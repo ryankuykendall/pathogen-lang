@@ -482,6 +482,43 @@ describe('formatDocument', () => {
     });
   });
 
+  // --- Semantic preservation (regressions: formatting must never change meaning) ---
+  describe('semantic preservation', () => {
+    it('keeps parentheses that precedence requires', () => {
+      expect(format('let x = calc((i + 0.5) / 28);')).toContain('(i + 0.5) / 28');
+      expect(format('let x = calc((a + b) * c);')).toContain('(a + b) * c');
+      expect(format('let x = calc(a - (b + c));')).toContain('a - (b + c)');
+      expect(format('let x = calc(a / (b * c));')).toContain('a / (b * c)');
+    });
+
+    it('drops parentheses that precedence makes redundant', () => {
+      expect(format('let x = calc((a * b) + c);')).toContain('a * b + c');
+      expect(format('let x = calc(a + (b - c));')).toContain('a + b - c');
+    });
+
+    it('parenthesizes binary arguments of unary operators', () => {
+      expect(format('let x = calc(-(a + b));')).toContain('-(a + b)');
+      expect(format('let x = !(a && b);')).toContain('!(a && b)');
+    });
+
+    it('re-quotes strings containing single quotes without corrupting them', () => {
+      const result = format(`let font = "'Helvetica Neue', 'Helvetica', sans-serif";`);
+      expect(result).toContain(`"'Helvetica Neue', 'Helvetica', sans-serif"`);
+    });
+
+    it('escapes when a string contains both quote styles', () => {
+      const result = format(`let s = "it's a \\"quote\\"";`);
+      expect(result).toContain(`'it\\'s a "quote"'`);
+    });
+
+    it('formatting is idempotent for precedence-heavy sources', () => {
+      const src = `let x = calc((i + 0.5) / 28);\nlet font = "'Helvetica Neue', sans-serif";`;
+      const once = format(src);
+      const twice = format(once);
+      expect(twice).toBe(once);
+    });
+  });
+
   // --- Trailing blocks ---
   describe('trailing blocks', () => {
     it('formats function call with trailing block', () => {

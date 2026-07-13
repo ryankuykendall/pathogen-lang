@@ -477,6 +477,70 @@ function splitAtLogicalOps(expr: Expression, depth: number, indent: string, sour
 
 // --- Expression formatting ---
 
+/**
+ * Binary operator precedence, mirroring pathogen.grammar's @precedence block
+ * (times > plus > compare > merge > equality > and > or; all left-associative).
+ * Higher number binds tighter.
+ */
+const OP_PRECEDENCE: Record<string, number> = {
+  '||': 1,
+  '&&': 2,
+  '==': 3,
+  '!=': 3,
+  '<<': 4,
+  '<': 5,
+  '<=': 5,
+  '>': 5,
+  '>=': 5,
+  '+': 6,
+  '-': 6,
+  '*': 7,
+  '/': 7,
+  '%': 7,
+};
+
+/** Operators where (a op b) op c === a op (b op c) — equal-precedence right children need no parens. */
+const ASSOCIATIVE_OPS = new Set(['+', '*', '&&', '||', '<<']);
+
+/**
+ * Format one operand of a binary expression, parenthesizing when required to
+ * preserve the parse. Dropping these parens silently changes semantics —
+ * `(i + 0.5) / 28` is NOT `i + 0.5 / 28`.
+ */
+function formatBinaryOperand(
+  child: Expression,
+  parentOp: string,
+  isRight: boolean,
+  depth: number,
+  indent: string,
+  source?: string,
+): string {
+  const text = formatExpression(child, depth, indent, source);
+  if (child.type === 'TernaryExpression') return `(${text})`;
+  if (child.type !== 'BinaryExpression') return text;
+  const childPrec = OP_PRECEDENCE[(child as BinaryExpression).operator] ?? 0;
+  const parentPrec = OP_PRECEDENCE[parentOp] ?? 0;
+  if (childPrec < parentPrec) return `(${text})`;
+  // Left-associative grammar: an equal-precedence RIGHT child re-parses as the
+  // parent's left unless the operator is associative (a - (b - c), a / (b * c)).
+  if (isRight && childPrec === parentPrec && !ASSOCIATIVE_OPS.has(parentOp)) return `(${text})`;
+  return text;
+}
+
+/**
+ * Re-quote a string literal, choosing the quote that minimizes escaping and
+ * re-escaping what parseStringContent unescapes. Naive `'${value}'` corrupts
+ * any value containing a single quote.
+ */
+function formatStringValue(value: string): string {
+  const escapeCommon = (s: string) =>
+    s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(/\r/g, '\\r');
+  if (value.includes("'") && !value.includes('"')) {
+    return `"${escapeCommon(value)}"`;
+  }
+  return `'${escapeCommon(value).replace(/'/g, "\\'")}'`;
+}
+
 function formatExpression(expr: Expression, depth: number, indent: string, source?: string): string {
   switch (expr.type) {
     case 'NumberLiteral': {
@@ -484,7 +548,7 @@ function formatExpression(expr: Expression, depth: number, indent: string, sourc
       return `${expr.value}${unit}`;
     }
     case 'StringLiteral':
-      return `'${expr.value}'`;
+      return formatStringValue(expr.value);
     case 'TemplateLiteral': {
       const parts = expr.parts.map((p) =>
         typeof p === 'string' ? p : `\${${formatExpression(p, depth, indent, source)}}`,
@@ -499,10 +563,19 @@ function formatExpression(expr: Expression, depth: number, indent: string, sourc
       return expr.name;
     case 'ColorLiteral':
       return expr.raw;
-    case 'BinaryExpression':
-      return `${formatExpression(expr.left, depth, indent, source)} ${expr.operator} ${formatExpression(expr.right, depth, indent, source)}`;
-    case 'UnaryExpression':
-      return `${expr.operator}${formatExpression(expr.argument, depth, indent, source)}`;
+    case 'BinaryExpression': {
+      const left = formatBinaryOperand(expr.left, expr.operator, false, depth, indent, source);
+      const right = formatBinaryOperand(expr.right, expr.operator, true, depth, indent, source);
+      return `${left} ${expr.operator} ${right}`;
+    }
+    case 'UnaryExpression': {
+      const arg = formatExpression(expr.argument, depth, indent, source);
+      // -(a + b) must not print as -a + b.
+      if (expr.argument.type === 'BinaryExpression' || expr.argument.type === 'TernaryExpression') {
+        return `${expr.operator}(${arg})`;
+      }
+      return `${expr.operator}${arg}`;
+    }
     case 'TernaryExpression':
       return formatTernary(expr, depth, indent, source);
     case 'CalcExpression':
