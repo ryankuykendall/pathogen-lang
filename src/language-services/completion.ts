@@ -5,6 +5,7 @@ import {
   KEYWORD_COMPLETIONS,
   STYLE_BLOCK_SNIPPET,
   STYLE_PROPERTY_COMPLETIONS,
+  STYLE_PROPERTY_VALUES,
 } from './completion-data-static';
 import {
   CONSTRUCTOR_RETURN_TYPES,
@@ -158,19 +159,31 @@ export function getCompletions(document: TextDocument, position: Position): Comp
 
   // Get the word prefix at cursor
   const prefixMatch = /[a-zA-Z_]\w*$/.exec(textBefore);
-  const prefix = prefixMatch ? prefixMatch[0] : '';
+  let prefix = prefixMatch ? prefixMatch[0] : '';
 
   // Collect all completions
   const items: CompletionItem[] = [];
   const insideStyleValue = isInsideStyleBlock(textBefore) && !isStylePropertyNameContext(textBefore);
 
   if (insideStyleValue) {
-    // Inside a style value position — rank user variables highest, add CSS
-    // value keywords, and skip noisy top-level keywords (let/for/fn/etc.)
-    // that are never valid inside a value expression.
-    items.push(...STYLE_VALUE_KEYWORDS.map(toCompletionItem));
+    // Inside a style value position — rank the current property's enumerated
+    // values first, then user variables, generic CSS value keywords, and
+    // stdlib. Top-level keywords (let/for/fn/etc.) are never valid here.
+    const propMatch = /([-\w]+)\s*:\s*[^;{}]*$/.exec(textBefore);
+    const propertyValues = propMatch ? STYLE_PROPERTY_VALUES[propMatch[1]] : undefined;
+    if (propertyValues) {
+      items.push(...propertyValues.map(toCompletionItem));
+      const covered = new Set(propertyValues.map((v) => v.label));
+      items.push(...STYLE_VALUE_KEYWORDS.filter((k) => !covered.has(k.label)).map(toCompletionItem));
+    } else {
+      items.push(...STYLE_VALUE_KEYWORDS.map(toCompletionItem));
+    }
     items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
     items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
+    // Value keywords are hyphenated (`line-through`, `text-top`) — filter by
+    // the full keyword run so the popup narrows correctly across the hyphen.
+    const valueRun = getStyleValueKeywordRun(source, offset);
+    if (valueRun) prefix = valueRun;
   } else {
     // Normal completion context — keywords, stdlib, enums.
     items.push(...KEYWORD_COMPLETIONS.map(toCompletionItem));
@@ -640,6 +653,23 @@ export function isStylePropertyNamePosition(source: string, offset: number): boo
   return (
     !isInsideBacktickString(textBefore) && isInsideStyleBlock(textBefore) && isStylePropertyNameContext(textBefore)
   );
+}
+
+/**
+ * When the cursor sits in style-block VALUE position typing an enumerated
+ * keyword (`text-decoration: line-t…`), returns the letters-and-hyphens run
+ * between the `:` and the cursor ('' right after the colon). Returns null
+ * outside that context — including when the value is expression-like
+ * (`4 2`, `#ff0`, `w - 2`), so editors keep normal word handling there.
+ * Editor integrations use this to widen their word/replacement range across
+ * hyphens, mirroring isStylePropertyNamePosition for property names.
+ */
+export function getStyleValueKeywordRun(source: string, offset: number): string | null {
+  const textBefore = source.slice(0, offset);
+  if (isInsideBacktickString(textBefore)) return null;
+  if (!isInsideStyleBlock(textBefore) || isStylePropertyNameContext(textBefore)) return null;
+  const m = /:\s*([-a-zA-Z]*)$/.exec(textBefore);
+  return m ? m[1] : null;
 }
 
 function toCompletionItem(entry: CompletionEntry): CompletionItem {

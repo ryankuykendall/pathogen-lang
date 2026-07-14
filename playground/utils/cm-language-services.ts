@@ -106,7 +106,9 @@ export interface CmModulesForLanguageServices {
  * Wired features: getCompletions. When signature help is wired in Phase C1
  * it will reuse this same trigger extension for `(` and `,`.
  */
-const COMPLETION_TRIGGER_CHARS = new Set(['.', '$', '(', ',']);
+// `:` triggers value-position suggestions inside style blocks
+// (stroke-linecap: → butt/round/square).
+const COMPLETION_TRIGGER_CHARS = new Set(['.', '$', '(', ',', ':']);
 
 function wireCompletionTriggers(cm: CmModulesForLanguageServices): unknown {
   return cm.view.EditorView.updateListener.of((update: CmViewUpdate) => {

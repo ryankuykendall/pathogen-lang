@@ -113,7 +113,8 @@ function manualSnippetApply(template: string) {
  */
 export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
   return function sharedCompletionSource(context: CompletionContext): CompletionResult | null {
-    const { StringTextDocument, getCompletions, isStylePropertyNamePosition } = window.PathogenLang;
+    const { StringTextDocument, getCompletions, isStylePropertyNamePosition, getStyleValueKeywordRun } =
+      window.PathogenLang;
 
     if (!getCompletions || !StringTextDocument) {
       return null;
@@ -121,19 +122,22 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
 
     const source = context.state.doc.toString();
 
-    // Style-block property names are hyphenated (`stroke-width`), so the
-    // word match must include `-` there — otherwise the replacement range
-    // starts after the hyphen and accepting `stroke-width` over a typed
-    // `stroke-w` yields `stroke-stroke-width`. Outside that context `-` is
-    // an operator (`a-b`, `-4`) and must stay a word boundary.
+    // Style-block property names (`stroke-width`) and enumerated values
+    // (`line-through`) are hyphenated, so the word match must include `-`
+    // there — otherwise the replacement range starts after the hyphen and
+    // accepting doubles the typed prefix. Outside those contexts `-` is an
+    // operator (`a-b`, `-4`) and must stay a word boundary; value positions
+    // only widen while the typed run is a pure keyword (letters + hyphens).
     const inStylePropName = isStylePropertyNamePosition?.(source, context.pos) ?? false;
+    const inStyleValueKeyword = (getStyleValueKeywordRun?.(source, context.pos) ?? null) !== null;
+    const hyphenAware = inStylePropName || inStyleValueKeyword;
 
     // Find the word being typed. `[@&$\w.]*` captures plain identifiers
     // (`cir`), member-access prefixes (`bg.app`), and leading-symbol prefixes
     // (`@font`, `&{`, `$`) that surface block-start and declaration snippets.
     // We reject zero-length non-explicit matches so that punctuation keystrokes
     // (e.g. `;`) don't trigger the completion popup for no reason.
-    const word = context.matchBefore(inStylePropName ? /[-\w]*/ : /[@&$\w.]*/);
+    const word = context.matchBefore(hyphenAware ? /[-\w]*/ : /[@&$\w.]*/);
     if (!word || (word.from === word.to && !context.explicit)) return null;
 
     const doc = new StringTextDocument(source);
@@ -170,7 +174,7 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
             }
           : {}),
       })),
-      validFor: inStylePropName ? /^[-\w]*$/ : /^[@&$\w.]*$/,
+      validFor: hyphenAware ? /^[-\w]*$/ : /^[@&$\w.]*$/,
     };
   };
 }

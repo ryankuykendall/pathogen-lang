@@ -11,6 +11,7 @@ import {
   getHoverInfo,
   getReferences,
   isStylePropertyNamePosition,
+  getStyleValueKeywordRun,
   getSignatureHelp,
   prepareRename,
   getRenameEdits,
@@ -79,7 +80,7 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
       textDocumentSync: TextDocumentSyncKind.Full,
       documentSymbolProvider: true,
       completionProvider: {
-        triggerCharacters: ['.', '$', '@', '&'],
+        triggerCharacters: ['.', '$', '@', '&', ':'],
       },
       hoverProvider: true,
       definitionProvider: true,
@@ -133,15 +134,18 @@ connection.onCompletion((params) => {
   const doc = new StringTextDocument(text);
   const items = getCompletions(doc, params.position);
 
-  // Style-block property names are hyphenated (`stroke-width`), but the
-  // client derives replacement ranges from its word pattern, which treats
-  // `-` as a boundary — accepting `stroke-width` over a typed `stroke-w`
-  // would double the prefix. Attach an explicit textEdit covering the full
-  // hyphenated run before the cursor. (Clients ignore insertText when a
-  // textEdit is present, so newText must carry the full insertion.)
+  // Style-block property names (`stroke-width`) and enumerated values
+  // (`line-through`) are hyphenated, but the client derives replacement
+  // ranges from its word pattern, which treats `-` as a boundary — accepting
+  // a completion over a typed hyphenated prefix would double it. Attach an
+  // explicit textEdit covering the full run before the cursor. (Clients
+  // ignore insertText when a textEdit is present, so newText must carry the
+  // full insertion.)
   const offset = textDocument.offsetAt(params.position);
-  if (isStylePropertyNamePosition(text, offset)) {
-    const prefix = /[-\w]*$/.exec(text.slice(0, offset))?.[0] ?? '';
+  const inPropName = isStylePropertyNamePosition(text, offset);
+  const valueRun = inPropName ? null : getStyleValueKeywordRun(text, offset);
+  if (inPropName || (valueRun !== null && valueRun.length > 0)) {
+    const prefix = inPropName ? (/[-\w]*$/.exec(text.slice(0, offset))?.[0] ?? '') : valueRun!;
     const start = textDocument.positionAt(offset - prefix.length);
     return items.map((item) => {
       const lspItem = toLSPCompletionItem(item);

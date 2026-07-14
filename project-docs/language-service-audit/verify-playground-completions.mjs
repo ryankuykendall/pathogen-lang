@@ -205,6 +205,18 @@ try {
     detail: JSON.stringify(text2.split('\n').slice(-3)),
   });
 
+  // ── 2b. value-position suggestions after the colon ────────────────────────
+  await openEditorWith('M 0 0\n');
+  await page.keyboard.type('let s = ${ stroke-linecap: ro', { delay: 30 });
+  const clicked2b = await acceptOption('round');
+  await new Promise((r) => setTimeout(r, 500));
+  const text2b = await editorText();
+  results.push({
+    name: '${ stroke-linecap: ro → accept round inserts value',
+    pass: clicked2b && text2b.includes('stroke-linecap: round'),
+    detail: JSON.stringify(text2b.split('\n').slice(-3)),
+  });
+
   // ── 3. Marker binding-block template ──────────────────────────────────────
   await openEditorWith('M 0 0\n');
   await page.keyboard.type('let mk = Mark', { delay: 30 });

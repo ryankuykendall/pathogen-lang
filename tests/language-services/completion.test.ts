@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { StringTextDocument } from '../../src/language-services/document';
-import { getCompletions } from '../../src/language-services/completion';
+import { getCompletions, getStyleValueKeywordRun } from '../../src/language-services/completion';
 import type { CompletionItem } from '../../src/language-services/completion';
 
 function complete(source: string, line: number, character: number): CompletionItem[] {
@@ -951,6 +951,52 @@ describe('getCompletions', () => {
       expect(sw).toBeDefined();
       expect(sw!.insertText).toBeUndefined();
       expect(sw!.isSnippet).toBeUndefined();
+    });
+  });
+
+  describe('style value-position suggestions', () => {
+    it('offers the property-specific enumerated values right after the colon', () => {
+      const names = labels(completeAtEnd('let s = ${ stroke-linecap: '));
+      expect(names).toEqual(expect.arrayContaining(['butt', 'round', 'square']));
+    });
+
+    it('filters hyphenated value keywords by the full run', () => {
+      const names = labels(completeAtEnd('let s = ${ text-decoration: line-t'));
+      expect(names).toContain('line-through');
+      expect(names).not.toContain('underline');
+    });
+
+    it('does not leak enumerated values across properties', () => {
+      const names = labels(completeAtEnd('let s = ${ stroke-width: '));
+      expect(names).not.toContain('butt');
+      expect(names).not.toContain('evenodd');
+    });
+
+    it('offers none/currentColor/context-* for stroke, deduped against generic keywords', () => {
+      const items = completeAtEnd('let s = ${ stroke: ');
+      const noneEntries = items.filter((i) => i.label === 'none');
+      expect(noneEntries).toHaveLength(1);
+      const names = labels(items);
+      expect(names).toEqual(expect.arrayContaining(['currentColor', 'context-stroke', 'context-fill']));
+    });
+
+    it('still offers user variables in value position (well-formed block)', () => {
+      // Note: scope analysis needs a parseable document — variables are not
+      // collected while the style block is still unterminated (pre-existing
+      // limitation, independent of value suggestions).
+      const source = 'let accent = oklch(0.7 0.1 250);\nlet s = ${ stroke:  };';
+      const cursor = source.indexOf(' };') + 1;
+      const items = complete(source, 1, cursor - source.indexOf('\n') - 1);
+      expect(labels(items)).toContain('accent');
+    });
+
+    it('getStyleValueKeywordRun returns the keyword run only for keyword-like values', () => {
+      const src1 = 'let s = ${ text-decoration: line-t';
+      expect(getStyleValueKeywordRun(src1, src1.length)).toBe('line-t');
+      const src2 = 'let s = ${ stroke-dasharray: 4 2';
+      expect(getStyleValueKeywordRun(src2, src2.length)).toBeNull();
+      const src3 = 'let x = a-b';
+      expect(getStyleValueKeywordRun(src3, src3.length)).toBeNull();
     });
   });
 });

@@ -59,7 +59,8 @@ export const LANGUAGE_FEATURES: readonly LanguageFeature[] = [
     id: 'completion',
     fn: 'getCompletions',
     vscodeCapability: 'completionProvider',
-    lspTriggerCharacters: ['.', '$', '@', '&'],
+    // `:` opens value-position suggestions inside style blocks.
+    lspTriggerCharacters: ['.', '$', '@', '&', ':'],
     playgroundRequired: true,
   },
   {
@@ -175,4 +176,8 @@ export const HELPERS_NOT_FEATURES: ReadonlySet<string> = new Set([
   'TOKEN_MODIFIERS',
   'encodeSemanticTokens',
   'analyzeScopes',
+  // Style-context probes consumed by the completion integrations (playground
+  // bridge word pattern, LSP textEdit range) — not standalone features.
+  'isStylePropertyNamePosition',
+  'getStyleValueKeywordRun',
 ]);

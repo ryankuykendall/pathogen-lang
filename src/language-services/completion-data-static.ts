@@ -76,6 +76,76 @@ export const STYLE_PROPERTY_COMPLETIONS: CompletionEntry[] = STYLE_PROPERTY_ENTR
   isSnippet: true,
 }));
 
+/** Build an enumerated style-value entry (boost 14 ranks above generic CSS keywords). */
+function styleValue(label: string, detail: string): CompletionEntry {
+  return { label, kind: 'constant', detail, boost: 14 };
+}
+
+/**
+ * Enumerated values per style property, offered in value position
+ * (`stroke-linecap: |`). Properties with open value domains (numbers, colors,
+ * ids) are absent — user variables and color literals cover those.
+ */
+export const STYLE_PROPERTY_VALUES: Record<string, CompletionEntry[]> = {
+  'stroke-linecap': [
+    styleValue('butt', 'Flat edge at the endpoint'),
+    styleValue('round', 'Semicircular cap'),
+    styleValue('square', 'Square cap extending half the stroke width'),
+  ],
+  'stroke-linejoin': [
+    styleValue('miter', 'Sharp corner'),
+    styleValue('round', 'Rounded corner'),
+    styleValue('bevel', 'Flattened corner'),
+  ],
+  'fill-rule': [
+    styleValue('nonzero', 'Winding-count fill rule (default)'),
+    styleValue('evenodd', 'Crossing-count fill rule — creates holes'),
+  ],
+  'font-style': [
+    styleValue('normal', 'Upright'),
+    styleValue('italic', 'Italic'),
+    styleValue('oblique', 'Slanted'),
+  ],
+  'font-weight': [
+    styleValue('normal', 'Weight 400'),
+    styleValue('bold', 'Weight 700'),
+    styleValue('400', 'Regular'),
+    styleValue('700', 'Bold'),
+  ],
+  'text-anchor': [
+    styleValue('start', 'Anchor at text start'),
+    styleValue('middle', 'Anchor at text center'),
+    styleValue('end', 'Anchor at text end'),
+  ],
+  'dominant-baseline': [
+    styleValue('auto', 'Default baseline'),
+    styleValue('alphabetic', 'Alphabetic baseline'),
+    styleValue('middle', 'Middle of the em box'),
+    styleValue('central', 'Center of the em box'),
+    styleValue('hanging', 'Hanging baseline'),
+    styleValue('text-top', 'Top of the text box'),
+    styleValue('text-bottom', 'Bottom of the text box'),
+  ],
+  'text-decoration': [
+    styleValue('none', 'No decoration'),
+    styleValue('underline', 'Underline'),
+    styleValue('overline', 'Overline'),
+    styleValue('line-through', 'Strikethrough'),
+  ],
+  stroke: [
+    styleValue('none', 'No stroke'),
+    styleValue('currentColor', 'Inherit the color property'),
+    styleValue('context-stroke', 'Inherit the referencing path’s stroke (markers)'),
+    styleValue('context-fill', 'Inherit the referencing path’s fill (markers)'),
+  ],
+  fill: [
+    styleValue('none', 'No fill'),
+    styleValue('currentColor', 'Inherit the color property'),
+    styleValue('context-fill', 'Inherit the referencing path’s fill (markers)'),
+    styleValue('context-stroke', 'Inherit the referencing path’s stroke (markers)'),
+  ],
+};
+
 // --- Block-start snippets (offered when typing @, & at statement start) ---
 
 export const BLOCK_START_SNIPPETS: CompletionEntry[] = [
