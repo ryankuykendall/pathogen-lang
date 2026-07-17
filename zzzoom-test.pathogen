@@ -1,0 +1,47 @@
+define ViewBox(0, 0, 13200, 7200);
+
+define default PathLayer('background') ${
+  fill: #fff;
+}
+
+layer('background').apply {
+  rect(0, 0, 13200, 7200);
+}
+
+let field = Grid(320, 200, { xDim: 20, yDim: 8, outOfBounds: 'wrap' }) {|g|
+  g.fill {|row, col, center|
+    return calc(tan(row * 21.1 / g.rows) + cos(col * 9.1 / g.cols));
+  };
+};
+
+let colorCount = 480;
+let colors = Color.palette(
+  oklch(0.8505 0.0113 348.5),
+  oklch(0.2390 0.0728 252.6 / 0.8),
+  colorCount);
+let drawingLayerSet = colors.map {|color, index|
+  return PathLayer(`drawing-layer-${index}`) ${
+    stroke-width: 0.2;
+    stroke: color.darken(0.2).alpha(0.48);
+    fill: color.alpha(0.325);
+  };
+};
+
+let itemLength = 880;
+for (drawingLayer in drawingLayerSet) {
+  let x = randomRange(900, 12000);
+  let y = randomRange(400, 2800);
+  let start = Point(x, y);
+  let next = start;
+  for (k in 1..itemLength) {
+    let angle = field.sampleBilinear(start.y, start.x);
+    next = start.polarTranslate(angle, 4.8);
+    drawingLayer.apply {
+      let t   = calc(k / (itemLength * 0.11));
+      let env = calc(sin(PI() * t)) * 1.5;
+      let radius = calc(1 + 49 * env * (0.5 + 0.5 * sin(k * 1.9)));
+      circle(start.x, start.y, radius);
+    }
+    start = next;
+  }
+}

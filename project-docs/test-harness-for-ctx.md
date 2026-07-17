@@ -132,3 +132,12 @@ Notes regarding multi-part series blog posts:
  1. Posts should be published on different days in order to correctly preserve their desired order
  2. Posts should include some kind of table of contents at the top of the post showing each entry in the series as well where the current post is ordered in the series
  3. Posts in a series should include a subtitle worded something like "Part <number> in our series on <topic or feature area>"
+
+ ## Flow fields work/follow-up
+
+Optional later layer: FlowField
+
+ Not part of this plan, just noting the path forward: a FlowField could later wrap a Grid<Point> to add integrate(startPoint, steps, stepSize) returning a PathBlock that traces a particle. Keeping Grid general now means FlowField is a thin convenience layer, not a parallel hierarchy.
+
+## Issues to address 06/18
+All 91 errors are in pre-existing unrelated files (cli.ts, parser/*, boolean-ops.ts) — none in our five touched files. Our changes are type-clean

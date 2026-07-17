@@ -74,12 +74,9 @@ key sets from `TYPE_MEMBERS` / `CONSTRUCTOR_RETURN_TYPES`
 
 ## Known pre-existing gap (flagged by review, out of scope)
 
-`ctx.transform` has never worked in `compileAnnotated()` — the annotated
-evaluator has no ContextObject `.transform` special case (absent before and
-after this work; the main evaluator synthesizes a TransformReference from
-`_transformState`). The struct-properties module deliberately leaves that
-special case in index.ts. If annotated parity for `ctx.transform` matters,
-it is a separate fix.
+`ctx.transform` has never worked in `compileAnnotated()` — full write-up with
+reproduction, root cause, and fix sketch in
+[bug-ctx-transform-annotated.md](bug-ctx-transform-annotated.md).
 
 ## Also fixed in passing
 

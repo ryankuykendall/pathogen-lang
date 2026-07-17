@@ -52,4 +52,11 @@ PRODUCTION        = "1"
 COOKIE_DOMAIN     = ".pathogen.studio"
 # AUTH_RESEND_API_KEY is set via `wrangler secret put AUTH_RESEND_API_KEY`
 # only if the CF Email Sending fallback to Resend is needed.
-# ADMIN_TOKEN is set via `wrangler secret put ADMIN_TOKEN`.
+# ADMIN_TOKEN is set via `wrangler secret put ADMIN_TOKEN` — required for the
+# token-gated `/admin/*` endpoints (see api/CLAUDE.md).
+# ADMIN_EMAILS is set via `wrangler secret put ADMIN_EMAILS` — comma-separated
+# allowlist of reviewer/admin emails. Read by isAdminUser() in
+# website/auth/features.ts to grant the `admin-moderation` feature via /me;
+# compared case-insensitively against user.email_lower. Not stored in D1 and
+# evaluated fresh on every request, so admin status can't be granted by
+# mutating a row. Kept as a secret (not [vars]) so CI redeploys don't wipe it.

@@ -1,0 +1,83 @@
+define ViewBox(0, 0, 5200, 20000);
+define default PathLayer('main-path-layer') ${
+  fill: #bbb;
+  stroke: #222;
+  stroke-width: 1;
+};
+
+let stroke2Layer = PathLayer('stroke-2') ${
+  stroke-linecap: round;
+  stroke-width: 2;
+};
+let stroke4Layer = PathLayer('stroke-4') ${
+  stroke-linecap: round;
+  stroke-width: 4;
+};
+let stroke8Layer = PathLayer('stroke-8') ${
+  stroke-linecap: round;
+  stroke-width: 8;
+};
+let stroke16Layer = PathLayer('stroke-16') ${
+  stroke-linecap: round;
+  stroke-width: 16;
+};
+let stroke32Layer = PathLayer('stroke-32') ${
+  stroke-linecap: round;
+  stroke-width: 32;
+};
+
+let baseChainedBezierArgs = [
+  { x: 0, y: 0, angle: -0.5pi, exit: 200 },
+  { x: 400, y: 0, angle: 0.5pi, exit: 200, entry: 200 },
+  { x: 800, y: 0, angle: -0.5pi, exit: 200, entry: 200 },
+  { x: 1200, y: 0, angle: 0.5pi, exit: 200, entry: 200 },
+  { x: 1600, y: 0, angle: -0.5pi, exit: 200, entry: 200 },
+  { x: 2000, y: 0, angle: 0.5pi, exit: 200, entry: 200 },
+  { x: 2400, y: 0, angle: -0.5pi, exit: 200, entry: 200 },
+  { x: 2800, y: 0, angle: 0.5pi, exit: 200, entry: 200 },
+  { x: 3200, y: 0, angle: -0.5pi, exit: 200, entry: 200 },
+  { x: 3600, y: 0, angle: 0.5pi, exit: 200, entry: 200 },
+  { x: 4000, y: 0, angle: -0.5pi, exit: 200, entry: 200 },
+  { x: 4400, y: 0, angle: 0.5pi, exit: 200, entry: 200 },
+  { x: 4800, y: 0, angle: -0.5pi, entry: 200 },
+];
+
+// randomRange(1, 2); //-- Uncomment this to get the refresh button.
+
+let strokeLayerCycler = Cycler([
+  stroke2Layer,
+  stroke4Layer,
+  stroke8Layer,
+  stroke16Layer,
+  stroke32Layer,
+  stroke16Layer,
+  stroke8Layer,
+  stroke4Layer,
+]);
+
+let xPos = 200;
+let lastBezierArgs = baseChainedBezierArgs.slice(0);
+for (yOffset in 193..1) {
+  let yPos = yOffset * 100 + 200;
+  let selectedStrokeLayer = strokeLayerCycler.pick();
+  let pb = @{
+    cubicSpline(lastBezierArgs);
+  };
+  selectedStrokeLayer.apply {
+    pb.drawTo(xPos, yPos);
+  }
+  lastBezierArgs = lastBezierArgs.map() {|item|
+    let props = {
+      y: randomRange(calc(item.y * 0.8), calc(item.y * 1.2)),
+      angle: randomRange(calc(item.angle * 0.95), calc(item.angle * 1.025)),
+    };
+    if (item.has('entry')) {
+      props['entry'] = randomRange(calc(item.entry * 0.95), calc(item.entry * 1.05));
+    }
+    if (item.has('exit')) {
+      props['exit'] = randomRange(calc(item.exit * 0.95), calc(item.exit * 1.05));
+    }
+                                         
+    return {} << item << props;
+  };
+}
