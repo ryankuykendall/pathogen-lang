@@ -846,6 +846,14 @@ let [only, ...rest] = [42];
 
 The rest pattern must be the last binding in the destructuring pattern.
 
+Object destructuring works on object literals and on fixed-shape struct
+values such as `Point`, `Grid`, `Color`, and `ctx.position` —
+see [Destructuring](#objects-destructuring) in the Objects guide:
+
+```
+let { x, y } = Point(20, 20);
+```
+
 ## Angle Units
 
 Numbers can have angle unit suffixes for convenience:

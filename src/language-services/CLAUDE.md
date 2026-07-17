@@ -28,7 +28,7 @@ Completion/hover/signature data comes from **two files with different rules**:
 | File | Status | Contents |
 |------|--------|----------|
 | `completion-data-static.ts` | Hand-written | Keywords, style properties, block-start/declaration snippets |
-| `completion-data.generated.ts` | **AUTO-GENERATED — never edit** | Stdlib + constructor completions, enum completions/members, `TYPE_MEMBERS`, `NAMESPACE_MEMBERS`, `SIGNATURE_DATA`, `CONSTRUCTOR_RETURN_TYPES`, `TYPE_METHOD_RETURNS` |
+| `completion-data.generated.ts` | **AUTO-GENERATED — never edit** | Stdlib + constructor completions, enum completions/members, `TYPE_MEMBERS`, `NAMESPACE_MEMBERS`, `SIGNATURE_DATA`, `CONSTRUCTOR_RETURN_TYPES`, `TYPE_METHOD_RETURNS`, `TYPE_PROPERTY_TYPES` |
 
 The generated file is produced by `scripts/generate-completions.ts` (pure logic in `scripts/lib/completion-extract.ts`, unit-tested in `tests/language-services/generate-completions.test.ts`) from two sources of truth:
 
@@ -43,7 +43,7 @@ npm run check:completions             # strict drift check + git-diff sync check
 ### JSDoc conventions in pathogen-api.ts
 
 - `detail text @boost N @kind variable` — detail string, sort boost, completion kind.
-- `@type TypeName` on an interface — extracted into `TYPE_MEMBERS['TypeName']`; the interface's method return types feed `TYPE_METHOD_RETURNS` (chain completions like `grid.getPoint(0,0).x`).
+- `@type TypeName` on an interface — extracted into `TYPE_MEMBERS['TypeName']`; the interface's method return types feed `TYPE_METHOD_RETURNS` (chain completions like `grid.getPoint(0,0).x`), and its property types feed `TYPE_PROPERTY_TYPES` (destructured-binding inference like `let { origin } = grid;`).
 - `@snippet template` — explicit snippet template (VS Code `${1:x}`/`$0` syntax; `\n`/`\t` as two-character escapes). **Required for trailing-block syntax** (`apply { }`, `Marker(...) {|m| ... }`) that TS declarations can't express. Methods without `@snippet` get a derived template from their required parameters (`drawTo(${1:x}, ${2:y})$0`, string params quoted). The generator warns when a detail looks block-shaped (`{|`, `{ }`) but has no `@snippet`.
 - Constructor return types that name a `@type`-tagged interface feed `CONSTRUCTOR_RETURN_TYPES` (drives `inferType` and binding-block param inference); `hasBindingBlock` is derived from `{|` in the `@snippet`.
 
@@ -62,8 +62,9 @@ npm run check:completions             # strict drift check + git-diff sync check
 | `scope-analysis.ts` | `analyzeScopes()` — scope tree, declarations, references | New declaration/statement types |
 | `completion-data-static.ts` | Hand-written keywords, style properties, snippets | New keyword / style property |
 | `completion-data.generated.ts` | **Generated** — see above | Never by hand; `npm run generate:completions` |
-| `completion.ts` | `getCompletions()` + `isStylePropertyNamePosition()` — type inference, member access, scope-aware | New inference rules (constructor data flows in automatically) |
-| `hover.ts` | `getHoverInfo()` — keywords, path commands, stdlib (built from `STDLIB_COMPLETIONS`) | New keywords; stdlib flows in automatically |
+| `completion.ts` | `getCompletions()` + `isStylePropertyNamePosition()` — completion contexts (member access, pattern braces, style blocks), scope-aware | New completion contexts |
+| `type-inference.ts` | `inferType()`, `inferRhsType()`, block-param/loop-var inference — shared by completion + hover | New inference rules (constructor/property data flows in automatically) |
+| `hover.ts` | `getHoverInfo()` — keywords, path commands, stdlib (built from `STDLIB_COMPLETIONS`), inferred variable types via `type-inference.ts` | New keywords; stdlib flows in automatically |
 | `signature-help.ts` | `getSignatureHelp()` — active parameter tracking | Flows from generated `SIGNATURE_DATA` |
 | `symbols.ts` | `getDocumentSymbols()` — outline/breadcrumbs | New AST nodes that appear in outline |
 | `navigation.ts` | `getDefinition()`, `getReferences()` | New declaration types |

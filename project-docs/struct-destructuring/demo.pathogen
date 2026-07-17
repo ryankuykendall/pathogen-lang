@@ -1,0 +1,57 @@
+// Struct destructuring demo — every destructurable built-in in one drawing.
+define ViewBox(0, 0, 200, 200);
+
+define PathLayer('rings') ${
+  stroke: oklch(0.55 0.18 260);
+  stroke-width: 2;
+  fill: none;
+}
+
+define PathLayer('dots') ${
+  stroke: none;
+  fill: oklch(0.6 0.2 20);
+}
+
+let labels = TextLayer('labels') ${ font-size: 8; fill: oklch(0.35 0.05 260); };
+
+// Point: destructure x/y and draw around them
+let center = Point(100, 100);
+let { x, y } = center;
+
+layer('rings').apply {
+  circle(x, y, 60);
+}
+
+// PolarVector: angle/distance place dots around the ring
+let { angle, distance } = PolarVector(0.7854, 60);
+layer('dots').apply {
+  for (i in 0..7) {
+    let px = calc(x + distance * cos(angle * i));
+    let py = calc(y + distance * sin(angle * i));
+    circle(px, py, 4);
+  }
+}
+
+// Grid: computed width/height via rest pattern frame the drawing
+let { rows, cols, ...dims } = Grid(18, 18, { xDim: 10, yDim: 10 });
+layer('rings').apply {
+  rect(calc(x - dims.width / 2), calc(y - dims.height / 2), dims.width, dims.height);
+}
+
+// Color: destructured channels drive a derived swatch row
+let { lightness, chroma, hue } = oklch(0.6 0.2 20);
+layer('dots').apply {
+  for (i in 0..4) {
+    circle(calc(40 + i * 30), 185, calc(3 + lightness * i));
+  }
+}
+
+// ctx.position: destructure the live pen position mid-path
+layer('rings').apply {
+  M 40 40
+  L 70 55
+  let { x: penX, y: penY } = ctx.position;
+  circle(penX, penY, 6);
+}
+
+labels.apply { text(30, 20)`Point / PolarVector / Grid / Color / ctx` }

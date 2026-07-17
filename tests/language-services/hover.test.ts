@@ -112,6 +112,60 @@ describe('getHoverInfo', () => {
     });
   });
 
+  describe('inferred variable types', () => {
+    it('shows the inferred type for a constructor-typed variable', () => {
+      const result = hover('let p = Point(10, 20);\ncircle(p.x, p.y, 5);', 1, 7);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('*variable: Point*');
+    });
+
+    it('shows the inferred type for a destructured struct binding', () => {
+      const result = hover(
+        'let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet { origin } = g;\ncircle(origin.x, origin.y, 5);',
+        2,
+        8,
+      );
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('*variable: Point*');
+    });
+
+    it('shows the Color display name for ColorInstance bindings', () => {
+      const result = hover('let col = oklch(0.7 0.15 200);\nlog(col);', 1, 5);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('*variable: Color*');
+      expect(result!.contents).not.toContain('ColorInstance');
+    });
+
+    it('shows the inferred type for an aliased destructured binding', () => {
+      const result = hover(
+        'let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet { origin: o } = g;\ncircle(o.x, o.y, 5);',
+        2,
+        7,
+      );
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('*variable: Point*');
+    });
+
+    it('keeps the plain hover text for un-inferable variables', () => {
+      const result = hover('let radius = 50;\ncircle(0, 0, radius);', 1, 15);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toBe('**radius** — *variable*\n\nDefined at line 1');
+    });
+
+    it('keeps the plain hover text for numeric destructured bindings', () => {
+      const result = hover('let { x } = Point(1, 2);\ncircle(x, 0, 5);', 1, 7);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('*variable*');
+      expect(result!.contents).not.toContain('variable:');
+    });
+
+    it('shows the inferred type for a loop variable over a typed array', () => {
+      const result = hover('let pts = [Point(0, 0), Point(1, 1)];\nfor (pt in pts) {\n  circle(pt.x, pt.y, 2);\n}', 2, 10);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('*loop variable: Point*');
+    });
+  });
+
   describe('no hover', () => {
     it('returns null for empty space far from any word', () => {
       // Position in the middle of lots of whitespace

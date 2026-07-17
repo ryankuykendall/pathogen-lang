@@ -320,4 +320,68 @@ M add(triple(2), 4) 0`);
       expect(result).toContain('L 50 30');
     });
   });
+
+  describe('destructuring', () => {
+    it('destructures object literals', () => {
+      const result = compileAnnotated('let { x, y } = { x: 20, y: 30 };\nM x y');
+      expect(result).toContain('M 20 30');
+    });
+
+    it('destructures arrays', () => {
+      const result = compileAnnotated('let [px, py] = [15, 25];\nM px py');
+      expect(result).toContain('M 15 25');
+    });
+
+    it('destructures Point like the main evaluator', () => {
+      const result = compileAnnotated('let { x, y } = Point(20, 30);\nM x y');
+      expect(result).toContain('M 20 30');
+    });
+
+    it('destructures Point with rename and rest', () => {
+      const result = compileAnnotated('let { x: px, ...rest } = Point(40, 60);\nM px rest.y');
+      expect(result).toContain('M 40 60');
+    });
+
+    it('destructures Grid computed properties', () => {
+      const result = compileAnnotated('let { width, height } = Grid(4, 5, { xDim: 10, yDim: 10 });\nM width height');
+      expect(result).toContain('M 50 40');
+    });
+
+    it('destructures ctx.position mid-path', () => {
+      const result = compileAnnotated('M 50 50\nL 120 80\nlet { x, y } = ctx.position;\nM x y');
+      expect(result).toContain('M 120 80');
+    });
+
+    it('throws with line number for a missing struct key', () => {
+      expect(() => compileAnnotated('let { z } = Point(1, 2);')).toThrow(
+        /Line 1.*Property 'z' does not exist on Point/,
+      );
+    });
+
+    it('destructures inside a TextBlock text body without throwing', () => {
+      expect(() =>
+        compileAnnotated(`let t = &{
+  text(0, 0) {
+    let { x, y } = Point(7, 9);
+    \`at \${x},\${y}\`
+  }
+};`),
+      ).not.toThrow();
+    });
+
+    it('missing struct key inside a TextBlock text body reports a line number', () => {
+      expect(() =>
+        compileAnnotated(`let t = &{
+  text(0, 0) {
+    let { z } = Point(1, 2);
+    \`hi\`
+  }
+};`),
+      ).toThrow(/Line \d+.*Property 'z' does not exist on Point/);
+    });
+
+    it('still throws when destructuring a plain number', () => {
+      expect(() => compileAnnotated('let { x } = 5;')).toThrow(/cannot destructure/i);
+    });
+  });
 });

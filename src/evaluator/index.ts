@@ -10,6 +10,7 @@ import {
   updateContextForCommand,
 } from './context';
 import { formatNum, resetNumberFormat, setNumberFormat } from './format';
+import { getStructDescriptor } from './struct-properties';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
 
@@ -28,10 +29,6 @@ import {
   mixColors,
   mixCSS,
   oklchToCSS,
-  oklchToHex,
-  oklchToHSLString,
-  oklchToOKLCHString,
-  oklchToRGBString,
   parseColor,
   saturate,
   saturateCSS,
@@ -2029,7 +2026,7 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
     if (stmt.type === 'LetDeclaration') {
       const value = evaluateExpression(stmt.value, scope);
       if (stmt.pattern) {
-        bindDestructuringPattern(stmt.pattern, value, scope);
+        bindDestructuringPattern(stmt.pattern, value, scope, getLine(stmt));
       } else {
         setVariable(scope, stmt.name, value);
       }
@@ -5212,34 +5209,25 @@ function evaluateTemplateLiteral(tl: TemplateLiteral, scope: Scope): string {
 function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   const obj = evaluateExpression(expr.object, scope);
 
-  // Handle PointValue property access
-  if (isPointValue(obj)) {
-    if (expr.property === 'x') return obj.x;
-    if (expr.property === 'y') return obj.y;
-    throw new Error(`Property '${expr.property}' does not exist on Point`);
-  }
-
-  // Handle GridValue property access
-  if (isGridValue(obj)) {
-    switch (expr.property) {
-      case 'rows': return obj.rows;
-      case 'cols': return obj.cols;
-      case 'xDim': return obj.xDim;
-      case 'yDim': return obj.yDim;
-      case 'origin': return obj.origin;
-      case 'width': return obj.cols * obj.xDim;
-      case 'height': return obj.rows * obj.yDim;
-      case 'outOfBounds': return obj.outOfBounds;
-      case 'interpolation': return obj.interpolation;
-      default: throw new Error(`Property '${expr.property}' does not exist on Grid`);
+  // Context .transform is synthesized from _transformState, not a data property
+  if (
+    typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ContextObject' &&
+    expr.property === 'transform'
+  ) {
+    const transformState = obj.value._transformState as TransformState | undefined;
+    if (transformState) {
+      return { type: 'TransformReference' as const, state: transformState };
     }
+    throw new Error(`Property 'transform' does not exist on context object`);
   }
 
-  // Handle PolarVectorValue property access
-  if (isPolarVectorValue(obj)) {
-    if (expr.property === 'angle') return obj.angle;
-    if (expr.property === 'distance') return obj.distance;
-    throw new Error(`Property '${expr.property}' does not exist on PolarVector`);
+  // Data properties of built-in structs (Point, PolarVector, Grid, MeshPoint,
+  // Color, context objects) resolve through the shared registry, which is also
+  // what object destructuring reads.
+  const struct = getStructDescriptor(obj);
+  if (struct) {
+    if (struct.has(obj, expr.property)) return struct.get(obj, expr.property);
+    throw new Error(`Property '${expr.property}' does not exist on ${struct.name}`);
   }
 
   // Handle PathBlockValue property access
@@ -5374,43 +5362,6 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         throw new Error(`Property '${expr.property}' does not exist on transform.scale`);
       }
     }
-  }
-
-  // Handle ContextObject property access
-  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ContextObject') {
-    const contextObj = obj;
-
-    // Handle .transform access — returns TransformReference if transform state is attached
-    if (expr.property === 'transform') {
-      const transformState = contextObj.value._transformState as TransformState | undefined;
-      if (transformState) {
-        return { type: 'TransformReference' as const, state: transformState };
-      }
-      throw new Error(`Property 'transform' does not exist on context object`);
-    }
-
-    const propValue = contextObj.value[expr.property];
-
-    if (propValue === undefined) {
-      throw new Error(`Property '${expr.property}' does not exist on context object`);
-    }
-
-    // If the property is an object (like position or start), wrap it as ContextObject
-    if (typeof propValue === 'object' && propValue !== null && !Array.isArray(propValue)) {
-      return { type: 'ContextObject' as const, value: propValue as Record<string, unknown> };
-    }
-
-    // If it's a number, return it directly
-    if (typeof propValue === 'number') {
-      return propValue;
-    }
-
-    // If it's an array (like commands), wrap it as ContextObject
-    if (Array.isArray(propValue)) {
-      return { type: 'ContextObject' as const, value: { length: propValue.length, items: propValue } };
-    }
-
-    throw new Error(`Cannot access property '${expr.property}' of type ${typeof propValue}`);
   }
 
   // Handle MaskValue property access
@@ -5605,20 +5556,6 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
-  // Handle MeshPointValue property access
-  if (isMeshPointValue(obj)) {
-    switch (expr.property) {
-      case 'x':
-        return obj.x;
-      case 'y':
-        return obj.y;
-      case 'color':
-        return { type: 'ColorValue', oklch: { ...obj.color } } as ColorValue;
-      default:
-        throw new Error(`Property '${expr.property}' does not exist on MeshPoint`);
-    }
-  }
-
   // Handle GradientValue property access
   if (isGradientValue(obj)) {
     switch (expr.property) {
@@ -5683,32 +5620,6 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       }
       default:
         throw new Error(`Property '${expr.property}' does not exist on Gradient`);
-    }
-  }
-
-  // Handle ColorValue property access
-  if (isColorValue(obj)) {
-    switch (expr.property) {
-      case 'css':
-        return oklchToCSS(obj.oklch);
-      case 'hex':
-        return oklchToHex(obj.oklch);
-      case 'oklch':
-        return oklchToOKLCHString(obj.oklch);
-      case 'hsl':
-        return oklchToHSLString(obj.oklch);
-      case 'rgb':
-        return oklchToRGBString(obj.oklch);
-      case 'lightness':
-        return obj.oklch.L;
-      case 'chroma':
-        return obj.oklch.C;
-      case 'hue':
-        return obj.oklch.H;
-      case 'a':
-        return obj.oklch.alpha;
-      default:
-        throw new Error(`Property '${expr.property}' does not exist on Color`);
     }
   }
 
@@ -7677,7 +7588,7 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
     } else if (item.type === 'LetDeclaration') {
       const value = evaluateExpression(item.value, scope);
       if (item.pattern) {
-        bindDestructuringPattern(item.pattern, value, scope);
+        bindDestructuringPattern(item.pattern, value, scope, getLine(item));
       } else {
         setVariable(scope, item.name, value);
       }
@@ -7708,18 +7619,42 @@ function bindDestructuringPattern(
       });
     }
   } else {
-    if (!isObjectValue(value)) {
+    if (isObjectValue(value)) {
+      const usedKeys = new Set<string>();
+      for (const { key, alias } of pattern.properties) {
+        usedKeys.add(key);
+        setVariable(scope, alias ?? key, value.properties.get(key) ?? null);
+      }
+      if (pattern.rest) {
+        const remaining = new Map<string, Value>();
+        for (const [k, v] of value.properties) {
+          if (!usedKeys.has(k)) remaining.set(k, v);
+        }
+        setVariable(scope, pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
+      }
+      return;
+    }
+
+    // Built-in structs (Point, PolarVector, Grid, MeshPoint, Color, context
+    // objects) destructure through the shared registry. Unlike plain objects,
+    // their property set is fixed, so a missing key is an error — the same
+    // contract as dot access.
+    const struct = getStructDescriptor(value);
+    if (!struct) {
       throw new Error(formatError('Cannot destructure non-object value with object pattern', line));
     }
     const usedKeys = new Set<string>();
     for (const { key, alias } of pattern.properties) {
+      if (!struct.has(value, key)) {
+        throw new Error(formatError(`Property '${key}' does not exist on ${struct.name}`, line));
+      }
       usedKeys.add(key);
-      setVariable(scope, alias ?? key, value.properties.get(key) ?? null);
+      setVariable(scope, alias ?? key, struct.get(value, key));
     }
     if (pattern.rest) {
       const remaining = new Map<string, Value>();
-      for (const [k, v] of value.properties) {
-        if (!usedKeys.has(k)) remaining.set(k, v);
+      for (const key of struct.keys(value)) {
+        if (!usedKeys.has(key)) remaining.set(key, struct.get(value, key));
       }
       setVariable(scope, pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
     }

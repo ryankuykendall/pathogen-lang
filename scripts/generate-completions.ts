@@ -19,6 +19,7 @@ import {
   extractSignatureData,
   extractConstructorReturnTypes,
   extractTypeMethodReturns,
+  extractTypePropertyReturns,
   escapeString,
 } from './lib/completion-extract';
 import type { ExtractedCompletion, MemberSet, ExtractionWarning } from './lib/completion-extract';
@@ -161,6 +162,14 @@ program
       return `  '${typeName}': { ${inner} }`;
     });
 
+    const typePropertyTypes = extractTypePropertyReturns(sourceFile);
+    const propertyTypeEntries = Object.entries(typePropertyTypes).map(([typeName, props]) => {
+      const inner = Object.entries(props)
+        .map(([p, t]) => `${p}: '${t}'`)
+        .join(', ');
+      return `  '${typeName}': { ${inner} }`;
+    });
+
     // Cross-check: compare declarations against runtime
     const declaredFunctions = new Set(signatureData.map((s) => s.name));
     const problems = crossCheck(declaredFunctions, constructorReturnTypes);
@@ -236,6 +245,11 @@ ${constructorEntries.join(',\n')},
 /** Per-type method return types (resolves chains like grid.getPoint(0,0).x) */
 export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
 ${methodReturnEntries.join(',\n')},
+};
+
+/** Per-type data-property types (resolves destructured bindings like let { origin } = grid) */
+export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
+${propertyTypeEntries.join(',\n')},
 };
 `;
 

@@ -35,10 +35,6 @@ import {
   mixColors,
   mixCSS,
   oklchToCSS,
-  oklchToHex,
-  oklchToHSLString,
-  oklchToOKLCHString,
-  oklchToRGBString,
   parseColor,
   saturate,
   saturateCSS,
@@ -47,19 +43,38 @@ import {
   setLightnessCSS,
 } from '../color';
 import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
+import { getStructDescriptor } from './struct-properties';
 
 import type { PathContext } from './context';
 import type { OKLCH } from '../color';
 import type {
+  BooleanValue,
+  ClipPathValue,
+  ColorNamespace,
+  ColorValue,
+  ContextObject,
+  CSSVarValue,
   GridInterpolationMode,
   GridOutOfBoundsMode,
+  MarkerValue,
+  MaskValue,
+  MeshPointValue,
+  ObjectNamespace,
   PathBlockCommand,
-  Point,
+  PathBlockNamespace,
+  PathBlockValue,
+  PathSegment,
+  PatternValue,
   PointValue,
+  PolarVectorValue,
+  ProjectedPathValue,
   ProjectedTextValue,
+  StyleBlockValue,
+  SVGFragmentValue,
   TextBlockElement,
   TextBlockValue,
   TextChild,
+  UserFunction,
 } from './types';
 import type {
   ArrayDestructuringPattern,
@@ -103,12 +118,6 @@ export type AnnotatedLine =
 
 export interface AnnotatedOutput {
   lines: AnnotatedLine[];
-}
-
-// BooleanValue type (mirrors main evaluator)
-export interface BooleanValue {
-  type: 'BooleanValue';
-  value: 0 | 1;
 }
 
 function isBooleanValue(value: Value): value is BooleanValue {
@@ -205,13 +214,6 @@ export type Value =
   | TextBlockValue
   | ProjectedTextValue;
 
-export interface SVGFragmentValue {
-  type: 'SVGFragmentValue';
-  defsContent: string;
-  visualContent: string;
-  rawContent: string;
-}
-
 function isSVGFragmentValue(value: Value): value is SVGFragmentValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SVGFragmentValue';
 }
@@ -259,34 +261,12 @@ function isGradientValue(value: Value): value is GradientValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'GradientValue';
 }
 
-export interface MeshPointValue {
-  type: 'MeshPointValue';
-  x: number;
-  y: number;
-  color: OKLCH;
-  colorCSS: string;
-  gridRow: number;
-  gridCol: number;
-}
-
 function isMeshPointValue(value: Value): value is MeshPointValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MeshPointValue';
 }
 
-export interface MaskValue {
-  type: 'MaskValue';
-  id: string;
-  paths: { d: string; styles: Record<string, string> }[];
-}
-
 function isMaskValue(value: Value): value is MaskValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MaskValue';
-}
-
-export interface ClipPathValue {
-  type: 'ClipPathValue';
-  id: string;
-  paths: string[];
 }
 
 function isClipPathValue(value: Value): value is ClipPathValue {
@@ -378,41 +358,17 @@ function assignMeshPointProperty(obj: MeshPointValue, property: string, value: V
   }
 }
 
-export interface PatternValue {
-  type: 'PatternValue';
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  paths: { d: string; styles: Record<string, string> }[];
-  patternUnits?: string;
-  patternTransform?: string;
-  patternContentUnits?: string;
-}
-
 function isPatternValue(value: Value): value is PatternValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PatternValue';
-}
-
-export interface MarkerValue {
-  type: 'MarkerValue';
-  id: string;
-  viewBox: string;
-  markerWidth: number;
-  markerHeight: number;
-  refX: number | string;
-  refY: number | string;
-  markerUnits: string;
-  orient: number | string;
-  preserveAspectRatio: string;
-  paths: { d: string; styles: Record<string, string> }[];
 }
 
 function isMarkerValue(value: Value): value is MarkerValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'MarkerValue';
 }
 
+// GridValue/CyclerValue/ArrayValue/ObjectValue embed this module's Value union
+// recursively (cells/elements/properties), so they must stay local — importing
+// them from ./types would rebind their payloads to types.ts's wider Value.
 export interface GridValue {
   type: 'GridValue';
   rows: number;
@@ -427,12 +383,6 @@ export interface GridValue {
 
 function isGridValue(value: Value): value is GridValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'GridValue';
-}
-
-export interface PolarVectorValue {
-  type: 'PolarVectorValue';
-  angle: number;
-  distance: number;
 }
 
 function isPolarVectorValue(value: Value): value is PolarVectorValue {
@@ -540,26 +490,8 @@ const ANNOTATED_FILTER_KINDS: Record<string, AnnotatedFilterValue['kind']> = {
 
 let annotatedFilterCounter = 0;
 
-export interface ColorValue {
-  type: 'ColorValue';
-  oklch: OKLCH;
-  cssVar?: { varName: string; fallback: string };
-  cssExpr?: string;
-  lightDark?: { lightCSS: string; darkCSS: string };
-}
-
 function isColorValue(value: Value): value is ColorValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ColorValue';
-}
-
-export interface ColorNamespace {
-  type: 'ColorNamespace';
-}
-
-export interface CSSVarValue {
-  type: 'CSSVarValue';
-  varName: string;
-  fallback: string | null;
 }
 
 function isCSSVarValue(value: Value): value is CSSVarValue {
@@ -584,31 +516,8 @@ function isObjectValue(value: Value): value is ObjectValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ObjectValue';
 }
 
-export interface ObjectNamespace {
-  type: 'ObjectNamespace';
-}
-
-export interface PathBlockNamespace {
-  type: 'PathBlockNamespace';
-}
-
-export interface PathBlockValue {
-  type: 'PathBlockValue';
-  commands: PathBlockCommand[];
-  pathStrings: string[];
-  startPoint: Point;
-  endPoint: Point;
-}
-
 function isPathBlockValue(value: Value): value is PathBlockValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathBlockValue';
-}
-
-export interface ProjectedPathValue {
-  type: 'ProjectedPathValue';
-  commands: PathBlockCommand[];
-  startPoint: Point;
-  endPoint: Point;
 }
 
 function isProjectedPathValue(value: Value): value is ProjectedPathValue {
@@ -695,23 +604,8 @@ function commandsToRelativeD(commands: PathBlockCommand[]): string {
   return parts.join(' ');
 }
 
-export interface StyleBlockValue {
-  type: 'StyleBlockValue';
-  properties: Record<string, string>;
-}
-
 export interface AnnotatedLayerRef {
   type: 'LayerReference';
-}
-
-export interface PathSegment {
-  type: 'PathSegment';
-  value: string;
-}
-
-export interface ContextObject {
-  type: 'ContextObject';
-  value: Record<string, unknown>;
 }
 
 /**
@@ -722,12 +616,6 @@ export interface PathWithResult {
   type: 'PathWithResult';
   path: string; // The path string to emit
   result: ContextObject; // The result value (for assignments)
-}
-
-export interface UserFunction {
-  type: 'UserFunction';
-  params: string[];
-  body: Statement[];
 }
 
 /**
@@ -3690,7 +3578,7 @@ function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children
     } else if (item.type === 'LetDeclaration') {
       const value = evaluateExpression(item.value, scope);
       if (item.pattern) {
-        bindDestructuringPattern(item.pattern, value, scope);
+        bindDestructuringPattern(item.pattern, value, scope, getLine(item));
       } else {
         setVariable(scope, item.name, value);
       }
@@ -3701,6 +3589,15 @@ function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children
 function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   const line = (expr as { loc?: { line: number } }).loc?.line;
   const obj = evaluateExpression(expr.object, scope);
+
+  // Data properties of built-in structs (Point, PolarVector, Grid, MeshPoint,
+  // Color, context objects) resolve through the shared registry, which is also
+  // what object destructuring reads.
+  const struct = getStructDescriptor(obj);
+  if (struct) {
+    if (struct.has(obj, expr.property)) return struct.get(obj, expr.property) as Value;
+    throw new Error(formatError(`Property '${expr.property}' does not exist on ${struct.name}`, line));
+  }
 
   // Handle PathBlockValue property access
   if (isPathBlockValue(obj)) {
@@ -3841,39 +3738,6 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
-  // Handle GridValue property access
-  if (isGridValue(obj)) {
-    switch (expr.property) {
-      case 'rows':
-        return obj.rows;
-      case 'cols':
-        return obj.cols;
-      case 'xDim':
-        return obj.xDim;
-      case 'yDim':
-        return obj.yDim;
-      case 'origin':
-        return obj.origin;
-      case 'width':
-        return obj.cols * obj.xDim;
-      case 'height':
-        return obj.rows * obj.yDim;
-      case 'outOfBounds':
-        return obj.outOfBounds;
-      case 'interpolation':
-        return obj.interpolation;
-      default:
-        throw new Error(formatError(`Property '${expr.property}' does not exist on Grid`, line));
-    }
-  }
-
-  // Handle PointValue property access (added for Grid origin / sampled directions)
-  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'PointValue') {
-    if (expr.property === 'x') return obj.x;
-    if (expr.property === 'y') return obj.y;
-    throw new Error(formatError(`Property '${expr.property}' does not exist on Point`, line));
-  }
-
   // Handle GradientValue property access
   if (isGradientValue(obj)) {
     switch (expr.property) {
@@ -3937,20 +3801,6 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     }
   }
 
-  // Handle MeshPointValue property access
-  if (isMeshPointValue(obj)) {
-    switch (expr.property) {
-      case 'x':
-        return obj.x;
-      case 'y':
-        return obj.y;
-      case 'color':
-        return { type: 'ColorValue' as const, oklch: { ...obj.color } };
-      default:
-        throw new Error(formatError(`Property '${expr.property}' does not exist on MeshPoint`, line));
-    }
-  }
-
   // Handle MaskValue property access
   if (isMaskValue(obj)) {
     if (expr.property === 'id') return obj.id;
@@ -3969,43 +3819,10 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
     throw new Error(formatError(`Property '${expr.property}' does not exist on ClipPath`, line));
   }
 
-  // Handle PolarVectorValue property access
-  if (isPolarVectorValue(obj)) {
-    if (expr.property === 'angle') return obj.angle;
-    if (expr.property === 'distance') return obj.distance;
-    throw new Error(formatError(`Property '${expr.property}' does not exist on PolarVector`, line));
-  }
-
   // Handle CyclerValue property access
   if (isCyclerValue(obj)) {
     if (expr.property === 'length') return obj.elements.length;
     throw new Error(formatError(`Property '${expr.property}' does not exist on Cycler`, line));
-  }
-
-  // Handle ColorValue property access
-  if (isColorValue(obj)) {
-    switch (expr.property) {
-      case 'css':
-        return oklchToCSS(obj.oklch);
-      case 'hex':
-        return oklchToHex(obj.oklch);
-      case 'oklch':
-        return oklchToOKLCHString(obj.oklch);
-      case 'hsl':
-        return oklchToHSLString(obj.oklch);
-      case 'rgb':
-        return oklchToRGBString(obj.oklch);
-      case 'lightness':
-        return obj.oklch.L;
-      case 'chroma':
-        return obj.oklch.C;
-      case 'hue':
-        return obj.oklch.H;
-      case 'a':
-        return obj.oklch.alpha;
-      default:
-        throw new Error(formatError(`Property '${expr.property}' does not exist on Color`, line));
-    }
   }
 
   // Handle CSSVarValue property access
@@ -4030,33 +3847,6 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       throw new Error(formatError(`Property '${expr.property}' does not exist on style block`, line));
     }
     return value;
-  }
-
-  // Handle ContextObject property access
-  if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ContextObject') {
-    const contextObj = obj;
-    const propValue = contextObj.value[expr.property];
-
-    if (propValue === undefined) {
-      throw new Error(formatError(`Property '${expr.property}' does not exist on context object`, line));
-    }
-
-    // If the property is an object (like position or start), wrap it as ContextObject
-    if (typeof propValue === 'object' && propValue !== null && !Array.isArray(propValue)) {
-      return { type: 'ContextObject' as const, value: propValue as Record<string, unknown> };
-    }
-
-    // If it's a number, return it directly
-    if (typeof propValue === 'number') {
-      return propValue;
-    }
-
-    // If it's an array (like commands), wrap it as ContextObject
-    if (Array.isArray(propValue)) {
-      return { type: 'ContextObject' as const, value: { length: propValue.length, items: propValue } };
-    }
-
-    throw new Error(formatError(`Cannot access property '${expr.property}' of type ${typeof propValue}`, line));
   }
 
   // Handle ObjectValue property access (dot notation)
@@ -5032,18 +4822,42 @@ function bindDestructuringPattern(
       });
     }
   } else {
-    if (!isObjectValue(value)) {
+    if (isObjectValue(value)) {
+      const usedKeys = new Set<string>();
+      for (const { key, alias } of pattern.properties) {
+        usedKeys.add(key);
+        setVariable(scope, alias ?? key, value.properties.get(key) ?? null);
+      }
+      if (pattern.rest) {
+        const remaining = new Map<string, Value>();
+        for (const [k, v] of value.properties) {
+          if (!usedKeys.has(k)) remaining.set(k, v);
+        }
+        setVariable(scope, pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
+      }
+      return;
+    }
+
+    // Built-in structs (Point, PolarVector, Grid, MeshPoint, Color, context
+    // objects) destructure through the shared registry. Unlike plain objects,
+    // their property set is fixed, so a missing key is an error — the same
+    // contract as dot access.
+    const struct = getStructDescriptor(value);
+    if (!struct) {
       throw new Error(formatError('Cannot destructure non-object value with object pattern', line));
     }
     const usedKeys = new Set<string>();
     for (const { key, alias } of pattern.properties) {
+      if (!struct.has(value, key)) {
+        throw new Error(formatError(`Property '${key}' does not exist on ${struct.name}`, line));
+      }
       usedKeys.add(key);
-      setVariable(scope, alias ?? key, value.properties.get(key) ?? null);
+      setVariable(scope, alias ?? key, struct.get(value, key) as Value);
     }
     if (pattern.rest) {
       const remaining = new Map<string, Value>();
-      for (const [k, v] of value.properties) {
-        if (!usedKeys.has(k)) remaining.set(k, v);
+      for (const key of struct.keys(value)) {
+        if (!usedKeys.has(key)) remaining.set(key, struct.get(value, key) as Value);
       }
       setVariable(scope, pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
     }

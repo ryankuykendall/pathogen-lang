@@ -389,6 +389,43 @@ export function extractTypeMethodReturns(sourceFile: SourceFile): Record<string,
   return result;
 }
 
+/**
+ * Pathogen-api interface names that resolve to a Pathogen type but carry no
+ * `@type` tag (brand-only forward declarations at the top of pathogen-api.ts).
+ * Scoped to property extraction so the other generated maps stay byte-stable.
+ */
+const PROPERTY_TYPE_ALIASES: ReadonlyMap<string, string> = new Map([['ColorValue', 'ColorInstance']]);
+
+/**
+ * Per-type data-property types: Pathogen type name → property name → Pathogen
+ * type of the property's value. Lets the engine resolve destructured bindings
+ * like `let { origin } = grid;` (origin: Point) and `let { color } = meshPoint;`
+ * (color: ColorInstance). Properties with no member surface (numbers, unions,
+ * inline object literals) emit no entry.
+ */
+export function extractTypePropertyReturns(sourceFile: SourceFile): Record<string, Record<string, string>> {
+  const ifaceToType = new Map([...buildIfaceToTypeMap(sourceFile), ...PROPERTY_TYPE_ALIASES]);
+  const result: Record<string, Record<string, string>> = {};
+
+  for (const iface of sourceFile.getInterfaces()) {
+    const comment = getRawJsDocComment(iface.getJsDocs());
+    if (!comment) continue;
+    const typeMatch = /@type\s+(\w+)/.exec(comment);
+    if (!typeMatch) continue;
+
+    const props: Record<string, string> = {};
+    for (const prop of iface.getProperties()) {
+      const typeText = prop.getTypeNode()?.getText();
+      if (!typeText) continue;
+      const pathogenType = returnTextToPathogenType(typeText, ifaceToType);
+      if (pathogenType) props[prop.getName()] = pathogenType;
+    }
+    if (Object.keys(props).length > 0) result[typeMatch[1]] = props;
+  }
+
+  return result;
+}
+
 /** Escape a string for emission inside single quotes in the generated file. */
 export function escapeString(s: string): string {
   return s

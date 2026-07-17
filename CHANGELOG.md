@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-17
+
+### Added
+
+#### Object destructuring for built-in struct values
+
+- **`let { x, y } = Point(20, 20);` now works** — object destructuring, previously limited to object literals, extends to every fixed-shape built-in value: `Point`, `PolarVector`, `Grid`, `MeshPoint`, `Color`, and context objects (`let { x, y } = ctx.position;`). Renaming (`{ x: px }`) and rest patterns work too; rest collects the remaining data properties into a plain object, including computed ones (a `Grid` rest carries `width`/`height`). Missing keys on a struct throw the same error as dot access (`Line N: Property 'z' does not exist on Point`) — object literals keep their lenient `null` binding. Documented in `docs/objects.md` (new "Destructuring Built-in Values" section) and cross-referenced from `docs/syntax.md`. (`src/evaluator/struct-properties.ts`, `src/evaluator/index.ts`, `src/evaluator/annotated.ts`.)
+- **Editor support for destructured bindings.** Member completions and chains resolve through destructured names — `let { origin } = grid;` gives `origin.` the full Point member set; `let { color } = meshPoint;` gives `color.` the Color set. Inside the pattern braces themselves, `let { | } = grid;` suggests the RHS type's data properties (already-used keys excluded, methods and keywords suppressed; object-literal RHS suggests its keys). Backed by a new generated `TYPE_PROPERTY_TYPES` map extracted from `pathogen-api.ts` property declarations. (`src/language-services/completion.ts`, `scripts/lib/completion-extract.ts`.)
+- **Type-aware hover for all inferable variables.** Hovering a variable now shows its inferred type — `let p = Point(10, 20);` hovers as `*variable: Point*`, destructured bindings resolve through the same rules (`origin` from a Grid hovers as Point), colors display as `Color`, and un-inferable variables keep the previous hover text unchanged. (`src/language-services/hover.ts`, new shared `src/language-services/type-inference.ts`.)
+
+### Development
+
+- **Single source of truth for struct properties.** New `src/evaluator/struct-properties.ts` registry (`getStructDescriptor` → `has`/`get`/`keys`) now backs both member access and destructuring in **both** evaluators; the six duplicated per-type member-access branches were deleted from each. `has()` uses `Object.hasOwn`, fixing a latent leak where `point.toString` resolved `Object.prototype.toString` instead of throwing. A drift-guard suite (`tests/struct-properties.test.ts`) mechanically asserts destructuring ≡ member access for every registry key through both evaluators.
+- **annotated.ts type dedup.** 19 locally re-declared value interfaces replaced with `import type` from `evaluator/types.ts`; only genuinely divergent types (`GradientValue`, `PathWithResult`, `EvaluationState`, `Scope`) and the four that embed the module-local `Value` union (`GridValue`, `CyclerValue`, `ArrayValue`, `ObjectValue`) remain local, each with the reason documented.
+- **Shared type-inference module.** `inferType` and friends moved out of `completion.ts` into `src/language-services/type-inference.ts` so hover and completion share one inference engine; new `inferRhsType` handles destructuring right-hand sides (`ctx.position`, constructor calls, color literals, variables).
+- Destructuring error messages in text-block bodies now carry line numbers (three `bindDestructuringPattern` call sites previously dropped them).
+
 ## [Unreleased] - 2026-07-13
 
 ### Added

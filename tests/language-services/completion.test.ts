@@ -144,6 +144,130 @@ describe('getCompletions', () => {
       expect(names).not.toContain('distance');
     });
 
+    it('offers Point members for a Grid origin destructured binding', () => {
+      const items = completeAtEnd('let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet { origin } = g;\norigin.');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+      expect(names).toContain('translate');
+    });
+
+    it('offers Point members for an aliased destructured binding', () => {
+      const items = completeAtEnd('let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet { origin: o } = g;\no.');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('translate');
+    });
+
+    it('offers no phantom members for numeric destructured bindings', () => {
+      const items = completeAtEnd('let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet { rows } = g;\nrows.');
+      const names = labels(items);
+      expect(names).not.toContain('x');
+      expect(names).not.toContain('cols');
+      expect(names).not.toContain('translate');
+    });
+
+    it('offers Color members for a MeshPoint color destructured binding', () => {
+      const items = completeAtEnd(
+        "let mg = MeshGradient('m', 100, 100, 2, 2) {|gr|\n};\nlet mp = mg.getPoint(0, 0);\nlet { color } = mp;\ncolor.",
+      );
+      const names = labels(items);
+      expect(names).toContain('hex');
+      expect(names).toContain('lighten');
+      expect(names).toContain('mix');
+    });
+
+    it('offers Point members for a ctx destructured binding', () => {
+      const items = completeAtEnd('M 0 0\nlet { position } = ctx;\nposition.');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+    });
+
+    it('offers no members for numeric ctx.position destructured bindings', () => {
+      const items = completeAtEnd('M 0 0\nlet { x } = ctx.position;\nx.');
+      const names = labels(items);
+      expect(names).not.toContain('translate');
+      expect(names).not.toContain('position');
+    });
+  });
+
+  describe('destructuring pattern braces', () => {
+    it('offers Grid data properties inside the pattern', () => {
+      const source = 'let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet {  } = g;';
+      const items = complete(source, 1, 5);
+      const names = labels(items);
+      expect(names).toContain('rows');
+      expect(names).toContain('cols');
+      expect(names).toContain('origin');
+      expect(names).toContain('width');
+    });
+
+    it('does not offer methods or keywords inside the pattern', () => {
+      const source = 'let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet {  } = g;';
+      const items = complete(source, 1, 5);
+      const names = labels(items);
+      expect(names).not.toContain('getPoint');
+      expect(names).not.toContain('fill');
+      expect(names).not.toContain('let');
+      expect(names).not.toContain('for');
+    });
+
+    it('excludes keys already used in the pattern', () => {
+      const source = 'let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet { rows,  } = g;';
+      const items = complete(source, 1, 11);
+      const names = labels(items);
+      expect(names).not.toContain('rows');
+      expect(names).toContain('cols');
+    });
+
+    it('filters by the typed prefix', () => {
+      const source = 'let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet { or } = g;';
+      const items = complete(source, 1, 8);
+      const names = labels(items);
+      expect(names).toContain('origin');
+      expect(names).not.toContain('rows');
+    });
+
+    it('offers Point properties for a constructor RHS', () => {
+      const source = 'let {  } = Point(1, 2);';
+      const items = complete(source, 0, 5);
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+      expect(names).not.toContain('translate');
+    });
+
+    it('offers object-literal keys for a literal-typed RHS variable', () => {
+      const source = 'let obj = { a: 1, b: 2 };\nlet {  } = obj;';
+      const items = complete(source, 1, 5);
+      const names = labels(items);
+      expect(names).toContain('a');
+      expect(names).toContain('b');
+    });
+
+    it('returns nothing when the RHS is missing', () => {
+      const items = completeAtEnd('let { ');
+      expect(items).toEqual([]);
+    });
+
+    it('does not fire for object literals or block braces', () => {
+      // let obj = { — object literal, not a pattern
+      const literalItems = completeAtEnd('let obj = { ');
+      expect(labels(literalItems)).not.toContain('rows');
+      // apply { — block body: keywords must still appear
+      const applyItems = completeAtEnd("define PathLayer('p') ${}\nlayer('p').apply {\n");
+      expect(labels(applyItems)).toContain('let');
+    });
+
+    it('does not fire for identifiers that merely end in "let"', () => {
+      // outlet { — in-progress/malformed input; normal completions must survive
+      const items = completeAtEnd('outlet {\n');
+      expect(labels(items)).toContain('let');
+      const violetItems = completeAtEnd('violet { ');
+      expect(labels(violetItems)).toContain('let');
+    });
+
     it('offers Grid members for Grid variables', () => {
       const items = completeAtEnd('let g = Grid(3, 4, { xDim: 10, yDim: 10 });\ng.');
       const names = labels(items);

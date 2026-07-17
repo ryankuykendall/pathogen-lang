@@ -1,5 +1,6 @@
 import { analyzeScopes } from './scope-analysis';
 import { STDLIB_COMPLETIONS } from './completion-data.generated';
+import { inferBlockParamType, inferLoopVarType, inferType } from './type-inference';
 
 import type { TextDocument } from './document';
 import type { Position, Range } from './types';
@@ -103,14 +104,36 @@ export function getHoverInfo(document: TextDocument, position: Position): HoverI
     if (ref.name === word.text && ref.declaration) {
       const decl = ref.declaration;
       const kindLabel = decl.kind === 'function' ? 'function' : decl.kind === 'parameter' ? 'parameter' : decl.kind === 'loopVar' ? 'loop variable' : decl.kind === 'enum' ? 'enum' : 'variable';
+      const inferred = inferSymbolType(decl.kind, word.text, source);
+      const kindWithType = inferred ? `${kindLabel}: ${inferred}` : kindLabel;
       return {
-        contents: `**${decl.name}** — *${kindLabel}*\n\nDefined at line ${decl.range.start.line + 1}`,
+        contents: `**${decl.name}** — *${kindWithType}*\n\nDefined at line ${decl.range.start.line + 1}`,
         range: word.range,
       };
     }
   }
 
   return null;
+}
+
+/** Internal inference type names → user-facing display names. */
+const DISPLAY_TYPE_NAMES: Record<string, string> = {
+  ColorInstance: 'Color',
+  _ObjectLiteral: 'object',
+};
+
+/**
+ * Infer a display type for a scope-resolved symbol using the same shared
+ * inference — and the same fallback chain — as the completion engine's
+ * getMembersForObject, so hover and completions always agree on a name's
+ * type. Returns null when nothing can be inferred — the hover then renders
+ * exactly as before. Functions and enums have no inferable value type.
+ */
+function inferSymbolType(kind: string, name: string, source: string): string | null {
+  if (kind === 'function' || kind === 'enum') return null;
+  const inferred = inferType(name, source) ?? inferBlockParamType(name, source) ?? inferLoopVarType(name, source);
+  if (!inferred) return null;
+  return DISPLAY_TYPE_NAMES[inferred] ?? inferred;
 }
 
 // --- Helpers ---

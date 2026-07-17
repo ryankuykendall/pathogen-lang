@@ -1819,6 +1819,135 @@ describe('Evaluator', () => {
         expect(result.logs[0].parts[1].value).toBe('20');
       });
     });
+
+    describe('built-in struct destructuring', () => {
+      it('destructures Point x and y', () => {
+        const result = compile('let point = Point(20, 30); let { x, y } = point; log(x, y);');
+        expect(result.logs[0].parts[0].value).toBe('20');
+        expect(result.logs[0].parts[1].value).toBe('30');
+      });
+
+      it('destructured values work in path commands', () => {
+        expect(compilePath('let { x, y } = Point(20, 30); M x y')).toBe('M 20 30');
+      });
+
+      it('renames Point properties', () => {
+        const result = compile('let { x: px, y: py } = Point(10, 30); log(px, py);');
+        expect(result.logs[0].parts[0].value).toBe('10');
+        expect(result.logs[0].parts[1].value).toBe('30');
+      });
+
+      it('destructures PolarVector angle and distance', () => {
+        const result = compile('let { angle, distance } = PolarVector(0.5, 100); log(angle, distance);');
+        expect(result.logs[0].parts[0].value).toBe('0.5');
+        expect(result.logs[0].parts[1].value).toBe('100');
+      });
+
+      it('destructures Grid including computed width and height', () => {
+        const result = compile(
+          'let g = Grid(4, 5, { xDim: 10, yDim: 10 }); let { rows, cols, width, height } = g; log(rows, cols, width, height);',
+        );
+        expect(result.logs[0].parts[0].value).toBe('4');
+        expect(result.logs[0].parts[1].value).toBe('5');
+        expect(result.logs[0].parts[2].value).toBe('50');
+        expect(result.logs[0].parts[3].value).toBe('40');
+      });
+
+      it('destructures Color channel properties', () => {
+        const result = compile('let { lightness, chroma, hue } = oklch(0.7 0.15 200); log(lightness, chroma, hue);');
+        expect(result.logs[0].parts[0].value).toBe('0.7');
+        expect(result.logs[0].parts[1].value).toBe('0.15');
+        expect(result.logs[0].parts[2].value).toBe('200');
+      });
+
+      it('destructured Color css matches member access', () => {
+        const result = compile('let c = oklch(0.7 0.15 200); let { css } = c; log(css); log(c.css);');
+        expect(result.logs[0].parts[0].value).toBe(result.logs[1].parts[0].value);
+      });
+
+      it('destructures MeshPoint x, y, and color', () => {
+        const result = compile(`let mg = MeshGradient('m', 100, 100, 2, 2) {|g|
+  g.colorAll(oklch(0.7 0.1 250));
+};
+let p = mg.getPoint(0, 0);
+let { x, y, color } = p;
+log(x, y);
+log(color.hex);
+log(p.color.hex);`);
+        expect(result.logs[0].parts[0].value).toBe('0');
+        expect(result.logs[0].parts[1].value).toBe('0');
+        expect(result.logs[1].parts[0].value).toBe(result.logs[2].parts[0].value);
+      });
+
+      it('destructures ctx.position mid-path', () => {
+        const result = compile('M 50 50 L 120 80 let { x, y } = ctx.position; log(x, y);');
+        expect(result.logs[0].parts[0].value).toBe('120');
+        expect(result.logs[0].parts[1].value).toBe('80');
+      });
+
+      it('rest pattern collects remaining Point properties', () => {
+        const result = compile('let { x, ...rest } = Point(1, 2); log(x, rest.y);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('2');
+      });
+
+      it('Grid rest pattern includes computed properties', () => {
+        const result = compile(
+          'let { rows, cols, ...dims } = Grid(4, 5, { xDim: 10, yDim: 10 }); log(dims.width, dims.height);',
+        );
+        expect(result.logs[0].parts[0].value).toBe('50');
+        expect(result.logs[0].parts[1].value).toBe('40');
+      });
+
+      it('throws with line number for a missing struct key', () => {
+        expect(() => compile("let { z } = Point(1, 2);")).toThrow(/Line 1: Property 'z' does not exist on Point/);
+      });
+
+      it('throws for a missing key on ctx.position', () => {
+        expect(() => compile('M 0 0 let { q } = ctx.position;')).toThrow(/Property 'q' does not exist on context object/);
+      });
+
+      it('still throws when destructuring a plain number', () => {
+        expect(() => compile('let { x } = 5;')).toThrow(/cannot destructure/i);
+      });
+
+      it('still throws for array pattern on a struct', () => {
+        expect(() => compile('let [a, b] = Point(1, 2);')).toThrow(/cannot destructure non-array/i);
+      });
+
+      it('object-literal missing keys still bind null', () => {
+        const result = compile('let { x, z } = { x: 1, y: 2 }; log(x, z);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('null');
+      });
+
+      it('destructures inside a text block body', () => {
+        const result = compile(`
+        define TextLayer('labels') \${}
+        layer('labels').apply {
+          text(10, 20) {
+            let { x, y } = Point(7, 9);
+            \`at \${x},\${y}\`
+          }
+        }
+      `);
+        const te = result.layers[0].textElements![0];
+        expect(te.children[0]).toEqual({ type: 'run', text: 'at 7,9' });
+      });
+
+      it('missing struct key inside a text block reports a line number', () => {
+        expect(() =>
+          compile(`
+        define TextLayer('labels') \${}
+        layer('labels').apply {
+          text(10, 20) {
+            let { z } = Point(1, 2);
+          }
+        }
+      `),
+        ).toThrow(/Line \d+: Property 'z' does not exist on Point/);
+      });
+    });
   });
 
   describe('string operations', () => {

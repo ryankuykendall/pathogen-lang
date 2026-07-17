@@ -269,6 +269,73 @@ let { x, ...rest } = config;
 
 The rest pattern must be the last binding in the destructuring pattern.
 
+### Destructuring Built-in Values
+
+Destructuring is not limited to object literals — it also works on Pathogen's
+fixed-shape struct values, the built-ins with a known, fixed set of
+properties: `Point`, `PolarVector`, `Grid`, `MeshPoint` (from mesh
+gradients), `Color`, and context objects like `ctx.position`. It does not
+work on open-ended built-ins like `TextBlock` or `ProjectedPath`, even
+though those support dot access.
+
+```
+let point = Point(20, 20);
+let { x, y } = point;
+log(x);  // 20
+log(y);  // 20
+```
+
+```
+let { angle, distance } = PolarVector(45deg, 100);
+// angle is 0.7853... (radians), distance is 100
+
+let grid = Grid(4, 5, { xDim: 10, yDim: 10 });
+let { rows, cols, width, height } = grid;
+// rows is 4, cols is 5, width is 50, height is 40
+
+let { lightness, chroma, hue } = oklch(0.7 0.15 200);
+// lightness is 0.7, chroma is 0.15, hue is 200
+```
+
+Because path commands move the pen, you can destructure the live pen
+position mid-path from `ctx.position`:
+
+```
+M 50 50
+L 120 80
+let { x, y } = ctx.position;
+// x is 120, y is 80
+```
+
+Renaming works too:
+
+```
+let { x: px, y: py } = Point(10, 30);
+// px is 10, py is 30
+```
+
+Unlike object literals, built-in values have a fixed set of properties, so
+destructuring a key that doesn't exist is an error rather than `null` —
+the same behavior as dot access:
+
+```
+let { z } = Point(1, 2);
+// Error: Property 'z' does not exist on Point
+```
+
+The rest pattern collects the remaining properties into a plain object.
+Computed properties are included — for example, a `Grid` rest includes
+`width` and `height`:
+
+```
+let { x, ...rest } = Point(1, 2);
+// x is 1, rest is { y: 2 }
+
+let { rows, cols, ...dims } = Grid(4, 5, { xDim: 10, yDim: 10 });
+// dims.width is 50, dims.height is 40
+// dims also includes xDim, yDim, origin, outOfBounds, interpolation
+```
+
 ## Using Objects with Path Commands
 
 Objects are natural containers for coordinates and configuration:

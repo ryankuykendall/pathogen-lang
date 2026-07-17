@@ -12,9 +12,12 @@ import {
   extractNamespaceMembers,
   extractTypeMembers,
   extractTypeMethodReturns,
+  extractTypePropertyReturns,
   loadApiSource,
   parseJsDoc,
 } from '../../scripts/lib/completion-extract';
+
+import { TYPE_PROPERTY_TYPES } from '../../src/language-services/completion-data.generated';
 
 import type { ExtractionWarning } from '../../scripts/lib/completion-extract';
 
@@ -202,6 +205,36 @@ describe('extractTypeMethodReturns', () => {
     `);
     const returns = extractTypeMethodReturns(sf);
     expect(returns.Grid).toEqual({ getPoint: 'Point', getRow: 'array', name: 'string' });
+  });
+});
+
+describe('extractTypePropertyReturns', () => {
+  it('resolves property types through @type tags, drops numbers, applies the ColorValue alias', () => {
+    const sf = loadApiSource(`
+      export interface ColorValue { readonly __brand: 'color'; }
+      /** @type Grid */
+      export interface PathogenGrid {
+        readonly rows: number;
+        readonly origin: PathogenPoint;
+        getPoint(row: number, col: number): PathogenPoint;
+      }
+      /** @type Point */
+      export interface PathogenPoint { readonly x: number; readonly y: number; }
+      /** @type MeshPoint */
+      export interface PathogenMeshPoint { color: ColorValue; x: number; }
+    `);
+    const props = extractTypePropertyReturns(sf);
+    expect(props.Grid).toEqual({ origin: 'Point' });
+    expect(props.MeshPoint).toEqual({ color: 'ColorInstance' });
+    expect(props.Point).toBeUndefined();
+  });
+
+  it('shipped generated data resolves the destructuring-critical entries', () => {
+    expect(TYPE_PROPERTY_TYPES.Grid.origin).toBe('Point');
+    expect(TYPE_PROPERTY_TYPES.MeshPoint.color).toBe('ColorInstance');
+    expect(TYPE_PROPERTY_TYPES.PathContext.position).toBe('Point');
+    expect(TYPE_PROPERTY_TYPES.PathContext.start).toBe('Point');
+    expect(TYPE_PROPERTY_TYPES.Grid.rows).toBeUndefined();
   });
 });
 
