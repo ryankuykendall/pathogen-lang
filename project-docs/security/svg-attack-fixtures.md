@@ -28,6 +28,10 @@ One entry per attack vector mapped to the article's class. Each fixture is a `.p
 | F8e | `>`-in-`<defs>`-attribute inner-carve | `SVGDocumentFragment("<defs id='x><image onerror=... />'><rect/></defs>")` | Inner content bounded by quote-aware positions; smuggled `<image>` stays inert quoted text, only real child `<rect/>` extracted. |
 | F8f | Namespace-prefixed href aliasing | `SVGDocumentFragment("<image xmlns:x='http://www.w3.org/1999/xlink' x:href='javascript:alert(1)'/>")` | Sanitizer error: every `*:href` local name is validated, not just the literal `xlink:href`. |
 | F8g | Namespace-prefixed element aliasing | `SVGDocumentFragment("<svg:script xmlns:svg='http://www.w3.org/2000/svg'>alert(1)</svg:script>")` | Sanitizer error: any element name containing `:` is rejected (a bare-name block list would miss the namespace-equivalent alias). |
+| F9a | HTML breakout via non-SVG element | `SVGDocumentFragment("<meta http-equiv='refresh' content='0;url=https://evil/'/>")` | Sanitizer error: element allow-list rejects any name not in the safe set (`<meta>`/`<div>`/`<img>`/`<math>` etc.). HTML5 foreign-content breakout would otherwise pop `<meta>` into a live page-navigation when the SVG is embedded via innerHTML. |
+| F9b | Presentation-attr remote url() (SSRF/tracking) | `SVGDocumentFragment("<rect fill='url(https://evil/track.svg#x)' width='10' height='10'/>")` | Sanitizer error: `fill`/`stroke`/`mask`/`filter`/`clip-path`/`marker*` url() must be a local fragment (`url(#name)`); remote/data url() rejected. |
+| F9c | `<use>` data:image/svg+xml clone-a-script | `SVGDocumentFragment("<use href='data:image/svg+xml;base64,…<script>…'/>")` | Sanitizer error: the `data:image` href allow-list is scoped to `<image>`/`<feImage>` (image mode); `<use>` (document-clone) is restricted to local fragment refs. |
+| F9d | Unquoted attribute value | `SVGDocumentFragment("<rect data-x=foo<foreignObject/> width='1'/>")` | Sanitizer error: unquoted attribute values are rejected (not valid XML; the tokenizer's tag-boundary model would otherwise diverge from a real parser and swallow the embedded tag). |
 | P1 | Long transition restyling | Through C1: malicious CSS with `transform: ... transition: all 9999s` — depends on C1 being closed. | Indirect: prevented because C1 cannot inject CSS. |
 
 ## Notes on coverage
@@ -35,7 +39,8 @@ One entry per attack vector mapped to the article's class. Each fixture is a `.p
 - **C1–C7** test the compiler emission path (Phase 1).
 - **C8–C10** test identifier validation across def-id and layer-name surfaces (Phase 1).
 - **F1–F7** test the fragment sanitizer (Phase 2).
-- **F8a–F8f** test the cursor-tokenizer rewrite of the sanitizer (regex-audit Phase 2): markup-by-regex parsing bypasses (attribute truncation, split handler names, inert-construct smuggling, defs mis-splitting) and namespace-prefix href aliasing.
+- **F8a–F8g** test the cursor-tokenizer rewrite of the sanitizer (regex-audit Phase 2): markup-by-regex parsing bypasses (attribute truncation, split handler names, inert-construct smuggling, defs mis-splitting) and namespace-prefix href/element aliasing.
+- **F9a–F9d** test the allow-list conversion + presentation-attribute url() validation (regex-audit Phase 2 follow-up): the sanitizer moved from a deny-list to the documented allow-list, added url() validation on presentation attributes, scoped the data:image href allow-list to image-mode elements, and rejects unquoted attribute values.
 - **P1** is indirect: it depends on C1's CSS injection vector being closed.
 
 When adding a new vector, add a row here and a corresponding test case in `tests/security/`.

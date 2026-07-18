@@ -29,33 +29,91 @@
 
 import { validateHrefValue } from './sanitize';
 
-const BLOCKED_ELEMENTS = new Set([
-  // HTML/script-bearing
-  'script',
-  'iframe',
-  'object',
-  'embed',
-  'form',
-  'input',
-  'textarea',
-  'button',
-  'select',
-  'option',
-  // Article F1: foreignObject is the historical XSS vector
-  'foreignobject',
-  // Article F2: <a> can carry javascript: hrefs; Pathogen has no link semantics
-  'a',
-  // Article F3: animation elements can mutate href to javascript:
-  'animate',
-  'animatemotion',
-  'animatetransform',
-  'set',
-  'discard',
-  'handler',
-  'listener',
-  // Article F6: <style> bypasses the Pathogen style allow-list
-  'style',
+// Allow-list (not a deny-list): only these element names are permitted; every
+// other name is rejected. A deny-list is unsound here — it silently admits any
+// element the author didn't think to block (e.g. <meta http-equiv="refresh">,
+// which HTML5 foreign-content breakout pops out of the SVG subtree into a live
+// page-navigation, or MathML/HTML container elements). This mirrors the set
+// published in docs/security.md plus the structural elements real fragments
+// need (use, symbol) and the full filter-primitive family.
+const ALLOWED_ELEMENTS = new Set([
+  // Structural / shape
+  'defs',
+  'g',
+  'symbol',
+  'use',
+  'path',
+  'circle',
+  'ellipse',
+  'line',
+  'polygon',
+  'polyline',
+  'rect',
+  'image',
+  'text',
+  'tspan',
+  // Paint servers / references
+  'lineargradient',
+  'radialgradient',
+  'pattern',
+  'mask',
+  'clippath',
+  'marker',
+  'stop',
+  'filter',
+  // Filter primitives
+  'feblend',
+  'fecolormatrix',
+  'fecomponenttransfer',
+  'fecomposite',
+  'feconvolvematrix',
+  'fediffuselighting',
+  'fedisplacementmap',
+  'fedistantlight',
+  'fedropshadow',
+  'feflood',
+  'fefunca',
+  'fefuncb',
+  'fefuncg',
+  'fefuncr',
+  'fegaussianblur',
+  'feimage',
+  'femerge',
+  'femergenode',
+  'femorphology',
+  'feoffset',
+  'fepointlight',
+  'fespecularlighting',
+  'fespotlight',
+  'fetile',
+  'feturbulence',
 ]);
+
+// Presentation attributes that accept a `url(...)` paint-server/reference
+// value. A remote or data: url() here is an outbound-fetch (SSRF/tracking)
+// vector, so — like the CSS value validator's URL_VALUED_PROPERTIES — only a
+// local fragment ref `url(#name)` is permitted.
+const PRESENTATION_URL_ATTRS = new Set([
+  'fill',
+  'stroke',
+  'mask',
+  'clip-path',
+  'filter',
+  'marker',
+  'marker-start',
+  'marker-mid',
+  'marker-end',
+]);
+
+// Elements whose `href` may be a data:image URI (rendered in image mode, no
+// scripting). Every other href-bearing element (notably <use>, which clones
+// referenced content into the live document) is restricted to local fragment
+// refs — a data:image/svg+xml <use> target is a historical clone-a-script
+// bypass class.
+const DATA_IMAGE_HREF_ELEMENTS = new Set(['image', 'feimage']);
+const LOCAL_FRAGMENT_HREF_RE = /^#[A-Za-z_][A-Za-z0-9_-]*$/;
+// Each url(...) occurrence in a presentation attribute must be a local ref.
+const URL_TOKEN_RE = /url\(\s*(['"]?)([^)'"]*)\1\s*\)/gi;
 
 // SVG elements that are inherently self-closing (void elements)
 const SVG_VOID_ELEMENTS = new Set([
@@ -121,6 +179,45 @@ const isSpace = (ch: string) => ch === ' ' || ch === '\t' || ch === '\n' || ch =
 
 function fail(message: string): never {
   throw new Error(`SVGDocumentFragment: ${message}`);
+}
+
+/**
+ * Validate an href/xlink:href value per element. Elements rendered in image
+ * mode (image, feImage) may use the data:image allow-list; every other
+ * href-bearing element (notably <use>, which clones into the live document)
+ * is restricted to local fragment refs.
+ */
+function validateElementHref(elementName: string, attrLabel: string, value: string): void {
+  if (DATA_IMAGE_HREF_ELEMENTS.has(elementName)) {
+    try {
+      validateHrefValue(value, `<${elementName}> ${attrLabel}`);
+    } catch (e) {
+      fail((e as Error).message);
+    }
+    return;
+  }
+  if (!LOCAL_FRAGMENT_HREF_RE.test(value.trim())) {
+    fail(`<${elementName}> ${attrLabel} must be a local fragment ref (#name), got ${JSON.stringify(value)}`);
+  }
+}
+
+/**
+ * Validate a presentation attribute (fill, stroke, mask, filter, …) whose
+ * value may contain url(...). Every url() occurrence must be a local fragment
+ * ref; a remote or data: url() is rejected. Values with no url() are left to
+ * downstream CSS handling (colors etc. carry no fetch surface here).
+ */
+function validatePresentationUrl(elementName: string, attrLabel: string, value: string): void {
+  URL_TOKEN_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = URL_TOKEN_RE.exec(value)) !== null) {
+    const target = m[2].trim();
+    if (!LOCAL_FRAGMENT_HREF_RE.test(target)) {
+      fail(
+        `<${elementName}> ${attrLabel} url(...) must reference a local fragment (#name), got ${JSON.stringify(target)}`,
+      );
+    }
+  }
 }
 
 /**
@@ -204,18 +301,18 @@ function tokenizeTags(input: string): TagToken[] {
         j++;
         while (j < len && isSpace(input[j])) j++;
         const q = input[j];
-        if (q === '"' || q === "'") {
-          const close = input.indexOf(q, j + 1);
-          if (close === -1) fail(`malformed SVG — unterminated attribute value in <${name}> tag`);
-          attrValue = input.slice(j + 1, close);
-          j = close + 1;
-        } else {
-          // Unquoted value: run until whitespace or tag end.
-          const valStart = j;
-          while (j < len && !isSpace(input[j]) && input[j] !== '>' && input[j] !== '/') j++;
-          if (j === valStart) fail(`malformed SVG — empty attribute value in <${name}> tag`);
-          attrValue = input.slice(valStart, j);
+        if (q !== '"' && q !== "'") {
+          // Require quoted attribute values. Unquoted values are not valid XML
+          // and let the scanner's tag-boundary model diverge from a real
+          // parser's (an unquoted value can swallow an embedded `<tag>` into
+          // what it treats as text) — reject rather than rely on downstream
+          // parser strictness.
+          fail(`malformed SVG — attribute value for '${attrName}' in <${name}> must be quoted`);
         }
+        const close = input.indexOf(q, j + 1);
+        if (close === -1) fail(`malformed SVG — unterminated attribute value in <${name}> tag`);
+        attrValue = input.slice(j + 1, close);
+        j = close + 1;
       }
       attrs.push({ name: attrName, value: attrValue });
     }
@@ -249,14 +346,15 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
     // Reject any namespace-prefixed element name. A prefix bound to a real
     // namespace URI (e.g. `xmlns:svg="http://www.w3.org/2000/svg"` +
     // `<svg:script>`) is namespace-equivalent to the bare element in every
-    // conformant consumer, so a bare-name BLOCKED_ELEMENTS check alone would
-    // let an aliased <script>/<foreignObject>/… through. Geometry fragments
-    // have no legitimate use for prefixed element names — reject outright
-    // (mirrors the `*:href` attribute handling below).
+    // conformant consumer, so a bare-name check alone would let an aliased
+    // <script>/<foreignObject>/… through. Geometry fragments have no
+    // legitimate use for prefixed element names — reject outright (mirrors the
+    // `*:href` attribute handling below).
     if (tok.name.includes(':')) {
       fail(`namespace-prefixed elements (<${tok.name}>) are not allowed`);
     }
-    if (BLOCKED_ELEMENTS.has(tok.name)) {
+    // Allow-list: anything not explicitly permitted is rejected.
+    if (!ALLOWED_ELEMENTS.has(tok.name)) {
       fail(`<${tok.name}> elements are not allowed`);
     }
 
@@ -269,7 +367,7 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
         if (/^on/.test(lower)) {
           fail('on* event handler attributes are not allowed');
         }
-        if (lower === 'style') {
+        if (lower === 'style' || lower.endsWith(':style')) {
           fail('inline style="..." attributes are not allowed — use a Pathogen style { … } block instead');
         }
         // Validate bare `href` and ANY namespace-prefixed `*:href`. A prefix
@@ -280,11 +378,12 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
         // legitimate attribute other than href ends in `:href`, so
         // over-validating is safe (it fails closed).
         if (lower === 'href' || lower.endsWith(':href')) {
-          try {
-            validateHrefValue(attr.value, `<${tok.name}> ${lower}`);
-          } catch (e) {
-            fail((e as Error).message);
-          }
+          validateElementHref(tok.name, lower, attr.value);
+        }
+        // Presentation attributes carrying url(...) must reference a local
+        // fragment only — a remote/data url() is an outbound-fetch vector.
+        if (PRESENTATION_URL_ATTRS.has(lower)) {
+          validatePresentationUrl(tok.name, lower, attr.value);
         }
       }
 

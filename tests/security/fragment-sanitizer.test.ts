@@ -357,6 +357,83 @@ describe('Security · SVGDocumentFragment sanitizer', () => {
     });
   });
 
+  // ── F9: allow-list + presentation-attribute url() (deny-list → allow-list) ──
+  // The sanitizer previously blocked a fixed deny-list and accepted everything
+  // else, and never validated url() in presentation attributes. Both were
+  // confirmed exploitable against the docs' "safe to embed inline" contract.
+
+  describe('F9: element allow-list', () => {
+    it('rejects <meta http-equiv=refresh> (HTML breakout → page hijack)', () => {
+      expectFragmentRejected('<meta http-equiv="refresh" content="0;url=https://evil.example/pwned"/>');
+    });
+
+    it.each([
+      ['div', '<div>x</div>'],
+      ['img', '<img src="https://evil.example/x"/>'],
+      ['body', '<body>x</body>'],
+      ['math', '<math><mtext>x</mtext></math>'],
+      ['table', '<table><tr><td>x</td></tr></table>'],
+      ['unknown element', '<xyzzy/>'],
+    ])('rejects non-allow-listed element: %s', (_label, input) => {
+      expectFragmentRejected(input);
+    });
+
+    it('still accepts the allow-listed structural, gradient, and filter elements', () => {
+      expect(() =>
+        compile(
+          'let f = SVGDocumentFragment(`' +
+            '<defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient>' +
+            '<filter id="fl"><feGaussianBlur stdDeviation="2"/><feMerge><feMergeNode/></feMerge></filter>' +
+            '<symbol id="s"><circle r="5"/></symbol></defs>' +
+            '<g><rect fill="url(#g)" filter="url(#fl)" width="10" height="10"/><use href="#s"/></g>' +
+            '`); f.insert();',
+        ),
+      ).not.toThrow();
+    });
+  });
+
+  describe('F9: presentation-attribute url() validation', () => {
+    it.each([
+      ['fill', '<rect fill="url(https://evil.example/track.svg#x)" width="10" height="10"/>'],
+      ['stroke', '<rect stroke="url(http://evil.example/x)" width="1" height="1"/>'],
+      ['mask', '<rect mask="url(https://evil.example/x)" width="1" height="1"/>'],
+      ['filter', '<rect filter="url(https://evil.example/x)" width="1" height="1"/>'],
+      ['clip-path', '<rect clip-path="url(//evil.example/x)" width="1" height="1"/>'],
+      ['marker-end', '<path marker-end="url(https://evil.example/x)" d="M0 0"/>'],
+    ])('rejects remote url() in %s', (_label, input) => {
+      expectFragmentRejected(input);
+    });
+
+    it('accepts a local fragment url() and plain color values', () => {
+      const r = sanitizeSVGFragment('<rect fill="url(#grad)" stroke="#f00" width="10" height="10"/>');
+      expect(r.visualContent).toContain('url(#grad)');
+    });
+  });
+
+  describe('F9: per-element href data:image scoping', () => {
+    it('rejects a data:image/svg+xml href on <use> (clone-a-script class)', () => {
+      // <use> clones into the live document; a data:image/svg+xml target is a
+      // historical script-smuggling vector. Only local fragments allowed.
+      expectFragmentRejected('<use href="data:image/svg+xml;base64,PHN2Zz48c2NyaXB0Pjwvc2NyaXB0Pjwvc3ZnPg=="/>');
+    });
+
+    it('still allows a data:image/png href on <image> (rendered in image mode)', () => {
+      expect(() =>
+        compile('let f = SVGDocumentFragment(`<image href="data:image/png;base64,iVBORw0KGgo="/>`); f.insert();'),
+      ).not.toThrow();
+    });
+  });
+
+  describe('F9: unquoted attribute values rejected', () => {
+    it('rejects an unquoted attribute value that could swallow an embedded tag', () => {
+      expectFragmentRejected('<rect data-x=foo<foreignObject/> width="1"/>');
+    });
+
+    it('rejects a benign unquoted attribute value (XML-invalid)', () => {
+      expectFragmentRejected('<rect width=10 height="10"/>');
+    });
+  });
+
   describe('F8: defs edge cases (Fix 1 invariant hardening)', () => {
     it('handles an empty <defs></defs>', () => {
       const r = sanitizeSVGFragment('<defs></defs><circle r="5"/>');

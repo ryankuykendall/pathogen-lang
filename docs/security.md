@@ -68,10 +68,13 @@ Spaces, punctuation, quotes, braces, semicolons, and CSS escape sequences are re
 
 `SVGDocumentFragment("...")` accepts a literal string of SVG markup and inserts it into the compiled output. Because the string is user-supplied, it is run through a sanitizer that rejects:
 
-- All elements except `defs`, `g`, `path`, `circle`, `ellipse`, `line`, `polygon`, `polyline`, `rect`, `image`, `linearGradient`, `radialGradient`, `pattern`, `mask`, `clipPath`, `marker`, `stop`, `text`, `tspan`, `filter`, and SVG filter primitives (`feBlend`, `feColorMatrix`, etc.).
-- All `on*` event-handler attributes.
-- Inline `style="..."` attributes and `<style>` blocks. Use a Pathogen `style { … }` block on the surrounding layer instead — that goes through the value allow-list above.
-- `href` / `xlink:href` attributes whose value is not a local fragment (`#name`) or a `data:image/(png|jpeg|gif|webp);base64,...` URI.
+- **All elements except** an explicit allow-list: `defs`, `g`, `symbol`, `use`, `path`, `circle`, `ellipse`, `line`, `polygon`, `polyline`, `rect`, `image`, `text`, `tspan`, `linearGradient`, `radialGradient`, `pattern`, `mask`, `clipPath`, `marker`, `stop`, `filter`, and the SVG filter primitives (`feBlend`, `feColorMatrix`, `feGaussianBlur`, `feMerge`, `feMergeNode`, … the full `fe*` family). Anything not on this list — including HTML/MathML containers such as `<div>`, `<meta>`, `<img>`, `<math>` — is rejected. (This is an allow-list: unknown elements fail closed, so a novel breakout element cannot slip through.)
+- All `on*` event-handler attributes (including any namespace-prefixed `*:on…` alias).
+- Inline `style="..."` attributes (and `*:style` aliases) and `<style>` blocks. Use a Pathogen `style { … }` block on the surrounding layer instead — that goes through the value allow-list above.
+- `href` / `xlink:href` (and any namespace-prefixed `*:href`) attributes whose value is not a local fragment (`#name`). A `data:image/(png|jpeg|gif|webp|svg+xml);base64,...` URI is additionally allowed **only** on `<image>` / `<feImage>` (rendered in image mode); on `<use>` and every other element the value must be a local fragment.
+- Presentation attributes that take a `url(...)` value — `fill`, `stroke`, `mask`, `clip-path`, `filter`, `marker`, `marker-start`, `marker-mid`, `marker-end` — whose `url(...)` is not a local fragment (`url(#name)`). A remote or `data:` `url()` is rejected (outbound-fetch / tracking vector).
+- Unquoted attribute values (not valid XML, and a tokenizer/parser mismatch surface).
+- XML comments, CDATA sections, DOCTYPE declarations, and processing instructions.
 
 A malformed fragment, a blocked element, or a forbidden attribute throws a Pathogen evaluator error with line/column information.
 
