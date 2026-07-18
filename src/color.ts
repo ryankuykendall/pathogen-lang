@@ -3,6 +3,8 @@
  * Pure computation, no evaluator dependencies.
  */
 
+import { parseColorFunction, type ColorComponent } from './color-parse';
+
 // ── Internal type ──────────────────────────────────────────────────────
 
 export interface OKLCH {
@@ -447,21 +449,22 @@ function cieLCHToOKLCH(L: number, C: number, H: number, alpha: number): OKLCH {
 
 // ── Unified parser ─────────────────────────────────────────────────────
 
-// CSS Color L4 percentage scaling helpers for oklch / oklab. Each axis uses
-// a different scaling: L and alpha map 100% → 1.0; chroma (oklch C, oklab a/b)
-// maps 100% → 0.4 per spec.
-function parsePctL(s: string): number {
-  return s.endsWith('%') ? parseFloat(s) / 100 : parseFloat(s);
+// CSS Color L4 percentage scaling, applied to the structured components that
+// color-parse.ts produces. Each axis scales differently: L and alpha map
+// 100% → 1.0; chroma (oklch C, oklab a/b) maps 100% → 0.4 per spec; rgb
+// components map 100% → 1.0 (= 255 in 8-bit) but a bare number is 0–255.
+function scaleL(c: ColorComponent): number {
+  return c.percent ? c.value / 100 : c.value;
 }
-function parsePctChroma(s: string): number {
-  return s.endsWith('%') ? parseFloat(s) / 250 : parseFloat(s);
+function scaleChroma(c: ColorComponent): number {
+  return c.percent ? c.value / 250 : c.value;
 }
-function parsePctAlpha(s: string): number {
-  return s.endsWith('%') ? parseFloat(s) / 100 : parseFloat(s);
+function scaleRgb(c: ColorComponent): number {
+  return c.percent ? c.value / 100 : c.value / 255;
 }
-// rgb()/rgba() per-component: percent is 100%=1.0; integer/decimal is 0-255.
-function parsePctRgb(s: string): number {
-  return s.endsWith('%') ? parseFloat(s) / 100 : parseFloat(s) / 255;
+function scaleAlpha(c: ColorComponent | undefined): number {
+  if (c === undefined) return 1;
+  return c.percent ? c.value / 100 : c.value;
 }
 
 export function parseColor(input: string): OKLCH {
@@ -478,92 +481,38 @@ export function parseColor(input: string): OKLCH {
     return srgbToOKLCH(hexToSRGB(trimmed));
   }
 
-  // rgb() / rgba()
-  // Modern (CSS Color L4): rgb(R G B [/ A]) — components may be 0-255 or 0%-100%
-  // Legacy: rgb(R, G, B [, A]) — same per-component flexibility
-  // R/G/B percent: 100% = 1.0 sRGB component (= 255 in 8-bit). Number: divide by 255.
-  const rgbModern = /^rgba?\(\s*([\d.]+%?)\s+([\d.]+%?)\s+([\d.]+%?)\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
-  const rgbLegacy = /^rgba?\(\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*,\s*([\d.]+%?)\s*(?:,\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
-  const rgbMatch = rgbModern || rgbLegacy;
-  if (rgbMatch) {
-    return srgbToOKLCH({
-      r: parsePctRgb(rgbMatch[1]),
-      g: parsePctRgb(rgbMatch[2]),
-      b: parsePctRgb(rgbMatch[3]),
-      alpha: rgbMatch[4] !== undefined ? parsePctAlpha(rgbMatch[4]) : 1,
-    });
-  }
-
-  // hsl() / hsla()
-  // Modern: hsl(H S% L% [/ A])
-  // Legacy: hsl(H, S%, L% [, A])
-  const hslModern = /^hsla?\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
-  const hslLegacy = /^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
-  const hslMatch = hslModern || hslLegacy;
-  if (hslMatch) {
-    const h = parseFloat(hslMatch[1]);
-    const s = parseFloat(hslMatch[2]) / 100;
-    const l = parseFloat(hslMatch[3]) / 100;
-    const a = hslMatch[4] !== undefined ? parsePctAlpha(hslMatch[4]) : 1;
-    return srgbToOKLCH(hslToSRGB(h, s, l, a));
-  }
-
-  // oklch() / oklab() — CSS Color L4 percentage scaling per axis:
-  //   L: 100% = 1.0           → /100
-  //   C (oklch chroma):       → /250 (CSS spec: 100% = 0.4)
-  //   a, b (oklab axis):      → /250 (CSS spec: 100% = 0.4)
-  //   alpha: 100% = 1.0       → /100
-  // Matches the format hdr-color-input emits and what colorjs.io parses to.
-  const oklchMatch = /^oklch\(\s*([\d.]+%?)\s+([\d.]+%?)\s+([\d.]+)\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
-  if (oklchMatch) {
-    return {
-      L: parsePctL(oklchMatch[1]),
-      C: parsePctChroma(oklchMatch[2]),
-      H: parseFloat(oklchMatch[3]),
-      alpha: oklchMatch[4] !== undefined ? parsePctAlpha(oklchMatch[4]) : 1,
-    };
-  }
-
-  // oklab()
-  const oklabMatch = /^oklab\(\s*([\d.]+%?)\s+(-?[\d.]+%?)\s+(-?[\d.]+%?)\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
-  if (oklabMatch) {
-    const lab: OKLab = {
-      L: parsePctL(oklabMatch[1]),
-      a: parsePctChroma(oklabMatch[2]),
-      b: parsePctChroma(oklabMatch[3]),
-      alpha: oklabMatch[4] !== undefined ? parsePctAlpha(oklabMatch[4]) : 1,
-    };
-    return oklabToOKLCH(lab);
-  }
-
-  // hwb() / hwba() — CSS L4: modern space-separated form only.
-  const hwbMatch = /^hwba?\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*(?:\/\s*([\d.]+%?))?\s*\)$/.exec(trimmed);
-  if (hwbMatch) {
-    const h = parseFloat(hwbMatch[1]);
-    const w = parseFloat(hwbMatch[2]) / 100;
-    const b = parseFloat(hwbMatch[3]) / 100;
-    const a = hwbMatch[4] !== undefined ? parsePctAlpha(hwbMatch[4]) : 1;
-    return srgbToOKLCH(hwbToSRGB(h, w, b, a));
-  }
-
-  // lab() — CIE Lab
-  const labMatch = /^lab\(\s*([\d.]+)%?\s+([-\d.]+)\s+([-\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
-  if (labMatch) {
-    const L = parseFloat(labMatch[1]);
-    const a = parseFloat(labMatch[2]);
-    const b = parseFloat(labMatch[3]);
-    const alpha = labMatch[4] !== undefined ? parseFloat(labMatch[4]) : 1;
-    return cieLabToOKLCH(L, a, b, alpha);
-  }
-
-  // lch() — CIE LCH
-  const lchMatch = /^lch\(\s*([\d.]+)%?\s+([\d.]+)\s+([\d.]+)\s*(?:\/\s*([\d.]+))?\s*\)$/.exec(trimmed);
-  if (lchMatch) {
-    const L = parseFloat(lchMatch[1]);
-    const C = parseFloat(lchMatch[2]);
-    const H = parseFloat(lchMatch[3]);
-    const alpha = lchMatch[4] !== undefined ? parseFloat(lchMatch[4]) : 1;
-    return cieLCHToOKLCH(L, C, H, alpha);
+  // Color functions — tokenizer-parsed into structured components; scaling
+  // per CSS Color L4 is applied here (see helpers above). The oklch chroma
+  // scaling (100% = 0.4) matches what hdr-color-input emits and colorjs.io
+  // parses to.
+  const parsed = parseColorFunction(trimmed);
+  if (parsed) {
+    const [c0, c1, c2] = parsed.comps;
+    switch (parsed.fn) {
+      case 'rgb':
+        return srgbToOKLCH({
+          r: scaleRgb(c0),
+          g: scaleRgb(c1),
+          b: scaleRgb(c2),
+          alpha: scaleAlpha(parsed.alpha),
+        });
+      case 'hsl':
+        // S and L require a percent; their .value is the number before `%`.
+        return srgbToOKLCH(hslToSRGB(c0.value, c1.value / 100, c2.value / 100, scaleAlpha(parsed.alpha)));
+      case 'hwb':
+        return srgbToOKLCH(hwbToSRGB(c0.value, c1.value / 100, c2.value / 100, scaleAlpha(parsed.alpha)));
+      case 'oklch':
+        return { L: scaleL(c0), C: scaleChroma(c1), H: c2.value, alpha: scaleAlpha(parsed.alpha) };
+      case 'oklab': {
+        const lab: OKLab = { L: scaleL(c0), a: scaleChroma(c1), b: scaleChroma(c2), alpha: scaleAlpha(parsed.alpha) };
+        return oklabToOKLCH(lab);
+      }
+      case 'lab':
+        // CIE Lab: an optional `%` on L is tolerated and ignored (bare value).
+        return cieLabToOKLCH(c0.value, c1.value, c2.value, scaleAlpha(parsed.alpha));
+      case 'lch':
+        return cieLCHToOKLCH(c0.value, c1.value, c2.value, scaleAlpha(parsed.alpha));
+    }
   }
 
   throw new Error(`Invalid color: '${input}'`);
