@@ -1,0 +1,22 @@
+define ViewBox(0, 0, 240, 140);
+define PathLayer('road') ${ stroke: #334155; stroke-width: 3; fill: none; }
+define PathLayer('ticks') ${ stroke: #f59e0b; stroke-width: 2; fill: none; }
+
+// A layer built with apply {} used to be write-only: you could add to it,
+// but never ask it anything. Labels make layers queryable.
+layer('road').apply {
+  M 20 110
+  h 50;
+  v -60 with fillet(28);
+  h 140 as segment('straightaway');
+}
+
+// Read the named stretch back OUT of the road layer and cross-hatch it.
+layer('ticks').apply {
+  let run = layer('road').segment('straightaway');
+  for (op in run.partition(10)) {
+    let a = calc(op.angle + 1.5708);
+    M calc(op.point.x - cos(a) * 5) calc(op.point.y - sin(a) * 5)
+    l calc(cos(a) * 10) calc(sin(a) * 10)
+  }
+}

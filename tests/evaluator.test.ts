@@ -3904,3 +3904,18 @@ log(p.color.hex);`);
     });
   });
 });
+
+describe('nested expression parsing (parse-depth regression)', () => {
+  // A boolean recursion guard in parseExpression silently dropped expressions
+  // parsed while another parse was in flight — an `if` condition inside a
+  // path block inside a `return` statement defaulted to `true`.
+  it('respects a false condition inside a path block returned from a function', () => {
+    const result = compile('fn tab(withNotch) {\n  return @{\n    h 30\n    if (withNotch) {\n      v 99\n    }\n    h 40\n  };\n}\nlet a = tab(false);\na.drawTo(0, 0);');
+    expect(result.layers[0].data).toBe('M 0 0 h 30 h 40');
+  });
+
+  it('respects a true condition inside a path block returned from a function', () => {
+    const result = compile('fn tab(withNotch) {\n  return @{\n    h 30\n    if (withNotch) {\n      v 99\n    }\n    h 40\n  };\n}\nlet a = tab(true);\na.drawTo(0, 0);');
+    expect(result.layers[0].data).toBe('M 0 0 h 30 v 99 h 40');
+  });
+});

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140" width="240" height="140">
+
+  <path data-layer-name="card" d="M 40 30 l 138 0 a 22 22 0 0 1 22 22 l 0 44 l -14 14 l -146 0 l 0 -80 z" fill="none" stroke="#334155" stroke-width="2.5"/>
+  <path data-layer-name="studs" id="studs" d="M 37 22 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 60 22 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 83 22 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 106 22 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 129 22 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 152 22 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 175 22 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="#7c3aed" stroke="#000" stroke-width="2"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"card","type":"path","styles":{"stroke":"#334155","stroke-width":"2.5","fill":"none"},"isDefault":true},{"name":"studs","type":"path","styles":{"fill":"#7c3aed"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":240,"height":140}}]]></script>
+</svg>

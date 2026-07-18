@@ -1,0 +1,30 @@
+define ViewBox(0, 0, 240, 130);
+define default PathLayer('tabs') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+
+// Index-based: filletAtVertex(1, 12) rounds "the second corner" — until an
+// edit inserts a notch earlier in the path and every index shifts.
+// Name-based: vertex('spout') keeps pointing at the same joint, before and
+// after the notch exists.
+
+fn tab(withNotch) {
+  return @{
+    h 30
+    if (withNotch) {
+      v 8
+      h 10
+      v -8
+    } else {
+      h 10
+    }
+    h 40 as endpoint('spout')
+    v 55
+    h -80
+    z
+  };
+}
+
+let plain = tab(false).vertex('spout').fillet(12);
+plain.drawTo(25, 35);
+
+let notched = tab(true).vertex('spout').fillet(12);
+notched.drawTo(135, 35);

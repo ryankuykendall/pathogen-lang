@@ -1,0 +1,21 @@
+define ViewBox(0, 0, 240, 140);
+define default PathLayer('bracket') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('bolts') ${ fill: none; stroke: #0d9488; stroke-width: 2.5; }
+
+// Name the two mounting corners as the bracket is drawn.
+let bracket = @{
+  h 150 as endpoint('mount-east');
+  v 70;
+  h -150 as endpoint('mount-west');
+  z
+};
+let placed = bracket.drawTo(45, 35);
+
+// Bolt heads anchor to the NAMED corners — no hand-computed coordinates,
+// and they follow automatically if the bracket's extents change.
+layer('bolts').apply {
+  let e = placed.point('mount-east');
+  let w = placed.point('mount-west');
+  circle(e.x, e.y, 7);
+  circle(w.x, w.y, 7);
+}

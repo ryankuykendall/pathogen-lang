@@ -1,0 +1,20 @@
+define ViewBox(0, 0, 240, 140);
+define default PathLayer('card') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('studs') ${ fill: #7c3aed; }
+
+// Name the lid while drawing it...
+let card = @{
+  h 160 as segment('lid');
+  v 80 with fillet(22);
+  h -160 with chamfer(14);
+  z
+};
+card.drawTo(40, 30);
+
+// ...then decorate evenly along just that named edge.
+layer('studs').apply {
+  let lid = card.segment('lid');
+  for (op in lid.partition(6)) {
+    circle(40 + op.point.x, 22, 3);
+  }
+}

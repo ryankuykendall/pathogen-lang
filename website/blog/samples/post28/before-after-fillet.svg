@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120" width="240" height="120">
+
+  <path data-layer-name="shapes" d="M 30 25 h 45 a 15 15 0 0 1 15 15 v 45 M 150 25 l 45 0 a 15 15 0 0 1 15 15.000000000000004 l 0 45" fill="none" stroke="#334155" stroke-width="2.5"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"shapes","type":"path","styles":{"stroke":"#334155","stroke-width":"2.5","fill":"none"},"isDefault":true}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":240,"height":120}}]]></script>
+</svg>

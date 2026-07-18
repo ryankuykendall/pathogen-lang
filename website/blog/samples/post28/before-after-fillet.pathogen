@@ -1,0 +1,18 @@
+define ViewBox(0, 0, 240, 120);
+define default PathLayer('shapes') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+
+// BEFORE: rounding a corner by hand means re-computing both edge
+// lengths and threading a tangent arc between them.
+let manual = @{
+  h 45
+  tangentArc(15, 0.5pi);
+  v 45
+};
+manual.drawTo(30, 25);
+
+// AFTER: write the edges you mean, name the rounding where it happens.
+let suffixed = @{
+  h 60
+  v 60 with fillet(15)
+};
+suffixed.drawTo(150, 25);

@@ -6,8 +6,14 @@ import { parser } from './pathogen.generated';
 import { buildAST, setExpressionParser } from './ast-builder';
 import type { Expression, SourceLocation } from './ast';
 
-// Guard against recursive calls (parseExpression → buildAST → parseExpressionString → parseExpression)
-let _parsing = false;
+// Bound recursive calls (parseExpression → buildAST → parseExpressionString →
+// parseExpression). Legitimate nesting is common — e.g. buildReturnStatement
+// re-parses `return @{ ... if (cond) ... };` and the nested buildIfStatement
+// re-parses `cond` — and each level parses a strictly shorter span, so a depth
+// limit terminates while a boolean guard silently DROPPED nested expressions
+// (an if condition inside a returned path block defaulted to `true`).
+const MAX_PARSE_DEPTH = 32;
+let _parseDepth = 0;
 
 /**
  * Parse an expression string using the Lezer parser.
@@ -17,12 +23,12 @@ let _parsing = false;
  */
 export function parseExpression(exprStr: string): Expression | null {
   if (!exprStr.trim()) return null;
-  if (_parsing) return null; // Prevent infinite recursion
+  if (_parseDepth >= MAX_PARSE_DEPTH) return null; // Bound pathological recursion
 
   // Wrap as a let declaration so the Lezer grammar can parse it
   const wrapped = `let _ = ${exprStr};`;
 
-  _parsing = true;
+  _parseDepth++;
   try {
     const tree = parser.parse(wrapped);
 
@@ -64,7 +70,7 @@ export function parseExpression(exprStr: string): Expression | null {
   } catch {
     return null;
   } finally {
-    _parsing = false;
+    _parseDepth--;
   }
 }
 

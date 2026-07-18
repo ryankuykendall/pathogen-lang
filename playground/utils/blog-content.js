@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "segment-labels-and-suffixes",
+    "title": "Name Your Corners: Segment Labels and Corner Suffixes",
+    "date": "2026-07-18",
+    "description": "Pathogen paths become collections of richly defined segments — label edges and vertices where you draw them, round corners at the point of definition, and query it all back by name."
+  },
+  {
     "slug": "the-swelling-line",
     "title": "The Swelling Line: Variable Offsets, Ribbons, and Letterforms",
     "date": "2026-07-13",
@@ -17193,6 +17199,202 @@ g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);
 </tbody></table>
 <p>The radial bar chart pattern — data array, angular distribution loop, <code>radialWedge()</code> for geometry, <code>radialProject()</code> for labels — is reusable for any categorical comparison that benefits from a circular layout. Try changing the <code>--bar-all</code> and <code>--bar-top</code> color variables in any of the examples above to explore different palettes, or modify the data array to add your own categories.</p>
 <p>For the full function signatures and parameter details, see the <a href="/docs#stdlib-path-functions">stdlib reference</a> and <a href="/docs#text-block-syntax">TextBlock documentation</a>. The original visualization by <a href="https://observablehq.com/@gitnoise">Patrick Wojda</a> that inspired this chart is available on <a href="https://observablehq.com/d/33703039e1484511">Observable</a>.</p>
+`,
+  'segment-labels-and-suffixes': `<p>A path used to be something you could only write. As of this release, it&#39;s something you can <strong>address</strong>.</p>
+<p>Two small clauses now attach to any path command. <code>as</code> gives an edge or a vertex a name. <code>with</code> attaches a fillet or chamfer to the joint a command creates, right where you draw it:</p>
+<pre><code class="hljs language-pathogen">M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
+h <span class="hljs-number">60</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;lid&#x27;</span>);
+v <span class="hljs-number">40</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>) <span class="hljs-keyword">as</span> <span class="hljs-title function_">endpoint</span>(<span class="hljs-string">&#x27;corner&#x27;</span>);
+h -<span class="hljs-number">60</span>;
+</code></pre><p>And everything you name can be looked up later — <code>segment(&#39;lid&#39;)</code> returns that edge with the full sampling API, <code>point(&#39;corner&#39;)</code> returns the vertex as a drawTo-ready Point, and <code>vertex(&#39;corner&#39;)</code> returns a handle that can round or cut that specific joint. The full reference lives in the <a href="/docs#segment-labels-syntax">Segment Labels &amp; Corner Suffixes docs</a>; this post is about why the feature exists and what it unlocks.</p>
+<h2>Rounding a corner where you draw it</h2>
+<p>Before this release, rounding one corner mid-path meant doing the trigonometry yourself: shorten the incoming edge, thread a <code>tangentArc</code> between the edges, shorten the outgoing edge. The authored code stops looking like the shape you meant.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: the 60×60 corner, hand-assembled from three pieces</span>
+<span class="hljs-keyword">let</span> manual = @{
+  h <span class="hljs-number">45</span>
+  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">15</span>, <span class="hljs-number">0.</span>5pi);
+  v <span class="hljs-number">45</span>
+};
+
+<span class="hljs-comment">// after: write the edges you mean, name the rounding where it happens</span>
+<span class="hljs-keyword">let</span> suffixed = @{
+  h <span class="hljs-number">60</span>
+  v <span class="hljs-number">60</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">fillet</span>(<span class="hljs-number">15</span>)
+};
+</code></pre><p><mini-workspace code-open caption="Same rounded corner — hand-assembled tangent arc on the left, \`with fillet(15)\` on the right">
+  <code>define ViewBox(0, 0, 240, 120);
+define default PathLayer('shapes') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
+
+// BEFORE: rounding a corner by hand means re-computing both edge
+// lengths and threading a tangent arc between them.
+let manual = @{
+  h 45
+  tangentArc(15, 0.5pi);
+  v 45
+};
+manual.drawTo(30, 25);
+
+// AFTER: write the edges you mean, name the rounding where it happens.
+let suffixed = @{
+  h 60
+  v 60 with fillet(15)
+};
+suffixed.drawTo(150, 25);
+</code>
+  <img src="/blog/samples/post28/before-after-fillet.svg" alt="Same rounded corner — hand-assembled tangent arc on the left, \`with fillet(15)\` on the right" loading="lazy">
+</mini-workspace></p>
+<p>The two are exactly equivalent: <code>fillet(15)</code> trims 15 units off each 60-unit edge, which is precisely the 45 the hand-built version has to write out — except now the compiler does that arithmetic, not you.</p>
+<p>The suffix form is <strong>recorded at definition and applied at finalization</strong> — the same trim-and-splice machinery as the post-hoc <a href="/blog/pathblock-fillets-chamfers"><code>fillet</code> methods</a>, just addressed by adjacency instead of index. Your authored extents stay intact: <code>ctx.position</code> mid-path still reflects the sharp corner you wrote, and the trimming happens when the path block closes or the layer emits. <code>with chamfer(d)</code> and <code>with ellipticalFillet(rx, ry)</code> work the same way.</p>
+<p>There&#39;s a design lesson hiding in the syntax. Our first sketch was <code>v 20 joinPreviousWithFillet(5)</code> — a function-call suffix. It read badly because a fillet isn&#39;t a property of an edge; it&#39;s a property of the <strong>joint between two edges</strong>. Every system that solved this before us — PostScript&#39;s <code>arct</code> operator, TikZ&#39;s <code>rounded corners</code>, CSS&#39;s per-corner <code>border-radius</code> — attaches rounding to the corner. <code>with fillet(...)</code> names the operation on the joint the command creates, and the clunkiness disappears.</p>
+<h2>Labels turn paths into structures</h2>
+<p>The deeper change is <code>as</code>. SVG path data is a 1999-era pen-plotter stream — single-letter opcodes and coordinates, no names, no structure. Everything Pathogen does ultimately compiles down to that stream, but <em>you</em> shouldn&#39;t have to think in it.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> card = @{
+  h <span class="hljs-number">160</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;lid&#x27;</span>);
+  v <span class="hljs-number">80</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">fillet</span>(<span class="hljs-number">22</span>);
+  h -<span class="hljs-number">160</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">chamfer</span>(<span class="hljs-number">14</span>);
+  z
+};
+</code></pre><p><code>&#39;lid&#39;</code> names the top edge. That name survives everything that happens to the path — fillets trimming it, projection moving it — and it answers questions:</p>
+<p><mini-workspace code-open caption="\`card.segment('lid').partition(6)\` — decorating evenly along one named edge">
+  <code>define ViewBox(0, 0, 240, 140);
+define default PathLayer('card') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('studs') \${ fill: #7c3aed; }
+
+// Name the lid while drawing it...
+let card = @{
+  h 160 as segment('lid');
+  v 80 with fillet(22);
+  h -160 with chamfer(14);
+  z
+};
+card.drawTo(40, 30);
+
+// ...then decorate evenly along just that named edge.
+layer('studs').apply {
+  let lid = card.segment('lid');
+  for (op in lid.partition(6)) {
+    circle(40 + op.point.x, 22, 3);
+  }
+}
+</code>
+  <img src="/blog/samples/post28/segment-decoration.svg" alt="\`card.segment('lid').partition(6)\` — decorating evenly along one named edge" loading="lazy">
+</mini-workspace></p>
+<p><code>segment(&#39;lid&#39;)</code> hands back the labeled range as a real PathBlock, so <code>partition</code>, <code>get</code>, <code>tangent</code>, <code>normal</code>, and <code>boundingBox</code> all work on just that edge. No index arithmetic, no measuring where the lid starts and stops.</p>
+<p>Vertices work the same way. <code>as endpoint(&#39;name&#39;)</code> names the point a command lands on, and <code>point(&#39;name&#39;)</code> retrieves it — an anchor that follows the geometry instead of a hand-computed coordinate:</p>
+<p><mini-workspace code-open caption="Bolt heads anchored to named corners — \`placed.point('mount-east')\` instead of coordinates">
+  <code>define ViewBox(0, 0, 240, 140);
+define default PathLayer('bracket') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('bolts') \${ fill: none; stroke: #0d9488; stroke-width: 2.5; }
+
+// Name the two mounting corners as the bracket is drawn.
+let bracket = @{
+  h 150 as endpoint('mount-east');
+  v 70;
+  h -150 as endpoint('mount-west');
+  z
+};
+let placed = bracket.drawTo(45, 35);
+
+// Bolt heads anchor to the NAMED corners — no hand-computed coordinates,
+// and they follow automatically if the bracket's extents change.
+layer('bolts').apply {
+  let e = placed.point('mount-east');
+  let w = placed.point('mount-west');
+  circle(e.x, e.y, 7);
+  circle(w.x, w.y, 7);
+}
+</code>
+  <img src="/blog/samples/post28/point-anchor.svg" alt="Bolt heads anchored to named corners — \`placed.point('mount-east')\` instead of coordinates" loading="lazy">
+</mini-workspace></p>
+<h2>Names don&#39;t break; indices do</h2>
+<p>We already shipped vertex-targeted fillets: <code>filletAtVertex(1, 12)</code> rounds &quot;the second corner.&quot; The problem is what happens next week, when you add a notch earlier in the path — every index shifts, and your fillet silently lands on the wrong corner. CAD systems call this the topological naming problem, and their answer is the same one we&#39;ve adopted: name the geometry at definition, address it by name forever.</p>
+<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">tab</span>(<span class="hljs-params">withNotch</span>) {
+  <span class="hljs-keyword">return</span> @{
+    h <span class="hljs-number">30</span>
+    <span class="hljs-keyword">if</span> (withNotch) {
+      v <span class="hljs-number">8</span>
+      h <span class="hljs-number">10</span>
+      v -<span class="hljs-number">8</span>
+    } <span class="hljs-keyword">else</span> {
+      h <span class="hljs-number">10</span>
+    }
+    h <span class="hljs-number">40</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">endpoint</span>(<span class="hljs-string">&#x27;spout&#x27;</span>)
+    v <span class="hljs-number">55</span>
+    h -<span class="hljs-number">80</span>
+    z
+  };
+}
+
+<span class="hljs-keyword">let</span> plain = <span class="hljs-title function_">tab</span>(<span class="hljs-literal">false</span>).<span class="hljs-title function_">vertex</span>(<span class="hljs-string">&#x27;spout&#x27;</span>).<span class="hljs-title function_">fillet</span>(<span class="hljs-number">12</span>);
+<span class="hljs-keyword">let</span> notched = <span class="hljs-title function_">tab</span>(<span class="hljs-literal">true</span>).<span class="hljs-title function_">vertex</span>(<span class="hljs-string">&#x27;spout&#x27;</span>).<span class="hljs-title function_">fillet</span>(<span class="hljs-number">12</span>);
+</code></pre><p><mini-workspace code-open caption="The notch adds three commands before the corner — \`vertex('spout')\` rounds the same joint in both variants">
+  <code>define ViewBox(0, 0, 240, 130);
+define default PathLayer('tabs') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
+
+// Index-based: filletAtVertex(1, 12) rounds "the second corner" — until an
+// edit inserts a notch earlier in the path and every index shifts.
+// Name-based: vertex('spout') keeps pointing at the same joint, before and
+// after the notch exists.
+
+fn tab(withNotch) {
+  return @{
+    h 30
+    if (withNotch) {
+      v 8
+      h 10
+      v -8
+    } else {
+      h 10
+    }
+    h 40 as endpoint('spout')
+    v 55
+    h -80
+    z
+  };
+}
+
+let plain = tab(false).vertex('spout').fillet(12);
+plain.drawTo(25, 35);
+
+let notched = tab(true).vertex('spout').fillet(12);
+notched.drawTo(135, 35);
+</code>
+  <img src="/blog/samples/post28/robust-names.svg" alt="The notch adds three commands before the corner — \`vertex('spout')\` rounds the same joint in both variants" loading="lazy">
+</mini-workspace></p>
+<p>The notched variant has three extra commands before the corner. An index-based fillet would need updating; <code>vertex(&#39;spout&#39;)</code> doesn&#39;t care.</p>
+<h2>Layers answer questions now</h2>
+<p>The quiet structural win: layers built with <code>apply { }</code> used to be write-only. You could route commands into them, but a layer could never tell you anything about its own geometry. Labels change that — <code>layer(&#39;name&#39;).segment(...)</code>, <code>.point(...)</code>, and <code>.vertex(...)</code> read named geometry back out of any path layer:</p>
+<p><mini-workspace code-open caption="A ticks layer cross-hatching a named stretch of the road layer — one layer reading another's geometry by name">
+  <code>define ViewBox(0, 0, 240, 140);
+define PathLayer('road') \${ stroke: #334155; stroke-width: 3; fill: none; }
+define PathLayer('ticks') \${ stroke: #f59e0b; stroke-width: 2; fill: none; }
+
+// A layer built with apply {} used to be write-only: you could add to it,
+// but never ask it anything. Labels make layers queryable.
+layer('road').apply {
+  M 20 110
+  h 50;
+  v -60 with fillet(28);
+  h 140 as segment('straightaway');
+}
+
+// Read the named stretch back OUT of the road layer and cross-hatch it.
+layer('ticks').apply {
+  let run = layer('road').segment('straightaway');
+  for (op in run.partition(10)) {
+    let a = calc(op.angle + 1.5708);
+    M calc(op.point.x - cos(a) * 5) calc(op.point.y - sin(a) * 5)
+    l calc(cos(a) * 10) calc(sin(a) * 10)
+  }
+}
+</code>
+  <img src="/blog/samples/post28/layer-query.svg" alt="A ticks layer cross-hatching a named stretch of the road layer — one layer reading another's geometry by name" loading="lazy">
+</mini-workspace></p>
+<p>The ticks layer never hard-codes where the straightaway is. It asks the road layer, gets a ProjectedPath in absolute coordinates, and decorates along it. Reshape the road and the ticks follow.</p>
+<h2>Under the hood, and what&#39;s next</h2>
+<p>Making this work took more than syntax. Both evaluators now track every emitted fragment as a <strong>structured record</strong> — the byte-exact output string paired with its commands, labels, and recorded corner ops — instead of an append-only string list. Zero-annotation programs emit byte-identical output to the previous release (our render snapshots enforce this), while annotated programs get finalization, label-preserving trims, and the query APIs on top of the same store.</p>
+<p>That structured store is the foundation for what&#39;s next: labels give the compiler stable handles into path interiors, which opens the door to editing named segments in place, per-segment styling, and richer inspector tooling. The <a href="/docs#segment-labels-syntax">docs page</a> covers the full syntax, the error catalogue, and the querying rules — everything in it compiles verbatim against this release.</p>
+<p>Every sample above is a live editor — change a radius, rename a label, add a command before a named corner and watch the queries follow. Or start from scratch in the <a href="/">playground</a>.</p>
 `,
   'seo-pages-cloudflare-workers-routing': `<h1>Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel</h1>
 <h2>The Goal</h2>
