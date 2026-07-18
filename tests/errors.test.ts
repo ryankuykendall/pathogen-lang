@@ -84,6 +84,20 @@ describe('Parse errors', () => {
     it('let with complex expression', () => {
       expect(() => compilePath('let x = (10 + 5) * 3\nM 0 0')).toThrow(/Missing ';' after let declaration/);
     });
+
+    it('style declaration missing its trailing semicolon (strict)', () => {
+      // The old regex silently dropped a `;`-less last declaration; it is now
+      // a hard compile error with a position.
+      expect(() =>
+        compile("define PathLayer('a') ${ fill: none; stroke-width: 3 }\nlayer('a').apply { M 0 0 L 10 10 }"),
+      ).toThrow(/Missing ';'/);
+    });
+
+    it('style declaration missing its colon', () => {
+      expect(() =>
+        compile("define PathLayer('a') ${ fill none; }\nlayer('a').apply { M 0 0 L 10 10 }"),
+      ).toThrow(/Missing ':'/);
+    });
   });
 
   describe('error messages include location', () => {

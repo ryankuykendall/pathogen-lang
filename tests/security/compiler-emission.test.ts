@@ -121,12 +121,16 @@ describe('Security · compiler emission', () => {
       ).toThrow();
     });
 
-    it('regression: url(https://...) form is silently dropped by the AST builder (parser bug, but contract holds)', () => {
-      const result = compile(`
-        define PathLayer('a') \${ background-image: "url(https://evil.example/log)"; }
-        layer('a').apply { M 0 0 L 10 10 }
-      `);
-      expect(result.layers[0].styles).toEqual({});
+    it('rejects url(https://...) in a style value', () => {
+      // Previously this was silently dropped as a side effect of the AST
+      // builder's comment-strip eating the `//` in `https://`. The declaration
+      // parser now keeps the value intact and validateCSSValue rejects it.
+      expect(() =>
+        compile(`
+          define PathLayer('a') \${ background-image: "url(https://evil.example/log)"; }
+          layer('a').apply { M 0 0 L 10 10 }
+        `),
+      ).toThrow(/url\(/);
     });
   });
 

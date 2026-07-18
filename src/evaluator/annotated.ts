@@ -1128,6 +1128,11 @@ function camelToKebab(name: string): string {
 }
 
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
+  // Strict enforcement of a malformed declaration recorded leniently during
+  // AST-building (see the index.ts twin for the rationale).
+  if (expr.incomplete) {
+    throw new Error(formatError(expr.incomplete.message, expr.incomplete.line, expr.incomplete.column));
+  }
   const properties: Record<string, string> = {};
   for (const prop of expr.properties) {
     let resolvedValue = prop.value;
@@ -1175,9 +1180,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
       // Keep raw string
     }
     if (!trusted) {
-      // StyleBlockLiteral has no source-location field, so we surface the
-      // validator's message verbatim. Callers that want line/col use the
-      // primary evaluator (src/evaluator/index.ts), which threads getLine/getCol.
+      // Annotated mode surfaces the validator's message verbatim; the primary
+      // evaluator (src/evaluator/index.ts) threads per-declaration line/col
+      // from prop.loc for editor diagnostics.
       validateCSSValue(resolvedValue, prop.name);
     }
     properties[prop.name] = resolvedValue;

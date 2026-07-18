@@ -1851,23 +1851,150 @@ function buildObjectLiteral(cursor: TreeCursor, source: string): ObjectLiteral {
 function buildStyleBlockLiteral(cursor: TreeCursor, source: string): StyleBlockLiteral {
   cursor.firstChild();
   let raw = '';
+  let contentFrom = -1;
   do {
     if (cursor.name === 'StyleContent') {
       raw = text(cursor, source);
+      contentFrom = cursor.from;
     }
   } while (cursor.nextSibling());
   cursor.parent();
 
-  // Parse CSS-like style declarations from raw text
+  const parsed = raw ? parseStyleDeclarations(raw, contentFrom, source) : { properties: [] };
+  const node: StyleBlockLiteral = { type: 'StyleBlockLiteral', properties: parsed.properties };
+  if (parsed.incomplete) node.incomplete = parsed.incomplete;
+  return node;
+}
+
+const STYLE_NAME_START = /[a-zA-Z]/;
+const STYLE_NAME_CHAR = /[a-zA-Z0-9-]/;
+
+interface StyleIncomplete {
+  message: string;
+  line: number;
+  column: number;
+}
+
+/** line/column (1-based) for an absolute source offset, matching loc(). */
+function lineColAt(source: string, offset: number): { line: number; column: number } {
+  const before = source.slice(0, offset);
+  const lines = before.split('\n');
+  return { line: lines.length, column: lines[lines.length - 1].length + 1 };
+}
+
+function lineColLoc(source: string, offset: number): SourceLocation {
+  const { line, column } = lineColAt(source, offset);
+  return { line, column, offset };
+}
+
+/**
+ * Parse the raw `${ … }` style-block content into structured declarations.
+ * Replaces the old regex scrape: this is quote-, paren-, and comment-aware,
+ * and — unlike the regex, which silently dropped any declaration lacking a
+ * trailing `;` — it treats a missing `:` or `;` as a hard error.
+ *
+ * AST-building stays LENIENT: on the first malformed declaration it stops and
+ * returns an `incomplete` marker (with source line/column) alongside the
+ * complete declarations parsed so far, rather than throwing. This keeps the
+ * language service resilient while a block is being typed (scope analysis,
+ * completion). The evaluator throws the marker as a strict error, so a missing
+ * `;` still fails compilation and shows as an editor diagnostic (Phase 3 eval).
+ * `baseOffset` is the absolute offset of `raw` within `source`.
+ */
+function parseStyleDeclarations(
+  raw: string,
+  baseOffset: number,
+  source: string,
+): { properties: StyleProperty[]; incomplete?: StyleIncomplete } {
   const properties: StyleProperty[] = [];
-  const stripped = raw.replace(/\/\/[^\n]*/g, ''); // Strip comments
-  const re = /([a-zA-Z][a-zA-Z0-9-]*)\s*:\s*([^;\n]+);/g;
-  let match;
-  while ((match = re.exec(stripped)) !== null) {
-    properties.push({ type: 'StyleProperty', name: match[1], value: match[2].trim() });
+  let i = 0;
+  const len = raw.length;
+  const isWs = (ch: string) => ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f';
+  const skipTrivia = () => {
+    for (;;) {
+      while (i < len && isWs(raw[i])) i++;
+      if (i + 1 < len && raw[i] === '/' && raw[i + 1] === '/') {
+        while (i < len && raw[i] !== '\n') i++; // skip to end of line
+        continue;
+      }
+      break;
+    }
+  };
+  const incompleteAt = (offset: number, message: string): { properties: StyleProperty[]; incomplete: StyleIncomplete } => {
+    const { line, column } = lineColAt(source, offset);
+    return { properties, incomplete: { message, line, column } };
+  };
+
+  for (;;) {
+    skipTrivia();
+    if (i >= len) break;
+
+    const nameStart = i;
+    if (!STYLE_NAME_START.test(raw[i])) {
+      return incompleteAt(baseOffset + i, `Unexpected '${raw[i]}' in style block — expected a property name`);
+    }
+    while (i < len && STYLE_NAME_CHAR.test(raw[i])) i++;
+    const name = raw.slice(nameStart, i);
+
+    skipTrivia();
+    if (raw[i] !== ':') {
+      return incompleteAt(baseOffset + i, `Missing ':' after style property '${name}'`);
+    }
+    i++; // consume ':'
+    skipTrivia();
+
+    // Read the value up to a top-level ';' — quote- and paren-aware, stopping
+    // at a `//` comment. An unterminated value that reaches end-of-content (or
+    // a comment) is the missing-';' error.
+    const valueStart = i;
+    let depth = 0;
+    let quote = '';
+    let terminated = false;
+    while (i < len) {
+      const ch = raw[i];
+      if (quote) {
+        if (ch === quote) quote = '';
+        i++;
+        continue;
+      }
+      if (ch === '"' || ch === "'") {
+        quote = ch;
+        i++;
+        continue;
+      }
+      if (ch === '(' || ch === '[') depth++;
+      else if (ch === ')' || ch === ']') {
+        if (depth > 0) depth--;
+      } else if (depth === 0) {
+        if (ch === ';') {
+          terminated = true;
+          break;
+        }
+        // A bare (unquoted, top-level) newline bounds the value, mirroring the
+        // old regex's `[^;\n]+`. Without this, a declaration missing its `;`
+        // would swallow the following declaration into a multi-line value
+        // instead of being flagged — so a missing `;` on ANY declaration (not
+        // just the last) is reported here.
+        if (ch === '\n' || ch === '\r') break;
+        if (ch === '/' && raw[i + 1] === '/') break; // comment before ';' → missing ';'
+      }
+      i++;
+    }
+    const rawValue = raw.slice(valueStart, i);
+    const value = rawValue.trim();
+    if (!terminated) {
+      // Point just past the value's last non-whitespace char — where ';' was
+      // expected — rather than at any trailing whitespace/newline consumed.
+      return incompleteAt(baseOffset + valueStart + rawValue.trimEnd().length, `Missing ';'`);
+    }
+    i++; // consume ';'
+
+    if (name) {
+      properties.push({ type: 'StyleProperty', name, value, loc: lineColLoc(source, baseOffset + nameStart) });
+    }
   }
 
-  return { type: 'StyleBlockLiteral', properties };
+  return { properties };
 }
 
 function buildPathBlockExpression(cursor: TreeCursor, source: string): PathBlockExpression {

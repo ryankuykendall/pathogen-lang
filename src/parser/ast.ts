@@ -339,6 +339,11 @@ export interface MethodCallExpression {
 export interface StyleBlockLiteral {
   type: 'StyleBlockLiteral';
   properties: StyleProperty[];
+  // Set when a declaration is malformed (e.g. missing a required trailing `;`).
+  // AST-building stays lenient (so the language service remains resilient while
+  // a block is being typed); the evaluator throws this as a strict error, so
+  // it surfaces at compile time and as an editor diagnostic (Phase 3 eval).
+  incomplete?: { message: string; line: number; column: number };
 }
 
 // text(x, y)`content` or text(x, y) { `text` tspan()... }
@@ -371,6 +376,7 @@ export interface StyleProperty {
   type: 'StyleProperty';
   name: string; // e.g. 'stroke', 'stroke-width'
   value: string; // raw string e.g. '#cc0000', '4 1 2 3'
+  loc?: SourceLocation; // span of the declaration name (for diagnostics)
 }
 
 // define [default] PathLayer('name') ${ style declarations }

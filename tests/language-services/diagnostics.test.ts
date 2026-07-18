@@ -36,6 +36,18 @@ describe('getDiagnostics', () => {
       expect(diags[0].range.start.line).toBe(0);
     });
 
+    it('reports a style declaration missing its trailing semicolon', () => {
+      const diags = diagnose("define PathLayer('a') ${ fill: none; stroke-width: 3 }\nlayer('a').apply { M 0 0 L 10 10 }");
+      expect(diags.length).toBeGreaterThanOrEqual(1);
+      expect(diags[0].message).toContain("Missing ';'");
+    });
+
+    it('stays resilient (no throw) for an incomplete style block being typed', () => {
+      // AST-building is lenient, so a half-typed block still yields a single
+      // diagnostic rather than crashing the language service.
+      expect(() => diagnose('let accent = oklch(0.7 0.1 250);\nlet s = ${ stroke:  };')).not.toThrow();
+    });
+
     it('reports correct 0-based line for multi-line error', () => {
       // Error is on line 2 (0-based: 1)
       const diags = diagnose('let x = 10;\nlet y = 20');

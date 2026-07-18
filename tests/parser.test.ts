@@ -628,8 +628,9 @@ L 10 20 // end point`;
       expect(def.type).toBe('LayerDefinition');
       expect(def.styleExpr.type).toBe('StyleBlockLiteral');
       expect(def.styleExpr.properties).toHaveLength(2);
-      expect(def.styleExpr.properties[0]).toEqual({ type: 'StyleProperty', name: 'stroke', value: '#cc0000' });
-      expect(def.styleExpr.properties[1]).toEqual({ type: 'StyleProperty', name: 'stroke-width', value: '4' });
+      // toMatchObject: declarations also carry a `loc` for diagnostics.
+      expect(def.styleExpr.properties[0]).toMatchObject({ type: 'StyleProperty', name: 'stroke', value: '#cc0000' });
+      expect(def.styleExpr.properties[1]).toMatchObject({ type: 'StyleProperty', name: 'stroke-width', value: '4' });
     });
 
     it('parses style block with comments', () => {
@@ -637,6 +638,65 @@ L 10 20 // end point`;
       const def = ast.body[0] as any;
       expect(def.styleExpr.properties).toHaveLength(1);
       expect(def.styleExpr.properties[0].name).toBe('stroke');
+    });
+
+    it('keeps the last declaration when it has a trailing semicolon', () => {
+      // Guards the fixed drop-bug: the old regex required `;` and silently
+      // dropped a `;`-less last declaration.
+      const ast = parse("define PathLayer('main') ${ fill: none; stroke-width: 3; }");
+      const def = ast.body[0] as any;
+      expect(def.styleExpr.properties.map((p: { name: string }) => p.name)).toEqual(['fill', 'stroke-width']);
+    });
+
+    it('parses paren- and quote-bearing values as a single declaration', () => {
+      const ast = parse(
+        "define PathLayer('main') ${ filter: drop-shadow(0 2px rgba(0,0,0,.5)); font-family: \"Arial\", sans-serif; }",
+      );
+      const props = (ast.body[0] as any).styleExpr.properties;
+      expect(props[0]).toMatchObject({ name: 'filter', value: 'drop-shadow(0 2px rgba(0,0,0,.5))' });
+      expect(props[1]).toMatchObject({ name: 'font-family', value: '"Arial", sans-serif' });
+    });
+
+    it('builds leniently for a declaration missing its trailing semicolon (marks incomplete, does not throw)', () => {
+      // AST-building stays resilient (for the language service); the evaluator
+      // enforces the missing `;` strictly.
+      const ast = parse("define PathLayer('main') ${ fill: none; stroke-width: 3 }");
+      const style = (ast.body[0] as any).styleExpr;
+      expect(style.incomplete).toMatchObject({ message: "Missing ';'" });
+      // The complete declaration before the error is still captured.
+      expect(style.properties.map((p: { name: string }) => p.name)).toEqual(['fill']);
+    });
+
+    it('flags a missing semicolon on a NON-last declaration (does not swallow the next)', () => {
+      // A bare newline bounds a value, so a missing `;` on an earlier
+      // declaration is reported at that declaration — it must not absorb the
+      // following declaration into a multi-line value.
+      const ast = parse("define PathLayer('main') ${\n  stroke: black\n  stroke-width: 2;\n  fill: none;\n}");
+      const style = (ast.body[0] as any).styleExpr;
+      // Error points just past `black` (line 2), not the last declaration.
+      expect(style.incomplete).toEqual({ message: "Missing ';'", line: 2, column: 16 });
+    });
+
+    it('reports the exact position of a single-line missing semicolon', () => {
+      const ast = parse("define PathLayer('m') ${ fill: none; stroke-width: 3 }");
+      const style = (ast.body[0] as any).styleExpr;
+      // Column points just past `3` (index 51, 0-based) → column 53 (1-based).
+      expect(style.incomplete).toEqual({ message: "Missing ';'", line: 1, column: 53 });
+    });
+
+    it('keeps a semicolon inside a quoted value from terminating the declaration', () => {
+      const ast = parse("define PathLayer('m') ${ content: \"a;b\"; fill: red; }");
+      const props = (ast.body[0] as any).styleExpr.properties;
+      expect(props[0]).toMatchObject({ name: 'content', value: '"a;b"' });
+      expect(props[1]).toMatchObject({ name: 'fill', value: 'red' });
+    });
+
+    it('keeps a bracketed value as a single declaration', () => {
+      const ast = parse("define PathLayer('m') ${ stroke-dasharray: [4, 2]; }");
+      expect((ast.body[0] as any).styleExpr.properties[0]).toMatchObject({
+        name: 'stroke-dasharray',
+        value: '[4, 2]',
+      });
     });
 
     it('parses layer name as expression', () => {
@@ -661,8 +721,8 @@ L 10 20 // end point`;
       const decl = ast.body[0] as any;
       expect(decl.value.type).toBe('StyleBlockLiteral');
       expect(decl.value.properties).toHaveLength(2);
-      expect(decl.value.properties[0]).toEqual({ type: 'StyleProperty', name: 'stroke', value: 'red' });
-      expect(decl.value.properties[1]).toEqual({ type: 'StyleProperty', name: 'fill', value: 'blue' });
+      expect(decl.value.properties[0]).toMatchObject({ type: 'StyleProperty', name: 'stroke', value: 'red' });
+      expect(decl.value.properties[1]).toMatchObject({ type: 'StyleProperty', name: 'fill', value: 'blue' });
     });
 
     it('parses << merge operator', () => {

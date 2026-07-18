@@ -1274,6 +1274,12 @@ function commandsToAbsoluteD(commands: PathBlockCommand[]): string {
 }
 
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
+  // A malformed declaration (e.g. a missing trailing `;`) is recorded leniently
+  // during AST-building so the language service stays resilient; enforce it
+  // strictly here so it fails compilation with a positioned error.
+  if (expr.incomplete) {
+    throw new Error(formatError(expr.incomplete.message, expr.incomplete.line, expr.incomplete.column));
+  }
   const properties: Record<string, string> = {};
   for (const prop of expr.properties) {
     // Trust tracking: compiler-emitted strings (Color → hex, CSSVar → var(...),
@@ -1343,8 +1349,10 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
       try {
         validateCSSIdent(resolvedValue, 'fragment-ref');
       } catch (e) {
-        const eLine = getLine(expr);
-        const eCol = getCol(expr);
+        // Prefer the per-declaration position (prop.loc); the enclosing
+        // StyleBlockLiteral carries no source location.
+        const eLine = prop.loc?.line ?? getLine(expr);
+        const eCol = prop.loc?.column ?? getCol(expr);
         throw new Error(formatError(`Style "${prop.name}" url() reference: ${(e as Error).message}`, eLine, eCol));
       }
       resolvedValue = `url(#${resolvedValue})`;
@@ -1358,8 +1366,8 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
       try {
         validateCSSValue(resolvedValue, prop.name, { allowVar });
       } catch (e) {
-        const eLine = getLine(expr);
-        const eCol = getCol(expr);
+        const eLine = prop.loc?.line ?? getLine(expr);
+        const eCol = prop.loc?.column ?? getCol(expr);
         throw new Error(formatError((e as Error).message, eLine, eCol));
       }
     }
