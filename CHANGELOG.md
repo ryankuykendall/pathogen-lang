@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-18 (regex-audit remediation)
+
+Audit and remediation of risky regex-based parsing in the compiler (see
+`project-docs/regex-audit/`). Structured, grammar-shaped content that was being
+parsed with regexes is now parsed by purpose-built tokenizers/parsers, closing
+several latent correctness bugs and two confirmed security vulnerabilities.
+
+### Security
+
+- **SVG fragment sanitizer hardened from a deny-list to an allow-list.** `SVGDocumentFragment()` markup is validated before it reaches the DOM (innerHTML embedding) or CLI output. Two confirmed-exploitable holes are closed: (1) the sanitizer blocked a fixed deny-list while `docs/security.md` promised an allow-list, so `<meta http-equiv="refresh">` (HTML5 foreign-content breakout → full-page hijack), `<div>`/`<img>`/`<math>` and other non-SVG elements passed through — it now rejects any element not on the documented safe set; (2) presentation attributes (`fill`/`stroke`/`mask`/`filter`/`clip-path`/`marker*`) carrying a remote `url()` were never validated (SSRF/tracking) — `url()` must now be a local fragment ref. Also: the regex tag scanner is replaced by a quote-aware cursor tokenizer (closing `>`-in-quoted-attribute truncation and whitespace-split `on*` handler bypasses), namespace-prefixed element/attribute aliases (`<svg:script>`, `x:href`) are rejected, the `data:image` href allow-list is scoped to `<image>`/`<feImage>`, unquoted attribute values and comments/CDATA/DOCTYPE/PIs are rejected. Fixtures F8/F9 in `project-docs/security/svg-attack-fixtures.md`.
+- **Remote `url()` in a style value is now rejected explicitly** instead of being silently dropped (it was only dropped as a side effect of the old comment-strip eating the `//` in `https://`).
+
+### Fixed
+
+- **Style-block declarations missing a trailing `;` were silently dropped.** The old regex scrape (`/([a-zA-Z…])\s*:\s*([^;\n]+);/g`) required a `;` after every declaration, so a `;`-less last declaration (common in hand-written blocks) was dropped — its style property (`stroke-width`, `font-family`, …) never applied. A proper quote/paren/bracket/comment-aware declaration parser now requires `;` on every declaration and reports a positioned `Missing ';'` compile error. AST-building stays lenient (attaches an `incomplete` marker) so the language service remains resilient while a block is typed; the evaluator enforces strictly. 22 blog/demo samples that relied on the drop are fixed. Docs: `docs/syntax.md`.
+- **SVG path-data tokenizing bugs.** The path round-trip tokenizer mis-parsed implicit-decimal chains (`1.5.5` dropped the second number) and packed arc flags (`1110`); a single cursor-based tokenizer (`src/evaluator/path-data.ts`) fixes both and handles exponents/sign-separators uniformly.
+- **CSS color parsing** now rejects malformed forms the old regexes accepted by silently truncating (`rgb(50%50% 0)`, `rgb(1.5.5 0)`, embedded signs) — the tokenizer requires real whitespace between modern components.
+
+### Changed
+
+- `StyleProperty` AST nodes carry a `loc`; `StyleBlockLiteral` carries an optional `incomplete` marker. CSS-value validation errors now report per-declaration line/column.
+
+### Development
+
+- **Path serialize→reparse round-trip eliminated.** `draw()`/`drawTo()` previously serialized structured commands to a string and immediately regex-reparsed it to track the path context. `serializeRelativeAndTrack` (new `src/evaluator/path-data.ts`) does both in one walk, and the three diverging duplicate tokenizers + two `commandsToRelativeD` serializers across `segments.ts`/`index.ts`/`annotated.ts` are consolidated into one module. Emitted output is byte-identical (render snapshots unchanged; verified against pre-refactor CLI output).
+- **`parseColor` regex ladder → tokenizer.** The nine hand-rolled CSS color-function regexes in `src/color.ts` are replaced by `src/color-parse.ts` (one scanner + a per-function acceptance table). Public `parseColor(input): OKLCH` and all call sites unchanged; the 36-row conformance suite and 136 color tests pass byte-identical, including the `hdr-color-input` picker round-trip.
+- **Style-block grammar note.** A Lezer-grammar approach to structuring style declarations was attempted and abandoned: `${` is shared between `styleBlockOpen` and `templateInterpStart`, and structuring `StyleBlockLiteral` merges their LALR states, breaking template interpolation. The declaration parser lives in the AST builder instead; the grammar's `StyleContent` token stays opaque.
+- New/expanded suites: `tests/path-data.test.ts`, `tests/path-roundtrip.test.ts`, `tests/color-parse.test.ts`, `tests/color-conformance.test.ts`, plus F8/F9 sanitizer fixtures and strict style-declaration tests across `parser`/`errors`/`diagnostics`.
+
 ## [Unreleased] - 2026-07-17 (segment labels & corner suffixes)
 
 ### Added
