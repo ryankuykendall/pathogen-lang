@@ -177,3 +177,92 @@ describe('corner-op finalization (record-then-apply)', () => {
     expect(() => compile("let p = @{\n  h 20 as segment('lid')\n  v 20\n};\nlet proj = p.project(10, 10);\nproj.drawTo(50, 50);")).not.toThrow();
   });
 });
+
+describe('name-based query APIs (segment / point / vertex)', () => {
+  it('segment() returns a rebased sub-PathBlock with working geometry APIs', () => {
+    const src = [
+      "let p = @{",
+      "  h 40 as segment('lid')",
+      "  v 40",
+      "};",
+      "let lid = p.segment('lid');",
+      "lid.drawTo(10, 10);",
+    ].join('\n');
+    const result = compile(src);
+    expect(result.layers[0].data).toBe('M 10 10 h 40');
+  });
+
+  it('point() returns the labeled vertex as a Point usable in commands', () => {
+    const result = compile("let p = @{\n  h 40 as endpoint('east')\n  v 40\n};\nlet e = p.point('east');\nM e.x e.y\nh 5");
+    expect(result.layers[0].data).toBe('M 40 0 h 5');
+  });
+
+  it('vertex().fillet(r) matches filletAtVertex on the same corner', () => {
+    const byName = compile("let p = @{\n  h 20\n  v 20 as endpoint('c')\n  h -20\n};\nlet f = p.vertex('c').fillet(5);\nf.drawTo(10, 10);");
+    const byIndex = compile('let p = @{\n  h 20\n  v 20\n  h -20\n};\nlet f = p.filletAtVertex(1, 5);\nf.drawTo(10, 10);');
+    expect(byName.layers[0].data).toBe(byIndex.layers[0].data);
+  });
+
+  it('point() answers the authored sharp corner even after a fillet trims it', () => {
+    // 'c' labels the end of the h edge — the very corner the fillet rounds away.
+    const result = compile("let p = @{\n  h 20 as endpoint('c')\n  v 20 with fillet(5)\n};\nlet pt = p.point('c');\nM pt.x pt.y\nh 1");
+    expect(result.layers[0].data).toBe('M 20 0 h 1');
+  });
+
+  it('projected paths answer queries in absolute coordinates', () => {
+    const src = "let p = @{\n  h 40 as endpoint('east')\n};\nlet proj = p.project(100, 200);\nlet e = proj.point('east');\nM e.x e.y\nh 1";
+    const result = compile(src);
+    expect(result.layers[0].data).toBe('M 140 200 h 1');
+  });
+
+  it('layer().segment() returns absolute geometry from the layer store', () => {
+    const src = [
+      "let pl = PathLayer('a') ${ fill: none; };",
+      "pl.apply {\n  M 10 10\n  h 30 as segment('top')\n  v 30\n}",
+      "let top = layer('a').segment('top');",
+      "let bb = top.boundingBox();",
+      "log(bb.x, bb.y, bb.width, bb.height);",
+    ].join('\n');
+    const result = compile(src);
+    const logLine = result.logs.map((l) => l.parts.map((p) => String(p.value)).join(' ')).join(' ');
+    // The labeled edge runs (10,10)→(40,10): bbox x=10 y=10 w=30 h=0
+    expect(logLine).toContain('10 10 30 0');
+  });
+
+  it('layer().point() reads authored geometry', () => {
+    const src = "let pl = PathLayer('a') ${ fill: none; };\npl.apply {\n  M 10 10\n  h 30 as endpoint('e')\n}\nlet e = layer('a').point('e');\nM e.x e.y\nh 1";
+    const result = compile(src);
+    // Bare command after apply goes to the default layer
+    const defaultLayer = result.layers.find((l) => l.isDefault);
+    expect(defaultLayer?.data).toBe('M 40 10 h 1');
+  });
+
+  it('unknown labels list what is available', () => {
+    expect(() => compile("let p = @{\n  h 40 as segment('lid')\n};\np.segment('nope');")).toThrow(
+      /No segment named 'nope' — available: 'lid'/,
+    );
+    expect(() => compile("let p = @{\n  h 40 as endpoint('e')\n};\np.point('nope');")).toThrow(
+      /No endpoint named 'nope' — available: 'e'/,
+    );
+  });
+
+  it('vertex handle exposes x/y/point/label properties and destructuring', () => {
+    const src = "let p = @{\n  h 20\n  v 20 as endpoint('c')\n};\nlet vh = p.vertex('c');\nlet { x, y } = vh;\nM x y\nh 1";
+    const result = compile(src);
+    expect(result.layers[0].data).toBe('M 20 20 h 1');
+  });
+
+  it('layer/projected vertex handles reject corner ops honestly', () => {
+    const src = "let pl = PathLayer('a') ${ fill: none; };\npl.apply {\n  M 0 0\n  h 10\n  v 10 as endpoint('c')\n}\nlayer('a').vertex('c').fillet(2);";
+    expect(() => compile(src)).toThrow(/not supported yet/);
+  });
+
+  it('segment labels survive corner-op finalization for querying', () => {
+    // The fillet consumes part of the labeled edge; the label must survive on
+    // the trimmed command so the segment stays queryable.
+    const src = "let p = @{\n  h 20 as segment('top')\n  v 20 with fillet(5)\n};\nlet top = p.segment('top');\ntop.drawTo(0, 0);";
+    const result = compile(src);
+    // Trimmed to 15 by the fillet (splits re-emit h as l, matching .fillet())
+    expect(result.layers[0].data).toBe('M 0 0 l 15 0');
+  });
+});

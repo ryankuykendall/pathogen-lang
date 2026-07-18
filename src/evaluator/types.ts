@@ -40,6 +40,7 @@ export type Value =
   | ObjectValue
   | ObjectNamespace
   | PathBlockValue
+  | VertexHandleValue
   | PathBlockNamespace
   | ProjectedPathValue
   | CyclerValue
@@ -556,6 +557,21 @@ export interface PathStore {
 /**
  * Represents a path block value — a reusable, introspectable path definition in relative coordinates
  */
+/**
+ * A named vertex handle returned by `.vertex('label')` — a structural handle
+ * exposing corner operations, distinct from the plain Point that
+ * `.point('label')` returns.
+ */
+export interface VertexHandleValue {
+  type: 'VertexHandleValue';
+  sourceKind: 'pathblock' | 'projected' | 'layer';
+  /** The value the handle was created from (corner ops valid for pathblock sources only). */
+  source: Value;
+  label: string;
+  point: Point; // authored vertex position
+  cornerIndex: number; // resolved corner index in the source's command space (-1 if not a corner)
+}
+
 export interface PathBlockValue {
   type: 'PathBlockValue';
   commands: PathBlockCommand[]; // structured command list (finalized geometry)

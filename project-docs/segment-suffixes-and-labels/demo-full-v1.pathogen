@@ -1,0 +1,24 @@
+// Full v1 demo: definition-site labels + corner suffixes + name-based queries.
+// A card outline with a filleted corner and a chamfered base, decorated by
+// querying the labeled lid segment, and a tab anchored to a named point.
+
+define ViewBox(0, 0, 160, 120);
+define default PathLayer('card') ${ stroke: #333; stroke-width: 2; fill: none; }
+
+let outline = @{
+  h 100 as segment('lid'), endpoint('ne');
+  v 70 with fillet(16);
+  h -100 with chamfer(10) as segment('base');
+  z
+};
+outline.drawTo(30, 20);
+
+// Decorate along the labeled lid edge
+let lid = outline.segment('lid');
+for (op in lid.partition(5)) {
+  circle(30 + op.point.x, 14, 2);
+}
+
+// Anchor a tab at the named corner (authored position, pre-fillet)
+let ne = outline.point('ne');
+circle(30 + ne.x, 20 + ne.y, 4);

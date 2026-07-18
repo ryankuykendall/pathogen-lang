@@ -1,6 +1,6 @@
 import { oklchToCSS, oklchToHex, oklchToHSLString, oklchToOKLCHString, oklchToRGBString } from '../color';
 
-import type { ColorValue, ContextObject, GridValue, MeshPointValue, PointValue, PolarVectorValue, Value } from './types';
+import type { ColorValue, ContextObject, GridValue, MeshPointValue, PointValue, PolarVectorValue, Value, VertexHandleValue } from './types';
 
 /**
  * Shared property registry for built-in struct values.
@@ -114,6 +114,13 @@ const CONTEXT_OBJECT: StructDescriptor = {
   keys: (value) => Object.keys((value as ContextObject).value).filter((k) => k !== '_transformState'),
 };
 
+const VERTEX_HANDLE = staticDescriptor('VertexHandle', {
+  x: (v) => (v as VertexHandleValue).point.x,
+  y: (v) => (v as VertexHandleValue).point.y,
+  point: (v) => ({ type: 'PointValue', x: (v as VertexHandleValue).point.x, y: (v as VertexHandleValue).point.y }) as Value,
+  label: (v) => (v as VertexHandleValue).label,
+});
+
 const DESCRIPTORS: Record<string, StructDescriptor> = {
   PointValue: POINT,
   PolarVectorValue: POLAR_VECTOR,
@@ -121,6 +128,7 @@ const DESCRIPTORS: Record<string, StructDescriptor> = {
   MeshPointValue: MESH_POINT,
   ColorValue: COLOR,
   ContextObject: CONTEXT_OBJECT,
+  VertexHandleValue: VERTEX_HANDLE,
 };
 
 /**

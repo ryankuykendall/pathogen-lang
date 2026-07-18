@@ -201,6 +201,69 @@ export function applyRecordedCornerOps(commands: PathBlockCommand[]): {
   return { commands: out, warnings, changed: true };
 }
 
+/**
+ * Locate the corner at the END of `target` in the vertex-index space the
+ * corner-op appliers use: z popped (replaced by a closing line when it has
+ * length), moves absent, corners from identifyCornerVertices + closure.
+ * Returns -1 when the target isn't present or its end isn't a corner.
+ */
+export function locateCornerPos(commands: PathBlockCommand[], target: PathBlockCommand): number {
+  let expanded = commands.filter((c) => !isMoveCmd(c.command));
+  let closed = false;
+  if (expanded.length > 0 && isCloseCmd(expanded[expanded.length - 1].command)) {
+    closed = true;
+    const z = expanded[expanded.length - 1];
+    expanded = expanded.slice(0, -1);
+    const zdx = z.end.x - z.start.x;
+    const zdy = z.end.y - z.start.y;
+    if (Math.abs(zdx) > 1e-10 || Math.abs(zdy) > 1e-10) {
+      expanded = [...expanded, { command: 'l', args: [zdx, zdy], start: { ...z.start }, end: { ...z.end } }];
+    }
+  }
+  const allCorners = identifyCornerVertices(expanded);
+  if (closed && expanded.length >= 2) allCorners.push(expanded.length - 1);
+  const k = expanded.indexOf(target);
+  return k === -1 ? -1 : allCorners.indexOf(k);
+}
+
+/** Distinct segment labels in authoring order. */
+export function collectSegmentLabels(commands: PathBlockCommand[]): string[] {
+  const seen = new Set<string>();
+  for (const c of commands) {
+    const label = c.meta?.segmentLabel;
+    if (label !== undefined) seen.add(label);
+  }
+  return [...seen];
+}
+
+/** Distinct endpoint labels in authoring order. */
+export function collectEndpointLabels(commands: PathBlockCommand[]): string[] {
+  const seen = new Set<string>();
+  for (const c of commands) {
+    const label = c.meta?.endVertex?.label;
+    if (label !== undefined) seen.add(label);
+  }
+  return [...seen];
+}
+
+/** The contiguous run of commands labeled `as segment(label)`, or null. */
+export function findLabeledRun(commands: PathBlockCommand[], label: string): PathBlockCommand[] | null {
+  const run: PathBlockCommand[] = [];
+  for (const c of commands) {
+    if (c.meta?.segmentLabel === label) run.push(c);
+    else if (run.length > 0) break; // labels attach to contiguous statement ranges
+  }
+  return run.length > 0 ? run : null;
+}
+
+/** The command whose end vertex carries `as endpoint(label)`, or null. */
+export function findEndpointCommand(commands: PathBlockCommand[], label: string): PathBlockCommand | null {
+  for (const c of commands) {
+    if (c.meta?.endVertex?.label === label) return c;
+  }
+  return null;
+}
+
 function finalizeSubpath(sub: PathBlockCommand[], warnings: string[]): PathBlockCommand[] {
   const moves: PathBlockCommand[] = [];
   let body = sub;
@@ -223,25 +286,9 @@ function finalizeSubpath(sub: PathBlockCommand[], warnings: string[]): PathBlock
     });
 
     // Locate the corner at the END of opCmd in the same vertex-index space the
-    // corner-op appliers use: z popped (replaced by a closing line when it has
-    // length), moves absent, corners from identifyCornerVertices + closure.
-    let expanded = body;
-    let closed = false;
-    if (body.length > 0 && isCloseCmd(body[body.length - 1].command)) {
-      closed = true;
-      const z = body[body.length - 1];
-      expanded = body.slice(0, -1);
-      const zdx = z.end.x - z.start.x;
-      const zdy = z.end.y - z.start.y;
-      if (Math.abs(zdx) > 1e-10 || Math.abs(zdy) > 1e-10) {
-        expanded = [...expanded, { command: 'l', args: [zdx, zdy], start: { ...z.start }, end: { ...z.end } }];
-      }
-    }
-    const allCorners = identifyCornerVertices(expanded);
-    if (closed && expanded.length >= 2) allCorners.push(expanded.length - 1);
-    const k = expanded.indexOf(opCmd);
-    const pos = allCorners.indexOf(k);
-    if (k === -1 || pos === -1) {
+    // corner-op appliers use (shared with vertex-handle queries).
+    const pos = locateCornerPos(body, opCmd);
+    if (pos === -1) {
       warnings.push(`${op.kind} skipped: no corner at the annotated vertex (collinear edges or terminal command)`);
       continue;
     }

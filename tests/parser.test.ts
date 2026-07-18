@@ -1592,3 +1592,21 @@ describe('Path command suffix clauses (with / as)', () => {
     expect(() => parse('let w = 5;\nh with;')).toThrow(/Parse error/);
   });
 });
+
+describe('z-command suffix clauses mid-document (GLR precedence regression)', () => {
+  it('parses z with a corner op and trailing semicolon followed by statements', () => {
+    const ast = parse('M 0 0\nh 10\nv 10\nz with chamfer(2);\nlet x = 1;');
+    const z = ast.body[3] as any;
+    expect(z.type).toBe('PathCommand');
+    expect(z.command).toBe('z');
+    expect(z.annotations.cornerOp.kind).toBe('chamfer');
+  });
+
+  it('parses z with a label and trailing semicolon inside blocks', () => {
+    const ast = parse("fn f() {\n  h 10\n  z as segment('s');\n}\nM 0 0");
+    const fnBody = (ast.body[0] as any).body;
+    const z = fnBody[1];
+    expect(z.command).toBe('z');
+    expect(z.annotations.labels[0].name.value).toBe('s');
+  });
+});

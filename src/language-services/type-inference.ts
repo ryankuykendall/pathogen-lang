@@ -55,6 +55,14 @@ export function getMethodReturnType(method: string): string | null {
     get: 'Point',
     anchor: 'Point',
 
+    // Named-label queries. `segment` returns PathBlock on a PathBlock receiver
+    // and ProjectedPath on ProjectedPath/PathLayer — the per-type
+    // TYPE_METHOD_RETURNS map (preferred over this fallback) carries the
+    // precise return; PathBlock is the fallback for an unknown receiver.
+    segment: 'PathBlock',
+    point: 'Point',
+    vertex: 'VertexHandle',
+
     // Color methods returning ColorInstance
     lighten: 'ColorInstance',
     darken: 'ColorInstance',
@@ -119,6 +127,16 @@ export function inferType(name: string, source: string): string | null {
   if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*PathLayer\\s*\\(`).test(source)) return 'PathLayer';
   if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*TextLayer\\s*\\(`).test(source)) return 'TextLayer';
   if (new RegExp(`(?:let\\s+${esc}\\s*=|define)\\s*GroupLayer\\s*\\(`).test(source)) return 'GroupLayer';
+
+  // let name = layer('...').segment/point/vertex(...) — a query RESULT, not
+  // the layer itself. Must be checked before the bare layer() rule below,
+  // which would otherwise greedily match on the `layer(` prefix.
+  const layerQuery = new RegExp(
+    `let\\s+${esc}\\s*=\\s*layer\\s*\\([^)]*\\)\\s*\\.\\s*(segment|point|vertex)\\s*\\(`,
+  ).exec(source);
+  if (layerQuery) {
+    return layerQuery[1] === 'segment' ? 'ProjectedPath' : layerQuery[1] === 'point' ? 'Point' : 'VertexHandle';
+  }
 
   // let name = layer('...')  — returns a layer reference (same as PathLayer)
   if (new RegExp(`let\\s+${esc}\\s*=\\s*layer\\s*\\(`).test(source)) return 'PathLayer';

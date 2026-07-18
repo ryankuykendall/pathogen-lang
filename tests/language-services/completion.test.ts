@@ -470,6 +470,73 @@ describe('getCompletions', () => {
     });
   });
 
+  describe('named-label queries (segment/point/vertex)', () => {
+    it('offers segment/point/vertex on a PathBlock variable', () => {
+      const items = completeAtEnd('let shape = @{\n  M 0 0\n  L 100 0\n};\nshape.');
+      const names = labels(items);
+      expect(names).toContain('segment');
+      expect(names).toContain('point');
+      expect(names).toContain('vertex');
+    });
+
+    it('derives a quoted-string snippet for segment()', () => {
+      const items = completeAtEnd('let shape = @{\n  M 0 0\n};\nshape.');
+      const segment = items.find((i) => i.label === 'segment');
+      expect(segment?.isSnippet).toBe(true);
+      expect(segment?.insertText).toBe("segment('${1:name}')$0");
+    });
+
+    it('offers VertexHandle members (fillet/chamfer + x/y/point/label) after pb.vertex(...)', () => {
+      const items = completeAtEnd("let shape = @{\n  M 0 0\n  L 100 0 as endpoint('corner')\n};\nshape.vertex('corner').");
+      const names = labels(items);
+      expect(names).toContain('fillet');
+      expect(names).toContain('chamfer');
+      expect(names).toContain('ellipticalFillet');
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+      expect(names).toContain('point');
+      expect(names).toContain('label');
+    });
+
+    it('keeps segment() a PathBlock on a PathBlock receiver', () => {
+      const items = completeAtEnd("let shape = @{\n  M 0 0\n};\nshape.segment('a').");
+      const names = labels(items);
+      // `project` is PathBlock-only (ProjectedPath lacks it) — proves the
+      // chain resolved to PathBlock, not ProjectedPath.
+      expect(names).toContain('project');
+      expect(names).toContain('segment');
+      expect(names).toContain('drawTo');
+    });
+
+    it('offers segment/point/vertex on a ProjectedPath variable', () => {
+      const items = completeAtEnd('let shape = @{\n  M 0 0\n};\nlet p = shape.project(0, 0);\np.');
+      const names = labels(items);
+      expect(names).toContain('segment');
+      expect(names).toContain('point');
+      expect(names).toContain('vertex');
+    });
+
+    it('offers segment/point/vertex on a PathLayer variable', () => {
+      const items = completeAtEnd("let a = layer('main');\na.");
+      const names = labels(items);
+      expect(names).toContain('segment');
+      expect(names).toContain('point');
+      expect(names).toContain('vertex');
+    });
+
+    it('offers segment/point/vertex on a direct layer() call', () => {
+      const items = completeAtEnd("layer('a').");
+      const names = labels(items);
+      expect(names).toContain('segment');
+      expect(names).toContain('point');
+      expect(names).toContain('vertex');
+      // The direct-call resolution also surfaces the base PathLayer members,
+      // which were previously unreachable without binding to a variable.
+      expect(names).toContain('apply');
+      expect(names).toContain('ctx');
+    });
+  });
+
   describe('style block completions', () => {
     it('offers style properties inside ${ }', () => {
       const items = completeAtEnd("define PathLayer('main') ${ ");
@@ -1122,5 +1189,37 @@ describe('getCompletions', () => {
       const src3 = 'let x = a-b';
       expect(getStyleValueKeywordRun(src3, src3.length)).toBeNull();
     });
+  });
+});
+
+describe('query-API chains rooted in layer() calls', () => {
+  const labels2 = (items: ReturnType<typeof completeAtEnd>) => items.map((i) => i.label);
+
+  it('resolves let x = layer(...).segment(...) as ProjectedPath', () => {
+    const items = completeAtEnd("let top = layer('a').segment('s');\ntop.");
+    const names = labels2(items);
+    expect(names).toContain('get');
+    expect(names).toContain('partition');
+    expect(names).not.toContain('project');
+    expect(names).not.toContain('draw');
+    // and not the PathLayer set
+    expect(names).not.toContain('apply');
+  });
+
+  it('resolves a direct layer(...).segment(...). chain as ProjectedPath', () => {
+    const items = completeAtEnd("layer('a').segment('s').");
+    const names = labels2(items);
+    expect(names).toContain('get');
+    expect(names).toContain('partition');
+    expect(names).not.toContain('project');
+    expect(names).not.toContain('draw');
+  });
+
+  it('infers layer query results by kind', async () => {
+    const { inferType } = await import('../../src/language-services/type-inference');
+    expect(inferType('top', "let top = layer('a').segment('s');")).toBe('ProjectedPath');
+    expect(inferType('pt', "let pt = layer('a').point('p');")).toBe('Point');
+    expect(inferType('vh', "let vh = layer('a').vertex('v');")).toBe('VertexHandle');
+    expect(inferType('pl', "let pl = layer('a');")).toBe('PathLayer');
   });
 });

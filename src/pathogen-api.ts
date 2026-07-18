@@ -699,10 +699,10 @@ export interface PathogenPathBlock {
   fillet(radius: number): PathogenPathBlock;
   /** filletAtVertex(index, radius) — Round at vertex */
   filletAtVertex(index: number, radius: number): PathogenPathBlock;
-  /** ellipticalFillet(rx, ry) — Elliptical fillet */
-  ellipticalFillet(rx: number, ry: number): PathogenPathBlock;
-  /** ellipticalFilletAtVertex(index, rx, ry) — Elliptical fillet at vertex */
-  ellipticalFilletAtVertex(index: number, rx: number, ry: number): PathogenPathBlock;
+  /** ellipticalFillet(rx, ry, rotation?) — Elliptical fillet */
+  ellipticalFillet(rx: number, ry: number, rotation?: AngleValue): PathogenPathBlock;
+  /** ellipticalFilletAtVertex(index, rx, ry, rotation?) — Elliptical fillet at vertex */
+  ellipticalFilletAtVertex(index: number, rx: number, ry: number, rotation?: AngleValue): PathogenPathBlock;
 
   // Boolean operations
   /** union(other) — Boolean union */
@@ -717,6 +717,14 @@ export interface PathogenPathBlock {
   intersects(other: PathogenPathBlock): boolean;
   /** intersectionPoints(other) — Get intersection points */
   intersectionPoints(other: PathogenPathBlock): PathogenArray<PathogenPoint>;
+
+  // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
+  /** segment(name) — Look up a labeled sub-path by name; returns a PathBlock */
+  segment(name: string): PathogenPathBlock;
+  /** point(name) — Look up a labeled point by name; returns a Point */
+  point(name: string): PathogenPoint;
+  /** vertex(name) — Look up a labeled vertex by name; returns a VertexHandle */
+  vertex(name: string): PathogenVertexHandle;
 }
 
 /** @type PolarVector */
@@ -767,6 +775,14 @@ export interface PathogenPathLayer {
   readonly ctx: PathContext;
   /** apply { } — Send path commands to this layer @snippet apply {\n\t$0\n} */
   apply(): void;
+
+  // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
+  /** segment(name) — Look up a labeled sub-path by name; returns a ProjectedPath (absolute coords) */
+  segment(name: string): PathogenProjectedPath;
+  /** point(name) — Look up a labeled point by name; returns a Point */
+  point(name: string): PathogenPoint;
+  /** vertex(name) — Look up a labeled vertex by name; returns a VertexHandle */
+  vertex(name: string): PathogenVertexHandle;
 }
 
 /** @type GroupLayer */
@@ -994,10 +1010,10 @@ export interface PathogenProjectedPath {
   fillet(radius: number): PathogenProjectedPath;
   /** filletAtVertex(index, radius) — Round at vertex */
   filletAtVertex(index: number, radius: number): PathogenProjectedPath;
-  /** ellipticalFillet(rx, ry) — Elliptical fillet */
-  ellipticalFillet(rx: number, ry: number): PathogenProjectedPath;
-  /** ellipticalFilletAtVertex(index, rx, ry) — Elliptical fillet at vertex */
-  ellipticalFilletAtVertex(index: number, rx: number, ry: number): PathogenProjectedPath;
+  /** ellipticalFillet(rx, ry, rotation?) — Elliptical fillet */
+  ellipticalFillet(rx: number, ry: number, rotation?: AngleValue): PathogenProjectedPath;
+  /** ellipticalFilletAtVertex(index, rx, ry, rotation?) — Elliptical fillet at vertex */
+  ellipticalFilletAtVertex(index: number, rx: number, ry: number, rotation?: AngleValue): PathogenProjectedPath;
   /** union(other) — Boolean union */
   union(other: PathogenPathBlock): PathogenProjectedPath;
   /** difference(other) — Boolean difference */
@@ -1006,6 +1022,32 @@ export interface PathogenProjectedPath {
   intersection(other: PathogenPathBlock): PathogenProjectedPath;
   /** xor(other) — Boolean XOR */
   xor(other: PathogenPathBlock): PathogenProjectedPath;
+
+  // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
+  /** segment(name) — Look up a labeled sub-path by name; returns a ProjectedPath (absolute coords) */
+  segment(name: string): PathogenProjectedPath;
+  /** point(name) — Look up a labeled point by name; returns a Point */
+  point(name: string): PathogenPoint;
+  /** vertex(name) — Look up a labeled vertex by name; returns a VertexHandle */
+  vertex(name: string): PathogenVertexHandle;
+}
+
+/** @type VertexHandle */
+export interface PathogenVertexHandle {
+  /** X coordinate */
+  readonly x: number;
+  /** Y coordinate */
+  readonly y: number;
+  /** Vertex position as a Point */
+  readonly point: PathogenPoint;
+  /** Label assigned via `as endpoint('...')` */
+  readonly label: string;
+  /** fillet(radius) — Round this corner; returns a PathBlock */
+  fillet(radius: number): PathogenPathBlock;
+  /** chamfer(d1, d2?) — Bevel this corner; returns a PathBlock */
+  chamfer(d1: number, d2?: number): PathogenPathBlock;
+  /** ellipticalFillet(rx, ry, rotation?) — Elliptical round of this corner; returns a PathBlock */
+  ellipticalFillet(rx: number, ry: number, rotation?: AngleValue): PathogenPathBlock;
 }
 
 /** @type Mask */

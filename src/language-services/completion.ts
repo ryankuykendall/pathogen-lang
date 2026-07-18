@@ -8,6 +8,7 @@ import {
   STYLE_PROPERTY_VALUES,
 } from './completion-data-static';
 import {
+  CONSTRUCTOR_RETURN_TYPES,
   ENUM_COMPLETIONS,
   ENUM_MEMBER_MAP,
   NAMESPACE_MEMBERS,
@@ -37,6 +38,19 @@ export interface CompletionItem {
   insertText?: string;
   isSnippet?: boolean;
 }
+
+/**
+ * Layer constructors return a layer union that stays hand-written rather than
+ * generated (see the matching special-case in type-inference.ts inferType), so
+ * they aren't in CONSTRUCTOR_RETURN_TYPES. Map their bare-call return types
+ * here for member completion on `layer('x').`, `PathLayer('x').`, etc.
+ */
+const LAYER_CALL_RETURN_TYPES: Record<string, string> = {
+  layer: 'PathLayer',
+  PathLayer: 'PathLayer',
+  TextLayer: 'TextLayer',
+  GroupLayer: 'GroupLayer',
+};
 
 /**
  * Get completion items at a position in a document.
@@ -166,6 +180,28 @@ export function getCompletions(document: TextDocument, position: Position): Comp
 
   // Check for method call on expression: expr.method(...).
   // e.g., shape.boundingBox(). or Color('#f00').lighten(0.2).
+  // Member access on a chain rooted in a bare call: callee(...).method(...).
+  // e.g. layer('a').segment('s'). — chainMatch below can't recover the
+  // receiver (the closing paren breaks its \w+ capture), so resolve the
+  // callee's return type and look the method up in that type's per-type
+  // return map (PathLayer's segment → ProjectedPath, not the flat fallback).
+  const callChainMatch = /(?:^|[^.\w])(\w+)\(\s*[^)]*\)\s*\.(\w+)\(\s*[^)]*\)\s*\.(\w*)$/.exec(textBefore);
+  if (callChainMatch) {
+    const callee = callChainMatch[1];
+    const methodName = callChainMatch[2];
+    const memberPrefix = callChainMatch[3];
+    const receiverType =
+      LAYER_CALL_RETURN_TYPES[callee] ??
+      (Object.hasOwn(CONSTRUCTOR_RETURN_TYPES, callee) ? CONSTRUCTOR_RETURN_TYPES[callee].type : null);
+    const chainReturnType = receiverType ? TYPE_METHOD_RETURNS[receiverType]?.[methodName] : undefined;
+    if (chainReturnType && chainReturnType in TYPE_MEMBERS) {
+      return filterByPrefix(
+        [...TYPE_MEMBERS[chainReturnType].properties, ...TYPE_MEMBERS[chainReturnType].methods].map(toCompletionItem),
+        memberPrefix,
+      );
+    }
+  }
+
   // When the receiver is a plain variable, prefer its per-type return map
   // (grid.getPoint() → Point vs mesh.getPoint() → MeshPoint).
   const chainMatch = /(\w+)?\.(\w+)\(\s*[^)]*\)\s*\.(\w*)$/.exec(textBefore);
@@ -178,6 +214,29 @@ export function getCompletions(document: TextDocument, position: Position): Comp
       : null;
     const perType = receiverType ? TYPE_METHOD_RETURNS[receiverType]?.[methodName] : undefined;
     const returnType = perType ?? getMethodReturnType(methodName);
+    if (returnType && returnType in TYPE_MEMBERS) {
+      return filterByPrefix(
+        [...TYPE_MEMBERS[returnType].properties, ...TYPE_MEMBERS[returnType].methods].map(toCompletionItem),
+        memberPrefix,
+      );
+    }
+  }
+
+  // Check for member access on a bare call expression: callee(...).
+  // e.g., layer('main'). or PathLayer('bg'). — the trailing ) breaks dotMatch's
+  // \w+, and chainMatch only fires on a `.method()` chain. Resolve the callee's
+  // return type (layer()/PathLayer()/TextLayer()/GroupLayer() → layer types,
+  // other constructors via CONSTRUCTOR_RETURN_TYPES) and offer that type's
+  // members. Placed after chainMatch so `pb.vertex('x').` still resolves via
+  // its receiver `pb`; the [^.\w] guard keeps this from matching a method call
+  // (which chainMatch owns).
+  const callMatch = /(?:^|[^.\w])(\w+)\(\s*[^)]*\)\s*\.(\w*)$/.exec(textBefore);
+  if (callMatch) {
+    const callee = callMatch[1];
+    const memberPrefix = callMatch[2];
+    const returnType =
+      LAYER_CALL_RETURN_TYPES[callee] ??
+      (Object.hasOwn(CONSTRUCTOR_RETURN_TYPES, callee) ? CONSTRUCTOR_RETURN_TYPES[callee].type : null);
     if (returnType && returnType in TYPE_MEMBERS) {
       return filterByPrefix(
         [...TYPE_MEMBERS[returnType].properties, ...TYPE_MEMBERS[returnType].methods].map(toCompletionItem),

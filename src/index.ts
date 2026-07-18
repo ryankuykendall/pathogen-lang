@@ -88,6 +88,7 @@ export type {
   PathStore,
   PathCommandMeta,
   RecordedCornerOp,
+  VertexHandleValue,
   PathContext,
   PathLayerState,
   Point,

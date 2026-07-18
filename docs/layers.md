@@ -91,6 +91,24 @@ layer('b').apply {
 L 200 200
 ```
 
+## Querying Labeled Geometry
+
+Path commands inside `apply { }` blocks can carry [`as segment(...)` / `as endpoint(...)` labels](segment-labels.md). A labeled layer answers geometry queries by name from anywhere:
+
+```
+let pl = PathLayer('outline') ${ stroke: #333; fill: none; };
+pl.apply {
+  M 10 10
+  h 60 as segment('top');
+  v 40 as endpoint('corner');
+}
+
+let top = layer('outline').segment('top');   // ProjectedPath (absolute coords)
+let c = layer('outline').point('corner');    // Point(70, 50)
+```
+
+`segment('name')` returns a `ProjectedPath` with the full sampling API (`get`, `tangent`, `partition`, `boundingBox`, ...); `point('name')` returns the labeled vertex as a Point. See [Segment Labels & Corner Suffixes](segment-labels.md) for the full query surface.
+
 ## Accessing Layer Context
 
 Use `layer('name').ctx` to read a layer's pen state from anywhere:

@@ -90,13 +90,13 @@ define default PathLayer('ribs') ${ stroke: #333; stroke-width: 2; fill: none; }
 
 M 10 60
 for (i in 0..5) {
-  v -30 as segment('rib-${i}');
+  v -30 as segment(`rib-${i}`);
   v 30;
   h 30;
 }
 ```
 
-This produces `rib-0` through `rib-4`, each naming one vertical rib for later lookup.
+This produces `rib-0` through `rib-5` (ranges are inclusive), each naming one vertical rib for later lookup.
 
 ## Corner Suffixes
 
@@ -133,7 +133,7 @@ v 60 with chamfer(6, 14);
 Corner suffixes do **not** rewrite the command as you write it. The operation is recorded on the joint and applied when the path is finalized — when the `@{ }` block closes, or when a layer is emitted. Two consequences follow:
 
 - **Your authored geometry is preserved.** The pen still moves by the extents you wrote; `ctx.position` mid-path reflects the sharp corner, not the trimmed one. The trimming happens at the end, so the cursor math you do between commands stays predictable.
-- **Labels survive the operation.** A segment or endpoint label on a filleted command still resolves after the corner is rounded. Endpoint labels name the **authored** vertex: if a corner op trims the corner a label sits on, `point('name')` still answers with the sharp corner you wrote, not the trimmed edge.
+- **Labels survive the operation.** A segment or endpoint label on a filleted command still resolves after the corner is rounded. On **PathBlock** values and **layer** queries, endpoint labels name the **authored** vertex: if a corner op trims the corner a label sits on, `point('name')` still answers with the sharp corner you wrote, not the trimmed edge. On a **ProjectedPath** (the result of `project()`/`draw()`/`drawTo()`), queries answer the projected, finalized geometry — a filleted corner's labeled point is the trimmed tangent point.
 
 ### Junction support
 
@@ -163,7 +163,7 @@ let outline = @{
 // decorate evenly along just the lid
 let lid = outline.segment('lid');
 for (op in lid.partition(6)) {
-  circle(op.point.x, op.point.y, 2)
+  circle(op.point.x, op.point.y, 2);
 }
 ```
 
@@ -179,8 +179,8 @@ let frame = @{
 };
 let proj = frame.project(10, 10);
 
-let tab = @{ circle(0, 0, 6) };
-tab.drawTo(proj.point('hinge').x, proj.point('hinge').y)
+let tab = @{ circle(0, 0, 6); };
+tab.drawTo(proj.point('hinge').x, proj.point('hinge').y);
 ```
 
 On a `ProjectedPath`, `point('name')` returns **absolute** coordinates; on an unprojected `PathBlock` the coordinates are relative to the block origin.
@@ -198,7 +198,7 @@ let box = @{
 };
 
 let rounded = box.vertex('corner').fillet(8);
-rounded.drawTo(10, 10)
+rounded.drawTo(10, 10);
 ```
 
 This is exactly why labels beat indices: inserting a command above `corner` shifts every vertex index, but `vertex('corner')` still points at the same joint.
@@ -220,7 +220,7 @@ layer('road').apply {
 // space dots along the named road segment
 layer('markers').apply {
   for (op in layer('road').segment('main').partition(9)) {
-    circle(op.point.x, op.point.y, 3)
+    circle(op.point.x, op.point.y, 3);
   }
 }
 ```

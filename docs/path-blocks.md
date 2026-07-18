@@ -631,6 +631,8 @@ Fillets round corners by replacing a vertex with a circular arc. The incoming an
 
 **Scope:** Line-line junctions only. At curve junctions, the fillet is skipped and a warning is logged.
 
+> **Name-based alternative:** instead of a numeric vertex index, you can label a vertex with `as endpoint('name')` and round it with `pb.vertex('name').fillet(radius)` — or attach the fillet where you draw the corner with `with fillet(radius)`. Labels don't break when commands are added earlier in the path. See [Segment Labels & Corner Suffixes](segment-labels.md).
+
 ### `fillet(radius)` → PathBlock / ProjectedPath
 
 Fillets all corner vertices with the given radius:

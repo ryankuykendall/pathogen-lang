@@ -1883,7 +1883,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     // Transform methods: reverse, boundingBox, offset
     const pathTransformResult = evaluateAnnotatedPathTransforms(obj, expr, scope);
     if (pathTransformResult !== null) return pathTransformResult;
-    if (expr.method === 'variableOffset' || expr.method === 'compoundVariableOffset') {
+    if (
+      expr.method === 'variableOffset' ||
+      expr.method === 'compoundVariableOffset' ||
+      expr.method === 'segment' ||
+      expr.method === 'point' ||
+      expr.method === 'vertex'
+    ) {
       throw mError(
         `${expr.method}() is not supported in --annotated debug mode yet; compile normally (it works in the CLI, playground, and VS Code preview).`,
       );

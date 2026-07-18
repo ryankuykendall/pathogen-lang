@@ -136,6 +136,7 @@ import type {
   UserFunction,
   Value,
   PathStore,
+  VertexHandleValue,
 } from './types';
 import type {
   ArrayDestructuringPattern,
@@ -232,8 +233,24 @@ export type {
   PathStore,
   PathCommandMeta,
   RecordedCornerOp,
+  VertexHandleValue,
 } from './types';
-import { applyAnnotationsToStore, applyRecordedCornerOps, commandsToPathData, createPathStore, recordPath, recordsFromCommands, parsePathStringAt, parsePathStringToCommands, storeToPathData } from './segments';
+import {
+  applyAnnotationsToStore,
+  applyRecordedCornerOps,
+  collectEndpointLabels,
+  collectSegmentLabels,
+  commandsToPathData,
+  createPathStore,
+  findEndpointCommand,
+  findLabeledRun,
+  locateCornerPos,
+  recordPath,
+  recordsFromCommands,
+  parsePathStringAt,
+  parsePathStringToCommands,
+  storeToPathData,
+} from './segments';
 
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker', 'marker-start', 'marker-mid', 'marker-end']);
@@ -452,6 +469,17 @@ export function isPathBlockValue(value: Value): value is PathBlockValue {
 
 export function isProjectedPathValue(value: Value): value is ProjectedPathValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedPathValue';
+}
+
+export function isVertexHandleValue(value: Value): value is VertexHandleValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'VertexHandleValue';
+}
+
+/** Error text for a failed label query, listing what the path actually has. */
+function queryLabelError(kind: 'segment' | 'endpoint', name: string, commands: PathBlockCommand[]): string {
+  const available = kind === 'segment' ? collectSegmentLabels(commands) : collectEndpointLabels(commands);
+  const list = available.length > 0 ? available.map((l) => `'${l}'`).join(', ') : '(none)';
+  return `No ${kind} named '${name}' — available: ${list}`;
 }
 
 export function isTextBlockValue(value: Value): value is TextBlockValue {
@@ -2190,6 +2218,54 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
   // LayerReference methods: .append() for GroupLayer
   if (isLayerReference(obj)) {
+    if (expr.method === 'segment' || expr.method === 'point' || expr.method === 'vertex') {
+      if (obj.layer.layerType !== 'PathLayer') {
+        throw mError(`.${expr.method}() is only available on PathLayer references`);
+      }
+      if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (name)`);
+      const qName = evaluateExpression(expr.args[0], scope);
+      if (typeof qName !== 'string') throw mError(`${expr.method}() name must be a string`);
+      const layerState = obj.layer as PathLayerState;
+      const authoredFlat = layerState.accum.records.flatMap((r) => r.commands);
+      // Snapshot the finalized geometry on demand (non-destructive; the layer's
+      // authored records keep their annotations for emit-time finalization).
+      const fin = applyRecordedCornerOps(authoredFlat);
+      const cmds = fin.commands;
+
+      if (expr.method === 'segment') {
+        const run = findLabeledRun(cmds, qName);
+        if (!run) throw mError(queryLabelError('segment', qName, cmds));
+        const copies = run.map((c) => ({
+          command: c.command,
+          args: [...c.args],
+          start: { ...c.start },
+          end: { ...c.end },
+          ...(c.meta !== undefined ? { meta: c.meta } : {}),
+        }));
+        return {
+          type: 'ProjectedPathValue' as const,
+          commands: copies,
+          startPoint: { ...copies[0].start },
+          endPoint: { ...copies[copies.length - 1].end },
+        };
+      }
+      if (expr.method === 'point') {
+        const authored = findEndpointCommand(authoredFlat, qName);
+        if (!authored) throw mError(queryLabelError('endpoint', qName, authoredFlat));
+        return { type: 'PointValue' as const, x: authored.end.x, y: authored.end.y };
+      }
+      const target = findEndpointCommand(cmds, qName);
+      if (!target) throw mError(queryLabelError('endpoint', qName, cmds));
+      const authoredCmd = findEndpointCommand(authoredFlat, qName) ?? target;
+      return {
+        type: 'VertexHandleValue' as const,
+        sourceKind: 'layer' as const,
+        source: obj,
+        label: qName,
+        point: { x: authoredCmd.end.x, y: authoredCmd.end.y },
+        cornerIndex: locateCornerPos(cmds, target),
+      };
+    }
     if (expr.method === 'append') {
       if (obj.layer.layerType !== 'GroupLayer') {
         throw mError(`.append() is only available on GroupLayer references`);
@@ -2445,6 +2521,59 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
               ['t', i / n],
             ]),
           })),
+        };
+      }
+
+      case 'segment': {
+        if (expr.args.length !== 1) throw mError('segment() expects 1 argument (name)');
+        const segName = evaluateExpression(expr.args[0], scope);
+        if (typeof segName !== 'string') throw mError('segment() name must be a string');
+        const run = findLabeledRun(obj.commands, segName);
+        if (!run) throw mError(queryLabelError('segment', segName, obj.commands));
+        const runStart = run[0].start;
+        const rebased = run.map((c) => ({
+          command: c.command,
+          args: [...c.args],
+          start: { x: c.start.x - runStart.x, y: c.start.y - runStart.y },
+          end: { x: c.end.x - runStart.x, y: c.end.y - runStart.y },
+          ...(c.meta !== undefined ? { meta: c.meta } : {}),
+        }));
+        return {
+          type: 'PathBlockValue' as const,
+          commands: rebased,
+          records: recordsFromCommands(rebased),
+          startPoint: { x: 0, y: 0 },
+          endPoint: { x: rebased[rebased.length - 1].end.x, y: rebased[rebased.length - 1].end.y },
+        };
+      }
+
+      case 'point': {
+        if (expr.args.length !== 1) throw mError('point() expects 1 argument (name)');
+        const ptName = evaluateExpression(expr.args[0], scope);
+        if (typeof ptName !== 'string') throw mError('point() name must be a string');
+        // Prefer the authored store: endpoint labels name the sharp corner the
+        // user wrote, even if a corner op later trimmed it.
+        const authored =
+          findEndpointCommand(obj.records.flatMap((r) => r.commands), ptName) ??
+          findEndpointCommand(obj.commands, ptName);
+        if (!authored) throw mError(queryLabelError('endpoint', ptName, obj.commands));
+        return { type: 'PointValue' as const, x: authored.end.x, y: authored.end.y };
+      }
+
+      case 'vertex': {
+        if (expr.args.length !== 1) throw mError('vertex() expects 1 argument (name)');
+        const vName = evaluateExpression(expr.args[0], scope);
+        if (typeof vName !== 'string') throw mError('vertex() name must be a string');
+        const target = findEndpointCommand(obj.commands, vName);
+        if (!target) throw mError(queryLabelError('endpoint', vName, obj.commands));
+        const authoredCmd = findEndpointCommand(obj.records.flatMap((r) => r.commands), vName) ?? target;
+        return {
+          type: 'VertexHandleValue' as const,
+          sourceKind: 'pathblock' as const,
+          source: obj,
+          label: vName,
+          point: { x: authoredCmd.end.x, y: authoredCmd.end.y },
+          cornerIndex: locateCornerPos(obj.commands, target),
         };
       }
 
@@ -3074,6 +3203,52 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         };
       }
 
+      case 'segment': {
+        if (expr.args.length !== 1) throw mError('segment() expects 1 argument (name)');
+        const segName = evaluateExpression(expr.args[0], scope);
+        if (typeof segName !== 'string') throw mError('segment() name must be a string');
+        const run = findLabeledRun(obj.commands, segName);
+        if (!run) throw mError(queryLabelError('segment', segName, obj.commands));
+        const copies = run.map((c) => ({
+          command: c.command,
+          args: [...c.args],
+          start: { ...c.start },
+          end: { ...c.end },
+          ...(c.meta !== undefined ? { meta: c.meta } : {}),
+        }));
+        return {
+          type: 'ProjectedPathValue' as const,
+          commands: copies,
+          startPoint: { ...copies[0].start },
+          endPoint: { ...copies[copies.length - 1].end },
+        };
+      }
+
+      case 'point': {
+        if (expr.args.length !== 1) throw mError('point() expects 1 argument (name)');
+        const ptName = evaluateExpression(expr.args[0], scope);
+        if (typeof ptName !== 'string') throw mError('point() name must be a string');
+        const labeled = findEndpointCommand(obj.commands, ptName);
+        if (!labeled) throw mError(queryLabelError('endpoint', ptName, obj.commands));
+        return { type: 'PointValue' as const, x: labeled.end.x, y: labeled.end.y };
+      }
+
+      case 'vertex': {
+        if (expr.args.length !== 1) throw mError('vertex() expects 1 argument (name)');
+        const vName = evaluateExpression(expr.args[0], scope);
+        if (typeof vName !== 'string') throw mError('vertex() name must be a string');
+        const target = findEndpointCommand(obj.commands, vName);
+        if (!target) throw mError(queryLabelError('endpoint', vName, obj.commands));
+        return {
+          type: 'VertexHandleValue' as const,
+          sourceKind: 'projected' as const,
+          source: obj,
+          label: vName,
+          point: { x: target.end.x, y: target.end.y },
+          cornerIndex: locateCornerPos(obj.commands, target),
+        };
+      }
+
       case 'reverse': {
         if (expr.args.length !== 0) throw mError('reverse() expects 0 arguments');
         const reversed = reverseCommands(obj.commands);
@@ -3387,6 +3562,47 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
       default:
         throw mError(`Unknown ProjectedPath method: ${expr.method}`);
+    }
+  }
+
+  // VertexHandleValue methods — corner ops on a named vertex
+  if (isVertexHandleValue(obj)) {
+    const handle = obj;
+    switch (expr.method) {
+      case 'fillet':
+      case 'chamfer':
+      case 'ellipticalFillet': {
+        if (handle.sourceKind !== 'pathblock') {
+          const what = handle.sourceKind === 'layer' ? 'layer' : 'projected path';
+          throw mError(
+            `${expr.method}() on a ${what} vertex handle is not supported yet — corner ops via vertex handles work on PathBlock values`,
+          );
+        }
+        if (handle.cornerIndex === -1) {
+          throw mError(`vertex('${handle.label}') is not at a corner (collinear edges) — nothing to ${expr.method}`);
+        }
+        const arity: Record<string, [number, number]> = { fillet: [1, 1], chamfer: [1, 2], ellipticalFillet: [2, 3] };
+        const [min, max] = arity[expr.method];
+        if (expr.args.length < min || expr.args.length > max) {
+          throw mError(`${expr.method}() expects ${min === max ? min : `${min}-${max}`} argument${max > 1 ? 's' : ''}`);
+        }
+        const nums = expr.args.map((a, i) => {
+          const v = evaluateExpression(a, scope);
+          if (typeof v !== 'number' || !Number.isFinite(v)) throw mError(`${expr.method}() argument ${i + 1} must be a finite number`);
+          return v;
+        });
+        const src = handle.source as PathBlockValue;
+        let res: { commands: PathBlockCommand[]; warnings: string[] };
+        if (expr.method === 'fillet') res = filletCommands(src.commands, nums[0], [handle.cornerIndex]);
+        else if (expr.method === 'chamfer') res = chamferCommands(src.commands, nums[0], nums[1] ?? nums[0], [handle.cornerIndex]);
+        else res = ellipticalFilletCommands(src.commands, nums[0], nums[1], nums[2] ?? 0, [handle.cornerIndex]);
+        for (const w of res.warnings) {
+          scope.evalState?.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+        }
+        return buildPathBlockFromCommands(res.commands, { x: 0, y: 0 });
+      }
+      default:
+        throw mError(`Unknown method '${expr.method}' on vertex handle`);
     }
   }
 
@@ -5170,6 +5386,9 @@ function formatValueForDisplay(val: Value): string {
   if (isPathBlockValue(val)) {
     return `PathBlock(${val.commands.length} commands)`;
   }
+  if (isVertexHandleValue(val)) {
+    return `VertexHandle('${val.label}' at ${formatNum(val.point.x)}, ${formatNum(val.point.y)})`;
+  }
   if (isProjectedPathValue(val)) {
     return `ProjectedPath(${formatNum(val.startPoint.x)}, ${formatNum(val.startPoint.y)} → ${formatNum(val.endPoint.x)}, ${formatNum(val.endPoint.y)})`;
   }
@@ -5805,6 +6024,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         } else if (isPathBlockValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isProjectedPathValue(value)) {
+          stringValue = formatValueForDisplay(value);
+        } else if (isVertexHandleValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isCyclerValue(value)) {
           stringValue = formatValueForDisplay(value);

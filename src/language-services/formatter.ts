@@ -177,8 +177,11 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
         (stmt.args[0].type === 'FunctionCall' || stmt.args[0].type === 'MethodCallExpression');
       // Commands carrying suffix clauses (`with fillet(...)` / `as segment(...)`)
       // also take a trailing semicolon so the clauses terminate cleanly — EXCEPT
-      // close-path (`z`/`Z`), where a suffix clause followed by `;` fails to parse
-      // mid-document. The suffix on `z` is unambiguous without the terminator.
+      // close-path (`z`/`Z`), where the suffix is unambiguous without the
+      // terminator, so we emit the terser form. (An earlier GLR ambiguity made
+      // `z <suffix>;` mid-document unparseable; fixed via @dynamicPrecedence on
+      // PathCommand and pinned by parser.test.ts regressions — this branch is
+      // now purely stylistic and safe either way.)
       const isClosePath = stmt.command === 'z' || stmt.command === 'Z';
       const needsSemicolon = isStatementCall || (stmt.annotations != null && !isClosePath);
       return `${prefix}${formatted}${needsSemicolon ? ';' : ''}`;
