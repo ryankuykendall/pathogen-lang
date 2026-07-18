@@ -3,6 +3,7 @@
 // to the Parsimmon parser so the evaluator and language-services work unchanged.
 
 import type { Tree, SyntaxNode, TreeCursor } from '@lezer/common';
+import { matchFunctionNotation } from '../css-value-utils';
 import type {
   Program,
   Statement,
@@ -1389,11 +1390,13 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
       // Handle CSSColorLiteral after dot (e.g., Color.oklch(...) tokenized as one token)
       if (cursor.name === 'CSSColorLiteral' || cursor.name === '⚠') {
         const raw = text(cursor, source);
-        // Extract method name and args from e.g., "oklch(0.7, 0.15, 200)"
-        const fnMatch = raw.match(/^(\w+)\(([^)]*)\)$/);
-        if (fnMatch) {
-          const methodArgs = parseFunctionArgs(fnMatch[2], cursor.from + fnMatch[1].length + 1, source);
-          expr = { type: 'MethodCallExpression', object: expr, method: fnMatch[1], args: methodArgs, loc: (expr as { loc?: SourceLocation }).loc } as MethodCallExpression;
+        // Extract method name and args from e.g., "oklch(0.7, 0.15, 200)".
+        // Balanced-paren aware, so nested calls like `mix(a, b)` in an argument
+        // are not truncated the way the old `[^)]*` capture was.
+        const fnMatch = matchFunctionNotation(raw);
+        if (fnMatch && /^[A-Za-z_]/.test(fnMatch.name)) {
+          const methodArgs = parseFunctionArgs(fnMatch.args, cursor.from + fnMatch.name.length + 1, source);
+          expr = { type: 'MethodCallExpression', object: expr, method: fnMatch.name, args: methodArgs, loc: (expr as { loc?: SourceLocation }).loc } as MethodCallExpression;
         } else {
           expr = {
             type: 'MemberExpression',

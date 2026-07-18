@@ -25,6 +25,8 @@
  * with line/column context.
  */
 
+import { matchFunctionNotation, splitTopLevel } from '../css-value-utils';
+
 // ── Identifier grammar ────────────────────────────────────────────────────
 
 const CSS_IDENT_RE = /^[A-Za-z_][A-Za-z0-9_-]*$/;
@@ -320,25 +322,6 @@ function isQuotedString(value: string): boolean {
   );
 }
 
-function splitTopLevel(value: string): string[] {
-  const out: string[] = [];
-  let depth = 0;
-  let buf = '';
-  for (let i = 0; i < value.length; i++) {
-    const c = value[i];
-    if (c === '(') depth++;
-    else if (c === ')') depth = Math.max(0, depth - 1);
-    if (depth === 0 && /\s/.test(c) && buf.length > 0) {
-      out.push(buf);
-      buf = '';
-      continue;
-    }
-    buf += c;
-  }
-  if (buf.length > 0) out.push(buf);
-  return out;
-}
-
 function isAllowedToken(
   token: string,
   propertyName: string,
@@ -357,14 +340,14 @@ function isAllowedToken(
   }
 
   // Functional notation
-  const fnMatch = trimmed.match(/^([A-Za-z][A-Za-z0-9_-]*)\((.*)\)$/);
-  if (fnMatch) {
-    const fnName = fnMatch[1].toLowerCase();
+  const fnMatch = matchFunctionNotation(trimmed);
+  if (fnMatch && /^[A-Za-z]/.test(fnMatch.name)) {
+    const fnName = fnMatch.name.toLowerCase();
     if (!ALLOWED_FUNCTION_NAMES.has(fnName)) {
       return false;
     }
     // Recursively validate args of allowed functions.
-    const inner = fnMatch[2];
+    const inner = fnMatch.args;
     // Reject nested forbidden tokens (defense in depth) — propagate allowVar.
     try {
       rejectForbiddenTokens(inner, propertyName, options);

@@ -252,6 +252,7 @@ import {
   storeToPathData,
 } from './segments';
 import { serializeRelativeAndTrack } from './path-data';
+import { matchFunctionNotation, splitTopLevel } from '../css-value-utils';
 
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker', 'marker-start', 'marker-mid', 'marker-end']);
@@ -1401,35 +1402,17 @@ function cssVarValueToCSS(v: CSSVarValue): string {
  * Split a string by whitespace while respecting nested parentheses.
  * e.g., "16px 16px 20px rgba(0,0,0,0.5)" → ["16px", "16px", "20px", "rgba(0,0,0,0.5)"]
  */
-function splitCSSArgs(input: string): string[] {
-  const tokens: string[] = [];
-  let current = '';
-  let depth = 0;
-  for (const ch of input) {
-    if (ch === '(') depth++;
-    else if (ch === ')') depth--;
-    if (/\s/.test(ch) && depth === 0) {
-      if (current) tokens.push(current);
-      current = '';
-    } else {
-      current += ch;
-    }
-  }
-  if (current) tokens.push(current);
-  return tokens;
-}
-
 /**
  * Try to resolve Pathogen expressions embedded within CSS function arguments.
  * Only substitutes tokens that evaluate to ColorValue or CSSVarValue —
  * CSS values like "16px" or "blue" are left untouched.
  */
 function tryResolveCSSFunctionArgs(raw: string, scope: Scope): string | null {
-  const match = raw.match(/^([\w-]+)\((.+)\)$/s);
+  const match = matchFunctionNotation(raw);
   if (!match) return null;
 
-  const funcName = match[1];
-  const tokens = splitCSSArgs(match[2]);
+  const funcName = match.name;
+  const tokens = splitTopLevel(match.args);
 
   let anyResolved = false;
   const resolved = tokens.map((token) => {
