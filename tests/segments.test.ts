@@ -88,6 +88,77 @@ describe('segments: always-on record tracking perf', () => {
   });
 });
 
+describe('segments: number-grammar characterization (regex tokenizer)', () => {
+  // These tests pin the exact tokenizing behavior of the regex-based parser
+  // (NUMBER_REGEX + commandRegex) ahead of the Phase 1 path-data unification.
+  // `it.fails` rows document known deviations from SVG path grammar that the
+  // shared cursor-based tokenizer must fix — flip them to `it` in Phase 1.
+  // When flipping a row, confirm the old failure was on the intended assertion
+  // (it.fails only requires that *something* threw, not which assertion).
+
+  it.fails('parses implicit-decimal chains per SVG number grammar (1.5.5 = 1.5, .5)', () => {
+    const ctx = createPathContext();
+    const commands = parsePathStringToCommands('M 1.5.5 2', ctx);
+    // SVG number grammar: a second '.' terminates the number, so the blob is
+    // three numbers: 1.5, 0.5, 2. Target semantics for Phase 1 are
+    // arity-agnostic bucketing (ALL numbers stay on the preceding command
+    // letter — no implicit-lineto splitting, matching current parser design).
+    // The contract locked here: `.5` must not be silently dropped.
+    expect(commands[0].args).toEqual([1.5, 0.5, 2]);
+  });
+
+  it.fails('splits packed arc flags per SVG grammar (A 5 5 0 1110 0 = flags 1,1 then 10,0)', () => {
+    const ctx = createPathContext();
+    const commands = parsePathStringToCommands('M 0 0 A 5 5 0 1110 0', ctx);
+    // Arc large-arc/sweep flags are single chars; "1110" is flag 1, flag 1, x=10, then y=0.
+    expect(commands[1].args).toEqual([5, 5, 0, 1, 1, 10, 0]);
+    expect(commands[1].end).toEqual({ x: 10, y: 0 });
+  });
+
+  it('treats a sign as a number separator (L10-5)', () => {
+    const ctx = createPathContext();
+    const commands = parsePathStringToCommands('L10-5', ctx);
+    expect(commands[0].args).toEqual([10, -5]);
+    expect(commands[0].end).toEqual({ x: 10, y: -5 });
+  });
+
+  it('parses packed commands with comma separators (M10,20L30,40)', () => {
+    const ctx = createPathContext();
+    const commands = parsePathStringToCommands('M10,20L30,40', ctx);
+    expect(commands.map((c) => [c.command, ...c.args])).toEqual([
+      ['M', 10, 20],
+      ['L', 30, 40],
+    ]);
+  });
+
+  it('parses leading-dot decimals with and without signs (h.5, l-.5-.5)', () => {
+    const ctx = createPathContext();
+    const commands = parsePathStringToCommands('M 0 0 h.5 l-.5-.5', ctx);
+    expect(commands[1].args).toEqual([0.5]);
+    expect(commands[2].args).toEqual([-0.5, -0.5]);
+    expect(ctx.position).toEqual({ x: 0, y: -0.5 });
+  });
+
+  it('parses scientific notation in both cases (1e-2, 1E+3)', () => {
+    const ctx = createPathContext();
+    const commands = parsePathStringToCommands('M 0 0 L 1e-2 1E+3', ctx);
+    expect(commands[1].args).toEqual([0.01, 1000]);
+    expect(ctx.position).toEqual({ x: 0.01, y: 1000 });
+  });
+
+  it('CHARACTERIZATION: a command with missing args yields empty args and undefined end coords', () => {
+    // Current behavior: no validation — `Q` with no args pushes args [] and
+    // updateContextForCommand leaves position coords undefined. Phase 1 must
+    // not silently change this without a deliberate decision.
+    const ctx = createPathContext();
+    const commands = parsePathStringToCommands('M 10 20 Q', ctx);
+    expect(commands[1].command).toBe('Q');
+    expect(commands[1].args).toEqual([]);
+    expect(commands[1].end.x).toBeUndefined();
+    expect(commands[1].end.y).toBeUndefined();
+  });
+});
+
 describe('segments: parsePathStringAt', () => {
   it('derives relative-command geometry from the seed position without a live context', () => {
     const commands = parsePathStringAt('h 10 v 5', { x: 100, y: 200 });
