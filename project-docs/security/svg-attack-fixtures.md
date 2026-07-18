@@ -27,6 +27,7 @@ One entry per attack vector mapped to the article's class. Each fixture is a `.p
 | F8d | `</defs>`-in-attribute mis-split | `SVGDocumentFragment("<defs><rect data-x='</defs>'/></defs><circle r='5'/>")` | defs separated by tokenizer byte ranges (regex `<defs…>[\s\S]*?</defs>` closed at the first literal `</defs>`). |
 | F8e | `>`-in-`<defs>`-attribute inner-carve | `SVGDocumentFragment("<defs id='x><image onerror=... />'><rect/></defs>")` | Inner content bounded by quote-aware positions; smuggled `<image>` stays inert quoted text, only real child `<rect/>` extracted. |
 | F8f | Namespace-prefixed href aliasing | `SVGDocumentFragment("<image xmlns:x='http://www.w3.org/1999/xlink' x:href='javascript:alert(1)'/>")` | Sanitizer error: every `*:href` local name is validated, not just the literal `xlink:href`. |
+| F8g | Namespace-prefixed element aliasing | `SVGDocumentFragment("<svg:script xmlns:svg='http://www.w3.org/2000/svg'>alert(1)</svg:script>")` | Sanitizer error: any element name containing `:` is rejected (a bare-name block list would miss the namespace-equivalent alias). |
 | P1 | Long transition restyling | Through C1: malicious CSS with `transform: ... transition: all 9999s` — depends on C1 being closed. | Indirect: prevented because C1 cannot inject CSS. |
 
 ## Notes on coverage

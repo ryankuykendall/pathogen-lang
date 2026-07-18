@@ -328,4 +328,52 @@ describe('Security · SVGDocumentFragment sanitizer', () => {
       ).not.toThrow();
     });
   });
+
+  describe('F8: namespace-prefixed element aliasing', () => {
+    it('rejects a <script> aliased through a self-declared SVG-namespace prefix', () => {
+      // <svg:script> bound to the real SVG namespace is element-equivalent to
+      // <script>; a bare-name block list alone would miss it.
+      expectFragmentRejected(
+        '<defs><svg:script xmlns:svg="http://www.w3.org/2000/svg">alert(1)</svg:script></defs><circle r="1"/>',
+      );
+    });
+
+    it('rejects a prefix-aliased blocked element in visual content', () => {
+      expectFragmentRejected(
+        '<x:foreignObject xmlns:x="http://www.w3.org/2000/svg"><div>x</div></x:foreignObject>',
+      );
+    });
+
+    it('rejects any namespace-prefixed element name outright', () => {
+      expectFragmentRejected('<svg:rect width="5" height="5"/>');
+    });
+
+    it('neutralizes prefix-aliased script end-to-end (not present in compiled output)', () => {
+      expect(() =>
+        compile(
+          'let f = SVGDocumentFragment(`<svg:script xmlns:svg="http://www.w3.org/2000/svg">alert(1)</svg:script>`); f.insert();',
+        ),
+      ).toThrow();
+    });
+  });
+
+  describe('F8: defs edge cases (Fix 1 invariant hardening)', () => {
+    it('handles an empty <defs></defs>', () => {
+      const r = sanitizeSVGFragment('<defs></defs><circle r="5"/>');
+      expect(r.defsContent).toBe('');
+      expect(r.visualContent).toBe('<circle r="5"/>');
+    });
+
+    it('captures nested defs as a single outer block', () => {
+      const r = sanitizeSVGFragment('<defs><defs><rect id="r"/></defs></defs><circle r="5"/>');
+      expect(r.defsContent).toBe('<defs><rect id="r"/></defs>');
+      expect(r.visualContent).toBe('<circle r="5"/>');
+    });
+
+    it('leaves a self-closing <defs/> in visual content (no inner content to carve)', () => {
+      const r = sanitizeSVGFragment('<defs/><circle r="5"/>');
+      expect(r.defsContent).toBe('');
+      expect(r.visualContent).toBe('<defs/><circle r="5"/>');
+    });
+  });
 });

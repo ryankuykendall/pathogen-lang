@@ -246,6 +246,16 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
   let defsInnerStart = -1;
 
   for (const tok of tokens) {
+    // Reject any namespace-prefixed element name. A prefix bound to a real
+    // namespace URI (e.g. `xmlns:svg="http://www.w3.org/2000/svg"` +
+    // `<svg:script>`) is namespace-equivalent to the bare element in every
+    // conformant consumer, so a bare-name BLOCKED_ELEMENTS check alone would
+    // let an aliased <script>/<foreignObject>/… through. Geometry fragments
+    // have no legitimate use for prefixed element names — reject outright
+    // (mirrors the `*:href` attribute handling below).
+    if (tok.name.includes(':')) {
+      fail(`namespace-prefixed elements (<${tok.name}>) are not allowed`);
+    }
     if (BLOCKED_ELEMENTS.has(tok.name)) {
       fail(`<${tok.name}> elements are not allowed`);
     }
