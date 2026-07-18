@@ -280,5 +280,52 @@ describe('Security · SVGDocumentFragment sanitizer', () => {
       );
       expect(r.visualContent).toBe('<rect width="1" height="1"/>');
     });
+
+    it('does not carve inner content from inside a >-bearing attribute on the <defs> tag', () => {
+      // A `>` inside the defs opening tag's own quoted attribute must NOT be
+      // treated as the tag close. Inner-content bounds come from the
+      // tokenizer's quote-aware positions, so the smuggled <image onerror>
+      // stays inert quoted text — only the real child <rect/> is extracted.
+      const payload = '<defs id="x><image onerror=\'alert(1)\' src=\'x\'/>"><rect/></defs><circle r="1"/>';
+      const r = sanitizeSVGFragment(payload);
+      expect(r.defsContent).toBe('<rect/>');
+      expect(r.visualContent).toBe('<circle r="1"/>');
+      expect(r.defsContent).not.toContain('onerror');
+    });
+
+    it('neutralizes the same attribute-smuggle end-to-end (no onerror in compiled output)', () => {
+      const result = compile(
+        'let f = SVGDocumentFragment(`<defs id="x><image onerror=\'alert(1)\' src=\'x\'/>"><rect/></defs><circle r="1"/>`); f.insert();',
+      );
+      const frag = result.layers.find((l) => l.type === 'fragment');
+      expect(frag?.fragmentDefs).toBe('<rect/>');
+      expect(frag?.fragmentDefs).not.toContain('onerror');
+      expect(frag?.fragmentVisuals).not.toContain('onerror');
+    });
+  });
+
+  describe('F8: namespace-prefixed href aliasing', () => {
+    it('validates a javascript: href behind a custom xlink-bound prefix', () => {
+      // x:href bound to the XLink namespace resolves like xlink:href in every
+      // namespace-aware consumer; matching only the literal "xlink:href" would
+      // let this skip the allow-list.
+      expectFragmentRejected(
+        '<image xmlns:evil="http://www.w3.org/1999/xlink" evil:href="javascript:alert(1)"/>',
+      );
+    });
+
+    it('validates a remote href behind a custom prefix', () => {
+      expectFragmentRejected(
+        '<image xmlns:x="http://www.w3.org/1999/xlink" x:href="https://evil.example/exfil"/>',
+      );
+    });
+
+    it('still accepts a custom-prefixed href pointing at a local fragment', () => {
+      expect(() =>
+        compile(
+          'let f = SVGDocumentFragment(`<use xmlns:x="http://www.w3.org/1999/xlink" x:href="#s"/>`); f.insert();',
+        ),
+      ).not.toThrow();
+    });
   });
 });

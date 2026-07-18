@@ -21,6 +21,12 @@ One entry per attack vector mapped to the article's class. Each fixture is a `.p
 | F5 | Inline `style="..."` | `SVGDocumentFragment("<rect style='background:url(https://evil.example/log)'/>")` | Sanitizer error: inline style attribute rejected. |
 | F6 | `<style>` block | `SVGDocumentFragment("<style>* { background: url(https://evil.example/log); }</style>")` | Sanitizer error: `<style>` blocked. |
 | F7 | `<use href="javascript:">` | `SVGDocumentFragment("<use href='javascript:alert(1)'/>")` | Sanitizer error: href protocol rejected. |
+| F8a | `>`-in-quoted-attr tag truncation | `SVGDocumentFragment("<use title='a>b' href='javascript:alert(1)'/>")` | Sanitizer error: quote-aware tokenizer still validates the href (regex `<[^>]*>` truncated at the inner `>` and skipped it). |
+| F8b | Event-handler name split by whitespace | `SVGDocumentFragment("<rect on\nclick='alert(1)'/>")` | Sanitizer error: structural attribute-name read rejects the `on`-prefixed name (`\bon\w+=` missed the split). |
+| F8c | Inert-construct smuggling | `SVGDocumentFragment("<!-- <script>x</script> --><rect/>")`, CDATA, DOCTYPE, PIs, stray `<` | Sanitizer error: comments/CDATA/DOCTYPE/PI/stray-`<` rejected outright (regex silently skipped them). |
+| F8d | `</defs>`-in-attribute mis-split | `SVGDocumentFragment("<defs><rect data-x='</defs>'/></defs><circle r='5'/>")` | defs separated by tokenizer byte ranges (regex `<defs…>[\s\S]*?</defs>` closed at the first literal `</defs>`). |
+| F8e | `>`-in-`<defs>`-attribute inner-carve | `SVGDocumentFragment("<defs id='x><image onerror=... />'><rect/></defs>")` | Inner content bounded by quote-aware positions; smuggled `<image>` stays inert quoted text, only real child `<rect/>` extracted. |
+| F8f | Namespace-prefixed href aliasing | `SVGDocumentFragment("<image xmlns:x='http://www.w3.org/1999/xlink' x:href='javascript:alert(1)'/>")` | Sanitizer error: every `*:href` local name is validated, not just the literal `xlink:href`. |
 | P1 | Long transition restyling | Through C1: malicious CSS with `transform: ... transition: all 9999s` — depends on C1 being closed. | Indirect: prevented because C1 cannot inject CSS. |
 
 ## Notes on coverage
@@ -28,6 +34,7 @@ One entry per attack vector mapped to the article's class. Each fixture is a `.p
 - **C1–C7** test the compiler emission path (Phase 1).
 - **C8–C10** test identifier validation across def-id and layer-name surfaces (Phase 1).
 - **F1–F7** test the fragment sanitizer (Phase 2).
+- **F8a–F8f** test the cursor-tokenizer rewrite of the sanitizer (regex-audit Phase 2): markup-by-regex parsing bypasses (attribute truncation, split handler names, inert-construct smuggling, defs mis-splitting) and namespace-prefix href aliasing.
 - **P1** is indirect: it depends on C1's CSS injection vector being closed.
 
 When adding a new vector, add a row here and a corresponding test case in `tests/security/`.

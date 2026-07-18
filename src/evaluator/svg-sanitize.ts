@@ -236,10 +236,14 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
   const tokens = tokenizeTags(input);
 
   const stack: string[] = [];
-  // Track byte ranges of top-level <defs>…</defs> in the input.
-  const defsRanges: { start: number; end: number }[] = [];
+  // Track byte ranges of top-level <defs>…</defs>. All boundaries come from
+  // the tokenizer's quote-aware positions: `start`/`end` bound the whole
+  // block (for removal from the visual content), `innerStart`/`innerEnd`
+  // bound the child content between the opening `<defs …>` and `</defs>`.
+  const defsRanges: { start: number; innerStart: number; innerEnd: number; end: number }[] = [];
   let defsDepth = 0;
   let defsStart = -1;
+  let defsInnerStart = -1;
 
   for (const tok of tokens) {
     if (BLOCKED_ELEMENTS.has(tok.name)) {
@@ -258,7 +262,14 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
         if (lower === 'style') {
           fail('inline style="..." attributes are not allowed — use a Pathogen style { … } block instead');
         }
-        if (lower === 'href' || lower === 'xlink:href') {
+        // Validate bare `href` and ANY namespace-prefixed `*:href`. A prefix
+        // is just an alias for a namespace URI, so `x:href` bound to the
+        // XLink namespace resolves identically to `xlink:href` in every
+        // namespace-aware consumer — matching only the literal `xlink:href`
+        // string would let a renamed prefix skip the allow-list. No
+        // legitimate attribute other than href ends in `:href`, so
+        // over-validating is safe (it fails closed).
+        if (lower === 'href' || lower.endsWith(':href')) {
           try {
             validateHrefValue(attr.value, `<${tok.name}> ${lower}`);
           } catch (e) {
@@ -270,6 +281,10 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
       const isSelfClosing = tok.selfClosing || SVG_VOID_ELEMENTS.has(tok.name);
       if (tok.name === 'defs' && !isSelfClosing && defsDepth === 0) {
         defsStart = tok.start;
+        // tok.end is the quote-aware end of the opening `<defs …>` tag — the
+        // start of the child content. Never re-derived with indexOf('>'),
+        // which would land inside a `>`-bearing quoted attribute value.
+        defsInnerStart = tok.end;
       }
       if (tok.name === 'defs' && !isSelfClosing) {
         defsDepth++;
@@ -287,8 +302,11 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
       if (tok.name === 'defs') {
         defsDepth--;
         if (defsDepth === 0 && defsStart !== -1) {
-          defsRanges.push({ start: defsStart, end: tok.end });
+          // tok.start is the position of the matching `</defs>` — the end of
+          // the child content.
+          defsRanges.push({ start: defsStart, innerStart: defsInnerStart, innerEnd: tok.start, end: tok.end });
           defsStart = -1;
+          defsInnerStart = -1;
         }
       }
     }
@@ -305,11 +323,9 @@ export function sanitizeSVGFragment(input: string): SanitizeResult {
   let cursor = 0;
   for (const range of defsRanges) {
     visual += input.slice(cursor, range.start);
-    const block = input.slice(range.start, range.end);
-    // Strip the outer <defs …> and </defs> wrapper to keep inner content.
-    const openEnd = block.indexOf('>');
-    const closeStart = block.lastIndexOf('</');
-    defsInners.push(block.slice(openEnd + 1, closeStart).trim());
+    // Inner content is bounded by the tokenizer's quote-aware positions — no
+    // wrapper-stripping heuristic that a crafted attribute could subvert.
+    defsInners.push(input.slice(range.innerStart, range.innerEnd).trim());
     cursor = range.end;
   }
   visual += input.slice(cursor);
