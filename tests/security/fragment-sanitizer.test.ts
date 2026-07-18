@@ -11,6 +11,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../../src';
+import { sanitizeSVGFragment } from '../../src/evaluator/svg-sanitize';
 
 // Wrap in `let f = ...; f.insert();` so the only failure point is the
 // sanitizer itself. A bare `SVGDocumentFragment(...);` expression statement
@@ -181,6 +182,103 @@ describe('Security · SVGDocumentFragment sanitizer', () => {
           frag.insert();
         `),
       ).not.toThrow();
+    });
+  });
+
+  // ── F8: markup-by-regex parsing bypasses (Phase 2 cursor tokenizer) ────
+  // The regex tag scanner ([^>]*? truncation, \bon\w+= word-boundary miss,
+  // silent skip of non-tag `<`) let malformed markup smuggle through. The
+  // first two rows below were CONFIRMED bypasses of the regex implementation;
+  // the cursor tokenizer closes them and rejects every inert construct.
+
+  describe('F8: quote-aware attribute scanning', () => {
+    it('rejects a javascript: href hidden behind a quoted ">" (attr-truncation bypass)', () => {
+      // TAG_RE stopped the attr block at the > inside title="a>b", so the
+      // javascript: href was never seen by validateHrefValue — a real bypass.
+      expectFragmentRejected('<use title="a>b" href="javascript:alert(1)"/>');
+    });
+
+    it('rejects an on* attribute whose name is split by a newline', () => {
+      // \bon\w+= never matched `on\nclick=`; the tokenizer reads the whole
+      // attribute name structurally.
+      expectFragmentRejected('<rect on\nclick="alert(1)" width="10" height="10"/>');
+    });
+
+    it('rejects an unterminated quoted attribute (silently skipped by the regex)', () => {
+      expectFragmentRejected('<rect title="abc');
+    });
+
+    it('rejects an unquoted javascript: href', () => {
+      expectFragmentRejected('<use href=javascript:alert(1) />');
+    });
+
+    it('still rejects unquoted on* attribute values (regression guard)', () => {
+      expectFragmentRejected('<rect width=10 onclick=alert(1)/>');
+    });
+
+    it('still rejects mixed-case blocked elements (regression guard)', () => {
+      expectFragmentRejected('<ScRiPt>x</ScRiPt>');
+    });
+
+    it('still rejects javascript: href with leading whitespace (regression guard)', () => {
+      expectFragmentRejected('<use href=" javascript:alert(1)"/>');
+    });
+  });
+
+  describe('F8: inert constructs rejected outright', () => {
+    it('rejects XML comments', () => {
+      expectFragmentRejected('<!-- note --><rect width="5"/>');
+    });
+
+    it('rejects a blocked element hidden inside a comment', () => {
+      expectFragmentRejected('<!-- <script>x</script> --><rect/>');
+    });
+
+    it('rejects an unterminated comment', () => {
+      expectFragmentRejected('<!-- never closed <rect/>');
+    });
+
+    it('rejects CDATA sections', () => {
+      expectFragmentRejected('<![CDATA[hello]]><rect/>');
+    });
+
+    it('rejects DOCTYPE declarations', () => {
+      expectFragmentRejected('<!DOCTYPE svg><rect/>');
+    });
+
+    it('rejects processing instructions', () => {
+      expectFragmentRejected('<?xml version="1.0"?><rect/>');
+    });
+
+    it('rejects a stray "<" in text content (XML-invalid)', () => {
+      expectFragmentRejected('<text>a < b</text>');
+    });
+  });
+
+  describe('F8: range-based defs separation', () => {
+    it('separates a <defs> block with attributes from visual content', () => {
+      const r = sanitizeSVGFragment('<defs id="d"><marker id="m"><path d="M 0 0"/></marker></defs><circle r="5"/>');
+      expect(r.defsContent).toBe('<marker id="m"><path d="M 0 0"/></marker>');
+      expect(r.visualContent).toBe('<circle r="5"/>');
+    });
+
+    it('does not mis-split on a </defs> string inside an attribute value', () => {
+      // The old defsRe closed at the FIRST literal </defs>, even inside a
+      // quoted attribute. Range-based slicing uses the tokenizer close pos.
+      const r = sanitizeSVGFragment('<defs><rect id="a" data-x="</defs>"/></defs><circle r="5"/>');
+      expect(r.defsContent).toBe('<rect id="a" data-x="</defs>"/>');
+      expect(r.visualContent).toBe('<circle r="5"/>');
+    });
+
+    it('merges multiple top-level defs blocks', () => {
+      const r = sanitizeSVGFragment(
+        '<defs><marker id="a"><path d="M 0 0"/></marker></defs><rect width="1" height="1"/>' +
+          '<defs><marker id="b"><path d="M 1 1"/></marker></defs>',
+      );
+      expect(r.defsContent).toBe(
+        '<marker id="a"><path d="M 0 0"/></marker>\n<marker id="b"><path d="M 1 1"/></marker>',
+      );
+      expect(r.visualContent).toBe('<rect width="1" height="1"/>');
     });
   });
 });
