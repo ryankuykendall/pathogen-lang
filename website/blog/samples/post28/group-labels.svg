@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140" width="240" height="140">
+
+  <path data-layer-name="comb" d="M 35 105 v -55 v 55 h 35 v -55 v 55 h 35 v -55 v 55 h 35 v -55 v 55 h 35 v -55 v 55 h 35" fill="none" stroke="#334155" stroke-width="2.5"/>
+  <path data-layer-name="tips" id="tips" d="M 31 50 a 4 4 0 1 1 8 0 a 4 4 0 1 1 -8 0 M 66 50 a 4 4 0 1 1 8 0 a 4 4 0 1 1 -8 0 M 101 50 a 4 4 0 1 1 8 0 a 4 4 0 1 1 -8 0 M 136 50 a 4 4 0 1 1 8 0 a 4 4 0 1 1 -8 0 M 171 50 a 4 4 0 1 1 8 0 a 4 4 0 1 1 -8 0" fill="#db2777" stroke="#000" stroke-width="2"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"comb","type":"path","styles":{"stroke":"#334155","stroke-width":"2.5","fill":"none"},"isDefault":true},{"name":"tips","type":"path","styles":{"fill":"#db2777"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":240,"height":140}}]]></script>
+</svg>

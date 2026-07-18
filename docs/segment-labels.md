@@ -80,9 +80,9 @@ Because the `as` clause takes a list, one command can name both its edge and its
 h -60 as segment('base'), endpoint('base-end');
 ```
 
-### Computed labels
+### Group labels and computed labels
 
-A label name is an expression, so loop-generated names work with `${ }` interpolation:
+Labels don't have to be unique, so the natural way to label loop-generated geometry is to reuse **one name** and query the group with [`segmentAll`](#querying-labels):
 
 ```
 define ViewBox(0, 0, 200, 120);
@@ -90,13 +90,19 @@ define default PathLayer('ribs') ${ stroke: #333; stroke-width: 2; fill: none; }
 
 M 10 60
 for (i in 0..5) {
-  v -30 as segment(`rib-${i}`);
+  v -30 as segment('rib');
   v 30;
   h 30;
 }
 ```
 
-This produces `rib-0` through `rib-5` (ranges are inclusive), each naming one vertical rib for later lookup.
+All six ribs share the name `rib`; `segmentAll('rib')` returns them in authoring order. When members need *distinct* names — say, to look one up individually — a label name is an expression, so `${ }` interpolation works:
+
+```
+v -30 as segment(`rib-${i}`);
+```
+
+That produces `rib-0` through `rib-5` (ranges are inclusive), each individually addressable with the singular `segment('rib-3')`.
 
 ## Corner Suffixes
 
@@ -145,9 +151,31 @@ Labels exist to be looked up. A path with labels answers three questions by name
 
 | Query | Returns | Use for |
 |---|---|---|
-| `pb.segment('name')` | `PathBlock` | Sampling, measuring, and decorating a named edge |
-| `pb.point('name')` | `Point` | The coordinate of a named vertex — a `drawTo`/layout target |
-| `pb.vertex('name')` | vertex handle | Rounding or cutting a named corner |
+| `pb.segment('name')` | `PathBlock` | The **first** segment matching the name |
+| `pb.segmentAll('name')` | array of `PathBlock` | **Every** segment sharing the name, in authoring order |
+| `pb.point('name')` | `Point` | The first named vertex — a `drawTo`/layout target |
+| `pb.pointAll('name')` | array of `Point` | Every vertex sharing the name |
+| `pb.vertex('name')` | vertex handle | Rounding or cutting the first named corner |
+| `pb.vertexAll('name')` | array of handles | Every corner sharing the name |
+
+The pairing follows the model you already know from the DOM: `segment` is `querySelector` (first match), `segmentAll` is `querySelectorAll` (all matches). Labels don't have to be unique — a name shared by several statements forms a **group**, which makes loops natural:
+
+```
+let comb = @{
+  for (i in 0..4) {
+    v -20 as segment('tooth');
+    v 20;
+    h 12;
+  }
+};
+
+// five teeth, one name, no index bookkeeping
+for (tooth in comb.segmentAll('tooth')) {
+  log(tooth.length);
+}
+```
+
+Consecutive same-labeled statements merge into one segment; runs separated by other commands are distinct group members. Singular queries error when the name matches nothing (listing what the path has); the `All` queries return an empty array instead, so they loop safely over names that might not exist.
 
 ### `segment('name')` → PathBlock
 
@@ -227,9 +255,9 @@ layer('markers').apply {
 
 ## Errors & Notes
 
-- **Duplicate labels.** A label name must be unique **per kind** within a single path: reusing `segment('lid')` twice, or `endpoint('corner')` twice, in the same path (or layer) is a compile error — matching how [layer](layers.md), Marker, and Gradient names must be unique. Segment and endpoint labels are separate namespaces, so `segment('x')` and `endpoint('x')` may coexist (they answer different queries).
+- **Shared labels form groups.** Label names do **not** have to be unique: reusing `segment('rib')` across several statements creates a group, and `segmentAll('rib')` returns every member (singular `segment('rib')` returns the first, querySelector-style). The same applies to `endpoint` labels via `pointAll`/`vertexAll`. Segment and endpoint labels are separate namespaces, so `segment('x')` and `endpoint('x')` may coexist (they answer different queries).
 - **`with` needs a previous joint.** A corner suffix rounds the joint between the previous command and this one, so it needs a previous command in the current subpath. `with fillet(...)` on the first command of a block, or on the first command after an `m`/`M` that opens a new subpath, is a compile error — there is no corner to operate on. (This mirrors the "no previous heading" error from `tangentArc`.)
 - **Clause ordering.** `with` must precede `as`, each may appear at most once, and only `as` takes a comma list. `as segment('x') with fillet(5)` (wrong order) and two `with` clauses on one command are both errors.
-- **Unknown labels.** Querying a name that was never defined — `pb.segment('nope')` — is an error that lists the labels the path actually has, so a typo tells you what was available.
+- **Unknown labels.** A singular query for a name that was never defined — `pb.segment('nope')` — is an error that lists the labels the path actually has, so a typo tells you what was available. The `All` queries return an **empty array** instead of erroring, matching `querySelectorAll`, so `for (x in pb.segmentAll('maybe'))` is safe without a guard.
 - **Vertex corner ops: PathBlocks for now.** `vertex('name').fillet(...)` and its siblings apply on `PathBlock` and `ProjectedPath` sources. On a **layer** vertex handle they report that corner operations are not supported on layers yet — layer and projected `segment`/`point` queries work fully; only the vertex-handle corner operations are deferred.
 ```

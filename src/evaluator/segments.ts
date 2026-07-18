@@ -30,7 +30,8 @@ const isClose = (c: string) => c === 'z' || c === 'Z';
 
 /**
  * Attach evaluated `with` / `as` annotations to the most recently recorded
- * fragment in the store. Validates duplicate labels and corner-op placement.
+ * fragment in the store. Validates corner-op placement; duplicate labels are
+ * allowed by design (shared names form groups — see the *All queries).
  * `fail` reports errors with the caller's line formatting and must throw.
  */
 export function applyAnnotationsToStore(
@@ -43,13 +44,11 @@ export function applyAnnotationsToStore(
     fail('with/as clauses require the statement to emit path data');
   }
 
+  // Duplicate labels are allowed by design: a name shared by several
+  // statements forms a GROUP. Singular queries return the first match;
+  // the *All queries (segmentAll/pointAll/vertexAll) return every match.
   if (ann.segmentLabel !== undefined) {
     const label = ann.segmentLabel;
-    for (const r of store.records) {
-      if (r !== record && r.label === label) {
-        fail(`Duplicate segment label '${label}' — labels must be unique within a path`);
-      }
-    }
     record.label = label;
     for (const cmd of record.commands) {
       cmd.meta = { ...cmd.meta, segmentLabel: label };
@@ -58,13 +57,6 @@ export function applyAnnotationsToStore(
 
   if (ann.endpointLabel !== undefined) {
     const label = ann.endpointLabel;
-    for (const r of store.records) {
-      for (const cmd of r.commands) {
-        if (cmd.meta?.endVertex?.label === label) {
-          fail(`Duplicate endpoint label '${label}' — labels must be unique within a path`);
-        }
-      }
-    }
     const last = record.commands[record.commands.length - 1];
     last.meta = { ...last.meta, endVertex: { ...last.meta?.endVertex, label } };
   }
@@ -246,17 +238,38 @@ export function collectEndpointLabels(commands: PathBlockCommand[]): string[] {
   return [...seen];
 }
 
-/** The contiguous run of commands labeled `as segment(label)`, or null. */
-export function findLabeledRun(commands: PathBlockCommand[], label: string): PathBlockCommand[] | null {
-  const run: PathBlockCommand[] = [];
+/**
+ * All maximal contiguous runs of commands labeled `as segment(label)`, in
+ * authoring order. Consecutive same-labeled statements merge into one run;
+ * runs separated by other commands are distinct group members.
+ */
+export function findLabeledRuns(commands: PathBlockCommand[], label: string): PathBlockCommand[][] {
+  const runs: PathBlockCommand[][] = [];
+  let current: PathBlockCommand[] = [];
   for (const c of commands) {
-    if (c.meta?.segmentLabel === label) run.push(c);
-    else if (run.length > 0) break; // labels attach to contiguous statement ranges
+    if (c.meta?.segmentLabel === label) {
+      current.push(c);
+    } else if (current.length > 0) {
+      runs.push(current);
+      current = [];
+    }
   }
-  return run.length > 0 ? run : null;
+  if (current.length > 0) runs.push(current);
+  return runs;
 }
 
-/** The command whose end vertex carries `as endpoint(label)`, or null. */
+/** The first contiguous run of commands labeled `as segment(label)`, or null. */
+export function findLabeledRun(commands: PathBlockCommand[], label: string): PathBlockCommand[] | null {
+  const runs = findLabeledRuns(commands, label);
+  return runs.length > 0 ? runs[0] : null;
+}
+
+/** Every command whose end vertex carries `as endpoint(label)`, in authoring order. */
+export function findEndpointCommands(commands: PathBlockCommand[], label: string): PathBlockCommand[] {
+  return commands.filter((c) => c.meta?.endVertex?.label === label);
+}
+
+/** The first command whose end vertex carries `as endpoint(label)`, or null. */
 export function findEndpointCommand(commands: PathBlockCommand[], label: string): PathBlockCommand | null {
   for (const c of commands) {
     if (c.meta?.endVertex?.label === label) return c;

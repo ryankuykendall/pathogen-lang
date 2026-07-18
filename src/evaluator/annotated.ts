@@ -1887,8 +1887,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       expr.method === 'variableOffset' ||
       expr.method === 'compoundVariableOffset' ||
       expr.method === 'segment' ||
+      expr.method === 'segmentAll' ||
       expr.method === 'point' ||
-      expr.method === 'vertex'
+      expr.method === 'pointAll' ||
+      expr.method === 'vertex' ||
+      expr.method === 'vertexAll'
     ) {
       throw mError(
         `${expr.method}() is not supported in --annotated debug mode yet; compile normally (it works in the CLI, playground, and VS Code preview).`,

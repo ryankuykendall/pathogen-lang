@@ -98,6 +98,30 @@ let notched = tab(true).vertex('spout').fillet(12);
 
 The notched variant has three extra commands before the corner. An index-based fillet would need updating; `vertex('spout')` doesn't care.
 
+## One name, many segments
+
+Labels don't have to be unique. A name shared by several statements forms a **group**, and the query API splits into the pairing you already know from the DOM: `segment('tooth')` is `querySelector` — the first match — while `segmentAll('tooth')` is `querySelectorAll`, returning every match in authoring order. The same goes for `pointAll` and `vertexAll`.
+
+That makes loop-generated geometry the easy case. Five teeth, one name, zero index bookkeeping:
+
+```pathogen
+M 35 105
+for (i in 0..4) {
+  v -55 as segment('tooth');
+  v 55 as endpoint('root');
+  h 35;
+}
+
+for (tooth in layer('comb').segmentAll('tooth')) {
+  let tip = tooth.get(1);
+  circle(tip.x, tip.y, 4);
+}
+```
+
+<mini-workspace src="samples/post28/group-labels.pathogen" caption="One shared name, five teeth — `segmentAll('tooth')` returns the group; each tip decorated without tracking a single index" code-open></mini-workspace>
+
+When members need *distinct* names, label names are expressions — `` as segment(`rib-${i}`) `` — so you can opt into individual addressing whenever the group reading isn't enough. And the `All` queries return an empty array (not an error) when nothing matches, so they're safe to loop over speculatively.
+
 ## Layers answer questions now
 
 The quiet structural win: layers built with `apply { }` used to be write-only. You could route commands into them, but a layer could never tell you anything about its own geometry. Labels change that — `layer('name').segment(...)`, `.point(...)`, and `.vertex(...)` read named geometry back out of any path layer:

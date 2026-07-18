@@ -413,6 +413,45 @@ notched.drawTo(135, 35);
   <img src="/blog/samples/post28/robust-names.svg" alt="The notch adds three commands before the corner — `vertex('spout')` rounds the same joint in both variants" loading="lazy">
 </mini-workspace></p>
 <p>The notched variant has three extra commands before the corner. An index-based fillet would need updating; <code>vertex(&#39;spout&#39;)</code> doesn&#39;t care.</p>
+<h2>One name, many segments</h2>
+<p>Labels don&#39;t have to be unique. A name shared by several statements forms a <strong>group</strong>, and the query API splits into the pairing you already know from the DOM: <code>segment(&#39;tooth&#39;)</code> is <code>querySelector</code> — the first match — while <code>segmentAll(&#39;tooth&#39;)</code> is <code>querySelectorAll</code>, returning every match in authoring order. The same goes for <code>pointAll</code> and <code>vertexAll</code>.</p>
+<p>That makes loop-generated geometry the easy case. Five teeth, one name, zero index bookkeeping:</p>
+<pre><code class="hljs language-pathogen">M <span class="hljs-number">35</span> <span class="hljs-number">105</span>
+<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.4</span>) {
+  v -<span class="hljs-number">55</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth&#x27;</span>);
+  v <span class="hljs-number">55</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">endpoint</span>(<span class="hljs-string">&#x27;root&#x27;</span>);
+  h <span class="hljs-number">35</span>;
+}
+
+<span class="hljs-keyword">for</span> (tooth <span class="hljs-keyword">in</span> <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;comb&#x27;</span>).<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;tooth&#x27;</span>)) {
+  <span class="hljs-keyword">let</span> tip = tooth.<span class="hljs-title function_">get</span>(<span class="hljs-number">1</span>);
+  <span class="hljs-title function_">circle</span>(tip.<span class="hljs-property">x</span>, tip.<span class="hljs-property">y</span>, <span class="hljs-number">4</span>);
+}
+</code></pre><p><mini-workspace code-open caption="One shared name, five teeth — `segmentAll('tooth')` returns the group; each tip decorated without tracking a single index">
+  <code>define ViewBox(0, 0, 240, 140);
+define default PathLayer('comb') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('tips') ${ fill: #db2777; }
+
+// One name, five teeth. Labels don't have to be unique — a shared name
+// forms a GROUP, so loops need no index bookkeeping at all.
+M 35 105
+for (i in 0..4) {
+  v -55 as segment('tooth');
+  v 55 as endpoint('root');
+  h 35;
+}
+
+// querySelectorAll-style: segmentAll returns every match, in order.
+layer('tips').apply {
+  for (tooth in layer('comb').segmentAll('tooth')) {
+    let tip = tooth.get(1);
+    circle(tip.x, tip.y, 4);
+  }
+}
+</code>
+  <img src="/blog/samples/post28/group-labels.svg" alt="One shared name, five teeth — `segmentAll('tooth')` returns the group; each tip decorated without tracking a single index" loading="lazy">
+</mini-workspace></p>
+<p>When members need <em>distinct</em> names, label names are expressions — <code>as segment(`rib-${i}`)</code> — so you can opt into individual addressing whenever the group reading isn&#39;t enough. And the <code>All</code> queries return an empty array (not an error) when nothing matches, so they&#39;re safe to loop over speculatively.</p>
 <h2>Layers answer questions now</h2>
 <p>The quiet structural win: layers built with <code>apply { }</code> used to be write-only. You could route commands into them, but a layer could never tell you anything about its own geometry. Labels change that — <code>layer(&#39;name&#39;).segment(...)</code>, <code>.point(...)</code>, and <code>.vertex(...)</code> read named geometry back out of any path layer:</p>
 <p><mini-workspace code-open caption="A ticks layer cross-hatching a named stretch of the road layer — one layer reading another's geometry by name">

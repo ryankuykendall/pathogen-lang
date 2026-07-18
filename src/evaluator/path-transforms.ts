@@ -1686,23 +1686,13 @@ export function applyCornerOperations(
   if (isClosed) {
     const last = result[result.length - 1];
     const first = result[0];
-    const dx = first.start.x - last.end.x;
-    const dy = first.start.y - last.end.y;
-    if (Math.abs(dx) > 1e-10 || Math.abs(dy) > 1e-10) {
-      result.push({
-        command: 'z',
-        args: [],
-        start: { ...last.end },
-        end: { ...first.start },
-      });
-    } else {
-      result.push({
-        command: 'z',
-        args: [],
-        start: { ...last.end },
-        end: { ...first.start },
-      });
-    }
+    result.push({
+      command: 'z',
+      args: [],
+      start: { ...last.end },
+      end: { ...first.start },
+      ...(zMeta !== undefined ? { meta: zMeta } : {}),
+    });
   }
 
   return { commands: result, warnings };

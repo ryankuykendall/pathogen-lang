@@ -719,12 +719,18 @@ export interface PathogenPathBlock {
   intersectionPoints(other: PathogenPathBlock): PathogenArray<PathogenPoint>;
 
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
-  /** segment(name) — Look up a labeled sub-path by name; returns a PathBlock */
+  /** segment(name) — First labeled sub-path matching name; returns a PathBlock */
   segment(name: string): PathogenPathBlock;
-  /** point(name) — Look up a labeled point by name; returns a Point */
+  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array */
+  segmentAll(name: string): PathogenArray<PathogenPathBlock>;
+  /** point(name) — First labeled point matching name; returns a Point */
   point(name: string): PathogenPoint;
-  /** vertex(name) — Look up a labeled vertex by name; returns a VertexHandle */
+  /** pointAll(name) — Every labeled point matching name; returns an array of Points */
+  pointAll(name: string): PathogenArray<PathogenPoint>;
+  /** vertex(name) — First labeled vertex matching name; returns a VertexHandle */
   vertex(name: string): PathogenVertexHandle;
+  /** vertexAll(name) — Every labeled vertex matching name; returns an array of VertexHandles */
+  vertexAll(name: string): PathogenArray<PathogenVertexHandle>;
 }
 
 /** @type PolarVector */
@@ -777,12 +783,18 @@ export interface PathogenPathLayer {
   apply(): void;
 
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
-  /** segment(name) — Look up a labeled sub-path by name; returns a ProjectedPath (absolute coords) */
+  /** segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords) */
   segment(name: string): PathogenProjectedPath;
-  /** point(name) — Look up a labeled point by name; returns a Point */
+  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array */
+  segmentAll(name: string): PathogenArray<PathogenProjectedPath>;
+  /** point(name) — First labeled point matching name; returns a Point */
   point(name: string): PathogenPoint;
-  /** vertex(name) — Look up a labeled vertex by name; returns a VertexHandle */
+  /** pointAll(name) — Every labeled point matching name; returns an array of Points */
+  pointAll(name: string): PathogenArray<PathogenPoint>;
+  /** vertex(name) — First labeled vertex matching name; returns a VertexHandle */
   vertex(name: string): PathogenVertexHandle;
+  /** vertexAll(name) — Every labeled vertex matching name; returns an array of VertexHandles */
+  vertexAll(name: string): PathogenArray<PathogenVertexHandle>;
 }
 
 /** @type GroupLayer */
@@ -1024,12 +1036,18 @@ export interface PathogenProjectedPath {
   xor(other: PathogenPathBlock): PathogenProjectedPath;
 
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
-  /** segment(name) — Look up a labeled sub-path by name; returns a ProjectedPath (absolute coords) */
+  /** segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords) */
   segment(name: string): PathogenProjectedPath;
-  /** point(name) — Look up a labeled point by name; returns a Point */
+  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array */
+  segmentAll(name: string): PathogenArray<PathogenProjectedPath>;
+  /** point(name) — First labeled point matching name; returns a Point */
   point(name: string): PathogenPoint;
-  /** vertex(name) — Look up a labeled vertex by name; returns a VertexHandle */
+  /** pointAll(name) — Every labeled point matching name; returns an array of Points */
+  pointAll(name: string): PathogenArray<PathogenPoint>;
+  /** vertex(name) — First labeled vertex matching name; returns a VertexHandle */
   vertex(name: string): PathogenVertexHandle;
+  /** vertexAll(name) — Every labeled vertex matching name; returns an array of VertexHandles */
+  vertexAll(name: string): PathogenArray<PathogenVertexHandle>;
 }
 
 /** @type VertexHandle */

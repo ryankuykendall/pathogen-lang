@@ -132,9 +132,10 @@ export function inferType(name: string, source: string): string | null {
   // the layer itself. Must be checked before the bare layer() rule below,
   // which would otherwise greedily match on the `layer(` prefix.
   const layerQuery = new RegExp(
-    `let\\s+${esc}\\s*=\\s*layer\\s*\\([^)]*\\)\\s*\\.\\s*(segment|point|vertex)\\s*\\(`,
+    `let\\s+${esc}\\s*=\\s*layer\\s*\\([^)]*\\)\\s*\\.\\s*(segmentAll|pointAll|vertexAll|segment|point|vertex)\\s*\\(`,
   ).exec(source);
   if (layerQuery) {
+    if (layerQuery[1].endsWith('All')) return 'Array';
     return layerQuery[1] === 'segment' ? 'ProjectedPath' : layerQuery[1] === 'point' ? 'Point' : 'VertexHandle';
   }
 

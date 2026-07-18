@@ -1223,3 +1223,20 @@ describe('query-API chains rooted in layer() calls', () => {
     expect(inferType('pl', "let pl = layer('a');")).toBe('PathLayer');
   });
 });
+
+describe('group-label All queries', () => {
+  it('offers the All variants alongside the singular queries', () => {
+    const items = completeAtEnd("let shape = @{\n  M 0 0\n};\nshape.");
+    const names = items.map((i) => i.label);
+    expect(names).toContain('segmentAll');
+    expect(names).toContain('pointAll');
+    expect(names).toContain('vertexAll');
+  });
+
+  it('offers All queries on layer references', () => {
+    const items = completeAtEnd("layer('a').");
+    const names = items.map((i) => i.label);
+    expect(names).toContain('segmentAll');
+    expect(names).toContain('vertexAll');
+  });
+});

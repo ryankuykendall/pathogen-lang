@@ -1,0 +1,20 @@
+define ViewBox(0, 0, 240, 140);
+define default PathLayer('comb') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('tips') ${ fill: #db2777; }
+
+// One name, five teeth. Labels don't have to be unique — a shared name
+// forms a GROUP, so loops need no index bookkeeping at all.
+M 35 105
+for (i in 0..4) {
+  v -55 as segment('tooth');
+  v 55 as endpoint('root');
+  h 35;
+}
+
+// querySelectorAll-style: segmentAll returns every match, in order.
+layer('tips').apply {
+  for (tooth in layer('comb').segmentAll('tooth')) {
+    let tip = tooth.get(1);
+    circle(tip.x, tip.y, 4);
+  }
+}

@@ -39,12 +39,9 @@ describe('segment labels and corner-op suffixes: recording', () => {
 });
 
 describe('segment labels and corner-op suffixes: validation errors', () => {
-  it('rejects duplicate segment labels within a path', () => {
-    expect(() => compile("M 0 0\nh 10 as segment('a')\nv 10 as segment('a')")).toThrow(/Duplicate segment label 'a'/);
-  });
-
-  it('rejects duplicate endpoint labels within a path', () => {
-    expect(() => compile("M 0 0\nh 10 as endpoint('e')\nv 10 as endpoint('e')")).toThrow(/Duplicate endpoint label 'e'/);
+  it('allows duplicate labels — shared names form groups', () => {
+    expect(() => compile("M 0 0\nh 10 as segment('a')\nv 10 as segment('a')")).not.toThrow();
+    expect(() => compile("M 0 0\nh 10 as endpoint('e')\nv 10 as endpoint('e')")).not.toThrow();
   });
 
   it('allows the same label in different layers', () => {
@@ -264,5 +261,112 @@ describe('name-based query APIs (segment / point / vertex)', () => {
     const result = compile(src);
     // Trimmed to 15 by the fillet (splits re-emit h as l, matching .fillet())
     expect(result.layers[0].data).toBe('M 0 0 l 15 0');
+  });
+});
+
+describe('group labels (querySelector/querySelectorAll model)', () => {
+  const ribs = "let p = @{\n  for (i in 0..3) {\n    h 10 as segment('rib')\n    v 5 as endpoint('joint')\n  }\n};";
+
+  it('segmentAll returns every contiguous run in authoring order', () => {
+    // 4 ribs, each separated by an unlabeled v — 4 distinct runs
+    const src = `${ribs}\nlet all = p.segmentAll('rib');\nlog(all.length);\nall[2].drawTo(0, 0);`;
+    const result = compile(src);
+    const logLine = result.logs.map((l) => l.parts.map((pp) => String(pp.value)).join(' ')).join(' ');
+    expect(logLine).toContain('4');
+    expect(result.layers[0].data).toBe('M 0 0 h 10');
+  });
+
+  it('singular segment() returns the first match when duplicates exist', () => {
+    const src = `${ribs}\np.segment('rib').drawTo(50, 50);`;
+    const result = compile(src);
+    expect(result.layers[0].data).toBe('M 50 50 h 10');
+  });
+
+  it('consecutive same-labeled statements merge into one run', () => {
+    const src = "let p = @{\n  h 10 as segment('edge')\n  h 10 as segment('edge')\n  v 5\n  h 10 as segment('edge')\n};\nlog(p.segmentAll('edge').length);\np.segment('edge').drawTo(0, 0);";
+    const result = compile(src);
+    const logLine = result.logs.map((l) => l.parts.map((pp) => String(pp.value)).join(' ')).join(' ');
+    expect(logLine).toContain('2'); // merged first pair + the separated third
+    expect(result.layers[0].data).toBe('M 0 0 h 10 h 10');
+  });
+
+  it('pointAll returns all labeled vertices with exact coordinates', () => {
+    const src = `${ribs}\nlet pts = p.pointAll('joint');\nlog(pts.length, pts[0].x, pts[0].y, pts[3].x, pts[3].y);`;
+    const result = compile(src);
+    const logLine = result.logs.map((l) => l.parts.map((pp) => String(pp.value)).join(' ')).join(' ');
+    // Each iteration: h 10 then v 5 — joints at (10,5),(20,10),(30,15),(40,20)
+    expect(logLine).toContain('4');
+    expect(logLine).toContain('10');
+    expect(logLine).toContain('40');
+    expect(logLine).toContain('20');
+  });
+
+  it('vertexAll returns fillet-capable handles for each vertex', () => {
+    const src = "let p = @{\n  h 20\n  v 20 as endpoint('c')\n  h 20\n  v 20 as endpoint('c')\n  h 20\n};\nlet vs = p.vertexAll('c');\nlog(vs.length);\nlet f = vs[1].fillet(4);\nf.drawTo(0, 0);";
+    const result = compile(src);
+    const logLine = result.logs.map((l) => l.parts.map((pp) => String(pp.value)).join(' ')).join(' ');
+    expect(logLine).toContain('2');
+    expect(result.layers[0].data).toContain('a 4 4'); // fillet arc applied at the second joint
+  });
+
+  it('All queries return an empty array for unknown labels (no error)', () => {
+    const src = "let p = @{\n  h 10 as segment('a')\n};\nlog(p.segmentAll('nope').length, p.pointAll('nope').length, p.vertexAll('nope').length);";
+    const result = compile(src);
+    const logLine = result.logs.map((l) => l.parts.map((pp) => String(pp.value)).join(' ')).join(' ');
+    expect(logLine).toContain('0');
+  });
+
+  it('singular queries still error on unknown labels', () => {
+    expect(() => compile("let p = @{\n  h 10 as segment('a')\n};\np.segment('nope');")).toThrow(/No segment named 'nope'/);
+  });
+
+  it('groups work through layer queries', () => {
+    const src = [
+      "let pl = PathLayer('g') ${ fill: none; };",
+      "pl.apply {\n  M 0 0\n  h 10 as segment('rib')\n  v 5\n  h 10 as segment('rib')\n}",
+      "log(layer('g').segmentAll('rib').length);",
+    ].join('\n');
+    const result = compile(src);
+    const logLine = result.logs.map((l) => l.parts.map((pp) => String(pp.value)).join(' ')).join(' ');
+    expect(logLine).toContain('2');
+  });
+
+  it('groups work on projected paths', () => {
+    const src = "let p = @{\n  h 10 as segment('rib')\n  v 5\n  h 10 as segment('rib')\n};\nlet proj = p.project(100, 100);\nlog(proj.segmentAll('rib').length, proj.segmentAll('rib')[1].startPoint.x);";
+    const result = compile(src);
+    const logLine = result.logs.map((l) => l.parts.map((pp) => String(pp.value)).join(' ')).join(' ');
+    expect(logLine).toContain('2');
+    expect(logLine).toContain('110'); // second rib starts at x=110 absolute
+  });
+});
+
+describe('z-chamfer label preservation and group pairing (review regressions)', () => {
+  it('endpoint labels on z survive chamfer finalization (singular query)', () => {
+    // applyCornerOperations (chamfer path) must reattach zMeta on re-close,
+    // matching the fillet appliers — previously the label vanished.
+    const src = "let p = @{\n  h 30\n  v 30 with chamfer(4)\n  h -30\n  z as endpoint('home')\n};\nlet pt = p.point('home');\nM pt.x pt.y\nh 1";
+    const result = compile(src);
+    expect(result.layers[0].data).toBe('M 0 0 h 1'); // z closes back to the block origin
+  });
+
+  it('vertexAll returns the full group with correct coordinates when a member sits on a chamfered z', () => {
+    const src = [
+      "let p = @{",
+      "  h 20 as endpoint('corner')",
+      "  v 20",
+      "  h 30 as endpoint('corner')",
+      "  v 20 with chamfer(4)",
+      "  h -50",
+      "  z as endpoint('corner')",
+      "};",
+      "let vs = p.vertexAll('corner');",
+      "log(vs.length, vs[0].x, vs[0].y, vs[1].x, vs[1].y, vs[2].x, vs[2].y);",
+    ].join('\n');
+    const result = compile(src);
+    const logLine = result.logs.map((l) => l.parts.map((pp) => String(pp.value)).join(' ')).join(' ');
+    // Three members: (20,0), (50,20), and z's end = subpath start (0,0)
+    expect(logLine).toContain('3');
+    expect(logLine).toContain('20 0');
+    expect(logLine).toContain('50 20');
   });
 });
