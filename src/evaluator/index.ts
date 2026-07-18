@@ -251,6 +251,7 @@ import {
   parsePathStringToCommands,
   storeToPathData,
 } from './segments';
+import { serializeRelativeAndTrack } from './path-data';
 
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker', 'marker-start', 'marker-mid', 'marker-end']);
@@ -1223,75 +1224,6 @@ function generateCodeSnippetLayers(
  * command doesn't start at (0,0). This compensates for closed-path fillet/chamfer
  * operations that cyclically shift the command start point away from the pathblock origin.
  */
-function commandsToRelativeD(commands: PathBlockCommand[], bridgeOriginGap = false): string {
-  const parts: string[] = [];
-  // Track actual SVG cursor position — needed because after `z` the cursor
-  // jumps to the subpath start, which may differ from the next command's `start`.
-  let cursorX = 0;
-  let cursorY = 0;
-  let subpathStartX = 0;
-  let subpathStartY = 0;
-  if (bridgeOriginGap && commands.length > 0) {
-    const s = commands[0].start;
-    if (Math.abs(s.x) > 1e-10 || Math.abs(s.y) > 1e-10) {
-      parts.push(`m ${formatNum(s.x)} ${formatNum(s.y)}`);
-      cursorX = s.x;
-      cursorY = s.y;
-      subpathStartX = s.x;
-      subpathStartY = s.y;
-    }
-  }
-  for (const cmd of commands) {
-    const c = cmd.command;
-    if (c === 'z') {
-      parts.push('z');
-      cursorX = subpathStartX;
-      cursorY = subpathStartY;
-    } else if (c === 'm') {
-      // Move: compute relative displacement from actual cursor position
-      const mx = cmd.end.x - cursorX;
-      const my = cmd.end.y - cursorY;
-      parts.push(`m ${formatNum(mx)} ${formatNum(my)}`);
-      cursorX = cmd.end.x;
-      cursorY = cmd.end.y;
-      subpathStartX = cmd.end.x;
-      subpathStartY = cmd.end.y;
-    } else {
-      const dx = cmd.end.x - cmd.start.x;
-      const dy = cmd.end.y - cmd.start.y;
-      if (c === 'h') {
-        parts.push(`h ${formatNum(dx)}`);
-      } else if (c === 'v') {
-        parts.push(`v ${formatNum(dy)}`);
-      } else if (c === 'c') {
-        const [dx1, dy1, dx2, dy2] = cmd.args;
-        parts.push(
-          `c ${formatNum(dx1)} ${formatNum(dy1)} ${formatNum(dx2)} ${formatNum(dy2)} ${formatNum(dx)} ${formatNum(dy)}`,
-        );
-      } else if (c === 's') {
-        const [dx2, dy2] = cmd.args;
-        parts.push(`s ${formatNum(dx2)} ${formatNum(dy2)} ${formatNum(dx)} ${formatNum(dy)}`);
-      } else if (c === 'q') {
-        const [dx1, dy1] = cmd.args;
-        parts.push(`q ${formatNum(dx1)} ${formatNum(dy1)} ${formatNum(dx)} ${formatNum(dy)}`);
-      } else if (c === 't') {
-        parts.push(`t ${formatNum(dx)} ${formatNum(dy)}`);
-      } else if (c === 'a') {
-        const [rx, ry, rotation, largeArc, sweep] = cmd.args;
-        parts.push(
-          `a ${formatNum(rx)} ${formatNum(ry)} ${formatNum(rotation)} ${formatNum(largeArc)} ${formatNum(sweep)} ${formatNum(dx)} ${formatNum(dy)}`,
-        );
-      } else {
-        // l → relative line
-        parts.push(`${c} ${formatNum(dx)} ${formatNum(dy)}`);
-      }
-      cursorX = cmd.end.x;
-      cursorY = cmd.end.y;
-    }
-  }
-  return parts.join(' ');
-}
-
 /**
  * Serialize PathBlockCommands to an absolute SVG d-attribute string.
  * Commands have absolute start/end points; relative args are converted to absolute.
@@ -2417,10 +2349,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         // is needed for the emitted path. We reconstruct from structured commands
         // because stdlib functions like circle() store absolute coordinates in their
         // PathSegment strings, but the structured commands are already relative.
-        const emittedPath = commandsToRelativeD(obj.commands, true);
-
-        // Track the relative path in context (updates cursor from current position)
-        const emittedCommands = parseAndTrackPathString(emittedPath, scope);
+        // Serialize AND track in one walk — no serialize→reparse round-trip.
+        const { d: emittedPath, tracked: emittedCommands } = serializeRelativeAndTrack(
+          obj.commands,
+          scope.evalState.pathContext,
+          { bridgeOriginGap: true },
+        );
+        updateCtxVariable(scope);
 
         // Build the ProjectedPathValue with absolute coordinates for programmatic use
         const projectedCommands = projectCommands(obj.commands, originX, originY);
@@ -2448,13 +2383,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (typeof dtX !== 'number') throw mError('drawTo() x must be a number');
         if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
 
-        // Emit M x y followed by relative commands
-        const moveCmd = `M ${formatNum(dtX)} ${formatNum(dtY)}`;
-        const relativeD = commandsToRelativeD(obj.commands, true);
-        const emittedPath = `${moveCmd} ${relativeD}`;
-
-        // Track in path context
-        const emittedCommands = parseAndTrackPathString(emittedPath, scope);
+        // Emit M x y followed by relative commands, tracking in the same walk.
+        const { d: emittedPath, tracked: emittedCommands } = serializeRelativeAndTrack(
+          obj.commands,
+          scope.evalState.pathContext,
+          { bridgeOriginGap: true, moveTo: { x: dtX, y: dtY } },
+        );
+        updateCtxVariable(scope);
 
         // Build ProjectedPathValue with absolute coordinates
         const projectedCommands = projectCommands(obj.commands, dtX, dtY);
@@ -3170,13 +3105,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           end: { x: cmd.end.x + offsetX, y: cmd.end.y + offsetY },
         }));
 
-        // Emit M x y followed by relative commands
-        const moveCmd = `M ${formatNum(dtX)} ${formatNum(dtY)}`;
-        const relativeD = commandsToRelativeD(reProjectedCommands);
-        const emittedPath = `${moveCmd} ${relativeD}`;
-
-        // Track in path context
-        const emittedCommands = parseAndTrackPathString(emittedPath, scope);
+        // Emit M x y followed by relative commands, tracking in the same walk.
+        // reProjectedCommands are world-space; the walk's deltas are unaffected.
+        const { d: emittedPath, tracked: emittedCommands } = serializeRelativeAndTrack(
+          reProjectedCommands,
+          scope.evalState.pathContext,
+          { moveTo: { x: dtX, y: dtY } },
+        );
+        updateCtxVariable(scope);
 
         // Build ProjectedPathValue with absolute coordinates
         const projected: ProjectedPathValue = {

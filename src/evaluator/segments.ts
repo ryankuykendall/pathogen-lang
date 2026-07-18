@@ -9,7 +9,6 @@
  */
 import type { PathBlockCommand, PathCommandMeta, PathRecord, PathStore, RecordedCornerOp } from './types';
 import type { SourceLocation } from '../parser/ast';
-import { createPathContext, updateContextForCommand, type PathContext } from './context';
 import {
   chamferCommands,
   commandToPathString,
@@ -326,48 +325,7 @@ export function commandsToPathData(commands: PathBlockCommand[]): string {
   return commands.map((c) => commandToPathString(c)).join(' ');
 }
 
-const NUMBER_REGEX = /-?[\d.]+(?:e[+-]?\d+)?/gi;
-
-/**
- * Parse a path string, updating `ctx` per command, and return the structured
- * commands with exact start/end cursor positions. Replaces the regex-only
- * walk previously inlined in parseAndTrackPathString, so records and context
- * tracking agree by construction.
- */
-export function parsePathStringToCommands(pathStr: string, ctx: PathContext): PathBlockCommand[] {
-  const commands: PathBlockCommand[] = [];
-  const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])\s*([\d\s.,eE+-]*)/g;
-  let match;
-  while ((match = commandRegex.exec(pathStr)) !== null) {
-    const command = match[1];
-    const argsStr = match[2].trim();
-    const args: number[] = [];
-    if (argsStr) {
-      const numMatches = argsStr.match(NUMBER_REGEX);
-      if (numMatches) {
-        for (const num of numMatches) args.push(parseFloat(num));
-      }
-    }
-    const start = { x: ctx.position.x, y: ctx.position.y };
-    updateContextForCommand(ctx, command, args);
-    commands.push({ command, args, start, end: { x: ctx.position.x, y: ctx.position.y } });
-  }
-  return commands;
-}
-
-/**
- * Parse a path string against a throwaway context seeded at `startPos`,
- * without touching any live context. Used to derive structured commands for
- * strings whose context tracking already happened during evaluation (e.g.
- * stdlib PathSegments stringified into a statement-function's output).
- */
-export function parsePathStringAt(
-  pathStr: string,
-  startPos: { x: number; y: number },
-  subpathStart?: { x: number; y: number },
-): PathBlockCommand[] {
-  const scratch = createPathContext({});
-  scratch.position = { x: startPos.x, y: startPos.y };
-  scratch.start = subpathStart ? { x: subpathStart.x, y: subpathStart.y } : { x: startPos.x, y: startPos.y };
-  return parsePathStringToCommands(pathStr, scratch);
-}
+// Path-string parsing moved to the shared path-data module (single
+// cursor-based tokenizer for both evaluators); re-exported here so existing
+// importers keep working.
+export { parsePathStringAt, parsePathStringToCommands } from './path-data';

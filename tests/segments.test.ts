@@ -89,14 +89,13 @@ describe('segments: always-on record tracking perf', () => {
 });
 
 describe('segments: number-grammar characterization (regex tokenizer)', () => {
-  // These tests pin the exact tokenizing behavior of the regex-based parser
-  // (NUMBER_REGEX + commandRegex) ahead of the Phase 1 path-data unification.
-  // `it.fails` rows document known deviations from SVG path grammar that the
-  // shared cursor-based tokenizer must fix — flip them to `it` in Phase 1.
-  // When flipping a row, confirm the old failure was on the intended assertion
-  // (it.fails only requires that *something* threw, not which assertion).
+  // These tests pin the exact tokenizing behavior of the path-string parser.
+  // Originally written (Phase 0) against the regex tokenizer with `it.fails`
+  // rows for its known SVG-grammar deviations (implicit decimals dropped,
+  // packed arc flags mis-split); those rows were flipped to `it` when the
+  // shared cursor-based tokenizer (path-data.ts) replaced the regexes.
 
-  it.fails('parses implicit-decimal chains per SVG number grammar (1.5.5 = 1.5, .5)', () => {
+  it('parses implicit-decimal chains per SVG number grammar (1.5.5 = 1.5, .5)', () => {
     const ctx = createPathContext();
     const commands = parsePathStringToCommands('M 1.5.5 2', ctx);
     // SVG number grammar: a second '.' terminates the number, so the blob is
@@ -107,7 +106,7 @@ describe('segments: number-grammar characterization (regex tokenizer)', () => {
     expect(commands[0].args).toEqual([1.5, 0.5, 2]);
   });
 
-  it.fails('splits packed arc flags per SVG grammar (A 5 5 0 1110 0 = flags 1,1 then 10,0)', () => {
+  it('splits packed arc flags per SVG grammar (A 5 5 0 1110 0 = flags 1,1 then 10,0)', () => {
     const ctx = createPathContext();
     const commands = parsePathStringToCommands('M 0 0 A 5 5 0 1110 0', ctx);
     // Arc large-arc/sweep flags are single chars; "1110" is flag 1, flag 1, x=10, then y=0.
