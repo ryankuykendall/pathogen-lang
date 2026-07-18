@@ -165,3 +165,26 @@ describe('parseColorFunction: per-function acceptance rules', () => {
     expect(parseColorFunction('rgb(255 0 0 / -0.5)')).toBeNull();
   });
 });
+
+describe('parseColorFunction: modern-component separator enforcement', () => {
+  it('requires whitespace between adjacent modern components', () => {
+    expect(parseColorFunction('rgb(50%50% 0)')).toBeNull();
+    expect(parseColorFunction('hsl(120 50%50%)')).toBeNull();
+    expect(parseColorFunction('oklch(0.5 0.1200)')).toBeNull();
+  });
+
+  it('rejects a multi-dot number rather than splitting it into phantom components', () => {
+    expect(parseColorFunction('rgb(1.5.5 0 0)')).toBeNull();
+    expect(parseColorFunction('oklch(1.5.5 0.1 200)')).toBeNull();
+  });
+
+  it('rejects an embedded sign inside a component', () => {
+    expect(parseColorFunction('lab(50 12-34 30)')).toBeNull();
+  });
+
+  it('still accepts generous but valid whitespace and tight slash alpha', () => {
+    expect(parseColorFunction('rgb(255  0  0)')).not.toBeNull();
+    expect(parseColorFunction('rgb( 255 0 0 )')).not.toBeNull();
+    expect(parseColorFunction('rgb(255 0 0/0.5)')?.alpha).toEqual({ value: 0.5, percent: false });
+  });
+});

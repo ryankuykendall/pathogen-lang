@@ -140,4 +140,30 @@ describe('parseColor: REJECT boundary (current throws, locked)', () => {
   it('CHARACTERIZATION: out-of-range hue (400) is accepted without validation', () => {
     expect(() => parseColor('hsl(400 50% 50%)')).not.toThrow();
   });
+
+  it.each([
+    // Zero-separator adjacency: the old regexes required whitespace between
+    // modern components; the tokenizer enforces the same, so these reject.
+    ['adjacent components, no space', 'rgb(50%50% 0)'],
+    ['adjacent components in hsl', 'hsl(120 50%50%)'],
+    // Malformed multi-dot / embedded-sign numbers: the old regexes accepted
+    // some of these by silently truncating via parseFloat (wrong values); the
+    // tokenizer rejects them outright. Deliberate correctness improvement.
+    ['multi-dot number splits into phantom components', 'rgb(1.5.5 0 0)'],
+    ['multi-dot number in oklch (old truncated to 1.5)', 'oklch(1.5.5 0.1 200)'],
+    ['embedded sign in lab a (old truncated to 12)', 'lab(50 12-34 30)'],
+    ['trailing dot with garbage', 'rgb(1.5. 0 0)'],
+    ['lone dot component', 'rgb(. 0 0)'],
+  ])('rejects malformed numeric form — %s: %s', (_label, input) => {
+    expect(() => parseColor(input)).toThrow();
+  });
+
+  it.each([
+    // These must keep parsing — separators that are valid but easy to break.
+    ['double space between components', 'rgb(255  0  0)', '#ff0000'],
+    ['padded parens', 'rgb( 255 0 0 )', '#ff0000'],
+    ['slash alpha with no surrounding space', 'rgb(255 0 0/0.5)'],
+  ])('still accepts valid spacing — %s: %s', (_label, input) => {
+    expect(() => parseColor(input)).not.toThrow();
+  });
 });

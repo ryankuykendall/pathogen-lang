@@ -120,12 +120,14 @@ const FN_SPECS: Record<ColorFn, FnSpec> = {
 // ── Scanner ────────────────────────────────────────────────────────────
 
 type RawToken =
-  | { kind: 'num'; value: number; percent: boolean; signed: boolean }
+  | { kind: 'num'; value: number; percent: boolean; signed: boolean; wsBefore: boolean }
   | { kind: 'comma' }
   | { kind: 'slash' };
 
 const isDigit = (ch: string) => ch >= '0' && ch <= '9';
-const isSpace = (ch: string) => ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f';
+// Match JS `\s` exactly — the old regexes used \s* / \s+ throughout, which
+// includes vertical tab and Unicode space separators, not just ASCII spaces.
+const isSpace = (ch: string) => /\s/.test(ch);
 
 /**
  * Read a single number token (optional leading `-`, digits with at most one
@@ -167,29 +169,40 @@ export function readNumber(s: string, pos: { i: number }): { value: number; perc
   return { value: signed ? -magnitude : magnitude, percent, signed };
 }
 
-/** Tokenize a color-function interior into numbers, commas, and slashes. */
+/**
+ * Tokenize a color-function interior into numbers, commas, and slashes. Each
+ * number records `wsBefore`: whether whitespace was skipped immediately before
+ * it (since the previous token). This lets the caller require a real separator
+ * between adjacent modern-form components — the old regexes' `\s+` — so
+ * `rgb(50%50% 0)` and `rgb(1.5.5 0)` are rejected rather than silently split.
+ */
 function scanInterior(inner: string): RawToken[] | null {
   const tokens: RawToken[] = [];
   const pos = { i: 0 };
+  let sawWs = false;
   while (pos.i < inner.length) {
     const ch = inner[pos.i];
     if (isSpace(ch)) {
+      sawWs = true;
       pos.i++;
       continue;
     }
     if (ch === ',') {
       tokens.push({ kind: 'comma' });
       pos.i++;
+      sawWs = false;
       continue;
     }
     if (ch === '/') {
       tokens.push({ kind: 'slash' });
       pos.i++;
+      sawWs = false;
       continue;
     }
     const num = readNumber(inner, pos);
     if (num === null) return null; // unexpected character
-    tokens.push({ kind: 'num', value: num.value, percent: num.percent, signed: num.signed });
+    tokens.push({ kind: 'num', value: num.value, percent: num.percent, signed: num.signed, wsBefore: sawWs });
+    sawWs = false;
   }
   return tokens;
 }
@@ -252,6 +265,19 @@ export function parseColorFunction(input: string): ParsedColorFunction | null {
   const actual = tokens.map((t) => t.kind);
   if (actual.length !== expected.length || actual.some((k, idx) => k !== expected[idx])) {
     return null;
+  }
+
+  // Modern form: adjacent components (two `num` tokens with no comma/slash
+  // between them) must be separated by real whitespace. Without this, the
+  // whitespace-skipping scanner would accept zero-separator forms the old
+  // `\s+` regexes rejected (`rgb(50%50% 0)`), and would silently split a
+  // malformed multi-dot number (`rgb(1.5.5 0)`) into phantom components.
+  for (let idx = 1; idx < tokens.length; idx++) {
+    const prev = tokens[idx - 1];
+    const cur = tokens[idx];
+    if (prev.kind === 'num' && cur.kind === 'num' && !cur.wsBefore) {
+      return null;
+    }
   }
 
   // Validate each component against the per-function rule.
