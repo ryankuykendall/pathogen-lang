@@ -1505,3 +1505,90 @@ L 10 20 // end point`;
     });
   });
 });
+
+describe('Path command suffix clauses (with / as)', () => {
+  it('parses a with clause into a cornerOp annotation', () => {
+    const ast = parse('h 20\nv 20 with fillet(5)');
+    const cmd = ast.body[1] as any;
+    expect(cmd.type).toBe('PathCommand');
+    expect(cmd.command).toBe('v');
+    expect(cmd.annotations.cornerOp).toMatchObject({
+      kind: 'fillet',
+      args: [{ type: 'NumberLiteral', value: 5 }],
+    });
+  });
+
+  it('parses an as clause into label annotations', () => {
+    const ast = parse("h 20 as segment('lid'), endpoint('corner');");
+    const cmd = ast.body[0] as any;
+    expect(cmd.annotations.labels).toHaveLength(2);
+    expect(cmd.annotations.labels[0]).toMatchObject({ kind: 'segment', name: { type: 'StringLiteral', value: 'lid' } });
+    expect(cmd.annotations.labels[1]).toMatchObject({ kind: 'endpoint', name: { type: 'StringLiteral', value: 'corner' } });
+  });
+
+  it('parses combined with + as clauses in fixed order', () => {
+    const ast = parse("v 20 with fillet(5) as segment('west');");
+    const cmd = ast.body[0] as any;
+    expect(cmd.annotations.cornerOp.kind).toBe('fillet');
+    expect(cmd.annotations.labels[0].name.value).toBe('west');
+  });
+
+  it('rejects as before with', () => {
+    expect(() => parse("h 20 as segment('x') with fillet(5);")).toThrow(/Parse error/);
+  });
+
+  it('accepts a trailing semicolon on plain path commands (former paper cut)', () => {
+    const ast = parse('h 20;');
+    expect(ast.body[0]).toMatchObject({ type: 'PathCommand', command: 'h' });
+  });
+
+  it('accepts clauses on z', () => {
+    const ast = parse('M 0 0 h 10 v 10\nz with fillet(2);');
+    const cmd = ast.body[ast.body.length - 1] as any;
+    expect(cmd.command).toBe('z');
+    expect(cmd.annotations.cornerOp.kind).toBe('fillet');
+  });
+
+  it('attaches labels to statement-function calls', () => {
+    const ast = parse("circle(5, 5, 20) as segment('circle-01');");
+    const cmd = ast.body[0] as any;
+    expect(cmd.type).toBe('PathCommand');
+    expect(cmd.command).toBe('');
+    expect(cmd.annotations.labels[0].name.value).toBe('circle-01');
+  });
+
+  it('parses clauses inside path blocks and apply blocks', () => {
+    const ast = parse(
+      "let p = @{\n  h 20 as segment('lid')\n};\nlet pl = PathLayer('x') ${ fill: none; };\npl.apply {\n  v 20 with fillet(3)\n}",
+    );
+    const block = (ast.body[0] as any).value;
+    expect(block.body[0].annotations.labels[0].name.value).toBe('lid');
+    const apply = ast.body[2] as any;
+    expect(apply.body[0].annotations.cornerOp.kind).toBe('fillet');
+  });
+
+  it('supports expression-valued label names for loops', () => {
+    const ast = parse('for (i in 0..3) {\n  h 10 as segment(`rib-${i}`)\n}');
+    const cmd = (ast.body[0] as any).body[0];
+    expect(cmd.annotations.labels[0].name.type).toBe('TemplateLiteral');
+  });
+
+  it('rejects unknown corner ops and label kinds', () => {
+    expect(() => parse('h 20 with bevel(5);')).toThrow(/unknown corner operation 'bevel'/);
+    expect(() => parse("h 20 as anchor('x');")).toThrow(/unknown label kind 'anchor'/);
+  });
+
+  it('rejects clauses on non-emitting expressions', () => {
+    expect(() => parse('let x = 5;\nx + 1 with fillet(5);')).toThrow(/only allowed on path commands/);
+  });
+
+  it('keeps with/as usable as identifiers outside path-arg position', () => {
+    const ast = parse('let with = 5;\nlet as = 3;\nlet sum = calc(with + as);');
+    expect(ast.body).toHaveLength(3);
+  });
+
+  it('reserves with/as in path-argument position (documented limitation)', () => {
+    // `h with` — the clause keyword ends the args; a bare clause fails to parse
+    expect(() => parse('let w = 5;\nh with;')).toThrow(/Parse error/);
+  });
+});

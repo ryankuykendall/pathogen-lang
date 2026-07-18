@@ -156,3 +156,14 @@ let dir = Direction.UP;
 
 // --- calc() ---
 M calc(x + 10) calc(y * 2)
+
+// --- Path-command suffix clauses (with / as) ---
+let box = @{
+  M 0 0
+  h 20 with fillet(3) as segment('top')
+  v 20 with chamfer(2) as segment('right')
+  h -20 with ellipticalFillet(4, 2) as endpoint('corner'), segment('bottom')
+  z
+};
+circle(50, 50, 20) as segment('c1');
+h 10 with chamfer(2) as segment('base');

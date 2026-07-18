@@ -75,6 +75,14 @@ export const
   _return = 102,
   PathCommand = 103,
   pathCmd = 104,
-  PathCommandLetter = 125,
-  pathCmdZ = 123,
-  ExpressionStatement = 126
+  PathCommandLetter = 133,
+  WithClause = 123,
+  withKw = 124,
+  _with = 125,
+  CornerOpCall = 126,
+  AsClause = 127,
+  asKw = 128,
+  as = 129,
+  LabelCall = 130,
+  pathCmdZ = 131,
+  ExpressionStatement = 134

@@ -26,6 +26,11 @@ const STATEMENT_FUNCTIONS = new Set([
 
 const PATH_COMMANDS = new Set('MLHVCSQTAZmlhvcsqtaz'.split(''));
 
+// Clause introducers that end path args so the grammar can attach
+// `with <cornerOp>(...)` / `as segment('...')` suffix clauses. Reserved in
+// path-argument position only (contextual @extend keywords in the grammar).
+const CLAUSE_KEYWORDS = new Set(['with', 'as']);
+
 /**
  * External tokenizer that greedily consumes path command arguments.
  * Called by the Lezer parser after matching a path command letter.
@@ -65,7 +70,7 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       // Check if next token starts a new statement
       if (isAlpha(input.next)) {
         const word = peekWord(input);
-        if (KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word) || (word.length === 1 && PATH_COMMANDS.has(word))) {
+        if (KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word) || CLAUSE_KEYWORDS.has(word) || (word.length === 1 && PATH_COMMANDS.has(word))) {
           break;
         }
         // Check if this identifier is followed by '=' (but not '==') — assignment statement
@@ -140,7 +145,7 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
 
       // If at top level (not inside parens), check for statement-starting keywords
       if (depth === 0) {
-        if ((KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word)) && word !== 'calc' && word !== 'true' && word !== 'false') break;
+        if ((KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word) || CLAUSE_KEYWORDS.has(word)) && word !== 'calc' && word !== 'true' && word !== 'false') break;
         if (word.length === 1 && PATH_COMMANDS.has(word)) break;
       }
 

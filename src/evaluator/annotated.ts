@@ -20,6 +20,7 @@ import {
   subPathCommands,
 } from './path-transforms';
 import { partitionPath, samplePathAtFraction } from './sampling';
+import { recordsFromCommands } from './segments';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
 import {
@@ -529,7 +530,7 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
     return {
       type: 'PathBlockValue' as const,
       commands: [],
-      pathStrings: [],
+      records: [],
       startPoint: { x: 0, y: 0 },
       endPoint: { x: 0, y: 0 },
     };
@@ -546,7 +547,7 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
   return {
     type: 'PathBlockValue' as const,
     commands: normalized,
-    pathStrings: normalized.map((c) => commandToPathString(c)),
+    records: recordsFromCommands(normalized),
     startPoint: { x: 0, y: 0 },
     endPoint: { x: last.end.x, y: last.end.y },
   };
@@ -566,6 +567,7 @@ function projectCommands(commands: PathBlockCommand[], originX: number, originY:
     args: [...cmd.args],
     start: { x: cmd.start.x + originX, y: cmd.start.y + originY },
     end: { x: cmd.end.x + originX, y: cmd.end.y + originY },
+    ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
   }));
 }
 
@@ -1337,7 +1339,7 @@ function evaluateAnnotatedPathTransforms(
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -1354,7 +1356,7 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: normalizedCmds,
-          pathStrings: normalizedCmds.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(normalizedCmds),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
         };
@@ -1393,7 +1395,7 @@ function evaluateAnnotatedPathTransforms(
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -1410,7 +1412,7 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: oNormalized,
-          pathStrings: oNormalized.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(oNormalized),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: oLast.end.x, y: oLast.end.y },
         };
@@ -1435,7 +1437,7 @@ function evaluateAnnotatedPathTransforms(
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -1452,7 +1454,7 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: mNormalized,
-          pathStrings: mNormalized.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(mNormalized),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: mLast.end.x, y: mLast.end.y },
         };
@@ -1481,7 +1483,7 @@ function evaluateAnnotatedPathTransforms(
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -1498,7 +1500,7 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: rNormalized,
-          pathStrings: rNormalized.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(rNormalized),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: rLast.end.x, y: rLast.end.y },
         };
@@ -1526,7 +1528,7 @@ function evaluateAnnotatedPathTransforms(
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -1535,7 +1537,7 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: scaled,
-          pathStrings: scaled.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(scaled),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: sLast.end.x, y: sLast.end.y },
         };
@@ -1565,7 +1567,7 @@ function evaluateAnnotatedPathTransforms(
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -1582,7 +1584,7 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: spNormalized,
-          pathStrings: spNormalized.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(spNormalized),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
@@ -1592,7 +1594,7 @@ function evaluateAnnotatedPathTransforms(
         return {
           type: 'PathBlockValue' as const,
           commands: [],
-          pathStrings: [],
+          records: [],
           startPoint: { x: 0, y: 0 },
           endPoint: { x: 0, y: 0 },
         };
@@ -1609,7 +1611,7 @@ function evaluateAnnotatedPathTransforms(
       return {
         type: 'PathBlockValue' as const,
         commands: spNormalized,
-        pathStrings: spNormalized.map((c) => commandToPathString(c)),
+        records: recordsFromCommands(spNormalized),
         startPoint: { x: 0, y: 0 },
         endPoint: { x: spLast.end.x, y: spLast.end.y },
       };
@@ -1749,7 +1751,7 @@ function buildAnnotatedResult(
       return {
         type: 'PathBlockValue' as const,
         commands: [],
-        pathStrings: [],
+        records: [],
         startPoint: { x: 0, y: 0 },
         endPoint: { x: 0, y: 0 },
       };
@@ -1774,7 +1776,7 @@ function buildAnnotatedResult(
     return {
       type: 'PathBlockValue' as const,
       commands: normalized,
-      pathStrings: normalized.map((c) => commandToPathString(c)),
+      records: recordsFromCommands(normalized),
       startPoint: { x: 0, y: 0 },
       endPoint: { x: last.end.x, y: last.end.y },
     };
@@ -2011,7 +2013,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: [],
-          pathStrings: [],
+          records: [],
           startPoint: { x: 0, y: 0 },
           endPoint: { x: 0, y: 0 },
         };
@@ -2969,7 +2971,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
             const pb: PathBlockValue = {
               type: 'PathBlockValue' as const,
               commands: [],
-              pathStrings: [],
+              records: [],
               startPoint: { x: 0, y: 0 },
               endPoint: { x: 0, y: 0 },
             };
@@ -3207,7 +3209,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
             return {
               type: 'PathBlockValue' as const,
               commands: [],
-              pathStrings: [],
+              records: [],
               startPoint: { x: 0, y: 0 },
               endPoint: { x: 0, y: 0 },
             };
@@ -3216,7 +3218,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: concatCmds,
-            pathStrings: concatCmds.map((c) => commandToPathString(c)),
+            records: recordsFromCommands(concatCmds),
             startPoint: { x: 0, y: 0 },
             endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
           };
@@ -3411,7 +3413,6 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     value: contextToObject(blockContext),
   });
 
-  const accum: string[] = [];
   for (const stmt of expr.body) {
     if (stmt.type === 'LayerDefinition' || stmt.type === 'LayerApplyBlock' || stmt.type === 'TextStatement') {
       continue; // silently skip in annotated mode
@@ -3419,8 +3420,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     if (stmt.type === 'PathCommand' && stmt.command !== '' && stmt.command !== stmt.command.toLowerCase()) {
       continue; // skip absolute commands in annotated mode
     }
-    const result = evaluateStatementPlain(stmt, blockScope);
-    if (result) accum.push(result);
+    evaluateStatementPlain(stmt, blockScope);
   }
 
   const commands: PathBlockCommand[] = blockContext.commands.map((entry) => ({
@@ -3433,7 +3433,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
   return {
     type: 'PathBlockValue',
     commands,
-    pathStrings: accum.filter((s) => s.length > 0),
+    records: recordsFromCommands(commands),
     startPoint: { x: 0, y: 0 },
     endPoint: { x: blockContext.position.x, y: blockContext.position.y },
   };
@@ -5046,6 +5046,11 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
     }
 
     case 'PathCommand': {
+      if (stmt.annotations?.cornerOp) {
+        throw new Error(
+          'with clauses are not supported in --annotated debug mode yet; compile normally (they work in the CLI, playground, and VS Code preview).',
+        );
+      }
       // Method call statements: evaluate for side effects, emit path if PathWithResult
       if (stmt.command === '' && stmt.args.length === 1 && stmt.args[0].type === 'MethodCallExpression') {
         const methodResult = evaluateMethodCall(stmt.args[0], scope);
@@ -5462,6 +5467,11 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
     }
 
     case 'PathCommand': {
+      if (stmt.annotations?.cornerOp) {
+        throw new Error(
+          'with clauses are not supported in --annotated debug mode yet; compile normally (they work in the CLI, playground, and VS Code preview).',
+        );
+      }
       // Method call statements: evaluate for side effects, emit path if PathWithResult
       if (stmt.command === '' && stmt.args.length === 1 && stmt.args[0].type === 'MethodCallExpression') {
         const methodExpr = stmt.args[0];

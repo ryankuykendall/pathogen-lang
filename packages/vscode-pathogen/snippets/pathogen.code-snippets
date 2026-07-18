@@ -243,5 +243,15 @@
     "prefix": "CSSVar",
     "body": "CSSVar('${1:--var-name}', ${0:#000})",
     "description": "CSSVar(name, fallback) — CSS custom property"
+  },
+  "With Fillet": {
+    "prefix": "with fillet",
+    "body": "with fillet(${1:radius})",
+    "description": "with fillet(radius) — round the corner this command creates"
+  },
+  "As Segment": {
+    "prefix": "as segment",
+    "body": "as segment('${1:name}')",
+    "description": "as segment('name') — label the segment this command draws"
   }
 }

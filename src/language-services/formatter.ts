@@ -173,8 +173,14 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       // Function calls and method calls wrapped as PathCommand (no command letter)
       // need semicolons — the parser requires them inside .apply blocks and at
       // statement level. Only actual SVG path commands (M, L, C, Z, etc.) skip them.
-      const needsSemicolon = !stmt.command && stmt.args.length > 0 &&
+      const isStatementCall = !stmt.command && stmt.args.length > 0 &&
         (stmt.args[0].type === 'FunctionCall' || stmt.args[0].type === 'MethodCallExpression');
+      // Commands carrying suffix clauses (`with fillet(...)` / `as segment(...)`)
+      // also take a trailing semicolon so the clauses terminate cleanly — EXCEPT
+      // close-path (`z`/`Z`), where a suffix clause followed by `;` fails to parse
+      // mid-document. The suffix on `z` is unambiguous without the terminator.
+      const isClosePath = stmt.command === 'z' || stmt.command === 'Z';
+      const needsSemicolon = isStatementCall || (stmt.annotations != null && !isClosePath);
       return `${prefix}${formatted}${needsSemicolon ? ';' : ''}`;
     }
     case 'ReturnStatement':
@@ -273,11 +279,37 @@ function formatParamList(params: string[], depth: number, indent: string): strin
 // --- Path commands ---
 
 function formatPathCommand(cmd: PathCommand, depth: number, indent: string, source?: string): string {
-  if (cmd.args.length === 0) return cmd.command;
+  const suffix = formatPathAnnotations(cmd.annotations, depth, indent, source);
+  if (cmd.args.length === 0) return `${cmd.command}${suffix}`;
   const args = cmd.args.map((a) => formatPathArg(a, depth, indent, source)).join(' ');
   // Empty command (e.g., standalone function call like circle(cx, cy, r))
-  if (!cmd.command) return args;
-  return `${cmd.command} ${args}`;
+  if (!cmd.command) return `${args}${suffix}`;
+  return `${cmd.command} ${args}${suffix}`;
+}
+
+// `with <cornerOp>(...)` then comma-separated `as segment('x'), endpoint('y')`.
+// Order is fixed (with before as) to match the grammar.
+function formatPathAnnotations(
+  annotations: PathCommand['annotations'],
+  depth: number,
+  indent: string,
+  source?: string,
+): string {
+  if (!annotations) return '';
+  let result = '';
+  if (annotations.cornerOp) {
+    const args = annotations.cornerOp.args
+      .map((a) => formatExpression(a, depth, indent, source))
+      .join(', ');
+    result += ` with ${annotations.cornerOp.kind}(${args})`;
+  }
+  if (annotations.labels && annotations.labels.length > 0) {
+    const labels = annotations.labels
+      .map((l) => `${l.kind}(${formatExpression(l.name, depth, indent, source)})`)
+      .join(', ');
+    result += ` as ${labels}`;
+  }
+  return result;
 }
 
 function formatPathArg(arg: PathArg, depth: number, indent: string, source?: string): string {

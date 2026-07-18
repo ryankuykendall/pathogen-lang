@@ -1,4 +1,5 @@
 import type { Point } from './context';
+import type { PathCommandMeta } from './types';
 
 /**
  * Minimal command interface for sampling — structurally compatible with PathBlockCommand
@@ -8,6 +9,7 @@ interface SamplingCmd {
   args: number[];
   start: Point;
   end: Point;
+  meta?: PathCommandMeta; // carried through rewrites so command identity survives
 }
 
 // ---- Length calculation (moved from index.ts) ----
@@ -180,6 +182,7 @@ export function resolveSmooth(commands: SamplingCmd[]): SamplingCmd[] {
         args: [cp1x, cp1y, x2, y2, dx, dy],
         start: { ...cmd.start },
         end: { ...cmd.end },
+        ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
       });
       lastCubicCP = { x: cmd.start.x + x2, y: cmd.start.y + y2 };
       lastQuadCP = null;
@@ -200,6 +203,7 @@ export function resolveSmooth(commands: SamplingCmd[]): SamplingCmd[] {
         args: [cpx, cpy, dx, dy],
         start: { ...cmd.start },
         end: { ...cmd.end },
+        ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
       });
       lastQuadCP = { x: cmd.start.x + cpx, y: cmd.start.y + cpy };
       lastCubicCP = null;
@@ -209,6 +213,7 @@ export function resolveSmooth(commands: SamplingCmd[]): SamplingCmd[] {
         args: [...cmd.args],
         start: { ...cmd.start },
         end: { ...cmd.end },
+        ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
       });
 
       // Track control points for C and Q so a following S/T can reflect them

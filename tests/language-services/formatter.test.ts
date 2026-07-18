@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { StringTextDocument } from '../../src/language-services/document';
 import { formatDocument } from '../../src/language-services/formatter';
+import { parse } from '../../src/parser';
 
 function format(source: string, indent?: string): string {
   const edits = formatDocument(new StringTextDocument(source), indent ? { indent } : undefined);
@@ -190,6 +191,49 @@ describe('formatDocument', () => {
     it('preserves space between command and arguments', () => {
       const result = format('M 100 200');
       expect(result).toBe('M 100 200');
+    });
+  });
+
+  // --- Path-command suffix clauses (with / as) ---
+  describe('suffix clauses', () => {
+    it('formats a command with both with and as clauses stably', () => {
+      const src = "v 20 with fillet(5) as segment('west');";
+      expect(format(src)).toBe(src);
+    });
+
+    it('is idempotent on with/as clauses', () => {
+      const src = "v 20 with fillet(5) as segment('west');";
+      const once = format(src);
+      expect(format(once)).toBe(once);
+    });
+
+    it('formats a bare with clause on z without a poisonous semicolon', () => {
+      // `z <suffix>;` fails to parse mid-document, so the formatter must not
+      // add the terminator on close-path commands.
+      expect(format('z with chamfer(2)')).toBe('z with chamfer(2)');
+    });
+
+    it('keeps annotated z formatting parseable inside a block (round-trip)', () => {
+      const src = 'let box = @{\n  M 0 0\n  z with chamfer(2)\n};\n';
+      const out = format(src);
+      // The invariant that matters for a formatter: parse(format(x)) must
+      // succeed whenever parse(x) does.
+      expect(() => parse(out)).not.toThrow();
+    });
+
+    it('formats comma-separated labels', () => {
+      const src = "h 20 as segment('lid'), endpoint('corner');";
+      expect(format(src)).toBe(src);
+    });
+
+    it('formats a label on a statement function call', () => {
+      expect(format("circle(5, 5, 20) as segment('c1');")).toBe("circle(5, 5, 20) as segment('c1');");
+    });
+
+    it('emits the with clause before the as clause', () => {
+      const result = format("h 10 with chamfer(2) as segment('base');");
+      expect(result).toBe("h 10 with chamfer(2) as segment('base');");
+      expect(result.indexOf('with')).toBeLessThan(result.indexOf('as'));
     });
   });
 

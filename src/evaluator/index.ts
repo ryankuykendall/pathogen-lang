@@ -38,7 +38,6 @@ import {
 } from '../color';
 import {
   chamferCommands,
-  commandToPathString,
   computeBoundingBox,
   concatenateCommands,
   ellipticalFilletCommands,
@@ -136,6 +135,7 @@ import type {
   TextLayerState,
   UserFunction,
   Value,
+  PathStore,
 } from './types';
 import type {
   ArrayDestructuringPattern,
@@ -228,7 +228,12 @@ export type {
   TransformReference,
   UserFunction,
   Value,
+  PathRecord,
+  PathStore,
+  PathCommandMeta,
+  RecordedCornerOp,
 } from './types';
+import { applyAnnotationsToStore, applyRecordedCornerOps, commandsToPathData, createPathStore, recordPath, recordsFromCommands, parsePathStringAt, parsePathStringToCommands, storeToPathData } from './segments';
 
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker', 'marker-start', 'marker-mid', 'marker-end']);
@@ -1025,7 +1030,7 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
     return {
       type: 'PathBlockValue' as const,
       commands: [],
-      pathStrings: [],
+      records: [],
       startPoint: { x: 0, y: 0 },
       endPoint: { x: 0, y: 0 },
     };
@@ -1042,7 +1047,7 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
   return {
     type: 'PathBlockValue' as const,
     commands: normalized,
-    pathStrings: normalized.map((c) => commandToPathString(c)),
+    records: recordsFromCommands(normalized),
     startPoint: { x: 0, y: 0 },
     endPoint: { x: last.end.x, y: last.end.y },
   };
@@ -1079,6 +1084,7 @@ function projectCommands(commands: PathBlockCommand[], originX: number, originY:
     args: [...cmd.args],
     start: { x: cmd.start.x + originX, y: cmd.start.y + originY },
     end: { x: cmd.end.x + originX, y: cmd.end.y + originY },
+    ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
   }));
 }
 
@@ -1112,14 +1118,14 @@ function generateCodeSnippetLayers(
     isDefault: false,
     styles: { fill: '#1e293b', stroke: '#334155', 'stroke-width': '1' },
     pathContext: createPathContext(),
-    accum: [],
+    accum: createPathStore(),
     transformState: createTransformState(),
   };
   // Generate roundRect path
   const r = 6;
   const rr = Math.min(r, bgWidth / 2, bgHeight / 2);
   const rrPath = `M ${rr} 0 L ${bgWidth - rr} 0 Q ${bgWidth} 0 ${bgWidth} ${rr} L ${bgWidth} ${bgHeight - rr} Q ${bgWidth} ${bgHeight} ${bgWidth - rr} ${bgHeight} L ${rr} ${bgHeight} Q 0 ${bgHeight} 0 ${bgHeight - rr} L 0 ${rr} Q 0 0 ${rr} 0 Z`;
-  bgLayerState.accum.push(rrPath);
+  recordPath(bgLayerState.accum, rrPath, parsePathStringAt(rrPath, { x: 0, y: 0 }));
 
   // Create code TextLayer with tokenized text
   const codeName = `${name}-code`;
@@ -1586,7 +1592,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
             return {
               type: 'PathBlockValue' as const,
               commands: [],
-              pathStrings: [],
+              records: [],
               startPoint: { x: 0, y: 0 },
               endPoint: { x: 0, y: 0 },
             };
@@ -1595,7 +1601,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: concatCmds,
-            pathStrings: concatCmds.map((c) => commandToPathString(c)),
+            records: recordsFromCommands(concatCmds),
             startPoint: { x: 0, y: 0 },
             endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
           };
@@ -1792,7 +1798,7 @@ function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope
       isDefault: false,
       styles,
       pathContext: createPathContext(),
-      accum: [],
+      accum: createPathStore(),
       transformState: createTransformState(),
     };
   }
@@ -1846,7 +1852,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
   });
 
   // Evaluate body, accumulating path command strings
-  const accum: string[] = [];
+  const accum = createPathStore();
   for (const stmt of expr.body) {
     // Runtime restrictions
     if (stmt.type === 'LayerDefinition') {
@@ -1871,10 +1877,37 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     end: { x: entry.end.x, y: entry.end.y },
   }));
 
+  // Transfer per-command metadata (labels, recorded corner ops) from the
+  // authored records onto the normalized commands. The two lists track the
+  // same evaluation 1:1; skip transfer defensively if counts ever diverge.
+  const recordCommands = accum.records.flatMap((r) => r.commands);
+  if (recordCommands.length === commands.length) {
+    for (let i = 0; i < commands.length; i++) {
+      if (recordCommands[i].meta !== undefined) commands[i].meta = recordCommands[i].meta;
+    }
+  } else if (recordCommands.some((c) => c.meta !== undefined)) {
+    scope.evalState?.logs.push({
+      line: null,
+      parts: [
+        {
+          type: 'string',
+          value: `[warn] path block annotation transfer skipped: ${recordCommands.length} recorded vs ${commands.length} tracked commands — labels/corner ops in this block were dropped`,
+        },
+      ],
+    });
+  }
+
+  // Apply recorded corner ops at finalization (identity: authored records keep
+  // their annotations; the finalized commands carry propagated labels).
+  const finalized = applyRecordedCornerOps(commands);
+  for (const w of finalized.warnings) {
+    scope.evalState?.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+  }
+
   return {
     type: 'PathBlockValue',
-    commands,
-    pathStrings: accum.filter((s) => s.length > 0),
+    commands: finalized.commands,
+    records: accum.records.filter((r) => r.raw.length > 0),
     startPoint: { x: 0, y: 0 },
     endPoint: { x: blockContext.position.x, y: blockContext.position.y },
   };
@@ -1883,7 +1916,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
 /**
  * Evaluate a statement inside a path block, enforcing relative-only constraint
  */
-function evaluatePathBlockStatement(stmt: Statement, scope: Scope, accum: string[]): void {
+function evaluatePathBlockStatement(stmt: Statement, scope: Scope, accum: PathStore): void {
   if (stmt.type === 'PathCommand' && stmt.command !== '') {
     // Enforce relative-only (lowercase) commands
     if (stmt.command !== stmt.command.toLowerCase()) {
@@ -2289,7 +2322,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const emittedPath = commandsToRelativeD(obj.commands, true);
 
         // Track the relative path in context (updates cursor from current position)
-        parseAndTrackPathString(emittedPath, scope);
+        const emittedCommands = parseAndTrackPathString(emittedPath, scope);
 
         // Build the ProjectedPathValue with absolute coordinates for programmatic use
         const projectedCommands = projectCommands(obj.commands, originX, originY);
@@ -2305,6 +2338,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           type: 'PathWithResult' as const,
           path: emittedPath,
           result: projected,
+          commands: emittedCommands,
         };
       }
 
@@ -2322,7 +2356,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const emittedPath = `${moveCmd} ${relativeD}`;
 
         // Track in path context
-        parseAndTrackPathString(emittedPath, scope);
+        const emittedCommands = parseAndTrackPathString(emittedPath, scope);
 
         // Build ProjectedPathValue with absolute coordinates
         const projectedCommands = projectCommands(obj.commands, dtX, dtY);
@@ -2337,6 +2371,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           type: 'PathWithResult' as const,
           path: emittedPath,
           result: projected,
+          commands: emittedCommands,
         };
       }
 
@@ -2421,7 +2456,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -2438,7 +2473,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: normalizedCmds,
-          pathStrings: normalizedCmds.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(normalizedCmds),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
         };
@@ -2468,7 +2503,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -2485,7 +2520,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: oNormalized,
-          pathStrings: oNormalized.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(oNormalized),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: oLast.end.x, y: oLast.end.y },
         };
@@ -2506,7 +2541,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (params.length > 0) setVariable(blockScope, params[0], builder);
         // pb = the spine PathBlockValue itself (exposes get/tangent/normal/length/vertices).
         if (params.length > 1) setVariable(blockScope, params[1], obj);
-        evaluateStatementsToAccum(expr.block.body, blockScope, []);
+        evaluateStatementsToAccum(expr.block.body, blockScope, createPathStore());
         if (builder.stops.length < 2)
           throw mError('variableOffset() needs at least 2 stops to trace a path (each go.stop() places one point)');
 
@@ -2526,7 +2561,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -2535,7 +2570,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: voResult,
-          pathStrings: voResult.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(voResult),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: voLast.end.x, y: voLast.end.y },
         };
@@ -2555,7 +2590,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const params = expr.block.params;
         if (params.length > 0) setVariable(blockScope, params[0], builder);
         if (params.length > 1) setVariable(blockScope, params[1], obj);
-        evaluateStatementsToAccum(expr.block.body, blockScope, []);
+        evaluateStatementsToAccum(expr.block.body, blockScope, createPathStore());
         if (builder.stops.length < 2)
           throw mError('compoundVariableOffset() needs at least 2 stops to trace a ribbon (each go.stop() places one cross-section)');
 
@@ -2585,7 +2620,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -2594,7 +2629,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: cvResult,
-          pathStrings: cvResult.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(cvResult),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: cvLast.end.x, y: cvLast.end.y },
         };
@@ -2609,7 +2644,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -2626,7 +2661,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: mNormalized,
-          pathStrings: mNormalized.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(mNormalized),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: mLast.end.x, y: mLast.end.y },
         };
@@ -2644,7 +2679,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -2661,7 +2696,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: rNormalized,
-          pathStrings: rNormalized.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(rNormalized),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: rLast.end.x, y: rLast.end.y },
         };
@@ -2678,7 +2713,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -2687,7 +2722,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: scaled,
-          pathStrings: scaled.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(scaled),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: sLast.end.x, y: sLast.end.y },
         };
@@ -2706,7 +2741,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -2724,7 +2759,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: spNormalized,
-          pathStrings: spNormalized.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(spNormalized),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
@@ -2963,7 +2998,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const emittedPath = `${moveCmd} ${relativeD}`;
 
         // Track in path context
-        parseAndTrackPathString(emittedPath, scope);
+        const emittedCommands = parseAndTrackPathString(emittedPath, scope);
 
         // Build ProjectedPathValue with absolute coordinates
         const projected: ProjectedPathValue = {
@@ -2977,6 +3012,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           type: 'PathWithResult' as const,
           path: emittedPath,
           result: projected,
+          commands: emittedCommands,
         };
       }
 
@@ -3145,7 +3181,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
-            pathStrings: [],
+            records: [],
             startPoint: { x: 0, y: 0 },
             endPoint: { x: 0, y: 0 },
           };
@@ -3162,7 +3198,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return {
           type: 'PathBlockValue' as const,
           commands: spNormalized,
-          pathStrings: spNormalized.map((c) => commandToPathString(c)),
+          records: recordsFromCommands(spNormalized),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
@@ -4242,7 +4278,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const callLine = getLine(expr);
         // Commands emitted inside a fill body are discarded (fill computes cell
         // values). Reuse one throwaway accum rather than allocating per cell.
-        const fillSink: string[] = [];
+        const fillSink = createPathStore();
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
             const blockScope = createScope(scope);
@@ -4278,7 +4314,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const callLine = getLine(expr);
         // Thread the active layer's accum so drawTo/path commands inside the block
         // emit to the surrounding layer.apply { ... }, matching for-loop semantics.
-        let blockAccum: string[] = [];
+        let blockAccum = createPathStore();
         if (scope.evalState?.activeLayerName) {
           const activeLayer = scope.evalState.layers.get(scope.evalState.activeLayerName);
           if (activeLayer && activeLayer.layerType === 'PathLayer') {
@@ -4321,7 +4357,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         const newCells: Value[][] = [];
         // Commands emitted inside a map body are discarded (map computes cell
         // values). Reuse one throwaway accum rather than allocating per cell.
-        const mapSink: string[] = [];
+        const mapSink = createPathStore();
         for (let r = 0; r < obj.rows; r++) {
           const row: Value[] = [];
           for (let c = 0; c < obj.cols; c++) {
@@ -4913,7 +4949,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
             const pb: PathBlockValue = {
               type: 'PathBlockValue' as const,
               commands: [],
-              pathStrings: [],
+              records: [],
               startPoint: { x: 0, y: 0 },
               endPoint: { x: 0, y: 0 },
             };
@@ -5037,7 +5073,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
         try {
           for (const stmt of expr.block.body) {
-            evaluateStatementToAccum(stmt, blockScope, []);
+            evaluateStatementToAccum(stmt, blockScope, createPathStore());
           }
           result.push(null); // no return → null
         } catch (e) {
@@ -5069,7 +5105,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
         try {
           for (const stmt of expr.block.body) {
-            evaluateStatementToAccum(stmt, blockScope, []);
+            evaluateStatementToAccum(stmt, blockScope, createPathStore());
           }
           accumulator = null; // no return → null
         } catch (e) {
@@ -5998,7 +6034,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return gradient;
@@ -6064,7 +6100,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return gradient;
@@ -6118,7 +6154,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], pattern);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return pattern;
@@ -6176,7 +6212,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], marker);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return marker;
@@ -6275,7 +6311,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], grid);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return grid;
@@ -6300,7 +6336,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return filter;
@@ -6325,7 +6361,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return filter;
@@ -6350,7 +6386,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return filter;
@@ -6375,7 +6411,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return filter;
@@ -6400,7 +6436,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return filter;
@@ -6453,7 +6489,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return filter;
@@ -6479,7 +6515,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return filter;
@@ -6535,7 +6571,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return gradient;
@@ -6621,7 +6657,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return gradient;
@@ -6675,7 +6711,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return gradient;
@@ -6732,7 +6768,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, []);
+        evaluateStatementToAccum(stmt, blockScope, createPathStore());
       }
     }
     return gradient;
@@ -6853,9 +6889,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
 
     // If stdlib function returns a PathSegment, track its commands
     if (typeof result === 'object' && result !== null && 'type' in result) {
-      const typed = result as { type: string; value?: string };
+      const typed = result as PathSegment;
       if (typed.type === 'PathSegment' && typed.value && scope.evalState) {
-        parseAndTrackPathString(typed.value, scope);
+        typed.commands = parseAndTrackPathString(typed.value, scope);
       }
     }
 
@@ -7260,7 +7296,7 @@ function evaluateContextAwareFunction(
       }
 
       // Update context tracking
-      parseAndTrackPathString(pathStr, scope);
+      const emittedCommands = parseAndTrackPathString(pathStr, scope);
 
       // Store tangent for tangentLine/tangentArc
       setLastTangent(ctx, tangentAngle);
@@ -7270,6 +7306,7 @@ function evaluateContextAwareFunction(
       return {
         type: 'PathWithResult' as const,
         path: pathStr,
+        commands: emittedCommands,
         result: {
           type: 'ContextObject' as const,
           value: {
@@ -7323,7 +7360,7 @@ function evaluateContextAwareFunction(
       }
 
       // Update context tracking
-      parseAndTrackPathString(pathStr, scope);
+      const emittedCommands = parseAndTrackPathString(pathStr, scope);
 
       // Store tangent for tangentLine/tangentArc
       setLastTangent(ctx, tangentAngle);
@@ -7333,6 +7370,7 @@ function evaluateContextAwareFunction(
       return {
         type: 'PathWithResult' as const,
         path: pathStr,
+        commands: emittedCommands,
         result: {
           type: 'ContextObject' as const,
           value: {
@@ -7416,7 +7454,7 @@ function evaluateContextAwareFunction(
       }
 
       // Update context tracking
-      parseAndTrackPathString(pathStr, scope);
+      const emittedCommands = parseAndTrackPathString(pathStr, scope);
 
       setLastTangent(ctx, newTangent);
       updateCtxVariable(scope);
@@ -7425,6 +7463,7 @@ function evaluateContextAwareFunction(
       return {
         type: 'PathWithResult' as const,
         path: pathStr,
+        commands: emittedCommands,
         result: {
           type: 'ContextObject' as const,
           value: {
@@ -7461,11 +7500,19 @@ function evaluateContextAwareFunction(
   }
 }
 
-function evaluatePathCommand(cmd: PathCommand, scope: Scope): string {
+function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; commands: PathBlockCommand[] } {
   // Empty command means it's a statement-level function call
   if (cmd.command === '') {
+    // Context tracking for any emitted PathSegments happens during arg
+    // evaluation, so derive structured commands from a scratch context seeded
+    // at the pre-statement cursor rather than re-applying to the live one.
+    const ctx = scope.evalState?.pathContext;
+    const startPos = ctx ? { x: ctx.position.x, y: ctx.position.y } : { x: 0, y: 0 };
+    const subpathStart = ctx ? { x: ctx.start.x, y: ctx.start.y } : undefined;
     const args = cmd.args.map((arg) => evaluatePathArg(arg, scope));
-    return args.join(' ');
+    const text = args.join(' ');
+    const commands = text ? parsePathStringAt(text, startPos, subpathStart) : [];
+    return { text, commands };
   }
 
   // Get string args for output
@@ -7473,45 +7520,31 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): string {
   const result = cmd.command + (stringArgs.length > 0 ? ` ${stringArgs.join(' ')}` : '');
 
   // Update path context if tracking is enabled
+  let commands: PathBlockCommand[] = [];
   if (scope.evalState && cmd.command !== '') {
     const numericArgs = getNumericArgs(cmd.args, scope);
-    updateContextForCommand(scope.evalState.pathContext, cmd.command, numericArgs);
+    const ctx = scope.evalState.pathContext;
+    const start = { x: ctx.position.x, y: ctx.position.y };
+    updateContextForCommand(ctx, cmd.command, numericArgs);
+    commands = [
+      { command: cmd.command, args: numericArgs, start, end: { x: ctx.position.x, y: ctx.position.y } },
+    ];
     updateCtxVariable(scope);
   }
 
-  return result;
+  return { text: result, commands };
 }
 
 /**
- * Parse a path string and update context for each command found.
- * Used for tracking context when stdlib functions return path strings.
+ * Parse a path string, update context for each command found, and return the
+ * structured commands. Used for tracking context when stdlib functions and
+ * draw()/drawTo() return path strings.
  */
-function parseAndTrackPathString(pathStr: string, scope: Scope): void {
-  if (!scope.evalState) return;
-
-  // Parse path commands from string: M 10 20 L 30 40 A 5 5 0 1 1 50 50 etc.
-  const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])\s*([\d\s.,eE+-]*)/g;
-  let match;
-
-  while ((match = commandRegex.exec(pathStr)) !== null) {
-    const command = match[1];
-    const argsStr = match[2].trim();
-
-    // Parse numeric arguments
-    const args: number[] = [];
-    if (argsStr) {
-      const numMatches = argsStr.match(/-?[\d.]+(?:e[+-]?\d+)?/gi);
-      if (numMatches) {
-        for (const num of numMatches) {
-          args.push(parseFloat(num));
-        }
-      }
-    }
-
-    updateContextForCommand(scope.evalState.pathContext, command, args);
-  }
-
+function parseAndTrackPathString(pathStr: string, scope: Scope): PathBlockCommand[] {
+  if (!scope.evalState) return [];
+  const commands = parsePathStringToCommands(pathStr, scope.evalState.pathContext);
   updateCtxVariable(scope);
+  return commands;
 }
 
 /**
@@ -7681,7 +7714,7 @@ function bindDestructuringPattern(
 function evaluateGridCellBody(
   body: Statement[],
   scope: Scope,
-  accum: string[],
+  accum: PathStore,
 ): { returned: boolean; value: Value } {
   for (const stmt of body) {
     if (stmt.type === 'ReturnStatement') {
@@ -7692,7 +7725,63 @@ function evaluateGridCellBody(
   return { returned: false, value: null };
 }
 
-function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]): void {
+/**
+ * Evaluate a PathCommand's `with` / `as` clause expressions into plain values.
+ * Validates label types and corner-op arity; placement validation happens in
+ * applyAnnotationsToStore once the record exists.
+ */
+function evaluatePathAnnotations(
+  stmt: PathCommand,
+  scope: Scope,
+): import('./segments').EvaluatedAnnotations | undefined {
+  const ann = stmt.annotations;
+  if (!ann) return undefined;
+  const line = getLine(stmt);
+  const result: import('./segments').EvaluatedAnnotations = {};
+
+  if (ann.cornerOp) {
+    const { kind, args } = ann.cornerOp;
+    const arity: Record<string, [number, number]> = { fillet: [1, 1], chamfer: [1, 2], ellipticalFillet: [2, 3] };
+    const [min, max] = arity[kind];
+    if (args.length < min || args.length > max) {
+      throw new Error(
+        formatError(
+          `${kind}() in a with clause expects ${min === max ? min : `${min}-${max}`} argument${max > 1 ? 's' : ''}, got ${args.length}`,
+          line,
+        ),
+      );
+    }
+    const values = args.map((a, i) => {
+      const v = evaluateExpression(a, scope);
+      if (typeof v !== 'number' || !Number.isFinite(v)) {
+        throw new Error(formatError(`${kind}() argument ${i + 1} must be a finite number`, line));
+      }
+      return v;
+    });
+    result.cornerOp = { kind, args: values, loc: ann.cornerOp.loc };
+  }
+
+  for (const label of ann.labels ?? []) {
+    const value = evaluateExpression(label.name, scope);
+    if (typeof value !== 'string' || value.length === 0) {
+      throw new Error(formatError(`${label.kind}() label name must be a non-empty string`, line));
+    }
+    if (label.kind === 'segment') {
+      if (result.segmentLabel !== undefined) {
+        throw new Error(formatError('At most one segment() label per as clause', line));
+      }
+      result.segmentLabel = value;
+    } else {
+      if (result.endpointLabel !== undefined) {
+        throw new Error(formatError('At most one endpoint() label per as clause', line));
+      }
+      result.endpointLabel = value;
+    }
+  }
+  return result;
+}
+
+function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStore): void {
   switch (stmt.type) {
     case 'LetDeclaration': {
       const value = evaluateExpression(stmt.value, scope);
@@ -7701,7 +7790,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         const bindValue = (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') ? value.result : value;
         bindDestructuringPattern(stmt.pattern, bindValue, scope, getLine(stmt));
         if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult' && value.path) {
-          accum.push(value.path);
+          recordPath(accum, value.path, value.commands ?? [], { loc: stmt.loc });
         }
         return;
       }
@@ -7709,7 +7798,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
         const pwr = value;
         setVariable(scope, stmt.name, pwr.result);
-        if (pwr.path) accum.push(pwr.path);
+        if (pwr.path) recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc });
         return;
       }
       setVariable(scope, stmt.name, value);
@@ -7721,7 +7810,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
         const pwr = value;
         updateVariable(scope, stmt.name, pwr.result, getLine(stmt));
-        if (pwr.path) accum.push(pwr.path);
+        if (pwr.path) recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc });
         return;
       }
       updateVariable(scope, stmt.name, value, getLine(stmt));
@@ -7876,7 +7965,13 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
             // `accum` is the default layer's accumulator at top level (it adopts the
             // top-level accum) and the active layer's inside an apply block, so a
             // single push routes correctly in all cases.
-            accum.push(pwr.path);
+            recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc });
+            const annotations = evaluatePathAnnotations(stmt, scope);
+            if (annotations) {
+              applyAnnotationsToStore(accum, annotations, (msg) => {
+                throw new Error(formatError(msg, getLine(stmt)));
+              });
+            }
           }
         }
         return;
@@ -7902,11 +7997,19 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         }
       }
       const result = evaluatePathCommand(stmt, scope);
-      if (result) {
+      if (result.text) {
         // `accum` is the default layer's accumulator at top level (the default layer
         // adopts the top-level accum) and the active layer's accumulator inside an
         // apply block — a single push routes correctly in all cases.
-        accum.push(result);
+        recordPath(accum, result.text, result.commands, { loc: stmt.loc });
+        const annotations = evaluatePathAnnotations(stmt, scope);
+        if (annotations) {
+          applyAnnotationsToStore(accum, annotations, (msg) => {
+            throw new Error(formatError(msg, getLine(stmt)));
+          });
+        }
+      } else if (stmt.annotations) {
+        throw new Error(formatError('with/as clauses require the statement to emit path data', getLine(stmt)));
       }
       return;
     }
@@ -8021,7 +8124,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         isDefault: stmt.isDefault,
         styles,
         pathContext: stmt.isDefault ? scope.evalState.pathContext : createPathContext(),
-        accum: stmt.isDefault ? (scope.evalState.rootAccum ?? accum) : [],
+        accum: stmt.isDefault ? (scope.evalState.rootAccum ?? accum) : createPathStore(),
         transformState: stmt.isDefault ? scope.evalState.transformState : createTransformState(),
       };
       scope.evalState.layers.set(nameValue, layerState);
@@ -8073,7 +8176,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
         const prevActiveLayerName = scope.evalState.activeLayerName;
         scope.evalState.activeLayerName = nameValue;
         for (const bodyStmt of stmt.body) {
-          evaluateStatementToAccum(bodyStmt, createScope(scope), []);
+          evaluateStatementToAccum(bodyStmt, createScope(scope), createPathStore());
         }
         scope.evalState.activeLayerName = prevActiveLayerName;
         return;
@@ -8808,7 +8911,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: string[]
 /**
  * Evaluate statements, appending output to the accumulator array.
  */
-function evaluateStatementsToAccum(stmts: Statement[], scope: Scope, accum: string[]): void {
+function evaluateStatementsToAccum(stmts: Statement[], scope: Scope, accum: PathStore): void {
   for (const stmt of stmts) {
     evaluateStatementToAccum(stmt, scope, accum);
   }
@@ -8819,9 +8922,16 @@ function evaluateStatementsToAccum(stmts: Statement[], scope: Scope, accum: stri
  * This is the public interface that uses the optimized accumulator internally.
  */
 function evaluateStatements(stmts: Statement[], scope: Scope): string {
-  const accum: string[] = [];
+  const accum = createPathStore();
   evaluateStatementsToAccum(stmts, scope, accum);
-  return accum.join(' ');
+  // Corner ops recorded inside this body (e.g. a user function) finalize here,
+  // since the joined string is this store's only output channel.
+  const finalized = applyRecordedCornerOps(accum.records.flatMap((r) => r.commands));
+  if (!finalized.changed) return storeToPathData(accum);
+  for (const w of finalized.warnings) {
+    scope.evalState?.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+  }
+  return commandsToPathData(finalized.commands);
 }
 
 /**
@@ -8860,7 +8970,21 @@ function expandOklchStops(stops: GradientStop[], stepsPerUnit: number): { offset
 /**
  * Build the CompileResult from evaluation state
  */
-function buildCompileResult(mainAccum: string[], evalState: EvaluationState): CompileResult {
+/**
+ * Emit a store's path data, applying any recorded corner ops at finalization.
+ * Zero-op stores (all pre-existing programs) take the byte-exact raw join.
+ */
+function storeToFinalizedData(store: PathStore, evalState: EvaluationState): string {
+  const flat = store.records.flatMap((r) => r.commands);
+  const finalized = applyRecordedCornerOps(flat);
+  if (!finalized.changed) return storeToPathData(store);
+  for (const w of finalized.warnings) {
+    evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+  }
+  return commandsToPathData(finalized.commands);
+}
+
+function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): CompileResult {
   const layers: LayerOutput[] = [];
 
   if (evalState.layerOrder.length === 0) {
@@ -8869,14 +8993,14 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
     layers.push({
       name: 'default',
       type: 'path',
-      data: mainAccum.join(' '),
+      data: storeToFinalizedData(mainAccum, evalState),
       styles: {},
       isDefault: true,
       transform,
     });
   } else {
     // Check if main accum has content that wasn't routed to a default layer
-    const mainContent = mainAccum.join(' ');
+    const mainContent = storeToFinalizedData(mainAccum, evalState);
     if (mainContent && !evalState.defaultLayerName) {
       // Prepend implicit default layer for bare commands
       const transform = transformStateToSvg(evalState.transformState) ?? undefined;
@@ -9043,7 +9167,7 @@ function buildCompileResult(mainAccum: string[], evalState: EvaluationState): Co
       return {
         name: layer.name,
         type: 'path',
-        data: pathLayer.accum.join(' '),
+        data: storeToFinalizedData(pathLayer.accum, evalState),
         styles: pathStyles,
         isDefault: layer.isDefault,
         transform,
@@ -9416,7 +9540,7 @@ export function evaluate(program: Program, options?: { toFixed?: number; fonts?:
       value: contextToObject(pathContext, transformState),
     });
 
-    const accum: string[] = [];
+    const accum = createPathStore();
     evalState.rootAccum = accum;
     evaluateStatementsToAccum(program.body, scope, accum);
 
@@ -9501,7 +9625,7 @@ export function evaluateWithContext(
 
     // Note: log() is handled specially in evaluateFunctionCall, not registered here
 
-    const accum: string[] = [];
+    const accum = createPathStore();
     evalState.rootAccum = accum;
     evaluateStatementsToAccum(program.body, scope, accum);
 

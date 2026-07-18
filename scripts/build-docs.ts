@@ -89,6 +89,7 @@ const DOC_FILES: Record<string, string> = {
   'viewbox.md': 'viewbox',
   'layers.md': 'layers',
   'path-blocks.md': 'pathBlocks',
+  'segment-labels.md': 'segmentLabels',
   'variable-offset.md': 'variableOffset',
   'textblock.md': 'textBlock',
   'color.md': 'color',

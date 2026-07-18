@@ -8,6 +8,9 @@ import type {
   Statement,
   Expression,
   Comment,
+  CornerOpAnnotation,
+  LabelAnnotation,
+  PathCommandAnnotations,
   LetDeclaration,
   AssignmentStatement,
   IndexedAssignmentStatement,
@@ -92,9 +95,12 @@ function parseExpressionAt(exprStr: string, sourceOffset: number, source: string
 // Wrapper offset: `let _ = ` is 8 characters
 const WRAP_OFFSET = 8;
 
-function adjustLocations(node: any, lineOffset: number, colOffset: number): void {
+function adjustLocations(node: any, lineOffset: number, colOffset: number, seen: Set<object> = new Set()): void {
   if (!node || typeof node !== 'object') return;
-  if (node.loc) {
+  // AST nodes may share a single loc object (e.g. MethodCallExpression and its
+  // object Identifier) — adjust each loc exactly once or lines drift.
+  if (node.loc && !seen.has(node.loc)) {
+    seen.add(node.loc);
     // For first line, adjust column accounting for the `let _ = ` wrapper
     if (node.loc.line === 1) {
       node.loc.line += lineOffset;
@@ -109,9 +115,9 @@ function adjustLocations(node: any, lineOffset: number, colOffset: number): void
     if (key === 'loc' || key === 'type') continue;
     const val = node[key];
     if (Array.isArray(val)) {
-      for (const item of val) adjustLocations(item, lineOffset, colOffset);
+      for (const item of val) adjustLocations(item, lineOffset, colOffset, seen);
     } else if (val && typeof val === 'object' && val.type) {
-      adjustLocations(val, lineOffset, colOffset);
+      adjustLocations(val, lineOffset, colOffset, seen);
     }
   }
 }
@@ -354,6 +360,12 @@ function buildExpressionStatement(cursor: TreeCursor, source: string): Statement
   const eqIdx = children.findIndex((c) => c.name === '=');
 
   if (eqIdx >= 0) {
+    // Assignments cannot carry with/as clauses — reject rather than silently drop.
+    if (children.some((c) => c.name === 'WithClause' || c.name === 'AsClause')) {
+      throw new Error(
+        `Parse error at line ${nodeLoc.line}: with/as clauses are only allowed on path commands and path-emitting function calls`,
+      );
+    }
     // This is an assignment. Build the LHS and RHS.
     const lhsChildren = children.slice(0, eqIdx);
     const rhsChildren = children.slice(eqIdx + 1).filter((c) => c.name !== ';');
@@ -410,6 +422,8 @@ function buildExpressionStatement(cursor: TreeCursor, source: string): Statement
   const expression = buildExpressionWithPostfix(cursor, source);
   cursor.parent();
 
+  const annotations = collectAnnotations(cursor, source);
+
   // Propagate the statement's location to the expression for error reporting
   if (expression && typeof expression === 'object' && !('loc' in expression && (expression as any).loc?.line > 1)) {
     (expression as any).loc = nodeLoc;
@@ -423,8 +437,15 @@ function buildExpressionStatement(cursor: TreeCursor, source: string): Statement
       type: 'PathCommand',
       command: '',
       args: [expression as PathArg],
+      ...(annotations ? { annotations } : {}),
       loc: nodeLoc,
     } as PathCommand;
+  }
+
+  if (annotations) {
+    throw new Error(
+      `Parse error at line ${nodeLoc.line}: with/as clauses are only allowed on path commands and path-emitting function calls`,
+    );
   }
 
   return {
@@ -630,6 +651,83 @@ function buildEnumDefinition(cursor: TreeCursor, source: string): EnumDefinition
   return { type: 'EnumDefinition', name, members, loc: nodeLoc };
 }
 
+const CORNER_OP_KINDS = new Set(['fillet', 'chamfer', 'ellipticalFillet']);
+const LABEL_KINDS = new Set(['segment', 'endpoint']);
+
+/** Build a `with <cornerOp>(...)` clause. Cursor must be on WithClause. */
+function buildWithClause(cursor: TreeCursor, source: string): CornerOpAnnotation {
+  const clauseLoc = loc(cursor, source);
+  let kind = '';
+  let args: Expression[] = [];
+  cursor.firstChild();
+  do {
+    if (cursor.name === 'CornerOpCall') {
+      cursor.firstChild();
+      do {
+        if (cursor.name === 'Identifier') kind = text(cursor, source);
+        else if (cursor.name === 'ArgList') args = buildArgList(cursor, source);
+      } while (cursor.nextSibling());
+      cursor.parent();
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+  if (!CORNER_OP_KINDS.has(kind)) {
+    throw new Error(
+      `Parse error at line ${clauseLoc.line}: unknown corner operation '${kind}' in with clause — expected fillet, chamfer, or ellipticalFillet`,
+    );
+  }
+  return { kind: kind as CornerOpAnnotation['kind'], args, loc: clauseLoc };
+}
+
+/** Build an `as segment('x'), endpoint('y')` clause. Cursor must be on AsClause. */
+function buildAsClause(cursor: TreeCursor, source: string): LabelAnnotation[] {
+  const labels: LabelAnnotation[] = [];
+  cursor.firstChild();
+  do {
+    if (cursor.name === 'LabelCall') {
+      const labelLoc = loc(cursor, source);
+      let kind = '';
+      let args: Expression[] = [];
+      cursor.firstChild();
+      do {
+        if (cursor.name === 'Identifier') kind = text(cursor, source);
+        else if (cursor.name === 'ArgList') args = buildArgList(cursor, source);
+      } while (cursor.nextSibling());
+      cursor.parent();
+      if (!LABEL_KINDS.has(kind)) {
+        throw new Error(
+          `Parse error at line ${labelLoc.line}: unknown label kind '${kind}' in as clause — expected segment or endpoint`,
+        );
+      }
+      if (args.length !== 1) {
+        throw new Error(
+          `Parse error at line ${labelLoc.line}: ${kind}() label expects exactly 1 argument (the name), got ${args.length}`,
+        );
+      }
+      labels.push({ kind: kind as LabelAnnotation['kind'], name: args[0], loc: labelLoc });
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+  return labels;
+}
+
+/**
+ * Collect WithClause/AsClause children of the node the cursor points into.
+ * Cursor must be positioned ON the parent; iterates children non-destructively.
+ */
+function collectAnnotations(cursor: TreeCursor, source: string): PathCommandAnnotations | undefined {
+  let cornerOp: CornerOpAnnotation | undefined;
+  let labels: LabelAnnotation[] | undefined;
+  cursor.firstChild();
+  do {
+    if (cursor.name === 'WithClause') cornerOp = buildWithClause(cursor, source);
+    else if (cursor.name === 'AsClause') labels = buildAsClause(cursor, source);
+  } while (cursor.nextSibling());
+  cursor.parent();
+  if (!cornerOp && !labels) return undefined;
+  return { ...(cornerOp ? { cornerOp } : {}), ...(labels ? { labels } : {}) };
+}
+
 function buildPathCommand(cursor: TreeCursor, source: string): Statement {
   const nodeLoc = loc(cursor, source);
   let command = '';
@@ -647,6 +745,8 @@ function buildPathCommand(cursor: TreeCursor, source: string): Statement {
   } while (cursor.nextSibling());
   cursor.parent();
 
+  const annotations = collectAnnotations(cursor, source);
+
   // Fixup: if a single lowercase letter is followed by "." (member access),
   // this is actually variable.method(), not a path command.
   // e.g., "m.draw()" should be PathCommand("", [MethodCallExpr]) not PathCommand("m", [draw arg]).
@@ -658,7 +758,7 @@ function buildPathCommand(cursor: TreeCursor, source: string): Statement {
     if (parsed) {
       // Wrap as PathCommand with empty command — the evaluator needs this
       // format to accumulate path data from method calls like draw().
-      return { type: 'PathCommand', command: '', args: [parsed as PathArg], loc: nodeLoc } as PathCommand;
+      return { type: 'PathCommand', command: '', args: [parsed as PathArg], ...(annotations ? { annotations } : {}), loc: nodeLoc } as PathCommand;
     }
   }
 
@@ -668,7 +768,7 @@ function buildPathCommand(cursor: TreeCursor, source: string): Statement {
   if (trimmedArgs.trim()) {
     args.push(...parsePathArgs(trimmedArgs.trim(), argsFrom + trimOffset, source));
   }
-  return { type: 'PathCommand', command, args, loc: nodeLoc } as PathCommand;
+  return { type: 'PathCommand', command, args, ...(annotations ? { annotations } : {}), loc: nodeLoc } as PathCommand;
 }
 
 /**

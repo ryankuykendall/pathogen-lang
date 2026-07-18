@@ -1,0 +1,313 @@
+/**
+ * Shared structured-path-record machinery for both evaluators.
+ *
+ * A PathStore pairs the byte-exact string fragments that the emit path joins
+ * into `LayerOutput.data` with the structured commands behind them. During
+ * the segments-everywhere transition the strings remain authoritative for
+ * output (byte parity by construction); the records are the queryable source
+ * of truth for labels and geometry.
+ */
+import type { PathBlockCommand, PathCommandMeta, PathRecord, PathStore, RecordedCornerOp } from './types';
+import type { SourceLocation } from '../parser/ast';
+import { createPathContext, updateContextForCommand, type PathContext } from './context';
+import {
+  chamferCommands,
+  commandToPathString,
+  ellipticalFilletCommands,
+  filletCommands,
+  identifyCornerVertices,
+} from './path-transforms';
+
+/** Evaluated (expression-free) annotation values ready to attach to a record. */
+export interface EvaluatedAnnotations {
+  cornerOp?: RecordedCornerOp;
+  segmentLabel?: string;
+  endpointLabel?: string;
+}
+
+const isMove = (c: string) => c === 'm' || c === 'M';
+const isClose = (c: string) => c === 'z' || c === 'Z';
+
+/**
+ * Attach evaluated `with` / `as` annotations to the most recently recorded
+ * fragment in the store. Validates duplicate labels and corner-op placement.
+ * `fail` reports errors with the caller's line formatting and must throw.
+ */
+export function applyAnnotationsToStore(
+  store: PathStore,
+  ann: EvaluatedAnnotations,
+  fail: (message: string) => never,
+): void {
+  const record = store.records[store.records.length - 1];
+  if (!record || record.commands.length === 0) {
+    fail('with/as clauses require the statement to emit path data');
+  }
+
+  if (ann.segmentLabel !== undefined) {
+    const label = ann.segmentLabel;
+    for (const r of store.records) {
+      if (r !== record && r.label === label) {
+        fail(`Duplicate segment label '${label}' — labels must be unique within a path`);
+      }
+    }
+    record.label = label;
+    for (const cmd of record.commands) {
+      cmd.meta = { ...cmd.meta, segmentLabel: label };
+    }
+  }
+
+  if (ann.endpointLabel !== undefined) {
+    const label = ann.endpointLabel;
+    for (const r of store.records) {
+      for (const cmd of r.commands) {
+        if (cmd.meta?.endVertex?.label === label) {
+          fail(`Duplicate endpoint label '${label}' — labels must be unique within a path`);
+        }
+      }
+    }
+    const last = record.commands[record.commands.length - 1];
+    last.meta = { ...last.meta, endVertex: { ...last.meta?.endVertex, label } };
+  }
+
+  if (ann.cornerOp !== undefined) {
+    const first = record.commands[0];
+    if (isMove(first.command)) {
+      fail(`with ${ann.cornerOp.kind}(...) cannot apply to a statement that begins a new subpath — there is no previous joint to round`);
+    }
+    // Find the previous drawing command in the same subpath (walk backwards
+    // across records; stop at a move or the beginning of the store).
+    const flat: PathBlockCommand[] = [];
+    for (const r of store.records) flat.push(...r.commands);
+    const firstIdx = flat.length - record.commands.length;
+    let prev: PathBlockCommand | null = null;
+    for (let i = firstIdx - 1; i >= 0; i--) {
+      const cmd = flat[i];
+      if (isMove(cmd.command)) break;
+      if (!isClose(cmd.command)) {
+        prev = cmd;
+        break;
+      }
+    }
+    if (!prev) {
+      fail(`with ${ann.cornerOp.kind}(...) requires a previous drawing command in the same subpath — there is no joint to round`);
+    }
+    if (prev.meta?.endVertex?.cornerOp) {
+      fail(`This vertex already has a ${prev.meta.endVertex.cornerOp.kind} recorded — only one corner operation per vertex`);
+    }
+    prev.meta = { ...prev.meta, endVertex: { ...prev.meta?.endVertex, cornerOp: ann.cornerOp } };
+  }
+}
+
+export function createPathStore(): PathStore {
+  return { records: [] };
+}
+
+/**
+ * The single write path for emitted path fragments. Each record pairs the
+ * byte-exact `raw` fragment (joined into LayerOutput.data) with its
+ * structured commands. Nothing else may push to a PathStore.
+ */
+export function recordPath(
+  store: PathStore,
+  raw: string,
+  commands: PathBlockCommand[],
+  extras?: { label?: string; loc?: SourceLocation },
+): void {
+  const record: PathRecord = { raw, commands };
+  if (extras?.label !== undefined) record.label = extras.label;
+  if (extras?.loc !== undefined) record.loc = extras.loc;
+  store.records.push(record);
+}
+
+/** Join a store's raw fragments into emit-ready path data. */
+export function storeToPathData(store: PathStore): string {
+  return store.records.map((r) => r.raw).join(' ');
+}
+
+/**
+ * Wrap derived commands (transform results, projections) as per-command
+ * records, serializing each with the canonical serializer — the same strings
+ * the old per-command pathStrings arrays held.
+ */
+export function recordsFromCommands(commands: PathBlockCommand[]): PathRecord[] {
+  return commands.map((c) => ({ raw: commandToPathString(c), commands: [c] }));
+}
+
+const isMoveCmd = (c: string) => c === 'm' || c === 'M';
+const isCloseCmd = (c: string) => c === 'z' || c === 'Z';
+
+function normalizeMeta(meta: PathCommandMeta | undefined): PathCommandMeta | undefined {
+  if (!meta) return undefined;
+  const endVertex =
+    meta.endVertex && (meta.endVertex.label !== undefined || meta.endVertex.cornerOp !== undefined)
+      ? meta.endVertex
+      : undefined;
+  if (meta.segmentLabel === undefined && endVertex === undefined) return undefined;
+  return { ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}), ...(endVertex ? { endVertex } : {}) };
+}
+
+/** Shallow-clone commands with cloned meta so finalization never mutates the authored store. */
+function cloneForFinalize(commands: PathBlockCommand[]): PathBlockCommand[] {
+  return commands.map((c) => ({
+    command: c.command,
+    args: [...c.args],
+    start: { ...c.start },
+    end: { ...c.end },
+    ...(c.meta !== undefined
+      ? { meta: { ...c.meta, ...(c.meta.endVertex ? { endVertex: { ...c.meta.endVertex } } : {}) } }
+      : {}),
+  }));
+}
+
+/**
+ * Apply corner operations recorded by `with <op>(...)` clauses. Non-destructive:
+ * the input commands are cloned; the authored store keeps its annotations.
+ * Identity (labels) propagates through the trims and splices inside
+ * path-transforms, so labeled segments survive finalization.
+ *
+ * Returns changed:false (input untouched) when no ops are recorded — the
+ * zero-op path is identity by construction, preserving byte-exact emit.
+ */
+export function applyRecordedCornerOps(commands: PathBlockCommand[]): {
+  commands: PathBlockCommand[];
+  warnings: string[];
+  changed: boolean;
+} {
+  if (!commands.some((c) => c.meta?.endVertex?.cornerOp)) {
+    return { commands, warnings: [], changed: false };
+  }
+
+  const warnings: string[] = [];
+  const working = cloneForFinalize(commands);
+
+  // Split into subpaths at move boundaries (applyCornerOperations drops moves
+  // from its result, so each subpath is finalized independently and its moves
+  // re-attached).
+  const subpaths: PathBlockCommand[][] = [];
+  let current: PathBlockCommand[] = [];
+  for (const cmd of working) {
+    if (isMoveCmd(cmd.command) && current.length > 0) {
+      subpaths.push(current);
+      current = [];
+    }
+    current.push(cmd);
+  }
+  if (current.length > 0) subpaths.push(current);
+
+  const out: PathBlockCommand[] = [];
+  for (const sub of subpaths) {
+    out.push(...finalizeSubpath(sub, warnings));
+  }
+  return { commands: out, warnings, changed: true };
+}
+
+function finalizeSubpath(sub: PathBlockCommand[], warnings: string[]): PathBlockCommand[] {
+  const moves: PathBlockCommand[] = [];
+  let body = sub;
+  while (body.length > 0 && isMoveCmd(body[0].command)) {
+    moves.push(body[0]);
+    body = body.slice(1);
+  }
+
+  let guard = 0;
+  while (guard++ < 1000) {
+    const opIdx = body.findIndex((c) => c.meta?.endVertex?.cornerOp);
+    if (opIdx === -1) break;
+    const opCmd = body[opIdx];
+    const op = opCmd.meta!.endVertex!.cornerOp!;
+
+    // Consume the op (meta was cloned, so the authored store is untouched).
+    opCmd.meta = normalizeMeta({
+      ...opCmd.meta,
+      endVertex: { ...(opCmd.meta!.endVertex!.label !== undefined ? { label: opCmd.meta!.endVertex!.label } : {}) },
+    });
+
+    // Locate the corner at the END of opCmd in the same vertex-index space the
+    // corner-op appliers use: z popped (replaced by a closing line when it has
+    // length), moves absent, corners from identifyCornerVertices + closure.
+    let expanded = body;
+    let closed = false;
+    if (body.length > 0 && isCloseCmd(body[body.length - 1].command)) {
+      closed = true;
+      const z = body[body.length - 1];
+      expanded = body.slice(0, -1);
+      const zdx = z.end.x - z.start.x;
+      const zdy = z.end.y - z.start.y;
+      if (Math.abs(zdx) > 1e-10 || Math.abs(zdy) > 1e-10) {
+        expanded = [...expanded, { command: 'l', args: [zdx, zdy], start: { ...z.start }, end: { ...z.end } }];
+      }
+    }
+    const allCorners = identifyCornerVertices(expanded);
+    if (closed && expanded.length >= 2) allCorners.push(expanded.length - 1);
+    const k = expanded.indexOf(opCmd);
+    const pos = allCorners.indexOf(k);
+    if (k === -1 || pos === -1) {
+      warnings.push(`${op.kind} skipped: no corner at the annotated vertex (collinear edges or terminal command)`);
+      continue;
+    }
+
+    let res: { commands: PathBlockCommand[]; warnings: string[] };
+    if (op.kind === 'fillet') {
+      res = filletCommands(body, op.args[0], [pos]);
+    } else if (op.kind === 'chamfer') {
+      res = chamferCommands(body, op.args[0], op.args[1] ?? op.args[0], [pos]);
+    } else {
+      res = ellipticalFilletCommands(body, op.args[0], op.args[1], op.args[2] ?? 0, [pos]);
+    }
+    warnings.push(...res.warnings);
+    body = res.commands;
+  }
+
+  return [...moves, ...body];
+}
+
+/** Serialize finalized commands to emit-ready path data. */
+export function commandsToPathData(commands: PathBlockCommand[]): string {
+  return commands.map((c) => commandToPathString(c)).join(' ');
+}
+
+const NUMBER_REGEX = /-?[\d.]+(?:e[+-]?\d+)?/gi;
+
+/**
+ * Parse a path string, updating `ctx` per command, and return the structured
+ * commands with exact start/end cursor positions. Replaces the regex-only
+ * walk previously inlined in parseAndTrackPathString, so records and context
+ * tracking agree by construction.
+ */
+export function parsePathStringToCommands(pathStr: string, ctx: PathContext): PathBlockCommand[] {
+  const commands: PathBlockCommand[] = [];
+  const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])\s*([\d\s.,eE+-]*)/g;
+  let match;
+  while ((match = commandRegex.exec(pathStr)) !== null) {
+    const command = match[1];
+    const argsStr = match[2].trim();
+    const args: number[] = [];
+    if (argsStr) {
+      const numMatches = argsStr.match(NUMBER_REGEX);
+      if (numMatches) {
+        for (const num of numMatches) args.push(parseFloat(num));
+      }
+    }
+    const start = { x: ctx.position.x, y: ctx.position.y };
+    updateContextForCommand(ctx, command, args);
+    commands.push({ command, args, start, end: { x: ctx.position.x, y: ctx.position.y } });
+  }
+  return commands;
+}
+
+/**
+ * Parse a path string against a throwaway context seeded at `startPos`,
+ * without touching any live context. Used to derive structured commands for
+ * strings whose context tracking already happened during evaluation (e.g.
+ * stdlib PathSegments stringified into a statement-function's output).
+ */
+export function parsePathStringAt(
+  pathStr: string,
+  startPos: { x: number; y: number },
+  subpathStart?: { x: number; y: number },
+): PathBlockCommand[] {
+  const scratch = createPathContext({});
+  scratch.position = { x: startPos.x, y: startPos.y };
+  scratch.start = subpathStart ? { x: subpathStart.x, y: subpathStart.y } : { x: startPos.x, y: startPos.y };
+  return parsePathStringToCommands(pathStr, scratch);
+}

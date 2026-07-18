@@ -508,11 +508,49 @@ export interface PathBlockNamespace {
 /**
  * Structured command within a PathBlock — stores command letter, numeric args, and start/end points
  */
+/** Authored corner-op intent recorded by a `with <op>(...)` clause; applied at finalization. */
+export interface RecordedCornerOp {
+  kind: 'fillet' | 'chamfer' | 'ellipticalFillet';
+  args: number[]; // evaluated: fillet(r) → [r]; chamfer(d1, d2?) → [d1, d2]; ellipticalFillet(rx, ry, rot?) → [rx, ry, rot]
+  loc?: SourceLocation;
+}
+
+/** Per-command metadata attached by `as` / `with` clauses. */
+export interface PathCommandMeta {
+  segmentLabel?: string; // inherited from the owning record's `as segment(...)`
+  endVertex?: {
+    label?: string; // `as endpoint(...)` on the command that creates this vertex
+    cornerOp?: RecordedCornerOp; // `with <op>(...)` on the FOLLOWING command (this vertex is the joint)
+  };
+}
+
 export interface PathBlockCommand {
-  command: string; // lowercase letter (m, l, h, v, c, s, q, t, a, z)
+  command: string; // command letter — lowercase inside PathBlocks; case-preserved in layer records
   args: number[]; // evaluated numeric arguments
   start: Point; // cursor position before command
   end: Point; // cursor position after command
+  meta?: PathCommandMeta;
+}
+
+/**
+ * One emitted path fragment: the byte-exact string pushed to the accumulator
+ * paired with its structured commands. Statement granularity — a stdlib call
+ * like circle() produces one record holding many commands.
+ */
+export interface PathRecord {
+  raw: string; // exact fragment joined into LayerOutput.data
+  commands: PathBlockCommand[];
+  label?: string; // segment label ('as segment(...)')
+  loc?: SourceLocation; // source location of the emitting statement
+}
+
+/**
+ * The structured accumulator for a path context (layer, root, or path
+ * block). All writes go through recordPath() in segments.ts; emit joins the
+ * records' byte-exact raw fragments.
+ */
+export interface PathStore {
+  records: PathRecord[];
 }
 
 /**
@@ -520,8 +558,8 @@ export interface PathBlockCommand {
  */
 export interface PathBlockValue {
   type: 'PathBlockValue';
-  commands: PathBlockCommand[]; // structured command list
-  pathStrings: string[]; // raw path command strings (for emit)
+  commands: PathBlockCommand[]; // structured command list (finalized geometry)
+  records: PathRecord[]; // statement-granularity authored store (raw fragments + commands)
   startPoint: Point; // origin (always 0,0 unless path begins with m)
   endPoint: Point; // final cursor position (relative)
 }
@@ -586,6 +624,7 @@ export interface PathWithResult {
   type: 'PathWithResult';
   path: string; // The path string to emit
   result: Value; // The result value (for assignments)
+  commands?: PathBlockCommand[]; // structured commands for `path`, captured at tracking time
 }
 
 /**
@@ -645,7 +684,7 @@ export interface PathLayerState {
   isDefault: boolean;
   styles: LayerStyle;
   pathContext: PathContext;
-  accum: string[];
+  accum: PathStore;
   transformState: TransformState;
 }
 
@@ -929,6 +968,7 @@ export interface FontRegistry {
 export interface PathSegment {
   type: 'PathSegment';
   value: string;
+  commands?: PathBlockCommand[]; // structured commands for `value`, captured at tracking time
 }
 
 export interface UserFunction {
@@ -948,7 +988,7 @@ export interface EvaluationState {
   layerOrder: string[]; // Definition order for z-index
   activeLayerName: string | null; // Currently inside layer().apply
   defaultLayerName: string | null; // Default layer name
-  rootAccum?: string[]; // Top-level command accumulator (the default layer adopts this)
+  rootAccum?: PathStore; // Top-level command accumulator (the default layer adopts this)
   transformState: TransformState; // Transform state for implicit default layer
   masks: Map<string, MaskValue>; // Mask definitions by ID
   clipPaths: Map<string, ClipPathValue>; // ClipPath definitions by ID

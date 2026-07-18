@@ -138,10 +138,32 @@ FontDirective {
 
 // Path commands: always greedy when args are available.
 // Z/z take no args; all others take at least one.
-PathCommand {
-  pathCmd PathArgs |
-  pathCmdZ
+// Optional suffix clauses: `with <cornerOp>(...)` records behavior on the
+// vertex the command creates; `as segment('x'), endpoint('y')` attaches
+// labels. Order is fixed (with before as); trailing semicolon is optional.
+PathCommand[@dynamicPrecedence=1] {
+  pathCmd PathArgs WithClause? AsClause? ";"? |
+  pathCmdZ WithClause? AsClause? ";"?
 }
+
+WithClause {
+  withKw CornerOpCall
+}
+
+CornerOpCall {
+  Identifier ArgList
+}
+
+AsClause {
+  asKw LabelCall ("," LabelCall)*
+}
+
+LabelCall {
+  Identifier ArgList
+}
+
+withKw[@name=with] { @extend[@name=with]<Identifier, "with"> }
+asKw[@name=as] { @extend[@name=as]<Identifier, "as"> }
 
 pathCmd[@name=PathCommandLetter] {
   @extend[@name=PathCommandLetter]<Identifier, "M"> |
@@ -178,7 +200,7 @@ pathCmdZ[@name=PathCommandLetter] {
 }
 
 ExpressionStatement {
-  expression ("=" expression)? ";"
+  expression ("=" expression)? WithClause? AsClause? ";"
 }
 
 Block {

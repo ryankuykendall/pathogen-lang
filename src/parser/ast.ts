@@ -142,11 +142,31 @@ export interface ReturnStatement {
   value: Expression;
 }
 
+// `with <cornerOp>(...)` — behavior recorded on the vertex this command creates
+export interface CornerOpAnnotation {
+  kind: 'fillet' | 'chamfer' | 'ellipticalFillet';
+  args: Expression[];
+  loc?: SourceLocation;
+}
+
+// `as segment('name')` / `as endpoint('name')` — labels attached to this command
+export interface LabelAnnotation {
+  kind: 'segment' | 'endpoint';
+  name: Expression; // expression-valued so loop labels like segment('rib-${i}') work
+  loc?: SourceLocation;
+}
+
+export interface PathCommandAnnotations {
+  cornerOp?: CornerOpAnnotation;
+  labels?: LabelAnnotation[];
+}
+
 // M x y, L 10 20, etc.
 export interface PathCommand {
   type: 'PathCommand';
   command: string; // M, m, L, l, H, h, V, v, C, c, S, s, Q, q, T, t, A, a, Z, z
   args: PathArg[];
+  annotations?: PathCommandAnnotations;
   loc?: SourceLocation;
 }
 

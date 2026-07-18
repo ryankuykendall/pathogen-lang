@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-17 (segment labels & corner suffixes)
+
+### Added
+
+#### Definition-site path annotations: `with` corner ops and `as` labels
+
+- **`with fillet(r)` / `with chamfer(d1, d2?)` / `with ellipticalFillet(rx, ry, rot?)` on path commands** — attach a corner operation to the joint a command creates, at the point of definition: `v 20 with fillet(5)` rounds the corner where the previous edge meets this one. Semantics are **record-then-apply**: the op is recorded on the vertex and applied at finalization via the same machinery as `.fillet()`/`.filletAtVertex()` (equivalence covered by tests), so `ctx.position` mid-program reflects authored geometry and authored records stay non-destructive. Works in `@{ }` path blocks, `apply { }` blocks, top level, and user function bodies. Errors: annotating a statement that begins a subpath, or with no previous drawing command in the subpath ("no joint to round"); curve-junction and clamping behavior matches the existing fillet methods. Not yet supported in `--annotated` mode (honest error).
+- **`as segment('name')` / `as endpoint('name')` labels** — name a command range or the vertex it creates: `h 20 as segment('lid'), endpoint('corner');`. Labels are emit-neutral (byte-identical output), expression-valued (`as segment('rib-${i}')` in loops), attach at statement granularity (`circle(...) as segment('c1');` labels the whole generated range), survive corner-op trims/splices via identity propagation, and are duplicate-checked per path. They are the addressing foundation for the upcoming name-based query APIs (`segment()`/`point()`/`vertex()`).
+- **Optional trailing semicolon on path commands** — `h 20;` is now valid (previously a parse error with a misleading "Missing ';'" message). Clause ordering is grammar-enforced: one `with`, one `as`, `with` before `as`, comma list only on `as`. `with`/`as` remain usable as identifiers outside path-argument position (contextual keywords). New docs page `docs/segment-labels.md`; TextMate keywords, snippets, and highlight tags updated.
+
+### Changed
+
+- **Breaking (pre-1.0):** `PathBlockValue.pathStrings: string[]` is replaced by `PathBlockValue.records: PathRecord[]` — the statement-granularity authored store pairing each byte-exact raw fragment with its structured commands. `PathLayerState.accum` is now a `PathStore` (records) instead of `string[]`. `PathRecord`, `PathStore`, `PathCommandMeta`, and `RecordedCornerOp` are exported from the package root. The field was write-only in practice; emitted SVG is unchanged.
+
+### Development
+
+- **Segments-everywhere refactor.** Both evaluators now accumulate structured `PathRecord`s (raw fragment + commands + optional label/loc) through a single write path (`src/evaluator/segments.ts` `recordPath`); `LayerOutput.data` joins the byte-exact raw fragments, so zero-annotation programs emit byte-identical output (render snapshots unchanged). `PathWithResult`/`PathSegment` carry their structured commands from tracking time (draw/drawTo, projected drawTo, `arcFromCenter`, `arcFromPolarOffset`, `tangentArc`, stdlib returns). Command identity (`meta`) propagates through `resolveSmooth`, corner-op trims, and splices in `sampling.ts`/`path-transforms.ts`, with inserted corner commands inheriting a segment label only when both neighbors share it. `PathCommand` GLR ambiguity against `ExpressionStatement` resolved with dynamic precedence (`h -120 with ...` parses as a path command).
+- **Fixed a latent double-adjustment bug in `parseExpressionAt`** — AST nodes sharing a `loc` object (method call + its object) were line-shifted twice, corrupting error locations for single-letter-variable method calls (`s.foo();`). Locations are now adjusted exactly once (visited-set guard).
+- New suites: `tests/segments.test.ts` (store/parse units + 30k-command perf smoke), `tests/segment-labels.test.ts` (recording, validation, finalization equivalence), snapshot fixture `13-segment-suffixes` exercising the syntax end-to-end. Note for grammar regens: `npx lezer-generator src/parser/pathogen.grammar -o src/parser/pathogen.generated.ts`, then re-apply the `keyof typeof spec_Identifier` type patch on the `specialized:` line (required for the DTS build).
+
 ## [Unreleased] - 2026-07-17
 
 ### Added

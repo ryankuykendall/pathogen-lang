@@ -9,6 +9,7 @@ import {
 } from './sampling';
 
 import type { Point } from './context';
+import type { PathCommandMeta } from './types';
 
 /**
  * Minimal command interface — structurally compatible with PathBlockCommand
@@ -18,6 +19,18 @@ interface TransformCmd {
   args: number[];
   start: Point;
   end: Point;
+  meta?: PathCommandMeta; // command identity (labels, recorded corner ops) — propagated through trims/splices
+}
+
+/**
+ * Meta for a command inserted at a corner junction: the insert belongs to a
+ * labeled segment only when both neighbors carry the same label (an interior
+ * corner of one labeled range); a boundary corner between two differently
+ * labeled segments belongs to neither.
+ */
+function inheritInsertMeta(incoming: TransformCmd, outgoing: TransformCmd): PathCommandMeta | undefined {
+  const label = incoming.meta?.segmentLabel;
+  return label !== undefined && label === outgoing.meta?.segmentLabel ? { segmentLabel: label } : undefined;
 }
 
 // ---- Shared utilities ----
@@ -1095,6 +1108,7 @@ export function concatenateCommands(
       args: [...cmd.args],
       start: { ...cmd.start },
       end: { ...cmd.end },
+      ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
     }));
   }
   if (rightCmds.length === 0) {
@@ -1103,6 +1117,7 @@ export function concatenateCommands(
       args: [...cmd.args],
       start: { ...cmd.start },
       end: { ...cmd.end },
+      ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
     }));
   }
 
@@ -1112,6 +1127,7 @@ export function concatenateCommands(
     args: [...cmd.args],
     start: { ...cmd.start },
     end: { ...cmd.end },
+    ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
   }));
 
   // Deep-copy right commands, offset start/end by leftEndPoint
@@ -1121,6 +1137,7 @@ export function concatenateCommands(
       args: [...cmd.args],
       start: { x: cmd.start.x + leftEndPoint.x, y: cmd.start.y + leftEndPoint.y },
       end: { x: cmd.end.x + leftEndPoint.x, y: cmd.end.y + leftEndPoint.y },
+      ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
     });
   }
 
@@ -1439,7 +1456,7 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
  * For a closed path (ending with z), the closure junction (last→first) is included.
  * Returns indices into the commands array where command[i].end == command[i+1].start.
  */
-function identifyCornerVertices(commands: TransformCmd[]): number[] {
+export function identifyCornerVertices(commands: TransformCmd[]): number[] {
   if (commands.length < 2) return [];
   const corners: number[] = [];
   for (let i = 0; i < commands.length - 1; i++) {
@@ -1510,9 +1527,11 @@ export function applyCornerOperations(
 
   // Check for closed path and expand z
   let isClosed = false;
+  let zMeta: PathCommandMeta | undefined;
   const working = [...resolved];
   if (working.length > 0 && working[working.length - 1].command.toUpperCase() === 'Z') {
     const zCmd = working.pop()!;
+    zMeta = zCmd.meta;
     isClosed = true;
     const zdx = zCmd.end.x - zCmd.start.x;
     const zdy = zCmd.end.y - zCmd.start.y;
@@ -1564,6 +1583,7 @@ export function applyCornerOperations(
     args: [...cmd.args],
     start: { ...cmd.start },
     end: { ...cmd.end },
+    ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
   }));
 
   for (const cornerIdx of sortedCorners) {
@@ -1609,10 +1629,12 @@ export function applyCornerOperations(
     // Trim incoming from end
     const trimEndT = findTrimFromEndT(incoming, d1);
     const [inHead] = splitCommandAtParametricT(incoming, trimEndT);
+    if (incoming.meta !== undefined) inHead.meta = incoming.meta;
 
     // Trim outgoing from start
     const trimStartT = findTrimFromStartT(outgoing, d2);
     const [, outTail] = splitCommandAtParametricT(outgoing, trimStartT);
+    if (outgoing.meta !== undefined) outTail.meta = outgoing.meta;
 
     // Build the corner insert
     const trimEndPoint = inHead.end;
@@ -1641,6 +1663,10 @@ export function applyCornerOperations(
       const ry = op.ry!;
       const rotation = op.rotation ?? 0;
       insertCmds = buildEllipticalFilletArc(incoming, outgoing, trimEndPoint, trimStartPoint, rx, ry, rotation);
+    }
+    const insertMeta = inheritInsertMeta(incoming, outgoing);
+    if (insertMeta !== undefined) {
+      for (const ins of insertCmds) ins.meta = insertMeta;
     }
 
     // Replace in result array
@@ -1900,9 +1926,11 @@ function applyFilletOperations(
   const resolved = resolveSmooth(commands);
 
   let isClosed = false;
+  let zMeta: PathCommandMeta | undefined;
   const working = [...resolved];
   if (working.length > 0 && working[working.length - 1].command.toUpperCase() === 'Z') {
     const zCmd = working.pop()!;
+    zMeta = zCmd.meta;
     isClosed = true;
     const zdx = zCmd.end.x - zCmd.start.x;
     const zdy = zCmd.end.y - zCmd.start.y;
@@ -1947,6 +1975,7 @@ function applyFilletOperations(
     args: [...cmd.args],
     start: { ...cmd.start },
     end: { ...cmd.end },
+    ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
   }));
 
   for (const cornerIdx of sortedCorners) {
@@ -2022,9 +2051,11 @@ function applyFilletOperations(
     }
 
     const [inHead] = splitCommandAtParametricT(incoming, inTrimT);
+    if (incoming.meta !== undefined) inHead.meta = incoming.meta;
     const p1 = { ...inHead.end };
 
     const [, outTail] = splitCommandAtParametricT(outgoing, outTrimT);
+    if (outgoing.meta !== undefined) outTail.meta = outgoing.meta;
     const p2 = { ...outTail.start };
 
     // Sweep flag: use cross product of incoming/outgoing direction
@@ -2034,11 +2065,13 @@ function applyFilletOperations(
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
 
+    const filletInsertMeta = inheritInsertMeta(incoming, outgoing);
     const arcCmd: TransformCmd = {
       command: 'a',
       args: [effectiveRadius, effectiveRadius, 0, 0, sweep, dx, dy],
       start: { ...p1 },
       end: { ...p2 },
+      ...(filletInsertMeta !== undefined ? { meta: filletInsertMeta } : {}),
     };
 
     // inHead and outTail already computed during trim point calculation above
@@ -2060,6 +2093,7 @@ function applyFilletOperations(
       args: [],
       start: { ...last.end },
       end: { ...first.start },
+      ...(zMeta !== undefined ? { meta: zMeta } : {}),
     });
   }
 
@@ -2091,9 +2125,11 @@ function applyEllipticalFilletOperations(
   const resolved = resolveSmooth(commands);
 
   let isClosed = false;
+  let zMeta: PathCommandMeta | undefined;
   const working = [...resolved];
   if (working.length > 0 && working[working.length - 1].command.toUpperCase() === 'Z') {
     const zCmd = working.pop()!;
+    zMeta = zCmd.meta;
     isClosed = true;
     const zdx = zCmd.end.x - zCmd.start.x;
     const zdy = zCmd.end.y - zCmd.start.y;
@@ -2138,6 +2174,7 @@ function applyEllipticalFilletOperations(
     args: [...cmd.args],
     start: { ...cmd.start },
     end: { ...cmd.end },
+    ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
   }));
 
   for (const cornerIdx of sortedCorners) {
@@ -2284,19 +2321,23 @@ function applyEllipticalFilletOperations(
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
 
+    const ellipticalInsertMeta = inheritInsertMeta(incoming, outgoing);
     const arcCmd: TransformCmd = {
       command: 'a',
       args: [rx, ry, rotDeg, 0, sweep, dx, dy],
       start: { ...p1 },
       end: { ...p2 },
+      ...(ellipticalInsertMeta !== undefined ? { meta: ellipticalInsertMeta } : {}),
     };
 
     const inTrimT = findTrimFromEndT(incoming, trimIn);
     const [inHead] = splitCommandAtParametricT(incoming, inTrimT);
+    if (incoming.meta !== undefined) inHead.meta = incoming.meta;
     inHead.end = { ...p1 };
 
     const outTrimT = findTrimFromStartT(outgoing, trimOut);
     const [, outTail] = splitCommandAtParametricT(outgoing, outTrimT);
+    if (outgoing.meta !== undefined) outTail.meta = outgoing.meta;
     outTail.start = { ...p2 };
 
     if (isClosureCorner) {
@@ -2316,6 +2357,7 @@ function applyEllipticalFilletOperations(
       args: [],
       start: { ...last.end },
       end: { ...first.start },
+      ...(zMeta !== undefined ? { meta: zMeta } : {}),
     });
   }
 
