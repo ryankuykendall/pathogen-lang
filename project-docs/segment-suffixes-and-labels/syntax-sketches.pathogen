@@ -1,0 +1,87 @@
+// ============================================================================
+// SPECULATIVE SYNTAX SKETCHES — NOT COMPILABLE PATHOGEN
+// Companion to research-summary.md in this directory.
+// Each block sketches one candidate syntax for attaching behavior (fillets)
+// and metadata (segment/vertex labels) at the point of path definition.
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// Original pseudo-code (from the prompt) — Option A: bare suffix call
+// REJECTED: a trailing function call is grammatically indistinguishable from
+// a positional path-command argument; without the `;` it already parses today
+// as `v` with two args (silently swallowed). Verified 2026-07-17 against the
+// real parser. As literally written it errors, but only because NO path
+// command accepts a trailing `;` today (even `h 20;` fails).
+// ----------------------------------------------------------------------------
+// let myPB = @{
+//   h 20
+//   v 20 joinPreviousWithFillet(5);
+// };
+
+// ----------------------------------------------------------------------------
+// Option B (recommended): keyword clauses — `with` for behavior (vertex),
+// `as` for identity (labels). Works in @{}, apply {}, and top level.
+// ----------------------------------------------------------------------------
+// let pb = @{
+//   h 20 as segment('lid');
+//   v 20 with fillet(5);                              // fillet the joint just created
+//   h -20 as segment('base'), endpoint('base-end');
+//   circle(5, 5, 20) as segment('circle-01');         // labels a command RANGE
+//   v 20 with fillet(5) as segment('west'), endpoint('home');
+// };
+//
+// let pl = PathLayer('my-path-layer') ${ fill: none; stroke: black; };
+// pl.apply {
+//   h 20 as segment('first-segment');
+//   v 20 as endpoint('second-endpoint');
+//   h -20 with chamfer(3) as segment('third-segment');
+// }
+//
+// Later, name-based queries replace index-based ones:
+// pb.segment('lid').partition(8);
+// pb.point('home');                  // -> Point, usable as a drawTo target
+// pb.vertex('base-end').fillet(5);   // name instead of brittle vertex index
+//                                    // (vertex handle; avoids overloading the
+//                                    //  shipped all-corners fillet(radius))
+
+// ----------------------------------------------------------------------------
+// Option C: sigil shorthand — possible later sugar over Option B.
+// Terse, TikZ-flavored; introduces new sigil vocabulary.
+// ----------------------------------------------------------------------------
+// let pb = @{
+//   h 20 #lid;                  // segment label
+//   v 20 ~fillet(5) #west;      // corner op + segment label
+//   h -20 #base @base-end;      // @ = endpoint label (strawman)
+// };
+
+// ----------------------------------------------------------------------------
+// Option D: scoped modifier block — TikZ `rounded corners` model.
+// Uniform rounding with zero per-command syntax; complementary to B.
+// ----------------------------------------------------------------------------
+// let pb = @{
+//   withFillet(5) {
+//     h 20; v 20; h -20;        // every interior corner gets r = 5
+//   }
+//   v -20;                      // sharp
+// };
+
+// ----------------------------------------------------------------------------
+// Option E: post-hoc labeling by index — minimal grammar footprint.
+// NOT RECOMMENDED as primary: reintroduces index brittleness and separates
+// the label from the geometry's definition site.
+// ----------------------------------------------------------------------------
+// let pb = @{ h 20; v 20; };
+// pb.label('lid', 0);
+// pb.labelVertex('corner', 1);
+
+// ----------------------------------------------------------------------------
+// Loop-generated labels — why label values must be expressions, and why
+// duplicate labels may want to act as groups.
+// ----------------------------------------------------------------------------
+// let ribs = @{
+//   for i in 0..8 {
+//     h 10 as segment('rib-${i}');   // expression-valued label
+//     v 4  as segment('rib');        // duplicate label = group? (open question)
+//   }
+// };
+// ribs.segments('rib');              // -> collection query (open question)
