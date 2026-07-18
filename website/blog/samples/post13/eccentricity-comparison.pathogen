@@ -18,7 +18,7 @@ let sAngle = -40deg;
 let sExit = 80;
 
 // t = 1.0 (full quadratic — most eccentric)
-define PathLayer('t100') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
+define PathLayer('t100') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('t100').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 1.0 },
@@ -28,7 +28,7 @@ layer('t100').apply {
 }
 
 // t = 0.75
-define PathLayer('t075') ${ fill: none; stroke: #8b5cf6; stroke-width: 2 }
+define PathLayer('t075') ${ fill: none; stroke: #8b5cf6; stroke-width: 2; }
 layer('t075').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.75 },
@@ -38,7 +38,7 @@ layer('t075').apply {
 }
 
 // t = 0.5
-define PathLayer('t050') ${ fill: none; stroke: #ec4899; stroke-width: 2 }
+define PathLayer('t050') ${ fill: none; stroke: #ec4899; stroke-width: 2; }
 layer('t050').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.5 },
@@ -48,7 +48,7 @@ layer('t050').apply {
 }
 
 // t = 0.25
-define PathLayer('t025') ${ fill: none; stroke: #f97316; stroke-width: 2 }
+define PathLayer('t025') ${ fill: none; stroke: #f97316; stroke-width: 2; }
 layer('t025').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.25 },
@@ -58,7 +58,7 @@ layer('t025').apply {
 }
 
 // On-curve points
-define PathLayer('pts') ${ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5 }
+define PathLayer('pts') ${ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5; }
 layer('diagram').append(layer('t100'), layer('t075'), layer('t050'), layer('t025'), layer('pts'));
 layer('pts').apply {
   circle(60, 165, 5);
@@ -69,10 +69,10 @@ layer('pts').apply {
 // === Legend group ===
 define GroupLayer('legend-group') ${ translate-x: 345; translate-y: 42; }
 
-define PathLayer('lg1') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
-define PathLayer('lg2') ${ fill: none; stroke: #8b5cf6; stroke-width: 2 }
-define PathLayer('lg3') ${ fill: none; stroke: #ec4899; stroke-width: 2 }
-define PathLayer('lg4') ${ fill: none; stroke: #f97316; stroke-width: 2 }
+define PathLayer('lg1') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
+define PathLayer('lg2') ${ fill: none; stroke: #8b5cf6; stroke-width: 2; }
+define PathLayer('lg3') ${ fill: none; stroke: #ec4899; stroke-width: 2; }
+define PathLayer('lg4') ${ fill: none; stroke: #f97316; stroke-width: 2; }
 layer('legend-group').append(layer('lg1'), layer('lg2'), layer('lg3'), layer('lg4'));
 
 layer('lg1').apply { M 0 0 L 20 0 }
@@ -80,7 +80,7 @@ layer('lg2').apply { M 0 18 L 20 18 }
 layer('lg3').apply { M 0 36 L 20 36 }
 layer('lg4').apply { M 0 54 L 20 54 }
 
-define TextLayer('legend') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+define TextLayer('legend') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('legend'));
 layer('legend').apply {
   text(28, 4)`t = 1.0 (quadratic)`
@@ -89,7 +89,7 @@ layer('legend').apply {
   text(28, 58)`t = 0.25 (dampened)`
 }
 
-define TextLayer('note') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('note') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('note').apply {
   text(60, 203)`Same waypoints, same angles — only`
   text(60, 217)`exitTime / entryTime change.`

@@ -29,7 +29,7 @@ let pts = [
 
 // --- Curve Layer ---
 
-define PathLayer('curve') ${ fill: none; stroke: #2563eb; stroke-width: 2 }
+define PathLayer('curve') ${ fill: none; stroke: #2563eb; stroke-width: 2; }
 
 layer('curve').apply {
   cubicSpline(pts);
@@ -38,7 +38,7 @@ layer('curve').apply {
 
 // --- On-Curve Points ---
 
-define PathLayer('on-points') ${ fill: #2563eb; stroke: none }
+define PathLayer('on-points') ${ fill: #2563eb; stroke: none; }
 
 layer('on-points').apply {
   for ([p, i] in pts) {
@@ -49,8 +49,8 @@ layer('on-points').apply {
 
 // --- Control Points + Tangent Lines ---
 
-define PathLayer('cp-markers') ${ fill: #dc2626; stroke: none }
-define PathLayer('tangent-lines') ${ fill: none; stroke: #dc2626; stroke-width: 0.75; stroke-dasharray: 3 2 }
+define PathLayer('cp-markers') ${ fill: #dc2626; stroke: none; }
+define PathLayer('tangent-lines') ${ fill: none; stroke: #dc2626; stroke-width: 0.75; stroke-dasharray: 3 2; }
 
 let n = calc(pts.length - 1);
 for (i in 1..n) {

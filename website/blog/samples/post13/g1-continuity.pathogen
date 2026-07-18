@@ -15,7 +15,7 @@ grid.apply {
 define GroupLayer('diagram') ${ translate-x: 0; translate-y: 0; }
 
 // Title — top, clear of geometry
-define TextLayer('title') ${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif }
+define TextLayer('title') ${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('title'));
 layer('title').apply {
   text(30, 28)`G1 continuity: CPs are collinear through the join`
@@ -26,14 +26,14 @@ let cpIn   = { x: 135, y: 135 };
 let cpOut  = { x: 265, y: 95 };
 
 // Collinear line through CPs
-define PathLayer('g1-line') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5 }
+define PathLayer('g1-line') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
 layer('diagram').append(layer('g1-line'));
 layer('g1-line').apply {
   M cpIn.x cpIn.y L cpOut.x cpOut.y
 }
 
 // Incoming and outgoing curve segments
-define PathLayer('curves') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
+define PathLayer('curves') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('diagram').append(layer('curves'));
 layer('curves').apply {
   M 75 175 C 100 155 cpIn.x cpIn.y joinPt.x joinPt.y
@@ -41,19 +41,19 @@ layer('curves').apply {
 }
 
 // Join point
-define PathLayer('anchor') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
+define PathLayer('anchor') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5; }
 layer('diagram').append(layer('anchor'));
 layer('anchor').apply { circle(joinPt.x, joinPt.y, 6); }
 
 // Control points
-define PathLayer('cp-entry') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
-define PathLayer('cp-exit') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
+define PathLayer('cp-entry') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
+define PathLayer('cp-exit') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
 layer('diagram').append(layer('cp-entry'), layer('cp-exit'));
 layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4); }
 layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4); }
 
 // Endpoint markers
-define PathLayer('endpoints') ${ fill: #64748b; stroke: #334155; stroke-width: 1 }
+define PathLayer('endpoints') ${ fill: #64748b; stroke: #334155; stroke-width: 1; }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
   circle(75, 175, 3);
@@ -61,7 +61,7 @@ layer('endpoints').apply {
 }
 
 // Labels — positioned with clearance from geometry
-define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(175, 98)`join point`
@@ -72,7 +72,7 @@ layer('labels').apply {
 }
 
 // Explanation — two shorter lines with safe margins
-define TextLayer('note') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('note') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('note'));
 layer('note').apply {
   text(30, 218)`Both CPs share the same tangent angle — the curve`

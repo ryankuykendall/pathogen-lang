@@ -20,7 +20,7 @@ fn cubicSpline(points) {
 // --- Example 1: S-Curve ---
 // Two segments forming a smooth S through three points.
 
-define PathLayer('s-curve') ${ fill: none; stroke: #2563eb; stroke-width: 2 }
+define PathLayer('s-curve') ${ fill: none; stroke: #2563eb; stroke-width: 2; }
 
 layer('s-curve').apply {
   cubicSpline([
@@ -34,7 +34,7 @@ layer('s-curve').apply {
 // --- Example 2: Sine Wave Approximation ---
 // Five-point chain approximating one cycle of a sine wave.
 
-define PathLayer('sine-wave') ${ fill: none; stroke: #dc2626; stroke-width: 2 }
+define PathLayer('sine-wave') ${ fill: none; stroke: #dc2626; stroke-width: 2; }
 
 layer('sine-wave').apply {
   cubicSpline([
@@ -50,7 +50,7 @@ layer('sine-wave').apply {
 // --- Example 3: Closed Loop ---
 // A diamond-like shape with smooth joins.
 
-define PathLayer('closed-loop') ${ fill: rgba(37, 99, 235, 0.1); stroke: #16a34a; stroke-width: 2 }
+define PathLayer('closed-loop') ${ fill: rgba(37, 99, 235, 0.1); stroke: #16a34a; stroke-width: 2; }
 
 layer('closed-loop').apply {
   cubicSpline([

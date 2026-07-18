@@ -53,26 +53,26 @@ let pts = [
 define GroupLayer('diagram') ${ translate-x: 0; translate-y: 0; }
 
 // Title
-define TextLayer('title') ${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif }
+define TextLayer('title') ${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('title'));
 layer('title').apply { text(30, 24)`cubicSpline — waypoints, tangent lines, and control points` }
 
 // The curve
-define PathLayer('curve') ${ fill: none; stroke: #3b82f6; stroke-width: 3 }
+define PathLayer('curve') ${ fill: none; stroke: #3b82f6; stroke-width: 3; }
 layer('diagram').append(layer('curve'));
 layer('curve').apply { cubicSpline(pts); }
 
 // On-curve points
-define PathLayer('anchors') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
+define PathLayer('anchors') ${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5; }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
   for ([p, i] in pts) { circle(p.x, p.y, 5); }
 }
 
 // Control points and tangent lines
-define PathLayer('cp-exit') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
-define PathLayer('cp-entry') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
-define PathLayer('tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3 }
+define PathLayer('cp-exit') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
+define PathLayer('cp-entry') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
+define PathLayer('tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; }
 layer('diagram').append(layer('cp-exit'), layer('cp-entry'), layer('tangent'));
 
 let n = calc(pts.length - 1);
@@ -93,16 +93,16 @@ for (i in 1..n) {
 }
 
 // Angle visualization layers
-define PathLayer('angle-fills') ${ fill: rgba(245, 158, 11, 0.15); stroke: none }
-define PathLayer('angle-arcs') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5 }
-define PathLayer('angle-ticks') ${ fill: none; stroke: #f59e0b; stroke-width: 0.8 }
-define TextLayer('angle-labels') ${ font-size: 9; fill: #f59e0b; font-family: system-ui, sans-serif }
+define PathLayer('angle-fills') ${ fill: rgba(245, 158, 11, 0.15); stroke: none; }
+define PathLayer('angle-arcs') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
+define PathLayer('angle-ticks') ${ fill: none; stroke: #f59e0b; stroke-width: 0.8; }
+define TextLayer('angle-labels') ${ font-size: 9; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('angle-fills'), layer('angle-arcs'), layer('angle-ticks'), layer('angle-labels'));
 
 for ([p, i] in pts) { angleWedge(p.x, p.y, 28, p.angle); }
 
 // Point labels
-define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(38, 182)`P0`
@@ -114,11 +114,11 @@ layer('labels').apply {
 // === Legend group ===
 define GroupLayer('legend-group') ${ translate-x: 30; translate-y: 230; }
 
-define PathLayer('sw-curve') ${ fill: #3b82f6; stroke: none }
-define PathLayer('sw-exit') ${ fill: #ef4444; stroke: none }
-define PathLayer('sw-entry') ${ fill: #22c55e; stroke: none }
-define PathLayer('sw-tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3 }
-define PathLayer('sw-angle') ${ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1 }
+define PathLayer('sw-curve') ${ fill: #3b82f6; stroke: none; }
+define PathLayer('sw-exit') ${ fill: #ef4444; stroke: none; }
+define PathLayer('sw-entry') ${ fill: #22c55e; stroke: none; }
+define PathLayer('sw-tangent') ${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; }
+define PathLayer('sw-angle') ${ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1; }
 layer('legend-group').append(layer('sw-curve'), layer('sw-exit'), layer('sw-entry'), layer('sw-tangent'), layer('sw-angle'));
 
 layer('sw-curve').apply { rect(0, 0, 12, 3); }
@@ -129,7 +129,7 @@ layer('sw-angle').apply {
   M 0 64 L 12 64 A 6 6 0 0 0 6 58 Z
 }
 
-define TextLayer('legend-text') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+define TextLayer('legend-text') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('legend-text'));
 layer('legend-text').apply {
   text(20, 6)`Curve`

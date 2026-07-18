@@ -45,7 +45,7 @@ fn clippedQuadSpline(start, points, end) {
 // Same geometry with different time values.
 
 // time = 1.0 (full quadratic, most eccentric)
-define PathLayer('full') ${ fill: none; stroke: #2563eb; stroke-width: 2 }
+define PathLayer('full') ${ fill: none; stroke: #2563eb; stroke-width: 2; }
 
 layer('full').apply {
   clippedQuadSpline(
@@ -56,7 +56,7 @@ layer('full').apply {
 }
 
 // time = 0.7 (moderate dampening)
-define PathLayer('moderate') ${ fill: none; stroke: #9333ea; stroke-width: 2 }
+define PathLayer('moderate') ${ fill: none; stroke: #9333ea; stroke-width: 2; }
 
 layer('moderate').apply {
   clippedQuadSpline(
@@ -67,7 +67,7 @@ layer('moderate').apply {
 }
 
 // time = 0.4 (heavy dampening)
-define PathLayer('damped') ${ fill: none; stroke: #dc2626; stroke-width: 2 }
+define PathLayer('damped') ${ fill: none; stroke: #dc2626; stroke-width: 2; }
 
 layer('damped').apply {
   clippedQuadSpline(
@@ -80,7 +80,7 @@ layer('damped').apply {
 // --- Asymmetric times ---
 // exit = 1.0, entry = 0.3
 
-define PathLayer('asymmetric') ${ fill: none; stroke: #ea580c; stroke-width: 2; stroke-dasharray: 4 2 }
+define PathLayer('asymmetric') ${ fill: none; stroke: #ea580c; stroke-width: 2; stroke-dasharray: 4 2; }
 
 layer('asymmetric').apply {
   clippedQuadSpline(

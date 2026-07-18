@@ -18,11 +18,11 @@ define GroupLayer('layout') ${ translate-x: 0; translate-y: 0; }
 define GroupLayer('arc-group') ${ translate-x: 15; translate-y: 8; }
 layer('layout').append(layer('arc-group'));
 
-define TextLayer('arc-label') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('arc-label') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('arc-group').append(layer('arc-label'));
 layer('arc-label').apply { text(23, 20)`Simple arc` }
 
-define PathLayer('arc') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
+define PathLayer('arc') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('arc-group').append(layer('arc'));
 layer('arc').apply {
   quadSpline(
@@ -36,11 +36,11 @@ layer('arc').apply {
 define GroupLayer('flow-group') ${ translate-x: 145; translate-y: 8; }
 layer('layout').append(layer('flow-group'));
 
-define TextLayer('flow-label') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('flow-label') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('flow-group').append(layer('flow-label'));
 layer('flow-label').apply { text(40, 20)`Flowing curve` }
 
-define PathLayer('flowing') ${ fill: none; stroke: #ef4444; stroke-width: 2.5 }
+define PathLayer('flowing') ${ fill: none; stroke: #ef4444; stroke-width: 2.5; }
 layer('flow-group').append(layer('flowing'));
 layer('flowing').apply {
   quadSpline(
@@ -58,11 +58,11 @@ layer('flowing').apply {
 define GroupLayer('zig-group') ${ translate-x: 310; translate-y: 8; }
 layer('layout').append(layer('zig-group'));
 
-define TextLayer('zig-label') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('zig-label') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('zig-group').append(layer('zig-label'));
 layer('zig-label').apply { text(30, 20)`Zigzag` }
 
-define PathLayer('zigzag') ${ fill: none; stroke: #22c55e; stroke-width: 2.5 }
+define PathLayer('zigzag') ${ fill: none; stroke: #22c55e; stroke-width: 2.5; }
 layer('zig-group').append(layer('zigzag'));
 layer('zigzag').apply {
   quadSpline(

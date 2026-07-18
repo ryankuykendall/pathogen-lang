@@ -23,17 +23,17 @@ let endPt = { x: 500, y: 150 };
 define GroupLayer('diagram') ${ translate-x: 0; translate-y: 0; }
 
 // Title
-define TextLayer('title') ${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif }
+define TextLayer('title') ${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('title'));
 layer('title').apply { text(30, 24)`quadSpline — implicit angle derivation` }
 
 // The curve
-define PathLayer('curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 3 }
+define PathLayer('curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 3; }
 layer('diagram').append(layer('curve'));
 layer('curve').apply { quadSpline(startPt, midPts, endPt); }
 
 // On-curve points
-define PathLayer('anchors') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
+define PathLayer('anchors') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5; }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
   circle(startPt.x, startPt.y, 5);
@@ -42,9 +42,9 @@ layer('anchors').apply {
 }
 
 // Recompute CPs for visualization
-define PathLayer('shared-cp') ${ fill: #f97316; stroke: #7c2d12; stroke-width: 1 }
-define PathLayer('tangent-line') ${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3 }
-define PathLayer('derived-dir') ${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2 }
+define PathLayer('shared-cp') ${ fill: #f97316; stroke: #7c2d12; stroke-width: 1; }
+define PathLayer('tangent-line') ${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3; }
+define PathLayer('derived-dir') ${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2; }
 layer('diagram').append(layer('shared-cp'), layer('tangent-line'), layer('derived-dir'));
 
 // First CP from explicit angle
@@ -74,7 +74,7 @@ for ([pt, idx] in midPts) {
 }
 
 // Labels — positioned with clearance
-define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+define TextLayer('labels') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(26, 165)`start`
@@ -87,10 +87,10 @@ layer('labels').apply {
 // === Legend group ===
 define GroupLayer('legend-group') ${ translate-x: 30; translate-y: 248; }
 
-define PathLayer('lg-curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 2.5 }
-define PathLayer('lg-cp') ${ fill: #f97316; stroke: none }
-define PathLayer('lg-dir') ${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2 }
-define PathLayer('lg-tan') ${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3 }
+define PathLayer('lg-curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 2.5; }
+define PathLayer('lg-cp') ${ fill: #f97316; stroke: none; }
+define PathLayer('lg-dir') ${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2; }
+define PathLayer('lg-tan') ${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3; }
 layer('legend-group').append(layer('lg-curve'), layer('lg-cp'), layer('lg-dir'), layer('lg-tan'));
 
 layer('lg-curve').apply { M 0 0 L 16 0 }
@@ -98,7 +98,7 @@ layer('lg-cp').apply { circle(8, 16, 4); }
 layer('lg-dir').apply { M 0 30 L 16 30 }
 layer('lg-tan').apply { M 0 44 L 16 44 }
 
-define TextLayer('legend') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+define TextLayer('legend') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('legend'));
 layer('legend').apply {
   text(24, 4)`Curve`
@@ -107,7 +107,7 @@ layer('legend').apply {
   text(24, 48)`Tangent extension (point -> nextCP)`
 }
 
-define TextLayer('note') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('note') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('note'));
 layer('note').apply {
   text(0, 68)`Only the start has an explicit angle.`

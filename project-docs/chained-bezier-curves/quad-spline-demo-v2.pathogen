@@ -4,7 +4,7 @@
 
 // --- Example 1: Simple Arc ---
 
-define PathLayer('simple-arc') ${ fill: none; stroke: #2563eb; stroke-width: 2 }
+define PathLayer('simple-arc') ${ fill: none; stroke: #2563eb; stroke-width: 2; }
 
 layer('simple-arc').apply {
   quadSpline(
@@ -17,7 +17,7 @@ layer('simple-arc').apply {
 
 // --- Example 2: Flowing Curve ---
 
-define PathLayer('flowing') ${ fill: none; stroke: #dc2626; stroke-width: 2 }
+define PathLayer('flowing') ${ fill: none; stroke: #dc2626; stroke-width: 2; }
 
 layer('flowing').apply {
   quadSpline(
@@ -34,7 +34,7 @@ layer('flowing').apply {
 
 // --- Example 3: Zigzag with Smooth Joins ---
 
-define PathLayer('zigzag') ${ fill: none; stroke: #16a34a; stroke-width: 2 }
+define PathLayer('zigzag') ${ fill: none; stroke: #16a34a; stroke-width: 2; }
 
 layer('zigzag').apply {
   quadSpline(
