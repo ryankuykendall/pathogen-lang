@@ -68,8 +68,13 @@ export function tokenizePathData(d: string): RawPathCommand[] {
           i++;
           continue;
         }
-        // A sign or dot in a flag slot is malformed; fall through to the
-        // number scanner so the value lands somewhere rather than looping.
+        // A sign or dot in a flag slot is malformed (flags must be bare 0/1);
+        // fall through to the number scanner so the value lands somewhere
+        // rather than looping. NOTE: slot alignment is not re-validated after
+        // this — a decimal in a flag slot (e.g. `A 5 5 0 1.0 1 50 50`) shifts
+        // subsequent args. Not reachable from evaluator-generated strings
+        // (always space-separated bare flags); revisit before exposing this
+        // tokenizer to raw user-pasted d strings.
       }
       const start = i;
       if (ch === '-' || ch === '+') i++;

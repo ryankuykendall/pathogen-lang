@@ -3,12 +3,11 @@ import { compile, compileAnnotated } from '../src/index';
 import { compilePath } from './helpers';
 
 /**
- * Phase 0 characterization tests for the draw()/drawTo() serialize→reparse
- * pipeline (commandsToRelativeD → parseAndTrackPathString). These lock the
- * CURRENT byte-level output and context-tracking semantics so the Phase 1
- * refactor (shared path-data module, serializeRelativeAndTrack) can prove
- * behavior parity. Deviations discovered while writing these tests are
- * documented inline — they are existing behavior, not new contracts.
+ * Characterization tests for the draw()/drawTo() emission pipeline (now the
+ * shared path-data module's serializeRelativeAndTrack; originally written in
+ * Phase 0 against the old commandsToRelativeD → parseAndTrackPathString
+ * round-trip to prove the Phase 1 refactor's behavior parity). Deviations
+ * documented inline are locked existing behavior, not new contracts.
  */
 
 function logValues(source: string): string[] {
@@ -102,9 +101,22 @@ describe('path round-trip: drawTo()', () => {
     expect(result.layers[0].data).toBe('M 1.234567891 2 h 10.123456789');
     expect(result.logs[0].parts[0].value).toBe('11.35802468');
   });
+
+  it('round-trips exponent notation end-to-end (String(1e-7) emit → tracked exactly)', () => {
+    // Default formatNum is String, which renders tiny coordinates in exponent
+    // notation; the emission walk must track them exactly (the pre-refactor
+    // annotated regex had no e/E support at all).
+    const result = compile(`
+      let p = @{ h 0.0000001 };
+      p.drawTo(0, 0);
+      log(ctx.position.x);
+    `);
+    expect(result.layers[0].data).toBe('M 0 0 h 1e-7');
+    expect(result.logs[0].parts[0].value).toBe('1e-7');
+  });
 });
 
-describe('path round-trip: annotated-mode divergences (locked, to converge deliberately in Phase 1)', () => {
+describe('path round-trip: annotated-mode divergences (locked; convergence on formatNum + origin bridge is a deferred, deliberate follow-up)', () => {
   it('CHARACTERIZATION: annotated draw() does NOT bridge the origin gap and rounds via toFixed(4)', () => {
     // annotated.ts has its own naive commandsToRelativeD: no bridgeOriginGap
     // (the `m 5 0` bridge from the normal evaluator is absent — the filleted
@@ -133,5 +145,17 @@ describe('path round-trip: annotated-mode divergences (locked, to converge delib
     `);
     expect(output).toContain('M 1.2346 2');
     expect(output).toContain('h 10.1235');
+  });
+
+  it('annotated ProjectedPath drawTo re-projects with toFixed(4) M coords', () => {
+    const output = compileAnnotated(`
+let p = @{ h 10 v 5 };
+let proj = p.drawTo(0, 0);
+proj.drawTo(100.123456789, 100);
+`);
+    expect(output).toBe(
+      '//--- p.drawTo(0, 0) called from line 3\n  M 0 0\n  h 10\n  v 5\n' +
+        '//--- proj.drawTo(100.123456789, 100) called from line 4\n  M 100.1235 100\n  h 10\n  v 5',
+    );
   });
 });
