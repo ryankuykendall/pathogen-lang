@@ -21,6 +21,12 @@ import {
 } from './path-transforms';
 import { partitionPath, samplePathAtFraction } from './sampling';
 import { recordsFromCommands } from './segments';
+import {
+  commandsToRelativeD,
+  parsePathStringToCommands,
+  serializeRelativeAndTrack,
+  splitPathCommands,
+} from './path-data';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
 import {
@@ -571,40 +577,12 @@ function projectCommands(commands: PathBlockCommand[], originX: number, originY:
   }));
 }
 
-function commandsToRelativeD(commands: PathBlockCommand[]): string {
-  const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''));
-  const parts: string[] = [];
-  for (const cmd of commands) {
-    const c = cmd.command;
-    const dx = cmd.end.x - cmd.start.x;
-    const dy = cmd.end.y - cmd.start.y;
-    if (c === 'z') {
-      parts.push('z');
-    } else if (c === 'h') {
-      parts.push(`h ${fmt(dx)}`);
-    } else if (c === 'v') {
-      parts.push(`v ${fmt(dy)}`);
-    } else if (c === 'c') {
-      const [dx1, dy1, dx2, dy2] = cmd.args;
-      parts.push(`c ${fmt(dx1)} ${fmt(dy1)} ${fmt(dx2)} ${fmt(dy2)} ${fmt(dx)} ${fmt(dy)}`);
-    } else if (c === 's') {
-      const [dx2, dy2] = cmd.args;
-      parts.push(`s ${fmt(dx2)} ${fmt(dy2)} ${fmt(dx)} ${fmt(dy)}`);
-    } else if (c === 'q') {
-      const [dx1, dy1] = cmd.args;
-      parts.push(`q ${fmt(dx1)} ${fmt(dy1)} ${fmt(dx)} ${fmt(dy)}`);
-    } else if (c === 't') {
-      parts.push(`t ${fmt(dx)} ${fmt(dy)}`);
-    } else if (c === 'a') {
-      const [rx, ry, rotation, largeArc, sweep] = cmd.args;
-      parts.push(`a ${fmt(rx)} ${fmt(ry)} ${fmt(rotation)} ${fmt(largeArc)} ${fmt(sweep)} ${fmt(dx)} ${fmt(dy)}`);
-    } else {
-      // m, l → relative move/line
-      parts.push(`${c} ${fmt(dx)} ${fmt(dy)}`);
-    }
-  }
-  return parts.join(' ');
-}
+/**
+ * Annotated mode's historical number formatting: toFixed(4) with trailing
+ * zeros trimmed. Passed to the shared path-data serializer to keep annotated
+ * output byte-stable; convergence on formatNum is a separate, deliberate step.
+ */
+const annotatedFmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''));
 
 export interface AnnotatedLayerRef {
   type: 'LayerReference';
@@ -725,29 +703,9 @@ function updateCtxVariable(scope: Scope): void {
  */
 function parseAndTrackPathString(pathStr: string, scope: Scope): void {
   if (!scope.evalState) return;
-
-  // Parse path commands from string: M 10 20 L 30 40 A 5 5 0 1 1 50 50 etc.
-  const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])\s*([\d\s.,-]*)/g;
-  let match;
-
-  while ((match = commandRegex.exec(pathStr)) !== null) {
-    const command = match[1];
-    const argsStr = match[2].trim();
-
-    // Parse numeric arguments
-    const args: number[] = [];
-    if (argsStr) {
-      const numMatches = argsStr.match(/-?[\d.]+/g);
-      if (numMatches) {
-        for (const num of numMatches) {
-          args.push(parseFloat(num));
-        }
-      }
-    }
-
-    updateContextForCommand(scope.evalState.pathContext, command, args);
-  }
-
+  // Shared cursor-based tokenizer (path-data.ts) — unlike the old inline
+  // regex, it handles exponent notation and implicit decimals correctly.
+  parsePathStringToCommands(pathStr, scope.evalState.pathContext);
   updateCtxVariable(scope);
 }
 
@@ -1808,12 +1766,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       const originX = ctx?.position.x ?? 0;
       const originY = ctx?.position.y ?? 0;
 
-      // Emit relative commands (naturally work from cursor position)
-      const emittedPath = commandsToRelativeD(obj.commands);
-
-      // Track the relative path in context
+      // Emit relative commands (naturally work from cursor position),
+      // tracking in the same walk when a context is live.
+      const emittedPath = scope.evalState
+        ? serializeRelativeAndTrack(obj.commands, scope.evalState.pathContext, { format: annotatedFmt }).d
+        : commandsToRelativeD(obj.commands, { format: annotatedFmt });
       if (scope.evalState) {
-        parseAndTrackPathString(emittedPath, scope);
+        updateCtxVariable(scope);
       }
 
       // Build ProjectedPathValue with absolute coordinates for programmatic use
@@ -1838,13 +1797,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       if (typeof dtX !== 'number') throw new Error('drawTo() x must be a number');
       if (typeof dtY !== 'number') throw new Error('drawTo() y must be a number');
 
-      const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''));
-      const moveCmd = `M ${fmt(dtX)} ${fmt(dtY)}`;
-      const relativeD = commandsToRelativeD(obj.commands);
-      const emittedPath = `${moveCmd} ${relativeD}`;
-
+      const emittedPath = scope.evalState
+        ? serializeRelativeAndTrack(obj.commands, scope.evalState.pathContext, {
+            format: annotatedFmt,
+            moveTo: { x: dtX, y: dtY },
+          }).d
+        : `M ${annotatedFmt(dtX)} ${annotatedFmt(dtY)} ${commandsToRelativeD(obj.commands, { format: annotatedFmt })}`;
       if (scope.evalState) {
-        parseAndTrackPathString(emittedPath, scope);
+        updateCtxVariable(scope);
       }
 
       const projectedCommands = projectCommands(obj.commands, dtX, dtY);
@@ -1918,13 +1878,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         end: { x: cmd.end.x + offsetX, y: cmd.end.y + offsetY },
       }));
 
-      const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(4).replace(/0+$/, '').replace(/\.$/, ''));
-      const moveCmd = `M ${fmt(dtX)} ${fmt(dtY)}`;
-      const relativeD = commandsToRelativeD(reProjectedCommands);
-      const emittedPath = `${moveCmd} ${relativeD}`;
-
+      const emittedPath = scope.evalState
+        ? serializeRelativeAndTrack(reProjectedCommands, scope.evalState.pathContext, {
+            format: annotatedFmt,
+            moveTo: { x: dtX, y: dtY },
+          }).d
+        : `M ${annotatedFmt(dtX)} ${annotatedFmt(dtY)} ${commandsToRelativeD(reProjectedCommands, { format: annotatedFmt })}`;
       if (scope.evalState) {
-        parseAndTrackPathString(emittedPath, scope);
+        updateCtxVariable(scope);
       }
 
       const projected: ProjectedPathValue = {
@@ -5770,16 +5731,11 @@ function exprSourceName(expr: Expression): string {
 }
 
 function emitPathString(pathStr: string, ctx: AnnotatedContext): void {
-  // Simple parsing: split on command letters
-  const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])([^MLHVCSQTAZmlhvcsqtaz]*)/g;
-  let match;
-  while ((match = commandRegex.exec(pathStr)) !== null) {
-    const command = match[1];
-    const args = match[2].trim();
+  for (const { command, argsText } of splitPathCommands(pathStr)) {
     ctx.output.push({
       type: 'path_command',
       command,
-      args,
+      args: argsText,
     });
   }
 }
