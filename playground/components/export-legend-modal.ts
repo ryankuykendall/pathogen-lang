@@ -1390,9 +1390,10 @@ class ExportLegendModal extends HTMLElement {
 
     let y = M;
 
-    // Title (single line, truncated)
-    const title = opts.title.length > 40 ? `${opts.title.slice(0, 39)}…` : opts.title;
-    svg.appendChild(this._createText(title || 'Untitled', M, y, { fontSize: 24, fontWeight: '600', color: '#111827' }));
+    // Title (single line, truncated to the actual content width — ~35 chars
+    // on Letter, ~33 on A4 at 24pt; a hardcoded count would overflow A4)
+    const title = fitLine(opts.title || 'Untitled', fitChars(contentW, 24));
+    svg.appendChild(this._createText(title, M, y, { fontSize: 24, fontWeight: '600', color: '#111827' }));
     y += 34;
 
     // Meta: creator · date (single line, truncated to the content width)

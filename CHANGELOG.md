@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Development
 
-- New suites `tests/path-precision.test.ts` (18), `tests/path-decimate.test.ts` (14), and `tests/pdf-cover-sheet.test.ts` (15) — incl. a no-drift proof vs naive relative rounding, epsilon-monotonicity/idempotence invariants, S/T reflection normalization across subpath boundaries, and cover manifest formatting. E2E harness extended to 56 checks (decimation op-count reduction, precision decimals/absolute assertions, floatPrecision probe, marker-untouched guard, cover-sheet page structure incl. the long-values + Standard-detail combination).
+- New suites `tests/path-precision.test.ts` (18), `tests/path-decimate.test.ts` (13), and `tests/pdf-cover-sheet.test.ts` (15) — incl. a no-drift proof vs naive relative rounding, epsilon-monotonicity/idempotence invariants, S/T reflection normalization across subpath boundaries, and cover manifest formatting. E2E harness extended to 56 checks (decimation op-count reduction, precision decimals/absolute assertions, floatPrecision probe, marker-untouched guard, cover-sheet page structure incl. the long-values + Standard-detail combination).
 - `playground/CLAUDE.md` drive-by: the browser global is `window.PathogenLang` (stale `SvgPathExtended` reference fixed).
 
 ## [Unreleased] - 2026-07-18 (print-ready PDF export)

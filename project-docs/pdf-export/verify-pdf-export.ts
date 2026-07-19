@@ -425,10 +425,17 @@ async function main(): Promise<void> {
   check('PDF settings visible + button label', !summary.hidden && summary.btn.includes('PDF'), summary.btn.trim());
   check('match-mode summary present', summary.text.includes('Artwork 800 × 500'), summary.text);
 
-  await page.screenshot({ path: join(OUT_DIR, 'modal-pdf-light.png'), captureBeyondViewport: false });
-  await page.evaluate(`document.documentElement.setAttribute('data-theme', 'dark');`);
-  await new Promise((r) => setTimeout(r, 300));
-  await page.screenshot({ path: join(OUT_DIR, 'modal-pdf-dark.png'), captureBeyondViewport: false });
+  // Illustrative artifacts only — no check() depends on these. macOS graphics
+  // stack flakiness can hang Page.captureScreenshot; never let that kill the
+  // check run.
+  try {
+    await page.screenshot({ path: join(OUT_DIR, 'modal-pdf-light.png'), captureBeyondViewport: false });
+    await page.evaluate(`document.documentElement.setAttribute('data-theme', 'dark');`);
+    await new Promise((r) => setTimeout(r, 300));
+    await page.screenshot({ path: join(OUT_DIR, 'modal-pdf-dark.png'), captureBeyondViewport: false });
+  } catch (err) {
+    console.warn('theme screenshots skipped (environmental):', (err as Error).message?.slice(0, 80));
+  }
   await page.evaluate(`document.documentElement.setAttribute('data-theme', 'light');`);
 
   // A) Match-artwork PDF (24in wide, 0.5in margins, print prep on)
@@ -683,7 +690,10 @@ async function main(): Promise<void> {
   // the previously untested width-bounding path (values truncate, no clip).
   await inModal(
     page,
-    `var c = sr.querySelector('#legend-creator');
+    `var n = sr.querySelector('#legend-name');
+     n.value = 'An Extraordinarily Long Workspace Title That Would Overflow The Cover Page Without Width Bounding';
+     n.dispatchEvent(new Event('input'));
+     var c = sr.querySelector('#legend-creator');
      c.value = 'Jane Smith, Senior Generative Designer and Creative Technologist, Acme Creative Studios International LLC';
      c.dispatchEvent(new Event('input'));
      var d = sr.querySelector('#pdf-detail'); d.value = 'standard'; d.dispatchEvent(new Event('change'));
