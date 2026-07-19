@@ -940,14 +940,23 @@ class ExportLegendModal extends HTMLElement {
     const downloadBtn = this.shadowRoot!.querySelector('.download-btn') as HTMLButtonElement;
     const originalText = downloadBtn.innerHTML;
     downloadBtn.disabled = true;
-    downloadBtn.textContent = 'Preparing...';
 
     try {
-      if (this._exportSettings.format === 'pdf') {
-        await this._downloadPdf(downloadBtn);
-      } else {
-        await this._downloadSvg();
-      }
+      const isPdf = this._exportSettings.format === 'pdf';
+      // Surface cheap geometry errors before opening the save dialog.
+      if (isPdf) computePdfLayout(this._layoutInput());
+
+      const suggestedName = `${this._safeName()}-with-legend.${isPdf ? 'pdf' : 'svg'}`;
+      // Acquire the save target FIRST, while the click's transient user
+      // activation is still valid — the export pipeline (font fetches,
+      // rasterization, svg2pdf) can easily outlive Chrome's ~5s activation
+      // window, after which showSaveFilePicker throws SecurityError.
+      const target = await this._acquireSaveTarget(suggestedName, isPdf);
+      if (target === 'cancelled') return;
+
+      downloadBtn.textContent = 'Preparing...';
+      const blob = isPdf ? await this._downloadPdf(downloadBtn) : await this._downloadSvg();
+      await this._writeBlob(blob, suggestedName, target);
     } catch (err: unknown) {
       if ((err as Error).name !== 'AbortError') {
         console.error('Export failed:', err);
@@ -972,18 +981,33 @@ class ExportLegendModal extends HTMLElement {
     return workspaceName.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-');
   }
 
-  async _saveBlob(blob: Blob, suggestedName: string, mime: string, extension: string, description: string): Promise<void> {
-    if ('showSaveFilePicker' in window) {
-      const handle = await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
+  /**
+   * Open the save dialog while the user gesture is still live. Returns the
+   * file handle, 'cancelled' (user dismissed — skip the export entirely), or
+   * null (API unavailable or refused → anchor-download fallback at write time).
+   */
+  async _acquireSaveTarget(suggestedName: string, isPdf: boolean): Promise<FileSystemFileHandle | 'cancelled' | null> {
+    if (!('showSaveFilePicker' in window)) return null;
+    try {
+      return await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
         suggestedName,
         types: [
           {
-            description,
-            accept: { [mime]: [extension] },
+            description: isPdf ? 'PDF Files' : 'SVG Files',
+            accept: isPdf ? { 'application/pdf': ['.pdf'] } : { 'image/svg+xml': ['.svg'] },
           },
         ],
       });
-      const writable = await handle.createWritable();
+    } catch (err: unknown) {
+      if ((err as Error).name === 'AbortError') return 'cancelled';
+      console.warn('showSaveFilePicker unavailable, falling back to anchor download:', err);
+      return null;
+    }
+  }
+
+  async _writeBlob(blob: Blob, suggestedName: string, target: FileSystemFileHandle | null): Promise<void> {
+    if (target) {
+      const writable = await target.createWritable();
       await writable.write(blob);
       await writable.close();
     } else {
@@ -1038,7 +1062,7 @@ class ExportLegendModal extends HTMLElement {
     return epsilon != null ? { removed, total } : null;
   }
 
-  async _downloadSvg(): Promise<void> {
+  async _downloadSvg(): Promise<Blob> {
     const clone = this._prepareExportClone();
     this._optimizeArtworkPaths(clone, null);
 
@@ -1047,12 +1071,10 @@ class ExportLegendModal extends HTMLElement {
 
     const serializer = new XMLSerializer();
     const svgString = `<?xml version="1.0" encoding="UTF-8"?>\n${serializer.serializeToString(clone)}`;
-    const blob = new Blob([svgString], { type: 'image/svg+xml' });
-
-    await this._saveBlob(blob, `${this._safeName()}-with-legend.svg`, 'image/svg+xml', '.svg', 'SVG Files');
+    return new Blob([svgString], { type: 'image/svg+xml' });
   }
 
-  async _downloadPdf(downloadBtn: HTMLButtonElement): Promise<void> {
+  async _downloadPdf(downloadBtn: HTMLButtonElement): Promise<Blob> {
     this._setExportStatus('');
     // Snapshot all mutable modal state up front — the user can close and
     // reopen the modal for a different workspace while awaits below resolve.
@@ -1265,8 +1287,7 @@ class ExportLegendModal extends HTMLElement {
 
     if (notices.length > 0) this._setExportStatus(notices.join(' '));
 
-    const blob = doc.output('blob');
-    await this._saveBlob(blob, `${this._safeName()}-with-legend.pdf`, 'application/pdf', '.pdf', 'PDF Files');
+    return doc.output('blob');
   }
 
   /**

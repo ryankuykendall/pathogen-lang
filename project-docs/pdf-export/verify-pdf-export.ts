@@ -281,19 +281,30 @@ const PREVIEW_READY = `
 async function installSaveStub(page: Page): Promise<void> {
   await page.evaluate(`
     window.__saved = null;
-    window.showSaveFilePicker = async (opts) => ({
-      createWritable: async () => ({
-        write: async (blob) => {
-          const buf = new Uint8Array(await blob.arrayBuffer());
-          let binary = '';
-          for (let i = 0; i < buf.length; i += 8192) {
-            binary += String.fromCharCode.apply(null, Array.from(buf.subarray(i, i + 8192)));
-          }
-          window.__saved = { name: opts.suggestedName, b64: btoa(binary) };
-        },
-        close: async () => {},
-      }),
-    });
+    window.__pickerCalls = 0;
+    // __rejectPicker: when set, the stub throws AbortError (user cancelled).
+    window.__rejectPicker = false;
+    window.showSaveFilePicker = async (opts) => {
+      window.__pickerCalls++;
+      if (window.__rejectPicker) {
+        const e = new Error('The user aborted a request.');
+        e.name = 'AbortError';
+        throw e;
+      }
+      return {
+        createWritable: async () => ({
+          write: async (blob) => {
+            const buf = new Uint8Array(await blob.arrayBuffer());
+            let binary = '';
+            for (let i = 0; i < buf.length; i += 8192) {
+              binary += String.fromCharCode.apply(null, Array.from(buf.subarray(i, i + 8192)));
+            }
+            window.__saved = { name: opts.suggestedName, b64: btoa(binary) };
+          },
+          close: async () => {},
+        }),
+      };
+    };
   `);
 }
 
@@ -454,6 +465,17 @@ async function main(): Promise<void> {
     check('A: no BT text operators', !/\bBT\b/.test(content));
     check('A: has vector path ops', /\bre\b|\bc\b|\bl\b/.test(content));
   }
+
+  // A1b) Save dialog opens BEFORE the export pipeline runs (activation-safe),
+  // and cancelling it skips the export entirely — no file, no wasted work.
+  await page.evaluate(`window.__rejectPicker = true; window.__pickerCalls = 0; window.__saved = null;`);
+  await inModal(page, `sr.querySelector('.download-btn').click(); return { ok: true };`);
+  await new Promise((r) => setTimeout(r, 1500));
+  const cancelState = await page.evaluate(`({ picker: window.__pickerCalls, saved: window.__saved })`) as { picker: number; saved: unknown };
+  check('A1b: cancelling the save dialog skips the export', cancelState.picker === 1 && cancelState.saved === null, JSON.stringify(cancelState));
+  const cancelStatus = await inModal<{ text: string }>(page, `return { text: sr.querySelector('.export-status').textContent };`);
+  check('A1b: cancel leaves no error status', cancelStatus.text.trim() === '', cancelStatus.text);
+  await page.evaluate(`window.__rejectPicker = false;`);
 
   // A2) Manual raster mode: artwork becomes an image, legend stays vector
   await inModal(page, `sr.querySelector('.artwork-toggle button[data-artwork="raster"]').click(); return { ok: true };`);
