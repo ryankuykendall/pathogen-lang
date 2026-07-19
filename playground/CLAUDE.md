@@ -6,7 +6,7 @@ Vanilla Web Components SPA — no framework, no bundler.
 
 - Shadow DOM custom elements, SPA via History API router (`utils/router.js`, BASE_PATH: `/pathogen`)
 - Entry: `index.html` → `<app-shell>` → router dispatches to views
-- Library loaded as global: `../dist/index.global.js` → `window.SvgPathExtended`
+- Library loaded as global: `../dist/index.global.js` → `window.PathogenLang`
 
 ## Directory Layout
 

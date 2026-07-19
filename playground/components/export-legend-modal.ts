@@ -14,6 +14,15 @@ import {
   type PdfLayoutInput,
   type Unit,
 } from '../utils/pdf-page-layout.js';
+import {
+  coverManifestEntries,
+  coverNotes,
+  coverPageSize,
+  coverTechnicalLine,
+  previewFitRect,
+  type CoverManifestEntry,
+  type CoverPageSize,
+} from '../utils/pdf-cover-sheet.js';
 import { normalizeSvgPaintColors, resolveCssColorToHex } from '../utils/svg-pdf-colors.js';
 import { outlineSvgText } from '../utils/svg-text-outliner.js';
 import styles from './export-legend-modal.css';
@@ -72,6 +81,22 @@ interface ExportSettings {
    * image; text + legend stay vector either way).
    */
   artworkMode: 'vector' | 'raster';
+  /**
+   * Per-export coordinate decimals for artwork paths (SVG + PDF); null =
+   * match workspace (no post-processing). Reset to null on every open().
+   */
+  exportPrecision: number | null;
+  /**
+   * PDF vector-mode decimation: cull segments below a fraction of a printed
+   * dot at the chosen print size. Defaults to 'standard' for complex artwork.
+   */
+  detail: 'full' | 'fine' | 'standard';
+  /**
+   * Include the page-1 job-ticket cover (fast preview + spec manifest).
+   * Defaults ON for complex artwork, where a heavy vector page 2 makes the
+   * file look broken in Finder/Preview.
+   */
+  coverSheet: boolean;
 }
 
 /** Artwork above either threshold defaults the PDF export to raster mode. */
@@ -82,6 +107,7 @@ interface WorkspaceState {
   width: number;
   height: number;
   background?: string;
+  toFixed?: number | null;
   gridEnabled?: boolean;
   gridColor?: string;
   gridSize?: number;
@@ -98,6 +124,8 @@ interface TextCreateOptions {
   cls?: string;
   color?: string;
   anchor?: string;
+  /** Explicit line gap for wrapped text (bypasses the legend _scaleFactor). */
+  lineGap?: number;
 }
 
 interface WrappedTextResult {
@@ -113,6 +141,7 @@ interface JsPdfDoc {
   rect(x: number, y: number, w: number, h: number, style: string): void;
   line(x1: number, y1: number, x2: number, y2: number): void;
   addImage(data: Uint8Array, format: string, x: number, y: number, w: number, h: number): void;
+  addPage(format: [number, number], orientation: 'portrait' | 'landscape'): void;
   output(type: 'blob'): Blob;
 }
 
@@ -163,7 +192,9 @@ class ExportLegendModal extends HTMLElement {
   // Snapshot of workspace state at modal open time
   private _workspaceState: WorkspaceState | null = null;
 
-  // Export format + PDF print settings (sticky for the session)
+  // Export format + PDF print settings. Sizing/unit/margin choices are sticky
+  // for the session; artworkMode, detail, and exportPrecision are re-seeded on
+  // every open() (complexity heuristic / match-workspace defaults).
   private _exportSettings: ExportSettings = {
     format: 'svg',
     sizing: 'match',
@@ -177,6 +208,9 @@ class ExportLegendModal extends HTMLElement {
     margin: 0.5,
     printPrep: true,
     artworkMode: 'vector',
+    exportPrecision: null,
+    detail: 'full',
+    coverSheet: false,
   };
 
   // Export overrides (non-null values override workspace state in preview)
@@ -295,8 +329,20 @@ class ExportLegendModal extends HTMLElement {
     }
 
     // Very complex artwork defaults to raster — pure-vector PDFs of it are
-    // valid but render for minutes (or blank) in Preview/Acrobat.
-    this._exportSettings.artworkMode = this._isArtworkComplex(svgElement) ? 'raster' : 'vector';
+    // valid but render for minutes (or blank) in Preview/Acrobat. The same
+    // heuristic defaults vector-mode Detail decimation to 'standard'.
+    const complex = this._isArtworkComplex(svgElement);
+    this._exportSettings.artworkMode = complex ? 'raster' : 'vector';
+    this._exportSettings.detail = complex ? 'standard' : 'full';
+    this._exportSettings.coverSheet = complex;
+    this._exportSettings.exportPrecision = null;
+
+    // Reflect the workspace's compile-time precision in the Match option label.
+    const matchOption = this.shadowRoot!.querySelector('#export-precision option[value="match"]');
+    if (matchOption) {
+      const ws = this._workspaceState?.toFixed;
+      matchOption.textContent = `Match workspace (${ws != null ? ws : 'off'})`;
+    }
 
     // Build the preview SVG with legend
     this._buildPreviewSvg(svgElement, this._getEffectiveState());
@@ -585,7 +631,7 @@ class ExportLegendModal extends HTMLElement {
     const charWidth = fSize * this.CHAR_WIDTH_FACTOR;
     const charsPerLine = Math.max(10, Math.floor(maxWidth / charWidth));
     const lines = this._wrapText(content, charsPerLine);
-    const lineGap = fSize + this._s(3);
+    const lineGap = opts.lineGap ?? fSize + this._s(3);
 
     const text = document.createElementNS(ns, 'text');
     text.setAttribute('x', String(x));
@@ -950,8 +996,51 @@ class ExportLegendModal extends HTMLElement {
     }
   }
 
+  /**
+   * Apply the export optimization passes (Detail decimation when epsilon is
+   * given, then Precision trimming) to artwork paths — everything outside
+   * #pathogen-legend. Both passes re-emit absolute commands so rounding never
+   * accumulates. A malformed d leaves that path untouched.
+   */
+  _optimizeArtworkPaths(clone: SVGSVGElement, epsilon: number | null): { removed: number; total: number } | null {
+    const precision = this._exportSettings.exportPrecision;
+    if (epsilon == null && precision == null) return null;
+    const lib = window.PathogenLang;
+    let removed = 0;
+    let total = 0;
+    for (const el of Array.from(clone.querySelectorAll('path[d]'))) {
+      // Legend geometry is never touched, and defs-scoped paths (markers,
+      // clip paths, patterns) live in their own local coordinate systems —
+      // the artwork-derived epsilon/precision have no meaning there.
+      if (el.closest('#pathogen-legend, defs, marker, clipPath, pattern')) continue;
+      try {
+        let d = el.getAttribute('d')!;
+        let pathRemoved = 0;
+        let pathTotal = 0;
+        if (epsilon != null) {
+          const result = lib.decimatePathData(d, epsilon);
+          pathRemoved = result.removed;
+          pathTotal = result.removed + result.kept;
+          d = result.d;
+        }
+        if (precision != null) {
+          d = lib.trimPathDataPrecision(d, precision);
+        }
+        el.setAttribute('d', d);
+        // Count only after the write succeeded so the reported reduction
+        // always matches what's actually in the exported file.
+        removed += pathRemoved;
+        total += pathTotal;
+      } catch (err) {
+        console.warn('Path optimization skipped for one path:', err);
+      }
+    }
+    return epsilon != null ? { removed, total } : null;
+  }
+
   async _downloadSvg(): Promise<void> {
     const clone = this._prepareExportClone();
+    this._optimizeArtworkPaths(clone, null);
 
     // Embed fonts for self-contained SVG
     await this._embedFonts(clone);
@@ -972,10 +1061,42 @@ class ExportLegendModal extends HTMLElement {
     const background = this._getEffectiveState().background;
     const canvasWidth = this._canvasWidth;
     const canvasHeight = this._canvasHeight;
+    const wantRaster = this._exportSettings.artworkMode === 'raster';
+    const forcedRaster = !!clone.querySelector('mask, filter, [mask], [filter]');
+    const detail = this._exportSettings.detail;
+    const coverEnabled = this._exportSettings.coverSheet;
+    const cover = coverPageSize(this._exportSettings.unit);
+    const coverManifestBase = {
+      unit: this._exportSettings.unit,
+      margin: this._exportSettings.margin,
+      printPrep: this._exportSettings.printPrep,
+      exportPrecision: this._exportSettings.exportPrecision,
+      workspaceToFixed: this._workspaceState?.toFixed,
+      date: this._formData.date,
+      creator: this._formData.creator,
+    };
+    const coverTitle = this._formData.name || 'Untitled';
+    const coverDescription = this._formData.description;
+    const notices: string[] = [];
+
+    // Detail decimation (vector artwork only) + per-export precision trimming.
+    // Epsilon = the chosen fraction of one printed dot at 300 DPI, converted
+    // from points into SVG user units via the layout's scale.
+    let epsilon: number | null = null;
+    if (!wantRaster && !forcedRaster && detail !== 'full') {
+      const DOT_PT = PT_PER_IN / 300;
+      epsilon = ((detail === 'fine' ? 0.5 : 1) * DOT_PT) / layout.scale;
+    }
+    const reduction = this._optimizeArtworkPaths(clone, epsilon);
+    if (reduction && reduction.removed > 0) {
+      notices.push(
+        `Detail: removed ${reduction.removed.toLocaleString()} of ${reduction.total.toLocaleString()} path segments (below print resolution).`,
+      );
+    }
 
     // Outline every piece of text so the PDF carries zero font dependencies.
     const outline = await outlineSvgText(clone);
-    const notices = [...outline.warnings];
+    notices.push(...outline.warnings);
 
     // The zero-font-dependency guarantee is the whole point of the PDF export:
     // if any text could not be outlined (font fetch failed), refuse to produce
@@ -986,14 +1107,26 @@ class ExportLegendModal extends HTMLElement {
       );
     }
 
+    // Cover preview: captured from a COPY of the fully optimized + outlined
+    // clone (artwork + legend), before the raster branch strips the artwork.
+    let previewBytes: Uint8Array | null = null;
+    if (coverEnabled) {
+      const previewSvg = clone.cloneNode(true) as SVGSVGElement;
+      previewSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      previewSvg.setAttribute('width', String(canvasWidth));
+      previewSvg.setAttribute('height', String(canvasHeight));
+      const previewScale = 1200 / Math.max(canvasWidth, canvasHeight);
+      const pw = Math.max(1, Math.round(canvasWidth * previewScale));
+      const ph = Math.max(1, Math.round(canvasHeight * previewScale));
+      previewBytes = await this._rasterizeSvgToJpeg(previewSvg, pw, ph, background, 0.85);
+    }
+
     // Raster the artwork when the user chose it (default for very complex
     // artwork) or when it uses masks/filters, which svg2pdf.js cannot render.
     // Text outlines and the legend stay vector in every case. The raster is
-    // handed to jsPDF as raw PNG bytes and NEVER goes through svg2pdf: its
+    // handed to jsPDF as raw JPEG bytes and NEVER goes through svg2pdf: its
     // data-URL handling runs a regex over the whole string, which overflows
     // the call stack on print-resolution images.
-    const wantRaster = this._exportSettings.artworkMode === 'raster';
-    const forcedRaster = !!clone.querySelector('mask, filter, [mask], [filter]');
     let rasterBytes: Uint8Array | null = null;
     if (wantRaster || forcedRaster) {
       rasterBytes = await this._rasterizeArtwork(clone, layout, canvasWidth, canvasHeight, background);
@@ -1002,6 +1135,39 @@ class ExportLegendModal extends HTMLElement {
           ? 'Artwork uses a mask or filter — it was embedded as a 300 DPI raster image; the legend stays vector.'
           : 'Artwork embedded as a print-resolution raster image; the legend stays vector.',
       );
+    }
+
+    // Cover sheet SVG — built after optimization so the manifest can report
+    // the actual reduction, then outlined under the same zero-font guarantee.
+    let coverSvg: SVGSVGElement | null = null;
+    let coverPreviewRect: { x: number; y: number; w: number; h: number } | null = null;
+    if (coverEnabled) {
+      const manifestInput = {
+        ...coverManifestBase,
+        layout,
+        artworkVector: !wantRaster && !forcedRaster,
+        detail,
+        reduction,
+      };
+      const built = this._buildCoverSvg({
+        page: cover,
+        title: coverTitle,
+        description: coverDescription,
+        creator: coverManifestBase.creator,
+        date: coverManifestBase.date,
+        entries: coverManifestEntries(manifestInput),
+        technicalLine: coverTechnicalLine(manifestInput),
+        notes: coverNotes(manifestInput.artworkVector),
+        artworkAspect: canvasWidth / canvasHeight,
+      });
+      coverSvg = built.svg;
+      coverPreviewRect = built.previewRect;
+      await outlineSvgText(coverSvg);
+      if (coverSvg.querySelector('text')) {
+        throw new Error(
+          'Some text could not be converted to outlines (font download failed), so the PDF was not generated — it would not print with the correct fonts. Check your connection and try again.',
+        );
+      }
     }
 
     downloadBtn.textContent = 'Rendering PDF...';
@@ -1016,12 +1182,44 @@ class ExportLegendModal extends HTMLElement {
 
     // jsPDF normalizes `format` to the given orientation (portrait puts the
     // smaller side first) — pass the real orientation so wide pages stay wide.
+    // floatPrecision 5 = 0.00001 pt resolution — kills the 17-digit float
+    // artifacts svg2pdf otherwise writes verbatim ('smart' would keep full
+    // precision for sub-1 values, defeating the point).
+    // With the cover enabled, page 1 takes the cover format and the artwork
+    // page is added after; each jsPDF page carries its own MediaBox.
+    const artworkOrientation: 'landscape' | 'portrait' = layout.pageW >= layout.pageH ? 'landscape' : 'portrait';
     const doc = new jsPDF({
-      orientation: layout.pageW >= layout.pageH ? 'landscape' : 'portrait',
+      orientation: coverEnabled ? 'portrait' : artworkOrientation,
       unit: 'pt',
-      format: [layout.pageW, layout.pageH],
+      format: coverEnabled ? [cover.w, cover.h] : [layout.pageW, layout.pageH],
       compress: true,
+      floatPrecision: 5,
     });
+
+    if (coverEnabled && coverSvg && coverPreviewRect) {
+      const coverHolder = document.createElement('div');
+      coverHolder.style.cssText = 'position:fixed;left:-99999px;top:0;opacity:0;pointer-events:none;';
+      coverHolder.appendChild(coverSvg);
+      document.body.appendChild(coverHolder);
+      try {
+        normalizeSvgPaintColors(coverSvg);
+        await svg2pdf(coverSvg, doc, { x: 0, y: 0, width: cover.w, height: cover.h });
+      } finally {
+        coverHolder.remove();
+      }
+      if (previewBytes) {
+        doc.addImage(
+          previewBytes,
+          'JPEG',
+          coverPreviewRect.x + 2,
+          coverPreviewRect.y + 2,
+          coverPreviewRect.w - 4,
+          coverPreviewRect.h - 4,
+        );
+      }
+      doc.addPage([layout.pageW, layout.pageH], artworkOrientation);
+      notices.push('Cover sheet added as page 1 — print or send page 2 only.');
+    }
 
     // Background fills to the bleed edge so trimmed posters are edge-to-edge.
     // resolveCssColorToHex handles oklch()/lab()/var-free modern colors too.
@@ -1090,7 +1288,30 @@ class ExportLegendModal extends HTMLElement {
     artOnly.setAttribute('width', String(canvasWidth));
     artOnly.setAttribute('height', String(canvasHeight));
 
-    const svgString = new XMLSerializer().serializeToString(artOnly);
+    let pxW = Math.ceil((layout.content.w / PT_PER_IN) * RASTER_DPI);
+    let pxH = Math.ceil((layout.content.h / PT_PER_IN) * RASTER_DPI);
+    const cap = Math.min(1, RASTER_MAX_SIDE_PX / Math.max(pxW, pxH));
+    pxW = Math.max(1, Math.round(pxW * cap));
+    pxH = Math.max(1, Math.round(pxH * cap));
+
+    const bytes = await this._rasterizeSvgToJpeg(artOnly, pxW, pxH, background);
+
+    // Only the legend remains for the vector pass.
+    while (clone.firstChild) clone.removeChild(clone.firstChild);
+    if (legend) clone.appendChild(legend);
+
+    return bytes;
+  }
+
+  /** Serialize an SVG element and rasterize it to flattened JPEG bytes. */
+  async _rasterizeSvgToJpeg(
+    svg: SVGSVGElement,
+    pxW: number,
+    pxH: number,
+    background: string | undefined,
+    quality = 0.95,
+  ): Promise<Uint8Array> {
+    const svgString = new XMLSerializer().serializeToString(svg);
     const url = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml' }));
     try {
       const img = new Image();
@@ -1099,12 +1320,6 @@ class ExportLegendModal extends HTMLElement {
         img.onerror = () => reject(new Error('Artwork rasterization failed'));
         img.src = url;
       });
-
-      let pxW = Math.ceil((layout.content.w / PT_PER_IN) * RASTER_DPI);
-      let pxH = Math.ceil((layout.content.h / PT_PER_IN) * RASTER_DPI);
-      const cap = Math.min(1, RASTER_MAX_SIDE_PX / Math.max(pxW, pxH));
-      pxW = Math.max(1, Math.round(pxW * cap));
-      pxH = Math.max(1, Math.round(pxH * cap));
 
       const canvas = document.createElement('canvas');
       canvas.width = pxW;
@@ -1118,18 +1333,166 @@ class ExportLegendModal extends HTMLElement {
       ctx.drawImage(img, 0, 0, pxW, pxH);
 
       const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Artwork rasterization produced no image'))), 'image/jpeg', 0.95);
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Artwork rasterization produced no image'))), 'image/jpeg', quality);
       });
-      const bytes = new Uint8Array(await blob.arrayBuffer());
-
-      // Only the legend remains for the vector pass.
-      while (clone.firstChild) clone.removeChild(clone.firstChild);
-      if (legend) clone.appendChild(legend);
-
-      return bytes;
+      return new Uint8Array(await blob.arrayBuffer());
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+
+  /**
+   * Build the page-1 cover sheet as a detached SVG in pt coordinates
+   * (approved layout: title/meta/description, framed preview area, manifest
+   * rows, technical line, notes, Baumans footer). The preview JPEG is NOT in
+   * the SVG — the caller draws it via doc.addImage into `previewRect`.
+   */
+  _buildCoverSvg(opts: {
+    page: CoverPageSize;
+    title: string;
+    description: string;
+    creator: string;
+    date: string;
+    entries: CoverManifestEntry[];
+    technicalLine: string;
+    notes: string[];
+    artworkAspect: number;
+  }): { svg: SVGSVGElement; previewRect: { x: number; y: number; w: number; h: number } } {
+    const ns = 'http://www.w3.org/2000/svg';
+    const { page } = opts;
+    const M = 54;
+    const contentW = page.w - 2 * M;
+
+    // The cover is a FIXED-size page (unlike the auto-sizing legend box), so
+    // every text field needs a width bound or long input silently clips at
+    // the page edge. Char budgets use the same width heuristic as _wrapText.
+    const fitChars = (widthPt: number, fontSize: number): number =>
+      Math.max(8, Math.floor(widthPt / (fontSize * this.CHAR_WIDTH_FACTOR)));
+    const fitLine = (text: string, maxChars: number): string =>
+      text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text;
+    // _wrapText breaks on word boundaries only — hard-split any single token
+    // longer than a line (URLs, hyphenated runs) before wrapping.
+    const breakLongWords = (text: string, maxChars: number): string =>
+      text
+        .split(/\s+/)
+        .map((w) => (w.length > maxChars ? (w.match(new RegExp(`.{1,${maxChars}}`, 'g')) ?? [w]).join(' ') : w))
+        .join(' ');
+
+    const svg = document.createElementNS(ns, 'svg') as SVGSVGElement;
+    svg.setAttribute('xmlns', ns);
+    svg.setAttribute('viewBox', `0 0 ${page.w} ${page.h}`);
+
+    const paper = document.createElementNS(ns, 'rect');
+    paper.setAttribute('width', String(page.w));
+    paper.setAttribute('height', String(page.h));
+    paper.setAttribute('fill', '#ffffff');
+    svg.appendChild(paper);
+
+    let y = M;
+
+    // Title (single line, truncated)
+    const title = opts.title.length > 40 ? `${opts.title.slice(0, 39)}…` : opts.title;
+    svg.appendChild(this._createText(title || 'Untitled', M, y, { fontSize: 24, fontWeight: '600', color: '#111827' }));
+    y += 34;
+
+    // Meta: creator · date (single line, truncated to the content width)
+    const meta = [opts.creator.trim(), opts.date.trim()].filter((s) => s.length > 0).join(' · ');
+    if (meta) {
+      svg.appendChild(this._createText(fitLine(meta, fitChars(contentW, 10)), M, y, { fontSize: 10, color: '#64748b' }));
+      y += 18;
+    }
+
+    // Description (max 3 wrapped lines; overlong tokens hard-broken)
+    if (opts.description.trim()) {
+      const charsPerLine = fitChars(contentW, 11);
+      let lines = this._wrapText(breakLongWords(opts.description.trim(), charsPerLine), charsPerLine);
+      if (lines.length > 3) {
+        lines = lines.slice(0, 3);
+        lines[2] = `${lines[2].replace(/\s*\S*$/, '')}…`;
+      }
+      for (const line of lines) {
+        svg.appendChild(this._createText(line, M, y, { fontSize: 11, color: '#475569' }));
+        y += 15;
+      }
+    }
+    y += 14;
+
+    // Divider
+    const divider = document.createElementNS(ns, 'line');
+    divider.setAttribute('x1', String(M));
+    divider.setAttribute('y1', String(y));
+    divider.setAttribute('x2', String(M + contentW));
+    divider.setAttribute('y2', String(y));
+    divider.setAttribute('stroke', '#e2e8f0');
+    divider.setAttribute('stroke-width', '1');
+    svg.appendChild(divider);
+    y += 12;
+
+    // Preview frame — artwork aspect-fitted and centered in a fixed-height box
+    const previewBox = { x: M, y, w: contentW, h: 290 };
+    const previewRect = previewFitRect(opts.artworkAspect, 1, previewBox);
+    const frame = document.createElementNS(ns, 'rect');
+    frame.setAttribute('x', String(previewRect.x));
+    frame.setAttribute('y', String(previewRect.y));
+    frame.setAttribute('width', String(previewRect.w));
+    frame.setAttribute('height', String(previewRect.h));
+    frame.setAttribute('fill', '#f8fafc');
+    frame.setAttribute('stroke', '#e2e8f0');
+    frame.setAttribute('stroke-width', '1');
+    svg.appendChild(frame);
+    y += previewBox.h + 22;
+
+    // Manifest rows (values truncated to the value column's width)
+    const valueChars = fitChars(page.w - M - (M + 146), 10.5);
+    for (const entry of opts.entries) {
+      svg.appendChild(this._createText(entry.label.toUpperCase(), M, y, { fontSize: 8.5, fontWeight: '600', color: '#94a3b8' }));
+      svg.appendChild(this._createText(fitLine(entry.value, valueChars), M + 146, y, { fontSize: 10.5, color: '#111827' }));
+      y += 17;
+    }
+    y += 14;
+
+    // Technical line
+    svg.appendChild(this._createText(fitLine(opts.technicalLine, fitChars(contentW, 9.5)), M, y, { fontSize: 9.5, color: '#64748b' }));
+    y += 18;
+
+    // Notes (bullet + wrapped lines)
+    const noteChars = fitChars(contentW - 10, 9.5);
+    for (const note of opts.notes) {
+      const bullet = document.createElementNS(ns, 'circle');
+      bullet.setAttribute('cx', String(M + 2.5));
+      bullet.setAttribute('cy', String(y + 4.5));
+      bullet.setAttribute('r', '2.5');
+      bullet.setAttribute('fill', '#94a3b8');
+      svg.appendChild(bullet);
+      const lines = this._wrapText(note, noteChars);
+      for (const line of lines) {
+        svg.appendChild(this._createText(line, M + 10, y, { fontSize: 9.5, color: '#475569' }));
+        y += 13;
+      }
+      y += 8;
+    }
+
+    // Footer — same brand pattern as the legend
+    const footer = document.createElementNS(ns, 'text');
+    footer.setAttribute('x', String(M));
+    footer.setAttribute('y', String(page.h - 40));
+    footer.setAttribute('dominant-baseline', 'auto');
+    footer.setAttribute('fill', '#94a3b8');
+    const created = document.createElementNS(ns, 'tspan');
+    created.setAttribute('font-size', '8');
+    created.setAttribute('font-family', "'Inter', -apple-system, BlinkMacSystemFont, sans-serif");
+    created.textContent = 'Created in';
+    const brand = document.createElementNS(ns, 'tspan');
+    brand.setAttribute('font-size', '12');
+    brand.setAttribute('font-weight', '400');
+    brand.setAttribute('font-family', "'Baumans', cursive");
+    brand.setAttribute('dx', '4');
+    brand.textContent = 'pathogen.studio';
+    footer.appendChild(created);
+    footer.appendChild(brand);
+    svg.appendChild(footer);
+
+    return { svg, previewRect };
   }
 
   // --- PDF settings state + UI sync ---
@@ -1201,6 +1564,13 @@ class ExportLegendModal extends HTMLElement {
     root.querySelectorAll('.artwork-toggle button').forEach((btn) => {
       btn.classList.toggle('active', (btn as HTMLElement).dataset.artwork === s.artworkMode);
     });
+    const vectorMode = s.artworkMode === 'vector';
+    (root.querySelector('#pdf-detail-row') as HTMLElement).hidden = !vectorMode;
+    (root.querySelector('#pdf-detail-note') as HTMLElement).hidden = !vectorMode;
+    (root.querySelector('#pdf-detail') as HTMLSelectElement).value = s.detail;
+    (root.querySelector('#pdf-cover-sheet') as HTMLInputElement).checked = s.coverSheet;
+    (root.querySelector('#export-precision') as HTMLSelectElement).value =
+      s.exportPrecision == null ? 'match' : String(s.exportPrecision);
 
     (root.querySelector('#pdf-art-w') as HTMLInputElement).value = String(s.artW);
     (root.querySelector('#pdf-art-h') as HTMLInputElement).value = String(s.artH);
@@ -1498,6 +1868,19 @@ class ExportLegendModal extends HTMLElement {
         this._updatePdfUi();
       });
     });
+
+    (root.querySelector('#export-precision') as HTMLSelectElement).addEventListener('change', (e: Event) => {
+      const value = (e.target as HTMLSelectElement).value;
+      s.exportPrecision = value === 'match' ? null : parseInt(value, 10);
+    });
+
+    (root.querySelector('#pdf-detail') as HTMLSelectElement).addEventListener('change', (e: Event) => {
+      s.detail = (e.target as HTMLSelectElement).value as 'full' | 'fine' | 'standard';
+    });
+
+    (root.querySelector('#pdf-cover-sheet') as HTMLInputElement).addEventListener('change', (e: Event) => {
+      s.coverSheet = (e.target as HTMLInputElement).checked;
+    });
   }
 
   _addDocumentListeners(): void {
@@ -1604,16 +1987,13 @@ class ExportLegendModal extends HTMLElement {
 
       <div class="backdrop"></div>
 
-      <div class="top-bar">
-        <button class="close-btn" title="Close">&times;</button>
-        <h2>Export with Legend</h2>
-        <div class="top-bar-actions">
-          <button class="btn primary download-btn">Download &#x2193;</button>
-        </div>
-      </div>
-
       <div class="content">
         <div class="form-panel">
+          <div class="form-header">
+            <h2>Export with Legend</h2>
+            <button class="close-btn" title="Close">&times;</button>
+          </div>
+          <div class="form-scroll">
           <div class="form-group">
             <label for="legend-name">Name</label>
             <input type="text" id="legend-name" placeholder="Workspace name">
@@ -1645,6 +2025,18 @@ class ExportLegendModal extends HTMLElement {
                 <label for="export-grid-color">Grid Color</label>
                 <pathogen-color-input id="export-grid-color" compact no-alpha></pathogen-color-input>
               </div>
+              <div class="advanced-row">
+                <label for="export-precision">Precision</label>
+                <select id="export-precision">
+                  <option value="match" selected>Match workspace</option>
+                  <option value="0">0 decimals</option>
+                  <option value="1">1 decimal</option>
+                  <option value="2">2 decimals</option>
+                  <option value="3">3 decimals</option>
+                  <option value="4">4 decimals</option>
+                </select>
+              </div>
+              <p class="row-note">Trims coordinate decimals in this export only &mdash; smaller files, unchanged appearance. Never adds precision beyond the workspace setting.</p>
             </div>
           </details>
           <div class="form-group">
@@ -1718,11 +2110,28 @@ class ExportLegendModal extends HTMLElement {
                 <button type="button" data-artwork="raster" title="Print-resolution image — very complex artwork previews and prints reliably">Raster</button>
               </div>
             </div>
+            <div class="pdf-row" id="pdf-detail-row">
+              <label for="pdf-detail">Detail</label>
+              <select id="pdf-detail" class="detail-select">
+                <option value="full">Full &mdash; every segment</option>
+                <option value="fine">Fine &mdash; below &frac12; printed dot</option>
+                <option value="standard">Standard &mdash; below 1 printed dot</option>
+              </select>
+            </div>
+            <p class="row-note" id="pdf-detail-note">Removes segments smaller than a printed dot (300 DPI) at your chosen print size. Complex artwork defaults to Standard.</p>
+            <div class="pdf-row check-row">
+              <input type="checkbox" id="pdf-cover-sheet">
+              <label for="pdf-cover-sheet">Cover sheet &mdash; preview + print specs</label>
+            </div>
+            <p class="row-note">Adds a letter/A4 job-ticket page with a fast preview &mdash; page 2 is the artwork. Turn off for automated upload portals that require single-page files.</p>
             <p class="pdf-note">Text is converted to vector outlines &mdash; fonts print exactly as shown, at any print shop.</p>
           </div>
           <p class="export-status"></p>
-          <div class="form-spacer"></div>
-          <button class="btn cancel-btn">Cancel</button>
+          </div>
+          <div class="form-actions">
+            <button class="btn cancel-btn">Cancel</button>
+            <button class="btn primary download-btn">Download &#x2193;</button>
+          </div>
         </div>
 
         <div class="preview-panel">

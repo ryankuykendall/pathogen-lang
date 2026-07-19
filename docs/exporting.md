@@ -39,6 +39,16 @@ A single **Units** selector (inches or centimeters) applies to every dimension �
 
 If you're unsure whether your print shop wants bleed, leave the option on for posters and off for framed prints with a border.
 
+### Cover sheet
+
+**Cover sheet — preview + print specs** adds a job-ticket page in front of your artwork. Page 1 is Letter-sized (A4 when your Units are centimeters) and carries a fast raster preview of the finished piece, a specification manifest — trim size in your units, page size including bleed, margins, bleed and crop marks, artwork mode and detail, precision, export date, and creator — and handling notes for the print counter: *print or send page 2 only*, and (for vector artwork) a heads-up that the artwork page may take a while to render in PDF viewers even though it prints correctly.
+
+The cover also solves a practical annoyance with dense vector artwork: Finder, Quick Look, and Preview all render **page 1** for thumbnails and the initial view. With a cover in front, the file previews instantly instead of appearing broken while a heavy artwork page rasterizes. That's why the option defaults **on** when complex artwork is detected (the same heuristic that defaults Raster mode), and off otherwise.
+
+One caveat: some automated print-upload portals require single-page files and validate page counts. If you're uploading to one of those rather than handing the file to a person, turn the cover sheet off.
+
+Like everything else in the PDF export, the cover's text is converted to vector outlines — the whole document stays font-free.
+
 ### Vector or raster artwork
 
 The **Artwork** setting chooses how your artwork is written into the PDF:
@@ -47,6 +57,24 @@ The **Artwork** setting chooses how your artwork is written into the PDF:
 - **Raster** — the artwork is embedded as a print-resolution image (300 DPI, sized for your page). Text outlines and the legend stay vector either way.
 
 Very complex artwork — hundreds of thousands of path segments, as dense generative patterns can produce — makes technically valid vector PDFs that Preview, Acrobat, and print-shop software render for minutes or show as blank. The export detects this and defaults such artwork to **Raster**, which previews instantly and prints reliably; you can always switch back to Vector.
+
+### Optimizing output
+
+Two controls trim the exported file without changing how it looks.
+
+**Precision** (under **Advanced Export Settings** — applies to both SVG and PDF). Pathogen emits coordinates at full floating-point precision by default. The workspace's footer **Precision** setting (also available as `--to-fixed <N>` in the CLI) rounds every coordinate at compile time, affecting the live preview and everything downstream. The export dialog's Precision select goes one step further: it trims decimals for *this export only*, without touching your workspace setting or preview. It defaults to **Match workspace**, only ever removes precision (never adds it back), and rewrites artwork paths as absolute coordinates so rounding can never accumulate into visible drift. Text outlines and the legend are left untouched. Two decimals is comfortably sub-pixel for screen SVGs and far below print resolution.
+
+**Detail** (PDF format, Vector artwork only). Dense generative artwork often packs many path segments inside the area of a single printed dot — invisible individually, but every one of them costs the print shop's software rendering time. The Detail select removes segments smaller than a threshold derived from your chosen print size:
+
+- **Full** — every segment, exact geometry (the default for typical artwork).
+- **Fine** — culls segments smaller than half a printed dot at 300 DPI.
+- **Standard** — culls segments smaller than one printed dot (1/300 in) at the chosen print size. The default when complex artwork is detected.
+
+Visual error is bounded by the threshold — by construction, below what a 300 DPI printer can reproduce. The export dialog reports what was removed (e.g. *"Detail: removed 18,240 of 96,411 path segments"*). Detail is unavailable in Raster mode, where resolution is already governed by the 300 DPI image.
+
+PDF coordinates are additionally written at bounded float precision, which keeps the file free of 17-digit floating-point artifacts.
+
+These passes apply to artwork path data only — transforms, gradient geometry, and basic shapes are left as-is.
 
 ### What stays vector
 

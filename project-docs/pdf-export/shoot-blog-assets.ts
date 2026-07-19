@@ -163,6 +163,7 @@ async function main(): Promise<void> {
      d.value = 'Concentric orbits with a Baumans title, sized for a 24-inch print.';
      d.dispatchEvent(new Event('input'));
      sr.querySelector('.format-toggle button[data-format="pdf"]').click();
+     sr.querySelector('.form-scroll').scrollTop = 220;
      return { summary: sr.querySelector('#pdf-summary').textContent };`,
   ).then((r) => console.log('summary:', (r as { summary: string }).summary));
 

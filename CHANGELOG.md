@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-19 (export output optimization)
+
+### Added
+
+#### Playground
+
+- **Export output optimization in "Export with Legend"** (mockup-reviewed):
+  - **Precision** (Advanced Export Settings; SVG + PDF): per-export coordinate-decimal trimming, seeded from but never mutating the workspace footer Precision (`toFixed`) setting. Applied as a post-processing pass over artwork `path[d]` attributes that re-emits **absolute** commands — rounding absolute coordinates never accumulates drift, unlike rounding the compiler's relative deltas. Text outlines and the legend are untouched.
+  - **Detail** (PDF, Vector artwork only): resolution-aware decimation — culls path segments smaller than a fraction of one printed dot (300 DPI) at the chosen print size (`Fine` = ½ dot, `Standard` = 1 dot; complex artwork defaults to Standard). Visual error is bounded by the sub-dot epsilon; the dialog reports the reduction ("Detail: removed 2,447 of 4,007 path segments"). Hidden in Raster mode.
+  - PDF coordinates now written at `floatPrecision: 5` (0.00001 pt), eliminating 17-digit float artifacts from the content stream.
+  - **Cover sheet — preview + print specs** (mockup-reviewed): an optional page-1 job ticket (Letter for inch users, A4 for cm) with a fast raster preview, a spec manifest (trim/page size, margins, bleed, artwork mode + detail reduction, precision, date, creator), a technical summary, and handling notes ("print or send page 2 only"; a slow-render heads-up for vector artwork). Because Finder/Quick Look/Preview render page 1 for thumbnails, the cover makes dense-artwork PDFs preview instantly instead of appearing broken. Defaults ON when complex artwork is detected; docs note to disable it for automated upload portals requiring single-page files. Cover text is outlined like everything else — the document stays 100% font-free.
+
+### Changed
+
+#### Playground
+
+- **Export with Legend layout** (mockup-reviewed, 4 variations): the modal's top bar is gone — the form column now owns a sticky header (title + close) and a sticky bottom action bar (Cancel + Download). The Download action sits adjacent to the form it acts on and never scrolls away; the preview pane gains the full modal height. Blog screenshot re-shot to match.
+
+### Fixed
+
+#### Playground
+
+- **Optimization passes no longer touch defs-scoped geometry** — markers, clip paths, and patterns live in their own local coordinate systems where the artwork-derived epsilon/precision are meaningless; they are now excluded (was: every `path[d]` outside the legend). Guarded by an E2E marker fixture.
+- **Decimation can no longer corrupt `S`/`T` smooth-curve reflections** — smooth shorthands are normalized to explicit `C`/`Q` at parse time (while original command adjacency is known), so culling a tiny predecessor no longer re-bases the reflection on a distant unrelated curve (previously up to a ~56-unit silent shape shift on hand-authored paths).
+- Reduction counters now only count paths whose optimized `d` was actually written.
+
+#### Library
+
+- New exports: `trimPathDataPrecision(d, decimals)`, `decimatePathData(d, epsilon)` (+ `DecimateResult`), `commandsToAbsoluteD(commands, {format})`, `parsePathDataExpanded(d)` — additive absolute-emission path passes in `src/evaluator/path-{precision,decimate}.ts` and `path-data.ts`; multi-group commands expanded per the SVG grammar (extra `M` groups become LineTos). Existing byte-locked serializers unchanged.
+
+### Documentation
+
+- `docs/exporting.md` gains an "Optimizing output" section — including the first published documentation for the workspace Precision control / CLI `--to-fixed`.
+
+### Development
+
+- New suites `tests/path-precision.test.ts` (18), `tests/path-decimate.test.ts` (14), and `tests/pdf-cover-sheet.test.ts` (15) — incl. a no-drift proof vs naive relative rounding, epsilon-monotonicity/idempotence invariants, S/T reflection normalization across subpath boundaries, and cover manifest formatting. E2E harness extended to 56 checks (decimation op-count reduction, precision decimals/absolute assertions, floatPrecision probe, marker-untouched guard, cover-sheet page structure incl. the long-values + Standard-detail combination).
+- `playground/CLAUDE.md` drive-by: the browser global is `window.PathogenLang` (stale `SvgPathExtended` reference fixed).
+
 ## [Unreleased] - 2026-07-18 (print-ready PDF export)
 
 ### Added

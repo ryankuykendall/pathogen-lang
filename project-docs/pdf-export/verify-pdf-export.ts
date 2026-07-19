@@ -73,6 +73,34 @@ layer('dots').apply {
 }
 `;
 
+// Trips _isArtworkComplex via the >1.5M-char d-length threshold (loop
+// commands merge into one path element, so the node-count route is
+// impractical to compile). 25k float-coordinate circles ≈ 1.59M chars
+// (measured; integer coordinates compress to ~0.7M and DON'T trip it).
+const COMPLEX_SOURCE = `define ViewBox(0, 0, 800, 500);
+
+define default PathLayer('background') \${
+  fill: #ffffff;
+  stroke: none;
+}
+
+layer('background').apply {
+  rect(0, 0, 800, 500);
+}
+
+define PathLayer('field') \${
+  stroke: #445566;
+  stroke-width: 0.3;
+  fill: none;
+}
+
+layer('field').apply {
+  for (i in 0..25000) {
+    circle(calc((i % 160) * 5.13 + 2.07), calc(floor(i / 160) * 5.13 + 2.07), 2.5);
+  }
+}
+`;
+
 // Mirrors the real-user failure scale: a huge canvas whose raster hits the
 // 8192px cap (the data-URL image path blew the regex stack at this size).
 const BIG_CANVAS_SOURCE = `define ViewBox(0, 0, 8200, 10000);
@@ -96,6 +124,53 @@ layer('rings').apply {
   circle(4100, 5000, 1200);
   circle(4100, 5000, 2200);
   circle(4100, 5000, 3200);
+}
+`;
+
+// Dense micro-segment artwork (stays under the complexity heuristic so
+// Vector remains the default) for the Detail decimation + Precision checks.
+const DENSE_SOURCE = `define ViewBox(0, 0, 800, 500);
+
+define default PathLayer('background') \${
+  fill: #ffffff;
+  stroke: none;
+}
+
+layer('background').apply {
+  rect(0, 0, 800, 500);
+}
+
+define PathLayer('dense') \${
+  stroke: #333333;
+  stroke-width: 0.5;
+  fill: none;
+}
+
+layer('dense').apply {
+  M 100 250
+  for (i in 0..4000) {
+    l 0.05 calc(sin(i * 0.7) * 0.04)
+  }
+  L 700 250
+}
+
+let arrow = @{
+  m 0 0 l 10 5 l -10 5 z
+};
+
+let arrowMarker = Marker('arrowhead', 10, 10) {|m|
+  m.append(arrow, \${ fill: #333333; });
+};
+
+define PathLayer('pointer') \${
+  stroke: #333333;
+  stroke-width: 2;
+  fill: none;
+  marker-end: arrowMarker;
+}
+
+layer('pointer').apply {
+  M 100 400 L 300 420
 }
 `;
 
@@ -237,6 +312,18 @@ async function download(page: Page): Promise<{ name: string; bytes: Buffer }> {
   }
 }
 
+function mediaBoxAll(pdf: Buffer): [number, number][] {
+  const text = pdf.toString('latin1');
+  return [...text.matchAll(/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/g)].map((m) => [
+    parseFloat(m[1]),
+    parseFloat(m[2]),
+  ]);
+}
+
+function imageCount(pdf: Buffer): number {
+  return (pdf.toString('latin1').match(/\/Subtype\s*\/Image/g) || []).length;
+}
+
 function mediaBox(pdf: Buffer): [number, number] {
   const text = pdf.toString('latin1');
   const m = /MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/.exec(text);
@@ -297,7 +384,9 @@ async function main(): Promise<void> {
   const maskWs = await createWorkspace(MASK_SOURCE, ownerId, 'pdf-export-verify-mask');
   const oklchWs = await createWorkspace(OKLCH_SOURCE, ownerId, 'pdf-export-verify-oklch');
   const bigWs = await createWorkspace(BIG_CANVAS_SOURCE, ownerId, 'pdf-export-verify-big');
-  console.log(`workspaces: ${mainWs}, ${maskWs}, ${oklchWs}, ${bigWs}`);
+  const denseWs = await createWorkspace(DENSE_SOURCE, ownerId, 'pdf-export-verify-dense');
+  const complexWs = await createWorkspace(COMPLEX_SOURCE, ownerId, 'pdf-export-verify-complex');
+  console.log(`workspaces: ${mainWs}, ${maskWs}, ${oklchWs}, ${bigWs}, ${denseWs}, ${complexWs}`);
 
   const browser = await puppeteer.launch({
     headless: true,
@@ -468,6 +557,206 @@ async function main(): Promise<void> {
   check('G: big raster export completes (no stack overflow)', pdfG.bytes.length > 10_000, `${(pdfG.bytes.length / 1e6).toFixed(1)} MB`);
   check('G: JPEG image XObject (DCTDecode)', /\/DCTDecode/.test(gRaw));
   check('G: legend still vector (no BT, no FontFile)', !gRaw.includes('/FontFile') && !/\bBT\b/.test(decodedStreams(pdfG.bytes)));
+
+  // --- Dense workspace: Detail decimation + per-export Precision ---
+  await page.goto(`${LOCAL_ORIGIN}/workspace/${denseWs}`, { waitUntil: 'networkidle2', timeout: 60_000 });
+  await waitFor(page, PREVIEW_READY, 60_000, 'dense preview compile');
+  await installSaveStub(page);
+  await openModal(page);
+
+  const densePathD = (svgBytes: Buffer): string => {
+    const text = svgBytes.toString('utf8');
+    const tag = text.match(/<path[^>]*data-layer-name="dense"[^>]*>/)?.[0] ?? '';
+    return tag.match(/ d="([^"]+)"/)?.[1] ?? '';
+  };
+  const markerPathD = (svgBytes: Buffer): string => {
+    const markerEl = svgBytes.toString('utf8').match(/<marker[\s\S]*?<\/marker>/)?.[0] ?? '';
+    return markerEl.match(/ d="([^"]+)"/)?.[1] ?? '';
+  };
+
+  // H5 control: defaults (Precision = Match) — artwork d untouched
+  const svgControl = await download(page);
+  const dControl = densePathD(svgControl.bytes);
+  check('H: control SVG has the dense path', dControl.length > 1000);
+
+  const svgControl2 = await download(page);
+  check('H: Precision=Match is byte-stable', densePathD(svgControl2.bytes) === dControl);
+
+  // H3: Precision = 2 → absolute commands, ≤2 decimals, legend text intact
+  await inModal(
+    page,
+    `var p = sr.querySelector('#export-precision'); p.value = '2'; p.dispatchEvent(new Event('change')); return { ok: true };`,
+  );
+  const svgTrimmed = await download(page);
+  const dTrimmed = densePathD(svgTrimmed.bytes);
+  check('H: precision-trimmed d is absolute', / L /.test(dTrimmed) && !/ l /.test(dTrimmed), dTrimmed.slice(0, 40));
+  {
+    const overlong = (dTrimmed.match(/-?\d+\.\d{3,}/g) || []).length;
+    check('H: precision-trimmed d has ≤2 decimals', overlong === 0, `${overlong} overlong tokens`);
+    check('H: d changed vs control', dTrimmed !== dControl);
+    check('H: legend still live text in SVG', svgTrimmed.bytes.toString('utf8').includes('pathogen.studio'));
+    // Defs-scoped geometry (marker arrowhead) must never be optimized — it
+    // lives in its own coordinate system.
+    const markerControl = markerPathD(svgControl.bytes);
+    check('H: marker path untouched by precision pass', markerControl.length > 0 && markerPathD(svgTrimmed.bytes) === markerControl, markerControl);
+  }
+
+  // H1: PDF Detail Full vs Standard (Precision back to Match for isolation)
+  await inModal(
+    page,
+    `var p = sr.querySelector('#export-precision'); p.value = 'match'; p.dispatchEvent(new Event('change'));
+     sr.querySelector('.format-toggle button[data-format="pdf"]').click();
+     return {
+       detail: sr.querySelector('#pdf-detail').value,
+       rowHidden: sr.querySelector('#pdf-detail-row').hidden,
+     };`,
+  ).then((r) => {
+    const v = r as { detail: string; rowHidden: boolean };
+    check('H: non-complex artwork defaults Detail=Full, row visible', v.detail === 'full' && !v.rowHidden, v.detail);
+  });
+
+  const countLineOps = (pdf: Buffer): number => (decodedStreams(pdf).match(/ l\n/g) || []).length;
+
+  const pdfFull = await download(page);
+  writeFileSync(join(OUT_DIR, 'dense-full.pdf'), pdfFull.bytes);
+  const fullOps = countLineOps(pdfFull.bytes);
+
+  await inModal(
+    page,
+    `var d = sr.querySelector('#pdf-detail'); d.value = 'standard'; d.dispatchEvent(new Event('change')); return { ok: true };`,
+  );
+  const pdfStd = await download(page);
+  writeFileSync(join(OUT_DIR, 'dense-standard.pdf'), pdfStd.bytes);
+  const stdOps = countLineOps(pdfStd.bytes);
+  const hStatus = await inModal<{ text: string }>(page, `return { text: sr.querySelector('.export-status').textContent };`);
+  check('H: Standard culls line ops vs Full', stdOps > 0 && stdOps < fullOps, `${fullOps} → ${stdOps}`);
+  check('H: reduction notice shown', hStatus.text.includes('Detail: removed'), hStatus.text);
+  check('H: Standard PDF smaller than Full', pdfStd.bytes.length < pdfFull.bytes.length, `${pdfFull.bytes.length} → ${pdfStd.bytes.length}`);
+
+  // H4: floatPrecision — no 17-digit float artifacts in the content stream
+  check('H: no overlong floats in PDF stream', !/\d\.\d{7,}/.test(decodedStreams(pdfStd.bytes)));
+
+  // H2: Detail row hides in Raster mode
+  await inModal(
+    page,
+    `sr.querySelector('.artwork-toggle button[data-artwork="raster"]').click();
+     return { hidden: sr.querySelector('#pdf-detail-row').hidden };`,
+  ).then((r) => check('H: Detail row hidden in Raster mode', (r as { hidden: boolean }).hidden));
+
+  // --- Section I: cover sheet ---
+  // Fresh navigation to the dense (non-complex) workspace for clean defaults.
+  await page.goto(`${LOCAL_ORIGIN}/workspace/${denseWs}`, { waitUntil: 'networkidle2', timeout: 60_000 });
+  await waitFor(page, PREVIEW_READY, 60_000, 'dense preview recompile');
+  await installSaveStub(page);
+  await openModal(page);
+  await inModal(
+    page,
+    `sr.querySelector('.format-toggle button[data-format="pdf"]').click();
+     return { cover: sr.querySelector('#pdf-cover-sheet').checked };`,
+  ).then((r) => check('I: cover defaults OFF for non-complex artwork', !(r as { cover: boolean }).cover));
+
+  // Force cover ON, vector, full detail → two pages, Letter + poster
+  await inModal(
+    page,
+    `sr.querySelector('#pdf-cover-sheet').checked = true;
+     sr.querySelector('#pdf-cover-sheet').dispatchEvent(new Event('change'));
+     var d = sr.querySelector('#pdf-detail'); d.value = 'full'; d.dispatchEvent(new Event('change'));
+     return { ok: true };`,
+  );
+  const pdfI = await download(page);
+  writeFileSync(join(OUT_DIR, 'cover-vector.pdf'), pdfI.bytes);
+  {
+    const boxes = mediaBoxAll(pdfI.bytes);
+    check('I: cover ON → two pages', boxes.length === 2, JSON.stringify(boxes));
+    check('I: page 1 is Letter', boxes.length === 2 && Math.abs(boxes[0][0] - 612) < 1 && Math.abs(boxes[0][1] - 792) < 1);
+    check('I: page 2 is the artwork page', boxes.length === 2 && Math.abs(boxes[1][0] - 1854) < 1 && Math.abs(boxes[1][1] - 1206) < 1);
+    check('I: exactly one image (the cover preview)', imageCount(pdfI.bytes) === 1);
+    const raw = pdfI.bytes.toString('latin1');
+    check('I: document stays font-free', !raw.includes('/FontFile') && !/\bBT\b/.test(decodedStreams(pdfI.bytes)));
+    check('I: no overlong floats with cover', !/\d\.\d{7,}/.test(decodedStreams(pdfI.bytes)));
+    const iStatus = await inModal<{ text: string }>(page, `return { text: sr.querySelector('.export-status').textContent };`);
+    check('I: cover notice shown', iStatus.text.includes('Cover sheet added'), iStatus.text);
+  }
+
+  // Cover + Standard detail + long creator: the reduction numbers make the
+  // Artwork manifest value long, and the creator overflows the meta line —
+  // the previously untested width-bounding path (values truncate, no clip).
+  await inModal(
+    page,
+    `var c = sr.querySelector('#legend-creator');
+     c.value = 'Jane Smith, Senior Generative Designer and Creative Technologist, Acme Creative Studios International LLC';
+     c.dispatchEvent(new Event('input'));
+     var d = sr.querySelector('#pdf-detail'); d.value = 'standard'; d.dispatchEvent(new Event('change'));
+     return { ok: true };`,
+  );
+  const pdfIlong = await download(page);
+  writeFileSync(join(OUT_DIR, 'cover-long-values.pdf'), pdfIlong.bytes);
+  {
+    const boxes = mediaBoxAll(pdfIlong.bytes);
+    const status = await inModal<{ text: string }>(page, `return { text: sr.querySelector('.export-status').textContent };`);
+    check('I: cover + Standard detail + long creator exports cleanly', boxes.length === 2 && imageCount(pdfIlong.bytes) === 1, JSON.stringify(boxes));
+    check('I: reduction + cover notices coexist', status.text.includes('Detail: removed') && status.text.includes('Cover sheet added'), status.text);
+  }
+  await inModal(
+    page,
+    `var c = sr.querySelector('#legend-creator'); c.value = ''; c.dispatchEvent(new Event('input'));
+     var d = sr.querySelector('#pdf-detail'); d.value = 'full'; d.dispatchEvent(new Event('change'));
+     return { ok: true };`,
+  );
+
+  // Units = cm → A4 cover
+  await inModal(
+    page,
+    `var u = sr.querySelector('#pdf-unit'); u.value = 'cm'; u.dispatchEvent(new Event('change')); return { ok: true };`,
+  );
+  const pdfIcm = await download(page);
+  {
+    const boxes = mediaBoxAll(pdfIcm.bytes);
+    check('I: cm units → A4 cover', boxes.length === 2 && Math.abs(boxes[0][0] - 595.28) < 1 && Math.abs(boxes[0][1] - 841.89) < 1, JSON.stringify(boxes[0]));
+  }
+  await inModal(
+    page,
+    `var u = sr.querySelector('#pdf-unit'); u.value = 'in'; u.dispatchEvent(new Event('change')); return { ok: true };`,
+  );
+
+  // Toggle OFF → single page (back-compat)
+  await inModal(
+    page,
+    `sr.querySelector('#pdf-cover-sheet').checked = false;
+     sr.querySelector('#pdf-cover-sheet').dispatchEvent(new Event('change'));
+     return { ok: true };`,
+  );
+  const pdfIoff = await download(page);
+  check('I: cover OFF → single page', mediaBoxAll(pdfIoff.bytes).length === 1);
+
+  // Cover + Raster artwork → 2 pages, 2 images (preview + artwork raster)
+  await inModal(
+    page,
+    `sr.querySelector('#pdf-cover-sheet').checked = true;
+     sr.querySelector('#pdf-cover-sheet').dispatchEvent(new Event('change'));
+     sr.querySelector('.artwork-toggle button[data-artwork="raster"]').click();
+     return { ok: true };`,
+  );
+  const pdfIraster = await download(page);
+  writeFileSync(join(OUT_DIR, 'cover-raster.pdf'), pdfIraster.bytes);
+  check('I: cover + raster → two pages, two images', mediaBoxAll(pdfIraster.bytes).length === 2 && imageCount(pdfIraster.bytes) === 2, `${imageCount(pdfIraster.bytes)} images`);
+
+  // Complex workspace: cover defaults ON (same flag also defaults Raster)
+  await page.goto(`${LOCAL_ORIGIN}/workspace/${complexWs}`, { waitUntil: 'networkidle2', timeout: 120_000 });
+  await waitFor(page, PREVIEW_READY, 120_000, 'complex preview compile');
+  await installSaveStub(page);
+  await openModal(page);
+  await inModal(
+    page,
+    `sr.querySelector('.format-toggle button[data-format="pdf"]').click();
+     return {
+       cover: sr.querySelector('#pdf-cover-sheet').checked,
+       raster: sr.querySelector('.artwork-toggle button[data-artwork="raster"]').classList.contains('active'),
+     };`,
+  ).then((r) => {
+    const v = r as { cover: boolean; raster: boolean };
+    check('I: complex artwork defaults cover ON (+ raster corroboration)', v.cover && v.raster, JSON.stringify(v));
+  });
 
   await browser.close();
 

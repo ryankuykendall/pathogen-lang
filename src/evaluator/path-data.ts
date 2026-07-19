@@ -270,6 +270,201 @@ export function commandsToRelativeD(commands: PathBlockCommand[], opts: Relative
   return parts.join(' ');
 }
 
+// ── Arbitrary d input → normalized commands → absolute d ────────────────
+//
+// Additive support for the export-time optimization passes (precision
+// trimming, decimation). Nothing here is used by the evaluators' own
+// serialization, whose byte-locked defaults are unchanged.
+
+/** Args consumed per command-letter group (SVG grammar). */
+const COMMAND_ARITY: Record<string, number> = {
+  M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0,
+};
+
+/**
+ * Expand multi-group commands (`L 10 10 20 20` → two `L`s) into one command
+ * per argument group, applying the SVG rule that argument groups after the
+ * first on an `M`/`m` are implicit LineTos. Incomplete trailing groups are
+ * dropped. Evaluator-generated strings are single-group already; this makes
+ * downstream passes safe for arbitrary well-formed d input.
+ */
+export function expandCommandGroups(raw: RawPathCommand[]): RawPathCommand[] {
+  const out: RawPathCommand[] = [];
+  for (const cmd of raw) {
+    const upper = cmd.command.toUpperCase();
+    const arity = COMMAND_ARITY[upper];
+    if (arity === undefined) continue;
+    if (arity === 0) {
+      out.push(cmd);
+      continue;
+    }
+    if (cmd.args.length < arity) continue; // incomplete group — drop
+    if (cmd.args.length === arity) {
+      out.push(cmd);
+      continue;
+    }
+    const isRelative = cmd.command !== upper;
+    for (let i = 0; i + arity <= cmd.args.length; i += arity) {
+      let letter = cmd.command;
+      if (upper === 'M' && i > 0) letter = isRelative ? 'l' : 'L';
+      out.push({ command: letter, args: cmd.args.slice(i, i + arity) });
+    }
+  }
+  return out;
+}
+
+/**
+ * Parse arbitrary well-formed path data into single-group commands with
+ * absolute start/end tracking (multi-group commands expanded per the SVG
+ * grammar). Unlike parsePathStringToCommands, safe for input the evaluator
+ * did not generate.
+ *
+ * Smooth shorthands are normalized away: `S`→explicit `C` and `T`→explicit
+ * `Q`, with the reflected control point resolved HERE, while the original
+ * command adjacency is still known. Downstream passes (decimation) may remove
+ * commands; a surviving raw `S`/`T` would then silently reflect off whatever
+ * unrelated curve precedes it in the output stream — an unbounded shape
+ * change. Explicit controls make every command self-contained.
+ */
+export function parsePathDataExpanded(
+  d: string,
+  startPos: { x: number; y: number } = { x: 0, y: 0 },
+): PathBlockCommand[] {
+  const scratch = createPathContext({});
+  scratch.position = { x: startPos.x, y: startPos.y };
+  scratch.start = { x: startPos.x, y: startPos.y };
+  const commands: PathBlockCommand[] = [];
+  // Absolute control points driving S/T reflection (SVG rules: reflection
+  // applies only when the previous command is same-family, else the control
+  // collapses to the current point).
+  let prevCubicCtrl: { x: number; y: number } | null = null;
+  let prevQuadCtrl: { x: number; y: number } | null = null;
+
+  for (const raw of expandCommandGroups(tokenizePathData(d))) {
+    const pos = { x: scratch.position.x, y: scratch.position.y };
+    let command = raw.command;
+    let args = raw.args;
+    const upper = command.toUpperCase();
+    const isRelative = command !== upper;
+
+    if (upper === 'S') {
+      const x2 = isRelative ? pos.x + args[0] : args[0];
+      const y2 = isRelative ? pos.y + args[1] : args[1];
+      const ex = isRelative ? pos.x + args[2] : args[2];
+      const ey = isRelative ? pos.y + args[3] : args[3];
+      const x1 = prevCubicCtrl ? 2 * pos.x - prevCubicCtrl.x : pos.x;
+      const y1 = prevCubicCtrl ? 2 * pos.y - prevCubicCtrl.y : pos.y;
+      command = 'C';
+      args = [x1, y1, x2, y2, ex, ey];
+    } else if (upper === 'T') {
+      const ex = isRelative ? pos.x + args[0] : args[0];
+      const ey = isRelative ? pos.y + args[1] : args[1];
+      const qx = prevQuadCtrl ? 2 * pos.x - prevQuadCtrl.x : pos.x;
+      const qy = prevQuadCtrl ? 2 * pos.y - prevQuadCtrl.y : pos.y;
+      command = 'Q';
+      args = [qx, qy, ex, ey];
+    }
+
+    // Track reflection state from the (possibly rewritten) command.
+    const u = command.toUpperCase();
+    const rel = command !== u;
+    if (u === 'C') {
+      prevCubicCtrl = { x: rel ? pos.x + args[2] : args[2], y: rel ? pos.y + args[3] : args[3] };
+      prevQuadCtrl = null;
+    } else if (u === 'Q') {
+      prevQuadCtrl = { x: rel ? pos.x + args[0] : args[0], y: rel ? pos.y + args[1] : args[1] };
+      prevCubicCtrl = null;
+    } else {
+      prevCubicCtrl = null;
+      prevQuadCtrl = null;
+    }
+
+    updateContextForCommand(scratch, command, args);
+    commands.push({
+      command,
+      args,
+      start: pos,
+      end: { x: scratch.position.x, y: scratch.position.y },
+    });
+  }
+  return commands;
+}
+
+export interface AbsoluteDOptions {
+  /** Number formatter; defaults to String (full precision). */
+  format?: (n: number) => string;
+}
+
+/**
+ * Serialize commands as ABSOLUTE path data (uppercase letters, world
+ * coordinates). Relative curve control points are absolutized against each
+ * command's tracked start point. Rounding absolute coordinates never
+ * accumulates drift the way rounding relative deltas does, which is why the
+ * export-time passes emit through this rather than commandsToRelativeD.
+ * Expects single-group commands (see parsePathDataExpanded).
+ *
+ * Note: parsePathDataExpanded never yields `S`/`T` (normalized to explicit
+ * `C`/`Q` at parse time); the S/T branches below exist only for
+ * evaluator-native command lists, where original adjacency is guaranteed.
+ */
+export function commandsToAbsoluteD(commands: PathBlockCommand[], opts: AbsoluteDOptions = {}): string {
+  const fmt = opts.format ?? String;
+  const parts: string[] = [];
+  for (const cmd of commands) {
+    const upper = cmd.command.toUpperCase();
+    const isRelative = cmd.command !== upper;
+    const { start, end, args } = cmd;
+    switch (upper) {
+      case 'Z':
+        parts.push('Z');
+        break;
+      case 'M':
+        parts.push(`M ${fmt(end.x)} ${fmt(end.y)}`);
+        break;
+      case 'L':
+      case 'T':
+        parts.push(`${upper} ${fmt(end.x)} ${fmt(end.y)}`);
+        break;
+      case 'H':
+        parts.push(`H ${fmt(end.x)}`);
+        break;
+      case 'V':
+        parts.push(`V ${fmt(end.y)}`);
+        break;
+      case 'C': {
+        const [a1, a2, a3, a4] = args;
+        const x1 = isRelative ? start.x + a1 : a1;
+        const y1 = isRelative ? start.y + a2 : a2;
+        const x2 = isRelative ? start.x + a3 : a3;
+        const y2 = isRelative ? start.y + a4 : a4;
+        parts.push(`C ${fmt(x1)} ${fmt(y1)} ${fmt(x2)} ${fmt(y2)} ${fmt(end.x)} ${fmt(end.y)}`);
+        break;
+      }
+      case 'S':
+      case 'Q': {
+        const [a1, a2] = args;
+        const x1 = isRelative ? start.x + a1 : a1;
+        const y1 = isRelative ? start.y + a2 : a2;
+        parts.push(`${upper} ${fmt(x1)} ${fmt(y1)} ${fmt(end.x)} ${fmt(end.y)}`);
+        break;
+      }
+      case 'A': {
+        const [rx, ry, rotation, largeArc, sweep] = args;
+        parts.push(
+          `A ${fmt(rx)} ${fmt(ry)} ${fmt(rotation)} ${fmt(largeArc)} ${fmt(sweep)} ${fmt(end.x)} ${fmt(end.y)}`,
+        );
+        break;
+      }
+      default:
+        // Unknown letters were filtered by expandCommandGroups; tolerate
+        // evaluator-native lists by treating anything else as a line.
+        parts.push(`L ${fmt(end.x)} ${fmt(end.y)}`);
+        break;
+    }
+  }
+  return parts.join(' ');
+}
+
 /**
  * The round-trip killer: serialize AND track in one walk. For each emitted
  * command the FORMATTED numbers are parsed back and applied to `ctx` via

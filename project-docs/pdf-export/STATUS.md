@@ -1,5 +1,100 @@
 # Print-Ready PDF Export — Status
 
+## 2026-07-19 (evening) — Option B modal layout
+
+Ryan flagged the Download button living in the modal top bar, far from the
+form. Four bbwp layout variations shipped
+(`…--export-legend-ux--action-bar-variations.bbwp.html`, with live-scrolling
+form columns); **Option B approved**: no top bar; sticky form-column header
+(title + close) + sticky bottom action bar (Cancel left / Download primary
+right); preview gains full modal height. Markup/CSS-only restructure —
+`.top-bar`/`.form-spacer` removed; `.form-panel` → header/`.form-scroll`/
+`.form-actions`. **Gotcha:** the flex no-crush guard moved with the scroll
+container (`.form-panel > *` → `.form-scroll > *`) — it protects children of
+whatever element scrolls. `shoot-blog-assets.ts` scroll target updated to
+`.form-scroll`; blog `pdf-export-modal.png` re-shot. Harness untouched and
+green (selectors are class-based, position-independent): 56/56. Verified
+scrolled/top, light/dark, and 640px mobile stack.
+
+## 2026-07-19 (later) — Cover sheet + review fixes
+
+**Review fixes applied** (from the optimization-diff code review):
+- CRITICAL: `_optimizeArtworkPaths` now skips `defs/marker/clipPath/pattern`
+  subtrees (local coordinate systems); marker E2E fixture guards it.
+- S/T reflection: normalized to explicit C/Q in `parsePathDataExpanded` — at
+  PARSE time, not the serializer as the review suggested, because after
+  decimation the serializer no longer knows the original adjacency. Test
+  proves the ~56-unit reflection corruption is fixed.
+- Counters only increment after the DOM write; comments corrected.
+
+**Cover sheet** (mockup-reviewed): page-1 job ticket, Letter/A4 by Units,
+defaults ON via `_isArtworkComplex` (same flag as Raster/Standard). Pure
+content module `playground/utils/pdf-cover-sheet.ts` (manifest/technical/
+notes/fit math — 15 unit tests); `_buildCoverSvg` in the modal (reuses
+`_createText`/`_wrapText` + legend brand footer); preview = 1200px JPEG of
+the optimized+outlined clone captured BEFORE raster-stripping, drawn via
+`doc.addImage` (never a data URL through svg2pdf); cover text outlined under
+the same zero-font guarantee (export fails rather than embedding fonts);
+jsPDF multi-page: constructor = cover format, `addPage([w,h], orient)` for
+the artwork page (per-page MediaBoxes verified against jspdf 4.2.1 source).
+
+**Harness fixture gotcha:** `_isArtworkComplex`'s d-length threshold needs
+FLOAT coordinates to trip economically — 16k integer-coordinate circles
+compile to only ~0.7M chars; 25k float-coordinate circles ≈ 1.59M (measured
+via `node -e` against dist before burning harness runs). Loop commands merge
+into one path element, so the >20k-node route is impractical in fixtures.
+
+**Verification:** harness now **56/56**; full suite 93 files / 3,771 tests.
+Rendered `verify/cover-vector.pdf` page 1 matches the approved mockup
+(instant Quick Look render — the feature working as designed).
+
+**Second review round (combined diff):** no criticals; independently
+re-verified S/T reflection rules against the SVG spec (incl. confirming
+parse-time normalization was the right call over serializer-time). Warning
+fixed in-session: cover text fields had no width bounds on the fixed-size
+page — meta line, manifest values, and technical line now truncate with
+ellipsis to their column widths, and description/note tokens longer than a
+line are hard-broken before wrapping (`fitChars`/`fitLine`/`breakLongWords`
+in `_buildCoverSvg`). Harness gained the previously-untested combination
+(cover + Standard detail + overlong creator → `verify/cover-long-values.pdf`,
+visually confirmed truncating cleanly). Also: S/T Z/M-boundary + chained-S
+reflection tests added; dead-branch comment in `commandExtent`; CHANGELOG
+counts corrected.
+
+## 2026-07-19 — Export output optimization (Precision + Detail)
+
+Follow-up from Ryan's question about relative→absolute conversion as a PDF
+performance lever (answer: no — PDF operators are already absolute and the
+conversion is additions, not trig; the real levers are operator count and
+number size). Mockup-reviewed, then shipped:
+
+- **Precision** (Advanced Export Settings, SVG+PDF): per-export decimal
+  trimming via new `trimPathDataPrecision` — post-processing over artwork
+  `path[d]` (NOT a recompile: that would lose GPU-rasterized gradients),
+  emitting ABSOLUTE commands because rounding relative deltas accumulates
+  drift (~2.8 units over 200 × `l .014 .014` at 1 decimal; absolute stays
+  within half an ULP). Seeded from the workspace `toFixed`, never mutates it.
+- **Detail** (PDF + Vector only): `decimatePathData(d, epsilon)` with
+  `epsilon = frac × (72/300)pt / layout.scale` (frac ½ = Fine, 1 = Standard);
+  sub-epsilon runs accumulate and emit a synthetic `L` at each epsilon of net
+  travel, so error is bounded by one printed dot. Complex artwork defaults to
+  Standard. Dense 4,000-segment fixture: 2,447 removed, line ops 8461→6014,
+  visually identical renders.
+- **jsPDF `floatPrecision: 5`** — NOT `'smart'`, which keeps full 16-digit
+  precision for sub-1 values and thus fails the no-overlong-floats probe.
+- Library additions (all additive; byte-locked round-trip suites untouched):
+  `commandsToAbsoluteD`, `parsePathDataExpanded` (multi-group expansion with
+  the extra-M-groups-become-LineTos SVG rule; incomplete groups dropped —
+  'garbage' tokenizes to bare `a` commands), exported via `src/index.ts` to
+  `window.PathogenLang`.
+- E2E harness now 41 checks; unit suites tests/path-precision.test.ts (13)
+  and tests/path-decimate.test.ts (12).
+
+Deferred: decimation for SVG export (needs an intended-display-size input);
+smooth-command (`S`/`T`) reflection base shifts by ≤ ~2·epsilon when a tiny
+predecessor is culled (documented, sub-dot).
+
+
 **Date:** 2026-07-18 · **Status:** Implemented, verified end-to-end, agentic reviews applied, pending commit
 
 ## Review outcomes (both agentic reviews run + findings applied)
