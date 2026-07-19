@@ -342,7 +342,14 @@ function mediaBox(pdf: Buffer): [number, number] {
   return [parseFloat(m[1]), parseFloat(m[2])];
 }
 
-/** Inflate every FlateDecode stream and concatenate the decoded content. */
+/**
+ * Concatenate PDF *content* streams (page drawing operators). Only
+ * FlateDecode-inflatable streams are included: with `compress: true` jsPDF
+ * deflates every page content stream, while embedded JPEGs are DCTDecode
+ * (inflate throws). Skipping the un-inflatable streams excludes image bytes,
+ * whose raw binary otherwise produces false `BT`/operator matches — which is
+ * exactly what a `stream`/`endstream`/`BT` byte-sequence inside a JPEG did.
+ */
 function decodedStreams(pdf: Buffer): string {
   const raw = pdf.toString('latin1');
   let out = '';
@@ -353,9 +360,10 @@ function decodedStreams(pdf: Buffer): string {
     const end = raw.indexOf('endstream', start);
     if (end === -1) continue;
     try {
-      out += inflateSync(pdf.subarray(start, end)).toString('latin1');
+      out += `${inflateSync(pdf.subarray(start, end)).toString('latin1')}\n`;
     } catch {
-      out += raw.slice(start, end); // uncompressed stream
+      // Not a FlateDecode content stream (DCTDecode image, or a false
+      // `stream` match inside binary) — not text content, skip it.
     }
   }
   return out;

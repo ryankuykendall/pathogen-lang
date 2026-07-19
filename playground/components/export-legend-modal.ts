@@ -292,9 +292,11 @@ class ExportLegendModal extends HTMLElement {
     // Store SVG reference for rebuilds
     this._svgElement = svgElement;
 
-    // Snapshot workspace state for override merging
+    // Snapshot workspace state for override merging. The grid defaults OFF
+    // for exports regardless of the workspace setting (an explicit false
+    // override, not null/inherit) — a printed piece rarely wants the grid.
     this._workspaceState = { ...storeState };
-    this._exportOverrides = { gridEnabled: null, gridColor: null };
+    this._exportOverrides = { gridEnabled: false, gridColor: null };
 
     this._canvasWidth = storeState.width;
     this._canvasHeight = storeState.height;
@@ -780,10 +782,11 @@ class ExportLegendModal extends HTMLElement {
       snapToggle.classList.toggle('active', this._snapEnabled);
       snapToggle.setAttribute('aria-checked', String(this._snapEnabled));
     }
-    // Populate advanced export settings from workspace state
+    // Populate advanced export settings. Grid follows the export override
+    // (defaults OFF); color still seeds from the workspace.
     if (this._workspaceState) {
       (root.querySelector('#export-grid-enabled') as HTMLInputElement).checked =
-        this._workspaceState.gridEnabled || false;
+        this._exportOverrides.gridEnabled ?? false;
       (root.querySelector('#export-grid-color') as HTMLElement & { value: string }).value =
         (this._workspaceState.gridColor as string) || '#cccccc';
     }
