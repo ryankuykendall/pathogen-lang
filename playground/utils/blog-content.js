@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "print-ready-pdf-export",
+    "title": "Print-Ready PDF Export: From Playground to Poster",
+    "date": "2026-07-18",
+    "description": "Export with Legend now produces print-ready PDFs — real page sizes, margins, bleed and crop marks, and text converted to vector outlines so your fonts survive any print shop."
+  },
+  {
     "slug": "segment-labels-and-suffixes",
     "title": "Name Your Corners: Segment Labels and Corner Suffixes",
     "date": "2026-07-18",
@@ -282,26 +288,26 @@ let pts = [
 define GroupLayer('diagram') \${ translate-x: 0; translate-y: 0; }
 
 // Title
-define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif }
+define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('title'));
 layer('title').apply { text(30, 24)\`cubicSpline — waypoints, tangent lines, and control points\` }
 
 // The curve
-define PathLayer('curve') \${ fill: none; stroke: #3b82f6; stroke-width: 3 }
+define PathLayer('curve') \${ fill: none; stroke: #3b82f6; stroke-width: 3; }
 layer('diagram').append(layer('curve'));
 layer('curve').apply { cubicSpline(pts); }
 
 // On-curve points
-define PathLayer('anchors') \${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
+define PathLayer('anchors') \${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5; }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
   for ([p, i] in pts) { circle(p.x, p.y, 5); }
 }
 
 // Control points and tangent lines
-define PathLayer('cp-exit') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
-define PathLayer('cp-entry') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
-define PathLayer('tangent') \${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3 }
+define PathLayer('cp-exit') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
+define PathLayer('cp-entry') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
+define PathLayer('tangent') \${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; }
 layer('diagram').append(layer('cp-exit'), layer('cp-entry'), layer('tangent'));
 
 let n = calc(pts.length - 1);
@@ -322,16 +328,16 @@ for (i in 1..n) {
 }
 
 // Angle visualization layers
-define PathLayer('angle-fills') \${ fill: rgba(245, 158, 11, 0.15); stroke: none }
-define PathLayer('angle-arcs') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5 }
-define PathLayer('angle-ticks') \${ fill: none; stroke: #f59e0b; stroke-width: 0.8 }
-define TextLayer('angle-labels') \${ font-size: 9; fill: #f59e0b; font-family: system-ui, sans-serif }
+define PathLayer('angle-fills') \${ fill: rgba(245, 158, 11, 0.15); stroke: none; }
+define PathLayer('angle-arcs') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
+define PathLayer('angle-ticks') \${ fill: none; stroke: #f59e0b; stroke-width: 0.8; }
+define TextLayer('angle-labels') \${ font-size: 9; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('angle-fills'), layer('angle-arcs'), layer('angle-ticks'), layer('angle-labels'));
 
 for ([p, i] in pts) { angleWedge(p.x, p.y, 28, p.angle); }
 
 // Point labels
-define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(38, 182)\`P0\`
@@ -343,11 +349,11 @@ layer('labels').apply {
 // === Legend group ===
 define GroupLayer('legend-group') \${ translate-x: 30; translate-y: 230; }
 
-define PathLayer('sw-curve') \${ fill: #3b82f6; stroke: none }
-define PathLayer('sw-exit') \${ fill: #ef4444; stroke: none }
-define PathLayer('sw-entry') \${ fill: #22c55e; stroke: none }
-define PathLayer('sw-tangent') \${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3 }
-define PathLayer('sw-angle') \${ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1 }
+define PathLayer('sw-curve') \${ fill: #3b82f6; stroke: none; }
+define PathLayer('sw-exit') \${ fill: #ef4444; stroke: none; }
+define PathLayer('sw-entry') \${ fill: #22c55e; stroke: none; }
+define PathLayer('sw-tangent') \${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; }
+define PathLayer('sw-angle') \${ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1; }
 layer('legend-group').append(layer('sw-curve'), layer('sw-exit'), layer('sw-entry'), layer('sw-tangent'), layer('sw-angle'));
 
 layer('sw-curve').apply { rect(0, 0, 12, 3); }
@@ -358,7 +364,7 @@ layer('sw-angle').apply {
   M 0 64 L 12 64 A 6 6 0 0 0 6 58 Z
 }
 
-define TextLayer('legend-text') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+define TextLayer('legend-text') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('legend-text'));
 layer('legend-text').apply {
   text(20, 6)\`Curve\`
@@ -390,7 +396,7 @@ grid.apply {
 define GroupLayer('diagram') \${ translate-x: 0; translate-y: 0; }
 
 // Title — top, clear of geometry
-define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif }
+define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('title'));
 layer('title').apply {
   text(30, 28)\`G1 continuity: CPs are collinear through the join\`
@@ -401,14 +407,14 @@ let cpIn   = { x: 135, y: 135 };
 let cpOut  = { x: 265, y: 95 };
 
 // Collinear line through CPs
-define PathLayer('g1-line') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5 }
+define PathLayer('g1-line') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
 layer('diagram').append(layer('g1-line'));
 layer('g1-line').apply {
   M cpIn.x cpIn.y L cpOut.x cpOut.y
 }
 
 // Incoming and outgoing curve segments
-define PathLayer('curves') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
+define PathLayer('curves') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('diagram').append(layer('curves'));
 layer('curves').apply {
   M 75 175 C 100 155 cpIn.x cpIn.y joinPt.x joinPt.y
@@ -416,19 +422,19 @@ layer('curves').apply {
 }
 
 // Join point
-define PathLayer('anchor') \${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5 }
+define PathLayer('anchor') \${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5; }
 layer('diagram').append(layer('anchor'));
 layer('anchor').apply { circle(joinPt.x, joinPt.y, 6); }
 
 // Control points
-define PathLayer('cp-entry') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
-define PathLayer('cp-exit') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
+define PathLayer('cp-entry') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
+define PathLayer('cp-exit') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
 layer('diagram').append(layer('cp-entry'), layer('cp-exit'));
 layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4); }
 layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4); }
 
 // Endpoint markers
-define PathLayer('endpoints') \${ fill: #64748b; stroke: #334155; stroke-width: 1 }
+define PathLayer('endpoints') \${ fill: #64748b; stroke: #334155; stroke-width: 1; }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
   circle(75, 175, 3);
@@ -436,7 +442,7 @@ layer('endpoints').apply {
 }
 
 // Labels — positioned with clearance from geometry
-define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(175, 98)\`join point\`
@@ -447,7 +453,7 @@ layer('labels').apply {
 }
 
 // Explanation — two shorter lines with safe margins
-define TextLayer('note') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('note') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('note'));
 layer('note').apply {
   text(30, 218)\`Both CPs share the same tangent angle — the curve\`
@@ -479,11 +485,11 @@ define GroupLayer('layout') \${ translate-x: 0; translate-y: 0; }
 define GroupLayer('s-curve-group') \${ translate-x: 15; translate-y: 8; }
 layer('layout').append(layer('s-curve-group'));
 
-define TextLayer('s-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('s-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('s-curve-group').append(layer('s-label'));
 layer('s-label').apply { text(27, 20)\`S-curve\` }
 
-define PathLayer('s-curve') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
+define PathLayer('s-curve') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('s-curve-group').append(layer('s-curve'));
 layer('s-curve').apply {
   cubicSpline([
@@ -497,11 +503,11 @@ layer('s-curve').apply {
 define GroupLayer('sine-group') \${ translate-x: 145; translate-y: 8; }
 layer('layout').append(layer('sine-group'));
 
-define TextLayer('sine-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('sine-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('sine-group').append(layer('sine-label'));
 layer('sine-label').apply { text(27, 20)\`Sine wave\` }
 
-define PathLayer('sine') \${ fill: none; stroke: #ef4444; stroke-width: 2.5 }
+define PathLayer('sine') \${ fill: none; stroke: #ef4444; stroke-width: 2.5; }
 layer('sine-group').append(layer('sine'));
 layer('sine').apply {
   cubicSpline([
@@ -517,11 +523,11 @@ layer('sine').apply {
 define GroupLayer('loop-group') \${ translate-x: 280; translate-y: 8; }
 layer('layout').append(layer('loop-group'));
 
-define TextLayer('loop-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('loop-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('loop-group').append(layer('loop-label'));
 layer('loop-label').apply { text(38, 20)\`Closed loop\` }
 
-define PathLayer('loop') \${ fill: rgba(34, 197, 94, 0.1); stroke: #22c55e; stroke-width: 2.5 }
+define PathLayer('loop') \${ fill: rgba(34, 197, 94, 0.1); stroke: #22c55e; stroke-width: 2.5; }
 layer('loop-group').append(layer('loop'));
 layer('loop').apply {
   cubicSpline([
@@ -597,17 +603,17 @@ let endPt = { x: 500, y: 150 };
 define GroupLayer('diagram') \${ translate-x: 0; translate-y: 0; }
 
 // Title
-define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif }
+define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('title'));
 layer('title').apply { text(30, 24)\`quadSpline — implicit angle derivation\` }
 
 // The curve
-define PathLayer('curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 3 }
+define PathLayer('curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 3; }
 layer('diagram').append(layer('curve'));
 layer('curve').apply { quadSpline(startPt, midPts, endPt); }
 
 // On-curve points
-define PathLayer('anchors') \${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
+define PathLayer('anchors') \${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5; }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
   circle(startPt.x, startPt.y, 5);
@@ -616,9 +622,9 @@ layer('anchors').apply {
 }
 
 // Recompute CPs for visualization
-define PathLayer('shared-cp') \${ fill: #f97316; stroke: #7c2d12; stroke-width: 1 }
-define PathLayer('tangent-line') \${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3 }
-define PathLayer('derived-dir') \${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2 }
+define PathLayer('shared-cp') \${ fill: #f97316; stroke: #7c2d12; stroke-width: 1; }
+define PathLayer('tangent-line') \${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3; }
+define PathLayer('derived-dir') \${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2; }
 layer('diagram').append(layer('shared-cp'), layer('tangent-line'), layer('derived-dir'));
 
 // First CP from explicit angle
@@ -648,7 +654,7 @@ for ([pt, idx] in midPts) {
 }
 
 // Labels — positioned with clearance
-define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(26, 165)\`start\`
@@ -661,10 +667,10 @@ layer('labels').apply {
 // === Legend group ===
 define GroupLayer('legend-group') \${ translate-x: 30; translate-y: 248; }
 
-define PathLayer('lg-curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 2.5 }
-define PathLayer('lg-cp') \${ fill: #f97316; stroke: none }
-define PathLayer('lg-dir') \${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2 }
-define PathLayer('lg-tan') \${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3 }
+define PathLayer('lg-curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 2.5; }
+define PathLayer('lg-cp') \${ fill: #f97316; stroke: none; }
+define PathLayer('lg-dir') \${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2; }
+define PathLayer('lg-tan') \${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3; }
 layer('legend-group').append(layer('lg-curve'), layer('lg-cp'), layer('lg-dir'), layer('lg-tan'));
 
 layer('lg-curve').apply { M 0 0 L 16 0 }
@@ -672,7 +678,7 @@ layer('lg-cp').apply { circle(8, 16, 4); }
 layer('lg-dir').apply { M 0 30 L 16 30 }
 layer('lg-tan').apply { M 0 44 L 16 44 }
 
-define TextLayer('legend') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+define TextLayer('legend') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('legend'));
 layer('legend').apply {
   text(24, 4)\`Curve\`
@@ -681,7 +687,7 @@ layer('legend').apply {
   text(24, 48)\`Tangent extension (point -&gt; nextCP)\`
 }
 
-define TextLayer('note') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('note') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('note'));
 layer('note').apply {
   text(0, 68)\`Only the start has an explicit angle.\`
@@ -712,11 +718,11 @@ define GroupLayer('layout') \${ translate-x: 0; translate-y: 0; }
 define GroupLayer('arc-group') \${ translate-x: 15; translate-y: 8; }
 layer('layout').append(layer('arc-group'));
 
-define TextLayer('arc-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('arc-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('arc-group').append(layer('arc-label'));
 layer('arc-label').apply { text(23, 20)\`Simple arc\` }
 
-define PathLayer('arc') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
+define PathLayer('arc') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('arc-group').append(layer('arc'));
 layer('arc').apply {
   quadSpline(
@@ -730,11 +736,11 @@ layer('arc').apply {
 define GroupLayer('flow-group') \${ translate-x: 145; translate-y: 8; }
 layer('layout').append(layer('flow-group'));
 
-define TextLayer('flow-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('flow-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('flow-group').append(layer('flow-label'));
 layer('flow-label').apply { text(40, 20)\`Flowing curve\` }
 
-define PathLayer('flowing') \${ fill: none; stroke: #ef4444; stroke-width: 2.5 }
+define PathLayer('flowing') \${ fill: none; stroke: #ef4444; stroke-width: 2.5; }
 layer('flow-group').append(layer('flowing'));
 layer('flowing').apply {
   quadSpline(
@@ -752,11 +758,11 @@ layer('flowing').apply {
 define GroupLayer('zig-group') \${ translate-x: 310; translate-y: 8; }
 layer('layout').append(layer('zig-group'));
 
-define TextLayer('zig-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('zig-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('zig-group').append(layer('zig-label'));
 layer('zig-label').apply { text(30, 20)\`Zigzag\` }
 
-define PathLayer('zigzag') \${ fill: none; stroke: #22c55e; stroke-width: 2.5 }
+define PathLayer('zigzag') \${ fill: none; stroke: #22c55e; stroke-width: 2.5; }
 layer('zig-group').append(layer('zigzag'));
 layer('zigzag').apply {
   quadSpline(
@@ -826,7 +832,7 @@ grid.apply {
 }
 
 // Title — top, clear of geometry
-define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif }
+define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('title').apply {
   text(30, 26)\`Single segment (t = 0.6) — CPs pulled 60% toward shared CP\`
 }
@@ -848,7 +854,7 @@ let cp2x = calc(lerp(ex, sharedX, t));
 let cp2y = calc(lerp(ey, sharedY, t));
 
 // Arms from endpoints to virtual shared CP
-define PathLayer('arms') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5; stroke-dasharray: 3 3 }
+define PathLayer('arms') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5; stroke-dasharray: 3 3; }
 layer('diagram').append(layer('arms'));
 layer('arms').apply {
   M sx sy L sharedX sharedY
@@ -856,7 +862,7 @@ layer('arms').apply {
 }
 
 // Virtual shared CP diamond
-define PathLayer('virtual') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5 }
+define PathLayer('virtual') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
 layer('diagram').append(layer('virtual'));
 layer('virtual').apply {
   M sharedX calc(sharedY - 6)
@@ -866,31 +872,31 @@ layer('virtual').apply {
 }
 
 // Actual CPs (lerped)
-define PathLayer('cp1') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1 }
-define PathLayer('cp2') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1 }
+define PathLayer('cp1') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
+define PathLayer('cp2') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
 layer('diagram').append(layer('cp1'), layer('cp2'));
 layer('cp1').apply { circle(cp1x, cp1y, 5); }
 layer('cp2').apply { circle(cp2x, cp2y, 5); }
 
 // Lines from endpoints to actual CPs
-define PathLayer('cp1-arm') \${ fill: none; stroke: #ef4444; stroke-width: 1.5 }
-define PathLayer('cp2-arm') \${ fill: none; stroke: #22c55e; stroke-width: 1.5 }
+define PathLayer('cp1-arm') \${ fill: none; stroke: #ef4444; stroke-width: 1.5; }
+define PathLayer('cp2-arm') \${ fill: none; stroke: #22c55e; stroke-width: 1.5; }
 layer('diagram').append(layer('cp1-arm'), layer('cp2-arm'));
 layer('cp1-arm').apply { M sx sy L cp1x cp1y }
 layer('cp2-arm').apply { M ex ey L cp2x cp2y }
 
 // The resulting cubic curve
-define PathLayer('curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 3 }
+define PathLayer('curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 3; }
 layer('diagram').append(layer('curve'));
 layer('curve').apply { M sx sy C cp1x cp1y cp2x cp2y ex ey }
 
 // Quadratic reference (t=1.0)
-define PathLayer('quad-ref') \${ fill: none; stroke: #475569; stroke-width: 1; stroke-dasharray: 4 4 }
+define PathLayer('quad-ref') \${ fill: none; stroke: #475569; stroke-width: 1; stroke-dasharray: 4 4; }
 layer('diagram').append(layer('quad-ref'));
 layer('quad-ref').apply { M sx sy Q sharedX sharedY ex ey }
 
 // Endpoints
-define PathLayer('endpoints') \${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5 }
+define PathLayer('endpoints') \${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5; }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
   circle(sx, sy, 5);
@@ -898,7 +904,7 @@ layer('endpoints').apply {
 }
 
 // Labels — positioned with clearance from geometry
-define TextLayer('labels') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+define TextLayer('labels') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(calc(sharedX + 10), calc(sharedY - 4))\`virtual shared CP\`
@@ -911,7 +917,7 @@ layer('labels').apply {
 // === Formula group — right side ===
 define GroupLayer('formula-group') \${ translate-x: 340; translate-y: 55; }
 
-define TextLayer('formula') \${ font-size: 10; fill: #94a3b8; font-family: monospace }
+define TextLayer('formula') \${ font-size: 10; fill: #94a3b8; font-family: monospace; }
 layer('formula-group').append(layer('formula'));
 layer('formula').apply {
   text(0, 10)\`CP1 = lerp(start,\`
@@ -921,7 +927,7 @@ layer('formula').apply {
 }
 
 // Reference note — bottom with safe margin
-define TextLayer('ref-note') \${ font-size: 9; fill: #475569; font-family: system-ui, sans-serif }
+define TextLayer('ref-note') \${ font-size: 9; fill: #475569; font-family: system-ui, sans-serif; }
 layer('ref-note').apply {
   text(130, 250)\`dashed gray: quadratic reference (t = 1.0)\`
 }
@@ -950,7 +956,7 @@ let sAngle = -40deg;
 let sExit = 80;
 
 // t = 1.0 (full quadratic — most eccentric)
-define PathLayer('t100') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
+define PathLayer('t100') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('t100').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 1.0 },
@@ -960,7 +966,7 @@ layer('t100').apply {
 }
 
 // t = 0.75
-define PathLayer('t075') \${ fill: none; stroke: #8b5cf6; stroke-width: 2 }
+define PathLayer('t075') \${ fill: none; stroke: #8b5cf6; stroke-width: 2; }
 layer('t075').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.75 },
@@ -970,7 +976,7 @@ layer('t075').apply {
 }
 
 // t = 0.5
-define PathLayer('t050') \${ fill: none; stroke: #ec4899; stroke-width: 2 }
+define PathLayer('t050') \${ fill: none; stroke: #ec4899; stroke-width: 2; }
 layer('t050').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.5 },
@@ -980,7 +986,7 @@ layer('t050').apply {
 }
 
 // t = 0.25
-define PathLayer('t025') \${ fill: none; stroke: #f97316; stroke-width: 2 }
+define PathLayer('t025') \${ fill: none; stroke: #f97316; stroke-width: 2; }
 layer('t025').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.25 },
@@ -990,7 +996,7 @@ layer('t025').apply {
 }
 
 // On-curve points
-define PathLayer('pts') \${ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5 }
+define PathLayer('pts') \${ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5; }
 layer('diagram').append(layer('t100'), layer('t075'), layer('t050'), layer('t025'), layer('pts'));
 layer('pts').apply {
   circle(60, 165, 5);
@@ -1001,10 +1007,10 @@ layer('pts').apply {
 // === Legend group ===
 define GroupLayer('legend-group') \${ translate-x: 345; translate-y: 42; }
 
-define PathLayer('lg1') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5 }
-define PathLayer('lg2') \${ fill: none; stroke: #8b5cf6; stroke-width: 2 }
-define PathLayer('lg3') \${ fill: none; stroke: #ec4899; stroke-width: 2 }
-define PathLayer('lg4') \${ fill: none; stroke: #f97316; stroke-width: 2 }
+define PathLayer('lg1') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
+define PathLayer('lg2') \${ fill: none; stroke: #8b5cf6; stroke-width: 2; }
+define PathLayer('lg3') \${ fill: none; stroke: #ec4899; stroke-width: 2; }
+define PathLayer('lg4') \${ fill: none; stroke: #f97316; stroke-width: 2; }
 layer('legend-group').append(layer('lg1'), layer('lg2'), layer('lg3'), layer('lg4'));
 
 layer('lg1').apply { M 0 0 L 20 0 }
@@ -1012,7 +1018,7 @@ layer('lg2').apply { M 0 18 L 20 18 }
 layer('lg3').apply { M 0 36 L 20 36 }
 layer('lg4').apply { M 0 54 L 20 54 }
 
-define TextLayer('legend') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif }
+define TextLayer('legend') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('legend'));
 layer('legend').apply {
   text(28, 4)\`t = 1.0 (quadratic)\`
@@ -1021,7 +1027,7 @@ layer('legend').apply {
   text(28, 58)\`t = 0.25 (dampened)\`
 }
 
-define TextLayer('note') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('note') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('note').apply {
   text(60, 203)\`Same waypoints, same angles — only\`
   text(60, 217)\`exitTime / entryTime change.\`
@@ -9631,7 +9637,7 @@ for ([shape, idx] in shapes) {
 
   // --- Label ---
   let tlName = \`l\${idx}\`;
-  define TextLayer(tlName) \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+  define TextLayer(tlName) \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   let labelX = calc(cx - shape.label.length * 3.3);
   layer(tlName).apply { text(labelX, labelY)\`\${shape.label}\` }
@@ -9640,7 +9646,7 @@ for ([shape, idx] in shapes) {
   let drawX = calc(cx - shape.bb.x - shape.bb.width / 2);
   let drawY = calc(shapeRowY - shape.bb.y - shape.bb.height / 2);
   let plName = \`p\${idx}\`;
-  define PathLayer(plName) \${ fill: none; stroke: shape.col; stroke-width: 2.5 }
+  define PathLayer(plName) \${ fill: none; stroke: shape.col; stroke-width: 2.5; }
   layer(gName).append(layer(plName));
   layer(plName).apply { shape.pb.drawTo(drawX, drawY); }
 
@@ -9734,7 +9740,7 @@ let spacing = 80;
 // === Row 1: Sharp polygons ===
 define GroupLayer('sharp-row') \${ translate-x: 0; translate-y: 20; }
 
-define TextLayer('r1-title') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+define TextLayer('r1-title') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('sharp-row').append(layer('r1-title'));
 layer('r1-title').apply { text(20, 14)\`Sharp corners — heading + tangentLine + turn\` }
 
@@ -9757,14 +9763,14 @@ for (idx in 0..7) {
   layer('sharp-row').append(layer(gName));
 
   let lName = \`s\${n}\`;
-  define PathLayer(lName) \${ fill: none; stroke: col; stroke-width: 2 }
+  define PathLayer(lName) \${ fill: none; stroke: col; stroke-width: 2; }
   layer(gName).append(layer(lName));
   layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   // Center label under the shape
   let labelX = calc(cx - name.length * 2.7);
   let tlName = \`s\${n}-l\`;
-  define TextLayer(tlName) \${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif }
+  define TextLayer(tlName) \${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   layer(tlName).apply { text(labelX, 112)\`\${name}\` }
 }
@@ -9772,7 +9778,7 @@ for (idx in 0..7) {
 // === Row 2: Rounded polygons ===
 define GroupLayer('round-row') \${ translate-x: 0; translate-y: 190; }
 
-define TextLayer('r2-title') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif }
+define TextLayer('r2-title') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('round-row').append(layer('r2-title'));
 layer('r2-title').apply { text(20, 14)\`Rounded corners — tangentLine + tangentArc\` }
 
@@ -9794,19 +9800,19 @@ for (idx in 0..7) {
   layer('round-row').append(layer(gName));
 
   let lName = \`r\${n}\`;
-  define PathLayer(lName) \${ fill: none; stroke: col; stroke-width: 2 }
+  define PathLayer(lName) \${ fill: none; stroke: col; stroke-width: 2; }
   layer(gName).append(layer(lName));
   layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   let labelX = calc(cx - name.length * 2.7);
   let tlName = \`r\${n}-l\`;
-  define TextLayer(tlName) \${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif }
+  define TextLayer(tlName) \${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   layer(tlName).apply { text(labelX, 112)\`\${name}\` }
 }
 
 // --- Caption ---
-define TextLayer('caption') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif }
+define TextLayer('caption') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('caption').apply {
   text(20, 382)\`All shapes built with heading(), turn(), tangentLine(), and tangentArc().\`
 }
@@ -15392,6 +15398,105 @@ layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), laye
 <p>The traditional workflow for themeable SVG is painful: generate variants, swap files, or embed JavaScript to manipulate the DOM. Pathogen&#39;s approach eliminates all of that. You write color logic at a high level — harmonies, palettes, lightness ramps — and the compiler translates it into CSS that browsers already know how to execute.</p>
 <p>The result is SVG illustration that participates in the web platform&#39;s theming infrastructure. Set CSS custom properties from your design system. Let <code>prefers-color-scheme</code> drive light and dark variants. Animate color transitions with CSS. No runtime JavaScript needed, no asset pipeline for variants.</p>
 <p>SVG was always a dynamic format hiding behind static tooling. The Color system gives it the vocabulary to express what it was designed for.</p>
+`,
+  'print-ready-pdf-export': `<p>There has always been a gap between finishing a piece in <a href="https://pathogen.studio/">Pathogen Studio</a> and holding it in your hands. <strong>Export with Legend</strong> gave you a beautiful self-contained SVG — but the moment you wanted a poster, you were on your own: find a web SVG-to-PDF converter, upload your artwork, and hope. Too often the file that came back had quietly swapped your fonts for whatever the converter had lying around. The piece on the wall didn&#39;t match the piece on the screen.</p>
+<p>As of today, that gap is closed. <strong>Export with Legend can produce a print-ready PDF directly</strong> — real physical page sizes, margins, bleed and crop marks, and one guarantee at the center of it all: the type that prints is exactly the type you designed.</p>
+<h2>Text becomes paths</h2>
+<p>The reason converters mangle fonts is that SVG text is a <em>reference</em> — <code>font-family: &#39;Baumans&#39;</code> only works if the machine rendering the file has Baumans, and a print shop&#39;s RIP almost never does. So instead of shipping references, the PDF export ships <strong>shapes</strong>. Before the PDF is generated, every piece of text — in your artwork and in the legend — is converted to vector outlines, glyph by glyph, using the same font data the playground renders with.</p>
+<p>The result is a PDF with no font references at all. There is nothing to substitute, nothing to miss, nothing for the print counter&#39;s software to &quot;helpfully&quot; replace. Zoom to 6400% in any PDF viewer and your letterforms are curves, as crisp as the rest of the artwork, at any size from postcard to A0.</p>
+<h2>Sized for the print counter</h2>
+<p>The PDF settings live right in the export dialog:</p>
+<img src="/blog/pdf-export-modal.png" alt="The Export with Legend dialog with PDF format selected, showing the Orbital Study artwork and the PDF settings: page size, units, artwork size with a linked aspect-ratio lock, margins, and a bleed + crop marks option" loading="lazy">
+
+<p>Pick <strong>PDF — print-ready</strong> as the format and choose how the page gets its size:</p>
+<ul>
+<li><strong>Match artwork — exact print size.</strong> The default, and the mode poster printing wants. You type the printed size of the artwork itself — say, 24 inches wide — and the height follows automatically, locked to your <code>ViewBox</code>&#39;s aspect ratio. The page is the artwork plus margins. No letterboxing, no surprises: the number you type is the size on the wall.</li>
+<li><strong>Standard pages.</strong> US poster sizes (18 × 24, 24 × 36), Letter and Tabloid for proofs, and the ISO A-series from A4 up to A0, each with a portrait/landscape toggle. Artwork scales to fit the printable area, centered.</li>
+<li><strong>Custom page.</strong> Any page size from 1 to 100 inches per side, with an aspect-ratio lock you can toggle off when the page shape and the artwork shape need to differ.</li>
+</ul>
+<p>One <strong>Units</strong> selector — inches or centimeters — applies everywhere, and a live summary line tells you exactly what will happen before you download: <em>&quot;Artwork 800 × 1000 units prints at 24 × 30 in — page 25 × 31 in with margins.&quot;</em></p>
+<h2>Bleed, crop marks, and the last half inch</h2>
+<p>If you have ever handed a file to a commercial printer, you have heard the question: <em>&quot;Does it have bleed?&quot;</em> Edge-to-edge posters are printed slightly oversized and trimmed down; the <strong>bleed</strong> is the extra margin of artwork that gets cut away, so no white sliver survives at the edge. The <strong>crop marks</strong> are the hairlines that tell the cutter where to trim.</p>
+<p>The export handles both with a single checkbox. Your artwork&#39;s background extends to the bleed edge automatically, and corner crop marks land in a slug area outside the trim:</p>
+<img src="/blog/pdf-export-poster.png" alt="The Orbital Study PDF page: artwork extending to the bleed edge, crop marks at the corners, and the legend in the lower right" loading="lazy">
+
+<p>Up close, a corner shows the anatomy — the artwork running past the trim line into the bleed, and the crop hairlines sitting safely outside it:</p>
+<img src="/blog/pdf-export-cropmarks.png" alt="A zoomed corner of the PDF showing the crop mark hairlines outside the artwork's bleed area" loading="lazy">
+
+<p>The legend rides along, of course — with its footer now reading <em>Created in pathogen.studio</em>.</p>
+<h2>What stays vector</h2>
+<p>Nearly everything. Paths, strokes, linear and radial gradients, patterns, and clip paths are written to the PDF as true vectors, and all text goes in as outlines. One honest trade-off comes with that: outlined text is no longer selectable or searchable in the PDF — shapes can&#39;t be copied as words. For a print file, that&#39;s the right trade; keep the SVG export if you want a version with live text.</p>
+<p>An <strong>Artwork</strong> toggle picks vector or raster output for the artwork itself. Dense generative pieces — hundreds of thousands of path segments — make vector PDFs that print-shop software and PDF viewers chew on for minutes, so the export detects them and defaults to a print-resolution raster instead (the legend and all text stay vector). Two other constructs always fall back to a high-resolution raster: conic, mesh, and freeform gradients (which are rasterized in every Pathogen output), and artwork that uses <a href="/docs#masks-masks-and-clip-paths">masks</a> or <a href="/docs#filters-filters">filters</a>, which is embedded as a 300 DPI image sized for your chosen page — the export dialog tells you when this happens, and the legend stays vector regardless.</p>
+<h2>Try it</h2>
+<p>Here is a piece begging to be printed at 24 inches. Open any workspace, choose <strong>Export with Legend</strong> from the menu, switch the format to PDF, and type the size you want to hold:</p>
+<p><mini-workspace code-open caption="A poster-shaped study — concentric orbits with a measured, centered title set in Baumans. Export it at 24 inches wide and the title prints in exactly these letterforms.">
+  <code>// viewBox="0 0 800 1000"
+@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 800, 1000);
+
+define default PathLayer('background') \${
+  fill: #14101c;
+  stroke: none;
+}
+
+layer('background').apply {
+  rect(0, 0, 800, 1000);
+}
+
+let rings = PathLayer('rings') \${
+  stroke: #b384e0;
+  stroke-width: 5;
+  fill: none;
+};
+
+rings.apply {
+  circle(400, 430, 80);
+  circle(400, 430, 130);
+  circle(400, 430, 185);
+  circle(400, 430, 245);
+  circle(400, 430, 310);
+}
+
+let sun = PathLayer('sun') \${
+  fill: #f7b56e;
+  stroke: none;
+};
+
+sun.apply {
+  circle(400, 430, 46);
+}
+
+let system = GroupLayer('system') \${};
+system.append(rings, sun);
+
+// The title is drawn as glyph outlines — the same trick the PDF export
+// uses, so these exact letterforms survive any renderer or print shop.
+define PathLayer('title') \${
+  fill: #f6e9da;
+  stroke: none;
+}
+
+let glyphs = PathBlock.fromGlyph('ORBITAL STUDY', \${
+  font-family: Baumans-Regular;
+  font-size: 46;
+});
+
+let totalWidth = 0;
+for (g in glyphs) {
+  totalWidth = calc(totalWidth + g.advanceWidth);
+}
+
+layer('title').apply {
+  let cx = calc((800 - totalWidth) / 2);
+  for (g in glyphs) {
+    g.drawTo(cx, 860);
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+</code>
+  <img src="/blog/samples/post29/orbital-study.svg" alt="A poster-shaped study — concentric orbits with a measured, centered title set in Baumans. Export it at 24 inches wide and the title prints in exactly these letterforms." loading="lazy">
+</mini-workspace></p>
+<p>The full details — every page preset, how margins interact with each sizing mode, and the current limitations — are in the <a href="/docs#exporting-exporting-your-work">exporting documentation</a>. Print something.</p>
 `,
   'radial-bar-chart': `<blockquote>
 <p><strong>Prerequisites:</strong> This post uses <a href="/blog/pathblock-introduction">PathBlocks</a>, <a href="/blog/textblock-introduction">TextBlocks</a>, <a href="/docs#layers-defining-layers">GroupLayers</a>, and <a href="/docs#syntax-destructuring">for-loop destructuring</a>. If you&#39;re new to Pathogen, start with those introductions.</p>

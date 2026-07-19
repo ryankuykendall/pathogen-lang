@@ -163,7 +163,10 @@ async function decompressWoff2(buffer: ArrayBuffer): Promise<ArrayBuffer> {
   if (!_decompressWoff2) {
     // Lazy-load the WOFF2 decoder (~290KB, Emscripten WebAssembly inlined).
     // Path is relative to the transpiled output at public/pathogen/services/.
-    const mod = await import('../vendor/woff2-decompress.js' as string);
+    // Variable specifier + @vite-ignore keeps vitest's jsdom transform from
+    // resolving the vendor bundle, which only exists in the build output.
+    const vendorPath = '../vendor/woff2-decompress.js';
+    const mod = await import(/* @vite-ignore */ vendorPath);
     _decompressWoff2 = (mod as { default: (bytes: Uint8Array | ArrayBuffer) => Promise<Uint8Array> }).default;
   }
   const ttf = await _decompressWoff2(new Uint8Array(buffer));

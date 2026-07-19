@@ -118,6 +118,14 @@
   gap: 1rem;
 }
 
+/* The panel scrolls when content overflows — children must never be crushed.
+ * (details.advanced-settings has overflow:hidden, which strips the automatic
+ * flex minimum size and let it collapse to its borders once the PDF settings
+ * made the column overflow.) */
+.form-panel > * {
+  flex-shrink: 0;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -409,6 +417,338 @@
   height: 16px;
   accent-color: var(--accent-color, #10b981);
   cursor: pointer;
+}
+
+/* Format segmented control */
+.format-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+}
+
+.format-toggle button {
+  padding: 0.5rem;
+  border: none;
+  background: var(--bg-primary, #f8f9fa);
+  color: var(--text-secondary, #64748b);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  transition: all 0.15s ease;
+}
+
+.format-toggle button + button {
+  border-left: 1px solid var(--border-color, #e2e8f0);
+}
+
+.format-toggle button .fmt-sub {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--text-tertiary, #94a3b8);
+}
+
+.format-toggle button.active {
+  background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+  color: var(--accent-color, #10b981);
+  font-weight: 600;
+}
+
+.format-toggle button.active .fmt-sub {
+  color: var(--accent-color, #10b981);
+  opacity: 0.8;
+}
+
+.format-toggle button:hover:not(.active) {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+}
+
+/* PDF print settings */
+.pdf-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-primary, #f8f9fa);
+}
+
+.pdf-settings[hidden] {
+  display: none;
+}
+
+.pdf-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pdf-row[hidden] {
+  display: none;
+}
+
+.pdf-row > label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+  white-space: nowrap;
+}
+
+.pdf-settings select,
+.pdf-settings input[type="number"] {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: var(--text-primary, #1a1a2e);
+  background: var(--bg-secondary, #ffffff);
+}
+
+.pdf-settings select:focus,
+.pdf-settings input:focus {
+  outline: none;
+  border-color: var(--accent-color, #10b981);
+  box-shadow: 0 0 0 3px var(--focus-ring, rgba(16, 185, 129, 0.2));
+}
+
+.pdf-settings .page-size-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.dims {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Number input with unit suffix (in/cm) and optional w/h prefix */
+.unit-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.unit-input input[type="number"] {
+  width: 62px;
+  padding-right: 1.55rem;
+  text-align: right;
+}
+
+.unit-input .unit-suffix {
+  position: absolute;
+  right: 0.5rem;
+  font-size: 0.68rem;
+  color: var(--text-tertiary, #94a3b8);
+  pointer-events: none;
+  user-select: none;
+}
+
+.unit-input .dim-prefix {
+  position: absolute;
+  left: 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-tertiary, #94a3b8);
+  pointer-events: none;
+  user-select: none;
+}
+
+.unit-input .dim-prefix + input[type="number"] {
+  width: 88px;
+  padding-left: 1.3rem;
+}
+
+/* Width and height stacked on their own lines, with the aspect-ratio lock
+ * spanning both rows — reads as "these two fields are linked". */
+.pdf-row.size-row {
+  align-items: flex-start;
+}
+
+.pdf-row.size-row > label {
+  padding-top: 0.45rem;
+}
+
+.size-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 0.35rem;
+  row-gap: 0.4rem;
+  align-items: center;
+}
+
+.size-grid .unit-input:first-child {
+  grid-area: 1 / 1;
+}
+
+.size-grid .unit-input:last-child {
+  grid-area: 2 / 1;
+}
+
+.size-grid .aspect-lock {
+  grid-area: 1 / 2 / 3 / 3;
+  align-self: center;
+}
+
+/* Orientation segmented toggle */
+.orient-toggle {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  overflow: hidden;
+}
+
+.orient-toggle button {
+  padding: 0.3rem 0.6rem;
+  border: none;
+  background: var(--bg-secondary, #ffffff);
+  color: var(--text-secondary, #64748b);
+  font-family: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.orient-toggle button + button {
+  border-left: 1px solid var(--border-color, #e2e8f0);
+}
+
+.orient-toggle button.active {
+  background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+  color: var(--accent-color, #10b981);
+  font-weight: 600;
+}
+
+.orient-toggle .page-icon {
+  display: inline-block;
+  border: 1.5px solid currentColor;
+  border-radius: 1px;
+}
+
+.orient-toggle .page-icon.portrait {
+  width: 8px;
+  height: 11px;
+}
+
+.orient-toggle .page-icon.landscape {
+  width: 11px;
+  height: 8px;
+}
+
+/* Aspect-ratio lock (chain-link) */
+.aspect-lock {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-secondary, #ffffff);
+  color: var(--text-tertiary, #94a3b8);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.aspect-lock svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.aspect-lock .linked-icon { display: none; }
+.aspect-lock .unlinked-icon { display: block; }
+
+.aspect-lock.locked {
+  background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+  border-color: var(--accent-color, #10b981);
+  color: var(--accent-color, #10b981);
+}
+
+.aspect-lock.locked .linked-icon { display: block; }
+.aspect-lock.locked .unlinked-icon { display: none; }
+
+.aspect-lock:hover:not([disabled]) {
+  border-color: var(--accent-color, #10b981);
+  color: var(--accent-color, #10b981);
+}
+
+.aspect-lock[disabled] {
+  cursor: default;
+  opacity: 0.85;
+}
+
+/* Live size summary */
+.size-summary {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-tertiary, #94a3b8);
+  line-height: 1.5;
+  padding: 0.4rem 0.55rem;
+  background: var(--hover-bg, rgba(0, 0, 0, 0.04));
+  border-radius: var(--radius-md, 8px);
+  font-variant-numeric: tabular-nums;
+}
+
+.size-summary:empty {
+  display: none;
+}
+
+.size-summary.error {
+  color: var(--error-text, #dc2626);
+  background: var(--error-bg, #fef2f2);
+}
+
+.pdf-row.check-row {
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.pdf-settings input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-color, #10b981);
+  cursor: pointer;
+}
+
+.pdf-row.check-row label {
+  cursor: pointer;
+}
+
+.pdf-note {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--text-tertiary, #94a3b8);
+  line-height: 1.45;
+}
+
+/* Export status / warnings */
+.export-status {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--warning-color, #f59e0b);
+  line-height: 1.4;
+}
+
+.export-status:empty {
+  display: none;
+}
+
+.export-status.error {
+  color: var(--error-text, #dc2626);
 }
 
 /* Legend cursor feedback */

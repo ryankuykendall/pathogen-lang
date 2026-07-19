@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-18 (print-ready PDF export)
+
+### Added
+
+#### Playground
+
+- **Print-ready PDF export in "Export with Legend"** — the export modal gains a Format selector (SVG / PDF). The PDF path is built for third-party print handoff at poster sizes:
+  - **Text outlining**: every `<text>`/`<tspan>` in the artwork and legend is converted to vector path outlines via opentype.js (`playground/utils/svg-text-outliner.ts` — pen model with tspan `x`/`dx`/`dy`, `text-anchor`, `dominant-baseline: hanging`, letter-spacing, whitespace-preserving code runs, per-family weight fallback with surfaced warnings). The produced PDF contains **no font programs and no text operators** — nothing for a print shop's RIP to substitute.
+  - **Page sizing modes** (`playground/utils/pdf-page-layout.ts`, pure + unit-tested): *Match artwork — exact print size* (enter the printed artwork size, W↔H permanently locked to the ViewBox ratio, page = artwork + margins, never letterboxed), US/ISO presets (18×24, 24×36, Letter, Tabloid, A4–A0) with portrait/landscape, and *Custom page* (1–100 in per side) with a toggleable aspect-ratio chain lock. One **Units** select (in/cm) governs every dimension, with unit suffixes on the width/height/margin inputs and a live size-summary line.
+  - **Print prep**: margins control plus a bleed (0.125 in / 3 mm) + corner crop marks checkbox; the artwork background fills to the bleed edge so trimmed posters are edge-to-edge.
+  - **Raster fallback**: artwork using masks/filters (unsupported by svg2pdf.js) is embedded as a ≥300 DPI PNG capped at 8192 px, with a user-visible notice; the legend stays vector.
+  - Rendering via lazily-loaded vendor bundle `public/vendor/pdf-export.js` (jsPDF + svg2pdf.js behind a shim entry so they share one jsPDF instance) — zero main-bundle growth.
+- **Legend footer rebrand** — "Pathogen built with pathogen-lang" → "Created in **pathogen.studio**" with the domain set in Baumans; the embedded Baumans subset now covers the `pathogen.studio` glyphs.
+
+### Fixed
+
+#### Playground
+
+- **PDF export rendered all artwork black for oklch-colored workspaces** — svg2pdf.js cannot parse modern CSS color functions (`oklch()`, `lab()`, `color()`), which Pathogen uses everywhere. New `playground/utils/svg-pdf-colors.ts` normalizes every paint (fill/stroke/stop-color/color, attributes and inline styles) to sRGB hex before PDF conversion via a 1×1-canvas `getImageData` read-back (the `fillStyle` getter no longer serializes to sRGB in modern Chrome), folding color alpha into the matching `*-opacity`.
+- **Advanced Export Settings collapsed to a 2px sliver when PDF format was selected** — `overflow: hidden` on the details box removed its automatic flex minimum size, so the overflowing form column crushed it. The panel's children no longer flex-shrink (the panel scrolls), and the grid controls moved above the Format selector.
+- **Vector PDFs of dense generative artwork rendered for minutes or blank in Preview/Quick Look** (a 463k-operator export needed ~114s of CPU for a single thumbnail). New **Artwork: Vector / Raster** toggle in the PDF settings; artwork exceeding complexity thresholds (>1.5M chars of path data or >20k geometry nodes) auto-defaults to the 300 DPI raster path — text outlines and the legend stay vector either way.
+- **Raster-mode export crashed with `RangeError: Maximum call stack size exceeded` on large canvases** — svg2pdf's image handling regexes the entire data-URL string, which overflows at print resolution. Rasterized artwork now bypasses svg2pdf entirely: flattened print-resolution **JPEG bytes** go straight into the page via jsPDF `addImage` (no data URL anywhere, no RGBA channel-splitting), with svg2pdf drawing only the vector legend on top.
+- **PDF size fields overflowed the form panel** — width/height now stack on their own lines with `w`/`h` prefixes in the inputs and the aspect-ratio lock spanning both rows.
+- **Raw-HTML images in SPA blog posts rendered at natural size and overflowed the article column** — `blog-post-view` now constrains `.post-content img` to `max-width: 100%` (the static blog shell already did); benefits every post with screenshots.
+
+### Documentation
+
+- New published docs page `docs/exporting.md` ("Exporting Your Work") covering the Export-with-Legend workflow, SVG export, PDF sizing modes, bleed/crop marks, what stays vector, and limitations.
+- Announcement blog post `print-ready-pdf-export` with a poster-shaped `post29` sample.
+
+### Development
+
+- `scripts/build-vendor.ts` gains `entryPath` for local shim entries; vendored `opentype.js` for the playground outliner.
+- Dynamic vendor imports in `font-loader.ts`/`svg-text-outliner.ts` use variable specifiers + `@vite-ignore` so jsdom vitest suites can import these modules.
+- New suites: `tests/pdf-page-layout.test.ts` (23 tests — preset/pt conversions, bleed+slug+crop-mark geometry, centering, match/custom modes, bounds), `tests/svg-text-outliner.test.ts` (12 tests against the Inter fixture font). End-to-end Puppeteer verification harness at `project-docs/pdf-export/verify-pdf-export.ts` (21 checks incl. PDF MediaBox, no-font-programs probe, raster fallback, margin-error surfacing).
+
 ## [Unreleased] - 2026-07-18 (regex-audit remediation)
 
 Audit and remediation of risky regex-based parsing in the compiler (see

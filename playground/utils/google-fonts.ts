@@ -78,6 +78,8 @@ const CURATED_FONTS: FontEntry[] = [
   { family: 'IBM Plex Sans', category: 'sans-serif', variants: [100, 200, 300, 400, 500, 600, 700] },
   { family: 'IBM Plex Mono', category: 'monospace', variants: [100, 200, 300, 400, 500, 600, 700] },
   { family: 'Bebas Neue', category: 'sans-serif', variants: [400] },
+  // Pathogen Studio's own brand face — used by the legend footer and Baumans-titled samples.
+  { family: 'Baumans', category: 'display', variants: [400] },
   { family: 'Pacifico', category: 'handwriting', variants: [400] },
   { family: 'Lobster', category: 'display', variants: [400] },
   { family: 'Dancing Script', category: 'handwriting', variants: [400, 500, 600, 700] },

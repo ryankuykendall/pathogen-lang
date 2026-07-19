@@ -3,12 +3,36 @@
 
 import { store } from '../state/store.js';
 import { createSvgSnapshot } from '../utils/svg-snapshot.js';
+import {
+  PAGE_PRESETS,
+  PT_PER_CM,
+  PT_PER_IN,
+  computePdfLayout,
+  convertUnit,
+  CROP_MARK_WIDTH_PT,
+  type PdfLayout,
+  type PdfLayoutInput,
+  type Unit,
+} from '../utils/pdf-page-layout.js';
+import { normalizeSvgPaintColors, resolveCssColorToHex } from '../utils/svg-pdf-colors.js';
+import { outlineSvgText } from '../utils/svg-text-outliner.js';
 import styles from './export-legend-modal.css';
 import './shared/pathogen-color-input.js';
 
 // Accent color used for legend border and resize handle (matches app theme)
 const ACCENT = '#10b981';
 const ACCENT_LIGHT = 'rgba(16, 185, 129, 0.35)';
+
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+// Chain-link icons for the aspect-ratio lock (linked shown when locked).
+const ASPECT_LOCK_ICONS = `
+  <svg class="linked-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+  <svg class="unlinked-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.84 12.25l1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M5.17 11.75l-1.72 1.71a5 5 0 0 0 7.07 7.07l1.72-1.71"/><line x1="8" y1="2" x2="8" y2="5"/><line x1="2" y1="8" x2="5" y2="8"/><line x1="16" y1="19" x2="16" y2="22"/><line x1="19" y1="16" x2="22" y2="16"/></svg>`;
+
+/** Raster fallback resolution for mask/filter artwork in PDF exports. */
+const RASTER_DPI = 300;
+const RASTER_MAX_SIDE_PX = 8192;
 
 interface LegendFormData {
   name: string;
@@ -22,6 +46,37 @@ interface ExportOverrides {
   gridEnabled: boolean | null;
   gridColor: string | null;
 }
+
+interface ExportSettings {
+  format: 'svg' | 'pdf';
+  /** 'match' | 'custom' | a PAGE_PRESETS id */
+  sizing: string;
+  orientation: 'portrait' | 'landscape';
+  /** Match mode: printed artwork size, in `unit`. */
+  artW: number;
+  artH: number;
+  /** Custom mode: page (trim) size, in `unit`. */
+  pageW: number;
+  pageH: number;
+  /** Custom mode: keep page at the artwork's aspect ratio. */
+  ratioLocked: boolean;
+  /** Single unit for all dimensions (sizes + margins). */
+  unit: Unit;
+  margin: number;
+  /** Bleed + crop marks. */
+  printPrep: boolean;
+  /**
+   * How the artwork is written into the PDF. 'vector' is exact but PDF viewers
+   * choke on very complex artwork (hundreds of thousands of path ops render
+   * for minutes or blank) — such artwork defaults to 'raster' (print-resolution
+   * image; text + legend stay vector either way).
+   */
+  artworkMode: 'vector' | 'raster';
+}
+
+/** Artwork above either threshold defaults the PDF export to raster mode. */
+const COMPLEXITY_D_LENGTH = 1_500_000;
+const COMPLEXITY_NODE_COUNT = 20_000;
 
 interface WorkspaceState {
   width: number;
@@ -48,6 +103,17 @@ interface TextCreateOptions {
 interface WrappedTextResult {
   el: SVGTextElement;
   height: number;
+}
+
+/** Minimal structural typing for the lazily-imported jsPDF instance. */
+interface JsPdfDoc {
+  setFillColor(color: string): void;
+  setDrawColor(r: number, g: number, b: number): void;
+  setLineWidth(width: number): void;
+  rect(x: number, y: number, w: number, h: number, style: string): void;
+  line(x1: number, y1: number, x2: number, y2: number): void;
+  addImage(data: Uint8Array, format: string, x: number, y: number, w: number, h: number): void;
+  output(type: 'blob'): Blob;
 }
 
 class ExportLegendModal extends HTMLElement {
@@ -96,6 +162,22 @@ class ExportLegendModal extends HTMLElement {
 
   // Snapshot of workspace state at modal open time
   private _workspaceState: WorkspaceState | null = null;
+
+  // Export format + PDF print settings (sticky for the session)
+  private _exportSettings: ExportSettings = {
+    format: 'svg',
+    sizing: 'match',
+    orientation: 'portrait',
+    artW: 24,
+    artH: 18,
+    pageW: 18,
+    pageH: 24,
+    ratioLocked: true,
+    unit: 'in',
+    margin: 0.5,
+    printPrep: true,
+    artworkMode: 'vector',
+  };
 
   // Export overrides (non-null values override workspace state in preview)
   private _exportOverrides: ExportOverrides = { gridEnabled: null, gridColor: null };
@@ -205,9 +287,21 @@ class ExportLegendModal extends HTMLElement {
     this._panX = 0;
     this._panY = 0;
 
+    // Re-derive ratio-locked dimensions from this workspace's canvas
+    const ratio = this._canvasWidth / this._canvasHeight;
+    this._exportSettings.artH = round2(this._exportSettings.artW / ratio);
+    if (this._exportSettings.ratioLocked) {
+      this._exportSettings.pageH = round2(this._exportSettings.pageW / ratio);
+    }
+
+    // Very complex artwork defaults to raster — pure-vector PDFs of it are
+    // valid but render for minutes (or blank) in Preview/Acrobat.
+    this._exportSettings.artworkMode = this._isArtworkComplex(svgElement) ? 'raster' : 'vector';
+
     // Build the preview SVG with legend
     this._buildPreviewSvg(svgElement, this._getEffectiveState());
     this._populateForm();
+    this._updatePdfUi();
     this._updateZoomDisplay();
 
     this.classList.add('open');
@@ -426,16 +520,16 @@ class ExportLegendModal extends HTMLElement {
     brandText.classList.add('legend-brand');
 
     const brandSpan1 = document.createElementNS(ns, 'tspan');
-    brandSpan1.setAttribute('font-size', String(pathogenFontSize));
-    brandSpan1.setAttribute('font-weight', '400');
-    brandSpan1.setAttribute('font-family', "'Baumans', cursive");
-    brandSpan1.textContent = 'Pathogen';
+    brandSpan1.setAttribute('font-size', String(brandFontSize));
+    brandSpan1.setAttribute('font-family', "'Inter', -apple-system, BlinkMacSystemFont, sans-serif");
+    brandSpan1.textContent = 'Created in';
 
     const brandSpan2 = document.createElementNS(ns, 'tspan');
-    brandSpan2.setAttribute('font-size', String(brandFontSize));
-    brandSpan2.setAttribute('font-family', "'Inter', -apple-system, BlinkMacSystemFont, sans-serif");
+    brandSpan2.setAttribute('font-size', String(pathogenFontSize));
+    brandSpan2.setAttribute('font-weight', '400');
+    brandSpan2.setAttribute('font-family', "'Baumans', cursive");
     brandSpan2.setAttribute('dx', String(brandFontSize * this.CHAR_WIDTH_FACTOR));
-    brandSpan2.textContent = 'built with pathogen-lang';
+    brandSpan2.textContent = 'pathogen.studio';
 
     brandText.appendChild(brandSpan1);
     brandText.appendChild(brandSpan2);
@@ -719,7 +813,7 @@ class ExportLegendModal extends HTMLElement {
     const fonts = [
       {
         family: 'Baumans',
-        url: 'https://fonts.googleapis.com/css2?family=Baumans&text=Pathogen',
+        url: `https://fonts.googleapis.com/css2?family=Baumans&text=${encodeURIComponent('pathogen.studio')}`,
       },
       {
         family: 'Inconsolata',
@@ -803,54 +897,350 @@ class ExportLegendModal extends HTMLElement {
     downloadBtn.textContent = 'Preparing...';
 
     try {
-      const clone = this._svg!.cloneNode(true) as SVGSVGElement;
-
-      // Reset viewBox to full canvas
-      clone.setAttribute('viewBox', `0 0 ${this._canvasWidth} ${this._canvasHeight}`);
-
-      // Strip interactive elements (resize handles, accent border overlay)
-      clone.querySelectorAll('[data-interactive="true"]').forEach((el) => el.remove());
-
-      // Embed fonts for self-contained SVG
-      await this._embedFonts(clone);
-
-      const serializer = new XMLSerializer();
-      const svgString = `<?xml version="1.0" encoding="UTF-8"?>\n${serializer.serializeToString(clone)}`;
-      const blob = new Blob([svgString], { type: 'image/svg+xml' });
-
-      const workspaceName = this._formData.name || 'untitled';
-      const safeName = workspaceName.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-');
-      const suggestedName = `${safeName}-with-legend.svg`;
-
-      if ('showSaveFilePicker' in window) {
-        const handle = await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
-          suggestedName,
-          types: [
-            {
-              description: 'SVG Files',
-              accept: { 'image/svg+xml': ['.svg'] },
-            },
-          ],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
+      if (this._exportSettings.format === 'pdf') {
+        await this._downloadPdf(downloadBtn);
       } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = suggestedName;
-        a.click();
-        URL.revokeObjectURL(url);
+        await this._downloadSvg();
       }
     } catch (err: unknown) {
       if ((err as Error).name !== 'AbortError') {
         console.error('Export failed:', err);
+        this._setExportStatus((err as Error).message || 'Export failed', true);
       }
     } finally {
       downloadBtn.disabled = false;
       downloadBtn.innerHTML = originalText;
     }
+  }
+
+  /** Clone the preview SVG and strip editor-only chrome for export. */
+  _prepareExportClone(): SVGSVGElement {
+    const clone = this._svg!.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute('viewBox', `0 0 ${this._canvasWidth} ${this._canvasHeight}`);
+    clone.querySelectorAll('[data-interactive="true"]').forEach((el) => el.remove());
+    return clone;
+  }
+
+  _safeName(): string {
+    const workspaceName = this._formData.name || 'untitled';
+    return workspaceName.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-');
+  }
+
+  async _saveBlob(blob: Blob, suggestedName: string, mime: string, extension: string, description: string): Promise<void> {
+    if ('showSaveFilePicker' in window) {
+      const handle = await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
+        suggestedName,
+        types: [
+          {
+            description,
+            accept: { [mime]: [extension] },
+          },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = suggestedName;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  async _downloadSvg(): Promise<void> {
+    const clone = this._prepareExportClone();
+
+    // Embed fonts for self-contained SVG
+    await this._embedFonts(clone);
+
+    const serializer = new XMLSerializer();
+    const svgString = `<?xml version="1.0" encoding="UTF-8"?>\n${serializer.serializeToString(clone)}`;
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+
+    await this._saveBlob(blob, `${this._safeName()}-with-legend.svg`, 'image/svg+xml', '.svg', 'SVG Files');
+  }
+
+  async _downloadPdf(downloadBtn: HTMLButtonElement): Promise<void> {
+    this._setExportStatus('');
+    // Snapshot all mutable modal state up front — the user can close and
+    // reopen the modal for a different workspace while awaits below resolve.
+    const layout = computePdfLayout(this._layoutInput());
+    const clone = this._prepareExportClone();
+    const background = this._getEffectiveState().background;
+    const canvasWidth = this._canvasWidth;
+    const canvasHeight = this._canvasHeight;
+
+    // Outline every piece of text so the PDF carries zero font dependencies.
+    const outline = await outlineSvgText(clone);
+    const notices = [...outline.warnings];
+
+    // The zero-font-dependency guarantee is the whole point of the PDF export:
+    // if any text could not be outlined (font fetch failed), refuse to produce
+    // a PDF that would silently depend on fonts the print shop doesn't have.
+    if (clone.querySelector('text')) {
+      throw new Error(
+        'Some text could not be converted to outlines (font download failed), so the PDF was not generated — it would not print with the correct fonts. Check your connection and try again.',
+      );
+    }
+
+    // Raster the artwork when the user chose it (default for very complex
+    // artwork) or when it uses masks/filters, which svg2pdf.js cannot render.
+    // Text outlines and the legend stay vector in every case. The raster is
+    // handed to jsPDF as raw PNG bytes and NEVER goes through svg2pdf: its
+    // data-URL handling runs a regex over the whole string, which overflows
+    // the call stack on print-resolution images.
+    const wantRaster = this._exportSettings.artworkMode === 'raster';
+    const forcedRaster = !!clone.querySelector('mask, filter, [mask], [filter]');
+    let rasterBytes: Uint8Array | null = null;
+    if (wantRaster || forcedRaster) {
+      rasterBytes = await this._rasterizeArtwork(clone, layout, canvasWidth, canvasHeight, background);
+      notices.push(
+        forcedRaster && !wantRaster
+          ? 'Artwork uses a mask or filter — it was embedded as a 300 DPI raster image; the legend stays vector.'
+          : 'Artwork embedded as a print-resolution raster image; the legend stays vector.',
+      );
+    }
+
+    downloadBtn.textContent = 'Rendering PDF...';
+
+    // Variable specifier + @vite-ignore: the vendor bundle only exists in the
+    // build output, so static import analysis must not try to resolve it.
+    const vendorPath = '../vendor/pdf-export.js';
+    const { jsPDF, svg2pdf } = (await import(/* @vite-ignore */ vendorPath)) as {
+      jsPDF: new (opts: object) => JsPdfDoc;
+      svg2pdf: (el: SVGElement, doc: JsPdfDoc, opts: object) => Promise<unknown>;
+    };
+
+    // jsPDF normalizes `format` to the given orientation (portrait puts the
+    // smaller side first) — pass the real orientation so wide pages stay wide.
+    const doc = new jsPDF({
+      orientation: layout.pageW >= layout.pageH ? 'landscape' : 'portrait',
+      unit: 'pt',
+      format: [layout.pageW, layout.pageH],
+      compress: true,
+    });
+
+    // Background fills to the bleed edge so trimmed posters are edge-to-edge.
+    // resolveCssColorToHex handles oklch()/lab()/var-free modern colors too.
+    const bgHex = resolveCssColorToHex(background);
+    if (bgHex) {
+      doc.setFillColor(bgHex);
+      doc.rect(layout.bleed.x, layout.bleed.y, layout.bleed.w, layout.bleed.h, 'F');
+    }
+
+    // Rasterized artwork goes straight into the page as JPEG bytes; the clone
+    // now carries only the legend, which svg2pdf draws as vector on top.
+    if (rasterBytes) {
+      doc.addImage(rasterBytes, 'JPEG', layout.content.x, layout.content.y, layout.content.w, layout.content.h);
+    }
+
+    // svg2pdf reads computed styles; the clone must be attached to a document.
+    // Color normalization also runs attached so var(...) paints can resolve.
+    const holder = document.createElement('div');
+    holder.style.cssText = 'position:fixed;left:-99999px;top:0;opacity:0;pointer-events:none;';
+    holder.appendChild(clone);
+    document.body.appendChild(holder);
+    try {
+      // svg2pdf can't parse oklch()/lab()/color() paints (they'd fall back to
+      // black) — rewrite every paint to sRGB hex first.
+      normalizeSvgPaintColors(clone);
+      await svg2pdf(clone, doc, {
+        x: layout.content.x,
+        y: layout.content.y,
+        width: layout.content.w,
+        height: layout.content.h,
+      });
+    } finally {
+      holder.remove();
+    }
+
+    if (layout.cropMarks.length > 0) {
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(CROP_MARK_WIDTH_PT);
+      for (const m of layout.cropMarks) {
+        doc.line(m.x1, m.y1, m.x2, m.y2);
+      }
+    }
+
+    if (notices.length > 0) this._setExportStatus(notices.join(' '));
+
+    const blob = doc.output('blob');
+    await this._saveBlob(blob, `${this._safeName()}-with-legend.pdf`, 'application/pdf', '.pdf', 'PDF Files');
+  }
+
+  /**
+   * Rasterize the artwork (everything except the legend) to print-resolution
+   * JPEG bytes and strip it from the clone, leaving only the legend for the
+   * vector pass. Returns the image for direct embedding via jsPDF addImage —
+   * as raw bytes, never a data URL (multi-MB data-URL strings overflow the
+   * regex stack in both svg2pdf's and jsPDF's string-based image paths), and
+   * as flattened JPEG rather than PNG (jsPDF's RGBA-PNG path decodes and
+   * splits channels in JS, which is prohibitive at print resolution).
+   */
+  async _rasterizeArtwork(clone: SVGSVGElement, layout: PdfLayout, canvasWidth: number, canvasHeight: number, background: string | undefined): Promise<Uint8Array> {
+    const ns = 'http://www.w3.org/2000/svg';
+    const legend = clone.querySelector('#pathogen-legend');
+
+    const artOnly = clone.cloneNode(true) as SVGSVGElement;
+    artOnly.querySelector('#pathogen-legend')?.remove();
+    artOnly.setAttribute('xmlns', ns);
+    artOnly.setAttribute('width', String(canvasWidth));
+    artOnly.setAttribute('height', String(canvasHeight));
+
+    const svgString = new XMLSerializer().serializeToString(artOnly);
+    const url = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml' }));
+    try {
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Artwork rasterization failed'));
+        img.src = url;
+      });
+
+      let pxW = Math.ceil((layout.content.w / PT_PER_IN) * RASTER_DPI);
+      let pxH = Math.ceil((layout.content.h / PT_PER_IN) * RASTER_DPI);
+      const cap = Math.min(1, RASTER_MAX_SIDE_PX / Math.max(pxW, pxH));
+      pxW = Math.max(1, Math.round(pxW * cap));
+      pxH = Math.max(1, Math.round(pxH * cap));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = pxW;
+      canvas.height = pxH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not rasterize the artwork — a canvas drawing context was unavailable');
+      // Flatten onto the page background (white paper fallback) — JPEG has no
+      // alpha, and the artwork sits on the printed page anyway.
+      ctx.fillStyle = resolveCssColorToHex(background) ?? '#ffffff';
+      ctx.fillRect(0, 0, pxW, pxH);
+      ctx.drawImage(img, 0, 0, pxW, pxH);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Artwork rasterization produced no image'))), 'image/jpeg', 0.95);
+      });
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+
+      // Only the legend remains for the vector pass.
+      while (clone.firstChild) clone.removeChild(clone.firstChild);
+      if (legend) clone.appendChild(legend);
+
+      return bytes;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // --- PDF settings state + UI sync ---
+
+  get _artworkRatio(): number {
+    return this._canvasWidth / this._canvasHeight;
+  }
+
+  /** True when the artwork is heavy enough that vector PDF viewers struggle. */
+  _isArtworkComplex(svg: SVGSVGElement): boolean {
+    const geometry = svg.querySelectorAll('path, circle, ellipse, rect, polygon, polyline, line');
+    if (geometry.length > COMPLEXITY_NODE_COUNT) return true;
+    let dLength = 0;
+    for (const p of Array.from(svg.querySelectorAll('path'))) {
+      dLength += p.getAttribute('d')?.length ?? 0;
+      if (dLength > COMPLEXITY_D_LENGTH) return true;
+    }
+    return false;
+  }
+
+  _layoutInput(): PdfLayoutInput {
+    const s = this._exportSettings;
+    const mode = s.sizing === 'match' ? 'match' : s.sizing === 'custom' ? 'custom' : 'preset';
+    return {
+      mode,
+      presetId: mode === 'preset' ? s.sizing : undefined,
+      orientation: s.orientation,
+      width: mode === 'match' ? s.artW : s.pageW,
+      height: mode === 'match' ? s.artH : s.pageH,
+      unit: s.unit,
+      margin: s.margin,
+      printPrep: s.printPrep,
+      svgWidth: this._canvasWidth,
+      svgHeight: this._canvasHeight,
+    };
+  }
+
+  _setExportStatus(message: string, isError = false): void {
+    const status = this.shadowRoot!.querySelector('.export-status') as HTMLElement | null;
+    if (status) {
+      status.textContent = message;
+      status.classList.toggle('error', isError && message.length > 0);
+    }
+  }
+
+  /** Sync every PDF control (visibility, values, unit suffixes) from _exportSettings. */
+  _updatePdfUi(): void {
+    const root = this.shadowRoot!;
+    const s = this._exportSettings;
+
+    root.querySelectorAll('.format-toggle button').forEach((btn) => {
+      btn.classList.toggle('active', (btn as HTMLElement).dataset.format === s.format);
+    });
+    (root.querySelector('.pdf-settings') as HTMLElement).hidden = s.format !== 'pdf';
+    const downloadBtn = root.querySelector('.download-btn') as HTMLButtonElement;
+    downloadBtn.innerHTML = s.format === 'pdf' ? 'Download PDF &#x2193;' : 'Download SVG &#x2193;';
+
+    (root.querySelector('#pdf-page-size') as HTMLSelectElement).value = s.sizing;
+    (root.querySelector('#pdf-unit') as HTMLSelectElement).value = s.unit;
+
+    const isPreset = s.sizing !== 'match' && s.sizing !== 'custom';
+    (root.querySelector('#pdf-orient-row') as HTMLElement).hidden = !isPreset;
+    (root.querySelector('#pdf-artwork-row') as HTMLElement).hidden = s.sizing !== 'match';
+    (root.querySelector('#pdf-custom-row') as HTMLElement).hidden = s.sizing !== 'custom';
+
+    root.querySelectorAll('.orient-toggle:not(.artwork-toggle) button').forEach((btn) => {
+      btn.classList.toggle('active', (btn as HTMLElement).dataset.orient === s.orientation);
+    });
+    root.querySelectorAll('.artwork-toggle button').forEach((btn) => {
+      btn.classList.toggle('active', (btn as HTMLElement).dataset.artwork === s.artworkMode);
+    });
+
+    (root.querySelector('#pdf-art-w') as HTMLInputElement).value = String(s.artW);
+    (root.querySelector('#pdf-art-h') as HTMLInputElement).value = String(s.artH);
+    (root.querySelector('#pdf-page-w') as HTMLInputElement).value = String(s.pageW);
+    (root.querySelector('#pdf-page-h') as HTMLInputElement).value = String(s.pageH);
+    (root.querySelector('#pdf-margin') as HTMLInputElement).value = String(s.margin);
+    (root.querySelector('#pdf-custom-lock') as HTMLElement).classList.toggle('locked', s.ratioLocked);
+
+    root.querySelectorAll('.unit-suffix').forEach((el) => {
+      el.textContent = s.unit;
+    });
+
+    this._updatePdfSummary();
+  }
+
+  _updatePdfSummary(): void {
+    const summary = this.shadowRoot!.querySelector('#pdf-summary') as HTMLElement | null;
+    if (!summary) return;
+    const s = this._exportSettings;
+    if (s.format !== 'pdf') return;
+
+    const ptPerUnit = s.unit === 'in' ? PT_PER_IN : PT_PER_CM;
+    let text: string;
+    try {
+      const layout = computePdfLayout(this._layoutInput());
+      const contentW = round2(layout.content.w / ptPerUnit);
+      const contentH = round2(layout.content.h / ptPerUnit);
+      const trimW = round2(layout.trim.w / ptPerUnit);
+      const trimH = round2(layout.trim.h / ptPerUnit);
+      if (s.sizing === 'match') {
+        text = `Artwork ${this._canvasWidth} × ${this._canvasHeight} units prints at ${contentW} × ${contentH} ${s.unit} — page ${trimW} × ${trimH} ${s.unit} with margins.`;
+      } else {
+        text = `Page ${trimW} × ${trimH} ${s.unit} — artwork scales to ${contentW} × ${contentH} ${s.unit}, centered.`;
+      }
+      summary.classList.remove('error');
+    } catch (err: unknown) {
+      text = (err as Error).message;
+      summary.classList.add('error');
+    }
+    summary.textContent = text;
   }
 
   // --- Event handling ---
@@ -922,6 +1312,9 @@ class ExportLegendModal extends HTMLElement {
       this._snapSize = Math.max(1, parseInt((e.target as HTMLInputElement).value) || 1);
     });
 
+    // Format + PDF print settings
+    this._setupPdfListeners();
+
     // Advanced export settings
     (root.querySelector('#export-grid-enabled') as HTMLInputElement).addEventListener('change', (e: Event) => {
       this._exportOverrides.gridEnabled = (e.target as HTMLInputElement).checked;
@@ -987,6 +1380,124 @@ class ExportLegendModal extends HTMLElement {
       },
       { passive: false },
     );
+  }
+
+  _setupPdfListeners(): void {
+    const root = this.shadowRoot!;
+    const s = this._exportSettings;
+
+    root.querySelectorAll('.format-toggle button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        s.format = (btn as HTMLElement).dataset.format as 'svg' | 'pdf';
+        this._setExportStatus('');
+        this._updatePdfUi();
+      });
+    });
+
+    (root.querySelector('#pdf-page-size') as HTMLSelectElement).addEventListener('change', (e: Event) => {
+      s.sizing = (e.target as HTMLSelectElement).value;
+      if (s.sizing === 'custom' && s.ratioLocked) {
+        s.pageH = round2(s.pageW / this._artworkRatio);
+      }
+      this._updatePdfUi();
+    });
+
+    (root.querySelector('#pdf-unit') as HTMLSelectElement).addEventListener('change', (e: Event) => {
+      const next = (e.target as HTMLSelectElement).value as Unit;
+      if (next === s.unit) return;
+      s.artW = round2(convertUnit(s.artW, s.unit, next));
+      s.artH = round2(convertUnit(s.artH, s.unit, next));
+      s.pageW = round2(convertUnit(s.pageW, s.unit, next));
+      s.pageH = round2(convertUnit(s.pageH, s.unit, next));
+      s.margin = round2(convertUnit(s.margin, s.unit, next));
+      s.unit = next;
+      this._updatePdfUi();
+    });
+
+    root.querySelectorAll('.orient-toggle:not(.artwork-toggle) button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        s.orientation = (btn as HTMLElement).dataset.orient as 'portrait' | 'landscape';
+        this._updatePdfUi();
+      });
+    });
+
+    // Match-artwork size: ratio is always locked — editing one dim recomputes the other.
+    const artW = root.querySelector('#pdf-art-w') as HTMLInputElement;
+    const artH = root.querySelector('#pdf-art-h') as HTMLInputElement;
+    artW.addEventListener('input', () => {
+      const v = parseFloat(artW.value);
+      if (v > 0) {
+        s.artW = v;
+        s.artH = round2(v / this._artworkRatio);
+        artH.value = String(s.artH);
+      }
+      this._updatePdfSummary();
+    });
+    artH.addEventListener('input', () => {
+      const v = parseFloat(artH.value);
+      if (v > 0) {
+        s.artH = v;
+        s.artW = round2(v * this._artworkRatio);
+        artW.value = String(s.artW);
+      }
+      this._updatePdfSummary();
+    });
+
+    // Custom page size: aspect lock is toggleable.
+    const pageW = root.querySelector('#pdf-page-w') as HTMLInputElement;
+    const pageH = root.querySelector('#pdf-page-h') as HTMLInputElement;
+    const customLock = root.querySelector('#pdf-custom-lock') as HTMLButtonElement;
+    customLock.addEventListener('click', () => {
+      s.ratioLocked = !s.ratioLocked;
+      customLock.classList.toggle('locked', s.ratioLocked);
+      customLock.setAttribute('aria-checked', String(s.ratioLocked));
+      if (s.ratioLocked) {
+        s.pageH = round2(s.pageW / this._artworkRatio);
+        pageH.value = String(s.pageH);
+      }
+      this._updatePdfSummary();
+    });
+    pageW.addEventListener('input', () => {
+      const v = parseFloat(pageW.value);
+      if (v > 0) {
+        s.pageW = v;
+        if (s.ratioLocked) {
+          s.pageH = round2(v / this._artworkRatio);
+          pageH.value = String(s.pageH);
+        }
+      }
+      this._updatePdfSummary();
+    });
+    pageH.addEventListener('input', () => {
+      const v = parseFloat(pageH.value);
+      if (v > 0) {
+        s.pageH = v;
+        if (s.ratioLocked) {
+          s.pageW = round2(v * this._artworkRatio);
+          pageW.value = String(s.pageW);
+        }
+      }
+      this._updatePdfSummary();
+    });
+
+    (root.querySelector('#pdf-margin') as HTMLInputElement).addEventListener('input', (e: Event) => {
+      const v = parseFloat((e.target as HTMLInputElement).value);
+      // Ignore invalid/partial input, keeping the previous margin (same as the size fields).
+      if (Number.isFinite(v) && v >= 0) s.margin = v;
+      this._updatePdfSummary();
+    });
+
+    (root.querySelector('#pdf-print-prep') as HTMLInputElement).addEventListener('change', (e: Event) => {
+      s.printPrep = (e.target as HTMLInputElement).checked;
+      this._updatePdfSummary();
+    });
+
+    root.querySelectorAll('.artwork-toggle button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        s.artworkMode = (btn as HTMLElement).dataset.artwork as 'vector' | 'raster';
+        this._updatePdfUi();
+      });
+    });
   }
 
   _addDocumentListeners(): void {
@@ -1136,6 +1647,80 @@ class ExportLegendModal extends HTMLElement {
               </div>
             </div>
           </details>
+          <div class="form-group">
+            <label id="format-label">Format</label>
+            <div class="format-toggle" role="group" aria-labelledby="format-label">
+              <button type="button" class="active" data-format="svg">SVG<span class="fmt-sub">vector file</span></button>
+              <button type="button" data-format="pdf">PDF<span class="fmt-sub">print-ready</span></button>
+            </div>
+          </div>
+          <div class="pdf-settings" hidden>
+            <div class="pdf-row">
+              <label for="pdf-page-size">Page size</label>
+              <select id="pdf-page-size" class="page-size-select">
+                <option value="match">Match artwork &mdash; exact print size</option>
+                <optgroup label="US">
+                  ${PAGE_PRESETS.filter((p) => p.unit === 'in')
+                    .map((p) => `<option value="${p.id}">${p.label}</option>`)
+                    .join('')}
+                </optgroup>
+                <optgroup label="ISO">
+                  ${PAGE_PRESETS.filter((p) => p.unit === 'mm')
+                    .map((p) => `<option value="${p.id}">${p.label}</option>`)
+                    .join('')}
+                </optgroup>
+                <option value="custom">Custom page&hellip;</option>
+              </select>
+            </div>
+            <div class="pdf-row">
+              <label for="pdf-unit">Units</label>
+              <select id="pdf-unit" class="unit-select-wide">
+                <option value="in">inches</option>
+                <option value="cm">centimeters</option>
+              </select>
+            </div>
+            <div class="pdf-row" id="pdf-orient-row" hidden>
+              <label id="orient-label">Orientation</label>
+              <div class="orient-toggle" role="group" aria-labelledby="orient-label">
+                <button type="button" class="active" data-orient="portrait"><span class="page-icon portrait"></span>Portrait</button>
+                <button type="button" data-orient="landscape"><span class="page-icon landscape"></span>Landscape</button>
+              </div>
+            </div>
+            <div class="pdf-row size-row" id="pdf-artwork-row">
+              <label id="artwork-size-label">Artwork size</label>
+              <div class="size-grid">
+                <span class="unit-input"><span class="dim-prefix">w</span><input type="number" id="pdf-art-w" min="0" step="0.25" aria-labelledby="artwork-size-label" aria-label="Width"><span class="unit-suffix">in</span></span>
+                <button type="button" class="aspect-lock locked" id="pdf-art-lock" disabled title="Aspect ratio locked to the artwork's viewBox">${ASPECT_LOCK_ICONS}</button>
+                <span class="unit-input"><span class="dim-prefix">h</span><input type="number" id="pdf-art-h" min="0" step="0.25" aria-labelledby="artwork-size-label" aria-label="Height"><span class="unit-suffix">in</span></span>
+              </div>
+            </div>
+            <div class="pdf-row size-row" id="pdf-custom-row" hidden>
+              <label id="custom-size-label">Page size</label>
+              <div class="size-grid">
+                <span class="unit-input"><span class="dim-prefix">w</span><input type="number" id="pdf-page-w" min="0" step="0.25" aria-labelledby="custom-size-label" aria-label="Width"><span class="unit-suffix">in</span></span>
+                <button type="button" class="aspect-lock locked" id="pdf-custom-lock" role="switch" aria-checked="true" title="Keep the artwork's aspect ratio">${ASPECT_LOCK_ICONS}</button>
+                <span class="unit-input"><span class="dim-prefix">h</span><input type="number" id="pdf-page-h" min="0" step="0.25" aria-labelledby="custom-size-label" aria-label="Height"><span class="unit-suffix">in</span></span>
+              </div>
+            </div>
+            <div class="pdf-row">
+              <label for="pdf-margin">Margins</label>
+              <span class="unit-input"><input type="number" id="pdf-margin" min="0" step="0.125"><span class="unit-suffix">in</span></span>
+            </div>
+            <p class="size-summary" id="pdf-summary"></p>
+            <div class="pdf-row check-row">
+              <input type="checkbox" id="pdf-print-prep" checked>
+              <label for="pdf-print-prep">Bleed + crop marks (0.125&Prime; / 3&nbsp;mm)</label>
+            </div>
+            <div class="pdf-row">
+              <label id="artwork-mode-label">Artwork</label>
+              <div class="orient-toggle artwork-toggle" role="group" aria-labelledby="artwork-mode-label">
+                <button type="button" data-artwork="vector" title="Exact vector geometry — best for simple artwork">Vector</button>
+                <button type="button" data-artwork="raster" title="Print-resolution image — very complex artwork previews and prints reliably">Raster</button>
+              </div>
+            </div>
+            <p class="pdf-note">Text is converted to vector outlines &mdash; fonts print exactly as shown, at any print shop.</p>
+          </div>
+          <p class="export-status"></p>
           <div class="form-spacer"></div>
           <button class="btn cancel-btn">Cancel</button>
         </div>

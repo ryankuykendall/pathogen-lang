@@ -16,6 +16,9 @@ interface VendorEntry {
   name: string;
   /** Optional sub-path within the package (e.g., 'decompress' to entry only the WOFF2 decompressor) */
   entry?: string;
+  /** ROOT-relative entry file used instead of require.resolve(name) — for local
+   *  shim entries that re-export multiple packages (e.g. scripts/vendor-entries/). */
+  entryPath?: string;
   outFile: string;
   /** Modules that should remain unbundled (typically Node built-ins guarded at runtime). */
   external?: string[];
@@ -30,6 +33,11 @@ const VENDORS: VendorEntry[] = [
   // woff2-encoder ships clean ESM with inline WASM and the modern `Module.ready`
   // pattern (no race against `onRuntimeInitialized`). Copy as-is.
   { name: 'woff2-encoder', entry: 'decompress', outFile: 'woff2-decompress.js', copyOnly: true },
+  // jsPDF + svg2pdf.js bundled together (shared jsPDF instance) for the
+  // Export-with-Legend PDF download path; lazy-imported on demand.
+  { name: 'pdf-export', entryPath: 'scripts/vendor-entries/pdf-export.ts', outFile: 'pdf-export.js' },
+  // opentype.js for client-side text-to-outline conversion in PDF exports.
+  { name: 'opentype.js', outFile: 'opentype.js' },
 ];
 
 export async function buildVendor(options: { watch?: boolean } = {}): Promise<void> {
@@ -37,7 +45,7 @@ export async function buildVendor(options: { watch?: boolean } = {}): Promise<vo
 
   for (const vendor of VENDORS) {
     const entrySpec = vendor.entry ? `${vendor.name}/${vendor.entry}` : vendor.name;
-    const entry = require.resolve(entrySpec);
+    const entry = vendor.entryPath ? join(ROOT, vendor.entryPath) : require.resolve(entrySpec);
     const outfile = join(VENDOR_OUT, vendor.outFile);
     if (vendor.copyOnly) {
       await fs.copyFile(entry, outfile);

@@ -29,6 +29,14 @@ const styles = `
     padding-block-end: 8rem;
   }
 
+  /* Raw-HTML images in post content (screenshots, renders) must never
+   * overflow the article column — matches the static shell's rule. */
+  .post-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+
   .back-link {
     display: inline-flex;
     align-items: center;
