@@ -1292,20 +1292,33 @@ function buildTextIfStatement(cursor: TreeCursor, source: string): IfStatement {
 
 function buildFontDirective(cursor: TreeCursor, source: string): FontDirective {
   const nodeLoc = loc(cursor, source);
+  const directiveFrom = cursor.from;
   let fontSource = '';
+  let sourceKind: FontDirective['sourceKind'];
   let weight: number | undefined;
 
   cursor.firstChild();
   do {
     if (cursor.name === 'String') {
       fontSource = parseStringContent(text(cursor, source));
+    } else if (cursor.name === 'Identifier') {
+      // `@font` is a single token, so `@fontFamily` would otherwise tokenize
+      // as `@font` + `Family`. Require whitespace before an identifier source.
+      if (cursor.from === directiveFrom + '@font'.length) {
+        const typed = source.slice(directiveFrom, cursor.to);
+        throw new Error(
+          `Parse error at line ${nodeLoc.line}: unknown directive '${typed}' — did you mean '@font ${text(cursor, source)}'?`,
+        );
+      }
+      fontSource = text(cursor, source);
+      sourceKind = 'identifier';
     } else if (cursor.name === 'Number') {
       weight = parseFloat(text(cursor, source));
     }
   } while (cursor.nextSibling());
   cursor.parent();
 
-  return { type: 'FontDirective', source: fontSource, weight, loc: nodeLoc };
+  return { type: 'FontDirective', source: fontSource, sourceKind, weight, loc: nodeLoc };
 }
 
 // --- Expression builders ---
@@ -1952,6 +1965,8 @@ function parseStyleDeclarations(
     const valueStart = i;
     let depth = 0;
     let quote = '';
+    let inTemplate = false;
+    let interpDepth = 0;
     let terminated = false;
     while (i < len) {
       const ch = raw[i];
@@ -1960,8 +1975,39 @@ function parseStyleDeclarations(
         i++;
         continue;
       }
+      if (inTemplate) {
+        if (ch === '\\') {
+          i += 2;
+          continue;
+        }
+        if (interpDepth === 0) {
+          // Template text: `;`, newlines, and `//` are all content here.
+          if (ch === '`') inTemplate = false;
+          else if (ch === '$' && raw[i + 1] === '{') {
+            interpDepth = 1;
+            i++; // extra advance for '{'
+          }
+          i++;
+          continue;
+        }
+        // Inside a ${...} interpolation expression
+        if (ch === '"' || ch === "'") {
+          quote = ch;
+          i++;
+          continue;
+        }
+        if (ch === '{') interpDepth++;
+        else if (ch === '}') interpDepth--;
+        i++;
+        continue;
+      }
       if (ch === '"' || ch === "'") {
         quote = ch;
+        i++;
+        continue;
+      }
+      if (ch === '`') {
+        inTemplate = true;
         i++;
         continue;
       }
@@ -1988,7 +2034,10 @@ function parseStyleDeclarations(
     if (!terminated) {
       // Point just past the value's last non-whitespace char — where ';' was
       // expected — rather than at any trailing whitespace/newline consumed.
-      return incompleteAt(baseOffset + valueStart + rawValue.trimEnd().length, `Missing ';'`);
+      return incompleteAt(
+        baseOffset + valueStart + rawValue.trimEnd().length,
+        inTemplate ? `Unterminated template literal in style value` : `Missing ';'`,
+      );
     }
     i++; // consume ';'
 

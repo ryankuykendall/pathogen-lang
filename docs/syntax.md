@@ -228,7 +228,7 @@ let styles = ${
 };
 ```
 
-Each property is a `name: value;` declaration. The trailing `;` is required on **every** declaration, including the last one before `}` — a declaration missing its `;` is a compile error. Values are try-evaluated as expressions — if the value parses as a valid expression (like a variable reference or `calc()`), its result is used. Otherwise the raw string is kept (e.g., `rgb(...)`, `#hex`).
+Each property is a `name: value;` declaration. The trailing `;` is required on **every** declaration, including the last one before `}` — a declaration missing its `;` is a compile error. Values are try-evaluated as expressions — if the value parses as a valid expression (like a variable reference, backtick template literal, or `calc()`), its result is used. Otherwise the raw string is kept (e.g., `rgb(...)`, `#hex`). See [Variables and Interpolation in Values](layers.md#variables-and-interpolation-in-values) for dynamic values.
 
 ### Merge (`<<`)
 

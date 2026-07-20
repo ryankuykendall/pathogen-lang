@@ -520,6 +520,22 @@ let dynamic = ${
 };
 ```
 
+### Variables and Interpolation in Values
+
+This is the same expression evaluation from the previous section applied to variables: a bare identifier is just an expression that resolves to its value, and a backtick template is an expression that interpolates with `${...}`:
+
+```
+let family = "Noto Sans";
+let size = 16;
+
+let textStyles = ${
+  font-family: family;              // resolves to "Noto Sans"
+  font-size: `${size * 2}`;         // interpolates to "32"
+};
+```
+
+Double-quoted strings are always literal — they never interpolate. `font-family: "family";` is the literal family name `family`, not the variable; use a bare identifier or backticks for dynamic values. (Inside a `${...}` interpolation, at most one nested level of `{ }` braces is supported.)
+
 ### Layer Definitions with Style Expressions
 
 Layer definitions accept any expression that evaluates to a style block:

@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { compile, compileAnnotated, parse, createFontRegistry, addFont, ensureOpentype, generateSvg } from '.';
+import { compile, compileAnnotated, parse, createFontRegistry, addFont, ensureOpentype, generateSvg, resolveFontDirectives } from '.';
 import type { SvgGeneratorOptions } from './svg-generator';
 
 import type { CompileResult, CompileOptions, FontRegistry, LogEntry } from '.';
@@ -655,12 +655,18 @@ async function loadFontsFromDirectives(source: string, sourceFile?: string): Pro
     return undefined; // Parse errors will be caught later by compile()
   }
 
-  const fontDirectives = ast.body.filter(
-    (stmt): stmt is { type: 'FontDirective'; source: string; weight?: number } =>
-      stmt.type === 'FontDirective',
-  );
+  const { resolved, errors } = resolveFontDirectives(ast);
+  if (errors.length > 0) {
+    // An unresolved @font identifier is a program error, unlike a merely
+    // missing font file (which stays a warning below).
+    for (const err of errors) {
+      const pos = err.loc ? ` at line ${err.loc.line}` : '';
+      console.error(`Error${pos}: ${err.message}`);
+    }
+    process.exit(1);
+  }
 
-  if (fontDirectives.length === 0) return undefined;
+  if (resolved.length === 0) return undefined;
 
   // Ensure opentype.js is loaded before parsing font files
   await ensureOpentype();
@@ -668,8 +674,8 @@ async function loadFontsFromDirectives(source: string, sourceFile?: string): Pro
   const registry = createFontRegistry();
   const baseDir = sourceFile ? dirname(resolve(sourceFile)) : process.cwd();
 
-  for (const directive of fontDirectives) {
-    const fontSource = directive.source;
+  for (const directive of resolved) {
+    const fontSource = directive.family;
     const weight = directive.weight ?? 400;
 
     // Check if it's a file path (starts with ./ or ../ or / or contains file extension)

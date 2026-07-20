@@ -7,6 +7,7 @@ import {
   createFontRegistry,
   addFont,
   getFontFromRegistry,
+  resolveFontDirectives,
 } from '../src/index';
 import { getAdvanceWidth, getVerticalMetrics, glyphToPathBlockCommands, splitContours } from '../src/evaluator/font-provider';
 import type { FontRegistry } from '../src/index';
@@ -162,6 +163,76 @@ describe('@font directive parsing', () => {
   it('evaluator ignores @font directives', () => {
     const result = compile('@font "Inter";\nM 10 20 L 30 40');
     expect(result.layers[0].data).toBe('M 10 20 L 30 40');
+  });
+
+  it('parses @font with identifier source', () => {
+    const ast = parse('let family = "Inter";\n@font family;');
+    const dir = ast.body[1] as { type: string; source: string; sourceKind?: string; weight?: number };
+    expect(dir.type).toBe('FontDirective');
+    expect(dir.source).toBe('family');
+    expect(dir.sourceKind).toBe('identifier');
+    expect(dir.weight).toBeUndefined();
+  });
+
+  it('parses @font identifier with weight', () => {
+    const ast = parse('let family = "Inter";\n@font family 700;');
+    const dir = ast.body[1] as { type: string; source: string; sourceKind?: string; weight?: number };
+    expect(dir.source).toBe('family');
+    expect(dir.sourceKind).toBe('identifier');
+    expect(dir.weight).toBe(700);
+  });
+
+  it('string-literal @font is not marked as identifier', () => {
+    const ast = parse('@font "Inter";');
+    const dir = ast.body[0] as { type: string; sourceKind?: string };
+    expect(dir.sourceKind === 'identifier').toBe(false);
+  });
+
+  it('@fontFamily (no whitespace) remains a parse error', () => {
+    expect(() => parse('@fontFamily;')).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveFontDirectives (static resolution of @font sources)
+// ---------------------------------------------------------------------------
+describe('resolveFontDirectives', () => {
+  it('passes string-literal directives through', () => {
+    const ast = parse('@font "Inter" 700;');
+    const { resolved, errors } = resolveFontDirectives(ast);
+    expect(errors).toEqual([]);
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0]).toMatchObject({ family: 'Inter', weight: 700 });
+  });
+
+  it('resolves an identifier against a top-level let string literal', () => {
+    const ast = parse('let f = "Noto Sans";\n@font f 900;');
+    const { resolved, errors } = resolveFontDirectives(ast);
+    expect(errors).toEqual([]);
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0]).toMatchObject({ family: 'Noto Sans', weight: 900 });
+  });
+
+  it('resolves regardless of declaration order relative to the directive', () => {
+    const ast = parse('@font f;\nlet f = "Inter";');
+    const { resolved, errors } = resolveFontDirectives(ast);
+    expect(errors).toEqual([]);
+    expect(resolved[0]).toMatchObject({ family: 'Inter' });
+  });
+
+  it('errors when the identifier is not declared', () => {
+    const ast = parse('@font mystery;');
+    const { resolved, errors } = resolveFontDirectives(ast);
+    expect(resolved).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toMatch(/references 'mystery'.*not a top-level string variable/s);
+  });
+
+  it('errors when the identifier is bound to a non-string expression', () => {
+    const ast = parse('let f = 42;\n@font f;');
+    const { errors } = resolveFontDirectives(ast);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toMatch(/not a top-level string variable/);
   });
 });
 

@@ -454,9 +454,11 @@ export interface TextBlockExpression {
 }
 
 // @font "Inter" or @font "./fonts/Custom.ttf" or @font "Inter" 700
+// or @font familyVar (a top-level let bound to a string literal)
 export interface FontDirective {
   type: 'FontDirective';
-  source: string; // Font family name or file path
+  source: string; // Font family name, file path, or variable name (see sourceKind)
+  sourceKind?: 'literal' | 'identifier'; // absent means 'literal'
   weight?: number; // Optional specific weight (100-900)
   loc?: SourceLocation;
 }

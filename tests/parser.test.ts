@@ -725,6 +725,76 @@ L 10 20 // end point`;
       expect(decl.value.properties[1]).toMatchObject({ type: 'StyleProperty', name: 'fill', value: 'blue' });
     });
 
+    it('parses template-literal values inside style blocks', () => {
+      const ast = parse('let s = ${ font-family: `${family}`; font-size: 16; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('StyleBlockLiteral');
+      expect(decl.value.properties).toHaveLength(2);
+      expect(decl.value.properties[0]).toMatchObject({ name: 'font-family', value: '`${family}`' });
+      expect(decl.value.properties[1]).toMatchObject({ name: 'font-size', value: '16' });
+    });
+
+    it('parses multiple interpolations in one template value', () => {
+      const ast = parse('let s = ${ font-family: `${a}, ${b}`; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.properties[0]).toMatchObject({ name: 'font-family', value: '`${a}, ${b}`' });
+    });
+
+    it('allows } inside quoted style values', () => {
+      const ast = parse('let s = ${ content: "}"; stroke: red; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.properties).toHaveLength(2);
+      expect(decl.value.properties[0]).toMatchObject({ name: 'content', value: '"}"' });
+      expect(decl.value.properties[1]).toMatchObject({ name: 'stroke', value: 'red' });
+    });
+
+    it('rejects an unterminated template literal in a style value', () => {
+      expect(() => parse('let s = ${ font-family: `${family; };')).toThrow();
+    });
+
+    it('a single-line trailing comment does not swallow the closing brace', () => {
+      const ast = parse('let s = ${ fill: red; // trailing comment };\nlet next = 1;');
+      expect(ast.body).toHaveLength(2);
+      expect(ast.body[1].type).toBe('LetDeclaration');
+      const decl = ast.body[0] as any;
+      expect(decl.value.properties).toHaveLength(1);
+      expect(decl.value.properties[0]).toMatchObject({ name: 'fill', value: 'red' });
+    });
+
+    it('a comment containing an apostrophe does not derail the style block', () => {
+      const ast = parse("let s = ${ fill: red; // don't use blue\n stroke: blue; };");
+      const decl = ast.body[0] as any;
+      expect(decl.value.properties.map((p: any) => p.name)).toEqual(['fill', 'stroke']);
+    });
+
+    it('a slash inside a value stays plain content', () => {
+      const ast = parse('let s = ${ font: 1/2; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.properties[0]).toMatchObject({ name: 'font', value: '1/2' });
+    });
+
+    it('same-line apostrophe pair straddling the closing brace does not swallow it', () => {
+      // "don't" + "it's" put two apostrophes on one line around the real `}`;
+      // single-quoted strings never cross `}`, so the block still ends there.
+      const ast = parse("define PathLayer('a') ${ fill: red; // don't change } M 0 0 L 10 10 Z // it's fine\n");
+      expect(ast.body.map((s: any) => s.type)).toEqual([
+        'LayerDefinition',
+        'PathCommand',
+        'PathCommand',
+        'PathCommand',
+        'Comment',
+      ]);
+      expect((ast.body[0] as any).styleExpr.properties).toHaveLength(1);
+    });
+
+    it("a literal `}` needs double quotes — single-quoted '}' does not cross the brace", () => {
+      // Deliberate asymmetry: apostrophes are everyday comment text, so the
+      // single-quote branch never crosses `}` (old stop-at-brace behavior).
+      expect(() => parse("let s = ${ content: '}'; };")).toThrow();
+      const ast = parse('let s = ${ content: "}"; };');
+      expect((ast.body[0] as any).value.properties[0]).toMatchObject({ name: 'content', value: '"}"' });
+    });
+
     it('parses << merge operator', () => {
       const ast = parse('let s = ${ stroke: red; } << ${ fill: blue; };');
       const decl = ast.body[0] as any;

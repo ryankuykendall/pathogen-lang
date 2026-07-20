@@ -95,6 +95,11 @@ describe('formatDocument', () => {
       expect(result).toBe('@font "Inter";');
     });
 
+    it('formats @font identifier source without quotes', () => {
+      const result = format('let family = "Inter";\n@font family 700;');
+      expect(result).toContain('@font family 700;');
+    });
+
     it('adds semicolon after @font with weight', () => {
       const result = format('@font "Inter" 700;');
       expect(result).toBe('@font "Inter" 700;');

@@ -1573,6 +1573,51 @@ describe('Multi-Layer Support', () => {
       expect(result.layers[0].styles).toEqual({ 'font-size': '14', 'font-family': 'monospace' });
     });
 
+    it('resolves a bare identifier in a font-family style value', () => {
+      const result = compile(`
+        let f = "Noto Sans";
+        let t = TextLayer('labels') \${ font-family: f; font-weight: 900; };
+        layer('labels').apply { text(0, 0)\`hi\` }
+      `);
+      expect(result.layers[0].styles).toEqual({ 'font-family': 'Noto Sans', 'font-weight': '900' });
+    });
+
+    it('resolves a template-literal font-family style value', () => {
+      const result = compile(`
+        let f = "Noto Sans";
+        let t = TextLayer('labels') \${ font-family: \`\${f}\`; font-size: 16; };
+        layer('labels').apply { text(0, 0)\`hi\` }
+      `);
+      expect(result.layers[0].styles).toEqual({ 'font-family': 'Noto Sans', 'font-size': '16' });
+    });
+
+    it('keeps a double-quoted font-family value literal (no interpolation)', () => {
+      const result = compile(`
+        let f = "Noto Sans";
+        let t = TextLayer('labels') \${ font-family: "f"; };
+        layer('labels').apply { text(0, 0)\`hi\` }
+      `);
+      expect(result.layers[0].styles).toEqual({ 'font-family': 'f' });
+    });
+
+    it('rejects a remote url() on a single-line style block with a clean positioned error', () => {
+      // `https://` contains `//` — must not be treated as a comment that
+      // swallows the closing brace; the sanitizer must see the full value.
+      expect(() => compile('let s = ${ mask: url(https://evil.example/track); };')).toThrow(
+        /contains url\(\)/,
+      );
+    });
+
+    it('rejects interpolation syntax inside a double-quoted style value', () => {
+      expect(() =>
+        compile(`
+          let f = "Noto Sans";
+          let t = TextLayer('labels') \${ font-family: "\${f}"; };
+          layer('labels').apply { text(0, 0)\`hi\` }
+        `),
+      ).toThrow(/disallowed token/);
+    });
+
     it('preserves definition order for multiple dynamic layers', () => {
       const result = compile(`
         let pa = PathLayer('a') \${ stroke: red; };

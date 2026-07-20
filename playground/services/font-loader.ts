@@ -203,8 +203,68 @@ export async function resolveFontBinaries(
 }
 
 /**
+ * Extract top-level `let name = "string literal";` bindings from source.
+ *
+ * Regex fallback used to statically resolve identifier-valued `@font`
+ * directives and style-block `font-family:` values before compilation when
+ * the real parser is unavailable or the source doesn't parse (mid-typing).
+ * Line-anchored with leading whitespace allowed — a heuristic, so an
+ * indented block-scoped `let` also matches; the authoritative path is
+ * `resolveFontDirectivesViaAst` below, which uses the same AST-based
+ * `resolveFontDirectives` as the CLI.
+ */
+export function extractTopLevelStringLets(source: string): Map<string, string> {
+  const map = new Map<string, string>();
+  const letRe = /^[ \t]*let\s+([A-Za-z_]\w*)\s*=\s*(["'])((?:\\.|(?!\2).)*)\2\s*;/gm;
+  let match;
+  while ((match = letRe.exec(source)) !== null) {
+    map.set(match[1], match[3]);
+  }
+  return map;
+}
+
+interface PathogenLangGlobal {
+  parse?: (source: string) => unknown;
+  resolveFontDirectives?: (program: unknown) => {
+    resolved: { family: string; weight?: number }[];
+    errors: { message: string; identifier?: string }[];
+  };
+}
+
+/**
+ * Resolve @font directives with the real parser — the same
+ * `resolveFontDirectives` the CLI uses — for exact surface parity on valid
+ * programs (leading whitespace, multiple statements per line, optional
+ * trailing `;`, and identical top-level/string-literal rules). Returns null
+ * when the library global isn't loaded or the source doesn't parse
+ * (mid-typing); callers then fall back to the regex scan.
+ */
+function resolveFontDirectivesViaAst(
+  source: string,
+): { resolved: { family: string; weight?: number }[]; unresolvedIdentifiers: string[] } | null {
+  try {
+    const lib =
+      typeof window !== 'undefined'
+        ? ((window as { PathogenLang?: PathogenLangGlobal }).PathogenLang ?? null)
+        : null;
+    if (!lib?.parse || !lib.resolveFontDirectives) return null;
+    const { resolved, errors } = lib.resolveFontDirectives(lib.parse(source));
+    return {
+      resolved,
+      unresolvedIdentifiers: errors
+        .map((e) => e.identifier)
+        .filter((n): n is string => typeof n === 'string'),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Extract font families referenced in source code.
  * Scans @font directives and style blocks (`${ font-family: ...; font-weight: ...; }`).
+ * Both accept an identifier that resolves through a top-level
+ * `let name = "string";` binding (see `extractTopLevelStringLets`).
  *
  * Unknown families are filtered out (see `isKnownGoogleFont`). The playground
  * recompiles after every keystroke, so a user typing a font name in the
@@ -216,21 +276,48 @@ export async function resolveFontBinaries(
  */
 export function extractFontReferences(source: string): { family: string; weight?: number }[] {
   const refs: Map<string, { family: string; weight?: number }> = new Map();
+  const stringLets = extractTopLevelStringLets(source);
 
-  // Scan for @font "family" [weight]. Skip file-path forms (e.g.
-  // `@font "../fonts/Foo.ttf"`) — those are loaded by the host, not Google Fonts.
-  const fontDirectiveRe = /@font\s+["']([^"']+)["']\s*(\d+)?/g;
-  let match;
-  while ((match = fontDirectiveRe.exec(source)) !== null) {
-    const family = match[1];
-    if (family.includes('/') || family.includes('\\') || family.endsWith('.ttf') || family.endsWith('.otf') || family.endsWith('.woff') || family.endsWith('.woff2')) continue;
-    if (!isKnownGoogleFont(family)) continue;
-    const weight = match[2] ? parseInt(match[2], 10) : undefined;
+  const addRef = (family: string, weight: number | undefined) => {
     const key = `${family}:${weight ?? 400}`;
     if (!refs.has(key)) {
       refs.set(key, { family, weight });
     }
+  };
+
+  // Directive scan — AST-based when the library is available (exact CLI
+  // parity), regex fallback otherwise.
+  const astResolved = resolveFontDirectivesViaAst(source);
+  if (astResolved) {
+    for (const r of astResolved.resolved) {
+      if (isFontFilePath(r.family)) continue;
+      if (!isKnownGoogleFont(r.family)) continue;
+      addRef(r.family, r.weight);
+    }
+  } else {
+    // Scan for @font "family" [weight]. Skip file-path forms (e.g.
+    // `@font "../fonts/Foo.ttf"`) — those are loaded by the host, not Google Fonts.
+    const fontDirectiveRe = /@font\s+["']([^"']+)["']\s*(\d+)?/g;
+    let match;
+    while ((match = fontDirectiveRe.exec(source)) !== null) {
+      const family = match[1];
+      if (isFontFilePath(family)) continue;
+      if (!isKnownGoogleFont(family)) continue;
+      addRef(family, match[2] ? parseInt(match[2], 10) : undefined);
+    }
+
+    // Scan for @font identifier [weight] — resolve through top-level lets.
+    // The trailing `;` is optional in the grammar, so it is optional here.
+    const fontDirectiveIdentRe = /@font\s+([A-Za-z_]\w*)(?:\s+(\d+))?\s*;?/g;
+    while ((match = fontDirectiveIdentRe.exec(source)) !== null) {
+      const bound = stringLets.get(match[1]);
+      if (bound === undefined) continue;
+      if (isFontFilePath(bound)) continue;
+      if (!isKnownGoogleFont(bound)) continue;
+      addRef(bound, match[2] ? parseInt(match[2], 10) : undefined);
+    }
   }
+  let match;
 
   // Scan style blocks (`${ ... }`) for font-family paired with font-weight in
   // the same block. Style blocks may not be perfectly delimited by `}` if
@@ -241,22 +328,37 @@ export function extractFontReferences(source: string): { family: string; weight?
     const block = match[1];
     const familyMatch = block.match(/font-family:\s*([^;\n]+)/);
     if (!familyMatch) continue;
-    const first = familyMatch[1].trim().split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+    const rawFirst = familyMatch[1].trim().split(',')[0].trim();
+    const wasQuoted = /^['"]/.test(rawFirst);
+    let first = rawFirst.replace(/^['"]|['"]$/g, '');
     if (!first) continue;
+    // A bare identifier (not a quoted literal) may be a variable reference —
+    // substitute its top-level string binding before the known-family gate.
+    if (!wasQuoted && !isKnownGoogleFont(first)) {
+      const bound = stringLets.get(first);
+      if (bound !== undefined) first = bound;
+    }
     if (GENERIC_FONT_FAMILIES.has(first)) continue;
     if (LEGACY_FILENAME_FAMILY.test(first)) continue;
     if (!isKnownGoogleFont(first)) continue;
 
     const weightMatch = block.match(/font-weight:\s*(\d+)/);
     const weight = weightMatch ? parseInt(weightMatch[1], 10) : undefined;
-
-    const key = `${first}:${weight ?? 400}`;
-    if (!refs.has(key)) {
-      refs.set(key, weight !== undefined ? { family: first, weight } : { family: first });
-    }
+    addRef(first, weight);
   }
 
   return Array.from(refs.values());
+}
+
+function isFontFilePath(value: string): boolean {
+  return (
+    value.includes('/') ||
+    value.includes('\\') ||
+    value.endsWith('.ttf') ||
+    value.endsWith('.otf') ||
+    value.endsWith('.woff') ||
+    value.endsWith('.woff2')
+  );
 }
 
 /**
@@ -278,20 +380,37 @@ export function extractFontReferences(source: string): { family: string; weight?
  */
 export function extractUnknownFontDirectiveFamilies(
   source: string,
-): { family: string; weight?: number }[] {
-  const seen: Map<string, { family: string; weight?: number }> = new Map();
+): { family: string; weight?: number; kind?: 'unresolved-identifier' }[] {
+  const seen: Map<string, { family: string; weight?: number; kind?: 'unresolved-identifier' }> = new Map();
+
+  // AST-based path (exact CLI parity): resolved-but-unknown families report
+  // the resolved name; an unresolvable identifier is an explicit-directive
+  // error (flagged, unlike style-block values).
+  const astResolved = resolveFontDirectivesViaAst(source);
+  if (astResolved) {
+    for (const r of astResolved.resolved) {
+      if (isFontFilePath(r.family)) continue;
+      if (isKnownGoogleFont(r.family)) continue;
+      const key = `${r.family}:${r.weight ?? 0}`;
+      if (!seen.has(key)) {
+        seen.set(key, r.weight !== undefined ? { family: r.family, weight: r.weight } : { family: r.family });
+      }
+    }
+    for (const name of astResolved.unresolvedIdentifiers) {
+      const key = `${name}:ident`;
+      if (!seen.has(key)) {
+        seen.set(key, { family: name, kind: 'unresolved-identifier' });
+      }
+    }
+    return Array.from(seen.values());
+  }
+
+  const stringLets = extractTopLevelStringLets(source);
   const fontDirectiveRe = /@font\s+["']([^"']+)["']\s*(\d+)?/g;
   let match;
   while ((match = fontDirectiveRe.exec(source)) !== null) {
     const family = match[1];
-    if (
-      family.includes('/') ||
-      family.includes('\\') ||
-      family.endsWith('.ttf') ||
-      family.endsWith('.otf') ||
-      family.endsWith('.woff') ||
-      family.endsWith('.woff2')
-    ) continue;
+    if (isFontFilePath(family)) continue;
     if (isKnownGoogleFont(family)) continue;
     const weight = match[2] ? parseInt(match[2], 10) : undefined;
     const key = `${family}:${weight ?? 0}`;
@@ -299,7 +418,91 @@ export function extractUnknownFontDirectiveFamilies(
       seen.set(key, weight !== undefined ? { family, weight } : { family });
     }
   }
+  // Identifier directives, regex fallback (trailing `;` optional, as in the
+  // grammar).
+  const fontDirectiveIdentRe = /@font\s+([A-Za-z_]\w*)(?:\s+(\d+))?\s*;?/g;
+  while ((match = fontDirectiveIdentRe.exec(source)) !== null) {
+    const name = match[1];
+    const weight = match[2] ? parseInt(match[2], 10) : undefined;
+    const bound = stringLets.get(name);
+    if (bound === undefined) {
+      const key = `${name}:ident:${weight ?? 0}`;
+      if (!seen.has(key)) {
+        seen.set(
+          key,
+          weight !== undefined
+            ? { family: name, weight, kind: 'unresolved-identifier' }
+            : { family: name, kind: 'unresolved-identifier' },
+        );
+      }
+      continue;
+    }
+    if (isFontFilePath(bound)) continue;
+    if (isKnownGoogleFont(bound)) continue;
+    const key = `${bound}:${weight ?? 0}`;
+    if (!seen.has(key)) {
+      seen.set(key, weight !== undefined ? { family: bound, weight } : { family: bound });
+    }
+  }
   return Array.from(seen.values());
+}
+
+/**
+ * Extract font references from a *compiled* result's resolved styles.
+ *
+ * The raw-source scan above only sees literal (or top-level-let-resolved)
+ * `font-family:` values. Anything the evaluator computes — template
+ * interpolation, function returns, merged style blocks — only exists in the
+ * compile result. This walks every layer (recursing into group children)
+ * and every text element's styles (merged over its layer's styles) and
+ * returns the known-Google-font references so the caller can fetch any
+ * binaries the pre-compile scan missed. Unknown families are silently
+ * skipped, matching the style-block keystroke policy above.
+ */
+export function extractFontReferencesFromCompileResult(result: {
+  layers?: CompileResultLayerLike[];
+}): { family: string; weight?: number }[] {
+  const refs: Map<string, { family: string; weight?: number }> = new Map();
+
+  const addFromStyles = (styles: Record<string, string> | undefined) => {
+    if (!styles) return;
+    const familyValue = styles['font-family'];
+    if (!familyValue) return;
+    const first = String(familyValue).split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+    if (!first) return;
+    if (GENERIC_FONT_FAMILIES.has(first)) return;
+    if (LEGACY_FILENAME_FAMILY.test(first)) return;
+    if (!isKnownGoogleFont(first)) return;
+    const weightRaw = styles['font-weight'];
+    const weight = weightRaw !== undefined && /^\d+$/.test(String(weightRaw).trim())
+      ? parseInt(String(weightRaw).trim(), 10)
+      : undefined;
+    const key = `${first}:${weight ?? 400}`;
+    if (!refs.has(key)) {
+      refs.set(key, weight !== undefined ? { family: first, weight } : { family: first });
+    }
+  };
+
+  const walkLayer = (layer: CompileResultLayerLike) => {
+    addFromStyles(layer.styles);
+    for (const te of layer.textElements ?? []) {
+      addFromStyles({ ...layer.styles, ...te.styles });
+    }
+    for (const child of layer.children ?? []) {
+      walkLayer(child);
+    }
+  };
+
+  for (const layer of result.layers ?? []) {
+    walkLayer(layer);
+  }
+  return Array.from(refs.values());
+}
+
+interface CompileResultLayerLike {
+  styles?: Record<string, string>;
+  textElements?: { styles?: Record<string, string> }[];
+  children?: CompileResultLayerLike[];
 }
 
 /**

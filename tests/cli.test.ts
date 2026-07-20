@@ -712,4 +712,33 @@ describe('CLI', () => {
       unlinkSync(outputSvg);
     });
   });
+
+  describe('@font directive with identifier source', () => {
+    it('loads a font file via a top-level let variable', () => {
+      const inputFile = join(TMP_DIR, 'font-var.pathogen');
+      writeFileSync(
+        inputFile,
+        `let fontPath = "../fixtures/fonts/Inter-Regular.ttf";
+@font fontPath;
+let g = PathBlock.fromGlyph("A", \${ font-family: Inter-Regular; font-size: 48; });
+M 10 100
+g[0].draw()
+`,
+      );
+      const result = runCli([`--src=${inputFile}`]);
+      expect(result.status).toBe(0);
+      // Glyph outlines produce curve commands beyond the initial move
+      expect(result.stdout).toMatch(/M 10 100/);
+      expect(result.stdout.length).toBeGreaterThan(40);
+
+      unlinkSync(inputFile);
+    });
+
+    it('fails with a positioned error when the identifier is not a top-level string', () => {
+      const result = runCli(['-e', '@font mystery;\nM 0 0']);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toMatch(/references 'mystery'/);
+      expect(result.stderr).toMatch(/not a top-level string variable/);
+    });
+  });
 });

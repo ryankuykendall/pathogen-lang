@@ -132,8 +132,8 @@ TextIfStatement {
 }
 
 FontDirective {
-  fontDirectiveKw String ~fontWeight Number ";"? |
-  fontDirectiveKw String ~fontWeight ";"?
+  fontDirectiveKw (String | Identifier) ~fontWeight Number ";"? |
+  fontDirectiveKw (String | Identifier) ~fontWeight ";"?
 }
 
 // Path commands: always greedy when args are available.
@@ -415,7 +415,33 @@ VariableName { Identifier }
 
   fontDirectiveKw { "@" "font" }
 
-  StyleContent { ![}]+ }
+  // Style-block content: everything up to the first `}` that is not inside
+  // a `//` comment, a quoted string, a backtick template, or a template's
+  // `${...}` interpolation (one nested brace level supported inside an
+  // interpolation — matching the AST builder's value scanner). This lets
+  // template values like `font-family: `${family}`;` and quoted values
+  // containing `}` survive to parseStyleDeclarations intact.
+  // Quote characters are BOTH ordinary content and possible string starts;
+  // the DFA's longest-accepting-match rule sorts out the extent: a string
+  // terminated on the same line (`content: "}";`) carries the token across
+  // its `}`, while an unterminated quote (mid-typing, or an apostrophe in a
+  // `// don't` comment whose "string" would die at the newline) falls back
+  // to the plain-content path, which stops at the first `}` — the old
+  // `![}]+` behavior. Single-quoted strings additionally never cross `}`:
+  // apostrophes are everyday comment text ("don't … it's"), and a same-line
+  // pair straddling the real closing brace must not swallow it — use double
+  // quotes for a literal `}` value. No escape handling inside style-value
+  // strings — mirrors the AST builder's value scanner, which tracks bare
+  // quote pairs.
+  styleContentString {
+    "\"" ![\"\n]* "\"" |
+    "'" ![\'\n}]* "'"
+  }
+  styleContentInterp { "$" "{" ![{}]* "}" }
+  styleContentTemplate { "`" (![\`\\$] | "\\" _ | "$" ![\{] | styleContentInterp)* "`" }
+  StyleContent {
+    (![}\`] | styleContentString | styleContentTemplate)+
+  }
 
   @precedence { "...", RangeOp, "." }
   @precedence { "||" }

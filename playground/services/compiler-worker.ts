@@ -3,6 +3,7 @@
 
 import {
   extractFontReferences,
+  extractFontReferencesFromCompileResult,
   extractUnknownFontDirectiveFamilies,
   resolveFontBinaries,
 } from './font-loader.js';
@@ -228,12 +229,21 @@ async function resolveFontsForSource(source: string): Promise<FontResolutionResu
     family: u.family,
     weight: u.weight ?? 0,
     reason:
-      `Unknown Google Font: "${u.family}"${u.weight !== undefined ? ` ${u.weight}` : ''}. ` +
-      `Open the font picker (click the font-family value in the inspector) for the supported list.`,
+      u.kind === 'unresolved-identifier'
+        ? `@font references variable '${u.family}', which is not a top-level string variable. ` +
+          `Declare it at the top level: let ${u.family} = "Family Name";`
+        : `Unknown Google Font: "${u.family}"${u.weight !== undefined ? ` ${u.weight}` : ''}. ` +
+          `Open the font picker (click the font-family value in the inspector) for the supported list.`,
   }));
 
   if (refs.length === 0 && unknownFailures.length === 0) {
-    if (/@font\b/.test(source)) {
+    // A well-formed directive that produced neither a ref nor a failure was
+    // deliberately skipped (file path, or an identifier resolved to a file
+    // path) — only fire the "not recognized" fallback when no directive
+    // form matched at all.
+    const wellFormed =
+      /@font\s+["'][^"']+["']/.test(source) || /@font\s+[A-Za-z_]\w*(?:\s+\d+)?\s*;?/.test(source);
+    if (!wellFormed && /@font\b/.test(source)) {
       const sample = (source.match(/@font[^\n]{0,80}/) ?? [''])[0].trim();
       return {
         binaries: [],
@@ -297,7 +307,8 @@ export async function compile(
     throw new Error(formatFontFailures(failures));
   }
   const result = await sendRequest('compile', source, compilationId, isStale, options, binaries);
-  return attachFontBinaries(result, binaries);
+  const allBinaries = await resolvePostCompileFonts(result, binaries);
+  return attachFontBinaries(result, allBinaries);
 }
 
 /**
@@ -334,7 +345,38 @@ export async function compileWithContext(
     throw new Error(formatFontFailures(failures));
   }
   const result = await sendRequest('compileWithContext', source, compilationId, isStale, options, binaries);
-  return attachFontBinaries(result, binaries);
+  const allBinaries = await resolvePostCompileFonts(result, binaries);
+  return attachFontBinaries(result, allBinaries);
+}
+
+/**
+ * Tier-2 font resolution: after a successful compile, extract the *resolved*
+ * font-family/font-weight values from the result's layers and fetch any
+ * binaries the pre-compile source scan missed (variable- or expression-valued
+ * font-family). Per-family failures are silently dropped — these are
+ * style-derived references, subject to the same per-keystroke policy as the
+ * raw-source style-block scan. No recompile is needed: compile-time font
+ * consumers (fromGlyph/toPathBlock) throw when their family is missing, so a
+ * compile that succeeded only needs these binaries for iframe @font-face
+ * injection.
+ */
+async function resolvePostCompileFonts(
+  result: unknown,
+  binaries: FontBinaryEntry[],
+): Promise<FontBinaryEntry[]> {
+  if (!result || typeof result !== 'object') return binaries;
+  const postRefs = extractFontReferencesFromCompileResult(
+    result as { layers?: { styles?: Record<string, string> }[] },
+  );
+  const missing = postRefs.filter(
+    (r) => !binaries.some((b) => b.family === r.family && b.weight === (r.weight ?? 400)),
+  );
+  if (missing.length === 0) return binaries;
+  const extra = await resolveFontBinaries(missing);
+  if (extra.failures.length > 0) {
+    console.debug('[pathogen] post-compile font fetches failed:', extra.failures);
+  }
+  return [...binaries, ...extra.binaries];
 }
 
 /**

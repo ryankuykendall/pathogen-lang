@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-20 (font-family variables)
+
+### Added
+
+#### Core
+
+- **`@font` accepts a variable source** — `@font fontFamily;` (optionally with a weight) now parses, where `fontFamily` is a top-level `let` bound to a plain string literal. Resolution is static (fonts load before evaluation): the new `resolveFontDirectives(program)` export const-folds top-level string `let`s; an unresolvable identifier is a positioned hard error in both the CLI and the playground. `@fontFamily` (no space) stays an error with a "did you mean `@font fontFamily`?" hint — `@font` is a single token, so without the guard it would silently parse as `@font Family`. AST gains `FontDirective.sourceKind: 'literal' | 'identifier'`; the formatter emits identifier sources unquoted.
+- **Template-literal values in style blocks** — `` font-family: `${family}`; `` now parses and interpolates. The `StyleContent` grammar token is redefined to be quote- and template-aware (one brace level inside `${...}`), so a `}` inside a quoted value or an interpolation no longer terminates the style block; the AST-builder value scanner mirrors the same states and reports "Unterminated template literal in style value". Comments, `//` inside `url(...)`, and slashes keep the old stop-at-`}` extent — quotes are simultaneously plain content and string starts, with the DFA's longest-match rule picking the right boundary (adversarial single-line cases like `${ fill: red; // note }` and `url(https://…)` are regression-tested after code review caught the first formulation crossing the brace). One deliberate asymmetry: a literal `}` value needs **double** quotes — single-quoted strings never cross `}`, so everyday comment apostrophes (`// don't … // it's`) on one line can't swallow the block's closing brace. Double-quoted strings remain literal: `font-family: "${f}"` is now a clear disallowed-token error instead of a confusing "Missing ';'".
+
+#### Playground
+
+- **Variable- and expression-valued `font-family` now loads the right Google Font** (the reported bug: `font-family: fontFamily;` rendered a fallback font and wrong weight even though the compiler resolved it correctly). Font fetching is now two-tier: the pre-compile scan resolves `@font` directives **AST-first** — when the library global is loaded it uses the same `parse` + `resolveFontDirectives` as the CLI for exact surface parity (indented top-level `let`s, multiple statements per line, optional trailing `;`), with the regex scan kept only as a mid-typing fallback — plus style-block variable substitution through top-level string `let`s; and a new post-compile pass (`extractFontReferencesFromCompileResult`) walks the compiled layers' *resolved* styles — recursing into group children and merging text-element styles — fetching any binaries the source scan missed. No recompile is needed: compile-time font consumers throw on a missing family, so late binaries only feed the preview iframe's `@font-face` injection.
+
+### Documentation
+
+- `docs/path-blocks.md`: `@font` variable form, resolution rule, and error message; variable + template pairing example.
+- `docs/layers.md`: "Variables and Interpolation in Values" — bare identifiers, backtick interpolation, and the double-quotes-are-literal rule.
+- `docs/syntax.md`: style-block value evaluation cross-link.
+
+### Development
+
+- New tests across `tests/parser.test.ts` (style-block templates, `}` in quoted values, unterminated-template error, `@font` identifier + `@fontFamily` guard), `tests/font-provider.test.ts` (`resolveFontDirectives`), `tests/layers.test.ts` (identifier/template/quoted-literal resolution pins), `tests/cli.test.ts` (file font via variable, unresolved-identifier error), `tests/font-loader.test.ts` (let-map extraction, identifier refs, compile-result extraction), and the formatter suite.
+- `scripts/debug-font-variable-resolution.ts` — puppeteer verification that the Noto Sans binary is fetched, injected into `#pathogen-fonts`, and computed on the rendered `<text>` for the variable program; plus a cold repro of the quoted-literal case. Artifacts in `project-docs/font-variable-resolution/`.
+- Deferred: scope-analysis reference (rename/go-to-def) for the `@font` identifier — needs an `identifierLoc` on the AST node first (see `project-docs/font-variable-resolution/STATUS.md`).
+
 ## [Unreleased] - 2026-07-19 (export output optimization)
 
 ### Added
@@ -30,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Optimization passes no longer touch defs-scoped geometry** — markers, clip paths, and patterns live in their own local coordinate systems where the artwork-derived epsilon/precision are meaningless; they are now excluded (was: every `path[d]` outside the legend). Guarded by an E2E marker fixture.
 - **Decimation can no longer corrupt `S`/`T` smooth-curve reflections** — smooth shorthands are normalized to explicit `C`/`Q` at parse time (while original command adjacency is known), so culling a tiny predecessor no longer re-bases the reflection on a distant unrelated curve (previously up to a ~56-unit silent shape shift on hand-authored paths).
 - Reduction counters now only count paths whose optimized `d` was actually written.
+- **Export failed with `SecurityError: showSaveFilePicker … Must be handling a user gesture` on large artwork** — the save dialog now opens FIRST, inside the click, before the export pipeline runs (Chrome expires transient user activation after ~5s; dense artwork's outlining/rasterization/svg2pdf easily exceed that). Bonus: cancelling the dialog now skips the whole pipeline, and the file writes to the pre-acquired handle when generation finishes. Geometry validation still runs before the dialog so margin errors surface without a pointless save prompt.
 
 #### Library
 

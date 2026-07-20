@@ -775,16 +775,33 @@ The `@font` directive declares a font for use in the program. It must appear at 
 @font "./fonts/CustomFont.ttf";
 ```
 
+The source can also be a variable, as long as it is a top-level `let` bound to a plain string literal:
+
+```
+let family = "Inter";
+
+@font family;
+@font family 700;
+```
+
 **Syntax:**
 
 ```
 @font "family-or-path" [weight];
+@font <variable> [weight];
 ```
 
 | Part | Required | Description |
 |------|----------|-------------|
-| Source | Yes | Font family name (e.g., `"Inter"`) or file path (e.g., `"./fonts/Custom.ttf"`) |
+| Source | Yes | Font family name (e.g., `"Inter"`), file path (e.g., `"./fonts/Custom.ttf"`), or a top-level `let` variable bound to a string literal |
 | Weight | No | Numeric weight 100–900 (default: 400) |
+
+Because fonts are loaded by the host environment *before* the program runs, a variable source must be resolvable statically: a top-level `let` whose value is a plain string literal. Referencing anything else fails with:
+
+```
+@font directive references 'x', which is not a top-level string variable.
+Declare it at the top level: let x = "Family Name";
+```
 
 **Font loading by environment:**
 
@@ -792,6 +809,19 @@ The `@font` directive declares a font for use in the program. It must appear at 
 - **Playground**: Fetches from Google Fonts CDN automatically
 
 The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, a warning is logged and compilation continues.
+
+A variable source pairs naturally with style blocks, letting a single declaration drive both the font load and the styles that use it:
+
+```
+let family = "Inter";
+
+@font family;
+
+let styles = ${
+  font-family: `${family}`;
+  font-size: 48;
+};
+```
 
 ### PathBlock.fromGlyph(text, styles)
 

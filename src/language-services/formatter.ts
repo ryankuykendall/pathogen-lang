@@ -236,8 +236,10 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       return `${prefix}${formatExpression(stmt.object, depth, indent, source)}[${formatExpression(stmt.index, depth, indent, source)}] = ${formatExpression(stmt.value, depth, indent, source)};`;
     case 'MemberAssignmentStatement':
       return `${prefix}${formatExpression(stmt.object, depth, indent, source)}.${stmt.property} = ${formatExpression(stmt.value, depth, indent, source)};`;
-    case 'FontDirective':
-      return `${prefix}@font "${stmt.source}"${stmt.weight ? ` ${stmt.weight}` : ''};`;
+    case 'FontDirective': {
+      const src = stmt.sourceKind === 'identifier' ? stmt.source : `"${stmt.source}"`;
+      return `${prefix}@font ${src}${stmt.weight ? ` ${stmt.weight}` : ''};`;
+    }
     default:
       return prefix;
   }

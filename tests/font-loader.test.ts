@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   extractFontReferences,
+  extractFontReferencesFromCompileResult,
   extractFontUrlFromGoogleFontsCss,
+  extractTopLevelStringLets,
   extractUnknownFontDirectiveFamilies,
   fontBinariesToCss,
   resolveFontBinaries,
@@ -94,6 +96,32 @@ describe('extractFontReferences', () => {
 
   it('drops unknown families from @font directives — picker is the authoritative source', () => {
     const refs = extractFontReferences(`@font "TotallyMadeUpFontName" 400;`);
+    expect(refs).toEqual([]);
+  });
+
+  it('resolves an identifier @font source via a top-level let string', () => {
+    const refs = extractFontReferences(`let f = "Roboto";\n@font f 700;`);
+    expect(refs).toEqual([{ family: 'Roboto', weight: 700 }]);
+  });
+
+  it('resolves an identifier @font source without weight', () => {
+    const refs = extractFontReferences(`let f = "Roboto";\n@font f;`);
+    expect(refs).toEqual([{ family: 'Roboto', weight: undefined }]);
+  });
+
+  it('resolves a variable font-family value in a style block', () => {
+    const refs = extractFontReferences(`let f = "Roboto";\nlet s = \${ font-family: f; font-weight: 700; };`);
+    expect(refs).toEqual([{ family: 'Roboto', weight: 700 }]);
+  });
+
+  it('does not substitute quoted names through the let map', () => {
+    // "f" is a literal family name, not a variable reference.
+    const refs = extractFontReferences(`let f = "Roboto";\nlet s = \${ font-family: "f"; };`);
+    expect(refs).toEqual([]);
+  });
+
+  it('ignores identifier @font sources bound to unknown families', () => {
+    const refs = extractFontReferences(`let f = "TotallyMadeUpFontName";\n@font f;`);
     expect(refs).toEqual([]);
   });
 
@@ -407,5 +435,143 @@ describe('extractUnknownFontDirectiveFamilies', () => {
       @font "MadeUp" 400;
     `);
     expect(refs).toEqual([{ family: 'MadeUp', weight: 400 }]);
+  });
+
+  it('flags an identifier @font source resolved to an unknown family', () => {
+    const refs = extractUnknownFontDirectiveFamilies(`let f = "MadeUpName";\n@font f 400;`);
+    expect(refs).toEqual([{ family: 'MadeUpName', weight: 400 }]);
+  });
+
+  it('flags an unresolvable identifier @font source', () => {
+    const refs = extractUnknownFontDirectiveFamilies(`@font mystery;`);
+    expect(refs).toEqual([{ family: 'mystery', kind: 'unresolved-identifier' }]);
+  });
+
+  it('does not flag an identifier that resolves to a known family', () => {
+    expect(extractUnknownFontDirectiveFamilies(`let f = "Roboto";\n@font f;`)).toEqual([]);
+  });
+});
+
+describe('extractTopLevelStringLets', () => {
+  it('extracts top-level string bindings', () => {
+    const map = extractTopLevelStringLets(`let a = "Roboto";\nlet b = 'Inter';\nlet n = 42;`);
+    expect(map.get('a')).toBe('Roboto');
+    expect(map.get('b')).toBe('Inter');
+    expect(map.has('n')).toBe(false);
+  });
+
+  it('ignores non-literal initializers', () => {
+    const map = extractTopLevelStringLets(`let a = "Ro" + "boto";\nlet b = someFn();`);
+    expect(map.size).toBe(0);
+  });
+
+  it('matches indented lets — a fallback heuristic; scope-exactness comes from the AST path', () => {
+    // Indentation and nesting are orthogonal in a whitespace-insignificant
+    // language. The regex fallback deliberately over-matches (mid-typing
+    // tolerance); when window.PathogenLang is loaded, directive resolution
+    // uses the same AST-based resolveFontDirectives as the CLI instead.
+    const map = extractTopLevelStringLets(`  let indented = "Roboto";`);
+    expect(map.get('indented')).toBe('Roboto');
+  });
+});
+
+describe('AST-backed directive resolution (parity with CLI)', () => {
+  beforeEach(async () => {
+    const lib = await import('../src/index');
+    (globalThis as Record<string, unknown>).window = Object.assign(
+      ((globalThis as Record<string, unknown>).window as object | undefined) ?? {},
+      { PathogenLang: { parse: lib.parse, resolveFontDirectives: lib.resolveFontDirectives } },
+    );
+  });
+  afterEach(() => {
+    delete ((globalThis as Record<string, unknown>).window as { PathogenLang?: unknown }).PathogenLang;
+  });
+
+  it('resolves an identifier @font after an indented top-level let', () => {
+    const refs = extractFontReferences(`  let f = "Roboto";\n@font f 700;`);
+    expect(refs).toContainEqual({ family: 'Roboto', weight: 700 });
+  });
+
+  it('resolves when two lets share one physical line', () => {
+    const refs = extractFontReferences(`let a = 1; let f = "Roboto";\n@font f;`);
+    expect(refs).toContainEqual({ family: 'Roboto', weight: undefined });
+  });
+
+  it('resolves an identifier @font without a trailing semicolon', () => {
+    const refs = extractFontReferences(`let f = "Roboto";\n@font f\nM 0 0`);
+    expect(refs).toContainEqual({ family: 'Roboto', weight: undefined });
+  });
+
+  it('flags an unresolved identifier via the AST path', () => {
+    const refs = extractUnknownFontDirectiveFamilies(`@font mystery;\nM 0 0`);
+    expect(refs).toEqual([{ family: 'mystery', kind: 'unresolved-identifier' }]);
+  });
+
+  it('falls back to the regex scan when the source does not parse', () => {
+    // Unparseable mid-typing state — AST path returns null, regex still finds
+    // the quoted directive.
+    const refs = extractFontReferences(`@font "Roboto" 400;\nlet broken = ;`);
+    expect(refs).toContainEqual({ family: 'Roboto', weight: 400 });
+  });
+});
+
+describe('extractFontReferencesFromCompileResult', () => {
+  it('extracts resolved font-family + font-weight from layer styles', () => {
+    const refs = extractFontReferencesFromCompileResult({
+      layers: [{ styles: { 'font-family': 'Noto Sans', 'font-weight': '900' } }],
+    });
+    expect(refs).toEqual([{ family: 'Noto Sans', weight: 900 }]);
+  });
+
+  it('extracts from text element styles merged over layer styles', () => {
+    const refs = extractFontReferencesFromCompileResult({
+      layers: [
+        {
+          styles: { 'font-weight': '700' },
+          textElements: [{ styles: { 'font-family': 'Roboto' } }],
+        },
+      ],
+    });
+    expect(refs).toEqual([{ family: 'Roboto', weight: 700 }]);
+  });
+
+  it('recurses into group children', () => {
+    const refs = extractFontReferencesFromCompileResult({
+      layers: [
+        {
+          styles: {},
+          children: [{ styles: { 'font-family': 'Inter' } }],
+        },
+      ],
+    });
+    expect(refs).toEqual([{ family: 'Inter' }]);
+  });
+
+  it('strips quotes and takes the first family in a comma list', () => {
+    const refs = extractFontReferencesFromCompileResult({
+      layers: [{ styles: { 'font-family': '"Josefin Sans", sans-serif' } }],
+    });
+    expect(refs).toEqual([{ family: 'Josefin Sans' }]);
+  });
+
+  it('filters generic, legacy-filename, and unknown families', () => {
+    const refs = extractFontReferencesFromCompileResult({
+      layers: [
+        { styles: { 'font-family': 'monospace' } },
+        { styles: { 'font-family': 'Raleway-Bold' } },
+        { styles: { 'font-family': 'TotallyMadeUpFontName' } },
+      ],
+    });
+    expect(refs).toEqual([]);
+  });
+
+  it('deduplicates the same family and weight across layers', () => {
+    const refs = extractFontReferencesFromCompileResult({
+      layers: [
+        { styles: { 'font-family': 'Roboto', 'font-weight': '400' } },
+        { styles: { 'font-family': 'Roboto' }, textElements: [{ styles: { 'font-weight': '400' } }] },
+      ],
+    });
+    expect(refs).toEqual([{ family: 'Roboto', weight: 400 }]);
   });
 });
