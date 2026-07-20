@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Variable- and expression-valued `font-family` now loads the right Google Font** (the reported bug: `font-family: fontFamily;` rendered a fallback font and wrong weight even though the compiler resolved it correctly). Font fetching is now two-tier: the pre-compile scan resolves `@font` directives **AST-first** — when the library global is loaded it uses the same `parse` + `resolveFontDirectives` as the CLI for exact surface parity (indented top-level `let`s, multiple statements per line, optional trailing `;`), with the regex scan kept only as a mid-typing fallback — plus style-block variable substitution through top-level string `let`s; and a new post-compile pass (`extractFontReferencesFromCompileResult`) walks the compiled layers' *resolved* styles — recursing into group children and merging text-element styles — fetching any binaries the source scan missed. No recompile is needed: compile-time font consumers throw on a missing family, so late binaries only feed the preview iframe's `@font-face` injection.
 
+#### Playground (follow-ups)
+
+- **Stale-preview marker** — when compilation fails, the preview pane keeps the last good render for context but now dims it and shows a "Stale preview — fix errors to update" badge, clearing on the next successful compile. Previously a stale render (with stale injected fonts) was indistinguishable from current output — the source of the "quoted font-family appeared to work" misread in the original bug report. Storybook gains a Stale story + toggle.
+- **`@fontFamily` typo now gets a positioned editor diagnostic** — the adjacency guard's "unknown directive '@fontFamily' — did you mean '@font fontFamily'?" message carries line *and column*, so `getDiagnostics` anchors the squiggle to the directive (was: a generic parse error pinned to the top of the file), and the suggestion names the full intended variable rather than the `Family` remainder token.
+
 ### Documentation
 
 - `docs/path-blocks.md`: `@font` variable form, resolution rule, and error message; variable + template pairing example.

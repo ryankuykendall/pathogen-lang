@@ -150,6 +150,7 @@ export class WorkspaceView extends HTMLElement {
     clear(): void;
     showLoading(): void;
     hideLoading(): void;
+    setStale(stale: boolean): void;
     updateSvgStyles(): void;
     setLayersWithTiming(layers: unknown[], options: unknown): number;
     setPathDataWithTiming(path: string): number;
@@ -852,6 +853,7 @@ export class WorkspaceView extends HTMLElement {
       console.log(`Render time: ${renderTime.toFixed(2)}ms`);
 
       this.previewPane.hideLoading();
+      this.previewPane.setStale(false);
       this.consolePane.logs = result.logs || [];
       this.hideError();
 
@@ -895,6 +897,9 @@ export class WorkspaceView extends HTMLElement {
       if (isStale(compilationId)) return;
 
       this.previewPane.hideLoading();
+      // The pane keeps the last good render (and its injected fonts) for
+      // context — mark it stale so it can't be mistaken for current output.
+      this.previewPane.setStale(true);
       const displayError = this.showError(e.message);
       this.consolePane.logs = [];
       store.set('layers', []);

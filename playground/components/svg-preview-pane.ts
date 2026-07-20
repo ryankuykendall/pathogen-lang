@@ -722,6 +722,17 @@ export class SvgPreviewPane extends HTMLElement {
     else store.update({ zoomLevel: 1, panX: 0, panY: 0 });
   }
 
+  /**
+   * Mark the current render as stale (compilation failed, so the pane is
+   * still showing the last good result). The artwork stays visible for
+   * context but is dimmed with a badge so it can't masquerade as the
+   * current program's output — a stale preview with stale injected fonts
+   * previously read as "my change worked" when it hadn't compiled at all.
+   */
+  setStale(stale: boolean): void {
+    this.previewContainer?.classList.toggle('stale', stale);
+  }
+
   showLoading(): void {
     (this.shadowRoot!.querySelector('#loading-overlay') as HTMLElement).style.display = 'flex';
   }
@@ -1110,6 +1121,36 @@ export class SvgPreviewPane extends HTMLElement {
           cursor: grab;
         }
 
+        /* Stale state: compilation failed, so the pane still shows the last
+           good render. Dim it and show a badge so it can't be mistaken for
+           the current program's output. */
+        #preview-container.stale #preview-frame {
+          opacity: 0.45;
+          filter: grayscale(0.35);
+          transition: opacity 0.15s ease, filter 0.15s ease;
+        }
+        #stale-badge {
+          display: none;
+          position: absolute;
+          top: 0.75rem;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 15;
+          pointer-events: none;
+          color: var(--text-primary, #1a1a2e);
+          background: var(--bg-elevated, rgba(255, 255, 255, 0.92));
+          border: 1px solid var(--border-color, #d0d0e0);
+          border-radius: var(--radius-md, 8px);
+          box-shadow: var(--shadow-sm);
+          padding: 0.3rem 0.75rem;
+          font-size: 0.75rem;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+        #preview-container.stale #stale-badge {
+          display: block;
+        }
+
         #preview-container.panning {
           cursor: grabbing;
         }
@@ -1337,6 +1378,7 @@ export class SvgPreviewPane extends HTMLElement {
              so srcdoc is set before insertion (avoids the about:blank phase
              warning). See playground/utils/preview-iframe.ts. -->
         <div id="scroll-hint"><span></span></div>
+        <div id="stale-badge">Stale preview — fix errors to update</div>
         <div id="loading-overlay">
           <div class="loading-spinner"></div>
         </div>

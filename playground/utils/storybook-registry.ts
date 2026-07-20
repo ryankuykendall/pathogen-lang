@@ -107,6 +107,10 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'Empty',
         props: { pathData: '' },
       },
+      {
+        name: 'Stale (compile error)',
+        props: { pathData: 'M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100', stale: true },
+      },
     ],
     controls: [
       {
@@ -117,6 +121,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
       },
       { name: 'width', type: 'number', label: 'Width', default: 200, min: 50, max: 1000 },
       { name: 'height', type: 'number', label: 'Height', default: 200, min: 50, max: 1000 },
+      { name: 'stale', type: 'boolean', label: 'Stale (compile error)', default: false },
     ],
     render: (container, props, controls) => {
       // Need to import store for svg-preview-pane
@@ -136,10 +141,14 @@ layer('hex').apply { circle(60, 100, 40) }`,
         // Give time for component to initialize
         setTimeout(() => {
           (preview as unknown as { pathData: string }).pathData = (props.pathData as string) || '';
+          if (props.stale) (preview as unknown as { setStale(s: boolean): void }).setStale(true);
         }, 100);
 
         controls.on('pathData', (value) => {
           (preview as unknown as { pathData: unknown }).pathData = value;
+        });
+        controls.on('stale', (value) => {
+          (preview as unknown as { setStale(s: boolean): void }).setStale(Boolean(value));
         });
         controls.on('width', (value) => {
           store.set('width', value);

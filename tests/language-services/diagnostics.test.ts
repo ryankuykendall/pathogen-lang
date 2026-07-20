@@ -232,6 +232,17 @@ describe('getDiagnostics', () => {
   });
 
   describe('contextual error messages', () => {
+    it("reports did-you-mean for '@fontFamily' (missing space after @font)", () => {
+      const diags = diagnose('@fontFamily;\nM 0 0');
+      expect(diags).toHaveLength(1);
+      expect(diags[0].message).toBe(
+        "unknown directive '@fontFamily' — did you mean '@font fontFamily'?",
+      );
+      // Anchored to the directive, not the top of the file.
+      expect(diags[0].range.start).toEqual({ line: 0, character: 0 });
+      expect(diags[0].range.end.character).toBeGreaterThan(0);
+    });
+
     it('reports expected = after variable name', () => {
       const diags = diagnose('let x 10;');
       expect(diags).toHaveLength(1);

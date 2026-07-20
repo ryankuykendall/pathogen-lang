@@ -58,6 +58,8 @@ interface ProbeResult {
   computedFonts: string[];
   errorPanelText: string | null;
   editorCodeHead: string | null;
+  previewStale: boolean | null;
+  staleBadgeVisible: boolean | null;
 }
 
 async function probe(page: Page): Promise<ProbeResult> {
@@ -88,9 +90,17 @@ async function probe(page: Page): Promise<ProbeResult> {
       computedFonts: [],
       errorPanelText: null,
       editorCodeHead: null,
+      previewStale: null,
+      staleBadgeVisible: null,
     };
     const cmContent = deepQuery(document, '.cm-content');
     if (cmContent) result.editorCodeHead = (cmContent.textContent ?? '').slice(0, 120);
+    const container = deepQuery(document, '#preview-container');
+    if (container) {
+      result.previewStale = container.classList.contains('stale');
+      const badge = container.querySelector('#stale-badge');
+      result.staleBadgeVisible = badge ? getComputedStyle(badge).display !== 'none' : null;
+    }
     const iframe = deepQuery(document, 'iframe') as HTMLIFrameElement | null;
     if (iframe?.contentDocument) {
       result.iframeFound = true;
@@ -143,7 +153,7 @@ async function runScenario(name: string, code: string, screenshotPath?: string):
     for (let i = 0; i < 30; i++) {
       await new Promise((r) => setTimeout(r, 500));
       result = await probe(page);
-      if (result.textFontFamilies.length > 0) break;
+      if (result.textFontFamilies.length > 0 || result.previewStale === true) break;
     }
 
     console.log('editor code head:', result?.editorCodeHead ?? '(no editor)');
@@ -157,6 +167,7 @@ async function runScenario(name: string, code: string, screenshotPath?: string):
     );
     console.log('text font-family attrs:', result?.textFontFamilies);
     console.log('computed fontFamily:', result?.computedFonts);
+    console.log('preview stale:', result?.previewStale, '| badge visible:', result?.staleBadgeVisible);
     if (result?.errorPanelText) console.log('error panel:', result.errorPanelText);
     // Screenshots are opt-in (--screenshots): page.screenshot hangs
     // indefinitely under headless Chrome on this host (reproduced against a
@@ -181,4 +192,9 @@ await runScenario(
   'literal quoted "fontFamily" (mystery repro, cold)',
   LITERAL_PROGRAM,
   'project-docs/font-variable-resolution/playground-literal-fontfamily-cold.png',
+);
+await runScenario(
+  'compile error marks the preview stale',
+  'let broken = ;\nM 0 0',
+  'project-docs/font-variable-resolution/playground-stale-marker.png',
 );

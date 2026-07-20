@@ -1306,8 +1306,10 @@ function buildFontDirective(cursor: TreeCursor, source: string): FontDirective {
       // as `@font` + `Family`. Require whitespace before an identifier source.
       if (cursor.from === directiveFrom + '@font'.length) {
         const typed = source.slice(directiveFrom, cursor.to);
+        // `@fontFamily` was most likely meant as `@font fontFamily` — suggest
+        // the full typed name (minus `@`), not the `Family` remainder token.
         throw new Error(
-          `Parse error at line ${nodeLoc.line}: unknown directive '${typed}' — did you mean '@font ${text(cursor, source)}'?`,
+          `Parse error at line ${nodeLoc.line}, column ${nodeLoc.column}: unknown directive '${typed}' — did you mean '@font ${typed.slice(1)}'?`,
         );
       }
       fontSource = text(cursor, source);

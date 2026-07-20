@@ -170,6 +170,14 @@ The user's session had parse errors (`@font fontFamily;`) interleaved with
 edits, making a stale-preview misread likely. **Cold repro (2026-07-20)
 confirms the literal case does NOT render Noto Sans** — no fetch, fallback
 rendering — so the observation required warm state. With `@font <identifier>`
-now parsing, the exact triggering sequence no longer exists. The generic
-stale-preview-on-error behavior remains; clearing/labeling stale previews is
-a separate, small change pending user sign-off.
+now parsing, the exact triggering sequence no longer exists.
+
+**Follow-up shipped (user-approved, same day)**: on compile error the
+preview pane now dims the kept render and shows a "Stale preview — fix
+errors to update" badge (`setStale` on svg-preview-pane, toggled by
+workspace-view's compile error/success paths; storybook story + control;
+jsdom unit test + E2E scenario 3 in the debug script). Also shipped: the
+`@fontFamily` adjacency-guard message now carries line+column and suggests
+the full intended name (`@font fontFamily`), so `getDiagnostics` surfaces
+it as a properly-anchored editor diagnostic — closing the deferred
+diagnostics gap from the review round.
