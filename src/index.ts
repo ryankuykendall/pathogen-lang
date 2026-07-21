@@ -6,6 +6,8 @@ import type { CompileResult } from './evaluator';
 export { parse, parseWithComments, parseLezer, lezerParser } from './parser';
 export { resolveFontDirectives } from './parser/font-directives';
 export type { ResolvedFontDirective, FontDirectiveError } from './parser/font-directives';
+export { highlightPathogenTokens } from './highlight';
+export type { HighlightToken } from './highlight';
 export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated, BUILTIN_ENUMS } from './evaluator';
 export { stdlib } from './stdlib';
 export { generateSvg } from './svg-generator';

@@ -7,7 +7,8 @@ import { copyURL } from '../utils/url-state.js';
 
 export class PlaygroundHeader extends HTMLElement {
   private _unsubscribe: (() => void) | null = null;
-  private _copying: boolean = false;
+
+  private _copying = false;
 
   constructor() {
     super();
@@ -39,8 +40,8 @@ export class PlaygroundHeader extends HTMLElement {
   }
 
   updateToggleStates(): void {
-    const annotatedToggle = this.shadowRoot!.querySelector('#annotated-toggle') as HTMLElement | null;
-    const consoleToggle = this.shadowRoot!.querySelector('#console-toggle') as HTMLElement | null;
+    const annotatedToggle = this.shadowRoot!.querySelector('#annotated-toggle');
+    const consoleToggle = this.shadowRoot!.querySelector('#console-toggle');
 
     if (annotatedToggle) {
       annotatedToggle.classList.toggle('active', store.get('annotatedOpen') as boolean);
@@ -141,8 +142,8 @@ export class PlaygroundHeader extends HTMLElement {
 
   setupEventListeners(): void {
     // Export file
-    this.shadowRoot!.querySelector('#export-file')?.addEventListener('click', () => {
-      this.dispatchEvent(new CustomEvent('export-file', { bubbles: true, composed: true }));
+    this.shadowRoot!.querySelector('#export')?.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('open-export', { bubbles: true, composed: true }));
     });
 
     // Copy workspace
@@ -170,7 +171,7 @@ export class PlaygroundHeader extends HTMLElement {
   }
 
   showCopyFeedback(): void {
-    const feedback = this.shadowRoot!.querySelector('#copy-feedback') as HTMLElement | null;
+    const feedback = this.shadowRoot!.querySelector('#copy-feedback');
     if (feedback) {
       feedback.classList.add('visible');
       setTimeout(() => feedback.classList.remove('visible'), 2000);
@@ -386,7 +387,7 @@ export class PlaygroundHeader extends HTMLElement {
         <div class="header-right">
           <button id="copy-url" class="secondary-btn">Copy URL</button>
           <span id="copy-feedback">Copied!</span>
-          <button id="export-file" class="secondary-btn" title="Export to file (Ctrl+S)">Export</button>
+          <button id="export" class="secondary-btn" title="Export as SVG, PNG, or PDF (Ctrl+Shift+E)">Export</button>
           <button id="copy-workspace" class="secondary-btn" title="Duplicate this workspace" style="display: ${workspaceId ? 'inline-block' : 'none'}">Copy Workspace</button>
         </div>
       </div>

@@ -149,6 +149,40 @@ describe('outlineSvgText — layout', () => {
     expect(xNormal - xSpaced).toBeGreaterThan(10);
   });
 
+  it('outlines highlighted-code lines: multi-tspan runs with per-token fills', async () => {
+    // The export legend's highlighted code block: each line's FIRST tspan
+    // carries x (+ dy after line 0); sibling tspans continue the pen and
+    // carry their own fill attribute.
+    const { svg, result } = await outline(
+      `<text x="10" y="20" font-family="Inter" font-size="12" fill="#1c1722" style="white-space: pre">` +
+        `<tspan x="10" fill="#6d3aa6">let</tspan><tspan> rings = </tspan><tspan fill="#d97a6e">5</tspan>` +
+        `<tspan x="10" dy="14" fill="#9087a0">// note</tspan>` +
+        `</text>`,
+    );
+    expect(result.warnings).toEqual([]);
+    const paths = svg.querySelectorAll('g[data-outlined-text] path');
+    expect(paths).toHaveLength(4);
+
+    // Per-token fills survive (group carries the base #1c1722)
+    expect(svg.querySelector('g[data-outlined-text]')!.getAttribute('fill')).toBe('#1c1722');
+    expect(paths[0].getAttribute('fill')).toBe('#6d3aa6');
+    expect(paths[1].getAttribute('fill')).toBeNull();
+    expect(paths[2].getAttribute('fill')).toBe('#d97a6e');
+    expect(paths[3].getAttribute('fill')).toBe('#9087a0');
+
+    // Pen advances across the first line's three runs…
+    const x0 = firstMove(paths[0]).x;
+    const x1 = firstMove(paths[1]).x;
+    const x2 = firstMove(paths[2]).x;
+    expect(x1).toBeGreaterThan(x0);
+    expect(x2).toBeGreaterThan(x1);
+
+    // …and the second line resets to x=10, one line-gap lower.
+    const line2 = firstMove(paths[3]);
+    expect(line2.x).toBeLessThan(x1);
+    expect(line2.y).toBeGreaterThan(firstMove(paths[0]).y + 8);
+  });
+
   it('preserves leading whitespace in white-space: pre runs', async () => {
     const flush = await outline(
       `<text x="10" y="50" font-family="Inter" font-size="12" style="white-space: pre"><tspan x="10">code</tspan></text>`,

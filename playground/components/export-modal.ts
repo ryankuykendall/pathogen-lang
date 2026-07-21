@@ -1,7 +1,7 @@
-// Export Legend Modal - Full-screen overlay for exporting SVG with an embedded legend
+// Export Modal - Full-screen overlay: the single export workflow for a
+// workspace (SVG / PNG / PDF, optional legend, brand watermark).
 // Opens via custom event, not routed. Component-local state (not persisted in store).
 
-import { store } from '../state/store.js';
 import { createSvgSnapshot } from '../utils/svg-snapshot.js';
 import {
   PAGE_PRESETS,
@@ -10,22 +10,22 @@ import {
   computePdfLayout,
   convertUnit,
   CROP_MARK_WIDTH_PT,
-  type PdfLayout,
-  type PdfLayoutInput,
-  type Unit,
 } from '../utils/pdf-page-layout.js';
+import type { PdfLayout, PdfLayoutInput, Unit } from '../utils/pdf-page-layout.js';
 import {
   coverManifestEntries,
   coverNotes,
   coverPageSize,
   coverTechnicalLine,
   previewFitRect,
-  type CoverManifestEntry,
-  type CoverPageSize,
 } from '../utils/pdf-cover-sheet.js';
+import type { CoverManifestEntry, CoverPageSize } from '../utils/pdf-cover-sheet.js';
 import { normalizeSvgPaintColors, resolveCssColorToHex } from '../utils/svg-pdf-colors.js';
 import { outlineSvgText } from '../utils/svg-text-outliner.js';
-import styles from './export-legend-modal.css';
+import { CODE_PRINT_COLORS, CODE_PRINT_DEFAULT } from '../utils/code-print-palette.js';
+import { layoutCodeLines } from '../utils/legend-code-tokens.js';
+import type { CodeToken } from '../utils/legend-code-tokens.js';
+import styles from './export-modal.css';
 import './shared/pathogen-color-input.js';
 
 // Accent color used for legend border and resize handle (matches app theme)
@@ -43,6 +43,9 @@ const ASPECT_LOCK_ICONS = `
 const RASTER_DPI = 300;
 const RASTER_MAX_SIDE_PX = 8192;
 
+/** Hard cap for PNG export dimensions (canvas element limit). */
+const PNG_MAX_SIDE_PX = 16384;
+
 interface LegendFormData {
   name: string;
   description: string;
@@ -57,7 +60,19 @@ interface ExportOverrides {
 }
 
 interface ExportSettings {
-  format: 'svg' | 'pdf';
+  format: 'svg' | 'png' | 'pdf';
+  /**
+   * Embed the legend card (title/creator/date/description/code). Reset to
+   * false on every open() — the legend is opt-in per export.
+   */
+  includeLegend: boolean;
+  /** Color the legend's code listing with the print palette. */
+  highlightCode: boolean;
+  /** PNG output scale relative to the viewBox, or 'custom' (pixel width). */
+  pngScale: number | 'custom';
+  pngCustomWidth: number;
+  /** Omit the workspace background from the PNG. */
+  pngTransparent: boolean;
   /** 'match' | 'custom' | a PAGE_PRESETS id */
   sizing: string;
   orientation: 'portrait' | 'landscape';
@@ -135,50 +150,64 @@ interface WrappedTextResult {
 
 /** Minimal structural typing for the lazily-imported jsPDF instance. */
 interface JsPdfDoc {
-  setFillColor(color: string): void;
-  setDrawColor(r: number, g: number, b: number): void;
-  setLineWidth(width: number): void;
-  rect(x: number, y: number, w: number, h: number, style: string): void;
-  line(x1: number, y1: number, x2: number, y2: number): void;
-  addImage(data: Uint8Array, format: string, x: number, y: number, w: number, h: number): void;
-  addPage(format: [number, number], orientation: 'portrait' | 'landscape'): void;
-  output(type: 'blob'): Blob;
+  setFillColor: (color: string) => void;
+  setDrawColor: (r: number, g: number, b: number) => void;
+  setLineWidth: (width: number) => void;
+  rect: (x: number, y: number, w: number, h: number, style: string) => void;
+  line: (x1: number, y1: number, x2: number, y2: number) => void;
+  addImage: (data: Uint8Array, format: string, x: number, y: number, w: number, h: number) => void;
+  addPage: (format: [number, number], orientation: 'portrait' | 'landscape') => void;
+  output: (type: 'blob') => Blob;
 }
 
-class ExportLegendModal extends HTMLElement {
+class ExportModal extends HTMLElement {
   static _fontCache: Record<string, string> = {};
 
   // Zoom/pan state (independent of workspace)
-  private _zoom: number = 1;
-  private _panX: number = 0;
-  private _panY: number = 0;
-  private _isPanning: boolean = false;
-  private _panStartX: number = 0;
-  private _panStartY: number = 0;
+  private _zoom = 1;
+
+  private _panX = 0;
+
+  private _panY = 0;
+
+  private _isPanning = false;
+
+  private _panStartX = 0;
+
+  private _panStartY = 0;
 
   // Legend drag state
-  private _isDragging: boolean = false;
-  private _dragStartX: number = 0;
-  private _dragStartY: number = 0;
-  private _legendX: number = 0;
-  private _legendY: number = 0;
+  private _isDragging = false;
+
+  private _dragStartX = 0;
+
+  private _dragStartY = 0;
+
+  private _legendX = 0;
+
+  private _legendY = 0;
 
   // Legend resize state
-  private _isResizing: boolean = false;
-  private _resizeStartX: number = 0;
-  private _resizeStartWidth: number = 0;
-  private _legendWidth: number = 560;
+  private _isResizing = false;
+
+  private _resizeStartX = 0;
+
+  private _resizeStartWidth = 0;
+
+  private _legendWidth = 560;
 
   // SVG canvas dimensions (from store)
-  private _canvasWidth: number = 200;
-  private _canvasHeight: number = 200;
+  private _canvasWidth = 200;
+
+  private _canvasHeight = 200;
 
   // Scale factor: all legend dimensions are multiplied by this
-  private _scaleFactor: number = 1;
+  private _scaleFactor = 1;
 
   // Snap-to-grid
-  private _snapEnabled: boolean = true;
-  private _snapSize: number = 10;
+  private _snapEnabled = true;
+
+  private _snapSize = 10;
 
   // Form data
   private _formData: LegendFormData = {
@@ -192,11 +221,20 @@ class ExportLegendModal extends HTMLElement {
   // Snapshot of workspace state at modal open time
   private _workspaceState: WorkspaceState | null = null;
 
+  // Memoized highlight tokens for the (readonly) code field — the legend
+  // rebuilds on every form keystroke; don't re-parse the source each time.
+  private _tokenCache: { source: string; lines: CodeToken[][] } | null = null;
+
   // Export format + PDF print settings. Sizing/unit/margin choices are sticky
   // for the session; artworkMode, detail, and exportPrecision are re-seeded on
   // every open() (complexity heuristic / match-workspace defaults).
   private _exportSettings: ExportSettings = {
     format: 'svg',
+    includeLegend: false,
+    highlightCode: true,
+    pngScale: 2,
+    pngCustomWidth: 1600,
+    pngTransparent: false,
     sizing: 'match',
     orientation: 'portrait',
     artW: 24,
@@ -221,37 +259,54 @@ class ExportLegendModal extends HTMLElement {
 
   // SVG references
   private _svg: SVGSVGElement | null = null;
+
   private _svgElement: SVGSVGElement | null = null;
 
   // Measured legend heights
-  private _legendBoxHeight: number = 0;
-  private _legendTotalHeight: number = 0;
+  private _legendBoxHeight = 0;
+
+  private _legendTotalHeight = 0;
 
   // Base dimensions (at scale factor 1.0, fits 80 monospace chars)
   private readonly BASE_WIDTH = 560;
+
   private readonly CHAR_WIDTH_FACTOR = 0.6;
 
   // Base (unscaled) typography & spacing
   private readonly BASE_PADDING = 16;
+
   private readonly BASE_LINE_HEIGHT = 18;
+
   private readonly BASE_FONT_SIZE = 13;
+
   private readonly BASE_TITLE_FONT_SIZE = 16;
+
   private readonly BASE_SMALL_FONT_SIZE = 11;
+
   private readonly BASE_BRAND_FONT_SIZE = 9;
+
   private readonly BASE_BORDER_RADIUS = 8;
+
   private readonly BASE_STROKE_WIDTH = 1;
+
   private readonly BASE_HANDLE_SIZE = 14;
+
   private readonly BASE_SEPARATOR_GAP = 10;
+
   private readonly BASE_BRAND_GAP = 5;
 
   // Zoom constants
   private readonly MIN_ZOOM = 0.1;
+
   private readonly MAX_ZOOM = 10;
+
   private readonly ZOOM_STEP = 1.5;
 
   // Document-level event handlers
   private _handleMouseMove: ((e: MouseEvent) => void) | null = null;
+
   private _handleMouseUp: (() => void) | null = null;
+
   private _handleKeydown: ((e: KeyboardEvent) => void) | null = null;
 
   constructor() {
@@ -339,6 +394,11 @@ class ExportLegendModal extends HTMLElement {
     this._exportSettings.coverSheet = complex;
     this._exportSettings.exportPrecision = null;
 
+    // The legend is opt-in per export; the highlight tokens belong to the
+    // previous workspace's source.
+    this._exportSettings.includeLegend = false;
+    this._tokenCache = null;
+
     // Reflect the workspace's compile-time precision in the Match option label.
     const matchOption = this.shadowRoot!.querySelector('#export-precision option[value="match"]');
     if (matchOption) {
@@ -416,10 +476,23 @@ class ExportLegendModal extends HTMLElement {
       background: state.background,
     }) as SVGSVGElement;
 
-    // Build legend first to measure height, then set initial position
+    if (this._exportSettings.includeLegend) {
+      this._appendLegendPositioned(svg);
+    } else {
+      svg.appendChild(this._buildWatermarkGroup());
+    }
+
+    previewArea.appendChild(svg);
+    this._svg = svg;
+    this._updateViewBox();
+  }
+
+  /** Build the legend and place it bottom-right (default position). */
+  _appendLegendPositioned(svg: SVGSVGElement): void {
     const margin = this._s(10);
     this._legendX = 0;
     this._legendY = 0;
+    this._legendWidth = this._computeBaseWidth() * this._scaleFactor;
     const legendG = this._buildLegendGroup();
 
     // Now position at bottom-right using measured height, snapped to grid
@@ -427,10 +500,66 @@ class ExportLegendModal extends HTMLElement {
     this._legendY = this._snap(this._canvasHeight - this._legendTotalHeight - margin);
     legendG.setAttribute('transform', `translate(${this._legendX}, ${this._legendY})`);
     svg.appendChild(legendG);
+  }
 
-    previewArea.appendChild(svg);
-    this._svg = svg;
-    this._updateViewBox();
+  /**
+   * Brand watermark for legend-less exports: the same two-tspan pattern as
+   * the legend footer, tucked into the artwork's bottom-right corner. Fixed
+   * and non-interactive — it IS the export's attribution, shown in the
+   * preview so the download never surprises.
+   */
+  _buildWatermarkGroup(): SVGGElement {
+    const ns = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('id', 'pathogen-watermark');
+
+    const inset = this._s(10);
+    const brandText = this._createBrandText(
+      this._canvasWidth - inset,
+      this._canvasHeight - inset,
+      this._s(this.BASE_BRAND_FONT_SIZE),
+      this._s(this.BASE_SMALL_FONT_SIZE) * 1.2,
+      'end',
+    );
+    g.appendChild(brandText);
+    return g;
+  }
+
+  /**
+   * "Created in pathogen.studio" as one <text> with two tspans (Inter +
+   * Baumans). y is the text baseline. Shared by the legend footer and the
+   * watermark; the PDF cover sheet keeps its own pt-coordinate copy.
+   */
+  _createBrandText(
+    x: number,
+    y: number,
+    brandFontSize: number,
+    pathogenFontSize: number,
+    anchor?: string,
+  ): SVGTextElement {
+    const ns = 'http://www.w3.org/2000/svg';
+    const brandText = document.createElementNS(ns, 'text');
+    brandText.setAttribute('x', String(x));
+    brandText.setAttribute('y', String(y));
+    brandText.setAttribute('dominant-baseline', 'auto');
+    brandText.setAttribute('fill', '#94a3b8');
+    if (anchor) brandText.setAttribute('text-anchor', anchor);
+
+    const brandSpan1 = document.createElementNS(ns, 'tspan');
+    brandSpan1.setAttribute('font-size', String(brandFontSize));
+    brandSpan1.setAttribute('font-family', "'Inter', -apple-system, BlinkMacSystemFont, sans-serif");
+    brandSpan1.textContent = 'Created in';
+
+    const brandSpan2 = document.createElementNS(ns, 'tspan');
+    brandSpan2.setAttribute('font-size', String(pathogenFontSize));
+    brandSpan2.setAttribute('font-weight', '400');
+    brandSpan2.setAttribute('font-family', "'Baumans', cursive");
+    brandSpan2.setAttribute('dx', String(brandFontSize * this.CHAR_WIDTH_FACTOR));
+    brandSpan2.textContent = 'pathogen.studio';
+
+    brandText.appendChild(brandSpan1);
+    brandText.appendChild(brandSpan2);
+    return brandText;
   }
 
   _buildLegendGroup(): SVGGElement {
@@ -556,31 +685,11 @@ class ExportLegendModal extends HTMLElement {
     // Append text elements on top of rect
     elements.forEach((el) => g.appendChild(el));
 
-    // Branding below box
+    // Branding below box — same pattern as the legend-less watermark
     const brandY = boxHeight + brandGap;
     const pathogenFontSize = smallFontSize * 1.2;
-
-    const brandText = document.createElementNS(ns, 'text');
-    brandText.setAttribute('x', String(pad));
-    brandText.setAttribute('y', String(brandY + pathogenFontSize));
-    brandText.setAttribute('dominant-baseline', 'auto');
-    brandText.setAttribute('fill', '#94a3b8');
+    const brandText = this._createBrandText(pad, brandY + pathogenFontSize, brandFontSize, pathogenFontSize);
     brandText.classList.add('legend-brand');
-
-    const brandSpan1 = document.createElementNS(ns, 'tspan');
-    brandSpan1.setAttribute('font-size', String(brandFontSize));
-    brandSpan1.setAttribute('font-family', "'Inter', -apple-system, BlinkMacSystemFont, sans-serif");
-    brandSpan1.textContent = 'Created in';
-
-    const brandSpan2 = document.createElementNS(ns, 'tspan');
-    brandSpan2.setAttribute('font-size', String(pathogenFontSize));
-    brandSpan2.setAttribute('font-weight', '400');
-    brandSpan2.setAttribute('font-family', "'Baumans', cursive");
-    brandSpan2.setAttribute('dx', String(brandFontSize * this.CHAR_WIDTH_FACTOR));
-    brandSpan2.textContent = 'pathogen.studio';
-
-    brandText.appendChild(brandSpan1);
-    brandText.appendChild(brandSpan2);
     g.appendChild(brandText);
 
     // Resize handle (bottom-right corner)
@@ -656,6 +765,25 @@ class ExportLegendModal extends HTMLElement {
     return { el: text, height: totalHeight };
   }
 
+  /**
+   * Highlight tokens for the (readonly) source, memoized per source string.
+   * Returns null when the library bundle predates highlightPathogenTokens or
+   * tokenization throws — the code block falls back to monochrome.
+   */
+  _tokensFor(source: string): CodeToken[][] | null {
+    if (this._tokenCache?.source === source) return this._tokenCache.lines;
+    const tokenize = window.PathogenLang?.highlightPathogenTokens;
+    if (typeof tokenize !== 'function') return null;
+    try {
+      const lines = tokenize(source);
+      this._tokenCache = { source, lines };
+      return lines;
+    } catch (err) {
+      console.warn('Syntax highlighting unavailable for this export:', err);
+      return null;
+    }
+  }
+
   _createCodeBlock(
     code: string,
     x: number,
@@ -670,12 +798,12 @@ class ExportLegendModal extends HTMLElement {
     const maxLines = 128;
     const lineGap = fSize + this._s(2);
 
-    let sourceLines = code.split('\n');
-    let truncated = false;
-    if (sourceLines.length > maxLines) {
-      sourceLines = sourceLines.slice(0, maxLines);
-      truncated = true;
-    }
+    const highlight = this._exportSettings.highlightCode;
+    const lines = layoutCodeLines(code, {
+      maxLines,
+      charsPerLine,
+      tokenLines: highlight ? this._tokensFor(code) : null,
+    });
 
     const text = document.createElementNS(ns, 'text');
     text.setAttribute('x', String(x));
@@ -684,32 +812,31 @@ class ExportLegendModal extends HTMLElement {
     text.setAttribute('font-family', "'Inconsolata', 'Consolas', 'Monaco', monospace");
     text.setAttribute('dominant-baseline', 'hanging');
     text.style.whiteSpace = 'pre';
-    if (opts.color) text.setAttribute('fill', opts.color);
+    const baseFill = highlight ? CODE_PRINT_DEFAULT : opts.color;
+    if (baseFill) text.setAttribute('fill', baseFill);
     if (opts.cls) text.classList.add(opts.cls);
 
-    sourceLines.forEach((line, i) => {
-      const tspan = document.createElementNS(ns, 'tspan');
-      tspan.setAttribute('x', String(x));
-      if (i > 0) tspan.setAttribute('dy', String(lineGap));
-      // Truncate long lines
-      if (line.length > charsPerLine) {
-        tspan.textContent = `${line.slice(0, charsPerLine - 3)}...`;
-      } else {
-        tspan.textContent = line || ' '; // preserve blank lines with a space
-      }
-      text.appendChild(tspan);
+    // One tspan per token. Only each line's FIRST tspan carries x/dy;
+    // followers continue the pen — the layout browsers, svg2pdf, and the
+    // text outliner all agree on. Fills are literal attributes (never CSS
+    // classes/vars) so they survive serialization, rasterization, and
+    // outlining. No italics: the outliner renders upright glyphs.
+    lines.forEach((tokens, i) => {
+      tokens.forEach((tok, j) => {
+        const tspan = document.createElementNS(ns, 'tspan');
+        if (j === 0) {
+          tspan.setAttribute('x', String(x));
+          if (i > 0) tspan.setAttribute('dy', String(lineGap));
+        }
+        if (highlight && tok.cls && CODE_PRINT_COLORS[tok.cls]) {
+          tspan.setAttribute('fill', CODE_PRINT_COLORS[tok.cls]);
+        }
+        tspan.textContent = tok.text;
+        text.appendChild(tspan);
+      });
     });
 
-    if (truncated) {
-      const tspan = document.createElementNS(ns, 'tspan');
-      tspan.setAttribute('x', String(x));
-      tspan.setAttribute('dy', String(lineGap));
-      tspan.textContent = '...';
-      text.appendChild(tspan);
-      sourceLines.push('...');
-    }
-
-    const totalHeight = sourceLines.length > 0 ? fSize + (sourceLines.length - 1) * lineGap : 0;
+    const totalHeight = lines.length > 0 ? fSize + (lines.length - 1) * lineGap : 0;
     return { el: text, height: totalHeight };
   }
 
@@ -754,13 +881,25 @@ class ExportLegendModal extends HTMLElement {
   // --- Legend updates from form ---
 
   _updateLegendFromForm(): void {
+    if (!this._svg) return;
+    this._svg.querySelector('#pathogen-legend')?.remove();
+    if (!this._exportSettings.includeLegend) return;
+
     this._legendWidth = this._computeBaseWidth() * this._scaleFactor;
-
-    const oldLegend = this._svg!.querySelector('#pathogen-legend');
-    if (oldLegend) oldLegend.remove();
-
     const legendG = this._buildLegendGroup();
-    this._svg!.appendChild(legendG);
+    this._svg.appendChild(legendG);
+  }
+
+  /** Swap between legend (default-positioned) and watermark in the preview. */
+  _applyIncludeLegend(): void {
+    if (!this._svg) return;
+    this._svg.querySelector('#pathogen-legend')?.remove();
+    this._svg.querySelector('#pathogen-watermark')?.remove();
+    if (this._exportSettings.includeLegend) {
+      this._appendLegendPositioned(this._svg);
+    } else {
+      this._svg.appendChild(this._buildWatermarkGroup());
+    }
   }
 
   // --- Populate form ---
@@ -815,7 +954,10 @@ class ExportLegendModal extends HTMLElement {
 
   _zoomIn(): void {
     const oldZoom = this._zoom;
-    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * this.ZOOM_STEP, { minZoom: this.MIN_ZOOM, maxZoom: this.MAX_ZOOM });
+    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * this.ZOOM_STEP, {
+      minZoom: this.MIN_ZOOM,
+      maxZoom: this.MAX_ZOOM,
+    });
     this._adjustPanForZoom(oldZoom, this._zoom);
     this._updateViewBox();
     this._updateZoomDisplay();
@@ -823,7 +965,10 @@ class ExportLegendModal extends HTMLElement {
 
   _zoomOut(): void {
     const oldZoom = this._zoom;
-    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom / this.ZOOM_STEP, { minZoom: this.MIN_ZOOM, maxZoom: this.MAX_ZOOM });
+    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom / this.ZOOM_STEP, {
+      minZoom: this.MIN_ZOOM,
+      maxZoom: this.MAX_ZOOM,
+    });
     this._adjustPanForZoom(oldZoom, this._zoom);
     this._updateViewBox();
     this._updateZoomDisplay();
@@ -865,6 +1010,12 @@ class ExportLegendModal extends HTMLElement {
         url: `https://fonts.googleapis.com/css2?family=Baumans&text=${encodeURIComponent('pathogen.studio')}`,
       },
       {
+        // Just the brand line's prefix — the rest of the legend's Inter
+        // text keeps the system-sans fallback, as before.
+        family: 'Inter',
+        url: `https://fonts.googleapis.com/css2?family=Inter&text=${encodeURIComponent('Created in')}`,
+      },
+      {
         family: 'Inconsolata',
         url: `https://fonts.googleapis.com/css2?family=Inconsolata&text=${encodeURIComponent(
           ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~',
@@ -877,8 +1028,8 @@ class ExportLegendModal extends HTMLElement {
     for (const font of fonts) {
       try {
         // Check session cache
-        if (ExportLegendModal._fontCache[font.family]) {
-          fontFaceRules.push(ExportLegendModal._fontCache[font.family]);
+        if (ExportModal._fontCache[font.family]) {
+          fontFaceRules.push(ExportModal._fontCache[font.family]);
           continue;
         }
 
@@ -888,7 +1039,7 @@ class ExportLegendModal extends HTMLElement {
         const css = await cssRes.text();
 
         // Extract src url and format from @font-face rule
-        const srcMatch = css.match(/src:\s*url\(([^)]+)\)\s*format\(['"]([^'"]+)['"]\)/);
+        const srcMatch = /src:\s*url\(([^)]+)\)\s*format\(['"]([^'"]+)['"]\)/.exec(css);
         if (!srcMatch) throw new Error('Could not parse font CSS');
 
         const fontUrl = srcMatch[1];
@@ -915,7 +1066,7 @@ class ExportLegendModal extends HTMLElement {
         // Build @font-face rule with data URI
         const rule = `@font-face {\n  font-family: '${font.family}';\n  src: url(data:${mime};base64,${b64}) format('${fontFormat}');\n}`;
 
-        ExportLegendModal._fontCache[font.family] = rule;
+        ExportModal._fontCache[font.family] = rule;
         fontFaceRules.push(rule);
       } catch (err: unknown) {
         console.warn(`Font embedding failed for ${font.family}:`, err);
@@ -945,20 +1096,26 @@ class ExportLegendModal extends HTMLElement {
     downloadBtn.disabled = true;
 
     try {
-      const isPdf = this._exportSettings.format === 'pdf';
+      const format = this._exportSettings.format;
       // Surface cheap geometry errors before opening the save dialog.
-      if (isPdf) computePdfLayout(this._layoutInput());
+      if (format === 'pdf') computePdfLayout(this._layoutInput());
+      if (format === 'png') this._pngDims();
 
-      const suggestedName = `${this._safeName()}-with-legend.${isPdf ? 'pdf' : 'svg'}`;
+      const suggestedName = `${this._safeName()}.${format}`;
       // Acquire the save target FIRST, while the click's transient user
       // activation is still valid — the export pipeline (font fetches,
       // rasterization, svg2pdf) can easily outlive Chrome's ~5s activation
       // window, after which showSaveFilePicker throws SecurityError.
-      const target = await this._acquireSaveTarget(suggestedName, isPdf);
+      const target = await this._acquireSaveTarget(suggestedName, format);
       if (target === 'cancelled') return;
 
       downloadBtn.textContent = 'Preparing...';
-      const blob = isPdf ? await this._downloadPdf(downloadBtn) : await this._downloadSvg();
+      const blob =
+        format === 'pdf'
+          ? await this._downloadPdf(downloadBtn)
+          : format === 'png'
+            ? await this._downloadPng()
+            : await this._downloadSvg();
       await this._writeBlob(blob, suggestedName, target);
     } catch (err: unknown) {
       if ((err as Error).name !== 'AbortError') {
@@ -989,17 +1146,22 @@ class ExportLegendModal extends HTMLElement {
    * file handle, 'cancelled' (user dismissed — skip the export entirely), or
    * null (API unavailable or refused → anchor-download fallback at write time).
    */
-  async _acquireSaveTarget(suggestedName: string, isPdf: boolean): Promise<FileSystemFileHandle | 'cancelled' | null> {
+  async _acquireSaveTarget(
+    suggestedName: string,
+    format: 'svg' | 'png' | 'pdf',
+  ): Promise<FileSystemFileHandle | 'cancelled' | null> {
     if (!('showSaveFilePicker' in window)) return null;
+    const fileTypes = {
+      svg: { description: 'SVG Files', accept: { 'image/svg+xml': ['.svg'] } },
+      png: { description: 'PNG Files', accept: { 'image/png': ['.png'] } },
+      pdf: { description: 'PDF Files', accept: { 'application/pdf': ['.pdf'] } },
+    } as const;
     try {
-      return await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
+      return await (
+        window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }
+      ).showSaveFilePicker({
         suggestedName,
-        types: [
-          {
-            description: isPdf ? 'PDF Files' : 'SVG Files',
-            accept: isPdf ? { 'application/pdf': ['.pdf'] } : { 'image/svg+xml': ['.svg'] },
-          },
-        ],
+        types: [fileTypes[format]],
       });
     } catch (err: unknown) {
       if ((err as Error).name === 'AbortError') return 'cancelled';
@@ -1036,10 +1198,10 @@ class ExportLegendModal extends HTMLElement {
     let removed = 0;
     let total = 0;
     for (const el of Array.from(clone.querySelectorAll('path[d]'))) {
-      // Legend geometry is never touched, and defs-scoped paths (markers,
-      // clip paths, patterns) live in their own local coordinate systems —
-      // the artwork-derived epsilon/precision have no meaning there.
-      if (el.closest('#pathogen-legend, defs, marker, clipPath, pattern')) continue;
+      // Legend/watermark geometry is never touched, and defs-scoped paths
+      // (markers, clip paths, patterns) live in their own local coordinate
+      // systems — the artwork-derived epsilon/precision have no meaning there.
+      if (el.closest('#pathogen-legend, #pathogen-watermark, defs, marker, clipPath, pattern')) continue;
       try {
         let d = el.getAttribute('d')!;
         let pathRemoved = 0;
@@ -1075,6 +1237,45 @@ class ExportLegendModal extends HTMLElement {
     const serializer = new XMLSerializer();
     const svgString = `<?xml version="1.0" encoding="UTF-8"?>\n${serializer.serializeToString(clone)}`;
     return new Blob([svgString], { type: 'image/svg+xml' });
+  }
+
+  /** PNG output dimensions from the scale settings. Throws on invalid sizes. */
+  _pngDims(): { w: number; h: number } {
+    const s = this._exportSettings;
+    const w = s.pngScale === 'custom' ? Math.round(s.pngCustomWidth) : Math.round(this._canvasWidth * s.pngScale);
+    if (!Number.isFinite(w) || w < 1) {
+      throw new Error('Enter a PNG width of at least 1 px.');
+    }
+    const h = Math.max(1, Math.round(w * (this._canvasHeight / this._canvasWidth)));
+    if (Math.max(w, h) > PNG_MAX_SIDE_PX) {
+      throw new Error(
+        `PNG too large — ${w.toLocaleString()} × ${h.toLocaleString()} px exceeds the ${PNG_MAX_SIDE_PX.toLocaleString()} px per-side limit. Reduce the scale or width.`,
+      );
+    }
+    return { w, h };
+  }
+
+  async _downloadPng(): Promise<Blob> {
+    this._setExportStatus('');
+    const dims = this._pngDims();
+    const clone = this._prepareExportClone();
+    this._optimizeArtworkPaths(clone, null);
+
+    // Transparent export: drop the workspace background rect entirely so
+    // the canvas's own transparency shows through.
+    if (this._exportSettings.pngTransparent) {
+      clone.querySelector('#preview-bg')?.remove();
+    }
+
+    // Fonts must be embedded BEFORE rasterizing — the SVG renders inside an
+    // isolated <img> document where external fetches never happen; data-URI
+    // @font-face is the only way the legend/watermark text gets real fonts.
+    await this._embedFonts(clone);
+
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width', String(this._canvasWidth));
+    clone.setAttribute('height', String(this._canvasHeight));
+    return this._rasterizeSvg(clone, dims.w, dims.h, { type: 'image/png' });
   }
 
   async _downloadPdf(downloadBtn: HTMLButtonElement): Promise<Blob> {
@@ -1213,6 +1414,7 @@ class ExportLegendModal extends HTMLElement {
     // With the cover enabled, page 1 takes the cover format and the artwork
     // page is added after; each jsPDF page carries its own MediaBox.
     const artworkOrientation: 'landscape' | 'portrait' = layout.pageW >= layout.pageH ? 'landscape' : 'portrait';
+    // eslint-disable-next-line new-cap -- jsPDF's exported constructor name
     const doc = new jsPDF({
       orientation: coverEnabled ? 'portrait' : artworkOrientation,
       unit: 'pt',
@@ -1302,12 +1504,20 @@ class ExportLegendModal extends HTMLElement {
    * as flattened JPEG rather than PNG (jsPDF's RGBA-PNG path decodes and
    * splits channels in JS, which is prohibitive at print resolution).
    */
-  async _rasterizeArtwork(clone: SVGSVGElement, layout: PdfLayout, canvasWidth: number, canvasHeight: number, background: string | undefined): Promise<Uint8Array> {
+  async _rasterizeArtwork(
+    clone: SVGSVGElement,
+    layout: PdfLayout,
+    canvasWidth: number,
+    canvasHeight: number,
+    background: string | undefined,
+  ): Promise<Uint8Array> {
     const ns = 'http://www.w3.org/2000/svg';
     const legend = clone.querySelector('#pathogen-legend');
+    const watermark = clone.querySelector('#pathogen-watermark');
 
     const artOnly = clone.cloneNode(true) as SVGSVGElement;
     artOnly.querySelector('#pathogen-legend')?.remove();
+    artOnly.querySelector('#pathogen-watermark')?.remove();
     artOnly.setAttribute('xmlns', ns);
     artOnly.setAttribute('width', String(canvasWidth));
     artOnly.setAttribute('height', String(canvasHeight));
@@ -1320,21 +1530,22 @@ class ExportLegendModal extends HTMLElement {
 
     const bytes = await this._rasterizeSvgToJpeg(artOnly, pxW, pxH, background);
 
-    // Only the legend remains for the vector pass.
+    // Only the legend/watermark overlays remain for the vector pass — the
+    // brand line stays crisp vector even when the artwork is a raster.
     while (clone.firstChild) clone.removeChild(clone.firstChild);
     if (legend) clone.appendChild(legend);
+    if (watermark) clone.appendChild(watermark);
 
     return bytes;
   }
 
-  /** Serialize an SVG element and rasterize it to flattened JPEG bytes. */
-  async _rasterizeSvgToJpeg(
+  /** Serialize an SVG element and rasterize it to an image Blob. */
+  async _rasterizeSvg(
     svg: SVGSVGElement,
     pxW: number,
     pxH: number,
-    background: string | undefined,
-    quality = 0.95,
-  ): Promise<Uint8Array> {
+    opts: { type: 'image/jpeg' | 'image/png'; quality?: number; background?: string },
+  ): Promise<Blob> {
     const svgString = new XMLSerializer().serializeToString(svg);
     const url = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml' }));
     try {
@@ -1350,19 +1561,37 @@ class ExportLegendModal extends HTMLElement {
       canvas.height = pxH;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not rasterize the artwork — a canvas drawing context was unavailable');
-      // Flatten onto the page background (white paper fallback) — JPEG has no
-      // alpha, and the artwork sits on the printed page anyway.
-      ctx.fillStyle = resolveCssColorToHex(background) ?? '#ffffff';
-      ctx.fillRect(0, 0, pxW, pxH);
+      if (opts.type === 'image/jpeg') {
+        // Flatten onto the page background (white paper fallback) — JPEG has
+        // no alpha, and the artwork sits on the printed page anyway. PNG
+        // keeps the canvas transparent; any background rect is in the SVG.
+        ctx.fillStyle = resolveCssColorToHex(opts.background) ?? '#ffffff';
+        ctx.fillRect(0, 0, pxW, pxH);
+      }
       ctx.drawImage(img, 0, 0, pxW, pxH);
 
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Artwork rasterization produced no image'))), 'image/jpeg', quality);
+      return await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error('Artwork rasterization produced no image'))),
+          opts.type,
+          opts.quality,
+        );
       });
-      return new Uint8Array(await blob.arrayBuffer());
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+
+  /** Rasterize to flattened JPEG bytes (PDF pipeline: raw bytes, never data URLs). */
+  async _rasterizeSvgToJpeg(
+    svg: SVGSVGElement,
+    pxW: number,
+    pxH: number,
+    background: string | undefined,
+    quality = 0.95,
+  ): Promise<Uint8Array> {
+    const blob = await this._rasterizeSvg(svg, pxW, pxH, { type: 'image/jpeg', quality, background });
+    return new Uint8Array(await blob.arrayBuffer());
   }
 
   /**
@@ -1402,7 +1631,7 @@ class ExportLegendModal extends HTMLElement {
         .map((w) => (w.length > maxChars ? (w.match(new RegExp(`.{1,${maxChars}}`, 'g')) ?? [w]).join(' ') : w))
         .join(' ');
 
-    const svg = document.createElementNS(ns, 'svg') as SVGSVGElement;
+    const svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('xmlns', ns);
     svg.setAttribute('viewBox', `0 0 ${page.w} ${page.h}`);
 
@@ -1423,7 +1652,9 @@ class ExportLegendModal extends HTMLElement {
     // Meta: creator · date (single line, truncated to the content width)
     const meta = [opts.creator.trim(), opts.date.trim()].filter((s) => s.length > 0).join(' · ');
     if (meta) {
-      svg.appendChild(this._createText(fitLine(meta, fitChars(contentW, 10)), M, y, { fontSize: 10, color: '#64748b' }));
+      svg.appendChild(
+        this._createText(fitLine(meta, fitChars(contentW, 10)), M, y, { fontSize: 10, color: '#64748b' }),
+      );
       y += 18;
     }
 
@@ -1470,14 +1701,20 @@ class ExportLegendModal extends HTMLElement {
     // Manifest rows (values truncated to the value column's width)
     const valueChars = fitChars(page.w - M - (M + 146), 10.5);
     for (const entry of opts.entries) {
-      svg.appendChild(this._createText(entry.label.toUpperCase(), M, y, { fontSize: 8.5, fontWeight: '600', color: '#94a3b8' }));
-      svg.appendChild(this._createText(fitLine(entry.value, valueChars), M + 146, y, { fontSize: 10.5, color: '#111827' }));
+      svg.appendChild(
+        this._createText(entry.label.toUpperCase(), M, y, { fontSize: 8.5, fontWeight: '600', color: '#94a3b8' }),
+      );
+      svg.appendChild(
+        this._createText(fitLine(entry.value, valueChars), M + 146, y, { fontSize: 10.5, color: '#111827' }),
+      );
       y += 17;
     }
     y += 14;
 
     // Technical line
-    svg.appendChild(this._createText(fitLine(opts.technicalLine, fitChars(contentW, 9.5)), M, y, { fontSize: 9.5, color: '#64748b' }));
+    svg.appendChild(
+      this._createText(fitLine(opts.technicalLine, fitChars(contentW, 9.5)), M, y, { fontSize: 9.5, color: '#64748b' }),
+    );
     y += 18;
 
     // Notes (bullet + wrapped lines)
@@ -1556,14 +1793,14 @@ class ExportLegendModal extends HTMLElement {
   }
 
   _setExportStatus(message: string, isError = false): void {
-    const status = this.shadowRoot!.querySelector('.export-status') as HTMLElement | null;
+    const status = this.shadowRoot!.querySelector('.export-status');
     if (status) {
       status.textContent = message;
       status.classList.toggle('error', isError && message.length > 0);
     }
   }
 
-  /** Sync every PDF control (visibility, values, unit suffixes) from _exportSettings. */
+  /** Sync every export control (visibility, values, unit suffixes) from _exportSettings. */
   _updatePdfUi(): void {
     const root = this.shadowRoot!;
     const s = this._exportSettings;
@@ -1572,8 +1809,25 @@ class ExportLegendModal extends HTMLElement {
       btn.classList.toggle('active', (btn as HTMLElement).dataset.format === s.format);
     });
     (root.querySelector('.pdf-settings') as HTMLElement).hidden = s.format !== 'pdf';
+    (root.querySelector('.png-settings') as HTMLElement).hidden = s.format !== 'png';
     const downloadBtn = root.querySelector('.download-btn') as HTMLButtonElement;
-    downloadBtn.innerHTML = s.format === 'pdf' ? 'Download PDF &#x2193;' : 'Download SVG &#x2193;';
+    downloadBtn.innerHTML = `Download ${s.format.toUpperCase()} &#x2193;`;
+
+    // Legend on/off: the fields, the switch, and the snap controls (which
+    // only matter while a legend can be dragged).
+    (root.querySelector('.legend-settings') as HTMLElement).hidden = !s.includeLegend;
+    const legendSwitch = root.querySelector('#include-legend') as HTMLButtonElement;
+    legendSwitch.classList.toggle('active', s.includeLegend);
+    legendSwitch.setAttribute('aria-checked', String(s.includeLegend));
+    (root.querySelector('.snap-group') as HTMLElement).hidden = !s.includeLegend;
+    (root.querySelector('#legend-highlight') as HTMLInputElement).checked = s.highlightCode;
+
+    // PNG controls
+    (root.querySelector('#png-scale') as HTMLSelectElement).value = String(s.pngScale);
+    (root.querySelector('#png-width-row') as HTMLElement).hidden = s.pngScale !== 'custom';
+    (root.querySelector('#png-width') as HTMLInputElement).value = String(s.pngCustomWidth);
+    (root.querySelector('#png-transparent') as HTMLInputElement).checked = s.pngTransparent;
+    this._updatePngSummary();
 
     (root.querySelector('#pdf-page-size') as HTMLSelectElement).value = s.sizing;
     (root.querySelector('#pdf-unit') as HTMLSelectElement).value = s.unit;
@@ -1611,8 +1865,22 @@ class ExportLegendModal extends HTMLElement {
     this._updatePdfSummary();
   }
 
+  _updatePngSummary(): void {
+    const summary = this.shadowRoot!.querySelector('#png-summary');
+    if (!summary) return;
+    if (this._exportSettings.format !== 'png') return;
+    try {
+      const { w, h } = this._pngDims();
+      summary.textContent = `Artwork ${this._canvasWidth} × ${this._canvasHeight} units — exports at ${w.toLocaleString()} × ${h.toLocaleString()} px.`;
+      summary.classList.remove('error');
+    } catch (err: unknown) {
+      summary.textContent = (err as Error).message;
+      summary.classList.add('error');
+    }
+  }
+
   _updatePdfSummary(): void {
-    const summary = this.shadowRoot!.querySelector('#pdf-summary') as HTMLElement | null;
+    const summary = this.shadowRoot!.querySelector('#pdf-summary');
     if (!summary) return;
     const s = this._exportSettings;
     if (s.format !== 'pdf') return;
@@ -1650,7 +1918,7 @@ class ExportLegendModal extends HTMLElement {
     root.querySelector('.cancel-btn')!.addEventListener('click', () => this.close());
 
     // Download
-    root.querySelector('.download-btn')!.addEventListener('click', () => this._download());
+    root.querySelector('.download-btn')!.addEventListener('click', async () => this._download());
 
     // Zoom controls
     root.querySelector('.zoom-in')!.addEventListener('click', () => this._zoomIn());
@@ -1768,7 +2036,10 @@ class ExportLegendModal extends HTMLElement {
         const dampening = 0.002;
         const delta = -e.deltaY * dampening;
         const oldZoom = this._zoom;
-        this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * (1 + delta), { minZoom: this.MIN_ZOOM, maxZoom: this.MAX_ZOOM });
+        this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * (1 + delta), {
+          minZoom: this.MIN_ZOOM,
+          maxZoom: this.MAX_ZOOM,
+        });
         this._adjustPanForZoom(oldZoom, this._zoom);
         this._updateViewBox();
         this._updateZoomDisplay();
@@ -1783,10 +2054,39 @@ class ExportLegendModal extends HTMLElement {
 
     root.querySelectorAll('.format-toggle button').forEach((btn) => {
       btn.addEventListener('click', () => {
-        s.format = (btn as HTMLElement).dataset.format as 'svg' | 'pdf';
+        s.format = (btn as HTMLElement).dataset.format as 'svg' | 'png' | 'pdf';
         this._setExportStatus('');
         this._updatePdfUi();
       });
+    });
+
+    // Include legend: swap the preview overlay and reveal/hide the fields.
+    (root.querySelector('#include-legend') as HTMLButtonElement).addEventListener('click', () => {
+      s.includeLegend = !s.includeLegend;
+      this._applyIncludeLegend();
+      this._updatePdfUi();
+    });
+
+    (root.querySelector('#legend-highlight') as HTMLInputElement).addEventListener('change', (e: Event) => {
+      s.highlightCode = (e.target as HTMLInputElement).checked;
+      this._updateLegendFromForm();
+    });
+
+    // PNG settings
+    (root.querySelector('#png-scale') as HTMLSelectElement).addEventListener('change', (e: Event) => {
+      const value = (e.target as HTMLSelectElement).value;
+      s.pngScale = value === 'custom' ? 'custom' : Number(value);
+      this._updatePdfUi();
+    });
+
+    (root.querySelector('#png-width') as HTMLInputElement).addEventListener('input', (e: Event) => {
+      const v = parseInt((e.target as HTMLInputElement).value, 10);
+      if (Number.isFinite(v) && v > 0) s.pngCustomWidth = v;
+      this._updatePngSummary();
+    });
+
+    (root.querySelector('#png-transparent') as HTMLInputElement).addEventListener('change', (e: Event) => {
+      s.pngTransparent = (e.target as HTMLInputElement).checked;
     });
 
     (root.querySelector('#pdf-page-size') as HTMLSelectElement).addEventListener('change', (e: Event) => {
@@ -1909,6 +2209,11 @@ class ExportLegendModal extends HTMLElement {
   }
 
   _addDocumentListeners(): void {
+    // Re-entrancy guard: open() can fire while the modal is already open
+    // (Ctrl+Shift+E pressed twice). Overwriting the handler fields without
+    // removing the old listeners would orphan them on `document` forever —
+    // and the arrow-key nudge handler is relative, so duplicates compound.
+    this._removeDocumentListeners();
     this._handleMouseMove = (e: MouseEvent): void => {
       // Legend resize
       if (this._isResizing) {
@@ -1984,7 +2289,7 @@ class ExportLegendModal extends HTMLElement {
         ArrowRight: [1, 0],
       };
       const dir = arrowMap[e.key];
-      if (dir && this._svg) {
+      if (dir && this._svg && this._exportSettings.includeLegend) {
         e.preventDefault();
         const multiplier = e.shiftKey ? 10 : 1;
         const base = this._snapEnabled && this._snapSize > 0 ? this._snapSize : 1;
@@ -2015,10 +2320,45 @@ class ExportLegendModal extends HTMLElement {
       <div class="content">
         <div class="form-panel">
           <div class="form-header">
-            <h2>Export with Legend</h2>
+            <h2>Export</h2>
             <button class="close-btn" title="Close">&times;</button>
           </div>
           <div class="form-scroll">
+          <div class="form-group">
+            <label id="format-label">Format</label>
+            <div class="format-toggle" role="group" aria-labelledby="format-label">
+              <button type="button" class="active" data-format="svg">SVG<span class="fmt-sub">vector file</span></button>
+              <button type="button" data-format="png">PNG<span class="fmt-sub">image</span></button>
+              <button type="button" data-format="pdf">PDF<span class="fmt-sub">print-ready</span></button>
+            </div>
+          </div>
+          <div class="png-settings" hidden>
+            <div class="pdf-row">
+              <label for="png-scale">Scale</label>
+              <select id="png-scale">
+                <option value="1">1&times; &mdash; artwork size</option>
+                <option value="2" selected>2&times;</option>
+                <option value="4">4&times;</option>
+                <option value="custom">Custom width&hellip;</option>
+              </select>
+            </div>
+            <div class="pdf-row" id="png-width-row" hidden>
+              <label for="png-width">Width</label>
+              <span class="unit-input"><input type="number" id="png-width" min="1" step="1"><span class="px-suffix">px</span></span>
+            </div>
+            <p class="size-summary" id="png-summary"></p>
+            <div class="pdf-row check-row">
+              <input type="checkbox" id="png-transparent">
+              <label for="png-transparent">Transparent background</label>
+            </div>
+            <p class="pdf-note">Omits the workspace background color &mdash; for compositing over other designs.</p>
+          </div>
+          <div class="legend-toggle-row">
+            <label for="include-legend">Include legend</label>
+            <button type="button" class="switch" id="include-legend" role="switch" aria-checked="false"></button>
+          </div>
+          <p class="row-note">Adds a title card with your name, notes, and source code. Without it, a small <em>Created in pathogen.studio</em> line marks the corner of the artwork.</p>
+          <div class="legend-settings" hidden>
           <div class="form-group">
             <label for="legend-name">Name</label>
             <input type="text" id="legend-name" placeholder="Workspace name">
@@ -2035,41 +2375,15 @@ class ExportLegendModal extends HTMLElement {
             <label for="legend-creator">Creator</label>
             <input type="text" id="legend-creator" placeholder="Your name">
           </div>
+          <div class="pdf-row check-row">
+            <input type="checkbox" id="legend-highlight" checked>
+            <label for="legend-highlight">Syntax highlighting</label>
+          </div>
+          <p class="row-note">Colors the source listing with Pathogen&rsquo;s print palette &mdash; baked into the file, so it survives PDF outlining and PNG rendering.</p>
           <div class="form-group">
-            <label for="legend-code">SVGX Code</label>
+            <label for="legend-code">Source Code</label>
             <textarea id="legend-code" rows="6" class="code-input" readonly></textarea>
           </div>
-          <details class="advanced-settings">
-            <summary>Advanced Export Settings</summary>
-            <div class="advanced-body">
-              <div class="advanced-row">
-                <label for="export-grid-enabled">Show Grid</label>
-                <input type="checkbox" id="export-grid-enabled">
-              </div>
-              <div class="advanced-row">
-                <label for="export-grid-color">Grid Color</label>
-                <pathogen-color-input id="export-grid-color" compact no-alpha></pathogen-color-input>
-              </div>
-              <div class="advanced-row">
-                <label for="export-precision">Precision</label>
-                <select id="export-precision">
-                  <option value="match" selected>Match workspace</option>
-                  <option value="0">0 decimals</option>
-                  <option value="1">1 decimal</option>
-                  <option value="2">2 decimals</option>
-                  <option value="3">3 decimals</option>
-                  <option value="4">4 decimals</option>
-                </select>
-              </div>
-              <p class="row-note">Trims coordinate decimals in this export only &mdash; smaller files, unchanged appearance. Never adds precision beyond the workspace setting.</p>
-            </div>
-          </details>
-          <div class="form-group">
-            <label id="format-label">Format</label>
-            <div class="format-toggle" role="group" aria-labelledby="format-label">
-              <button type="button" class="active" data-format="svg">SVG<span class="fmt-sub">vector file</span></button>
-              <button type="button" data-format="pdf">PDF<span class="fmt-sub">print-ready</span></button>
-            </div>
           </div>
           <div class="pdf-settings" hidden>
             <div class="pdf-row">
@@ -2151,6 +2465,31 @@ class ExportLegendModal extends HTMLElement {
             <p class="row-note">Adds a letter/A4 job-ticket page with a fast preview &mdash; page 2 is the artwork. Turn off for automated upload portals that require single-page files.</p>
             <p class="pdf-note">Text is converted to vector outlines &mdash; fonts print exactly as shown, at any print shop.</p>
           </div>
+          <details class="advanced-settings">
+            <summary>Advanced Export Settings</summary>
+            <div class="advanced-body">
+              <div class="advanced-row">
+                <label for="export-grid-enabled">Show Grid</label>
+                <input type="checkbox" id="export-grid-enabled">
+              </div>
+              <div class="advanced-row">
+                <label for="export-grid-color">Grid Color</label>
+                <pathogen-color-input id="export-grid-color" compact no-alpha></pathogen-color-input>
+              </div>
+              <div class="advanced-row">
+                <label for="export-precision">Precision</label>
+                <select id="export-precision">
+                  <option value="match" selected>Match workspace</option>
+                  <option value="0">0 decimals</option>
+                  <option value="1">1 decimal</option>
+                  <option value="2">2 decimals</option>
+                  <option value="3">3 decimals</option>
+                  <option value="4">4 decimals</option>
+                </select>
+              </div>
+              <p class="row-note">Trims coordinate decimals in this export only &mdash; smaller files, unchanged appearance. Never adds precision beyond the workspace setting.</p>
+            </div>
+          </details>
           <p class="export-status"></p>
           </div>
           <div class="form-actions">
@@ -2180,6 +2519,6 @@ class ExportLegendModal extends HTMLElement {
   }
 }
 
-customElements.define('export-legend-modal', ExportLegendModal);
+customElements.define('export-modal', ExportModal);
 
-export default ExportLegendModal;
+export default ExportModal;

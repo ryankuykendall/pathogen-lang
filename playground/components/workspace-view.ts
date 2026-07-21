@@ -10,7 +10,7 @@ import './annotated-pane.js';
 import './console-pane.js';
 import './docs-panel.js';
 import './inspector-panel.js';
-import './export-legend-modal.js';
+import './export-modal.js';
 import './playground-footer.js';
 import './playground-main.js';
 import './svg-preview-pane.js';
@@ -30,37 +30,63 @@ import './shared/error-panel.js';
 
 export class WorkspaceView extends HTMLElement {
   private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   private _fileHandle: FileSystemFileHandle | null = null;
-  private _initialized: boolean = false;
+
+  private _initialized = false;
+
   private _routeUnsubscribe: (() => void) | null = null;
-  private _loadingWorkspace: boolean = false;
+
+  private _loadingWorkspace = false;
+
   private _currentWorkspaceId: string | null | undefined = undefined;
 
   // Document-level event handlers (stored for cleanup)
-  private _handleExportFile: (() => void) | null = null;
   private _handleCopyCode: (() => void) | null = null;
+
   private _handleCopySvg: (() => void) | null = null;
+
   private _handleFormatDocument: (() => void) | null = null;
+
   private _handleToggleAnnotated: (() => void) | null = null;
+
   private _handleToggleConsole: (() => void) | null = null;
+
   private _handleToggleInspector: (() => void) | null = null;
+
   private _handleKeydown: ((e: KeyboardEvent) => void) | null = null;
-  private _handleExportLegend: (() => void) | null = null;
+
+  private _handleOpenExport: (() => void) | null = null;
+
   private _handleRefreshPreview: (() => void) | null = null;
+
   private _handleSetThumbnail: (() => void) | null = null;
+
   private _handleRenameWorkspace: (() => void) | null = null;
+
   private _handleCopyDebugInfo: (() => Promise<void>) | null = null;
+
   private _handleThumbnailAutoGenerate: ((e: Event) => void) | null = null;
+
   private _handleBeforeUnload: ((e: BeforeUnloadEvent) => void) | null = null;
+
   private _handleVisibilityChange: (() => void) | null = null;
+
   private _handleEditorBlur: (() => void) | null = null;
+
   private _handleWorkspaceConflict: ((e: Event) => void) | null = null;
+
   private _handleFullscreenChange: ((e: Event) => void) | null = null;
+
   private _multiTabUnsubscribe: (() => void) | null = null;
+
   private _inspectorDataUnsubscribe: (() => void) | null = null;
+
   private _handleLayerVisibilityChange: ((e: Event) => void) | null = null;
+
   private _handleDefsVisibilityChange: ((e: Event) => void) | null = null;
-  private _isPreviewFullscreen: boolean = false;
+
+  private _isPreviewFullscreen = false;
 
   constructor() {
     super();
@@ -142,56 +168,67 @@ export class WorkspaceView extends HTMLElement {
     }
   }
 
-  get editorPane(): HTMLElement & { code: string; initialCode: string; highlightError(line: number, col: number): void; clearError(): void } {
+  get editorPane(): HTMLElement & {
+    code: string;
+    initialCode: string;
+    highlightError: (line: number, col: number) => void;
+    clearError: () => void;
+  } {
     return this.shadowRoot!.querySelector('code-editor-pane') as any;
   }
 
   get previewPane(): HTMLElement & {
-    clear(): void;
-    showLoading(): void;
-    hideLoading(): void;
-    setStale(stale: boolean): void;
-    updateSvgStyles(): void;
-    setLayersWithTiming(layers: unknown[], options: unknown): number;
-    setPathDataWithTiming(path: string): number;
+    clear: () => void;
+    showLoading: () => void;
+    hideLoading: () => void;
+    setStale: (stale: boolean) => void;
+    updateSvgStyles: () => void;
+    setLayersWithTiming: (layers: unknown[], options: unknown) => number;
+    setPathDataWithTiming: (path: string) => number;
     preview: SVGSVGElement | null;
   } {
     return this.shadowRoot!.querySelector('svg-preview-pane') as any;
   }
 
-  get annotatedPane(): HTMLElement & { open(): void; toggle(): void; isOpen: boolean; content: string } {
+  get annotatedPane(): HTMLElement & { open: () => void; toggle: () => void; isOpen: boolean; content: string } {
     return this.shadowRoot!.querySelector('annotated-pane') as any;
   }
 
-  get consolePane(): HTMLElement & { open(): void; toggle(): void; logs: unknown[] } {
+  get consolePane(): HTMLElement & { open: () => void; toggle: () => void; logs: unknown[] } {
     return this.shadowRoot!.querySelector('console-pane') as any;
   }
 
-  get docsPanel(): HTMLElement & { open(): void; close(): void } {
+  get docsPanel(): HTMLElement & { open: () => void; close: () => void } {
     return this.shadowRoot!.querySelector('docs-panel') as any;
   }
 
-  get inspectorPanel(): HTMLElement & { setData(data: Record<string, unknown>): void } {
-    return this.shadowRoot!.querySelector('inspector-panel') as HTMLElement & { setData(data: Record<string, unknown>): void };
+  get inspectorPanel(): HTMLElement & { setData: (data: Record<string, unknown>) => void } {
+    return this.shadowRoot!.querySelector('inspector-panel') as HTMLElement & {
+      setData: (data: Record<string, unknown>) => void;
+    };
   }
 
-  get errorPanel(): HTMLElement & { show(message: string): void; hide(): void; showFeedback(message: string): void } {
+  get errorPanel(): HTMLElement & {
+    show: (message: string) => void;
+    hide: () => void;
+    showFeedback: (message: string) => void;
+  } {
     return this.shadowRoot!.querySelector('error-panel') as any;
   }
 
-  get exportLegendModal(): HTMLElement & { open(svgElement: SVGElement, state: unknown): void } {
-    return this.shadowRoot!.querySelector('export-legend-modal') as any;
+  get exportModal(): HTMLElement & { open: (svgElement: SVGElement, state: unknown) => void } {
+    return this.shadowRoot!.querySelector('export-modal') as any;
   }
 
-  get thumbnailCropModal(): HTMLElement & { open(svgElement: SVGElement, state: unknown): void } {
+  get thumbnailCropModal(): HTMLElement & { open: (svgElement: SVGElement, state: unknown) => void } {
     return this.shadowRoot!.querySelector('thumbnail-crop-modal') as any;
   }
 
-  get editMetadataModal(): HTMLElement & { open(opts: { name: string | null; description: string | null }): void } {
+  get editMetadataModal(): HTMLElement & { open: (opts: { name: string | null; description: string | null }) => void } {
     return this.shadowRoot!.querySelector('edit-workspace-metadata-modal') as any;
   }
 
-  waitForLibrary(maxWait: number = 5000): void {
+  waitForLibrary(maxWait = 5000): void {
     const start = Date.now();
     const check = (): void => {
       if ((window as any).PathogenLang) {
@@ -244,7 +281,13 @@ export class WorkspaceView extends HTMLElement {
     // New workspace
     else {
       // Use default code for new workspaces
-      const preferences = store.get('preferences') as { background: string; gridEnabled: boolean; gridColor: string; gridSize: number; toFixed: number | null } | null;
+      const preferences = store.get('preferences') as {
+        background: string;
+        gridEnabled: boolean;
+        gridColor: string;
+        gridSize: number;
+        toFixed: number | null;
+      } | null;
       this.editorPane.initialCode = defaultCode;
       store.update({
         code: defaultCode,
@@ -283,7 +326,7 @@ export class WorkspaceView extends HTMLElement {
     this._loadingWorkspace = true;
 
     try {
-      const workspace = await workspaceApi.get(id) as any;
+      const workspace = (await workspaceApi.get(id)) as any;
       const userId = getUserId();
 
       // Update store with workspace data
@@ -421,10 +464,12 @@ export class WorkspaceView extends HTMLElement {
     // Phase 3 moved compiled SVG into a sandboxed iframe; setCssVar / removeCssVar
     // forward the override into the iframe document where the SVG lives.
     this.shadowRoot!.addEventListener('cssvar-override', (e: Event) => {
-      const pane = this.previewPane as (HTMLElement & {
-        setCssVar?(n: string, v: string): void;
-        removeCssVar?(n: string): void;
-      }) | null;
+      const pane = this.previewPane as
+        | (HTMLElement & {
+            setCssVar?: (n: string, v: string) => void;
+            removeCssVar?: (n: string) => void;
+          })
+        | null;
       if (!pane) return;
       const { varName, value } = (e as CustomEvent<{ varName: string; value: string }>).detail;
       if (value && pane.setCssVar) {
@@ -441,13 +486,6 @@ export class WorkspaceView extends HTMLElement {
 
     // Listen for events from app-header and app-breadcrumb (bubble up through DOM)
     // These listeners are on document to catch events from outside shadow DOM
-    this._handleExportFile = (): void => {
-      if (store.get('currentView') === 'workspace') {
-        this.exportFile();
-      }
-    };
-    document.addEventListener('export-file', this._handleExportFile);
-
     this._handleFormatDocument = (): void => {
       if (store.get('currentView') !== 'workspace') return;
       const pane = this.editorPane as unknown as { formatDocument?: () => void };
@@ -528,19 +566,24 @@ export class WorkspaceView extends HTMLElement {
         e.preventDefault();
         autosave.saveNow();
       }
+      // Ctrl/Cmd+Shift+E opens the export modal
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        this._handleOpenExport?.();
+      }
     };
     document.addEventListener('keydown', this._handleKeydown, true);
 
-    // Export with legend
-    this._handleExportLegend = (): void => {
+    // Open the export modal (SVG / PNG / PDF, optional legend)
+    this._handleOpenExport = (): void => {
       if (store.get('currentView') === 'workspace') {
         const svgElement = this.previewPane.preview;
         if (svgElement) {
-          this.exportLegendModal.open(svgElement, store.getAll());
+          this.exportModal.open(svgElement, store.getAll());
         }
       }
     };
-    document.addEventListener('export-legend', this._handleExportLegend);
+    document.addEventListener('open-export', this._handleOpenExport);
 
     // Refresh preview (for random functions)
     this._handleRefreshPreview = (): void => {
@@ -702,7 +745,6 @@ export class WorkspaceView extends HTMLElement {
   }
 
   cleanupEventListeners(): void {
-    if (this._handleExportFile) document.removeEventListener('export-file', this._handleExportFile);
     if (this._handleFormatDocument) document.removeEventListener('format-document', this._handleFormatDocument);
     if (this._handleCopyCode) document.removeEventListener('copy-code', this._handleCopyCode);
     if (this._handleCopySvg) document.removeEventListener('copy-svg', this._handleCopySvg);
@@ -711,18 +753,22 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleToggleInspector) document.removeEventListener('toggle-inspector', this._handleToggleInspector);
     if (this._handleFullscreenChange) document.removeEventListener('fullscreen-change', this._handleFullscreenChange);
     if (this._handleKeydown) document.removeEventListener('keydown', this._handleKeydown, true);
-    if (this._handleExportLegend) document.removeEventListener('export-legend', this._handleExportLegend);
+    if (this._handleOpenExport) document.removeEventListener('open-export', this._handleOpenExport);
     if (this._handleRefreshPreview) document.removeEventListener('refresh-preview', this._handleRefreshPreview);
     if (this._handleCopyDebugInfo) document.removeEventListener('copy-debug-info', this._handleCopyDebugInfo);
     if (this._handleSetThumbnail) document.removeEventListener('set-thumbnail', this._handleSetThumbnail);
     if (this._handleRenameWorkspace) document.removeEventListener('rename-workspace', this._handleRenameWorkspace);
-    if (this._handleThumbnailAutoGenerate) document.removeEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
+    if (this._handleThumbnailAutoGenerate)
+      document.removeEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
     if (this._handleBeforeUnload) window.removeEventListener('beforeunload', this._handleBeforeUnload);
     if (this._handleVisibilityChange) document.removeEventListener('visibilitychange', this._handleVisibilityChange);
     if (this._handleEditorBlur) this.shadowRoot!.removeEventListener('editor-blur', this._handleEditorBlur);
-    if (this._handleWorkspaceConflict) document.removeEventListener('workspace-conflict', this._handleWorkspaceConflict);
-    if (this._handleLayerVisibilityChange) document.removeEventListener('layer-visibility-change', this._handleLayerVisibilityChange);
-    if (this._handleDefsVisibilityChange) document.removeEventListener('defs-visibility-change', this._handleDefsVisibilityChange);
+    if (this._handleWorkspaceConflict)
+      document.removeEventListener('workspace-conflict', this._handleWorkspaceConflict);
+    if (this._handleLayerVisibilityChange)
+      document.removeEventListener('layer-visibility-change', this._handleLayerVisibilityChange);
+    if (this._handleDefsVisibilityChange)
+      document.removeEventListener('defs-visibility-change', this._handleDefsVisibilityChange);
     if (this._multiTabUnsubscribe) this._multiTabUnsubscribe();
     if (this._inspectorDataUnsubscribe) this._inspectorDataUnsubscribe();
   }
@@ -789,7 +835,7 @@ export class WorkspaceView extends HTMLElement {
     try {
       const toFixed = store.get('toFixed') as number | null;
       const compileOptions = toFixed != null ? { toFixed } : undefined;
-      const result = await compilerWorker.compileWithContext(code, compilationId, isStale, compileOptions) as any;
+      const result = (await compilerWorker.compileWithContext(code, compilationId, isStale, compileOptions)) as any;
       const compileTime = performance.now() - compileStart;
       console.log(`Compile time: ${compileTime.toFixed(2)}ms`);
 
@@ -798,7 +844,9 @@ export class WorkspaceView extends HTMLElement {
 
       // Pull viewBox from the compile result (falls back to 200x200 when the
       // source has no `define ViewBox`).
-      const compiledViewBox = (result.viewBox as { originX: number; originY: number; width: number; height: number } | undefined) ?? {
+      const compiledViewBox = (result.viewBox as
+        | { originX: number; originY: number; width: number; height: number }
+        | undefined) ?? {
         originX: 0,
         originY: 0,
         width: 200,
@@ -946,11 +994,13 @@ export class WorkspaceView extends HTMLElement {
         const diagnostics = getDiagnostics(doc);
         if (diagnostics.length > 0) {
           // Format message: show each diagnostic on its own line
-          const messages = diagnostics.map((d: { range: { start: { line: number; character: number } }; message: string }) => {
-            const line = d.range.start.line + 1;
-            const col = d.range.start.character + 1;
-            return `Line ${line}:${col} — ${d.message}`;
-          });
+          const messages = diagnostics.map(
+            (d: { range: { start: { line: number; character: number } }; message: string }) => {
+              const line = d.range.start.line + 1;
+              const col = d.range.start.character + 1;
+              return `Line ${line}:${col} — ${d.message}`;
+            },
+          );
           const displayMessage = messages.join('\n');
           this.errorPanel.show(displayMessage, diagnostics.length);
           // Highlight all diagnostic locations in the editor (0-based → 1-based)
@@ -968,12 +1018,12 @@ export class WorkspaceView extends HTMLElement {
 
     // Fallback: regex-based error location extraction
     this.errorPanel.show(message);
-    const parseMatch = message.match(/Parse error at line (\d+), column (\d+)/);
+    const parseMatch = /Parse error at line (\d+), column (\d+)/.exec(message);
     if (parseMatch) {
       this.editorPane.highlightError(parseInt(parseMatch[1], 10), parseInt(parseMatch[2], 10));
       return message;
     }
-    const runtimeMatch = message.match(/^Line (\d+)(?:, col (\d+))?: /);
+    const runtimeMatch = /^Line (\d+)(?:, col (\d+))?: /.exec(message);
     if (runtimeMatch) {
       const line = parseInt(runtimeMatch[1], 10);
       const col = runtimeMatch[2] ? parseInt(runtimeMatch[2], 10) : 1;
@@ -985,45 +1035,6 @@ export class WorkspaceView extends HTMLElement {
   hideError(): void {
     this.errorPanel.hide();
     this.editorPane.clearError();
-  }
-
-  // Export file (renamed from saveFile)
-  async exportFile(): Promise<void> {
-    const code = this.editorPane.code;
-    const workspaceName = (store.get('workspaceName') as string | null) || (store.get('currentFileName') as string | null) || 'untitled';
-    const suggestedName = workspaceName.endsWith('.svgx') ? workspaceName : `${workspaceName}.svgx`;
-
-    try {
-      if ('showSaveFilePicker' in window) {
-        const options = {
-          suggestedName,
-          types: [
-            {
-              description: 'SVG Path Extended Files',
-              accept: { 'text/plain': ['.svgx'] } as Record<string, string[]>,
-            },
-          ],
-        };
-
-        const handle = await (window as any).showSaveFilePicker(options);
-        const writable = await handle.createWritable();
-        await writable.write(code);
-        await writable.close();
-      } else {
-        // Fallback for browsers without File System Access API
-        const blob = new Blob([code], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = suggestedName;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        console.error('Export failed:', err);
-      }
-    }
   }
 
   // Simple string hash for content change tracking (not cryptographic)
@@ -1120,7 +1131,7 @@ export class WorkspaceView extends HTMLElement {
 
       <docs-panel></docs-panel>
 
-      <export-legend-modal></export-legend-modal>
+      <export-modal></export-modal>
 
       <thumbnail-crop-modal></thumbnail-crop-modal>
 

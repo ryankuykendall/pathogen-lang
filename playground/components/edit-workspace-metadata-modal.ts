@@ -1,6 +1,6 @@
 // Edit Workspace Metadata Modal — centered card dialog for renaming the
 // workspace and editing its description. Mirrors the :host(.open) pattern
-// from thumbnail-crop-modal / export-legend-modal but rendered as a
+// from thumbnail-crop-modal / export-modal but rendered as a
 // centered card (~480px wide) instead of a full-viewport overlay.
 
 import { workspaceApi } from '../services/api.js';

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 02 — Export (legend on, highlighted code)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inconsolata:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --border-color: #e2e8f0;
+    --text-primary: #1c1722;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    --accent-color: #10b981;
+    --accent-subtle: rgba(16, 185, 129, 0.1);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'Inconsolata', monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: #2a2438;
+    color: var(--text-primary);
+  }
+  .banner {
+    padding: 0.6rem 1.25rem;
+    background: #1c1722; color: #cbc4d6; font-size: 0.78rem;
+    display: flex; gap: 0.75rem; align-items: baseline;
+  }
+  .banner strong { color: #fff; font-weight: 600; }
+
+  .modal { height: calc(100vh - 2.2rem); display: flex; flex-direction: column; }
+  .content { display: flex; flex: 1; min-height: 0; background: var(--bg-primary); }
+  .form-panel {
+    width: 320px; flex-shrink: 0;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .form-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+  }
+  .form-header h2 { margin: 0; font-size: 1rem; font-weight: 600; }
+  .close-btn {
+    width: 32px; height: 32px; display: grid; place-items: center;
+    border-radius: var(--radius-md); border: 1px solid var(--border-color);
+    background: var(--bg-secondary); color: var(--text-secondary);
+    cursor: pointer; font-size: 1.125rem; line-height: 1; padding: 0;
+  }
+  .form-scroll {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 1.25rem;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .form-actions {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem; padding: 0.85rem 1.25rem;
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -6px 12px -8px rgba(28, 23, 34, 0.18);
+  }
+  .btn {
+    padding: 0.5rem 1rem; border-radius: var(--radius-md);
+    border: 1px solid var(--border-color); background: var(--bg-secondary);
+    color: var(--text-primary); font-size: 0.8125rem; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn.primary { background: var(--accent-color); border-color: var(--accent-color); color: #fff; }
+
+  .form-group { display: flex; flex-direction: column; gap: 0.375rem; }
+  .form-group > label, .legend-toggle-row > label {
+    font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.025em;
+  }
+  .form-group input, .form-group textarea {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color); border-radius: var(--radius-md);
+    font-size: 0.875rem; font-family: inherit; color: var(--text-primary);
+    background: var(--bg-primary); resize: none;
+  }
+  .form-group textarea { min-height: 60px; }
+  .form-group .code-input { font-family: var(--font-mono); font-size: 0.75rem; }
+  .form-group input[readonly], .form-group textarea[readonly] { opacity: 0.7; }
+
+  .format-toggle {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    border: 1px solid var(--border-color); border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .format-toggle button {
+    padding: 0.5rem 0.25rem; border: none; background: var(--bg-primary);
+    color: var(--text-secondary); font-family: inherit;
+    font-size: 0.8125rem; font-weight: 500; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 0.1rem;
+  }
+  .format-toggle button + button { border-left: 1px solid var(--border-color); }
+  .format-toggle button .fmt-sub { font-size: 0.65rem; font-weight: 400; color: var(--text-tertiary); }
+  .format-toggle button.active { background: var(--accent-subtle); color: var(--accent-color); font-weight: 600; }
+  .format-toggle button.active .fmt-sub { color: var(--accent-color); opacity: 0.8; }
+
+  .legend-toggle-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  }
+  .switch {
+    position: relative; width: 32px; height: 18px; border-radius: 9px;
+    background: #cbd5e1; border: none; cursor: pointer; padding: 0;
+    flex-shrink: 0; transition: background 0.15s ease;
+  }
+  .switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; border-radius: 50%; background: #fff;
+    transition: transform 0.15s ease;
+  }
+  .switch.active { background: var(--accent-color); }
+  .switch.active::after { transform: translateX(14px); }
+
+  /* Legend settings group: revealed when the switch is on */
+  .legend-settings {
+    display: flex; flex-direction: column; gap: 1rem;
+    padding: 0.85rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+  }
+  .legend-settings .form-group input,
+  .legend-settings .form-group textarea { background: var(--bg-secondary); }
+  .check-row { display: flex; align-items: center; gap: 0.5rem; }
+  .check-row input[type="checkbox"] {
+    width: 16px; height: 16px; accent-color: var(--accent-color); cursor: pointer;
+  }
+  .check-row label {
+    font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); cursor: pointer;
+  }
+  .row-note { margin: -0.6rem 0 0; font-size: 0.66rem; color: var(--text-tertiary); line-height: 1.45; }
+
+  .advanced-settings { border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; }
+  .advanced-settings summary {
+    padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 600;
+    color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.025em;
+    cursor: pointer; user-select: none; list-style: none;
+    display: flex; align-items: center; gap: 0.375rem;
+  }
+  .advanced-settings summary::-webkit-details-marker { display: none; }
+  .advanced-settings summary::before { content: '\25B6'; font-size: 0.5rem; }
+
+  /* ===== Preview panel ===== */
+  .preview-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+  .preview-area {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; padding: 2rem;
+  }
+  .artwork-wrap {
+    position: relative; height: 100%; max-height: 640px;
+    aspect-ratio: 800 / 1000; border-radius: var(--radius-lg);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.25); overflow: hidden;
+  }
+  .artwork-wrap svg { display: block; width: 100%; height: 100%; }
+
+  /* Legend card overlay (stands in for the in-SVG legend group) */
+  .legend-card {
+    position: absolute; left: 5%; bottom: 4%;
+    width: 62%;
+    background: rgba(255, 255, 255, 0.92);
+    border-left: 3px solid #10b981;
+    border-radius: 6px;
+    padding: 12px 14px;
+    cursor: move;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  }
+  .legend-card .lg-title { font-size: 0.9rem; font-weight: 600; color: #1c1722; }
+  .legend-card .lg-meta {
+    display: flex; justify-content: space-between;
+    font-size: 0.62rem; color: #64748b; margin-top: 2px;
+  }
+  .legend-card .lg-desc { font-size: 0.66rem; color: #475569; margin-top: 6px; line-height: 1.45; }
+  .legend-card hr { border: none; border-top: 1px solid #e2e8f0; margin: 8px 0; }
+  .legend-card pre {
+    margin: 0; font-family: var(--font-mono); font-size: 0.6rem;
+    line-height: 1.5; white-space: pre; overflow: hidden; color: #1c1722;
+  }
+  .legend-card .lg-brand {
+    margin-top: 9px; font-size: 0.56rem; color: #94a3b8; text-align: left;
+  }
+  .legend-card .lg-brand .brand { font-family: 'Baumans', var(--font-sans); font-size: 0.68rem; margin-left: 0.25em; }
+  .resize-dot {
+    position: absolute; right: -5px; bottom: -5px; width: 10px; height: 10px;
+    border-radius: 50%; background: #10b981; border: 2px solid #fff;
+    cursor: nwse-resize;
+  }
+
+  /* Syntax palette — the real light --code-* hexes that ship in the export */
+  .tk-kw { color: #6d3aa6; font-weight: 600; }
+  .tk-fn { color: #a83d80; }
+  .tk-num { color: #d97a6e; }
+  .tk-str { color: #5a8a72; }
+  .tk-cm { color: #9087a0; }
+  .tk-op { color: #6b5a7a; }
+  .tk-tp { color: #b65a2a; }
+
+  .zoom-bar {
+    display: flex; align-items: center; position: relative;
+    padding: 0.5rem 0.75rem; background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+  }
+  .zoom-controls {
+    display: flex; align-items: center; gap: 0.5rem;
+    position: absolute; left: 50%; transform: translateX(-50%);
+  }
+  .zoom-bar button:not(.switch) {
+    width: 32px; height: 32px; padding: 0; display: grid; place-items: center;
+    border: 1px solid var(--border-color); border-radius: var(--radius-md);
+    background: var(--bg-secondary); color: var(--text-primary);
+    cursor: pointer; font-size: 0.875rem; font-family: inherit;
+  }
+  .zoom-bar .zoom-in, .zoom-bar .zoom-out { font-size: 1.25rem; line-height: 0; }
+  .zoom-bar .zoom-level {
+    width: 56px; padding: 0.375rem 0.5rem;
+    border: 1px solid var(--border-color); border-radius: var(--radius-md);
+    font-size: 0.75rem; font-family: var(--font-mono); font-weight: 500;
+    text-align: center; background: var(--bg-secondary);
+  }
+  .snap-group { display: flex; align-items: center; gap: 0.375rem; margin-left: auto; }
+  .snap-label { font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); }
+  .snap-size {
+    width: 48px; padding: 0.25rem 0.375rem;
+    border: 1px solid var(--border-color); border-radius: var(--radius-md);
+    font-size: 0.75rem; font-family: var(--font-mono); text-align: center;
+    background: var(--bg-secondary);
+  }
+
+  /* Comparison strip */
+  .compare {
+    padding: 1.5rem 1.25rem; background: #211b2e; color: #cbc4d6;
+  }
+  .compare h3 { margin: 0 0 1rem; color: #fff; font-size: 0.9rem; }
+  .compare-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; max-width: 900px; }
+  .compare-pane { background: rgba(255,255,255,0.92); border-radius: 6px; border-left: 3px solid #10b981; padding: 12px 14px; }
+  .compare-pane h4 {
+    margin: 0 0 0.5rem; font-size: 0.7rem; font-weight: 600;
+    color: #64748b; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .compare-pane pre {
+    margin: 0; font-family: var(--font-mono); font-size: 0.72rem;
+    line-height: 1.55; white-space: pre; overflow-x: auto; color: #1c1722;
+  }
+  .compare-pane.mono pre { color: #64748b; }
+
+  .notes { padding: 1.25rem; background: #1c1722; color: #cbc4d6; font-size: 0.8rem; line-height: 1.6; }
+  .notes h3 { margin: 0 0 0.5rem; color: #fff; font-size: 0.85rem; }
+  .notes ul { margin: 0; padding-left: 1.2rem; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <strong>Mockup 02 / 04</strong>
+  <span>Unified Export — legend ON with syntax-highlighted source (real print palette)</span>
+</div>
+
+<div class="modal">
+  <div class="content">
+
+    <div class="form-panel">
+      <div class="form-header">
+        <h2>Export</h2>
+        <button class="close-btn">&times;</button>
+      </div>
+
+      <div class="form-scroll">
+        <div class="form-group">
+          <label>Format</label>
+          <div class="format-toggle">
+            <button class="active">SVG<span class="fmt-sub">vector file</span></button>
+            <button>PNG<span class="fmt-sub">image</span></button>
+            <button>PDF<span class="fmt-sub">print-ready</span></button>
+          </div>
+        </div>
+
+        <div class="legend-toggle-row">
+          <label for="include-legend">Include legend</label>
+          <button class="switch active" id="include-legend" role="switch" aria-checked="true"></button>
+        </div>
+
+        <div class="legend-settings">
+          <div class="form-group">
+            <label for="legend-name">Name</label>
+            <input type="text" id="legend-name" value="Orbital Study">
+          </div>
+          <div class="form-group">
+            <label for="legend-description">Description</label>
+            <textarea id="legend-description" rows="2">Five concentric orbits around a warm center; a study in restraint.</textarea>
+          </div>
+          <div class="form-group">
+            <label for="legend-date">Export Date</label>
+            <input type="date" id="legend-date" value="2026-07-21">
+          </div>
+          <div class="form-group">
+            <label for="legend-creator">Creator</label>
+            <input type="text" id="legend-creator" value="Ryan Kuykendall">
+          </div>
+          <div class="check-row">
+            <input type="checkbox" id="highlight-code" checked>
+            <label for="highlight-code">Syntax highlighting</label>
+          </div>
+          <p class="row-note">
+            Colors the legend&rsquo;s source listing with Pathogen&rsquo;s
+            print palette. Colors are baked into the file &mdash; they
+            survive PDF outlining and PNG rendering.
+          </p>
+          <div class="form-group">
+            <label for="legend-code">Source Code</label>
+            <textarea id="legend-code" rows="5" class="code-input" readonly>define ViewBox(0, 0, 800, 1000);
+
+let rings = 5;
+let center = Point(400, 500);
+&hellip;</textarea>
+          </div>
+        </div>
+
+        <details class="advanced-settings">
+          <summary>Advanced Export Settings</summary>
+        </details>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn">Cancel</button>
+        <button class="btn primary">Download SVG &#x2193;</button>
+      </div>
+    </div>
+
+    <div class="preview-panel">
+      <div class="preview-area">
+        <div class="artwork-wrap">
+          <svg viewBox="0 0 800 1000" xmlns="http://www.w3.org/2000/svg">
+            <rect width="800" height="1000" fill="#171226"/>
+            <g fill="none" stroke="#b9a5e6">
+              <circle cx="400" cy="500" r="130" stroke-width="2" opacity="0.9"/>
+              <circle cx="400" cy="500" r="200" stroke-width="2" opacity="0.75"/>
+              <circle cx="400" cy="500" r="270" stroke-width="2" opacity="0.6"/>
+              <circle cx="400" cy="500" r="340" stroke-width="2" opacity="0.45"/>
+              <circle cx="400" cy="500" r="410" stroke-width="2" opacity="0.3"/>
+            </g>
+            <circle cx="400" cy="500" r="26" fill="#f0a07b"/>
+            <circle cx="530" cy="500" r="8" fill="#c4a4e8"/>
+            <circle cx="258" cy="360" r="10" fill="#8fc4a1"/>
+            <circle cx="400" cy="840" r="7" fill="#f0a07b"/>
+            <circle cx="690" cy="500" r="6" fill="#c4a4e8"/>
+            <text x="400" y="120" text-anchor="middle" fill="#e8e2f4"
+                  font-family="Baumans" font-size="44" letter-spacing="14">ORBITAL STUDY</text>
+          </svg>
+
+          <div class="legend-card">
+            <div class="lg-title">Orbital Study</div>
+            <div class="lg-meta"><span>Ryan Kuykendall</span><span>2026-07-21</span></div>
+            <div class="lg-desc">Five concentric orbits around a warm center; a study in restraint.</div>
+            <hr>
+            <pre><span class="tk-kw">define</span> <span class="tk-tp">ViewBox</span><span class="tk-op">(</span><span class="tk-num">0</span>, <span class="tk-num">0</span>, <span class="tk-num">800</span>, <span class="tk-num">1000</span><span class="tk-op">)</span>;
+
+<span class="tk-kw">let</span> rings <span class="tk-op">=</span> <span class="tk-num">5</span>;
+<span class="tk-kw">let</span> center <span class="tk-op">=</span> <span class="tk-fn">Point</span><span class="tk-op">(</span><span class="tk-num">400</span>, <span class="tk-num">500</span><span class="tk-op">)</span>;
+
+<span class="tk-kw">for</span> i <span class="tk-kw">in</span> <span class="tk-num">1</span><span class="tk-op">..</span>rings {
+  <span class="tk-kw">let</span> r <span class="tk-op">=</span> <span class="tk-num">60</span> <span class="tk-op">+</span> i <span class="tk-op">*</span> <span class="tk-num">70</span>;
+  <span class="tk-fn">circle</span><span class="tk-op">(</span>center, r<span class="tk-op">)</span>.<span class="tk-fn">draw</span><span class="tk-op">()</span>.<span class="tk-kw">apply</span> {
+    stroke: <span class="tk-str">oklch(0.75 0.12 300)</span>;
+    stroke-width: <span class="tk-num">2</span>;
+  }
+}
+
+<span class="tk-cm">// the sun</span>
+<span class="tk-fn">circle</span><span class="tk-op">(</span>center, <span class="tk-num">26</span><span class="tk-op">)</span>.<span class="tk-fn">draw</span><span class="tk-op">()</span>.<span class="tk-kw">apply</span> {
+  fill: <span class="tk-str">oklch(0.78 0.15 60)</span>;
+}</pre>
+            <div class="lg-brand">Created in<span class="brand">pathogen.studio</span></div>
+            <div class="resize-dot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="zoom-bar">
+        <div class="zoom-controls">
+          <button class="zoom-out">&#x2212;</button>
+          <button>Fit</button>
+          <button class="zoom-in">&#x002B;</button>
+          <input type="text" class="zoom-level" value="100%" readonly>
+        </div>
+        <div class="snap-group">
+          <span class="snap-label">Snap</span>
+          <button class="switch active" role="switch" aria-checked="true"></button>
+          <input type="number" class="snap-size" value="10">
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="compare">
+  <h3>Code block — syntax highlighting on vs. off</h3>
+  <div class="compare-panes">
+    <div class="compare-pane">
+      <h4>Highlighting on (default)</h4>
+      <pre><span class="tk-kw">define</span> <span class="tk-tp">ViewBox</span><span class="tk-op">(</span><span class="tk-num">0</span>, <span class="tk-num">0</span>, <span class="tk-num">800</span>, <span class="tk-num">1000</span><span class="tk-op">)</span>;
+
+<span class="tk-kw">let</span> rings <span class="tk-op">=</span> <span class="tk-num">5</span>;
+<span class="tk-kw">let</span> center <span class="tk-op">=</span> <span class="tk-fn">Point</span><span class="tk-op">(</span><span class="tk-num">400</span>, <span class="tk-num">500</span><span class="tk-op">)</span>;
+
+<span class="tk-kw">for</span> i <span class="tk-kw">in</span> <span class="tk-num">1</span><span class="tk-op">..</span>rings {
+  <span class="tk-fn">circle</span><span class="tk-op">(</span>center, <span class="tk-num">60</span> <span class="tk-op">+</span> i <span class="tk-op">*</span> <span class="tk-num">70</span><span class="tk-op">)</span>.<span class="tk-fn">draw</span><span class="tk-op">()</span>;
+}
+
+<span class="tk-cm">// the sun</span>
+<span class="tk-fn">circle</span><span class="tk-op">(</span>center, <span class="tk-num">26</span><span class="tk-op">)</span>.<span class="tk-fn">draw</span><span class="tk-op">()</span>;</pre>
+    </div>
+    <div class="compare-pane mono">
+      <h4>Highlighting off</h4>
+      <pre>define ViewBox(0, 0, 800, 1000);
+
+let rings = 5;
+let center = Point(400, 500);
+
+for i in 1..rings {
+  circle(center, 60 + i * 70).draw();
+}
+
+// the sun
+circle(center, 26).draw();</pre>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <h3>Design notes — legend on</h3>
+  <ul>
+    <li><strong>Include legend ON</strong> reveals a grouped <em>legend settings</em> panel: Name, Description, Export Date, Creator, the Syntax highlighting checkbox, and the read-only source listing. Turning the switch off collapses the whole group (mockup 01).</li>
+    <li><strong>Syntax highlighting defaults ON.</strong> Colors are the exact light-theme <code>--code-*</code> print palette (keyword #6d3aa6 · function #a83d80 · number #d97a6e · string #5a8a72&hellip;) inlined as literal <code>fill</code> attributes on per-token tspans — they survive SVG serialization, PDF text outlining, and PNG rasterization identically.</li>
+    <li><strong>No italics in the export</strong> — the editor styles comments/functions italic, but the PDF outliner renders upright glyphs, so the export palette uses color + weight only. The legend card is always white, so only the light palette is needed.</li>
+    <li><strong>Field label</strong> renamed from &ldquo;SVGX Code&rdquo; to &ldquo;Source Code&rdquo;.</li>
+    <li><strong>Snap controls return</strong> in the zoom bar when the legend is on (the card is draggable/resizable, as today).</li>
+    <li>Legend footer keeps the <em>Created in pathogen.studio</em> brand line, so no separate corner watermark is added when the legend is on.</li>
+  </ul>
+</div>
+
+</body>
+</html>

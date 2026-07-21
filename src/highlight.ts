@@ -27,9 +27,21 @@ export { lezerParser };
 // as un-classed text (acceptable graceful degradation).
 const NODE_CLASS: Record<string, string> = {
   // Keywords — match the `kw<…>` macro names from pathogen.grammar.
-  let: 'kw', fn: 'kw', for: 'kw', in: 'kw', if: 'kw', else: 'kw',
-  return: 'kw', apply: 'kw', layer: 'kw', text: 'kw', tspan: 'kw',
-  define: 'kw', default: 'kw', calc: 'kw', enum: 'kw',
+  let: 'kw',
+  fn: 'kw',
+  for: 'kw',
+  in: 'kw',
+  if: 'kw',
+  else: 'kw',
+  return: 'kw',
+  apply: 'kw',
+  layer: 'kw',
+  text: 'kw',
+  tspan: 'kw',
+  define: 'kw',
+  default: 'kw',
+  calc: 'kw',
+  enum: 'kw',
   // Block-opener keywords inside the path/style/text grammars.
   styleBlockOpen: 'kw',
   pathBlockOpen: 'kw',
@@ -74,10 +86,23 @@ const NODE_CLASS: Record<string, string> = {
 // we pattern-match on the slice text for short tokens. Keeps the
 // bundle tiny — no regex backtracking, just direct lookup.
 const ANON_OP_CLASS: Record<string, string> = {
-  '+': 'op', '-': 'op', '*': 'op', '/': 'op', '%': 'op',
-  '==': 'op', '!=': 'op', '<=': 'op', '>=': 'op', '<': 'op', '>': 'op',
-  '||': 'op', '&&': 'op', '!': 'op',
-  '=': 'op', '?': 'op', ':': 'op',
+  '+': 'op',
+  '-': 'op',
+  '*': 'op',
+  '/': 'op',
+  '%': 'op',
+  '==': 'op',
+  '!=': 'op',
+  '<=': 'op',
+  '>=': 'op',
+  '<': 'op',
+  '>': 'op',
+  '||': 'op',
+  '&&': 'op',
+  '!': 'op',
+  '=': 'op',
+  '?': 'op',
+  ':': 'op',
   '...': 'op',
 };
 
@@ -95,14 +120,23 @@ function classFor(typeName: string, text: string): string | null {
   return null;
 }
 
-export function highlightPathogen(source: string): string {
+// One classified slice of source text. `cls` is null for gaps
+// (whitespace between leaves) and tokens with no class mapping.
+export interface HighlightToken {
+  text: string;
+  cls: string | null;
+}
+
+// Flat, in-order token stream covering the entire source: every
+// character of `source` appears in exactly one token, in order.
+function flatTokens(source: string): HighlightToken[] {
+  const tokens: HighlightToken[] = [];
   // Empty input: skip the walk; the cursor's behavior on an empty tree
   // is fine but the bookkeeping below assumes at least one iteration.
-  if (source.length === 0) return '';
+  if (source.length === 0) return tokens;
 
   const tree = lezerParser.parse(source);
   const cur = tree.cursor();
-  const parts: string[] = [];
   let cursorPos = 0;
 
   // Leaf-only depth-first walk. The outer loop descends into the first
@@ -114,15 +148,16 @@ export function highlightPathogen(source: string): string {
     }
 
     // Emit any gap between the previous leaf's end and this leaf's
-    // start (Lezer skips whitespace; we capture it as raw escaped
-    // text to preserve formatting).
+    // start (Lezer skips whitespace; we capture it as raw text to
+    // preserve formatting).
     if (cur.from > cursorPos) {
-      parts.push(escapeHtml(source.slice(cursorPos, cur.from)));
+      tokens.push({ text: source.slice(cursorPos, cur.from), cls: null });
     }
 
     const text = source.slice(cur.from, cur.to);
-    const cls = classFor(cur.type.name, text);
-    parts.push(cls ? `<span class="${cls}">${escapeHtml(text)}</span>` : escapeHtml(text));
+    if (text.length > 0) {
+      tokens.push({ text, cls: classFor(cur.type.name, text) });
+    }
     cursorPos = cur.to;
 
     // Advance to the next leaf: try a sibling first, then climb
@@ -130,10 +165,39 @@ export function highlightPathogen(source: string): string {
     while (!cur.nextSibling()) {
       if (!cur.parent()) {
         if (cursorPos < source.length) {
-          parts.push(escapeHtml(source.slice(cursorPos)));
+          tokens.push({ text: source.slice(cursorPos), cls: null });
         }
-        return parts.join('');
+        return tokens;
       }
     }
   }
+}
+
+// Token-level API: one array per source line, tokens carrying the same
+// classes highlightPathogen emits as CSS class names. Multi-line
+// tokens (comments, template strings, whitespace gaps) are split at
+// newlines, each piece keeping its class. Invariant:
+//   lines.map(ts => ts.map(t => t.text).join('')).join('\n') === source
+// Consumed by the playground's export legend to emit per-token colored
+// <tspan>s.
+export function highlightPathogenTokens(source: string): HighlightToken[][] {
+  const lines: HighlightToken[][] = [[]];
+  for (const tok of flatTokens(source)) {
+    const parts = tok.text.split('\n');
+    for (let i = 0; i < parts.length; i++) {
+      if (i > 0) lines.push([]);
+      if (parts[i].length > 0) {
+        lines[lines.length - 1].push({ text: parts[i], cls: tok.cls });
+      }
+    }
+  }
+  return lines;
+}
+
+export function highlightPathogen(source: string): string {
+  const parts: string[] = [];
+  for (const tok of flatTokens(source)) {
+    parts.push(tok.cls ? `<span class="${tok.cls}">${escapeHtml(tok.text)}</span>` : escapeHtml(tok.text));
+  }
+  return parts.join('');
 }

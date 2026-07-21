@@ -34,7 +34,7 @@ Note: `workspace-view.js` lives at `components/` root, not in `views/`.
 ### Events
 
 - All CustomEvents MUST use `{ bubbles: true, composed: true }` — without `composed`, events won't cross Shadow DOM boundaries
-- Event names: kebab-case (`code-change`, `style-change`, `export-file`)
+- Event names: kebab-case (`code-change`, `style-change`, `open-export`)
 - Document-level listeners for cross-component communication
 
 ### CSS & Theming

@@ -296,7 +296,14 @@
   margin-left: auto;
 }
 
-.snap-toggle {
+.snap-group[hidden] {
+  display: none;
+}
+
+/* Pill switch — shared by the zoom bar's Snap toggle and the form's
+ * Include legend toggle. */
+.snap-toggle,
+.switch {
   position: relative;
   width: 32px;
   height: 18px;
@@ -309,7 +316,8 @@
   flex-shrink: 0;
 }
 
-.snap-toggle::after {
+.snap-toggle::after,
+.switch::after {
   content: '';
   position: absolute;
   top: 2px;
@@ -321,12 +329,50 @@
   transition: transform 0.15s ease;
 }
 
-.snap-toggle.active {
+.snap-toggle.active,
+.switch.active {
   background: var(--accent-color, #10b981);
 }
 
-.snap-toggle.active::after {
+.snap-toggle.active::after,
+.switch.active::after {
   transform: translateX(14px);
+}
+
+/* Include-legend toggle row + revealed settings group */
+.legend-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.legend-toggle-row > label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  cursor: pointer;
+}
+
+.legend-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.85rem 0.75rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-primary, #f8f9fa);
+}
+
+.legend-settings[hidden] {
+  display: none;
+}
+
+.legend-settings .form-group input,
+.legend-settings .form-group textarea {
+  background: var(--bg-secondary, #ffffff);
 }
 
 .snap-label {
@@ -431,7 +477,7 @@
 /* Format segmented control */
 .format-toggle {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-md, 8px);
   overflow: hidden;
@@ -478,8 +524,9 @@
   background: var(--hover-bg, rgba(0, 0, 0, 0.04));
 }
 
-/* PDF print settings */
-.pdf-settings {
+/* PDF print settings + PNG image settings (shared panel styling) */
+.pdf-settings,
+.png-settings {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
@@ -489,7 +536,8 @@
   background: var(--bg-primary, #f8f9fa);
 }
 
-.pdf-settings[hidden] {
+.pdf-settings[hidden],
+.png-settings[hidden] {
   display: none;
 }
 
@@ -512,7 +560,9 @@
 }
 
 .pdf-settings select,
-.pdf-settings input[type="number"] {
+.pdf-settings input[type="number"],
+.png-settings select,
+.png-settings input[type="number"] {
   padding: 0.35rem 0.5rem;
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-md, 8px);
@@ -523,7 +573,9 @@
 }
 
 .pdf-settings select:focus,
-.pdf-settings input:focus {
+.pdf-settings input:focus,
+.png-settings select:focus,
+.png-settings input:focus {
   outline: none;
   border-color: var(--accent-color, #10b981);
   box-shadow: 0 0 0 3px var(--focus-ring, rgba(16, 185, 129, 0.2));
@@ -553,7 +605,9 @@
   text-align: right;
 }
 
-.unit-input .unit-suffix {
+/* .px-suffix is a fixed "px" label the PDF unit-sync must not rewrite. */
+.unit-input .unit-suffix,
+.unit-input .px-suffix {
   position: absolute;
   right: 0.5rem;
   font-size: 0.68rem;
@@ -726,7 +780,9 @@
   gap: 0.5rem;
 }
 
-.pdf-settings input[type="checkbox"] {
+.pdf-settings input[type="checkbox"],
+.png-settings input[type="checkbox"],
+.legend-settings input[type="checkbox"] {
   width: 16px;
   height: 16px;
   accent-color: var(--accent-color, #10b981);

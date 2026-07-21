@@ -2,7 +2,7 @@
 // Left: breadcrumb trail. Right (workspace view only): annotated/console
 // toggles, Copy Code, save status, and the overflow menu containing
 // Export / Format Document / Copy URL / Copy Workspace / Copy SVG /
-// Copy Debug Info / Export with Legend / Set Thumbnail and (when signed in)
+// Copy Debug Info / Set Thumbnail and (when signed in)
 // Publish/Unpublish workspace.
 //
 // The overflow menu was relocated here from app-header in Phase 2 so the top
@@ -12,7 +12,8 @@
 // workspace-view.ts has been listening for since the previous implementation.
 
 import { workspaceApi } from '../services/api.js';
-import { hasFeature, UserFeature, type CurrentUser } from '../services/auth.js';
+import { hasFeature, UserFeature } from '../services/auth.js';
+import type { CurrentUser } from '../services/auth.js';
 import {
   precheckCompile,
   toastPrivateSuccess,
@@ -52,7 +53,9 @@ const viewConfig: Record<string, ViewConfig> = {
 
 class AppBreadcrumb extends HTMLElement {
   private unsubscribe: (() => void) | null = null;
-  private _menuOpen: boolean = false;
+
+  private _menuOpen = false;
+
   private _handleOutsideClick: ((e: MouseEvent) => void) | null = null;
 
   constructor() {
@@ -168,7 +171,7 @@ class AppBreadcrumb extends HTMLElement {
           } else if (routeParams.slugId) {
             const parsed = parseWorkspaceSlugId(routeParams.slugId);
             if (parsed.id) {
-              const workspaces = (store.get('workspaces') || []) as Array<{ id: string; name: string }>;
+              const workspaces = (store.get('workspaces') || []) as { id: string; name: string }[];
               const workspace = workspaces.find((w) => w.id === parsed.id);
               if (workspace) {
                 label = workspace.name;
@@ -260,7 +263,7 @@ class AppBreadcrumb extends HTMLElement {
 
     const menuItems: string[] = [];
     menuItems.push(
-      `<button data-action="export-file" title="Export to file (Ctrl+S)">${materialIcon('download', { size: 16, className: 'menu-icon' })}<span>Export</span></button>`,
+      `<button data-action="export" title="Export as SVG, PNG, or PDF (Ctrl+Shift+E)">${materialIcon('download', { size: 16, className: 'menu-icon' })}<span>Export</span></button>`,
     );
     menuItems.push(
       `<button data-action="format-document" title="Format the current document (Ctrl/Cmd+Shift+F)">${materialIcon('format-left', { size: 16, className: 'menu-icon' })}<span>Format Document</span></button>`,
@@ -286,9 +289,6 @@ class AppBreadcrumb extends HTMLElement {
       `<button data-action="copy-debug-info">${materialIcon('bug-report', { size: 16, className: 'menu-icon' })}<span>Copy Debug Info</span></button>`,
     );
     menuItems.push('<div class="menu-divider"></div>');
-    menuItems.push(
-      `<button data-action="export-legend">${materialIcon('share', { size: 16, className: 'menu-icon' })}<span>Export with Legend</span></button>`,
-    );
     if (hasWorkspace) {
       menuItems.push(
         `<button data-action="set-thumbnail">${materialIcon('image', { size: 16, className: 'menu-icon' })}<span>Set Thumbnail</span></button>`,
@@ -420,9 +420,7 @@ class AppBreadcrumb extends HTMLElement {
       link.addEventListener('click', (e: Event) => {
         e.preventDefault();
         const path = (link as HTMLElement).dataset.route!;
-        this.dispatchEvent(
-          new CustomEvent('navigate', { bubbles: true, composed: true, detail: { path } }),
-        );
+        this.dispatchEvent(new CustomEvent('navigate', { bubbles: true, composed: true, detail: { path } }));
       });
     });
 
@@ -467,8 +465,8 @@ class AppBreadcrumb extends HTMLElement {
 
   async handleMenuAction(action: string): Promise<void> {
     switch (action) {
-      case 'export-file':
-        this.dispatchEvent(new CustomEvent('export-file', { bubbles: true, composed: true }));
+      case 'export':
+        this.dispatchEvent(new CustomEvent('open-export', { bubbles: true, composed: true }));
         break;
       case 'format-document':
         this.dispatchEvent(new CustomEvent('format-document', { bubbles: true, composed: true }));
@@ -491,9 +489,6 @@ class AppBreadcrumb extends HTMLElement {
       case 'copy-debug-info':
         this.dispatchEvent(new CustomEvent('copy-debug-info', { bubbles: true, composed: true }));
         this.showOverflowFeedback('Debug info copied!');
-        break;
-      case 'export-legend':
-        this.dispatchEvent(new CustomEvent('export-legend', { bubbles: true, composed: true }));
         break;
       case 'set-thumbnail':
         this.dispatchEvent(new CustomEvent('set-thumbnail', { bubbles: true, composed: true }));
@@ -542,7 +537,11 @@ class AppBreadcrumb extends HTMLElement {
         workspacePublicationState: newState,
       });
 
-      const workspaces = (store.get('workspaces') || []) as Array<{ id: string; isPublic: boolean; publicationState?: string }>;
+      const workspaces = (store.get('workspaces') || []) as {
+        id: string;
+        isPublic: boolean;
+        publicationState?: string;
+      }[];
       const workspace = workspaces.find((w) => w.id === workspaceId);
       if (workspace) {
         workspace.isPublic = newIsPublic;
@@ -559,15 +558,15 @@ class AppBreadcrumb extends HTMLElement {
   }
 
   showCopyFeedback(): void {
-    const feedback = this.shadowRoot!.querySelector('#copy-feedback') as HTMLElement | null;
+    const feedback = this.shadowRoot!.querySelector('#copy-feedback');
     if (feedback) {
       feedback.classList.add('visible');
       setTimeout(() => feedback.classList.remove('visible'), 2000);
     }
   }
 
-  showOverflowFeedback(message: string, isError: boolean = false): void {
-    const feedback = this.shadowRoot!.querySelector('.overflow-feedback') as HTMLElement | null;
+  showOverflowFeedback(message: string, isError = false): void {
+    const feedback = this.shadowRoot!.querySelector('.overflow-feedback');
     if (!feedback) return;
     feedback.textContent = message;
     feedback.classList.toggle('error', isError);

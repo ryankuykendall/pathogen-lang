@@ -1,26 +1,48 @@
 # Exporting Your Work
 
-Pathogen Studio can export any workspace as a self-contained image with an embedded **legend** — a caption card carrying the title, creator, date, description, and the Pathogen source that produced the artwork. Exports come in two formats: **SVG** for the web and further editing, and **PDF** for print — including poster-size prints handled by a third-party print shop.
+Pathogen Studio exports any workspace from a single **Export** dialog — open it from the overflow menu (`⋮` → **Export**) or press **Ctrl/Cmd+Shift+E**. Three formats are available:
 
-## Export with Legend
+- **SVG** — a self-contained vector file for the web, further editing, or re-import into design tools.
+- **PNG** — a raster image at the resolution you choose, with optional transparency.
+- **PDF** — a print-ready document with real page sizes, margins, bleed and crop marks, and all text converted to vector outlines.
 
-1. Open the workspace you want to export.
-2. From the overflow menu (`⋮`), choose **Export with Legend**.
-3. Fill in the legend fields — name, description, export date, and creator. The **SVGX Code** block is included automatically.
-4. Drag the legend card anywhere over the artwork; drag its corner handle to resize. Enable **Snap** in the bottom bar for grid-aligned placement.
-5. Choose a format — **SVG** or **PDF** — and press **Download**.
+Whatever you see in the dialog's live preview is exactly what downloads: the preview shows your artwork, the optional legend, and the branding line as they will appear in the file.
+
+## The legend (optional)
+
+A **legend** is a caption card embedded in the export — title, creator, date, description, and the Pathogen source that produced the artwork. It's off by default; flip **Include legend** on to add it.
+
+1. Fill in the legend fields — name, description, export date, and creator. The **Source Code** block is included automatically.
+2. Drag the legend card anywhere over the artwork; drag its corner handle to resize. Enable **Snap** in the bottom bar for grid-aligned placement.
+3. Choose a format and press **Download**.
+
+**Syntax highlighting** (on by default) colors the legend's source listing with Pathogen's print palette — the same token colors used across pathogen.studio, tuned for the legend's white card. The colors are baked into the file as literal fills, so they survive PDF text outlining and PNG rasterization identically. Turn the checkbox off for a plain monochrome listing.
 
 Under **Advanced Export Settings** you can include the workspace grid in the export and set its color.
 
-The legend footer reads *Created in pathogen.studio*.
+## Branding
+
+Every export carries a small *Created in pathogen.studio* attribution:
+
+- With the legend **on**, it appears as the legend card's footer.
+- With the legend **off**, a quiet single line marks the artwork's bottom-right corner.
+
+The line is shown in the live preview, so its placement is never a surprise.
 
 ## SVG export
 
-The SVG export is fully self-contained: the legend's fonts are embedded directly in the file as data URIs, so the file renders identically offline, in any browser, with no font substitution. Use SVG when you want to keep the export editable, embed it in a web page, or re-import it into design tools.
+The SVG export is fully self-contained: fonts used by the legend and branding line are embedded directly in the file as data URIs, so the file renders identically offline, in any browser, with no font substitution. Use SVG when you want to keep the export editable, embed it in a web page, or re-import it into design tools.
+
+## PNG export
+
+The PNG export rasterizes exactly what the preview shows — artwork, legend, branding, and (if enabled) the grid — with fonts rendered from the same embedded data as the SVG export.
+
+- **Scale** — 1×, 2× (default), or 4× of the artwork's `ViewBox` units, or **Custom width** in pixels; height always follows the artwork's aspect ratio. A live summary line shows the computed pixel dimensions. Sizes are capped at 16,384 px per side.
+- **Transparent background** — omits the workspace background color, for compositing the artwork over other designs.
 
 ## PDF export (print-ready)
 
-The PDF export is built for handing off to a print shop. It solves the problem that generic SVG-to-PDF converters routinely mangle: **font fidelity**. Before the PDF is generated, every piece of text — in your artwork and in the legend — is converted to vector outlines. The PDF contains no font references at all, so there is nothing for a print shop's software to substitute. What you see in the editor is what comes off the press, at any size.
+The PDF export is built for handing off to a print shop. It solves the problem that generic SVG-to-PDF converters routinely mangle: **font fidelity**. Before the PDF is generated, every piece of text — in your artwork, the legend, and the branding line — is converted to vector outlines. The PDF contains no font references at all, so there is nothing for a print shop's software to substitute. What you see in the editor is what comes off the press, at any size.
 
 ### Page sizing
 
@@ -54,7 +76,7 @@ Like everything else in the PDF export, the cover's text is converted to vector 
 The **Artwork** setting chooses how your artwork is written into the PDF:
 
 - **Vector** — exact path geometry, crisp at any print size. The default for most artwork.
-- **Raster** — the artwork is embedded as a print-resolution image (300 DPI, sized for your page). Text outlines and the legend stay vector either way.
+- **Raster** — the artwork is embedded as a print-resolution image (300 DPI, sized for your page). Text outlines, the legend, and the branding line stay vector either way.
 
 Very complex artwork — hundreds of thousands of path segments, as dense generative patterns can produce — makes technically valid vector PDFs that Preview, Acrobat, and print-shop software render for minutes or show as blank. The export detects this and defaults such artwork to **Raster**, which previews instantly and prints reliably; you can always switch back to Vector.
 
@@ -62,7 +84,7 @@ Very complex artwork — hundreds of thousands of path segments, as dense genera
 
 Two controls trim the exported file without changing how it looks.
 
-**Precision** (under **Advanced Export Settings** — applies to both SVG and PDF). Pathogen emits coordinates at full floating-point precision by default. The workspace's footer **Precision** setting (also available as `--to-fixed <N>` in the CLI) rounds every coordinate at compile time, affecting the live preview and everything downstream. The export dialog's Precision select goes one step further: it trims decimals for *this export only*, without touching your workspace setting or preview. It defaults to **Match workspace**, only ever removes precision (never adds it back), and rewrites artwork paths as absolute coordinates so rounding can never accumulate into visible drift. Text outlines and the legend are left untouched. Two decimals is comfortably sub-pixel for screen SVGs and far below print resolution.
+**Precision** (under **Advanced Export Settings** — applies to every format). Pathogen emits coordinates at full floating-point precision by default. The workspace's footer **Precision** setting (also available as `--to-fixed <N>` in the CLI) rounds every coordinate at compile time, affecting the live preview and everything downstream. The export dialog's Precision select goes one step further: it trims decimals for *this export only*, without touching your workspace setting or preview. It defaults to **Match workspace**, only ever removes precision (never adds it back), and rewrites artwork paths as absolute coordinates so rounding can never accumulate into visible drift. Text outlines and the legend are left untouched. Two decimals is comfortably sub-pixel for screen SVGs and far below print resolution.
 
 **Detail** (PDF format, Vector artwork only). Dense generative artwork often packs many path segments inside the area of a single printed dot — invisible individually, but every one of them costs the print shop's software rendering time. The Detail select removes segments smaller than a threshold derived from your chosen print size:
 

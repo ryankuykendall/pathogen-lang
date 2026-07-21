@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 04 — Menu change + watermark detail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baumans&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-secondary: #ffffff;
+    --border-color: #e2e8f0;
+    --text-primary: #1c1722;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    --accent-color: #10b981;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-sans); background: #2a2438; color: #cbc4d6; }
+  .banner {
+    padding: 0.6rem 1.25rem; background: #1c1722; color: #cbc4d6;
+    font-size: 0.78rem; display: flex; gap: 0.75rem; align-items: baseline;
+  }
+  .banner strong { color: #fff; font-weight: 600; }
+  section { padding: 1.75rem 1.25rem; }
+  section h2 { margin: 0 0 1.25rem; color: #fff; font-size: 1rem; }
+  section h3 { margin: 0 0 0.75rem; color: #cbc4d6; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  /* ===== Overflow menu ===== */
+  .menus { display: flex; gap: 3rem; flex-wrap: wrap; }
+  .menu-card {
+    min-width: 230px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 20px -5px rgba(0,0,0,0.35);
+    padding: 0.375rem;
+    color: var(--text-primary);
+  }
+  .menu-card button {
+    display: flex; align-items: center; gap: 0.6rem;
+    width: 100%; padding: 0.5rem 0.65rem;
+    border: none; background: none; text-align: left;
+    font-family: inherit; font-size: 0.8125rem; color: var(--text-primary);
+    border-radius: 6px; cursor: pointer;
+  }
+  .menu-card button:hover { background: rgba(16, 185, 129, 0.08); }
+  .menu-card button.removed {
+    color: #dc2626; text-decoration: line-through; opacity: 0.75;
+    background: #fef2f2;
+  }
+  .menu-card button.hilite {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
+  }
+  .menu-card .menu-divider { height: 1px; background: var(--border-color); margin: 0.3rem 0.4rem; }
+  .menu-card .icon {
+    width: 16px; height: 16px; display: inline-grid; place-items: center;
+    color: var(--text-secondary); font-size: 0.85rem;
+  }
+  .menu-note { margin-top: 0.6rem; font-size: 0.72rem; color: #a89ebd; max-width: 230px; line-height: 1.5; }
+
+  /* ===== Watermark close-ups ===== */
+  .corners { display: flex; gap: 2rem; flex-wrap: wrap; }
+  .corner-demo { position: relative; width: 380px; height: 200px; border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.35); }
+  .corner-demo.dark { background: #171226; }
+  .corner-demo.dark::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 20% -40%, rgba(185,165,230,0.35), transparent 60%),
+      radial-gradient(circle at 85% 130%, rgba(240,160,123,0.25), transparent 55%);
+  }
+  .corner-demo.light { background: #fdfcf8; }
+  .corner-demo.light::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 15% -30%, rgba(122,95,176,0.18), transparent 55%),
+      radial-gradient(circle at 90% 140%, rgba(232,131,79,0.16), transparent 55%);
+  }
+  .watermark {
+    position: absolute; right: 14px; bottom: 10px;
+    font-size: 0.72rem; color: #94a3b8; letter-spacing: 0.01em;
+  }
+  .watermark .brand { font-family: 'Baumans', var(--font-sans); font-size: 0.86rem; margin-left: 0.28em; }
+  .corner-label {
+    position: absolute; left: 14px; top: 10px;
+    font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: rgba(148,163,184,0.8);
+  }
+  .zoombox {
+    margin-top: 1.5rem; display: inline-block;
+    background: #171226; border-radius: var(--radius-lg);
+    padding: 2.2rem 2.6rem; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.35);
+  }
+  .zoombox .watermark { position: static; font-size: 1.5rem; color: #94a3b8; }
+  .zoombox .watermark .brand { font-size: 1.85rem; margin-left: 0.3em; }
+  .zoom-caption { margin-top: 0.6rem; font-size: 0.72rem; color: #a89ebd; }
+
+  .notes { padding: 1.25rem; background: #1c1722; color: #cbc4d6; font-size: 0.8rem; line-height: 1.6; }
+  .notes h3 { margin: 0 0 0.5rem; color: #fff; font-size: 0.85rem; text-transform: none; letter-spacing: 0; }
+  .notes ul { margin: 0; padding-left: 1.2rem; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <strong>Mockup 04 / 04</strong>
+  <span>Unified Export — overflow menu before/after + watermark legibility</span>
+</div>
+
+<section>
+  <h2>Overflow menu (⋮)</h2>
+  <div class="menus">
+    <div>
+      <h3>Before</h3>
+      <div class="menu-card">
+        <button><span class="icon">&#8595;</span>Export <span style="margin-left:auto;font-size:0.66rem;color:var(--text-tertiary)">saves .svgx source</span></button>
+        <button><span class="icon">&#8676;</span>Format Document</button>
+        <button><span class="icon">&#9998;</span>Rename workspace</button>
+        <div class="menu-divider"></div>
+        <button><span class="icon">&#128279;</span>Copy URL</button>
+        <button><span class="icon">&#10697;</span>Copy Workspace</button>
+        <button><span class="icon">&lt;&gt;</span>Copy SVG</button>
+        <button><span class="icon">&#9888;</span>Copy Debug Info</button>
+        <div class="menu-divider"></div>
+        <button class="removed"><span class="icon">&#8599;</span>Export with Legend</button>
+        <button><span class="icon">&#9635;</span>Set Thumbnail</button>
+      </div>
+      <p class="menu-note">Two export items with a misleading split: &ldquo;Export&rdquo; saved raw source code, &ldquo;Export with Legend&rdquo; opened the real export workflow.</p>
+    </div>
+    <div>
+      <h3>After</h3>
+      <div class="menu-card">
+        <button class="hilite"><span class="icon">&#8595;</span>Export <span style="margin-left:auto;font-size:0.66rem;color:var(--text-tertiary)">Ctrl+Shift+E</span></button>
+        <button><span class="icon">&#8676;</span>Format Document</button>
+        <button><span class="icon">&#9998;</span>Rename workspace</button>
+        <div class="menu-divider"></div>
+        <button><span class="icon">&#128279;</span>Copy URL</button>
+        <button><span class="icon">&#10697;</span>Copy Workspace</button>
+        <button><span class="icon">&lt;&gt;</span>Copy SVG</button>
+        <button><span class="icon">&#9888;</span>Copy Debug Info</button>
+        <div class="menu-divider"></div>
+        <button><span class="icon">&#9635;</span>Set Thumbnail</button>
+      </div>
+      <p class="menu-note">One &ldquo;Export&rdquo; item opening the unified dialog (tooltip: &ldquo;Export as SVG, PNG, or PDF (Ctrl+Shift+E)&rdquo;). The .svgx source download is retired. Ctrl+S remains a silent save.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Watermark — legibility across backgrounds</h2>
+  <div class="corners">
+    <div class="corner-demo dark">
+      <span class="corner-label">Dark artwork</span>
+      <div class="watermark">Created in<span class="brand">pathogen.studio</span></div>
+    </div>
+    <div class="corner-demo light">
+      <span class="corner-label">Light artwork</span>
+      <div class="watermark">Created in<span class="brand">pathogen.studio</span></div>
+    </div>
+  </div>
+
+  <div class="zoombox">
+    <div class="watermark">Created in<span class="brand">pathogen.studio</span></div>
+  </div>
+  <p class="zoom-caption">Enlarged: Inter &ldquo;Created in&rdquo; + Baumans &ldquo;pathogen.studio&rdquo;, slate #94a3b8 &mdash; the same brand pattern as the legend footer and PDF cover sheet.</p>
+</section>
+
+<div class="notes">
+  <h3>Design notes — menu + watermark</h3>
+  <ul>
+    <li><strong>Single Export entry.</strong> <code>data-action="export"</code> dispatches <code>open-export</code>; the modal opens for every format. &ldquo;Export with Legend&rdquo; and the old source-save code path are removed.</li>
+    <li><strong>Keyboard:</strong> Ctrl/Cmd+Shift+E opens Export. Ctrl/Cmd+S stays an autosave flush (its old tooltip claiming it exported was wrong).</li>
+    <li><strong>Watermark color #94a3b8</strong> is a mid-slate chosen to be quiet on both dark and light artwork — visible in both close-ups above, dominant in neither. It sits inside the artwork&rsquo;s bottom-right corner (10 units of padding, scaled with the legend&rsquo;s unit system).</li>
+    <li><strong>Fixed position v1</strong> — not draggable, no opt-out (it&rsquo;s the attribution that replaces the legend footer). If real artwork ever collides with it, a corner selector is the planned v1.1 escape hatch.</li>
+    <li>The watermark appears in the modal&rsquo;s live preview, so what you download is exactly what you saw.</li>
+  </ul>
+</div>
+
+</body>
+</html>
