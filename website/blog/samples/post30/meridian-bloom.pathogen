@@ -1,0 +1,68 @@
+// viewBox="0 0 900 1200"
+@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 900, 1200);
+
+define default PathLayer('background') ${
+  fill: #14101c;
+  stroke: none;
+}
+
+layer('background').apply {
+  rect(0, 0, 900, 1200);
+}
+
+// Six rings of petals, each ring rotated half a step from the last
+let petals = PathLayer('petals') ${
+  stroke: oklch(0.75 0.12 300);
+  stroke-width: 2;
+  fill: none;
+};
+
+petals.apply {
+  for (ring in 1..6) {
+    let count = calc(ring * 6);
+    let radius = calc(ring * 62);
+    for (i in 0..calc(count - 1)) {
+      let a = calc((i + ring * 0.5) / count * 2pi);
+      let px = calc(450 + radius * cos(a));
+      let py = calc(540 + radius * sin(a));
+      circle(px, py, calc(26 - ring * 3));
+    }
+  }
+}
+
+let core = PathLayer('core') ${
+  fill: oklch(0.78 0.15 60);
+  stroke: none;
+};
+
+core.apply {
+  circle(450, 540, 34);
+}
+
+let bloom = GroupLayer('bloom') ${};
+bloom.append(petals, core);
+
+// Title drawn as glyph outlines in Baumans
+define PathLayer('title') ${
+  fill: #f6e9da;
+  stroke: none;
+}
+
+let glyphs = PathBlock.fromGlyph('MERIDIAN BLOOM', ${
+  font-family: Baumans-Regular;
+  font-size: 44;
+});
+
+let totalWidth = 0;
+for (g in glyphs) {
+  totalWidth = calc(totalWidth + g.advanceWidth);
+}
+
+layer('title').apply {
+  let cx = calc((900 - totalWidth) / 2);
+  for (g in glyphs) {
+    g.drawTo(cx, 1060);
+    cx = calc(cx + g.advanceWidth);
+  }
+}

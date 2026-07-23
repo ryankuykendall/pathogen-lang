@@ -96,10 +96,40 @@ Gotchas hit:
   corner (a drawn full-canvas rect is artwork, not workspace
   background).
 
-### Phase C — Blog — not started
+### Phase C — Blog (2026-07-23) — IN REVIEW
 
-New post `website/blog/unified-export.md`, samples `post30/`, screenshots
-via `shoot-blog-assets.ts` clone.
+- Sample: `website/blog/samples/post30/meridian-bloom.pathogen`
+  (900×1200 poster, six petal rings + Baumans glyph title; GroupLayer'd;
+  `compile:samples` + `validate-samples` clean; BBWP compiled
+  2026-07-23-09:53:40)
+- Screenshots via `shoot-blog-assets.ts` (adapted from pdf-export
+  shooter, EXPORT-MODAL tag): `website/blog-static/unified-export-modal
+  / -legend / -png.png` + `verify/meridian-bloom-poster.pdf`
+- Post: `website/blog/unified-export.md` — "Export Anything: SVG, PNG,
+  and Print-Ready PDF from One Dialog" (slug `unified-export`,
+  2026-07-23). Standalone launch framing (no upgrade story); old
+  print-ready-pdf-export post untouched.
+- `build:blog` (29 pages) + `build:website` + `check-links` clean;
+  post + images + sample SVG verified serving on :3000.
+- Content review (4-persona round table) verdict: strong launch, clean
+  net-new framing. Actions taken:
+  - **Must-Fix 1** (color claim needed visible evidence): added
+    `unified-export-legend-detail.png` — high-res crop of the exported
+    legend card with fully legible token colors — into the post.
+  - **SF-3**: sample now uses the idiomatic `2pi` unit instead of
+    `6.28318`; recompiled + revalidated + fresh BBWP
+    (2026-07-23-10:04:48).
+  - **SF-4** verified real: `open()` seeds the legend Name from the
+    workspace name (screenshot shows it pre-filled). Phrasing kept.
+  - **C-5**: Precision/Detail sentence split (decimals vs segments).
+  - **C-6**: PNG screenshot recaptured with legend off (matches alt).
+  - **C-7**: watermark line no longer claims light-artwork evidence.
+  - **SF-2 flagged, not actioned**: old `print-ready-pdf-export.md:54`
+    still says "Export with Legend" (menu item that no longer exists).
+    User directed the old post stay completely untouched — surfaced to
+    Ryan as a known staleness for a future editorial pass.
+  - **C-8**: no forward link from old post added (out of scope, same
+    directive).
 
 ## Key implementation facts (verified during planning)
 

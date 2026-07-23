@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "unified-export",
+    "title": "Export Anything: SVG, PNG, and Print-Ready PDF from One Dialog",
+    "date": "2026-07-23",
+    "description": "Pathogen Studio's Export dialog ships today: three formats, an optional legend with syntax-highlighted source, and a live preview that is exactly what you download."
+  },
+  {
     "slug": "print-ready-pdf-export",
     "title": "Print-Ready PDF Export: From Playground to Poster",
     "date": "2026-07-18",
@@ -20273,6 +20279,115 @@ layer('glyphs').apply {
 <h2>Where to go next</h2>
 <p>Two methods, one idea: <strong>any path can be a rail for a variable-width stroke.</strong> Vary the distance for tapered edges; choose <code>G0</code>/<code>G1</code>/<code>G2</code> for the character of the joins; add a second profile for a filled ribbon; cap it; and point it at your own geometry — even your own type.</p>
 <p>The full reference lives in the <a href="/docs#variable-offset-variable-offset">Variable Offset docs</a>. Go make something that breathes.</p>
+`,
+  'unified-export': `<p>There&#39;s a moment in every generative piece where the browser stops being enough. The composition is done, the palette has settled, and now you want the thing itself — a file you can send, post, composite, or carry to a print shop. Today we&#39;re shipping the workflow for that moment: a single <strong>Export</strong> dialog that takes any workspace to SVG, PNG, or print-ready PDF.</p>
+<p>Open it from the workspace&#39;s overflow menu (⋮ → <strong>Export</strong>) or press <strong>Ctrl/Cmd+Shift+E</strong>. Everything about the dialog follows one rule: <em>the preview is the file</em>. What you see — the artwork, the optional legend, the small attribution line — is exactly what lands on disk.</p>
+<img src="/blog/unified-export-modal.png" alt="The Export dialog: format toggle at the top left, live preview of the artwork with a small Created in pathogen.studio line in its corner" loading="lazy">
+
+<h2>Three formats</h2>
+<p>The first decision is the format, and it&#39;s the first control in the dialog:</p>
+<ul>
+<li><strong>SVG — vector file.</strong> Fully self-contained: the fonts used by the legend and attribution line are embedded as data URIs, so the file renders identically offline, in any browser, with no substitutions. This is the format for the web, for further editing, and for re-import into design tools.</li>
+<li><strong>PNG — image.</strong> Pixels at the resolution you choose. Scale presets render at 1×, 2×, or 4× of your <code>ViewBox</code> units, or type a custom pixel width and the height follows your aspect ratio. A summary line shows the computed dimensions before you commit — <em>&quot;Artwork 900 × 1200 units — exports at 1,800 × 2,400 px&quot;</em>. There&#39;s also a <strong>transparent background</strong> option that omits the workspace background color entirely, for compositing your linework over other designs.</li>
+<li><strong>PDF — print-ready.</strong> Real page sizes, margins, bleed and crop marks, and a guarantee we&#39;ll come back to below: the file that comes out of this dialog prints correctly at any print shop.</li>
+</ul>
+<h2>The legend</h2>
+<p>Flip on <strong>Include legend</strong> and the export gains a caption card: title, creator, date, description, and the full Pathogen source that produced the artwork. Drag it anywhere over the piece; drag its corner to resize; enable <strong>Snap</strong> for grid-aligned placement.</p>
+<p>The source listing is <strong>syntax highlighted</strong> by default. The legend card uses Pathogen&#39;s print palette — the same token colors you see across pathogen.studio, tuned for the card&#39;s white background — and the colors are baked into the file as literal fills. That detail matters more than it sounds: it means the highlighted code survives every format identically. In the SVG it&#39;s colored text, in the PNG it&#39;s colored pixels, and in the PDF it&#39;s colored <em>vector outlines</em> — the same keywords in the same purple, whether you&#39;re zooming a browser or holding a poster.</p>
+<img src="/blog/unified-export-legend-detail.png" alt="Close-up of an exported legend card: keywords in purple, layer constructors in magenta, numbers in coral, color values in green, comments in gray" loading="lazy">
+
+<img src="/blog/unified-export-legend.png" alt="Export dialog with the legend enabled: the caption card carries the title, creator, date, description, and syntax-highlighted Pathogen source" loading="lazy">
+
+<p>A legend turns an export into an artifact that explains itself. The piece and the program that made it travel together — pin it to a wall and the source is right there, readable, in color.</p>
+<h2>A quiet signature</h2>
+<p>Every export carries a small <em>Created in pathogen.studio</em> line. With the legend on, it&#39;s the card&#39;s footer. With the legend off, it sits in the artwork&#39;s bottom-right corner — a mid-slate chosen to sit on the artwork without competing with it. It appears in the live preview, so its placement is never a surprise, and like everything else it&#39;s real vector: in the PDF, the wordmark is outlined glyphs, not a font reference.</p>
+<h2>Sized for the print counter</h2>
+<p>The PDF format is where the dialog earns the word <em>print-ready</em>, because it solves the problem that silently ruins most SVG-to-print pipelines: <strong>fonts</strong>. An SVG names its fonts; a print shop&#39;s software resolves those names against whatever it has installed, and substitutes without asking. So before the PDF is generated, every piece of text — artwork, legend, attribution — is converted to vector outlines. The file contains no font references at all. There is nothing to substitute. Zoom to 6400% and the letterforms are curves.</p>
+<p>Around that guarantee is a full print workflow:</p>
+<ul>
+<li><strong>Page sizing three ways.</strong> <em>Match artwork</em> (type the printed width — say 24 in — and height follows your <code>ViewBox</code> ratio; the artwork prints at exactly that size), standard presets (US poster sizes, Letter, Tabloid, ISO A4–A0, portrait or landscape), or a fully custom page. One units selector — inches or centimeters — applies everywhere, and a live summary spells out what will print.</li>
+<li><strong>Bleed and crop marks</strong> with one checkbox: the background extends 0.125 in / 3 mm past the trim line and hairline marks show the cutter where to cut. Leave it on for edge-to-edge posters.</li>
+<li><strong>A cover sheet</strong> option adds a job-ticket first page — fast raster preview, a spec manifest, and handling notes for the print counter — which also makes heavy files preview instantly in Finder and Acrobat.</li>
+<li><strong>Vector or raster artwork.</strong> Simple pieces stay exact vector geometry. Dense generative work — hundreds of thousands of segments — defaults to a 300 DPI raster that previews and prints reliably, while the legend and every piece of text stay vector either way. A <strong>Precision</strong> control trims coordinate decimals, and a <strong>Detail</strong> control culls segments smaller than a printed dot — smaller, faster files with no visible change.</li>
+</ul>
+<p>The full details — sizing modes, margins, the cover sheet, what stays vector — are in <a href="/docs#exporting-exporting-your-work">the export documentation</a>.</p>
+<img src="/blog/unified-export-png.png" alt="PNG settings: scale presets with a computed-dimensions summary and a transparent background option" loading="lazy">
+
+<h2>Try it</h2>
+<p>The piece in the screenshots is below — open the source, riff on the rings, then take it to the Export dialog and watch the legend set its own title.</p>
+<p><mini-workspace code-open caption="Meridian Bloom — six rings of petals and a Baumans title, drawn as glyph outlines.">
+  <code>// viewBox="0 0 900 1200"
+@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 900, 1200);
+
+define default PathLayer('background') \${
+  fill: #14101c;
+  stroke: none;
+}
+
+layer('background').apply {
+  rect(0, 0, 900, 1200);
+}
+
+// Six rings of petals, each ring rotated half a step from the last
+let petals = PathLayer('petals') \${
+  stroke: oklch(0.75 0.12 300);
+  stroke-width: 2;
+  fill: none;
+};
+
+petals.apply {
+  for (ring in 1..6) {
+    let count = calc(ring * 6);
+    let radius = calc(ring * 62);
+    for (i in 0..calc(count - 1)) {
+      let a = calc((i + ring * 0.5) / count * 2pi);
+      let px = calc(450 + radius * cos(a));
+      let py = calc(540 + radius * sin(a));
+      circle(px, py, calc(26 - ring * 3));
+    }
+  }
+}
+
+let core = PathLayer('core') \${
+  fill: oklch(0.78 0.15 60);
+  stroke: none;
+};
+
+core.apply {
+  circle(450, 540, 34);
+}
+
+let bloom = GroupLayer('bloom') \${};
+bloom.append(petals, core);
+
+// Title drawn as glyph outlines in Baumans
+define PathLayer('title') \${
+  fill: #f6e9da;
+  stroke: none;
+}
+
+let glyphs = PathBlock.fromGlyph('MERIDIAN BLOOM', \${
+  font-family: Baumans-Regular;
+  font-size: 44;
+});
+
+let totalWidth = 0;
+for (g in glyphs) {
+  totalWidth = calc(totalWidth + g.advanceWidth);
+}
+
+layer('title').apply {
+  let cx = calc((900 - totalWidth) / 2);
+  for (g in glyphs) {
+    g.drawTo(cx, 1060);
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+</code>
+  <img src="/blog/samples/post30/meridian-bloom.svg" alt="Meridian Bloom — six rings of petals and a Baumans title, drawn as glyph outlines." loading="lazy">
+</mini-workspace></p>
+<p>Export lives in every workspace today at <a href="https://pathogen.studio">pathogen.studio</a>. Make something, then take it with you.</p>
 `,
   'vscode-developer-experience': `<img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
 

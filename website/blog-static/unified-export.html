@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Export Anything: SVG, PNG, and Print-Ready PDF from One Dialog — Pathogen Studio</title>
+  <meta name="description" content="Pathogen Studio's Export dialog ships today: three formats, an optional legend with syntax-highlighted source, and a live preview that is exactly what you download.">
+  <link rel="canonical" href="https://pathogen.studio/blog/unified-export">
+  <meta property="og:title" content="Export Anything: SVG, PNG, and Print-Ready PDF from One Dialog — Pathogen Studio">
+  <meta property="og:description" content="Pathogen Studio's Export dialog ships today: three formats, an optional legend with syntax-highlighted source, and a live preview that is exactly what you download.">
+  <meta property="og:url" content="https://pathogen.studio/blog/unified-export">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Export Anything: SVG, PNG, and Print-Ready PDF from One Dialog","description":"Pathogen Studio's Export dialog ships today: three formats, an optional legend with syntax-highlighted source, and a live preview that is exactly what you download.","datePublished":"2026-07-23","url":"https://pathogen.studio/blog/unified-export","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Export Anything: SVG, PNG, and Print-Ready PDF from One Dialog</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Export Anything: SVG, PNG, and Print-Ready PDF from One Dialog</h1>
+        <p class="post-meta"><time datetime="2026-07-23">July 22, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p>There&#39;s a moment in every generative piece where the browser stops being enough. The composition is done, the palette has settled, and now you want the thing itself — a file you can send, post, composite, or carry to a print shop. Today we&#39;re shipping the workflow for that moment: a single <strong>Export</strong> dialog that takes any workspace to SVG, PNG, or print-ready PDF.</p>
+<p>Open it from the workspace&#39;s overflow menu (⋮ → <strong>Export</strong>) or press <strong>Ctrl/Cmd+Shift+E</strong>. Everything about the dialog follows one rule: <em>the preview is the file</em>. What you see — the artwork, the optional legend, the small attribution line — is exactly what lands on disk.</p>
+<img src="/blog/unified-export-modal.png" alt="The Export dialog: format toggle at the top left, live preview of the artwork with a small Created in pathogen.studio line in its corner" loading="lazy">
+
+<h2>Three formats</h2>
+<p>The first decision is the format, and it&#39;s the first control in the dialog:</p>
+<ul>
+<li><strong>SVG — vector file.</strong> Fully self-contained: the fonts used by the legend and attribution line are embedded as data URIs, so the file renders identically offline, in any browser, with no substitutions. This is the format for the web, for further editing, and for re-import into design tools.</li>
+<li><strong>PNG — image.</strong> Pixels at the resolution you choose. Scale presets render at 1×, 2×, or 4× of your <code>ViewBox</code> units, or type a custom pixel width and the height follows your aspect ratio. A summary line shows the computed dimensions before you commit — <em>&quot;Artwork 900 × 1200 units — exports at 1,800 × 2,400 px&quot;</em>. There&#39;s also a <strong>transparent background</strong> option that omits the workspace background color entirely, for compositing your linework over other designs.</li>
+<li><strong>PDF — print-ready.</strong> Real page sizes, margins, bleed and crop marks, and a guarantee we&#39;ll come back to below: the file that comes out of this dialog prints correctly at any print shop.</li>
+</ul>
+<h2>The legend</h2>
+<p>Flip on <strong>Include legend</strong> and the export gains a caption card: title, creator, date, description, and the full Pathogen source that produced the artwork. Drag it anywhere over the piece; drag its corner to resize; enable <strong>Snap</strong> for grid-aligned placement.</p>
+<p>The source listing is <strong>syntax highlighted</strong> by default. The legend card uses Pathogen&#39;s print palette — the same token colors you see across pathogen.studio, tuned for the card&#39;s white background — and the colors are baked into the file as literal fills. That detail matters more than it sounds: it means the highlighted code survives every format identically. In the SVG it&#39;s colored text, in the PNG it&#39;s colored pixels, and in the PDF it&#39;s colored <em>vector outlines</em> — the same keywords in the same purple, whether you&#39;re zooming a browser or holding a poster.</p>
+<img src="/blog/unified-export-legend-detail.png" alt="Close-up of an exported legend card: keywords in purple, layer constructors in magenta, numbers in coral, color values in green, comments in gray" loading="lazy">
+
+<img src="/blog/unified-export-legend.png" alt="Export dialog with the legend enabled: the caption card carries the title, creator, date, description, and syntax-highlighted Pathogen source" loading="lazy">
+
+<p>A legend turns an export into an artifact that explains itself. The piece and the program that made it travel together — pin it to a wall and the source is right there, readable, in color.</p>
+<h2>A quiet signature</h2>
+<p>Every export carries a small <em>Created in pathogen.studio</em> line. With the legend on, it&#39;s the card&#39;s footer. With the legend off, it sits in the artwork&#39;s bottom-right corner — a mid-slate chosen to sit on the artwork without competing with it. It appears in the live preview, so its placement is never a surprise, and like everything else it&#39;s real vector: in the PDF, the wordmark is outlined glyphs, not a font reference.</p>
+<h2>Sized for the print counter</h2>
+<p>The PDF format is where the dialog earns the word <em>print-ready</em>, because it solves the problem that silently ruins most SVG-to-print pipelines: <strong>fonts</strong>. An SVG names its fonts; a print shop&#39;s software resolves those names against whatever it has installed, and substitutes without asking. So before the PDF is generated, every piece of text — artwork, legend, attribution — is converted to vector outlines. The file contains no font references at all. There is nothing to substitute. Zoom to 6400% and the letterforms are curves.</p>
+<p>Around that guarantee is a full print workflow:</p>
+<ul>
+<li><strong>Page sizing three ways.</strong> <em>Match artwork</em> (type the printed width — say 24 in — and height follows your <code>ViewBox</code> ratio; the artwork prints at exactly that size), standard presets (US poster sizes, Letter, Tabloid, ISO A4–A0, portrait or landscape), or a fully custom page. One units selector — inches or centimeters — applies everywhere, and a live summary spells out what will print.</li>
+<li><strong>Bleed and crop marks</strong> with one checkbox: the background extends 0.125 in / 3 mm past the trim line and hairline marks show the cutter where to cut. Leave it on for edge-to-edge posters.</li>
+<li><strong>A cover sheet</strong> option adds a job-ticket first page — fast raster preview, a spec manifest, and handling notes for the print counter — which also makes heavy files preview instantly in Finder and Acrobat.</li>
+<li><strong>Vector or raster artwork.</strong> Simple pieces stay exact vector geometry. Dense generative work — hundreds of thousands of segments — defaults to a 300 DPI raster that previews and prints reliably, while the legend and every piece of text stay vector either way. A <strong>Precision</strong> control trims coordinate decimals, and a <strong>Detail</strong> control culls segments smaller than a printed dot — smaller, faster files with no visible change.</li>
+</ul>
+<p>The full details — sizing modes, margins, the cover sheet, what stays vector — are in <a href="/docs#exporting-exporting-your-work">the export documentation</a>.</p>
+<img src="/blog/unified-export-png.png" alt="PNG settings: scale presets with a computed-dimensions summary and a transparent background option" loading="lazy">
+
+<h2>Try it</h2>
+<p>The piece in the screenshots is below — open the source, riff on the rings, then take it to the Export dialog and watch the legend set its own title.</p>
+<p><mini-workspace code-open caption="Meridian Bloom — six rings of petals and a Baumans title, drawn as glyph outlines.">
+  <code>// viewBox="0 0 900 1200"
+@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+define ViewBox(0, 0, 900, 1200);
+
+define default PathLayer('background') ${
+  fill: #14101c;
+  stroke: none;
+}
+
+layer('background').apply {
+  rect(0, 0, 900, 1200);
+}
+
+// Six rings of petals, each ring rotated half a step from the last
+let petals = PathLayer('petals') ${
+  stroke: oklch(0.75 0.12 300);
+  stroke-width: 2;
+  fill: none;
+};
+
+petals.apply {
+  for (ring in 1..6) {
+    let count = calc(ring * 6);
+    let radius = calc(ring * 62);
+    for (i in 0..calc(count - 1)) {
+      let a = calc((i + ring * 0.5) / count * 2pi);
+      let px = calc(450 + radius * cos(a));
+      let py = calc(540 + radius * sin(a));
+      circle(px, py, calc(26 - ring * 3));
+    }
+  }
+}
+
+let core = PathLayer('core') ${
+  fill: oklch(0.78 0.15 60);
+  stroke: none;
+};
+
+core.apply {
+  circle(450, 540, 34);
+}
+
+let bloom = GroupLayer('bloom') ${};
+bloom.append(petals, core);
+
+// Title drawn as glyph outlines in Baumans
+define PathLayer('title') ${
+  fill: #f6e9da;
+  stroke: none;
+}
+
+let glyphs = PathBlock.fromGlyph('MERIDIAN BLOOM', ${
+  font-family: Baumans-Regular;
+  font-size: 44;
+});
+
+let totalWidth = 0;
+for (g in glyphs) {
+  totalWidth = calc(totalWidth + g.advanceWidth);
+}
+
+layer('title').apply {
+  let cx = calc((900 - totalWidth) / 2);
+  for (g in glyphs) {
+    g.drawTo(cx, 1060);
+    cx = calc(cx + g.advanceWidth);
+  }
+}
+</code>
+  <img src="/blog/samples/post30/meridian-bloom.svg" alt="Meridian Bloom — six rings of petals and a Baumans title, drawn as glyph outlines." loading="lazy">
+</mini-workspace></p>
+<p>Export lives in every workspace today at <a href="https://pathogen.studio">pathogen.studio</a>. Make something, then take it with you.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>
