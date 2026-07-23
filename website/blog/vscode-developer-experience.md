@@ -97,7 +97,7 @@ Before the preview panel, Pathogen development required a save-compile-open cycl
 
 The preview isn't just a static render — it matches the [playground](/) experience:
 
-- **Pan and zoom**: Click-drag to pan, Cmd+scroll to zoom (0.25x–10x range), with a navigator minimap
+- **Pan and zoom**: Click-drag to pan, Cmd+scroll to zoom (0.1x–20x range), with a navigator minimap
 - **Layer inspector**: Toggle [layer](/docs#layers-defining-layers) visibility, see color swatches, navigate GroupLayer hierarchy
 - **CSS variable pickers**: Color picker inputs for every [`CSSVar()`](/docs#css-var-cssvar-type) in the source — changes recompile instantly
 - **Recompile button**: Re-rolls `randomRange()` values without editing source

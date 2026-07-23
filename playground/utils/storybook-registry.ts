@@ -16,7 +16,7 @@ interface Story {
 }
 
 interface ControlEvents {
-  on(name: string, callback: (value: unknown) => void): void;
+  on: (name: string, callback: (value: unknown) => void) => void;
 }
 
 interface ComponentSpec {
@@ -141,14 +141,14 @@ layer('hex').apply { circle(60, 100, 40) }`,
         // Give time for component to initialize
         setTimeout(() => {
           (preview as unknown as { pathData: string }).pathData = (props.pathData as string) || '';
-          if (props.stale) (preview as unknown as { setStale(s: boolean): void }).setStale(true);
+          if (props.stale) (preview as unknown as { setStale: (s: boolean) => void }).setStale(true);
         }, 100);
 
         controls.on('pathData', (value) => {
           (preview as unknown as { pathData: unknown }).pathData = value;
         });
         controls.on('stale', (value) => {
-          (preview as unknown as { setStale(s: boolean): void }).setStale(Boolean(value));
+          (preview as unknown as { setStale: (s: boolean) => void }).setStale(Boolean(value));
         });
         controls.on('width', (value) => {
           store.set('width', value);
@@ -346,15 +346,15 @@ layer('hex').apply { circle(60, 100, 40) }`,
       container.appendChild(consolePane);
 
       if (props.isOpen) {
-        (consolePane as unknown as { open(): void }).open();
+        (consolePane as unknown as { open: () => void }).open();
       }
       (consolePane as unknown as { logs: unknown }).logs = props.logs || [];
 
       controls.on('isOpen', (value) => {
         if (value) {
-          (consolePane as unknown as { open(): void }).open();
+          (consolePane as unknown as { open: () => void }).open();
         } else {
-          (consolePane as unknown as { close(): void }).close();
+          (consolePane as unknown as { close: () => void }).close();
         }
       });
     },
@@ -433,12 +433,12 @@ layer('hex').apply { circle(60, 100, 40) }`,
       (pane as unknown as { _content: unknown })._content = props.content || '';
 
       if (props.isOpen) {
-        (pane as unknown as { open(): void }).open();
+        (pane as unknown as { open: () => void }).open();
       }
 
       controls.on('isOpen', (value) => {
-        if (value) (pane as unknown as { open(): void }).open();
-        else (pane as unknown as { close(): void }).close();
+        if (value) (pane as unknown as { open: () => void }).open();
+        else (pane as unknown as { close: () => void }).close();
       });
       controls.on('content', (value) => {
         (pane as unknown as { content: unknown }).content = value;
@@ -575,12 +575,12 @@ layer('hex').apply { circle(60, 100, 40) }`,
       wrapper.appendChild(panel);
 
       if (props.isOpen) {
-        setTimeout(() => (panel as unknown as { open(): void }).open(), 50);
+        setTimeout(() => (panel as unknown as { open: () => void }).open(), 50);
       }
 
       controls.on('isOpen', (value) => {
-        if (value) (panel as unknown as { open(): void }).open();
-        else (panel as unknown as { close(): void }).close();
+        if (value) (panel as unknown as { open: () => void }).open();
+        else (panel as unknown as { close: () => void }).close();
       });
     },
   },
@@ -759,7 +759,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
           type: 'success',
           title: 'Thumbnail set',
           message: 'Your new thumbnail will appear on your workspaces page.',
-          image: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" fill="%2310b981"/><circle cx="24" cy="24" r="14" fill="white" opacity="0.85"/></svg>',
+          image:
+            'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" fill="%2310b981"/><circle cx="24" cy="24" r="14" fill="white" opacity="0.85"/></svg>',
         },
       },
       {
@@ -773,10 +774,17 @@ layer('hex').apply { circle(60, 100, 40) }`,
     ],
     controls: [
       { name: 'title', type: 'text', label: 'Title', default: 'Thumbnail set' },
-      { name: 'message', type: 'text', label: 'Message', default: 'Your new thumbnail will appear on your workspaces page.' },
+      {
+        name: 'message',
+        type: 'text',
+        label: 'Message',
+        default: 'Your new thumbnail will appear on your workspaces page.',
+      },
     ],
     render: (container, props, controls) => {
-      const toast = document.createElement('app-toast') as HTMLElement & { show(opts: Record<string, unknown>): void };
+      const toast = document.createElement('app-toast') as HTMLElement & {
+        show: (opts: Record<string, unknown>) => void;
+      };
       container.appendChild(toast);
 
       const show = (): void => {
@@ -847,10 +855,65 @@ layer('hex').apply { circle(60, 100, 40) }`,
     },
   },
   {
+    id: 'pathogen-zoom-pill',
+    name: 'Zoom Pill',
+    category: 'Shared',
+    description:
+      'THE shared zoom control for every preview surface (workspace, export/thumbnail modals, mini-workspace, VS Code). Glass pill with −/Fit/+ and an editable percentage. Registered by the pan-zoom bundle (src/ui/zoom-pill.ts), not a playground module.',
+    stories: [
+      { name: 'Hover Fade (default)', props: {} },
+      { name: 'Always Visible', props: { alwaysVisible: true } },
+    ],
+    controls: [],
+    render: (container, props) => {
+      // Positioned stage so the pill's absolute bottom-center placement and
+      // hover-fade read exactly as they do over a live preview.
+      const stage = document.createElement('div');
+      stage.style.cssText =
+        'position:relative; height:220px; border:1px dashed var(--border-color, #e2e8f0); border-radius:12px; ' +
+        'background:repeating-conic-gradient(var(--bg-primary, #f8f9fa) 0 25%, var(--bg-secondary, #fff) 0 50%) 0 0 / 24px 24px;';
+
+      const pill = document.createElement('pathogen-zoom-pill');
+      if (props.alwaysVisible) pill.setAttribute('always-visible', '');
+
+      // Stub controller: maintains a zoom value and pushes it back to the
+      // pill, mimicking a surface's onChange loop.
+      let zoom = 1;
+      const clamp = (z: number): number => Math.min(20, Math.max(0.1, z));
+      const push = (): void => {
+        pill.zoom = zoom;
+      };
+      pill.controller = {
+        zoomIn: () => {
+          zoom = clamp(zoom * 1.5);
+          push();
+        },
+        zoomOut: () => {
+          zoom = clamp(zoom / 1.5);
+          push();
+        },
+        zoomToFit: () => {
+          zoom = 1;
+          push();
+        },
+        zoomTo: (z: number) => {
+          zoom = clamp(z);
+          push();
+        },
+        getView: () => ({ zoom }),
+      };
+      pill.fadeTarget = stage;
+
+      stage.appendChild(pill);
+      container.appendChild(stage);
+    },
+  },
+  {
     id: 'edit-workspace-metadata-modal',
     name: 'Edit Workspace Metadata Modal',
     category: 'Shared',
-    description: 'Centered card dialog for renaming a workspace and editing its description. Triggered from the breadcrumb overflow menu via the "Rename workspace" item.',
+    description:
+      'Centered card dialog for renaming a workspace and editing its description. Triggered from the breadcrumb overflow menu via the "Rename workspace" item.',
     stories: [
       {
         name: 'Default',
@@ -864,20 +927,27 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'Long description',
         props: {
           name: 'Layered Marker Demo',
-          description: 'Explores stacked path markers and the interaction between context-stroke, context-fill, and inherited dash patterns across multiple layers.',
+          description:
+            'Explores stacked path markers and the interaction between context-stroke, context-fill, and inherited dash patterns across multiple layers.',
         },
       },
     ],
     controls: [
       { name: 'name', type: 'text', label: 'Name', default: 'My Spirograph' },
-      { name: 'description', type: 'text', label: 'Description', default: 'A nested rotation pattern with adjustable arms.' },
+      {
+        name: 'description',
+        type: 'text',
+        label: 'Description',
+        default: 'A nested rotation pattern with adjustable arms.',
+      },
     ],
-    notes: 'In storybook the modal is rendered open. In the playground it is hidden by default and shown when the user invokes "Rename workspace" from the overflow menu.',
+    notes:
+      'In storybook the modal is rendered open. In the playground it is hidden by default and shown when the user invokes "Rename workspace" from the overflow menu.',
     render: (container, props, controls) => {
       void import('../components/edit-workspace-metadata-modal.js');
 
       const modal = document.createElement('edit-workspace-metadata-modal') as HTMLElement & {
-        open(opts: { name: string | null; description: string | null }): void;
+        open: (opts: { name: string | null; description: string | null }) => void;
       };
       container.appendChild(modal);
 
@@ -1249,7 +1319,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
         props: {
           codeOpen: false,
           withVars: true,
-          caption: 'Click a color chip in the control bar to recolor the SVG — exercises <pathogen-color-input> in the blog embed.',
+          caption:
+            'Click a color chip in the control bar to recolor the SVG — exercises <pathogen-color-input> in the blog embed.',
         },
       },
     ],
@@ -1291,9 +1362,7 @@ dot.apply { circle(100, 100, 14); }`;
       // mini-workspace reads code from a child <pre><code> (or <code>) and
       // the preview SVG from a child <svg>. Escape `<` in the code so it
       // doesn't break the inline <pre><code> block.
-      const escapedCode = sampleCode.replace(/[&<]/g, (c) =>
-        ({ '&': '&amp;', '<': '&lt;' })[c] as string,
-      );
+      const escapedCode = sampleCode.replace(/[&<]/g, (c) => ({ '&': '&amp;', '<': '&lt;' })[c] as string);
       const el = document.createElement('mini-workspace');
       if (withVars) {
         el.setAttribute('vars', '--bg-color:#f1faee;--ring-color:#e63946;--dot-color:#1d3557');
@@ -1365,7 +1434,10 @@ dot.apply { circle(100, 100, 14); }`;
     stories: [
       { name: 'Signed out', props: { signedIn: false } },
       { name: 'Signed in', props: { signedIn: true, displayName: 'Ryan K', handle: 'ryan-k' } },
-      { name: 'Long display name', props: { signedIn: true, displayName: 'Ada Augusta Lovelace', handle: 'ada-lovelace' } },
+      {
+        name: 'Long display name',
+        props: { signedIn: true, displayName: 'Ada Augusta Lovelace', handle: 'ada-lovelace' },
+      },
     ],
     controls: [
       { name: 'signedIn', type: 'toggle', label: 'Signed in', default: true },

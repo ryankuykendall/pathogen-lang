@@ -5,6 +5,7 @@ import { thumbnailApi } from '../services/api.js';
 import thumbnailService from '../services/thumbnail-service.js';
 import { store } from '../state/store.js';
 import { createSvgSnapshot } from '../utils/svg-snapshot.js';
+import type { PanZoomController } from '../../dist/pan-zoom';
 
 const ACCENT = '#10b981';
 const ACCENT_LIGHT = 'rgba(16, 185, 129, 0.35)';
@@ -197,6 +198,7 @@ const styles = `
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+    position: relative; /* anchors the floating zoom pill */
   }
 
   .preview-area {
@@ -222,70 +224,8 @@ const styles = `
     overflow: visible;
   }
 
-  /* Zoom bar */
-  .zoom-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 0.75rem;
-    background: var(--bg-secondary, #ffffff);
-    border-top: 1px solid var(--border-color, #e2e8f0);
-    flex-shrink: 0;
-  }
-
-  .zoom-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .zoom-bar button {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    display: grid;
-    place-items: center;
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: var(--radius-md, 8px);
-    background: var(--bg-secondary, #ffffff);
-    color: var(--text-primary, #1a1a2e);
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-family: inherit;
-    transition: all 0.15s ease;
-  }
-
-  .zoom-bar button:hover {
-    background: var(--hover-bg, rgba(0, 0, 0, 0.04));
-    border-color: var(--accent-color, ${ACCENT});
-    color: var(--accent-color, ${ACCENT});
-  }
-
-  .zoom-bar .zoom-in,
-  .zoom-bar .zoom-out {
-    font-size: 1.25rem;
-    font-weight: 400;
-    line-height: 0;
-  }
-
-  .zoom-bar .zoom-level {
-    width: 56px;
-    padding: 0.375rem 0.5rem;
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: var(--radius-md, 8px);
-    font-size: 0.75rem;
-    font-family: var(--font-mono, 'Inconsolata', monospace);
-    font-weight: 500;
-    text-align: center;
-    background: var(--bg-secondary, #ffffff);
-    color: var(--text-primary, #1a1a2e);
-  }
-
-  .zoom-bar .zoom-level:focus {
-    outline: none;
-    border-color: var(--accent-color, ${ACCENT});
-    box-shadow: 0 0 0 3px var(--focus-ring, rgba(16, 185, 129, 0.4));
-  }
+  /* Zoom control is the shared <pathogen-zoom-pill>, floating bottom-center
+   * over the preview (its own :host handles placement + hover-fade). */
 
 
   @media (max-width: 700px) {
@@ -323,50 +263,56 @@ interface CropRegion {
 type ResizeCorner = 'nw' | 'ne' | 'sw' | 'se';
 
 class ThumbnailCropModal extends HTMLElement {
-  // Zoom/pan state
-  private _zoom: number = 1;
-  private _panX: number = 0;
-  private _panY: number = 0;
-  private _isPanning: boolean = false;
-  private _panStartX: number = 0;
-  private _panStartY: number = 0;
+  // Shared pan/zoom controller (transform-during-gesture → bake-on-idle).
+  // Destroyed + reconstructed with the preview SVG.
+  private _panZoom: PanZoomController | null = null;
 
   // Crop state (SVG coordinates)
-  private _cropX: number = 0;
-  private _cropY: number = 0;
-  private _cropSize: number = 100;
+  private _cropX = 0;
+
+  private _cropY = 0;
+
+  private _cropSize = 100;
 
   // Drag/resize state
-  private _isDragging: boolean = false;
-  private _isResizing: boolean = false;
+  private _isDragging = false;
+
+  private _isResizing = false;
+
   private _resizeCorner: ResizeCorner | null = null;
-  private _dragStartX: number = 0;
-  private _dragStartY: number = 0;
-  private _dragStartCropX: number = 0;
-  private _dragStartCropY: number = 0;
-  private _dragStartCropSize: number = 0;
+
+  private _dragStartX = 0;
+
+  private _dragStartY = 0;
+
+  private _dragStartCropX = 0;
+
+  private _dragStartCropY = 0;
+
+  private _dragStartCropSize = 0;
 
   // Canvas dimensions
-  private _canvasWidth: number = 200;
-  private _canvasHeight: number = 200;
+  private _canvasWidth = 200;
 
-  // Zoom constants
-  private readonly MIN_ZOOM = 0.1;
-  private readonly MAX_ZOOM = 10;
-  private readonly ZOOM_STEP = 1.5;
+  private _canvasHeight = 200;
 
   // Live preview update throttle
   private _previewRafId: number | null = null;
 
   // References
   private _svg: SVGSVGElement | null = null;
+
   private _svgElement: SVGSVGElement | null = null;
+
   private _storeState: StoreState | null = null;
-  private _saving: boolean = false;
+
+  private _saving = false;
 
   // Document-level event handlers
   private _handleMouseMove: ((e: MouseEvent) => void) | null = null;
+
   private _handleMouseUp: (() => void) | null = null;
+
   private _handleKeydown: ((e: KeyboardEvent) => void) | null = null;
 
   constructor() {
@@ -395,14 +341,10 @@ class ThumbnailCropModal extends HTMLElement {
     // Default crop: centered square
     this._resetCrop();
 
-    // Reset zoom/pan
-    this._zoom = 1;
-    this._panX = 0;
-    this._panY = 0;
-
-    // Build preview SVG
+    // Build preview SVG (fresh controller at zoom 1 — see _buildPreviewSvg)
+    this._panZoom?.destroy();
+    this._panZoom = null;
     this._buildPreviewSvg();
-    this._updateZoomDisplay();
     this._schedulePreviewUpdate();
 
     // Update save button state
@@ -417,15 +359,17 @@ class ThumbnailCropModal extends HTMLElement {
   // store mirrors workspace.manualThumbnailAt at workspace-load time and after
   // every save/clear so this stays correct without a fresh API round-trip.
   private _updateClearButton(): void {
-    const btn = this.shadowRoot!.querySelector('.clear-btn') as HTMLButtonElement | null;
+    const btn = this.shadowRoot!.querySelector('.clear-btn');
     if (!btn) return;
     const hasManual = Boolean(store.get('workspaceManualThumbnailAt'));
-    btn.hidden = !hasManual;
+    (btn as HTMLElement).hidden = !hasManual;
   }
 
   close(): void {
     this.classList.remove('open');
     this._removeDocumentListeners();
+    this._panZoom?.destroy();
+    this._panZoom = null;
     if (this._previewRafId) {
       cancelAnimationFrame(this._previewRafId);
       this._previewRafId = null;
@@ -468,7 +412,47 @@ class ThumbnailCropModal extends HTMLElement {
 
     previewArea.appendChild(svg);
     this._svg = svg;
-    this._updateViewBox();
+
+    // Shared controller owns pan/zoom; crop drag/resize win via the predicate.
+    const savedView = undefined; // crop modal always reopens at fit
+    this._panZoom?.destroy();
+    const pill = this.shadowRoot!.querySelector('pathogen-zoom-pill');
+    this._panZoom = new window.PathogenPanZoom.PanZoomController({
+      svg,
+      eventTarget: previewArea,
+      mode: 'transform',
+      canvas: this._pzCanvas(),
+      view: savedView,
+      onChange: (v) => {
+        if (pill) pill.zoom = v.zoom;
+        // Overlay handles ride the CSS transform mid-gesture; rebuild them
+        // against settled geometry once per frame.
+        this._scheduleOverlayRefresh();
+      },
+      onBake: () => this._updateCropOverlay(),
+      shouldStartPan: (e) => {
+        const t = e.target as Element | null;
+        return !(t?.classList?.contains('crop-handle') || t?.classList?.contains('crop-area'));
+      },
+      // Plain wheel (modal preview is the only scrollable thing on screen);
+      // zoom range/step come from the shared DEFAULTS (10%–2000%).
+      options: { wheelDampening: 0.002 },
+    });
+    if (pill) {
+      pill.controller = this._panZoom;
+      pill.fadeTarget = this.shadowRoot!.querySelector('.preview-panel') ?? previewArea;
+      pill.zoom = 1;
+    }
+  }
+
+  private _overlayRafId: number | null = null;
+
+  _scheduleOverlayRefresh(): void {
+    if (this._overlayRafId) return;
+    this._overlayRafId = requestAnimationFrame(() => {
+      this._overlayRafId = null;
+      this._updateCropOverlay();
+    });
   }
 
   _buildCropOverlay(group: SVGGElement): void {
@@ -704,56 +688,8 @@ class ThumbnailCropModal extends HTMLElement {
     return { originX: 0, originY: 0, width: this._canvasWidth, height: this._canvasHeight };
   }
 
-  _updateViewBox(): void {
-    if (!this._svg) return;
-    // Shared math (window.PathogenPanZoom); this modal keeps viewBox mutation.
-    this._svg.setAttribute(
-      'viewBox',
-      window.PathogenPanZoom.viewToViewBox({ zoom: this._zoom, panX: this._panX, panY: this._panY }, this._pzCanvas()),
-    );
-  }
-
-  _updateZoomDisplay(): void {
-    const input = this.shadowRoot!.querySelector('.zoom-level') as HTMLInputElement | null;
-    if (input) input.value = `${Math.round(this._zoom * 100)}%`;
-  }
-
-  _zoomIn(): void {
-    const old = this._zoom;
-    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * this.ZOOM_STEP, { minZoom: this.MIN_ZOOM, maxZoom: this.MAX_ZOOM });
-    this._adjustPanForZoom(old, this._zoom);
-    this._updateViewBox();
-    this._updateZoomDisplay();
-    this._updateCropOverlay();
-  }
-
-  _zoomOut(): void {
-    const old = this._zoom;
-    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom / this.ZOOM_STEP, { minZoom: this.MIN_ZOOM, maxZoom: this.MAX_ZOOM });
-    this._adjustPanForZoom(old, this._zoom);
-    this._updateViewBox();
-    this._updateZoomDisplay();
-    this._updateCropOverlay();
-  }
-
-  _zoomFit(): void {
-    this._zoom = 1;
-    this._panX = 0;
-    this._panY = 0;
-    this._updateViewBox();
-    this._updateZoomDisplay();
-    this._updateCropOverlay();
-  }
-
-  _adjustPanForZoom(oldZoom: number, newZoom: number): void {
-    const adj = window.PathogenPanZoom.adjustPanForZoom(
-      { zoom: oldZoom, panX: this._panX, panY: this._panY },
-      newZoom,
-      this._pzCanvas(),
-    );
-    this._panX = adj.panX;
-    this._panY = adj.panY;
-  }
+  // Zoom in/out/fit, the % input, wheel zoom, and panning are owned by the
+  // shared PanZoomController + <pathogen-zoom-pill> (see _buildPreviewSvg).
 
   _screenToSvg(clientX: number, clientY: number): SVGPoint {
     const pt = this._svg!.createSVGPoint();
@@ -907,33 +843,15 @@ class ThumbnailCropModal extends HTMLElement {
 
     root.querySelector('.close-btn')!.addEventListener('click', () => this.close());
     root.querySelector('.cancel-btn')!.addEventListener('click', () => this.close());
-    root.querySelector('.save-btn')!.addEventListener('click', () => this._save());
-    root.querySelector('.clear-btn')!.addEventListener('click', () => this._clear());
+    root.querySelector('.save-btn')!.addEventListener('click', async () => this._save());
+    root.querySelector('.clear-btn')!.addEventListener('click', async () => this._clear());
     root.querySelector('.reset-btn')!.addEventListener('click', () => {
       this._resetCrop();
       this._updateCropOverlay();
       this._schedulePreviewUpdate();
     });
 
-    // Zoom controls
-    root.querySelector('.zoom-in')!.addEventListener('click', () => this._zoomIn());
-    root.querySelector('.zoom-out')!.addEventListener('click', () => this._zoomOut());
-    root.querySelector('.zoom-fit')!.addEventListener('click', () => this._zoomFit());
-
-    const zoomInput = root.querySelector('.zoom-level') as HTMLInputElement;
-    zoomInput.addEventListener('change', (e: Event) => {
-      const val = parseInt((e.target as HTMLInputElement).value);
-      if (!isNaN(val) && val >= this.MIN_ZOOM * 100 && val <= this.MAX_ZOOM * 100) {
-        const old = this._zoom;
-        this._zoom = val / 100;
-        this._adjustPanForZoom(old, this._zoom);
-        this._updateViewBox();
-        this._updateZoomDisplay();
-        this._updateCropOverlay();
-      } else {
-        this._updateZoomDisplay();
-      }
-    });
+    // Zoom controls live in <pathogen-zoom-pill>, wired in _buildPreviewSvg.
 
     // Preview area mouse events
     const previewArea = root.querySelector('.preview-area') as HTMLElement;
@@ -947,6 +865,8 @@ class ThumbnailCropModal extends HTMLElement {
       if (target.classList.contains('crop-handle')) {
         e.preventDefault();
         e.stopPropagation();
+        // Bake any in-flight pan/zoom so getScreenCTM reads settled geometry.
+        this._panZoom?.endGesture();
         this._isResizing = true;
 
         if (target.classList.contains('crop-handle-nw')) this._resizeCorner = 'nw';
@@ -967,38 +887,15 @@ class ThumbnailCropModal extends HTMLElement {
       if (target.classList.contains('crop-area')) {
         e.preventDefault();
         e.stopPropagation();
+        this._panZoom?.endGesture();
         this._isDragging = true;
         const svgPt = this._screenToSvg(e.clientX, e.clientY);
         this._dragStartX = svgPt.x - this._cropX;
         this._dragStartY = svgPt.y - this._cropY;
-        return;
       }
-
-      // Pan
-      e.preventDefault();
-      this._isPanning = true;
-      this._panStartX = e.clientX;
-      this._panStartY = e.clientY;
-      previewArea.classList.add('panning');
+      // Panning + wheel zoom belong to the PanZoomController (it stands down
+      // on crop-handle/crop-area targets via its shouldStartPan predicate).
     });
-
-    // Wheel zoom
-    previewArea.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        if (!this._svg) return;
-        e.preventDefault();
-        const dampening = 0.002;
-        const delta = -e.deltaY * dampening;
-        const old = this._zoom;
-        this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * (1 + delta), { minZoom: this.MIN_ZOOM, maxZoom: this.MAX_ZOOM });
-        this._adjustPanForZoom(old, this._zoom);
-        this._updateViewBox();
-        this._updateZoomDisplay();
-        this._updateCropOverlay();
-      },
-      { passive: false },
-    );
   }
 
   _addDocumentListeners(): void {
@@ -1065,33 +962,16 @@ class ThumbnailCropModal extends HTMLElement {
         this._constrainCrop();
         this._updateCropOverlay();
         this._schedulePreviewUpdate();
-        return;
       }
-
-      if (this._isPanning && this._svg) {
-        const rect = this._svg.getBoundingClientRect();
-        const vw = this._canvasWidth / this._zoom;
-        const vh = this._canvasHeight / this._zoom;
-        const scaleX = vw / rect.width;
-        const scaleY = vh / rect.height;
-
-        this._panX += (this._panStartX - e.clientX) * scaleX;
-        this._panY += (this._panStartY - e.clientY) * scaleY;
-        this._panStartX = e.clientX;
-        this._panStartY = e.clientY;
-        this._updateViewBox();
-      }
+      // Panning is the PanZoomController's job.
     };
 
     this._handleMouseUp = (): void => {
       this._isDragging = false;
       this._isResizing = false;
       this._resizeCorner = null;
-      if (this._isPanning) {
-        this._isPanning = false;
-        const previewArea = this.shadowRoot!.querySelector('.preview-area');
-        if (previewArea) previewArea.classList.remove('panning');
-      }
+      // A pan released outside the preview area must still bake cleanly.
+      this._panZoom?.endGesture();
     };
 
     this._handleKeydown = (e: KeyboardEvent): void => {
@@ -1148,14 +1028,7 @@ class ThumbnailCropModal extends HTMLElement {
 
         <div class="preview-panel">
           <div class="preview-area"></div>
-          <div class="zoom-bar">
-            <div class="zoom-controls">
-              <button class="zoom-out" title="Zoom out">&#x2212;</button>
-              <button class="zoom-fit" title="Fit to view">Fit</button>
-              <button class="zoom-in" title="Zoom in">&#x002B;</button>
-              <input type="text" class="zoom-level" value="100%" title="Enter zoom percentage">
-            </div>
-          </div>
+          <pathogen-zoom-pill></pathogen-zoom-pill>
         </div>
       </div>
     `;

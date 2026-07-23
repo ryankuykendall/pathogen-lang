@@ -83,12 +83,26 @@ export interface PanZoomConfig {
   onChange?: (view: PanZoomView) => void;
   /** Notifies when the gesture's transform has been baked into the viewBox. */
   onBake?: (view: PanZoomView) => void;
+  /**
+   * Return false to leave a press entirely to the surface's own handlers
+   * (legend drag, crop-box resize, …): the controller then neither tracks the
+   * pointer nor calls preventDefault, so the surface's mousedown/document
+   * handlers run exactly as if the controller weren't attached. Wheel and
+   * pinch are unaffected. Receives PointerEvent normally, MouseEvent when
+   * `enableTouch: false` selects the mouse-event fallback.
+   */
+  shouldStartPan?: (e: PointerEvent | MouseEvent) => boolean;
   options?: PanZoomOptions;
 }
 
-const DEFAULTS: Required<PanZoomOptions> = {
-  minZoom: 0.25,
-  maxZoom: 10,
+/**
+ * The canonical zoom/pan behavior every surface shares (10%–2000%, step 1.5).
+ * Exported so surfaces and tests use these values instead of keeping local
+ * copies — per-component MIN/MAX/STEP constants are drift hazards.
+ */
+export const DEFAULTS: Required<PanZoomOptions> = {
+  minZoom: 0.1,
+  maxZoom: 20,
   zoomStep: 1.5,
   wheelDampening: 0.002,
   requireModifierForWheel: false,
@@ -115,7 +129,11 @@ export function clampZoom(zoom: number, opts: Pick<PanZoomOptions, 'minZoom' | '
  * canvas is recentered; otherwise pan is bounded with a margin. Mirrors the
  * long-standing svg-preview-pane semantics so behavior is unchanged.
  */
-export function clampPan(view: PanZoomView, canvas: PanZoomCanvas, opts: PanZoomOptions = {}): { panX: number; panY: number } {
+export function clampPan(
+  view: PanZoomView,
+  canvas: PanZoomCanvas,
+  opts: PanZoomOptions = {},
+): { panX: number; panY: number } {
   const margin = opts.clampMargin ?? DEFAULTS.clampMargin;
   const disableBelow = opts.panDisableBelowZoom ?? DEFAULTS.panDisableBelowZoom;
   const viewWidth = canvas.width / view.zoom;
@@ -140,7 +158,11 @@ export function clampPan(view: PanZoomView, canvas: PanZoomCanvas, opts: PanZoom
 }
 
 /** Recompute pan so the view's center stays fixed across a zoom change. */
-export function adjustPanForZoom(view: PanZoomView, newZoom: number, canvas: PanZoomCanvas): { panX: number; panY: number } {
+export function adjustPanForZoom(
+  view: PanZoomView,
+  newZoom: number,
+  canvas: PanZoomCanvas,
+): { panX: number; panY: number } {
   const oldViewWidth = canvas.width / view.zoom;
   const oldViewHeight = canvas.height / view.zoom;
   const centerX = view.panX + oldViewWidth / 2;
@@ -191,38 +213,59 @@ export function computeTransform(
 
 export class PanZoomController {
   private svg: SVGSVGElement;
+
   private eventTarget: Document | HTMLElement;
+
   private mode: 'transform' | 'viewbox';
+
   private opts: Required<PanZoomOptions>;
+
   private onChange?: (view: PanZoomView) => void;
+
   private onBake?: (view: PanZoomView) => void;
 
+  private shouldStartPan?: (e: PointerEvent | MouseEvent) => boolean;
+
   private canvas: PanZoomCanvas;
+
   private view: PanZoomView = { zoom: 1, panX: 0, panY: 0 };
+
   /** The view currently written to the `viewBox` attribute (what's rasterized). */
   private renderedView: PanZoomView = { zoom: 1, panX: 0, panY: 0 };
 
   // Transform-session state (the baked reference the live transform is relative to).
   private sessionActive = false;
+
   private bakedView: PanZoomView = { zoom: 1, panX: 0, panY: 0 };
+
   private boxW = 1;
+
   private boxH = 1;
 
   // Pointer / pinch state.
   private pointers = new Map<number, { x: number; y: number }>();
+
   private lastPanX = 0;
+
   private lastPanY = 0;
+
   private pinchPrevDist = 0;
+
   private pinchPrevMid = { x: 0, y: 0 };
 
   private rafId: number | null = null;
+
   private bakeTimer: ReturnType<typeof setTimeout> | null = null;
+
   private destroyed = false;
 
   // Bound handlers (stable refs for removeEventListener).
   private readonly onWheel: (e: WheelEvent) => void;
+
   private readonly onPointerDown: (e: PointerEvent) => void;
+
   private readonly onPointerMove: (e: PointerEvent) => void;
+
   private readonly onPointerUp: (e: PointerEvent) => void;
 
   constructor(config: PanZoomConfig) {
@@ -231,6 +274,7 @@ export class PanZoomController {
     this.mode = config.mode ?? 'transform';
     this.onChange = config.onChange;
     this.onBake = config.onBake;
+    this.shouldStartPan = config.shouldStartPan;
     this.opts = { ...DEFAULTS, ...(config.options ?? {}) };
     this.canvas = config.canvas ?? { originX: 0, originY: 0, width: 200, height: 200 };
     if (config.view) this.view = { ...this.view, ...config.view };
@@ -329,9 +373,11 @@ export class PanZoomController {
   zoomIn(): void {
     this.zoomTo(this.view.zoom * this.opts.zoomStep);
   }
+
   zoomOut(): void {
     this.zoomTo(this.view.zoom / this.opts.zoomStep);
   }
+
   zoomToFit(): void {
     this.view = { zoom: 1, panX: 0, panY: 0 };
     this.endSessionAndBake();
@@ -388,6 +434,11 @@ export class PanZoomController {
   }
 
   private handlePointerDown(e: PointerEvent | MouseEvent): void {
+    // Surface veto: when the press belongs to a foreground interaction
+    // (legend drag, crop box), stand down BEFORE preventDefault so the
+    // surface's own handlers see an untouched event. The pointer is never
+    // tracked, so the matching move/up are no-ops here automatically.
+    if (this.shouldStartPan && !this.shouldStartPan(e)) return;
     e.preventDefault();
     this.pointers.set(PanZoomController.pid(e), { x: e.clientX, y: e.clientY });
     this.lastPanX = e.clientX;

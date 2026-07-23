@@ -13,31 +13,34 @@ const LAYERS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 
 export class MiniPreview extends HTMLElement {
   // Canvas dimensions
-  private _width: number = 200;
-  private _height: number = 200;
-  private _background: string = 'transparent';
+  private _width = 200;
 
-  // Zoom/pan constants
-  private readonly MIN_ZOOM: number = 0.25;
-  private readonly MAX_ZOOM: number = 10;
-  private readonly ZOOM_STEP: number = 1.5;
+  private _height = 200;
+
+  private _background = 'transparent';
 
   // Zoom/pan state (mirrored from the shared controller, which owns the
   // viewBox/transform). Kept as instance fields because this component has no
   // store and exposes them via getters / navigator math.
-  private _zoomLevel: number = 1;
-  private _panX: number = 0;
-  private _panY: number = 0;
+  private _zoomLevel = 1;
+
+  private _panX = 0;
+
+  private _panY = 0;
 
   // Shared pan/zoom controller (transform-during-gesture → bake-on-idle).
   private panZoom: PanZoomController | null = null;
 
   // Navigator drag state
-  private isNavigatorDragging: boolean = false;
-  private navDragStartX: number = 0;
-  private navDragStartY: number = 0;
-  private navDragStartPanX: number = 0;
-  private navDragStartPanY: number = 0;
+  private isNavigatorDragging = false;
+
+  private navDragStartX = 0;
+
+  private navDragStartY = 0;
+
+  private navDragStartPanX = 0;
+
+  private navDragStartPanY = 0;
 
   // Scroll hint timer
   private _scrollHintTimer: ReturnType<typeof setTimeout> | undefined;
@@ -47,6 +50,7 @@ export class MiniPreview extends HTMLElement {
 
   // Bound handlers for cleanup
   private _onDocMouseMove: (e: MouseEvent) => void;
+
   private _onDocMouseUp: () => void;
 
   /**
@@ -58,6 +62,7 @@ export class MiniPreview extends HTMLElement {
    * the iframe is ready (rare — srcdoc parsing is fast — but possible).
    */
   private _iframeDoc: Document | null = null;
+
   private _pendingSvgString: string | null = null;
 
   constructor() {
@@ -144,9 +149,7 @@ export class MiniPreview extends HTMLElement {
       view: { zoom: this._zoomLevel, panX: this._panX, panY: this._panY },
       onChange: (v) => this._onPanZoomChange(v),
       options: {
-        minZoom: this.MIN_ZOOM,
-        maxZoom: this.MAX_ZOOM,
-        zoomStep: this.ZOOM_STEP,
+        // Zoom range/step come from the shared DEFAULTS (10%–2000%).
         wheelDampening: 0.002,
         // Blog embeds live in long scrollable pages — keep the Ctrl/Cmd gate so
         // plain scrolling doesn't trap the visitor.
@@ -154,8 +157,15 @@ export class MiniPreview extends HTMLElement {
       },
     });
 
+    // Hand the shared zoom pill its controller + hover container.
+    const pill = this.shadowRoot!.querySelector('pathogen-zoom-pill');
+    if (pill) {
+      pill.controller = this.panZoom;
+      pill.fadeTarget = this.shadowRoot!.querySelector('#preview-container');
+    }
+
     // The controller ignores un-modified wheels; show the "⌘ + scroll" hint then.
-    const scrollHint = this.shadowRoot!.querySelector('#scroll-hint') as HTMLElement | null;
+    const scrollHint = this.shadowRoot!.querySelector('#scroll-hint');
     doc.addEventListener(
       'wheel',
       (e: WheelEvent) => {
@@ -200,10 +210,10 @@ export class MiniPreview extends HTMLElement {
 
   /** Update the zoom % display, navigator viewport rect, and can-pan classes. */
   private _refreshZoomChrome(): void {
-    const zoomDisplay = this.shadowRoot!.querySelector('#zoom-level') as HTMLInputElement | null;
-    if (zoomDisplay) zoomDisplay.value = `${Math.round(this._zoomLevel * 100)}%`;
+    const pill = this.shadowRoot!.querySelector('pathogen-zoom-pill');
+    if (pill) pill.zoom = this._zoomLevel;
     this.updateNavigatorViewport();
-    const container = this.shadowRoot!.querySelector('#preview-container') as HTMLElement | null;
+    const container = this.shadowRoot!.querySelector('#preview-container');
     if (container) container.classList.toggle('can-pan', this._zoomLevel >= 0.5);
     if (this._iframeDoc) this._iframeDoc.body.classList.toggle('can-pan', this._zoomLevel >= 0.5);
   }
@@ -297,16 +307,17 @@ export class MiniPreview extends HTMLElement {
     if (!head) return;
     head.style.display = display;
     let cursor: Element | null = head.nextElementSibling;
-    while (cursor && cursor.tagName === head.tagName && !cursor.hasAttribute('id')) {
+    while (cursor?.tagName === head.tagName && !cursor.hasAttribute('id')) {
       (cursor as HTMLElement).style.display = display;
       cursor = cursor.nextElementSibling;
     }
   }
 
   /** Pending CSS-var writes buffered while the iframe is still parsing. */
-  private _pendingCssVars: Map<string, string> = new Map();
+  private _pendingCssVars = new Map<string, string>();
+
   /** Pending layer-visibility toggles buffered while the iframe is still parsing. */
-  private _pendingVisibility: Map<string, boolean> = new Map();
+  private _pendingVisibility = new Map<string, boolean>();
 
   setSvgContent(svgString: string): void {
     if (!this._iframeDoc) {
@@ -379,26 +390,10 @@ export class MiniPreview extends HTMLElement {
     this.updateNavigatorContent();
   }
 
-  // --- Zoom/Pan ---
-
-  // Zoom controls delegate to the shared PanZoomController (which owns the
-  // viewBox/transform and emits onChange → instance state + zoom chrome).
-  private zoomIn(): void {
-    this.panZoom?.zoomIn();
-  }
-
-  private zoomOut(): void {
-    this.panZoom?.zoomOut();
-  }
-
-  private zoomFit(): void {
-    this.panZoom?.zoomToFit();
-  }
-
   // --- Navigator ---
 
   private updateNavigatorViewport(): void {
-    const viewport = this.shadowRoot!.querySelector('#navigator-viewport') as SVGRectElement | null;
+    const viewport = this.shadowRoot!.querySelector('#navigator-viewport');
     if (!viewport) return;
 
     const viewWidth = this._width / this._zoomLevel;
@@ -412,8 +407,8 @@ export class MiniPreview extends HTMLElement {
 
   private updateNavigatorContent(): void {
     const navGroup = this.shadowRoot!.querySelector('#navigator-paths');
-    const navBg = this.shadowRoot!.querySelector('#navigator-bg') as SVGRectElement | null;
-    const navSvg = this.shadowRoot!.querySelector('#navigator-svg') as SVGSVGElement | null;
+    const navBg = this.shadowRoot!.querySelector('#navigator-bg');
+    const navSvg = this.shadowRoot!.querySelector('#navigator-svg');
     if (!navGroup || !navBg || !navSvg) return;
 
     navGroup.innerHTML = '';
@@ -437,7 +432,7 @@ export class MiniPreview extends HTMLElement {
 
     const navViewBox = `${-offsetX / scale} ${-offsetY / scale} ${navWidth / scale} ${navHeight / scale}`;
     navSvg.setAttribute('viewBox', navViewBox);
-    const navOverlay = this.shadowRoot!.querySelector('#navigator-overlay') as SVGSVGElement | null;
+    const navOverlay = this.shadowRoot!.querySelector('#navigator-overlay');
     if (navOverlay) navOverlay.setAttribute('viewBox', navViewBox);
     navBg.setAttribute('fill', this._background);
     navBg.setAttribute('x', '0');
@@ -527,31 +522,8 @@ export class MiniPreview extends HTMLElement {
   // --- Events ---
 
   private setupEventListeners(): void {
-    // Zoom controls
-    this.shadowRoot!.querySelector('#zoom-in')!.addEventListener('click', () => this.zoomIn());
-    this.shadowRoot!.querySelector('#zoom-out')!.addEventListener('click', () => this.zoomOut());
-    this.shadowRoot!.querySelector('#zoom-fit')!.addEventListener('click', () => this.zoomFit());
-
-    // Zoom level input
-    const zoomInput = this.shadowRoot!.querySelector('#zoom-level') as HTMLInputElement;
-    zoomInput.addEventListener('change', (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const value = parseInt(target.value);
-      if (!isNaN(value) && value >= this.MIN_ZOOM * 100 && value <= this.MAX_ZOOM * 100) {
-        this.panZoom?.zoomTo(value / 100);
-      } else {
-        target.value = `${Math.round(this._zoomLevel * 100)}%`;
-      }
-    });
-
-    zoomInput.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const step = e.shiftKey ? 0.25 : 0.05;
-        const direction = e.key === 'ArrowUp' ? 1 : -1;
-        this.panZoom?.zoomTo(this._zoomLevel + step * direction);
-      }
-    });
+    // Zoom buttons + editable % input live inside <pathogen-zoom-pill>,
+    // which calls the controller directly (wired in _setupIframeEventListeners).
 
     // Mouse wheel zoom — requires Ctrl/Cmd to prevent scroll traps in long pages
     // Mouse wheel zoom and pan-mousedown listeners are wired against the
@@ -691,93 +663,11 @@ export class MiniPreview extends HTMLElement {
           fill: var(--accent-subtle, rgba(16, 185, 129, 0.15));
         }
 
-        /* Zoom controls — glass pill matching the workspace chrome aesthetic */
-        #zoom-controls {
-          position: absolute;
-          bottom: 0.75rem;
-          right: 0.75rem;
-          display: flex;
-          align-items: center;
-          gap: 2px;
-          padding: 3px;
-          background: color-mix(in srgb, var(--bg-elevated, #ffffff) 82%, transparent);
-          backdrop-filter: blur(16px) saturate(140%);
-          -webkit-backdrop-filter: blur(16px) saturate(140%);
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: 999px;
-          box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
-          z-index: 10;
-          opacity: 0.6;
-          transition: opacity var(--transition-base, 0.15s ease);
-        }
-
-        #preview-container:hover ~ #zoom-controls,
-        #zoom-controls:hover,
-        :host(.fullscreen) #zoom-controls {
+        /* Zoom control is the shared <pathogen-zoom-pill> (pan-zoom bundle);
+         * bottom-center, self-managed hover-fade via fadeTarget. Outer author
+         * rule keeps it fully visible in fullscreen. */
+        :host(.fullscreen) pathogen-zoom-pill {
           opacity: 1;
-        }
-
-        /* Touch devices have no hover — keep controls fully visible. */
-        @media (hover: none) {
-          #zoom-controls { opacity: 1; }
-        }
-
-        #zoom-controls button {
-          width: 26px;
-          height: 26px;
-          padding: 0;
-          display: grid;
-          place-items: center;
-          border: 0;
-          border-radius: 999px;
-          background: transparent;
-          color: var(--text-secondary, #64748b);
-          cursor: pointer;
-          font-family: inherit;
-          font-size: 0.8125rem;
-          transition: all var(--transition-base, 0.15s ease);
-        }
-
-        #zoom-controls button:hover {
-          background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
-          color: var(--accent-color, #10b981);
-        }
-
-        #zoom-in,
-        #zoom-out {
-          font-size: 1.125rem;
-          font-weight: 400;
-          line-height: 0;
-        }
-
-        #zoom-fit {
-          font-size: 0.6875rem;
-          font-weight: 500;
-          letter-spacing: 0.04em;
-          width: auto !important;
-          padding: 0 10px;
-        }
-
-        #zoom-level {
-          width: 46px;
-          padding: 3px 6px;
-          border: 0;
-          border-left: 1px solid var(--border-color, #e2e8f0);
-          border-radius: 0;
-          font-size: 0.6875rem;
-          font-family: var(--font-mono, 'Inconsolata', monospace);
-          font-weight: 500;
-          font-feature-settings: 'tnum';
-          text-align: center;
-          background: transparent;
-          color: var(--text-secondary, #64748b);
-          transition: all var(--transition-base, 0.15s ease);
-          margin-left: 2px;
-        }
-
-        #zoom-level:focus {
-          outline: none;
-          color: var(--accent-color, #10b981);
         }
 
         #inspector-open-btn {
@@ -846,12 +736,7 @@ export class MiniPreview extends HTMLElement {
 
       <button id="inspector-open-btn" title="Toggle inspector">${LAYERS_ICON}</button>
 
-      <div id="zoom-controls">
-        <button id="zoom-out" title="Zoom out">&#x2212;</button>
-        <button id="zoom-fit" title="Fit to view">Fit</button>
-        <button id="zoom-in" title="Zoom in">&#x002B;</button>
-        <input type="text" id="zoom-level" value="100%" title="Enter zoom percentage">
-      </div>
+      <pathogen-zoom-pill></pathogen-zoom-pill>
     `;
   }
 }

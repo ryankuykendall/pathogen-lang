@@ -370,21 +370,113 @@ async function main(): Promise<void> {
     `pos=(${lx}, ${ly}) size=(${Math.round(clamped.legendW)}×${Math.round(clamped.legendH)}) canvas=800×500`,
   );
 
-  // Regression: zoomed/panned preview squares its corners (the rounded card
-  // look at fit becomes a mask when the viewBox is a window into the art).
-  await inModal(page, `sr.querySelector('.zoom-in').click(); return { ok: true };`);
-  const zoomedClass = await inModal<{ zoomed: boolean; radius: string }>(
-    page,
-    `var svg = sr.querySelector('.preview-area svg');
-     return { zoomed: svg.classList.contains('zoomed'), radius: getComputedStyle(svg).borderRadius };`,
+  // Shared-controller zoom: the pill's shadow-DOM buttons drive the
+  // PanZoomController; a button zoom applies immediately (baked viewBox).
+  const pillZoomIn = `sr.querySelector('pathogen-zoom-pill').shadowRoot.querySelector('#zoom-in').click(); return { ok: true };`;
+  const pillZoomFit = `sr.querySelector('pathogen-zoom-pill').shadowRoot.querySelector('#zoom-fit').click(); return { ok: true };`;
+  const readZoomState = `
+    var svg = sr.querySelector('.preview-area svg');
+    var vb = svg.getAttribute('viewBox').split(' ').map(Number);
+    var pill = sr.querySelector('pathogen-zoom-pill');
+    return {
+      vbW: vb[2],
+      pct: pill.shadowRoot.querySelector('#zoom-level').value,
+      inlineTransform: svg.style.transform || '',
+    };`;
+
+  await inModal(page, pillZoomIn);
+  const zoomedState = await inModal<{ vbW: number; pct: string; inlineTransform: string }>(page, readZoomState);
+  check(
+    'pill zoom-in narrows the baked viewBox to canvas/1.5 and reads 150%',
+    Math.abs(zoomedState.vbW - 800 / 1.5) < 0.5 && zoomedState.pct === '150%',
+    `vbW=${zoomedState.vbW} pct=${zoomedState.pct}`,
   );
-  check('zoomed preview drops the rounded-corner clip', zoomedClass.zoomed && zoomedClass.radius === '0px', `radius=${zoomedClass.radius}`);
-  await inModal(page, `sr.querySelector('.zoom-fit').click(); return { ok: true };`);
-  const fitClass = await inModal<{ zoomed: boolean }>(
+
+  // Regression (code review 2026-07-23): a border-radius on the svg element
+  // clips baked-zoom artwork into a rounded mask — the element must have
+  // radius 0 so magnified content is never corner-clipped.
+  const zoomedRadius = await inModal<{ radius: string }>(
     page,
-    `return { zoomed: sr.querySelector('.preview-area svg').classList.contains('zoomed') };`,
+    `return { radius: getComputedStyle(sr.querySelector('.preview-area svg')).borderRadius };`,
   );
-  check('fit restores the rounded card look', !fitClass.zoomed);
+  check('zoomed artwork is never corner-clipped (svg radius is 0)', zoomedRadius.radius === '0px', `radius=${zoomedRadius.radius}`);
+  await inModal(page, pillZoomFit);
+  const fitState = await inModal<{ vbW: number; pct: string }>(page, readZoomState);
+  check('pill Fit restores the full viewBox at 100%', fitState.vbW === 800 && fitState.pct === '100%', `vbW=${fitState.vbW}`);
+
+  // Pan gesture goes through the controller (Pointer events — synthetic
+  // MouseEvents are ignored by design). Zoom in first so pan is enabled.
+  await inModal(page, pillZoomIn);
+  const vbBeforePan = await inModal<{ x: number }>(
+    page,
+    `return { x: Number(sr.querySelector('.preview-area svg').getAttribute('viewBox').split(' ')[0]) };`,
+  );
+  await inModal(
+    page,
+    `var area = sr.querySelector('.preview-area');
+     var rect = area.getBoundingClientRect();
+     var cx = rect.x + rect.width / 2, cy = rect.y + rect.height / 2;
+     var opts = { bubbles: true, cancelable: true, composed: true, pointerId: 7, clientX: cx, clientY: cy };
+     area.dispatchEvent(new PointerEvent('pointerdown', opts));
+     for (var i = 1; i <= 3; i++) {
+       area.dispatchEvent(new PointerEvent('pointermove', Object.assign({}, opts, { clientX: cx - i * 30, clientY: cy })));
+     }
+     area.dispatchEvent(new PointerEvent('pointerup', opts));
+     return { ok: true };`,
+  );
+  await new Promise((r) => setTimeout(r, 200)); // > bakeDelayMs (72)
+  const vbAfterPan = await inModal<{ x: number }>(
+    page,
+    `return { x: Number(sr.querySelector('.preview-area svg').getAttribute('viewBox').split(' ')[0]) };`,
+  );
+  check('pointer drag pans (viewBox origin moved, baked)', vbAfterPan.x > vbBeforePan.x + 1, `x ${vbBeforePan.x} → ${vbAfterPan.x}`);
+
+  // Legend targets veto panning (shouldStartPan): a pointerdown on the legend
+  // must not start a controller gesture.
+  const vbBeforeLegend = vbAfterPan.x;
+  await inModal(
+    page,
+    `var legend = sr.querySelector('.preview-area svg #pathogen-legend');
+     var r = legend.getBoundingClientRect();
+     var opts = { bubbles: true, cancelable: true, composed: true, pointerId: 8, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2 };
+     legend.dispatchEvent(new PointerEvent('pointerdown', opts));
+     legend.dispatchEvent(new PointerEvent('pointermove', Object.assign({}, opts, { clientX: r.x + r.width / 2 - 60 })));
+     legend.dispatchEvent(new PointerEvent('pointerup', opts));
+     return { ok: true };`,
+  );
+  await new Promise((r) => setTimeout(r, 200));
+  const vbAfterLegend = await inModal<{ x: number }>(
+    page,
+    `return { x: Number(sr.querySelector('.preview-area svg').getAttribute('viewBox').split(' ')[0]) };`,
+  );
+  check('pointerdown on the legend does NOT pan (predicate veto)', Math.abs(vbAfterLegend.x - vbBeforeLegend) < 0.5);
+
+  // Mid-gesture download must not leak the controller's inline transform into
+  // the exported bytes (the _prepareExportClone force-bake + strip).
+  await inModal(
+    page,
+    `var area = sr.querySelector('.preview-area');
+     var rect = area.getBoundingClientRect();
+     var opts = { bubbles: true, cancelable: true, composed: true, pointerId: 9, clientX: rect.x + 60, clientY: rect.y + 60 };
+     area.dispatchEvent(new PointerEvent('pointerdown', opts));
+     area.dispatchEvent(new PointerEvent('pointermove', Object.assign({}, opts, { clientX: rect.x + 120, clientY: rect.y + 90 })));
+     return { ok: true };`,
+  );
+  const midGestureSvg = await download(page);
+  const midGestureText = midGestureSvg.bytes.toString('utf8');
+  const vbAttr = /viewBox="([^"]+)"/.exec(midGestureText)?.[1];
+  check(
+    'mid-gesture download is byte-clean (no inline transform, full viewBox)',
+    !/style="[^"]*transform/.test(midGestureText) && !/will-change/.test(midGestureText) && vbAttr === '0 0 800 500',
+    `viewBox=${vbAttr}`,
+  );
+  await inModal(
+    page,
+    `var area = sr.querySelector('.preview-area');
+     area.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, pointerId: 9 }));
+     return { ok: true };`,
+  );
+  await inModal(page, pillZoomFit);
 
   await closeModal(page);
 
@@ -405,7 +497,7 @@ async function main(): Promise<void> {
       title: sr.querySelector('.form-header h2').textContent,
       activeFormat: (sr.querySelector('.format-toggle button.active') || {}).dataset.format || '',
       legendHidden: sr.querySelector('.legend-settings').hidden,
-      snapHidden: sr.querySelector('.snap-group').hidden,
+      snapHidden: sr.querySelector('.snap-chip').hidden,
       switchOn: sr.querySelector('#include-legend').classList.contains('active'),
       btnLabel: sr.querySelector('.download-btn').textContent,
       legendInPreview: !!sr.querySelector('.preview-area svg #pathogen-legend'),
@@ -420,6 +512,20 @@ async function main(): Promise<void> {
     !state.legendInPreview && state.watermarkText.includes('Created in') && state.watermarkText.includes('pathogen.studio'),
     state.watermarkText,
   );
+
+  // Regression (2026-07-23): an eslint-autofix once rewrote the layer
+  // visibility check from `=== false` to a falsy test, hiding every layer
+  // (fresh workspaces have an empty visibility map) — the modal snapshot
+  // cloned display:none paths and every preview/export went blank. Assert
+  // the snapshot carries VISIBLE artwork geometry.
+  const artwork = await inModal<{ total: number; visible: number }>(
+    page,
+    `var paths = sr.querySelectorAll('.preview-area svg #preview-layers [data-layer-name]');
+     var visible = 0;
+     paths.forEach(function (p) { if (p.style.display !== 'none') visible++; });
+     return { total: paths.length, visible: visible };`,
+  );
+  check('modal snapshot contains visible artwork layers', artwork.total > 0 && artwork.visible === artwork.total, `${artwork.visible}/${artwork.total} visible`);
   await page.screenshot({ path: join(OUT_DIR, 'modal-default.png') });
 
   // --- 4. SVG export, legend off: watermark embedded, no legend ---
@@ -439,7 +545,7 @@ async function main(): Promise<void> {
     page,
     `return {
       legendHidden: sr.querySelector('.legend-settings').hidden,
-      snapHidden: sr.querySelector('.snap-group').hidden,
+      snapHidden: sr.querySelector('.snap-chip').hidden,
       highlightOn: sr.querySelector('#legend-highlight').checked,
       kwTspans: sr.querySelectorAll('.preview-area svg #pathogen-legend tspan[fill="#6d3aa6"]').length,
       watermarkGone: !sr.querySelector('.preview-area svg #pathogen-watermark'),
@@ -558,6 +664,36 @@ async function main(): Promise<void> {
   const alphaTrans = await cornerAlpha(page, pngTrans.bytes);
   check('transparent PNG has alpha-0 corner', alphaTrans === 0, `alpha=${alphaTrans}`);
   writeFileSync(join(OUT_DIR, 'export-transparent.png'), pngTrans.bytes);
+
+  // --- 13. Standalone bundle registers the zoom pill (the VS Code webview
+  // path: a bare page that loads ONLY pan-zoom.global.js — no playground
+  // modules, no theme.css). Styles must come from adoptedStyleSheets.
+  const barePage = await browser.newPage();
+  await barePage.setContent('<!DOCTYPE html><html><body></body></html>');
+  await barePage.addScriptTag({ path: join(process.cwd(), 'dist', 'pan-zoom.global.js') });
+  const pillStandalone = (await barePage.evaluate(`(() => {
+    if (!customElements.get('pathogen-zoom-pill')) return { registered: false };
+    const pill = document.createElement('pathogen-zoom-pill');
+    document.body.appendChild(pill);
+    const level = pill.shadowRoot.querySelector('#zoom-level');
+    return {
+      registered: true,
+      level: level ? level.value : '(missing)',
+      styled: pill.shadowRoot.adoptedStyleSheets.length > 0 || !!pill.shadowRoot.querySelector('style'),
+      radius: getComputedStyle(pill).borderRadius,
+      hasDefaults: typeof window.PathogenPanZoom.DEFAULTS === 'object' && window.PathogenPanZoom.DEFAULTS.maxZoom === 20,
+    };
+  })()`)) as { registered: boolean; level?: string; styled?: boolean; radius?: string; hasDefaults?: boolean };
+  check(
+    'pan-zoom.global.js alone registers a styled pill (VS Code webview path)',
+    pillStandalone.registered === true &&
+      pillStandalone.level === '100%' &&
+      pillStandalone.styled === true &&
+      pillStandalone.radius === '999px' &&
+      pillStandalone.hasDefaults === true,
+    JSON.stringify(pillStandalone),
+  );
+  await barePage.close();
 
   await browser.close();
 

@@ -60,13 +60,13 @@ export default defineConfig([
   // compiler global at all). Self-contained (noExternal) so the global runs
   // standalone, like dist/highlight.global.js.
   {
-    entry: { 'pan-zoom': 'src/ui/pan-zoom-controller.ts' },
+    entry: { 'pan-zoom': 'src/ui/pan-zoom.ts' },
     format: ['esm', 'cjs'],
     dts: true,
     sourcemap: true,
   },
   {
-    entry: { 'pan-zoom': 'src/ui/pan-zoom-controller.ts' },
+    entry: { 'pan-zoom': 'src/ui/pan-zoom.ts' },
     format: ['iife'],
     globalName: 'PathogenPanZoom',
     outExtension: () => ({ js: '.global.js' }),

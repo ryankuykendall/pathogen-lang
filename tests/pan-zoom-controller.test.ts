@@ -1,13 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
-  clampZoom,
-  clampPan,
   adjustPanForZoom,
-  viewToViewBox,
+  clampPan,
+  clampZoom,
   computeTransform,
-  type PanZoomCanvas,
-  type PanZoomView,
+  DEFAULTS,
+  PanZoomController,
+  viewToViewBox,
 } from '../src/ui/pan-zoom-controller';
+
+import type { PanZoomCanvas, PanZoomView } from '../src/ui/pan-zoom-controller';
 
 const CANVAS: PanZoomCanvas = { originX: 0, originY: 0, width: 200, height: 200 };
 const CANVAS_OFFSET: PanZoomCanvas = { originX: 10, originY: 20, width: 400, height: 300 };
@@ -19,8 +22,16 @@ describe('clampZoom', () => {
     expect(clampZoom(2, { minZoom: 0.25, maxZoom: 10 })).toBe(2);
   });
   it('uses defaults when opts omitted', () => {
-    expect(clampZoom(0.01, {})).toBe(0.25);
-    expect(clampZoom(999, {})).toBe(10);
+    expect(clampZoom(0.01, {})).toBe(0.1);
+    expect(clampZoom(999, {})).toBe(20);
+  });
+});
+
+describe('DEFAULTS', () => {
+  it('exposes the canonical shared zoom range (10%–2000%, step 1.5)', () => {
+    expect(DEFAULTS.minZoom).toBe(0.1);
+    expect(DEFAULTS.maxZoom).toBe(20);
+    expect(DEFAULTS.zoomStep).toBe(1.5);
   });
 });
 
@@ -113,10 +124,8 @@ describe('computeTransform', () => {
     const offsetY = (boxH - baseScale * CANVAS.height) / 2;
 
     // unit → px under a given view (meet, constant aspect).
-    const pxX = (u: number, v: PanZoomView) =>
-      offsetX + baseScale * v.zoom * (u - (CANVAS.originX + v.panX));
-    const pyY = (u: number, v: PanZoomView) =>
-      offsetY + baseScale * v.zoom * (u - (CANVAS.originY + v.panY));
+    const pxX = (u: number, v: PanZoomView) => offsetX + baseScale * v.zoom * (u - (CANVAS.originX + v.panX));
+    const pyY = (u: number, v: PanZoomView) => offsetY + baseScale * v.zoom * (u - (CANVAS.originY + v.panY));
 
     const t = computeTransform(view, baked, CANVAS, boxW, boxH);
     // Apply CSS transform (origin 0,0): p' = scale*p + translate.
@@ -126,5 +135,127 @@ describe('computeTransform', () => {
       const transformedY = t.scale * pyY(u, baked) + t.ty;
       expect(transformedY).toBeCloseTo(pyY(u, view), 6);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Instance-level tests (fake DOM). First non-pure-math coverage in this file:
+// the shouldStartPan predicate gates gesture capture, so it can only be
+// tested through a constructed controller.
+// ---------------------------------------------------------------------------
+
+type Listener = (e: unknown) => void;
+
+/** Minimal event target capturing addEventListener for direct dispatch. */
+class FakeTarget {
+  listeners = new Map<string, Listener[]>();
+
+  addEventListener(type: string, fn: Listener): void {
+    const list = this.listeners.get(type) ?? [];
+    list.push(fn);
+    this.listeners.set(type, list);
+  }
+
+  removeEventListener(type: string, fn: Listener): void {
+    const list = this.listeners.get(type) ?? [];
+    const i = list.indexOf(fn);
+    if (i >= 0) list.splice(i, 1);
+  }
+
+  dispatch(type: string, e: unknown): void {
+    for (const fn of [...(this.listeners.get(type) ?? [])]) fn(e);
+  }
+
+  count(): number {
+    let n = 0;
+    for (const list of this.listeners.values()) n += list.length;
+    return n;
+  }
+}
+
+function fakeSvg(): SVGSVGElement {
+  return {
+    style: {} as CSSStyleDeclaration,
+    getBoundingClientRect: () => ({ width: 400, height: 400, x: 0, y: 0, top: 0, left: 0, right: 400, bottom: 400 }),
+    setAttribute: vi.fn(),
+  } as unknown as SVGSVGElement;
+}
+
+function pointerEvent(overrides: Record<string, unknown> = {}): PointerEvent {
+  return {
+    pointerId: 1,
+    clientX: 100,
+    clientY: 100,
+    ctrlKey: false,
+    metaKey: false,
+    preventDefault: vi.fn(),
+    target: { classList: { contains: () => false } },
+    ...overrides,
+  } as unknown as PointerEvent;
+}
+
+describe('PanZoomController — shouldStartPan predicate', () => {
+  beforeEach(() => {
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function make(shouldStartPan?: (e: PointerEvent | MouseEvent) => boolean) {
+    const target = new FakeTarget();
+    const controller = new PanZoomController({
+      svg: fakeSvg(),
+      eventTarget: target as unknown as HTMLElement,
+      mode: 'transform',
+      canvas: { originX: 0, originY: 0, width: 200, height: 200 },
+      view: { zoom: 2, panX: 10, panY: 10 }, // zoom ≥ panDisableBelowZoom so pan is live
+      shouldStartPan,
+    });
+    return { target, controller };
+  }
+
+  it('predicate false: press is not captured, preventDefault is not called, move does not pan', () => {
+    const { target, controller } = make(() => false);
+    const down = pointerEvent();
+    target.dispatch('pointerdown', down);
+    expect(down.preventDefault).not.toHaveBeenCalled();
+
+    const before = controller.getView();
+    target.dispatch('pointermove', pointerEvent({ clientX: 160, clientY: 160 }));
+    expect(controller.getView()).toEqual(before);
+    controller.destroy();
+  });
+
+  it('predicate true: press pans as normal', () => {
+    const { target, controller } = make(() => true);
+    const down = pointerEvent();
+    target.dispatch('pointerdown', down);
+    expect(down.preventDefault).toHaveBeenCalled();
+
+    const before = controller.getView();
+    target.dispatch('pointermove', pointerEvent({ clientX: 160, clientY: 160 }));
+    const after = controller.getView();
+    expect(after.panX).not.toBe(before.panX);
+    controller.destroy();
+  });
+
+  it('no predicate: default capture behavior unchanged', () => {
+    const { target, controller } = make(undefined);
+    const down = pointerEvent();
+    target.dispatch('pointerdown', down);
+    expect(down.preventDefault).toHaveBeenCalled();
+    controller.destroy();
+  });
+
+  it('destroy removes every listener from the event target', () => {
+    const { target, controller } = make(() => true);
+    expect(target.count()).toBeGreaterThan(0);
+    controller.destroy();
+    expect(target.count()).toBe(0);
   });
 });

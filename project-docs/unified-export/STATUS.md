@@ -166,6 +166,13 @@ transform-mode PanZoomController. The zoomed-corner patch above treats
 a symptom of that gap. Full divergence audit + alignment plan:
 `project-docs/pan-zoom-performance/zoom-surface-parity.md`.
 
+**RESOLVED by the zoom-parity pass (2026-07-23, later the same day):**
+both modals migrated to the transform-mode controller; the
+`zoomed`-class hack and the bottom zoom-bar strip were deleted (the
+export preview is now full-bleed with the shared `<pathogen-zoom-pill>`
++ a floating Snap chip). The E2E harness was rewritten accordingly
+(39/39). See the parity doc's Execution record.
+
 ## Key implementation facts (verified during planning)
 
 - Legend card is always white → light code palette only:

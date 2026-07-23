@@ -1,6 +1,11 @@
 # Zoom/Pan Surface Parity — Divergence Audit
 
 **Date:** 2026-07-23
+**Status: EXECUTED 2026-07-23** — all five surfaces now run the shared
+`PanZoomController` in transform mode with the shared
+`<pathogen-zoom-pill>` chrome. See "Execution record" at the end; the
+audit below is preserved as written for the historical picture.
+
 **Trigger:** Ryan compared 500% zoom in the primary workspace preview
 (smooth transform-mode magnification filling the pane) against 500% in
 the Export modal (content magnified inside a fixed, clipped window with
@@ -114,3 +119,94 @@ during the original controller rollout and is the actual work item.
 - Export modal patch-fixes now superseded-in-spirit by this plan:
   `project-docs/unified-export/STATUS.md` → "Post-launch fixes (2026-07-23)"
 - Controller source: `src/ui/pan-zoom-controller.ts`
+
+---
+
+## Execution record (2026-07-23)
+
+The alignment plan above was executed the same day, with these decisions
+from Ryan:
+
+- **Chrome**: one shared glass pill, `<pathogen-zoom-pill>`, styled after
+  the mini-workspace design — **bottom-center + hover-fade on every
+  surface** (mini moved from bottom-right; primary gained the fade).
+- **Zoom range**: **10%–2000%** (min 0.1 / max 20), step 1.5 —
+  standardized in the now-exported `DEFAULTS`
+  (`src/ui/pan-zoom-controller.ts`); every per-surface MIN/MAX/STEP copy
+  deleted, including VS Code's hard-coded 25–1000 input validation.
+- **Wheel gates** (unchanged by design): primary + mini require
+  Ctrl/Cmd; modals + VS Code plain wheel.
+- **Export modal**: full-bleed preview — the bottom zoom-bar strip is
+  gone; Snap became a floating glass chip beside the pill (shown only
+  with the legend on).
+
+**Final state:**
+
+| Surface | System | Chrome |
+|---|---|---|
+| Workspace primary preview | Controller, transform | `<pathogen-zoom-pill>` |
+| Export modal | Controller, transform | pill + snap chip (full-bleed) |
+| Set Thumbnail modal | Controller, transform | `<pathogen-zoom-pill>` |
+| Mini-workspace | Controller, transform | `<pathogen-zoom-pill>` |
+| VS Code preview | Controller, transform | `<pathogen-zoom-pill>` |
+
+**Key implementation facts:**
+
+- `shouldStartPan(e)` predicate added to `PanZoomConfig` — guarded at
+  the top of `handlePointerDown` BEFORE `preventDefault`, so a vetoed
+  press (legend drag/resize, crop handle/area) reaches the surface's
+  own handlers untouched. Move/Up needed no guarding (move ignores
+  untracked pointer ids). First instance-level controller tests added
+  (fake svg/eventTarget + RAF stubs, `tests/pan-zoom-controller.test.ts`).
+- The pill lives in `src/ui/zoom-pill.ts`, registered by the pan-zoom
+  bundle barrel (`src/ui/pan-zoom.ts` → `dist/pan-zoom.global.js`) so
+  the VS Code webview gets it from the script it already loads. Element
+  class defined inside `registerZoomPill()` — the Node CLI imports this
+  module, so no DOM at module top level. Styles via constructed
+  `adoptedStyleSheets` (CSP-safe) with `<style>` fallback; theming
+  chain `--playground-token → --vscode-* → literal`.
+- Pill API: `controller` (structural target; reassign after controller
+  rebuilds), `zoom` (display-only, pushed by the surface's onChange —
+  the pill never subscribes), `fadeTarget` (hover container),
+  `always-visible`, `min`/`max` attributes. Shadow ids
+  `#zoom-out/#zoom-fit/#zoom-in/#zoom-level` are a documented contract
+  (E2E pierces two shadow roots).
+- Modal migrations destroy + reconstruct the controller per preview
+  rebuild (the SVG element is recreated), seeding the saved view.
+  `endGesture()` at legend/crop mousedown keeps `getScreenCTM` settled;
+  `_prepareExportClone` force-bakes and strips inline
+  `transform/transform-origin/will-change/touch-action` so exports are
+  byte-clean even mid-gesture (E2E-verified).
+- The export modal's `zoomed`-class corner hack (2026-07-23 patch) was
+  deleted — but NOT because transform mode makes a radius safe (post-bake,
+  the element is back at DOM size with a magnified viewBox, and a radius
+  clips again — caught by code review against the first formulation).
+  Instead the artwork element's `border-radius` was removed entirely,
+  matching the thumbnail modal and primary preview (shadow only); an E2E
+  check pins computed radius 0 at zoom.
+
+**Verification:** 41/41 E2E checks (`project-docs/unified-export/
+verify-export.ts`) including PointerEvent pan, predicate veto,
+mid-gesture byte-clean download, computed-radius-0 at zoom, a
+visible-artwork-layers guard, and a standalone-bundle check proving
+`pan-zoom.global.js` alone registers a styled pill (the VS Code path).
+Visual probes in `project-docs/unified-export/verify/
+probe-parity-500pct.png` / `probe-parity-pill-chip.png`. Full suite
+green (3,855). `.vsix` builds; VS Code interactive verify is Ryan's
+manual step (install + reload, wheel/drag/pill at 10%/2000%).
+
+**Code-review round (2026-07-23):** two Warnings, both fixed —
+(1) the corner-radius clip returned post-bake (review caught the flaw in
+"obsolete under transform mode"; radius removed entirely + E2E pin);
+(2) stale 0.25x–10x range in the published vscode-developer-experience
+post (updated in place). During the fix pass an **eslint --fix
+semantic rewrite** was discovered: it turned three
+`visibility[...] === false` checks in svg-preview-pane into falsy
+tests, hiding every layer/mask/clip on fresh workspaces (empty
+visibility maps) — preview AND all exports went blank. Restored to
+explicit `=== false` with an explanatory comment and a new E2E guard
+(visible artwork layers in the modal snapshot). Lesson recorded:
+never trust `--fix` output without a behavior diff — it rewrites
+semantics, not just formatting. Also removed dead
+`SvgPreviewPane.zoomIn/zoomOut`; crop-modal mid-gesture handle-size
+flicker noted as cosmetic/self-healing (non-blocking).

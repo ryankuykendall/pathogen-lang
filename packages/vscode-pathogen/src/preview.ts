@@ -1,4 +1,5 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
+
 import * as vscode from 'vscode';
 
 let currentPanel: vscode.WebviewPanel | undefined;
@@ -9,7 +10,7 @@ let updateTimeout: ReturnType<typeof setTimeout> | undefined;
  */
 export function openPreview(context: vscode.ExtensionContext): void {
   const editor = vscode.window.activeTextEditor;
-  if (!editor || editor.document.languageId !== 'pathogen') {
+  if (editor?.document.languageId !== 'pathogen') {
     vscode.window.showWarningMessage('Open a .pathogen file first.');
     return;
   }
@@ -51,26 +52,29 @@ export function openPreview(context: vscode.ExtensionContext): void {
   // project-docs/security/iframe-sandbox-rationale.md and docs/security.md.
   // The webview is already iframe-isolated by VS Code; this CSP is the
   // structural defense that makes the article's recommended boundary explicit.
-  const cspSource = currentPanel.webview.cspSource;
+  const { cspSource } = currentPanel.webview;
   const nonce = generateNonce();
-  currentPanel.webview.html = getWebviewContent(
-    webviewCompilerUri.toString(),
-    webviewPanZoomUri,
-    cspSource,
-    nonce,
+  currentPanel.webview.html = getWebviewContent(webviewCompilerUri.toString(), webviewPanZoomUri, cspSource, nonce);
+
+  currentPanel.onDidDispose(
+    () => {
+      currentPanel = undefined;
+      if (updateTimeout) clearTimeout(updateTimeout);
+    },
+    null,
+    context.subscriptions,
   );
 
-  currentPanel.onDidDispose(() => {
-    currentPanel = undefined;
-    if (updateTimeout) clearTimeout(updateTimeout);
-  }, null, context.subscriptions);
-
-  currentPanel.webview.onDidReceiveMessage((msg) => {
-    if (msg.type === 'ready') {
-      // Use the captured editor from before the panel opened
-      sendSource(initialEditor.document);
-    }
-  }, null, context.subscriptions);
+  currentPanel.webview.onDidReceiveMessage(
+    (msg) => {
+      if (msg.type === 'ready') {
+        // Use the captured editor from before the panel opened
+        sendSource(initialEditor.document);
+      }
+    },
+    null,
+    context.subscriptions,
+  );
 
   const changeDisposable = vscode.workspace.onDidChangeTextDocument((e) => {
     if (e.document.languageId === 'pathogen' && currentPanel) {
@@ -81,7 +85,7 @@ export function openPreview(context: vscode.ExtensionContext): void {
   context.subscriptions.push(changeDisposable);
 
   const editorDisposable = vscode.window.onDidChangeActiveTextEditor((ed) => {
-    if (ed && ed.document.languageId === 'pathogen' && currentPanel) {
+    if (ed?.document.languageId === 'pathogen' && currentPanel) {
       sendSource(ed.document);
     }
   });
@@ -109,7 +113,7 @@ function generateNonce(): string {
 }
 
 function getCompilerUri(context: vscode.ExtensionContext): vscode.Uri | null {
-  const fs = require('fs');
+  const fs = require('node:fs');
   const bundled = vscode.Uri.joinPath(context.extensionUri, 'compiler', 'index.global.js');
   if (fs.existsSync(bundled.fsPath)) return bundled;
   const dev = vscode.Uri.joinPath(context.extensionUri, '..', '..', 'dist', 'index.global.js');
@@ -119,7 +123,7 @@ function getCompilerUri(context: vscode.ExtensionContext): vscode.Uri | null {
 
 /** The shared pan/zoom controller bundle (window.PathogenPanZoom). */
 function getPanZoomUri(context: vscode.ExtensionContext): vscode.Uri | null {
-  const fs = require('fs');
+  const fs = require('node:fs');
   const bundled = vscode.Uri.joinPath(context.extensionUri, 'compiler', 'pan-zoom.global.js');
   if (fs.existsSync(bundled.fsPath)) return bundled;
   const dev = vscode.Uri.joinPath(context.extensionUri, '..', '..', 'dist', 'pan-zoom.global.js');
@@ -272,54 +276,9 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
       cursor: move;
     }
 
-    /* Zoom controls */
-    .zoom-controls {
-      position: absolute;
-      bottom: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: var(--vscode-editor-background, #1e1e1e);
-      border: 1px solid var(--vscode-panel-border, #444);
-      padding: 4px 6px;
-      border-radius: 4px;
-      z-index: 10;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-    .zoom-controls button {
-      width: 24px;
-      height: 24px;
-      padding: 0;
-      display: grid;
-      place-items: center;
-      background: transparent;
-      border: 1px solid var(--vscode-panel-border, #444);
-      border-radius: 3px;
-      color: var(--vscode-foreground, #ccc);
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .zoom-controls button:hover {
-      background: var(--vscode-list-hoverBackground, #2a2d2e);
-      border-color: var(--vscode-focusBorder, #0e639c);
-    }
-    .zoom-controls input {
-      width: 44px;
-      padding: 2px 4px;
-      text-align: center;
-      background: var(--vscode-input-background, #3c3c3c);
-      color: var(--vscode-input-foreground, #ccc);
-      border: 1px solid var(--vscode-input-border, #555);
-      border-radius: 3px;
-      font-size: 10px;
-      font-family: var(--vscode-editor-font-family, monospace);
-    }
-    .zoom-controls input:focus {
-      outline: none;
-      border-color: var(--vscode-focusBorder, #0e639c);
-    }
+    /* Zoom control is the shared <pathogen-zoom-pill>, registered by the
+       already-loaded pan-zoom.global.js bundle. Its theming falls back to
+       --vscode-* variables automatically. */
 
     /* Side panel (layers, vars, palette) */
     .side-panel {
@@ -513,12 +472,7 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
         </svg>
       </div>
 
-      <div class="zoom-controls">
-        <button id="zoom-out" title="Zoom out">\u2212</button>
-        <button id="zoom-fit" title="Fit">Fit</button>
-        <button id="zoom-in" title="Zoom in">+</button>
-        <input type="text" id="zoom-level" value="100%" title="Zoom level">
-      </div>
+      <pathogen-zoom-pill id="zoom-pill"></pathogen-zoom-pill>
     </div>
 
     <div class="side-panel" id="side-panel">
@@ -553,7 +507,7 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
     const navigatorOverlay = document.getElementById('navigator-overlay');
     const navigatorPaths = document.getElementById('navigator-paths');
     const navigatorViewport = document.getElementById('navigator-viewport');
-    const zoomLevelInput = document.getElementById('zoom-level');
+    const zoomPill = document.getElementById('zoom-pill');
     const sidePanel = document.getElementById('side-panel');
 
     if (typeof PathogenLang === 'undefined') {
@@ -575,7 +529,6 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
     let lastResult = null;
     let layerVisibility = {};
     let cssVarOverrides = {};
-    const MIN_ZOOM = 0.25, MAX_ZOOM = 10, ZOOM_STEP = 1.5;
 
     // SVG icons for layer visibility
     const eyeOpenSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -594,22 +547,19 @@ export function getWebviewContent(compilerUri: string, panZoomUri: string, cspSo
       view: { zoom: zoomLevel, panX: panX, panY: panY },
       onChange: (v) => { zoomLevel = v.zoom; panX = v.panX; panY = v.panY; refreshChrome(); },
       // Plain scroll zooms — this is a dedicated preview panel, not a long
-      // scrollable page, so no Ctrl/Cmd gate (unlike blog embeds).
-      options: { minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM, zoomStep: ZOOM_STEP, wheelDampening: 0.002, requireModifierForWheel: false },
+      // scrollable page, so no Ctrl/Cmd gate (unlike blog embeds). Zoom
+      // range/step come from the bundle's shared DEFAULTS (10%–2000%).
+      options: { wheelDampening: 0.002, requireModifierForWheel: false },
     });
     function refreshChrome() {
-      zoomLevelInput.value = Math.round(zoomLevel * 100) + '%';
+      zoomPill.zoom = zoomLevel;
       updateNavigatorViewport();
       container.classList.toggle('can-pan', zoomLevel >= 0.5);
     }
 
-    document.getElementById('zoom-in').addEventListener('click', () => pz.zoomIn());
-    document.getElementById('zoom-out').addEventListener('click', () => pz.zoomOut());
-    document.getElementById('zoom-fit').addEventListener('click', () => pz.zoomToFit());
-    zoomLevelInput.addEventListener('change', () => {
-      const v = parseInt(zoomLevelInput.value, 10);
-      if (v >= 25 && v <= 1000) pz.zoomTo(v / 100);
-    });
+    // The pill's buttons/% input call the controller directly.
+    zoomPill.controller = pz;
+    zoomPill.fadeTarget = container;
 
     // (No scroll hint: plain scroll zooms directly, so the "Ctrl + scroll"
     // hint that blog embeds use isn't needed here.)

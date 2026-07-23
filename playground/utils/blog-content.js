@@ -20642,7 +20642,7 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 <h3>Interactive controls</h3>
 <p>The preview isn&#39;t just a static render — it matches the <a href="/">playground</a> experience:</p>
 <ul>
-<li><strong>Pan and zoom</strong>: Click-drag to pan, Cmd+scroll to zoom (0.25x–10x range), with a navigator minimap</li>
+<li><strong>Pan and zoom</strong>: Click-drag to pan, Cmd+scroll to zoom (0.1x–20x range), with a navigator minimap</li>
 <li><strong>Layer inspector</strong>: Toggle <a href="/docs#layers-defining-layers">layer</a> visibility, see color swatches, navigate GroupLayer hierarchy</li>
 <li><strong>CSS variable pickers</strong>: Color picker inputs for every <a href="/docs#css-var-cssvar-type"><code>CSSVar()</code></a> in the source — changes recompile instantly</li>
 <li><strong>Recompile button</strong>: Re-rolls <code>randomRange()</code> values without editing source</li>

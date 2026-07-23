@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-23 (zoom/pan parity + shared zoom pill)
+
+### Added
+
+#### Core
+
+- **`<pathogen-zoom-pill>`** — the single shared zoom control for every preview surface, shipped inside the pan-zoom bundle (`src/ui/zoom-pill.ts`, registered by `dist/pan-zoom.global.js`) so even the VS Code webview gets it from the script it already loads. Glass pill styled after the mini-workspace design (999px radius, backdrop-blur, borderless buttons, editable % input with arrow-key nudges), bottom-center with hover-fade, themed via a `--playground-token → --vscode-* → literal` fallback chain, styles applied through constructed `adoptedStyleSheets` (webview-CSP-safe). Storybook entry under Shared.
+- **`shouldStartPan` predicate on `PanZoomConfig`** — surfaces with foreground drag interactions (legend drag/resize, thumbnail crop box) can veto pan capture per press; the controller stands down before `preventDefault`, leaving the event untouched for the surface's own handlers. First instance-level controller unit tests (fake DOM harness).
+
+### Changed
+
+#### Playground
+
+- **All five preview surfaces now share one zoom/pan system**: the Export and Set Thumbnail modals migrated from hand-rolled viewBox-mutation zoom to the transform-mode `PanZoomController` — zooming now magnifies the artwork to fill the pane (matching the primary preview) instead of clipping inside a fixed window. The export modal's preview goes full-bleed: the bottom zoom-bar strip is gone, replaced by the floating pill plus a glass Snap chip (legend mode only). Four duplicated copies of zoom-chrome CSS deleted.
+- **Zoom range standardized to 10%–2000%** (was 25%–1000% on controller surfaces, 10%–1000% in modals) via the now-exported shared `DEFAULTS`; all per-component MIN/MAX/STEP constants deleted.
+- Export downloads are transform-proof: `_prepareExportClone` force-bakes any in-flight gesture and strips the controller's inline styles, so SVG/PNG/PDF bytes are identical even when a download races a pan (E2E-verified).
+
+#### VS Code
+
+- Preview panel adopts the shared pill (replacing its bespoke `--vscode-*` zoom bar) and the shared zoom range; the stale hard-coded 25–1000% input validation is gone.
+
+### Development
+
+- `project-docs/unified-export/verify-export.ts` extended to 39 checks: PointerEvent pan gestures, predicate veto on legend targets, mid-gesture byte-clean download, and a standalone-bundle check that `pan-zoom.global.js` alone registers a styled pill (the VS Code path). Execution record in `project-docs/pan-zoom-performance/zoom-surface-parity.md`.
+
+## [Unreleased] - 2026-07-21 (unified export workflow)
+
+### Added
+
+#### Playground
+
+- **The Export dialog is now the single export workflow** (⋮ → Export, or Ctrl/Cmd+Shift+E): SVG, **PNG** (new format — 1×/2×/4×/custom-width scaling capped at 16,384 px per side, transparent-background option, embedded fonts), and print-ready PDF from one dialog. The legend is now **optional and off by default**; legend-less exports carry a small *Created in pathogen.studio* watermark (vector through PDF outlining, even in raster mode). The legend's source listing gains **syntax highlighting** (default on) via the new `highlightPathogenTokens()` API with the light print palette inlined as literal fills — identical colors in SVG text, PNG pixels, and PDF outlines. The legend is clamped inside the canvas everywhere it can move (drag, arrows, resize, content growth) so exports never silently crop it.
+- The old "Export with Legend" menu item and the raw-source `.svgx` download are retired; Ctrl+S remains autosave-only.
+
+#### Core
+
+- `highlightPathogenTokens(source)` — token-level highlighter API (one array per source line, round-trip invariant); `highlightPathogen` reimplemented on top of the same walk.
+
+### Documentation
+
+- `docs/exporting.md` rewritten around the unified dialog (formats at a glance, optional legend, branding, PNG section).
+- New launch blog post: *Export Anything: SVG, PNG, and Print-Ready PDF from One Dialog* (`/blog/unified-export`, post30 sample `meridian-bloom.pathogen`).
+
+### Development
+
+- New tests: `highlight-tokens`, `legend-code-tokens`, `code-print-palette` (drift-guard against theme.css), outliner multi-tspan fills; Puppeteer E2E harness `project-docs/unified-export/verify-export.ts`.
+
 ## [Unreleased] - 2026-07-20 (font-family variables)
 
 ### Added

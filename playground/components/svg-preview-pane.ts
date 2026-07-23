@@ -139,28 +139,29 @@ interface CssPropertyDef {
 }
 
 export class SvgPreviewPane extends HTMLElement {
-  // Zoom/pan constants
-  private readonly MIN_ZOOM = 0.25;
-  private readonly MAX_ZOOM = 10;
-  private readonly ZOOM_STEP = 1.5;
-
   // Shared pan/zoom controller (transform-during-gesture → bake-on-idle). Owns
   // the viewBox/transform; this component mirrors its state into the store and
   // keeps the navigator/zoom chrome in sync. Created once the iframe SVG exists.
   private panZoom: PanZoomController | null = null;
+
   // Guards the store mirror: true while we're writing the controller's view INTO
   // the store (onChange), so the [zoomLevel,panX,panY] subscription doesn't treat
   // our own echo as an external write and feed it back into the controller.
   private _panZoomEcho = false;
+
   // Timer for the "⌘ + scroll to zoom" hint shown on un-modified wheel.
   private _scrollHintTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Navigator drag state
-  private isNavigatorDragging: boolean = false;
-  private navDragStartX: number = 0;
-  private navDragStartY: number = 0;
-  private navDragStartPanX: number = 0;
-  private navDragStartPanY: number = 0;
+  private isNavigatorDragging = false;
+
+  private navDragStartX = 0;
+
+  private navDragStartY = 0;
+
+  private navDragStartPanX = 0;
+
+  private navDragStartPanY = 0;
 
   // Fullscreen toggle
   private _cleanupFullscreen: (() => void) | null = null;
@@ -174,7 +175,9 @@ export class SvgPreviewPane extends HTMLElement {
    * `_pendingLayerCall` and replayed when ready.
    */
   private _iframeDoc: Document | null = null;
+
   private _iframeReady: Promise<Document> | null = null;
+
   private _pendingLayerCall: { layers: LayerInput[]; defsData: DefsData } | null = null;
 
   constructor() {
@@ -251,19 +254,24 @@ export class SvgPreviewPane extends HTMLElement {
       },
       onChange: (v) => this._onPanZoomChange(v),
       options: {
-        minZoom: this.MIN_ZOOM,
-        maxZoom: this.MAX_ZOOM,
-        zoomStep: this.ZOOM_STEP,
+        // Zoom range/step come from the shared DEFAULTS (10%–2000%).
         wheelDampening: 0.002,
         // Require Ctrl/Cmd for wheel-zoom (consistent with blog/website embeds).
         requireModifierForWheel: true,
       },
     });
 
+    // Hand the shared zoom pill its controller + hover container.
+    const pill = this.shadowRoot!.querySelector('pathogen-zoom-pill');
+    if (pill) {
+      pill.controller = this.panZoom;
+      pill.fadeTarget = this.previewContainer;
+    }
+
     // Un-modified wheel: the controller ignores it; show the zoom hint.
-    const scrollHint = this.shadowRoot!.querySelector('#scroll-hint') as HTMLElement | null;
+    const scrollHint = this.shadowRoot!.querySelector('#scroll-hint');
     if (scrollHint) {
-      const span = scrollHint.querySelector('span') as HTMLSpanElement | null;
+      const span = scrollHint.querySelector('span');
       if (span) {
         const isMac = navigator.platform.includes('Mac') || navigator.userAgent.includes('Mac');
         span.textContent = isMac ? '⌘ + scroll to zoom' : 'Ctrl + scroll to zoom';
@@ -315,8 +323,8 @@ export class SvgPreviewPane extends HTMLElement {
 
   /** Update the zoom % display, navigator viewport rect, and can-pan classes. */
   private _refreshZoomChrome(zoomLevel: number): void {
-    const zoomDisplay = this.shadowRoot!.querySelector('#zoom-level') as HTMLInputElement | null;
-    if (zoomDisplay) zoomDisplay.value = `${Math.round(zoomLevel * 100)}%`;
+    const pill = this.shadowRoot!.querySelector('pathogen-zoom-pill');
+    if (pill) pill.zoom = zoomLevel;
     this.updateNavigatorViewport();
     this.previewContainer.classList.toggle('can-pan', zoomLevel >= 0.5);
     if (this._iframeDoc) this._iframeDoc.body.classList.toggle('can-pan', zoomLevel >= 0.5);
@@ -517,7 +525,7 @@ export class SvgPreviewPane extends HTMLElement {
             gradients: (defsData.gradients ?? []) as GradientOutput[],
             patterns: defsData.patterns ?? [],
             markers: (defsData.markers ?? []) as MarkerOutput[],
-            filters: (defsData.filters ?? []) as FilterOutput[],
+            filters: defsData.filters ?? [],
             // Unused by buildDefs but required by the CompileResult shape:
             layers: [],
             cssProperties: [],
@@ -600,7 +608,7 @@ export class SvgPreviewPane extends HTMLElement {
     try {
       const paths = layersGroup?.querySelectorAll('path') || [this.previewPath];
       for (const p of paths) {
-        (p as SVGPathElement).getBBox();
+        p.getBBox();
       }
     } catch (e) {
       // getBBox can throw if path is empty or invalid
@@ -663,6 +671,9 @@ export class SvgPreviewPane extends HTMLElement {
 
     for (const el of layersGroup.querySelectorAll('[data-layer-name]')) {
       const name = (el as HTMLElement).dataset.layerName;
+      // Explicit false only: layers absent from the visibility map are
+      // VISIBLE by default (`!visibility[name]` would hide everything on a
+      // fresh workspace, where the map is {}).
       if (name && visibility[name] === false) {
         (el as HTMLElement).style.display = 'none';
       } else {
@@ -677,7 +688,7 @@ export class SvgPreviewPane extends HTMLElement {
       // Check mask attribute
       const maskAttr = htmlEl.getAttribute('mask') || htmlEl.dataset.origMask;
       if (maskAttr) {
-        const match = maskAttr.match(/url\(#(.+?)\)/);
+        const match = /url\(#(.+?)\)/.exec(maskAttr);
         if (match) {
           const maskId = match[1];
           if (defsVisibility[`mask:${maskId}`] === false) {
@@ -694,7 +705,7 @@ export class SvgPreviewPane extends HTMLElement {
       // Check clip-path attribute
       const clipAttr = htmlEl.getAttribute('clip-path') || htmlEl.dataset.origClipPath;
       if (clipAttr) {
-        const match = clipAttr.match(/url\(#(.+?)\)/);
+        const match = /url\(#(.+?)\)/.exec(clipAttr);
         if (match) {
           const clipId = match[1];
           if (defsVisibility[`clip-path:${clipId}`] === false) {
@@ -741,17 +752,8 @@ export class SvgPreviewPane extends HTMLElement {
     (this.shadowRoot!.querySelector('#loading-overlay') as HTMLElement).style.display = 'none';
   }
 
-  // Zoom/Pan methods — all delegate to the shared PanZoomController, which owns
-  // the viewBox/transform and emits onChange (→ store mirror + zoom chrome).
-
-  zoomIn(): void {
-    this.panZoom?.zoomIn();
-  }
-
-  zoomOut(): void {
-    this.panZoom?.zoomOut();
-  }
-
+  // Zoom buttons live in <pathogen-zoom-pill>, which talks to the controller
+  // directly. zoomFit survives as public API for clear().
   zoomFit(): void {
     this.panZoom?.zoomToFit();
   }
@@ -883,7 +885,7 @@ export class SvgPreviewPane extends HTMLElement {
     navSvg.setAttribute('viewBox', navViewBox);
     // The overlay (viewport rect) must share the content SVG's viewBox so the
     // rect's canvas-unit coordinates line up with the rendered minimap.
-    const navOverlay = this.shadowRoot!.querySelector('#navigator-overlay') as SVGSVGElement | null;
+    const navOverlay = this.shadowRoot!.querySelector('#navigator-overlay');
     if (navOverlay) navOverlay.setAttribute('viewBox', navViewBox);
     navBg.setAttribute('fill', store.get('background') as string);
     navBg.setAttribute('x', '0');
@@ -1027,31 +1029,8 @@ export class SvgPreviewPane extends HTMLElement {
   }
 
   setupEventListeners(): void {
-    // Zoom controls
-    this.shadowRoot!.querySelector('#zoom-in')!.addEventListener('click', () => this.zoomIn());
-    this.shadowRoot!.querySelector('#zoom-out')!.addEventListener('click', () => this.zoomOut());
-    this.shadowRoot!.querySelector('#zoom-fit')!.addEventListener('click', () => this.zoomFit());
-
-    // Zoom level input
-    const zoomInput = this.shadowRoot!.querySelector('#zoom-level') as HTMLInputElement;
-    zoomInput.addEventListener('change', (e: Event) => {
-      const value = parseInt((e.target as HTMLInputElement).value);
-      if (!isNaN(value) && value >= this.MIN_ZOOM * 100 && value <= this.MAX_ZOOM * 100) {
-        this.panZoom?.zoomTo(value / 100);
-      } else {
-        (e.target as HTMLInputElement).value = `${Math.round((store.get('zoomLevel') as number) * 100)}%`;
-      }
-    });
-
-    zoomInput.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const step = e.shiftKey ? 0.25 : 0.05;
-        const direction = e.key === 'ArrowUp' ? 1 : -1;
-        const newZoom = (store.get('zoomLevel') as number) + step * direction;
-        this.panZoom?.zoomTo(newZoom);
-      }
-    });
+    // Zoom buttons + editable % input live inside <pathogen-zoom-pill>,
+    // which calls the controller directly (wired in _setupIframeEventListeners).
 
     // Pan/wheel/touch listeners live on the iframe document (the controller
     // attaches them there — mouse events inside the iframe don't bubble to the
@@ -1224,75 +1203,12 @@ export class SvgPreviewPane extends HTMLElement {
           fill: var(--accent-subtle, rgba(16, 185, 129, 0.15));
         }
 
-        /* Zoom controls */
-        #zoom-controls {
-          position: absolute;
-          bottom: 1rem;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: var(--bg-elevated, #ffffff);
-          padding: 0.5rem 0.75rem;
-          border-radius: var(--radius-lg, 12px);
-          border: 1px solid var(--border-color, #e2e8f0);
-          box-shadow: var(--shadow-lg);
-          z-index: 10;
-        }
-
-        #zoom-controls button {
-          width: 32px;
-          height: 32px;
-          padding: 0;
-          display: grid;
-          place-items: center;
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-md, 8px);
-          background: var(--bg-secondary, #ffffff);
-          color: var(--text-primary, #1a1a2e);
-          cursor: pointer;
-          font-family: inherit;
-          font-size: 0.875rem;
-          transition: all var(--transition-base, 0.15s ease);
-        }
-
-        #zoom-controls button:hover {
-          background: var(--hover-bg, rgba(0, 0, 0, 0.04));
-          border-color: var(--accent-color, #10b981);
-          color: var(--accent-color, #10b981);
-        }
-
-        #zoom-in,
-        #zoom-out {
-          font-size: 1.25rem;
-          font-weight: 400;
-          line-height: 0;
-        }
-
-        #zoom-fit {
-          font-size: 0.8125rem;
-          font-weight: 500;
-        }
-
-        #zoom-level {
-          width: 56px;
-          padding: 0.375rem 0.5rem;
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: var(--radius-md, 8px);
-          font-size: 0.75rem;
-          font-family: var(--font-mono, 'Inconsolata', monospace);
-          font-weight: 500;
-          text-align: center;
-          background: var(--bg-secondary, #ffffff);
-          color: var(--text-primary, #1a1a2e);
-          transition: all var(--transition-base, 0.15s ease);
-        }
-
-        #zoom-level:focus {
-          outline: none;
-          border-color: var(--accent-color, #10b981);
-          box-shadow: 0 0 0 3px var(--focus-ring, rgba(16, 185, 129, 0.4));
+        /* Zoom control is the shared <pathogen-zoom-pill> (pan-zoom bundle);
+         * it self-positions bottom-center and handles its own hover-fade.
+         * Outer author rule beats the pill's :host opacity — always visible
+         * in fullscreen, where there's no surrounding UI to defer to. */
+        :host(.fullscreen) pathogen-zoom-pill {
+          opacity: 1;
         }
 
         #loading-overlay {
@@ -1366,12 +1282,7 @@ export class SvgPreviewPane extends HTMLElement {
 
       <button id="inspector-open-btn" title="Toggle inspector">${LAYERS_ICON}</button>
 
-      <div id="zoom-controls">
-        <button id="zoom-out" title="Zoom out">&#x2212;</button>
-        <button id="zoom-fit" title="Fit to view">Fit</button>
-        <button id="zoom-in" title="Zoom in">&#x002B;</button>
-        <input type="text" id="zoom-level" value="100%" title="Enter zoom percentage">
-      </div>
+      <pathogen-zoom-pill></pathogen-zoom-pill>
 
       <div id="preview-container">
         <!-- The sandboxed iframe is created programmatically in _setupIframe

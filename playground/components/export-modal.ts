@@ -25,6 +25,7 @@ import { outlineSvgText } from '../utils/svg-text-outliner.js';
 import { CODE_PRINT_COLORS, CODE_PRINT_DEFAULT } from '../utils/code-print-palette.js';
 import { layoutCodeLines } from '../utils/legend-code-tokens.js';
 import type { CodeToken } from '../utils/legend-code-tokens.js';
+import type { PanZoomController, ZoomPillElement } from '../../dist/pan-zoom';
 import styles from './export-modal.css';
 import './shared/pathogen-color-input.js';
 
@@ -163,18 +164,10 @@ interface JsPdfDoc {
 class ExportModal extends HTMLElement {
   static _fontCache: Record<string, string> = {};
 
-  // Zoom/pan state (independent of workspace)
-  private _zoom = 1;
-
-  private _panX = 0;
-
-  private _panY = 0;
-
-  private _isPanning = false;
-
-  private _panStartX = 0;
-
-  private _panStartY = 0;
+  // Shared pan/zoom controller (transform-during-gesture → bake-on-idle).
+  // Destroyed + reconstructed whenever the preview SVG is rebuilt — the
+  // controller holds a reference to a specific <svg> element.
+  private _panZoom: PanZoomController | null = null;
 
   // Legend drag state
   private _isDragging = false;
@@ -295,13 +288,6 @@ class ExportModal extends HTMLElement {
 
   private readonly BASE_BRAND_GAP = 5;
 
-  // Zoom constants
-  private readonly MIN_ZOOM = 0.1;
-
-  private readonly MAX_ZOOM = 10;
-
-  private readonly ZOOM_STEP = 1.5;
-
   // Document-level event handlers
   private _handleMouseMove: ((e: MouseEvent) => void) | null = null;
 
@@ -373,11 +359,6 @@ class ExportModal extends HTMLElement {
     this._scaleFactor = Math.max(0.2, Math.min(8, shortSide / 2000));
     this._legendWidth = this._computeBaseWidth() * this._scaleFactor;
 
-    // Reset zoom/pan
-    this._zoom = 1;
-    this._panX = 0;
-    this._panY = 0;
-
     // Re-derive ratio-locked dimensions from this workspace's canvas
     const ratio = this._canvasWidth / this._canvasHeight;
     this._exportSettings.artH = round2(this._exportSettings.artW / ratio);
@@ -406,11 +387,12 @@ class ExportModal extends HTMLElement {
       matchOption.textContent = `Match workspace (${ws != null ? ws : 'off'})`;
     }
 
-    // Build the preview SVG with legend
+    // Build the preview SVG (fresh controller at zoom 1 — see _buildPreviewSvg)
+    this._panZoom?.destroy();
+    this._panZoom = null;
     this._buildPreviewSvg(svgElement, this._getEffectiveState());
     this._populateForm();
     this._updatePdfUi();
-    this._updateZoomDisplay();
 
     this.classList.add('open');
     this._addDocumentListeners();
@@ -419,6 +401,10 @@ class ExportModal extends HTMLElement {
   close(): void {
     this.classList.remove('open');
     this._removeDocumentListeners();
+    // Listener hygiene: the controller binds wheel/pointer handlers on the
+    // preview area; rebuilt on next open().
+    this._panZoom?.destroy();
+    this._panZoom = null;
   }
 
   _getEffectiveState(): WorkspaceState {
@@ -438,12 +424,10 @@ class ExportModal extends HTMLElement {
   }
 
   _rebuildPreview(): void {
-    // Save legend position and zoom/pan
+    // Save legend position (zoom/pan survive via the controller-view seed
+    // inside _buildPreviewSvg)
     const savedX = this._legendX;
     const savedY = this._legendY;
-    const savedZoom = this._zoom;
-    const savedPanX = this._panX;
-    const savedPanY = this._panY;
     const savedWidth = this._legendWidth;
     const savedScale = this._scaleFactor;
 
@@ -452,21 +436,23 @@ class ExportModal extends HTMLElement {
     this._scaleFactor = savedScale;
     this._buildPreviewSvg(this._svgElement!, this._getEffectiveState());
 
-    // Restore legend position and zoom/pan
+    // Restore legend position
     this._legendX = savedX;
     this._legendY = savedY;
-    this._zoom = savedZoom;
-    this._panX = savedPanX;
-    this._panY = savedPanY;
     this._updateLegendPosition();
-    this._updateViewBox();
-    this._updateZoomDisplay();
   }
 
   // --- SVG building ---
 
   _buildPreviewSvg(sourceSvg: SVGSVGElement, state: WorkspaceState): void {
     const previewArea = this.shadowRoot!.querySelector('.preview-area') as HTMLElement;
+
+    // The controller is bound to a specific <svg>; carry its view across the
+    // rebuild (undefined on first build / after open() → fresh 1/0/0).
+    const savedView = this._panZoom?.getView();
+    this._panZoom?.destroy();
+    this._panZoom = null;
+
     const oldSvg = previewArea.querySelector('svg');
     if (oldSvg) oldSvg.remove();
 
@@ -484,7 +470,38 @@ class ExportModal extends HTMLElement {
 
     previewArea.appendChild(svg);
     this._svg = svg;
-    this._updateViewBox();
+
+    const pill = this._zoomPill;
+    this._panZoom = new window.PathogenPanZoom.PanZoomController({
+      svg,
+      eventTarget: previewArea,
+      mode: 'transform',
+      canvas: this._pzCanvas(),
+      view: savedView,
+      onChange: (v) => {
+        if (pill) pill.zoom = v.zoom;
+      },
+      // Legend drag + resize must win over panning: the controller stands
+      // down (no capture, no preventDefault) so this modal's own mousedown
+      // and document-level handlers run untouched.
+      shouldStartPan: (e) => {
+        const t = e.target as Element | null;
+        return !(t?.classList?.contains('resize-handle') || t?.closest?.('.legend-group'));
+      },
+      // Plain wheel: the modal preview is the only scrollable thing on
+      // screen, so there's no scroll trap to guard against. Zoom range/step
+      // come from the shared DEFAULTS (10%–2000%).
+      options: { wheelDampening: 0.002 },
+    });
+    if (pill) {
+      pill.controller = this._panZoom;
+      pill.fadeTarget = this.shadowRoot!.querySelector('.preview-panel');
+      pill.zoom = this._panZoom.getView().zoom;
+    }
+  }
+
+  get _zoomPill(): ZoomPillElement | null {
+    return this.shadowRoot!.querySelector('pathogen-zoom-pill');
   }
 
   /** Build the legend and place it bottom-right (default position). */
@@ -957,64 +974,8 @@ class ExportModal extends HTMLElement {
     return { originX: 0, originY: 0, width: this._canvasWidth, height: this._canvasHeight };
   }
 
-  _updateViewBox(): void {
-    if (!this._svg) return;
-    // Shared math (window.PathogenPanZoom); this modal keeps viewBox mutation.
-    this._svg.setAttribute(
-      'viewBox',
-      window.PathogenPanZoom.viewToViewBox({ zoom: this._zoom, panX: this._panX, panY: this._panY }, this._pzCanvas()),
-    );
-    // The card look (rounded corners) only makes sense at fit. Zoomed or
-    // panned, the element is a window into the artwork — rounding its corners
-    // clips the magnified content into a mask shape. Square the window then.
-    const atFit = this._zoom === 1 && this._panX === 0 && this._panY === 0;
-    this._svg.classList.toggle('zoomed', !atFit);
-  }
-
-  _updateZoomDisplay(): void {
-    const input = this.shadowRoot!.querySelector('.zoom-level') as HTMLInputElement | null;
-    if (input) input.value = `${Math.round(this._zoom * 100)}%`;
-  }
-
-  _zoomIn(): void {
-    const oldZoom = this._zoom;
-    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * this.ZOOM_STEP, {
-      minZoom: this.MIN_ZOOM,
-      maxZoom: this.MAX_ZOOM,
-    });
-    this._adjustPanForZoom(oldZoom, this._zoom);
-    this._updateViewBox();
-    this._updateZoomDisplay();
-  }
-
-  _zoomOut(): void {
-    const oldZoom = this._zoom;
-    this._zoom = window.PathogenPanZoom.clampZoom(this._zoom / this.ZOOM_STEP, {
-      minZoom: this.MIN_ZOOM,
-      maxZoom: this.MAX_ZOOM,
-    });
-    this._adjustPanForZoom(oldZoom, this._zoom);
-    this._updateViewBox();
-    this._updateZoomDisplay();
-  }
-
-  _zoomFit(): void {
-    this._zoom = 1;
-    this._panX = 0;
-    this._panY = 0;
-    this._updateViewBox();
-    this._updateZoomDisplay();
-  }
-
-  _adjustPanForZoom(oldZoom: number, newZoom: number): void {
-    const adj = window.PathogenPanZoom.adjustPanForZoom(
-      { zoom: oldZoom, panX: this._panX, panY: this._panY },
-      newZoom,
-      this._pzCanvas(),
-    );
-    this._panX = adj.panX;
-    this._panY = adj.panY;
-  }
+  // Zoom in/out/fit, the % input, wheel zoom, and panning are all owned by
+  // the shared PanZoomController + <pathogen-zoom-pill> (see _buildPreviewSvg).
 
   // --- Screen to SVG coordinate conversion ---
 
@@ -1154,8 +1115,17 @@ class ExportModal extends HTMLElement {
 
   /** Clone the preview SVG and strip editor-only chrome for export. */
   _prepareExportClone(): SVGSVGElement {
+    // Force-bake any in-flight pan/zoom: cloneNode(true) copies the
+    // controller's inline transform/transform-origin/will-change from a
+    // mid-gesture element, which would scale/translate every exported
+    // SVG/PNG/PDF. All three formats funnel through this method.
+    this._panZoom?.endGesture();
     const clone = this._svg!.cloneNode(true) as SVGSVGElement;
     clone.setAttribute('viewBox', `0 0 ${this._canvasWidth} ${this._canvasHeight}`);
+    for (const prop of ['transform', 'transform-origin', 'will-change', 'touch-action']) {
+      clone.style.removeProperty(prop);
+    }
+    if (clone.getAttribute('style') === '') clone.removeAttribute('style');
     clone.querySelectorAll('[data-interactive="true"]').forEach((el) => el.remove());
     return clone;
   }
@@ -1843,7 +1813,7 @@ class ExportModal extends HTMLElement {
     const legendSwitch = root.querySelector('#include-legend') as HTMLButtonElement;
     legendSwitch.classList.toggle('active', s.includeLegend);
     legendSwitch.setAttribute('aria-checked', String(s.includeLegend));
-    (root.querySelector('.snap-group') as HTMLElement).hidden = !s.includeLegend;
+    (root.querySelector('.snap-chip') as HTMLElement).hidden = !s.includeLegend;
     (root.querySelector('#legend-highlight') as HTMLInputElement).checked = s.highlightCode;
 
     // PNG controls
@@ -1944,25 +1914,7 @@ class ExportModal extends HTMLElement {
     // Download
     root.querySelector('.download-btn')!.addEventListener('click', async () => this._download());
 
-    // Zoom controls
-    root.querySelector('.zoom-in')!.addEventListener('click', () => this._zoomIn());
-    root.querySelector('.zoom-out')!.addEventListener('click', () => this._zoomOut());
-    root.querySelector('.zoom-fit')!.addEventListener('click', () => this._zoomFit());
-
-    // Zoom level input
-    const zoomInput = root.querySelector('.zoom-level') as HTMLInputElement;
-    zoomInput.addEventListener('change', (e: Event) => {
-      const val = parseInt((e.target as HTMLInputElement).value);
-      if (!isNaN(val) && val >= this.MIN_ZOOM * 100 && val <= this.MAX_ZOOM * 100) {
-        const oldZoom = this._zoom;
-        this._zoom = val / 100;
-        this._adjustPanForZoom(oldZoom, this._zoom);
-        this._updateViewBox();
-        this._updateZoomDisplay();
-      } else {
-        this._updateZoomDisplay();
-      }
-    });
+    // Zoom controls live in <pathogen-zoom-pill>, wired in _buildPreviewSvg.
 
     // Form inputs -> live update legend
     const formInputs = ['#legend-name', '#legend-description', '#legend-date', '#legend-creator'];
@@ -2012,7 +1964,9 @@ class ExportModal extends HTMLElement {
       this._scheduleRebuild();
     });
 
-    // Preview area mouse events (pan + legend drag + resize)
+    // Preview area mouse events (legend drag + resize; panning + wheel zoom
+    // belong to the PanZoomController, which stands down on these targets
+    // via its shouldStartPan predicate)
     const previewArea = root.querySelector('.preview-area') as HTMLElement;
 
     previewArea.addEventListener('mousedown', (e: MouseEvent) => {
@@ -2024,6 +1978,9 @@ class ExportModal extends HTMLElement {
       if (target.classList.contains('resize-handle')) {
         e.preventDefault();
         e.stopPropagation();
+        // Bake any in-flight pan/zoom transform so getScreenCTM (and the
+        // resize math's zoom read) reflect settled geometry.
+        this._panZoom?.endGesture();
         this._isResizing = true;
         this._resizeStartX = e.clientX;
         this._resizeStartWidth = this._legendWidth;
@@ -2034,42 +1991,15 @@ class ExportModal extends HTMLElement {
       if (target.closest('.legend-group')) {
         e.preventDefault();
         e.stopPropagation();
+        this._panZoom?.endGesture();
         this._isDragging = true;
         const svgPt = this._screenToSvg(e.clientX, e.clientY);
         this._dragStartX = svgPt.x - this._legendX;
         this._dragStartY = svgPt.y - this._legendY;
         const legendG = this._svg.querySelector('#pathogen-legend');
         if (legendG) legendG.classList.add('dragging');
-        return;
       }
-
-      // Pan
-      e.preventDefault();
-      this._isPanning = true;
-      this._panStartX = e.clientX;
-      this._panStartY = e.clientY;
-      previewArea.classList.add('panning');
     });
-
-    // Wheel zoom
-    previewArea.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        if (!this._svg) return;
-        e.preventDefault();
-        const dampening = 0.002;
-        const delta = -e.deltaY * dampening;
-        const oldZoom = this._zoom;
-        this._zoom = window.PathogenPanZoom.clampZoom(this._zoom * (1 + delta), {
-          minZoom: this.MIN_ZOOM,
-          maxZoom: this.MAX_ZOOM,
-        });
-        this._adjustPanForZoom(oldZoom, this._zoom);
-        this._updateViewBox();
-        this._updateZoomDisplay();
-      },
-      { passive: false },
-    );
   }
 
   _setupPdfListeners(): void {
@@ -2243,7 +2173,8 @@ class ExportModal extends HTMLElement {
       if (this._isResizing) {
         const dx = e.clientX - this._resizeStartX;
         const rect = this._svg!.getBoundingClientRect();
-        const vw = this._canvasWidth / this._zoom;
+        const zoom = this._panZoom?.getView().zoom ?? 1;
+        const vw = this._canvasWidth / zoom;
         const scale = vw / rect.width;
         const svgDx = dx * scale;
         const baseWidth = this._computeBaseWidth();
@@ -2254,29 +2185,13 @@ class ExportModal extends HTMLElement {
         return;
       }
 
-      // Legend drag
+      // Legend drag (panning is the PanZoomController's job)
       if (this._isDragging) {
         const svgPt = this._screenToSvg(e.clientX, e.clientY);
         this._legendX = this._snap(svgPt.x - this._dragStartX);
         this._legendY = this._snap(svgPt.y - this._dragStartY);
         this._clampLegendPos();
         this._updateLegendPosition();
-        return;
-      }
-
-      // Pan
-      if (this._isPanning && this._svg) {
-        const rect = this._svg.getBoundingClientRect();
-        const vw = this._canvasWidth / this._zoom;
-        const vh = this._canvasHeight / this._zoom;
-        const scaleX = vw / rect.width;
-        const scaleY = vh / rect.height;
-
-        this._panX += (this._panStartX - e.clientX) * scaleX;
-        this._panY += (this._panStartY - e.clientY) * scaleY;
-        this._panStartX = e.clientX;
-        this._panStartY = e.clientY;
-        this._updateViewBox();
       }
     };
 
@@ -2289,11 +2204,8 @@ class ExportModal extends HTMLElement {
       if (this._isResizing) {
         this._isResizing = false;
       }
-      if (this._isPanning) {
-        this._isPanning = false;
-        const previewArea = this.shadowRoot!.querySelector('.preview-area');
-        if (previewArea) previewArea.classList.remove('panning');
-      }
+      // A pan released outside the preview area must still bake cleanly.
+      this._panZoom?.endGesture();
     };
 
     this._handleKeydown = (e: KeyboardEvent): void => {
@@ -2526,14 +2438,9 @@ class ExportModal extends HTMLElement {
 
         <div class="preview-panel">
           <div class="preview-area"></div>
-          <div class="zoom-bar">
-            <div class="zoom-controls">
-              <button class="zoom-out" title="Zoom out">&#x2212;</button>
-              <button class="zoom-fit" title="Fit to view">Fit</button>
-              <button class="zoom-in" title="Zoom in">&#x002B;</button>
-              <input type="text" class="zoom-level" value="100%" title="Enter zoom percentage">
-            </div>
-            <div class="snap-group">
+          <div class="floating-controls">
+            <pathogen-zoom-pill></pathogen-zoom-pill>
+            <div class="snap-chip" hidden>
               <span class="snap-label" id="snap-label">Snap</span>
               <button class="snap-toggle active" id="snap-toggle" role="switch" aria-checked="true" aria-labelledby="snap-label" title="Toggle snap to grid"></button>
               <input type="number" class="snap-size" id="legend-snap" min="1" step="1" value="10" title="Snap grid size">

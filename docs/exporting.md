@@ -13,7 +13,7 @@ Whatever you see in the dialog's live preview is exactly what downloads: the pre
 A **legend** is a caption card embedded in the export — title, creator, date, description, and the Pathogen source that produced the artwork. It's off by default; flip **Include legend** on to add it.
 
 1. Fill in the legend fields — name, description, export date, and creator. The **Source Code** block is included automatically.
-2. Drag the legend card anywhere over the artwork; drag its corner handle to resize. Enable **Snap** in the bottom bar for grid-aligned placement.
+2. Drag the legend card anywhere over the artwork; drag its corner handle to resize. Enable **Snap** in the floating control next to the zoom pill for grid-aligned placement.
 3. Choose a format and press **Download**.
 
 **Syntax highlighting** (on by default) colors the legend's source listing with Pathogen's print palette — the same token colors used across pathogen.studio, tuned for the legend's white card. The colors are baked into the file as literal fills, so they survive PDF text outlining and PNG rasterization identically. Turn the checkbox off for a plain monochrome listing.
