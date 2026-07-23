@@ -159,6 +159,13 @@ rightward step and mask a duplicate listener). Visual probes:
 `verify/probe-zoomed-square-corners.png`, `verify/probe-clamped-at-fit.png`
 (`probe-zoom-clamp.ts`).
 
+**Follow-up identified as the real issue by Ryan:** the Export and Set
+Thumbnail modals still run the LEGACY viewBox-mutation zoom while the
+primary preview / mini-workspace / VS Code preview use the shared
+transform-mode PanZoomController. The zoomed-corner patch above treats
+a symptom of that gap. Full divergence audit + alignment plan:
+`project-docs/pan-zoom-performance/zoom-surface-parity.md`.
+
 ## Key implementation facts (verified during planning)
 
 - Legend card is always white → light code palette only:
