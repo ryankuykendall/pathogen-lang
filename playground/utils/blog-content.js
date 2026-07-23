@@ -9,12 +9,6 @@ export const blogIndex = [
     "description": "Pathogen Studio's Export dialog ships today: three formats, an optional legend with syntax-highlighted source, and a live preview that is exactly what you download."
   },
   {
-    "slug": "print-ready-pdf-export",
-    "title": "Print-Ready PDF Export: From Playground to Poster",
-    "date": "2026-07-18",
-    "description": "Export with Legend now produces print-ready PDFs — real page sizes, margins, bleed and crop marks, and text converted to vector outlines so your fonts survive any print shop."
-  },
-  {
     "slug": "segment-labels-and-suffixes",
     "title": "Name Your Corners: Segment Labels and Corner Suffixes",
     "date": "2026-07-18",
@@ -15404,105 +15398,6 @@ layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), laye
 <p>The traditional workflow for themeable SVG is painful: generate variants, swap files, or embed JavaScript to manipulate the DOM. Pathogen&#39;s approach eliminates all of that. You write color logic at a high level — harmonies, palettes, lightness ramps — and the compiler translates it into CSS that browsers already know how to execute.</p>
 <p>The result is SVG illustration that participates in the web platform&#39;s theming infrastructure. Set CSS custom properties from your design system. Let <code>prefers-color-scheme</code> drive light and dark variants. Animate color transitions with CSS. No runtime JavaScript needed, no asset pipeline for variants.</p>
 <p>SVG was always a dynamic format hiding behind static tooling. The Color system gives it the vocabulary to express what it was designed for.</p>
-`,
-  'print-ready-pdf-export': `<p>There has always been a gap between finishing a piece in <a href="https://pathogen.studio/">Pathogen Studio</a> and holding it in your hands. <strong>Export with Legend</strong> gave you a beautiful self-contained SVG — but the moment you wanted a poster, you were on your own: find a web SVG-to-PDF converter, upload your artwork, and hope. Too often the file that came back had quietly swapped your fonts for whatever the converter had lying around. The piece on the wall didn&#39;t match the piece on the screen.</p>
-<p>As of today, that gap is closed. <strong>Export with Legend can produce a print-ready PDF directly</strong> — real physical page sizes, margins, bleed and crop marks, and one guarantee at the center of it all: the type that prints is exactly the type you designed.</p>
-<h2>Text becomes paths</h2>
-<p>The reason converters mangle fonts is that SVG text is a <em>reference</em> — <code>font-family: &#39;Baumans&#39;</code> only works if the machine rendering the file has Baumans, and a print shop&#39;s RIP almost never does. So instead of shipping references, the PDF export ships <strong>shapes</strong>. Before the PDF is generated, every piece of text — in your artwork and in the legend — is converted to vector outlines, glyph by glyph, using the same font data the playground renders with.</p>
-<p>The result is a PDF with no font references at all. There is nothing to substitute, nothing to miss, nothing for the print counter&#39;s software to &quot;helpfully&quot; replace. Zoom to 6400% in any PDF viewer and your letterforms are curves, as crisp as the rest of the artwork, at any size from postcard to A0.</p>
-<h2>Sized for the print counter</h2>
-<p>The PDF settings live right in the export dialog:</p>
-<img src="/blog/pdf-export-modal.png" alt="The Export with Legend dialog with PDF format selected, showing the Orbital Study artwork and the PDF settings: page size, units, artwork size with a linked aspect-ratio lock, margins, and a bleed + crop marks option" loading="lazy">
-
-<p>Pick <strong>PDF — print-ready</strong> as the format and choose how the page gets its size:</p>
-<ul>
-<li><strong>Match artwork — exact print size.</strong> The default, and the mode poster printing wants. You type the printed size of the artwork itself — say, 24 inches wide — and the height follows automatically, locked to your <code>ViewBox</code>&#39;s aspect ratio. The page is the artwork plus margins. No letterboxing, no surprises: the number you type is the size on the wall.</li>
-<li><strong>Standard pages.</strong> US poster sizes (18 × 24, 24 × 36), Letter and Tabloid for proofs, and the ISO A-series from A4 up to A0, each with a portrait/landscape toggle. Artwork scales to fit the printable area, centered.</li>
-<li><strong>Custom page.</strong> Any page size from 1 to 100 inches per side, with an aspect-ratio lock you can toggle off when the page shape and the artwork shape need to differ.</li>
-</ul>
-<p>One <strong>Units</strong> selector — inches or centimeters — applies everywhere, and a live summary line tells you exactly what will happen before you download: <em>&quot;Artwork 800 × 1000 units prints at 24 × 30 in — page 25 × 31 in with margins.&quot;</em></p>
-<h2>Bleed, crop marks, and the last half inch</h2>
-<p>If you have ever handed a file to a commercial printer, you have heard the question: <em>&quot;Does it have bleed?&quot;</em> Edge-to-edge posters are printed slightly oversized and trimmed down; the <strong>bleed</strong> is the extra margin of artwork that gets cut away, so no white sliver survives at the edge. The <strong>crop marks</strong> are the hairlines that tell the cutter where to trim.</p>
-<p>The export handles both with a single checkbox. Your artwork&#39;s background extends to the bleed edge automatically, and corner crop marks land in a slug area outside the trim:</p>
-<img src="/blog/pdf-export-poster.png" alt="The Orbital Study PDF page: artwork extending to the bleed edge, crop marks at the corners, and the legend in the lower right" loading="lazy">
-
-<p>Up close, a corner shows the anatomy — the artwork running past the trim line into the bleed, and the crop hairlines sitting safely outside it:</p>
-<img src="/blog/pdf-export-cropmarks.png" alt="A zoomed corner of the PDF showing the crop mark hairlines outside the artwork's bleed area" loading="lazy">
-
-<p>The legend rides along, of course — with its footer now reading <em>Created in pathogen.studio</em>.</p>
-<h2>What stays vector</h2>
-<p>Nearly everything. Paths, strokes, linear and radial gradients, patterns, and clip paths are written to the PDF as true vectors, and all text goes in as outlines. One honest trade-off comes with that: outlined text is no longer selectable or searchable in the PDF — shapes can&#39;t be copied as words. For a print file, that&#39;s the right trade; keep the SVG export if you want a version with live text.</p>
-<p>An <strong>Artwork</strong> toggle picks vector or raster output for the artwork itself. Dense generative pieces — hundreds of thousands of path segments — make vector PDFs that print-shop software and PDF viewers chew on for minutes, so the export detects them and defaults to a print-resolution raster instead (the legend and all text stay vector). Two other constructs always fall back to a high-resolution raster: conic, mesh, and freeform gradients (which are rasterized in every Pathogen output), and artwork that uses <a href="/docs#masks-masks-and-clip-paths">masks</a> or <a href="/docs#filters-filters">filters</a>, which is embedded as a 300 DPI image sized for your chosen page — the export dialog tells you when this happens, and the legend stays vector regardless.</p>
-<h2>Try it</h2>
-<p>Here is a piece begging to be printed at 24 inches. Open any workspace, choose <strong>Export with Legend</strong> from the menu, switch the format to PDF, and type the size you want to hold:</p>
-<p><mini-workspace code-open caption="A poster-shaped study — concentric orbits with a measured, centered title set in Baumans. Export it at 24 inches wide and the title prints in exactly these letterforms.">
-  <code>// viewBox="0 0 800 1000"
-@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
-define ViewBox(0, 0, 800, 1000);
-
-define default PathLayer('background') \${
-  fill: #14101c;
-  stroke: none;
-}
-
-layer('background').apply {
-  rect(0, 0, 800, 1000);
-}
-
-let rings = PathLayer('rings') \${
-  stroke: #b384e0;
-  stroke-width: 5;
-  fill: none;
-};
-
-rings.apply {
-  circle(400, 430, 80);
-  circle(400, 430, 130);
-  circle(400, 430, 185);
-  circle(400, 430, 245);
-  circle(400, 430, 310);
-}
-
-let sun = PathLayer('sun') \${
-  fill: #f7b56e;
-  stroke: none;
-};
-
-sun.apply {
-  circle(400, 430, 46);
-}
-
-let system = GroupLayer('system') \${};
-system.append(rings, sun);
-
-// The title is drawn as glyph outlines — the same trick the PDF export
-// uses, so these exact letterforms survive any renderer or print shop.
-define PathLayer('title') \${
-  fill: #f6e9da;
-  stroke: none;
-}
-
-let glyphs = PathBlock.fromGlyph('ORBITAL STUDY', \${
-  font-family: Baumans-Regular;
-  font-size: 46;
-});
-
-let totalWidth = 0;
-for (g in glyphs) {
-  totalWidth = calc(totalWidth + g.advanceWidth);
-}
-
-layer('title').apply {
-  let cx = calc((800 - totalWidth) / 2);
-  for (g in glyphs) {
-    g.drawTo(cx, 860);
-    cx = calc(cx + g.advanceWidth);
-  }
-}
-</code>
-  <img src="/blog/samples/post29/orbital-study.svg" alt="A poster-shaped study — concentric orbits with a measured, centered title set in Baumans. Export it at 24 inches wide and the title prints in exactly these letterforms." loading="lazy">
-</mini-workspace></p>
-<p>The full details — every page preset, how margins interact with each sizing mode, and the current limitations — are in the <a href="/docs#exporting-exporting-your-work">exporting documentation</a>. Print something.</p>
 `,
   'radial-bar-chart': `<blockquote>
 <p><strong>Prerequisites:</strong> This post uses <a href="/blog/pathblock-introduction">PathBlocks</a>, <a href="/blog/textblock-introduction">TextBlocks</a>, <a href="/docs#layers-defining-layers">GroupLayers</a>, and <a href="/docs#syntax-destructuring">for-loop destructuring</a>. If you&#39;re new to Pathogen, start with those introductions.</p>
