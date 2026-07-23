@@ -392,14 +392,32 @@ async function main(): Promise<void> {
     `vbW=${zoomedState.vbW} pct=${zoomedState.pct}`,
   );
 
-  // Regression (code review 2026-07-23): a border-radius on the svg element
-  // clips baked-zoom artwork into a rounded mask — the element must have
-  // radius 0 so magnified content is never corner-clipped.
-  const zoomedRadius = await inModal<{ radius: string }>(
+  // Regression (Ryan, 2026-07-23): baked zoom renders into the ELEMENT box —
+  // if the element is artwork-sized, magnified content stays confined to a
+  // small window no matter the zoom (with rounded corners it was also
+  // corner-clipped). The element must fill the preview pane so the zoom
+  // window IS the pane, and must carry no radius.
+  const zoomedGeom = await inModal<{ radius: string; svgW: number; svgH: number; areaW: number; areaH: number; padL: number; padT: number }>(
     page,
-    `return { radius: getComputedStyle(sr.querySelector('.preview-area svg')).borderRadius };`,
+    `var svg = sr.querySelector('.preview-area svg');
+     var area = sr.querySelector('.preview-area');
+     var cs = getComputedStyle(area);
+     var r = svg.getBoundingClientRect();
+     var a = area.getBoundingClientRect();
+     return {
+       radius: getComputedStyle(svg).borderRadius,
+       svgW: r.width, svgH: r.height, areaW: a.width, areaH: a.height,
+       padL: parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight),
+       padT: parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom),
+     };`,
   );
-  check('zoomed artwork is never corner-clipped (svg radius is 0)', zoomedRadius.radius === '0px', `radius=${zoomedRadius.radius}`);
+  check(
+    'zoom window is the whole pane (svg fills preview area, radius 0)',
+    zoomedGeom.radius === '0px' &&
+      Math.abs(zoomedGeom.svgW - (zoomedGeom.areaW - zoomedGeom.padL)) < 4 &&
+      Math.abs(zoomedGeom.svgH - (zoomedGeom.areaH - zoomedGeom.padT)) < 4,
+    `svg=${Math.round(zoomedGeom.svgW)}×${Math.round(zoomedGeom.svgH)} area=${Math.round(zoomedGeom.areaW)}×${Math.round(zoomedGeom.areaH)} radius=${zoomedGeom.radius}`,
+  );
   await inModal(page, pillZoomFit);
   const fitState = await inModal<{ vbW: number; pct: string }>(page, readZoomState);
   check('pill Fit restores the full viewBox at 100%', fitState.vbW === 800 && fitState.pct === '100%', `vbW=${fitState.vbW}`);

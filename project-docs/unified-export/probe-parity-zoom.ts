@@ -92,15 +92,30 @@ async function main(): Promise<void> {
   await page.evaluate(`document.dispatchEvent(new CustomEvent('open-export', { bubbles: true, composed: true }));`);
   await new Promise((r) => setTimeout(r, 800));
 
-  // Zoom to ~506% (1.5^4) via the pill.
-  for (let i = 0; i < 4; i++) {
+  // Zoom to ~1709% (1.5^7) via the pill — the confinement Ryan reported was
+  // most visible at very high zoom.
+  for (let i = 0; i < 7; i++) {
     await page.evaluate(
       `(() => { ${FIND} sr.querySelector('pathogen-zoom-pill').shadowRoot.querySelector('#zoom-in').click(); })()`,
     );
     await new Promise((r) => setTimeout(r, 150));
   }
   await new Promise((r) => setTimeout(r, 400));
-  await page.screenshot({ path: join(OUT, 'probe-parity-500pct.png') });
+  await page.screenshot({ path: join(OUT, 'probe-parity-1700pct.png') });
+
+  // Zoom OUT to ~30% — below fit the artwork should shrink centered on the
+  // pane with no empty "card" framing it.
+  await page.evaluate(
+    `(() => { ${FIND} sr.querySelector('pathogen-zoom-pill').shadowRoot.querySelector('#zoom-fit').click(); })()`,
+  );
+  for (let i = 0; i < 3; i++) {
+    await page.evaluate(
+      `(() => { ${FIND} sr.querySelector('pathogen-zoom-pill').shadowRoot.querySelector('#zoom-out').click(); })()`,
+    );
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  await new Promise((r) => setTimeout(r, 400));
+  await page.screenshot({ path: join(OUT, 'probe-parity-30pct.png') });
 
   // Legend on at fit — pill + snap chip cluster over full-bleed preview.
   await page.evaluate(

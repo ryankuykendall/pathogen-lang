@@ -216,12 +216,13 @@ const styles = `
     cursor: grabbing;
   }
 
+  /* Element = pane, so the baked-zoom window is the whole pane (same
+   * geometry as the export modal and the primary preview's iframe). At fit
+   * the artwork letterboxes centered via preserveAspectRatio. */
   .preview-area svg {
     display: block;
-    max-width: 100%;
-    max-height: 100%;
-    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.08));
-    overflow: visible;
+    width: 100%;
+    height: 100%;
   }
 
   /* Zoom control is the shared <pathogen-zoom-pill>, floating bottom-center

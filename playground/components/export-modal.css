@@ -212,15 +212,18 @@
   cursor: grabbing;
 }
 
-/* No border-radius: the element clips its content (SVG UA overflow:hidden),
- * and once a zoom bakes into the viewBox the element is back at DOM size
- * with magnified artwork — a radius would clip it into a rounded mask
- * (the pre-parity bug). Shadow only, matching the thumbnail modal. */
+/* The SVG element fills the whole preview area (like the primary preview's
+ * iframe surface): the element box is the zoom window, and once a zoom bakes
+ * into the viewBox, content rendered into an artwork-sized element would stay
+ * confined to that small box no matter the zoom level (the reported clip).
+ * With the element = the pane, baked zoom fills the pane; at fit the artwork
+ * letterboxes centered via preserveAspectRatio (xMidYMid meet, the default).
+ * No radius/shadow — decoration on the element would frame the pane, and any
+ * clip decoration re-creates the windowing bug. */
 .preview-area svg {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
-  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.08));
+  width: 100%;
+  height: 100%;
 }
 
 /* Floating control cluster: shared zoom pill + snap chip, bottom-center

@@ -195,6 +195,20 @@ probe-parity-500pct.png` / `probe-parity-pill-chip.png`. Full suite
 green (3,855). `.vsix` builds; VS Code interactive verify is Ryan's
 manual step (install + reload, wheel/drag/pill at 10%/2000%).
 
+**Second user report (2026-07-23, post-commit):** zoom still confined to
+a window. Root cause was structural, not cosmetic: baked zoom renders
+into the ELEMENT box, and both modal SVGs were artwork-sized
+(`width`/`height` attrs + `max-width/height: 100%`) — so magnified
+content stayed inside a small centered box at any zoom. The primary
+preview never had this because its surface fills the pane. Fix: modal
+SVG elements are now `width/height: 100%` of the preview area (the zoom
+window IS the pane; at fit the artwork letterboxes centered via default
+`preserveAspectRatio`), shadow/radius decoration removed. Export clone
+unaffected (sizing is class-based in the shadow stylesheet, never
+serialized). E2E radius pin upgraded to a fills-the-pane geometry pin.
+Probes: `probe-parity-1700pct.png` (fills pane), `probe-parity-30pct.png`
+(centered shrink, no empty card).
+
 **Code-review round (2026-07-23):** two Warnings, both fixed —
 (1) the corner-radius clip returned post-bake (review caught the flaw in
 "obsolete under transform mode"; radius removed entirely + E2E pin);
