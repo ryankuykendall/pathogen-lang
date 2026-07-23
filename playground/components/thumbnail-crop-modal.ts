@@ -7,8 +7,8 @@ import { store } from '../state/store.js';
 import { createSvgSnapshot } from '../utils/svg-snapshot.js';
 import type { PanZoomController } from '../../dist/pan-zoom';
 
-const ACCENT = '#10b981';
-const ACCENT_LIGHT = 'rgba(16, 185, 129, 0.35)';
+const ACCENT = '#c0518e';
+const ACCENT_LIGHT = 'rgba(192, 81, 142, 0.35)';
 const OVERLAY_COLOR = 'rgba(0, 0, 0, 0.5)';
 const MIN_CROP_SIZE = 20;
 
@@ -74,7 +74,7 @@ const styles = `
   .btn:hover:not(:disabled) {
     border-color: var(--accent-color, ${ACCENT});
     color: var(--accent-color, ${ACCENT});
-    background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+    background: var(--accent-subtle, rgba(192, 81, 142, 0.1));
   }
 
   .btn:disabled {
@@ -89,8 +89,8 @@ const styles = `
   }
 
   .btn.primary:hover:not(:disabled) {
-    background: var(--accent-hover, #059669);
-    border-color: var(--accent-hover, #059669);
+    background: var(--accent-hover, #b04680);
+    border-color: var(--accent-hover, #b04680);
     color: var(--accent-text, #ffffff);
   }
 
@@ -128,7 +128,7 @@ const styles = `
   .close-btn:hover {
     border-color: var(--accent-color, ${ACCENT});
     color: var(--accent-color, ${ACCENT});
-    background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+    background: var(--accent-subtle, rgba(192, 81, 142, 0.1));
   }
 
   .content {

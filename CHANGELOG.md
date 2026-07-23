@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Development
 
-- `project-docs/unified-export/verify-export.ts` extended to 39 checks: PointerEvent pan gestures, predicate veto on legend targets, mid-gesture byte-clean download, and a standalone-bundle check that `pan-zoom.global.js` alone registers a styled pill (the VS Code path). Execution record in `project-docs/pan-zoom-performance/zoom-surface-parity.md`.
+- `project-docs/unified-export/verify-export.ts` extended to 41 checks: PointerEvent pan gestures, predicate veto on legend targets, mid-gesture byte-clean download, a fills-the-pane zoom-window geometry pin, a visible-artwork-layers guard, and a standalone-bundle check that `pan-zoom.global.js` alone registers a styled pill (the VS Code path). Execution record in `project-docs/pan-zoom-performance/zoom-surface-parity.md`.
 
 ## [Unreleased] - 2026-07-21 (unified export workflow)
 

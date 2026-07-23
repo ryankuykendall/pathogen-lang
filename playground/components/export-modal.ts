@@ -30,8 +30,8 @@ import styles from './export-modal.css';
 import './shared/pathogen-color-input.js';
 
 // Accent color used for legend border and resize handle (matches app theme)
-const ACCENT = '#10b981';
-const ACCENT_LIGHT = 'rgba(16, 185, 129, 0.35)';
+const ACCENT = '#c0518e';
+const ACCENT_LIGHT = 'rgba(192, 81, 142, 0.35)';
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
