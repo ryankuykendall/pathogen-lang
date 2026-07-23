@@ -329,15 +329,63 @@ async function main(): Promise<void> {
   };
   const snapStep = await inModal<{ v: number }>(page, `return { v: parseInt(sr.querySelector('#legend-snap').value, 10) || 1 };`);
   const xBefore = await readLegendX();
+  // Nudge LEFT — the default bottom-right placement sits near the right-edge
+  // clamp, so a rightward nudge would be clamp-truncated and mask a duplicate.
   await page.evaluate(
-    `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));`,
+    `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }));`,
   );
   const xAfter = await readLegendX();
   check(
     'double-open does not duplicate listeners (arrow nudges exactly one step)',
-    Math.abs(xAfter - xBefore - snapStep.v) < 0.01,
+    Math.abs(xBefore - xAfter - snapStep.v) < 0.01,
     `moved ${xAfter - xBefore}, snap=${snapStep.v}`,
   );
+
+  // Regression: the legend must never leave the canvas — outside the viewBox
+  // it would be silently cut off in the downloaded file. Hammer ArrowRight/
+  // ArrowDown far past the edge and assert the clamp holds.
+  for (let i = 0; i < 80; i++) {
+    await page.evaluate(
+      `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true, cancelable: true }));
+       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true, bubbles: true, cancelable: true }));`,
+    );
+  }
+  const clamped = await inModal<{ transform: string; legendW: number; legendH: number; canvasW: number; canvasH: number }>(
+    page,
+    `var legend = sr.querySelector('.preview-area svg #pathogen-legend');
+     var box = legend.getBBox();
+     var vb = sr.querySelector('.preview-area svg').getAttribute('viewBox');
+     return {
+       transform: legend.getAttribute('transform'),
+       legendW: box.width, legendH: box.height,
+       canvasW: ${'800'}, canvasH: ${'500'},
+     };`,
+  );
+  const tm = /translate\((-?[\d.]+),\s*(-?[\d.]+)\)/.exec(clamped.transform)!;
+  const lx = parseFloat(tm[1]);
+  const ly = parseFloat(tm[2]);
+  check(
+    'legend clamps inside the canvas under arrow-key hammering',
+    lx >= 0 && ly >= 0 && lx + clamped.legendW <= clamped.canvasW + 2 && ly + clamped.legendH <= clamped.canvasH + 2,
+    `pos=(${lx}, ${ly}) size=(${Math.round(clamped.legendW)}×${Math.round(clamped.legendH)}) canvas=800×500`,
+  );
+
+  // Regression: zoomed/panned preview squares its corners (the rounded card
+  // look at fit becomes a mask when the viewBox is a window into the art).
+  await inModal(page, `sr.querySelector('.zoom-in').click(); return { ok: true };`);
+  const zoomedClass = await inModal<{ zoomed: boolean; radius: string }>(
+    page,
+    `var svg = sr.querySelector('.preview-area svg');
+     return { zoomed: svg.classList.contains('zoomed'), radius: getComputedStyle(svg).borderRadius };`,
+  );
+  check('zoomed preview drops the rounded-corner clip', zoomedClass.zoomed && zoomedClass.radius === '0px', `radius=${zoomedClass.radius}`);
+  await inModal(page, `sr.querySelector('.zoom-fit').click(); return { ok: true };`);
+  const fitClass = await inModal<{ zoomed: boolean }>(
+    page,
+    `return { zoomed: sr.querySelector('.preview-area svg').classList.contains('zoomed') };`,
+  );
+  check('fit restores the rounded card look', !fitClass.zoomed);
+
   await closeModal(page);
 
   // --- 3. Default modal state ---

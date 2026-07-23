@@ -220,6 +220,13 @@
   border-radius: var(--radius-lg, 12px);
 }
 
+/* Zoomed/panned, the element is a viewport into the artwork — rounded
+ * corners would clip the magnified content into a mask shape (SVG UA
+ * style is overflow: hidden). Square the window while off-fit. */
+.preview-area svg.zoomed {
+  border-radius: 0;
+}
+
 /* Zoom bar */
 .zoom-bar {
   display: flex;

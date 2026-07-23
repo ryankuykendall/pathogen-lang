@@ -498,8 +498,23 @@ class ExportModal extends HTMLElement {
     // Now position at bottom-right using measured height, snapped to grid
     this._legendX = this._snap(this._canvasWidth - this._legendWidth - margin);
     this._legendY = this._snap(this._canvasHeight - this._legendTotalHeight - margin);
+    this._clampLegendPos();
     legendG.setAttribute('transform', `translate(${this._legendX}, ${this._legendY})`);
     svg.appendChild(legendG);
+  }
+
+  /**
+   * Keep the legend card inside the canvas. The exported clone's viewBox is
+   * always reset to the full canvas, so anything positioned outside would be
+   * silently cut off in the downloaded file — the preview must not allow it.
+   * When the card is larger than the canvas the range inverts; clamp to the
+   * maximal-overlap range instead (some cropping is then unavoidable).
+   */
+  _clampLegendPos(): void {
+    const maxX = this._canvasWidth - this._legendWidth;
+    const maxY = this._canvasHeight - this._legendTotalHeight;
+    this._legendX = Math.max(Math.min(0, maxX), Math.min(this._legendX, Math.max(0, maxX)));
+    this._legendY = Math.max(Math.min(0, maxY), Math.min(this._legendY, Math.max(0, maxY)));
   }
 
   /**
@@ -888,6 +903,10 @@ class ExportModal extends HTMLElement {
     this._legendWidth = this._computeBaseWidth() * this._scaleFactor;
     const legendG = this._buildLegendGroup();
     this._svg.appendChild(legendG);
+    // Content edits and resizes change the card's size — re-clamp so growth
+    // never pushes it past the canvas (and the export's crop line).
+    this._clampLegendPos();
+    this._updateLegendPosition();
   }
 
   /** Swap between legend (default-positioned) and watermark in the preview. */
@@ -945,6 +964,11 @@ class ExportModal extends HTMLElement {
       'viewBox',
       window.PathogenPanZoom.viewToViewBox({ zoom: this._zoom, panX: this._panX, panY: this._panY }, this._pzCanvas()),
     );
+    // The card look (rounded corners) only makes sense at fit. Zoomed or
+    // panned, the element is a window into the artwork — rounding its corners
+    // clips the magnified content into a mask shape. Square the window then.
+    const atFit = this._zoom === 1 && this._panX === 0 && this._panY === 0;
+    this._svg.classList.toggle('zoomed', !atFit);
   }
 
   _updateZoomDisplay(): void {
@@ -2235,6 +2259,7 @@ class ExportModal extends HTMLElement {
         const svgPt = this._screenToSvg(e.clientX, e.clientY);
         this._legendX = this._snap(svgPt.x - this._dragStartX);
         this._legendY = this._snap(svgPt.y - this._dragStartY);
+        this._clampLegendPos();
         this._updateLegendPosition();
         return;
       }
@@ -2296,6 +2321,7 @@ class ExportModal extends HTMLElement {
         const step = base * multiplier;
         this._legendX += dir[0] * step;
         this._legendY += dir[1] * step;
+        this._clampLegendPos();
         this._updateLegendPosition();
       }
     };

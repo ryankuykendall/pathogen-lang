@@ -131,6 +131,34 @@ Gotchas hit:
   - **C-8**: no forward link from old post added (out of scope, same
     directive).
 
+### Post-launch fixes (2026-07-23)
+
+Ryan reported two preview issues (both pre-dated the unification but are
+front-and-center now that this is the only export surface):
+
+1. **Rounded clip mask on zoom** — `.preview-area svg` has
+   `border-radius: 12px` and SVG UA style is `overflow: hidden`; the
+   modal zooms by viewBox mutation, so magnified content clipped to the
+   fixed element box *with rounded corners*. Fix: `_updateViewBox()`
+   toggles a `zoomed` class off-fit; CSS squares the corners while
+   zoomed/panned, restoring the card look at Fit. (Proper long-term fix
+   remains PanZoomController Phase 4 — transform-mode migration — but
+   the controller pans on any mousedown and would fight legend drag; it
+   needs a pointer-filter API first.)
+2. **Legend draggable outside the viewBox** — drag/arrows/resize never
+   clamped position; the export clone resets the viewBox, so off-canvas
+   legend content was silently cut from downloaded files. Fix:
+   `_clampLegendPos()` applied on drag, arrow nudge, resize/content
+   rebuild, and initial placement; maximal-overlap clamp when the card
+   is larger than the canvas.
+
+E2E grew 3 checks (arrow-hammer clamp, zoomed square corners, fit
+restore) → **35/35**; the double-open nudge check now nudges LEFT (the
+default position sits near the right-edge clamp, which would truncate a
+rightward step and mask a duplicate listener). Visual probes:
+`verify/probe-zoomed-square-corners.png`, `verify/probe-clamped-at-fit.png`
+(`probe-zoom-clamp.ts`).
+
 ## Key implementation facts (verified during planning)
 
 - Legend card is always white → light code palette only:
