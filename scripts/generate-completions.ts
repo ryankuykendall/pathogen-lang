@@ -20,6 +20,9 @@ import {
   extractConstructorReturnTypes,
   extractTypeMethodReturns,
   extractTypePropertyReturns,
+  extractTypeElementTypes,
+  extractNamespaceMethodReturns,
+  extractMethodBlockParams,
   escapeString,
 } from './lib/completion-extract';
 import type { ExtractedCompletion, MemberSet, ExtractionWarning } from './lib/completion-extract';
@@ -170,6 +173,33 @@ program
       return `  '${typeName}': { ${inner} }`;
     });
 
+    const typeElementTypes = extractTypeElementTypes(sourceFile);
+    const elementTypeEntries = Object.entries(typeElementTypes).map(([typeName, members]) => {
+      const inner = Object.entries(members)
+        .map(([m, t]) => `${m}: '${escapeString(t)}'`)
+        .join(', ');
+      return `  '${escapeString(typeName)}': { ${inner} }`;
+    });
+
+    const namespaceMethodReturns = extractNamespaceMethodReturns(sourceFile);
+    const namespaceReturnEntries = Object.entries(namespaceMethodReturns).map(([nsName, returns]) => {
+      const inner = Object.entries(returns)
+        .map(
+          ([f, r]) =>
+            `${f}: { type: '${escapeString(r.type)}'${r.elementType ? `, elementType: '${escapeString(r.elementType)}'` : ''} }`,
+        )
+        .join(', ');
+      return `  '${escapeString(nsName)}': { ${inner} }`;
+    });
+
+    const methodBlockParams = extractMethodBlockParams(sourceFile, warnings);
+    const blockParamEntries = Object.entries(methodBlockParams).map(([typeName, methods]) => {
+      const inner = Object.entries(methods)
+        .map(([m, params]) => `${m}: [${params.map((p) => `'${escapeString(p)}'`).join(', ')}]`)
+        .join(', ');
+      return `  '${escapeString(typeName)}': { ${inner} }`;
+    });
+
     // Cross-check: compare declarations against runtime
     const declaredFunctions = new Set(signatureData.map((s) => s.name));
     const problems = crossCheck(declaredFunctions, constructorReturnTypes);
@@ -250,6 +280,21 @@ ${methodReturnEntries.join(',\n')},
 /** Per-type data-property types (resolves destructured bindings like let { origin } = grid) */
 export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
 ${propertyTypeEntries.join(',\n')},
+};
+
+/** Per-type array element types for members typed PathogenArray<X> / X[] (parallel to TYPE_METHOD_RETURNS / TYPE_PROPERTY_TYPES, whose values stay bare 'array') */
+export const TYPE_ELEMENT_TYPES: Record<string, Record<string, string>> = {
+${elementTypeEntries.join(',\n')},
+};
+
+/** Namespace function return types (resolves let glyphs = PathBlock.fromGlyph(...), including array element types) */
+export const NAMESPACE_METHOD_RETURNS: Record<string, Record<string, { type: string; elementType?: string }>> = {
+${namespaceReturnEntries.join(',\n')},
+};
+
+/** Per-type trailing-block param types from @blockparams tags (resolves {|go, pb| ...} params on method calls) */
+export const METHOD_BLOCK_PARAMS: Record<string, Record<string, string[]>> = {
+${blockParamEntries.join(',\n')},
 };
 `;
 

@@ -21,8 +21,11 @@ describe('getSemanticTokens', () => {
     expect(tokens('')).toEqual([]);
   });
 
-  it('returns empty for unparseable source', () => {
-    expect(tokens('let x = ')).toEqual([]);
+  it('recovers tokens from incomplete source (lenient parse)', () => {
+    // Mid-typing `let x = ` still classifies x — error recovery keeps
+    // highlighting alive while the document has parse errors.
+    const t = tokens('let x = ');
+    expect(t.length).toBeGreaterThanOrEqual(1);
   });
 
   describe('variable declarations', () => {

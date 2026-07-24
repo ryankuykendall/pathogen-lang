@@ -30,10 +30,12 @@ describe('analyzeScopes', () => {
     expect(info.references).toHaveLength(0);
   });
 
-  it('returns empty for unparseable source', () => {
+  it('recovers declarations from incomplete source (lenient parse)', () => {
+    // Mid-typing `let x = ` still records x — Lezer error recovery + the
+    // lenient AST builder keep the scope tree usable between keystrokes.
     const info = analyze('let x = ');
-    expect(info.declarations).toHaveLength(0);
-    expect(info.references).toHaveLength(0);
+    expect(info.declarations).toHaveLength(1);
+    expect(info.declarations[0].name).toBe('x');
   });
 
   describe('let declarations', () => {

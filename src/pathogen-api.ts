@@ -675,9 +675,9 @@ export interface PathogenPathBlock {
   // Transforms
   /** offset(distance) — Offset path */
   offset(distance: number): PathogenPathBlock;
-  /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity @snippet variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
+  /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity @blockparams VariableOffsetBuilder, PathBlock @snippet variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
   variableOffset(): PathogenPathBlock;
-  /** compoundVariableOffset() {|go, pb| ...} — Trace a two-profile (closeable) offset ribbon @snippet compoundVariableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
+  /** compoundVariableOffset() {|go, pb| ...} — Trace a two-profile (closeable) offset ribbon @blockparams CompoundVariableOffsetBuilder, PathBlock @snippet compoundVariableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
   compoundVariableOffset(): PathogenPathBlock;
   /** mirror(angle) — Mirror path */
   mirror(angle: AngleValue): PathogenPathBlock;
@@ -731,6 +731,32 @@ export interface PathogenPathBlock {
   vertex(name: string): PathogenVertexHandle;
   /** vertexAll(name) — Every labeled vertex matching name; returns an array of VertexHandles */
   vertexAll(name: string): PathogenArray<PathogenVertexHandle>;
+}
+
+/** @type VariableOffsetBuilder */
+export interface PathogenVariableOffsetBuilder {
+  /** stop(time, offset, continuity) — Place an offset stop along the spine (time 0..1, non-decreasing; continuity is a CurveContinuity value) @snippet stop(${1:time}, ${2:offset}, ${3:CurveContinuity.G2})$0 */
+  stop(time: number, offset: number, continuity: string): PathogenVariableOffsetBuilder;
+  /** startTangent(vector) — Force the offset path's launch direction at the spine start */
+  startTangent(vector: PathogenPolarVector): PathogenVariableOffsetBuilder;
+  /** endTangent(vector) — Force the offset path's arrival direction at the spine end */
+  endTangent(vector: PathogenPolarVector): PathogenVariableOffsetBuilder;
+}
+
+/** @type CompoundVariableOffsetBuilder */
+export interface PathogenCompoundVariableOffsetBuilder {
+  /** stop(time, offset1, continuity1, offset2, continuity2) — Place a two-profile stop along the spine (time 0..1, non-decreasing; continuities are CurveContinuity values) @snippet stop(${1:time}, ${2:offset1}, ${3:CurveContinuity.G2}, ${4:offset2}, ${5:CurveContinuity.G2})$0 */
+  stop(
+    time: number,
+    offset1: number,
+    continuity1: string,
+    offset2: number,
+    continuity2: string,
+  ): PathogenCompoundVariableOffsetBuilder;
+  /** startCap(cap) — Shape the ribbon's start end (Cap.butt/round/elliptical/tapered) */
+  startCap(cap: CapValue): PathogenCompoundVariableOffsetBuilder;
+  /** endCap(cap) — Shape the ribbon's end (Cap.butt/round/elliptical/tapered) */
+  endCap(cap: CapValue): PathogenCompoundVariableOffsetBuilder;
 }
 
 /** @type PolarVector */

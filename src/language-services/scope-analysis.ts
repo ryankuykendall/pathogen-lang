@@ -1,4 +1,4 @@
-import { parse } from '../parser';
+import { parseLezer } from '../parser';
 import { stdlib } from '../stdlib';
 
 import type { TextDocument } from './document';
@@ -33,11 +33,32 @@ const BUILTIN_GLOBALS = new Set(['ctx', 'PI', 'E', 'TAU', 'Infinity', 'NaN']);
 
 export type DeclarationKind = 'variable' | 'function' | 'parameter' | 'loopVar' | 'enum' | 'blockParam';
 
+/**
+ * How a declared name gets its value — the AST context type inference needs.
+ * Carried on the Declaration so inference works on real expression nodes
+ * instead of regex probes over source text (regex-audit Phase 5b).
+ */
+export type DeclTypeContext =
+  /** let x = expr; */
+  | { kind: 'init'; expr: Expression }
+  /** let [a, b] = expr; — binding at position `index` */
+  | { kind: 'arrayElement'; expr: Expression; index: number }
+  /** let { key: a } = expr; — binding of property `key` */
+  | { kind: 'objectProp'; expr: Expression; key: string }
+  /** for (x in iterable) / for ([x, i] in iterable) — the element binding */
+  | { kind: 'loopElement'; iterable: Expression }
+  /** for (i in 0..10) counter, or the index binding of for ([x, i] in arr) — always a number */
+  | { kind: 'loopIndex' }
+  /** {|p| ...} trailing-block param at position `index` of a call */
+  | { kind: 'blockParam'; call: FunctionCall | MethodCallExpression; index: number };
+
 export interface Declaration {
   name: string;
   kind: DeclarationKind;
   range: Range;
   scope: Scope;
+  /** AST context for type inference; absent when the value is uninferable (fn params, enums, rest bindings) */
+  typeContext?: DeclTypeContext;
 }
 
 export interface Reference {
@@ -70,9 +91,13 @@ interface Collector {
 export function analyzeScopes(document: TextDocument): ScopeInfo {
   const source = document.getText();
 
+  // Lenient parse: Lezer's error recovery + the lenient AST builder keep the
+  // scope tree usable while the user is mid-keystroke (an unterminated `vo.`
+  // must not blank out completions/hover for the whole document). Strict
+  // errors stay the diagnostics engine's job.
   let ast: Program;
   try {
-    ast = parse(source);
+    ast = parseLezer(source).ast;
   } catch {
     return { root: mkScope(null), declarations: [], references: [] };
   }
@@ -93,9 +118,16 @@ function mkScope(parent: Scope | null): Scope {
   return scope;
 }
 
-function addDecl(scope: Scope, name: string, kind: DeclarationKind, loc: SourceLocation | undefined, col: Collector): Declaration {
+function addDecl(
+  scope: Scope,
+  name: string,
+  kind: DeclarationKind,
+  loc: SourceLocation | undefined,
+  col: Collector,
+  typeContext?: DeclTypeContext,
+): Declaration {
   const range = locToRange(loc);
-  const decl: Declaration = { name, kind, range, scope };
+  const decl: Declaration = { name, kind, range, scope, ...(typeContext ? { typeContext } : {}) };
   scope.declarations.set(name, decl);
   col.decls.push(decl);
   return decl;
@@ -130,14 +162,22 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       // Bind names
       if (stmt.pattern) {
         if (stmt.pattern.type === 'ArrayDestructuringPattern') {
-          for (const elem of stmt.pattern.elements) addDecl(scope, elem, 'variable', stmt.loc, col);
+          stmt.pattern.elements.forEach((elem, index) =>
+            addDecl(scope, elem, 'variable', stmt.loc, col, { kind: 'arrayElement', expr: stmt.value, index }),
+          );
           if (stmt.pattern.rest) addDecl(scope, stmt.pattern.rest, 'variable', stmt.loc, col);
         } else if (stmt.pattern.type === 'ObjectDestructuringPattern') {
-          for (const prop of stmt.pattern.properties) addDecl(scope, prop.alias || prop.key, 'variable', stmt.loc, col);
+          for (const prop of stmt.pattern.properties) {
+            addDecl(scope, prop.alias || prop.key, 'variable', stmt.loc, col, {
+              kind: 'objectProp',
+              expr: stmt.value,
+              key: prop.key,
+            });
+          }
           if (stmt.pattern.rest) addDecl(scope, stmt.pattern.rest, 'variable', stmt.loc, col);
         }
       } else {
-        addDecl(scope, stmt.name, 'variable', stmt.loc, col);
+        addDecl(scope, stmt.name, 'variable', stmt.loc, col, { kind: 'init', expr: stmt.value });
       }
       break;
     }
@@ -160,15 +200,15 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       walkExpr(stmt.start, scope, col);
       walkExpr(stmt.end, scope, col);
       const loopScope = mkScope(scope);
-      addDecl(loopScope, stmt.variable, 'loopVar', stmt.loc, col);
+      addDecl(loopScope, stmt.variable, 'loopVar', stmt.loc, col, { kind: 'loopIndex' });
       walkStatements(stmt.body, loopScope, col);
       break;
     }
     case 'ForEachLoop': {
       walkExpr(stmt.iterable, scope, col);
       const eachScope = mkScope(scope);
-      addDecl(eachScope, stmt.variable, 'loopVar', stmt.loc, col);
-      if (stmt.indexVariable) addDecl(eachScope, stmt.indexVariable, 'loopVar', stmt.loc, col);
+      addDecl(eachScope, stmt.variable, 'loopVar', stmt.loc, col, { kind: 'loopElement', iterable: stmt.iterable });
+      if (stmt.indexVariable) addDecl(eachScope, stmt.indexVariable, 'loopVar', stmt.loc, col, { kind: 'loopIndex' });
       walkStatements(stmt.body, eachScope, col);
       break;
     }
@@ -328,7 +368,9 @@ function walkFnCall(expr: FunctionCall, scope: Scope, col: Collector): void {
   for (const arg of expr.args) walkExpr(arg, scope, col);
   if (expr.block) {
     const blockScope = mkScope(scope);
-    for (const p of expr.block.params) addDecl(blockScope, p, 'blockParam', expr.loc, col);
+    expr.block.params.forEach((p, index) =>
+      addDecl(blockScope, p, 'blockParam', expr.loc, col, { kind: 'blockParam', call: expr, index }),
+    );
     walkStatements(expr.block.body, blockScope, col);
   }
 }
@@ -338,7 +380,9 @@ function walkMethodCall(expr: MethodCallExpression, scope: Scope, col: Collector
   for (const arg of expr.args) walkExpr(arg, scope, col);
   if (expr.block) {
     const blockScope = mkScope(scope);
-    for (const p of expr.block.params) addDecl(blockScope, p, 'blockParam', expr.loc, col);
+    expr.block.params.forEach((p, index) =>
+      addDecl(blockScope, p, 'blockParam', expr.loc, col, { kind: 'blockParam', call: expr, index }),
+    );
     walkStatements(expr.block.body, blockScope, col);
   }
 }

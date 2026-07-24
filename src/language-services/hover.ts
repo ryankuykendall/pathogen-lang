@@ -1,8 +1,11 @@
+import { STDLIB_COMPLETIONS, TYPE_ELEMENT_TYPES, TYPE_PROPERTY_TYPES } from './completion-data.generated';
+import { regexNameResolver, resolveMemberAccess } from './member-resolution';
 import { analyzeScopes } from './scope-analysis';
-import { STDLIB_COMPLETIONS } from './completion-data.generated';
 import { inferBlockParamType, inferLoopVarType, inferType } from './type-inference';
+import { findDeclaration, inferDeclType, inferExprElementType } from './type-inference-ast';
 
 import type { TextDocument } from './document';
+import type { Declaration, ScopeInfo } from './scope-analysis';
 import type { Position, Range } from './types';
 
 export interface HoverInfo {
@@ -19,9 +22,11 @@ const KEYWORD_HOVER: Record<string, string> = {
   else: '**else** — Alternate branch of an if statement',
   fn: '**fn** — Define a function\n```\nfn name(params) { ... }\n```',
   return: '**return** — Return a value from a function\n```\nreturn expression;\n```',
-  define: '**define** — Define a layer (PathLayer / TextLayer / GroupLayer) or the SVG viewBox\n```\ndefine PathLayer(\'name\') ${ stroke: #000; }\ndefine TextLayer(\'name\') ${ font-size: 14; }\ndefine ViewBox(0, 0, 200, 200);\n```',
-  ViewBox: '**ViewBox** — Declare the SVG viewBox in source code\n```\ndefine ViewBox(originX, originY, width, height);\n```\nSource-defined viewBox overrides any CLI `--viewBox` flag.',
-  layer: '**layer** — Apply block to route output to a layer\n```\nlayer(\'name\').apply { ... }\n```',
+  define:
+    "**define** — Define a layer (PathLayer / TextLayer / GroupLayer) or the SVG viewBox\n```\ndefine PathLayer('name') ${ stroke: #000; }\ndefine TextLayer('name') ${ font-size: 14; }\ndefine ViewBox(0, 0, 200, 200);\n```",
+  ViewBox:
+    '**ViewBox** — Declare the SVG viewBox in source code\n```\ndefine ViewBox(originX, originY, width, height);\n```\nSource-defined viewBox overrides any CLI `--viewBox` flag.',
+  layer: "**layer** — Apply block to route output to a layer\n```\nlayer('name').apply { ... }\n```",
   text: '**text** — Create a text element\n```\ntext(x, y)`content`\n```',
   tspan: '**tspan** — Text span inside a text block\n```\ntspan(dx, dy)`content`\n```',
   enum: '**enum** — Define an enumeration\n```\nenum Name { MEMBER1, MEMBER2 }\n```',
@@ -87,34 +92,99 @@ export function getHoverInfo(document: TextDocument, position: Position): HoverI
     return { contents: PATH_COMMAND_HOVER[word.text], range: word.range };
   }
 
-  // 3. Check if it's a stdlib function
+  // Scope analysis is lazily computed once — keyword/stdlib/color hovers
+  // above and below never pay for a parse.
+  let cachedScopeInfo: ScopeInfo | null = null;
+  const getScopeInfo = () => {
+    cachedScopeInfo ??= analyzeScopes(document);
+    return cachedScopeInfo;
+  };
+
+  // AST-first name typing shared with completion (regex fallback inside).
+  const resolveName = (name: string): string | null => {
+    const decl = findDeclaration(getScopeInfo(), name, position);
+    return (decl ? inferDeclType(decl) : null) ?? regexNameResolver(name, source);
+  };
+
+  // 3. Member access — the word follows a `.`: resolve the receiver through
+  // the same path as member completion and describe the matched member.
+  // A member position that doesn't resolve returns null rather than falling
+  // through — the flat stdlib lookup would otherwise show e.g. the stdlib
+  // `map(value, ...)` doc for `xs.map`, which describes a different function.
+  if (word.startOffset > 0 && source[word.startOffset - 1] === '.') {
+    const resolution = resolveMemberAccess(source.slice(0, word.endOffset), source, resolveName);
+    if (resolution) {
+      const member =
+        [...resolution.members.properties, ...resolution.members.methods].find((m) => m.label === word.text) ?? null;
+      if (member) {
+        const kindLabel = member.kind === 'function' ? 'method' : member.kind === 'constant' ? 'constant' : 'property';
+        const owner = resolution.typeName ? `${displayTypeName(resolution.typeName)} ` : '';
+        let valueType = '';
+        if (member.kind !== 'function' && resolution.typeName) {
+          const propType = TYPE_PROPERTY_TYPES[resolution.typeName]?.[member.label];
+          const elementType = TYPE_ELEMENT_TYPES[resolution.typeName]?.[member.label];
+          const display = elementType
+            ? `array<${displayTypeName(elementType)}>`
+            : propType
+              ? displayTypeName(propType)
+              : null;
+          if (display) valueType = `: ${display}`;
+        }
+        return {
+          contents: `**${member.label}** — *${owner}${kindLabel}${valueType}*\n\n${member.detail}`,
+          range: word.range,
+        };
+      }
+    }
+    return null;
+  }
+
+  // 4. Check if it's a stdlib function
   if (STDLIB_HOVER.has(word.text)) {
     return { contents: STDLIB_HOVER.get(word.text)!, range: word.range };
   }
 
-  // 4. Check if it's a color literal
+  // 5. Check if it's a color literal
   const colorMatch = getColorAt(source, offset);
   if (colorMatch) {
     return { contents: `**Color** \`${colorMatch.text}\``, range: colorMatch.range };
   }
 
-  // 5. Try scope analysis for user-defined symbols
-  const scopeInfo = analyzeScopes(document);
-  for (const ref of scopeInfo.references) {
-    if (ref.name === word.text && ref.declaration) {
-      const decl = ref.declaration;
-      const kindLabel = decl.kind === 'function' ? 'function' : decl.kind === 'parameter' ? 'parameter' : decl.kind === 'loopVar' ? 'loop variable' : decl.kind === 'enum' ? 'enum' : 'variable';
-      const inferred = inferSymbolType(decl.kind, word.text, source);
-      const kindWithType = inferred ? `${kindLabel}: ${inferred}` : kindLabel;
-      return {
-        contents: `**${decl.name}** — *${kindWithType}*\n\nDefined at line ${decl.range.start.line + 1}`,
-        range: word.range,
-      };
+  // 6. Try scope analysis for user-defined symbols — references first, then
+  // declarations, so hovering a name at its declaration site (let x, fn
+  // params, loop vars, {|block params|}) also resolves.
+  let matched: Declaration | null = null;
+  for (const ref of getScopeInfo().references) {
+    if (ref.name !== word.text || !ref.declaration) continue;
+    if (!matched) matched = ref.declaration;
+    // Prefer the reference at the hovered position — shadowed names resolve
+    // to the declaration that actually governs this occurrence.
+    if (ref.range.start.line === word.range.start.line && ref.range.start.character === word.range.start.character) {
+      matched = ref.declaration;
+      break;
     }
+  }
+  if (!matched) matched = findDeclaration(getScopeInfo(), word.text, position);
+  if (matched) {
+    const inferred = inferSymbolType(matched, word.text, source);
+    const kindWithType = inferred ? `${KIND_LABELS[matched.kind]}: ${inferred}` : KIND_LABELS[matched.kind];
+    return {
+      contents: `**${matched.name}** — *${kindWithType}*\n\nDefined at line ${matched.range.start.line + 1}`,
+      range: word.range,
+    };
   }
 
   return null;
 }
+
+const KIND_LABELS: Record<Declaration['kind'], string> = {
+  function: 'function',
+  parameter: 'parameter',
+  loopVar: 'loop variable',
+  enum: 'enum',
+  blockParam: 'block parameter',
+  variable: 'variable',
+};
 
 /** Internal inference type names → user-facing display names. */
 const DISPLAY_TYPE_NAMES: Record<string, string> = {
@@ -122,18 +192,32 @@ const DISPLAY_TYPE_NAMES: Record<string, string> = {
   _ObjectLiteral: 'object',
 };
 
+function displayTypeName(typeName: string): string {
+  return DISPLAY_TYPE_NAMES[typeName] ?? typeName;
+}
+
 /**
- * Infer a display type for a scope-resolved symbol using the same shared
- * inference — and the same fallback chain — as the completion engine's
- * getMembersForObject, so hover and completions always agree on a name's
- * type. Returns null when nothing can be inferred — the hover then renders
- * exactly as before. Functions and enums have no inferable value type.
+ * Infer a display type for a scope-resolved symbol: the AST-based path first
+ * (typing the declaration's real initializer/iterable/block context), then the
+ * legacy regex chain — the same order as the completion engine, so hover and
+ * completions always agree on a name's type. Returns null when nothing can be
+ * inferred — the hover then renders exactly as before. Functions and enums
+ * have no inferable value type.
  */
-function inferSymbolType(kind: string, name: string, source: string): string | null {
-  if (kind === 'function' || kind === 'enum') return null;
-  const inferred = inferType(name, source) ?? inferBlockParamType(name, source) ?? inferLoopVarType(name, source);
+function inferSymbolType(decl: Declaration, name: string, source: string): string | null {
+  if (decl.kind === 'function' || decl.kind === 'enum') return null;
+  const inferred =
+    inferDeclType(decl) ??
+    inferType(name, source) ??
+    inferBlockParamType(name, source) ??
+    inferLoopVarType(name, source);
   if (!inferred) return null;
-  return DISPLAY_TYPE_NAMES[inferred] ?? inferred;
+  // Arrays with a known element type display as array<Element>
+  if (inferred === 'array' && decl.typeContext?.kind === 'init') {
+    const elementType = inferExprElementType(decl.typeContext.expr, decl.scope);
+    if (elementType) return `array<${displayTypeName(elementType)}>`;
+  }
+  return displayTypeName(inferred);
 }
 
 // --- Helpers ---
@@ -141,6 +225,8 @@ function inferSymbolType(kind: string, name: string, source: string): string | n
 interface WordAtPosition {
   text: string;
   range: Range;
+  startOffset: number;
+  endOffset: number;
 }
 
 function getWordAt(source: string, offset: number): WordAtPosition | null {
@@ -167,10 +253,12 @@ function getWordAt(source: string, offset: number): WordAtPosition | null {
       start: { line, character },
       end: { line: endLine, character: endCharacter },
     },
+    startOffset: start,
+    endOffset: end,
   };
 }
 
-function getColorAt(source: string, offset: number): WordAtPosition | null {
+function getColorAt(source: string, offset: number): Omit<WordAtPosition, 'startOffset' | 'endOffset'> | null {
   // Check if we're on a #hex color literal
   let start = offset;
   while (start > 0 && /[a-fA-F0-9]/.test(source[start - 1])) start--;

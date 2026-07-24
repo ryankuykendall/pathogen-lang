@@ -86,7 +86,9 @@ describe('getRenameEdits', () => {
     expect(editLines).not.toContain(3);
   });
 
-  it('returns empty for unparseable source', () => {
-    expect(rename('let x = ', 0, 4, 'y')).toHaveLength(0);
+  it('renames the recovered declaration in incomplete source (lenient parse)', () => {
+    // Mid-typing `let x = ` still finds x's declaration — error recovery
+    // keeps rename alive while the document has parse errors.
+    expect(rename('let x = ', 0, 4, 'y')).toHaveLength(1);
   });
 });

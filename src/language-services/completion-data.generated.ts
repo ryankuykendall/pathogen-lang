@@ -441,6 +441,26 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'vertexAll', kind: 'function', detail: 'vertexAll(name) — Every labeled vertex matching name; returns an array of VertexHandles', boost: 8, insertText: 'vertexAll(\'${1:name}\')$0', isSnippet: true },
     ],
   },
+  'VariableOffsetBuilder': {
+    properties: [
+
+    ],
+    methods: [
+      { label: 'stop', kind: 'function', detail: 'stop(time, offset, continuity) — Place an offset stop along the spine (time 0..1, non-decreasing; continuity is a CurveContinuity value)', boost: 8, insertText: 'stop(${1:time}, ${2:offset}, ${3:CurveContinuity.G2})$0', isSnippet: true },
+      { label: 'startTangent', kind: 'function', detail: 'startTangent(vector) — Force the offset path\'s launch direction at the spine start', boost: 8, insertText: 'startTangent(${1:vector})$0', isSnippet: true },
+      { label: 'endTangent', kind: 'function', detail: 'endTangent(vector) — Force the offset path\'s arrival direction at the spine end', boost: 8, insertText: 'endTangent(${1:vector})$0', isSnippet: true },
+    ],
+  },
+  'CompoundVariableOffsetBuilder': {
+    properties: [
+
+    ],
+    methods: [
+      { label: 'stop', kind: 'function', detail: 'stop(time, offset1, continuity1, offset2, continuity2) — Place a two-profile stop along the spine (time 0..1, non-decreasing; continuities are CurveContinuity values)', boost: 8, insertText: 'stop(${1:time}, ${2:offset1}, ${3:CurveContinuity.G2}, ${4:offset2}, ${5:CurveContinuity.G2})$0', isSnippet: true },
+      { label: 'startCap', kind: 'function', detail: 'startCap(cap) — Shape the ribbon\'s start end (Cap.butt/round/elliptical/tapered)', boost: 8, insertText: 'startCap(${1:cap})$0', isSnippet: true },
+      { label: 'endCap', kind: 'function', detail: 'endCap(cap) — Shape the ribbon\'s end (Cap.butt/round/elliptical/tapered)', boost: 8, insertText: 'endCap(${1:cap})$0', isSnippet: true },
+    ],
+  },
   'PolarVector': {
     properties: [
       { label: 'angle', kind: 'property', detail: 'Angle in radians', boost: 8 },
@@ -1014,6 +1034,8 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'array': { map: 'array', mapSlice: 'array', slice: 'array' },
   'string': { split: 'array', append: 'string', prepend: 'string', slice: 'string' },
   'PathBlock': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'PathBlock', offset: 'PathBlock', variableOffset: 'PathBlock', compoundVariableOffset: 'PathBlock', mirror: 'PathBlock', scale: 'PathBlock', rotateAtVertexIndex: 'PathBlock', subPath: 'PathBlock', project: 'ProjectedPath', chamfer: 'PathBlock', chamferAtVertex: 'PathBlock', fillet: 'PathBlock', filletAtVertex: 'PathBlock', ellipticalFillet: 'PathBlock', ellipticalFilletAtVertex: 'PathBlock', union: 'PathBlock', difference: 'PathBlock', intersection: 'PathBlock', xor: 'PathBlock', intersectionPoints: 'array', segment: 'PathBlock', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
+  'VariableOffsetBuilder': { stop: 'VariableOffsetBuilder', startTangent: 'VariableOffsetBuilder', endTangent: 'VariableOffsetBuilder' },
+  'CompoundVariableOffsetBuilder': { stop: 'CompoundVariableOffsetBuilder', startCap: 'CompoundVariableOffsetBuilder', endCap: 'CompoundVariableOffsetBuilder' },
   'PolarVector': { turn: 'PolarVector', scale: 'PolarVector', mirror: 'PolarVector' },
   'PathLayer': { segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
   'ProjectedText': { translate: 'ProjectedText' },
@@ -1029,32 +1051,60 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
 
 /** Per-type data-property types (resolves destructured bindings like let { origin } = grid) */
 export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
-  'ColorInstance': { css: 'string', hex: 'string', oklch: 'string', hsl: 'string', rgb: 'string' },
-  'Grid': { origin: 'Point' },
-  'PathBlock': { vertices: 'array', subPathCommands: 'array', startPoint: 'Point', endPoint: 'Point', contours: 'array' },
+  'ColorInstance': { css: 'string', hex: 'string', oklch: 'string', hsl: 'string', rgb: 'string', lightness: 'number', chroma: 'number', hue: 'number', a: 'number' },
+  'BoundingBox': { x: 'number', y: 'number', width: 'number', height: 'number' },
+  'Grid': { rows: 'number', cols: 'number', xDim: 'number', yDim: 'number', origin: 'Point', width: 'number', height: 'number' },
+  'Point': { x: 'number', y: 'number' },
+  'array': { length: 'number' },
+  'string': { length: 'number' },
+  'PathBlock': { length: 'number', vertices: 'array', subPathCount: 'number', subPathCommands: 'array', startPoint: 'Point', endPoint: 'Point', advanceWidth: 'number', contours: 'array' },
+  'PolarVector': { angle: 'number', distance: 'number' },
+  'Cycler': { length: 'number' },
   'TextLayer': { name: 'string' },
   'PathLayer': { name: 'string', ctx: 'PathContext' },
   'GroupLayer': { name: 'string', ctx: 'PathContext' },
-  'PathContext': { position: 'Point', start: 'Point', commands: 'array' },
-  'ProjectedText': { origin: 'Point' },
-  'NoiseFilter': { id: 'string' },
-  'GlowFilter': { id: 'string', color: 'ColorInstance' },
-  'EmbossFilter': { id: 'string', lightColor: 'ColorInstance' },
-  'ElevationShadowFilter': { id: 'string', color: 'ColorInstance' },
-  'InnerShadowFilter': { id: 'string', color: 'ColorInstance' },
-  'PixelateFilter': { id: 'string' },
-  'MotionBlurFilter': { id: 'string', type: 'string' },
-  'ProjectedPath': { vertices: 'array', subPathCommands: 'array', startPoint: 'Point', endPoint: 'Point' },
-  'VertexHandle': { point: 'Point', label: 'string' },
+  'PathContext': { position: 'Point', start: 'Point', heading: 'number', tangentAngle: 'number', commands: 'array' },
+  'ObjectValue': { length: 'number' },
+  'ProjectedText': { elementCount: 'number', origin: 'Point' },
+  'NoiseFilter': { id: 'string', octaves: 'number', amount: 'number', monochrome: 'boolean', seed: 'number', contrast: 'number', stitch: 'boolean' },
+  'GlowFilter': { id: 'string', color: 'ColorInstance', radius: 'number', spread: 'number', opacity: 'number' },
+  'EmbossFilter': { id: 'string', depth: 'number', strength: 'number', shininess: 'number', lightColor: 'ColorInstance', smooth: 'number' },
+  'ElevationShadowFilter': { id: 'string', elevation: 'number', color: 'ColorInstance', tightness: 'number' },
+  'InnerShadowFilter': { id: 'string', offsetX: 'number', offsetY: 'number', blur: 'number', color: 'ColorInstance', opacity: 'number' },
+  'PixelateFilter': { id: 'string', width: 'number', height: 'number', radius: 'number' },
+  'MotionBlurFilter': { id: 'string', type: 'string', distance: 'number', angle: 'number', samples: 'number' },
+  'ProjectedPath': { length: 'number', vertices: 'array', subPathCount: 'number', subPathCommands: 'array', startPoint: 'Point', endPoint: 'Point' },
+  'VertexHandle': { x: 'number', y: 'number', point: 'Point', label: 'string' },
   'Mask': { id: 'string' },
   'ClipPath': { id: 'string' },
-  'LinearGradient': { id: 'string', spreadMethod: 'string', gradientUnits: 'string', gradientTransform: 'string', interpolation: 'string' },
-  'RadialGradient': { id: 'string', spreadMethod: 'string', gradientUnits: 'string', gradientTransform: 'string', interpolation: 'string' },
-  'ConicGradient': { id: 'string', direction: 'string', spread: 'string', interpolation: 'string' },
-  'MeshGradient': { id: 'string' },
-  'MeshPoint': { color: 'ColorInstance' },
-  'FreeformGradient': { id: 'string' },
-  'TopoGradient': { id: 'string', easing: 'string', method: 'string', baseColor: 'ColorInstance' },
+  'LinearGradient': { id: 'string', spreadMethod: 'string', gradientUnits: 'string', gradientTransform: 'string', interpolation: 'string', steps: 'number' },
+  'RadialGradient': { id: 'string', spreadMethod: 'string', gradientUnits: 'string', gradientTransform: 'string', interpolation: 'string', steps: 'number' },
+  'ConicGradient': { id: 'string', direction: 'string', spread: 'string', innerRadius: 'number', interpolation: 'string', steps: 'number' },
+  'MeshGradient': { id: 'string', cols: 'number', rows: 'number', width: 'number', height: 'number' },
+  'MeshPoint': { x: 'number', y: 'number', color: 'ColorInstance' },
+  'FreeformGradient': { id: 'string', width: 'number', height: 'number', falloff: 'number' },
+  'TopoGradient': { id: 'string', width: 'number', height: 'number', easing: 'string', method: 'string', iterations: 'number', blend: 'number', baseColor: 'ColorInstance' },
   'Pattern': { id: 'string', patternUnits: 'string', patternTransform: 'string', patternContentUnits: 'string' },
-  'Marker': { id: 'string', viewBox: 'string', markerUnits: 'string', preserveAspectRatio: 'string' },
+  'Marker': { id: 'string', markerWidth: 'number', markerHeight: 'number', viewBox: 'string', refX: 'number', refY: 'number', markerUnits: 'string', preserveAspectRatio: 'string' },
+};
+
+/** Per-type array element types for members typed PathogenArray<X> / X[] (parallel to TYPE_METHOD_RETURNS / TYPE_PROPERTY_TYPES, whose values stay bare 'array') */
+export const TYPE_ELEMENT_TYPES: Record<string, Record<string, string>> = {
+  'ColorInstance': { analogous: 'ColorInstance', triadic: 'ColorInstance', tetradic: 'ColorInstance', splitComplementary: 'ColorInstance' },
+  'PathBlock': { vertices: 'Point', contours: 'PathBlock', intersectionPoints: 'Point', segmentAll: 'PathBlock', pointAll: 'Point', vertexAll: 'VertexHandle' },
+  'PathLayer': { segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'VertexHandle' },
+  'ProjectedPath': { vertices: 'Point', segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'VertexHandle' },
+  'MeshGradient': { getRow: 'MeshPoint', getCol: 'MeshPoint' },
+};
+
+/** Namespace function return types (resolves let glyphs = PathBlock.fromGlyph(...), including array element types) */
+export const NAMESPACE_METHOD_RETURNS: Record<string, Record<string, { type: string; elementType?: string }>> = {
+  'Object': { keys: { type: 'array' }, values: { type: 'array' }, entries: { type: 'array' } },
+  'Color': { mix: { type: 'ColorInstance' }, palette: { type: 'array', elementType: 'ColorInstance' }, lightDark: { type: 'ColorInstance' } },
+  'PathBlock': { fromGlyph: { type: 'array', elementType: 'PathBlock' } },
+};
+
+/** Per-type trailing-block param types from @blockparams tags (resolves {|go, pb| ...} params on method calls) */
+export const METHOD_BLOCK_PARAMS: Record<string, Record<string, string[]>> = {
+  'PathBlock': { variableOffset: ['VariableOffsetBuilder', 'PathBlock'], compoundVariableOffset: ['CompoundVariableOffsetBuilder', 'PathBlock'] },
 };

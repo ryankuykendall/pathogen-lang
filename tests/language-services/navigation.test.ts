@@ -48,8 +48,12 @@ describe('getDefinition', () => {
     expect(result!.range.start.line).toBe(0); // param defined on fn line
   });
 
-  it('returns null for unparseable source', () => {
-    expect(def('let x = ', 0, 4)).toBeNull();
+  it('recovers the declaration from incomplete source (lenient parse)', () => {
+    // Mid-typing `let x = ` still resolves x — error recovery keeps
+    // navigation alive while the document has parse errors.
+    const result = def('let x = ', 0, 4);
+    expect(result).not.toBeNull();
+    expect(result!.range.start.line).toBe(0);
   });
 });
 

@@ -147,11 +147,21 @@ See also [`playground-language-parity.md`](./playground-language-parity.md) for 
 1. `docs/` — Document the type and its properties/methods
 2. `src/evaluator/index.ts` — Implement member dispatch (property access + method calls)
 3. `tests/evaluator.test.ts` — Add tests
-4. `src/language-services/completion-data.ts` — Add new `*_MEMBERS: MemberCompletionSet` export
-5. `src/language-services/completion.ts` — Add to `getMembersForObject()` and extend `inferType()` with constructor pattern
-6. `src/language-services/hover.ts` — Add member hover info if appropriate
-7. `tests/language-services/completion.test.ts` — Test member completions appear
-8. `npm run build` to rebuild dist/
+4. `src/pathogen-api.ts` — Declare a `@type TypeName`-tagged interface with JSDoc per member; run `npm run generate:completions`. Member completions, chain returns, property types, array element types, and hover all flow from the generated data — do not hand-edit `completion-data.generated.ts` or `completion.ts`/`hover.ts`
+5. `tests/language-services/completion.test.ts` + `hover.test.ts` — Test member completions AND member hover appear (assert `detail`/`insertText`, not just labels)
+6. `npm run build` to rebuild dist/
+
+**This includes builder/handle values that only exist inside a block.** If users
+can call methods on it (`vo.stop(...)` inside `variableOffset() {|vo, pb| ...}`),
+it is a type with member access and needs a `@type` interface — the variableOffset
+builder shipped without one and had zero completions/hover until 2026-07-24.
+
+### Adding a Method That Takes a Trailing Block (`{|a, b| ...}`)
+
+1. Declare the method in its type's `@type` interface in `src/pathogen-api.ts` with **both** tags, in this order: `@blockparams HandleType, SpineType` **before** `@snippet` (the snippet capture runs to end-of-line and would swallow a trailing `@blockparams`; the generator warns).
+2. Give each block-param handle type its own `@type` interface (see above) so `handle.` completes and hovers.
+3. `npm run generate:completions` — `METHOD_BLOCK_PARAMS` + `TYPE_MEMBERS` entries flow to block-param inference in `type-inference-ast.ts` automatically.
+4. Test: completion on `handle.` inside the block, hover on the params at declaration and use sites.
 
 ### Adding a New Constructor Type
 

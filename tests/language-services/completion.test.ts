@@ -1240,3 +1240,74 @@ describe('group-label All queries', () => {
     expect(names).toContain('vertexAll');
   });
 });
+
+describe('variableOffset builder completions', () => {
+  it('offers the simple builder methods on vo. inside a variableOffset block', () => {
+    const items = completeAtEnd('let spine = @{ M 0 0 L 100 0 };\nlet halo = spine.variableOffset() {|vo, pb|\n  vo.');
+    const names = items.map((i) => i.label);
+    expect(names).toContain('stop');
+    expect(names).toContain('startTangent');
+    expect(names).toContain('endTangent');
+    expect(names).not.toContain('startCap');
+    const stop = items.find((i) => i.label === 'stop');
+    expect(stop!.detail).toContain('Place an offset stop along the spine');
+    expect(stop!.insertText).toBe('stop(${1:time}, ${2:offset}, ${3:CurveContinuity.G2})$0');
+    expect(stop!.isSnippet).toBe(true);
+  });
+
+  it('offers the compound builder methods (caps, 5-arg stop) on go. inside a compoundVariableOffset block', () => {
+    const items = completeAtEnd('let spine = @{ M 0 0 L 100 0 };\nlet rib = spine.compoundVariableOffset() {|go, pb|\n  go.');
+    const names = items.map((i) => i.label);
+    expect(names).toContain('startCap');
+    expect(names).toContain('endCap');
+    expect(names).not.toContain('startTangent');
+    const stop = items.find((i) => i.label === 'stop');
+    expect(stop!.detail).toContain('two-profile stop');
+    expect(stop!.insertText).toBe('stop(${1:time}, ${2:offset1}, ${3:CurveContinuity.G2}, ${4:offset2}, ${5:CurveContinuity.G2})$0');
+  });
+
+  it('types the second block param (the spine) as PathBlock', () => {
+    const items = completeAtEnd('let spine = @{ M 0 0 L 100 0 };\nlet halo = spine.variableOffset() {|vo, pb|\n  pb.');
+    const names = items.map((i) => i.label);
+    expect(names).toContain('boundingBox');
+    expect(names).toContain('contours');
+  });
+});
+
+describe('AST-based receiver typing (destructured loops over method-returned arrays)', () => {
+  it('offers PathBlock members on a destructured loop element over PathBlock.fromGlyph', () => {
+    const items = completeAtEnd(
+      "let glyphs = PathBlock.fromGlyph('AB', ${ font-family: 'B'; });\nfor ([glyph, gIndex] in glyphs) {\n  glyph.",
+    );
+    const names = items.map((i) => i.label);
+    expect(names).toContain('contours');
+    expect(names).toContain('variableOffset');
+    const drawTo = items.find((i) => i.label === 'drawTo');
+    expect(drawTo!.insertText).toBe('drawTo(${1:x}, ${2:y})$0');
+  });
+
+  it('offers PathBlock members on a loop element over glyph.contours', () => {
+    const items = completeAtEnd(
+      "let glyphs = PathBlock.fromGlyph('AB', ${ font-family: 'B'; });\nfor ([glyph, gIndex] in glyphs) {\n  for ([contour, cIndex] in glyph.contours) {\n    contour.",
+    );
+    const names = items.map((i) => i.label);
+    expect(names).toContain('variableOffset');
+    expect(names).toContain('drawTo');
+  });
+
+  it('resolves shadowed names to the declaration governing the cursor position', () => {
+    // Outer `item` is a number; the inner loop shadows it with a Point element.
+    const items = completeAtEnd('let item = 5;\nfor (item in [Point(0, 0)]) {\n  item.');
+    const names = items.map((i) => i.label);
+    expect(names).toContain('translate');
+    expect(names).toContain('x');
+  });
+});
+
+describe('reference cycles', () => {
+  it('does not overflow on mutually-referencing declarations', () => {
+    // Transient editing state: two variables briefly assigned to each other.
+    // Regression for a stack overflow in the regex inference chain.
+    expect(() => completeAtEnd('let alpha = beta;\nlet beta = alpha;\nalpha.')).not.toThrow();
+  });
+});

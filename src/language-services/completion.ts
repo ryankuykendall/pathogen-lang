@@ -7,27 +7,15 @@ import {
   STYLE_PROPERTY_COMPLETIONS,
   STYLE_PROPERTY_VALUES,
 } from './completion-data-static';
-import {
-  CONSTRUCTOR_RETURN_TYPES,
-  ENUM_COMPLETIONS,
-  ENUM_MEMBER_MAP,
-  NAMESPACE_MEMBERS,
-  STDLIB_COMPLETIONS,
-  TYPE_MEMBERS,
-  TYPE_METHOD_RETURNS,
-} from './completion-data.generated';
+import { ENUM_COMPLETIONS, STDLIB_COMPLETIONS, TYPE_MEMBERS } from './completion-data.generated';
+import { inferObjectProperties, regexNameResolver, resolveMemberAccess } from './member-resolution';
 import { analyzeScopes } from './scope-analysis';
-import {
-  escapeRegex,
-  getMethodReturnType,
-  inferBlockParamType,
-  inferLoopVarType,
-  inferRhsType,
-  inferType,
-} from './type-inference';
+import { inferRhsType } from './type-inference';
+import { findDeclaration, inferDeclType } from './type-inference-ast';
 
-import type { CompletionEntry, MemberCompletionSet } from './completion-data-static';
+import type { CompletionEntry } from './completion-data-static';
 import type { TextDocument } from './document';
+import type { ScopeInfo } from './scope-analysis';
 import type { Position } from './types';
 
 export interface CompletionItem {
@@ -40,25 +28,28 @@ export interface CompletionItem {
 }
 
 /**
- * Layer constructors return a layer union that stays hand-written rather than
- * generated (see the matching special-case in type-inference.ts inferType), so
- * they aren't in CONSTRUCTOR_RETURN_TYPES. Map their bare-call return types
- * here for member completion on `layer('x').`, `PathLayer('x').`, etc.
- */
-const LAYER_CALL_RETURN_TYPES: Record<string, string> = {
-  layer: 'PathLayer',
-  PathLayer: 'PathLayer',
-  TextLayer: 'TextLayer',
-  GroupLayer: 'GroupLayer',
-};
-
-/**
  * Get completion items at a position in a document.
  */
 export function getCompletions(document: TextDocument, position: Position): CompletionItem[] {
   const source = document.getText();
   const offset = document.offsetAt(position);
   const textBefore = source.slice(0, offset);
+
+  // Scope analysis is lazily computed once and shared between the member-access
+  // resolver and the user-declaration collection below.
+  let cachedScopeInfo: ScopeInfo | null = null;
+  const getScopeInfo = () => {
+    cachedScopeInfo ??= analyzeScopes(document);
+    return cachedScopeInfo;
+  };
+
+  // AST-first name typing (regex-audit Phase 5b): resolve the declaration
+  // through the scope tree and type it from its AST context; fall back to the
+  // legacy regex chain when the tree yields nothing.
+  const resolveName = (name: string): string | null => {
+    const decl = findDeclaration(getScopeInfo(), name, position);
+    return (decl ? inferDeclType(decl) : null) ?? regexNameResolver(name, source);
+  };
 
   // Inside a backtick template literal: offer the ${expr} interpolation
   // snippet plus normal scope-aware expression completions. Must run BEFORE
@@ -170,7 +161,9 @@ export function getCompletions(document: TextDocument, position: Position): Comp
       // otherwise the colon and semicolon would double up.
       const colonAhead = /^[ \t]*:/.test(source.slice(offset));
       const items = STYLE_PROPERTY_COMPLETIONS.map((entry) =>
-        colonAhead ? toCompletionItem({ ...entry, insertText: undefined, isSnippet: undefined }) : toCompletionItem(entry),
+        colonAhead
+          ? toCompletionItem({ ...entry, insertText: undefined, isSnippet: undefined })
+          : toCompletionItem(entry),
       );
       return filterByPrefix(items, propPrefix);
     }
@@ -178,92 +171,14 @@ export function getCompletions(document: TextDocument, position: Position): Comp
     // keywords via the normal path, then append style-value keywords below.
   }
 
-  // Check for method call on expression: expr.method(...).
-  // e.g., shape.boundingBox(). or Color('#f00').lighten(0.2).
-  // Member access on a chain rooted in a bare call: callee(...).method(...).
-  // e.g. layer('a').segment('s'). — chainMatch below can't recover the
-  // receiver (the closing paren breaks its \w+ capture), so resolve the
-  // callee's return type and look the method up in that type's per-type
-  // return map (PathLayer's segment → ProjectedPath, not the flat fallback).
-  const callChainMatch = /(?:^|[^.\w])(\w+)\(\s*[^)]*\)\s*\.(\w+)\(\s*[^)]*\)\s*\.(\w*)$/.exec(textBefore);
-  if (callChainMatch) {
-    const callee = callChainMatch[1];
-    const methodName = callChainMatch[2];
-    const memberPrefix = callChainMatch[3];
-    const receiverType =
-      LAYER_CALL_RETURN_TYPES[callee] ??
-      (Object.hasOwn(CONSTRUCTOR_RETURN_TYPES, callee) ? CONSTRUCTOR_RETURN_TYPES[callee].type : null);
-    const chainReturnType = receiverType ? TYPE_METHOD_RETURNS[receiverType]?.[methodName] : undefined;
-    if (chainReturnType && chainReturnType in TYPE_MEMBERS) {
-      return filterByPrefix(
-        [...TYPE_MEMBERS[chainReturnType].properties, ...TYPE_MEMBERS[chainReturnType].methods].map(toCompletionItem),
-        memberPrefix,
-      );
-    }
-  }
-
-  // When the receiver is a plain variable, prefer its per-type return map
-  // (grid.getPoint() → Point vs mesh.getPoint() → MeshPoint).
-  const chainMatch = /(\w+)?\.(\w+)\(\s*[^)]*\)\s*\.(\w*)$/.exec(textBefore);
-  if (chainMatch) {
-    const receiverName = chainMatch[1];
-    const methodName = chainMatch[2];
-    const memberPrefix = chainMatch[3];
-    const receiverType = receiverName
-      ? (inferType(receiverName, source) ?? inferBlockParamType(receiverName, source))
-      : null;
-    const perType = receiverType ? TYPE_METHOD_RETURNS[receiverType]?.[methodName] : undefined;
-    const returnType = perType ?? getMethodReturnType(methodName);
-    if (returnType && returnType in TYPE_MEMBERS) {
-      return filterByPrefix(
-        [...TYPE_MEMBERS[returnType].properties, ...TYPE_MEMBERS[returnType].methods].map(toCompletionItem),
-        memberPrefix,
-      );
-    }
-  }
-
-  // Check for member access on a bare call expression: callee(...).
-  // e.g., layer('main'). or PathLayer('bg'). — the trailing ) breaks dotMatch's
-  // \w+, and chainMatch only fires on a `.method()` chain. Resolve the callee's
-  // return type (layer()/PathLayer()/TextLayer()/GroupLayer() → layer types,
-  // other constructors via CONSTRUCTOR_RETURN_TYPES) and offer that type's
-  // members. Placed after chainMatch so `pb.vertex('x').` still resolves via
-  // its receiver `pb`; the [^.\w] guard keeps this from matching a method call
-  // (which chainMatch owns).
-  const callMatch = /(?:^|[^.\w])(\w+)\(\s*[^)]*\)\s*\.(\w*)$/.exec(textBefore);
-  if (callMatch) {
-    const callee = callMatch[1];
-    const memberPrefix = callMatch[2];
-    const returnType =
-      LAYER_CALL_RETURN_TYPES[callee] ??
-      (Object.hasOwn(CONSTRUCTOR_RETURN_TYPES, callee) ? CONSTRUCTOR_RETURN_TYPES[callee].type : null);
-    if (returnType && returnType in TYPE_MEMBERS) {
-      return filterByPrefix(
-        [...TYPE_MEMBERS[returnType].properties, ...TYPE_MEMBERS[returnType].methods].map(toCompletionItem),
-        memberPrefix,
-      );
-    }
-  }
-
-  // Check for member access (dot completions)
-  const dotMatch = /(\w+)\.(\w*)$/.exec(textBefore);
-  if (dotMatch) {
-    const objectName = dotMatch[1];
-    const memberPrefix = dotMatch[2];
-    const members = getMembersForObject(objectName, source);
-    if (members) {
-      return filterByPrefix([...members.properties, ...members.methods].map(toCompletionItem), memberPrefix);
-    }
-  }
-
-  // Check for deep property access (e.g., ctx.position.x, layer.ctx.position)
-  const deepMatch = /(\w+)\.(\w+)\.(\w*)$/.exec(textBefore);
-  if (deepMatch) {
-    const [, obj, prop1, prefix] = deepMatch;
-    const deepMembers = getDeepMembers(obj, prop1, source);
-    if (deepMembers) {
-      return filterByPrefix([...deepMembers.properties, ...deepMembers.methods].map(toCompletionItem), prefix);
-    }
+  // Member access (dot completions, call chains, deep property access) —
+  // shared with hover via member-resolution.ts.
+  const memberAccess = resolveMemberAccess(textBefore, source, resolveName);
+  if (memberAccess) {
+    return filterByPrefix(
+      [...memberAccess.members.properties, ...memberAccess.members.methods].map(toCompletionItem),
+      memberAccess.memberPrefix,
+    );
   }
 
   // Get the word prefix at cursor
@@ -303,7 +218,7 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // Scope-aware user definitions. When inside a style value position we
   // boost user variables so they rank above stdlib items — the user is
   // almost always trying to reference a defined color/number variable.
-  const scopeInfo = analyzeScopes(document);
+  const scopeInfo = getScopeInfo();
   const seen = new Set<string>();
   const userDeclBoost = insideStyleValue ? 90 : 20;
 
@@ -373,134 +288,6 @@ function isStylePropertyNameContext(textBefore: string): boolean {
     if (ch === ':') return false;
   }
   return true;
-}
-
-function getMembersForObject(name: string, source: string): MemberCompletionSet | null {
-  // Namespaces (Color, Object)
-  if (name in NAMESPACE_MEMBERS) return NAMESPACE_MEMBERS[name];
-
-  // Enum member access (GridPatternType.Shape, Easing.Linear, etc.)
-  if (name in ENUM_MEMBER_MAP) {
-    return { properties: ENUM_MEMBER_MAP[name], methods: [] };
-  }
-
-  // Special names with known types
-  if (name === 'ctx' && 'PathContext' in TYPE_MEMBERS) return TYPE_MEMBERS.PathContext;
-
-  // Try to infer type from source
-  const type = inferType(name, source);
-  if (type && type in TYPE_MEMBERS) return TYPE_MEMBERS[type];
-
-  // Block parameter inference: name is a param in .map {|name| ...} or .reduce {|acc, name| ...}
-  const blockParamType = inferBlockParamType(name, source);
-  if (blockParamType && blockParamType in TYPE_MEMBERS) return TYPE_MEMBERS[blockParamType];
-
-  // Loop variable inference: for (name in array) or for ([name, i] in array)
-  const loopVarType = inferLoopVarType(name, source);
-  if (loopVarType && loopVarType in TYPE_MEMBERS) return TYPE_MEMBERS[loopVarType];
-
-  // Object literal properties: if we can find { name: ..., x: ..., y: ... } patterns
-  // for the variable, offer those properties as completions
-  const objProps = inferObjectProperties(name, source);
-  if (objProps) return objProps;
-
-  return null;
-}
-
-function getDeepMembers(obj: string, prop: string, source?: string): MemberCompletionSet | null {
-  // ctx.position.x, ctx.start.y
-  if (obj === 'ctx' && (prop === 'position' || prop === 'start')) {
-    return TYPE_MEMBERS.Point ?? null;
-  }
-  // ctx.transform has its own members
-  if (obj === 'ctx' && prop === 'transform') {
-    return {
-      properties: [
-        { label: 'translate', kind: 'property', detail: 'Translation state {x, y}', boost: 10 },
-        { label: 'rotate', kind: 'property', detail: 'Rotation state {angle, cx, cy}', boost: 10 },
-        { label: 'scale', kind: 'property', detail: 'Scale state {x, y}', boost: 10 },
-      ],
-      methods: [
-        { label: 'reset', kind: 'function', detail: 'reset() — Reset all transforms', boost: 8 },
-        { label: 'set', kind: 'function', detail: 'set(property, value) — Set transform value', boost: 8 },
-      ],
-    };
-  }
-
-  // layer.ctx.position, layer.ctx.start — infer layer type, then check prop
-  if (source && prop === 'ctx') {
-    const type = inferType(obj, source);
-    if (type === 'PathLayer' || type === 'GroupLayer') {
-      return TYPE_MEMBERS.PathContext ?? null;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Infer object properties when a variable holds an object literal or comes from
- * an array of objects. Returns ad-hoc member completions based on property names.
- */
-function inferObjectProperties(name: string, source: string): MemberCompletionSet | null {
-  const esc = escapeRegex(name);
-
-  // Direct object literal: let name = { x: ..., y: ..., ... };
-  const objMatch = new RegExp(`let\\s+${esc}\\s*=\\s*\\{\\s*([^}]{1,500})\\}`).exec(source);
-  if (objMatch) {
-    return extractObjectProps(objMatch[1]);
-  }
-
-  // Check if this is a loop/block param iterating over an array of objects
-  // We already checked inferBlockParamType/inferLoopVarType — if those returned '_ObjectLiteral',
-  // we need to find the actual array and extract props from the first element
-  const blockParamType = inferBlockParamType(name, source);
-  if (blockParamType === '_ObjectLiteral') {
-    // Find the array variable
-    const mapMatch = new RegExp(`(\\w+)\\.map\\s*\\(\\)\\s*\\{\\s*\\|\\s*${esc}`).exec(source);
-    const loopMatch = new RegExp(
-      `for\\s*\\(\\s*(?:\\[\\s*)?${esc}(?:\\s*,\\s*\\w+)*\\s*(?:\\]\\s+|\\s+)in\\s+(\\w+)\\s*\\)`,
-    ).exec(source);
-    const arrName = mapMatch?.[1] ?? loopMatch?.[1];
-    if (arrName) {
-      const arrEsc = escapeRegex(arrName);
-      const arrInit = new RegExp(`let\\s+${arrEsc}\\s*=\\s*\\[\\s*\\{\\s*([^}]{1,500})\\}`).exec(source);
-      if (arrInit) return extractObjectProps(arrInit[1]);
-    }
-  }
-
-  const loopVarType = inferLoopVarType(name, source);
-  if (loopVarType === '_ObjectLiteral') {
-    const loopMatch = new RegExp(
-      `for\\s*\\(\\s*(?:\\[\\s*)?${esc}(?:\\s*,\\s*\\w+)*\\s*(?:\\]\\s+|\\s+)in\\s+(\\w+)\\s*\\)`,
-    ).exec(source);
-    const arrName = loopMatch?.[1];
-    if (arrName) {
-      const arrEsc = escapeRegex(arrName);
-      const arrInit = new RegExp(`let\\s+${arrEsc}\\s*=\\s*\\[\\s*\\{\\s*([^}]{1,500})\\}`).exec(source);
-      if (arrInit) return extractObjectProps(arrInit[1]);
-    }
-  }
-
-  return null;
-}
-
-/**
- * Extract property names from an object literal body string like "x: 10, y: 20, name: 'foo'"
- */
-function extractObjectProps(body: string): MemberCompletionSet | null {
-  const propPattern = /(\w+)\s*:/g;
-  const props: CompletionEntry[] = [];
-  const seen = new Set<string>();
-  let m;
-  while ((m = propPattern.exec(body)) !== null) {
-    if (!seen.has(m[1])) {
-      seen.add(m[1]);
-      props.push({ label: m[1], kind: 'property', detail: `property: ${m[1]}`, boost: 10 });
-    }
-  }
-  if (props.length === 0) return null;
-  return { properties: props, methods: [] };
 }
 
 /**

@@ -44,6 +44,14 @@ export interface ParsedJsDoc {
   kind: string;
   /** `@snippet` template with `\n`/`\t` escapes already expanded */
   snippet?: string;
+  /** `@blockparams` Pathogen type names of a method's trailing-block params, in order */
+  blockParams?: string[];
+}
+
+/** Return type of a namespace function: the Pathogen type, plus the array element type when known. */
+export interface NamespaceMethodReturn {
+  type: string;
+  elementType?: string;
 }
 
 /** Warnings collected during extraction (drift smells, missing tags). */
@@ -65,6 +73,7 @@ export function parseJsDoc(comment: string): ParsedJsDoc {
   let boost = 8;
   let kind = 'function';
   let snippet: string | undefined;
+  let blockParams: string[] | undefined;
 
   const boostMatch = /@boost\s+(\d+)/.exec(comment);
   if (boostMatch) boost = parseInt(boostMatch[1], 10);
@@ -77,14 +86,23 @@ export function parseJsDoc(comment: string): ParsedJsDoc {
     snippet = snippetMatch[1].trim().replace(/\\n/g, '\n').replace(/\\t/g, '\t');
   }
 
+  // @blockparams TypeA, TypeB — must precede @snippet in single-line JSDoc
+  // (the snippet capture runs to end of line and would swallow it otherwise;
+  // extractMethodBlockParams warns when a snippet contains the tag).
+  const blockParamsMatch = /@blockparams\s+([A-Za-z_$][\w$]*(?:\s*,\s*[A-Za-z_$][\w$]*)*)/.exec(comment);
+  if (blockParamsMatch) {
+    blockParams = blockParamsMatch[1].split(',').map((s) => s.trim());
+  }
+
   // Detail is everything before the first @tag, trimmed
   const detail = comment
     .replace(/@snippet\s+.+$/m, '')
+    .replace(/@blockparams\s+[A-Za-z_$][\w$]*(?:\s*,\s*[A-Za-z_$][\w$]*)*/g, '')
     .replace(/@boost\s+\d+/g, '')
     .replace(/@kind\s+\w+/g, '')
     .trim();
 
-  return { detail, boost, kind, snippet };
+  return { detail, boost, kind, snippet, ...(blockParams ? { blockParams } : {}) };
 }
 
 /**
@@ -417,10 +435,132 @@ export function extractTypePropertyReturns(sourceFile: SourceFile): Record<strin
     for (const prop of iface.getProperties()) {
       const typeText = prop.getTypeNode()?.getText();
       if (!typeText) continue;
-      const pathogenType = returnTextToPathogenType(typeText, ifaceToType);
+      // Primitive-typed properties carry no member surface but still power
+      // hover display for destructured bindings (let { x } = point → number).
+      const pathogenType =
+        returnTextToPathogenType(typeText, ifaceToType) ??
+        (typeText === 'number' || typeText === 'boolean' ? typeText : null);
       if (pathogenType) props[prop.getName()] = pathogenType;
     }
     if (Object.keys(props).length > 0) result[typeMatch[1]] = props;
+  }
+
+  return result;
+}
+
+/**
+ * Resolve the element type of an array-typed declaration text: `PathogenArray<X>`
+ * and `X[]` map X through the `@type` map (plus aliases). Returns null for bare
+ * `PathogenArray`, non-array types, and element types with no member surface.
+ */
+export function elementTypeFromText(typeText: string, ifaceToType: Map<string, string>): string | null {
+  const t = typeText.trim();
+  const genericMatch = /^PathogenArray<\s*([\w$]+)\s*>$/.exec(t);
+  const suffixMatch = /^([\w$]+)\[\]$/.exec(t);
+  const inner = genericMatch?.[1] ?? suffixMatch?.[1];
+  if (!inner) return null;
+  return ifaceToType.get(inner) ?? null;
+}
+
+/**
+ * Per-type member element types: Pathogen type name → member (property or
+ * method) name → element type of the array it holds/returns. Parallel to
+ * TYPE_METHOD_RETURNS / TYPE_PROPERTY_TYPES (whose values stay bare 'array' —
+ * 'array' is itself a TYPE_MEMBERS key that engine code string-compares
+ * against). Lets inference recover `glyph.contours` → array of PathBlock.
+ */
+export function extractTypeElementTypes(sourceFile: SourceFile): Record<string, Record<string, string>> {
+  const ifaceToType = new Map([...buildIfaceToTypeMap(sourceFile), ...PROPERTY_TYPE_ALIASES]);
+  const result: Record<string, Record<string, string>> = {};
+
+  for (const iface of sourceFile.getInterfaces()) {
+    const comment = getRawJsDocComment(iface.getJsDocs());
+    if (!comment) continue;
+    const typeMatch = /@type\s+(\w+)/.exec(comment);
+    if (!typeMatch) continue;
+
+    const members: Record<string, string> = {};
+    for (const prop of iface.getProperties()) {
+      const typeText = prop.getTypeNode()?.getText();
+      const elementType = typeText ? elementTypeFromText(typeText, ifaceToType) : null;
+      if (elementType) members[prop.getName()] = elementType;
+    }
+    for (const method of iface.getMethods()) {
+      const returnText = method.getReturnTypeNode()?.getText();
+      const elementType = returnText ? elementTypeFromText(returnText, ifaceToType) : null;
+      if (elementType) members[method.getName()] = elementType;
+    }
+    if (Object.keys(members).length > 0) result[typeMatch[1]] = members;
+  }
+
+  return result;
+}
+
+/**
+ * Namespace function return types (PathBlock.fromGlyph, Color.mix, ...):
+ * namespace name → function name → { type, elementType? }. Namespace functions
+ * previously emitted no return-type data at all; this powers inference for
+ * `let glyphs = PathBlock.fromGlyph(...)` including the array element type.
+ */
+export function extractNamespaceMethodReturns(
+  sourceFile: SourceFile,
+): Record<string, Record<string, NamespaceMethodReturn>> {
+  const ifaceToType = new Map([...buildIfaceToTypeMap(sourceFile), ...PROPERTY_TYPE_ALIASES]);
+  const result: Record<string, Record<string, NamespaceMethodReturn>> = {};
+
+  for (const ns of sourceFile.getModules()) {
+    const returns: Record<string, NamespaceMethodReturn> = {};
+    for (const fn of ns.getFunctions()) {
+      const fnName = fn.getName();
+      if (!fnName) continue;
+      const returnText = fn.getReturnTypeNode()?.getText();
+      if (!returnText) continue;
+      const type = returnTextToPathogenType(returnText, ifaceToType);
+      if (!type) continue;
+      const label = fnName.endsWith('_') ? fnName.slice(0, -1) : fnName;
+      const elementType = elementTypeFromText(returnText, ifaceToType);
+      returns[label] = { type, ...(elementType ? { elementType } : {}) };
+    }
+    if (Object.keys(returns).length > 0) result[ns.getName()] = returns;
+  }
+
+  return result;
+}
+
+/**
+ * Method trailing-block param types: Pathogen type name → method name → the
+ * Pathogen types of the `{|a, b| ...}` block params, in order, from the
+ * method's `@blockparams` JSDoc tag. Powers block-param inference for
+ * `spine.variableOffset() {|go, pb| ...}` (go: VariableOffsetBuilder, pb: PathBlock).
+ */
+export function extractMethodBlockParams(
+  sourceFile: SourceFile,
+  warnings?: ExtractionWarning[],
+): Record<string, Record<string, string[]>> {
+  const result: Record<string, Record<string, string[]>> = {};
+
+  for (const iface of sourceFile.getInterfaces()) {
+    const comment = getRawJsDocComment(iface.getJsDocs());
+    if (!comment) continue;
+    const typeMatch = /@type\s+(\w+)/.exec(comment);
+    if (!typeMatch) continue;
+    const typeName = typeMatch[1];
+
+    const perMethod: Record<string, string[]> = {};
+    for (const method of iface.getMethods()) {
+      const methodComment = getRawJsDocComment(method.getJsDocs());
+      if (!methodComment) continue;
+      const parsed = parseJsDoc(methodComment);
+      if (parsed.snippet?.includes('@blockparams') && warnings) {
+        warnings.push({
+          member: `${typeName}.${method.getName()}`,
+          message:
+            '@blockparams appears after @snippet — the snippet capture runs to end of line, so the tag must precede @snippet',
+        });
+      }
+      if (parsed.blockParams) perMethod[method.getName()] = parsed.blockParams;
+    }
+    if (Object.keys(perMethod).length > 0) result[typeName] = perMethod;
   }
 
   return result;

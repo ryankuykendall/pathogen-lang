@@ -28,7 +28,7 @@ Completion/hover/signature data comes from **two files with different rules**:
 | File | Status | Contents |
 |------|--------|----------|
 | `completion-data-static.ts` | Hand-written | Keywords, style properties, block-start/declaration snippets |
-| `completion-data.generated.ts` | **AUTO-GENERATED — never edit** | Stdlib + constructor completions, enum completions/members, `TYPE_MEMBERS`, `NAMESPACE_MEMBERS`, `SIGNATURE_DATA`, `CONSTRUCTOR_RETURN_TYPES`, `TYPE_METHOD_RETURNS`, `TYPE_PROPERTY_TYPES` |
+| `completion-data.generated.ts` | **AUTO-GENERATED — never edit** | Stdlib + constructor completions, enum completions/members, `TYPE_MEMBERS`, `NAMESPACE_MEMBERS`, `SIGNATURE_DATA`, `CONSTRUCTOR_RETURN_TYPES`, `TYPE_METHOD_RETURNS`, `TYPE_PROPERTY_TYPES`, `TYPE_ELEMENT_TYPES`, `NAMESPACE_METHOD_RETURNS`, `METHOD_BLOCK_PARAMS` |
 
 The generated file is produced by `scripts/generate-completions.ts` (pure logic in `scripts/lib/completion-extract.ts`, unit-tested in `tests/language-services/generate-completions.test.ts`) from two sources of truth:
 
@@ -45,6 +45,8 @@ npm run check:completions             # strict drift check + git-diff sync check
 - `detail text @boost N @kind variable` — detail string, sort boost, completion kind.
 - `@type TypeName` on an interface — extracted into `TYPE_MEMBERS['TypeName']`; the interface's method return types feed `TYPE_METHOD_RETURNS` (chain completions like `grid.getPoint(0,0).x`), and its property types feed `TYPE_PROPERTY_TYPES` (destructured-binding inference like `let { origin } = grid;`).
 - `@snippet template` — explicit snippet template (VS Code `${1:x}`/`$0` syntax; `\n`/`\t` as two-character escapes). **Required for trailing-block syntax** (`apply { }`, `Marker(...) {|m| ... }`) that TS declarations can't express. Methods without `@snippet` get a derived template from their required parameters (`drawTo(${1:x}, ${2:y})$0`, string params quoted). The generator warns when a detail looks block-shaped (`{|`, `{ }`) but has no `@snippet`.
+- `@blockparams TypeA, TypeB` on a method — the Pathogen types of the method's trailing-block params, in order, feeding `METHOD_BLOCK_PARAMS` (types `go`/`pb` in `spine.variableOffset() {|go, pb| ...}`). **Must precede `@snippet` in single-line JSDoc** — the snippet capture runs to end of line and would swallow it (the generator warns).
+- `PathogenArray<X>` / `X[]` property and method-return types feed `TYPE_ELEMENT_TYPES` (element-of-array inference for loops/indexing); namespace function returns feed `NAMESPACE_METHOD_RETURNS` (`PathBlock.fromGlyph` → array of PathBlock). The base maps keep bare `'array'` values — `'array'` is itself a `TYPE_MEMBERS` key that engine code compares against.
 - Constructor return types that name a `@type`-tagged interface feed `CONSTRUCTOR_RETURN_TYPES` (drives `inferType` and binding-block param inference); `hasBindingBlock` is derived from `{|` in the `@snippet`.
 
 ### Drift guards
@@ -59,12 +61,14 @@ npm run check:completions             # strict drift check + git-diff sync check
 | `types.ts` | Position, Range, Diagnostic types (LSP-compatible) | New diagnostic kinds needed |
 | `document.ts` | TextDocument abstraction (StringTextDocument) | Stable — rarely changes |
 | `diagnostics.ts` | `getDiagnostics()` — Lezer error recovery + contextual messages | New syntax constructs |
-| `scope-analysis.ts` | `analyzeScopes()` — scope tree, declarations, references | New declaration/statement types |
+| `scope-analysis.ts` | `analyzeScopes()` — scope tree, declarations (with `typeContext` AST nodes for inference), references. Uses the **lenient** `parseLezer` so the scope tree survives mid-typing errors | New declaration/statement types |
 | `completion-data-static.ts` | Hand-written keywords, style properties, snippets | New keyword / style property |
 | `completion-data.generated.ts` | **Generated** — see above | Never by hand; `npm run generate:completions` |
-| `completion.ts` | `getCompletions()` + `isStylePropertyNamePosition()` — completion contexts (member access, pattern braces, style blocks), scope-aware | New completion contexts |
-| `type-inference.ts` | `inferType()`, `inferRhsType()`, block-param/loop-var inference — shared by completion + hover | New inference rules (constructor/property data flows in automatically) |
-| `hover.ts` | `getHoverInfo()` — keywords, path commands, stdlib (built from `STDLIB_COMPLETIONS`), inferred variable types via `type-inference.ts` | New keywords; stdlib flows in automatically |
+| `completion.ts` | `getCompletions()` + `isStylePropertyNamePosition()` — completion contexts (pattern braces, style blocks), scope-aware; member access delegates to `member-resolution.ts` | New completion contexts |
+| `member-resolution.ts` | `resolveMemberAccess()` — receiver typing + member sets, shared by completion AND hover; takes an injectable name resolver (AST-first, regex fallback) | New member-access shapes |
+| `type-inference-ast.ts` | **AST-first inference** (regex-audit Phase 5b): `inferDeclType()` types a Declaration via its `typeContext` node; `inferExprType()`/`inferExprElementType()` type expressions structurally. Always tried before the regex rules | New inference rules go HERE, not in type-inference.ts |
+| `type-inference.ts` | Legacy regex inference — kept as the fallback safety net for the AST path. Do not add new rules | Never — extend `type-inference-ast.ts` instead |
+| `hover.ts` | `getHoverInfo()` — keywords, path commands, stdlib, member hover via `member-resolution.ts`, declaration/reference types via `type-inference-ast.ts` (declaration-site hover included) | New keywords; stdlib + members flow in automatically |
 | `signature-help.ts` | `getSignatureHelp()` — active parameter tracking | Flows from generated `SIGNATURE_DATA` |
 | `symbols.ts` | `getDocumentSymbols()` — outline/breadcrumbs | New AST nodes that appear in outline |
 | `navigation.ts` | `getDefinition()`, `getReferences()` | New declaration types |
@@ -83,6 +87,7 @@ npm run check:completions             # strict drift check + git-diff sync check
 | New stdlib function | Declare in `src/pathogen-api.ts` → `npm run generate:completions` (completion + hover + signature help all flow) |
 | New evaluator constructor | Add to `src/evaluator/constructor-registry.ts` + canonical program in `tests/constructor-registry.test.ts`, declare in `pathogen-api.ts` (with `@snippet` if it takes a trailing block) + `@type` return interface → regenerate |
 | New type with member access | `@type`-tagged interface in `pathogen-api.ts` → regenerate (member completions + chain returns flow) |
+| New method taking a trailing block (`{\|...\|}`) | `@blockparams` (before `@snippet`) on the method in `pathogen-api.ts`, plus a `@type` interface for the block's handle type (e.g. `VariableOffsetBuilder`) → regenerate. Without both, the block params get no completions or hover |
 | New enum | Runtime `BUILTIN_ENUMS` + `ENUM_METADATA` in `src/api-surface.ts` → regenerate |
 | New statement kind | `scope-analysis.ts`, `symbols.ts`, `formatter.ts`, `semantic-tokens.ts` |
 | Signature change | Fix the declaration in `pathogen-api.ts` → regenerate |

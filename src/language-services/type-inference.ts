@@ -101,7 +101,7 @@ export function getMethodReturnType(method: string): string | null {
  * Infer the Pathogen type of a destructuring RHS expression text
  * (the `rhs` in `let { a, b } = rhs;`).
  */
-export function inferRhsType(rhs: string, source: string): string | null {
+export function inferRhsType(rhs: string, source: string, seen?: Set<string>): string | null {
   const t = rhs.trim();
   if (/^ctx\.(position|start)$/.test(t)) return 'Point';
   if (t === 'ctx') return 'PathContext';
@@ -110,15 +110,23 @@ export function inferRhsType(rhs: string, source: string): string | null {
   // not resolve through Object.prototype (same pitfall as struct-properties).
   if (ctorMatch && Object.hasOwn(CONSTRUCTOR_RETURN_TYPES, ctorMatch[1])) return CONSTRUCTOR_RETURN_TYPES[ctorMatch[1]].type;
   if (/^(?:Color\s*\(|#[0-9a-fA-F]|rgb\(|hsl\(|oklch\(|hwb\(|lab\(|lch\(|oklab\()/.test(t)) return 'ColorInstance';
-  if (/^[a-zA-Z_]\w*$/.test(t)) return inferType(t, source);
+  if (/^[a-zA-Z_]\w*$/.test(t)) return inferType(t, source, seen);
   return null;
 }
 
 /**
  * Lightweight type inference from source text.
  * Matches patterns like `let x = Point(...)`, `let x = @{...}`, `let x = [...]`, etc.
+ *
+ * `seen` guards multi-hop reference cycles (`let a = b; let b = a;`) — the
+ * inline `!== name` checks below only catch direct self-reference, and a
+ * two-variable cycle previously recursed to a stack overflow.
  */
-export function inferType(name: string, source: string): string | null {
+export function inferType(name: string, source: string, seen?: Set<string>): string | null {
+  const visited = seen ?? new Set<string>();
+  if (visited.has(name)) return null;
+  visited.add(name);
+
   const esc = escapeRegex(name);
 
   // Layer constructors — support both `let x = PathLayer(...)` and
@@ -175,7 +183,7 @@ export function inferType(name: string, source: string): string | null {
   const methodAssignMatch = new RegExp(`let\\s+${esc}\\s*=\\s*(\\w+)\\.([a-zA-Z]+)\\s*\\(`).exec(source);
   if (methodAssignMatch) {
     const [, receiver, method] = methodAssignMatch;
-    const receiverType = receiver !== name ? inferType(receiver, source) : null;
+    const receiverType = receiver !== name ? inferType(receiver, source, visited) : null;
     const perType = receiverType ? TYPE_METHOD_RETURNS[receiverType]?.[method] : undefined;
     const returnType = perType ?? getMethodReturnType(method);
     if (returnType && returnType !== 'any') return returnType;
@@ -196,7 +204,7 @@ export function inferType(name: string, source: string): string | null {
       const bound = alias ?? key;
       if (bound !== name) continue;
       if (rhs.trim() === name) return null; // recursion guard
-      const rhsType = inferRhsType(rhs, source);
+      const rhsType = inferRhsType(rhs, source, visited);
       const propType = rhsType ? TYPE_PROPERTY_TYPES[rhsType]?.[key] : undefined;
       // A destructured binding must not fall through to weaker rules.
       return propType ?? null;
@@ -218,7 +226,7 @@ export function inferType(name: string, source: string): string | null {
     const sourceVar = assignMatch[1];
     // Avoid infinite recursion by not re-inferring the same name
     if (sourceVar !== name) {
-      return inferType(sourceVar, source);
+      return inferType(sourceVar, source, visited);
     }
   }
 

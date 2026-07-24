@@ -6,10 +6,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   deriveTemplate,
+  elementTypeFromText,
   escapeString,
   extractConstructorReturnTypes,
   extractFromPathogenApi,
+  extractMethodBlockParams,
   extractNamespaceMembers,
+  extractNamespaceMethodReturns,
+  extractTypeElementTypes,
   extractTypeMembers,
   extractTypeMethodReturns,
   extractTypePropertyReturns,
@@ -17,7 +21,12 @@ import {
   parseJsDoc,
 } from '../../scripts/lib/completion-extract';
 
-import { TYPE_PROPERTY_TYPES } from '../../src/language-services/completion-data.generated';
+import {
+  METHOD_BLOCK_PARAMS,
+  NAMESPACE_METHOD_RETURNS,
+  TYPE_ELEMENT_TYPES,
+  TYPE_PROPERTY_TYPES,
+} from '../../src/language-services/completion-data.generated';
 
 import type { ExtractionWarning } from '../../scripts/lib/completion-extract';
 
@@ -39,6 +48,19 @@ describe('parseJsDoc', () => {
     const parsed = parseJsDoc('drawTo(x, y) — Draw path translated to (x, y)');
     expect(parsed.snippet).toBeUndefined();
     expect(parsed.detail).toBe('drawTo(x, y) — Draw path translated to (x, y)');
+  });
+
+  it('extracts @blockparams as an ordered type list and strips it from detail', () => {
+    const parsed = parseJsDoc(
+      'variableOffset() {|go, pb| ...} — Trace @blockparams VariableOffsetBuilder, PathBlock @snippet variableOffset() {|${1:go}, ${2:pb}|\\n\\t$0\\n}',
+    );
+    expect(parsed.blockParams).toEqual(['VariableOffsetBuilder', 'PathBlock']);
+    expect(parsed.detail).toBe('variableOffset() {|go, pb| ...} — Trace');
+    expect(parsed.snippet).toBe('variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n}');
+  });
+
+  it('omits blockParams when the tag is absent', () => {
+    expect(parseJsDoc('drawTo(x, y) — Draw').blockParams).toBeUndefined();
   });
 });
 
@@ -209,7 +231,7 @@ describe('extractTypeMethodReturns', () => {
 });
 
 describe('extractTypePropertyReturns', () => {
-  it('resolves property types through @type tags, drops numbers, applies the ColorValue alias', () => {
+  it('resolves property types through @type tags, keeps primitives, applies the ColorValue alias', () => {
     const sf = loadApiSource(`
       export interface ColorValue { readonly __brand: 'color'; }
       /** @type Grid */
@@ -224,9 +246,11 @@ describe('extractTypePropertyReturns', () => {
       export interface PathogenMeshPoint { color: ColorValue; x: number; }
     `);
     const props = extractTypePropertyReturns(sf);
-    expect(props.Grid).toEqual({ origin: 'Point' });
-    expect(props.MeshPoint).toEqual({ color: 'ColorInstance' });
-    expect(props.Point).toBeUndefined();
+    // number/boolean properties are kept — they have no member surface but
+    // power hover display for destructured bindings (let { x } = point).
+    expect(props.Grid).toEqual({ rows: 'number', origin: 'Point' });
+    expect(props.MeshPoint).toEqual({ color: 'ColorInstance', x: 'number' });
+    expect(props.Point).toEqual({ x: 'number', y: 'number' });
   });
 
   it('shipped generated data resolves the destructuring-critical entries', () => {
@@ -234,7 +258,116 @@ describe('extractTypePropertyReturns', () => {
     expect(TYPE_PROPERTY_TYPES.MeshPoint.color).toBe('ColorInstance');
     expect(TYPE_PROPERTY_TYPES.PathContext.position).toBe('Point');
     expect(TYPE_PROPERTY_TYPES.PathContext.start).toBe('Point');
-    expect(TYPE_PROPERTY_TYPES.Grid.rows).toBeUndefined();
+    expect(TYPE_PROPERTY_TYPES.Grid.rows).toBe('number');
+    expect(TYPE_PROPERTY_TYPES.Point.x).toBe('number');
+  });
+});
+
+describe('elementTypeFromText', () => {
+  const ifaceToType = new Map([
+    ['PathogenPathBlock', 'PathBlock'],
+    ['PathogenPoint', 'Point'],
+    ['ColorValue', 'ColorInstance'],
+  ]);
+
+  it('resolves PathogenArray<T> generics and T[] suffixes through the type map', () => {
+    expect(elementTypeFromText('PathogenArray<PathogenPathBlock>', ifaceToType)).toBe('PathBlock');
+    expect(elementTypeFromText('ColorValue[]', ifaceToType)).toBe('ColorInstance');
+  });
+
+  it('returns null for ungeneric arrays, unknown element types, and non-arrays', () => {
+    expect(elementTypeFromText('PathogenArray', ifaceToType)).toBeNull();
+    expect(elementTypeFromText('PathogenArray<UnknownThing>', ifaceToType)).toBeNull();
+    expect(elementTypeFromText('number', ifaceToType)).toBeNull();
+  });
+});
+
+describe('extractTypeElementTypes', () => {
+  it('collects element types from array-typed properties and method returns', () => {
+    const sf = loadApiSource(`
+      /** @type PathBlock */
+      export interface PathogenPathBlock {
+        /** Per-contour PathBlocks */
+        readonly contours: PathogenArray<PathogenPathBlock>;
+        /** Not an array */
+        readonly length: number;
+        /** segmentAll(name) */
+        segmentAll(name: string): PathogenArray<PathogenPathBlock>;
+        /** boundingBox() */
+        boundingBox(): PathogenBoundingBox;
+      }
+      /** @type BoundingBox */
+      export interface PathogenBoundingBox { readonly width: number; }
+    `);
+    expect(extractTypeElementTypes(sf)).toEqual({
+      PathBlock: { contours: 'PathBlock', segmentAll: 'PathBlock' },
+    });
+  });
+
+  it('shipped generated data carries the contours element type', () => {
+    expect(TYPE_ELEMENT_TYPES.PathBlock.contours).toBe('PathBlock');
+    expect(TYPE_ELEMENT_TYPES.PathBlock.vertices).toBe('Point');
+  });
+});
+
+describe('extractNamespaceMethodReturns', () => {
+  it('collects namespace function return types with array element types', () => {
+    const sf = loadApiSource(`
+      export declare namespace PathBlock {
+        /** PathBlock.fromGlyph(text, styles) */
+        function fromGlyph(text: string, styles: Value): PathogenArray<PathogenPathBlock>;
+      }
+      /** @type PathBlock */
+      export interface PathogenPathBlock { readonly length: number; }
+      /** @type array */
+      export interface PathogenArray<T = Value> { readonly length: number; }
+    `);
+    expect(extractNamespaceMethodReturns(sf)).toEqual({
+      PathBlock: { fromGlyph: { type: 'array', elementType: 'PathBlock' } },
+    });
+  });
+
+  it('shipped generated data resolves fromGlyph and Color.palette', () => {
+    expect(NAMESPACE_METHOD_RETURNS.PathBlock.fromGlyph).toEqual({ type: 'array', elementType: 'PathBlock' });
+    expect(NAMESPACE_METHOD_RETURNS.Color.palette).toEqual({ type: 'array', elementType: 'ColorInstance' });
+    expect(NAMESPACE_METHOD_RETURNS.Color.mix).toEqual({ type: 'ColorInstance' });
+  });
+});
+
+describe('extractMethodBlockParams', () => {
+  it('collects @blockparams per type and method', () => {
+    const sf = loadApiSource(`
+      /** @type PathBlock */
+      export interface PathogenPathBlock {
+        /** variableOffset() {|go, pb| ...} @blockparams VariableOffsetBuilder, PathBlock @snippet variableOffset() {|\${1:go}, \${2:pb}|\\n\\t$0\\n} */
+        variableOffset(): PathogenPathBlock;
+        /** drawTo(x, y) — no block */
+        drawTo(x: number, y: number): PathogenProjectedPath;
+      }
+    `);
+    expect(extractMethodBlockParams(sf)).toEqual({
+      PathBlock: { variableOffset: ['VariableOffsetBuilder', 'PathBlock'] },
+    });
+  });
+
+  it('warns when @blockparams trails @snippet (which would swallow it)', () => {
+    const sf = loadApiSource(`
+      /** @type PathBlock */
+      export interface PathogenPathBlock {
+        /** variableOffset() {|go, pb| ...} @snippet variableOffset() {|\${1:go}|$0} @blockparams VariableOffsetBuilder, PathBlock */
+        variableOffset(): PathogenPathBlock;
+      }
+    `);
+    const warnings: ExtractionWarning[] = [];
+    extractMethodBlockParams(sf, warnings);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].member).toBe('PathBlock.variableOffset');
+    expect(warnings[0].message).toContain('must precede @snippet');
+  });
+
+  it('shipped generated data types both variableOffset block params', () => {
+    expect(METHOD_BLOCK_PARAMS.PathBlock.variableOffset).toEqual(['VariableOffsetBuilder', 'PathBlock']);
+    expect(METHOD_BLOCK_PARAMS.PathBlock.compoundVariableOffset).toEqual(['CompoundVariableOffsetBuilder', 'PathBlock']);
   });
 });
 

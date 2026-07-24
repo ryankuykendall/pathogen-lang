@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-24 (AST-based type inference + member hover)
+
+### Added
+
+#### Core
+
+- **Member hover across the language service**: hovering any property or method after a `.` (e.g. `glyph.contours`, `contour.variableOffset`, `vo.stop`) now shows its signature, doc, and value type — hover previously had no member-access path at all. Powered by a new shared `member-resolution.ts` used identically by completion and hover, so both surfaces always agree. VS Code inherits it via the shared `getHoverInfo`.
+- **AST-based type inference** (`type-inference-ast.ts`, the regex-audit Phase 5b design): declarations carry their real AST context (`Declaration.typeContext`) and are typed structurally — position-aware scope resolution, so shadowed names resolve to the declaration that governs the cursor. Covers what the regex engine missed: array-destructure positions (`let [num, pb, sb] = [5, @{}, ${}]`), `[element, index]` loop bindings (index is `number`), method-trailing-block params, number/boolean/`calc()`/StyleBlock literals, and element types through `PathBlock.fromGlyph(...)` / `glyph.contours` (displayed as `array<PathBlock>`). The regex rules in `type-inference.ts` remain solely as a fallback.
+- **variableOffset builder registration**: new `@type VariableOffsetBuilder` / `CompoundVariableOffsetBuilder` interfaces in `pathogen-api.ts` — `vo.` inside a `variableOffset() {|vo, pb|}` block now completes and hovers `stop`/`startTangent`/`endTangent` (caps on the compound builder), with `CurveContinuity`-aware snippets. New `@blockparams` JSDoc tag feeds the generated `METHOD_BLOCK_PARAMS` so both block params infer their types.
+- New generated metadata maps: `TYPE_ELEMENT_TYPES` (array element types from `PathogenArray<X>` members), `NAMESPACE_METHOD_RETURNS` (namespace function returns, e.g. `Color.palette` → array of Color), and number/boolean property types in `TYPE_PROPERTY_TYPES` (destructured numeric bindings hover as `number`).
+
+### Changed
+
+#### Core
+
+- **`analyzeScopes` uses the lenient Lezer parse** (error recovery) instead of the strict parser: scope-dependent features — completions, hover, go-to-definition, rename, semantic tokens — keep working while the document has mid-typing parse errors (an unterminated `vo.` no longer blanks the whole document's intelligence).
+- Hover resolves names at their **declaration sites** too (`let` names, fn params, loop vars, `{|block params|}`), and block params get their own "block parameter" label.
+
+### Development
+
+- Hover test suite gains the full variableOffset repro program as an integration fixture plus a binding-form × hover-site coverage matrix (every literal kind, destructure position, loop form, and block-param form) so future inference holes fail a test instead of surfacing as UX reports.
+- `src/language-services/CLAUDE.md` and the cross-system lifecycle checklist now cover trailing-block methods (`@blockparams` + builder `@type` interface) and direct new inference rules to the AST module.
+
 ## [Unreleased] - 2026-07-23 (zoom/pan parity + shared zoom pill)
 
 ### Added
