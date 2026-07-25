@@ -33,5 +33,11 @@ All seven phases of [PLAN.md](PLAN.md) shipped in one session. See
 
 - `cm-textlayer-editor.ts` regex parse (safe — outer-node slicing only)
 - `color(...)` in the outer `CSSColorLiteral` token (regen + keyof hand-patch cycle)
-- TextMate style-block scopes (VS Code highlighting stays regex-based)
+- TextMate style-block scopes (VS Code highlighting stays regex-based; already
+  scopes property names via `support.type.property-name`) + LSP
+  `textDocument/documentColor` for native VS Code color chips
 - Interpolation as a distinct inner-grammar node (Template is one token in v1)
+- Highlighting follow-ups from Ryan's 2026-07-25 review (primer.md
+  "Highlighting notes"): scope-aware recolor of variable refs in style values
+  (via semantic tokens), `.` token / MemberExpression in the inner grammar,
+  and the (by-design) `.apply`-keyword-vs-method-color question

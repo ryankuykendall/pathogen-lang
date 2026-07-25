@@ -73,13 +73,50 @@ so `drop-shadow(4px, 4px, 4px, #f00)` validated and emitted invalid CSS.
   unresolved in the Annotated pane. Fixed by extracting the resolver to
   `src/evaluator/css-function-resolve.ts`, parameterized by an eval callback.
 
+## Highlighting notes (observed 2026-07-25, after the color re-tag)
+
+Recorded per Ryan's review of the shipped colors; none are regressions of the
+comma/chips/completions work, but they share one root cause worth fixing once.
+
+1. **Variable references inside style values are orange, not coral.**
+   `fill: glyphFontColor.alpha(40%);` colors `glyphFontColor` whiskey orange
+   (value class) while the same variable is coral red everywhere else. The
+   inner grammar cannot tell a Pathogen variable reference from a CSS keyword
+   (`middle`, `round`) — both are bare `Identifier` tokens and the parser has
+   no scope info. Making "values orange" therefore necessarily recolors
+   variable refs. **Same root cause as the tomato chip limitation** (below).
+   Proper fix: a scope-aware decoration pass — extend `getSemanticTokens()`
+   (already scope-aware) to emit tokens inside style-block values so
+   identifiers that resolve to declarations re-take the variable color, with
+   the inner-grammar orange remaining the fallback for true CSS keywords.
+
+2. **`.` is an error node in the inner grammar.** Member-call values
+   (`glyphFontColor.alpha(40%)`) parse as `Identifier ⚠(.) Call` — renders
+   fine and declaration boundaries hold (verified), but the inner grammar
+   should grow a `"."` token / MemberExpression rule so chained values are
+   first-class (also a prerequisite for semantic-token mapping above).
+
+3. **`.apply` purple vs `.drawTo` coral in outer code — by design, not drift.**
+   `apply` is a grammar KEYWORD (`pathogen.grammar:95-96`, `kw<"apply">` — a
+   layer-apply BLOCK construct, not a method call), so it takes the keyword
+   color (oneDark violet) like `let`/`for`/`layer`. `.drawTo`, `.alpha`,
+   `.fillet` etc. are plain member `Identifier`s → variable color (coral).
+   Method members are consistent among themselves; only the `apply` keyword
+   differs. If the purple reads as noise, the option is a styleTags path rule
+   for member-position identifiers (e.g. `MemberExpression/Identifier` →
+   `t.function(t.variableName)`) to give METHODS their own color and let
+   `apply` stand alone as the only keyword after a dot — defer until decided.
+
 ## Deferred follow-ups
 
 - **Scope-aware named-color chip exclusion**: a variable literally named after
   a CSS color (`let tomato = ...; stroke: tomato;`) still gets a chip — the
   chip scanner sees only tree + text. Fix requires threading declared-name
   info (e.g. from analyzeScopes) into `findColorRanges`. Documented by the
-  KNOWN LIMITATION test in tests/cm-color-picker.test.ts.
+  KNOWN LIMITATION test in tests/cm-color-picker.test.ts. Bundle with
+  highlighting note #1 — one scope-aware pass serves both.
+- **Inner-grammar member expressions** (`.` token) — highlighting note #2.
+- **Semantic tokens into style values** — highlighting note #1.
 
 - `cm-textlayer-editor.ts` still regex-parses style blocks (safe: it slices the
   outer node, never descends).
