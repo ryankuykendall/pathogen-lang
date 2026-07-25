@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Playground
 
 - **Color chips everywhere in style values**: chips now come from the mounted inner tree instead of a whole-value regex — a hex or color-function literal gets a chip **anywhere in any property's value**, including nested inside `drop-shadow(...)` (the reported gap: `filter: drop-shadow(4px 4px 4px #c00)` had no chip because `filter` wasn't in the six-property regex allow-list). Bare **named** colors chip only as the entire value of a color-typed property, so a variable named `tomato` is never rewritten. The regex fallback remains for unmounted trees.
-- **Structured highlighting inside `${ }`**: property names, numbers/units, strings, templates, and function calls get real token colors in both themes (previously the whole block interior was one flat string color). Applies to the editor and the read-only workspace detail mount (`dist/highlight.global.js`).
+- **Structured highlighting inside `${ }`**: property names, numbers/units, strings, templates, and function calls get real token colors in both themes (previously the whole block interior was one flat string color). Applies to the editor and the read-only workspace detail mount (`dist/highlight.global.js`). Tags are tuned against the stock theme palettes so the roles contrast: dark mode reads blue property names / red variable names / orange values / yellow numbers (measured via `inspect-colors.mjs`, not assumed — `t.propertyName` would have collapsed property names into oneDark's variable-name coral).
 
 ### Documentation
 
