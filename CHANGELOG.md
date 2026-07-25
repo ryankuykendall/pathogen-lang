@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-25 (style-block structure: comma-form filter error, inner grammar, editor intelligence)
+
+### Fixed
+
+#### Core
+
+- **Comma-form CSS filter functions are now a positioned compile error instead of a silent no-op.** `filter: drop-shadow(4px, 4px, 4px, color)` previously compiled and emitted invalid CSS the browser dropped — the shadow just never appeared (Pathogen call syntax uses commas, but CSS `drop-shadow()` is space-separated, and a `font-family`-fallback comma branch in the validator incidentally let `4px,` through). All 10 CSS filter functions now reject top-level commas with a fix-it message (`drop-shadow() uses space-separated CSS syntax: drop-shadow(4px 4px 4px color) — remove the commas`), and comma-chained filters (`blur(2px), brightness(1)`) get `filter chains are space-separated`. Errors point at the declaration **value** via the new `StyleProperty.valueLoc`. Genuinely comma-separated functions (`rgba`, `color-mix`, `cubic-bezier`, `polygon`, transform functions, font-family lists) are untouched, with negative-control tests for each family.
+- **Annotated-evaluator drift**: `--annotated` never resolved Pathogen expressions embedded in CSS function args (`drop-shadow(4px 4px 8px shadowColor)` kept the raw variable name). Both evaluators now share `css-function-resolve.ts`, so resolution and the comma error behave identically; annotated validation errors gained line/col positions.
+
+### Added
+
+#### Core
+
+- **Structured syntax tree inside style blocks** (`editorParser`): a new dedicated Lezer grammar (`src/parser/style.grammar` — `Declaration`, `PropertyName`, `Call`, `ArgList`, `NumberUnit`, `ColorLiteral`, `StringLiteral`, `Template` nodes) is mounted over the opaque `StyleContent` token via `parseMixed`. The outer grammar is untouched (no `${` state-merge risk — outer-tree invariance is tested), and the compiler keeps the unwrapped parser. A parity corpus test locks the inner grammar to `parseStyleDeclarations` boundary rules (top-level `;`/newline termination, paren/quote/template awareness, mid-typing leniency). New `npm run generate:style-parser`; `editorParser` ships in both `dist/index.global.js` and `dist/highlight.global.js`.
+- **`StyleProperty` source extents**: AST style declarations now carry `nameEnd`, `valueLoc`, and `valueEnd` alongside `loc`, so tooling and diagnostics can address the value text without re-scanning.
+- **Style completion coverage**: `filter`, `mask`, `clip-path`, `stroke-dashoffset`, `color`, `mix-blend-mode`, and `paint-order` join the property completions (previously absent — `filter` is the 6th most-used property in the sample corpus). Value position after `filter:` offers the 10 CSS filter functions as space-separated snippets (`drop-shadow(${dx} ${dy} ${blur} ${color})` — teaching the correct syntax), `url(#id)`, and ranks in-scope filter-constructor variables first with a `NoiseFilter — renders as url(#id)` detail (type-aware via AST inference). `mask`/`clip-path` get `url(#id)` + basic-shape snippets; `mix-blend-mode`/`paint-order` get their keyword enumerations. The function list is **imported from the sanitizer allow-list** (`CSS_FILTER_FUNCTION_NAMES` et al., now exported groups) so completions cannot drift from what the evaluator accepts. Declaration-shaped binding-block constructor snippets (`NoiseFilter() {|f| ...}`) are no longer inserted in value position (offered as plain names instead). A property × value-kind coverage-matrix test guards the whole surface.
+
+#### Playground
+
+- **Color chips everywhere in style values**: chips now come from the mounted inner tree instead of a whole-value regex — a hex or color-function literal gets a chip **anywhere in any property's value**, including nested inside `drop-shadow(...)` (the reported gap: `filter: drop-shadow(4px 4px 4px #c00)` had no chip because `filter` wasn't in the six-property regex allow-list). Bare **named** colors chip only as the entire value of a color-typed property, so a variable named `tomato` is never rewritten. The regex fallback remains for unmounted trees.
+- **Structured highlighting inside `${ }`**: property names, numbers/units, strings, templates, and function calls get real token colors in both themes (previously the whole block interior was one flat string color). Applies to the editor and the read-only workspace detail mount (`dist/highlight.global.js`).
+
+### Documentation
+
+- `docs/syntax.md`: new **CSS Function Values** section — space-separated filter-function syntax, the comma error with before/after example, comma-taking function families, and variable resolution inside CSS functions. `docs/filters.md`: native-CSS-syntax callout in "Layering with Native CSS Filters".
+
+### Development
+
+- `project-docs/style-block-structure/` — plan, primer (parser-identity diagram, comma policy, inner-grammar boundary rules), demo `.pathogen`, and the puppeteer verification scripts used for the playground surface checks.
+
 ## [Unreleased] - 2026-07-25 (font weight fallback)
 
 ### Fixed

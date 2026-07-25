@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compileAnnotated } from '../src';
+import { compile, compileAnnotated } from '../src';
 
 describe('Annotated Output', () => {
   describe('basic path commands', () => {
@@ -382,6 +382,44 @@ M add(triple(2), 4) 0`);
 
     it('still throws when destructuring a plain number', () => {
       expect(() => compileAnnotated('let { x } = 5;')).toThrow(/cannot destructure/i);
+    });
+  });
+
+  describe('style-block CSS function values (parity with primary evaluator)', () => {
+    // Layer definitions are no-ops in annotated mode, so these tests evaluate
+    // style blocks in expression position (`let s = ${...};`), which routes
+    // through the annotated evaluator's evaluateStyleBlockLiteral.
+    it('resolves a Color variable inside drop-shadow to the same CSS as the primary evaluator', () => {
+      // Regression: the annotated evaluator previously never resolved
+      // expressions embedded in CSS function args, drifting from index.ts.
+      // The expected string comes from the primary evaluator, so this asserts
+      // exact cross-evaluator parity; it is observable in annotated mode via
+      // the property-read branch (only the exact resolved string takes M 1 1).
+      const expected = compile(`let c = oklch(0.63 0.26 29);
+define PathLayer('a') \${ filter: drop-shadow(4px 4px 8px c); }
+layer('a').apply { M 0 0 }`).layers.find((l) => l.name === 'a')!.styles.filter;
+      expect(expected).toMatch(/^drop-shadow\(4px 4px 8px #[0-9a-f]{6}\)$/);
+
+      const result = compileAnnotated(`let c = oklch(0.63 0.26 29);
+let s = \${ filter: drop-shadow(4px 4px 8px c); };
+if (s.filter == '${expected}') { M 1 1 } else { M 9 9 }`);
+      expect(result).toBe('M 1 1');
+    });
+
+    it('rejects comma-form drop-shadow with the same positioned error', () => {
+      expect(() =>
+        compileAnnotated(`
+let s = \${ filter: drop-shadow(4px, 4px, 4px, #c00); };
+M 0 0`),
+      ).toThrow(/Line 2, col \d+: drop-shadow\(\) uses space-separated CSS syntax/);
+    });
+
+    it('rejects comma-chained filter functions', () => {
+      expect(() =>
+        compileAnnotated(`
+let s = \${ filter: blur(2px), brightness(1.2); };
+M 0 0`),
+      ).toThrow(/filter chains are space-separated/);
     });
   });
 });

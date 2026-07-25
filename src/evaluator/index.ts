@@ -252,7 +252,7 @@ import {
   storeToPathData,
 } from './segments';
 import { serializeRelativeAndTrack } from './path-data';
-import { matchFunctionNotation, splitTopLevel } from '../css-value-utils';
+import { tryResolveCSSFunctionArgs as sharedTryResolveCSSFunctionArgs } from './css-function-resolve';
 
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker', 'marker-start', 'marker-mid', 'marker-end']);
@@ -1367,8 +1367,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
       try {
         validateCSSValue(resolvedValue, prop.name, { allowVar });
       } catch (e) {
-        const eLine = prop.loc?.line ?? getLine(expr);
-        const eCol = prop.loc?.column ?? getCol(expr);
+        // Point at the value when we know its extent (valueLoc), else the name.
+        const eLine = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
+        const eCol = prop.valueLoc?.column ?? prop.loc?.column ?? getCol(expr);
         throw new Error(formatError((e as Error).message, eLine, eCol));
       }
     }
@@ -1399,53 +1400,23 @@ function cssVarValueToCSS(v: CSSVarValue): string {
 }
 
 /**
- * Split a string by whitespace while respecting nested parentheses.
- * e.g., "16px 16px 20px rgba(0,0,0,0.5)" → ["16px", "16px", "20px", "rgba(0,0,0,0.5)"]
- */
-/**
- * Try to resolve Pathogen expressions embedded within CSS function arguments.
- * Only substitutes tokens that evaluate to ColorValue or CSSVarValue —
- * CSS values like "16px" or "blue" are left untouched.
+ * Resolve Pathogen expressions embedded within CSS function arguments (e.g.
+ * color args in drop-shadow) via the shared resolver, using this evaluator's
+ * expression parse/eval.
  */
 function tryResolveCSSFunctionArgs(raw: string, scope: Scope): string | null {
-  const match = matchFunctionNotation(raw);
-  if (!match) return null;
-
-  const funcName = match.name;
-  const tokens = splitTopLevel(match.args);
-
-  let anyResolved = false;
-  const resolved = tokens.map((token) => {
-    try {
+  return sharedTryResolveCSSFunctionArgs(raw, {
+    parseExpression: (token) => {
       const parseResult = expressionParser.parse(token);
-      if (!parseResult.status || !parseResult.value) return token;
-
-      // Preserve raw hex color literals
-      if (parseResult.value.type === 'ColorLiteral') {
-        anyResolved = true;
-        return parseResult.value.raw;
-      }
-
-      const evaluated = evaluateExpression(parseResult.value, scope);
-
-      if (isColorValue(evaluated)) {
-        anyResolved = true;
-        return colorValueToCSS(evaluated);
-      }
-      if (isCSSVarValue(evaluated)) {
-        anyResolved = true;
-        return cssVarValueToCSS(evaluated);
-      }
-
-      // Don't substitute other types — they're CSS values
-      return token;
-    } catch {
-      return token;
-    }
+      return parseResult.status && parseResult.value ? parseResult.value : null;
+    },
+    resolveToCSS: (expr) => {
+      const evaluated = evaluateExpression(expr, scope);
+      if (isColorValue(evaluated)) return colorValueToCSS(evaluated);
+      if (isCSSVarValue(evaluated)) return cssVarValueToCSS(evaluated);
+      return null;
+    },
   });
-
-  if (!anyResolved) return null;
-  return `${funcName}(${resolved.join(' ')})`;
 }
 
 function evaluateExpression(expr: Expression, scope: Scope): Value {

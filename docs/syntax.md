@@ -230,6 +230,26 @@ let styles = ${
 
 Each property is a `name: value;` declaration. The trailing `;` is required on **every** declaration, including the last one before `}` — a declaration missing its `;` is a compile error. Values are try-evaluated as expressions — if the value parses as a valid expression (like a variable reference, backtick template literal, or `calc()`), its result is used. Otherwise the raw string is kept (e.g., `rgb(...)`, `#hex`). See [Variables and Interpolation in Values](layers.md#variables-and-interpolation-in-values) for dynamic values.
 
+### CSS Function Values
+
+Style-block values are **native CSS syntax**, not Pathogen call syntax. This matters for CSS functions whose grammar is space-separated — the CSS filter functions (`blur`, `brightness`, `contrast`, `drop-shadow`, `grayscale`, `hue-rotate`, `invert`, `opacity`, `saturate`, `sepia`) take space-separated arguments, and commas inside them are a compile error:
+
+```
+// ✗ Compile error — Pathogen-style commas are not valid CSS here
+filter: drop-shadow(4px, 4px, 4px, shadowColor);
+// drop-shadow() uses space-separated CSS syntax:
+// drop-shadow(4px 4px 4px color) — remove the commas
+
+// ✓ Native CSS syntax — space-separated
+filter: drop-shadow(4px 4px 4px shadowColor);
+```
+
+Filter chains are also space-separated: `filter: blur(2px) brightness(1.2);` — a comma between chained filter functions is likewise a compile error.
+
+Functions whose CSS grammar genuinely uses commas keep them, exactly as in CSS: `rgba(0, 0, 0, 0.5)`, `color-mix(in oklch, red, blue)`, `translate(10px, 20px)`, `cubic-bezier(0.4, 0, 0.2, 1)`, `polygon(0 0, 100% 0, 50% 100%)`, and `font-family` fallback lists.
+
+Pathogen variables still work anywhere inside a CSS function value — `drop-shadow(4px 4px 4px shadowColor)` resolves `shadowColor` to its CSS color at compile time.
+
 ### Merge (`<<`)
 
 The `<<` operator merges two values of the same type. The right side overrides the left on key conflicts:

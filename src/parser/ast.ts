@@ -376,7 +376,10 @@ export interface StyleProperty {
   type: 'StyleProperty';
   name: string; // e.g. 'stroke', 'stroke-width'
   value: string; // raw string e.g. '#cc0000', '4 1 2 3'
-  loc?: SourceLocation; // span of the declaration name (for diagnostics)
+  loc?: SourceLocation; // start of the declaration name (for diagnostics)
+  nameEnd?: number; // offset just past the property name
+  valueLoc?: SourceLocation; // start of the trimmed value
+  valueEnd?: number; // offset just past the trimmed value
 }
 
 // define [default] PathLayer('name') ${ style declarations }

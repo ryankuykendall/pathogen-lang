@@ -29,6 +29,7 @@
   ],
   "scripts": {
     "generate:completions": "tsx scripts/generate-completions.ts",
+    "generate:style-parser": "lezer-generator src/parser/style.grammar --typeScript -o src/parser/style.generated.ts",
     "check:completions": "tsx scripts/generate-completions.ts --strict && git diff --exit-code src/language-services/completion-data.generated.ts",
     "build": "tsup",
     "build:docs": "tsx scripts/build-docs.ts",

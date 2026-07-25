@@ -1,0 +1,36 @@
+// Demo: style-block structure — filter values, templates, interpolation.
+// Exercises: space-separated drop-shadow with a variable color (renders),
+// filter chain, custom filter constructor reference, template value.
+define ViewBox(0, 0, 320, 120);
+
+let shadowColor = oklch(0.6567 0.2598 356.8);
+let family = 'Noto Sans';
+
+let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
+
+let card = PathLayer('card') << ${
+  fill: oklch(0.9792 0.1035 107.6);
+  stroke: #667a;
+  stroke-width: 0.5;
+  filter: drop-shadow(4px 4px 4px shadowColor);
+};
+card.apply {
+  roundRect(20, 20, 80, 80, 12);
+}
+
+let soft = PathLayer('soft') << ${
+  fill: #eaaa;
+  filter: blur(1px) brightness(1.1);
+};
+soft.apply {
+  circle(160, 60, 40);
+}
+
+let grainy = PathLayer('grainy') << ${
+  fill: hotpink;
+  filter: grain;
+  font-family: `${family}`;
+};
+grainy.apply {
+  roundRect(220, 20, 80, 80, 12);
+}

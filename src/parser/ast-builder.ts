@@ -2044,7 +2044,17 @@ function parseStyleDeclarations(
     i++; // consume ';'
 
     if (name) {
-      properties.push({ type: 'StyleProperty', name, value, loc: lineColLoc(source, baseOffset + nameStart) });
+      const trimmedStart = valueStart + (rawValue.length - rawValue.trimStart().length);
+      const trimmedEnd = valueStart + rawValue.trimEnd().length;
+      properties.push({
+        type: 'StyleProperty',
+        name,
+        value,
+        loc: lineColLoc(source, baseOffset + nameStart),
+        nameEnd: baseOffset + nameStart + name.length,
+        valueLoc: lineColLoc(source, baseOffset + trimmedStart),
+        valueEnd: baseOffset + trimmedEnd,
+      });
     }
   }
 

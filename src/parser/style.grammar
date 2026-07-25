@@ -1,0 +1,96 @@
+// Inner grammar for style-block content (`${ ... }` interiors).
+//
+// This grammar is mounted OVER the outer grammar's opaque StyleContent token
+// via parseMixed (see editor-parser.ts) — it is never part of the LALR outer
+// grammar (structuring StyleContent there breaks template interpolation; see
+// project-docs/style-block-structure/primer.md).
+//
+// Boundary parity contract with parseStyleDeclarations (ast-builder.ts):
+//   - declarations end at a top-level `;` or a bare newline
+//   - newlines are insignificant inside parenthesized args and templates
+//   - single-quoted strings never cross a newline
+//   - `//` comments run to end of line
+// The parity corpus test (tests/parser/style-grammar.test.ts) is the gate.
+
+@top StyleSheet { item* }
+
+item { Declaration | LineComment | newline }
+
+Declaration { PropertyName ":" value* declEnd }
+
+declEnd { ";" | newline }
+
+PropertyName { identifier }
+Identifier { identifier }
+
+value {
+  NumberUnit |
+  ColorLiteral |
+  StringLiteral |
+  Template |
+  Call |
+  Identifier |
+  "," | "/"
+}
+
+@precedence { call }
+
+Call { Identifier !call ArgList }
+
+// Newlines are insignificant inside parenthesized arguments — a value like
+// drop-shadow(\n  4px 4px\n  black\n) stays one declaration. Rules referenced
+// inside a skip scope must be defined in it, so the value shapes are
+// duplicated here with @name aliases mapping them to the same node types.
+@skip { spaces | newline } {
+  ArgList { "(" argItem* ")" }
+  argItem {
+    NumberUnit |
+    ColorLiteral |
+    StringLiteral |
+    Template |
+    ArgCall |
+    ArgIdentifier |
+    "," | "/" |
+    ArgList
+  }
+  ArgCall[@name=Call] { ArgIdentifier !call ArgList }
+  ArgIdentifier[@name=Identifier] { identifier }
+}
+
+@skip { spaces }
+
+@tokens {
+  spaces { $[ \t]+ }
+  newline { $[\r\n] }
+
+  LineComment { "//" ![\n]* }
+
+  identifier { $[A-Za-z_] $[A-Za-z0-9_-]* }
+
+  NumberUnit {
+    $[+-]? (@digit+ ("." @digit*)? | "." @digit+) ($[eE] $[+-]? @digit+)?
+    ($[a-zA-Z]+ | "%")?
+  }
+
+  ColorLiteral { "#" $[0-9a-fA-F]+ }
+
+  // Double-quoted strings may contain `;`/`}`; single-quoted strings never
+  // cross a newline (mirrors the outer styleContentString asymmetry).
+  StringLiteral { '"' !["\n]* '"' | "'" !['\n]* "'" }
+
+  // Backtick template with one level of ${...} interpolation nesting,
+  // mirroring the outer styleContentTemplate token. `;` and newlines are
+  // content inside a template.
+  Template { "`" tchar* "`" }
+  tchar { ![`\\$] | "\\" _ | interp | "$" }
+  interp { "${" (![{}] | "{" ![{}]* "}")* "}" }
+
+  "(" ")" "," ";" ":" "/"
+
+  @precedence { LineComment, "/" }
+  @precedence { NumberUnit, identifier }
+}
+
+@external propSource styleHighlighting from "./style-highlight"
+
+@detectDelim

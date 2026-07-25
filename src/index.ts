@@ -4,6 +4,7 @@ import { parse, parseWithComments } from './parser';
 import type { CompileResult } from './evaluator';
 
 export { parse, parseWithComments, parseLezer, lezerParser } from './parser';
+export { editorParser, styleParser } from './parser/editor-parser';
 export { resolveFontDirectives } from './parser/font-directives';
 export type { ResolvedFontDirective, FontDirectiveError } from './parser/font-directives';
 export { highlightPathogenTokens } from './highlight';

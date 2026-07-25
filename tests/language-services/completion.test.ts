@@ -7,6 +7,11 @@ function complete(source: string, line: number, character: number): CompletionIt
   return getCompletions(new StringTextDocument(source), { line, character });
 }
 
+// eslint-disable-next-line import/order
+import { STYLE_PROPERTY_VALUES } from '../../src/language-services/completion-data-static';
+// eslint-disable-next-line import/order
+import { CSS_FILTER_FUNCTION_NAMES } from '../../src/evaluator/sanitize';
+
 /** Get completions at end of source. */
 function completeAtEnd(source: string): CompletionItem[] {
   const lines = source.split('\n');
@@ -1309,5 +1314,95 @@ describe('reference cycles', () => {
     // Transient editing state: two variables briefly assigned to each other.
     // Regression for a stack overflow in the regex inference chain.
     expect(() => completeAtEnd('let alpha = beta;\nlet beta = alpha;\nalpha.')).not.toThrow();
+  });
+});
+
+describe('style property/value coverage matrix', () => {
+  // Generalization of the reported `filter` gap: every property in
+  // STYLE_PROPERTY_ENTRIES must be offered in name position, and value
+  // position must behave per its value-kind — enumerated properties offer
+  // exactly their STYLE_PROPERTY_VALUES entries, open-domain properties
+  // offer keywords + user variables, and no property offers statement
+  // keywords or declaration-shaped binding-block snippets.
+  const nameItems = completeAtEnd("define PathLayer('m') ${ ");
+  const nameLabels = labels(nameItems);
+
+  it('offers every known style property in name position', () => {
+    for (const label of Object.keys(STYLE_PROPERTY_VALUES)) {
+      expect(nameLabels, `property '${label}' missing in name position`).toContain(label);
+    }
+    // The seven properties added for the 2026-07-25 audit
+    for (const label of ['filter', 'mask', 'clip-path', 'stroke-dashoffset', 'color', 'mix-blend-mode', 'paint-order']) {
+      expect(nameLabels, `property '${label}' missing in name position`).toContain(label);
+    }
+  });
+
+  describe('value position per property', () => {
+    for (const [prop, values] of Object.entries(STYLE_PROPERTY_VALUES)) {
+      it(`offers the enumerated/snippet values for '${prop}' and no statement keywords`, () => {
+        const items = completeAtEnd(`define PathLayer('m') \${ ${prop}: `);
+        const names = labels(items);
+        for (const v of values) {
+          expect(names, `value '${v.label}' missing for '${prop}'`).toContain(v.label);
+        }
+        expect(names).not.toContain('let');
+        expect(names).not.toContain('for');
+        // Declaration-shaped constructor snippets (binding blocks) must never
+        // be inserted in value position.
+        for (const item of items) {
+          expect(item.insertText ?? '', `binding-block snippet '${item.label}' offered for '${prop}'`).not.toContain('{|');
+        }
+      });
+    }
+  });
+
+  it('offers filter function snippets with space-separated (CSS-correct) placeholders', () => {
+    const items = completeAtEnd("define PathLayer('m') ${ filter: ");
+    const drop = items.find((i) => i.label === 'drop-shadow');
+    expect(drop).toBeDefined();
+    expect(drop!.isSnippet).toBe(true);
+    expect(drop!.insertText).toBe('drop-shadow(${1:dx} ${2:dy} ${3:blur} ${4:color})');
+    expect(drop!.insertText).not.toContain(',');
+    const blur = items.find((i) => i.label === 'blur');
+    expect(blur!.insertText).toBe('blur(${1:radius})');
+    const url = items.find((i) => i.label === 'url');
+    expect(url!.insertText).toBe('url(#${1:id})');
+  });
+
+  it('derives filter function completions from the sanitizer allow-list (bidirectional)', () => {
+    const items = completeAtEnd("define PathLayer('m') ${ filter: ");
+    const names = new Set(labels(items));
+    for (const fn of CSS_FILTER_FUNCTION_NAMES) {
+      expect(names, `sanitizer-allowed filter fn '${fn}' has no completion`).toContain(fn);
+    }
+  });
+
+  it('ranks in-scope filter-constructor variables first after filter:', () => {
+    const source =
+      'let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };\n' +
+      'let unrelated = 42;\n' +
+      "let l = PathLayer('a') ${\n" +
+      '  filter: \n' +
+      '};';
+    const items = complete(source, 3, 10);
+    const grain = items.find((i) => i.label === 'grain');
+    expect(grain).toBeDefined();
+    expect(grain!.detail).toBe('NoiseFilter — renders as url(#id)');
+    const unrelated = items.find((i) => i.label === 'unrelated');
+    expect(unrelated).toBeDefined();
+    // Lower sortText string sorts first in both surfaces
+    expect(grain!.sortText < unrelated!.sortText).toBe(true);
+  });
+
+  it('offers Mask-typed variables with the ref detail after mask:', () => {
+    const source =
+      "let m = Mask('cut');\n" +
+      "let l = PathLayer('a') ${\n" +
+      '  mask: \n' +
+      '};';
+    const items = complete(source, 2, 8);
+    const m = items.find((i) => i.label === 'm');
+    expect(m).toBeDefined();
+    expect(m!.detail).toBe('Mask — renders as url(#id)');
   });
 });

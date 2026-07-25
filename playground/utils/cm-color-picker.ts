@@ -243,17 +243,31 @@ export function createColorChip({ color, onChange, className, title }: ColorChip
  * a comment vs code, so we use it as the source of truth.
  *
  * Four sources of chips:
- *   1. `ColorLiteral` / `CSSColorLiteral` — bare colors in code.
+ *   1. `ColorLiteral` / `CSSColorLiteral` — bare colors in code (the inner
+ *      style grammar also emits `ColorLiteral`, so hex colors anywhere inside
+ *      a style value — including nested in `drop-shadow(...)` — flow through
+ *      this same branch with document-absolute positions).
  *   2. `Color(String)` — the color is inside a string literal argument; we
  *      accept it because it's a known constructor and place the chip inside
  *      the quotes so replacements don't break them.
  *   3. `CSSVar('--name', String)` — same idea for the fallback argument.
- *   4. `StyleContent` — style-block interior (`${stroke: #f00;}`) is raw text
- *      in the grammar, so we regex-scan only the text range the AST has
- *      identified as a style block.
+ *   4. Style-block interiors: when the editor parser has mounted the inner
+ *      style grammar over `StyleContent` (parseMixed), the walk descends into
+ *      real `Declaration`/`Call` nodes — color-function calls (`rgb(...)`,
+ *      `oklch(...)`) chip anywhere in any value, and bare NAMED colors chip
+ *      only as the whole value of a color-typed property. That rule keeps
+ *      identifiers on non-color properties (`filter: card;`) and identifiers
+ *      that merely contain a color name (`tomatoJuice`) chip-free; a variable
+ *      literally named after a CSS color (`let tomato = ...; stroke: tomato;`)
+ *      still chips — the scanner has no scope info (pre-existing limitation,
+ *      same as the regex fallback). When there is no mount (plain parser),
+ *      the legacy regex scan runs as a fallback.
  */
 export function findColorRanges(tree: Tree, docText: string): ColorRange[] {
   const results: ColorRange[] = [];
+  // StyleContent ranges seen during the walk; `mounted` flips when the inner
+  // grammar's top node (StyleSheet) appears inside the range.
+  const styleRanges: Array<{ from: number; to: number; mounted: boolean }> = [];
 
   tree.iterate({
     enter: (node) => {
@@ -271,7 +285,34 @@ export function findColorRanges(tree: Tree, docText: string): ColorRange[] {
       }
 
       if (name === 'StyleContent') {
-        addStyleBlockColors(docText, node.from, node.to, results);
+        styleRanges.push({ from: node.from, to: node.to, mounted: false });
+        return true;
+      }
+
+      // Inner style grammar top node — marks its StyleContent as mounted.
+      if (name === 'StyleSheet') {
+        const range = styleRanges.find((r) => node.from >= r.from && node.to <= r.to);
+        if (range) range.mounted = true;
+        return true;
+      }
+
+      // Inner style grammar: whole-call chip for CSS color functions.
+      // Returning false skips children so nested hex args (e.g. inside a
+      // future color-mix) don't produce overlapping chips.
+      if (name === 'Call') {
+        const text = docText.slice(node.from, node.to);
+        if (isColorString(text)) {
+          results.push({ from: node.from, to: node.to, color: text });
+          return false;
+        }
+        return true;
+      }
+
+      // Inner style grammar: bare named-color values (`stroke: tomato;`)
+      // chip only when the whole value of a color-typed property is a single
+      // identifier that names a CSS color.
+      if (name === 'Declaration') {
+        tryAddNamedColorValue(node, docText, results);
         return true;
       }
 
@@ -279,9 +320,49 @@ export function findColorRanges(tree: Tree, docText: string): ColorRange[] {
     },
   });
 
+  // Regex fallback for style blocks with no mounted inner tree (callers still
+  // parsing with the plain lezerParser).
+  for (const range of styleRanges) {
+    if (!range.mounted) addStyleBlockColors(docText, range.from, range.to, results);
+  }
+
   // Sort by position so downstream ordering is stable.
   results.sort((a, b) => a.from - b.from);
   return results;
+}
+
+/**
+ * For an inner-grammar Declaration node, chip a bare named-color value
+ * (`stroke: tomato;`) — only when the property is color-typed and the entire
+ * value is a single Identifier naming a CSS color. Hex literals and color
+ * functions are handled by the generic ColorLiteral/Call branches on ANY
+ * property; this rule exists because a bare identifier is ambiguous with a
+ * Pathogen variable reference. NOTE: the ambiguity is only narrowed, not
+ * solved — a variable whose name is itself a CSS color name (`tomato`) still
+ * chips, because this scanner sees only the tree + text, not scope. A
+ * scope-aware exclusion is a recorded follow-up
+ * (project-docs/style-block-structure/primer.md).
+ */
+function tryAddNamedColorValue(declRef: LezerNodeRef, docText: string, out: ColorRange[]): void {
+  let propName: string | null = null;
+  let valueChild: LezerNodeRef | null = null;
+  let valueCount = 0;
+  let child = declRef.node.firstChild;
+  while (child) {
+    if (child.name === 'PropertyName') {
+      propName = docText.slice(child.from, child.to);
+    } else if (child.name !== ':' && child.name !== ';' && child.name !== 'LineComment') {
+      valueCount++;
+      valueChild = child;
+    }
+    child = child.node.nextSibling;
+  }
+  if (!propName || !COLOR_PROPERTIES.has(propName)) return;
+  if (valueCount !== 1 || !valueChild || valueChild.name !== 'Identifier') return;
+  const text = docText.slice(valueChild.from, valueChild.to);
+  if (text === 'none' || text === 'inherit' || text === 'currentColor') return;
+  if (detectFormat(text) !== 'named') return;
+  out.push({ from: valueChild.from, to: valueChild.to, color: text });
 }
 
 type LezerNodeRef = { name: string; from: number; to: number; node: { prevSibling: LezerNodeRef | null; firstChild: LezerNodeRef | null; nextSibling: LezerNodeRef | null } };

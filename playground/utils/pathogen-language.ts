@@ -24,16 +24,20 @@ interface CmLanguageModule {
  * @returns A CodeMirror LanguageSupport extension
  */
 export function pathogenLanguage(cmLanguage: CmLanguageModule): unknown {
-  const { lezerParser } = window.PathogenLang;
+  // Prefer the editor parser (inner style-block grammar mounted over
+  // StyleContent via parseMixed) — structured highlighting + chips inside
+  // `${ ... }`. Fall back to the plain parser for older bundles.
+  const { editorParser, lezerParser } = window.PathogenLang;
+  const parser = editorParser ?? lezerParser;
 
-  if (!lezerParser) {
+  if (!parser) {
     console.warn('Lezer parser not available — falling back to no language support');
     return [];
   }
 
   // Create the LRLanguage with our parser
   const lang = cmLanguage.LRLanguage.define({
-    parser: lezerParser,
+    parser,
     languageData: {
       commentTokens: { line: '//' },
       closeBrackets: { brackets: ['(', '[', '{', '"', "'", '`'] },

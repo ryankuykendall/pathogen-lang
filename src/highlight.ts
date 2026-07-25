@@ -20,6 +20,11 @@ import { parser as lezerParser } from './parser/pathogen.generated';
 // 9MB of compiler weight we don't need for read-only display).
 export { lezerParser };
 
+// Editor parser: same outer parser with the inner style-block grammar
+// mounted over StyleContent (parseMixed) — structured highlighting inside
+// `${ ... }`. Small LR table; watch dist/highlight.global.js size.
+export { editorParser } from './parser/editor-parser';
+
 // Lookup table: Lezer grammar node names → CSS class names. Mirrors
 // the semantic intent of pathogenHighlighting in src/parser/highlight.ts
 // without importing the @lezer/highlight tag system at the call site.

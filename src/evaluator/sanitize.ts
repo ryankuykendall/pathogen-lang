@@ -158,29 +158,57 @@ const ALLOWED_VALUE_FORMS: RegExp[] = [
 ];
 
 /**
- * CSS color/transform functions that are safe (no URL fetching, no host-doc
- * restyling, no script). Everything else (url, var, calc, image-set, image,
- * src, expression, attr) is rejected.
+ * CSS function-name allow-list, grouped by role. The groups are exported so
+ * other layers (e.g. language-services completion data) derive from this
+ * single source instead of hand-maintaining parallel lists.
  */
-const ALLOWED_FUNCTION_NAMES = new Set([
-  // Color functions
+export const CSS_COLOR_FUNCTION_NAMES = [
   'oklch', 'oklab', 'lch', 'lab', 'rgb', 'rgba', 'hsl', 'hsla',
   'hwb', 'color', 'color-mix', 'light-dark',
-  // Transform functions
+] as const;
+
+export const CSS_TRANSFORM_FUNCTION_NAMES = [
   'translate', 'translatex', 'translatey', 'translatez', 'translate3d',
   'rotate', 'rotatex', 'rotatey', 'rotatez', 'rotate3d',
   'scale', 'scalex', 'scaley', 'scalez', 'scale3d',
   'skew', 'skewx', 'skewy',
   'matrix', 'matrix3d',
   'perspective',
-  // Filter functions
+] as const;
+
+export const CSS_FILTER_FUNCTION_NAMES = [
   'blur', 'brightness', 'contrast', 'drop-shadow', 'grayscale',
   'hue-rotate', 'invert', 'opacity', 'saturate', 'sepia',
-  // Clip-path basic shapes
+] as const;
+
+export const CSS_SHAPE_FUNCTION_NAMES = [
   'inset', 'circle', 'ellipse', 'polygon', 'path',
-  // Animation timing
+] as const;
+
+export const CSS_TIMING_FUNCTION_NAMES = [
   'cubic-bezier', 'steps',
+] as const;
+
+/**
+ * CSS color/transform functions that are safe (no URL fetching, no host-doc
+ * restyling, no script). Everything else (url, var, calc, image-set, image,
+ * src, expression, attr) is rejected.
+ */
+const ALLOWED_FUNCTION_NAMES = new Set<string>([
+  ...CSS_COLOR_FUNCTION_NAMES,
+  ...CSS_TRANSFORM_FUNCTION_NAMES,
+  ...CSS_FILTER_FUNCTION_NAMES,
+  ...CSS_SHAPE_FUNCTION_NAMES,
+  ...CSS_TIMING_FUNCTION_NAMES,
 ]);
+
+/**
+ * Functions whose CSS grammar is space-separated — a top-level comma inside
+ * their arguments is invalid CSS that browsers silently drop. Pathogen call
+ * syntax uses commas everywhere else, so this is a natural mistake; fail
+ * loudly with a fix-it message instead of emitting a dead declaration.
+ */
+const COMMA_FORBIDDEN_FUNCTIONS = new Set<string>(CSS_FILTER_FUNCTION_NAMES);
 
 /**
  * String-typed properties — accept a quoted string verbatim (after rejecting
@@ -238,6 +266,14 @@ export function validateCSSValue(
       return value;
     }
     // fall through — bare keywords like `serif` also acceptable
+  }
+
+  // Filter chains are space-separated in CSS (`blur(2px) brightness(1.2)`);
+  // a comma between chained functions is invalid CSS the browser drops.
+  if (propertyName === 'filter' && hasTopLevelComma(value)) {
+    throw new Error(
+      `filter chains are space-separated: blur(2px) brightness(1.2) — remove the commas`,
+    );
   }
 
   // Multi-token values (e.g. "1px solid red", "1px 2px 3px") — split and
@@ -303,6 +339,30 @@ function rejectForbiddenTokens(value: string, propertyName: string, options: { a
   }
 }
 
+/**
+ * True when the string contains a comma outside any parens/brackets/quotes.
+ * Used to distinguish `drop-shadow(4px, 4px, ...)` (invalid, top-level commas
+ * in the arg string) from `drop-shadow(4px 4px rgba(0, 0, 0, .5))` (valid,
+ * commas nested one paren level down).
+ */
+function hasTopLevelComma(value: string): boolean {
+  let depth = 0;
+  let quote = '';
+  for (let i = 0; i < value.length; i++) {
+    const ch = value[i];
+    if (quote) {
+      if (ch === quote) quote = '';
+      continue;
+    }
+    if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') {
+      if (depth > 0) depth--;
+    } else if (ch === ',' && depth === 0) return true;
+  }
+  return false;
+}
+
 function isCompilerEmittedVar(value: string): boolean {
   // var(--ident) or var(--ident, anything-without-var)
   const m = value.match(/^var\(\s*(--[A-Za-z_][A-Za-z0-9_-]*)\s*(?:,\s*([^)]*))?\)$/);
@@ -345,6 +405,18 @@ function isAllowedToken(
     const fnName = fnMatch.name.toLowerCase();
     if (!ALLOWED_FUNCTION_NAMES.has(fnName)) {
       return false;
+    }
+    // Space-separated CSS functions reject top-level commas loudly — the
+    // browser would silently drop the whole declaration otherwise.
+    if (COMMA_FORBIDDEN_FUNCTIONS.has(fnName) && hasTopLevelComma(fnMatch.args)) {
+      if (fnName === 'drop-shadow') {
+        throw new Error(
+          `drop-shadow() uses space-separated CSS syntax: drop-shadow(4px 4px 4px color) — remove the commas`,
+        );
+      }
+      throw new Error(
+        `${fnName}() takes a single value — commas are not allowed`,
+      );
     }
     // Recursively validate args of allowed functions.
     const inner = fnMatch.args;

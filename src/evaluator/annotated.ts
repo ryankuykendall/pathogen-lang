@@ -28,6 +28,7 @@ import {
   splitPathCommands,
 } from './path-data';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
+import { tryResolveCSSFunctionArgs } from './css-function-resolve';
 import { sanitizeSVGFragment } from './svg-sanitize';
 import {
   cssSourceExpr,
@@ -1179,11 +1180,48 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     } catch {
       // Keep raw string
     }
+    // Whole-value expression parse didn't resolve — try resolving expressions
+    // embedded inside CSS function arguments (e.g. color args in drop-shadow),
+    // matching the primary evaluator so both surfaces emit the same CSS.
+    let allowVar = false;
+    if (resolvedValue === prop.value) {
+      const cssResolved = tryResolveCSSFunctionArgs(prop.value, {
+        parseExpression: (token) => {
+          const parseResult = expressionParser.parse(token);
+          return parseResult.status && parseResult.value ? parseResult.value : null;
+        },
+        resolveToCSS: (e) => {
+          const evaluated = evaluateExpression(e, scope);
+          if (isColorValue(evaluated)) {
+            if (evaluated.lightDark) return `light-dark(${evaluated.lightDark.lightCSS}, ${evaluated.lightDark.darkCSS})`;
+            if (evaluated.cssExpr) return evaluated.cssExpr;
+            if (evaluated.cssVar) return `var(${evaluated.cssVar.varName}, ${oklchToCSS(evaluated.oklch)})`;
+            return oklchToCSS(evaluated.oklch);
+          }
+          if (isCSSVarValue(evaluated)) {
+            return evaluated.fallback
+              ? `var(${evaluated.varName}, ${evaluated.fallback})`
+              : `var(${evaluated.varName})`;
+          }
+          return null;
+        },
+      });
+      if (cssResolved !== null) {
+        resolvedValue = cssResolved;
+        allowVar = true;
+      }
+    }
     if (!trusted) {
-      // Annotated mode surfaces the validator's message verbatim; the primary
-      // evaluator (src/evaluator/index.ts) threads per-declaration line/col
-      // from prop.loc for editor diagnostics.
-      validateCSSValue(resolvedValue, prop.name);
+      try {
+        validateCSSValue(resolvedValue, prop.name, { allowVar });
+      } catch (e) {
+        const eLine = prop.valueLoc?.line ?? prop.loc?.line;
+        const eCol = prop.valueLoc?.column ?? prop.loc?.column;
+        if (eLine !== undefined) {
+          throw new Error(formatError((e as Error).message, eLine, eCol));
+        }
+        throw e;
+      }
     }
     properties[prop.name] = resolvedValue;
   }

@@ -2,6 +2,12 @@
 // Stdlib completions are now generated — see completion-data.generated.ts.
 // Shared by VS Code (via LSP) and playground (via direct import).
 
+// CSS function-name groups are imported from the sanitizer allow-list — the
+// single source of truth — so value completions cannot drift from what the
+// evaluator actually accepts. (sanitize.ts is dependency-free, preserving the
+// language-services zero-Node-deps rule.)
+import { CSS_FILTER_FUNCTION_NAMES, CSS_SHAPE_FUNCTION_NAMES } from '../evaluator/sanitize';
+
 export interface CompletionEntry {
   label: string;
   kind: 'function' | 'variable' | 'keyword' | 'property' | 'constant' | 'snippet';
@@ -68,6 +74,13 @@ const STYLE_PROPERTY_ENTRIES: CompletionEntry[] = [
   { label: 'marker-start', kind: 'property', detail: 'Marker at path start', boost: 6 },
   { label: 'marker-mid', kind: 'property', detail: 'Marker at path vertices', boost: 6 },
   { label: 'marker-end', kind: 'property', detail: 'Marker at path end', boost: 6 },
+  { label: 'filter', kind: 'property', detail: 'Filter — Pathogen filter variable, url(#id), or CSS filter chain', boost: 12 },
+  { label: 'mask', kind: 'property', detail: 'Mask — Mask variable or url(#id)', boost: 8 },
+  { label: 'clip-path', kind: 'property', detail: 'Clip path — ClipPath variable, url(#id), or basic shape', boost: 8 },
+  { label: 'stroke-dashoffset', kind: 'property', detail: 'Dash pattern offset', boost: 8 },
+  { label: 'color', kind: 'property', detail: 'Color — source for currentColor', boost: 6 },
+  { label: 'mix-blend-mode', kind: 'property', detail: 'Blend mode with backdrop', boost: 6 },
+  { label: 'paint-order', kind: 'property', detail: 'Paint order of fill, stroke, markers', boost: 6 },
 ];
 
 export const STYLE_PROPERTY_COMPLETIONS: CompletionEntry[] = STYLE_PROPERTY_ENTRIES.map((entry) => ({
@@ -80,6 +93,43 @@ export const STYLE_PROPERTY_COMPLETIONS: CompletionEntry[] = STYLE_PROPERTY_ENTR
 function styleValue(label: string, detail: string): CompletionEntry {
   return { label, kind: 'constant', detail, boost: 14 };
 }
+
+/** `url(#id)` reference snippet for defs-referencing properties. */
+function urlRefValue(detail: string): CompletionEntry {
+  return { label: 'url', kind: 'snippet', detail, boost: 12, insertText: 'url(#${1:id})', isSnippet: true };
+}
+
+// CSS filter functions are SPACE-separated (comma args are a compile error) —
+// the snippets teach the correct syntax. Functions not listed here get the
+// generic single-amount template.
+const FILTER_FUNCTION_SNIPPETS: Record<string, { insert: string; detail: string }> = {
+  'drop-shadow': { insert: 'drop-shadow(${1:dx} ${2:dy} ${3:blur} ${4:color})', detail: 'Drop shadow — space-separated: dx dy blur color' },
+  blur: { insert: 'blur(${1:radius})', detail: 'Gaussian blur (px)' },
+  'hue-rotate': { insert: 'hue-rotate(${1:angle})', detail: 'Rotate all hues (deg)' },
+  brightness: { insert: 'brightness(${1:amount})', detail: 'Brightness multiplier (1 = unchanged)' },
+  contrast: { insert: 'contrast(${1:amount})', detail: 'Contrast multiplier (1 = unchanged)' },
+};
+
+const FILTER_FUNCTION_VALUES: CompletionEntry[] = CSS_FILTER_FUNCTION_NAMES.map((name) => {
+  const s = FILTER_FUNCTION_SNIPPETS[name];
+  return {
+    label: name,
+    kind: 'function' as const,
+    detail: s?.detail ?? `CSS ${name}() filter (0–1 amount)`,
+    boost: 13,
+    insertText: s?.insert ?? `${name}(\${1:amount})`,
+    isSnippet: true,
+  };
+});
+
+const SHAPE_FUNCTION_VALUES: CompletionEntry[] = CSS_SHAPE_FUNCTION_NAMES.map((name) => ({
+  label: name,
+  kind: 'function' as const,
+  detail: `CSS basic shape ${name}()`,
+  boost: 11,
+  insertText: name === 'path' ? `path('\${1:d}')` : `${name}(\${1})`,
+  isSnippet: true,
+}));
 
 /**
  * Enumerated values per style property, offered in value position
@@ -143,6 +193,41 @@ export const STYLE_PROPERTY_VALUES: Record<string, CompletionEntry[]> = {
     styleValue('currentColor', 'Inherit the color property'),
     styleValue('context-fill', 'Inherit the referencing path’s fill (markers)'),
     styleValue('context-stroke', 'Inherit the referencing path’s stroke (markers)'),
+  ],
+  filter: [
+    ...FILTER_FUNCTION_VALUES,
+    urlRefValue('Reference a filter by id: url(#id)'),
+  ],
+  mask: [
+    urlRefValue('Reference a Mask by id: url(#id)'),
+  ],
+  'clip-path': [
+    urlRefValue('Reference a ClipPath by id: url(#id)'),
+    ...SHAPE_FUNCTION_VALUES,
+  ],
+  'mix-blend-mode': [
+    styleValue('normal', 'No blending (default)'),
+    styleValue('multiply', 'Multiply with backdrop'),
+    styleValue('screen', 'Inverse multiply — lightens'),
+    styleValue('overlay', 'Multiply or screen depending on backdrop'),
+    styleValue('darken', 'Keep the darker channel'),
+    styleValue('lighten', 'Keep the lighter channel'),
+    styleValue('color-dodge', 'Brighten backdrop toward the source'),
+    styleValue('color-burn', 'Darken backdrop toward the source'),
+    styleValue('hard-light', 'Overlay with source/backdrop swapped'),
+    styleValue('soft-light', 'Soft version of hard-light'),
+    styleValue('difference', 'Absolute channel difference'),
+    styleValue('exclusion', 'Lower-contrast difference'),
+    styleValue('hue', 'Source hue, backdrop saturation/luminosity'),
+    styleValue('saturation', 'Source saturation, backdrop hue/luminosity'),
+    styleValue('color', 'Source hue+saturation, backdrop luminosity'),
+    styleValue('luminosity', 'Source luminosity, backdrop hue/saturation'),
+  ],
+  'paint-order': [
+    styleValue('normal', 'fill, stroke, markers (default)'),
+    styleValue('stroke', 'Paint stroke first (fill covers stroke inner half)'),
+    styleValue('markers', 'Paint markers first'),
+    styleValue('fill', 'Paint fill first'),
   ],
 };
 

@@ -1462,6 +1462,91 @@ describe('Multi-Layer Support', () => {
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('drop-shadow(2px 2px 4px blue)');
     });
 
+    describe('comma-form filter functions are a positioned compile error', () => {
+      it('rejects comma-separated drop-shadow args with a fix-it message', () => {
+        expect(() =>
+          compile(`
+            define PathLayer('a') \${ filter: drop-shadow(4px, 4px, 4px, #c00); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/Line 2, col \d+: drop-shadow\(\) uses space-separated CSS syntax.*remove the commas/s);
+      });
+
+      it('rejects comma-separated drop-shadow even when a variable resolves', () => {
+        expect(() =>
+          compile(`
+            let shadowColor = oklch(0.65 0.26 357);
+            define PathLayer('a') \${ filter: drop-shadow(4px, 4px, 4px, shadowColor); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/drop-shadow\(\) uses space-separated CSS syntax/);
+      });
+
+      it('rejects commas in single-argument filter functions', () => {
+        expect(() =>
+          compile(`
+            define PathLayer('a') \${ filter: blur(2px, 3px); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/blur\(\) takes a single value — commas are not allowed/);
+      });
+
+      it('rejects comma-chained filter functions', () => {
+        expect(() =>
+          compile(`
+            define PathLayer('a') \${ filter: blur(2px), brightness(1.2); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/filter chains are space-separated: blur\(2px\) brightness\(1\.2\)/);
+      });
+
+      it('positions the error at the declaration value', () => {
+        try {
+          compile(`define PathLayer('a') \${ filter: drop-shadow(1px, 1px, black); }\nlayer('a').apply { M 0 0 }`);
+          expect.unreachable('expected comma-form drop-shadow to throw');
+        } catch (e) {
+          // Value starts at 1-based column 34 of line 1: `drop-shadow(...)`
+          expect((e as Error).message).toMatch(/^Line 1, col 34:/);
+        }
+      });
+
+      it('keeps nested commas in genuinely comma-separated functions legal', () => {
+        const result = compile(`
+          define PathLayer('a') \${ filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5)); }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
+          'drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5))',
+        );
+      });
+
+      it('does not affect comma-taking functions on other properties', () => {
+        const result = compile(`
+          define PathLayer('a') \${
+            fill: color-mix(in oklch, red, blue);
+            transform: translate(10px, 20px);
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+          }
+          layer('a').apply { M 0 0 }
+        `);
+        const layer = result.layers.find((l) => l.name === 'a')!;
+        expect(layer.styles.fill).toBe('color-mix(in oklch, red, blue)');
+        // transform is promoted to a first-class layer field, not a style
+        expect((layer as any).transform).toBe('translate(10px, 20px)');
+        expect(layer.styles['transition-timing-function']).toBe('cubic-bezier(0.4, 0, 0.2, 1)');
+        expect(layer.styles['clip-path']).toBe('polygon(0 0, 100% 0, 50% 100%)');
+      });
+
+      it('keeps font-family fallback lists legal', () => {
+        const result = compile(`
+          define TextLayer('t') \${ font-family: "Inter", serif; }
+          layer('t').apply { text(0, 0) \`hi\`; }
+        `);
+        expect(result.layers.find((l) => l.name === 't')!.styles['font-family']).toBe('"Inter", serif');
+      });
+    });
+
     it('resolves Color in clip-path CSS function args', () => {
       // Not a typical use case, but verifies generality
       const result = compile(`

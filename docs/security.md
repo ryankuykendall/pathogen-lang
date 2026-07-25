@@ -27,6 +27,7 @@ Pathogen uses a strict allow-list for style values. Allowed value forms are:
 - **CSS hex colors**: `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`. Example: `fill: "#e63946"`.
 - **CSS keyword identifiers** (matching `[A-Za-z_][A-Za-z0-9_-]*`): `none`, `currentColor`, `bold`, `inherit`, `initial`, etc.
 - **CSS color functions** from a fixed allow-list: `oklch(...)`, `oklab(...)`, `lch(...)`, `lab(...)`, `rgb(...)`, `rgba(...)`, `hsl(...)`, `hsla(...)`, `color(...)`. Example: `fill: oklch(0.7 0.15 240)`.
+- **CSS transform, filter, basic-shape, and timing functions** from the same fixed allow-list: the `translate`/`rotate`/`scale`/`skew`/`matrix`/`perspective` families, the 10 filter functions (`blur`, `brightness`, `contrast`, `drop-shadow`, `grayscale`, `hue-rotate`, `invert`, `opacity`, `saturate`, `sepia`), `inset`/`circle`/`ellipse`/`polygon`/`path`, and `cubic-bezier`/`steps`. Filter functions are **space-separated** — a top-level comma inside them (or between chained filters) is a compile error, since it would emit invalid CSS the browser silently drops. See [CSS Function Values](syntax.md#css-function-values).
 - **Local fragment refs** (`#ident`) on properties that take URLs: `mask`, `clip-path`, `filter`, `fill`, `stroke`. Example: `mask: "#myMask"`.
 - **Quoted strings** on string-typed properties: `font-family`, `content`. Example: `font-family: "Inter, sans-serif"`.
 - **Pathogen `CSSVar()` values** (auto-converted to `var(...)` during emission). Use this instead of writing `var()` literally — see below.

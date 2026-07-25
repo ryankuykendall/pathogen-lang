@@ -7,11 +7,12 @@ import {
   STYLE_PROPERTY_COMPLETIONS,
   STYLE_PROPERTY_VALUES,
 } from './completion-data-static';
-import { ENUM_COMPLETIONS, STDLIB_COMPLETIONS, TYPE_MEMBERS } from './completion-data.generated';
+import { CONSTRUCTOR_RETURN_TYPES, ENUM_COMPLETIONS, STDLIB_COMPLETIONS, TYPE_MEMBERS } from './completion-data.generated';
 import { inferObjectProperties, regexNameResolver, resolveMemberAccess } from './member-resolution';
 import { analyzeScopes } from './scope-analysis';
 import { inferRhsType } from './type-inference';
 import { findDeclaration, inferDeclType } from './type-inference-ast';
+import { FILTER_CONSTRUCTORS } from '../evaluator/constructor-registry';
 
 import type { CompletionEntry } from './completion-data-static';
 import type { TextDocument } from './document';
@@ -188,12 +189,14 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // Collect all completions
   const items: CompletionItem[] = [];
   const insideStyleValue = isInsideStyleBlock(textBefore) && !isStylePropertyNameContext(textBefore);
+  let styleValueProp: string | null = null;
 
   if (insideStyleValue) {
     // Inside a style value position — rank the current property's enumerated
     // values first, then user variables, generic CSS value keywords, and
     // stdlib. Top-level keywords (let/for/fn/etc.) are never valid here.
     const propMatch = /([-\w]+)\s*:\s*[^;{}]*$/.exec(textBefore);
+    styleValueProp = propMatch ? propMatch[1] : null;
     const propertyValues = propMatch ? STYLE_PROPERTY_VALUES[propMatch[1]] : undefined;
     if (propertyValues) {
       items.push(...propertyValues.map(toCompletionItem));
@@ -202,7 +205,18 @@ export function getCompletions(document: TextDocument, position: Position): Comp
     } else {
       items.push(...STYLE_VALUE_KEYWORDS.map(toCompletionItem));
     }
-    items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
+    // Constructor snippets with binding blocks (`NoiseFilter() {|f| ...}`) are
+    // declaration-shaped and invalid in value position — offer those entries
+    // as plain names instead so `filter: N` can still complete the reference.
+    // hasBindingBlock comes from the generated constructor table (single
+    // source of truth) rather than sniffing the snippet text.
+    items.push(
+      ...STDLIB_COMPLETIONS.map((entry) =>
+        CONSTRUCTOR_RETURN_TYPES[entry.label]?.hasBindingBlock
+          ? toCompletionItem({ ...entry, insertText: undefined, isSnippet: undefined })
+          : toCompletionItem(entry),
+      ),
+    );
     items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
     // Value keywords are hyphenated (`line-through`, `text-top`) — filter by
     // the full keyword run so the popup narrows correctly across the hyphen.
@@ -222,6 +236,11 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   const seen = new Set<string>();
   const userDeclBoost = insideStyleValue ? 90 : 20;
 
+  // Declarations whose inferred type matches the current style property's
+  // reference type (e.g. a NoiseFilter variable after `filter:`) rank above
+  // everything else — referencing a defs-producing variable is the idiom.
+  const expectedRefTypes = insideStyleValue && styleValueProp ? STYLE_VALUE_REF_TYPES[styleValueProp] : undefined;
+
   for (const decl of scopeInfo.declarations) {
     if (seen.has(decl.name)) continue;
     seen.add(decl.name);
@@ -229,17 +248,32 @@ export function getCompletions(document: TextDocument, position: Position): Comp
     // Check if declaration is visible at the cursor position
     // (simple heuristic: declaration line is before cursor line)
     if (decl.range.start.line <= position.line) {
+      const declType = expectedRefTypes ? inferDeclType(decl) : null;
+      const isRefTyped = declType !== null && expectedRefTypes!.has(declType);
       items.push({
         label: decl.name,
         kind: decl.kind === 'function' ? 'function' : 'variable',
-        detail: decl.kind === 'function' ? `fn ${decl.name}(...)` : `${decl.kind}: ${decl.name}`,
-        sortText: sortKey(userDeclBoost, decl.name),
+        detail: isRefTyped
+          ? `${declType} — renders as url(#id)`
+          : decl.kind === 'function' ? `fn ${decl.name}(...)` : `${decl.kind}: ${decl.name}`,
+        sortText: sortKey(isRefTyped ? 95 : userDeclBoost, decl.name),
       });
     }
   }
 
   return filterByPrefix(items, prefix);
 }
+
+/**
+ * Style properties that reference defs-producing values by variable, mapped
+ * to the inferred type names that qualify (constructor return types from
+ * CONSTRUCTOR_RETURN_TYPES — names match the constructors).
+ */
+const STYLE_VALUE_REF_TYPES: Record<string, Set<string>> = {
+  filter: new Set(FILTER_CONSTRUCTORS),
+  mask: new Set(['Mask']),
+  'clip-path': new Set(['ClipPath']),
+};
 
 /**
  * CSS value keywords valid inside a style block value position. Includes

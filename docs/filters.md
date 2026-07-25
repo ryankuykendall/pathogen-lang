@@ -597,6 +597,8 @@ The `filter` style property is auto-wrapping: when assigned a `NoiseFilter` valu
 
 A single `filter:` declaration accepts **either** a `NoiseFilter` value **or** a chain of native CSS filter functions like `blur(2px) brightness(1.2)` — not both at once. To combine custom and native filters, nest the layer in a [`GroupLayer`](./layers.md):
 
+> **Native CSS syntax — spaces, not commas.** CSS filter functions are space-separated: `drop-shadow(4px 4px 8px oklch(0.65 0.26 357))`, and chains are space-separated too: `blur(2px) brightness(1.2)`. Writing Pathogen-style commas (`drop-shadow(4px, 4px, 4px, color)`) is a compile error with a fix-it message — previously this silently emitted invalid CSS that browsers dropped. See [CSS Function Values](syntax.md#css-function-values). The editor suggests correctly-shaped filter functions and any in-scope filter variables after `filter:`.
+
 ```
 let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
 

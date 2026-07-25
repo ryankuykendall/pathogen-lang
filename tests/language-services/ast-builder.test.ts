@@ -315,4 +315,48 @@ let g = PathBlock.fromGlyph("A", styles);`;
       expect(expr.type).toBe('MemberExpression');
     });
   });
+
+  describe('StyleProperty source offsets', () => {
+    function styleProps(source: string) {
+      const ast = lezerParse(source);
+      return (ast.body[0] as any).value.properties;
+    }
+
+    it('records name and value extents for a single declaration', () => {
+      const source = 'let s = ${ stroke: #cc0000; };';
+      const [p] = styleProps(source);
+      expect(p.name).toBe('stroke');
+      expect(source.slice(p.loc.offset, p.nameEnd)).toBe('stroke');
+      expect(source.slice(p.valueLoc.offset, p.valueEnd)).toBe('#cc0000');
+    });
+
+    it('records extents for multiple declarations across lines', () => {
+      const source = 'let s = ${\n  fill: none;\n  stroke-width: 4;\n};';
+      const props = styleProps(source);
+      expect(props).toHaveLength(2);
+      expect(source.slice(props[0].valueLoc.offset, props[0].valueEnd)).toBe('none');
+      expect(source.slice(props[1].loc.offset, props[1].nameEnd)).toBe('stroke-width');
+      expect(source.slice(props[1].valueLoc.offset, props[1].valueEnd)).toBe('4');
+      expect(props[1].valueLoc.line).toBe(3);
+    });
+
+    it('covers function values including inner commas and spaces', () => {
+      const source = 'let s = ${ filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5)); };';
+      const [p] = styleProps(source);
+      expect(source.slice(p.valueLoc.offset, p.valueEnd)).toBe('drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5))');
+    });
+
+    it('trims surrounding whitespace from the value extent', () => {
+      const source = 'let s = ${ fill:    hotpink   ; };';
+      const [p] = styleProps(source);
+      expect(source.slice(p.valueLoc.offset, p.valueEnd)).toBe('hotpink');
+      expect(p.value).toBe('hotpink');
+    });
+
+    it('keeps template values intact in the extent', () => {
+      const source = 'let s = ${ font-family: `${family}`; };';
+      const [p] = styleProps(source);
+      expect(source.slice(p.valueLoc.offset, p.valueEnd)).toBe('`${family}`');
+    });
+  });
 });

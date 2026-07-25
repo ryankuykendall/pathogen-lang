@@ -53,8 +53,10 @@ export async function mountReadOnlyEditor(
 
   // The Lezer parser comes from our small bundle, not the 9MB compiler
   // global. Same parser the playground editor uses — keeping things in
-  // sync structurally rather than by convention.
-  const lezerParser = (highlightMod as { lezerParser?: unknown }).lezerParser;
+  // sync structurally rather than by convention. Prefer the editor parser
+  // (structured style-block highlighting via parseMixed).
+  const mod = highlightMod as { lezerParser?: unknown; editorParser?: unknown };
+  const lezerParser = mod.editorParser ?? mod.lezerParser;
   if (!lezerParser) {
     return { mounted: false, reason: 'lezerParser missing from highlight bundle' };
   }
