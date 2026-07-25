@@ -20,6 +20,7 @@ import gpuGradientService from '../gpu/gradient-service.js';
 import { workspaceApi } from '../services/api.js';
 import { autosave, SaveStatus } from '../services/autosave.js';
 import compilerWorker from '../services/compiler-worker.js';
+import { formatFontSubstitutions } from '../services/font-loader.js';
 import thumbnailService from '../services/thumbnail-service.js';
 import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
@@ -79,6 +80,8 @@ export class WorkspaceView extends HTMLElement {
   private _handleFullscreenChange: ((e: Event) => void) | null = null;
 
   private _multiTabUnsubscribe: (() => void) | null = null;
+  private _fontWarningsUnsubscribe: (() => void) | null = null;
+  private _dismissedFontWarnings = '';
 
   private _inspectorDataUnsubscribe: (() => void) | null = null;
 
@@ -137,6 +140,11 @@ export class WorkspaceView extends HTMLElement {
       // Check if we need to load a different workspace
       if (!this._initialized || this._currentWorkspaceId !== workspaceId) {
         this._currentWorkspaceId = workspaceId;
+        // This element is a reused singleton — clear the previous workspace's
+        // font warnings and dismissal memory so a stale banner can't show for
+        // (or stay suppressed in) the newly opened workspace.
+        this._dismissedFontWarnings = '';
+        store.set('fontWarnings', []);
         this.waitForLibrary();
       }
     } else {
@@ -145,6 +153,7 @@ export class WorkspaceView extends HTMLElement {
         autosave.flush();
         tabCoordinator.close();
         store.set('multiTabWarning', false);
+        store.set('fontWarnings', []);
 
         // Generate thumbnail if content changed since last thumbnail
         const wsId = this._currentWorkspaceId;
@@ -404,6 +413,14 @@ export class WorkspaceView extends HTMLElement {
     // Dismiss multi-tab warning
     this.shadowRoot!.querySelector('#dismiss-multi-tab')?.addEventListener('click', () => {
       store.set('multiTabWarning', false);
+    });
+
+    // Dismiss font-substitution warning — remembered per message set, so the
+    // banner stays hidden across keystroke recompiles but re-appears when the
+    // substitutions change.
+    this.shadowRoot!.querySelector('#dismiss-font-warning')?.addEventListener('click', () => {
+      this._dismissedFontWarnings = (store.get('fontWarnings') as string[]).join('\n');
+      this._updateFontWarningBanner();
     });
 
     // Re-apply compilation error when editor finishes loading
@@ -706,6 +723,11 @@ export class WorkspaceView extends HTMLElement {
       this._updateWarningBanner();
     });
 
+    // Subscribe to font-weight substitution warnings
+    this._fontWarningsUnsubscribe = store.subscribe(['fontWarnings'], () => {
+      this._updateFontWarningBanner();
+    });
+
     // Feed inspector panel data from store
     this._inspectorDataUnsubscribe = store.subscribe(
       ['layers', 'masks', 'clipPaths', 'gradients', 'cssProperties', 'layerVisibility', 'defsVisibility'],
@@ -770,6 +792,7 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleDefsVisibilityChange)
       document.removeEventListener('defs-visibility-change', this._handleDefsVisibilityChange);
     if (this._multiTabUnsubscribe) this._multiTabUnsubscribe();
+    if (this._fontWarningsUnsubscribe) this._fontWarningsUnsubscribe();
     if (this._inspectorDataUnsubscribe) this._inspectorDataUnsubscribe();
   }
 
@@ -904,6 +927,7 @@ export class WorkspaceView extends HTMLElement {
       this.previewPane.setStale(false);
       this.consolePane.logs = result.logs || [];
       this.hideError();
+      store.set('fontWarnings', formatFontSubstitutions(result.fontSubstitutions || []));
 
       // Store layers and defs for layers panel
       const resultLayers = result.layers || [];
@@ -950,6 +974,9 @@ export class WorkspaceView extends HTMLElement {
       this.previewPane.setStale(true);
       const displayError = this.showError(e.message);
       this.consolePane.logs = [];
+      // A failed compile invalidates any weight-substitution warning — don't
+      // stack a stale warning banner on top of an unrelated error.
+      store.set('fontWarnings', []);
       store.set('layers', []);
       store.update({
         compilationStatus: 'error',
@@ -1056,6 +1083,16 @@ export class WorkspaceView extends HTMLElement {
     }
   }
 
+  _updateFontWarningBanner(): void {
+    const banner = this.shadowRoot?.querySelector('#font-warning');
+    const text = this.shadowRoot?.querySelector('#font-warning-text');
+    if (!banner || !text) return;
+    const joined = (store.get('fontWarnings') as string[]).join('\n');
+    // Idempotent under keystroke recompiles — only touch the DOM on change.
+    if (text.textContent !== joined) text.textContent = joined;
+    banner.classList.toggle('visible', joined !== '' && joined !== this._dismissedFontWarnings);
+  }
+
   render(): void {
     this.shadowRoot!.innerHTML = `
       <style>
@@ -1080,7 +1117,7 @@ export class WorkspaceView extends HTMLElement {
           min-height: 0;
         }
 
-        .multi-tab-warning {
+        .warning-banner {
           display: none;
           align-items: center;
           gap: 8px;
@@ -1092,11 +1129,15 @@ export class WorkspaceView extends HTMLElement {
           line-height: 1.4;
         }
 
-        .multi-tab-warning.visible {
+        .warning-banner.visible {
           display: flex;
         }
 
-        .multi-tab-warning .dismiss-btn {
+        .warning-banner .banner-text {
+          white-space: pre-line;
+        }
+
+        .warning-banner .dismiss-btn {
           margin-left: auto;
           background: none;
           border: none;
@@ -1108,15 +1149,20 @@ export class WorkspaceView extends HTMLElement {
           opacity: 0.7;
         }
 
-        .multi-tab-warning .dismiss-btn:hover {
+        .warning-banner .dismiss-btn:hover {
           opacity: 1;
           background: rgba(0, 0, 0, 0.08);
         }
       </style>
 
-      <div class="multi-tab-warning" id="multi-tab-warning">
+      <div class="warning-banner" id="multi-tab-warning">
         <span>This workspace is open in another tab. Changes may conflict.</span>
         <button class="dismiss-btn" id="dismiss-multi-tab">Dismiss</button>
+      </div>
+
+      <div class="warning-banner" id="font-warning">
+        <span class="banner-text" id="font-warning-text"></span>
+        <button class="dismiss-btn" id="dismiss-font-warning">Dismiss</button>
       </div>
 
       <playground-main>

@@ -99,6 +99,7 @@ export const store = createStore({
   saveStatus: 'idle', // 'idle', 'modified', 'saving', 'saved', 'error'
   saveError: null, // Error message if save failed
   multiTabWarning: false, // True when same workspace is open in another tab
+  fontWarnings: [], // Formatted font-weight substitution messages (see font-loader formatFontSubstitutions)
 
   // User preferences (defaults for new workspaces)
   preferences: {

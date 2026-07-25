@@ -73,6 +73,10 @@ export interface StoreState {
   compilationError: string | null;
   compilationId: number;
   calledStdlibFunctions: string[];
+  // Formatted font-weight substitution messages for the warning banner;
+  // empty when the last compile had none (or failed).
+  fontWarnings: string[];
+  multiTabWarning: boolean;
 
   // SVG styles
   width: number;

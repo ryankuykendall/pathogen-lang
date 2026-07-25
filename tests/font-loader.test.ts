@@ -8,7 +8,9 @@ import {
   fontBinariesToCss,
   resolveFontBinaries,
   fetchFontBinary,
+  formatFontSubstitutions,
 } from '../playground/services/font-loader';
+import { fetchGoogleFonts } from '../playground/utils/google-fonts';
 
 describe('extractFontReferences', () => {
   it('extracts family and weight from @font directive', () => {
@@ -314,6 +316,152 @@ describe('resolveFontBinaries partitioning', () => {
     const result = await resolveFontBinaries([]);
     expect(result.binaries).toEqual([]);
     expect(result.failures).toEqual([]);
+    expect(result.substitutions).toEqual([]);
+  });
+});
+
+describe('weight substitution', () => {
+  const css = `/* latin */ @font-face { src: url(https://fonts.gstatic.com/sub.ttf) format('truetype'); }`;
+  const ttfBuffer = new Uint8Array(8).buffer;
+
+  /** Stub fetch: CSS for css2 URLs, a binary for gstatic URLs. Returns the spy. */
+  function stubFontFetch() {
+    const spy = vi.fn(async (url: string) => {
+      if (url.includes('fonts.googleapis.com')) return new Response(css, { status: 200 });
+      return new Response(ttfBuffer, { status: 200 });
+    });
+    vi.stubGlobal('fetch', spy);
+    return spy;
+  }
+
+  const cssUrls = (spy: ReturnType<typeof vi.fn>): string[] =>
+    spy.mock.calls.map((c) => String(c[0])).filter((u) => u.includes('fonts.googleapis.com'));
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('snaps every curated single-variant family to its only weight — never fetches a nonexistent one', async () => {
+    // Coverage matrix, not a Baumans special case: the css2 API 400s (with no
+    // CORS headers, so the browser sees a bare "Failed to fetch") for ANY
+    // single-variant family asked for a weight it lacks.
+    const catalog = await fetchGoogleFonts();
+    // Pacifico is reserved for the cache-interplay test below, which needs a
+    // single-variant family with a cold module cache.
+    const singleVariant = catalog.filter(
+      (f) => !f.isSystem && f.variants.length === 1 && f.family !== 'Pacifico',
+    );
+    expect(singleVariant.length).toBeGreaterThan(0);
+
+    for (const { family, variants } of singleVariant) {
+      const spy = stubFontFetch();
+      const outcome = await fetchFontBinary(family, 900);
+      expect(outcome.ok, `${family} 900 should succeed via substitution`).toBe(true);
+      if (!outcome.ok) throw new Error('expected success outcome');
+      expect(outcome.weightUsed, family).toBe(variants[0]);
+      // 900 was already snapped for earlier compiles of other tests? No — each
+      // family is fetched at most once here; assert the URL used the variant.
+      const urls = cssUrls(spy);
+      if (urls.length > 0) {
+        expect(urls[0], family).toContain(`wght@${variants[0]}`);
+        expect(urls[0], family).not.toContain('wght@900');
+      }
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('snaps an unavailable middle weight to the nearest variant, tie toward lower', async () => {
+    // Titillium Web has [200, 300, 400, 600, 700, 900] — no 500; 400 wins the tie.
+    const spy = stubFontFetch();
+    const outcome = await fetchFontBinary('Titillium Web', 500);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) throw new Error('expected success outcome');
+    expect(outcome.weightUsed).toBe(400);
+    expect(cssUrls(spy)[0]).toContain('wght@400');
+  });
+
+  it('passes an available weight through untouched', async () => {
+    const spy = stubFontFetch();
+    const outcome = await fetchFontBinary('Titillium Web', 700);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) throw new Error('expected success outcome');
+    expect(outcome.weightUsed).toBe(700);
+    expect(cssUrls(spy)[0]).toContain('wght@700');
+  });
+
+  it('passes unknown families through with the requested weight verbatim', async () => {
+    const spy = stubFontFetch();
+    const outcome = await fetchFontBinary('UnknownFamilyWeightTest', 900);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) throw new Error('expected success outcome');
+    expect(outcome.weightUsed).toBe(900);
+    expect(cssUrls(spy)[0]).toContain('wght@900');
+  });
+
+  it('resolveFontBinaries registers the REQUESTED weight and reports the substitution', async () => {
+    // The binary must carry the requested weight: the injected @font-face has
+    // to match the font-weight the source emits on <text>, or the browser
+    // synthesizes a faux-bold and live text diverges from outlined text.
+    stubFontFetch();
+    const result = await resolveFontBinaries([{ family: 'Bebas Neue', weight: 900 }]);
+    expect(result.failures).toEqual([]);
+    expect(result.binaries).toHaveLength(1);
+    expect(result.binaries[0]).toMatchObject({ family: 'Bebas Neue', weight: 900, style: 'normal' });
+    expect(result.substitutions).toEqual([
+      { family: 'Bebas Neue', requested: 900, used: 400, available: [400] },
+    ]);
+  });
+
+  it('reports no substitution when the requested weight exists', async () => {
+    stubFontFetch();
+    const result = await resolveFontBinaries([{ family: 'Titillium Web', weight: 200 }]);
+    expect(result.failures).toEqual([]);
+    expect(result.substitutions).toEqual([]);
+  });
+
+  it('caches under both keys: repeat and sibling unavailable weights fetch zero times', async () => {
+    let spy = stubFontFetch();
+    await fetchFontBinary('Pacifico', 900);
+    expect(cssUrls(spy)).toHaveLength(1);
+
+    // Same request again — cache hit, but the substitution must still be
+    // reported so the warning banner survives keystroke recompiles.
+    spy = stubFontFetch();
+    const repeat = await fetchFontBinary('Pacifico', 900);
+    expect(repeat.ok).toBe(true);
+    if (!repeat.ok) throw new Error('expected success outcome');
+    expect(repeat.weightUsed).toBe(400);
+    expect(spy).not.toHaveBeenCalled();
+
+    // A different unavailable weight resolves to the same snapped binary.
+    spy = stubFontFetch();
+    const sibling = await fetchFontBinary('Pacifico', 800);
+    expect(sibling.ok).toBe(true);
+    if (!sibling.ok) throw new Error('expected success outcome');
+    expect(sibling.weightUsed).toBe(400);
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe('formatFontSubstitutions', () => {
+  it('uses the only-available phrasing for single-variant families', () => {
+    expect(
+      formatFontSubstitutions([{ family: 'Baumans', requested: 900, used: 400, available: [400] }]),
+    ).toEqual(['Baumans is only available at weight 400 (requested 900); using 400']);
+  });
+
+  it('lists the available weights for multi-variant families', () => {
+    expect(
+      formatFontSubstitutions([
+        { family: 'Titillium Web', requested: 500, used: 400, available: [200, 300, 400, 600, 700, 900] },
+      ]),
+    ).toEqual([
+      'Titillium Web is not available at weight 500; using 400 — available weights: 200, 300, 400, 600, 700, 900',
+    ]);
+  });
+
+  it('returns an empty list for no substitutions', () => {
+    expect(formatFontSubstitutions([])).toEqual([]);
   });
 });
 

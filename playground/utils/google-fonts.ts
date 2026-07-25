@@ -170,10 +170,13 @@ export function loadGoogleFont(family: string): void {
   const id = `gf-${family.replace(/\s+/g, '-').toLowerCase()}`;
   if (document.getElementById(id)) return;
 
+  // Request only the family's real variants — the css2 API returns 400 Bad
+  // Request for any weight the family lacks, even inside a wght@ list.
+  const weights = [...(getKnownVariants(family) ?? [400, 700])].sort((a, b) => a - b);
   const link = document.createElement('link');
   link.id = id;
   link.rel = 'stylesheet';
-  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@100;200;300;400;500;600;700;800;900&display=swap`;
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weights.join(';')}&display=swap`;
   document.head.appendChild(link);
 }
 
@@ -184,6 +187,35 @@ export function getAvailableWeights(family: string): number[] {
   const fonts = cachedFonts || [...SYSTEM_FONTS, ...CURATED_FONTS];
   const font = fonts.find((f) => f.family === family);
   return font?.variants || [400, 700];
+}
+
+/**
+ * Known weight variants for a family, or null when the family is not in the
+ * catalog (or carries no variant data — possible on the API path). Callers
+ * must skip weight validation on null. Unlike getAvailableWeights, this never
+ * invents a [400, 700] default, so "unknown family" is distinguishable from
+ * "has 400 and 700".
+ */
+export function getKnownVariants(family: string): number[] | null {
+  const fonts = cachedFonts || [...SYSTEM_FONTS, ...CURATED_FONTS];
+  const font = fonts.find((f) => f.family === family);
+  // Copy so no caller can mutate the catalog's variants in place.
+  return font && font.variants.length > 0 ? [...font.variants] : null;
+}
+
+/**
+ * Nearest available weight: minimum absolute distance, ties go to the lower
+ * weight. Deliberate simplification of the CSS font-matching algorithm, which
+ * only diverges on directional-search edge cases where either choice is
+ * visually defensible.
+ */
+export function nearestWeight(requested: number, variants: number[]): number {
+  if (variants.length === 0) return requested;
+  return variants.reduce((best, v) => {
+    const d = Math.abs(v - requested);
+    const bestD = Math.abs(best - requested);
+    return d < bestD || (d === bestD && v < best) ? v : best;
+  });
 }
 
 /**

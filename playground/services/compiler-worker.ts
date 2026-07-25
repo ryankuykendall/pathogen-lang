@@ -7,7 +7,7 @@ import {
   extractUnknownFontDirectiveFamilies,
   resolveFontBinaries,
 } from './font-loader.js';
-import type { FontBinaryEntry, FontResolutionResult } from './font-loader.js';
+import type { FontBinaryEntry, FontResolutionResult, FontWeightSubstitution } from './font-loader.js';
 
 declare const window: Window & { PathogenLang?: Record<string, Function> };
 
@@ -257,19 +257,21 @@ async function resolveFontsForSource(source: string): Promise<FontResolutionResu
               `Check for hidden characters (NBSP, zero-width space) or missing quotes around the family name.`,
           },
         ],
+        substitutions: [],
       };
     }
-    return { binaries: [], failures: [] };
+    return { binaries: [], failures: [], substitutions: [] };
   }
 
   if (refs.length === 0) {
-    return { binaries: [], failures: unknownFailures };
+    return { binaries: [], failures: unknownFailures, substitutions: [] };
   }
 
   const resolved = await resolveFontBinaries(refs);
   return {
     binaries: resolved.binaries,
     failures: [...unknownFailures, ...resolved.failures],
+    substitutions: resolved.substitutions,
   };
 }
 
@@ -302,13 +304,13 @@ export async function compile(
   isStale: ((id: number) => boolean) | undefined,
   options?: Record<string, unknown>,
 ): Promise<unknown> {
-  const { binaries, failures } = await resolveFontsForSource(source);
+  const { binaries, failures, substitutions } = await resolveFontsForSource(source);
   if (failures.length > 0) {
     throw new Error(formatFontFailures(failures));
   }
   const result = await sendRequest('compile', source, compilationId, isStale, options, binaries);
-  const allBinaries = await resolvePostCompileFonts(result, binaries);
-  return attachFontBinaries(result, allBinaries);
+  const post = await resolvePostCompileFonts(result, binaries);
+  return attachFontDiagnostics(result, post.binaries, [...substitutions, ...post.substitutions]);
 }
 
 /**
@@ -340,13 +342,13 @@ export async function compileWithContext(
   isStale: ((id: number) => boolean) | undefined,
   options?: Record<string, unknown>,
 ): Promise<unknown> {
-  const { binaries, failures } = await resolveFontsForSource(source);
+  const { binaries, failures, substitutions } = await resolveFontsForSource(source);
   if (failures.length > 0) {
     throw new Error(formatFontFailures(failures));
   }
   const result = await sendRequest('compileWithContext', source, compilationId, isStale, options, binaries);
-  const allBinaries = await resolvePostCompileFonts(result, binaries);
-  return attachFontBinaries(result, allBinaries);
+  const post = await resolvePostCompileFonts(result, binaries);
+  return attachFontDiagnostics(result, post.binaries, [...substitutions, ...post.substitutions]);
 }
 
 /**
@@ -363,33 +365,40 @@ export async function compileWithContext(
 async function resolvePostCompileFonts(
   result: unknown,
   binaries: FontBinaryEntry[],
-): Promise<FontBinaryEntry[]> {
-  if (!result || typeof result !== 'object') return binaries;
+): Promise<{ binaries: FontBinaryEntry[]; substitutions: FontWeightSubstitution[] }> {
+  if (!result || typeof result !== 'object') return { binaries, substitutions: [] };
   const postRefs = extractFontReferencesFromCompileResult(
     result as { layers?: { styles?: Record<string, string> }[] },
   );
   const missing = postRefs.filter(
     (r) => !binaries.some((b) => b.family === r.family && b.weight === (r.weight ?? 400)),
   );
-  if (missing.length === 0) return binaries;
+  if (missing.length === 0) return { binaries, substitutions: [] };
   const extra = await resolveFontBinaries(missing);
   if (extra.failures.length > 0) {
     console.debug('[pathogen] post-compile font fetches failed:', extra.failures);
   }
-  return [...binaries, ...extra.binaries];
+  return { binaries: [...binaries, ...extra.binaries], substitutions: extra.substitutions };
 }
 
 /**
- * Attach the host-side font binaries to the compile result so the preview
- * iframe can inject them as `@font-face` data URIs (see
- * playground/components/svg-preview-pane.ts).
+ * Attach the host-side font binaries and weight substitutions to the compile
+ * result: binaries feed the preview iframe's `@font-face` data URIs (see
+ * playground/components/svg-preview-pane.ts); substitutions feed the
+ * non-fatal warning banner in workspace-view.
  *
  * The binaries here are the cached references (not the transferred copies);
  * the host always keeps the originals, so reading them post-compile is safe.
  */
-function attachFontBinaries(result: unknown, binaries: FontBinaryEntry[]): unknown {
+function attachFontDiagnostics(
+  result: unknown,
+  binaries: FontBinaryEntry[],
+  substitutions: FontWeightSubstitution[],
+): unknown {
   if (result && typeof result === 'object') {
-    (result as { fontBinaries?: FontBinaryEntry[] }).fontBinaries = binaries;
+    const r = result as { fontBinaries?: FontBinaryEntry[]; fontSubstitutions?: FontWeightSubstitution[] };
+    r.fontBinaries = binaries;
+    r.fontSubstitutions = substitutions;
   }
   return result;
 }

@@ -1,7 +1,7 @@
 // Font Loader Service
 // Fetches font binaries from Google Fonts and caches them for compilation
 
-import { isKnownGoogleFont } from '../utils/google-fonts.js';
+import { isKnownGoogleFont, getKnownVariants, nearestWeight } from '../utils/google-fonts.js';
 
 export interface FontBinaryEntry {
   family: string;
@@ -16,13 +16,22 @@ export interface FontResolutionFailure {
   reason: string;
 }
 
+/** A requested weight the family doesn't offer, snapped to the nearest available one. */
+export interface FontWeightSubstitution {
+  family: string;
+  requested: number;
+  used: number;
+  available: number[];
+}
+
 export interface FontResolutionResult {
   binaries: FontBinaryEntry[];
   failures: FontResolutionFailure[];
+  substitutions: FontWeightSubstitution[];
 }
 
 type FontFetchOutcome =
-  | { ok: true; buffer: ArrayBuffer }
+  | { ok: true; buffer: ArrayBuffer; weightUsed: number }
   | { ok: false; reason: string };
 
 // CSS generic font families — not fetchable from Google Fonts
@@ -66,23 +75,35 @@ export async function fetchFontBinary(
     return { ok: false, reason: `'${family}' is a CSS generic family and cannot be fetched from Google Fonts` };
   }
 
-  const cacheKey = `${family}:${weight}`;
+  // Snap to the nearest catalog weight before any network access: the css2
+  // API returns 400 Bad Request for weights a family lacks, and the error is
+  // unobservable cross-origin (no CORS headers → bare "Failed to fetch").
+  // Unknown families (null variants) pass through unvalidated.
+  const variants = getKnownVariants(family);
+  const weightUsed = variants ? nearestWeight(weight, variants) : weight;
 
-  // Check cache
-  const cached = fontBinaryCache.get(cacheKey);
+  // Check cache under both the requested and the snapped weight — a cache hit
+  // must still report the substitution so the warning survives recompiles.
+  // The weightUsed fallback is load-bearing: when concurrent requests for
+  // different unavailable weights share one in-flight fetch, only the leader
+  // writes its requested-weight key; followers rely on this fallback.
+  const cached = fontBinaryCache.get(`${family}:${weight}`) ?? fontBinaryCache.get(`${family}:${weightUsed}`);
   if (cached) {
-    return { ok: true, buffer: cached };
+    return { ok: true, buffer: cached, weightUsed };
   }
 
-  // Dedup in-flight fetches
+  // Dedup in-flight fetches on the weight actually fetched, so e.g. requests
+  // for 900 and 800 of a single-variant family share one network round trip.
+  const cacheKey = `${family}:${weightUsed}`;
   const inflight = pendingFetches.get(cacheKey);
   if (inflight) return inflight;
 
   const fetchPromise = (async (): Promise<FontFetchOutcome> => {
     try {
-      const buffer = await fetchFontBinaryUncached(family, weight);
+      const buffer = await fetchFontBinaryUncached(family, weightUsed);
       fontBinaryCache.set(cacheKey, buffer);
-      return { ok: true, buffer };
+      fontBinaryCache.set(`${family}:${weight}`, buffer);
+      return { ok: true, buffer, weightUsed };
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       return { ok: false, reason };
@@ -187,19 +208,44 @@ export async function resolveFontBinaries(
 ): Promise<FontResolutionResult> {
   const binaries: FontBinaryEntry[] = [];
   const failures: FontResolutionFailure[] = [];
+  const substitutions: FontWeightSubstitution[] = [];
 
   await Promise.all(
     families.map(async ({ family, weight = 400 }) => {
       const outcome = await fetchFontBinary(family, weight);
       if (outcome.ok) {
+        // Register under the REQUESTED weight, not the fetched one: the
+        // source's font-weight reaches the SVG <text> verbatim, and the
+        // injected @font-face (fontBinariesToCss) must match it or the
+        // browser synthesizes a faux-bold that diverges from outlined text.
         binaries.push({ family, weight, style: 'normal', buffer: outcome.buffer });
+        if (outcome.weightUsed !== weight) {
+          substitutions.push({
+            family,
+            requested: weight,
+            used: outcome.weightUsed,
+            available: getKnownVariants(family) ?? [outcome.weightUsed],
+          });
+        }
       } else {
         failures.push({ family, weight, reason: outcome.reason });
       }
     }),
   );
 
-  return { binaries, failures };
+  return { binaries, failures, substitutions };
+}
+
+/**
+ * Human-readable one-liner per substitution, shown in the workspace's
+ * non-fatal warning banner.
+ */
+export function formatFontSubstitutions(subs: FontWeightSubstitution[]): string[] {
+  return subs.map((s) =>
+    s.available.length === 1
+      ? `${s.family} is only available at weight ${s.used} (requested ${s.requested}); using ${s.used}`
+      : `${s.family} is not available at weight ${s.requested}; using ${s.used} — available weights: ${[...s.available].sort((a, b) => a - b).join(', ')}`,
+  );
 }
 
 /**

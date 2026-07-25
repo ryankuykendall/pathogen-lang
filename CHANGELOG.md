@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-25 (font weight fallback)
+
+### Fixed
+
+#### Playground
+
+- **Unavailable Google Font weights no longer kill the compile.** Requesting a weight a family doesn't ship (e.g. `Baumans` at `font-weight: 900` — Baumans only has 400) used to fetch `css2?...wght@900`, which Google rejects with a CORS-invisible 400; the playground surfaced it as a fatal "Failed to load fonts referenced by @font directive: … Failed to fetch" error plus a wall of misleading CORS console errors, refetched on every keystroke. `fetchFontBinary` now validates the weight against the fonts catalog *before* any network access (the HTTP status is unobservable cross-origin, so pre-flight is the only workable check) and snaps to the nearest available variant — min distance, ties toward lighter. The substituted binary registers under the **requested** weight so the injected `@font-face` matches the source's `font-weight` on `<text>` (no faux-bold divergence from outlined glyphs), and the buffer is cached under both weight keys, eliminating the per-keystroke refetch.
+- **Non-fatal substitution warning banner**: substitutions ride the compile result (`fontSubstitutions`) into a dismissible workspace banner — "Baumans is only available at weight 400 (requested 900); using 400" (multi-variant families also list their available weights). Dismissal is remembered per message set (re-appears when the substitutions change), resets on workspace switch, and clears on compile errors. The banner styling is shared with the multi-tab warning (`.warning-banner`).
+- **Font-picker preview links request only real variants**: `loadGoogleFont` previously requested `wght@100;…;900` for every family, silently 400ing for single/partial-variant families.
+
+### Development
+
+- New `getKnownVariants` (returns `null` for unknown families — deliberately not `getAvailableWeights`, whose `[400, 700]` default would mis-snap uncatalogued families) and `nearestWeight` in `google-fonts.ts`; first tests for that module. `font-loader` tests gain a weight-substitution coverage matrix over every curated single-variant family, tie-breaking, unknown-family passthrough, dual-key cache behavior, and exact banner message formats.
+
+### Documentation
+
+- `path-blocks.md` @font section: documents playground weight substitution, and corrects the load-failure claim (CLI warns and continues; the playground reports a compile error).
+
 ## [Unreleased] - 2026-07-24 (AST-based type inference + member hover)
 
 ### Added

@@ -254,6 +254,15 @@ export interface CompileResult {
     style: 'normal' | 'italic';
     buffer: ArrayBuffer;
   }[];
+  // Attached host-side alongside fontBinaries: weights the requested family
+  // doesn't offer, snapped to the nearest available variant. Feeds the
+  // non-fatal warning banner in workspace-view. Playground-only extension.
+  fontSubstitutions?: {
+    family: string;
+    requested: number;
+    used: number;
+    available: number[];
+  }[];
 }
 
 export interface FontData {

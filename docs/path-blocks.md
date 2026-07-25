@@ -808,7 +808,9 @@ Declare it at the top level: let x = "Family Name";
 - **CLI**: Loads from local file paths (relative to source file) or searches system font directories (`/Library/Fonts`, `/System/Library/Fonts`, `~/Library/Fonts` on macOS; equivalent paths on Linux/Windows)
 - **Playground**: Fetches from Google Fonts CDN automatically
 
-The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, a warning is logged and compilation continues.
+The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, the CLI logs a warning and compilation continues; the playground reports a compile error.
+
+In the playground, if a family doesn't offer the requested weight (whether from an `@font` directive or a `font-weight` style property), the nearest available weight is substituted and a warning explains the substitution — for example, requesting `Baumans` at weight 900 loads its only weight, 400.
 
 A variable source pairs naturally with style blocks, letting a single declaration drive both the font load and the styles that use it:
 
