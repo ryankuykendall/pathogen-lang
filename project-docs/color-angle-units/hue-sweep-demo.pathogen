@@ -1,0 +1,19 @@
+define ViewBox(0, 0, 400, 400);
+define default PathLayer('main-path-layer') ${
+  fill: #bbb;
+  stroke: #222;
+  stroke-width: 1;
+};
+
+let orangish = #d19a66;
+
+for (shiftOffset in 1..9) {
+  let shiftColor = orangish.hueShift(calc(shiftOffset / 9 * 2pi));
+  let shiftLayer = PathLayer(`shift-${shiftOffset}`) ${
+    stroke: none;
+    fill: shiftColor;
+  };
+  shiftLayer.apply {
+    rect(0, calc(shiftOffset * 24), 20, 20);
+  }
+}

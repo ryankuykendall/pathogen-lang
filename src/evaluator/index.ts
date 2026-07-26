@@ -10,7 +10,12 @@ import {
   updateContextForCommand,
 } from './context';
 import { formatNum, resetNumberFormat, setNumberFormat } from './format';
+import { BUILTIN_ENUMS } from './builtin-enums';
+import { assignGradientProperty, assignMarkerProperty, assignMeshPointProperty, assignPatternProperty } from './member-assign';
 import { getStructDescriptor } from './struct-properties';
+
+export { BUILTIN_ENUMS };
+import { angleArgToDegrees, checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
 
@@ -511,81 +516,6 @@ function toNumber(v: Value): number | undefined {
   return undefined;
 }
 
-/** Built-in enum definitions — constant map of enum name → member name → string value */
-export const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
-  Easing: { Linear: 'linear', Smoothstep: 'smoothstep', EaseIn: 'ease-in', EaseOut: 'ease-out', EaseInOut: 'ease-in-out' },
-  Interpolation: { SRGB: 'srgb', OKLCH: 'oklch', LinearRGB: 'linearRGB' },
-  SpreadMethod: { Pad: 'pad', Reflect: 'reflect', Repeat: 'repeat' },
-  GradientUnits: { ObjectBoundingBox: 'objectBoundingBox', UserSpaceOnUse: 'userSpaceOnUse' },
-  Direction: { CW: 'cw', CCW: 'ccw' },
-  CurveContinuity: { G0: 'position', G1: 'tangent', G2: 'curvature' },
-  ConicSpread: { Clamp: 'clamp', Repeat: 'repeat', Transparent: 'transparent' },
-  InnerFill: { Transparent: 'transparent', TransparentBlend: 'transparent-blend', Center: 'center' },
-  TopoMethod: { Distance: 'distance', Laplace: 'laplace' },
-  BBoxAnchor: { TopLeft: 'top-left', Top: 'top', TopRight: 'top-right', Right: 'right', BottomRight: 'bottom-right', Bottom: 'bottom', BottomLeft: 'bottom-left', Left: 'left', Center: 'center' },
-  GridPatternType: { Shape: 'shape', Dot: 'dot', Intersection: 'intersection', Partial: 'partial' },
-  HexagonOrientation: { Edge: 'edge', Vertex: 'vertex' },
-  VerticalAnchor: { Descender: 'descender', Baseline: 'baseline', Midline: 'midline', CapHeight: 'cap-height' },
-  MarkerUnits: { StrokeWidth: 'strokeWidth', UserSpaceOnUse: 'userSpaceOnUse' },
-  MarkerOrient: { Auto: 'auto', AutoStartReverse: 'auto-start-reverse' },
-  MarkerRefX: { Left: 'left', Center: 'center', Right: 'right' },
-  MarkerRefY: { Top: 'top', Center: 'center', Bottom: 'bottom' },
-  NoiseFilterStyle: {
-    Grain: 'grain',
-    Paper: 'paper',
-    Speckle: 'speckle',
-    Static: 'static',
-    Gradient: 'gradient',
-  },
-  NoiseFilterScale: {
-    Fine: 'fine',
-    Medium: 'medium',
-    Coarse: 'coarse',
-  },
-  GlowMode: {
-    Outer: 'outer',
-    Inner: 'inner',
-  },
-  MotionBlurType: {
-    Linear: 'linear',
-    Progressive: 'progressive',
-  },
-  BlendMode: {
-    Normal: 'normal',
-    Multiply: 'multiply',
-    Screen: 'screen',
-    Overlay: 'overlay',
-    ColorBurn: 'color-burn',
-    ColorDodge: 'color-dodge',
-    HardLight: 'hard-light',
-    SoftLight: 'soft-light',
-    Darken: 'darken',
-    Lighten: 'lighten',
-    Difference: 'difference',
-    Exclusion: 'exclusion',
-  },
-  MarkerPreserveAspectRatio: {
-    None: 'none',
-    XMinYMinMeet: 'xMinYMin meet',
-    XMinYMinSlice: 'xMinYMin slice',
-    XMidYMinMeet: 'xMidYMin meet',
-    XMidYMinSlice: 'xMidYMin slice',
-    XMaxYMinMeet: 'xMaxYMin meet',
-    XMaxYMinSlice: 'xMaxYMin slice',
-    XMinYMidMeet: 'xMinYMid meet',
-    XMinYMidSlice: 'xMinYMid slice',
-    XMidYMidMeet: 'xMidYMid meet',
-    XMidYMidSlice: 'xMidYMid slice',
-    XMaxYMidMeet: 'xMaxYMid meet',
-    XMaxYMidSlice: 'xMaxYMid slice',
-    XMinYMaxMeet: 'xMinYMax meet',
-    XMinYMaxSlice: 'xMinYMax slice',
-    XMidYMaxMeet: 'xMidYMax meet',
-    XMidYMaxSlice: 'xMidYMax slice',
-    XMaxYMaxMeet: 'xMaxYMax meet',
-    XMaxYMaxSlice: 'xMaxYMax slice',
-  },
-};
 
 /**
  * Convert an Expression AST node to its source text representation
@@ -881,65 +811,6 @@ function updateVariable(scope: Scope, name: string, value: Value, line?: number)
     current = current.parent;
   }
   throw new Error(formatError(`Cannot assign to undeclared variable: ${name}`, line));
-}
-
-/**
- * Convert value based on unit suffix
- * - 'deg': converts degrees to radians
- * - 'pi': multiplies by Math.PI
- * - '%': divides by 100 (20% → 0.2)
- * - 'rad' or undefined: returns value unchanged (radians are internal standard)
- */
-function convertUnitSuffix(value: number, unit?: 'deg' | 'rad' | 'pi' | '%'): number {
-  if (unit === 'deg') {
-    return (value * Math.PI) / 180;
-  }
-  if (unit === 'pi') {
-    return value * Math.PI;
-  }
-  if (unit === '%') {
-    return value / 100;
-  }
-  return value; // rad or no unit = radians (internal standard)
-}
-
-/**
- * Check if an expression is a NumberLiteral with an angle unit (deg/rad/pi)
- */
-function hasAngleUnit(expr: Expression): boolean {
-  if (expr.type === 'NumberLiteral') {
-    return expr.unit === 'deg' || expr.unit === 'rad' || expr.unit === 'pi';
-  }
-  // For unary minus on a number with unit: -45deg
-  if (expr.type === 'UnaryExpression' && expr.operator === '-') {
-    return hasAngleUnit(expr.argument);
-  }
-  return false;
-}
-
-/**
- * Check if adding/subtracting expressions with mismatched angle units
- * Throws an error if one operand has an angle unit and the other doesn't
- */
-function checkAngleUnitMismatch(left: Expression, right: Expression, operator: string): void {
-  const leftHasUnit = hasAngleUnit(left);
-  const rightHasUnit = hasAngleUnit(right);
-
-  // If both are NumberLiterals (or unary negations of them), check for mismatch
-  const leftIsLiteral =
-    left.type === 'NumberLiteral' || (left.type === 'UnaryExpression' && left.argument.type === 'NumberLiteral');
-  const rightIsLiteral =
-    right.type === 'NumberLiteral' || (right.type === 'UnaryExpression' && right.argument.type === 'NumberLiteral');
-
-  if (leftIsLiteral && rightIsLiteral && leftHasUnit !== rightHasUnit) {
-    const op = operator === '+' ? 'add' : 'subtract';
-    const withUnit = leftHasUnit ? 'left' : 'right';
-    const withoutUnit = leftHasUnit ? 'right' : 'left';
-    throw new Error(
-      `Cannot ${op} a number with angle unit (${withUnit}) and a number without unit (${withoutUnit}). ` +
-        `Use explicit units: e.g., 90deg + 5deg or 1.57rad + 0.5rad`,
-    );
-  }
 }
 
 function isStyleBlock(value: Value): value is StyleBlockValue {
@@ -1498,8 +1369,8 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
     }
 
     case 'BinaryExpression': {
-      // Check for angle unit mismatch before evaluation for +/-
-      if (expr.operator === '+' || expr.operator === '-') {
+      // Check for angle unit misuse before evaluation (+/- mixing, angle × angle)
+      if (expr.operator === '+' || expr.operator === '-' || expr.operator === '*') {
         checkAngleUnitMismatch(expr.left, expr.right, expr.operator);
       }
 
@@ -4839,8 +4710,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       case 'hueShift': {
         if (expr.args.length !== 1) throw mError('hueShift() expects 1 argument');
-        const degrees = evaluateExpression(expr.args[0], scope);
-        if (typeof degrees !== 'number') throw mError('hueShift() degrees must be a number');
+        const raw = evaluateExpression(expr.args[0], scope);
+        if (typeof raw !== 'number') throw mError('hueShift() degrees must be a number');
+        const degrees = angleArgToDegrees(expr.args[0], raw);
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         return {
           type: 'ColorValue',
@@ -4874,7 +4746,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length === 1) {
           const a = evaluateExpression(expr.args[0], scope);
           if (typeof a !== 'number') throw mError('analogous() angle must be a number');
-          angle = a;
+          angle = angleArgToDegrees(expr.args[0], a);
         }
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         const colors: ColorValue[] = [
@@ -4915,7 +4787,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length === 1) {
           const a = evaluateExpression(expr.args[0], scope);
           if (typeof a !== 'number') throw mError('splitComplementary() angle must be a number');
-          angle = a;
+          angle = angleArgToDegrees(expr.args[0], a);
         }
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         const colors: ColorValue[] = [
@@ -8422,90 +8294,16 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         return;
       }
       if (isPatternValue(obj)) {
-        if (typeof value !== 'string')
-          throw new Error(formatError(`Pattern property '${stmt.property}' must be a string`, getLine(stmt)));
-        switch (stmt.property) {
-          case 'patternUnits':
-            obj.patternUnits = value;
-            return;
-          case 'patternTransform':
-            obj.patternTransform = value;
-            return;
-          case 'patternContentUnits':
-            obj.patternContentUnits = value;
-            return;
-          default:
-            throw new Error(formatError(`Cannot assign to Pattern property '${stmt.property}'`, getLine(stmt)));
-        }
+        assignPatternProperty(obj, stmt.property, value, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
+        return;
       }
       if (isMarkerValue(obj)) {
-        const validateEnum = (enumName: string, val: string): string => {
-          const enumObj = BUILTIN_ENUMS[enumName];
-          const validValues = Object.values(enumObj);
-          if (!validValues.includes(val)) {
-            throw new Error(
-              formatError(
-                `Invalid value '${val}' for Marker.${stmt.property}. Valid values: ${validValues.join(', ')}`,
-                getLine(stmt),
-              ),
-            );
-          }
-          return val;
-        };
-        switch (stmt.property) {
-          case 'viewBox': {
-            if (typeof value !== 'string')
-              throw new Error(formatError(`Marker.viewBox must be a string`, getLine(stmt)));
-            obj.viewBox = value;
-            return;
-          }
-          case 'refX': {
-            if (typeof value === 'number') {
-              obj.refX = value;
-            } else if (typeof value === 'string') {
-              obj.refX = validateEnum('MarkerRefX', value);
-            } else {
-              throw new Error(formatError(`Marker.refX must be a number or MarkerRefX enum value`, getLine(stmt)));
-            }
-            return;
-          }
-          case 'refY': {
-            if (typeof value === 'number') {
-              obj.refY = value;
-            } else if (typeof value === 'string') {
-              obj.refY = validateEnum('MarkerRefY', value);
-            } else {
-              throw new Error(formatError(`Marker.refY must be a number or MarkerRefY enum value`, getLine(stmt)));
-            }
-            return;
-          }
-          case 'orient': {
-            if (typeof value === 'number') {
-              obj.orient = value;
-            } else if (typeof value === 'string') {
-              obj.orient = validateEnum('MarkerOrient', value);
-            } else {
-              throw new Error(formatError(`Marker.orient must be a number or MarkerOrient enum value`, getLine(stmt)));
-            }
-            return;
-          }
-          case 'markerUnits': {
-            if (typeof value !== 'string')
-              throw new Error(formatError(`Marker.markerUnits must be a MarkerUnits enum value`, getLine(stmt)));
-            obj.markerUnits = validateEnum('MarkerUnits', value);
-            return;
-          }
-          case 'preserveAspectRatio': {
-            if (typeof value !== 'string')
-              throw new Error(
-                formatError(`Marker.preserveAspectRatio must be a MarkerPreserveAspectRatio enum value`, getLine(stmt)),
-              );
-            obj.preserveAspectRatio = validateEnum('MarkerPreserveAspectRatio', value);
-            return;
-          }
-          default:
-            throw new Error(formatError(`Cannot assign to Marker property '${stmt.property}'`, getLine(stmt)));
-        }
+        assignMarkerProperty(obj, stmt.property, value, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
+        return;
       }
       if (isNoiseFilterValue(obj)) {
         switch (stmt.property) {
@@ -8893,181 +8691,16 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         }
       }
       if (isMeshPointValue(obj)) {
-        switch (stmt.property) {
-          case 'color': {
-            if (!isColorValue(value))
-              throw new Error(formatError('MeshPoint color must be a Color value', getLine(stmt)));
-            obj.color = { ...value.oklch };
-            obj.colorCSS = oklchToCSS(value.oklch);
-            return;
-          }
-          case 'x': {
-            if (typeof value !== 'number') throw new Error(formatError('MeshPoint x must be a number', getLine(stmt)));
-            obj.x = value;
-            return;
-          }
-          case 'y': {
-            if (typeof value !== 'number') throw new Error(formatError('MeshPoint y must be a number', getLine(stmt)));
-            obj.y = value;
-            return;
-          }
-          default:
-            throw new Error(formatError(`Cannot assign to MeshPoint property '${stmt.property}'`, getLine(stmt)));
-        }
+        assignMeshPointProperty(obj, stmt.property, value, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
+        return;
       }
       if (isGradientValue(obj)) {
-        switch (stmt.property) {
-          case 'spreadMethod':
-          case 'gradientUnits':
-          case 'gradientTransform': {
-            if (typeof value !== 'string')
-              throw new Error(formatError(`Gradient property '${stmt.property}' must be a string`, getLine(stmt)));
-            if (stmt.property === 'spreadMethod') obj.spreadMethod = value;
-            else if (stmt.property === 'gradientUnits') obj.gradientUnits = value;
-            else obj.gradientTransform = value;
-            return;
-          }
-          case 'interpolation': {
-            if (typeof value !== 'string')
-              throw new Error(formatError(`Gradient property 'interpolation' must be a string`, getLine(stmt)));
-            if (value !== 'srgb' && value !== 'oklch' && value !== 'linearRGB') {
-              throw new Error(
-                formatError(`Gradient interpolation must be 'srgb', 'oklch', or 'linearRGB'`, getLine(stmt)),
-              );
-            }
-            obj.interpolation = value;
-            return;
-          }
-          case 'steps': {
-            if (typeof value !== 'number')
-              throw new Error(formatError(`Gradient property 'steps' must be a number`, getLine(stmt)));
-            obj.steps = value;
-            return;
-          }
-          // Conic-specific properties
-          case 'from':
-          case 'to': {
-            // Enforce angle unit on literal numbers
-            if (stmt.value.type === 'NumberLiteral' && !stmt.value.unit) {
-              throw new Error(
-                formatError(
-                  `ConicGradient '${stmt.property}' requires an angle unit. Use e.g. ${stmt.value.value}deg, ${((stmt.value.value * Math.PI) / 180).toFixed(2)}rad, or ${(stmt.value.value / 180).toFixed(2)}pi`,
-                  getLine(stmt),
-                ),
-              );
-            }
-            // Also check negative unary on bare number
-            if (stmt.value.type === 'UnaryExpression' && stmt.value.operator === '-' && !hasAngleUnit(stmt.value)) {
-              throw new Error(formatError(`ConicGradient '${stmt.property}' requires an angle unit`, getLine(stmt)));
-            }
-            if (typeof value !== 'number')
-              throw new Error(
-                formatError(`ConicGradient '${stmt.property}' must be a number (with angle unit)`, getLine(stmt)),
-              );
-            obj[stmt.property] = value;
-            return;
-          }
-          case 'direction': {
-            if (value !== 'cw' && value !== 'ccw')
-              throw new Error(formatError(`ConicGradient direction must be 'cw' or 'ccw'`, getLine(stmt)));
-            obj.direction = value;
-            return;
-          }
-          case 'spread': {
-            if (typeof value !== 'string' || !['clamp', 'repeat', 'transparent'].includes(value)) {
-              throw new Error(
-                formatError(`ConicGradient spread must be 'clamp', 'repeat', or 'transparent'`, getLine(stmt)),
-              );
-            }
-            obj.spread = value;
-            return;
-          }
-          case 'innerRadius': {
-            if (typeof value !== 'number') {
-              throw new Error(formatError(`ConicGradient innerRadius must be a number`, getLine(stmt)));
-            }
-            if (value < 0) {
-              throw new Error(formatError(`ConicGradient innerRadius must be >= 0`, getLine(stmt)));
-            }
-            obj.innerRadius = value;
-            return;
-          }
-          case 'innerFill': {
-            if (value === 'transparent' || value === 'center' || value === 'transparent-blend') {
-              obj.innerFill = value;
-            } else if (isColorValue(value)) {
-              obj.innerFill = value;
-            } else {
-              throw new Error(
-                formatError(
-                  `ConicGradient innerFill must be 'transparent', 'transparent-blend', 'center', or a Color value`,
-                  getLine(stmt),
-                ),
-              );
-            }
-            return;
-          }
-          case 'falloff': {
-            if (obj.gradientType !== 'freeform')
-              throw new Error(formatError(`Property 'falloff' is only available on FreeformGradient`, getLine(stmt)));
-            if (typeof value !== 'number')
-              throw new Error(formatError(`FreeformGradient falloff must be a number`, getLine(stmt)));
-            if (value <= 0) throw new Error(formatError(`FreeformGradient falloff must be positive`, getLine(stmt)));
-            obj.falloff = value;
-            return;
-          }
-          // Topo-specific properties
-          case 'easing': {
-            if (obj.gradientType !== 'topo')
-              throw new Error(formatError(`Property 'easing' is only available on TopoGradient`, getLine(stmt)));
-            const valid = ['linear', 'smoothstep', 'ease-in', 'ease-out', 'ease-in-out'];
-            if (typeof value !== 'string' || !valid.includes(value)) {
-              throw new Error(formatError(`TopoGradient easing must be one of: ${valid.join(', ')}`, getLine(stmt)));
-            }
-            obj.topoEasing = value;
-            return;
-          }
-          case 'method': {
-            if (obj.gradientType !== 'topo')
-              throw new Error(formatError(`Property 'method' is only available on TopoGradient`, getLine(stmt)));
-            if (value !== 'distance' && value !== 'laplace') {
-              throw new Error(formatError(`TopoGradient method must be 'distance' or 'laplace'`, getLine(stmt)));
-            }
-            obj.topoMethod = value as string;
-            return;
-          }
-          case 'iterations': {
-            if (obj.gradientType !== 'topo')
-              throw new Error(formatError(`Property 'iterations' is only available on TopoGradient`, getLine(stmt)));
-            if (typeof value !== 'number')
-              throw new Error(formatError(`TopoGradient iterations must be a number`, getLine(stmt)));
-            if (value < 1 || value > 2000)
-              throw new Error(formatError(`TopoGradient iterations must be between 1 and 2000`, getLine(stmt)));
-            obj.topoIterations = Math.round(value);
-            return;
-          }
-          case 'blend': {
-            if (obj.gradientType !== 'topo')
-              throw new Error(formatError(`Property 'blend' is only available on TopoGradient`, getLine(stmt)));
-            if (typeof value !== 'number')
-              throw new Error(formatError(`TopoGradient blend must be a number`, getLine(stmt)));
-            if (value < 0 || value > 1)
-              throw new Error(formatError(`TopoGradient blend must be between 0 and 1`, getLine(stmt)));
-            obj.topoBlend = value;
-            return;
-          }
-          case 'baseColor': {
-            if (obj.gradientType !== 'topo')
-              throw new Error(formatError(`Property 'baseColor' is only available on TopoGradient`, getLine(stmt)));
-            if (!isColorValue(value))
-              throw new Error(formatError(`TopoGradient baseColor must be a Color value`, getLine(stmt)));
-            obj.topoBaseColor = { ...value.oklch };
-            obj.topoBaseColorCSS = oklchToCSS(value.oklch);
-            return;
-          }
-          default:
-            throw new Error(formatError(`Cannot assign to Gradient property '${stmt.property}'`, getLine(stmt)));
-        }
+        assignGradientProperty(obj, stmt.property, value, stmt.value, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
+        return;
       }
       throw new Error(formatError(`Cannot assign to property '${stmt.property}'`, getLine(stmt)));
     }

@@ -263,6 +263,218 @@ M add(triple(2), 4) 0`);
       expect(result).toContain('L');
       expect(result).toContain('150'); // 50 + 100*sin(90deg) = 150
     });
+
+    it('hueShift(90deg) matches hueShift(90) (unit-aware color methods, parity)', () => {
+      const result = compileAnnotated(`let c = Color(0.5, 0.15, 30);
+if (c.hueShift(90deg).hue == c.hueShift(90).hue) { M 1 1 } else { M 9 9 }`);
+      expect(result).toContain('M 1 1');
+    });
+
+    it('hueShift over calc angle arithmetic matches degrees (parity)', () => {
+      const result = compileAnnotated(`let c = Color(0.5, 0.15, 30);
+if (c.hueShift(calc(1 / 2 * 2pi)).hue == c.hueShift(180).hue) { M 1 1 } else { M 9 9 }`);
+      expect(result).toContain('M 1 1');
+    });
+
+    it('throws on angle unit mismatch in + (parity with primary evaluator)', () => {
+      expect(() => compileAnnotated('M calc(90deg + 5) 0')).toThrow(/Cannot add.*angle unit/);
+    });
+
+    it('throws when multiplying two angle values (parity)', () => {
+      expect(() => compileAnnotated('M calc(90deg * 45deg) 0')).toThrow(/Cannot multiply.*angle/);
+    });
+  });
+
+  describe('gradient property validation (parity with primary evaluator)', () => {
+    // The annotated evaluator used to accept-or-ignore all gradient property
+    // assignments ("lenient by design"), so programs the primary evaluator
+    // rejects compiled fine under --annotated. Both now share
+    // assignGradientProperty from gradient-assign.ts.
+    const conic = `let g = ConicGradient('cg', 50, 50) {|g|
+      g.stop(0, Color('#000'));
+      g.stop(1, Color('#fff'));
+    };`;
+
+    it('accepts angle-suffixed from/to', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.from = 135deg;
+g.to = 405deg;
+M 0 0`),
+      ).not.toThrow();
+    });
+
+    it('rejects a bare number on from with the helpful message', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.from = 135;`),
+      ).toThrow(/ConicGradient 'from' requires an angle unit.*135deg/);
+    });
+
+    it('rejects invalid direction', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.direction = 'up';`),
+      ).toThrow(/ConicGradient direction must be 'cw' or 'ccw'/);
+    });
+
+    it('rejects invalid spread', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.spread = 'mirror';`),
+      ).toThrow(/ConicGradient spread must be 'clamp', 'repeat', or 'transparent'/);
+    });
+
+    it('rejects wrong-typed steps', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.steps = 'many';`),
+      ).toThrow(/Gradient property 'steps' must be a number/);
+    });
+
+    it('rejects invalid interpolation', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.interpolation = 'hsl';`),
+      ).toThrow(/Gradient interpolation must be 'srgb', 'oklch', or 'linearRGB'/);
+    });
+
+    it('rejects a topo-only property on a conic gradient', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.blend = 0.5;`),
+      ).toThrow(/Property 'blend' is only available on TopoGradient/);
+    });
+
+    it('rejects an unknown gradient property', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.bogus = 1;`),
+      ).toThrow(/Cannot assign to Gradient property 'bogus'/);
+    });
+
+    // innerRadius/innerFill previously fell through the lenient switch with no
+    // case at all — silently vanishing in annotated mode instead of storing.
+    it('accepts valid innerRadius and innerFill', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.innerRadius = 10;
+g.innerFill = 'center';
+M 0 0`),
+      ).not.toThrow();
+    });
+
+    it('rejects negative innerRadius', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.innerRadius = -1;`),
+      ).toThrow(/ConicGradient innerRadius must be >= 0/);
+    });
+
+    it('rejects invalid innerFill', () => {
+      expect(() =>
+        compileAnnotated(`${conic}
+g.innerFill = 'nonsense';`),
+      ).toThrow(/ConicGradient innerFill must be 'transparent', 'transparent-blend', 'center', or a Color value/);
+    });
+  });
+
+  describe('Pattern/Marker/MeshPoint property validation (parity with primary evaluator)', () => {
+    const pattern = `let pt = Pattern('pt', 0, 0, 10, 10) {|p|
+      p.append(@{ m 0 0 l 5 5 });
+    };`;
+    const marker = `let mk = Marker('mk', 10, 10) {|m|
+      m.append(@{ m 0 0 l 10 5 l -10 5 z });
+    };`;
+    const mesh = `let g = MeshGradient('mg', 200, 100, 3, 2) {|g|
+      g.colorAll(Color('#ff0000'));
+    };`;
+
+    it('accepts valid Pattern/Marker/MeshPoint assignments', () => {
+      expect(() =>
+        compileAnnotated(`${pattern}
+${marker}
+${mesh}
+pt.patternUnits = 'userSpaceOnUse';
+mk.refX = 'center';
+mk.orient = 'auto';
+g.getPoint(0, 0).color = Color('#00ff00');
+M 0 0`),
+      ).not.toThrow();
+    });
+
+    it('rejects wrong-typed Pattern property', () => {
+      expect(() =>
+        compileAnnotated(`${pattern}
+pt.patternUnits = 5;`),
+      ).toThrow(/Pattern property 'patternUnits' must be a string/);
+    });
+
+    it('rejects unknown Pattern property', () => {
+      expect(() =>
+        compileAnnotated(`${pattern}
+pt.bogus = 'x';`),
+      ).toThrow(/Cannot assign to Pattern property 'bogus'/);
+    });
+
+    it('rejects invalid Marker enum value', () => {
+      expect(() =>
+        compileAnnotated(`${marker}
+mk.refX = 'middle';`),
+      ).toThrow(/Invalid value 'middle' for Marker.refX. Valid values: left, center, right/);
+    });
+
+    it('rejects wrong-typed Marker orient', () => {
+      expect(() =>
+        compileAnnotated(`${marker}
+mk.orient = Color('#000');`),
+      ).toThrow(/Marker.orient must be a number or MarkerOrient enum value/);
+    });
+
+    it('rejects unknown Marker property', () => {
+      expect(() =>
+        compileAnnotated(`${marker}
+mk.bogus = 1;`),
+      ).toThrow(/Cannot assign to Marker property 'bogus'/);
+    });
+
+    it('rejects Marker enum violation inside an apply block (second statement evaluator)', () => {
+      expect(() =>
+        compileAnnotated(`${marker}
+define PathLayer('a') \${ stroke: #000; }
+layer('a').apply {
+  mk.markerUnits = 'pixels';
+}`),
+      ).toThrow(/Invalid value 'pixels' for Marker.markerUnits/);
+    });
+
+    it('rejects non-Color MeshPoint color', () => {
+      expect(() =>
+        compileAnnotated(`${mesh}
+g.getPoint(0, 0).color = 5;`),
+      ).toThrow(/MeshPoint color must be a Color value/);
+    });
+
+    it('rejects wrong-typed MeshPoint x', () => {
+      expect(() =>
+        compileAnnotated(`${mesh}
+g.getPoint(0, 0).x = 'left';`),
+      ).toThrow(/MeshPoint x must be a number/);
+    });
+  });
+
+  describe('BUILTIN_ENUMS parity (shared builtin-enums.ts)', () => {
+    // The annotated evaluator's former hand-copied enum table was missing
+    // BlendMode, NoiseFilterStyle, GlowMode, BBoxAnchor, and five others,
+    // so these references threw 'Undefined variable' only in annotated mode.
+    it('resolves enums that were missing from the annotated copy', () => {
+      expect(() =>
+        compileAnnotated(`let b = BlendMode.Multiply;
+let n = NoiseFilterStyle.Grain;
+let a = BBoxAnchor.Center;
+M 0 0`),
+      ).not.toThrow();
+    });
   });
 
   describe('member expressions in path args', () => {

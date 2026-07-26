@@ -471,19 +471,19 @@ export interface PathogenColorInstance {
   desaturate(factor: number): PathogenColorInstance;
   /** alpha(value) — Set alpha channel */
   alpha(value: number): PathogenColorInstance;
-  /** hueShift(degrees) — Rotate hue */
+  /** hueShift(degrees) — Rotate hue (degrees; angle-suffixed values like 90deg auto-convert) */
   hueShift(degrees: number): PathogenColorInstance;
   /** complement() — Complementary color */
   complement(): PathogenColorInstance;
   /** mix(other, t) — Mix with another color */
   mix(other: PathogenColorInstance, t: number): PathogenColorInstance;
-  /** analogous(angle?) — Analogous color harmony (3 colors) */
+  /** analogous(angle?) — Analogous color harmony (3 colors; degrees, default 30; angle-suffixed values auto-convert) */
   analogous(angle?: number): PathogenColorInstance[];
   /** triadic() — Triadic color harmony (3 colors) */
   triadic(): PathogenColorInstance[];
   /** tetradic() — Tetradic color harmony (4 colors) */
   tetradic(): PathogenColorInstance[];
-  /** splitComplementary(angle?) — Split complementary harmony (3 colors) */
+  /** splitComplementary(angle?) — Split complementary harmony (3 colors; degrees, default 30; angle-suffixed values auto-convert) */
   splitComplementary(angle?: number): PathogenColorInstance[];
 }
 

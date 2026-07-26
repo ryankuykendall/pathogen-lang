@@ -191,6 +191,10 @@ M calc(100 - r) 100
 L calc(100 + r) 100
 ```
 
+`calc()` computes on **values**, not on units. Unit suffixes (`deg`, `rad`, `pi`, `%`) are converted at each literal before any arithmetic happens (angles to radians, percents to fractions), so the value a `calc()` produces is always a plain number.
+
+Separately, the compiler reads the expression *as written* to decide whether it denotes an angle. That static reading is what rejects nonsense like `calc(0.25pi + 5)`, and what lets the degree-based color methods tell `hueShift(90deg)` from `hueShift(90)`. **Units are a property of how an expression is written, not of the number it produces** — which is why they do not survive being stored in a variable. See [Angle Units](#syntax-angle-units).
+
 ### Supported Operators
 
 | Operator | Description |
@@ -902,7 +906,17 @@ let full = 2pi;          // 2π
 M sin(0.25pi) cos(0.25pi)
 ```
 
-The `pi` suffix participates in angle unit mismatch checking: `calc(0.25pi + 5)` throws an error, while `calc(90deg + 0.5pi)` is allowed (both have angle units).
+All angle suffixes participate in unit mismatch checking:
+
+- `calc(0.25pi + 5)` throws — adding an angle to a unitless number is ambiguous. `calc(90deg + 0.5pi)` is allowed (both are angles; `%` counts as unitless for this check).
+- `calc(90deg * 45deg)` throws — multiplying two angles has no meaning here. Scaling an angle by a plain number (`calc(2 * 45deg)`) is allowed and keeps the angle unit.
+- Division never throws: `calc(1pi / 2pi)` is a unitless ratio, and `calc(2pi / 4)` is still an angle.
+- Angle-ness propagates through a product: `calc((90deg * 2) + 5)` throws, because the product is still an angle.
+- The check only sees literals. `calc(x + 5)` is always allowed, even when `x` holds `90deg` — the compiler reads the expression as written and never looks inside a variable or a function's return value.
+
+**Degree-based color methods**: `hueShift`, `analogous`, and `splitComplementary` are the only methods that read their argument in **degrees** and auto-convert angle units. Bare numbers are degrees; arguments written with `deg`/`rad`/`pi` — including `calc()` arithmetic over them, like `hueShift(calc(i / 9 * 2pi))` — are detected and converted for you. Everywhere else in the language, a bare number is radians.
+
+`Color(L, C, H)` and the `.hue` property are the exception in the other direction: their hue is in degrees, but they do **not** auto-convert. `Color(0.6, 0.15, 90deg)` stores a hue of 1.57, not 90 — pass a bare number there. See [Color § Hue](#color-hue).
 
 **Note**: The `pi` suffix only works on numeric literals. For expressions or variables, use `mpi(x)` (see [Standard Library](stdlib.md)).
 

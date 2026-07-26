@@ -435,6 +435,32 @@ describe('Edge cases', () => {
       expect(() => compilePath('M calc(90deg + -5) 0')).toThrow(/Cannot add.*angle unit/);
     });
 
+    it('throws when multiplying two angle values', () => {
+      expect(() => compilePath('M calc(90deg * 45deg) 0')).toThrow(/Cannot multiply.*angle/);
+    });
+
+    it('throws on nested angle arithmetic mixed with a plain number', () => {
+      expect(() => compilePath('M calc((90deg * 2) + 5) 0')).toThrow(/Cannot add.*angle unit/);
+    });
+
+    it('allows scaling an angle by a plain number', () => {
+      expect(compilePath('M calc(2 * 45deg) 0')).toMatch(/^M 1\.570/);
+    });
+
+    it('allows dividing two angle values (unitless ratio)', () => {
+      expect(compilePath('M calc(90deg / 45deg) 0')).toBe('M 2 0');
+    });
+
+    // Unknowns (variables, calls) are never rejected — the check only fires
+    // when both sides' units can be statically inferred from the source.
+    it('never rejects a variable mixed with an angle literal', () => {
+      expect(compilePath('let offset = 5; M calc(offset + 90deg) 0')).toMatch(/^M 6\.570/);
+    });
+
+    it('never rejects an angle literal mixed with a variable (reversed order)', () => {
+      expect(compilePath('let offset = 5; M calc(90deg + offset) 0')).toMatch(/^M 6\.570/);
+    });
+
     it('allows adding deg to deg', () => {
       const result = compilePath('M calc(90deg + 5deg) 0');
       expect(result).toMatch(/^M [\d.]+ 0$/);

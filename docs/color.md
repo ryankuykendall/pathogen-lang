@@ -130,6 +130,38 @@ let shifted = c.hueShift(180);   // shift hue by 180°
 let comp = c.complement();       // shorthand for hueShift(180)
 ```
 
+`hueShift` takes **degrees** when given a bare number — so you can write the angle in whatever unit the surrounding code already uses, without hand-converting. If the argument is written with an [angle unit](#syntax-angle-units) (`deg`, `rad`, or `pi`) — including `calc()` arithmetic over angle-suffixed literals — it is interpreted as an angle and converted to degrees automatically:
+
+```
+let c = Color('#e63946');
+let quarterTurn = c.hueShift(90);    // 90° — bare numbers are degrees
+let sameByDeg = c.hueShift(90deg);   // 90° — angle units auto-convert
+let sameByPi = c.hueShift(0.5pi);    // 90° — π/2 radians
+```
+
+```
+// A hue wheel in nine swatches — the 2pi literal at the call site
+// is what makes this argument an angle
+let c = Color('#e63946');
+for (i in 1..9) {
+  let swatch = PathLayer(`shift-${i}`) ${
+    stroke: none;
+    fill: c.hueShift(calc(i / 9 * 2pi));
+  };
+  swatch.apply { rect(0, calc(i * 24), 20, 20); }
+}
+```
+
+> **Units do not survive a variable.** A suffix is consumed where it is written; by the time the value is in a variable it is just a number, and the call site cannot tell it was ever an angle. The sweep above works *only* because `2pi` appears at the call site — hoist it into a `let` and the shift silently collapses. The same applies to function results: `hueShift(calc(sin(t) * 180))` is degrees, because a call is never read as an angle. Use [`deg()`](#stdlib-angle-conversion) to convert explicitly:
+
+```
+let angle = calc(i / 9 * 2pi);       // just a number now (radians)
+let wrong = c.hueShift(angle);       // read as degrees — a 6° sweep, not 360°
+let right = c.hueShift(deg(angle));  // deg() restores the intent
+```
+
+The same rules apply to [`analogous()`](#color-analogousangle) and [`splitComplementary()`](#color-splitcomplementaryangle), and to colors backed by `CSSVar(...)` — the emitted CSS hue expression uses degrees. Note that `Color(L, C, H)` and the `.hue` property are also in degrees but do **not** auto-convert — pass bare numbers there.
+
 ### Mixing
 
 Mix two colors in OKLCH space:
@@ -154,7 +186,7 @@ let c = Color('#e63946')
 
 ## Color Harmonies
 
-Generate sets of harmonious colors based on color theory. All harmony methods return an array of Colors, preserving lightness, chroma, and alpha.
+Generate sets of harmonious colors based on color theory. All harmony methods return an array of Colors, preserving lightness, chroma, and alpha. `analogous` and `splitComplementary` take an angle argument (`triadic` and `tetradic` are fixed at 120° and 90° spacing). Angle arguments are in **degrees** for bare numbers, with the same auto-conversion as [`hueShift`](#color-hue): `analogous(30deg)` and `analogous(30)` are equivalent.
 
 ### .analogous(angle?)
 

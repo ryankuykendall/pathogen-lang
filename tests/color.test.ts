@@ -416,6 +416,131 @@ describe('Color type', () => {
 
   // ── Static methods ─────────────────────────────────────────────────────
 
+  // ── Angle-unit arguments ────────────────────────────────────────────────
+  // Color methods take degrees for bare numbers; arguments written with
+  // angle units (deg/rad/pi) — including calc() arithmetic over them —
+  // evaluate to radians and are auto-converted to degrees.
+
+  describe('angle-unit arguments', () => {
+    const hueOf = (src: string): number => parseFloat(compile(src).logs[0].parts[0].value);
+
+    it('.hueShift(90deg) equals .hueShift(90)', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(90deg).hue);')).toBeCloseTo(120, 1);
+    });
+
+    it('.hueShift(0.5pi) shifts 90°', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(0.5pi).hue);')).toBeCloseTo(120, 1);
+    });
+
+    it('.hueShift(1.5707963rad) shifts ≈90°', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(1.5707963rad).hue);')).toBeCloseTo(120, 1);
+    });
+
+    it('.hueShift(-90deg) shifts backwards', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(-90deg).hue);')).toBeCloseTo(300, 1);
+    });
+
+    it('scaling keeps the angle unit: calc(2 * 45deg)', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(calc(2 * 45deg)).hue);')).toBeCloseTo(120, 1);
+    });
+
+    it('division keeps the angle unit: calc(2pi / 4)', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(calc(2pi / 4)).hue);')).toBeCloseTo(120, 1);
+    });
+
+    it('angle/angle ratio is unitless: calc(1pi / 2pi * 180) is 90 degrees', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(calc(1pi / 2pi * 180)).hue);')).toBeCloseTo(
+        120,
+        1,
+      );
+    });
+
+    it('ternary arms are inferred: both angle arms convert', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(1 < 2 ? 90deg : 45deg).hue);')).toBeCloseTo(
+        120,
+        1,
+      );
+    });
+
+    it('bare-number arithmetic remains degrees: calc(90 + 90)', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(calc(90 + 90)).hue);')).toBeCloseTo(210, 1);
+    });
+
+    it('call results are not treated as angles: calc(sin(0.5pi) * 180) is 180 degrees', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(calc(sin(0.5pi) * 180)).hue);')).toBeCloseTo(
+        210,
+        1,
+      );
+    });
+
+    it('sweeps the hue wheel with loop-variable calc arithmetic', () => {
+      const result = compile(`
+        let c = Color(0.5, 0.15, 30);
+        for (i in 0..8) {
+          log(c.hueShift(calc(i / 8 * 2pi)).hue);
+        }
+      `);
+      const hues = result.logs.map((l) => parseFloat(l.parts[0].value));
+      expect(hues[0]).toBeCloseTo(30, 1); // 0 turns
+      expect(hues[2]).toBeCloseTo(120, 1); // quarter turn
+      expect(hues[4]).toBeCloseTo(210, 1); // half turn
+      expect(hues[8]).toBeCloseTo(30, 1); // full turn wraps home
+    });
+
+    it('unit is lost through a variable (known limitation); deg() converts explicitly', () => {
+      const result = compile(`
+        let c = Color(0.5, 0.15, 30);
+        let turn = 0.5pi;
+        log(c.hueShift(deg(turn)).hue);
+        log(c.hueShift(turn).hue);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(120, 1);
+      // A stored variable is a plain number in radians and reads as degrees:
+      // 30 + 1.5707… — the docs point at deg() as the escape hatch.
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(31.57, 1);
+    });
+
+    it('.analogous(45deg) equals .analogous(45)', () => {
+      const result = compile(`
+        let c = Color(0.5, 0.15, 60);
+        let colors = c.analogous(45deg);
+        log(colors[0].hue);
+        log(colors[2].hue);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(15, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(105, 1);
+    });
+
+    it('.splitComplementary(15deg) equals .splitComplementary(15)', () => {
+      const result = compile(`
+        let c = Color(0.5, 0.15, 60);
+        let colors = c.splitComplementary(15deg);
+        log(colors[1].hue);
+        log(colors[2].hue);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(225, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(255, 1);
+    });
+
+    it('per-layer fills vary in the reported hue-sweep program', () => {
+      const result = compile(`
+        let orangish = #d19a66;
+        for (i in 1..9) {
+          let shiftLayer = PathLayer(\`shift-\${i}\`) \${
+            stroke: none;
+            fill: orangish.hueShift(calc(i / 9 * 2pi));
+          };
+          shiftLayer.apply {
+            rect(0, calc(i * 24), 20, 20);
+          }
+        }
+      `);
+      const fills = result.layers.filter((l) => l.name.startsWith('shift-')).map((l) => l.styles.fill);
+      expect(fills).toHaveLength(9);
+      expect(new Set(fills).size).toBe(9);
+    });
+  });
+
   describe('static methods', () => {
     it('Color.mix() mixes two colors', () => {
       const result = compile(`

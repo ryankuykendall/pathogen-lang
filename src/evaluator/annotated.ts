@@ -28,6 +28,9 @@ import {
   splitPathCommands,
 } from './path-data';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
+import { BUILTIN_ENUMS } from './builtin-enums';
+import { assignGradientProperty, assignMarkerProperty, assignMeshPointProperty, assignPatternProperty } from './member-assign';
+import { angleArgToDegrees, checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { tryResolveCSSFunctionArgs } from './css-function-resolve';
 import { sanitizeSVGFragment } from './svg-sanitize';
 import {
@@ -142,49 +145,6 @@ function toNumber(v: Value): number | undefined {
   return undefined;
 }
 
-/** Built-in enum definitions */
-const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
-  Easing: {
-    Linear: 'linear',
-    Smoothstep: 'smoothstep',
-    EaseIn: 'ease-in',
-    EaseOut: 'ease-out',
-    EaseInOut: 'ease-in-out',
-  },
-  Interpolation: { SRGB: 'srgb', OKLCH: 'oklch', LinearRGB: 'linearRGB' },
-  SpreadMethod: { Pad: 'pad', Reflect: 'reflect', Repeat: 'repeat' },
-  GradientUnits: { ObjectBoundingBox: 'objectBoundingBox', UserSpaceOnUse: 'userSpaceOnUse' },
-  Direction: { CW: 'cw', CCW: 'ccw' },
-  CurveContinuity: { G0: 'position', G1: 'tangent', G2: 'curvature' },
-  ConicSpread: { Clamp: 'clamp', Repeat: 'repeat', Transparent: 'transparent' },
-  InnerFill: { Transparent: 'transparent', TransparentBlend: 'transparent-blend', Center: 'center' },
-  TopoMethod: { Distance: 'distance', Laplace: 'laplace' },
-  MarkerUnits: { StrokeWidth: 'strokeWidth', UserSpaceOnUse: 'userSpaceOnUse' },
-  MarkerOrient: { Auto: 'auto', AutoStartReverse: 'auto-start-reverse' },
-  MarkerRefX: { Left: 'left', Center: 'center', Right: 'right' },
-  MarkerRefY: { Top: 'top', Center: 'center', Bottom: 'bottom' },
-  MarkerPreserveAspectRatio: {
-    None: 'none',
-    XMinYMinMeet: 'xMinYMin meet',
-    XMinYMinSlice: 'xMinYMin slice',
-    XMidYMinMeet: 'xMidYMin meet',
-    XMidYMinSlice: 'xMidYMin slice',
-    XMaxYMinMeet: 'xMaxYMin meet',
-    XMaxYMinSlice: 'xMaxYMin slice',
-    XMinYMidMeet: 'xMinYMid meet',
-    XMinYMidSlice: 'xMinYMid slice',
-    XMidYMidMeet: 'xMidYMid meet',
-    XMidYMidSlice: 'xMidYMid slice',
-    XMaxYMidMeet: 'xMaxYMid meet',
-    XMaxYMidSlice: 'xMaxYMid slice',
-    XMinYMaxMeet: 'xMinYMax meet',
-    XMinYMaxSlice: 'xMinYMax slice',
-    XMidYMaxMeet: 'xMidYMax meet',
-    XMidYMaxSlice: 'xMidYMax slice',
-    XMaxYMaxMeet: 'xMaxYMax meet',
-    XMaxYMaxSlice: 'xMaxYMax slice',
-  },
-};
 
 // Value types (same as main evaluator)
 export type Value =
@@ -242,6 +202,8 @@ export interface GradientValue {
   to?: number;
   direction?: 'cw' | 'ccw';
   spread?: string;
+  innerRadius?: number;
+  innerFill?: 'transparent' | 'transparent-blend' | 'center' | ColorValue;
   // Mesh-specific
   meshGrid?: MeshPointValue[][];
   meshWidth?: number;
@@ -279,91 +241,6 @@ function isMaskValue(value: Value): value is MaskValue {
 
 function isClipPathValue(value: Value): value is ClipPathValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ClipPathValue';
-}
-
-/**
- * Gradient property-assignment semantics shared by both annotated statement
- * evaluators. Lenient by design: annotated mode produces no defs output, so
- * type-mismatched values are ignored rather than thrown.
- */
-function assignGradientProperty(obj: GradientValue, property: string, value: Value): void {
-  switch (property) {
-    case 'spreadMethod':
-    case 'gradientUnits':
-    case 'gradientTransform': {
-      if (typeof value === 'string') {
-        if (property === 'spreadMethod') obj.spreadMethod = value;
-        else if (property === 'gradientUnits') obj.gradientUnits = value;
-        else obj.gradientTransform = value;
-      }
-      break;
-    }
-    case 'interpolation': {
-      if (typeof value === 'string' && (value === 'srgb' || value === 'oklch' || value === 'linearRGB')) {
-        obj.interpolation = value;
-      }
-      break;
-    }
-    case 'steps': {
-      if (typeof value === 'number') obj.steps = value;
-      break;
-    }
-    // Conic-specific
-    case 'from':
-    case 'to': {
-      if (typeof value === 'number') obj[property] = value;
-      break;
-    }
-    case 'direction': {
-      if (value === 'cw' || value === 'ccw') obj.direction = value;
-      break;
-    }
-    case 'spread': {
-      if (typeof value === 'string') obj.spread = value;
-      break;
-    }
-    // Freeform-specific
-    case 'falloff': {
-      if (typeof value === 'number') obj.falloff = value;
-      break;
-    }
-    // Topo-specific
-    case 'easing': {
-      if (typeof value === 'string') obj.topoEasing = value;
-      break;
-    }
-    case 'method': {
-      if (typeof value === 'string') obj.topoMethod = value;
-      break;
-    }
-    case 'iterations': {
-      if (typeof value === 'number') obj.topoIterations = Math.round(value);
-      break;
-    }
-    case 'blend': {
-      if (typeof value === 'number') obj.topoBlend = value;
-      break;
-    }
-    case 'baseColor': {
-      if (isColorValue(value)) {
-        obj.topoBaseColor = { ...value.oklch };
-        obj.topoBaseColorCSS = oklchToCSS(value.oklch);
-      }
-      break;
-    }
-  }
-}
-
-/** MeshPoint property-assignment semantics shared by both annotated statement evaluators. */
-function assignMeshPointProperty(obj: MeshPointValue, property: string, value: Value): void {
-  if (property === 'color' && isColorValue(value)) {
-    obj.color = { ...value.oklch };
-    obj.colorCSS = oklchToCSS(value.oklch);
-  } else if (property === 'x' && typeof value === 'number') {
-    obj.x = value;
-  } else if (property === 'y' && typeof value === 'number') {
-    obj.y = value;
-  }
 }
 
 function isPatternValue(value: Value): value is PatternValue {
@@ -659,26 +536,6 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
 
 function setVariable(scope: Scope, name: string, value: Value): void {
   scope.variables.set(name, value);
-}
-
-/**
- * Convert value based on unit suffix
- * - 'deg': converts degrees to radians
- * - 'pi': multiplies by Math.PI
- * - '%': divides by 100 (20% → 0.2)
- * - 'rad' or undefined: returns value unchanged (radians are internal standard)
- */
-function convertUnitSuffix(value: number, unit?: 'deg' | 'rad' | 'pi' | '%'): number {
-  if (unit === 'deg') {
-    return (value * Math.PI) / 180;
-  }
-  if (unit === 'pi') {
-    return value * Math.PI;
-  }
-  if (unit === '%') {
-    return value / 100;
-  }
-  return value; // rad or no unit = radians (internal standard)
 }
 
 /**
@@ -2725,8 +2582,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       case 'hueShift': {
         if (expr.args.length !== 1) throw mError('hueShift() expects 1 argument');
-        const degrees = evaluateExpression(expr.args[0], scope);
-        if (typeof degrees !== 'number') throw mError('hueShift() degrees must be a number');
+        const raw = evaluateExpression(expr.args[0], scope);
+        if (typeof raw !== 'number') throw mError('hueShift() degrees must be a number');
+        const degrees = angleArgToDegrees(expr.args[0], raw);
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         return {
           type: 'ColorValue',
@@ -2760,7 +2618,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length === 1) {
           const a = evaluateExpression(expr.args[0], scope);
           if (typeof a !== 'number') throw mError('analogous() angle must be a number');
-          angle = a;
+          angle = angleArgToDegrees(expr.args[0], a);
         }
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         const colors: ColorValue[] = [
@@ -2801,7 +2659,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length === 1) {
           const a = evaluateExpression(expr.args[0], scope);
           if (typeof a !== 'number') throw mError('splitComplementary() angle must be a number');
-          angle = a;
+          angle = angleArgToDegrees(expr.args[0], a);
         }
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         const colors: ColorValue[] = [
@@ -3211,6 +3069,11 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
     }
 
     case 'BinaryExpression': {
+      // Check for angle unit misuse before evaluation (+/- mixing, angle × angle)
+      if (expr.operator === '+' || expr.operator === '-' || expr.operator === '*') {
+        checkAngleUnitMismatch(expr.left, expr.right, expr.operator);
+      }
+
       const left = evaluateExpression(expr.left, scope);
       const right = evaluateExpression(expr.right, scope);
 
@@ -5122,50 +4985,27 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       const value = evaluateExpression(stmt.value, scope);
       // Handle Pattern property assignment
       if (isPatternValue(obj)) {
-        if (typeof value === 'string') {
-          switch (stmt.property) {
-            case 'patternUnits':
-              obj.patternUnits = value;
-              break;
-            case 'patternTransform':
-              obj.patternTransform = value;
-              break;
-            case 'patternContentUnits':
-              obj.patternContentUnits = value;
-              break;
-          }
-        }
+        assignPatternProperty(obj, stmt.property, value, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
       }
       // Handle Marker property assignment
       if (isMarkerValue(obj)) {
-        switch (stmt.property) {
-          case 'viewBox':
-            if (typeof value === 'string') obj.viewBox = value;
-            break;
-          case 'refX':
-            if (typeof value === 'number' || typeof value === 'string') obj.refX = value;
-            break;
-          case 'refY':
-            if (typeof value === 'number' || typeof value === 'string') obj.refY = value;
-            break;
-          case 'orient':
-            if (typeof value === 'number' || typeof value === 'string') obj.orient = value;
-            break;
-          case 'markerUnits':
-            if (typeof value === 'string') obj.markerUnits = value;
-            break;
-          case 'preserveAspectRatio':
-            if (typeof value === 'string') obj.preserveAspectRatio = value;
-            break;
-        }
+        assignMarkerProperty(obj, stmt.property, value, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
       }
       // Handle Gradient property assignment (including conic/freeform/topo fields)
       if (isGradientValue(obj)) {
-        assignGradientProperty(obj, stmt.property, value);
+        assignGradientProperty(obj, stmt.property, value, stmt.value, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
       }
       // Handle MeshPoint property assignment (g.getPoint(r, c).color = ...)
       if (isMeshPointValue(obj)) {
-        assignMeshPointProperty(obj, stmt.property, value);
+        assignMeshPointProperty(obj, stmt.property, value, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
       }
       return '';
     }
@@ -5718,26 +5558,26 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       const maValue = evaluateExpression(stmt.value, scope);
       // Handle Pattern property assignment
       if (isPatternValue(maObj)) {
-        if (typeof maValue === 'string') {
-          switch (stmt.property) {
-            case 'patternUnits':
-              maObj.patternUnits = maValue;
-              break;
-            case 'patternTransform':
-              maObj.patternTransform = maValue;
-              break;
-            case 'patternContentUnits':
-              maObj.patternContentUnits = maValue;
-              break;
-          }
-        }
+        assignPatternProperty(maObj, stmt.property, maValue, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
+      }
+      // Handle Marker property assignment (previously missing here entirely)
+      if (isMarkerValue(maObj)) {
+        assignMarkerProperty(maObj, stmt.property, maValue, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
       }
       // Handle Gradient property assignment (including conic fields)
       if (isGradientValue(maObj)) {
-        assignGradientProperty(maObj, stmt.property, maValue);
+        assignGradientProperty(maObj, stmt.property, maValue, stmt.value, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
       }
       if (isMeshPointValue(maObj)) {
-        assignMeshPointProperty(maObj, stmt.property, maValue);
+        assignMeshPointProperty(maObj, stmt.property, maValue, (message) => {
+          throw new Error(formatError(message, getLine(stmt)));
+        });
       }
       break;
     }

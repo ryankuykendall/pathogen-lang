@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-26 (unit-aware color-method angles)
+
+### Fixed
+
+#### Core
+
+- **`hueShift(90deg)` now shifts 90° (was a silent 1.57°).** Color methods (`hueShift`, `analogous`, `splitComplementary`) take degrees, but angle-suffixed literals evaluate to radians — so a suffixed argument was reinterpreted as a much smaller degree value with no error. A new operator-aware unit-inference pass (`src/evaluator/units.ts`) detects arguments *written* with angle units — including `calc()` arithmetic over them, like `hueShift(calc(i / 9 * 2pi))`, which now sweeps the full hue wheel instead of an invisible 5.6° — and converts radians→degrees at the call site. Bare numbers (`hueShift(180)`) are unchanged. The conversion also flows to the `CSSVar` color path (`oklch(from … calc(h + 90))`). Known limitation (documented): units don't survive variable assignment — `let a = 90deg; c.hueShift(a)` still reads as degrees; use `c.hueShift(deg(a))`.
+- **Angle-unit guardrail extended to `*` and to the annotated evaluator.** Multiplying two angle values (`calc(90deg * 45deg)`) is now an error; scaling by a plain number (`calc(2 * 45deg)`) and angle/angle ratios (`calc(1pi / 2pi)`) remain valid. The `+`/`-` mismatch check now sees through nested arithmetic (`calc((90deg * 2) + 5)` throws) and runs in the annotated evaluator, which previously had no angle-unit checking at all. `convertUnitSuffix`/`hasAngleUnit`/`checkAngleUnitMismatch` are consolidated in the shared `units.ts` module instead of hand-copied between the two evaluators.
+- **Gradient, Pattern, Marker, and MeshPoint property validation now matches between the primary and annotated evaluators.** The annotated evaluator's member-assignment handling was "lenient by design" — a bare `g.from = 45` (rejected by normal compilation with `requires an angle unit`), an invalid Marker enum (`mk.refX = 'middle'`), or a wrong-typed value was silently accepted or dropped under `--annotated`, so annotated/debug output could show a "working" program that the real compiler rejects. Both evaluators now share the strict validation via a new `src/evaluator/member-assign.ts` (`assignGradientProperty`/`assignPatternProperty`/`assignMarkerProperty`/`assignMeshPointProperty` — same no-drift consolidation as `units.ts`). Also fixed along the way: one of the annotated evaluator's two statement evaluators — the one that runs every top-level statement and nested block body — had no Marker assignment handling at all, so `marker.prop = value` was a silent no-op under `--annotated` at any nesting level; and its local `GradientValue` was missing the `innerRadius`/`innerFill` fields, so those assignments silently vanished instead of being stored. Remaining known gap in annotated mode (unchanged, tracked): filter property assignments (`NoiseFilter`, `GlowFilter`, …) are still complete no-ops there.
+- **9 built-in enums were unresolvable in annotated mode.** `BUILTIN_ENUMS` was hand-copied into the annotated evaluator and had drifted: `BlendMode`, `NoiseFilterStyle`, `NoiseFilterScale`, `GlowMode`, `MotionBlurType`, `BBoxAnchor`, `GridPatternType`, `HexagonOrientation`, and `VerticalAnchor` were missing, so e.g. `BlendMode.Multiply` threw `Undefined variable` only under `--annotated`. The table now lives in a shared `src/evaluator/builtin-enums.ts` (re-exported from the evaluator for existing importers) consumed by both evaluators.
+
+#### Documentation
+
+- `docs/color.md` now states the degrees contract for hue/harmony methods (previously the unit was documented only by a `°` in a code comment) with the auto-conversion rules and the `deg()` escape hatch; `docs/syntax.md` documents that `calc()` is unit-blind and the extended mismatch rules.
+
 ## [Unreleased] - 2026-07-26 (template literals: CST-walk fix + parseMixed assessment)
 
 ### Fixed

@@ -228,6 +228,15 @@ describe('CSSVar type', () => {
       expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
     });
 
+    it('hueShift(90deg) emits degrees in the CSS hue expression', () => {
+      const result = compile(`
+        let c = Color(CSSVar('--base', '#cc6683'));
+        define PathLayer('a') \${ fill: c.hueShift(90deg); }
+        layer('a').apply { M 0 0 }
+      `);
+      expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
+    });
+
     it('complement() outputs oklch(from var(...) l c calc(h + 180))', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));

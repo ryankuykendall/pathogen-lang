@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+
+  <path data-layer-name="main-path-layer" d="" fill="#bbb" stroke="#222" stroke-width="1"/>
+  <path data-layer-name="shift-1" id="shift-1" d="M 0 24 l 20 0 l 0 20 l -20 0 z" fill="#b1aa61" stroke="none" stroke-width="2"/>
+  <path data-layer-name="shift-2" id="shift-2" d="M 0 48 l 20 0 l 0 20 l -20 0 z" fill="#82b781" stroke="none" stroke-width="2"/>
+  <path data-layer-name="shift-3" id="shift-3" d="M 0 72 l 20 0 l 0 20 l -20 0 z" fill="#58baad" stroke="none" stroke-width="2"/>
+  <path data-layer-name="shift-4" id="shift-4" d="M 0 96 l 20 0 l 0 20 l -20 0 z" fill="#5db4d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="shift-5" id="shift-5" d="M 0 120 l 20 0 l 0 20 l -20 0 z" fill="#88a6e3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="shift-6" id="shift-6" d="M 0 144 l 20 0 l 0 20 l -20 0 z" fill="#b498d8" stroke="none" stroke-width="2"/>
+  <path data-layer-name="shift-7" id="shift-7" d="M 0 168 l 20 0 l 0 20 l -20 0 z" fill="#d18fb6" stroke="none" stroke-width="2"/>
+  <path data-layer-name="shift-8" id="shift-8" d="M 0 192 l 20 0 l 0 20 l -20 0 z" fill="#dc8f8a" stroke="none" stroke-width="2"/>
+  <path data-layer-name="shift-9" id="shift-9" d="M 0 216 l 20 0 l 0 20 l -20 0 z" fill="#d19a66" stroke="none" stroke-width="2"/>
+</svg>
