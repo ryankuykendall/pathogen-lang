@@ -25,4 +25,5 @@ export const styleHighlighting = styleTags({
   LineComment: t.lineComment,
   '"(" ")"': t.paren,
   '"," ";" ":"': t.separator,
+  '"."': t.derefOperator,
 });

@@ -1,5 +1,34 @@
 # Style-Block Structure — STATUS (2026-07-25)
 
+## PLAN-2 (scope awareness) — shipped same day
+
+Follow-ups #1 and #2 from the highlighting notes, per [PLAN-2.md](PLAN-2.md):
+
+- **Foundation**: `scope-analysis.ts` emits references inside style-block
+  values (full-width ranges, `Reference.inStyleValue`; inner-styleParser wrap
+  + template-interp expression parsing). Fixes rename/find-references/VS Code
+  semantic tokens in style values — previously silently skipped.
+- **Inner grammar**: `.` token + `Member` rule in both skip scopes
+  (`@precedence { call, member }` — member-first made arg-scope tails reduce
+  before shifting into calls; call must bind tighter).
+- **Playground**: `cm-style-ref-recolor.ts` (resolved refs → variable color,
+  baseTheme &dark coral / &light inherit) + scope-aware chip exclusion, both
+  fed by the `scope-cache.ts` size-1 memo. KNOWN LIMITATION test inverted.
+- Verified: 4034 tests; `verify-plan2.mjs` headless both themes (resolved refs
+  coral/default, unresolved stay value-colored, declared-tomato chip gone,
+  undeclared-salmon chip stays, member values error-free).
+- Recorded quirk (not fixed): `lezer-expression.ts:110` adjustLocs `.offset`
+  math is wrong on multi-line docs — consumers must use line/column only.
+- Review follow-ups recorded, not blocking: consolidate the three
+  zero-vs-full-width range helpers (navigation/rename/semantic-tokens) if a
+  fourth consumer appears; `code-lens.ts` has no test file at all
+  (pre-existing gap — its reference counts now include style-value refs,
+  intended but unverifiable without tests); unquoted dotted paths inside
+  `url(...)` can emit a false-positive Member-head reference mid-edit
+  (syntax the language doesn't support; sanitizer rejects external urls).
+
+## Original project (PLAN.md)
+
 All seven phases of [PLAN.md](PLAN.md) shipped in one session. See
 [primer.md](primer.md) for the design constraints and comma policy.
 

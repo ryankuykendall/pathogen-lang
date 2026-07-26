@@ -13,6 +13,7 @@ export type { ParsedColor, ColorFormat } from './color.js';
 import type { Tree } from '@lezer/common';
 
 import { parseColor, formatColor, detectFormat, formatToColorspace, colorspaceToFormat } from './color.js';
+import { getStyleRefRanges } from './scope-cache.js';
 import type { ColorFormat, ColorInputSpace } from './color.js';
 
 /** Options for creating a color chip element. */
@@ -263,11 +264,20 @@ export function createColorChip({ color, onChange, className, title }: ColorChip
  *      same as the regex fallback). When there is no mount (plain parser),
  *      the legacy regex scan runs as a fallback.
  */
-export function findColorRanges(tree: Tree, docText: string): ColorRange[] {
+export function findColorRanges(
+  tree: Tree,
+  docText: string,
+  resolvedRefRanges?: Array<{ from: number; to: number }>,
+): ColorRange[] {
   const results: ColorRange[] = [];
   // StyleContent ranges seen during the walk; `mounted` flips when the inner
   // grammar's top node (StyleSheet) appears inside the range.
   const styleRanges: Array<{ from: number; to: number; mounted: boolean }> = [];
+  // A named-color candidate covered by a resolved style-value reference is a
+  // VARIABLE named after a CSS color (`let tomato = ...; stroke: tomato;`) —
+  // chipping it would rewrite the reference into a literal. Skip those.
+  const isResolvedRef = (from: number, to: number): boolean =>
+    resolvedRefRanges?.some((r) => r.from <= from && to <= r.to) ?? false;
 
   tree.iterate({
     enter: (node) => {
@@ -312,7 +322,7 @@ export function findColorRanges(tree: Tree, docText: string): ColorRange[] {
       // chip only when the whole value of a color-typed property is a single
       // identifier that names a CSS color.
       if (name === 'Declaration') {
-        tryAddNamedColorValue(node, docText, results);
+        tryAddNamedColorValue(node, docText, results, isResolvedRef);
         return true;
       }
 
@@ -323,7 +333,7 @@ export function findColorRanges(tree: Tree, docText: string): ColorRange[] {
   // Regex fallback for style blocks with no mounted inner tree (callers still
   // parsing with the plain lezerParser).
   for (const range of styleRanges) {
-    if (!range.mounted) addStyleBlockColors(docText, range.from, range.to, results);
+    if (!range.mounted) addStyleBlockColors(docText, range.from, range.to, results, isResolvedRef);
   }
 
   // Sort by position so downstream ordering is stable.
@@ -343,7 +353,12 @@ export function findColorRanges(tree: Tree, docText: string): ColorRange[] {
  * scope-aware exclusion is a recorded follow-up
  * (project-docs/style-block-structure/primer.md).
  */
-function tryAddNamedColorValue(declRef: LezerNodeRef, docText: string, out: ColorRange[]): void {
+function tryAddNamedColorValue(
+  declRef: LezerNodeRef,
+  docText: string,
+  out: ColorRange[],
+  isResolvedRef: (from: number, to: number) => boolean,
+): void {
   let propName: string | null = null;
   let valueChild: LezerNodeRef | null = null;
   let valueCount = 0;
@@ -362,6 +377,9 @@ function tryAddNamedColorValue(declRef: LezerNodeRef, docText: string, out: Colo
   const text = docText.slice(valueChild.from, valueChild.to);
   if (text === 'none' || text === 'inherit' || text === 'currentColor') return;
   if (detectFormat(text) !== 'named') return;
+  // Scope-aware exclusion: `let tomato = ...; stroke: tomato;` is a variable
+  // reference, not the CSS color — never chip it.
+  if (isResolvedRef(valueChild.from, valueChild.to)) return;
   out.push({ from: valueChild.from, to: valueChild.to, color: text });
 }
 
@@ -409,7 +427,13 @@ function tryAddStringCallArg(argListRef: LezerNodeRef, docText: string, out: Col
  * we're inside `StyleContent` (as opposed to, say, a string literal that
  * happens to contain `stroke: #fff`) means the regex below is safe.
  */
-function addStyleBlockColors(docText: string, from: number, to: number, out: ColorRange[]): void {
+function addStyleBlockColors(
+  docText: string,
+  from: number,
+  to: number,
+  out: ColorRange[],
+  isResolvedRef: (from: number, to: number) => boolean = () => false,
+): void {
   const block = docText.slice(from, to);
   const declRegex = /([\w-]+)\s*:\s*([^;}\n]+)/g;
   let m: RegExpExecArray | null;
@@ -421,6 +445,9 @@ function addStyleBlockColors(docText: string, from: number, to: number, out: Col
     if (!isColorString(value)) continue;
     const valueStart = from + m.index + m[0].indexOf(value, prop.length + 1);
     const valueEnd = valueStart + value.length;
+    // Same scope-aware exclusion as the mounted path: a resolved variable
+    // named after a CSS color must not chip.
+    if (detectFormat(value) === 'named' && isResolvedRef(valueStart, valueEnd)) continue;
     out.push({ from: valueStart, to: valueEnd, color: value });
   }
 }
@@ -522,7 +549,7 @@ export function colorPickerExtension(cmViewModule: CMViewModule, cmLanguageModul
   function buildDecorations(view: any): any {
     const docText = view.state.doc.toString();
     const tree = syntaxTree(view.state);
-    const colorRanges = findColorRanges(tree, docText);
+    const colorRanges = findColorRanges(tree, docText, getStyleRefRanges(docText));
     const widgets: any[] = [];
 
     for (const { from, to, color } of colorRanges) {

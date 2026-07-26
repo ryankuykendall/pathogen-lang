@@ -46,6 +46,7 @@ function innerDeclarations(source: string): Array<{ name: string; nameFrom: numb
         .concat(node.getChildren('ColorLiteral'))
         .concat(node.getChildren('StringLiteral'))
         .concat(node.getChildren('Template'))
+        .concat(node.getChildren('Member'))
         .concat(node.getChildren('Call'))
         .concat(node.getChildren('Identifier'));
       let from = Infinity;
@@ -106,6 +107,18 @@ describe('inner style grammar', () => {
       {
         label: 'dasharray multi-token value',
         source: 'let s = ${ stroke-dasharray: 4 1 2 3; };',
+      },
+      {
+        label: 'member-access value',
+        source: 'let s = ${ fill: c.alpha(40%); };',
+      },
+      {
+        label: 'member chain with call head',
+        source: 'let s = ${ stroke: rgba(0, 0, 200, 1).lighten(20%); filter: a.b.c(1).d; };',
+      },
+      {
+        label: 'member nested inside function args',
+        source: 'let s = ${ filter: drop-shadow(1px 1px shadowColor.alpha(50%)); };',
       },
     ];
 
@@ -171,6 +184,36 @@ describe('inner style grammar', () => {
   });
 
   describe('standalone inner parser', () => {
+    it('parses member-access values without error nodes', () => {
+      const src = 'fill: c.alpha(40%);';
+      const names = nodeList(styleParser.parse(src));
+      expect(names.some((n) => n.startsWith('⚠'))).toBe(false);
+      expect(names).toContain('Member[6,18]');
+      expect(names).toContain('.[7,8]');
+      expect(names).toContain('Call[8,18]');
+    });
+
+    it('member call nested in another call binds the tail ArgList to the tail Call', () => {
+      // Precedence guard: @precedence { call, member } — with member first,
+      // `shadowColor.alpha(50%)` inside drop-shadow's args silently misparses
+      // as Member[Identifier . Identifier] with the (50%) ArgList floating as
+      // a stray sibling (NO error node, so only this exact-extent assertion
+      // catches a revert). Do not "clean up" the precedence order.
+      const src = 'filter: drop-shadow(1px 1px shadowColor.alpha(50%));';
+      const names = nodeList(styleParser.parse(src));
+      expect(names).toContain('Member[28,50]');
+      expect(names).toContain('Call[40,50]');
+      expect(names.some((n) => n.startsWith('⚠'))).toBe(false);
+    });
+
+    it('keeps .5 as a single NumberUnit (no member token)', () => {
+      const src = 'stroke-width: .5;';
+      const names = nodeList(styleParser.parse(src));
+      expect(names).toContain('NumberUnit[14,16]');
+      expect(names.some((n) => n.startsWith('Member'))).toBe(false);
+      expect(names.some((n) => n.startsWith('⚠'))).toBe(false);
+    });
+
     it('produces Call nodes with Identifier + ArgList inside values', () => {
       const tree = styleParser.parse('filter: blur(2px);');
       const names = nodeList(tree);

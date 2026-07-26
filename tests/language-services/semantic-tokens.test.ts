@@ -141,4 +141,29 @@ describe('getSemanticTokens', () => {
       expect(encoded).toEqual([0, 4, 1, 0, 0, 0, 6, 3, 2, 0]);
     });
   });
+
+  describe('style-block value references', () => {
+    it('emits a variable token at the exact column and length inside a style value', () => {
+      const src = 'let shadowColor = #000;\nlet s = ${ filter: drop-shadow(4px 4px shadowColor); };';
+      const col = src.split('\n')[1].indexOf('shadowColor');
+      // Line 1 also carries the `s` declaration token; select by column.
+      const varTokens = tokensByType(src, 'variable').filter((t) => t.line === 1 && t.character === col);
+      expect(varTokens).toHaveLength(1);
+      expect(varTokens[0].length).toBe('shadowColor'.length);
+    });
+
+    it('emits nothing for CSS keywords in style values', () => {
+      const src = 'let s = ${ stroke-linejoin: round; text-anchor: middle; };';
+      const styleLine = tokens(src).filter((t) => t.line === 0 && t.character > src.indexOf('${'));
+      expect(styleLine).toHaveLength(0);
+    });
+
+    it('emits a function token for a fn referenced in a template interpolation', () => {
+      const src = 'fn myFn(x) { return x; }\nlet s = ${ font-family: `${myFn(2)}`; };';
+      const fnTokens = tokensByType(src, 'function').filter((t) => t.line === 1);
+      expect(fnTokens).toHaveLength(1);
+      expect(fnTokens[0].character).toBe(src.split('\n')[1].indexOf('myFn'));
+      expect(fnTokens[0].length).toBe(4);
+    });
+  });
 });

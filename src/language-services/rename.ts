@@ -45,7 +45,7 @@ export function prepareRename(document: TextDocument, position: Position): Prepa
   // Must resolve to a user declaration
   const scopeInfo = analyzeScopes(document);
   for (const ref of scopeInfo.references) {
-    if (ref.name === word.text && ref.declaration && isOnLine(position, ref.range)) {
+    if (ref.name === word.text && ref.declaration && matchesPosition(position, ref.range)) {
       return { range: word.range, placeholder: word.text };
     }
   }
@@ -74,7 +74,7 @@ export function getRenameEdits(document: TextDocument, position: Position, newNa
   // Find the target declaration
   let targetDecl = null;
   for (const ref of scopeInfo.references) {
-    if (ref.name === word.text && ref.declaration && isOnLine(position, ref.range)) {
+    if (ref.name === word.text && ref.declaration && matchesPosition(position, ref.range)) {
       targetDecl = ref.declaration;
       break;
     }
@@ -97,10 +97,14 @@ export function getRenameEdits(document: TextDocument, position: Position, newNa
     edits.push({ range: declWordRange, newText: newName });
   }
 
-  // Rename all references to this declaration
+  // Rename all references to this declaration. Full-width references
+  // (style-block values — see Reference.inStyleValue) carry exact extents and
+  // are used directly; zero-width references fall back to the line scan.
   for (const ref of scopeInfo.references) {
     if (ref.declaration === targetDecl) {
-      const refWordRange = findWordRangeOnLine(source, document, ref.range.start.line, ref.name);
+      const refWordRange = isFullWidth(ref.range)
+        ? ref.range
+        : findWordRangeOnLine(source, document, ref.range.start.line, ref.name);
       if (refWordRange) {
         // Avoid duplicates (same range as declaration)
         if (!edits.some((e) => e.range.start.line === refWordRange.start.line && e.range.start.character === refWordRange.start.character)) {
@@ -144,6 +148,23 @@ function getWordAt(source: string, offset: number): WordAtPosition | null {
 
 function isOnLine(position: Position, range: Range): boolean {
   return position.line === range.start.line;
+}
+
+function isFullWidth(range: Range): boolean {
+  return range.end.line > range.start.line || range.end.character > range.start.character;
+}
+
+/**
+ * Position matching that handles both range conventions (mirrors
+ * navigation.ts isPositionInRange): zero-width statement-anchored ranges
+ * match by line; full-width ranges (style-value references) by containment.
+ */
+function matchesPosition(position: Position, range: Range): boolean {
+  if (!isFullWidth(range)) return isOnLine(position, range);
+  if (position.line < range.start.line || position.line > range.end.line) return false;
+  if (position.line === range.start.line && position.character < range.start.character) return false;
+  if (position.line === range.end.line && position.character > range.end.character) return false;
+  return true;
 }
 
 /**

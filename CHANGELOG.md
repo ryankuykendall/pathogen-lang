@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-25 (style-block scope awareness: references in values, rename/find-refs, Member expressions)
+
+### Added
+
+#### Core
+
+- **Scope analysis now sees inside style-block values.** Identifiers in `${ ... }` values that resolve to user declarations become real references with **exact full-width ranges** (`Reference.inStyleValue`), extracted via the inner style grammar (`'_: value;'` wrap) plus full expression parsing for `${...}` template interpolations. The reference rule matches evaluator semantics: bare values and member heads reference only USER declarations (`stroke-linejoin: round;` stays plain CSS; a user `let round` shadowing it becomes a reference); function names (`drop-shadow`, `.alpha`) never do. This fixes a silent hole: **rename and find-references previously skipped style values entirely** — renaming `shadowColor` did not update it inside `drop-shadow(4px 4px shadowColor)`. Rename now edits style-value occurrences with exact ranges (including several on one line — the old first-match-per-line scan couldn't), find-references/go-to-definition work from inside values, and VS Code semantic tokens color them at exact positions.
+- **Member expressions in the inner style grammar**: `fill: c.alpha(40%);`, `rgba(0,0,200,1).lighten(20%)`, and chains like `a.b.c(1).d` now parse as first-class `Member` nodes in both grammar scopes (previously the `.` was an error node). `.5` numbers are unaffected.
+
+#### Playground
+
+- **Variable references inside style values take the variable color again.** A new decoration extension (`cm-style-ref-recolor.ts`) marks style-value identifiers that resolve to declarations, so `stroke: c;` and `drop-shadow(1px 1px c)` render `c` coral in dark mode / default text in light — matching the variable everywhere else — while CSS keywords (`middle`) and undeclared names keep the value color. Backed by a shared size-1 scope-analysis memo (`scope-cache.ts`) reused by the color-chip extension.
+- **Color chips are scope-aware**: `let tomato = ...; stroke: tomato;` no longer renders a chip (clicking it would have overwritten the variable reference with a literal color — the KNOWN LIMITATION from the previous entry, now fixed in both the mounted-tree and regex-fallback chip paths). An undeclared `stroke: tomato;` still chips.
+
 ## [Unreleased] - 2026-07-25 (style-block structure: comma-form filter error, inner grammar, editor intelligence)
 
 ### Fixed

@@ -100,3 +100,26 @@ describe('getReferences', () => {
     expect(refs('circle(50, 50, 25)', 0, 3)).toHaveLength(0);
   });
 });
+
+describe('style-block value references (navigation)', () => {
+  it('find-references includes style-value occurrences with exact full-width ranges', () => {
+    const src = 'let c = #f00;\nlet s = ${ filter: drop-shadow(1px 1px c); };';
+    const result = refs(src, 0, 4);
+    const styleRef = result.find((loc) => loc.range.start.line === 1);
+    expect(styleRef).toBeDefined();
+    const line = src.split('\n')[1];
+    expect(line.slice(styleRef!.range.start.character, styleRef!.range.end.character)).toBe('c');
+  });
+
+  it('getDefinition works from inside a style value', () => {
+    const src = 'let c = #f00;\nlet s = ${ stroke: c; };';
+    const result = def(src, 1, 19);
+    expect(result).not.toBeNull();
+    expect(result!.range.start.line).toBe(0);
+  });
+
+  it('undeclared CSS keywords resolve to nothing', () => {
+    const src = 'let s = ${ stroke-linejoin: round; };';
+    expect(def(src, 0, 30)).toBeNull();
+  });
+});

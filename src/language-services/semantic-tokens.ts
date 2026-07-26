@@ -103,36 +103,56 @@ export function getSemanticTokens(document: TextDocument): SemanticToken[] {
 
   // Classify references
   for (const ref of scopeInfo.references) {
+    // Full-width references (style-block values) carry exact extents — emit
+    // the token directly. Zero-width references fall back to the line scan.
+    const isFullWidth =
+      ref.range.end.line > ref.range.start.line || ref.range.end.character > ref.range.start.character;
+    const emit = (type: number, modifiers: number): void => {
+      if (isFullWidth) {
+        tokens.push({
+          line: ref.range.start.line,
+          character: ref.range.start.character,
+          // Range width (single-line by construction) — self-consistent if a
+          // future full-width Reference ever spans more than the identifier.
+          length: ref.range.end.character - ref.range.start.character,
+          type,
+          modifiers,
+        });
+      } else {
+        addTokenForName(source, ref.name, ref.range.start.line, type, modifiers, tokens);
+      }
+    };
+
     if (ref.declaration) {
       // User-defined reference — classify by declaration kind
       switch (ref.declaration.kind) {
         case 'function':
-          addTokenForName(source, ref.name, ref.range.start.line, typeIndex('function'), 0, tokens);
+          emit(typeIndex('function'), 0);
           break;
         case 'parameter':
         case 'blockParam':
-          addTokenForName(source, ref.name, ref.range.start.line, typeIndex('parameter'), 0, tokens);
+          emit(typeIndex('parameter'), 0);
           break;
         case 'loopVar':
-          addTokenForName(source, ref.name, ref.range.start.line, typeIndex('variable'), modBit('readonly'), tokens);
+          emit(typeIndex('variable'), modBit('readonly'));
           break;
         case 'enum':
-          addTokenForName(source, ref.name, ref.range.start.line, typeIndex('type'), 0, tokens);
+          emit(typeIndex('type'), 0);
           break;
         default:
-          addTokenForName(source, ref.name, ref.range.start.line, typeIndex('variable'), 0, tokens);
+          emit(typeIndex('variable'), 0);
           break;
       }
     } else if (ref.isBuiltin) {
       // Classify builtins by category
       if (CONSTRUCTOR_TYPES.has(ref.name)) {
-        addTokenForName(source, ref.name, ref.range.start.line, typeIndex('type'), 0, tokens);
+        emit(typeIndex('type'), 0);
       } else if (ENUM_NAMES.has(ref.name)) {
-        addTokenForName(source, ref.name, ref.range.start.line, typeIndex('type'), modBit('readonly'), tokens);
+        emit(typeIndex('type'), modBit('readonly'));
       } else if (NAMESPACES.has(ref.name)) {
-        addTokenForName(source, ref.name, ref.range.start.line, typeIndex('namespace'), 0, tokens);
+        emit(typeIndex('namespace'), 0);
       } else if (STDLIB_NAMES.has(ref.name)) {
-        addTokenForName(source, ref.name, ref.range.start.line, typeIndex('function'), 0, tokens);
+        emit(typeIndex('function'), 0);
       }
     }
   }

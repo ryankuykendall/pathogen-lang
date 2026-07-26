@@ -28,14 +28,20 @@ value {
   ColorLiteral |
   StringLiteral |
   Template |
+  Member |
   Call |
   Identifier |
   "," | "/"
 }
 
-@precedence { call }
+@precedence { call, member }
 
 Call { Identifier !call ArgList }
+
+// Member-access values: `c.alpha(40%)`, `rgba(0,0,0,.5).lighten(20%)`,
+// chains `a.b.c(1).d`. The head may be an Identifier or a Call; tails after
+// `.` are property reads (Identifier) or method calls (Call).
+Member { (Call | Identifier) (!member "." (Call | Identifier))+ }
 
 // Newlines are insignificant inside parenthesized arguments — a value like
 // drop-shadow(\n  4px 4px\n  black\n) stays one declaration. Rules referenced
@@ -48,6 +54,7 @@ Call { Identifier !call ArgList }
     ColorLiteral |
     StringLiteral |
     Template |
+    ArgMember |
     ArgCall |
     ArgIdentifier |
     "," | "/" |
@@ -55,6 +62,7 @@ Call { Identifier !call ArgList }
   }
   ArgCall[@name=Call] { ArgIdentifier !call ArgList }
   ArgIdentifier[@name=Identifier] { identifier }
+  ArgMember[@name=Member] { (ArgCall | ArgIdentifier) (!member "." (ArgCall | ArgIdentifier))+ }
 }
 
 @skip { spaces }
@@ -85,10 +93,14 @@ Call { Identifier !call ArgList }
   tchar { ![`\\$] | "\\" _ | interp | "$" }
   interp { "${" (![{}] | "{" ![{}]* "}")* "}" }
 
-  "(" ")" "," ";" ":" "/"
+  "(" ")" "," ";" ":" "/" "."
 
   @precedence { LineComment, "/" }
   @precedence { NumberUnit, identifier }
+  // `.5` stays a NumberUnit (maximal munch would too, but the generator wants
+  // the overlap resolved explicitly); a lone `.` before a non-digit is the
+  // member-access token.
+  @precedence { NumberUnit, "." }
 }
 
 @external propSource styleHighlighting from "./style-highlight"

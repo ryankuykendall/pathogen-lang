@@ -7,9 +7,11 @@ export const
   ColorLiteral = 6,
   StringLiteral = 7,
   Template = 8,
-  Call = 9,
-  Identifier = 10,
-  ArgList = 13,
-  ArgCall = 14,
-  ArgIdentifier = 15,
-  LineComment = 19
+  Member = 9,
+  Call = 10,
+  Identifier = 11,
+  ArgList = 14,
+  ArgMember = 15,
+  ArgCall = 16,
+  ArgIdentifier = 17,
+  LineComment = 22

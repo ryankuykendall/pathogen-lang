@@ -236,4 +236,97 @@ describe('analyzeScopes', () => {
       expect(itemDecl!.kind).toBe('blockParam');
     });
   });
+
+  describe('style-block value references', () => {
+    function styleRefs(info: ScopeInfo): Reference[] {
+      return info.references.filter((r) => r.inStyleValue);
+    }
+    /** Assert a ref's full-width range slices exactly its name from the source. */
+    function expectExactRange(src: string, ref: Reference): void {
+      const line = src.split('\n')[ref.range.start.line];
+      expect(ref.range.end.line).toBe(ref.range.start.line);
+      expect(line.slice(ref.range.start.character, ref.range.end.character)).toBe(ref.name);
+    }
+
+    it('emits a reference for a bare declared identifier as a value', () => {
+      const src = 'let c = #f00;\nlet s = ${ stroke: c; };';
+      const refs = styleRefs(analyze(src));
+      expect(refs).toHaveLength(1);
+      expect(refs[0].name).toBe('c');
+      expect(refs[0].declaration).not.toBeNull();
+      expectExactRange(src, refs[0]);
+    });
+
+    it('emits references inside CSS function args (drop-shadow)', () => {
+      const src = 'let shadowColor = #000;\nlet s = ${ filter: drop-shadow(4px 4px 8px shadowColor); };';
+      const refs = styleRefs(analyze(src));
+      expect(refs.map((r) => r.name)).toEqual(['shadowColor']);
+      expectExactRange(src, refs[0]);
+    });
+
+    it('member heads are references; method names are not', () => {
+      const src = 'let c = #f00;\nlet s = ${ fill: c.alpha(40%); };';
+      const refs = styleRefs(analyze(src));
+      expect(refs.map((r) => r.name)).toEqual(['c']);
+      expectExactRange(src, refs[0]);
+    });
+
+    it('function callee names are never references', () => {
+      // `blur` is also a plausible variable name — as a callee it stays CSS.
+      const src = 'let blur = 4;\nlet s = ${ filter: blur(2px); };';
+      expect(styleRefs(analyze(src))).toHaveLength(0);
+    });
+
+    it('CSS keywords and undeclared identifiers are not references', () => {
+      const src = 'let s = ${ stroke-linejoin: round; text-anchor: middle; fill: tomato; };';
+      expect(styleRefs(analyze(src))).toHaveLength(0);
+    });
+
+    it('stdlib/builtin names are not references at CSS level', () => {
+      // Evaluator keeps function-valued identifiers as raw CSS; `round` is
+      // stdlib but must not be a reference unless the USER declares it.
+      const src = 'let s = ${ stroke-linejoin: round; };';
+      const info = analyze(src);
+      expect(styleRefs(info)).toHaveLength(0);
+    });
+
+    it('a user declaration shadowing a CSS keyword IS a reference', () => {
+      const src = 'let round = #0f0;\nlet s = ${ stroke: round; };';
+      const refs = styleRefs(analyze(src));
+      expect(refs.map((r) => r.name)).toEqual(['round']);
+      expect(refs[0].declaration).not.toBeNull();
+    });
+
+    it('template interpolation identifiers use normal Pathogen semantics', () => {
+      const src = "let family = 'Inter';\nfn myFn(x) { return x; }\nlet s = ${ font-family: `${family} ${myFn(2)}`; };";
+      const refs = styleRefs(analyze(src));
+      expect(refs.map((r) => r.name).sort()).toEqual(['family', 'myFn']);
+      for (const r of refs) expectExactRange(src, r);
+    });
+
+    it('multiple references on one line each get exact distinct ranges', () => {
+      const src = 'let c = #f00;\nlet s = ${ filter: drop-shadow(1px 1px c) drop-shadow(2px 2px c); };';
+      const refs = styleRefs(analyze(src));
+      expect(refs).toHaveLength(2);
+      expect(refs[0].range.start.character).not.toBe(refs[1].range.start.character);
+      for (const r of refs) expectExactRange(src, r);
+    });
+
+    it('style refs carry full-width ranges (end > start)', () => {
+      const src = 'let c = #f00;\nlet s = ${ stroke: c; };';
+      const [ref] = styleRefs(analyze(src));
+      expect(ref.range.end.character).toBeGreaterThan(ref.range.start.character);
+    });
+
+    it('stays lenient on incomplete blocks', () => {
+      const src = 'let c = #f00;\nlet s = ${\n  stroke: c;\n  filter: \n};';
+      const refs = styleRefs(analyze(src));
+      expect(refs.map((r) => r.name)).toEqual(['c']);
+    });
+
+    it('declarations after the style block are not in scope', () => {
+      const src = 'let s = ${ stroke: later; };\nlet later = #f00;';
+      expect(styleRefs(analyze(src))).toHaveLength(0);
+    });
+  });
 });

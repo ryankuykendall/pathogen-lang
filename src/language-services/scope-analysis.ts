@@ -1,4 +1,6 @@
 import { parseLezer } from '../parser';
+import { parser as styleParser } from '../parser/style.generated';
+import { parseExpressionAtOffset } from '../parser/lezer-expression';
 import { stdlib } from '../stdlib';
 
 import type { TextDocument } from './document';
@@ -11,6 +13,7 @@ import type {
   FunctionCall,
   MethodCallExpression,
   PathArg,
+  StyleBlockLiteral,
 } from '../parser/ast';
 
 // --- Built-in names that are always in scope ---
@@ -66,6 +69,14 @@ export interface Reference {
   range: Range;
   declaration: Declaration | null;
   isBuiltin: boolean;
+  /**
+   * Set when the reference sits inside a style-block value (`${ fill: c; }`).
+   * These references carry FULL-WIDTH ranges (end > start, exact extents from
+   * the inner style parser) unlike ordinary references, whose ranges are
+   * zero-width and consumed via line-scan heuristics. `end > start` is the
+   * discriminator consumers branch on.
+   */
+  inStyleValue?: true;
 }
 
 export interface Scope {
@@ -84,6 +95,9 @@ export interface ScopeInfo {
 interface Collector {
   decls: Declaration[];
   refs: Reference[];
+  /** Full source + document — style-block value sub-parsing needs exact offsets. */
+  source: string;
+  document: TextDocument;
 }
 
 // --- Analysis ---
@@ -102,7 +116,7 @@ export function analyzeScopes(document: TextDocument): ScopeInfo {
     return { root: mkScope(null), declarations: [], references: [] };
   }
 
-  const col: Collector = { decls: [], refs: [] };
+  const col: Collector = { decls: [], refs: [], source, document };
   const rootScope = mkScope(null);
 
   walkStatements(ast.body, rootScope, col);
@@ -353,14 +367,126 @@ function walkExpr(expr: Expression, scope: Scope, col: Collector): void {
     case 'TextBlockExpression':
       walkStatements(expr.body as Statement[], scope, col);
       break;
+    case 'StyleBlockLiteral':
+      collectStyleBlockReferences(expr, scope, col);
+      break;
     case 'NumberLiteral':
     case 'StringLiteral':
     case 'BooleanLiteral':
     case 'NullLiteral':
     case 'ColorLiteral':
-    case 'StyleBlockLiteral':
       break;
   }
+}
+
+// --- Style-block value references ---
+
+const STYLE_VALUE_WRAP_PREFIX = '_: ';
+
+/** `${...}` interpolations inside a template token — one brace-nesting level,
+ * mirroring the inner grammar's `interp` token definition. */
+const TEMPLATE_INTERP_RE = /\$\{((?:[^{}]|\{[^{}]*\})*)\}/g;
+
+/**
+ * Emit references for identifiers inside style-block values, using the
+ * `StyleProperty.valueLoc`/`valueEnd` extents for exact document offsets.
+ *
+ * Value text is parsed with the INNER style grammar (the same tokenizer the
+ * editor mounts over `StyleContent`), wrapped as `_: <value>;` so it reads as
+ * one declaration. Reference rule (matches evaluator semantics — resolved
+ * identifiers substitute, unresolved ones pass through as raw CSS):
+ *   - bare identifiers and Member HEADS → a Reference only when the scope
+ *     chain resolves to a USER declaration (builtins don't count: in
+ *     `stroke-linejoin: round;` the evaluator keeps `round` as CSS);
+ *   - Call callees (`drop-shadow`, `.alpha`) and Member tails → never;
+ *   - template `${...}` interpolations are real Pathogen expressions and use
+ *     normal reference semantics (builtins included).
+ *
+ * Unlike ordinary references (zero-width ranges), these carry FULL-WIDTH
+ * ranges so rename/semantic-tokens/find-references can use them directly.
+ */
+function collectStyleBlockReferences(expr: StyleBlockLiteral, scope: Scope, col: Collector): void {
+  for (const prop of expr.properties) {
+    if (!prop.valueLoc || prop.valueEnd === undefined || prop.valueEnd <= prop.valueLoc.offset) continue;
+    const valueText = col.source.slice(prop.valueLoc.offset, prop.valueEnd);
+    const wrapped = STYLE_VALUE_WRAP_PREFIX + valueText + ';';
+    const baseOffset = prop.valueLoc.offset - STYLE_VALUE_WRAP_PREFIX.length;
+
+    styleParser.parse(wrapped).iterate({
+      enter: (n) => {
+        if (n.name === 'Template') {
+          collectTemplateInterpRefs(wrapped.slice(n.from, n.to), baseOffset + n.from, scope, col);
+          return false;
+        }
+        if (n.name !== 'Identifier') return true;
+
+        const parent = n.node.parent;
+        if (parent) {
+          // Call callee (`drop-shadow(`, `.alpha(`) — a function name, not a value ref.
+          if (parent.name === 'Call' && parent.firstChild?.from === n.from) return true;
+          // Member tail (`c.alpha`, `a.b`) — property/method name, not a value ref.
+          if (parent.name === 'Member' && parent.firstChild?.from !== n.from) return true;
+        }
+
+        const name = wrapped.slice(n.from, n.to);
+        const decl = resolveInChain(name, scope);
+        if (!decl) return true; // unresolved → CSS keyword/token, not a reference
+
+        const from = baseOffset + n.from;
+        const to = baseOffset + n.to;
+        col.refs.push({
+          name,
+          range: { start: col.document.positionAt(from), end: col.document.positionAt(to) },
+          declaration: decl,
+          isBuiltin: false,
+          inStyleValue: true,
+        });
+        return true;
+      },
+    });
+  }
+}
+
+/**
+ * References inside a style-value template's `${...}` interpolations. These
+ * are full Pathogen expressions — parse each with the standard expression
+ * parser (locations adjusted to the document; NOTE: consume only line/column
+ * from the adjusted locs — adjustLocs' `.offset` math is unreliable on
+ * multi-line documents) and reuse walkExpr, keeping resolved + builtin refs.
+ */
+function collectTemplateInterpRefs(templateText: string, templateDocFrom: number, scope: Scope, col: Collector): void {
+  TEMPLATE_INTERP_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = TEMPLATE_INTERP_RE.exec(templateText)) !== null) {
+    const exprText = m[1];
+    if (!exprText.trim()) continue;
+    const exprDocFrom = templateDocFrom + m.index + 2; // past `${`
+    const parsed = parseExpressionAtOffset(exprText, exprDocFrom, col.source);
+    if (!parsed) continue;
+
+    const temp: Collector = { decls: [], refs: [], source: col.source, document: col.document };
+    walkExpr(parsed, scope, temp);
+    for (const ref of temp.refs) {
+      if (!ref.declaration && !ref.isBuiltin) continue;
+      const start = ref.range.start;
+      col.refs.push({
+        ...ref,
+        range: { start, end: { line: start.line, character: start.character + ref.name.length } },
+        inStyleValue: true,
+      });
+    }
+  }
+}
+
+/** Walk the scope chain for a user declaration; null when unresolved. */
+function resolveInChain(name: string, scope: Scope): Declaration | null {
+  let current: Scope | null = scope;
+  while (current) {
+    const decl = current.declarations.get(name);
+    if (decl) return decl;
+    current = current.parent;
+  }
+  return null;
 }
 
 function walkFnCall(expr: FunctionCall, scope: Scope, col: Collector): void {

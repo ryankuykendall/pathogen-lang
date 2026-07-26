@@ -9,6 +9,7 @@ import {
   type ErrorHighlightHandle,
 } from '../utils/cm-language-services.js';
 import { colorPickerExtension } from '../utils/cm-color-picker.js';
+import { styleRefRecolorExtension } from '../utils/cm-style-ref-recolor.js';
 import { textLayerEditorExtension } from '../utils/cm-textlayer-editor.js';
 import { svgPathCompletions } from '../utils/codemirror-setup.js';
 import { pathogenLanguage } from '../utils/pathogen-language.js';
@@ -316,6 +317,7 @@ export class CodeEditorPane extends HTMLElement {
         blurExtension,
         view.EditorView.lineWrapping,
         ...colorPickerExtension(view, language),
+        ...styleRefRecolorExtension(view),
         ...textLayerEditorExtension(view, language),
       ],
     });

@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import { findColorRanges } from '../playground/utils/cm-color-picker.js';
+import { resolvedStyleRefOffsetRanges } from '../playground/utils/scope-cache.js';
 import { colorspaceToFormat } from '../playground/utils/color.js';
-import { parseLezer } from '../src';
+import { parseLezer, analyzeScopes } from '../src';
+import { StringTextDocument } from '../src/language-services/document';
 import { editorParser } from '../src/parser/editor-parser';
+
+/** Resolved style-value reference ranges, as the playground's scope-cache computes them. */
+function scopeRanges(source: string) {
+  const doc = new StringTextDocument(source);
+  return resolvedStyleRefOffsetRanges(analyzeScopes(doc), doc);
+}
 
 function ranges(source: string) {
   const { tree } = parseLezer(source);
@@ -159,19 +167,39 @@ describe('findColorRanges (AST-based)', () => {
       expect(r[0].color).toBe('tomato');
     });
 
-    it('KNOWN LIMITATION: a variable literally named after a CSS color still chips', () => {
-      // The scanner has no scope info, so `tomato` here is chipped as the CSS
-      // named color even though it is a variable reference the compiler would
-      // resolve to oklch(...). Interacting with the chip would overwrite the
-      // reference with a literal color. Same behavior as the legacy regex
-      // fallback; scope-aware exclusion is a recorded follow-up
-      // (project-docs/style-block-structure/primer.md). This test documents
-      // the limitation — if it starts failing because the chip disappeared,
-      // the follow-up landed and this test should be inverted.
+    it('scope-aware exclusion: a variable named after a CSS color does NOT chip', () => {
+      // The 2026-07-25 follow-up: with resolved style-value reference ranges
+      // threaded in (as the playground's scope-cache does), `tomato` is known
+      // to be a variable reference — chipping it would overwrite the
+      // reference with a literal color.
+      const src = 'let tomato = oklch(0.63 0.24 30);\nlet s = ${ stroke: tomato; };';
+      const r = findColorRanges(editorParser.parse(src), src, scopeRanges(src));
+      expect(r.find((x) => x.color === 'tomato')).toBeUndefined();
+    });
+
+    it('without scope info the named-color chip remains (documented default)', () => {
       const src = 'let tomato = oklch(0.63 0.24 30);\nlet s = ${ stroke: tomato; };';
       const r = mountedRanges(src);
-      const styleChip = r.find((x) => x.color === 'tomato');
-      expect(styleChip).toBeDefined();
+      expect(r.find((x) => x.color === 'tomato')).toBeDefined();
+    });
+
+    it('an UNDECLARED named color still chips even with scope info', () => {
+      const src = 'let s = ${ stroke: tomato; };';
+      const r = findColorRanges(editorParser.parse(src), src, scopeRanges(src));
+      expect(r.find((x) => x.color === 'tomato')).toBeDefined();
+    });
+
+    it('the regex fallback path applies the same exclusion (unmounted tree)', () => {
+      const src = 'let tomato = oklch(0.63 0.24 30);\nlet s = ${ stroke: tomato; };';
+      const { tree } = parseLezer(src);
+      const r = findColorRanges(tree, src, scopeRanges(src));
+      expect(r.find((x) => x.color === 'tomato')).toBeUndefined();
+      // other chips are unaffected: the oklch literal on the declaration line
+      // and the hex value in the block both still chip
+      const src2 = 'let tomato = oklch(0.63 0.24 30);\nlet s = ${ stroke: tomato; fill: #f00; };';
+      const r2 = findColorRanges(parseLezer(src2).tree, src2, scopeRanges(src2));
+      expect(r2.map((x) => x.color)).toEqual(['oklch(0.63 0.24 30)', '#f00']);
+      expect(r2.find((x) => x.color === 'tomato')).toBeUndefined();
     });
 
     it('does not chip identifiers that merely contain a color name', () => {

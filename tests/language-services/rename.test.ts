@@ -92,3 +92,78 @@ describe('getRenameEdits', () => {
     expect(rename('let x = ', 0, 4, 'y')).toHaveLength(1);
   });
 });
+
+describe('rename inside style-block values', () => {
+  function applyEdits(source: string, edits: TextEdit[]): string {
+    const lines = source.split('\n');
+    // Apply per line, right-to-left so earlier edits don't shift later ranges.
+    const sorted = [...edits].sort((a, b) =>
+      a.range.start.line !== b.range.start.line
+        ? b.range.start.line - a.range.start.line
+        : b.range.start.character - a.range.start.character,
+    );
+    for (const e of sorted) {
+      const line = lines[e.range.start.line];
+      lines[e.range.start.line] =
+        line.slice(0, e.range.start.character) + e.newText + line.slice(e.range.end.character);
+    }
+    return lines.join('\n');
+  }
+
+  it('renames a variable referenced inside drop-shadow()', () => {
+    const src = 'let c = #f00;\nlet s = ${ filter: drop-shadow(1px 1px c); };';
+    const edits = rename(src, 0, 4, 'shadow');
+    expect(edits).toHaveLength(2);
+    expect(applyEdits(src, edits)).toBe(
+      'let shadow = #f00;\nlet s = ${ filter: drop-shadow(1px 1px shadow); };',
+    );
+  });
+
+  it('renames a member-head reference', () => {
+    const src = 'let c = #f00;\nlet s = ${ fill: c.alpha(40%); };';
+    expect(applyEdits(src, rename(src, 0, 4, 'base'))).toBe(
+      'let base = #f00;\nlet s = ${ fill: base.alpha(40%); };',
+    );
+  });
+
+  it('renames inside a template interpolation value', () => {
+    const src = "let family = 'Inter';\nlet s = ${ font-family: `${family}`; };";
+    expect(applyEdits(src, rename(src, 0, 6, 'font'))).toBe(
+      "let font = 'Inter';\nlet s = ${ font-family: `${font}`; };",
+    );
+  });
+
+  it('handles declaration and style-value reference on the SAME line', () => {
+    const src = 'let c = #f00; let s = ${ stroke: c; };';
+    const edits = rename(src, 0, 4, 'col');
+    expect(applyEdits(src, edits)).toBe('let col = #f00; let s = ${ stroke: col; };');
+  });
+
+  it('renames multiple style-value references on one line distinctly', () => {
+    const src = 'let c = #f00;\nlet s = ${ filter: drop-shadow(1px 1px c) drop-shadow(2px 2px c); };';
+    const edits = rename(src, 0, 4, 'x');
+    expect(edits).toHaveLength(3);
+    expect(applyEdits(src, edits)).toBe(
+      'let x = #f00;\nlet s = ${ filter: drop-shadow(1px 1px x) drop-shadow(2px 2px x); };',
+    );
+  });
+
+  it('rename initiated FROM a style-value reference works', () => {
+    const src = 'let c = #f00;\nlet s = ${ stroke: c; };';
+    // Cursor on the `c` inside the style block (line 1, char 19)
+    const edits = rename(src, 1, 19, 'col');
+    expect(applyEdits(src, edits)).toBe('let col = #f00;\nlet s = ${ stroke: col; };');
+  });
+
+  it('prepareRename works on a style-value reference', () => {
+    const src = 'let c = #f00;\nlet s = ${ stroke: c; };';
+    const result = prepare(src, 1, 19);
+    expect(result).not.toBeNull();
+    expect(result!.placeholder).toBe('c');
+  });
+
+  it('does not rename an undeclared CSS keyword', () => {
+    const src = 'let s = ${ stroke-linejoin: round; };';
+    expect(prepare(src, 0, 30)).toBeNull();
+  });
+});
