@@ -16,7 +16,11 @@ export const pathogenHighlighting = styleTags({
   NullLiteral: t.null,
   ColorLiteral: t.color,
   CSSColorLiteral: t.color,
-  templateContent: t.string,
+  // Template literal: the composite node takes the string style; the
+  // lowercase template tokens (templateContent, templateStart, …) are NOT
+  // node types (Lezer lowercase rule) — styling them is dead code. Nested
+  // interpolation expressions' own token styles override within their ranges.
+  TemplateLiteral: t.special(t.string),
 
   // Path commands
   pathCommandLetter: t.operatorKeyword,
@@ -45,10 +49,6 @@ export const pathogenHighlighting = styleTags({
   '"," ";"': t.separator,
   '"."': t.derefOperator,
   '"..."': t.punctuation,
-
-  // Template literal delimiters
-  'templateStart templateEnd': t.string,
-  'templateInterpStart templateInterpEnd': t.special(t.brace),
 
   // Style block content
   StyleContent: t.special(t.string),

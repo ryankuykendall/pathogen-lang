@@ -58,9 +58,10 @@ const NODE_CLASS: Record<string, string> = {
   String: 'str',
   ColorLiteral: 'str',
   CSSColorLiteral: 'str',
-  templateContent: 'str',
-  templateStart: 'str',
-  templateEnd: 'str',
+  // NOTE: template literal text runs are structural GAPS in the leaf-only
+  // walk below (the lowercase template tokens are not node types), so they
+  // emit with cls null — plain text. The former templateContent/Start/End
+  // entries here were dead code and were removed 2026-07-26.
   BooleanLiteral: 'num',
   NullLiteral: 'num',
 

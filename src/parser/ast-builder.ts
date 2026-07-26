@@ -1722,21 +1722,95 @@ function buildIdentifier(cursor: TreeCursor, source: string): Identifier {
 }
 
 function buildTemplateLiteral(cursor: TreeCursor, source: string): TemplateLiteral {
-  // Always use the raw text approach — it's more reliable than walking
-  // Lezer's template tokens, which often have gaps (text between backtick
-  // and ${} interpolation is not captured as a node).
+  // Walk the CST. The grammar parses `${...}` interpolations INLINE as real
+  // expression subtrees under TemplateInterpolation nodes — correct even for
+  // hard cases like a `}` inside a string argument (`${ f("}") }`). Only the
+  // literal text runs are structural gaps (the lowercase template tokens are
+  // not node types), and those are recovered by range between children.
+  //
+  // History: this function previously discarded the tree and re-scanned the
+  // raw text (commits 8c89ff4/0041d3e, reacting to the missing text nodes) —
+  // which silently mis-parsed interpolations containing braces in strings and
+  // re-parsed every expression a second time with offset-rewritten locations.
+  // The raw scanner survives only as the error-recovery fallback below.
+  const nodeFrom = cursor.from;
+  const nodeTo = cursor.to;
   const raw = text(cursor, source);
-  if (raw.startsWith('`') && raw.endsWith('`')) {
-    const inner = raw.slice(1, -1);
-    const parts = parseTemplateString(inner, cursor.from + 1, source);
-    return { type: 'TemplateLiteral', parts };
+  const opened = raw.startsWith('`');
+  const closed = opened && raw.length >= 2 && raw.endsWith('`');
+  // Unterminated templates (mid-typing, error recovery) have no closing
+  // backtick — the literal content then runs to the node end.
+  const contentEnd = closed ? nodeTo - 1 : nodeTo;
+
+  const parts: (string | Expression)[] = [];
+  let sawInterpolation = false;
+  let prevEnd = nodeFrom + (opened ? 1 : 0);
+
+  if (cursor.firstChild()) {
+    do {
+      if (cursor.name !== 'TemplateInterpolation') continue;
+      sawInterpolation = true;
+      // Literal gap before this interpolation (empty gaps push nothing —
+      // matches the legacy parts contract for adjacent interpolations).
+      if (cursor.from > prevEnd) {
+        parts.push(unescapeTemplate(source.slice(prevEnd, cursor.from)));
+      }
+      let interpEnd = cursor.to;
+      // Empty/mid-typing interpolation (`${}` — the auto-close intermediate
+      // state on every keystroke): error recovery ends the node right after
+      // `${`, leaving the `}` unconsumed — without this it would leak into
+      // the following literal run. A well-formed interpolation's own span
+      // already includes its `}`, so the end-check prevents double-consuming
+      // a literal `}` that follows one (`` `${a}}` ``).
+      if (!source.slice(cursor.from, cursor.to).endsWith('}') && source[interpEnd] === '}') {
+        interpEnd += 1;
+      }
+      // The `${`/`}` delimiters are token-level (no nodes); the children are
+      // the expression's node(s). Postfix operators (`(args)`, `.prop`,
+      // `[idx]`) appear as SIBLINGS, so use the postfix-aware builder — same
+      // pattern as buildCalcExpression.
+      let expr: Expression | null = null;
+      if (cursor.firstChild()) {
+        do {
+          if (isExpressionNode(cursor.name)) {
+            expr = buildExpressionWithPostfix(cursor, source);
+            break;
+          }
+        } while (cursor.nextSibling());
+        cursor.parent();
+      }
+      // Mid-typing interpolation with no parsable expression contributes no
+      // part (lenient) rather than a bogus Identifier.
+      if (expr) parts.push(expr);
+      prevEnd = interpEnd;
+    } while (cursor.nextSibling());
+    cursor.parent();
   }
-  return { type: 'TemplateLiteral', parts: [] };
+
+  // Error-recovery fallback: the node has no structured interpolations but
+  // its text contains `${` — an opaque/recovered shape (historically hit as
+  // "TemplateLiteral with no children", commit 8c89ff4). Use the legacy raw
+  // scanner so those degraded states still yield usable parts.
+  if (!sawInterpolation && raw.includes('${') && opened) {
+    const inner = closed ? raw.slice(1, -1) : raw.slice(1);
+    return { type: 'TemplateLiteral', parts: parseTemplateString(inner, nodeFrom + 1, source) };
+  }
+
+  // Trailing literal run (or the entire content for interpolation-free templates)
+  if (contentEnd > prevEnd) {
+    parts.push(unescapeTemplate(source.slice(prevEnd, contentEnd)));
+  }
+  return { type: 'TemplateLiteral', parts };
 }
 
 /**
  * Parse a template string's inner content (between backticks) into parts.
  * Handles ${expr} interpolations by re-parsing the expression content.
+ *
+ * DEGRADED PATH ONLY — kept for error-recovered/opaque TemplateLiteral nodes
+ * (no TemplateInterpolation children). The brace counter here is NOT
+ * string-aware (`${ f("}") }` mis-splits); the primary CST walk above never
+ * has that problem because the grammar already parsed the expression.
  */
 function parseTemplateString(inner: string, baseOffset: number, source: string): (string | Expression)[] {
   const parts: (string | Expression)[] = [];

@@ -77,6 +77,11 @@ All seven phases of [PLAN.md](PLAN.md) shipped in one session. See
   scopes property names via `support.type.property-name`) + LSP
   `textDocument/documentColor` for native VS Code color chips
 - Interpolation as a distinct inner-grammar node (Template is one token in v1)
+  — note: the follow-on template investigation
+  (project-docs/template-literals/ASSESSMENT.md, 2026-07-26) concluded the
+  INNER Template token is the only legitimate remaining parseMixed candidate;
+  OUTER template literals must NOT be extracted (the grammar already parses
+  interpolations inline — the builder bug found there was fixed instead)
 - Highlighting follow-ups from Ryan's 2026-07-25 review (primer.md
   "Highlighting notes"): scope-aware recolor of variable refs in style values
   (via semantic tokens), `.` token / MemberExpression in the inner grammar,

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-26 (template literals: CST-walk fix + parseMixed assessment)
+
+### Fixed
+
+#### Core
+
+- **Silent template-AST corruption for interpolations containing braces in strings.** `` let x = `${ f("}") }`; `` parsed to a correct syntax tree but a garbage AST (the builder re-scanned raw text with a brace counter that had no string-awareness), compiling wrong output with zero diagnostics. `buildTemplateLiteral` now walks the CST the grammar already produced: interpolation expressions come from the single inline parse (correct absolute source positions — no more `let _ = expr;` re-parse, wrap-offset location rewrites, or silent depth-cap fallback to a bogus identifier), and literal text runs are recovered as ranges between interpolations. The raw-text scanner survives only as the error-recovery fallback for opaque/recovered nodes.
+
+### Added
+
+#### Playground
+
+- **Template literals finally have string coloring**: `TemplateLiteral` is styled as a special string (oneDark cyan / light `#e40`), with interpolation expressions keeping their own token colors (verified per-painted-span in both themes). The previous highlight entries targeted template token names that never existed as tree nodes — dead code, removed from both highlight maps.
+
+### Development
+
+- **parseMixed assessment recorded** (`project-docs/template-literals/ASSESSMENT.md`): extracting template literals into a separate parseMixed-mounted parser would *subtract* structure — the grammar already parses interpolations inline as real expression subtrees, a mount would replace them unless unproven `overlay` machinery re-mounted the full parser inside every interpolation, and the `${` token-group fragility stays either way. The inner style grammar's opaque `Template` token remains the one legitimate future parseMixed candidate.
+
 ## [Unreleased] - 2026-07-25 (style-block scope awareness: references in values, rename/find-refs, Member expressions)
 
 ### Added

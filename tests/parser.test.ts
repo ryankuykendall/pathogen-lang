@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractComments, parse, parseWithComments } from '../src/parser';
+import { extractComments, parse, parseLezer, parseWithComments } from '../src/parser';
 
 describe('Parser', () => {
   describe('path commands', () => {
@@ -972,6 +972,108 @@ L 10 20 // end point`;
       const ast = parse('let x = `hello \\`world\\``;');
       const tl = (ast.body[0] as any).value;
       expect(tl.parts[0]).toBe('hello `world`');
+    });
+
+    it('REGRESSION: interpolation containing a brace inside a string builds the real call', () => {
+      // Pre-CST-walk, the raw-text brace counter split on the `}` inside the
+      // string argument and produced garbage parts with zero diagnostics.
+      const ast = parse('let x = `${ f("}") }`;');
+      const tl = (ast.body[0] as any).value;
+      expect(tl.parts).toHaveLength(1);
+      expect(tl.parts[0].type).toBe('FunctionCall');
+      expect(tl.parts[0].name).toBe('f');
+      expect(tl.parts[0].args).toHaveLength(1);
+      expect(tl.parts[0].args[0]).toMatchObject({ type: 'StringLiteral', value: '}' });
+    });
+
+    it('parses member-of-object-literal interpolation', () => {
+      const ast = parse('let x = `${ {a: 1}.a }`;');
+      const tl = (ast.body[0] as any).value;
+      expect(tl.parts).toHaveLength(1);
+      expect(tl.parts[0].type).toBe('MemberExpression');
+      expect(tl.parts[0].property).toBe('a');
+    });
+
+    it('adjacent interpolations produce no empty string parts', () => {
+      const ast = parse('let x = `${a}${b}`;');
+      const tl = (ast.body[0] as any).value;
+      expect(tl.parts.map((p: any) => (typeof p === 'string' ? p : p.name))).toEqual(['a', 'b']);
+    });
+
+    it('escaped backticks interleave with interpolations', () => {
+      const ast = parse('let x = `esc \\` tick ${n} \\` more`;');
+      const tl = (ast.body[0] as any).value;
+      expect(tl.parts[0]).toBe('esc ` tick ');
+      expect(tl.parts[1].name).toBe('n');
+      expect(tl.parts[2]).toBe(' ` more');
+    });
+
+    it('interpolation expressions carry absolute document locations', () => {
+      const src = 'let pad = 1;\nlet x = `pos: ${pad}`;';
+      const ast = parse(src);
+      const tl = (ast.body[1] as any).value;
+      const ref = tl.parts[1];
+      expect(ref.type).toBe('Identifier');
+      // `pad` starts at line 2, column 17 (1-based) — absolute document
+      // position from the single inline parse (previously wrap-offset math).
+      expect(ref.loc).toMatchObject({ line: 2, column: 17 });
+    });
+
+    it('REGRESSION: empty interpolation (auto-close intermediate) does not leak its brace', () => {
+      // `${}` is the normal editor state right after typing `${` with
+      // auto-close. Error recovery ends the node after `${`; the closing
+      // brace must be consumed, not glued onto the following text.
+      const result = parseLezer('let x = `a${}b`;');
+      const tl = (result.ast.body[0] as any).value;
+      expect(tl.parts).toEqual(['a', 'b']);
+    });
+
+    it('literal brace right after a well-formed interpolation is kept', () => {
+      const result = parseLezer('let x = `${a}}`;');
+      const tl = (result.ast.body[0] as any).value;
+      expect(tl.parts.map((p: any) => (typeof p === 'string' ? p : p.name))).toEqual(['a', '}']);
+    });
+
+    it('nested template literal inside an interpolation builds recursively', () => {
+      const ast = parse('let x = `outer ${ `inner ${n}` } end`;');
+      const tl = (ast.body[0] as any).value;
+      expect(tl.parts[0]).toBe('outer ');
+      expect(tl.parts[1].type).toBe('TemplateLiteral');
+      expect(tl.parts[1].parts[0]).toBe('inner ');
+      expect(tl.parts[1].parts[1]).toMatchObject({ type: 'Identifier', name: 'n' });
+      expect(tl.parts[2]).toBe(' end');
+    });
+
+    it('multi-line template interpolation carries the correct line/column', () => {
+      // The old wrap-offset loc math was documented-unreliable on multi-line
+      // documents; the CST walk gets positions from the single inline parse.
+      const src = 'let pad = 1;\nlet x = `line one\nline two ${pad} end`;';
+      const ast = parse(src);
+      const tl = (ast.body[1] as any).value;
+      const ref = tl.parts.find((p: any) => typeof p !== 'string');
+      expect(ref.loc).toMatchObject({ line: 3, column: 12 });
+    });
+
+    it('text() and tspan() templates with interpolations build correct parts', () => {
+      // The new builder walks the cursor (the old one was a pure text read),
+      // so non-expression call sites must be cursor-balance-safe too.
+      const ast = parse('let name = 1;\ntext(50, 50) `Hi ${name}`;\ntext(0, 0) {\n  tspan(2) `v: ${name}`\n}');
+      const inline = (ast.body[1] as any).content;
+      expect(inline.parts[0]).toBe('Hi ');
+      expect(inline.parts[1]).toMatchObject({ type: 'Identifier', name: 'name' });
+      const tspan = (ast.body[2] as any).body[0].content;
+      expect(tspan.parts[0]).toBe('v: ');
+      expect(tspan.parts[1]).toMatchObject({ type: 'Identifier', name: 'name' });
+    });
+
+    it('stays lenient on an unterminated template mid-typing', () => {
+      // Lenient AST-building contract: no throw, usable partial parts.
+      // (parse() is strict on error trees; parseLezer is the lenient path.)
+      const result = parseLezer('let x = `open ${n} tail');
+      const tl = (result.ast.body[0] as any).value;
+      expect(tl.type).toBe('TemplateLiteral');
+      expect(tl.parts[0]).toBe('open ');
+      expect(tl.parts[1]).toMatchObject({ type: 'Identifier', name: 'n' });
     });
 
     it('parses template literal with dollar sign not followed by brace', () => {

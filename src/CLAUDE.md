@@ -99,7 +99,7 @@ docs/
 
 ### Parser (Lezer)
 
-**Lezer** (~213 line grammar + external tokenizer) — Sole parser for both compilation and editor integration. The grammar (`pathogen.grammar`) is compiled to an LR parser table by `@lezer/generator`. Lezer's built-in error recovery powers multi-error diagnostics. The parser also provides CodeMirror 6 native syntax highlighting for the playground.
+**Lezer** (~465 line grammar + external tokenizer, plus the ~110 line inner style grammar `style.grammar` mounted via parseMixed for editors only) — Sole parser for both compilation and editor integration. The grammar (`pathogen.grammar`) is compiled to an LR parser table by `@lezer/generator`. Lezer's built-in error recovery powers multi-error diagnostics. The parser also provides CodeMirror 6 native syntax highlighting for the playground.
 
 **CST-to-AST converter** (`ast-builder.ts`) — Converts Lezer's concrete syntax tree to AST nodes defined in `ast.ts`. Full parity with all language constructs.
 
