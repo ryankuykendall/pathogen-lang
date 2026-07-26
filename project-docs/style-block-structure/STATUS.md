@@ -19,6 +19,17 @@ Follow-ups #1 and #2 from the highlighting notes, per [PLAN-2.md](PLAN-2.md):
   undeclared-salmon chip stays, member values error-free).
 - Recorded quirk (not fixed): `lezer-expression.ts:110` adjustLocs `.offset`
   math is wrong on multi-line docs — consumers must use line/column only.
+- **Post-ship fix (2026-07-26)**: the recolor was visually inert everywhere —
+  CodeMirror nests the syntax-highlight span INSIDE the mark span, so the
+  baseTheme rule on `.cm-style-var-ref` colored the wrapper while the inner
+  `ͼx` span kept painting whiskey. Every computed-style measurement (mine,
+  headless, and the in-tab console probes) hit the wrapper and reported
+  coral — a systematic false positive; Ryan's side-by-side color-literal
+  swatches (`let myCoral = rgb(224,108,117); let orangish = #d19a66;`) were
+  the instrument that exposed it. Fix: descendant rules
+  (`.cm-style-var-ref span`). LESSON for all CM decoration work: measure the
+  DEEPEST span (the painted element), never the mark wrapper — see
+  recolor-fixed.png and diagnose-spans.mjs.
 - Review follow-ups recorded, not blocking: consolidate the three
   zero-vs-full-width range helpers (navigation/rename/semantic-tokens) if a
   fourth consumer appears; `code-lens.ts` has no test file at all

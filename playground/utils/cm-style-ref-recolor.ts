@@ -47,9 +47,20 @@ export function styleRefRecolorExtension(cmViewModule: CMViewModule): any[] {
 
   // Theme-scoped selectors (scope class + descendant) out-rank the single-
   // class syntax-highlight rules, so no !important is needed.
+  //
+  // CRITICAL: the `span` descendant selectors are load-bearing. CodeMirror
+  // NESTS the syntax-highlight span INSIDE the mark span —
+  //   <span class="cm-style-var-ref"><span class="ͼx">name</span></span>
+  // — so the glyphs are painted by the inner span's color, not the mark's.
+  // Styling only `.cm-style-var-ref` makes getComputedStyle on the mark
+  // report the new color while the rendered text keeps the old one (found
+  // 2026-07-26 via Ryan's side-by-side color-literal calibration after every
+  // wrapper-level measurement claimed the recolor worked).
   const theme = EditorView.baseTheme({
     '&dark .cm-style-var-ref': { color: '#e06c75' },
+    '&dark .cm-style-var-ref span': { color: '#e06c75' },
     '&light .cm-style-var-ref': { color: 'inherit' },
+    '&light .cm-style-var-ref span': { color: 'inherit' },
   });
 
   return [plugin, theme];
