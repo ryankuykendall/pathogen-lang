@@ -1083,6 +1083,8 @@ L 30 40
 L calc(ctx.position.x + 10) ctx.position.y  // L 40 40
 ```
 
+`ctx` is an ambient global — so is `viewbox`, which exposes the dimensions set by `define ViewBox(…)`; see [Reading the viewbox](#viewbox-reading-the-viewbox).
+
 ### ctx Properties
 
 | Property | Type | Description |

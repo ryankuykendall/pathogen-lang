@@ -277,6 +277,7 @@ export const STDLIB_COMPLETIONS: CompletionEntry[] = [
   { label: 'sqrt', kind: 'function', detail: 'sqrt(x) — Square root', boost: 10, insertText: 'sqrt(${1:x})$0', isSnippet: true },
   { label: 'cbrt', kind: 'function', detail: 'cbrt(x) — Cube root', boost: 6, insertText: 'cbrt(${1:x})$0', isSnippet: true },
   { label: 'ctx', kind: 'variable', detail: 'ctx — Path context (position, start, heading)', boost: 16 },
+  { label: 'viewbox', kind: 'variable', detail: 'viewbox — Read-only viewBox set by define ViewBox(...)', boost: 14 },
   { label: 'Object', kind: 'variable', detail: 'Object — Static methods (keys, values, entries)', boost: 6 },
   { label: 'Color', kind: 'variable', detail: 'Color — Color creation and manipulation', boost: 8 },
   { label: 'Cap', kind: 'function', detail: 'End-cap constructors for compoundVariableOffset ribbons', boost: 6 },
@@ -310,6 +311,17 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'triadic', kind: 'function', detail: 'triadic() — Triadic color harmony (3 colors)', boost: 8, insertText: 'triadic()$0', isSnippet: true },
       { label: 'tetradic', kind: 'function', detail: 'tetradic() — Tetradic color harmony (4 colors)', boost: 8, insertText: 'tetradic()$0', isSnippet: true },
       { label: 'splitComplementary', kind: 'function', detail: 'splitComplementary(angle?) — Split complementary harmony (3 colors; degrees, default 30; angle-suffixed values auto-convert)', boost: 8, insertText: 'splitComplementary()$0', isSnippet: true },
+    ],
+  },
+  'ViewBox': {
+    properties: [
+      { label: 'originX', kind: 'property', detail: 'ViewBox origin X', boost: 8 },
+      { label: 'originY', kind: 'property', detail: 'ViewBox origin Y', boost: 8 },
+      { label: 'width', kind: 'property', detail: 'ViewBox width', boost: 8 },
+      { label: 'height', kind: 'property', detail: 'ViewBox height', boost: 8 },
+    ],
+    methods: [
+
     ],
   },
   'BoundingBox': {
@@ -1052,6 +1064,7 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
 /** Per-type data-property types (resolves destructured bindings like let { origin } = grid) */
 export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
   'ColorInstance': { css: 'string', hex: 'string', oklch: 'string', hsl: 'string', rgb: 'string', lightness: 'number', chroma: 'number', hue: 'number', a: 'number' },
+  'ViewBox': { originX: 'number', originY: 'number', width: 'number', height: 'number' },
   'BoundingBox': { x: 'number', y: 'number', width: 'number', height: 'number' },
   'Grid': { rows: 'number', cols: 'number', xDim: 'number', yDim: 'number', origin: 'Point', width: 'number', height: 'number' },
   'Point': { x: 'number', y: 'number' },

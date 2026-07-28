@@ -718,3 +718,91 @@ if (s.filter == '${expected}') { M 1 1 } else { M 9 9 }`);
     });
   });
 });
+
+describe('viewbox global — annotated evaluator parity', () => {
+  it('stores and reads the viewbox after define', () => {
+    const result = compileAnnotated(`define ViewBox(0, 0, 880, 280);
+if (viewbox.width == 880) { M 1 1 } else { M 9 9 }
+if (viewbox.height == 280) { M 2 2 } else { M 9 9 }`);
+    expect(result).toContain('M 1 1');
+    expect(result).toContain('M 2 2');
+    expect(result).not.toContain('M 9 9');
+  });
+
+  it('supports destructuring', () => {
+    const result = compileAnnotated(`define ViewBox(-10, -20, 100, 50);
+let {originX, originY, width, height} = viewbox;
+if (originX == -10) { M 1 1 } else { M 9 9 }
+if (originY == -20) { M 2 2 } else { M 9 9 }
+if (width == 100) { M 3 3 } else { M 9 9 }
+if (height == 50) { M 4 4 } else { M 9 9 }`);
+    expect(result).not.toContain('M 9 9');
+  });
+
+  it('errors when read before define (same message as main evaluator)', () => {
+    expect(() => compileAnnotated('let w = viewbox.width;')).toThrow(
+      /viewbox is not available until define ViewBox\(\.\.\.\) has run/,
+    );
+  });
+
+  it('rejects duplicate ViewBox definitions', () => {
+    expect(() =>
+      compileAnnotated('define ViewBox(0, 0, 200, 200);\ndefine ViewBox(0, 0, 400, 400);'),
+    ).toThrow(/Duplicate ViewBox definition/);
+  });
+
+  it('rejects zero width', () => {
+    expect(() => compileAnnotated('define ViewBox(0, 0, 0, 200);')).toThrow(
+      /width must be greater than 0/,
+    );
+  });
+
+  it('rejects define ViewBox inside a layer apply block', () => {
+    expect(() =>
+      compileAnnotated(`define PathLayer('a') \${ stroke: red; };
+layer('a').apply {
+  define ViewBox(0, 0, 200, 200);
+  M 0 0
+}`),
+    ).toThrow(/ViewBox must appear at top level/);
+  });
+
+  it('reads viewbox inside a function called after define', () => {
+    const result = compileAnnotated(`fn w() { return viewbox.width; }
+define ViewBox(0, 0, 100, 50);
+if (w() == 100) { M 1 1 } else { M 9 9 }`);
+    expect(result).toContain('M 1 1');
+    expect(result).not.toContain('M 9 9');
+  });
+
+  it('reads viewbox inside a layer apply block', () => {
+    const result = compileAnnotated(`define ViewBox(0, 0, 100, 50);
+define PathLayer('a') \${ stroke: red; };
+layer('a').apply {
+  M viewbox.width 0
+}`);
+    expect(result).toContain('M 100 0');
+  });
+
+  it('reads viewbox inside a path block', () => {
+    const result = compileAnnotated(`define ViewBox(0, 0, 60, 40);
+let p = @{ let w = viewbox.width; h w };
+if (p.endPoint.x == 60) { M 1 1 } else { M 9 9 }`);
+    expect(result).toContain('M 1 1');
+    expect(result).not.toContain('M 9 9');
+  });
+
+  it('silently skips define ViewBox inside path blocks (annotated block convention)', () => {
+    const result = compileAnnotated(`let p = @{ define ViewBox(0, 0, 9, 9); h 10 };
+define ViewBox(0, 0, 100, 50);
+if (viewbox.width == 100) { M 1 1 } else { M 9 9 }`);
+    expect(result).toContain('M 1 1');
+    expect(result).not.toContain('M 9 9');
+  });
+
+  it('rejects assignment to a viewbox member (parity with main evaluator)', () => {
+    expect(() =>
+      compileAnnotated('define ViewBox(0, 0, 100, 50);\nviewbox.width = 5;\nM 0 0'),
+    ).toThrow(/Cannot assign to property 'width'/);
+  });
+});

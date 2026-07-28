@@ -163,6 +163,9 @@ export function getMembersForObject(
   if (name === 'ctx' && 'PathContext' in TYPE_MEMBERS) {
     return { typeName: 'PathContext', members: TYPE_MEMBERS.PathContext };
   }
+  if (name === 'viewbox' && 'ViewBox' in TYPE_MEMBERS) {
+    return { typeName: 'ViewBox', members: TYPE_MEMBERS.ViewBox };
+  }
 
   // Resolve the name to a type (AST-first when injected, regex chain otherwise)
   const type = resolver(name);

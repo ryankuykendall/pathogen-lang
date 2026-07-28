@@ -57,7 +57,8 @@ export type Value =
   | ColorNamespace
   | CSSVarValue
   | TextBlockValue
-  | ProjectedTextValue;
+  | ProjectedTextValue
+  | ViewBoxStructValue;
 
 // ---------------------------------------------------------------------------
 // Core value interfaces
@@ -938,6 +939,15 @@ export interface ViewBoxValue {
   originY: number;
   width: number;
   height: number;
+}
+
+/**
+ * Runtime struct returned by reads of the ambient `viewbox` global. Kept
+ * separate from ViewBoxValue so the discriminant never leaks into the public
+ * CompileResult.viewBox shape or EvaluationState storage.
+ */
+export interface ViewBoxStructValue extends ViewBoxValue {
+  type: 'ViewBoxStructValue';
 }
 
 export interface CompileResult {

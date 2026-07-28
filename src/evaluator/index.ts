@@ -789,6 +789,29 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   if (name === 'Cap') {
     return { type: 'CapNamespace' } as CapNamespace;
   }
+  // Ambient viewbox global — fresh copy per read so the struct is read-only
+  // and evalState's `loc` never leaks into user code.
+  // NOTE: fallbacks run only at the ROOT scope (recursion above returns
+  // through scope.parent first), whose evalState is the real one. Path/text
+  // blocks put a synthetic evalState on the BLOCK scope, so reads inside
+  // @{ } / &{ } correctly see the program's viewBox. Do not add `viewBox`
+  // to the synthetic block-state field lists or short-circuit this lookup
+  // at a non-root scope — either would silently break in-block reads.
+  if (name === 'viewbox') {
+    const vb = scope.evalState?.viewBox;
+    if (!vb) {
+      throw new Error(
+        formatError('viewbox is not available until define ViewBox(...) has run', line, column),
+      );
+    }
+    return {
+      type: 'ViewBoxStructValue',
+      originX: vb.originX,
+      originY: vb.originY,
+      width: vb.width,
+      height: vb.height,
+    };
+  }
   // Built-in enums
   if (name in BUILTIN_ENUMS) {
     const props = new Map<string, Value>();
@@ -1167,6 +1190,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     let resolvedValue = prop.value;
     let trusted = false;
     let wasWholeValueTemplate = false;
+    let structValueName: string | null = null;
     // var() strings this compiler emitted from validated CSSVarValue/Color
     // objects for THIS value — the validator allows exactly these tokens.
     const emittedVars: string[] = [];
@@ -1208,11 +1232,30 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (isFilterValue(evaluated)) {
           resolvedValue = `url(#${evaluated.id})`;
           trusted = true;
+        } else {
+          // Struct values (ViewBox, Point, Grid, ctx, …) have no CSS form;
+          // silently keeping the raw source text would emit a broken
+          // attribute (e.g. stroke-width="viewbox"). Record the type name
+          // and reject AFTER the try/catch — throwing here would be
+          // swallowed by the catch below, whose keep-raw behavior is
+          // load-bearing for eval failures (rgb(...), context-stroke, …).
+          structValueName = getStructDescriptor(evaluated)?.name ?? null;
         }
-        // For other types, keep raw string (untrusted)
+        // For other non-struct types, keep raw string (untrusted)
       }
     } catch {
       // Parse or eval failed — keep raw string (handles rgb(...), #hex, multi-value strings, etc.)
+    }
+    if (structValueName) {
+      const eLine = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
+      const eCol = prop.valueLoc?.column ?? prop.loc?.column ?? getCol(expr);
+      throw new Error(
+        formatError(
+          `Style value for "${prop.name}": a ${structValueName} value has no CSS form — use one of its members instead`,
+          eLine,
+          eCol,
+        ),
+      );
     }
     // Backtick template fragments inside the value (e.g. blur(`${v}`px)):
     // evaluate each span and splice its text into the surrounding value.
@@ -1713,6 +1756,9 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     if (stmt.type === 'TextStatement') {
       throw new Error(formatError('Text statements are not allowed inside path blocks', getLine(stmt)));
     }
+    if (stmt.type === 'ViewBoxDefinition') {
+      throw new Error(formatError('ViewBox definitions are not allowed inside path blocks', getLine(stmt)));
+    }
 
     // Evaluate with a wrapper that enforces relative-only commands
     evaluatePathBlockStatement(stmt, blockScope, accum);
@@ -1840,6 +1886,9 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
     }
     if (stmt.type === 'PathCommand') {
       throw new Error(formatError('Path commands are not allowed inside text blocks', getLine(stmt)));
+    }
+    if (stmt.type === 'ViewBoxDefinition') {
+      throw new Error(formatError('ViewBox definitions are not allowed inside text blocks', getLine(stmt)));
     }
 
     if (stmt.type === 'TextStatement') {
@@ -5277,6 +5326,9 @@ function formatValueForDisplay(val: Value): string {
   if (isPolarVectorValue(val)) {
     return `PolarVector(${formatNum(val.angle)}, ${formatNum(val.distance)})`;
   }
+  if (typeof val === 'object' && 'type' in val && val.type === 'ViewBoxStructValue') {
+    return `ViewBox(${formatNum(val.originX)}, ${formatNum(val.originY)}, ${formatNum(val.width)}, ${formatNum(val.height)})`;
+  }
   if (isPathBlockValue(val)) {
     return `PathBlock(${val.commands.length} commands)`;
   }
@@ -5910,6 +5962,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
         } else if (isPointValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isPolarVectorValue(value)) {
+          stringValue = formatValueForDisplay(value);
+        } else if (typeof value === 'object' && 'type' in value && value.type === 'ViewBoxStructValue') {
           stringValue = formatValueForDisplay(value);
         } else if (isObjectValue(value)) {
           stringValue = formatValueForDisplay(value);
@@ -8132,6 +8186,16 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
     case 'ViewBoxDefinition': {
       if (!scope.evalState) {
         throw new Error(formatError('ViewBox definitions require evaluation context', getLine(stmt)));
+      }
+      // Guard at the case, not only in the block-body loops: a definition
+      // nested in if/for inside a block reaches here with the block's
+      // synthetic evalState (activeLayerName reset to null), so the flags
+      // are the only reliable placement signal at any nesting depth.
+      if ((scope.evalState as EvaluationState & { _insidePathBlock?: boolean })._insidePathBlock) {
+        throw new Error(formatError('ViewBox definitions are not allowed inside path blocks', getLine(stmt)));
+      }
+      if ((scope.evalState as EvaluationState & { _insideTextBlock?: boolean })._insideTextBlock) {
+        throw new Error(formatError('ViewBox definitions are not allowed inside text blocks', getLine(stmt)));
       }
       if (scope.evalState.activeLayerName !== null) {
         throw new Error(formatError('ViewBox must appear at top level', getLine(stmt)));

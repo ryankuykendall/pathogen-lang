@@ -105,6 +105,7 @@ export function inferRhsType(rhs: string, source: string, seen?: Set<string>): s
   const t = rhs.trim();
   if (/^ctx\.(position|start)$/.test(t)) return 'Point';
   if (t === 'ctx') return 'PathContext';
+  if (t === 'viewbox') return 'ViewBox';
   const ctorMatch = /^(\w+)\s*\(/.exec(t);
   // Object.hasOwn, not `in`: inherited names like toString/constructor must
   // not resolve through Object.prototype (same pitfall as struct-properties).

@@ -30,7 +30,7 @@ const BUILTIN_ENUMS = new Set([
 
 const STDLIB_NAMES = new Set(Object.keys(stdlib));
 
-const BUILTIN_GLOBALS = new Set(['ctx', 'PI', 'E', 'TAU', 'Infinity', 'NaN']);
+const BUILTIN_GLOBALS = new Set(['ctx', 'viewbox', 'PI', 'E', 'TAU', 'Infinity', 'NaN']);
 
 // --- Types ---
 

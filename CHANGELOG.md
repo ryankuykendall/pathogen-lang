@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-28 (readable `viewbox` global)
+
+### Added
+
+#### Core
+
+- **Ambient `viewbox` global** — the values set by `define ViewBox(originX, originY, width, height);` are now readable anywhere after the define executes, via a read-only struct with members `originX`/`originY`/`width`/`height`. This removes the update-two-places pattern for full-canvas backgrounds: `let {width, height} = viewbox; rect(0, 0, width, height);`. Lowercase `viewbox` is a plain identifier resolved as a scope-chain fallback (the `ViewBox` keyword is untouched; zero grammar changes), so a user variable named `viewbox` shadows the global and existing programs keep their meaning. Reading it before the define has run — including in a program with no `define ViewBox` at all — is an error (`viewbox is not available until define ViewBox(...) has run`); the implicit `0 0 200 200` rendering default is deliberately not readable. Each read returns a fresh copy, and dot access, destructuring, and rest patterns all work via the shared struct-property registry in both evaluators. Full editor support: member completions, destructuring-pattern completions, hover, and scope analysis treat `viewbox` like `ctx`. Documented in `docs/viewbox.md` (new "Reading the viewbox" section) with a cross-link from `docs/syntax.md`.
+- **Annotated evaluator now implements `define ViewBox`** — previously a silent no-op (no validation, no storage), it now mirrors the main evaluator's guards (top-level-only, duplicate rejection with first-defined line, finite numbers, positive dimensions) so `viewbox` reads and error behavior are identical in annotated mode.
+
+### Fixed
+
+#### Core
+
+- **`define ViewBox` inside path and text blocks is now rejected** (`ViewBox definitions are not allowed inside path blocks`) — previously it was silently discarded into the block's isolated state, contradicting the documented top-level-only placement rule. The guard lives in the `ViewBoxDefinition` evaluator case itself (not just the block-body loops), so a definition nested in `if`/`for` inside a block is caught at any depth.
+- **Struct values in style-block values are now a compile error instead of silent CSS corruption** — `stroke-width: viewbox;` (or `ctx`, a `Point`, a `Grid`, …) used to keep the raw source text and emit invalid SVG like `stroke-width="viewbox"` that browsers silently drop. Any value with a struct descriptor now errors with `a ViewBox value has no CSS form — use one of its members instead`. The keep-raw fallback for *unparseable/unevaluable* values (`rgb(...)`, `context-stroke`, multi-value strings) is deliberately unchanged.
+- **`log(viewbox)` and `` `${viewbox}` `` interpolation format as `ViewBox(originX, originY, width, height)`** instead of `[object Object]`.
+- **Annotated evaluator rejects `viewbox` member assignment** (`Cannot assign to property 'width'`), matching the main evaluator. (The annotated evaluator's broader silent-accept of unhandled member assignments — e.g. `point.x = 5` — predates this work and is left as a tracked follow-up, since fixing it wholesale needs its own regression pass.)
+
 ## [Unreleased] - 2026-07-28 (any Google Font via @font)
 
 ### Added

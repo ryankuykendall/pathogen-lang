@@ -88,6 +88,8 @@ import type {
   TextBlockValue,
   TextChild,
   UserFunction,
+  ViewBoxStructValue,
+  ViewBoxValue,
 } from './types';
 import type {
   ArrayDestructuringPattern,
@@ -101,11 +103,13 @@ import type {
   PathArg,
   PathBlockExpression,
   Program,
+  SourceLocation,
   Statement,
   StyleBlockLiteral,
   TemplateLiteral,
   TextBlockExpression,
   TextBodyItem,
+  ViewBoxDefinition,
 } from '../parser/ast';
 
 /** Maximum iterations allowed per for-loop to prevent runaway programs. */
@@ -182,7 +186,8 @@ export type Value =
   | CyclerValue
   | GridValue
   | TextBlockValue
-  | ProjectedTextValue;
+  | ProjectedTextValue
+  | ViewBoxStructValue;
 
 function isSVGFragmentValue(value: Value): value is SVGFragmentValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SVGFragmentValue';
@@ -492,6 +497,8 @@ class ReturnSignal {
 export interface EvaluationState {
   pathContext: PathContext;
   fontRegistry?: import('./types').FontRegistry;
+  viewBox?: ViewBoxValue & { loc?: SourceLocation };
+  insideLayerApply?: boolean;
 }
 
 export interface Scope {
@@ -523,6 +530,29 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
   }
   if (name === 'PathBlock') {
     return { type: 'PathBlockNamespace' } as PathBlockNamespace;
+  }
+  // Ambient viewbox global — fresh copy per read so the struct is read-only
+  // and evalState's `loc` never leaks into user code.
+  // NOTE: fallbacks run only at the ROOT scope (recursion above returns
+  // through scope.parent first), whose evalState is the real one. Path/text
+  // blocks put a synthetic evalState on the BLOCK scope, so reads inside
+  // @{ } / &{ } correctly see the program's viewBox. Do not add `viewBox`
+  // to the synthetic block-state field lists or short-circuit this lookup
+  // at a non-root scope — either would silently break in-block reads.
+  if (name === 'viewbox') {
+    const vb = scope.evalState?.viewBox;
+    if (!vb) {
+      throw new Error(
+        formatError('viewbox is not available until define ViewBox(...) has run', line, column),
+      );
+    }
+    return {
+      type: 'ViewBoxStructValue',
+      originX: vb.originX,
+      originY: vb.originY,
+      width: vb.width,
+      height: vb.height,
+    };
   }
   // Built-in enums
   if (name in BUILTIN_ENUMS) {
@@ -3356,7 +3386,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
   });
 
   for (const stmt of expr.body) {
-    if (stmt.type === 'LayerDefinition' || stmt.type === 'LayerApplyBlock' || stmt.type === 'TextStatement') {
+    if (stmt.type === 'LayerDefinition' || stmt.type === 'LayerApplyBlock' || stmt.type === 'TextStatement' || stmt.type === 'ViewBoxDefinition') {
       continue; // silently skip in annotated mode
     }
     if (stmt.type === 'PathCommand' && stmt.command !== '' && stmt.command !== stmt.command.toLowerCase()) {
@@ -3398,7 +3428,7 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
 
   for (const stmt of expr.body) {
     // Silently skip forbidden constructs (annotated mode pattern)
-    if (stmt.type === 'LayerDefinition' || stmt.type === 'LayerApplyBlock' || stmt.type === 'PathCommand') {
+    if (stmt.type === 'LayerDefinition' || stmt.type === 'LayerApplyBlock' || stmt.type === 'PathCommand' || stmt.type === 'ViewBoxDefinition') {
       continue;
     }
 
@@ -4807,6 +4837,44 @@ function bindDestructuringPattern(
 }
 
 // Plain evaluation (no annotations) for nested contexts
+/**
+ * Evaluate `define ViewBox(...)` with the same guards as the main evaluator
+ * (index.ts ViewBoxDefinition case) so the `viewbox` global and error
+ * behavior stay in parity. The top-level check uses `insideLayerApply`
+ * because the annotated evaluator has no activeLayerName tracking.
+ */
+function evaluateViewBoxDefinition(stmt: ViewBoxDefinition, scope: Scope): void {
+  if (!scope.evalState) {
+    throw new Error(formatError('ViewBox definitions require evaluation context', getLine(stmt)));
+  }
+  if (scope.evalState.insideLayerApply) {
+    throw new Error(formatError('ViewBox must appear at top level', getLine(stmt)));
+  }
+  if (scope.evalState.viewBox) {
+    const prev = scope.evalState.viewBox.loc?.line;
+    const where = prev ? ` (first defined at line ${prev})` : '';
+    throw new Error(formatError(`Duplicate ViewBox definition${where}`, getLine(stmt)));
+  }
+  const evalArg = (label: string, expr: Expression): number => {
+    const v = evaluateExpression(expr, scope);
+    if (typeof v !== 'number' || !Number.isFinite(v)) {
+      throw new Error(formatError(`ViewBox ${label} must evaluate to a finite number`, getLine(stmt)));
+    }
+    return v;
+  };
+  const originX = evalArg('originX', stmt.originX);
+  const originY = evalArg('originY', stmt.originY);
+  const width = evalArg('width', stmt.width);
+  const height = evalArg('height', stmt.height);
+  if (width <= 0) {
+    throw new Error(formatError(`ViewBox width must be greater than 0 (got ${width})`, getLine(stmt)));
+  }
+  if (height <= 0) {
+    throw new Error(formatError(`ViewBox height must be greater than 0 (got ${height})`, getLine(stmt)));
+  }
+  scope.evalState.viewBox = { originX, originY, width, height, loc: stmt.loc };
+}
+
 function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
   switch (stmt.type) {
     case 'Comment':
@@ -5029,15 +5097,23 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       return '';
 
     case 'ViewBoxDefinition':
-      // ViewBox is a metadata-only declaration; no path output
+      // Metadata-only: stores evalState.viewBox (read via the `viewbox`
+      // global) and validates, but emits no path output.
+      evaluateViewBoxDefinition(stmt, scope);
       return '';
 
     case 'LayerApplyBlock': {
       // In annotated mode, just evaluate the body normally
       const results: string[] = [];
-      for (const bodyStmt of stmt.body) {
-        const result = evaluateStatementPlain(bodyStmt, createScope(scope));
-        if (result) results.push(result);
+      const prevInsideApply = scope.evalState?.insideLayerApply;
+      if (scope.evalState) scope.evalState.insideLayerApply = true;
+      try {
+        for (const bodyStmt of stmt.body) {
+          const result = evaluateStatementPlain(bodyStmt, createScope(scope));
+          if (result) results.push(result);
+        }
+      } finally {
+        if (scope.evalState) scope.evalState.insideLayerApply = prevInsideApply;
       }
       return results.join(' ');
     }
@@ -5049,6 +5125,11 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
     case 'MemberAssignmentStatement': {
       const obj = evaluateExpression(stmt.object, scope);
       const value = evaluateExpression(stmt.value, scope);
+      // The viewbox global is read-only — parity with the main evaluator's
+      // 'Cannot assign to property' rejection.
+      if (typeof obj === 'object' && obj !== null && 'type' in obj && obj.type === 'ViewBoxStructValue') {
+        throw new Error(formatError(`Cannot assign to property '${stmt.property}'`, getLine(stmt)));
+      }
       // Handle Pattern property assignment
       if (isPatternValue(obj)) {
         assignPatternProperty(obj, stmt.property, value, (message) => {
@@ -5604,13 +5685,21 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       break;
 
     case 'ViewBoxDefinition':
-      // ViewBox is a metadata-only declaration; no path output
+      // Metadata-only: stores evalState.viewBox (read via the `viewbox`
+      // global) and validates, but emits no output line.
+      evaluateViewBoxDefinition(stmt, scope);
       break;
 
     case 'LayerApplyBlock': {
       // In annotated mode, just evaluate the body into the annotated output
-      for (const bodyStmt of stmt.body) {
-        evaluateStatementAnnotated(bodyStmt, createScope(scope), ctx);
+      const prevInsideApply = scope.evalState?.insideLayerApply;
+      if (scope.evalState) scope.evalState.insideLayerApply = true;
+      try {
+        for (const bodyStmt of stmt.body) {
+          evaluateStatementAnnotated(bodyStmt, createScope(scope), ctx);
+        }
+      } finally {
+        if (scope.evalState) scope.evalState.insideLayerApply = prevInsideApply;
       }
       break;
     }
@@ -5622,6 +5711,11 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
     case 'MemberAssignmentStatement': {
       const maObj = evaluateExpression(stmt.object, scope);
       const maValue = evaluateExpression(stmt.value, scope);
+      // The viewbox global is read-only — parity with the main evaluator's
+      // 'Cannot assign to property' rejection.
+      if (typeof maObj === 'object' && maObj !== null && 'type' in maObj && maObj.type === 'ViewBoxStructValue') {
+        throw new Error(formatError(`Cannot assign to property '${stmt.property}'`, getLine(stmt)));
+      }
       // Handle Pattern property assignment
       if (isPatternValue(maObj)) {
         assignPatternProperty(maObj, stmt.property, maValue, (message) => {

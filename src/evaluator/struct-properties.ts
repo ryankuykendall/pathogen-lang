@@ -1,12 +1,12 @@
 import { oklchToCSS, oklchToHex, oklchToHSLString, oklchToOKLCHString, oklchToRGBString } from '../color';
 
-import type { ColorValue, ContextObject, GridValue, MeshPointValue, PointValue, PolarVectorValue, Value, VertexHandleValue } from './types';
+import type { ColorValue, ContextObject, GridValue, MeshPointValue, PointValue, PolarVectorValue, Value, VertexHandleValue, ViewBoxStructValue } from './types';
 
 /**
  * Shared property registry for built-in struct values.
  *
  * Single source of truth for the data properties of Point, PolarVector, Grid,
- * MeshPoint, Color, and context objects — used by BOTH evaluators (index.ts and
+ * MeshPoint, Color, ViewBox, and context objects — used by BOTH evaluators (index.ts and
  * annotated.ts) for member access and object destructuring. Properties are read
  * lazily via `get()` so reading one never computes the others; `keys()` exists
  * for rest-pattern enumeration and is not called on the member-access hot path.
@@ -121,6 +121,13 @@ const VERTEX_HANDLE = staticDescriptor('VertexHandle', {
   label: (v) => (v as VertexHandleValue).label,
 });
 
+const VIEW_BOX = staticDescriptor('ViewBox', {
+  originX: (v) => (v as ViewBoxStructValue).originX,
+  originY: (v) => (v as ViewBoxStructValue).originY,
+  width: (v) => (v as ViewBoxStructValue).width,
+  height: (v) => (v as ViewBoxStructValue).height,
+});
+
 const DESCRIPTORS: Record<string, StructDescriptor> = {
   PointValue: POINT,
   PolarVectorValue: POLAR_VECTOR,
@@ -129,6 +136,7 @@ const DESCRIPTORS: Record<string, StructDescriptor> = {
   ColorValue: COLOR,
   ContextObject: CONTEXT_OBJECT,
   VertexHandleValue: VERTEX_HANDLE,
+  ViewBoxStructValue: VIEW_BOX,
 };
 
 /**

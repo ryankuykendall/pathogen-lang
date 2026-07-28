@@ -87,6 +87,19 @@ describe('getHoverInfo', () => {
       expect(result).not.toBeNull();
       expect(result!.contents).toContain('**ctx**');
     });
+
+    it('shows hover for the viewbox global', () => {
+      const result = hover('define ViewBox(0, 0, 200, 100);\nlet w = viewbox;', 1, 10);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('**viewbox**');
+      expect(result!.contents).toContain('originX');
+    });
+
+    it('shows member hover for viewbox.width', () => {
+      const result = hover('define ViewBox(0, 0, 200, 100);\nlet w = viewbox.width;', 1, 17);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('width');
+    });
   });
 
   describe('user-defined symbols', () => {

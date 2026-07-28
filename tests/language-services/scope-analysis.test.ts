@@ -181,6 +181,11 @@ describe('analyzeScopes', () => {
       expect(builtinRefs(info)).toContain('ctx');
     });
 
+    it('marks viewbox as builtin', () => {
+      const info = analyze('define ViewBox(0, 0, 200, 100);\nlet w = viewbox.width;');
+      expect(builtinRefs(info)).toContain('viewbox');
+    });
+
     it('marks builtin enums as builtin', () => {
       const info = analyze('let e = Easing.Linear;');
       expect(builtinRefs(info)).toContain('Easing');

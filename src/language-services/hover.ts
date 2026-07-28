@@ -26,6 +26,8 @@ const KEYWORD_HOVER: Record<string, string> = {
     "**define** — Define a layer (PathLayer / TextLayer / GroupLayer) or the SVG viewBox\n```\ndefine PathLayer('name') ${ stroke: #000; }\ndefine TextLayer('name') ${ font-size: 14; }\ndefine ViewBox(0, 0, 200, 200);\n```",
   ViewBox:
     '**ViewBox** — Declare the SVG viewBox in source code\n```\ndefine ViewBox(originX, originY, width, height);\n```\nSource-defined viewBox overrides any CLI `--viewBox` flag.',
+  viewbox:
+    '**viewbox** — Read-only global exposing the viewBox set by `define ViewBox(…)`\n```\nlet {width, height} = viewbox;\nrect(viewbox.originX, viewbox.originY, width, height);\n```\nMembers: `originX`, `originY`, `width`, `height`. Reading it before `define ViewBox(…)` has run is an error.',
   layer: "**layer** — Apply block to route output to a layer\n```\nlayer('name').apply { ... }\n```",
   text: '**text** — Create a text element\n```\ntext(x, y)`content`\n```',
   tspan: '**tspan** — Text span inside a text block\n```\ntspan(dx, dy)`content`\n```',

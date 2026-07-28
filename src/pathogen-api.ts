@@ -487,6 +487,18 @@ export interface PathogenColorInstance {
   splitComplementary(angle?: number): PathogenColorInstance[];
 }
 
+/** @type ViewBox */
+export interface PathogenViewBox {
+  /** ViewBox origin X */
+  readonly originX: number;
+  /** ViewBox origin Y */
+  readonly originY: number;
+  /** ViewBox width */
+  readonly width: number;
+  /** ViewBox height */
+  readonly height: number;
+}
+
 /** @type BoundingBox */
 export interface PathogenBoundingBox {
   /** X position */
@@ -505,6 +517,9 @@ export interface PathogenBoundingBox {
 
 /** ctx — Path context (position, start, heading) @boost 16 @kind variable */
 export declare const ctx: PathContext;
+
+/** viewbox — Read-only viewBox set by define ViewBox(...) @boost 14 @kind variable */
+export declare const viewbox: PathogenViewBox;
 
 // =============================================================================
 // Type Interfaces — extracted by generation script for member completions

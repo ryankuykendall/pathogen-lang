@@ -195,9 +195,28 @@ describe('getCompletions', () => {
       expect(names).not.toContain('translate');
       expect(names).not.toContain('position');
     });
+
+    it('offers viewbox properties after viewbox.', () => {
+      const items = completeAtEnd('define ViewBox(0, 0, 200, 100);\nviewbox.');
+      const names = labels(items);
+      expect(names).toContain('originX');
+      expect(names).toContain('originY');
+      expect(names).toContain('width');
+      expect(names).toContain('height');
+    });
   });
 
   describe('destructuring pattern braces', () => {
+    it('offers viewbox data properties inside the pattern', () => {
+      const source = 'define ViewBox(0, 0, 200, 100);\nlet {  } = viewbox;';
+      const items = complete(source, 1, 5);
+      const names = labels(items);
+      expect(names).toContain('originX');
+      expect(names).toContain('originY');
+      expect(names).toContain('width');
+      expect(names).toContain('height');
+    });
+
     it('offers Grid data properties inside the pattern', () => {
       const source = 'let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet {  } = g;';
       const items = complete(source, 1, 5);
