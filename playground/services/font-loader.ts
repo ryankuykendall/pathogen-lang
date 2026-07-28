@@ -14,6 +14,8 @@ export interface FontResolutionFailure {
   family: string;
   weight: number;
   reason: string;
+  /** Structured discriminant for failures callers branch on (avoids string-matching `reason`). */
+  code?: 'generic-family';
 }
 
 /** A requested weight the family doesn't offer, snapped to the nearest available one. */
@@ -32,7 +34,7 @@ export interface FontResolutionResult {
 
 type FontFetchOutcome =
   | { ok: true; buffer: ArrayBuffer; weightUsed: number }
-  | { ok: false; reason: string };
+  | { ok: false; reason: string; code?: 'generic-family' };
 
 // CSS generic font families — not fetchable from Google Fonts
 const GENERIC_FONT_FAMILIES = new Set([
@@ -53,6 +55,23 @@ const fontBinaryCache: Map<string, ArrayBuffer> = new Map();
 // In-flight fetch dedup: "family:weight" → Promise<FontFetchOutcome>
 const pendingFetches: Map<string, Promise<FontFetchOutcome>> = new Map();
 
+// TTL negative cache for unknown (non-curated) families only. css2 error
+// responses carry no CORS headers, so a missing font is indistinguishable
+// from a network blip ("Failed to fetch"); the TTL lets transient failures
+// recover while stopping per-keystroke refetch storms for bad names.
+// Curated-family failures are never cached — a subsequent compile re-attempts.
+const FAILURE_TTL_MS = 60_000;
+const fontFailureCache: Map<string, { reason: string; expires: number }> = new Map();
+
+// "family:weight" requests (outside the curated catalog) that only resolved
+// at their css2 default weight → the weight actually served. Keyed like the
+// sibling caches — per requested weight, NOT per family — so a different
+// weight of the same family that succeeded directly is never misattributed.
+// Consulted on cache hits so the substitution warning survives recompiles
+// (the curated equivalent is recomputed from getKnownVariants; unknown
+// families have no catalog entry).
+const defaultWeightServed: Map<string, number> = new Map();
+
 /**
  * Fetch a font binary from Google Fonts CDN.
  *
@@ -63,8 +82,10 @@ const pendingFetches: Map<string, Promise<FontFetchOutcome>> = new Map();
  * can surface them to the user instead of letting compilation continue
  * with an empty registry and produce a misleading downstream error.
  *
- * Successful results are cached for the session; failures are not, so a
- * subsequent compile re-attempts the fetch.
+ * Successful results are cached for the session. Curated-family failures are
+ * never cached, so a subsequent compile re-attempts the fetch. Non-curated
+ * (unknown) family failures are negative-cached for FAILURE_TTL_MS — see the
+ * cache declarations above.
  */
 export async function fetchFontBinary(
   family: string,
@@ -72,15 +93,22 @@ export async function fetchFontBinary(
 ): Promise<FontFetchOutcome> {
   // Skip CSS generic font families — these are not real fonts on Google Fonts
   if (GENERIC_FONT_FAMILIES.has(family)) {
-    return { ok: false, reason: `'${family}' is a CSS generic family and cannot be fetched from Google Fonts` };
+    return {
+      ok: false,
+      reason: `'${family}' is a CSS generic family and cannot be fetched from Google Fonts`,
+      code: 'generic-family',
+    };
   }
 
   // Snap to the nearest catalog weight before any network access: the css2
   // API returns 400 Bad Request for weights a family lacks, and the error is
   // unobservable cross-origin (no CORS headers → bare "Failed to fetch").
   // Unknown families (null variants) pass through unvalidated.
+  // Strict null check to match the retry/negative-cache gates below —
+  // getKnownVariants never returns [] today, but a truthy check here would
+  // silently disagree with the `=== null` sites if that ever changes.
   const variants = getKnownVariants(family);
-  const weightUsed = variants ? nearestWeight(weight, variants) : weight;
+  const weightUsed = variants !== null ? nearestWeight(weight, variants) : weight;
 
   // Check cache under both the requested and the snapped weight — a cache hit
   // must still report the substitution so the warning survives recompiles.
@@ -89,7 +117,25 @@ export async function fetchFontBinary(
   // writes its requested-weight key; followers rely on this fallback.
   const cached = fontBinaryCache.get(`${family}:${weight}`) ?? fontBinaryCache.get(`${family}:${weightUsed}`);
   if (cached) {
-    return { ok: true, buffer: cached, weightUsed };
+    // Non-curated requests that fell back to their default weight have no
+    // catalog entry to recompute the substitution from — recover it here.
+    const servedWeight =
+      variants === null
+        ? (defaultWeightServed.get(`${family}:${weight}`) ??
+           defaultWeightServed.get(`${family}:${weightUsed}`) ??
+           weightUsed)
+        : weightUsed;
+    return { ok: true, buffer: cached, weightUsed: servedWeight };
+  }
+
+  const failed =
+    fontFailureCache.get(`${family}:${weight}`) ?? fontFailureCache.get(`${family}:${weightUsed}`);
+  if (failed) {
+    if (failed.expires > Date.now()) {
+      return { ok: false, reason: failed.reason };
+    }
+    fontFailureCache.delete(`${family}:${weight}`);
+    fontFailureCache.delete(`${family}:${weightUsed}`);
   }
 
   // Dedup in-flight fetches on the weight actually fetched, so e.g. requests
@@ -100,13 +146,38 @@ export async function fetchFontBinary(
 
   const fetchPromise = (async (): Promise<FontFetchOutcome> => {
     try {
-      const buffer = await fetchFontBinaryUncached(family, weightUsed);
+      const { buffer } = await fetchFontBinaryUncached(family, weightUsed);
       fontBinaryCache.set(cacheKey, buffer);
       fontBinaryCache.set(`${family}:${weight}`, buffer);
       return { ok: true, buffer, weightUsed };
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      return { ok: false, reason };
+      if (variants !== null) {
+        // Curated family: pre-snapped weight, so this is a genuine CDN /
+        // decode failure. Never negative-cached — recompiles re-attempt.
+        return { ok: false, reason };
+      }
+      // Unknown family: the requested weight may simply not exist (css2
+      // rejects it opaquely). Retry without ":wght@…" so css2 serves the
+      // family's default style — a real family with a wrong weight must not
+      // masquerade as "font not found".
+      try {
+        const { buffer, cssWeight } = await fetchFontBinaryUncached(family, null);
+        const served = cssWeight ?? 400;
+        defaultWeightServed.set(`${family}:${weight}`, served);
+        defaultWeightServed.set(`${family}:${weightUsed}`, served);
+        fontBinaryCache.set(`${family}:${served}`, buffer);
+        fontBinaryCache.set(`${family}:${weight}`, buffer);
+        return { ok: true, buffer, weightUsed: served };
+      } catch {
+        // Report the ORIGINAL reason — it corresponds to the request the
+        // user actually made; the bare retry exists only to rule out a
+        // wrong-weight rejection.
+        const expires = Date.now() + FAILURE_TTL_MS;
+        fontFailureCache.set(`${family}:${weight}`, { reason, expires });
+        fontFailureCache.set(`${family}:${weightUsed}`, { reason, expires });
+        return { ok: false, reason };
+      }
     } finally {
       pendingFetches.delete(cacheKey);
     }
@@ -118,14 +189,15 @@ export async function fetchFontBinary(
 
 async function fetchFontBinaryUncached(
   family: string,
-  weight: number,
-): Promise<ArrayBuffer> {
+  weight: number | null, // null → omit ":wght@…" so css2 serves the family default
+): Promise<{ buffer: ArrayBuffer; cssWeight: number | null }> {
   // Browsers ignore custom User-Agent headers in fetch (per Fetch spec
   // forbidden-header rules), so Google Fonts always returns multi-block
   // WOFF2 for browser UAs. We pick the latin block (ASCII glyphs) and
   // decompress WOFF2 → TTF on the fly via wawoff2 — opentype.js v1 cannot
   // parse WOFF2 directly.
-  const cssUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weight}&display=swap`;
+  const familyParam = encodeURIComponent(family) + (weight === null ? '' : `:wght@${weight}`);
+  const cssUrl = `https://fonts.googleapis.com/css2?family=${familyParam}&display=swap`;
   const cssRes = await fetch(cssUrl);
 
   if (!cssRes.ok) {
@@ -153,7 +225,10 @@ async function fetchFontBinaryUncached(
       throw new Error(`WOFF2 decode failed: ${detail}`);
     }
   }
-  return buffer;
+  // Report the weight css2 actually served (its @font-face declares it) so a
+  // default-weight fallback can attribute the substitution accurately.
+  const weightMatch = css.match(/font-weight:\s*(\d+)/);
+  return { buffer, cssWeight: weightMatch ? parseInt(weightMatch[1], 10) : null };
 }
 
 /**
@@ -224,11 +299,14 @@ export async function resolveFontBinaries(
             family,
             requested: weight,
             used: outcome.weightUsed,
-            available: getKnownVariants(family) ?? [outcome.weightUsed],
+            // Empty array = family not in the curated catalog (we don't know
+            // its full variant list) — formatFontSubstitutions phrases these
+            // as a default-weight fallback rather than a false variant claim.
+            available: getKnownVariants(family) ?? [],
           });
         }
       } else {
-        failures.push({ family, weight, reason: outcome.reason });
+        failures.push({ family, weight, reason: outcome.reason, ...(outcome.code ? { code: outcome.code } : {}) });
       }
     }),
   );
@@ -241,11 +319,14 @@ export async function resolveFontBinaries(
  * non-fatal warning banner.
  */
 export function formatFontSubstitutions(subs: FontWeightSubstitution[]): string[] {
-  return subs.map((s) =>
-    s.available.length === 1
+  return subs.map((s) => {
+    if (s.available.length === 0) {
+      return `${s.family} does not provide weight ${s.requested} on Google Fonts; using its default weight ${s.used}`;
+    }
+    return s.available.length === 1
       ? `${s.family} is only available at weight ${s.used} (requested ${s.requested}); using ${s.used}`
-      : `${s.family} is not available at weight ${s.requested}; using ${s.used} — available weights: ${[...s.available].sort((a, b) => a - b).join(', ')}`,
-  );
+      : `${s.family} is not available at weight ${s.requested}; using ${s.used} — available weights: ${[...s.available].sort((a, b) => a - b).join(', ')}`;
+  });
 }
 
 /**
@@ -312,13 +393,22 @@ function resolveFontDirectivesViaAst(
  * Both accept an identifier that resolves through a top-level
  * `let name = "string";` binding (see `extractTopLevelStringLets`).
  *
- * Unknown families are filtered out (see `isKnownGoogleFont`). The playground
- * recompiles after every keystroke, so a user typing a font name in the
- * picker — `Joseph`, `Josephi`, `Josephin`, … — would otherwise send a fetch
- * per partial value to Google's CDN. The check is applied to both @font
- * directives and style-block `font-family:` values; legitimate unknown @font
- * directives are silently dropped rather than fetched, since the picker is
- * the authoritative font source for users.
+ * Filtering policy differs by reference source:
+ *
+ * - **Style-block `font-family:` values** are gated by `isKnownGoogleFont`.
+ *   The playground recompiles after every keystroke, so a user typing a font
+ *   name in the picker — `Joseph`, `Josephi`, `Josephin`, … — would otherwise
+ *   send a fetch per partial value to Google's CDN. The picker is the
+ *   authoritative source for style-block fonts.
+ * - **`@font` directives** are NOT gated: any non-file-path family flows to
+ *   the fetch, which acts as the probe — css2 serves any published Google
+ *   Font, curated or not. Partial names typed inside `@font "…"` (quote
+ *   auto-closing keeps them well-formed) each probe the CDN, costing up to
+ *   TWO requests per partial (weighted attempt + bare default-weight retry).
+ *   The fetch-layer caches don't help mid-typing — every keystroke is a new
+ *   family string, hence a new cache key — so the only rate limit while the
+ *   name is changing is the compile debounce; the caches (positive,
+ *   in-flight dedup, negative TTL) kick in once the name stops changing.
  */
 export function extractFontReferences(source: string): { family: string; weight?: number }[] {
   const refs: Map<string, { family: string; weight?: number }> = new Map();
@@ -337,7 +427,6 @@ export function extractFontReferences(source: string): { family: string; weight?
   if (astResolved) {
     for (const r of astResolved.resolved) {
       if (isFontFilePath(r.family)) continue;
-      if (!isKnownGoogleFont(r.family)) continue;
       addRef(r.family, r.weight);
     }
   } else {
@@ -348,7 +437,6 @@ export function extractFontReferences(source: string): { family: string; weight?
     while ((match = fontDirectiveRe.exec(source)) !== null) {
       const family = match[1];
       if (isFontFilePath(family)) continue;
-      if (!isKnownGoogleFont(family)) continue;
       addRef(family, match[2] ? parseInt(match[2], 10) : undefined);
     }
 
@@ -359,7 +447,6 @@ export function extractFontReferences(source: string): { family: string; weight?
       const bound = stringLets.get(match[1]);
       if (bound === undefined) continue;
       if (isFontFilePath(bound)) continue;
-      if (!isKnownGoogleFont(bound)) continue;
       addRef(bound, match[2] ? parseInt(match[2], 10) : undefined);
     }
   }
@@ -411,12 +498,12 @@ function isFontFilePath(value: string): boolean {
  * Extract families from `@font` directives that look well-formed (proper
  * quotes, not a file path) but are NOT in the curated Google Fonts list.
  *
- * `extractFontReferences` silently drops these to avoid per-keystroke CDN
- * requests as the font picker types. That's the right call for the fetch
- * path, but it leaves a user who hand-types `@font "MadeUp" 400;` with no
- * feedback at all. This helper lets the resolver surface those as compile
- * failures with a clear message ("Unknown Google Font: …") while preserving
- * the no-fetch property.
+ * Pure extractor: the resolver (compiler-worker `resolveFontsForSource`)
+ * interprets the output. Unresolvable identifiers become compile failures;
+ * resolved-but-uncurated families now also flow through the fetch path
+ * (see `extractFontReferences`), and the resolver uses this list to tag
+ * them — fetch success becomes a non-fatal "not in the curated list"
+ * notice, fetch failure a "could not load from Google Fonts" error.
  *
  * Style-block `font-family:` values are deliberately excluded — they're the
  * picker's live-typing target, and reporting each transient partial would

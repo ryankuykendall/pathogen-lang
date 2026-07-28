@@ -7,7 +7,13 @@ import {
   extractUnknownFontDirectiveFamilies,
   resolveFontBinaries,
 } from './font-loader.js';
-import type { FontBinaryEntry, FontResolutionResult, FontWeightSubstitution } from './font-loader.js';
+import type {
+  FontBinaryEntry,
+  FontResolutionFailure,
+  FontResolutionResult,
+  FontWeightSubstitution,
+} from './font-loader.js';
+import { isKnownGoogleFont } from '../utils/google-fonts.js';
 
 declare const window: Window & { PathogenLang?: Record<string, Function> };
 
@@ -208,33 +214,45 @@ async function fallbackSync(
  * surface them — see `compile` / `compileWithContext` below, which
  * promote them to a compilation error.
  *
- * Three failure modes are detected here without ever hitting the network:
+ * Failure and notice modes detected here:
  *
- * 1. **Unknown directive family**: `@font "MadeUp"` parses fine but the
- *    family isn't in the curated Google Fonts list. We surface this as a
- *    "Unknown Google Font: …" failure so the user sees feedback instead
- *    of a silent drop.
+ * 1. **Unresolvable identifier**: `@font someVar;` where the variable isn't
+ *    a top-level string literal. Detected without hitting the network.
  * 2. **Malformed directive**: source mentions `@font` but neither
  *    `extractFontReferences` nor `extractUnknownFontDirectiveFamilies`
  *    matched (hidden NBSP / zero-width chars, missing quotes, etc.).
- *    Surfaced as the legacy "not recognized" failure.
- * 3. **Fetch failure**: a well-formed known family fails to resolve at
- *    the CDN — handled inside `resolveFontBinaries`.
+ *    Surfaced as the legacy "not recognized" failure, no network.
+ * 3. **Fetch failure**: any well-formed family that fails to resolve at the
+ *    CDN — handled inside `resolveFontBinaries`. For families outside the
+ *    curated list the fetch IS the existence probe (css2 serves any
+ *    published Google Font); its failure message is rewritten here because
+ *    css2 errors are CORS-opaque and can't distinguish "no such font" from
+ *    a network failure.
+ * 4. **Uncurated success** (notice, non-fatal): a family outside the curated
+ *    picker list that Google Fonts served anyway — reported so the user
+ *    knows they've left the curated set.
  */
-async function resolveFontsForSource(source: string): Promise<FontResolutionResult> {
+async function resolveFontsForSource(
+  source: string,
+): Promise<FontResolutionResult & { notices: string[] }> {
   const refs = extractFontReferences(source);
   const unknownDirectives = extractUnknownFontDirectiveFamilies(source);
 
-  const unknownFailures = unknownDirectives.map((u) => ({
-    family: u.family,
-    weight: u.weight ?? 0,
-    reason:
-      u.kind === 'unresolved-identifier'
-        ? `@font references variable '${u.family}', which is not a top-level string variable. ` +
-          `Declare it at the top level: let ${u.family} = "Family Name";`
-        : `Unknown Google Font: "${u.family}"${u.weight !== undefined ? ` ${u.weight}` : ''}. ` +
-          `Open the font picker (click the font-family value in the inspector) for the supported list.`,
-  }));
+  const unknownFailures = unknownDirectives
+    .filter((u) => u.kind === 'unresolved-identifier')
+    .map((u) => ({
+      family: u.family,
+      weight: u.weight ?? 0,
+      reason:
+        `@font references variable '${u.family}', which is not a top-level string variable. ` +
+        `Declare it at the top level: let ${u.family} = "Family Name";`,
+    }));
+
+  // Resolved-but-uncurated families are probed via the normal fetch path
+  // (they're already in `refs`); success downgrades to a notice below.
+  const uncuratedFamilies = new Set(
+    unknownDirectives.filter((u) => u.kind === undefined).map((u) => u.family),
+  );
 
   if (refs.length === 0 && unknownFailures.length === 0) {
     // A well-formed directive that produced neither a ref nor a failure was
@@ -258,21 +276,62 @@ async function resolveFontsForSource(source: string): Promise<FontResolutionResu
           },
         ],
         substitutions: [],
+        notices: [],
       };
     }
-    return { binaries: [], failures: [], substitutions: [] };
+    return { binaries: [], failures: [], substitutions: [], notices: [] };
   }
 
   if (refs.length === 0) {
-    return { binaries: [], failures: unknownFailures, substitutions: [] };
+    return { binaries: [], failures: unknownFailures, substitutions: [], notices: [] };
   }
 
   const resolved = await resolveFontBinaries(refs);
+  const { notices, failures } = annotateUncuratedResolution(resolved, uncuratedFamilies);
+
   return {
     binaries: resolved.binaries,
-    failures: [...unknownFailures, ...resolved.failures],
+    failures: [...unknownFailures, ...failures],
     substitutions: resolved.substitutions,
+    notices,
   };
+}
+
+/**
+ * Classify the outcome of probing families outside the curated list.
+ * Exported for unit tests — this is where the user-facing message text lives.
+ *
+ * - A loaded uncurated family becomes a non-fatal notice.
+ * - An uncurated fetch failure gets its reason rewritten: css2 failures are
+ *   CORS-opaque ("Failed to fetch"), so for a family we have no catalog
+ *   entry for, a failure means either the font doesn't exist or the network
+ *   is down — say so instead of leaking the raw reason. Generic-family
+ *   rejections (code: 'generic-family') already carry a precise message.
+ */
+export function annotateUncuratedResolution(
+  resolved: Pick<FontResolutionResult, 'binaries' | 'failures'>,
+  uncuratedFamilies: Set<string>,
+): { notices: string[]; failures: FontResolutionFailure[] } {
+  const notices: string[] = [];
+  for (const family of uncuratedFamilies) {
+    if (resolved.binaries.some((b) => b.family === family)) {
+      notices.push(`"${family}" is not in the curated font list; loaded directly from Google Fonts.`);
+    }
+  }
+
+  const failures = resolved.failures.map((f) =>
+    isKnownGoogleFont(f.family) || f.code === 'generic-family'
+      ? f
+      : {
+          ...f,
+          reason:
+            `Could not load "${f.family}" from Google Fonts — the font was not found, ` +
+            `or the network request failed. Check the spelling against fonts.google.com, ` +
+            `or open the font picker for the curated list. (${f.reason})`,
+        },
+  );
+
+  return { notices, failures };
 }
 
 /**
@@ -304,13 +363,13 @@ export async function compile(
   isStale: ((id: number) => boolean) | undefined,
   options?: Record<string, unknown>,
 ): Promise<unknown> {
-  const { binaries, failures, substitutions } = await resolveFontsForSource(source);
+  const { binaries, failures, substitutions, notices } = await resolveFontsForSource(source);
   if (failures.length > 0) {
     throw new Error(formatFontFailures(failures));
   }
   const result = await sendRequest('compile', source, compilationId, isStale, options, binaries);
   const post = await resolvePostCompileFonts(result, binaries);
-  return attachFontDiagnostics(result, post.binaries, [...substitutions, ...post.substitutions]);
+  return attachFontDiagnostics(result, post.binaries, [...substitutions, ...post.substitutions], notices);
 }
 
 /**
@@ -342,13 +401,13 @@ export async function compileWithContext(
   isStale: ((id: number) => boolean) | undefined,
   options?: Record<string, unknown>,
 ): Promise<unknown> {
-  const { binaries, failures, substitutions } = await resolveFontsForSource(source);
+  const { binaries, failures, substitutions, notices } = await resolveFontsForSource(source);
   if (failures.length > 0) {
     throw new Error(formatFontFailures(failures));
   }
   const result = await sendRequest('compileWithContext', source, compilationId, isStale, options, binaries);
   const post = await resolvePostCompileFonts(result, binaries);
-  return attachFontDiagnostics(result, post.binaries, [...substitutions, ...post.substitutions]);
+  return attachFontDiagnostics(result, post.binaries, [...substitutions, ...post.substitutions], notices);
 }
 
 /**
@@ -382,10 +441,11 @@ async function resolvePostCompileFonts(
 }
 
 /**
- * Attach the host-side font binaries and weight substitutions to the compile
- * result: binaries feed the preview iframe's `@font-face` data URIs (see
- * playground/components/svg-preview-pane.ts); substitutions feed the
- * non-fatal warning banner in workspace-view.
+ * Attach the host-side font binaries, weight substitutions, and notices to
+ * the compile result: binaries feed the preview iframe's `@font-face` data
+ * URIs (see playground/components/svg-preview-pane.ts); substitutions and
+ * notices (e.g. "not in the curated font list") feed the non-fatal warning
+ * banner in workspace-view.
  *
  * The binaries here are the cached references (not the transferred copies);
  * the host always keeps the originals, so reading them post-compile is safe.
@@ -394,11 +454,17 @@ function attachFontDiagnostics(
   result: unknown,
   binaries: FontBinaryEntry[],
   substitutions: FontWeightSubstitution[],
+  notices: string[] = [],
 ): unknown {
   if (result && typeof result === 'object') {
-    const r = result as { fontBinaries?: FontBinaryEntry[]; fontSubstitutions?: FontWeightSubstitution[] };
+    const r = result as {
+      fontBinaries?: FontBinaryEntry[];
+      fontSubstitutions?: FontWeightSubstitution[];
+      fontNotices?: string[];
+    };
     r.fontBinaries = binaries;
     r.fontSubstitutions = substitutions;
+    r.fontNotices = notices;
   }
   return result;
 }

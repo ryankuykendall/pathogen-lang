@@ -927,7 +927,10 @@ export class WorkspaceView extends HTMLElement {
       this.previewPane.setStale(false);
       this.consolePane.logs = result.logs || [];
       this.hideError();
-      store.set('fontWarnings', formatFontSubstitutions(result.fontSubstitutions || []));
+      store.set('fontWarnings', [
+        ...formatFontSubstitutions(result.fontSubstitutions || []),
+        ...(result.fontNotices || []),
+      ]);
 
       // Store layers and defs for layers panel
       const resultLayers = result.layers || [];

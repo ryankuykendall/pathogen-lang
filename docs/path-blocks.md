@@ -808,9 +808,25 @@ Declare it at the top level: let x = "Family Name";
 - **CLI**: Loads from local file paths (relative to source file) or searches system font directories (`/Library/Fonts`, `/System/Library/Fonts`, `~/Library/Fonts` on macOS; equivalent paths on Linux/Windows)
 - **Playground**: Fetches from Google Fonts CDN automatically
 
-The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, the CLI logs a warning and compilation continues; the playground reports a compile error.
+The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, the CLI logs a warning and compilation continues; in the playground it is a compile error (what counts as "cannot be found" is explained below).
 
-In the playground, if a family doesn't offer the requested weight (whether from an `@font` directive or a `font-weight` style property), the nearest available weight is substituted and a warning explains the substitution — for example, requesting `Baumans` at weight 900 loads its only weight, 400.
+**Curated families vs. any Google Font (playground)**
+
+The playground's font picker — opened by clicking the `font-family` value in the inspector — lists about 100 popular families: the *curated list*. `@font` is not limited to it. It accepts **any family published on [Google Fonts](https://fonts.google.com)**, so a display face that never appears in the picker still works — browse the catalog and paste the family name:
+
+```
+@font "Gravitas One";
+```
+
+The difference between the two tiers is what the playground knows about a family: it has the curated families' weight lists; for any other family it must ask Google.
+
+| | In the curated list | Not in the curated list |
+|---|---------------------|-------------------------|
+| **Loading** | Loads silently | Loads, plus a dismissible warning: `"Gravitas One" is not in the curated font list; loaded directly from Google Fonts.` |
+| **Unavailable weight** | Snapped to the nearest known weight *before* any request — `@font "Baumans" 900;` loads its only weight, 400 | The requested weight is tried first; if Google rejects it, the playground *retries* without a weight and takes Google's default: `Gravitas One does not provide weight 700 on Google Fonts; using its default weight 400` |
+| **Family can't be served** | Compile error reporting the CDN's reason | Compile error. The name may be wrong *or* the network request may have failed — the browser cannot read Google's error details across origins. Check the spelling at [Google Fonts](https://fonts.google.com) |
+
+Warnings appear in the workspace's dismissible warning banner and never stop compilation. Weight substitution applies to both `@font` weights and `font-weight` in a style block. Other font-loading failures are also compile errors: a CSS generic family (`@font "sans-serif";` — generics can't be fetched from Google Fonts, even though the picker lists them), an unresolvable variable (shown above), or a malformed directive. See [Error cases](#path-blocks-error-cases) for `fromGlyph`-specific errors.
 
 A variable source pairs naturally with style blocks, letting a single declaration drive both the font load and the styles that use it:
 

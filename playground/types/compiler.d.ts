@@ -263,6 +263,11 @@ export interface CompileResult {
     used: number;
     available: number[];
   }[];
+  // Attached host-side alongside fontBinaries: non-fatal informational
+  // messages (e.g. an @font family outside the curated list that Google
+  // Fonts served anyway). Feeds the same warning banner as
+  // fontSubstitutions. Playground-only extension.
+  fontNotices?: string[];
 }
 
 export interface FontData {

@@ -96,9 +96,9 @@ describe('extractFontReferences', () => {
     expect(refs).toEqual([{ family: 'Josefin Sans' }]);
   });
 
-  it('drops unknown families from @font directives — picker is the authoritative source', () => {
+  it('keeps unknown families from @font directives — the fetch is the existence probe', () => {
     const refs = extractFontReferences(`@font "TotallyMadeUpFontName" 400;`);
-    expect(refs).toEqual([]);
+    expect(refs).toEqual([{ family: 'TotallyMadeUpFontName', weight: 400 }]);
   });
 
   it('resolves an identifier @font source via a top-level let string', () => {
@@ -122,12 +122,12 @@ describe('extractFontReferences', () => {
     expect(refs).toEqual([]);
   });
 
-  it('ignores identifier @font sources bound to unknown families', () => {
+  it('extracts identifier @font sources bound to unknown families', () => {
     const refs = extractFontReferences(`let f = "TotallyMadeUpFontName";\n@font f;`);
-    expect(refs).toEqual([]);
+    expect(refs).toEqual([{ family: 'TotallyMadeUpFontName', weight: undefined }]);
   });
 
-  it('keeps known families alongside dropped unknown ones in mixed sources', () => {
+  it('keeps directive unknowns but still drops style-block unknowns in mixed sources', () => {
     const refs = extractFontReferences(`
       @font "Roboto" 400;
       @font "NotARealFont" 700;
@@ -137,10 +137,12 @@ describe('extractFontReferences', () => {
     expect(refs).toEqual(
       expect.arrayContaining([
         { family: 'Roboto', weight: 400 },
+        { family: 'NotARealFont', weight: 700 },
         { family: 'Inter', weight: 500 },
       ]),
     );
-    expect(refs).toHaveLength(2);
+    // "ImaginaryThing" (style block) must NOT extract — per-keystroke policy.
+    expect(refs).toHaveLength(3);
   });
 });
 
@@ -321,7 +323,7 @@ describe('resolveFontBinaries partitioning', () => {
 });
 
 describe('weight substitution', () => {
-  const css = `/* latin */ @font-face { src: url(https://fonts.gstatic.com/sub.ttf) format('truetype'); }`;
+  const css = `/* latin */ @font-face { font-weight: 400; src: url(https://fonts.gstatic.com/sub.ttf) format('truetype'); }`;
   const ttfBuffer = new Uint8Array(8).buffer;
 
   /** Stub fetch: CSS for css2 URLs, a binary for gstatic URLs. Returns the spy. */
@@ -419,6 +421,95 @@ describe('weight substitution', () => {
     expect(result.substitutions).toEqual([]);
   });
 
+  it('falls back to the default weight for an unknown family whose weighted request fails', async () => {
+    // css2 rejects nonexistent weights opaquely (no CORS headers → bare
+    // "Failed to fetch"). A real non-curated family asked for a weight it
+    // lacks must load its default weight, not masquerade as "font not found".
+    const spy = vi.fn(async (url: string) => {
+      if (url.includes('fonts.googleapis.com')) {
+        if (url.includes('wght@')) throw new TypeError('Failed to fetch');
+        return new Response(css, { status: 200 });
+      }
+      return new Response(ttfBuffer, { status: 200 });
+    });
+    vi.stubGlobal('fetch', spy);
+
+    const outcome = await fetchFontBinary('UnknownRetryFamilyTest', 700);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) throw new Error('expected success outcome');
+    expect(outcome.weightUsed).toBe(400);
+
+    const urls = cssUrls(spy);
+    expect(urls).toHaveLength(2);
+    expect(urls[0]).toContain('wght@700');
+    expect(urls[1]).not.toContain('wght@');
+
+    // Cache hit must still report the served weight so the substitution
+    // warning survives keystroke recompiles.
+    const spy2 = stubFontFetch();
+    const cached = await fetchFontBinary('UnknownRetryFamilyTest', 700);
+    expect(cached.ok).toBe(true);
+    if (!cached.ok) throw new Error('expected success outcome');
+    expect(cached.weightUsed).toBe(400);
+    expect(spy2).not.toHaveBeenCalled();
+  });
+
+  it('does not misattribute a fallback to a sibling weight that succeeded directly', async () => {
+    // Regression: defaultWeightServed must be keyed per requested weight, not
+    // per family. A 900-request that fell back to 400 must not make a later
+    // 700-request (served exactly as asked) report a bogus substitution.
+    const family = 'MixedWeightUnknownTest';
+    const rejectWeighted = vi.fn(async (url: string) => {
+      if (url.includes('fonts.googleapis.com')) {
+        if (url.includes('wght@')) throw new TypeError('Failed to fetch');
+        return new Response(css, { status: 200 });
+      }
+      return new Response(ttfBuffer, { status: 200 });
+    });
+    vi.stubGlobal('fetch', rejectWeighted);
+    const fallback = await fetchFontBinary(family, 900);
+    expect(fallback.ok).toBe(true);
+    if (!fallback.ok) throw new Error('expected success outcome');
+    expect(fallback.weightUsed).toBe(400);
+
+    // 700 exists and is served directly.
+    stubFontFetch();
+    const direct = await fetchFontBinary(family, 700);
+    expect(direct.ok).toBe(true);
+    if (!direct.ok) throw new Error('expected success outcome');
+    expect(direct.weightUsed).toBe(700);
+
+    // Cache hits keep each weight's own attribution.
+    const spy = stubFontFetch();
+    const cached700 = await fetchFontBinary(family, 700);
+    if (!cached700.ok) throw new Error('expected success outcome');
+    expect(cached700.weightUsed).toBe(700);
+    const cached900 = await fetchFontBinary(family, 900);
+    if (!cached900.ok) throw new Error('expected success outcome');
+    expect(cached900.weightUsed).toBe(400);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('resolveFontBinaries reports an empty available list for unknown-family fallbacks', async () => {
+    const spy = vi.fn(async (url: string) => {
+      if (url.includes('fonts.googleapis.com')) {
+        if (url.includes('wght@')) throw new TypeError('Failed to fetch');
+        return new Response(css, { status: 200 });
+      }
+      return new Response(ttfBuffer, { status: 200 });
+    });
+    vi.stubGlobal('fetch', spy);
+
+    const result = await resolveFontBinaries([{ family: 'UnknownRetryResolveTest', weight: 700 }]);
+    expect(result.failures).toEqual([]);
+    // Registered under the REQUESTED weight (same contract as curated snaps).
+    expect(result.binaries).toHaveLength(1);
+    expect(result.binaries[0]).toMatchObject({ family: 'UnknownRetryResolveTest', weight: 700 });
+    expect(result.substitutions).toEqual([
+      { family: 'UnknownRetryResolveTest', requested: 700, used: 400, available: [] },
+    ]);
+  });
+
   it('caches under both keys: repeat and sibling unavailable weights fetch zero times', async () => {
     let spy = stubFontFetch();
     await fetchFontBinary('Pacifico', 900);
@@ -443,6 +534,52 @@ describe('weight substitution', () => {
   });
 });
 
+describe('failure negative cache', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('negative-caches unknown-family failures and refetches after the TTL', async () => {
+    vi.useFakeTimers();
+    const spy = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    vi.stubGlobal('fetch', spy);
+
+    const first = await fetchFontBinary('NegativeCacheFamilyTest', 400);
+    expect(first.ok).toBe(false);
+    const callsAfterFirst = spy.mock.calls.length; // weighted attempt + bare retry
+    expect(callsAfterFirst).toBe(2);
+
+    // Within the TTL: served from the negative cache, zero network calls.
+    const second = await fetchFontBinary('NegativeCacheFamilyTest', 400);
+    expect(second.ok).toBe(false);
+    if (second.ok) throw new Error('expected failure outcome');
+    expect(second.reason).toMatch(/Failed to fetch/);
+    expect(spy.mock.calls.length).toBe(callsAfterFirst);
+
+    // Past the TTL: a transient network failure must be re-attempted.
+    vi.advanceTimersByTime(61_000);
+    const third = await fetchFontBinary('NegativeCacheFamilyTest', 400);
+    expect(third.ok).toBe(false);
+    expect(spy.mock.calls.length).toBeGreaterThan(callsAfterFirst);
+  });
+
+  it('does not negative-cache curated-family failures — recompiles re-attempt immediately', async () => {
+    const spy = vi.fn(async () => new Response('', { status: 404 }));
+    vi.stubGlobal('fetch', spy);
+
+    const first = await fetchFontBinary('Roboto', 400);
+    expect(first.ok).toBe(false);
+    expect(spy.mock.calls.length).toBe(1); // curated: pre-snapped, no bare retry
+
+    const second = await fetchFontBinary('Roboto', 400);
+    expect(second.ok).toBe(false);
+    expect(spy.mock.calls.length).toBe(2);
+  });
+});
+
 describe('formatFontSubstitutions', () => {
   it('uses the only-available phrasing for single-variant families', () => {
     expect(
@@ -457,6 +594,14 @@ describe('formatFontSubstitutions', () => {
       ]),
     ).toEqual([
       'Titillium Web is not available at weight 500; using 400 — available weights: 200, 300, 400, 600, 700, 900',
+    ]);
+  });
+
+  it('uses the default-weight phrasing when the variant list is unknown (non-curated family)', () => {
+    expect(
+      formatFontSubstitutions([{ family: 'Gravitas One', requested: 700, used: 400, available: [] }]),
+    ).toEqual([
+      'Gravitas One does not provide weight 700 on Google Fonts; using its default weight 400',
     ]);
   });
 
