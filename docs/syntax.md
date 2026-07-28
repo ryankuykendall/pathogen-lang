@@ -252,7 +252,71 @@ Filter chains are also space-separated: `filter: blur(2px) brightness(1.2);` —
 
 Functions whose CSS grammar genuinely uses commas keep them, exactly as in CSS: `rgba(0, 0, 0, 0.5)`, `color-mix(in oklch, red, blue)`, `translate(10px, 20px)`, `cubic-bezier(0.4, 0, 0.2, 1)`, `polygon(0 0, 100% 0, 50% 100%)`, and `font-family` fallback lists.
 
-Pathogen variables still work anywhere inside a CSS function value — `drop-shadow(4px 4px 4px shadowColor)` resolves `shadowColor` to its CSS color at compile time, and a numeric variable substitutes as a bare number (`brightness(level)` → `brightness(1.4)`). Substitution is not unit-aware, so arguments that need a unit want a template fragment instead: `` blur(`${softness}`px) ``. See [Variables and Interpolation in Values](#layers-variables-and-interpolation-in-values).
+Pathogen variables still work anywhere inside a CSS function value — `drop-shadow(4px 4px 4px shadowColor)` resolves `shadowColor` to its CSS color at compile time, and a numeric variable substitutes as a bare number (`brightness(level)` → `brightness(1.4)`). Substitution is not unit-aware, and the compiler checks the result — arguments that need a unit want a template fragment instead: `` blur(`${softness}`px) ``. See [Argument Units](#syntax-argument-units) below and [Variables and Interpolation in Values](#layers-variables-and-interpolation-in-values).
+
+#### Argument Units
+
+CSS is strict about units per function, and a wrong one makes the browser drop the whole declaration silently. Pathogen checks the final value — after any variable substitution or interpolation — and fails with a fix-it message instead:
+
+| Group | Functions | Numeric arguments |
+|-------|-----------|-------------------|
+| Filter | `blur`, `drop-shadow` | A **length** — unit required (`px`, `em`, `rem`, `pt`, `in`, `cm`, `vw`, …). No percentages. |
+| Filter | `hue-rotate` | An **angle** — unit required (`deg`, `rad`, `turn`). |
+| Filter | `brightness`, `contrast`, `grayscale`, `invert`, `opacity`, `saturate`, `sepia` | A plain number **or** percentage. Units are an error. |
+| Shape | `inset`, `circle`, `ellipse`, `polygon` | A **length or percentage** — one or the other is required. |
+| Transform | `scale`, `scaleX`, `scaleY`, `scaleZ`, `scale3d`, `matrix`, `matrix3d` | Plain numbers only. Any unit, including `%`, is an error. |
+| Timing | `cubic-bezier`, `steps` | Plain numbers only. Any unit, including `%`, is an error. |
+
+The table above is the **complete** list of checked functions. Any CSS function not listed — including `rotate`, `translate`, `skew`, `perspective`, the color functions, and `path()` — passes through unchecked.
+
+```
+filter: blur(4);              // ✗ blur() takes a length — "4" needs a unit (try 4px)
+filter: blur(4px);            // ✓
+filter: hue-rotate(90);       // ✗ hue-rotate() takes an angle — "90" needs a unit (try 90deg)
+filter: hue-rotate(90deg);    // ✓
+filter: opacity(50%);         // ✓ percentages are fine for filter amounts
+transform: scale(2px);        // ✗ scale() takes plain numbers — "2px" must not have a unit
+transform: scale(0.5);        // ✓
+
+let softness = 4;
+filter: blur(softness);       // ✗ substituted values are checked the same way
+filter: blur(`${softness}`px); // ✓
+```
+
+**Zero is always allowed bare** — `blur(0)` and `polygon(0 0, 100% 0, 50% 100%)` are valid CSS and pass unchanged.
+
+#### Why Some Functions Are Unchecked
+
+Pathogen checks a function's units only where CSS and SVG agree on the right answer.
+
+**Color functions** (`oklch`, `rgb`, `color-mix`, …) accept numbers, percentages, and angles interchangeably depending on the channel, so there is no single rule to enforce — they are left alone.
+
+**Most transform functions** are emitted into SVG's `transform` attribute, whose grammar takes unitless user units. `transform: rotate(45)` and `translate(100, 200)` are correct there and are exactly what Pathogen's own [transform convenience properties](#layers-transform-convenience-properties) generate, while the CSS grammar for the same functions requires units. Because the two grammars disagree, Pathogen accepts both forms and checks neither — `translate(10px, 20px)` is accepted too.
+
+**`scale*` and `matrix*` are the exception**, which is why they appear in the table. A unit is invalid in *both* grammars — SVG's is `scale(<number>)` and `matrix(<number>×6)` — so there is one correct answer and Pathogen enforces it.
+
+#### Functions Must Match the Property
+
+A function also has to belong to the property it is used on — `fill: rotate(45);` is a compile error, since a transform function means nothing to `fill`:
+
+```
+fill: rotate(45);             // ✗ rotate() is not valid on "fill" — that property takes color functions
+fill: oklch(0.7 0.15 240);    // ✓
+clip-path: blur(4px);         // ✗ blur() is not valid on "clip-path" — that property takes basic shapes
+clip-path: circle(50%);       // ✓
+```
+
+The mapping is:
+
+| Property | Accepts |
+|----------|---------|
+| `filter` | Filter functions |
+| `clip-path` | Basic shapes |
+| `transform` | Transform functions |
+| `fill`, `stroke`, `stop-color`, `flood-color`, `lighting-color` | Color functions |
+| `transition-timing-function`, `animation-timing-function` | Timing functions |
+
+Any property not in this table accepts any allow-listed function. Nesting is unaffected: `drop-shadow(4px 4px 8px oklch(0.65 0.26 357))` is fine, because only the outermost function is matched against the property.
 
 ### Merge (`<<`)
 

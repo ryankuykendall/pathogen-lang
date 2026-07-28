@@ -102,10 +102,13 @@ function urlRefValue(detail: string): CompletionEntry {
 // CSS filter functions are SPACE-separated (comma args are a compile error) —
 // the snippets teach the correct syntax. Functions not listed here get the
 // generic single-amount template.
+// Placeholders for length/angle arguments carry their unit — the compiler
+// rejects a unitless length or angle (see validateCSSValue), so a snippet
+// without one would steer users straight into that error.
 const FILTER_FUNCTION_SNIPPETS: Record<string, { insert: string; detail: string }> = {
-  'drop-shadow': { insert: 'drop-shadow(${1:dx} ${2:dy} ${3:blur} ${4:color})', detail: 'Drop shadow — space-separated: dx dy blur color' },
-  blur: { insert: 'blur(${1:radius})', detail: 'Gaussian blur (px)' },
-  'hue-rotate': { insert: 'hue-rotate(${1:angle})', detail: 'Rotate all hues (deg)' },
+  'drop-shadow': { insert: 'drop-shadow(${1:4}px ${2:4}px ${3:8}px ${4:color})', detail: 'Drop shadow — space-separated: dx dy blur color' },
+  blur: { insert: 'blur(${1:4}px)', detail: 'Gaussian blur — length, unit required (px)' },
+  'hue-rotate': { insert: 'hue-rotate(${1:90}deg)', detail: 'Rotate all hues — angle, unit required (deg)' },
   brightness: { insert: 'brightness(${1:amount})', detail: 'Brightness multiplier (1 = unchanged)' },
   contrast: { insert: 'contrast(${1:amount})', detail: 'Contrast multiplier (1 = unchanged)' },
 };

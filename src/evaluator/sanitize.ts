@@ -145,12 +145,39 @@ const URL_VALUED_PROPERTIES = new Set([
 ]);
 
 /**
+ * The units a numeric value may carry, grouped by dimension. These are the
+ * single source for BOTH the token allow-list regex below and the per-function
+ * argument rules further down — deriving them keeps the two from drifting into
+ * a state where a unit passes one check and fails the other with a confusing
+ * message.
+ */
+const LENGTH_UNITS = ['px', 'em', 'rem', 'pt', 'pc', 'in', 'cm', 'mm', 'vw', 'vh', 'vmin', 'vmax', 'ch', 'ex'] as const;
+const ANGLE_UNITS = ['deg', 'rad', 'turn'] as const;
+const TIME_UNITS = ['s', 'ms'] as const;
+const OTHER_UNITS = ['fr'] as const;
+
+const LENGTH_UNIT_SET: ReadonlySet<string> = new Set(LENGTH_UNITS);
+const ANGLE_UNIT_SET: ReadonlySet<string> = new Set(ANGLE_UNITS);
+
+/** `px|rem|…` sorted longest-first so no unit is shadowed by its own prefix. */
+const UNIT_ALTERNATION = [...LENGTH_UNITS, ...ANGLE_UNITS, ...TIME_UNITS, ...OTHER_UNITS]
+  .slice()
+  .sort((a, b) => b.length - a.length)
+  .join('|');
+
+/** A number with an optional unit or `%`, capturing the suffix. */
+const NUMERIC_TOKEN_RE = new RegExp(
+  `^[-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:e[-+]?\\d+)?(${UNIT_ALTERNATION}|%)?$`,
+  'i',
+);
+
+/**
  * Token-level allow-list. After we strip leading/trailing whitespace and
  * optional quotes, the value must match one of these forms.
  */
 const ALLOWED_VALUE_FORMS: RegExp[] = [
   // Number with optional unit
-  /^[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?(?:px|em|rem|%|deg|rad|turn|s|ms|pt|pc|in|cm|mm|vw|vh|vmin|vmax|fr|ch|ex)?$/i,
+  NUMERIC_TOKEN_RE,
   // CSS hex color
   /^#[0-9a-fA-F]{3,8}$/,
   // CSS keyword identifier (single token)
@@ -217,6 +244,201 @@ const COMMA_FORBIDDEN_FUNCTIONS = new Set<string>(CSS_FILTER_FUNCTION_NAMES);
 const STRING_VALUED_PROPERTIES = new Set([
   'font-family', 'content',
 ]);
+
+// ── CSS function argument units ───────────────────────────────────────────
+//
+// CSS is strict about units per function, and the wrong one makes the browser
+// drop the entire declaration silently — the same failure mode as the
+// comma-form filters above, so it gets the same loud treatment. The check runs
+// on the FINAL value, so it catches literal, variable-substituted, and
+// interpolated arguments alike.
+//
+// Deliberately unchecked: color functions (channels accept numbers,
+// percentages, and angles interchangeably) and transform functions (they are
+// emitted into SVG's `transform` attribute, whose grammar takes unitless user
+// units — `rotate(45)` is correct there and is what Pathogen itself emits).
+// `scale`/`matrix` ARE listed, because a unit is invalid in both grammars.
+
+type ArgUnitRule =
+  | 'length'              // unit required; percentages rejected
+  | 'angle'               // angle unit required
+  | 'length-percentage'   // unit or % required
+  | 'number-percentage'   // bare number or %; dimension units rejected
+  | 'number';             // bare numbers only; any unit rejected
+
+const CSS_FUNCTION_ARG_RULES = new Map<string, ArgUnitRule>([
+  ['blur', 'length'],
+  ['drop-shadow', 'length'],
+  ['hue-rotate', 'angle'],
+  ...(['inset', 'circle', 'ellipse', 'polygon'] as const).map(
+    (n) => [n, 'length-percentage'] as [string, ArgUnitRule],
+  ),
+  // Filter amounts: <number-percentage> per Filter Effects — both forms valid.
+  ...(['brightness', 'contrast', 'grayscale', 'invert', 'opacity', 'saturate', 'sepia'] as const).map(
+    (n) => [n, 'number-percentage'] as [string, ArgUnitRule],
+  ),
+  // Plain numbers only. scale*/matrix* are transform functions, but unlike
+  // rotate/translate they are unambiguous: SVG's transform grammar is
+  // scale(<number>) / matrix(<number>×6), so neither a dimension unit nor a
+  // percentage is valid in the attribute these are emitted into.
+  ...(['cubic-bezier', 'steps', 'matrix', 'matrix3d', 'scale', 'scalex', 'scaley', 'scalez', 'scale3d'] as const).map(
+    (n) => [n, 'number'] as [string, ArgUnitRule],
+  ),
+]);
+
+/**
+ * A numeric argument, capturing any trailing unit-ish suffix. Deliberately
+ * looser than NUMERIC_TOKEN_RE (it accepts any letters) so an unsupported unit
+ * reports "…has an invalid unit (try 100deg)" here rather than falling through
+ * to the generic "disallowed token" message.
+ */
+const NUMERIC_ARG_RE = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?([a-z%]*)$/i;
+
+/**
+ * Which function groups make sense on a given property. A property absent from
+ * this map accepts any allow-listed function — we only constrain properties
+ * whose contract we have actually reasoned about, so unmapped properties can't
+ * false-positive. Applied to the OUTERMOST function only: a color function
+ * nested in `drop-shadow(4px 4px 8px oklch(…))` is legitimate.
+ */
+const PROPERTY_FUNCTION_GROUPS: ReadonlyArray<[string, ReadonlySet<string>, string]> = [
+  ['filter', new Set<string>(CSS_FILTER_FUNCTION_NAMES), 'filter functions'],
+  ['clip-path', new Set<string>(CSS_SHAPE_FUNCTION_NAMES), 'basic shapes'],
+  ['transform', new Set<string>(CSS_TRANSFORM_FUNCTION_NAMES), 'transform functions'],
+  ['fill', new Set<string>(CSS_COLOR_FUNCTION_NAMES), 'color functions'],
+  ['stroke', new Set<string>(CSS_COLOR_FUNCTION_NAMES), 'color functions'],
+  ['stop-color', new Set<string>(CSS_COLOR_FUNCTION_NAMES), 'color functions'],
+  ['flood-color', new Set<string>(CSS_COLOR_FUNCTION_NAMES), 'color functions'],
+  ['lighting-color', new Set<string>(CSS_COLOR_FUNCTION_NAMES), 'color functions'],
+  ['transition-timing-function', new Set<string>(CSS_TIMING_FUNCTION_NAMES), 'timing functions'],
+  ['animation-timing-function', new Set<string>(CSS_TIMING_FUNCTION_NAMES), 'timing functions'],
+];
+
+/**
+ * Split a function's argument list into individual numeric-candidate tokens.
+ * Arguments are separated by top-level whitespace, commas, or both, and nested
+ * calls survive as single tokens (which then fail the numeric test and are
+ * skipped).
+ */
+function splitFunctionArgs(args: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let quote = '';
+  let buf = '';
+  const flush = (): void => {
+    const token = buf.trim();
+    if (token.length > 0) out.push(token);
+    buf = '';
+  };
+  for (let i = 0; i < args.length; i++) {
+    const c = args[i];
+    if (quote) {
+      buf += c;
+      if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      buf += c;
+      continue;
+    }
+    if (c === '(') depth++;
+    else if (c === ')') depth = Math.max(0, depth - 1);
+    // Separate on whitespace AND commas, but only at the top level. Splitting
+    // on every comma regardless of depth would tear a legacy comma-syntax
+    // nested call (`rgba(20, 21, 31, 0.4)`) into fragments and validate its
+    // channel values against the OUTER function's unit rule.
+    else if (depth === 0 && (c === ',' || /\s/.test(c))) {
+      flush();
+      continue;
+    }
+    buf += c;
+  }
+  flush();
+  return out;
+}
+
+/**
+ * Enforce per-function argument units. Throws with a fix-it message; non-numeric
+ * arguments (colors, keywords, nested functions, var() refs) are skipped.
+ */
+function checkFunctionArgUnits(fnName: string, args: string): void {
+  const rule = CSS_FUNCTION_ARG_RULES.get(fnName);
+  if (!rule) return;
+
+  for (const arg of splitFunctionArgs(args)) {
+    const match = NUMERIC_ARG_RE.exec(arg);
+    if (!match) continue;
+    const unit = match[1].toLowerCase();
+    const isPercent = unit === '%';
+    // Unitless zero is a valid length/angle in CSS — never flag it.
+    const isZero = parseFloat(arg) === 0;
+
+    switch (rule) {
+      case 'length':
+        if (!unit && isZero) break;
+        if (!LENGTH_UNIT_SET.has(unit)) {
+          throw new Error(
+            `${fnName}() takes a length — ${JSON.stringify(arg)} ${unit ? `has an invalid unit` : `needs a unit`} ` +
+            `(try ${arg.replace(/[a-z%]*$/i, '')}px). Lengths without a valid unit are invalid CSS and the browser ` +
+            `drops the whole declaration.`,
+          );
+        }
+        break;
+      case 'angle':
+        if (!unit && isZero) break;
+        if (!ANGLE_UNIT_SET.has(unit)) {
+          throw new Error(
+            `${fnName}() takes an angle — ${JSON.stringify(arg)} ${unit ? `has an invalid unit` : `needs a unit`} ` +
+            `(try ${arg.replace(/[a-z%]*$/i, '')}deg). Angles without a valid unit are invalid CSS and the browser ` +
+            `drops the whole declaration.`,
+          );
+        }
+        break;
+      case 'length-percentage':
+        if (!unit && isZero) break;
+        if (!isPercent && !LENGTH_UNIT_SET.has(unit)) {
+          throw new Error(
+            `${fnName}() takes a length or percentage — ${JSON.stringify(arg)} ` +
+            `${unit ? `has an invalid unit` : `needs a unit`} (try ${arg.replace(/[a-z%]*$/i, '')}px or ` +
+            `${arg.replace(/[a-z%]*$/i, '')}%). The browser drops the whole declaration otherwise.`,
+          );
+        }
+        break;
+      case 'number-percentage':
+        if (unit && !isPercent) {
+          throw new Error(
+            `${fnName}() takes a plain number or percentage — ${JSON.stringify(arg)} must not have a unit ` +
+            `(try ${arg.replace(/[a-z%]*$/i, '')}). The browser drops the whole declaration otherwise.`,
+          );
+        }
+        break;
+      case 'number':
+        if (unit) {
+          throw new Error(
+            `${fnName}() takes plain numbers — ${JSON.stringify(arg)} must not have a unit ` +
+            `(try ${arg.replace(/[a-z%]*$/i, '')}). The browser drops the whole declaration otherwise.`,
+          );
+        }
+        break;
+    }
+  }
+}
+
+/**
+ * Enforce that a top-level function belongs to the property it is used on.
+ */
+function checkFunctionMatchesProperty(fnName: string, propertyName: string): void {
+  for (const [prop, group, label] of PROPERTY_FUNCTION_GROUPS) {
+    if (prop !== propertyName) continue;
+    if (!group.has(fnName)) {
+      throw new Error(
+        `${fnName}() is not valid on "${propertyName}" — that property takes ${label}.`,
+      );
+    }
+    return;
+  }
+}
 
 /**
  * Validate a style-block property value against the strict allow-list.
@@ -293,7 +515,7 @@ export function validateCSSValue(
   // a balanced-paren split.
   const tokens = splitTopLevel(value);
   for (const token of tokens) {
-    if (!isAllowedToken(token, propertyName, options)) {
+    if (!isAllowedToken(token, propertyName, options, true)) {
       // A backtick reaching the validator means a template span could not be
       // spliced (e.g. unterminated) — point at the interpolation docs.
       const templateHint = rawValue.includes('`')
@@ -405,6 +627,9 @@ function isAllowedToken(
   token: string,
   propertyName: string,
   options: ValidateCSSValueOptions = {},
+  // True for tokens that are direct values of the property (not function
+  // arguments) — only these are matched against PROPERTY_FUNCTION_GROUPS.
+  topLevel = false,
 ): boolean {
   const trimmed = token.trim();
   if (trimmed.length === 0) return true;
@@ -441,6 +666,14 @@ function isAllowedToken(
         `${fnName}() takes a single value — commas are not allowed`,
       );
     }
+    // A function has to belong to the property it is used on — checked at the
+    // top level only, so legitimate nesting (a color inside drop-shadow) is
+    // unaffected.
+    if (topLevel) {
+      checkFunctionMatchesProperty(fnName, propertyName);
+    }
+    // Arguments must carry the units CSS requires for this function.
+    checkFunctionArgUnits(fnName, fnMatch.args);
     // Recursively validate args of allowed functions.
     const inner = fnMatch.args;
     // Reject nested forbidden tokens (defense in depth) — propagate allowVar.
@@ -459,16 +692,17 @@ function isAllowedToken(
     return true;
   }
 
-  // Comma-separated list (e.g. font-family fallbacks)
+  // Comma-separated list (e.g. font-family fallbacks). Parts are still direct
+  // values of the property, so the top-level flag carries through.
   if (trimmed.includes(',')) {
     const parts = trimmed.split(',').map((p) => p.trim()).filter((p) => p.length > 0);
-    return parts.every((p) => isAllowedToken(p, propertyName, options));
+    return parts.every((p) => isAllowedToken(p, propertyName, options, topLevel));
   }
 
   // Slash-separated list (e.g. `1px/1.5` line-height shorthand) — same rule.
   if (trimmed.includes('/')) {
     const parts = trimmed.split('/').map((p) => p.trim()).filter((p) => p.length > 0);
-    return parts.every((p) => isAllowedToken(p, propertyName, options));
+    return parts.every((p) => isAllowedToken(p, propertyName, options, topLevel));
   }
 
   // Atomic token: number, hex, ident
@@ -505,4 +739,8 @@ export const __test__ = {
   URL_DATA_IMAGE_RE,
   ALLOWED_FUNCTION_NAMES,
   isCompilerEmittedVar,
+  NUMERIC_TOKEN_RE,
+  LENGTH_UNIT_SET,
+  ANGLE_UNIT_SET,
+  CSS_FUNCTION_ARG_RULES,
 };

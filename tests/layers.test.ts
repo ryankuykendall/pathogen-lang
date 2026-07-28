@@ -1739,6 +1739,207 @@ describe('Multi-Layer Support', () => {
         expect(layer.styles['clip-path']).toBe('polygon(0 0, 100% 0, 50% 100%)');
       });
 
+    describe('CSS function argument units', () => {
+      const styled = (decl: string): string | undefined => {
+        const result = compile(`
+          define PathLayer('a') \${ ${decl} }
+          layer('a').apply { M 0 0 }
+        `);
+        const layer = result.layers.find((l) => l.name === 'a')!;
+        const prop = decl.slice(0, decl.indexOf(':')).trim();
+        return prop === 'transform' ? (layer as any).transform : layer.styles[prop];
+      };
+
+      describe('length-taking functions require a unit', () => {
+        it('rejects a unitless blur length', () => {
+          expect(() => styled('filter: blur(4);')).toThrow(/blur\(\) takes a length.*needs a unit/s);
+        });
+
+        it('rejects a percentage where a length is required', () => {
+          expect(() => styled('filter: blur(50%);')).toThrow(/blur\(\) takes a length/);
+        });
+
+        it('rejects a unitless drop-shadow offset', () => {
+          expect(() => styled('filter: drop-shadow(4 4 8px black);')).toThrow(/drop-shadow\(\) takes a length/);
+        });
+
+        it('accepts lengths with units', () => {
+          expect(styled('filter: blur(4px);')).toBe('blur(4px)');
+          expect(styled('filter: drop-shadow(4px 4px 8px black);')).toBe('drop-shadow(4px 4px 8px black)');
+        });
+
+        it('accepts unitless zero as a length', () => {
+          expect(styled('filter: blur(0);')).toBe('blur(0)');
+          expect(styled('filter: drop-shadow(0 0 4px red);')).toBe('drop-shadow(0 0 4px red)');
+        });
+      });
+
+      describe('angle-taking functions require a unit', () => {
+        it('rejects a unitless hue-rotate angle', () => {
+          expect(() => styled('filter: hue-rotate(90);')).toThrow(/hue-rotate\(\) takes an angle.*needs a unit/s);
+        });
+
+        it('accepts angles with units and unitless zero', () => {
+          expect(styled('filter: hue-rotate(90deg);')).toBe('hue-rotate(90deg)');
+          expect(styled('filter: hue-rotate(-0.5rad);')).toBe('hue-rotate(-0.5rad)');
+          expect(styled('filter: hue-rotate(0);')).toBe('hue-rotate(0)');
+        });
+      });
+
+      describe('number-taking functions reject units', () => {
+        it('rejects a unit on a filter amount', () => {
+          expect(() => styled('filter: brightness(2px);')).toThrow(/brightness\(\).*must not have a unit/);
+        });
+
+        it('rejects a unit on scale', () => {
+          expect(() => styled('transform: scale(2px);')).toThrow(/scale\(\).*must not have a unit/);
+        });
+
+        it('rejects a percentage on scale (SVG transform grammar takes numbers)', () => {
+          expect(() => styled('transform: scale(50%);')).toThrow(/scale\(\) takes plain numbers/);
+        });
+
+        it('rejects a unit in cubic-bezier', () => {
+          expect(() => styled('transition-timing-function: cubic-bezier(0.4px, 0, 0.2, 1);')).toThrow(
+            /cubic-bezier\(\).*must not have a unit/,
+          );
+        });
+
+        it('rejects a percentage in cubic-bezier (numbers only)', () => {
+          expect(() => styled('transition-timing-function: cubic-bezier(40%, 0, 0.2, 1);')).toThrow(
+            /cubic-bezier\(\).*must not have a unit/,
+          );
+        });
+
+        it('accepts plain numbers, and percentages where the spec allows them', () => {
+          expect(styled('filter: brightness(1.4);')).toBe('brightness(1.4)');
+          expect(styled('filter: opacity(50%);')).toBe('opacity(50%)');
+          expect(styled('transform: scale(2, 2);')).toBe('scale(2, 2)');
+          expect(styled('transform: scale(0.5);')).toBe('scale(0.5)');
+        });
+      });
+
+      describe('shape functions require a length or percentage', () => {
+        it('rejects a unitless circle radius', () => {
+          expect(() => styled('clip-path: circle(50);')).toThrow(/circle\(\) takes a length or percentage/);
+        });
+
+        it('accepts percentages, lengths, and zero', () => {
+          expect(styled('clip-path: circle(50%);')).toBe('circle(50%)');
+          expect(styled('clip-path: inset(10px 20px);')).toBe('inset(10px 20px)');
+          expect(styled('clip-path: polygon(0 0, 100% 0, 50% 100%);')).toBe('polygon(0 0, 100% 0, 50% 100%)');
+        });
+      });
+
+      describe('unchecked groups', () => {
+        it('leaves transform functions unitless-valid (SVG attribute grammar)', () => {
+          expect(styled('transform: rotate(45);')).toBe('rotate(45)');
+          expect(styled('transform: translate(100, 200);')).toBe('translate(100, 200)');
+          expect(styled('transform: translate(10px, 20px);')).toBe('translate(10px, 20px)');
+        });
+
+        it('leaves color function channels alone', () => {
+          expect(styled('fill: oklch(0.7 0.15 240);')).toBe('oklch(0.7 0.15 240)');
+          expect(styled('fill: rgb(255 0 0);')).toBe('rgb(255 0 0)');
+        });
+
+        it('checks only the outermost function against nesting', () => {
+          expect(styled('filter: drop-shadow(4px 4px 8px oklch(0.65 0.26 357));')).toBe(
+            'drop-shadow(4px 4px 8px oklch(0.65 0.26 357))',
+          );
+        });
+
+        // A nested legacy comma-syntax color function must survive as ONE
+        // token — splitting on its internal commas would validate the channel
+        // values (21, 31, 50%) against the OUTER function's length rule.
+        it('does not tear apart a nested comma-syntax rgba()', () => {
+          expect(styled('filter: drop-shadow(0 6px 12px rgba(20, 21, 31, 0.4));')).toBe(
+            'drop-shadow(0 6px 12px rgba(20, 21, 31, 0.4))',
+          );
+        });
+
+        it('does not tear apart a nested comma-syntax hsla() with percentage channels', () => {
+          expect(styled('filter: drop-shadow(2px 2px 4px hsla(200, 50%, 40%, 0.6));')).toBe(
+            'drop-shadow(2px 2px 4px hsla(200, 50%, 40%, 0.6))',
+          );
+        });
+
+        it('still catches a unitless value mid comma-separated list', () => {
+          // Guards the opposite failure: dropping comma separation entirely
+          // would let this through as an unparseable "50," token.
+          expect(() => styled('clip-path: polygon(0 0, 50 0, 50% 100%);')).toThrow(
+            /polygon\(\) takes a length or percentage/,
+          );
+        });
+      });
+
+      describe('the check runs after substitution', () => {
+        it('rejects a substituted unitless variable', () => {
+          expect(() =>
+            compile(`
+              let amount = 4;
+              define PathLayer('a') \${ filter: blur(amount); }
+              layer('a').apply { M 0 0 }
+            `),
+          ).toThrow(/blur\(\) takes a length/);
+        });
+
+        it('rejects an interpolated unitless fragment', () => {
+          expect(() =>
+            compile(`
+              let amount = 4;
+              define PathLayer('a') \${ filter: blur(\`\${amount}\`); }
+              layer('a').apply { M 0 0 }
+            `),
+          ).toThrow(/blur\(\) takes a length/);
+        });
+
+        it('accepts the same variable with a spliced unit', () => {
+          const result = compile(`
+            let amount = 4;
+            define PathLayer('a') \${ filter: blur(\`\${amount}\`px); }
+            layer('a').apply { M 0 0 }
+          `);
+          expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(4px)');
+        });
+      });
+
+      describe('functions must match the property', () => {
+        it('rejects a transform function on fill', () => {
+          expect(() => styled('fill: rotate(45);')).toThrow(/rotate\(\) is not valid on "fill"/);
+        });
+
+        it('rejects a filter function on clip-path', () => {
+          expect(() => styled('clip-path: blur(4px);')).toThrow(/blur\(\) is not valid on "clip-path"/);
+        });
+
+        it('accepts each mapped property with its own group', () => {
+          expect(styled('filter: blur(4px);')).toBe('blur(4px)');
+          expect(styled('clip-path: circle(50%);')).toBe('circle(50%)');
+          expect(styled('transform: rotate(45);')).toBe('rotate(45)');
+          expect(styled('fill: oklch(0.7 0.15 240);')).toBe('oklch(0.7 0.15 240)');
+          expect(styled('transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);')).toBe(
+            'cubic-bezier(0.4, 0, 0.2, 1)',
+          );
+        });
+
+        it('leaves unmapped properties unconstrained', () => {
+          expect(styled('stroke-dasharray: steps(4, end);')).toBe('steps(4, end)');
+        });
+      });
+
+      it('reports the error with a source position', () => {
+        expect(() =>
+          compile(`
+            define PathLayer('a') \${
+              filter: blur(4);
+            }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/Line 3, col \d+/);
+      });
+    });
+
       it('keeps font-family fallback lists legal', () => {
         const result = compile(`
           define TextLayer('t') \${ font-family: "Inter", serif; }

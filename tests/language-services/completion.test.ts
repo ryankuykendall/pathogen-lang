@@ -1361,12 +1361,20 @@ describe('style property/value coverage matrix', () => {
     const drop = items.find((i) => i.label === 'drop-shadow');
     expect(drop).toBeDefined();
     expect(drop!.isSnippet).toBe(true);
-    expect(drop!.insertText).toBe('drop-shadow(${1:dx} ${2:dy} ${3:blur} ${4:color})');
+    expect(drop!.insertText).toBe('drop-shadow(${1:4}px ${2:4}px ${3:8}px ${4:color})');
     expect(drop!.insertText).not.toContain(',');
-    const blur = items.find((i) => i.label === 'blur');
-    expect(blur!.insertText).toBe('blur(${1:radius})');
     const url = items.find((i) => i.label === 'url');
     expect(url!.insertText).toBe('url(#${1:id})');
+  });
+
+  it('carries units in length/angle placeholders so the snippet compiles as-is', () => {
+    // The evaluator rejects a unitless length or angle, so a snippet without a
+    // unit would insert code that fails to compile.
+    const items = completeAtEnd("define PathLayer('m') ${ filter: ");
+    expect(items.find((i) => i.label === 'blur')!.insertText).toBe('blur(${1:4}px)');
+    expect(items.find((i) => i.label === 'hue-rotate')!.insertText).toBe('hue-rotate(${1:90}deg)');
+    // Unitless amounts stay unitless — a unit there is an error.
+    expect(items.find((i) => i.label === 'brightness')!.insertText).toBe('brightness(${1:amount})');
   });
 
   it('derives filter function completions from the sanitizer allow-list (bidirectional)', () => {

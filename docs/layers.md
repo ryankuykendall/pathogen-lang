@@ -557,7 +557,7 @@ These four forms are all available, and all produce `blur(1.5px) brightness(1.4)
 | Fragment, unit outside | `` blur(`${softness}`px) `` | Most cases — the unit stays visible as CSS |
 | Fragment, unit inside | `` blur(`${softness}px`) `` | The unit itself is computed |
 | Whole-value template | `` `blur(${softness}px)` `` | The whole value is one interpolated string |
-| Bare identifier | `brightness(level)` | The argument is a **unitless** number |
+| Bare identifier | `brightness(level)` | The argument is a **unitless** number — a length or angle here is a compile error |
 
 The quoting rule above still applies to fragments: a backtick inside a double- or single-quoted string is literal text, not a splice point.
 
@@ -568,7 +568,14 @@ let level = 1.4;
 define PathLayer('bright') ${ filter: brightness(level); };
 ```
 
-**Substitution is not unit-aware.** The compiler replaces any numeric variable it finds inside an allow-listed CSS function, so `filter: blur(amount);` compiles and emits `blur(4)` — a unitless length, which is invalid CSS and is silently dropped by the browser with no error. Use a bare identifier only for the unitless filter functions (`brightness`, `contrast`, `grayscale`, `invert`, `opacity`, `saturate`, `sepia`); whenever the argument is a length or an angle, attach the unit with a template fragment. Literal arguments written with units (`blur(2px)`, `hue-rotate(-90deg)`) are always left exactly as typed.
+**Substitution is not unit-aware, and the compiler checks the result.** A numeric variable substitutes as a bare number, so `filter: blur(amount);` would emit `blur(4)` — a unitless length, which is invalid CSS. Rather than emit a declaration the browser silently drops, Pathogen rejects it:
+
+```
+blur() takes a length — "4" needs a unit (try 4px). Lengths without a valid
+unit are invalid CSS and the browser drops the whole declaration.
+```
+
+The check runs on the final value, so it catches the mistake whether the number was typed literally, substituted from a variable, or interpolated. Use a bare identifier for the unitless filter functions (`brightness`, `contrast`, `grayscale`, `invert`, `opacity`, `saturate`, `sepia`); whenever the argument is a length or an angle, attach the unit with a template fragment. Literal arguments written with units (`blur(2px)`, `hue-rotate(-90deg)`) are always left exactly as typed. See [CSS Function Values](#syntax-css-function-values) for the full per-function unit rules.
 
 Interpolation is a convenience, not an escape hatch: every interpolated result — whole-value or fragment — is validated against the same style-value allow-list as hand-written values (see the [security model](#security-whats-allowed-in-style-blocks)). Note the two `calc()`s are different things: an unquoted `calc(12 + 15)` is Pathogen arithmetic resolved before emission, while a `calc()` that survives *into* the emitted CSS string — including via interpolation — is rejected.
 

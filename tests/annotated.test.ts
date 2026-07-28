@@ -672,6 +672,37 @@ M 0 0`),
       ).toThrow(/var\(\)|disallowed/);
     });
 
+    it('rejects unitless CSS function arguments with the same error', () => {
+      expect(() =>
+        compileAnnotated(`
+let s = \${ filter: blur(4); };
+M 0 0`),
+      ).toThrow(/blur\(\) takes a length.*needs a unit/s);
+    });
+
+    it('rejects a substituted unitless variable like the primary evaluator', () => {
+      expect(() =>
+        compileAnnotated(`
+let amount = 4;
+let s = \${ filter: blur(amount); };
+M 0 0`),
+      ).toThrow(/blur\(\) takes a length/);
+    });
+
+    it('rejects a property/function mismatch like the primary evaluator', () => {
+      expect(() =>
+        compileAnnotated(`
+let s = \${ fill: rotate(45); };
+M 0 0`),
+      ).toThrow(/rotate\(\) is not valid on "fill"/);
+    });
+
+    it('keeps unitless transforms valid in annotated mode', () => {
+      const result = compileAnnotated(`let s = \${ transform: rotate(45); };
+if (s.transform == 'rotate(45)') { M 1 1 } else { M 9 9 }`);
+      expect(result).toBe('M 1 1');
+    });
+
     it('resolves identifiers in whole-value templates with parity', () => {
       const expected = compile(`let softness = 1.5;
 let level = 1.4;
