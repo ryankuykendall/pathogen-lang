@@ -37,6 +37,89 @@ export function splitTopLevel(value: string): string[] {
 const FN_NAME_RE = /^[A-Za-z0-9_-]+/;
 
 /**
+ * Find backtick template spans in a raw style value and replace each with
+ * `evalTemplate(span)` (the span INCLUDES its backticks, so it parses as a
+ * Pathogen template-literal expression). Returns the spliced string, or null
+ * when the value contains no complete template span. Scanning mirrors
+ * parseStyleDeclarations in the AST builder: single/double quotes hide
+ * backticks, and inside a span `${ }` interpolation nesting and backslash
+ * escapes are tracked so the closing backtick is found correctly.
+ * `evalTemplate` may throw; the error propagates to the caller.
+ */
+export function spliceTemplateFragments(
+  raw: string,
+  evalTemplate: (templateSource: string) => string,
+): string | null {
+  let out = '';
+  let i = 0;
+  let found = false;
+  let quote = '';
+  while (i < raw.length) {
+    const ch = raw[i];
+    if (quote) {
+      out += ch;
+      if (ch === quote) quote = '';
+      i++;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      out += ch;
+      i++;
+      continue;
+    }
+    if (ch === '`') {
+      const start = i;
+      i++;
+      let interpDepth = 0;
+      let innerQuote = '';
+      let closed = false;
+      while (i < raw.length) {
+        const c = raw[i];
+        if (innerQuote) {
+          if (c === innerQuote) innerQuote = '';
+          i++;
+          continue;
+        }
+        if (c === '\\') {
+          i += 2;
+          continue;
+        }
+        if (interpDepth === 0) {
+          if (c === '`') {
+            i++;
+            closed = true;
+            break;
+          }
+          if (c === '$' && raw[i + 1] === '{') {
+            interpDepth = 1;
+            i += 2;
+            continue;
+          }
+          i++;
+          continue;
+        }
+        if (c === '"' || c === "'") {
+          innerQuote = c;
+          i++;
+          continue;
+        }
+        if (c === '{') interpDepth++;
+        else if (c === '}') interpDepth--;
+        i++;
+      }
+      if (!closed) return null; // unterminated — leave for the strict parser/validator to report
+      found = true;
+      out += evalTemplate(raw.slice(start, i));
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  return found ? out : null;
+}
+
+/**
  * Match a string that is a single `name( … )` functional notation spanning the
  * whole (trimmed) input, returning `{ name, args }` or null. Unlike a greedy
  * `name\((.*)\)$` or non-nesting `name\(([^)]*)\)$` regex, the argument span is

@@ -633,5 +633,57 @@ let s = \${ filter: blur(2px), brightness(1.2); };
 M 0 0`),
       ).toThrow(/filter chains are space-separated/);
     });
+
+    it('splices template fragments with exact cross-evaluator parity', () => {
+      const expected = compile(`let softness = 1.5;
+define PathLayer('a') \${ filter: blur(\`\${softness}\`px) brightness(\`\${1.2}\`); }
+layer('a').apply { M 0 0 }`).layers.find((l) => l.name === 'a')!.styles.filter;
+      expect(expected).toBe('blur(1.5px) brightness(1.2)');
+
+      const result = compileAnnotated(`let softness = 1.5;
+let s = \${ filter: blur(\`\${softness}\`px) brightness(\`\${1.2}\`); };
+if (s.filter == '${expected}') { M 1 1 } else { M 9 9 }`);
+      expect(result).toBe('M 1 1');
+    });
+
+    it('substitutes numeric variables with cross-evaluator parity', () => {
+      const result = compileAnnotated(`let level = 1.4;
+let s = \${ filter: brightness(level); };
+if (s.filter == 'brightness(1.4)') { M 1 1 } else { M 9 9 }`);
+      expect(result).toBe('M 1 1');
+    });
+
+    it('rejects a fragment result that violates the allow-list', () => {
+      expect(() =>
+        compileAnnotated(`
+let bad = "url(http://evil.example)";
+let s = \${ filter: blur(2px) \`\${bad}\`; };
+M 0 0`),
+      ).toThrow(/url\(\)|disallowed/);
+    });
+
+    it('rejects a smuggled var()-shaped fragment beside a legit substitution', () => {
+      expect(() =>
+        compileAnnotated(`
+let level = 1.5;
+let payload = "var(--evil-hack, 1)";
+let s = \${ filter: \`\${payload}\` brightness(level); };
+M 0 0`),
+      ).toThrow(/var\(\)|disallowed/);
+    });
+
+    it('resolves identifiers in whole-value templates with parity', () => {
+      const expected = compile(`let softness = 1.5;
+let level = 1.4;
+define PathLayer('a') \${ filter: \`blur(\${softness}px) brightness(level)\`; }
+layer('a').apply { M 0 0 }`).layers.find((l) => l.name === 'a')!.styles.filter;
+      expect(expected).toBe('blur(1.5px) brightness(1.4)');
+
+      const result = compileAnnotated(`let softness = 1.5;
+let level = 1.4;
+let s = \${ filter: \`blur(\${softness}px) brightness(level)\`; };
+if (s.filter == '${expected}') { M 1 1 } else { M 9 9 }`);
+      expect(result).toBe('M 1 1');
+    });
   });
 });

@@ -258,6 +258,7 @@ import {
 } from './segments';
 import { serializeRelativeAndTrack } from './path-data';
 import { tryResolveCSSFunctionArgs as sharedTryResolveCSSFunctionArgs } from './css-function-resolve';
+import { spliceTemplateFragments } from '../css-value-utils';
 
 /** CSS properties that reference defs elements via url(#id) */
 const URL_REF_PROPERTIES = new Set(['mask', 'clip-path', 'filter', 'marker', 'marker-start', 'marker-mid', 'marker-end']);
@@ -1165,6 +1166,10 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     // multi-token-fallback paths remain untrusted and get strict validation.
     let resolvedValue = prop.value;
     let trusted = false;
+    let wasWholeValueTemplate = false;
+    // var() strings this compiler emitted from validated CSSVarValue/Color
+    // objects for THIS value — the validator allows exactly these tokens.
+    const emittedVars: string[] = [];
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status && parseResult.value) {
@@ -1181,6 +1186,10 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
           // Untrusted: user-supplied string. Validation runs below.
+          // A whole-value template is inline-authored CSS text: run the
+          // function-arg resolver on its result (below) so `blur(${s}px)
+          // brightness(level)` behaves identically to the fragment form.
+          wasWholeValueTemplate = parseResult.value.type === 'TemplateLiteral';
         } else if (isColorValue(evaluated)) {
           resolvedValue = colorValueToCSS(evaluated);
           trusted = true;
@@ -1205,18 +1214,51 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     } catch {
       // Parse or eval failed — keep raw string (handles rgb(...), #hex, multi-value strings, etc.)
     }
+    // Backtick template fragments inside the value (e.g. blur(`${v}`px)):
+    // evaluate each span and splice its text into the surrounding value.
+    // The whole-value template case never reaches here (it parses above);
+    // the spliced result stays untrusted and is validated below.
+    let didSplice = false;
+    if (resolvedValue === prop.value && prop.value.includes('`')) {
+      try {
+        const spliced = spliceTemplateFragments(prop.value, (templateSource) => {
+          const parsed = expressionParser.parse(templateSource);
+          if (!parsed.status || !parsed.value) {
+            throw new Error(`could not parse template fragment ${templateSource}`);
+          }
+          const v = evaluateExpression(parsed.value, scope);
+          if (typeof v === 'number') return formatNum(v);
+          if (typeof v === 'string') return v;
+          // Typed values with a CSS form: var() strings from these are
+          // compiler-emitted (validated at construction) — record them so
+          // the validator can allow exactly these tokens. A var()-shaped
+          // plain string result above is deliberately NOT recorded.
+          if (isColorValue(v) || isCSSVarValue(v)) {
+            const css = isColorValue(v) ? colorValueToCSS(v) : cssVarValueToCSS(v);
+            if (css.startsWith('var(')) emittedVars.push(css);
+            return css;
+          }
+          throw new Error(`template fragment ${templateSource} must produce a string or number`);
+        });
+        if (spliced !== null) {
+          resolvedValue = spliced;
+          didSplice = true;
+        }
+      } catch (e) {
+        const eLine = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
+        const eCol = prop.valueLoc?.column ?? prop.loc?.column ?? getCol(expr);
+        throw new Error(formatError(`Style value for "${prop.name}": ${(e as Error).message}`, eLine, eCol));
+      }
+    }
     // If the whole-value expression parse didn't resolve, try resolving
-    // expressions embedded inside CSS function arguments (e.g., color args in drop-shadow)
-    let allowVar = false;
-    if (resolvedValue === prop.value) {
-      const cssResolved = tryResolveCSSFunctionArgs(prop.value, scope);
+    // expressions embedded inside CSS function arguments (e.g., color args in
+    // drop-shadow, numeric variables in brightness). Also runs on spliced
+    // values and whole-value template results so remaining idents substitute
+    // identically in every interpolation form.
+    if (resolvedValue === prop.value || didSplice || wasWholeValueTemplate) {
+      const cssResolved = tryResolveCSSFunctionArgs(resolvedValue, scope, emittedVars);
       if (cssResolved !== null) {
         resolvedValue = cssResolved;
-        // The substituted tokens are typed values pre-validated at construction
-        // (Color, CSSVar). The remaining literal tokens still need validation,
-        // but we permit well-formed var(--ident,...) refs in the result since
-        // they were produced by the substitution itself.
-        allowVar = true;
       }
     }
     // Auto-wrap URL-reference properties with url(#...) — skip CSS function values (contain parentheses)
@@ -1240,7 +1282,11 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     // construction validates inputs and produces a fixed grammar).
     if (!trusted) {
       try {
-        validateCSSValue(resolvedValue, prop.name, { allowVar });
+        // Only var() tokens the compiler itself emitted (recorded in
+        // emittedVars) may pass — never a var() that rode along in the text.
+        validateCSSValue(resolvedValue, prop.name, {
+          allowVar: emittedVars.length > 0 ? emittedVars : false,
+        });
       } catch (e) {
         // Point at the value when we know its extent (valueLoc), else the name.
         const eLine = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
@@ -1279,19 +1325,25 @@ function cssVarValueToCSS(v: CSSVarValue): string {
  * color args in drop-shadow) via the shared resolver, using this evaluator's
  * expression parse/eval.
  */
-function tryResolveCSSFunctionArgs(raw: string, scope: Scope): string | null {
+function tryResolveCSSFunctionArgs(raw: string, scope: Scope, emittedVars?: string[]): string | null {
   return sharedTryResolveCSSFunctionArgs(raw, {
     parseExpression: (token) => {
       const parseResult = expressionParser.parse(token);
       return parseResult.status && parseResult.value ? parseResult.value : null;
     },
     resolveToCSS: (expr) => {
+      // Literal tokens (2px, 1.4) must stay verbatim — substituting would
+      // strip CSS units the Pathogen number parser consumed. (The resolver
+      // also guards on the raw token text, which covers -90deg/-50% shapes
+      // that parse as UnaryExpression rather than NumberLiteral.)
+      if (expr.type === 'NumberLiteral') return null;
       const evaluated = evaluateExpression(expr, scope);
       if (isColorValue(evaluated)) return colorValueToCSS(evaluated);
       if (isCSSVarValue(evaluated)) return cssVarValueToCSS(evaluated);
+      if (typeof evaluated === 'number') return formatNum(evaluated);
       return null;
     },
-  });
+  }, emittedVars);
 }
 
 function evaluateExpression(expr: Expression, scope: Scope): Value {

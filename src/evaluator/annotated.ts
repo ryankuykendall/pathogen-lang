@@ -32,6 +32,8 @@ import { BUILTIN_ENUMS } from './builtin-enums';
 import { assignGradientProperty, assignMarkerProperty, assignMeshPointProperty, assignPatternProperty } from './member-assign';
 import { angleArgToDegrees, checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { tryResolveCSSFunctionArgs } from './css-function-resolve';
+import { spliceTemplateFragments } from '../css-value-utils';
+import { formatNum } from './format';
 import { sanitizeSVGFragment } from './svg-sanitize';
 import {
   cssSourceExpr,
@@ -973,6 +975,10 @@ function getLine(node: unknown): number | undefined {
   return (node as { loc?: { line: number } })?.loc?.line;
 }
 
+function getCol(node: unknown): number | undefined {
+  return (node as { loc?: { column: number } })?.loc?.column;
+}
+
 function isStyleBlock(value: Value): value is StyleBlockValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'StyleBlockValue';
 }
@@ -985,6 +991,26 @@ function camelToKebab(name: string): string {
   return name.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 }
 
+/**
+ * Serialize a typed Value with a CSS representation (Color, CSSVar) to its
+ * CSS string; null for everything else. Shared by the CSS-function-arg hooks
+ * and the template-fragment splicer below (twin of index.ts helpers).
+ */
+function styleValueToCSS(evaluated: Value): string | null {
+  if (isColorValue(evaluated)) {
+    if (evaluated.lightDark) return `light-dark(${evaluated.lightDark.lightCSS}, ${evaluated.lightDark.darkCSS})`;
+    if (evaluated.cssExpr) return evaluated.cssExpr;
+    if (evaluated.cssVar) return `var(${evaluated.cssVar.varName}, ${oklchToCSS(evaluated.oklch)})`;
+    return oklchToCSS(evaluated.oklch);
+  }
+  if (isCSSVarValue(evaluated)) {
+    return evaluated.fallback
+      ? `var(${evaluated.varName}, ${evaluated.fallback})`
+      : `var(${evaluated.varName})`;
+  }
+  return null;
+}
+
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
   // Strict enforcement of a malformed declaration recorded leniently during
   // AST-building (see the index.ts twin for the rationale).
@@ -995,6 +1021,10 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
   for (const prop of expr.properties) {
     let resolvedValue = prop.value;
     let trusted = false;
+    let wasWholeValueTemplate = false;
+    // var() strings this compiler emitted from validated CSSVarValue/Color
+    // objects for THIS value — the validator allows exactly these tokens.
+    const emittedVars: string[] = [];
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status && parseResult.value) {
@@ -1004,6 +1034,9 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           trusted = true;
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
+          // Whole-value template results also get function-arg resolution
+          // below, mirroring index.ts.
+          wasWholeValueTemplate = parseResult.value.type === 'TemplateLiteral';
         } else if (isColorValue(evaluated)) {
           if (evaluated.lightDark) {
             resolvedValue = `light-dark(${evaluated.lightDark.lightCSS}, ${evaluated.lightDark.darkCSS})`;
@@ -1037,40 +1070,73 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     } catch {
       // Keep raw string
     }
+    // Backtick template fragments inside the value (e.g. blur(`${v}`px)):
+    // evaluate each span and splice its text in, mirroring index.ts. The
+    // spliced result stays untrusted and is validated below.
+    let didSplice = false;
+    if (resolvedValue === prop.value && prop.value.includes('`')) {
+      try {
+        const spliced = spliceTemplateFragments(prop.value, (templateSource) => {
+          const parsed = expressionParser.parse(templateSource);
+          if (!parsed.status || !parsed.value) {
+            throw new Error(`could not parse template fragment ${templateSource}`);
+          }
+          const v = evaluateExpression(parsed.value, scope);
+          if (typeof v === 'number') return formatNum(v);
+          if (typeof v === 'string') return v;
+          // Typed values only: record compiler-emitted var() strings so the
+          // validator allows exactly these tokens (never a var()-shaped
+          // plain string result).
+          const css = styleValueToCSS(v);
+          if (css !== null) {
+            if (css.startsWith('var(')) emittedVars.push(css);
+            return css;
+          }
+          throw new Error(`template fragment ${templateSource} must produce a string or number`);
+        });
+        if (spliced !== null) {
+          resolvedValue = spliced;
+          didSplice = true;
+        }
+      } catch (e) {
+        const eLine = prop.valueLoc?.line ?? prop.loc?.line ?? getLine(expr);
+        const eCol = prop.valueLoc?.column ?? prop.loc?.column ?? getCol(expr);
+        throw new Error(formatError(`Style value for "${prop.name}": ${(e as Error).message}`, eLine, eCol));
+      }
+    }
     // Whole-value expression parse didn't resolve — try resolving expressions
-    // embedded inside CSS function arguments (e.g. color args in drop-shadow),
-    // matching the primary evaluator so both surfaces emit the same CSS.
-    let allowVar = false;
-    if (resolvedValue === prop.value) {
-      const cssResolved = tryResolveCSSFunctionArgs(prop.value, {
+    // embedded inside CSS function arguments (e.g. color args in drop-shadow,
+    // numeric variables in brightness), matching the primary evaluator so both
+    // surfaces emit the same CSS. Also runs on spliced values and whole-value
+    // template results.
+    if (resolvedValue === prop.value || didSplice || wasWholeValueTemplate) {
+      const cssResolved = tryResolveCSSFunctionArgs(resolvedValue, {
         parseExpression: (token) => {
           const parseResult = expressionParser.parse(token);
           return parseResult.status && parseResult.value ? parseResult.value : null;
         },
         resolveToCSS: (e) => {
+          // Literal tokens (2px, 1.4) stay verbatim — substitution would
+          // strip CSS units the Pathogen number parser consumed. (The shared
+          // resolver also guards on raw token text for -90deg/-50% shapes.)
+          if (e.type === 'NumberLiteral') return null;
           const evaluated = evaluateExpression(e, scope);
-          if (isColorValue(evaluated)) {
-            if (evaluated.lightDark) return `light-dark(${evaluated.lightDark.lightCSS}, ${evaluated.lightDark.darkCSS})`;
-            if (evaluated.cssExpr) return evaluated.cssExpr;
-            if (evaluated.cssVar) return `var(${evaluated.cssVar.varName}, ${oklchToCSS(evaluated.oklch)})`;
-            return oklchToCSS(evaluated.oklch);
-          }
-          if (isCSSVarValue(evaluated)) {
-            return evaluated.fallback
-              ? `var(${evaluated.varName}, ${evaluated.fallback})`
-              : `var(${evaluated.varName})`;
-          }
+          const css = styleValueToCSS(evaluated);
+          if (css !== null) return css;
+          if (typeof evaluated === 'number') return formatNum(evaluated);
           return null;
         },
-      });
+      }, emittedVars);
       if (cssResolved !== null) {
         resolvedValue = cssResolved;
-        allowVar = true;
       }
     }
     if (!trusted) {
       try {
-        validateCSSValue(resolvedValue, prop.name, { allowVar });
+        // Only compiler-emitted var() tokens (emittedVars) may pass.
+        validateCSSValue(resolvedValue, prop.name, {
+          allowVar: emittedVars.length > 0 ? emittedVars : false,
+        });
       } catch (e) {
         const eLine = prop.valueLoc?.line ?? prop.loc?.line;
         const eCol = prop.valueLoc?.column ?? prop.loc?.column;

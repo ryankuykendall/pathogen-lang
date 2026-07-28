@@ -1454,6 +1454,207 @@ describe('Multi-Layer Support', () => {
       );
     });
 
+    describe('dynamic values in style-value functions (coverage matrix)', () => {
+      it('splices a template fragment with the unit outside', () => {
+        const result = compile(`
+          let softness = 1.5;
+          define PathLayer('a') \${ filter: blur(\`\${softness}\`px); }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(1.5px)');
+      });
+
+      it('splices a template fragment with the unit inside', () => {
+        const result = compile(`
+          let softness = 1.5;
+          define PathLayer('a') \${ filter: blur(\`\${softness}px\`); }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(1.5px)');
+      });
+
+      it('splices a fragment containing a function call (user repro shape)', () => {
+        const result = compile(`
+          define PathLayer('a') \${ filter: blur(\`\${randomRange(1.1, 2.2)}\`px); }
+          layer('a').apply { M 0 0 }
+        `);
+        const filter = result.layers.find((l) => l.name === 'a')!.styles.filter!;
+        const amount = parseFloat(/^blur\(([\d.]+)px\)$/.exec(filter)![1]);
+        expect(amount).toBeGreaterThanOrEqual(1.1);
+        expect(amount).toBeLessThanOrEqual(2.2);
+      });
+
+      it('splices multiple fragments in a chained value', () => {
+        const result = compile(`
+          let a = 2;
+          let b = 1.2;
+          define PathLayer('a') \${ filter: blur(\`\${a}\`px) brightness(\`\${b}\`); }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(2px) brightness(1.2)');
+      });
+
+      it('evaluates expressions inside fragments', () => {
+        const result = compile(`
+          let base = 2;
+          define PathLayer('a') \${ filter: blur(\`\${base * 2}\`px); }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(4px)');
+      });
+
+      it('whole-value template still works (degenerate case)', () => {
+        const result = compile(`
+          let softness = 1.5;
+          define PathLayer('a') \${ filter: \`blur(\${softness}px)\`; }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(1.5px)');
+      });
+
+      it('substitutes a numeric variable as a function argument', () => {
+        const result = compile(`
+          let level = 1.4;
+          define PathLayer('a') \${ filter: brightness(level); }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('brightness(1.4)');
+      });
+
+      it('substitutes numeric variables alongside color variables', () => {
+        const result = compile(`
+          let level = 0.8;
+          let c = CSSVar('--shadow', #000);
+          define PathLayer('a') \${ filter: opacity(level) drop-shadow(2px 2px 4px c); }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
+          'opacity(0.8) drop-shadow(2px 2px 4px var(--shadow, #000000))',
+        );
+      });
+
+      it('rejects a fragment result that violates the allow-list', () => {
+        expect(() =>
+          compile(`
+            let bad = "url(http://evil.example)";
+            define PathLayer('a') \${ filter: blur(2px) \`\${bad}\`; }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/url\(\)|disallowed/);
+      });
+
+      it('rejects a fragment result smuggling a forbidden token', () => {
+        expect(() =>
+          compile(`
+            let bad = "javascript:alert(1)";
+            define PathLayer('a') \${ filter: \`\${bad}\`; }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow();
+      });
+
+      it('still rejects calc() in style values with the fix-it message', () => {
+        expect(() =>
+          compile(`
+            define PathLayer('a') \${ filter: blur(calc(1 + 1)px); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/calc/);
+      });
+
+      it('errors clearly when a fragment expression fails to evaluate', () => {
+        expect(() =>
+          compile(`
+            define PathLayer('a') \${ filter: blur(\`\${nonexistent}\`px); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/nonexistent/);
+      });
+
+      it('rejects a var()-shaped string smuggled via fragment beside a legit substitution', () => {
+        // The numeric substitution in brightness() must NOT extend var()
+        // permission to the attacker-controlled spliced segment.
+        expect(() =>
+          compile(`
+            let level = 1.5;
+            let payload = "var(--evil-hack, 1)";
+            define PathLayer('a') \${ filter: \`\${payload}\` brightness(level); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/var\(\)|disallowed/);
+      });
+
+      it('rejects a hand-typed var() beside a legit CSSVar in the same function', () => {
+        expect(() =>
+          compile(`
+            let c = CSSVar('--shadow', #000);
+            define PathLayer('a') \${ filter: drop-shadow(2px 2px var(--evil,1) c); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/var\(\)|disallowed/);
+      });
+
+      it('keeps the bare-identifier CSSVar path working (compiler-emitted var passes)', () => {
+        // The emitted var() is allow-listed by exact string, so the legitimate
+        // substitution path must still succeed after the smuggling fix.
+        const result = compile(`
+          let v = CSSVar('--shadow', #000);
+          define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px v); }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
+          'drop-shadow(2px 2px 4px var(--shadow, #000000))',
+        );
+      });
+
+      it('rejects a CSSVar interpolated into a fragment (stringifies, not CSS)', () => {
+        // A template stringifies a CSSVar as "CSSVar(...)" — not valid CSS.
+        // Use the bare identifier form instead; the error must be loud.
+        expect(() =>
+          compile(`
+            let v = CSSVar('--shadow', #000);
+            define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px \`\${v}\`); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/disallowed token/);
+      });
+
+      it('preserves negated unit literals during numeric substitution', () => {
+        const result = compile(`
+          let level = 1.4;
+          define PathLayer('a') \${ filter: hue-rotate(-90deg) brightness(level); }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
+          'hue-rotate(-90deg) brightness(1.4)',
+        );
+      });
+
+      it('does not re-splice a fragment result containing a backtick', () => {
+        // A backtick in the RESULT must reach the validator verbatim (and be
+        // rejected) — never trigger a second evaluation pass.
+        expect(() =>
+          compile(`
+            let tick = "a\\\`b";
+            define PathLayer('a') \${ filter: blur(\`\${tick}\`px); }
+            layer('a').apply { M 0 0 }
+          `),
+        ).toThrow(/disallowed/);
+      });
+
+      it('whole-value template gets identifier substitution like fragments do', () => {
+        const result = compile(`
+          let softness = 1.5;
+          let level = 1.4;
+          define PathLayer('a') \${ filter: \`blur(\${softness}px) brightness(level)\`; }
+          layer('a').apply { M 0 0 }
+        `);
+        expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
+          'blur(1.5px) brightness(1.4)',
+        );
+      });
+    });
+
     it('preserves CSS color names in drop-shadow without resolving', () => {
       const result = compile(`
         define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px blue); }

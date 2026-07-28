@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-28 (object shorthand + style-value interpolation)
+
+### Added
+
+#### Core
+
+- **Object literal shorthand properties**: `{ contour, leftOffset }` is now sugar for `{ contour: contour, leftOffset: leftOffset }` — the mirror of the destructuring shorthand the language already had. The AST builder desugars to an ordinary `key: value` pair, so evaluation, scope analysis, and navigation needed no changes; the formatter and annotated source printer round-trip the sugar instead of expanding it, and rename expands a shorthand reference to `{ key: newName }` rather than silently renaming the property key. Documented in `docs/objects.md` (new Shorthand Properties section) with a cross-link from `docs/syntax.md`.
+- **Template fragments inside style values**: a backtick template can now sit *anywhere* in a style-block value, not just span the whole value — ``filter: blur(`${randomRange(1.1, 2.2)}`px);`` splices the evaluated fragment into the surrounding text (previously a misleading `disallowed token` error; the editor grammar already accepted the shape). Spliced results are validated against the same strict allow-list as hand-written values, so interpolation remains convenience, not an escape hatch. Works identically in annotated mode.
+- **Numeric variables substitute inside CSS function args**: `filter: brightness(level);` now emits `brightness(1.4)` — matching the existing Color/CSSVar substitution — instead of silently emitting invalid CSS (`brightness(level)`) that browsers drop. Literal tokens are never touched, including unit-carrying negatives like `hue-rotate(-90deg)`. Chained filter functions (`blur(2px) brightness(level)`) now resolve embedded variables too; previously only single-function values did. Substitution is not unit-aware — documented, with the unitless filter functions named explicitly.
+- **All interpolation forms behave identically**: a whole-value template's result now gets the same function-argument resolution as a fragment, so `` `blur(${s}px) brightness(level)` `` resolves `level` instead of emitting it verbatim for the browser to drop.
+
+### Fixed
+
+#### Core
+
+- **Lenient parse no longer fabricates an identifier from a colonless string key** (`{ 'radius' }`, the mid-typing state of `{ 'radius': … }`) — previously (during this same unreleased window) rename could mangle the string literal in place.
+- **Same-line rename references no longer collapse onto the first occurrence**: `let p = { radius, scaled: radius };` (and `calc(a + a)`) now rename every occurrence; the line scan skips positions already claimed by an earlier edit.
+- **Object-property type inference is live**: parsed longhand properties were missing their AST discriminant, leaving the `objectProp` inference branch dead — hover now infers types for bindings destructured from inline object literals (`let { x } = { x: 5 };`).
+- **Style-value validator hints at template problems**: when a value still contains a backtick at validation time (e.g. an unterminated template), the error now points at the interpolation syntax instead of only citing the allow-list.
+- **Security: `var()` permission is now per-token, not per-value.** The style-value validator's `allowVar` was a single flag flipped whenever *any* token in a value resolved to a compiler-emitted `CSSVar()` — so an unrelated `var()` sitting elsewhere in the same value rode through unvalidated (e.g. `drop-shadow(2px 2px var(--evil,1) c)`). The validator now allow-lists the exact `var()` strings the compiler emitted for that value; every other `var()` is rejected as before. The flaw predates the interpolation work but was reachable then and would have been widened by it.
+- **Cross-evaluator number formatting parity in style values**: the annotated evaluator formatted substituted/spliced numbers with `String()` while the primary evaluator used `formatNum`, so the two surfaces emitted different CSS under a `--to-fixed` precision option. Both now use `formatNum`. The annotated evaluator's template-fragment error also gained the positioned-error fallback the primary path already had.
+
+#### Documentation
+
+- `docs/layers.md` documents fragment interpolation, unit-inside vs unit-outside equivalence, and numeric substitution; `docs/security.md` states that interpolation results are validated post-evaluation; `docs/filters.md` adds a dynamic filter-arguments example.
+
 ## [Unreleased] - 2026-07-26 (unit-aware color-method angles)
 
 ### Fixed

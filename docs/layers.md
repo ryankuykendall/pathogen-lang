@@ -536,6 +536,42 @@ let textStyles = ${
 
 Double-quoted strings are always literal — they never interpolate. `font-family: "family";` is the literal family name `family`, not the variable; use a bare identifier or backticks for dynamic values. (Inside a `${...}` interpolation, at most one nested level of `{ }` braces is supported.)
 
+#### Dynamic Function Arguments
+
+A template doesn't have to span the whole value — a backtick fragment can sit anywhere inside it, including function arguments. Each fragment evaluates and splices into the surrounding text before the value is checked:
+
+```
+let amount = randomRange(1.1, 2.2);
+
+define PathLayer('soft') ${
+  fill: hotpink;
+  filter: blur(`${amount}`px);   // splices to e.g. "blur(1.63px)"
+};
+layer('soft').apply { circle(100, 100, 60); }
+```
+
+These four forms are all available, and all produce `blur(1.5px) brightness(1.4)` for `softness = 1.5`, `level = 1.4`:
+
+| Form | Example | Use when |
+|------|---------|----------|
+| Fragment, unit outside | `` blur(`${softness}`px) `` | Most cases — the unit stays visible as CSS |
+| Fragment, unit inside | `` blur(`${softness}px`) `` | The unit itself is computed |
+| Whole-value template | `` `blur(${softness}px)` `` | The whole value is one interpolated string |
+| Bare identifier | `brightness(level)` | The argument is a **unitless** number |
+
+The quoting rule above still applies to fragments: a backtick inside a double- or single-quoted string is literal text, not a splice point.
+
+A bare identifier works as a function argument when the variable holds a number — the compiler substitutes the value, as it already does for Color and `CSSVar()` references:
+
+```
+let level = 1.4;
+define PathLayer('bright') ${ filter: brightness(level); };
+```
+
+**Substitution is not unit-aware.** The compiler replaces any numeric variable it finds inside an allow-listed CSS function, so `filter: blur(amount);` compiles and emits `blur(4)` — a unitless length, which is invalid CSS and is silently dropped by the browser with no error. Use a bare identifier only for the unitless filter functions (`brightness`, `contrast`, `grayscale`, `invert`, `opacity`, `saturate`, `sepia`); whenever the argument is a length or an angle, attach the unit with a template fragment. Literal arguments written with units (`blur(2px)`, `hue-rotate(-90deg)`) are always left exactly as typed.
+
+Interpolation is a convenience, not an escape hatch: every interpolated result — whole-value or fragment — is validated against the same style-value allow-list as hand-written values (see the [security model](#security-whats-allowed-in-style-blocks)). Note the two `calc()`s are different things: an unquoted `calc(12 + 15)` is Pathogen arithmetic resolved before emission, while a `calc()` that survives *into* the emitted CSS string — including via interpolation — is rejected.
+
 ### Layer Definitions with Style Expressions
 
 Layer definitions accept any expression that evaluates to a style block:

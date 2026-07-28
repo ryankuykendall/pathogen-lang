@@ -614,6 +614,21 @@ halo.append(inner);
 
 The grain renders on `inner`; the blur applies to the wrapping group.
 
+Native filter arguments can be dynamic. A bare variable substitutes where the function takes a **unitless** number (`brightness`, `contrast`, `grayscale`, `invert`, `opacity`, `saturate`, `sepia`); lengths and angles need a unit, so splice those with a template fragment — see [Variables and Interpolation in Values](#layers-variables-and-interpolation-in-values):
+
+```
+let level = randomRange(1.1, 1.4);
+let softness = randomRange(1, 3);
+
+let art = PathLayer('art') ${ fill: hotpink; };
+layer('art').apply { circle(100, 100, 60); }
+
+let shimmer = GroupLayer('shimmer') ${
+  filter: brightness(level) blur(`${softness}`px);
+};
+shimmer.append(art);
+```
+
 ## Pairing with Gradients
 
 Custom filters compose cleanly with every [gradient](./gradients.md) kind. The filter applies to the layer's painted result, so a grainy gradient is just a layer with a gradient `fill` and a `NoiseFilter` `filter`. The `Gradient` style preset is tuned for this case — its primitive chain pumps contrast before blending so the grain reads through saturated gradient stops without looking muddy.

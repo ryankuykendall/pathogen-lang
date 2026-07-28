@@ -230,10 +230,22 @@ const STRING_VALUED_PROPERTIES = new Set([
  *
  * Throws a plain Error on rejection; the caller adds line/col context.
  */
+/**
+ * Options for validateCSSValue. `allowVar` may be:
+ * - `true` — any well-formed var(--ident, …) token passes (compiler-internal
+ *   contexts only, e.g. CSSVar initial-value validation);
+ * - `string[]` — ONLY var() tokens exactly equal to one of these
+ *   compiler-emitted strings pass (the post-substitution path);
+ * - absent/false — every var() is rejected.
+ */
+export interface ValidateCSSValueOptions {
+  allowVar?: boolean | string[];
+}
+
 export function validateCSSValue(
   rawValue: unknown,
   propertyName: string,
-  options: { allowVar?: boolean } = {},
+  options: ValidateCSSValueOptions = {},
 ): string {
   if (typeof rawValue !== 'string') {
     throw new Error(
@@ -282,17 +294,22 @@ export function validateCSSValue(
   const tokens = splitTopLevel(value);
   for (const token of tokens) {
     if (!isAllowedToken(token, propertyName, options)) {
+      // A backtick reaching the validator means a template span could not be
+      // spliced (e.g. unterminated) — point at the interpolation docs.
+      const templateHint = rawValue.includes('`')
+        ? ` The value contains a backtick template that could not be evaluated — check it is complete, or wrap the entire value in backticks (filter: \`blur(\${x}px)\`;).`
+        : '';
       throw new Error(
         `Style value for "${propertyName}" contains a disallowed token (${JSON.stringify(token)} in ${JSON.stringify(rawValue)}). ` +
         `Allowed: numbers with units, hex colors, keywords, color/transform functions, and Pathogen CSSVar()/gradient refs. ` +
-        `See docs/security.md for the full allow-list.`,
+        `See docs/security.md for the full allow-list.` + templateHint,
       );
     }
   }
   return value;
 }
 
-function rejectForbiddenTokens(value: string, propertyName: string, options: { allowVar?: boolean } = {}): void {
+function rejectForbiddenTokens(value: string, propertyName: string, options: ValidateCSSValueOptions = {}): void {
   for (const [re, label] of FORBIDDEN_TOKENS) {
     if (re.test(value)) {
       throw new Error(
@@ -309,21 +326,23 @@ function rejectForbiddenTokens(value: string, propertyName: string, options: { a
     );
   }
   // var() is rejected by default — direct users to CSSVar(). When
-  // `options.allowVar` is set (post-resolve path from tryResolveCSSFunctionArgs),
-  // we accept well-formed var(--ident) / var(--ident, fallback) shapes but
-  // still reject malformed ones.
+  // `options.allowVar` is set (post-resolve path from tryResolveCSSFunctionArgs
+  // or `true` for compiler-internal contexts), var() shapes may pass here —
+  // but the token-level check in isAllowedToken enforces that each var()
+  // token is EXACTLY one of the compiler-emitted strings when the option is
+  // an array, so an attacker-controlled var() alongside a legitimate
+  // substitution cannot ride the flag.
   if (/\bvar\s*\(/i.test(value)) {
     if (!options.allowVar) {
       throw new Error(
         `Style value for "${propertyName}" contains a raw var(): use the Pathogen CSSVar() constructor instead.`,
       );
     }
-    // When `allowVar` is set, the var() refs came from tryResolveCSSFunctionArgs
-    // substituting validated CSSVarValue objects. Their varNames were already
-    // checked by validateCSSIdent at CSSVar() construction and their fallbacks
-    // by validateCSSValue. We therefore accept any shape; the alternative
-    // (re-parsing var() balanced-paren content with our own regex) is the
-    // exact "roll-our-own CSS parser" trap the article warns against.
+    // Accepted shapes are constrained per-token in isAllowedToken; the
+    // emitted strings come from validated CSSVarValue objects (varNames
+    // checked by validateCSSIdent at CSSVar() construction, fallbacks by
+    // validateCSSValue). We don't re-parse var() content here — that's the
+    // "roll-our-own CSS parser" trap the module header warns against.
   }
   // calc() rejected
   if (/\bcalc\s*\(/i.test(value)) {
@@ -385,18 +404,22 @@ function isQuotedString(value: string): boolean {
 function isAllowedToken(
   token: string,
   propertyName: string,
-  options: { allowVar?: boolean } = {},
+  options: ValidateCSSValueOptions = {},
 ): boolean {
   const trimmed = token.trim();
   if (trimmed.length === 0) return true;
 
-  // Allow var() refs when the caller has marked the value as compiler-resolved.
-  // Match any var(--ident, …) shape — the fallback may contain nested function
-  // calls like rgba(...). We accept these because the source CSSVarValue was
-  // validated at construction; re-validating the inner content here would
-  // require a real CSS parser.
+  // var() refs: allowed only when the caller marked the value compiler-
+  // resolved. With `allowVar: true` (compiler-internal contexts) any
+  // well-formed shape passes; with a string[] the token must EXACTLY equal
+  // one of the var() strings the compiler itself emitted from validated
+  // CSSVarValue objects — a var() that merely rode along in the same value
+  // (hand-typed, or produced by a template splice) is rejected. The emitted
+  // strings' varNames/fallbacks were validated at CSSVar() construction;
+  // re-parsing their inner content here would require a real CSS parser.
   if (options.allowVar && /^var\s*\(\s*--[A-Za-z_][A-Za-z0-9_-]*\s*(?:,[\s\S]*)?\)\s*$/.test(trimmed)) {
-    return true;
+    if (options.allowVar === true) return true;
+    return options.allowVar.includes(trimmed);
   }
 
   // Functional notation
