@@ -12,8 +12,6 @@ let point = { x: 50, y: 80 };
 let config = { name: 'Dave', age: 32, cats: ['foo', 'bar', 'baz'] };
 ```
 
-Keys can be identifiers or string literals. Trailing commas are allowed.
-
 Use the spread operator (`...`) to expand an existing object's properties into a new object:
 
 ```
@@ -37,7 +35,7 @@ let defaults = { stroke: 'black', width: 2 };
 let custom = { ...defaults, width: 4 };  // { stroke: 'black', width: 4 }
 ```
 
-Keys can also be identifiers or string literals. Trailing commas are allowed:
+Keys can be identifiers or string literals. Trailing commas are allowed:
 
 ```
 let obj = {
@@ -55,6 +53,54 @@ let shape = {
   radius: 50,
 };
 ```
+
+### Shorthand Properties
+
+When a property value is a variable with the same name as the key, you can write the name once — `{ x }` is shorthand for `{ x: x }`:
+
+```
+let x = 50;
+let y = 80;
+let point = { x, y };        // { x: 50, y: 80 }
+```
+
+Shorthand shines when accumulating records in a loop, or at call sites that take an options object:
+
+```
+let offsets = [];
+for ([glyph, gIndex] in ['a', 'b', 'c']) {
+  let leftOffset = calc(60 + gIndex * 48);
+  offsets.push({ glyph, leftOffset });
+}
+```
+
+```
+let xDim = 10;
+let yDim = 10;
+let grid = Grid(4, 5, { xDim, yDim });
+```
+
+Shorthand, regular properties, and spread mix freely, and later properties still override earlier ones:
+
+```
+let radius = 40;
+let base = { cx: 100, cy: 100, radius: 10 };
+let spec = { ...base, radius };   // { cx: 100, cy: 100, radius: 40 }
+```
+
+This is the mirror of [destructuring](#objects-destructuring), which unpacks with the same one-name syntax:
+
+```
+let { x, y } = point;    // destructure out...
+let copy = { x, y };     // ...and pack back up
+```
+
+The symmetry stops at failures, though: destructuring a key that doesn't exist gives `null`, while packing a name that isn't defined is an error.
+
+Two constraints on the shorthand form:
+
+- The key must be a plain identifier. String keys (`{ 'first-name' }`) and computed keys (`[expr]: value`) are parse errors.
+- The name is an ordinary variable reference. If it isn't defined, evaluation fails with `Undefined variable: name`.
 
 ## Reading Properties
 

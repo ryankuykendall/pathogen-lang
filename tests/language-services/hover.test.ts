@@ -158,6 +158,14 @@ describe('getHoverInfo', () => {
       expect(result!.contents).toContain('*variable: number*');
     });
 
+    it('infers number for bindings destructured from an inline object literal', () => {
+      // Backstop for the objectProp branch in type-inference-ast.ts, which
+      // requires the ObjectProperty discriminant on parsed properties.
+      const result = hover("let { x } = { x: 5, y: 'hi' };\ncircle(x, 0, 5);", 1, 7);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('*variable: number*');
+    });
+
     it('shows the inferred type for a loop variable over a typed array', () => {
       const result = hover('let pts = [Point(0, 0), Point(1, 1)];\nfor (pt in pts) {\n  circle(pt.x, pt.y, 2);\n}', 2, 10);
       expect(result).not.toBeNull();

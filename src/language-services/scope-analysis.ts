@@ -77,6 +77,13 @@ export interface Reference {
    * discriminator consumers branch on.
    */
   inStyleValue?: true;
+  /**
+   * Set when the reference is the desugared value of a shorthand object
+   * property (`{ x }` for `{ x: x }`). Rename must expand the shorthand
+   * (`{ x: newName }`) instead of replacing the span, which would silently
+   * rename the property key too.
+   */
+  inShorthandProperty?: true;
 }
 
 export interface Scope {
@@ -352,7 +359,19 @@ function walkExpr(expr: Expression, scope: Scope, col: Collector): void {
       for (const el of expr.elements) walkExpr(el.type === 'SpreadElement' ? el.argument : el, scope, col);
       break;
     case 'ObjectLiteral':
-      for (const p of expr.properties) walkExpr(p.type === 'SpreadElement' ? p.argument : p.value, scope, col);
+      for (const p of expr.properties) {
+        if (p.type === 'SpreadElement') {
+          walkExpr(p.argument, scope, col);
+          continue;
+        }
+        const before = col.refs.length;
+        walkExpr(p.value, scope, col);
+        // A shorthand property's value is a single desugared Identifier —
+        // tag its reference so rename expands rather than replaces.
+        if (p.shorthand && col.refs.length === before + 1 && col.refs[before].name === p.key) {
+          col.refs[before].inShorthandProperty = true;
+        }
+      }
       break;
     case 'TemplateLiteral':
       for (const part of expr.parts) { if (typeof part !== 'string') walkExpr(part, scope, col); }

@@ -301,6 +301,11 @@ describe('formatDocument', () => {
       const result = format('let x = { ...defaults, a: 1 };');
       expect(result).toContain('...defaults,');
     });
+
+    it('preserves shorthand properties', () => {
+      const result = format('let x = { a, b: 2 };');
+      expect(result).toBe('let x = {\n  a,\n  b: 2,\n};');
+    });
   });
 
   // --- Section 10: Function definitions ---

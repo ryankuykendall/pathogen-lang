@@ -666,6 +666,9 @@ function formatExpression(expr: Expression, depth: number, indent: string, sourc
         if (p.type === 'SpreadElement') {
           return `${inner}...${formatExpression(p.argument, depth + 1, indent, source)},`;
         }
+        if (p.shorthand && p.value.type === 'Identifier' && p.value.name === p.key) {
+          return `${inner}${p.key},`;
+        }
         return `${inner}${p.key}: ${formatExpression(p.value, depth + 1, indent, source)},`;
       });
       return `{\n${props.join('\n')}\n${close}}`;

@@ -267,6 +267,34 @@ describe('Lezer AST Builder', () => {
       expect(prop.value.args).toHaveLength(2);
     });
 
+    it('desugars shorthand properties to identifier values', () => {
+      const ast = lezerParse('let x = { contour, leftOffset };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ObjectLiteral');
+      expect(decl.value.properties).toMatchObject([
+        { type: 'ObjectProperty', key: 'contour', value: { type: 'Identifier', name: 'contour' }, shorthand: true },
+        { type: 'ObjectProperty', key: 'leftOffset', value: { type: 'Identifier', name: 'leftOffset' }, shorthand: true },
+      ]);
+    });
+
+    it('does not fabricate a shorthand reference for a colonless string key (error recovery)', () => {
+      // Grammar-invalid ({ 'a' } — mid-typing state of { 'a': ... }); reachable
+      // only through Lezer error recovery. Must stay longhand + NullLiteral,
+      // never a desugared Identifier built from the string content.
+      const ast = lezerParse("let p = { 'a' };");
+      const decl = ast.body[0] as any;
+      const prop = decl.value.properties[0];
+      expect(prop.shorthand).toBeUndefined();
+      expect(prop.value.type).toBe('NullLiteral');
+    });
+
+    it('longhand properties carry the ObjectProperty discriminant', () => {
+      const ast = lezerParse('let x = { y: 1 };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.properties[0].type).toBe('ObjectProperty');
+      expect(decl.value.properties[0].shorthand).toBeUndefined();
+    });
+
     it('parses function call with calc args as object property value', () => {
       const ast = lezerParse('let x = { y: randomRange(calc(a * 0.8), calc(a * 1.2)) };');
       const decl = ast.body[0] as any;

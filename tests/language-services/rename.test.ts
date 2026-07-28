@@ -93,6 +93,55 @@ describe('getRenameEdits', () => {
   });
 });
 
+describe('rename with shorthand object properties', () => {
+  it('expands the shorthand instead of renaming the property key', () => {
+    const src = 'let contour = 5;\nlet set = { contour, other: 1 };';
+    const edits = rename(src, 0, 6, 'outline');
+    const declEdit = edits.find((e) => e.range.start.line === 0);
+    expect(declEdit).toBeDefined();
+    expect(declEdit!.newText).toBe('outline');
+    const refEdit = edits.find((e) => e.range.start.line === 1);
+    expect(refEdit).toBeDefined();
+    expect(refEdit!.newText).toBe('contour: outline');
+  });
+
+  it('still renames longhand property values with the bare name', () => {
+    const src = 'let v = 5;\nlet set = { key: v };';
+    const edits = rename(src, 0, 4, 'w');
+    expect(edits.length).toBeGreaterThanOrEqual(2);
+    expect(edits.every((e) => e.newText === 'w')).toBe(true);
+  });
+
+  it('does not touch a colonless string key from error recovery', () => {
+    // { 'radius' } is grammar-invalid (mid-typing of { 'radius': ... });
+    // renaming the variable must not mangle the string literal.
+    const src = "let radius = 40;\nlet p = { 'radius' };";
+    const edits = rename(src, 0, 5, 'size');
+    expect(edits).toHaveLength(1);
+    expect(edits[0].range.start.line).toBe(0);
+  });
+
+  it('renames shorthand and longhand references on the same line', () => {
+    const src = 'let radius = 40;\nlet p = { radius, scaled: radius };';
+    const edits = rename(src, 0, 5, 'size');
+    expect(edits).toHaveLength(3);
+    const line1 = edits
+      .filter((e) => e.range.start.line === 1)
+      .sort((a, b) => a.range.start.character - b.range.start.character);
+    expect(line1).toHaveLength(2);
+    expect(line1[0].newText).toBe('radius: size');
+    expect(line1[1].newText).toBe('size');
+  });
+
+  it('renames repeated references on one line', () => {
+    const src = 'let a = 5;\nlet sum = calc(a + a);';
+    const edits = rename(src, 0, 4, 'b');
+    const line1 = edits.filter((e) => e.range.start.line === 1);
+    expect(line1).toHaveLength(2);
+    expect(line1.every((e) => e.newText === 'b')).toBe(true);
+  });
+});
+
 describe('rename inside style-block values', () => {
   function applyEdits(source: string, edits: TextEdit[]): string {
     const lines = source.split('\n');

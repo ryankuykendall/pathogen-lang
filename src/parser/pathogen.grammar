@@ -303,7 +303,7 @@ objectElement {
 }
 
 ObjectProperty {
-  (Identifier | String) ":" expression
+  Identifier (":" expression)? | String ":" expression
 }
 
 StyleBlockLiteral {

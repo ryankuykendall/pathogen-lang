@@ -1909,14 +1909,21 @@ function buildObjectLiteral(cursor: TreeCursor, source: string): ObjectLiteral {
     if (cursor.name === 'ObjectProperty') {
       cursor.firstChild();
       let key = '';
+      let keyLoc: SourceLocation | undefined;
+      let keyIsString = false;
+      let hasValue = false;
       let value: Expression = { type: 'NullLiteral' };
       // First pass: find the key (first Identifier or String before ':')
       do {
         if ((cursor.name === 'Identifier' || cursor.name === 'String') && !key) {
-          key = cursor.name === 'String' ? parseStringContent(text(cursor, source)) : text(cursor, source);
+          keyIsString = cursor.name === 'String';
+          key = keyIsString ? parseStringContent(text(cursor, source)) : text(cursor, source);
+          keyLoc = loc(cursor, source);
         } else if (cursor.name === ':') {
           // After ':', the rest is the value expression — use buildExpressionWithPostfix
           // to correctly handle Identifier + ArgList (function calls), member chains, etc.
+          // A ':' with no value yet (mid-typing, error recovery) is still longhand.
+          hasValue = true;
           if (cursor.nextSibling()) {
             value = buildExpressionWithPostfix(cursor, source);
           }
@@ -1924,7 +1931,22 @@ function buildObjectLiteral(cursor: TreeCursor, source: string): ObjectLiteral {
         }
       } while (cursor.nextSibling());
       cursor.parent();
-      properties.push({ key, value });
+      if (!hasValue && !keyIsString) {
+        // Shorthand { key } — desugar to key: key so downstream consumers
+        // (evaluators, scope analysis) see an ordinary identifier reference.
+        // The key's loc anchors the reference for rename/navigation.
+        // A colonless STRING key ({ 'a' } — grammar-invalid, reachable only
+        // via error recovery) must NOT fabricate a reference from the string
+        // content; it keeps the longhand NullLiteral shape below.
+        properties.push({
+          type: 'ObjectProperty',
+          key,
+          value: { type: 'Identifier', name: key, loc: keyLoc },
+          shorthand: true,
+        });
+      } else {
+        properties.push({ type: 'ObjectProperty', key, value });
+      }
     } else if (cursor.name === 'SpreadElement') {
       cursor.firstChild();
       let arg: Expression = { type: 'NullLiteral' };

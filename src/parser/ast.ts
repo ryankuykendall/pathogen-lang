@@ -282,11 +282,14 @@ export interface ArrayLiteral {
   elements: (Expression | SpreadElement)[];
 }
 
-// Object property: key: value
+// Object property: key: value, or shorthand { key } desugared to key: key
 export interface ObjectProperty {
   type: 'ObjectProperty';
   key: string;
   value: Expression;
+  // True when written as shorthand ({ x } for { x: x }); value holds the
+  // desugared Identifier. Source printers use this to round-trip the sugar.
+  shorthand?: true;
 }
 
 // Object literal: { key: value, ... } or { ...obj, key: value }

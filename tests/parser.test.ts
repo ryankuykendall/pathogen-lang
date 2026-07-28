@@ -1351,6 +1351,30 @@ L 10 20 // end point`;
       expect(decl.value.properties[1]).toMatchObject({ key: 'y' });
     });
 
+    it('parses shorthand object properties', () => {
+      const ast = parse('let p = { a, b };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('ObjectLiteral');
+      expect(decl.value.properties).toMatchObject([
+        { type: 'ObjectProperty', key: 'a', value: { type: 'Identifier', name: 'a' }, shorthand: true },
+        { type: 'ObjectProperty', key: 'b', value: { type: 'Identifier', name: 'b' }, shorthand: true },
+      ]);
+    });
+
+    it('parses shorthand mixed with regular properties and spread', () => {
+      const ast = parse('let p = { a, x: 2, ...rest };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.properties).toHaveLength(3);
+      expect(decl.value.properties[0]).toMatchObject({ type: 'ObjectProperty', key: 'a', shorthand: true });
+      expect(decl.value.properties[1]).toMatchObject({ type: 'ObjectProperty', key: 'x', value: { type: 'NumberLiteral', value: 2 } });
+      expect(decl.value.properties[1].shorthand).toBeUndefined();
+      expect(decl.value.properties[2]).toMatchObject({ type: 'SpreadElement', argument: { type: 'Identifier', name: 'rest' } });
+    });
+
+    it('rejects string-key shorthand', () => {
+      expect(() => parse("let p = { 'a' };")).toThrow(/Parse error/);
+    });
+
     it('parses array destructuring pattern', () => {
       const ast = parse('let [a, b, c] = arr;');
       const decl = ast.body[0] as any;

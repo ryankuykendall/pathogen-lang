@@ -878,6 +878,10 @@ see [Destructuring](#objects-destructuring) in the Objects guide:
 let { x, y } = Point(20, 20);
 ```
 
+The one-name syntax also works in the other direction: `{ x, y }` builds an
+object with those variables as values — see
+[Shorthand Properties](#objects-shorthand-properties) in the Objects guide.
+
 ## Angle Units
 
 Numbers can have angle unit suffixes for convenience:

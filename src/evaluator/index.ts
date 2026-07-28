@@ -557,7 +557,11 @@ function expressionToSource(expr: Expression): string {
     case 'MethodCallExpression':
       return `${expressionToSource(expr.object)}.${expr.method}(${expr.args.map(expressionToSource).join(', ')})${expr.block ? ` {|${expr.block.params.join(', ')}| ...}` : ''}`;
     case 'ObjectLiteral':
-      return `{${expr.properties.map((p) => p.type === 'SpreadElement' ? `...${expressionToSource(p.argument)}` : `${p.key}: ${expressionToSource(p.value)}`).join(', ')}}`;
+      return `{${expr.properties.map((p) => {
+        if (p.type === 'SpreadElement') return `...${expressionToSource(p.argument)}`;
+        if (p.shorthand && p.value.type === 'Identifier' && p.value.name === p.key) return p.key;
+        return `${p.key}: ${expressionToSource(p.value)}`;
+      }).join(', ')}}`;
     case 'PathBlockExpression':
       return '@{ ... }';
     default:

@@ -1720,6 +1720,40 @@ describe('Evaluator', () => {
         expect(() => compile('let a = 42; let b = { ...a };')).toThrow(/must be an object/);
       });
     });
+
+    describe('shorthand properties', () => {
+      it('expands { x, y } to { x: x, y: y }', () => {
+        const result = compile('let x = 50; let y = 80; let p = { x, y }; log(p.x, p.y);');
+        expect(result.logs[0].parts[0].value).toBe('50');
+        expect(result.logs[0].parts[1].value).toBe('80');
+      });
+
+      it('mixes shorthand with regular properties and spread', () => {
+        const result = compile('let a = { w: 1 }; let radius = 40; let spec = { ...a, radius, cx: 100 }; log(spec.w, spec.radius, spec.cx);');
+        expect(result.logs[0].parts[0].value).toBe('1');
+        expect(result.logs[0].parts[1].value).toBe('40');
+        expect(result.logs[0].parts[2].value).toBe('100');
+      });
+
+      it('works inside a for-loop with index destructuring', () => {
+        const result = compile(`
+let out = [];
+for ([glyph, gIndex] in ['a', 'b']) {
+  let leftOffset = calc(60 + gIndex * 48);
+  out.push({ glyph, leftOffset });
+}
+log(out[0].glyph, out[0].leftOffset, out[1].glyph, out[1].leftOffset);
+`);
+        expect(result.logs[0].parts[0].value).toBe('a');
+        expect(result.logs[0].parts[1].value).toBe('60');
+        expect(result.logs[0].parts[2].value).toBe('b');
+        expect(result.logs[0].parts[3].value).toBe('108');
+      });
+
+      it('errors on undefined variable like a normal reference', () => {
+        expect(() => compile('let p = { nope };')).toThrow(/nope/);
+      });
+    });
   });
 
   describe('destructuring', () => {

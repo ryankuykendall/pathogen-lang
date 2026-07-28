@@ -99,16 +99,21 @@ export function getRenameEdits(document: TextDocument, position: Position, newNa
 
   // Rename all references to this declaration. Full-width references
   // (style-block values — see Reference.inStyleValue) carry exact extents and
-  // are used directly; zero-width references fall back to the line scan.
+  // are used directly; zero-width references fall back to the line scan,
+  // skipping occurrences already claimed by earlier edits so multiple
+  // references on one line each land on their own occurrence.
   for (const ref of scopeInfo.references) {
     if (ref.declaration === targetDecl) {
       const refWordRange = isFullWidth(ref.range)
         ? ref.range
-        : findWordRangeOnLine(source, document, ref.range.start.line, ref.name);
+        : findWordRangeOnLine(source, document, ref.range.start.line, ref.name, edits);
       if (refWordRange) {
+        // Shorthand object property ({ x }): expand to `x: newName` so the
+        // property key keeps its name and only the value reference renames.
+        const newText = ref.inShorthandProperty ? `${ref.name}: ${newName}` : newName;
         // Avoid duplicates (same range as declaration)
         if (!edits.some((e) => e.range.start.line === refWordRange.start.line && e.range.start.character === refWordRange.start.character)) {
-          edits.push({ range: refWordRange, newText: newName });
+          edits.push({ range: refWordRange, newText });
         }
       }
     }
@@ -171,8 +176,11 @@ function matchesPosition(position: Position, range: Range): boolean {
  * Find the exact word range for a name on a given line.
  * Since scope analysis only gives the statement start location,
  * we need to search the actual line for the identifier.
+ * When `claimed` is given, occurrences whose start position already has an
+ * edit are skipped, so successive same-line references each get the next
+ * unclaimed occurrence instead of piling onto the first.
  */
-function findWordRangeOnLine(source: string, document: TextDocument, line: number, name: string): Range | null {
+function findWordRangeOnLine(source: string, document: TextDocument, line: number, name: string, claimed?: TextEdit[]): Range | null {
   const lineStart = document.offsetAt({ line, character: 0 });
   const lineEnd = line + 1 < document.lineCount
     ? document.offsetAt({ line: line + 1, character: 0 })
@@ -180,16 +188,17 @@ function findWordRangeOnLine(source: string, document: TextDocument, line: numbe
   const lineText = source.slice(lineStart, lineEnd);
 
   // Find the name as a whole word on this line
-  const re = new RegExp(`\\b${escapeRegex(name)}\\b`);
-  const match = re.exec(lineText);
-  if (!match) return null;
-
-  const startChar = match.index;
-  const endChar = startChar + name.length;
-  return {
-    start: { line, character: startChar },
-    end: { line, character: endChar },
-  };
+  const re = new RegExp(`\\b${escapeRegex(name)}\\b`, 'g');
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(lineText)) !== null) {
+    const startChar = match.index;
+    if (claimed?.some((e) => e.range.start.line === line && e.range.start.character === startChar)) continue;
+    return {
+      start: { line, character: startChar },
+      end: { line, character: startChar + name.length },
+    };
+  }
+  return null;
 }
 
 function escapeRegex(s: string): string {
