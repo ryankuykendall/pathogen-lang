@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-28 (any Google Font via @font)
+
+### Added
+
+#### Playground
+
+- **`@font` accepts any family published on Google Fonts** — the curated ~100-family picker list no longer gates the directive; `@font "Gravitas One";` now loads instead of erroring with `Unknown Google Font`. The fetch itself is the existence probe: a family Google serves compiles with a non-fatal dismissible notice (`"Gravitas One" is not in the curated font list; loaded directly from Google Fonts.`); a family it can't serve is a compile error whose message notes it may equally be a network failure (css2 errors carry no CORS headers, so the two are indistinguishable in the browser) and points at fonts.google.com and the picker. Requesting a weight a non-curated family lacks retries at the family's css2 default weight and reports an accurate substitution (`does not provide weight 700 on Google Fonts; using its default weight 400`) rather than failing — the playground knows the curated families' weight lists but not anyone else's. Failed probes are negative-cached for 60 s so per-keystroke recompiles don't refetch bad names; curated-family behavior (pre-fetch nearest-weight snapping, no failure caching) and the style-block `font-family` whitelist gate (per-keystroke typing protection) are unchanged. Publish precheck and admin re-renders inherit the probe, so published workspaces may now use any Google Font. Documented in `docs/path-blocks.md` (Font Integration — new curated-vs-any comparison table quoting the exact runtime strings).
+
+### Fixed
+
+#### Development
+
+- **`check-links` was validating almost nothing** — the link checker now actually resolves and verifies cross-references; running the fixed checker surfaced 30 broken cross-references across the docs, all repaired.
+
 ## [Unreleased] - 2026-07-28 (object shorthand + style-value interpolation)
 
 ### Added
