@@ -5,7 +5,7 @@ Segment labels and corner suffixes let you annotate a path **at the point you de
 - **`as`** gives a command (or the vertex it lands on) a **name**, so you can look it up later by that name instead of by a fragile numeric index.
 - **`with`** attaches a **corner operation** — a fillet or chamfer — to the joint the command creates, rounding or cutting it without restructuring your code.
 
-Both clauses read left to right like English and work everywhere path commands do: inside `@{ }` [path blocks](path-blocks.md), inside `layer('name').apply { }` blocks, and at the top level.
+Both clauses read left to right like English and work everywhere path commands do: inside `@{ }` [path blocks](#path-blocks-path-blocks), inside `layer('name').apply { }` blocks, and at the top level.
 
 ```
 define ViewBox(0, 0, 120, 80);
@@ -57,7 +57,7 @@ Labels name parts of a path so you can query them later. There are two kinds, ma
 
 ### `as segment('name')`
 
-Names the command (or command range) itself. Query it with [`segment('name')`](#querying-labels) to get a sub-path you can sample, measure, and decorate.
+Names the command (or command range) itself. Query it with [`segment('name')`](#segment-labels-querying-labels) to get a sub-path you can sample, measure, and decorate.
 
 ```
 h 60 as segment('lid');
@@ -66,7 +66,7 @@ circle(0, 0, 20) as segment('rim');
 
 ### `as endpoint('name')`
 
-Names the **vertex** the command lands on — the point at its end. Query it two ways: [`point('name')`](#querying-labels) for the coordinate (useful as a `drawTo` target), and [`vertex('name')`](#querying-labels) for a handle that can round or cut the corner.
+Names the **vertex** the command lands on — the point at its end. Query it two ways: [`point('name')`](#segment-labels-querying-labels) for the coordinate (useful as a `drawTo` target), and [`vertex('name')`](#segment-labels-querying-labels) for a handle that can round or cut the corner.
 
 ```
 v 40 as endpoint('shoulder');
@@ -82,7 +82,7 @@ h -60 as segment('base'), endpoint('base-end');
 
 ### Group labels and computed labels
 
-Labels don't have to be unique, so the natural way to label loop-generated geometry is to reuse **one name** and query the group with [`segmentAll`](#querying-labels):
+Labels don't have to be unique, so the natural way to label loop-generated geometry is to reuse **one name** and query the group with [`segmentAll`](#segment-labels-querying-labels):
 
 ```
 define ViewBox(0, 0, 200, 120);
@@ -106,7 +106,7 @@ That produces `rib-0` through `rib-5` (ranges are inclusive), each individually 
 
 ## Corner Suffixes
 
-The `with` clause attaches a corner operation to the joint a command creates — the vertex between the **previous** command and this one. It is the definition-site spelling of the [`fillet` and `chamfer`](path-blocks.md#fillets) methods: instead of rounding a corner after the fact by its index, you round it right where you draw it.
+The `with` clause attaches a corner operation to the joint a command creates — the vertex between the **previous** command and this one. It is the definition-site spelling of the [`fillet` and `chamfer`](#path-blocks-fillets) methods: instead of rounding a corner after the fact by its index, you round it right where you draw it.
 
 ### `with fillet(radius)`
 
@@ -143,11 +143,11 @@ Corner suffixes do **not** rewrite the command as you write it. The operation is
 
 ### Junction support
 
-`with fillet(...)` and `with ellipticalFillet(...)` follow the same rules as the [`fillet`](path-blocks.md#fillets) methods: tangent-based rounding that skips tangent-collinear junctions; junctions involving curves follow the same tangent math. `with chamfer(...)` works at junctions between **all** command types — lines, curves, and arcs — matching [`chamfer`](path-blocks.md#chamfers). If a radius or chamfer distance is larger than an adjacent edge, it is clamped to the edge length and a warning is logged.
+`with fillet(...)` and `with ellipticalFillet(...)` follow the same rules as the [`fillet`](#path-blocks-fillets) methods: tangent-based rounding that skips tangent-collinear junctions; junctions involving curves follow the same tangent math. `with chamfer(...)` works at junctions between **all** command types — lines, curves, and arcs — matching [`chamfer`](#path-blocks-chamfers). If a radius or chamfer distance is larger than an adjacent edge, it is clamped to the edge length and a warning is logged.
 
 ## Querying Labels
 
-Labels exist to be looked up. A path with labels answers three questions by name, on both [`PathBlock`](path-blocks.md) and `ProjectedPath` values:
+Labels exist to be looked up. A path with labels answers three questions by name, on both [`PathBlock`](#path-blocks-path-blocks) and `ProjectedPath` values:
 
 | Query | Returns | Use for |
 |---|---|---|
@@ -215,7 +215,7 @@ On a `ProjectedPath`, `point('name')` returns **absolute** coordinates; on an un
 
 ### `vertex('name')` → vertex handle
 
-Returns a handle for the named corner. The handle exposes `.fillet(radius)`, `.chamfer(distance)` / `.chamfer(d1, d2)`, and `.ellipticalFillet(rx, ry)`, each returning a new path with that corner operation applied — the name-based counterpart to [`filletAtVertex`](path-blocks.md#filletatvertex-index-radius) that never breaks when you add a command earlier in the path:
+Returns a handle for the named corner. The handle exposes `.fillet(radius)`, `.chamfer(distance)` / `.chamfer(d1, d2)`, and `.ellipticalFillet(rx, ry)`, each returning a new path with that corner operation applied — the name-based counterpart to [`filletAtVertex`](#path-blocks-filletatvertexindex-radius-pathblock-projectedpath) that never breaks when you add a command earlier in the path:
 
 ```
 let box = @{

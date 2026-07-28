@@ -1,6 +1,6 @@
 # Variable Offset
 
-`variableOffset` and `compoundVariableOffset` are [path block](#path-blocks) methods that trace a **new** path alongside an existing one, using a gradient-stop-like syntax. You place *stops* at positions along a reference path (the **spine**) and give each stop a perpendicular offset distance; the resulting points are connected into a smooth (or sharp) curve whose joins you control per-stop.
+`variableOffset` and `compoundVariableOffset` are [path block](#path-blocks-path-blocks) methods that trace a **new** path alongside an existing one, using a gradient-stop-like syntax. You place *stops* at positions along a reference path (the **spine**) and give each stop a perpendicular offset distance; the resulting points are connected into a smooth (or sharp) curve whose joins you control per-stop.
 
 Where the existing `offset(distance)` produces a uniform parallel curve at one fixed distance, `variableOffset` lets the distance **vary** from stop to stop — and lets you choose the curve continuity (sharp corners, smooth tangents, or flowing curvature) at each stop. Reach for it when you want tapered or calligraphic strokes, ribbons and casings that follow a path, or banded flow-field effects.
 
@@ -54,7 +54,7 @@ A `G0` stop breaks the curve into separate smooth spans on either side. A run of
 
 ## Endpoint tangents
 
-By default, the curve leaves its first and last points along the **spine's own direction** at those stops — a sensible, zero-configuration default. To control an endpoint explicitly, supply a [`PolarVector`](#stdlib) handle:
+By default, the curve leaves its first and last points along the **spine's own direction** at those stops — a sensible, zero-configuration default. To control an endpoint explicitly, supply a [`PolarVector`](#stdlib-polarvector) handle:
 
 ```
 let edge = spine.variableOffset() {|go, pb|
@@ -108,7 +108,7 @@ Caps are **constructor values** — Pathogen's convention is *enums for paramete
 
 ## Querying the spine — `pb`
 
-The second block parameter, `pb`, is a read-only handle to the spine, mirroring the [path block](#path-blocks) sampling API so it behaves exactly as you already expect:
+The second block parameter, `pb`, is a read-only handle to the spine, mirroring the [path block](#path-blocks-path-blocks) sampling API so it behaves exactly as you already expect:
 
 | Member | Returns |
 |--------|---------|
@@ -134,5 +134,5 @@ Self-intersecting output is **not** an error: if dense stops or extreme offsets 
 
 ## Related
 
-- [Path Blocks](#path-blocks) — the `@{ }` blocks and methods (`offset`, `partition`, `boundingBox`, `get`/`tangent`/`normal`) this builds on
-- [Standard Library](#stdlib) — `PolarVector` and the spine-sampling helpers
+- [Path Blocks](#path-blocks-path-blocks) — the `@{ }` blocks and methods (`offset`, `partition`, `boundingBox`, `get`/`tangent`/`normal`) this builds on
+- [Standard Library](#stdlib-standard-library-reference) — `PolarVector` and the spine-sampling helpers

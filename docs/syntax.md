@@ -167,7 +167,7 @@ let c = oklch(0.6 0.15 30);          // any CSS color space
 let lighter = (#cc0000).lighten(20%); // method chaining via parens
 ```
 
-See the [Color documentation](color.md) for full details.
+See the [Color documentation](#color-color-type) for full details.
 
 ## Percent Suffix
 
@@ -334,7 +334,7 @@ let b = a << { y: 99, z: 3 };
 // Result: {x: 1, y: 99, z: 3}
 ```
 
-Multiple merges can be chained: `a << b << c`. See also [Objects — Merging](objects.md#merging-objects-).
+Multiple merges can be chained: `a << b << c`. See also [Objects — Merging](#objects-merging-objects).
 
 ### Property Access
 
@@ -349,7 +349,7 @@ Property values are always strings.
 
 ### Usage in Layers
 
-Style blocks are used in layer definitions and can be passed as per-element styles on `text()` and `tspan()`. See [Layers](layers.md) for full details.
+Style blocks are used in layer definitions and can be passed as per-element styles on `text()` and `tspan()`. See [Layers](#layers-layers) for full details.
 
 ## Null
 
@@ -986,7 +986,7 @@ All angle suffixes participate in unit mismatch checking:
 
 `Color(L, C, H)` and the `.hue` property are the exception in the other direction: their hue is in degrees, but they do **not** auto-convert. `Color(0.6, 0.15, 90deg)` stores a hue of 1.57, not 90 — pass a bare number there. See [Color § Hue](#color-hue).
 
-**Note**: The `pi` suffix only works on numeric literals. For expressions or variables, use `mpi(x)` (see [Standard Library](stdlib.md)).
+**Note**: The `pi` suffix only works on numeric literals. For expressions or variables, use `mpi(x)` (see [Standard Library](#stdlib-standard-library-reference)).
 
 ## For Loops
 

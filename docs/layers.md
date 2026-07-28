@@ -2,7 +2,7 @@
 
 Layers let you output multiple `<path>` elements from a single program, each with its own styles and independent pen tracking.
 
-See also [`define ViewBox`](#viewbox) for declaring the SVG viewBox — a sibling `define`-family statement that controls the canvas dimensions.
+See also [`define ViewBox`](#viewbox-viewbox) for declaring the SVG viewBox — a sibling `define`-family statement that controls the canvas dimensions.
 
 ## Defining Layers
 
@@ -93,7 +93,7 @@ L 200 200
 
 ## Querying Labeled Geometry
 
-Path commands inside `apply { }` blocks can carry [`as segment(...)` / `as endpoint(...)` labels](segment-labels.md). A labeled layer answers geometry queries by name from anywhere:
+Path commands inside `apply { }` blocks can carry [`as segment(...)` / `as endpoint(...)` labels](#segment-labels-segment-labels-corner-suffixes). A labeled layer answers geometry queries by name from anywhere:
 
 ```
 let pl = PathLayer('outline') ${ stroke: #333; fill: none; };
@@ -107,7 +107,7 @@ let top = layer('outline').segment('top');   // ProjectedPath (absolute coords)
 let c = layer('outline').point('corner');    // Point(70, 50)
 ```
 
-`segment('name')` returns a `ProjectedPath` with the full sampling API (`get`, `tangent`, `partition`, `boundingBox`, ...); `point('name')` returns the labeled vertex as a Point. See [Segment Labels & Corner Suffixes](segment-labels.md) for the full query surface.
+`segment('name')` returns a `ProjectedPath` with the full sampling API (`get`, `tangent`, `partition`, `boundingBox`, ...); `point('name')` returns the labeled vertex as a Point. See [Segment Labels & Corner Suffixes](#segment-labels-segment-labels-corner-suffixes) for the full query surface.
 
 ## Accessing Layer Context
 

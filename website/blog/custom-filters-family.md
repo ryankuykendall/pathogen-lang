@@ -33,7 +33,7 @@ A `spread` parameter is also available in both modes — it dilates the silhouet
 
 <mini-workspace src="samples/post26/04-glow-opacity-sweep.pathogen" caption="Opacity scales the flood-opacity on the glow color. Subtle ambient lighting at 0.3; full-strength halo at 0.9." code-open></mini-workspace>
 
-For inner glow, an additional `spread` parameter erodes the silhouette before blurring so the glow has more inset distance — useful for pressed-glass and bezeled-button effects. See [docs/filters § GlowFilter](/docs/filters#filters-glowfilter) for the full property reference.
+For inner glow, an additional `spread` parameter erodes the silhouette before blurring so the glow has more inset distance — useful for pressed-glass and bezeled-button effects. See [docs/filters § GlowFilter](/pathogen/docs#filters-glowfilter) for the full property reference.
 
 ## EmbossFilter — `feSpecularLighting` wrapped in named parameters
 

@@ -180,7 +180,7 @@ When you need text that renders identically without requiring fonts — or when 
 This is different from `PathBlock.fromGlyph()`, which returns an array of per-character PathBlocks. `.toPathBlock()` returns a single PathBlock containing all glyphs from the entire TextBlock, already laid out according to element positions, tspan offsets, and letter-spacing.
 
 **Requirements:**
-- Fonts must be loaded via [`@font` directive](cli.md) or compile options
+- Fonts must be loaded via [`@font` directive](#cli-cli-reference) or compile options
 - `font-family` must be set in the TextBlock's styles
 - Only available on TextBlockValue (not ProjectedTextValue)
 
@@ -202,7 +202,7 @@ layer('text-as-path').apply {
 
 The resulting PathBlock is normalized to a (0, 0) origin, so `.drawTo(x, y)` places the text geometry at absolute coordinates `(x, y)`. Space characters advance the cursor without generating outline commands.
 
-Since the result is a standard [PathBlock](path-blocks.md), you can chain any PathBlock operation:
+Since the result is a standard [PathBlock](#path-blocks-path-blocks), you can chain any PathBlock operation:
 
 ```pathogen
 // Scale the text geometry down to 60%

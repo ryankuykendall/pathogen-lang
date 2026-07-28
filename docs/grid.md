@@ -146,7 +146,7 @@ A flow field is a 2D grid where each cell stores a direction; visualizing it dra
 
 > **Two cell representations for flow fields, choose by use case:**
 > - **Storing scalar angles** (this section) — fine when you only render at cell centers via `forEach`. Simpler to write and reason about.
-> - **Storing unit vectors** `Point(cos(a), sin(a))` (see [the bilinear-sampling primer below](#bilinear-sampling--what-it-is-and-when-to-use-it)) — required if you'll sample between cells (e.g., to trace a particle through the field via `sampleBilinear`). Raw-angle bilinear interpolation produces wrong directions at every wrap-around; vector-component interpolation is the standard fix.
+> - **Storing unit vectors** `Point(cos(a), sin(a))` (see [the bilinear-sampling primer below](#grid-bilinear-sampling-what-it-is-and-when-to-use-it)) — required if you'll sample between cells (e.g., to trace a particle through the field via `sampleBilinear`). Raw-angle bilinear interpolation produces wrong directions at every wrap-around; vector-component interpolation is the standard fix.
 
 ```
 define ViewBox(0, 0, 200, 200);
@@ -238,7 +238,7 @@ Bilinear interpolation of unit vectors does shrink the result slightly (a sample
 
 ## See also
 
-- [Markers](markers.md) — uses the same trailing-block construction pattern.
-- [Path Blocks](path-blocks.md) — `rotateAtVertexIndex` and `drawTo` are the natural way to render arrows at each cell.
-- [Gradients](gradients.md) — `MeshGradient` interpolates colors across an SVG patch; `Grid` stores arbitrary values your code reads back via `get`, `sample`, etc. The vocabulary overlaps (`getPoint`, `getRow`, `getCol`) but the runtime roles are distinct.
-- [Stdlib `squareGrid`/`triangleGrid`/`hexagonGrid`](stdlib.md) — produce SVG path data for visual lattices; not data containers.
+- [Markers](#markers-markers) — uses the same trailing-block construction pattern.
+- [Path Blocks](#path-blocks-path-blocks) — `rotateAtVertexIndex` and `drawTo` are the natural way to render arrows at each cell.
+- [Gradients](#gradients-gradients) — `MeshGradient` interpolates colors across an SVG patch; `Grid` stores arbitrary values your code reads back via `get`, `sample`, etc. The vocabulary overlaps (`getPoint`, `getRow`, `getCol`) but the runtime roles are distinct.
+- [Stdlib `squareGrid`/`triangleGrid`/`hexagonGrid`](#stdlib-standard-library-reference) — produce SVG path data for visual lattices; not data containers.

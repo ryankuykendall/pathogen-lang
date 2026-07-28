@@ -26,7 +26,7 @@ h calc(-size)
 Z
 ```
 
-Every Pathogen program starts with a [`define ViewBox`](#viewbox) declaring the canvas, and typically one or more [layer definitions](#layers) describing how strokes and fills should look.
+Every Pathogen program starts with a [`define ViewBox`](#viewbox-viewbox) declaring the canvas, and typically one or more [layer definitions](#layers-layers) describing how strokes and fills should look.
 
 This creates a rectangle by:
 1. Moving to position (10, 10)

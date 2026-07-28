@@ -568,7 +568,7 @@ let rev = combined.reverse();
 let mid = combined.get(0.5);
 ```
 
-The `<<` operator also works for [style block merging](syntax.md#style-blocks). The operand types must match — mixing PathBlocks and style blocks throws an error.
+The `<<` operator also works for [style block merging](#syntax-style-blocks). The operand types must match — mixing PathBlocks and style blocks throws an error.
 
 ## Chamfers
 
@@ -631,7 +631,7 @@ Fillets round corners by replacing a vertex with a circular arc. The incoming an
 
 **Scope:** Line-line junctions only. At curve junctions, the fillet is skipped and a warning is logged.
 
-> **Name-based alternative:** instead of a numeric vertex index, you can label a vertex with `as endpoint('name')` and round it with `pb.vertex('name').fillet(radius)` — or attach the fillet where you draw the corner with `with fillet(radius)`. Labels don't break when commands are added earlier in the path. See [Segment Labels & Corner Suffixes](segment-labels.md).
+> **Name-based alternative:** instead of a numeric vertex index, you can label a vertex with `as endpoint('name')` and round it with `pb.vertex('name').fillet(radius)` — or attach the fillet where you draw the corner with `with fillet(radius)`. Labels don't break when commands are added earlier in the path. See [Segment Labels & Corner Suffixes](#segment-labels-segment-labels-corner-suffixes).
 
 ### `fillet(radius)` → PathBlock / ProjectedPath
 
@@ -711,7 +711,7 @@ one.draw()
 
 Boolean operations combine two closed paths using set operations. Both paths must be closed (end with `z` or have coincident start and end points). The result preserves original curve types — no linearization.
 
-See also: [Standard Library path functions](stdlib.md#path-functions) for creating shapes to use with boolean operations.
+See also: [Standard Library path functions](#stdlib-path-functions) for creating shapes to use with boolean operations.
 
 ### `union(other)` → PathBlock
 

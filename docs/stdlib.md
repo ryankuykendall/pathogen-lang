@@ -394,7 +394,7 @@ Output: `m` followed by one `c` (relative cubic) command per segment — not `q`
 
 These functions generate complete grid patterns as path segments. Each accepts a `GridPatternType` enum (or string) that controls the visual style:
 
-> **Not to be confused with** the [`Grid()`](grid.md) constructor — that's a data container for 2D values mapped to canvas coordinates (flow fields, heatmaps, sampling). The functions below produce SVG path data for visual lattices.
+> **Not to be confused with** the [`Grid()`](#grid-grid) constructor — that's a data container for 2D values mapped to canvas coordinates (flow fields, heatmaps, sampling). The functions below produce SVG path data for visual lattices.
 
 
 | Pattern | Description |
@@ -573,7 +573,7 @@ heading(0)           // Set heading to rightward
 tangentArc(20, 90deg) // Works immediately — no dummy segment needed
 ```
 
-Inside [path blocks](path-blocks.md), `heading()` avoids the offset artifacts that `h 0.01` causes with `z` closePath:
+Inside [path blocks](#path-blocks-path-blocks), `heading()` avoids the offset artifacts that `h 0.01` causes with `z` closePath:
 
 ```
 let cLike = @{
@@ -662,7 +662,7 @@ tangentArc(30, 90deg)  // Smooth arc curving down from the line's endpoint
 
 ## Color
 
-The `Color` type provides first-class color manipulation in OKLCH color space. See the full [Color documentation](color.md) for constructor forms, methods, properties, and examples.
+The `Color` type provides first-class color manipulation in OKLCH color space. See the full [Color documentation](#color-color-type) for constructor forms, methods, properties, and examples.
 
 ```
 let c = Color('#e63946');
@@ -674,7 +674,7 @@ let comp = c.complement();
 
 ## CSSVar
 
-The `CSSVar` type creates CSS custom property references (`var()`) for use in style blocks. See the full [CSSVar documentation](cssvar.md) for constructor forms, properties, and examples.
+The `CSSVar` type creates CSS custom property references (`var()`) for use in style blocks. See the full [CSSVar documentation](#css-var-cssvar-type) for constructor forms, properties, and examples.
 
 ```
 let fg = CSSVar('--foreground', '#333');

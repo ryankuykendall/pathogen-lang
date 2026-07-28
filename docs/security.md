@@ -56,7 +56,7 @@ define PathLayer('a') ${ fill: "\\75\\72\\6c(...)"; }
 define PathLayer('a') ${ fill: "/* comment */ red"; }
 ```
 
-If your design needs CSS variables, use Pathogen's `CSSVar()` constructor — see the [CSSVar docs](cssvar.md). The compiler will emit a properly-formed `var(--name, fallback)` reference for you.
+If your design needs CSS variables, use Pathogen's `CSSVar()` constructor — see the [CSSVar docs](#css-var-cssvar-type). The compiler will emit a properly-formed `var(--name, fallback)` reference for you.
 
 ## What's allowed as identifiers
 

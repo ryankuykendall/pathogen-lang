@@ -726,7 +726,7 @@ l4.apply {
 </code>
   <img src="/blog/samples/post26/04-glow-opacity-sweep.svg" alt="Opacity scales the flood-opacity on the glow color. Subtle ambient lighting at 0.3; full-strength halo at 0.9." loading="lazy">
 </mini-workspace></p>
-<p>For inner glow, an additional <code>spread</code> parameter erodes the silhouette before blurring so the glow has more inset distance — useful for pressed-glass and bezeled-button effects. See <a href="/docs/filters#filters-glowfilter">docs/filters § GlowFilter</a> for the full property reference.</p>
+<p>For inner glow, an additional <code>spread</code> parameter erodes the silhouette before blurring so the glow has more inset distance — useful for pressed-glass and bezeled-button effects. See <a href="/pathogen/docs#filters-glowfilter">docs/filters § GlowFilter</a> for the full property reference.</p>
 <h2>EmbossFilter — <code>feSpecularLighting</code> wrapped in named parameters</h2>
 <p>The SVG primitive for embossed surfaces is <code>feSpecularLighting</code> + <code>feDistantLight</code>. It&#39;s powerful and unergonomic: you write XML, you choose which child light type to nest, you spec <code>surfaceScale</code> and <code>specularConstant</code> and <code>specularExponent</code> and <code>lighting-color</code>, you composite the highlight pass back against <code>SourceAlpha</code>, and then you blend it onto <code>SourceGraphic</code>. Five primitives, half a dozen attributes, no semantic shortcuts.</p>
 <p><code>EmbossFilter</code> wraps that whole chain into seven named parameters you can sweep without leaving Pathogen.</p>

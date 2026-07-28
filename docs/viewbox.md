@@ -88,5 +88,5 @@ Storing viewBox in source code (rather than in workspace metadata, comments, or 
 
 ## Related
 
-- [Layers](#layers) — the rest of the `define` family (`PathLayer`, `TextLayer`, `GroupLayer`)
-- [CLI](#cli) — using `--viewBox`/`--width`/`--height` flags alongside source-defined viewBox
+- [Layers](#layers-layers) — the rest of the `define` family (`PathLayer`, `TextLayer`, `GroupLayer`)
+- [CLI](#cli-cli-reference) — using `--viewBox`/`--width`/`--height` flags alongside source-defined viewBox

@@ -12,7 +12,7 @@ Pathogen ships seven custom filter constructors:
 - [`PixelateFilter`](#filters-pixelatefilter) — mosaic / pixelation
 - [`MotionBlurFilter`](#filters-motionblurfilter) — directional and progressive blur (no native CSS equivalent)
 
-Custom filters live in the shared `<defs>` block alongside [gradients](./gradients.md), patterns, masks, and [markers](./markers.md), and are referenced via `url(#id)`. They compile to stock SVG filter primitives, so they render identically in the CLI, the playground, and the VS Code preview — with one documented exception for progressive motion blur in non-Chromium engines (see [MotionBlurFilter](#filters-motionblurfilter)).
+Custom filters live in the shared `<defs>` block alongside [gradients](#gradients-gradients), patterns, masks, and [markers](#markers-markers), and are referenced via `url(#id)`. They compile to stock SVG filter primitives, so they render identically in the CLI, the playground, and the VS Code preview — with one documented exception for progressive motion blur in non-Chromium engines (see [MotionBlurFilter](#filters-motionblurfilter)).
 
 ## NoiseFilter
 
@@ -595,7 +595,7 @@ The `filter` style property is auto-wrapping: when assigned a `NoiseFilter` valu
 
 ## Layering with Native CSS Filters
 
-A single `filter:` declaration accepts **either** a `NoiseFilter` value **or** a chain of native CSS filter functions like `blur(2px) brightness(1.2)` — not both at once. To combine custom and native filters, nest the layer in a [`GroupLayer`](./layers.md):
+A single `filter:` declaration accepts **either** a `NoiseFilter` value **or** a chain of native CSS filter functions like `blur(2px) brightness(1.2)` — not both at once. To combine custom and native filters, nest the layer in a [`GroupLayer`](#layers-layers):
 
 > **Native CSS syntax — spaces, not commas.** CSS filter functions are space-separated: `drop-shadow(4px 4px 8px oklch(0.65 0.26 357))`, and chains are space-separated too: `blur(2px) brightness(1.2)`. Writing Pathogen-style commas (`drop-shadow(4px, 4px, 4px, color)`) is a compile error with a fix-it message — previously this silently emitted invalid CSS that browsers dropped. See [CSS Function Values](#syntax-css-function-values). The editor suggests correctly-shaped filter functions and any in-scope filter variables after `filter:`.
 
@@ -631,7 +631,7 @@ shimmer.append(art);
 
 ## Pairing with Gradients
 
-Custom filters compose cleanly with every [gradient](./gradients.md) kind. The filter applies to the layer's painted result, so a grainy gradient is just a layer with a gradient `fill` and a `NoiseFilter` `filter`. The `Gradient` style preset is tuned for this case — its primitive chain pumps contrast before blending so the grain reads through saturated gradient stops without looking muddy.
+Custom filters compose cleanly with every [gradient](#gradients-gradients) kind. The filter applies to the layer's painted result, so a grainy gradient is just a layer with a gradient `fill` and a `NoiseFilter` `filter`. The `Gradient` style preset is tuned for this case — its primitive chain pumps contrast before blending so the grain reads through saturated gradient stops without looking muddy.
 
 ### LinearGradient
 
@@ -690,7 +690,7 @@ layer('wheel').apply { circle(100, 100, 90); }
 
 `Grain`, `Paper`, `Speckle`, and `Static` work with gradient fills too — they just bias toward different visual outcomes. Mix and match freely.
 
-Mesh, freeform, and topographical gradients are also supported; the noise filter rides on top of the rasterized gradient output produced by the playground or `--render-gpu`. See [gradients.md](./gradients.md) for the full list of gradient kinds.
+Mesh, freeform, and topographical gradients are also supported; the noise filter rides on top of the rasterized gradient output produced by the playground or `--render-gpu`. See [gradients.md](#gradients-gradients) for the full list of gradient kinds.
 
 ## Generated SVG Output
 
@@ -942,8 +942,8 @@ let pix = PixelateFilter(16, 16, 8);
 
 ## See Also
 
-- [Gradients](./gradients.md) — pair `NoiseFilter` with linear, radial, conic, mesh, freeform, or topo gradients
-- [Layers](./layers.md) — `GroupLayer` composition for stacking custom and native CSS filters
-- [Markers](./markers.md) — another defs-producing constructor following the same trailing-block convention
-- [Syntax](./syntax.md) — style blocks, trailing blocks, and template-literal interpolation
+- [Gradients](#gradients-gradients) — pair `NoiseFilter` with linear, radial, conic, mesh, freeform, or topo gradients
+- [Layers](#layers-layers) — `GroupLayer` composition for stacking custom and native CSS filters
+- [Markers](#markers-markers) — another defs-producing constructor following the same trailing-block convention
+- [Syntax](#syntax-syntax-reference) — style blocks, trailing blocks, and template-literal interpolation
 
