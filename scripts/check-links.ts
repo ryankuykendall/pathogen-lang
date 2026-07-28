@@ -47,7 +47,23 @@ async function discoverBlogSlugs(): Promise<string[]> {
 }
 
 /**
- * Extract and check all internal links on a page
+ * Results are cached by resolved target so a link repeated across pages costs
+ * one navigation, not one per occurrence.
+ */
+const targetCache = new Map<string, { status: number | string; ok: boolean }>();
+
+/**
+ * Extract and check every internal link on a page.
+ *
+ * Three link forms exist in this codebase and all three are checked:
+ *  - `/pathogen/...`  absolute site paths (with or without a `#fragment`)
+ *  - `#fragment`      same-page anchors — the form docs/*.md use for cross-
+ *                     references, since every doc section renders into one page
+ *  - `foo.md#frag`    relative markdown paths, which survive into the built
+ *                     HTML unrewritten and therefore 404 when clicked
+ *
+ * Only the first form used to be checked, so the entire docs cross-reference
+ * surface was unverified and drifted (prefixed vs unprefixed heading slugs).
  */
 async function checkPageLinks(
   page: puppeteer.Page,
@@ -66,69 +82,123 @@ async function checkPageLinks(
     .catch(() => {});
   await new Promise((r) => setTimeout(r, 2000));
 
-  // Extract all internal links
+  // Extract every internal link — external, mailto, and bare "#" are skipped.
   const links = await page.evaluate(() => {
     const anchors = document.querySelectorAll('a[href]');
+    const seen = new Set<string>();
     return Array.from(anchors)
       .map((a) => ({
         href: a.getAttribute('href') || '',
         text: (a.textContent || '').trim().substring(0, 60),
       }))
-      .filter((l) => l.href.startsWith('/pathogen/'));
+      .filter((l) => {
+        if (!l.href || l.href === '#') return false;
+        if (/^[a-z]+:/i.test(l.href) || l.href.startsWith('//')) return false;
+        if (seen.has(l.href)) return false;
+        seen.add(l.href);
+        return true;
+      });
   });
 
   const results: LinkResult[] = [];
 
+  // Phase 1 — same-page anchors. Verified against the DOM we are already on,
+  // so this must run before any navigation below.
+  const fragmentLinks = links.filter((l) => l.href.startsWith('#'));
+  if (fragmentLinks.length > 0) {
+    const found: boolean[] = await page.evaluate(
+      (ids: string[]) =>
+        ids.map(
+          (id) =>
+            !!(
+              document.getElementById(id) ||
+              document.querySelector(`[name="${id}"]`)
+            ),
+        ),
+      fragmentLinks.map((l) => decodeURIComponent(l.href.slice(1))),
+    );
+    fragmentLinks.forEach((l, i) => {
+      results.push({
+        href: l.href,
+        text: l.text,
+        status: found[i] ? 200 : 'ANCHOR_NOT_FOUND',
+        ok: found[i],
+      });
+    });
+  }
+
+  // Phase 2 — links that require navigating to a different document. Hrefs are
+  // resolved against the current page URL so relative forms (`./sibling-post`,
+  // `foo.md#frag`) are tested exactly as a browser would follow them.
   for (const link of links) {
-    if (link.href.includes('#')) {
-      // Anchor link — navigate to page and verify anchor exists
-      const [path, anchor] = link.href.split('#');
-      const navUrl = `${BASE}${path}`;
+    if (link.href.startsWith('#')) continue;
 
-      try {
-        await page.goto(navUrl, { waitUntil: 'networkidle2', timeout: 10000 });
+    let resolvedPath: string;
+    let anchor = '';
+    try {
+      const url = new URL(link.href, `${BASE}${pageUrl}`);
+      resolvedPath = url.pathname + url.search;
+      anchor = url.hash.slice(1);
+    } catch {
+      results.push({
+        href: link.href,
+        text: link.text,
+        status: 'UNRESOLVABLE_HREF',
+        ok: false,
+      });
+      continue;
+    }
+
+    const cacheKey = resolvedPath + (anchor ? `#${anchor}` : '');
+    const cached = targetCache.get(cacheKey);
+    if (cached) {
+      results.push({ href: link.href, text: link.text, ...cached });
+      continue;
+    }
+
+    const path = resolvedPath;
+    let outcome: { status: number | string; ok: boolean };
+    try {
+      const resp = await page.goto(`${BASE}${path}`, {
+        waitUntil: 'networkidle2',
+        timeout: 10000,
+      });
+      const status = resp?.status() || 0;
+      if (status < 200 || status >= 400) {
+        outcome = { status, ok: false };
+      } else if (anchor) {
         await new Promise((r) => setTimeout(r, 2000));
-
-        const anchorExists = await page.evaluate((id) => {
-          return !!(
-            document.getElementById(id) ||
-            document.querySelector(`[name="${id}"]`)
-          );
-        }, anchor);
-
-        results.push({
-          href: link.href,
-          text: link.text,
+        const anchorExists = await page.evaluate(
+          (id: string) =>
+            !!(
+              document.getElementById(id) ||
+              document.querySelector(`[name="${id}"]`)
+            ),
+          decodeURIComponent(anchor),
+        );
+        outcome = {
           status: anchorExists ? 200 : 'ANCHOR_NOT_FOUND',
           ok: anchorExists,
-        });
-      } catch (err: any) {
-        results.push({
-          href: link.href,
-          text: link.text,
-          status: err.message,
-          ok: false,
-        });
+        };
+      } else {
+        outcome = { status, ok: true };
       }
-    } else {
-      // Non-anchor link — check HTTP status
-      try {
-        const resp = await page.goto(`${BASE}${link.href}`, {
-          waitUntil: 'networkidle2',
-          timeout: 10000,
-        });
-        const status = resp?.status() || 0;
-        const ok = status >= 200 && status < 400;
-        results.push({ href: link.href, text: link.text, status, ok });
-      } catch (err: any) {
-        results.push({
-          href: link.href,
-          text: link.text,
-          status: err.message,
-          ok: false,
-        });
-      }
+    } catch (err: any) {
+      outcome = { status: err.message, ok: false };
     }
+
+    // A relative markdown path survives the docs build unrewritten, so it
+    // resolves to a path the site doesn't serve. Say so — the fix is always
+    // the same-page `#section-anchor` form.
+    if (!outcome.ok && /\.md(\?|#|$)/.test(link.href)) {
+      outcome = {
+        status: `${outcome.status} — relative .md link; use the #section-anchor form`,
+        ok: false,
+      };
+    }
+
+    targetCache.set(cacheKey, outcome);
+    results.push({ href: link.href, text: link.text, ...outcome });
   }
 
   return results;
