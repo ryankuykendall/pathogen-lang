@@ -32,6 +32,7 @@ export class CssvarPanel extends HTMLElement {
   private _layers: LayerOutput[] = [];
   private _cssProperties: CSSPropertyDeclaration[] = [];
   private _gradients: GradientOutput[] = [];
+  private _updateScheduled = false;
 
   constructor() {
     super();
@@ -45,9 +46,19 @@ export class CssvarPanel extends HTMLElement {
     this.updateList();
   }
 
-  set layers(value: LayerOutput[]) { this._layers = value || []; this.updateList(); }
-  set cssProperties(value: CSSPropertyDeclaration[]) { this._cssProperties = value || []; this.updateList(); }
-  set gradients(value: GradientOutput[]) { this._gradients = value || []; this.updateList(); }
+  set layers(value: LayerOutput[]) { this._layers = value || []; this._scheduleUpdate(); }
+  set cssProperties(value: CSSPropertyDeclaration[]) { this._cssProperties = value || []; this._scheduleUpdate(); }
+  set gradients(value: GradientOutput[]) { this._gradients = value || []; this._scheduleUpdate(); }
+
+  /** Coalesce back-to-back property assignments into one updateList per microtask. */
+  private _scheduleUpdate(): void {
+    if (this._updateScheduled) return;
+    this._updateScheduled = true;
+    queueMicrotask(() => {
+      this._updateScheduled = false;
+      if (this.isConnected) this.updateList();
+    });
+  }
 
   toggleCollapse(): void {
     this._collapsed = !this._collapsed;

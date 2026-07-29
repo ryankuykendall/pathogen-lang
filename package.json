@@ -59,6 +59,7 @@
     "security:browser-audit": "tsx scripts/security-browser-audit.ts",
     "perf:panzoom": "tsx scripts/perf-pan-zoom-audit.ts",
     "perf:transform-probe": "tsx scripts/perf-transform-probe.ts",
+    "perf:typing": "tsx scripts/perf-typing-audit.ts",
     "cli": "tsx src/cli.ts",
     "serve:bbwp": "tsx scripts/serve-bbwp.ts",
     "update:bbwp-index": "tsx scripts/update-bbwp-index.ts",

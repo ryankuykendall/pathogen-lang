@@ -21,6 +21,10 @@ export interface InspectorData {
 }
 
 export class InspectorPanel extends HTMLElement {
+  // Last references handed to the child panels — used to skip re-assigning
+  // (and therefore re-rendering) fields whose identity hasn't changed.
+  private _last: InspectorData = {};
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -49,21 +53,29 @@ export class InspectorPanel extends HTMLElement {
     const cp = this.cssvarPanel;
     if (!lp || !pp || !cp) return;
 
-    if (data.layers !== undefined) {
+    // Differential assignment: a field is forwarded only when its identity
+    // changed since the last call, so e.g. a layerVisibility-only update
+    // doesn't re-render the (potentially huge) layers list three panels wide.
+    const changed = (key: keyof InspectorData): boolean =>
+      data[key] !== undefined && data[key] !== this._last[key];
+
+    if (changed('layers')) {
       lp.layers = data.layers as any;
       pp.layers = data.layers as any;
       cp.layers = data.layers as any;
     }
-    if (data.masks !== undefined) lp.masks = data.masks;
-    if (data.clipPaths !== undefined) lp.clipPaths = data.clipPaths;
-    if (data.gradients !== undefined) {
+    if (changed('masks')) lp.masks = data.masks!;
+    if (changed('clipPaths')) lp.clipPaths = data.clipPaths!;
+    if (changed('gradients')) {
       lp.gradients = data.gradients as any;
       pp.gradients = data.gradients as any;
       cp.gradients = data.gradients as any;
     }
-    if (data.cssProperties !== undefined) cp.cssProperties = data.cssProperties as any;
-    if (data.layerVisibility !== undefined) lp.layerVisibility = data.layerVisibility;
-    if (data.defsVisibility !== undefined) lp.defsVisibility = data.defsVisibility;
+    if (changed('cssProperties')) cp.cssProperties = data.cssProperties as any;
+    if (changed('layerVisibility')) lp.layerVisibility = data.layerVisibility!;
+    if (changed('defsVisibility')) lp.defsVisibility = data.defsVisibility!;
+
+    this._last = { ...this._last, ...data };
   }
 
   private setupEventListeners(): void {
@@ -73,6 +85,9 @@ export class InspectorPanel extends HTMLElement {
   }
 
   render(): void {
+    // Fresh child panels start empty — drop the identity cache so the next
+    // setData forwards every field even if the store references are unchanged.
+    this._last = {};
     this.shadowRoot!.innerHTML = `
       <style>${styles}</style>
 

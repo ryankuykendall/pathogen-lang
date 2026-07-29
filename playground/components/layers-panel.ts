@@ -1,6 +1,7 @@
 // Floating layers panel for layer inspection and visibility control
 
 import type { GradientOutput, LayerOutput } from '../types/compiler.js';
+import { cssValueForStyleAttr, escapeHtml } from '../utils/html-escape.js';
 import styles from './layers-panel.css';
 
 const EYE_OPEN = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -32,6 +33,7 @@ export class LayersPanel extends HTMLElement {
   private _gradients: GradientOutput[] = [];
   private _layerVisibility: Record<string, boolean> = {};
   private _defsVisibility: Record<string, boolean> = {};
+  private _updateScheduled = false;
 
   constructor() {
     super();
@@ -45,12 +47,25 @@ export class LayersPanel extends HTMLElement {
     this.updateList();
   }
 
-  set layers(value: LayerOutput[]) { this._layers = value || []; this.updateList(); }
-  set masks(value: { id: string }[]) { this._masks = value || []; this.updateList(); }
-  set clipPaths(value: { id: string }[]) { this._clipPaths = value || []; this.updateList(); }
-  set gradients(value: GradientOutput[]) { this._gradients = value || []; this.updateList(); }
-  set layerVisibility(value: Record<string, boolean>) { this._layerVisibility = value || {}; this.updateList(); }
-  set defsVisibility(value: Record<string, boolean>) { this._defsVisibility = value || {}; this.updateList(); }
+  set layers(value: LayerOutput[]) { this._layers = value || []; this._scheduleUpdate(); }
+  set masks(value: { id: string }[]) { this._masks = value || []; this._scheduleUpdate(); }
+  set clipPaths(value: { id: string }[]) { this._clipPaths = value || []; this._scheduleUpdate(); }
+  set gradients(value: GradientOutput[]) { this._gradients = value || []; this._scheduleUpdate(); }
+  set layerVisibility(value: Record<string, boolean>) { this._layerVisibility = value || {}; this._scheduleUpdate(); }
+  set defsVisibility(value: Record<string, boolean>) { this._defsVisibility = value || {}; this._scheduleUpdate(); }
+
+  /**
+   * Coalesce back-to-back property assignments (a setData pass assigns up to
+   * six fields) into a single updateList per microtask.
+   */
+  private _scheduleUpdate(): void {
+    if (this._updateScheduled) return;
+    this._updateScheduled = true;
+    queueMicrotask(() => {
+      this._updateScheduled = false;
+      if (this.isConnected) this.updateList();
+    });
+  }
 
   /** Convert a GradientOutput to a CSS background value */
   gradientToCSS(grad: GradientOutput): string | null {
@@ -120,99 +135,79 @@ export class LayersPanel extends HTMLElement {
     );
   }
 
+  /**
+   * Append a layer row (plus its defs sub-rows and group children) to `parts`
+   * as HTML strings. The whole list becomes one innerHTML assignment in
+   * updateList \u2014 a single parse instead of one per row \u2014 and clicks are
+   * handled by delegation on the list container (see render), so no per-row
+   * listeners are needed.
+   */
   renderLayerRow(
     layer: LayerOutput,
-    list: HTMLElement,
+    parts: string[],
     depth: number,
     visibility: Record<string, boolean>,
     defsVisibility: Record<string, boolean>,
     layerDefs: Map<string, DefRef[]>,
-    layersByName: Map<string, LayerOutput>,
   ): void {
     const isVisible = visibility[layer.name] !== false;
     const color = this.getLayerColor(layer);
+    const name = escapeHtml(layer.name);
 
     // Resolve fill/stroke for gradient-aware swatch
     const fillResolved = this.resolveStyleColor(layer.styles?.fill);
     const strokeResolved = this.resolveStyleColor(layer.styles?.stroke);
     const dotResolved = strokeResolved && !fillResolved ? strokeResolved : fillResolved || strokeResolved || null;
-    const dotStyle = dotResolved
-      ? `background: ${dotResolved.css}${dotResolved.isGradient ? '; border-radius: 2px' : ''}`
-      : `background: ${color}`;
-
-    const row = document.createElement('div');
-    row.className = depth > 0 ? 'layer-row group-child' : 'layer-row';
-    if (depth > 0) row.style.paddingLeft = `calc(0.5rem + ${depth} * 0.5rem)`;
-
-    const connectorHTML = depth > 0 ? '<span class="tree-connector"></span>' : '';
+    const dotCss = dotResolved ? cssValueForStyleAttr(dotResolved.css) : cssValueForStyleAttr(color);
+    const dotStyle = dotResolved && dotCss
+      ? `background: ${dotCss}${dotResolved.isGradient ? '; border-radius: 2px' : ''}`
+      : `background: ${dotCss ?? '#333'}`;
 
     const isGroup = layer.type === 'group';
     const isGroupCollapsed = isGroup && this._collapsedGroups.has(layer.name);
+
+    const rowStyles: string[] = [];
+    if (depth > 0) rowStyles.push(`padding-left: calc(0.5rem + ${depth} * 0.5rem)`);
+    if (isGroup) rowStyles.push('cursor: pointer');
+
+    const connectorHTML = depth > 0 ? '<span class="tree-connector"></span>' : '';
     const groupChevronHTML = isGroup
       ? `<button class="group-chevron${isGroupCollapsed ? ' collapsed' : ''}" title="${isGroupCollapsed ? 'Expand' : 'Collapse'} group">${isGroupCollapsed ? '\u25B6' : '\u25BC'}</button>`
       : '';
 
-    row.innerHTML = `
+    parts.push(`<div class="${depth > 0 ? 'layer-row group-child' : 'layer-row'}" data-layer-name="${name}"${
+      isGroup ? ' data-group="1"' : ''
+    }${rowStyles.length ? ` style="${rowStyles.join('; ')}"` : ''}>
       ${connectorHTML}
       ${groupChevronHTML}
-      <span class="color-dot" style="${dotStyle}"></span>
-      <span class="layer-name" title="${layer.name}">${layer.name}</span>
+      <span class="color-dot" style="${escapeHtml(dotStyle)}"></span>
+      <span class="layer-name" title="${name}">${name}</span>
       <span class="type-badge">${layer.type === 'text' ? 'text' : layer.type === 'fragment' ? 'frag' : layer.type === 'group' ? 'grp' : 'path'}</span>
-      <button class="eye-btn" title="${isVisible ? 'Hide layer' : 'Show layer'}" aria-label="${isVisible ? 'Hide' : 'Show'} ${layer.name}">
+      <button class="eye-btn" title="${isVisible ? 'Hide layer' : 'Show layer'}" aria-label="${isVisible ? 'Hide' : 'Show'} ${name}">
         ${isVisible ? EYE_OPEN : EYE_CLOSED}
       </button>
-    `;
-
-    (row.querySelector('.eye-btn') as HTMLButtonElement).addEventListener('click', (e: Event) => {
-      e.stopPropagation();
-      this.toggleVisibility(layer.name);
-    });
-
-    if (isGroup) {
-      row.style.cursor = 'pointer';
-      row.addEventListener('click', (e: MouseEvent) => {
-        // Don't toggle if the eye button was clicked
-        if ((e.target as HTMLElement).closest('.eye-btn')) return;
-        if (this._collapsedGroups.has(layer.name)) {
-          this._collapsedGroups.delete(layer.name);
-        } else {
-          this._collapsedGroups.add(layer.name);
-        }
-        this.updateList();
-      });
-    }
-
-    list.appendChild(row);
+    </div>`);
 
     // Render nested mask/clipPath rows for this layer
     const refs = layerDefs.get(layer.name) || [];
     for (const ref of refs) {
       const defKey = `${ref.type}:${ref.id}`;
       const defVisible = defsVisibility[defKey] !== false;
-      const subRow = document.createElement('div');
-      subRow.className = 'layer-row defs-row';
-      subRow.style.paddingLeft = `calc(0.5rem + ${depth + 1} * 0.5rem)`;
-
-      subRow.innerHTML = `
+      const id = escapeHtml(ref.id);
+      parts.push(`<div class="layer-row defs-row" data-def-key="${escapeHtml(defKey)}" style="padding-left: calc(0.5rem + ${depth + 1} * 0.5rem)">
         <span class="tree-connector"></span>
-        <span class="layer-name" title="${ref.id}">${ref.id}</span>
+        <span class="layer-name" title="${id}">${id}</span>
         <span class="type-badge defs-badge">${ref.type === 'mask' ? 'mask' : 'clip'}</span>
-        <button class="eye-btn" title="${defVisible ? 'Disable' : 'Enable'} ${ref.type}" aria-label="${defVisible ? 'Disable' : 'Enable'} ${ref.type} ${ref.id}">
+        <button class="eye-btn" title="${defVisible ? 'Disable' : 'Enable'} ${ref.type}" aria-label="${defVisible ? 'Disable' : 'Enable'} ${ref.type} ${id}">
           ${defVisible ? EYE_OPEN : EYE_CLOSED}
         </button>
-      `;
-
-      (subRow.querySelector('.eye-btn') as HTMLButtonElement).addEventListener('click', () => {
-        this.toggleDefsVisibility(defKey);
-      });
-
-      list.appendChild(subRow);
+      </div>`);
     }
 
     // Recursively render group children (children are LayerOutput objects, not names)
     if (isGroup && !isGroupCollapsed && layer.children) {
       for (const childLayer of layer.children) {
-        this.renderLayerRow(childLayer, list, depth + 1, visibility, defsVisibility, layerDefs, layersByName);
+        this.renderLayerRow(childLayer, parts, depth + 1, visibility, defsVisibility, layerDefs);
       }
     }
   }
@@ -277,24 +272,17 @@ export class LayersPanel extends HTMLElement {
       if (refs.length > 0) layerDefs.set(layer.name, refs);
     }
 
-    list.innerHTML = '';
-
     // Show empty state in embedded mode
     if (isEmpty && this.hasAttribute('embedded')) {
-      const empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.textContent = 'No layers';
-      list.appendChild(empty);
+      list.innerHTML = '<div class="empty-state">No layers</div>';
       return;
     }
 
-    // Build a lookup of all layers by name (for mask/clipPath ref resolution)
-    const layersByName = new Map<string, LayerOutput>();
-    for (const layer of layers) layersByName.set(layer.name, layer);
-
+    const parts: string[] = [];
     for (const layer of layers) {
-      this.renderLayerRow(layer, list, 0, visibility, defsVisibility, layerDefs, layersByName);
+      this.renderLayerRow(layer, parts, 0, visibility, defsVisibility, layerDefs);
     }
+    list.innerHTML = parts.join('');
 
     if (this._collapsed) {
       list.style.display = 'none';
@@ -317,6 +305,33 @@ export class LayersPanel extends HTMLElement {
 
     (this.shadowRoot!.querySelector('.panel-header') as HTMLElement).addEventListener('click', () => {
       this.toggleCollapse();
+    });
+
+    // Delegated click handling for all rows (rows are re-rendered wholesale,
+    // so per-row listeners would be re-attached constantly).
+    (this.shadowRoot!.querySelector('.layer-list') as HTMLElement).addEventListener('click', (e: Event) => {
+      const target = e.target as HTMLElement;
+      const row = target.closest('.layer-row') as HTMLElement | null;
+      if (!row) return;
+      const defKey = row.dataset.defKey;
+      const layerName = row.dataset.layerName;
+
+      if (target.closest('.eye-btn')) {
+        e.stopPropagation();
+        if (defKey !== undefined) this.toggleDefsVisibility(defKey);
+        else if (layerName !== undefined) this.toggleVisibility(layerName);
+        return;
+      }
+
+      // Clicking anywhere else on a group row toggles its collapse state
+      if (row.dataset.group === '1' && layerName !== undefined) {
+        if (this._collapsedGroups.has(layerName)) {
+          this._collapsedGroups.delete(layerName);
+        } else {
+          this._collapsedGroups.add(layerName);
+        }
+        this.updateList();
+      }
     });
   }
 }

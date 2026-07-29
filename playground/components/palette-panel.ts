@@ -1,6 +1,7 @@
 // Floating palette panel showing all colors used in the current program, grouped by layer
 
 import type { GradientOutput, LayerOutput } from '../types/compiler.js';
+import { cssValueForStyleAttr, escapeHtml } from '../utils/html-escape.js';
 import styles from './palette-panel.css';
 
 const COLOR_PROPERTIES = new Set(['stroke', 'fill', 'color', 'stop-color', 'flood-color']);
@@ -18,6 +19,7 @@ export class PalettePanel extends HTMLElement {
   private _collapsed: boolean;
   private _layers: LayerOutput[] = [];
   private _gradients: GradientOutput[] = [];
+  private _updateScheduled = false;
 
   constructor() {
     super();
@@ -30,8 +32,18 @@ export class PalettePanel extends HTMLElement {
     this.updateList();
   }
 
-  set layers(value: LayerOutput[]) { this._layers = value || []; this.updateList(); }
-  set gradients(value: GradientOutput[]) { this._gradients = value || []; this.updateList(); }
+  set layers(value: LayerOutput[]) { this._layers = value || []; this._scheduleUpdate(); }
+  set gradients(value: GradientOutput[]) { this._gradients = value || []; this._scheduleUpdate(); }
+
+  /** Coalesce back-to-back property assignments into one updateList per microtask. */
+  private _scheduleUpdate(): void {
+    if (this._updateScheduled) return;
+    this._updateScheduled = true;
+    queueMicrotask(() => {
+      this._updateScheduled = false;
+      if (this.isConnected) this.updateList();
+    });
+  }
 
   toggleCollapse(): void {
     this._collapsed = !this._collapsed;
@@ -46,8 +58,10 @@ export class PalettePanel extends HTMLElement {
     const list = this.shadowRoot!.querySelector('.palette-list') as HTMLElement | null;
     if (!list) return;
 
-    list.innerHTML = '';
-
+    // Rows are accumulated as HTML strings and assigned in one innerHTML pass
+    // (single parse, no per-row element construction) — this list can reach
+    // thousands of rows on layer-heavy programs.
+    const parts: string[] = [];
     let colorCount = 0;
 
     for (const layer of layers) {
@@ -75,17 +89,11 @@ export class PalettePanel extends HTMLElement {
       if (layerColors.length === 0) continue;
 
       // Layer group header
-      const header = document.createElement('div');
-      header.className = 'group-header';
-      header.textContent = layer.name;
-      list.appendChild(header);
+      parts.push(`<div class="group-header">${escapeHtml(layer.name)}</div>`);
 
       for (const entry of layerColors) {
-        const row = document.createElement('div');
-        row.className = 'color-row';
-
-        const swatch = document.createElement('span');
-        swatch.className = 'swatch';
+        let swatchClass = 'swatch';
+        let swatchStyle = '';
 
         // Check for gradient url(#id)
         const urlMatch = entry.value.match(/^url\(#(.+?)\)$/);
@@ -96,46 +104,40 @@ export class PalettePanel extends HTMLElement {
           while (grad && grad.stops.length === 0 && grad.href) {
             grad = gradients.find((g) => g.id === grad!.href) || null;
           }
-          if (grad && grad.stops.length > 0) {
-            const stops = grad.stops.map((s) => `${s.color} ${(s.offset * 100).toFixed(0)}%`).join(', ');
-            const cssGrad =
-              grad.type === 'radial' ? `radial-gradient(circle, ${stops})` : `linear-gradient(to right, ${stops})`;
-            swatch.style.background = cssGrad;
-            swatch.style.borderRadius = '2px';
+          const cssGrad =
+            grad && grad.stops.length > 0
+              ? cssValueForStyleAttr(
+                  `${grad.type === 'radial' ? 'radial-gradient(circle' : 'linear-gradient(to right'}, ${grad.stops
+                    .map((s) => `${s.color} ${(s.offset * 100).toFixed(0)}%`)
+                    .join(', ')})`,
+                )
+              : null;
+          if (cssGrad) {
+            swatchStyle = `background: ${cssGrad}; border-radius: 2px`;
           } else {
-            swatch.classList.add('no-color');
+            swatchClass += ' no-color';
           }
         } else if (entry.varName) {
           // For var() references, use fallback as swatch color
-          swatch.style.backgroundColor = entry.fallback || 'transparent';
-          if (!entry.fallback) {
-            swatch.classList.add('no-color');
+          const fallback = entry.fallback ? cssValueForStyleAttr(entry.fallback) : null;
+          swatchStyle = `background-color: ${fallback || 'transparent'}`;
+          if (!fallback) swatchClass += ' no-color';
+        } else {
+          const value = cssValueForStyleAttr(entry.value);
+          if (value) {
+            swatchStyle = `background-color: ${value}`;
+          } else {
+            swatchClass += ' no-color';
           }
-        } else {
-          swatch.style.backgroundColor = entry.value;
         }
 
-        const label = document.createElement('span');
-        label.className = 'prop-name';
-        label.textContent = entry.prop;
+        const valText = entry.varName ?? (urlMatch ? urlMatch[1] : entry.value);
 
-        const val = document.createElement('span');
-        val.className = 'color-value';
-        if (entry.varName) {
-          val.textContent = entry.varName;
-          val.title = entry.value;
-        } else if (urlMatch) {
-          val.textContent = urlMatch[1];
-          val.title = entry.value;
-        } else {
-          val.textContent = entry.value;
-          val.title = entry.value;
-        }
-
-        row.appendChild(swatch);
-        row.appendChild(label);
-        row.appendChild(val);
-        list.appendChild(row);
+        parts.push(`<div class="color-row">
+          <span class="${swatchClass}"${swatchStyle ? ` style="${escapeHtml(swatchStyle)}"` : ''}></span>
+          <span class="prop-name">${escapeHtml(entry.prop)}</span>
+          <span class="color-value" title="${escapeHtml(entry.value)}">${escapeHtml(valText)}</span>
+        </div>`);
         colorCount++;
       }
     }
@@ -148,11 +150,10 @@ export class PalettePanel extends HTMLElement {
     if (!this.hasAttribute('embedded')) {
       this.style.display = colorCount === 0 ? 'none' : '';
     } else if (colorCount === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.textContent = 'No colors';
-      list.appendChild(empty);
+      parts.push('<div class="empty-state">No colors</div>');
     }
+
+    list.innerHTML = parts.join('');
 
     if (this._collapsed) {
       list.style.display = 'none';

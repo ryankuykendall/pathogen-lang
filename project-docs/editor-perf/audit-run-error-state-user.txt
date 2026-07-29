@@ -1,0 +1,783 @@
+source: project-docs/editor-perf/user-perf-workspace.pathogen (2492 chars)
+workspace ready — first compile/render done
+
+━━━ pathogen:* span summary per phase ━━━
+
+  Phase 1: fast typing (60ms/key, 30 keys)  [3108ms window]
+    compile-roundtrip        n=  1  total=   214ms  mean=  214.0ms  max=  214.0ms
+    analyze-scopes           n= 31  total=    42ms  mean=    1.3ms  max=    2.8ms
+    layer-build-mount        n=  1  total=     6ms  mean=    5.6ms  max=    5.6ms
+    getbbox-reflow-loop      n=  1  total=     4ms  mean=    4.4ms  max=    4.4ms
+    store-updates            n=  1  total=     3ms  mean=    2.5ms  max=    2.5ms
+    notify:layerVisibility   n=  2  total=     2ms  mean=    1.0ms  max=    1.9ms
+    notify:compilationStatus n=  4  total=     2ms  mean=    0.4ms  max=    0.5ms
+    signature-help           n= 31  total=     1ms  mean=    0.0ms  max=    0.2ms
+    iframe-fonts-css         n=  1  total=     1ms  mean=    0.5ms  max=    0.5ms
+    notify:calledStdlibFunctions n=  1  total=     0ms  mean=    0.2ms  max=    0.2ms
+    defs-build-mount         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:masks             n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:clipPaths         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:gradients         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:cssProperties     n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+  Phase 2: slow typing (180ms/key, 23 keys)  [6333ms window]
+    compile-roundtrip        n= 20  total=  3355ms  mean=  167.7ms  max=  218.1ms
+    layer-build-mount        n= 18  total=    90ms  mean=    5.0ms  max=    5.6ms
+    getbbox-reflow-loop      n= 18  total=    79ms  mean=    4.4ms  max=    4.9ms
+    store-updates            n= 18  total=    43ms  mean=    2.4ms  max=    2.6ms
+    notify:layerVisibility   n= 36  total=    32ms  mean=    0.9ms  max=    1.9ms
+    analyze-scopes           n= 23  total=    20ms  mean=    0.9ms  max=    1.4ms
+    notify:compilationStatus n= 61  total=    14ms  mean=    0.2ms  max=    0.4ms
+    iframe-fonts-css         n= 18  total=    10ms  mean=    0.5ms  max=    0.6ms
+    notify:calledStdlibFunctions n= 18  total=     2ms  mean=    0.1ms  max=    0.3ms
+    signature-help           n= 23  total=     1ms  mean=    0.0ms  max=    0.1ms
+    defs-build-mount         n= 18  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:layers            n= 18  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:fontWarnings      n= 18  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:clipPaths         n= 18  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:masks             n= 18  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:gradients         n= 18  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:cssProperties     n= 18  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+  Phase 3: arrow-key cursor movement (40 presses)  [3336ms window]
+    signature-help           n= 40  total=     2ms  mean=    0.0ms  max=    0.2ms
+
+  Phase 4: entering eval-error state (24 keys)  [3032ms window]
+    compile-roundtrip        n=  1  total=   174ms  mean=  173.9ms  max=  173.9ms
+    analyze-scopes           n= 25  total=    35ms  mean=    1.4ms  max=    1.9ms
+    get-diagnostics          n=  1  total=     9ms  mean=    8.9ms  max=    8.9ms
+    notify:compilationStatus n=  2  total=     1ms  mean=    0.4ms  max=    0.6ms
+    signature-help           n= 26  total=     1ms  mean=    0.0ms  max=    0.1ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+  Phase 5: typing in error state (180ms/key, 23 keys)  [5718ms window]
+    compile-roundtrip        n= 23  total=  3432ms  mean=  149.2ms  max=  178.8ms
+    get-diagnostics          n= 23  total=    43ms  mean=    1.9ms  max=    2.2ms
+    analyze-scopes           n= 24  total=    21ms  mean=    0.9ms  max=    1.8ms
+    notify:compilationStatus n= 46  total=    12ms  mean=    0.3ms  max=    0.6ms
+    signature-help           n= 24  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:layers            n= 23  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:fontWarnings      n= 23  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+━━━ console timing / observer log (chronological) ━━━
+  +   474ms  [perf] instrumentation enabled (localStorage.pathogenPerf / ?perf=1)
+  +   502ms  [perf] notify:currentView: 8.6ms
+  +   543ms  [perf] long task: 84ms @ 433
+  +   630ms  [perf] analyze-scopes: 2.1ms
+  +   903ms  [perf] compile-roundtrip: 409.3ms
+  +   904ms  Compile time: 409.50ms
+  +   911ms  [perf] layer-build-mount: 5.9ms
+  +   916ms  [perf] getbbox-reflow-loop: 4.6ms
+  +   919ms  Render time: 11.70ms
+  +   922ms  [perf] notify:layerVisibility: 1.9ms
+  +   923ms  [perf] store-updates: 2.7ms
+  +  1001ms  [perf] long task: 58ms @ 924
+  +  1514ms  [perf] slow input event: keydown duration=472ms inputDelay=0ms
+  +  1514ms  [perf] slow input event: keydown duration=472ms inputDelay=0ms
+  +  1514ms  [perf] slow input event: keyup duration=464ms inputDelay=0ms
+  +  1514ms  [perf] slow input event: keyup duration=464ms inputDelay=0ms
+  +  1872ms  [perf] analyze-scopes: 2.8ms
+  +  1893ms  [perf] analyze-scopes: 1.7ms
+  +  1953ms  [perf] analyze-scopes: 1.6ms
+  +  2017ms  [perf] analyze-scopes: 1.7ms
+  +  2079ms  [perf] analyze-scopes: 1.7ms
+  +  2140ms  [perf] analyze-scopes: 1.4ms
+  +  2204ms  [perf] analyze-scopes: 1.4ms
+  +  2266ms  [perf] analyze-scopes: 1.2ms
+  +  2329ms  [perf] analyze-scopes: 1.2ms
+  +  2393ms  [perf] analyze-scopes: 1.6ms
+  +  2438ms  [perf] slow input event: keydown duration=568ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keypress duration=568ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: beforeinput duration=568ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: input duration=568ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keyup duration=504ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keydown duration=504ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keypress duration=504ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: beforeinput duration=504ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: input duration=504ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keyup duration=440ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keydown duration=440ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keypress duration=440ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: beforeinput duration=440ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: input duration=440ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keyup duration=384ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keydown duration=384ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keypress duration=384ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: beforeinput duration=384ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: input duration=384ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keyup duration=320ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keydown duration=320ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keypress duration=320ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: beforeinput duration=320ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: input duration=320ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keyup duration=256ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keydown duration=256ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: keypress duration=256ms inputDelay=0ms
+  +  2439ms  [perf] slow input event: beforeinput duration=256ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: input duration=256ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: keyup duration=192ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: keydown duration=192ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: keypress duration=192ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: beforeinput duration=192ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: input duration=192ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: keyup duration=128ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: keydown duration=128ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: keypress duration=128ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: beforeinput duration=128ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: input duration=128ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: keydown duration=64ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: keypress duration=64ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: beforeinput duration=64ms inputDelay=0ms
+  +  2440ms  [perf] slow input event: input duration=64ms inputDelay=0ms
+  +  2454ms  [perf] analyze-scopes: 1.0ms
+  +  2515ms  [perf] analyze-scopes: 1.0ms
+  +  2579ms  [perf] analyze-scopes: 1.1ms
+  +  2642ms  [perf] analyze-scopes: 1.2ms
+  +  2767ms  [perf] analyze-scopes: 1.3ms
+  +  2831ms  [perf] analyze-scopes: 1.5ms
+  +  2894ms  [perf] analyze-scopes: 1.7ms
+  +  2956ms  [perf] analyze-scopes: 1.3ms
+  +  3080ms  [perf] analyze-scopes: 1.1ms
+  +  3142ms  [perf] analyze-scopes: 1.0ms
+  +  3204ms  [perf] analyze-scopes: 1.3ms
+  +  3267ms  [perf] analyze-scopes: 1.2ms
+  +  3330ms  [perf] analyze-scopes: 1.3ms
+  +  3392ms  [perf] analyze-scopes: 1.2ms
+  +  3456ms  [perf] analyze-scopes: 1.4ms
+  +  3518ms  [perf] analyze-scopes: 1.3ms
+  +  3579ms  [perf] analyze-scopes: 1.3ms
+  +  3642ms  [perf] analyze-scopes: 1.3ms
+  +  3705ms  [perf] analyze-scopes: 1.2ms
+  +  3881ms  [perf] slow input event: keyup duration=1440ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keydown duration=1440ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keypress duration=1440ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: beforeinput duration=1440ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: input duration=1440ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keyup duration=1376ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keydown duration=1376ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keypress duration=1376ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: beforeinput duration=1376ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: input duration=1376ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keyup duration=1312ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keydown duration=1312ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keypress duration=1312ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: beforeinput duration=1312ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: input duration=1312ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keyup duration=1248ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keydown duration=1248ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keypress duration=1248ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: beforeinput duration=1248ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: input duration=1248ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keyup duration=1184ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keydown duration=1184ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keypress duration=1184ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: beforeinput duration=1184ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: input duration=1184ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keyup duration=1128ms inputDelay=0ms
+  +  3881ms  [perf] slow input event: keydown duration=1128ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: keypress duration=1128ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: beforeinput duration=1128ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: input duration=1128ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: keyup duration=1064ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: keydown duration=1064ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: keypress duration=1064ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: beforeinput duration=1064ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: input duration=1064ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: keyup duration=1000ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: keydown duration=1000ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: keypress duration=1000ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: beforeinput duration=1000ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: input duration=1000ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: keyup duration=936ms inputDelay=0ms
+  +  3882ms  [perf] slow input event: keydown duration=936ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keypress duration=936ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: beforeinput duration=936ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: input duration=936ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keyup duration=872ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keydown duration=872ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keypress duration=872ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: beforeinput duration=872ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: input duration=872ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keyup duration=808ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keydown duration=808ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keypress duration=808ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: beforeinput duration=808ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: input duration=808ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keyup duration=752ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keydown duration=752ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keypress duration=752ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: beforeinput duration=752ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: input duration=752ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keyup duration=688ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keydown duration=688ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keypress duration=688ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: beforeinput duration=688ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: input duration=688ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keyup duration=624ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keydown duration=624ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keypress duration=624ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: beforeinput duration=624ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: input duration=624ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keyup duration=560ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keydown duration=560ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keypress duration=560ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: beforeinput duration=560ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: input duration=560ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keyup duration=496ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keydown duration=496ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keypress duration=496ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: beforeinput duration=496ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: input duration=496ms inputDelay=0ms
+  +  3883ms  [perf] slow input event: keyup duration=440ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keydown duration=440ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keypress duration=440ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: beforeinput duration=440ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: input duration=432ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keyup duration=376ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keydown duration=376ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keypress duration=376ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: beforeinput duration=376ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: input duration=376ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keyup duration=312ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keydown duration=312ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keypress duration=312ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: beforeinput duration=312ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: input duration=312ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keydown duration=248ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keypress duration=248ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: beforeinput duration=248ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: input duration=248ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keyup duration=184ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keydown duration=184ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: keypress duration=184ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: beforeinput duration=184ms inputDelay=0ms
+  +  3884ms  [perf] slow input event: input duration=184ms inputDelay=0ms
+  +  4071ms  [perf] compile-roundtrip: 214.0ms
+  +  4071ms  Compile time: 214.00ms
+  +  4078ms  [perf] layer-build-mount: 5.6ms
+  +  4082ms  [perf] getbbox-reflow-loop: 4.4ms
+  +  4085ms  Render time: 11.10ms
+  +  4088ms  [perf] notify:layerVisibility: 1.9ms
+  +  4088ms  [perf] store-updates: 2.5ms
+  +  4161ms  [perf] long task: 50ms @ 4094
+  +  4975ms  [perf] analyze-scopes: 1.4ms
+  +  5138ms  [perf] slow input event: keydown duration=176ms inputDelay=0ms
+  +  5138ms  [perf] slow input event: keypress duration=176ms inputDelay=1ms
+  +  5138ms  [perf] slow input event: beforeinput duration=176ms inputDelay=0ms
+  +  5139ms  [perf] slow input event: input duration=176ms inputDelay=0ms
+  +  5157ms  [perf] analyze-scopes: 1.0ms
+  +  5346ms  [perf] compile-roundtrip: 218.1ms
+  +  5513ms  [perf] compile-roundtrip: 189.7ms
+  +  5672ms  [perf] compile-roundtrip: 180.7ms
+  +  5672ms  Compile time: 180.80ms
+  +  5678ms  [perf] layer-build-mount: 5.6ms
+  +  5683ms  [perf] getbbox-reflow-loop: 4.9ms
+  +  5686ms  Render time: 11.70ms
+  +  5688ms  [perf] notify:layerVisibility: 1.8ms
+  +  5689ms  [perf] store-updates: 2.4ms
+  +  6017ms  [perf] slow input event: keyup duration=320ms inputDelay=56ms
+  +  6087ms  [perf] compile-roundtrip: 162.9ms
+  +  6088ms  Compile time: 163.00ms
+  +  6094ms  [perf] layer-build-mount: 4.9ms
+  +  6098ms  [perf] getbbox-reflow-loop: 4.4ms
+  +  6101ms  Render time: 10.20ms
+  +  6103ms  [perf] notify:layerVisibility: 1.7ms
+  +  6103ms  [perf] store-updates: 2.5ms
+  +  6195ms  [perf] slow input event: keydown duration=440ms inputDelay=13ms
+  +  6195ms  [perf] slow input event: keypress duration=440ms inputDelay=13ms
+  +  6195ms  [perf] slow input event: beforeinput duration=424ms inputDelay=0ms
+  +  6195ms  [perf] slow input event: input duration=424ms inputDelay=0ms
+  +  6195ms  [perf] slow input event: keyup duration=240ms inputDelay=0ms
+  +  6195ms  [perf] slow input event: keydown duration=240ms inputDelay=0ms
+  +  6195ms  [perf] slow input event: keypress duration=240ms inputDelay=0ms
+  +  6196ms  [perf] slow input event: beforeinput duration=240ms inputDelay=0ms
+  +  6196ms  [perf] slow input event: input duration=240ms inputDelay=0ms
+  +  6290ms  [perf] compile-roundtrip: 165.9ms
+  +  6290ms  Compile time: 166.10ms
+  +  6296ms  [perf] layer-build-mount: 5.1ms
+  +  6301ms  [perf] getbbox-reflow-loop: 4.4ms
+  +  6303ms  Render time: 10.30ms
+  +  6305ms  [perf] notify:layerVisibility: 1.6ms
+  +  6306ms  [perf] store-updates: 2.3ms
+  +  6454ms  [perf] slow input event: keyup duration=320ms inputDelay=41ms
+  +  6454ms  [perf] slow input event: keydown duration=272ms inputDelay=0ms
+  +  6454ms  [perf] slow input event: keypress duration=272ms inputDelay=0ms
+  +  6455ms  [perf] slow input event: beforeinput duration=272ms inputDelay=0ms
+  +  6455ms  [perf] slow input event: input duration=272ms inputDelay=0ms
+  +  6494ms  [perf] compile-roundtrip: 164.5ms
+  +  6494ms  Compile time: 164.60ms
+  +  6501ms  [perf] layer-build-mount: 5.5ms
+  +  6505ms  [perf] getbbox-reflow-loop: 4.6ms
+  +  6508ms  Render time: 11.10ms
+  +  6511ms  [perf] notify:layerVisibility: 1.9ms
+  +  6511ms  [perf] store-updates: 2.5ms
+  +  6710ms  [perf] compile-roundtrip: 159.6ms
+  +  6710ms  Compile time: 159.70ms
+  +  6716ms  [perf] layer-build-mount: 4.9ms
+  +  6720ms  [perf] getbbox-reflow-loop: 4.2ms
+  +  6723ms  Render time: 10.00ms
+  +  6725ms  [perf] notify:layerVisibility: 1.8ms
+  +  6726ms  [perf] store-updates: 2.4ms
+  +  6864ms  [perf] analyze-scopes: 1.0ms
+  +  6950ms  [perf] compile-roundtrip: 163.0ms
+  +  6951ms  Compile time: 163.20ms
+  +  6956ms  [perf] layer-build-mount: 4.3ms
+  +  6960ms  [perf] getbbox-reflow-loop: 4.2ms
+  +  6963ms  Render time: 9.50ms
+  +  6965ms  [perf] notify:layerVisibility: 1.7ms
+  +  6965ms  [perf] store-updates: 2.4ms
+  +  7036ms  [perf] slow input event: keyup duration=616ms inputDelay=37ms
+  +  7036ms  [perf] slow input event: keydown duration=584ms inputDelay=0ms
+  +  7036ms  [perf] slow input event: keypress duration=584ms inputDelay=0ms
+  +  7036ms  [perf] slow input event: beforeinput duration=584ms inputDelay=0ms
+  +  7036ms  [perf] slow input event: input duration=584ms inputDelay=0ms
+  +  7196ms  [perf] compile-roundtrip: 161.7ms
+  +  7196ms  Compile time: 161.90ms
+  +  7203ms  [perf] layer-build-mount: 5.5ms
+  +  7208ms  [perf] getbbox-reflow-loop: 4.7ms
+  +  7210ms  Render time: 11.10ms
+  +  7213ms  [perf] notify:layerVisibility: 1.8ms
+  +  7213ms  [perf] store-updates: 2.6ms
+  +  7342ms  [perf] long task: 53ms @ 7219
+  +  7342ms  [perf] slow input event: keyup duration=640ms inputDelay=43ms
+  +  7384ms  [perf] slow input event: keydown duration=776ms inputDelay=14ms
+  +  7384ms  [perf] slow input event: keypress duration=776ms inputDelay=14ms
+  +  7384ms  [perf] slow input event: beforeinput duration=760ms inputDelay=0ms
+  +  7384ms  [perf] slow input event: input duration=760ms inputDelay=0ms
+  +  7608ms  [perf] compile-roundtrip: 164.5ms
+  +  7608ms  Compile time: 164.70ms
+  +  7614ms  [perf] layer-build-mount: 4.9ms
+  +  7618ms  [perf] getbbox-reflow-loop: 4.5ms
+  +  7621ms  Render time: 10.50ms
+  +  7623ms  [perf] notify:layerVisibility: 1.7ms
+  +  7623ms  [perf] store-updates: 2.4ms
+  +  7699ms  [perf] analyze-scopes: 1.0ms
+  +  7742ms  [perf] slow input event: keyup duration=928ms inputDelay=46ms
+  +  7742ms  [perf] slow input event: keydown duration=880ms inputDelay=0ms
+  +  7742ms  [perf] slow input event: keypress duration=880ms inputDelay=0ms
+  +  7742ms  [perf] slow input event: beforeinput duration=880ms inputDelay=0ms
+  +  7742ms  [perf] slow input event: input duration=880ms inputDelay=0ms
+  +  7808ms  [perf] compile-roundtrip: 159.0ms
+  +  7808ms  Compile time: 159.20ms
+  +  7815ms  [perf] layer-build-mount: 5.1ms
+  +  7819ms  [perf] getbbox-reflow-loop: 4.4ms
+  +  7822ms  Render time: 10.60ms
+  +  7824ms  [perf] notify:layerVisibility: 1.7ms
+  +  7824ms  [perf] store-updates: 2.2ms
+  +  7986ms  [perf] slow input event: keyup duration=944ms inputDelay=1ms
+  +  7986ms  [perf] slow input event: keydown duration=944ms inputDelay=0ms
+  +  7986ms  [perf] slow input event: keypress duration=944ms inputDelay=0ms
+  +  7986ms  [perf] slow input event: beforeinput duration=944ms inputDelay=0ms
+  +  7986ms  [perf] slow input event: input duration=944ms inputDelay=0ms
+  +  7986ms  [perf] slow input event: keyup duration=760ms inputDelay=48ms
+  +  8010ms  [perf] compile-roundtrip: 160.1ms
+  +  8010ms  Compile time: 160.10ms
+  +  8016ms  [perf] layer-build-mount: 4.7ms
+  +  8021ms  [perf] getbbox-reflow-loop: 4.5ms
+  +  8024ms  Render time: 10.20ms
+  +  8026ms  [perf] notify:layerVisibility: 1.8ms
+  +  8027ms  [perf] store-updates: 2.4ms
+  +  8160ms  [perf] slow input event: keydown duration=888ms inputDelay=14ms
+  +  8160ms  [perf] slow input event: keypress duration=888ms inputDelay=14ms
+  +  8160ms  [perf] slow input event: beforeinput duration=872ms inputDelay=0ms
+  +  8160ms  [perf] slow input event: input duration=872ms inputDelay=0ms
+  +  8237ms  [perf] compile-roundtrip: 164.0ms
+  +  8237ms  Compile time: 164.10ms
+  +  8243ms  [perf] layer-build-mount: 5.2ms
+  +  8248ms  [perf] getbbox-reflow-loop: 4.5ms
+  +  8250ms  Render time: 10.60ms
+  +  8252ms  [perf] notify:layerVisibility: 1.7ms
+  +  8253ms  [perf] store-updates: 2.3ms
+  +  8400ms  [perf] slow input event: keyup duration=928ms inputDelay=1ms
+  +  8401ms  [perf] slow input event: keydown duration=928ms inputDelay=0ms
+  +  8401ms  [perf] slow input event: keypress duration=928ms inputDelay=0ms
+  +  8401ms  [perf] slow input event: beforeinput duration=928ms inputDelay=0ms
+  +  8401ms  [perf] slow input event: input duration=928ms inputDelay=0ms
+  +  8401ms  [perf] slow input event: keyup duration=744ms inputDelay=42ms
+  +  8401ms  [perf] slow input event: keydown duration=704ms inputDelay=0ms
+  +  8401ms  [perf] slow input event: keypress duration=704ms inputDelay=0ms
+  +  8401ms  [perf] slow input event: beforeinput duration=704ms inputDelay=0ms
+  +  8401ms  [perf] slow input event: input duration=704ms inputDelay=0ms
+  +  8453ms  [perf] compile-roundtrip: 162.4ms
+  +  8453ms  Compile time: 162.50ms
+  +  8459ms  [perf] layer-build-mount: 4.8ms
+  +  8464ms  [perf] getbbox-reflow-loop: 4.2ms
+  +  8466ms  Render time: 10.00ms
+  +  8468ms  [perf] notify:layerVisibility: 1.8ms
+  +  8469ms  [perf] store-updates: 2.4ms
+  +  8670ms  [perf] compile-roundtrip: 160.1ms
+  +  8670ms  Compile time: 160.20ms
+  +  8676ms  [perf] layer-build-mount: 4.8ms
+  +  8680ms  [perf] getbbox-reflow-loop: 4.2ms
+  +  8683ms  Render time: 10.10ms
+  +  8685ms  [perf] notify:layerVisibility: 1.8ms
+  +  8685ms  [perf] store-updates: 2.2ms
+  +  8823ms  [perf] slow input event: keyup duration=848ms inputDelay=39ms
+  +  8823ms  [perf] slow input event: keydown duration=808ms inputDelay=0ms
+  +  8823ms  [perf] slow input event: keypress duration=808ms inputDelay=0ms
+  +  8823ms  [perf] slow input event: beforeinput duration=808ms inputDelay=0ms
+  +  8823ms  [perf] slow input event: input duration=808ms inputDelay=0ms
+  +  9065ms  [perf] slow input event: keyup duration=976ms inputDelay=36ms
+  +  9065ms  [perf] slow input event: keydown duration=936ms inputDelay=0ms
+  +  9065ms  [perf] slow input event: keypress duration=936ms inputDelay=0ms
+  +  9065ms  [perf] slow input event: beforeinput duration=936ms inputDelay=0ms
+  +  9065ms  [perf] slow input event: input duration=936ms inputDelay=0ms
+  +  9090ms  [perf] compile-roundtrip: 166.2ms
+  +  9090ms  Compile time: 166.30ms
+  +  9096ms  [perf] layer-build-mount: 5.0ms
+  +  9101ms  [perf] getbbox-reflow-loop: 4.4ms
+  +  9103ms  Render time: 10.40ms
+  +  9106ms  [perf] notify:layerVisibility: 1.8ms
+  +  9106ms  [perf] store-updates: 2.5ms
+  +  9294ms  [perf] compile-roundtrip: 164.2ms
+  +  9294ms  Compile time: 164.30ms
+  +  9300ms  [perf] layer-build-mount: 5.1ms
+  +  9305ms  [perf] getbbox-reflow-loop: 4.7ms
+  +  9307ms  Render time: 10.60ms
+  +  9310ms  [perf] notify:layerVisibility: 1.8ms
+  +  9310ms  [perf] store-updates: 2.5ms
+  +  9414ms  [perf] slow input event: keyup duration=1088ms inputDelay=36ms
+  +  9414ms  [perf] slow input event: keydown duration=1056ms inputDelay=0ms
+  +  9414ms  [perf] slow input event: keypress duration=1056ms inputDelay=0ms
+  +  9414ms  [perf] slow input event: beforeinput duration=1056ms inputDelay=0ms
+  +  9414ms  [perf] slow input event: input duration=1056ms inputDelay=0ms
+  +  9495ms  [perf] compile-roundtrip: 164.5ms
+  +  9495ms  Compile time: 164.60ms
+  +  9502ms  [perf] layer-build-mount: 5.0ms
+  +  9506ms  [perf] getbbox-reflow-loop: 4.2ms
+  +  9508ms  Render time: 10.30ms
+  +  9511ms  [perf] notify:layerVisibility: 1.8ms
+  +  9511ms  [perf] store-updates: 2.5ms
+  +  9713ms  [perf] compile-roundtrip: 160.3ms
+  +  9713ms  Compile time: 160.30ms
+  +  9718ms  [perf] layer-build-mount: 4.7ms
+  +  9722ms  [perf] getbbox-reflow-loop: 3.9ms
+  +  9725ms  Render time: 9.40ms
+  +  9727ms  [perf] notify:layerVisibility: 1.9ms
+  +  9727ms  [perf] store-updates: 2.4ms
+  +  9849ms  [perf] slow input event: keyup duration=1224ms inputDelay=39ms
+  +  9849ms  [perf] slow input event: keydown duration=1184ms inputDelay=0ms
+  +  9849ms  [perf] slow input event: keypress duration=1184ms inputDelay=0ms
+  +  9849ms  [perf] slow input event: beforeinput duration=1184ms inputDelay=0ms
+  +  9849ms  [perf] slow input event: input duration=1184ms inputDelay=0ms
+  +  9926ms  [perf] slow input event: keyup duration=1176ms inputDelay=10ms
+  +  9926ms  [perf] slow input event: keydown duration=1168ms inputDelay=0ms
+  +  9926ms  [perf] slow input event: keypress duration=1168ms inputDelay=0ms
+  +  9926ms  [perf] slow input event: beforeinput duration=1168ms inputDelay=0ms
+  +  9926ms  [perf] slow input event: input duration=1168ms inputDelay=0ms
+  +  9926ms  [perf] slow input event: keyup duration=984ms inputDelay=1ms
+  +  9926ms  [perf] slow input event: keydown duration=984ms inputDelay=0ms
+  +  9926ms  [perf] slow input event: keypress duration=984ms inputDelay=0ms
+  +  9926ms  [perf] slow input event: beforeinput duration=984ms inputDelay=0ms
+  +  9926ms  [perf] slow input event: input duration=984ms inputDelay=0ms
+  +  9961ms  [perf] compile-roundtrip: 163.6ms
+  +  9961ms  Compile time: 163.70ms
+  +  9967ms  [perf] layer-build-mount: 4.9ms
+  +  9971ms  [perf] getbbox-reflow-loop: 4.1ms
+  +  9974ms  Render time: 9.90ms
+  +  9976ms  [perf] notify:layerVisibility: 1.9ms
+  +  9976ms  [perf] store-updates: 2.4ms
+  + 10235ms  [perf] long task: 58ms @ 10162
+  + 10236ms  [perf] slow input event: keyup duration=1056ms inputDelay=40ms
+  + 10236ms  [perf] slow input event: keydown duration=1016ms inputDelay=0ms
+  + 10236ms  [perf] slow input event: keypress duration=1016ms inputDelay=0ms
+  + 10236ms  [perf] slow input event: beforeinput duration=1016ms inputDelay=0ms
+  + 10236ms  [perf] slow input event: input duration=1016ms inputDelay=0ms
+  + 10236ms  [perf] slow input event: keyup duration=832ms inputDelay=40ms
+  + 10236ms  [perf] slow input event: keydown duration=792ms inputDelay=0ms
+  + 10236ms  [perf] slow input event: keypress duration=792ms inputDelay=0ms
+  + 10236ms  [perf] slow input event: beforeinput duration=792ms inputDelay=0ms
+  + 10236ms  [perf] slow input event: input duration=792ms inputDelay=0ms
+  + 10551ms  [perf] slow input event: keyup duration=976ms inputDelay=36ms
+  + 10551ms  [perf] slow input event: keydown duration=944ms inputDelay=0ms
+  + 10551ms  [perf] slow input event: keypress duration=944ms inputDelay=0ms
+  + 10551ms  [perf] slow input event: beforeinput duration=944ms inputDelay=0ms
+  + 10551ms  [perf] slow input event: input duration=944ms inputDelay=0ms
+  + 10751ms  [perf] slow input event: keyup duration=960ms inputDelay=1ms
+  + 14653ms  [perf] analyze-scopes: 1.9ms
+  + 14672ms  [perf] analyze-scopes: 1.7ms
+  + 14679ms  [perf] slow input event: keydown duration=3392ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keyup duration=3384ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keydown duration=3328ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keyup duration=3320ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keydown duration=3264ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keyup duration=3264ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keydown duration=3200ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keyup duration=3200ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keydown duration=3136ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keyup duration=3136ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keydown duration=3072ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keyup duration=3072ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keydown duration=3008ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keyup duration=3008ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keydown duration=2944ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keyup duration=2944ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keydown duration=2888ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keyup duration=2880ms inputDelay=0ms
+  + 14679ms  [perf] slow input event: keydown duration=2824ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2824ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2760ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2688ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2688ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2624ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2624ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2560ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2560ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2496ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2496ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2440ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2432ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2376ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2376ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2312ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2312ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2248ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2248ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2184ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2184ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2120ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2120ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2064ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2064ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=2000ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=2000ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=1936ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=1936ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=1872ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=1872ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=1808ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=1736ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keyup duration=1736ms inputDelay=0ms
+  + 14680ms  [perf] slow input event: keydown duration=1680ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1680ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1616ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1616ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1552ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1552ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1488ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1488ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1424ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1424ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1360ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1360ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1304ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1304ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1240ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1240ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1176ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1176ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1112ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=1112ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=1048ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=984ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=976ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keydown duration=920ms inputDelay=0ms
+  + 14681ms  [perf] slow input event: keyup duration=920ms inputDelay=0ms
+  + 14734ms  [perf] analyze-scopes: 1.1ms
+  + 14797ms  [perf] analyze-scopes: 1.3ms
+  + 14860ms  [perf] analyze-scopes: 1.3ms
+  + 14923ms  [perf] analyze-scopes: 1.3ms
+  + 14985ms  [perf] analyze-scopes: 1.3ms
+  + 15048ms  [perf] analyze-scopes: 1.5ms
+  + 15112ms  [perf] analyze-scopes: 1.7ms
+  + 15174ms  [perf] analyze-scopes: 1.5ms
+  + 15237ms  [perf] analyze-scopes: 1.3ms
+  + 15300ms  [perf] analyze-scopes: 1.3ms
+  + 15363ms  [perf] analyze-scopes: 1.4ms
+  + 15426ms  [perf] analyze-scopes: 1.4ms
+  + 15487ms  [perf] analyze-scopes: 1.3ms
+  + 15549ms  [perf] analyze-scopes: 1.4ms
+  + 15612ms  [perf] analyze-scopes: 1.2ms
+  + 15675ms  [perf] analyze-scopes: 1.3ms
+  + 15737ms  [perf] analyze-scopes: 1.3ms
+  + 15799ms  [perf] analyze-scopes: 1.4ms
+  + 15862ms  [perf] analyze-scopes: 1.4ms
+  + 15923ms  [perf] analyze-scopes: 1.4ms
+  + 15986ms  [perf] analyze-scopes: 1.3ms
+  + 16049ms  [perf] analyze-scopes: 1.4ms
+  + 16112ms  [perf] analyze-scopes: 1.6ms
+  + 16285ms  [perf] slow input event: keyup duration=1640ms inputDelay=11ms
+  + 16285ms  [perf] slow input event: keydown duration=1624ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: keypress duration=1624ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: beforeinput duration=1624ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: input duration=1624ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: keyup duration=1560ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: keydown duration=1560ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: keypress duration=1560ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: beforeinput duration=1560ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: input duration=1560ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: keyup duration=1496ms inputDelay=0ms
+  + 16285ms  [perf] slow input event: keydown duration=1496ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keypress duration=1496ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: beforeinput duration=1496ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: input duration=1496ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keyup duration=1440ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keydown duration=1432ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keypress duration=1432ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: beforeinput duration=1432ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: input duration=1432ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keyup duration=1376ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keydown duration=1376ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keypress duration=1376ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: beforeinput duration=1376ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: input duration=1376ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keyup duration=1312ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keydown duration=1312ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keypress duration=1312ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: beforeinput duration=1312ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: input duration=1312ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keyup duration=1248ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keydown duration=1248ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keypress duration=1248ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: beforeinput duration=1248ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: input duration=1248ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keyup duration=1184ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keydown duration=1184ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keypress duration=1184ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: beforeinput duration=1184ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: input duration=1184ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keyup duration=1120ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keydown duration=1120ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: keypress duration=1120ms inputDelay=0ms
+  + 16286ms  [perf] slow input event: beforeinput duration=1120ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: input duration=1120ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keyup duration=1056ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keydown duration=1056ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keypress duration=1056ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: beforeinput duration=1056ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: input duration=1056ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keyup duration=1000ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keydown duration=992ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keypress duration=992ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: beforeinput duration=992ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: input duration=992ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keydown duration=936ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keypress duration=936ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: beforeinput duration=936ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: input duration=936ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keyup duration=872ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keydown duration=872ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keypress duration=872ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: beforeinput duration=872ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: input duration=872ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keyup duration=808ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keydown duration=808ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keypress duration=808ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: beforeinput duration=808ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: input duration=808ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keyup duration=744ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keydown duration=744ms inputDelay=0ms
+  + 16287ms  [perf] slow input event: keypress duration=744ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: beforeinput duration=744ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: input duration=744ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keyup duration=680ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keydown duration=680ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keypress duration=680ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: beforeinput duration=680ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: input duration=680ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keyup duration=624ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keydown duration=624ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keypress duration=624ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: beforeinput duration=624ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: input duration=624ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keyup duration=560ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keydown duration=560ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keypress duration=560ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: beforeinput duration=560ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: input duration=560ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keyup duration=496ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keydown duration=496ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keypress duration=496ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: beforeinput duration=496ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: input duration=496ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keyup duration=432ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keydown duration=432ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keypress duration=432ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: beforeinput duration=432ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: input duration=432ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keyup duration=376ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keydown duration=376ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keypress duration=376ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: beforeinput duration=376ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: input duration=368ms inputDelay=0ms
+  + 16288ms  [perf] slow input event: keyup duration=312ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: keydown duration=312ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: keypress duration=312ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: beforeinput duration=312ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: input duration=312ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: keyup duration=248ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: keydown duration=248ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: keypress duration=248ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: beforeinput duration=248ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: input duration=248ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: keyup duration=184ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: keydown duration=184ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: keypress duration=184ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: beforeinput duration=184ms inputDelay=0ms
+  + 16289ms  [perf] slow input event: input duration=184ms inputDelay=0ms
+  + 16439ms  [perf] compile-roundtrip: 173.9ms
+  + 16448ms  [perf] get-diagnostics: 8.9ms
+  + 17680ms  [perf] analyze-scopes: 1.8ms
+  + 17690ms  [perf] analyze-scopes: 1.4ms
+  + 17850ms  [perf] compile-roundtrip: 5.5ms
+  + 17851ms  [perf] get-diagnostics: 1.3ms
+  + 17871ms  [perf] slow input event: keyup duration=192ms inputDelay=3ms
+  + 17871ms  [perf] slow input event: keydown duration=192ms inputDelay=0ms
+  + 17871ms  [perf] slow input event: keypress duration=192ms inputDelay=0ms
+  + 17871ms  [perf] slow input event: beforeinput duration=192ms inputDelay=0ms
+  + 17871ms  [perf] slow input event: input duration=192ms inputDelay=0ms
+  + 17875ms  [perf] analyze-scopes: 1.3ms
+  + 18043ms  [perf] slow input event: keydown duration=176ms inputDelay=0ms
+  + 18043ms  [perf] slow input event: keypress duration=176ms inputDelay=0ms
+  + 18043ms  [perf] slow input event: beforeinput duration=176ms inputDelay=0ms
+  + 18043ms  [perf] slow input event: input duration=176ms inputDelay=0ms
+  + 18057ms  [perf] analyze-scopes: 1.2ms
+  + 18207ms  [perf] compile-roundtrip: 178.8ms
+  + 18208ms  [perf] get-diagnostics: 1.9ms
+  + 18369ms  [perf] compile-roundtrip: 155.3ms
+  + 18370ms  [perf] get-diagnostics: 2.2ms
+  + 18553ms  [perf] compile-roundtrip: 157.5ms
+  + 18555ms  [perf] get-diagnostics: 1.9ms
+  + 18730ms  [perf] compile-roundtrip: 152.2ms
+  + 18732ms  [perf] get-diagnostics: 2.1ms
+  + 18914ms  [perf] compile-roundtrip: 155.3ms
+  + 18915ms  [perf] get-diagnostics: 1.8ms
+  + 19092ms  [perf] compile-roundtrip: 151.2ms
+  + 19094ms  [perf] get-diagnostics: 2.0ms
+  + 19279ms  [perf] compile-roundtrip: 155.8ms
+  + 19281ms  [perf] get-diagnostics: 1.9ms
+  + 19460ms  [perf] compile-roundtrip: 153.6ms
+  + 19461ms  [perf] get-diagnostics: 2.0ms
+  + 19643ms  [perf] compile-roundtrip: 153.5ms
+  + 19644ms  [perf] get-diagnostics: 1.8ms
+  + 19823ms  [perf] compile-roundtrip: 151.4ms
+  + 19824ms  [perf] get-diagnostics: 1.7ms
+  + 20009ms  [perf] compile-roundtrip: 155.7ms
+  + 20011ms  [perf] get-diagnostics: 1.8ms
+  + 20197ms  [perf] compile-roundtrip: 161.2ms
+  + 20199ms  [perf] get-diagnostics: 1.9ms
+  + 20380ms  [perf] compile-roundtrip: 161.0ms
+  + 20382ms  [perf] get-diagnostics: 2.0ms
+  + 20555ms  [perf] compile-roundtrip: 152.7ms
+  + 20556ms  [perf] get-diagnostics: 2.0ms
+  + 20740ms  [perf] compile-roundtrip: 156.4ms
+  + 20742ms  [perf] get-diagnostics: 1.8ms
+  + 20918ms  [perf] compile-roundtrip: 153.4ms
+  + 20920ms  [perf] get-diagnostics: 1.9ms
+  + 21103ms  [perf] compile-roundtrip: 154.5ms
+  + 21104ms  [perf] get-diagnostics: 1.6ms
+  + 21284ms  [perf] compile-roundtrip: 153.1ms
+  + 21285ms  [perf] get-diagnostics: 1.9ms
+  + 21468ms  [perf] compile-roundtrip: 154.9ms
+  + 21469ms  [perf] get-diagnostics: 1.7ms
+  + 21648ms  [perf] compile-roundtrip: 152.5ms
+  + 21649ms  [perf] get-diagnostics: 1.8ms
+  + 21831ms  [perf] compile-roundtrip: 153.5ms
+  + 21833ms  [perf] get-diagnostics: 1.7ms
+  + 22014ms  [perf] compile-roundtrip: 153.1ms
+  + 22016ms  [perf] get-diagnostics: 1.9ms
+
+final: preview paths=985, error=Line 86, col 10: Undefined variable: nosuchvariable

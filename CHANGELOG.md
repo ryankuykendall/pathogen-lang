@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-29 (editor typing-latency overhaul)
+
+### Fixed
+
+#### Playground
+
+- **Typing choppiness on layer-heavy programs eliminated** — every debounced compile used to land a ~550 ms main-thread long task on a ~900-layer program (measured: keystrokes queued behind it with 440–560 ms input delays; 52% of wall-clock frozen during sustained typing). The compile itself was already off-thread in the worker — the freeze was the inspector pipeline: one store subscription over seven keys re-ran a full `inspectorPanel.setData(everything)` once per changed key, and each `setData` reassigned every field to all three child panels, each assignment a full re-render. Three-part fix: (1) the workspace-view subscription coalesces to a single `setData` per microtask; (2) `setData` is differential — only fields whose object identity changed are forwarded (callers must replace arrays/objects, never mutate in place); (3) the panels batch their own property-setter re-renders into one `updateList` per microtask, and layers-panel + palette-panel build their row lists as a single HTML string assigned via one `innerHTML` pass (one parse instead of one per row) with click handling moved to event delegation. Measured after: ~2.4 ms per compile for the store-update block, ~52 ms worst long task, zero keystrokes over 50 ms during sustained typing on the same program. Interpolated layer names, def ids, and style values are now HTML-escaped (previously unescaped), and swatch/dot style values pass a `cssValueForStyleAttr` guard (`playground/utils/html-escape.ts`) so the `style="…"` attributes don't depend solely on the evaluator's `validateCSSValue` allow-list. Regression tests in `tests/playground-inspector-coalescing.test.ts` cover coalescing, differential forwarding, delegated eye/group/defs-row clicks, escaping, and the injection guard.
+
+### Added
+
+#### Development
+
+- **Flag-gated editor perf instrumentation** (`playground/utils/perf-marks.ts`) — inert unless `localStorage.pathogenPerf = '1'` or `?perf=1`; emits `performance.measure('pathogen:*')` spans plus `[perf]` console lines for the compile round-trip, GPU gradient pre-render, post-compile store updates, per-key store notifies, defs/layer mount, the getBBox reflow loop, font base64 encode, `getDiagnostics`, signature help, and scope analysis, and installs observers logging input events > 50 ms and all long tasks.
+- **`npm run perf:typing`** (`scripts/perf-typing-audit.ts`) — puppeteer editor-latency profiler: loads a `.pathogen` source (or a generated heavy program) via `/workspace/scratch?state=`, drives real typing / cursor-movement / error-state bursts against live CodeMirror, and aggregates the perf spans per phase. Diagnosis narrative and before/after numbers in `project-docs/editor-perf/FINDINGS.md`.
+- Benchmarked but deferred (tracked in `project-docs/editor-perf/FINDINGS.md`): `showError()`'s main-thread `getDiagnostics` re-evaluates the whole program per errored compile — ~64 ms per keystroke pause in a long-lived error state on a loop-heavy program, scaling 1:1 with compile time (glyph-font programs dodge it because the fonts-absent main-thread evaluation skips glyph loops — itself a diagnostics-divergence hazard). Fix direction: run diagnostics in the existing compiler worker.
+
 ## [Unreleased] - 2026-07-28 (readable `viewbox` global)
 
 ### Added

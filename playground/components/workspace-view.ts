@@ -26,6 +26,7 @@ import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
+import { installPerfObservers, perfSpan, perfSpanAsync } from '../utils/perf-marks.js';
 import { updateWorkspaceSlugUrl } from '../utils/workspace-slug-url.js';
 import './shared/error-panel.js';
 
@@ -85,6 +86,8 @@ export class WorkspaceView extends HTMLElement {
 
   private _inspectorDataUnsubscribe: (() => void) | null = null;
 
+  private _inspectorSyncScheduled = false;
+
   private _handleLayerVisibilityChange: ((e: Event) => void) | null = null;
 
   private _handleDefsVisibilityChange: ((e: Event) => void) | null = null;
@@ -99,6 +102,7 @@ export class WorkspaceView extends HTMLElement {
   connectedCallback(): void {
     this.render();
     this.setupEventListeners();
+    installPerfObservers();
 
     // Initialize WebGPU gradient service (async, non-blocking)
     gpuGradientService.init();
@@ -728,18 +732,26 @@ export class WorkspaceView extends HTMLElement {
       this._updateFontWarningBanner();
     });
 
-    // Feed inspector panel data from store
+    // Feed inspector panel data from store. The post-compile store.set
+    // cluster in updatePreview() notifies most of these keys back-to-back;
+    // coalesce to a single setData per microtask so the inspector re-renders
+    // once per compile instead of once per changed key.
     this._inspectorDataUnsubscribe = store.subscribe(
       ['layers', 'masks', 'clipPaths', 'gradients', 'cssProperties', 'layerVisibility', 'defsVisibility'],
       () => {
-        this.inspectorPanel.setData({
-          layers: store.get('layers') as any[],
-          masks: store.get('masks') as any[],
-          clipPaths: store.get('clipPaths') as any[],
-          gradients: store.get('gradients') as any[],
-          cssProperties: store.get('cssProperties') as any[],
-          layerVisibility: store.get('layerVisibility') as Record<string, boolean>,
-          defsVisibility: store.get('defsVisibility') as Record<string, boolean>,
+        if (this._inspectorSyncScheduled) return;
+        this._inspectorSyncScheduled = true;
+        queueMicrotask(() => {
+          this._inspectorSyncScheduled = false;
+          this.inspectorPanel?.setData({
+            layers: store.get('layers') as any[],
+            masks: store.get('masks') as any[],
+            clipPaths: store.get('clipPaths') as any[],
+            gradients: store.get('gradients') as any[],
+            cssProperties: store.get('cssProperties') as any[],
+            layerVisibility: store.get('layerVisibility') as Record<string, boolean>,
+            defsVisibility: store.get('defsVisibility') as Record<string, boolean>,
+          });
         });
       },
     );
@@ -858,7 +870,9 @@ export class WorkspaceView extends HTMLElement {
     try {
       const toFixed = store.get('toFixed') as number | null;
       const compileOptions = toFixed != null ? { toFixed } : undefined;
-      const result = (await compilerWorker.compileWithContext(code, compilationId, isStale, compileOptions)) as any;
+      const result = (await perfSpanAsync('compile-roundtrip', async () =>
+        compilerWorker.compileWithContext(code, compilationId, isStale, compileOptions),
+      )) as any;
       const compileTime = performance.now() - compileStart;
       console.log(`Compile time: ${compileTime.toFixed(2)}ms`);
 
@@ -891,12 +905,14 @@ export class WorkspaceView extends HTMLElement {
       ) {
         const svgW = compiledViewBox.width;
         const svgH = compiledViewBox.height;
-        const [conicUrls, freeformUrls, meshUrls, topoUrls] = await Promise.all([
-          gpuGradientService.renderConicGradients(result.gradients, svgW, svgH),
-          gpuGradientService.renderFreeformGradients(result.gradients, svgW, svgH),
-          gpuGradientService.renderMeshGradients(result.gradients, svgW, svgH),
-          gpuGradientService.renderTopoGradients(result.gradients, svgW, svgH),
-        ]);
+        const [conicUrls, freeformUrls, meshUrls, topoUrls] = await perfSpanAsync('gpu-gradient-prerender', async () =>
+          Promise.all([
+            gpuGradientService.renderConicGradients(result.gradients, svgW, svgH),
+            gpuGradientService.renderFreeformGradients(result.gradients, svgW, svgH),
+            gpuGradientService.renderMeshGradients(result.gradients, svgW, svgH),
+            gpuGradientService.renderTopoGradients(result.gradients, svgW, svgH),
+          ]),
+        );
         for (const [id, url] of conicUrls) gpuGradientUrls.set(id, url);
         for (const [id, url] of freeformUrls) gpuGradientUrls.set(id, url);
         for (const [id, url] of meshUrls) gpuGradientUrls.set(id, url);
@@ -927,37 +943,39 @@ export class WorkspaceView extends HTMLElement {
       this.previewPane.setStale(false);
       this.consolePane.logs = result.logs || [];
       this.hideError();
-      store.set('fontWarnings', [
-        ...formatFontSubstitutions(result.fontSubstitutions || []),
-        ...(result.fontNotices || []),
-      ]);
+      perfSpan('store-updates', () => {
+        store.set('fontWarnings', [
+          ...formatFontSubstitutions(result.fontSubstitutions || []),
+          ...(result.fontNotices || []),
+        ]);
 
-      // Store layers and defs for layers panel
-      const resultLayers = result.layers || [];
-      store.set('layers', resultLayers);
-      store.set('masks', result.masks || []);
-      store.set('clipPaths', result.clipPaths || []);
-      store.set('gradients', result.gradients || []);
-      store.set('patterns', result.patterns || []);
-      store.set('markers', result.markers || []);
-      store.set('filters', result.filters || []);
-      store.set('cssProperties', result.cssProperties || []);
+        // Store layers and defs for layers panel
+        const resultLayers = result.layers || [];
+        store.set('layers', resultLayers);
+        store.set('masks', result.masks || []);
+        store.set('clipPaths', result.clipPaths || []);
+        store.set('gradients', result.gradients || []);
+        store.set('patterns', result.patterns || []);
+        store.set('markers', result.markers || []);
+        store.set('filters', result.filters || []);
+        store.set('cssProperties', result.cssProperties || []);
 
-      // Clean up stale visibility entries
-      const currentVisibility = store.get('layerVisibility') as Record<string, boolean>;
-      const currentLayerNames = new Set(resultLayers.map((l: any) => l.name));
-      const cleaned: Record<string, boolean> = {};
-      for (const [name, visible] of Object.entries(currentVisibility)) {
-        if (currentLayerNames.has(name)) {
-          cleaned[name] = visible;
+        // Clean up stale visibility entries
+        const currentVisibility = store.get('layerVisibility') as Record<string, boolean>;
+        const currentLayerNames = new Set(resultLayers.map((l: any) => l.name));
+        const cleaned: Record<string, boolean> = {};
+        for (const [name, visible] of Object.entries(currentVisibility)) {
+          if (currentLayerNames.has(name)) {
+            cleaned[name] = visible;
+          }
         }
-      }
-      store.set('layerVisibility', cleaned);
+        store.set('layerVisibility', cleaned);
 
-      store.update({
-        compilationStatus: 'completed',
-        compilationError: null,
-        calledStdlibFunctions: result.calledStdlibFunctions || [],
+        store.update({
+          compilationStatus: 'completed',
+          compilationError: null,
+          calledStdlibFunctions: result.calledStdlibFunctions || [],
+        });
       });
 
       // Auto-hide completion status after a brief moment
@@ -1020,8 +1038,10 @@ export class WorkspaceView extends HTMLElement {
     if (getDiagnostics && StringTextDocument) {
       try {
         const code = this.editorPane.code;
-        const doc = new StringTextDocument(code);
-        const diagnostics = getDiagnostics(doc);
+        const diagnostics = perfSpan('get-diagnostics', () => {
+          const doc = new StringTextDocument(code);
+          return getDiagnostics(doc);
+        });
         if (diagnostics.length > 0) {
           // Format message: show each diagnostic on its own line
           const messages = diagnostics.map(

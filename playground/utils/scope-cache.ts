@@ -7,6 +7,8 @@
 // is fine, twice is waste. This module memoizes the last (source → ranges)
 // pair; ViewPlugin updates for the same document hit the cache.
 
+import { perfSpan } from './perf-marks.js';
+
 /** Absolute document offset range. */
 export interface OffsetRange {
   from: number;
@@ -59,9 +61,11 @@ export function getStyleRefRanges(source: string): OffsetRange[] {
   }
   const lang = window.PathogenLang;
   if (!lang?.analyzeScopes || !lang?.StringTextDocument) return [];
-  const doc = new lang.StringTextDocument(source);
-  const info = lang.analyzeScopes(doc);
-  cachedSource = source;
-  cachedRanges = resolvedStyleRefOffsetRanges(info as { references: StyleRefLike[] }, doc);
-  return cachedRanges;
+  return perfSpan('analyze-scopes', () => {
+    const doc = new lang.StringTextDocument(source);
+    const info = lang.analyzeScopes(doc);
+    cachedSource = source;
+    cachedRanges = resolvedStyleRefOffsetRanges(info as { references: StyleRefLike[] }, doc);
+    return cachedRanges;
+  });
 }

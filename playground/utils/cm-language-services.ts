@@ -20,6 +20,7 @@
 import { makeSharedCompletionSource } from './cm-completion-bridge.js';
 import { hoverTooltipExtension } from './cm-hover-tooltip.js';
 import { errorHighlightExtension } from './cm-error-highlight.js';
+import { perfSpan } from './perf-marks.js';
 
 // ─── CodeMirror module shapes (dynamically imported from ESM CDN) ─────────────
 
@@ -187,8 +188,10 @@ function wireSignatureHelp(cm: CmModulesForLanguageServices): unknown[] {
     const source = state.doc.toString();
     const head = state.selection.main.head;
     const { line, character } = offsetToPosition(source, head);
-    const doc = new StringTextDocumentCtor(source);
-    const help = getSignatureHelp(doc, { line, character });
+    const help = perfSpan('signature-help', () => {
+      const doc = new StringTextDocumentCtor(source);
+      return getSignatureHelp(doc, { line, character });
+    });
     if (!help || help.signatures.length === 0) return [];
 
     const sig = help.signatures[help.activeSignature] ?? help.signatures[0];

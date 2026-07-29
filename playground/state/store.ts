@@ -1,6 +1,8 @@
 // Observable state store for playground
 // Simple pub/sub pattern - no framework needed
 
+import { perfEnabled, perfSpan } from '../utils/perf-marks.js';
+
 type StoreCallback = (value: unknown, key: string) => void;
 
 function createStore<T extends Record<string, unknown>>(initialState: T) {
@@ -52,7 +54,13 @@ function createStore<T extends Record<string, unknown>>(initialState: T) {
     },
 
     notify(key: string) {
-      listeners.get(key)?.forEach((callback) => callback(state[key], key));
+      const subs = listeners.get(key);
+      if (!subs) return;
+      if (perfEnabled()) {
+        subs.forEach((callback) => perfSpan(`notify:${key}`, () => callback(state[key], key)));
+      } else {
+        subs.forEach((callback) => callback(state[key], key));
+      }
     },
 
     // Batch updates without intermediate notifications

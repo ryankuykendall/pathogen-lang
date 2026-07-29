@@ -1,0 +1,74 @@
+define ViewBox(0, 0, 1000, 1000);
+
+let ring0 = PathLayer('ring0') << ${ stroke: oklch(0.65 0.16 0); stroke-width: 1.2; fill: none; };
+ring0.apply {
+  for (i in 0..2200) {
+    circle(500 + (300 + 0 * 18) * cos(i * 0.618), 500 + (300 + 0 * 18) * sin(i * 0.618), 3 + (i % 11));
+  }
+}
+
+let ring1 = PathLayer('ring1') << ${ stroke: oklch(0.65 0.16 45); stroke-width: 1.2; fill: none; };
+ring1.apply {
+  for (i in 0..2200) {
+    circle(500 + (300 + 1 * 18) * cos(i * 0.618), 500 + (300 + 1 * 18) * sin(i * 0.618), 3 + (i % 11));
+  }
+}
+
+let ring2 = PathLayer('ring2') << ${ stroke: oklch(0.65 0.16 90); stroke-width: 1.2; fill: none; };
+ring2.apply {
+  for (i in 0..2200) {
+    circle(500 + (300 + 2 * 18) * cos(i * 0.618), 500 + (300 + 2 * 18) * sin(i * 0.618), 3 + (i % 11));
+  }
+}
+
+let ring3 = PathLayer('ring3') << ${ stroke: oklch(0.65 0.16 135); stroke-width: 1.2; fill: none; };
+ring3.apply {
+  for (i in 0..2200) {
+    circle(500 + (300 + 3 * 18) * cos(i * 0.618), 500 + (300 + 3 * 18) * sin(i * 0.618), 3 + (i % 11));
+  }
+}
+
+let ring4 = PathLayer('ring4') << ${ stroke: oklch(0.65 0.16 180); stroke-width: 1.2; fill: none; };
+ring4.apply {
+  for (i in 0..2200) {
+    circle(500 + (300 + 4 * 18) * cos(i * 0.618), 500 + (300 + 4 * 18) * sin(i * 0.618), 3 + (i % 11));
+  }
+}
+
+let ring5 = PathLayer('ring5') << ${ stroke: oklch(0.65 0.16 225); stroke-width: 1.2; fill: none; };
+ring5.apply {
+  for (i in 0..2200) {
+    circle(500 + (300 + 5 * 18) * cos(i * 0.618), 500 + (300 + 5 * 18) * sin(i * 0.618), 3 + (i % 11));
+  }
+}
+
+let ring6 = PathLayer('ring6') << ${ stroke: oklch(0.65 0.16 270); stroke-width: 1.2; fill: none; };
+ring6.apply {
+  for (i in 0..2200) {
+    circle(500 + (300 + 6 * 18) * cos(i * 0.618), 500 + (300 + 6 * 18) * sin(i * 0.618), 3 + (i % 11));
+  }
+}
+
+let ring7 = PathLayer('ring7') << ${ stroke: oklch(0.65 0.16 315); stroke-width: 1.2; fill: none; };
+ring7.apply {
+  for (i in 0..2200) {
+    circle(500 + (300 + 7 * 18) * cos(i * 0.618), 500 + (300 + 7 * 18) * sin(i * 0.618), 3 + (i % 11));
+  }
+}
+
+// padding line 0 — simulates a large hand-written document for parse-cost realism
+// padding line 1 — simulates a large hand-written document for parse-cost realism
+// padding line 2 — simulates a large hand-written document for parse-cost realism
+// padding line 3 — simulates a large hand-written document for parse-cost realism
+// padding line 4 — simulates a large hand-written document for parse-cost realism
+// padding line 5 — simulates a large hand-written document for parse-cost realism
+// padding line 6 — simulates a large hand-written document for parse-cost realism
+// padding line 7 — simulates a large hand-written document for parse-cost realism
+// padding line 8 — simulates a large hand-written document for parse-cost realism
+// padding line 9 — simulates a large hand-written document for parse-cost realism
+// padding line 10 — simulates a large hand-written document for parse-cost realism
+// padding line 11 — simulates a large hand-written document for parse-cost realism
+// padding line 12 — simulates a large hand-written document for parse-cost realism
+// padding line 13 — simulates a large hand-written document for parse-cost realism
+// padding line 14 — simulates a large hand-written document for parse-cost realism
+// padding line 15 — simulates a large hand-written document for parse-cost realism

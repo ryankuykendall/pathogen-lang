@@ -17,6 +17,7 @@ import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from
 import { bootstrapPreviewIframe } from '../utils/preview-iframe.js';
 import type { FontBinaryEntry } from '../services/font-loader.js';
 import { fontBinariesToCss } from '../services/font-loader.js';
+import { perfSpan } from '../utils/perf-marks.js';
 
 // Runtime access to the render API is via the bundled global (the playground
 // loads `dist/index.global.js` rather than importing `src/` directly). Typed
@@ -445,7 +446,7 @@ export class SvgPreviewPane extends HTMLElement {
       styleEl.id = 'pathogen-fonts';
       head.appendChild(styleEl);
     }
-    styleEl.textContent = fontBinariesToCss(binaries);
+    styleEl.textContent = perfSpan('iframe-fonts-css', () => fontBinariesToCss(binaries));
   }
 
   set pathData(value: string) {
@@ -518,35 +519,37 @@ export class SvgPreviewPane extends HTMLElement {
       // URL. Masks/clipPaths/patterns/markers/linear+radial gradients pass
       // through unchanged.
       if (defsEl) {
-        const defsVNodes = window.PathogenLang.buildDefs(
-          {
-            masks: defsData.masks ?? [],
-            clipPaths: defsData.clipPaths ?? [],
-            gradients: (defsData.gradients ?? []) as GradientOutput[],
-            patterns: defsData.patterns ?? [],
-            markers: (defsData.markers ?? []) as MarkerOutput[],
-            filters: defsData.filters ?? [],
-            // Unused by buildDefs but required by the CompileResult shape:
-            layers: [],
-            cssProperties: [],
-            logs: [],
-            calledStdlibFunctions: [],
-          } as unknown as CompileResult,
-          {
-            width: svgW,
-            height: svgH,
-            emitPlaygroundDataAttrs: true,
-            useImageGradients: true,
-            gpuGradientUrls: defsData.gpuGradientUrls,
-          },
-        );
-        decorateConicGradientsWithCanvasFallback(
-          defsVNodes,
-          (defsData.gradients ?? []) as GradientOutput[],
-          svgW,
-          svgH,
-        );
-        window.PathogenLang.mountInto(defsEl, defsVNodes);
+        perfSpan('defs-build-mount', () => {
+          const defsVNodes = window.PathogenLang.buildDefs(
+            {
+              masks: defsData.masks ?? [],
+              clipPaths: defsData.clipPaths ?? [],
+              gradients: (defsData.gradients ?? []) as GradientOutput[],
+              patterns: defsData.patterns ?? [],
+              markers: (defsData.markers ?? []) as MarkerOutput[],
+              filters: defsData.filters ?? [],
+              // Unused by buildDefs but required by the CompileResult shape:
+              layers: [],
+              cssProperties: [],
+              logs: [],
+              calledStdlibFunctions: [],
+            } as unknown as CompileResult,
+            {
+              width: svgW,
+              height: svgH,
+              emitPlaygroundDataAttrs: true,
+              useImageGradients: true,
+              gpuGradientUrls: defsData.gpuGradientUrls,
+            },
+          );
+          decorateConicGradientsWithCanvasFallback(
+            defsVNodes,
+            (defsData.gradients ?? []) as GradientOutput[],
+            svgW,
+            svgH,
+          );
+          window.PathogenLang.mountInto(defsEl, defsVNodes);
+        });
       }
 
       // Inject @property CSS declarations into the iframe document. The
@@ -588,14 +591,16 @@ export class SvgPreviewPane extends HTMLElement {
       // Render each layer in order. Fragment layers are special-cased because
       // they produce raw SVG strings that must split between <defs> and the
       // layer group; all other layer types flow through the shared renderer.
-      for (const layer of layers) {
-        if (layer.type === 'fragment') {
-          this._insertFragmentLayer(layer, defsEl, layersGroup, SVG_NS);
-          continue;
+      perfSpan('layer-build-mount', () => {
+        for (const layer of layers) {
+          if (layer.type === 'fragment') {
+            this._insertFragmentLayer(layer, defsEl, layersGroup, SVG_NS);
+            continue;
+          }
+          const vnode: VNode = window.PathogenLang.buildSingleLayer(layer as unknown as LayerOutput, layerBuildOptions);
+          window.PathogenLang.mountInto(layersGroup, vnode);
         }
-        const vnode: VNode = window.PathogenLang.buildSingleLayer(layer as unknown as LayerOutput, layerBuildOptions);
-        window.PathogenLang.mountInto(layersGroup, vnode);
-      }
+      });
 
       // Hide the single preview-path when using layers group
       if (this.previewPath) this.previewPath.setAttribute('d', '');
@@ -605,14 +610,16 @@ export class SvgPreviewPane extends HTMLElement {
     }
 
     // Force synchronous layout calculation
-    try {
-      const paths = layersGroup?.querySelectorAll('path') || [this.previewPath];
-      for (const p of paths) {
-        p.getBBox();
+    perfSpan('getbbox-reflow-loop', () => {
+      try {
+        const paths = layersGroup?.querySelectorAll('path') || [this.previewPath];
+        for (const p of paths) {
+          p.getBBox();
+        }
+      } catch (e) {
+        // getBBox can throw if path is empty or invalid
       }
-    } catch (e) {
-      // getBBox can throw if path is empty or invalid
-    }
+    });
 
     const renderTime = performance.now() - start;
 

@@ -1,0 +1,83 @@
+define ViewBox(0, 0, 1180, 560);
+define default PathLayer('base') ${
+  fill: #fff;
+  stroke: none;
+}
+let { width, height } = viewbox;
+rect(0, 0, width, height);
+
+let mainPLFillColor = oklch(0.9792 0.1035 107.6 / 0.075).hueShift(1.25pi);
+let shadowColor = oklch(0.6573 0.2590 356.8 / 0.28).hueShift(-0.5pi).saturate(120%);
+let baseMainStyles = ${
+  fill: mainPLFillColor;
+  stroke: mainPLFillColor.darken(84%).alpha(64%);
+  stroke-width: 0.3;
+  filter: drop-shadow(0px 0px 8px shadowColor);
+};
+let mainPathLayer = PathLayer('main-path-layer') << baseMainStyles;
+
+let fontFamily = 'Gravitas One';
+@font fontFamily;
+let glyphFontColor = oklch(0.6291 0.2562 26.8);
+let glyphStyles = ${
+  fill: glyphFontColor.alpha(28%);
+  font-family: fontFamily;
+  font-size: 32;
+  font-weight: 400;
+  stroke: glyphFontColor.alpha(72%);
+  stroke-width: 2;
+};
+
+let layerCounter = 1;
+let glyphs = PathBlock.fromGlyph(`pathogen studio`, glyphStyles);
+for ([glyph, gIndex] in glyphs) {
+  // Capture generated contours so that they can later be added to a higher
+  //   z-index layer
+  let contourSet = [];
+  let conScale = randomRange(0.95, 4);
+
+  // let foo = [].reverse(); We need a reverse method
+
+  for ([contour, cIndex] in glyph.contours.map() {|con|
+    return con.fillet(1.6).scale(conScale, conScale);
+  }) {
+    let leftOffset = calc(220 + gIndex * 48);
+    contourSet.push({
+      contour,
+      leftOffset,
+    });
+
+    for (offsetBase in 1..42) {
+      let offsetBase = calc(offsetBase * 2.2 + 5);
+      let halo = contour.variableOffset() {|vo, cpb|
+        let timeMax = 17;
+        for (time in 1..timeMax) {
+          let offset = randomRange(calc(offsetBase - 6), calc(offsetBase + 6));
+          vo.stop(calc(time / timeMax), offset, CurveContinuity.G2);
+        }
+      };
+      let updatedFill = mainPLFillColor.hueShift(calc(offsetBase * 0.075pi));
+      let pl = PathLayer(`pl-${layerCounter}`) << baseMainStyles << ${
+        fill: updatedFill;
+        stroke: updatedFill.hueShift(1.2pi).darken(randomRange(0.32, 0.62)).alpha(66%);
+        stroke-width: randomRange(0.075, 0.975);
+      };
+      layerCounter = layerCounter + 1;
+      pl.apply {
+        halo.drawTo(leftOffset, 260);
+        z
+      }
+    }
+  }
+
+
+  let glyphLayer = PathLayer(`gl-${gIndex}`) << glyphStyles << ${
+    filter: `blur(${randomRange(1.8, 4.2)}px)`;
+  };
+  glyphLayer.apply {
+    for (contourRef in contourSet) {
+      let { contour, leftOffset } = contourRef;
+      contour.drawTo(leftOffset, 260);
+    }
+  }
+}
