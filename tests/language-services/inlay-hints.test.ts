@@ -100,6 +100,24 @@ describe('getInlayHints', () => {
       expect(h[0].label).toBe(': PathBlock');
     });
 
+    it('shows Array for reverse() on an array-literal receiver', () => {
+      const h = typeHints('let r = [3, 1, 2].reverse();');
+      expect(h.length).toBe(1);
+      expect(h[0].label).toBe(': Array');
+    });
+
+    it('shows Array for sort()', () => {
+      const h = typeHints('let r = [3, 1, 2].sort();');
+      expect(h.length).toBe(1);
+      expect(h[0].label).toBe(': Array');
+    });
+
+    it('keeps PathBlock for reverse() on an unknown receiver', () => {
+      const h = typeHints('let shape = @{\n  M 0 0\n};\nlet r = shape.reverse();');
+      const hint = h.find((x) => x.label === ': PathBlock' && x.position.line === 3);
+      expect(hint).toBeDefined();
+    });
+
     it('shows type for color literal', () => {
       const h = typeHints('let c = #ff0000;');
       expect(h.length).toBe(1);

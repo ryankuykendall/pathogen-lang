@@ -123,6 +123,11 @@ function inferBlockParam(
     if (index === 2) return 'number';
     return null; // the accumulator's type is the block's own business
   }
+  // sort comparator: both params are elements (unlike map, index 1 is NOT a number)
+  if (call.method === 'sort') {
+    if (index === 0 || index === 1) return inferExprElementType(call.object, scope, seen);
+    return null;
+  }
 
   // Method trailing blocks typed via @blockparams metadata
   // (spine.variableOffset() {|go, pb|} → VariableOffsetBuilder, PathBlock)

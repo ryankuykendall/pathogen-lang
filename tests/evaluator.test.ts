@@ -1641,6 +1641,113 @@ describe('Evaluator', () => {
         expect(() => compile("let r = [1].mapSlice('a');")).toThrow(/must be a number/);
       });
     });
+
+    describe('reverse', () => {
+      it('returns a new reversed array', () => {
+        const result = compile('let r = [1, 2, 3].reverse(); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[3, 2, 1]');
+      });
+
+      it('does not mutate the original array', () => {
+        const result = compile('let a = [1, 2, 3]; let r = a.reverse(); log(a); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 2, 3]');
+        expect(result.logs[1].parts[0].value).toBe('[3, 2, 1]');
+      });
+
+      it('empty array returns empty array', () => {
+        const result = compile('let r = [].reverse(); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[]');
+      });
+
+      it('single element array', () => {
+        const result = compile('let r = [42].reverse(); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[42]');
+      });
+
+      it('reverses strings', () => {
+        expect(compilePath(
+          'let r = [`a`, `b`, `c`].reverse(); if (r[0] == `c`) { M 1 0 } else { M 0 0 }',
+        )).toBe('M 1 0');
+      });
+    });
+
+    describe('sort', () => {
+      it('bare sort orders numbers ascending, not lexicographically', () => {
+        const result = compile('let r = [10, 2, -1].sort(); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[-1, 2, 10]');
+      });
+
+      it('bare sort handles decimals', () => {
+        const result = compile('let r = [0.5, 0.25, 2].sort(); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[0.25, 0.5, 2]');
+      });
+
+      it('bare sort orders strings alphabetically', () => {
+        expect(compilePath(
+          'let r = [`cherry`, `apple`, `banana`].sort(); if (r[0] == `apple` && r[2] == `cherry`) { M 1 0 } else { M 0 0 }',
+        )).toBe('M 1 0');
+      });
+
+      it('does not mutate the original array', () => {
+        const result = compile('let a = [3, 1, 2]; let r = a.sort(); log(a); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[3, 1, 2]');
+        expect(result.logs[1].parts[0].value).toBe('[1, 2, 3]');
+      });
+
+      it('empty array returns empty array', () => {
+        const result = compile('let r = [].sort(); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[]');
+      });
+
+      it('single element array', () => {
+        const result = compile('let r = [7].sort(); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[7]');
+      });
+
+      it('comparator sorts descending', () => {
+        const result = compile('let r = [3, 1, 2].sort {|a, b| return calc(b - a); }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[3, 2, 1]');
+      });
+
+      it('comparator sorts Points by field', () => {
+        expect(compilePath(
+          'let pts = [Point(30, 0), Point(10, 0), Point(20, 0)]; let sorted = pts.sort {|a, b| return calc(a.x - b.x); }; M sorted[0].x sorted[2].x',
+        )).toBe('M 10 30');
+      });
+
+      it('sort is stable — equal keys keep original relative order', () => {
+        expect(compilePath(
+          'let pts = [Point(1, 5), Point(1, 3), Point(0, 9)]; let sorted = pts.sort {|a, b| return calc(a.x - b.x); }; M sorted[1].y sorted[2].y',
+        )).toBe('M 5 3');
+      });
+
+      it('comparator can access outer scope variables', () => {
+        const result = compile('let dir = -1; let r = [1, 3, 2].sort {|a, b| return calc((a - b) * dir); }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[3, 2, 1]');
+      });
+
+      it('no-paren trailing block form works', () => {
+        const result = compile('let r = [2, 1].sort {|a, b| return calc(a - b); }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 2]');
+      });
+
+      it('paren-plus-block form works', () => {
+        const result = compile('let r = [2, 1].sort() {|a, b| return calc(a - b); }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 2]');
+      });
+
+      it('comparator with nested return inside if', () => {
+        const result = compile(
+          'let r = [3, 1, 2].sort {|a, b| if (a > b) { return 1; } if (a < b) { return -1; } return 0; }; log(r);',
+        );
+        expect(result.logs[0].parts[0].value).toBe('[1, 2, 3]');
+      });
+
+      it('chains with reverse', () => {
+        const result = compile('let r = [2, 3, 1].sort().reverse(); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[3, 2, 1]');
+      });
+    });
   });
 
   describe('spread operator', () => {

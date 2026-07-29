@@ -320,9 +320,16 @@ function inferExprType(expr: Expression): string | null {
       // Common method return types
       if (expr.method === 'boundingBox' || expr.method === 'paddedBoundingBox') return 'BBox';
       if (expr.method === 'get' || expr.method === 'anchor') return 'Point';
-      if (expr.method === 'slice' || expr.method === 'map' || expr.method === 'mapSlice') return 'Array';
+      if (expr.method === 'slice' || expr.method === 'map' || expr.method === 'mapSlice' ||
+          expr.method === 'sort') return 'Array';
       if (expr.method === 'pick') return inferExprType(expr.object) === 'Cycler' ? null : null;
-      if (expr.method === 'offset' || expr.method === 'reverse' || expr.method === 'subPath' ||
+      // reverse() exists on Array AND PathBlock/ProjectedPath. This function is
+      // scope-less, so an Identifier receiver infers null and keeps the
+      // historical PathBlock fallback (same ambiguity slice already has).
+      if (expr.method === 'reverse') {
+        return inferExprType(expr.object) === 'Array' ? 'Array' : 'PathBlock';
+      }
+      if (expr.method === 'offset' || expr.method === 'subPath' ||
           expr.method === 'chamfer' || expr.method === 'fillet' || expr.method === 'union' ||
           expr.method === 'difference' || expr.method === 'intersection' || expr.method === 'xor') return 'PathBlock';
       if (expr.method === 'lighten' || expr.method === 'darken' || expr.method === 'alpha' ||

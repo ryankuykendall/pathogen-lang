@@ -483,6 +483,23 @@ describe('getHoverInfo', () => {
         kind: 'block parameter',
         type: 'Point',
       },
+      // Comparator params named pa/pb, not a/b — single-letter path-command
+      // names (a = relative arc) get path-command hover, which wins over
+      // scope analysis (pre-existing precedence, not sort-specific).
+      {
+        label: 'sort comparator first param',
+        source: 'let pts = [Point(0, 0)];\nlet sorted = pts.sort {|pa, pb| return calc(pa.x - pb.x); };',
+        needle: 'pa, pb|',
+        kind: 'block parameter',
+        type: 'Point',
+      },
+      {
+        label: 'sort comparator second param',
+        source: 'let pts = [Point(0, 0)];\nlet sorted = pts.sort {|pa, pb| return calc(pa.x - pb.x); };',
+        needle: 'pb| return',
+        kind: 'block parameter',
+        type: 'Point',
+      },
       {
         label: 'fn parameter (uninferable)',
         source: 'fn f(amount) {\n  return amount;\n}',

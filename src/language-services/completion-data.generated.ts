@@ -390,6 +390,8 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'reduce', kind: 'function', detail: 'reduce(init) {|acc, item| ...} — Reduce', boost: 8, insertText: 'reduce(${1:init}) {|${2:acc}, ${3:item}|\n\treturn $0;\n}', isSnippet: true },
       { label: 'mapSlice', kind: 'function', detail: 'mapSlice(length) — Sliding window slices', boost: 8, insertText: 'mapSlice(${1:length})$0', isSnippet: true },
       { label: 'slice', kind: 'function', detail: 'slice(start, end?) — Get sub-array', boost: 8, insertText: 'slice(${1:start})$0', isSnippet: true },
+      { label: 'reverse', kind: 'function', detail: 'reverse() — Reversed copy (non-mutating)', boost: 8, insertText: 'reverse()$0', isSnippet: true },
+      { label: 'sort', kind: 'function', detail: 'sort() — Sorted copy, ascending; optional comparator block for custom order', boost: 8, insertText: 'sort()$0', isSnippet: true },
     ],
   },
   'string': {
@@ -1043,7 +1045,7 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'ColorInstance': { lighten: 'ColorInstance', darken: 'ColorInstance', saturate: 'ColorInstance', desaturate: 'ColorInstance', alpha: 'ColorInstance', hueShift: 'ColorInstance', complement: 'ColorInstance', mix: 'ColorInstance', analogous: 'array', triadic: 'array', tetradic: 'array', splitComplementary: 'array' },
   'Grid': { set: 'Grid', getPoint: 'Point', getRow: 'array', getCol: 'array', cells: 'array', fill: 'Grid', map: 'Grid' },
   'Point': { translate: 'Point', rotate: 'Point', lerp: 'Point', midpoint: 'Point', polarTranslate: 'Point' },
-  'array': { map: 'array', mapSlice: 'array', slice: 'array' },
+  'array': { map: 'array', mapSlice: 'array', slice: 'array', reverse: 'array', sort: 'array' },
   'string': { split: 'array', append: 'string', prepend: 'string', slice: 'string' },
   'PathBlock': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'PathBlock', offset: 'PathBlock', variableOffset: 'PathBlock', compoundVariableOffset: 'PathBlock', mirror: 'PathBlock', scale: 'PathBlock', rotateAtVertexIndex: 'PathBlock', subPath: 'PathBlock', project: 'ProjectedPath', chamfer: 'PathBlock', chamferAtVertex: 'PathBlock', fillet: 'PathBlock', filletAtVertex: 'PathBlock', ellipticalFillet: 'PathBlock', ellipticalFilletAtVertex: 'PathBlock', union: 'PathBlock', difference: 'PathBlock', intersection: 'PathBlock', xor: 'PathBlock', intersectionPoints: 'array', segment: 'PathBlock', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
   'VariableOffsetBuilder': { stop: 'VariableOffsetBuilder', startTangent: 'VariableOffsetBuilder', endTangent: 'VariableOffsetBuilder' },

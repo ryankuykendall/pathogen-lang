@@ -330,6 +330,16 @@ describe('getCompletions', () => {
       expect(names).toContain('push');
       expect(names).toContain('pop');
       expect(names).toContain('mapSlice');
+      expect(names).toContain('reverse');
+      expect(names).toContain('sort');
+
+      const reverse = items.find((i) => i.label === 'reverse')!;
+      expect(reverse.detail).toContain('Reversed copy');
+      expect(reverse.insertText).toBe('reverse()$0');
+
+      const sort = items.find((i) => i.label === 'sort')!;
+      expect(sort.detail).toContain('Sorted copy');
+      expect(sort.insertText).toBe('sort()$0');
     });
 
     it('does not offer phantom Array methods', () => {
@@ -337,8 +347,6 @@ describe('getCompletions', () => {
       const names = labels(items);
       expect(names).not.toContain('filter');
       expect(names).not.toContain('flatMap');
-      expect(names).not.toContain('sort');
-      expect(names).not.toContain('reverse');
       expect(names).not.toContain('indexOf');
     });
 

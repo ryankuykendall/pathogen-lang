@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-29 (array reverse + sort)
+
+### Added
+
+#### Core
+
+- **`.reverse()` and `.sort()` array methods** — both return a new array, leaving the original unmodified. Bare `.sort()` sorts in natural ascending order (numbers numerically, strings by character-code order); arrays holding anything else (Points, Colors, `null`, mixed types) — or numeric arrays containing `NaN`, which the sort algorithm would otherwise silently treat as "equal" — throw a clear error directing the user to a comparator. `.sort {|a, b| return calc(a - b); }` takes a JS-style comparator trailing block (negative → `a` first, positive → `b` first, zero → keep order; stable). A comparator that returns a non-number — including a boolean from `return a < b;` or nothing at all — is an error naming the `calc(a - b)` form. The comparator loop uses the top-level-return fast path (no per-comparison throw/catch), and both methods behave identically in the annotated evaluator. Editor support flows end-to-end: completions with snippets, hover, chain return-type inference, comparator block params infer the array's element type, and array-receiver `.reverse()` inlay hints now say `Array` instead of `PathBlock`. Documented in `docs/syntax.md` (Arrays → Methods).
+
 ## [Unreleased] - 2026-07-29 (editor typing-latency overhaul)
 
 ### Fixed

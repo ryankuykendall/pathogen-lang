@@ -806,3 +806,43 @@ if (viewbox.width == 100) { M 1 1 } else { M 9 9 }`);
     ).toThrow(/Cannot assign to property 'width'/);
   });
 });
+
+describe('array reverse and sort (annotated parity)', () => {
+  it('reverse returns a new reversed array', () => {
+    const result = compileAnnotated('let r = [1, 2, 3].reverse(); M r[0] r[2]');
+    expect(result).toContain('M 3 1');
+  });
+
+  it('reverse does not mutate the original array', () => {
+    const result = compileAnnotated('let orig = [1, 2, 3]; let r = orig.reverse(); M orig[0] r[0]');
+    expect(result).toContain('M 1 3');
+  });
+
+  it('bare sort orders numbers ascending', () => {
+    const result = compileAnnotated('let r = [10, 2, -1].sort(); M r[0] r[2]');
+    expect(result).toContain('M -1 10');
+  });
+
+  it('bare sort on mixed-type array throws the same error as main mode', () => {
+    expect(() => compileAnnotated('let r = [1, `a`].sort();')).toThrow(/all-number or all-string/);
+  });
+
+  it('comparator sort orders Points by field', () => {
+    const result = compileAnnotated(
+      'let pts = [Point(30, 0), Point(10, 0), Point(20, 0)]; let sorted = pts.sort {|a, b| return calc(a.x - b.x); }; M sorted[0].x sorted[2].x',
+    );
+    expect(result).toContain('M 10 30');
+  });
+
+  it('comparator returning a boolean throws the same error as main mode', () => {
+    expect(() => compileAnnotated('let r = [1, 2].sort {|a, b| return a < b; };')).toThrow(/must return a number/);
+  });
+});
+
+describe('array sort NaN guard (annotated parity)', () => {
+  it('bare sort on numeric array containing NaN throws the same error as main mode', () => {
+    expect(() => compileAnnotated('let a = [3, 1]; a.push(calc(1 % 0)); let r = a.sort();')).toThrow(
+      /cannot order NaN elements/,
+    );
+  });
+});

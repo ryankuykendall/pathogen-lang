@@ -629,6 +629,10 @@ export interface PathogenArray<T = Value> {
   mapSlice(length: number): PathogenArray;
   /** slice(start, end?) — Get sub-array */
   slice(start: number, end?: number): PathogenArray<T>;
+  /** reverse() — Reversed copy (non-mutating) */
+  reverse(): PathogenArray<T>;
+  /** sort() — Sorted copy, ascending; optional comparator block for custom order */
+  sort(block?: (a: T, b: T) => number): PathogenArray<T>;
 }
 
 /** @type string */

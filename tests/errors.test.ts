@@ -258,6 +258,56 @@ describe('Array errors', () => {
   it('method on non-array throws', () => {
     expect(() => compilePath('let x = 5; x.push(1);')).toThrow(/non-array/i);
   });
+
+  it('bare sort on mixed-type array throws with comparator hint', () => {
+    expect(() => compilePath('let r = [1, `a`].sort();')).toThrow(/all-number or all-string.*comparator|comparator/i);
+  });
+
+  it('bare sort on Point array throws', () => {
+    expect(() => compilePath('let r = [Point(0, 0), Point(1, 1)].sort();')).toThrow(/all-number or all-string/i);
+  });
+
+  it('bare sort on array containing null throws', () => {
+    expect(() => compilePath('let a = [1, 2]; a.push(null); let r = a.sort();')).toThrow(/all-number or all-string/i);
+  });
+
+  it('sort comparator returning a string throws', () => {
+    expect(() => compilePath('let r = [1, 2].sort {|a, b| return `x`; };')).toThrow(/must return a number/i);
+  });
+
+  it('sort comparator returning a boolean throws', () => {
+    expect(() => compilePath('let r = [1, 2].sort {|a, b| return a < b; };')).toThrow(/must return a number/i);
+  });
+
+  it('sort comparator with no return throws', () => {
+    expect(() => compilePath('let r = [1, 2].sort {|a, b| log(a); };')).toThrow(/must return a number/i);
+  });
+
+  it('sort comparator returning NaN throws', () => {
+    expect(() => compilePath('let r = [1, 2].sort {|a, b| return calc(a % 0); };')).toThrow(/must return a number/i);
+  });
+
+  it('bare sort on numeric array containing NaN throws', () => {
+    expect(() => compilePath('let a = [3, 1]; a.push(calc(1 % 0)); let r = a.sort();')).toThrow(/NaN/);
+  });
+
+  it('sort with arguments throws', () => {
+    expect(() => compilePath('let r = [1, 2].sort(1);')).toThrow(/does not take arguments/i);
+  });
+
+  it('reverse with arguments throws', () => {
+    expect(() => compilePath('let r = [1, 2].reverse(1);')).toThrow(/0 arguments/i);
+  });
+
+  it('reverse with a trailing block throws', () => {
+    expect(() => compilePath('let r = [1, 2].reverse() {|a| return a; };')).toThrow(/does not take a trailing block/i);
+  });
+
+  it('error inside sort comparator is wrapped with sort context', () => {
+    expect(() => compilePath('let r = [1, 2].sort {|a, b| let x = undefinedVar; return 0; };')).toThrow(
+      /sort\(\) comparator/i,
+    );
+  });
 });
 
 describe('String errors', () => {

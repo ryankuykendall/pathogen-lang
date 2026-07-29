@@ -863,6 +863,91 @@ let triples = [10, 20, 30, 40, 50].mapSlice(3);
 // triples is [[10, 20, 30], [20, 30, 40], [30, 40, 50], [40, 50], [50]]
 ```
 
+#### `.reverse()`
+
+Returns a new array with the elements in reverse order. The original array is not modified.
+
+```
+let arr = [1, 2, 3];
+let rev = arr.reverse();
+// rev is [3, 2, 1]
+// arr is still [1, 2, 3]
+```
+
+#### `.sort()` / `.sort {|a, b| ... }`
+
+Returns a new array with the elements sorted. Sorting is how you z-order shapes by area, order gradient stops by offset, or arrange points by angle before drawing.
+
+> **Note:** Unlike JavaScript, `.sort()` and `.reverse()` do not sort or reverse in place — they return new arrays and leave the original untouched. Of the array methods, `.push()`, `.pop()`, `.unshift()`, and `.shift()` mutate the array; `.slice()`, `.map()`, `.mapSlice()`, `.reverse()`, and `.sort()` return copies. See [Reference Semantics](#syntax-reference-semantics) for why the distinction matters when an array has more than one binding.
+
+Called without a block, `.sort()` sorts in natural ascending order — numbers sort numerically, strings by character code order:
+
+```
+let source = [10, 2, -1];
+let nums = source.sort();
+// nums is [-1, 2, 10] — numeric, not lexicographic
+// source is still [10, 2, -1]
+
+let names = ["cherry", "apple", "banana"].sort();
+// names is ["apple", "banana", "cherry"]
+```
+
+String order compares character codes, not locale rules — uppercase letters sort before lowercase, and digits before letters:
+
+```
+let mixed = ["apple", "Banana"].sort();
+// mixed is ["Banana", "apple"] — "B" (66) precedes "a" (97)
+```
+
+For locale-aware or any other custom ordering, supply a comparator block.
+
+The natural order is only defined when every element is a number, or every element is a string. Sorting anything else without a comparator — Points, Colors, `null`, or mixed types — is an error:
+
+```
+let mixed = [1, "two", Point(0, 0)];
+let bad = mixed.sort();
+// Error: sort() without a comparator requires all-number or all-string
+// elements — use sort {|a, b| return ...; } to define the order
+```
+
+`NaN` has no defined order, so a numeric array containing `NaN` is also an error. An empty array sorts to an empty array. A single-element array of an unsortable type still errors — the element check does not depend on the array's size.
+
+For custom ordering, pass a comparator as a trailing block. `.sort()` takes no parenthesized arguments — the comparator must be a block:
+
+```
+let points = [Point(30, 0), Point(10, 0), Point(20, 0)];
+let byX = points.sort {|a, b|
+  return calc(a.x - b.x);
+};
+// byX is [Point(10, 0), Point(20, 0), Point(30, 0)]
+```
+
+The comparator block receives exactly two parameters — unlike `.map` and `.reduce`, there is no index or array reference:
+
+- `a` — the first element being compared
+- `b` — the second element being compared
+
+The block must `return` a number:
+
+- negative — `a` sorts before `b`
+- positive — `b` sorts before `a`
+- zero — keep the original relative order
+
+The sort is stable: elements that compare equal keep their original relative order.
+
+> **Note:** The comparator must return a number — a comparison operator will not do. `return a < b;` can only produce two outcomes, but a comparator needs three: `a` first, `b` first, or equal. Subtract instead: `return calc(a - b);`
+>
+> Returning anything other than a number (including `NaN`) raises: `sort() comparator must return a number (negative = a first, positive = b first, zero = keep order) — e.g. return calc(a - b);`
+
+```
+let descending = [3, 1, 2].sort {|a, b|
+  return calc(b - a);
+};
+// descending is [3, 2, 1]
+```
+
+The comparator can read variables from the enclosing scope, but any path commands it emits are discarded — a comparator is for ordering only.
+
 ### Reference Semantics
 
 Arrays are passed by reference. Mutations through one binding are visible through all others:

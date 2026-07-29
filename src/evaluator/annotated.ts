@@ -3087,9 +3087,81 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       return { type: 'ArrayValue' as const, elements: obj.elements.slice(s) };
     }
+    case 'reverse': {
+      if (expr.args.length !== 0) throw mError('reverse() expects 0 arguments');
+      if (expr.block) throw mError('reverse() does not take a trailing block');
+      return { type: 'ArrayValue' as const, elements: [...obj.elements].reverse() };
+    }
+    case 'sort': {
+      if (expr.args.length !== 0) {
+        throw mError('sort() does not take arguments — use sort {|a, b| return ...; } for a custom order');
+      }
+      const sorted = [...obj.elements];
+      if (!expr.block) {
+        const allNumbers = sorted.every((e) => typeof e === 'number');
+        const allStrings = !allNumbers && sorted.every((e) => typeof e === 'string');
+        if (!allNumbers && !allStrings) {
+          throw mError(
+            'sort() without a comparator requires all-number or all-string elements — use sort {|a, b| return ...; } to define the order',
+          );
+        }
+        if (allNumbers) {
+          if (sorted.some((e) => Number.isNaN(e as number))) {
+            throw mError('sort() without a comparator cannot order NaN elements — remove them before sorting');
+          }
+          sorted.sort((a, b) => (a as number) - (b as number));
+        } else {
+          sorted.sort((a, b) => ((a as string) < (b as string) ? -1 : (a as string) > (b as string) ? 1 : 0));
+        }
+        return { type: 'ArrayValue' as const, elements: sorted };
+      }
+      const sortParams = expr.block.params;
+      const sortBody = expr.block.body;
+      const sortLine = getLine(expr);
+      sorted.sort((a, b) => {
+        const blockScope = createScope(scope);
+        if (sortParams.length > 0) setVariable(blockScope, sortParams[0], a);
+        if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
+        let cmp: Value = null;
+        try {
+          const res = evaluateBlockBodyPlain(sortBody, blockScope);
+          cmp = res.returned ? res.value : null;
+        } catch (e) {
+          if (e instanceof ReturnSignal) {
+            cmp = e.value;
+          } else {
+            const msg = e instanceof Error ? e.message : String(e);
+            throw new Error(formatError(`Error in .sort() comparator: ${msg}`, sortLine));
+          }
+        }
+        if (typeof cmp !== 'number' || Number.isNaN(cmp)) {
+          throw mError(
+            'sort() comparator must return a number (negative = a first, positive = b first, zero = keep order) — e.g. return calc(a - b);',
+          );
+        }
+        return cmp;
+      });
+      return { type: 'ArrayValue' as const, elements: sorted };
+    }
     default:
       throw mError(`Unknown array method: ${expr.method}`);
   }
+}
+
+/**
+ * Fast-path evaluation of a trailing-block body (mirrors the main evaluator's
+ * evaluateGridCellBody): a top-level `return` short-circuits WITHOUT throwing,
+ * avoiding the per-invocation ReturnSignal throw/catch cost. Nested returns
+ * (inside if/for) still throw and are caught by the caller.
+ */
+function evaluateBlockBodyPlain(body: Statement[], scope: Scope): { returned: boolean; value: Value } {
+  for (const stmt of body) {
+    if (stmt.type === 'ReturnStatement') {
+      return { returned: true, value: evaluateExpression(stmt.value, scope) };
+    }
+    evaluateStatementPlain(stmt, scope);
+  }
+  return { returned: false, value: null };
 }
 
 function evaluateExpression(expr: Expression, scope: Scope): Value {

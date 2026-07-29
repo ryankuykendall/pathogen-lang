@@ -5310,6 +5310,70 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       return { type: 'ArrayValue' as const, elements: obj.elements.slice(s) };
     }
+    case 'reverse': {
+      if (expr.args.length !== 0) throw mError('reverse() expects 0 arguments');
+      if (expr.block) throw mError('reverse() does not take a trailing block');
+      return { type: 'ArrayValue' as const, elements: [...obj.elements].reverse() };
+    }
+    case 'sort': {
+      if (expr.args.length !== 0) {
+        throw mError('sort() does not take arguments — use sort {|a, b| return ...; } for a custom order');
+      }
+      const sorted = [...obj.elements];
+      if (!expr.block) {
+        const allNumbers = sorted.every((e) => typeof e === 'number');
+        const allStrings = !allNumbers && sorted.every((e) => typeof e === 'string');
+        if (!allNumbers && !allStrings) {
+          throw mError(
+            'sort() without a comparator requires all-number or all-string elements — use sort {|a, b| return ...; } to define the order',
+          );
+        }
+        if (allNumbers) {
+          // NaN would be silently coerced to "equal" by the sort algorithm,
+          // producing an arbitrary order instead of the documented ascending one.
+          if (sorted.some((e) => Number.isNaN(e as number))) {
+            throw mError('sort() without a comparator cannot order NaN elements — remove them before sorting');
+          }
+          sorted.sort((a, b) => (a as number) - (b as number));
+        } else {
+          sorted.sort((a, b) => ((a as string) < (b as string) ? -1 : (a as string) > (b as string) ? 1 : 0));
+        }
+        return { type: 'ArrayValue' as const, elements: sorted };
+      }
+      const sortParams = expr.block.params;
+      const sortBody = expr.block.body;
+      const sortLine = getLine(expr);
+      // One shared sink for all comparator invocations — path output inside a
+      // comparator is discarded (same semantics as Grid.fill). Hoisting the
+      // store and short-circuiting top-level returns via evaluateGridCellBody
+      // avoids the per-invocation throw/catch deopt; the comparator runs
+      // O(n log n) times.
+      const sortSink = createPathStore();
+      sorted.sort((a, b) => {
+        const blockScope = createScope(scope);
+        if (sortParams.length > 0) setVariable(blockScope, sortParams[0], a);
+        if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
+        let cmp: Value = null;
+        try {
+          const res = evaluateGridCellBody(sortBody, blockScope, sortSink);
+          cmp = res.returned ? res.value : null;
+        } catch (e) {
+          if (e instanceof ReturnSignal) {
+            cmp = e.value;
+          } else {
+            const msg = e instanceof Error ? e.message : String(e);
+            throw new Error(formatError(`Error in .sort() comparator: ${msg}`, sortLine));
+          }
+        }
+        if (typeof cmp !== 'number' || Number.isNaN(cmp)) {
+          throw mError(
+            'sort() comparator must return a number (negative = a first, positive = b first, zero = keep order) — e.g. return calc(a - b);',
+          );
+        }
+        return cmp;
+      });
+      return { type: 'ArrayValue' as const, elements: sorted };
+    }
     default:
       throw mError(`Unknown array method: ${expr.method}`);
   }
