@@ -31,10 +31,12 @@ export function fullscreenStyles(navWidth: number, offset: number): string {
       transition: all var(--transition-base, 0.15s ease);
     }
 
+    /* Fallback literals mirror theme.css light values — the old chrome
+       carried stale #10b981 green fallbacks; see zoom-pill.ts:51. */
     #fullscreen-toggle:hover {
-      border-color: var(--accent-color, #10b981);
-      color: var(--accent-color, #10b981);
-      background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+      border-color: var(--accent-color, #c0518e);
+      color: var(--accent-color, #c0518e);
+      background: var(--accent-subtle, rgba(192, 81, 142, 0.1));
     }
 
     #fullscreen-toggle svg {

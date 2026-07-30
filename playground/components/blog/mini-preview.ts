@@ -12,10 +12,17 @@ import type { PanZoomController, PanZoomView } from '../../../dist/pan-zoom';
 const LAYERS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
 
 export class MiniPreview extends HTMLElement {
-  // Canvas dimensions
+  // Canvas dimensions. Origin is nonzero when the compiled SVG's viewBox
+  // starts off (0,0) — `define ViewBox(originX, originY, w, h)` supports
+  // this, and the controller's pan/fit math needs the real origin or every
+  // fit/clamp lands offset.
   private _width = 200;
 
   private _height = 200;
+
+  private _originX = 0;
+
+  private _originY = 0;
 
   private _background = 'transparent';
 
@@ -195,9 +202,9 @@ export class MiniPreview extends HTMLElement {
     doc.addEventListener('pointercancel', clearGrab);
   }
 
-  /** Canvas dims for the controller (mini-preview viewBox origin is 0,0). */
+  /** Canvas dims for the controller, including the real viewBox origin. */
   private _panZoomCanvas(): { originX: number; originY: number; width: number; height: number } {
-    return { originX: 0, originY: 0, width: this._width, height: this._height };
+    return { originX: this._originX, originY: this._originY, width: this._width, height: this._height };
   }
 
   /** Mirror a controller view-change into instance state + zoom chrome. */
@@ -291,8 +298,11 @@ export class MiniPreview extends HTMLElement {
 
     // Modern SVGs (compiled with `--include-metadata` after the data-layer-
     // name emission landed) tag every layer-rendered element with the
-    // attribute, so a single query catches the whole group.
-    const tagged = contentGroup.querySelectorAll(`[data-layer-name="${name}"]`);
+    // attribute, so a single query catches the whole group. Layer names are
+    // author-chosen strings (arbitrary published workspaces reach this via
+    // the detail-page hero viewer) — CSS.escape keeps a quote in the name
+    // from turning into an invalid selector that throws.
+    const tagged = contentGroup.querySelectorAll(`[data-layer-name="${CSS.escape(name)}"]`);
     if (tagged.length > 0) {
       for (const el of tagged) (el as HTMLElement).style.display = display;
       return;
@@ -303,7 +313,7 @@ export class MiniPreview extends HTMLElement {
     // from the serializer's `__text-siblings__` unwrap. Walk forward through
     // same-tag siblings that lack their own id and toggle them too — without
     // this, hiding `formula` only hides the first formula line.
-    const head = contentGroup.querySelector(`[id="${name}"]`) as HTMLElement | null;
+    const head = contentGroup.querySelector(`[id="${CSS.escape(name)}"]`) as HTMLElement | null;
     if (!head) return;
     head.style.display = display;
     let cursor: Element | null = head.nextElementSibling;
@@ -350,12 +360,21 @@ export class MiniPreview extends HTMLElement {
     if (w) this._width = parseFloat(w);
     if (h) this._height = parseFloat(h);
 
+    // Width/height attributes win for dimensions, but the ORIGIN can only
+    // come from the viewBox — parse all four numbers whenever it exists so
+    // nonzero-origin drawings pan/fit correctly.
     const vb = svgRoot.getAttribute('viewBox');
-    if (vb && !w && !h) {
+    this._originX = 0;
+    this._originY = 0;
+    if (vb) {
       const parts = vb.split(/[\s,]+/).map(Number);
-      if (parts.length === 4) {
-        this._width = parts[2];
-        this._height = parts[3];
+      if (parts.length === 4 && parts.every(Number.isFinite)) {
+        this._originX = parts[0];
+        this._originY = parts[1];
+        if (!w && !h) {
+          this._width = parts[2];
+          this._height = parts[3];
+        }
       }
     }
 
@@ -399,8 +418,10 @@ export class MiniPreview extends HTMLElement {
     const viewWidth = this._width / this._zoomLevel;
     const viewHeight = this._height / this._zoomLevel;
 
-    viewport.setAttribute('x', String(this._panX));
-    viewport.setAttribute('y', String(this._panY));
+    // Pan is origin-relative (viewBox x = originX + panX) — translate back
+    // into world coordinates for the navigator rect.
+    viewport.setAttribute('x', String(this._originX + this._panX));
+    viewport.setAttribute('y', String(this._originY + this._panY));
     viewport.setAttribute('width', String(viewWidth));
     viewport.setAttribute('height', String(viewHeight));
   }
@@ -430,13 +451,15 @@ export class MiniPreview extends HTMLElement {
     const offsetX = (navWidth - this._width * scale) / 2;
     const offsetY = (navHeight - this._height * scale) / 2;
 
-    const navViewBox = `${-offsetX / scale} ${-offsetY / scale} ${navWidth / scale} ${navHeight / scale}`;
+    // Navigator viewBox is in world (content) coordinates — offset by the
+    // canvas origin so nonzero-origin drawings center correctly.
+    const navViewBox = `${this._originX - offsetX / scale} ${this._originY - offsetY / scale} ${navWidth / scale} ${navHeight / scale}`;
     navSvg.setAttribute('viewBox', navViewBox);
     const navOverlay = this.shadowRoot!.querySelector('#navigator-overlay');
     if (navOverlay) navOverlay.setAttribute('viewBox', navViewBox);
     navBg.setAttribute('fill', this._background);
-    navBg.setAttribute('x', '0');
-    navBg.setAttribute('y', '0');
+    navBg.setAttribute('x', String(this._originX));
+    navBg.setAttribute('y', String(this._originY));
     navBg.setAttribute('width', String(this._width));
     navBg.setAttribute('height', String(this._height));
 
@@ -457,8 +480,11 @@ export class MiniPreview extends HTMLElement {
     const { x: svgX, y: svgY } = this.screenToNavigatorSVG(e.clientX, e.clientY);
     const viewWidth = this._width / this._zoomLevel;
     const viewHeight = this._height / this._zoomLevel;
+    // Navigator coordinates are world-space; pan is origin-relative.
+    const viewX = this._originX + this._panX;
+    const viewY = this._originY + this._panY;
     const inViewport =
-      svgX >= this._panX && svgX <= this._panX + viewWidth && svgY >= this._panY && svgY <= this._panY + viewHeight;
+      svgX >= viewX && svgX <= viewX + viewWidth && svgY >= viewY && svgY <= viewY + viewHeight;
 
     if (inViewport) {
       this.isNavigatorDragging = true;
@@ -467,7 +493,10 @@ export class MiniPreview extends HTMLElement {
       this.navDragStartPanX = this._panX;
       this.navDragStartPanY = this._panY;
     } else {
-      this.panZoom?.setView({ panX: svgX - viewWidth / 2, panY: svgY - viewHeight / 2 }, { emit: true });
+      this.panZoom?.setView(
+        { panX: svgX - this._originX - viewWidth / 2, panY: svgY - this._originY - viewHeight / 2 },
+        { emit: true },
+      );
     }
   }
 
@@ -491,7 +520,10 @@ export class MiniPreview extends HTMLElement {
     const viewWidth = this._width / this._zoomLevel;
     const viewHeight = this._height / this._zoomLevel;
 
-    this.panZoom?.setView({ panX: svgX - viewWidth / 2, panY: svgY - viewHeight / 2 }, { emit: true });
+    this.panZoom?.setView(
+      { panX: svgX - this._originX - viewWidth / 2, panY: svgY - this._originY - viewHeight / 2 },
+      { emit: true },
+    );
   }
 
   // --- Styles ---
@@ -506,8 +538,8 @@ export class MiniPreview extends HTMLElement {
     preview.setAttribute('height', String(this._height));
 
     bg.setAttribute('fill', this._background);
-    bg.setAttribute('x', '0');
-    bg.setAttribute('y', '0');
+    bg.setAttribute('x', String(this._originX));
+    bg.setAttribute('y', String(this._originY));
     bg.setAttribute('width', String(this._width));
     bg.setAttribute('height', String(this._height));
 
@@ -660,7 +692,7 @@ export class MiniPreview extends HTMLElement {
 
         #navigator-viewport {
           cursor: move;
-          fill: var(--accent-subtle, rgba(16, 185, 129, 0.15));
+          fill: var(--accent-subtle, rgba(192, 81, 142, 0.15));
         }
 
         /* Zoom control is the shared <pathogen-zoom-pill> (pan-zoom bundle);
@@ -693,10 +725,12 @@ export class MiniPreview extends HTMLElement {
           display: grid;
         }
 
+        /* Fallback literals mirror theme.css light values — the old chrome
+           carried stale #10b981 green fallbacks; see zoom-pill.ts:51. */
         #inspector-open-btn:hover {
-          border-color: var(--accent-color, #10b981);
-          color: var(--accent-color, #10b981);
-          background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+          border-color: var(--accent-color, #c0518e);
+          color: var(--accent-color, #c0518e);
+          background: var(--accent-subtle, rgba(192, 81, 142, 0.1));
         }
 
         #inspector-open-btn svg {
@@ -728,7 +762,7 @@ export class MiniPreview extends HTMLElement {
           <g id="navigator-paths"></g>
         </svg>
         <svg id="navigator-overlay">
-          <rect id="navigator-viewport" fill="none" stroke="var(--accent-color, #10b981)" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
+          <rect id="navigator-viewport" fill="none" stroke="var(--accent-color, #c0518e)" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
         </svg>
       </div>
 

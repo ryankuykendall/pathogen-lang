@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Variant B — Framed viewer · detail hero viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../playground/styles/theme.css">
+  <link rel="stylesheet" href="../../../playground/styles/site-header.css">
+  <link rel="stylesheet" href="../../../playground/styles/workspace-detail.css">
+  <link rel="stylesheet" href="./mockup-shared.css">
+  <script>
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script src="../../../public/dist/pan-zoom.global.js"></script>
+  <script type="module" src="../../../public/components/shared/theme-toggle.js"></script>
+  <style>
+    .site-header { position: sticky; top: 0; z-index: 50; }
+    .site-main { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    @media (max-width: 768px) { .site-main { padding: 1.5rem 0.75rem; } }
+
+    /* ── Variant B: the stage becomes a framed instrument ──────────────
+     * A slim toolbar sits on a clean full-width viewport; the frame
+     * carries the border/radius/shadow that the plate stage carries in
+     * production. Crop marks are dropped — the frame IS the chrome.
+     * The art spans the full 1280px plate minus 1px frame (~1216px vs
+     * 720px today). */
+    .framed-stage {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg, 12px);
+      box-shadow:
+        0 1px 2px rgba(var(--shadow-tint-rgb), 0.08),
+        0 16px 40px rgba(var(--shadow-tint-rgb), 0.14),
+        0 36px 72px rgba(var(--shadow-tint-rgb), 0.08);
+      overflow: hidden;
+    }
+    .frame-toolbar {
+      flex: none;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0 0.6rem 0 1.1rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 11;
+    }
+    .frame-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .frame-dims {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      color: var(--text-tertiary);
+      opacity: 0.75;
+      margin-right: auto;
+      white-space: nowrap;
+    }
+    .frame-actions { display: flex; align-items: center; gap: 0.25rem; }
+    .ghost-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      height: 28px;
+      min-width: 28px;
+      padding: 0 0.4rem;
+      border: 0;
+      border-radius: var(--radius-sm, 4px);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color var(--transition-base, 0.15s), background var(--transition-base, 0.15s);
+    }
+    .ghost-btn:hover { color: var(--accent-color); background: var(--accent-subtle); }
+    .ghost-btn[aria-expanded='true'] { color: var(--accent-color); background: var(--accent-subtle); }
+    .ghost-btn:focus-visible { outline: 2px solid var(--focus-ring, rgba(192, 81, 142, 0.4)); outline-offset: 1px; }
+    .ghost-btn svg { width: 15px; height: 15px; }
+    .ghost-btn .count {
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+      font-weight: 600;
+      color: var(--text-tertiary);
+    }
+    .ghost-btn[aria-expanded='true'] .count { color: var(--accent-color); }
+
+    .frame-viewport {
+      height: clamp(320px, 38vw, 520px);
+      background: var(--bg-elevated);
+    }
+
+    /* Layers drawer slides in from the right, inside the viewport. */
+    .layers-drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 248px;
+      background: color-mix(in srgb, var(--bg-elevated) 90%, transparent);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      border-left: 1px solid var(--border-color);
+      transform: translateX(100%);
+      transition: transform var(--transition-slow, 0.3s) ease;
+      z-index: 12;
+      display: flex;
+      flex-direction: column;
+    }
+    .layers-drawer.open { transform: translateX(0); }
+    .drawer-tip {
+      padding: 0.5rem 0.75rem;
+      border-top: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.04em;
+      color: var(--text-tertiary);
+    }
+    @media (prefers-reduced-motion: reduce) { .layers-drawer { transition: none; } }
+
+    /* Fullscreen keeps the toolbar — this is the app-like variant. */
+    .framed-stage[data-fullscreen] { border-radius: 0; }
+    .framed-stage[data-fullscreen] .frame-viewport { height: auto; flex: 1; min-height: 0; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="logo" href="./index.html">
+        <span class="logo-main">Pathogen <em>Studio</em></span>
+        <span class="logo-sub">built on Pathogen v0.7.0</span>
+      </a>
+      <nav class="tabs-wrap" aria-label="Primary">
+        <a class="nav-link" href="#">Playground</a>
+        <a class="nav-link" href="#">Explore</a>
+        <a class="nav-link" href="#">Featured</a>
+        <a class="nav-link" href="#">Docs</a>
+        <a class="nav-link" href="#">Blog</a>
+      </nav>
+      <div class="actions">
+        <theme-toggle></theme-toggle>
+      </div>
+    </div>
+  </header>
+  <main class="site-main">
+    <div class="workspace-detail variant-b">
+      <div class="detail-subnav">
+        <div class="detail-subnav-crumb">
+          <a href="#">Explore</a><span class="sep">›</span><a href="#">@ryan</a><span class="sep">›</span><span class="here">experiments-in-random-variable-offsets</span>
+        </div>
+        <a class="detail-cta" href="#"><span>Open as new workspace</span><span class="arrow">→</span></a>
+      </div>
+
+      <section class="detail-plate">
+        <div class="framed-stage" id="stage">
+          <header class="frame-toolbar" data-chrome>
+            <span class="frame-label">experiments-in-random-variable-offsets</span>
+            <span class="frame-dims" id="frame-dims"></span>
+            <div class="frame-actions">
+              <button class="ghost-btn" id="layers-btn" title="Layers" aria-expanded="false" aria-controls="layers-drawer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg>
+                <span class="count" id="layer-count"></span>
+              </button>
+              <button class="ghost-btn" id="fit-btn" title="Fit to view">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="8" height="8" rx="1"/><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+              </button>
+              <button class="ghost-btn" id="fullscreen-btn" title="Fullscreen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+              </button>
+            </div>
+          </header>
+          <div class="frame-viewport hero-viewport" id="viewport">
+            <!-- artwork SVG injected here -->
+            <aside class="layers-drawer" id="layers-drawer" data-chrome>
+              <div id="drawer-list" style="flex: 1; min-height: 0;"></div>
+              <p class="drawer-tip">⌥ + click a row to solo it</p>
+            </aside>
+            <pathogen-zoom-pill id="pill" data-chrome></pathogen-zoom-pill>
+            <div class="wheel-hint" id="hint">⌘ + scroll to zoom · drag to pan</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="detail-meta">
+        <h1 class="detail-meta-title">Experiments in random variable <em>offsets</em></h1>
+        <p class="detail-byline">
+          <span class="avatar">r</span>
+          <a class="handle" href="#">@ryan</a>
+          <span class="dot"></span>
+          <span>Published July 2026</span>
+        </p>
+      </section>
+
+      <section class="detail-source">
+        <details class="detail-source-disclosure">
+          <summary>
+            <span class="detail-source-title">View source</span>
+            <span class="detail-source-meta" id="source-meta">Pathogen</span>
+          </summary>
+          <pre class="detail-source-code" id="source-code"></pre>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <nav class="mockup-nav" aria-label="Mock-up variants">
+    <a href="./index.html">Index</a>
+    <a href="./variant-a-refined-plate.html">A</a>
+    <a href="./variant-b-framed-viewer.html" aria-current="page">B</a>
+    <a href="./variant-b2-full-viewport.html">B·2</a>
+    <a href="./variant-c-full-bleed.html">C</a>
+  </nav>
+
+  <script type="module">
+    import { loadArtwork, buildLayerModel, renderLayerList, initHeroViewer, populateSource } from './mockup-shared.js';
+
+    const stage = document.getElementById('stage');
+    const viewport = document.getElementById('viewport');
+    const pill = document.getElementById('pill');
+    const layersBtn = document.getElementById('layers-btn');
+    const drawer = document.getElementById('layers-drawer');
+
+    populateSource(document.getElementById('source-code'), document.getElementById('source-meta'));
+
+    try {
+      const { svg } = await loadArtwork(viewport);
+      const model = buildLayerModel(svg);
+      renderLayerList(document.getElementById('drawer-list'), model, { solo: true });
+      document.getElementById('layer-count').textContent = model.length;
+      const vb = (svg.getAttribute('viewBox') || '').split(/[\s,]+/);
+      document.getElementById('frame-dims').textContent = vb.length === 4 ? `${vb[2]} × ${vb[3]}` : '';
+      initHeroViewer({
+        stage,
+        viewport,
+        svg,
+        pill,
+        fullscreenBtn: document.getElementById('fullscreen-btn'),
+        fitBtn: document.getElementById('fit-btn'),
+        hintEl: document.getElementById('hint'),
+      });
+    } catch (err) {
+      viewport.innerHTML = `<div class="viewer-fallback">Artwork failed to load — run “npm run serve:bbwp” and open via localhost:3001<br>(${err.message})</div>`;
+    }
+
+    layersBtn.addEventListener('click', () => {
+      const open = !drawer.classList.contains('open');
+      drawer.classList.toggle('open', open);
+      layersBtn.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && drawer.classList.contains('open')) {
+        drawer.classList.remove('open');
+        layersBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  </script>
+</body>
+</html>

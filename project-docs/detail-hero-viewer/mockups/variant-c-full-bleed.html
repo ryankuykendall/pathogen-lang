@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Variant C — Full-bleed stage · detail hero viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../playground/styles/theme.css">
+  <link rel="stylesheet" href="../../../playground/styles/site-header.css">
+  <link rel="stylesheet" href="../../../playground/styles/workspace-detail.css">
+  <link rel="stylesheet" href="./mockup-shared.css">
+  <script>
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script src="../../../public/dist/pan-zoom.global.js"></script>
+  <script type="module" src="../../../public/components/shared/theme-toggle.js"></script>
+  <style>
+    .site-header { position: sticky; top: 0; z-index: 50; }
+    .site-main { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    @media (max-width: 768px) { .site-main { padding: 1.5rem 0.75rem; } }
+
+    /* ── Variant C: near edge-to-edge stage, glass chrome over the art ──
+     * No art cap, no stage padding: the viewport IS the plate. A subtle
+     * secondary-gradient backdrop stages white-background artwork; all
+     * controls float as glass and reveal on hover. Crop marks are gone —
+     * the meta block below carries the editorial identity. */
+    .bleed-viewport {
+      height: clamp(360px, 44vw, 600px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl, 16px);
+      background: linear-gradient(160deg, var(--bg-secondary-from), var(--bg-secondary-to));
+      box-shadow: 0 24px 60px rgba(var(--shadow-tint-rgb), 0.12);
+    }
+    .corner-cluster {
+      position: absolute;
+      top: 0.85rem;
+      right: 0.85rem;
+      display: flex;
+      gap: 0.5rem;
+      z-index: 11;
+      opacity: 0;
+      transition: opacity var(--transition-base, 0.15s);
+    }
+    .bleed-viewport:hover .corner-cluster,
+    .bleed-viewport:focus-within .corner-cluster,
+    [data-fullscreen] .corner-cluster {
+      opacity: 1;
+    }
+    @media (hover: none) { .corner-cluster { opacity: 1; } }
+
+    /* ── the signature move: a glass layers rail over the left edge ────
+     * Collapsed: a 44px strip of layer swatch dots (clickable toggles).
+     * Expanded: a 224px scrollable panel with names, filter, and bulk
+     * controls. Real artworks carry hundreds of generated layers (this
+     * one ~485) — the strip shows the first dozen + an overflow count. */
+    .layers-rail {
+      position: absolute;
+      top: 0.85rem;
+      left: 0.85rem;
+      max-height: calc(100% - 1.7rem);
+      width: 44px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md, 8px);
+      background: color-mix(in srgb, var(--bg-elevated) 78%, transparent);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+      z-index: 12;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width var(--transition-slow, 0.3s) ease;
+    }
+    .layers-rail.expanded { width: 224px; bottom: 0.85rem; }
+    @media (prefers-reduced-motion: reduce) { .layers-rail { transition: none; } }
+
+    .rail-toggle {
+      flex: none;
+      display: grid;
+      place-items: center;
+      height: 36px;
+      border: 0;
+      border-bottom: 1px solid var(--border-subtle);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .rail-toggle:hover { color: var(--accent-color); background: var(--accent-subtle); }
+    .rail-toggle:focus-visible { outline: 2px solid var(--focus-ring, rgba(192, 81, 142, 0.4)); outline-offset: -2px; }
+    .rail-toggle svg { width: 15px; height: 15px; transition: transform var(--transition-base, 0.15s); }
+    .layers-rail.expanded .rail-toggle svg { transform: rotate(180deg); }
+
+    .rail-dots {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 0.7rem 0;
+      overflow: hidden;
+    }
+    .rail-dot {
+      flex: none;
+      width: 11px;
+      height: 11px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-tertiary);
+      cursor: pointer;
+    }
+    .rail-dot:hover { transform: scale(1.35); }
+    .rail-dot[aria-pressed='false'] { opacity: 0.25; }
+    .rail-dot:focus-visible { outline: 2px solid var(--focus-ring, rgba(192, 81, 142, 0.4)); outline-offset: 1px; }
+    .rail-overflow {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      letter-spacing: 0.04em;
+      margin-top: 2px;
+    }
+    .rail-list { display: none; flex: 1; min-height: 0; }
+    .layers-rail.expanded .rail-dots { display: none; }
+    .layers-rail.expanded .rail-list { display: flex; flex-direction: column; }
+
+    /* Fullscreen: the chromeless stage simply grows. */
+    .bleed-stage[data-fullscreen] { display: grid; background: var(--bg-primary); }
+    .bleed-stage[data-fullscreen] .bleed-viewport {
+      height: 100%;
+      border-radius: 0;
+      border: 0;
+      box-shadow: none;
+    }
+    .esc-toast {
+      position: absolute;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.4rem 0.9rem;
+      border-radius: var(--radius-full, 999px);
+      background: color-mix(in srgb, var(--text-primary) 78%, transparent);
+      color: var(--text-inverse);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      opacity: 0;
+      transition: opacity var(--transition-base, 0.15s);
+      pointer-events: none;
+      z-index: 13;
+    }
+    .esc-toast.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="logo" href="./index.html">
+        <span class="logo-main">Pathogen <em>Studio</em></span>
+        <span class="logo-sub">built on Pathogen v0.7.0</span>
+      </a>
+      <nav class="tabs-wrap" aria-label="Primary">
+        <a class="nav-link" href="#">Playground</a>
+        <a class="nav-link" href="#">Explore</a>
+        <a class="nav-link" href="#">Featured</a>
+        <a class="nav-link" href="#">Docs</a>
+        <a class="nav-link" href="#">Blog</a>
+      </nav>
+      <div class="actions">
+        <theme-toggle></theme-toggle>
+      </div>
+    </div>
+  </header>
+  <main class="site-main">
+    <div class="workspace-detail variant-c">
+      <div class="detail-subnav">
+        <div class="detail-subnav-crumb">
+          <a href="#">Explore</a><span class="sep">›</span><a href="#">@ryan</a><span class="sep">›</span><span class="here">experiments-in-random-variable-offsets</span>
+        </div>
+        <a class="detail-cta" href="#"><span>Open as new workspace</span><span class="arrow">→</span></a>
+      </div>
+
+      <section class="detail-plate">
+        <div class="bleed-stage" id="stage">
+          <div class="bleed-viewport hero-viewport" id="viewport">
+            <!-- artwork SVG injected here -->
+            <div class="corner-cluster" data-chrome>
+              <button class="glass-btn" id="fullscreen-btn" title="Fullscreen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+              </button>
+            </div>
+            <aside class="layers-rail" id="layers-rail" data-chrome>
+              <button class="rail-toggle" id="rail-toggle" title="Layers" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <div class="rail-dots" id="rail-dots"></div>
+              <div class="rail-list" id="rail-list"></div>
+            </aside>
+            <pathogen-zoom-pill id="pill" data-chrome></pathogen-zoom-pill>
+            <div class="wheel-hint" id="hint">⌘ + scroll to zoom · drag to pan</div>
+            <div class="esc-toast" id="esc-toast">esc to exit</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="detail-meta">
+        <h1 class="detail-meta-title">Experiments in random variable <em>offsets</em></h1>
+        <p class="detail-byline">
+          <span class="avatar">r</span>
+          <a class="handle" href="#">@ryan</a>
+          <span class="dot"></span>
+          <span>Published July 2026</span>
+        </p>
+      </section>
+
+      <section class="detail-source">
+        <details class="detail-source-disclosure">
+          <summary>
+            <span class="detail-source-title">View source</span>
+            <span class="detail-source-meta" id="source-meta">Pathogen</span>
+          </summary>
+          <pre class="detail-source-code" id="source-code"></pre>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <nav class="mockup-nav" aria-label="Mock-up variants">
+    <a href="./index.html">Index</a>
+    <a href="./variant-a-refined-plate.html">A</a>
+    <a href="./variant-b-framed-viewer.html">B</a>
+    <a href="./variant-b2-full-viewport.html">B·2</a>
+    <a href="./variant-c-full-bleed.html" aria-current="page">C</a>
+  </nav>
+
+  <script type="module">
+    import { loadArtwork, buildLayerModel, renderLayerList, initHeroViewer, populateSource } from './mockup-shared.js';
+
+    const stage = document.getElementById('stage');
+    const viewport = document.getElementById('viewport');
+    const pill = document.getElementById('pill');
+    const rail = document.getElementById('layers-rail');
+    const railToggle = document.getElementById('rail-toggle');
+
+    populateSource(document.getElementById('source-code'), document.getElementById('source-meta'));
+
+    try {
+      const { svg } = await loadArtwork(viewport);
+      const model = buildLayerModel(svg);
+
+      // Collapsed strip: first dozen swatch dots + overflow count.
+      const dotsEl = document.getElementById('rail-dots');
+      const DOT_LIMIT = 12;
+      const dots = model.slice(0, DOT_LIMIT).map((layer) => {
+        const dot = document.createElement('button');
+        dot.className = 'rail-dot';
+        dot.title = layer.name;
+        dot.setAttribute('aria-pressed', 'true');
+        if (layer.color) dot.style.background = layer.color;
+        dot.addEventListener('click', () => {
+          const next = !layer.visible;
+          layer.visible = next;
+          layer.els.forEach((el) => { el.style.display = next ? '' : 'none'; });
+          dot.setAttribute('aria-pressed', String(next));
+          list.sync();
+        });
+        dotsEl.appendChild(dot);
+        return { layer, dot };
+      });
+      if (model.length > DOT_LIMIT) {
+        const more = document.createElement('span');
+        more.className = 'rail-overflow';
+        more.textContent = `+${model.length - DOT_LIMIT}`;
+        dotsEl.appendChild(more);
+      }
+
+      const list = renderLayerList(document.getElementById('rail-list'), model, {
+        solo: true,
+        onChange: () => {
+          dots.forEach(({ layer, dot }) => dot.setAttribute('aria-pressed', String(layer.visible)));
+        },
+      });
+
+      initHeroViewer({
+        stage,
+        viewport,
+        svg,
+        pill,
+        fullscreenBtn: document.getElementById('fullscreen-btn'),
+        hintEl: document.getElementById('hint'),
+      });
+    } catch (err) {
+      viewport.innerHTML = `<div class="viewer-fallback">Artwork failed to load — run “npm run serve:bbwp” and open via localhost:3001<br>(${err.message})</div>`;
+    }
+
+    railToggle.addEventListener('click', () => {
+      const open = !rail.classList.contains('expanded');
+      rail.classList.toggle('expanded', open);
+      railToggle.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && rail.classList.contains('expanded')) {
+        rail.classList.remove('expanded');
+        railToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    // Fullscreen esc hint toast.
+    const toast = document.getElementById('esc-toast');
+    document.addEventListener('fullscreenchange', () => {
+      if (document.fullscreenElement === stage) {
+        toast.classList.add('visible');
+        setTimeout(() => toast.classList.remove('visible'), 2500);
+      }
+    });
+  </script>
+</body>
+</html>

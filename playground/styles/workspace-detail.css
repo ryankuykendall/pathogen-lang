@@ -178,6 +178,90 @@ body:has(.workspace-detail) main.site-main {
   color: var(--text-inverse);
 }
 
+/* ── live hero viewer (progressive enhancement) ─────────── */
+/* detail-hero-mount.ts upgrades the static plate to a <mini-preview>
+ * viewer (design: project-docs/detail-hero-viewer/, variant B·2). Once
+ * .detail-hero-live lands on the stage, the plate goes frameless: no
+ * padding, no crop marks — the framed art IS the chrome. The static
+ * rules above remain the no-JS / fetch-failure experience. */
+.detail-plate-stage.detail-hero-live {
+  padding: 0;
+}
+.detail-plate-stage.detail-hero-live::before,
+.detail-plate-stage.detail-hero-live::after {
+  display: none;
+}
+
+/* NOTE: height (not flex-basis) sizes this — a `flex: 1` shorthand here
+ * would set flex-basis: 0% and collapse the content-sized stage to zero
+ * (bug found during the B·2 mockup verification). */
+.detail-hero-viewport {
+  position: relative;
+  height: clamp(320px, 38vw, 520px);
+}
+.detail-hero-viewport mini-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The single resting control: a hover-revealed glass fullscreen button.
+ * mini-preview's own chrome (zoom pill, navigator, layers/inspector
+ * button, exit toggle) appears per its existing rules — layers and
+ * navigator are fullscreen-only. Hidden while the preview is fullscreen:
+ * the fixed overlay covers the page and carries its own exit toggle. */
+.detail-hero-fullscreen {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full, 999px);
+  background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  color: var(--text-secondary);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  z-index: 11;
+  opacity: 0;
+  transition: opacity var(--transition-base, 0.15s), color var(--transition-base, 0.15s);
+}
+.detail-hero-viewport:hover .detail-hero-fullscreen,
+.detail-hero-viewport:focus-within .detail-hero-fullscreen {
+  opacity: 1;
+}
+@media (hover: none) {
+  .detail-hero-fullscreen {
+    opacity: 1;
+  }
+}
+.detail-hero-fullscreen:hover {
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
+}
+.detail-hero-fullscreen:focus-visible {
+  outline: 2px solid var(--focus-ring, rgba(192, 81, 142, 0.4));
+  outline-offset: 2px;
+}
+.detail-hero-fullscreen svg {
+  width: 16px;
+  height: 16px;
+}
+.detail-hero-viewport:has(mini-preview.fullscreen) .detail-hero-fullscreen {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-hero-fullscreen {
+    transition: none;
+  }
+}
+
 /* ── meta block — title, byline, deck ───────────────────── */
 .detail-meta {
   max-width: 880px;

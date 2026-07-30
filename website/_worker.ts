@@ -655,6 +655,13 @@ async function renderWorkspaceDetailPage(
     heroHtml = `<div class="detail-plate-fallback" style="background: linear-gradient(135deg, ${from} 0%, ${to} 100%);">Preview pending</div>`;
   }
 
+  // A vector hero (inline legacy SVG or R2 approval SVG) can be upgraded
+  // client-side to the live viewer — detail-hero-mount.ts reads the SVG
+  // from the SSR markup itself (inline node or <object data> URL), so the
+  // flag on the stage is the only extra SSR surface. Raster/swatch heroes
+  // stay static.
+  const heroVector = Boolean(approval.svg || approval.approvalSvgAt);
+
   // "More by @handle" — same KV pattern + stale-index revalidation as
   // renderProfilePage (~line 297). Capped at 3 entries; excludes the
   // current approval. If the owner has no other approved work, the
@@ -747,7 +754,7 @@ async function renderWorkspaceDetailPage(
     </div>
 
     <section class="detail-plate">
-      <div class="detail-plate-stage">
+      <div class="detail-plate-stage"${heroVector ? ' data-hero-vector' : ''}>
         ${heroHtml}
       </div>
     </section>
@@ -782,7 +789,32 @@ async function renderWorkspaceDetailPage(
     <meta property="og:image" content="${ogImage}">
     <meta property="og:type" content="article">
     <link rel="stylesheet" href="/styles/workspace-detail.css">
+    ${
+      // The live hero viewer requires the shared pan/zoom bundle
+      // (window.PathogenPanZoom + <pathogen-zoom-pill>) as a classic
+      // script BEFORE the module below imports mini-preview — same
+      // ordering contract as the blog pages and BBWP templates.
+      heroVector ? '<script src="/dist/pan-zoom.global.js"></script>' : ''
+    }
     <script type="module">
+      ${
+        // Upgrade the static vector hero to the live viewer (pan/zoom,
+        // fullscreen, layers — see project-docs/detail-hero-viewer/). Any
+        // failure leaves the SSR <object>/<img> chain untouched. Gated so
+        // non-vector pages serve byte-identical HTML to pre-viewer output.
+        heroVector
+          ? `(async () => {
+        const stage = document.querySelector('.detail-plate-stage[data-hero-vector]');
+        if (!stage) return;
+        try {
+          const mount = await import('/utils/detail-hero-mount.js');
+          await mount.mountHeroViewer(stage);
+        } catch {
+          // Static hero remains — this is the no-JS/failure experience.
+        }
+      })();`
+          : ''
+      }
       // Lazy hydrate the "View source" disclosure. SSR emits the source
       // as plain escaped text inside <pre class="detail-source-code">
       // so crawlers index it as-is. On first expand we try to mount a

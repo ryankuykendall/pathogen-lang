@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Detail hero viewer — three explorations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../playground/styles/theme.css">
+  <script>
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="module" src="../../../public/components/shared/theme-toggle.js"></script>
+  <style>
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 3rem 2rem 8rem; }
+    .head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: clamp(2rem, 4vw, 2.8rem); margin: 0; }
+    h1 em {
+      font-style: italic;
+      background: linear-gradient(120deg, var(--secondary-from), var(--secondary-to));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .brief {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 1.15rem;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      max-width: 62ch;
+      margin: 0 0 2.5rem;
+    }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    @media (max-width: 880px) { .cards { grid-template-columns: 1fr; } }
+    .card {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg, 12px);
+      box-shadow:
+        0 1px 2px rgba(var(--shadow-tint-rgb), 0.06),
+        0 8px 24px rgba(var(--shadow-tint-rgb), 0.06);
+      overflow: hidden;
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--secondary-accent-subtle);
+      box-shadow:
+        0 4px 8px rgba(var(--shadow-tint-rgb), 0.10),
+        0 16px 32px rgba(var(--shadow-tint-rgb), 0.14);
+    }
+    .card-tag {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--secondary-accent-text);
+      padding: 1.1rem 1.3rem 0;
+    }
+    .card h2 {
+      font-size: 1.45rem;
+      margin: 0.3rem 0 0;
+      padding: 0 1.3rem;
+      color: var(--text-primary);
+    }
+    .card .thesis {
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      padding: 0.6rem 1.3rem 0;
+      margin: 0;
+    }
+    .card ul {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: var(--text-tertiary);
+      margin: 0.75rem 0 0;
+      padding: 0 1.3rem 0 2.3rem;
+    }
+    .card .open {
+      margin-top: auto;
+      padding: 1.1rem 1.3rem 1.2rem;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--secondary-accent-text);
+    }
+    .foot {
+      margin-top: 3rem;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      color: var(--text-tertiary);
+      line-height: 1.8;
+    }
+    .foot code {
+      font-family: var(--font-mono);
+      background: var(--bg-tertiary);
+      padding: 0.1rem 0.35rem;
+      border-radius: var(--radius-sm, 4px);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <h1>Detail hero viewer — three <em>explorations</em></h1>
+      <theme-toggle></theme-toggle>
+    </div>
+    <p class="brief">
+      Elevating the hero on the public workspace detail page from a static raster plate to a
+      mini-workspace-grade viewer: pan, zoom, fullscreen, and layers over the pre-compiled SVG.
+      All three variants are live — drag, ⌘-scroll, and toggle layers in each. Artwork is the
+      real <strong>experiments-in-random-variable-offsets</strong> workspace (485 layers).
+    </p>
+    <div class="cards">
+      <a class="card" href="./variant-a-refined-plate.html">
+        <span class="card-tag">Variant A · conservative</span>
+        <h2>Refined plate</h2>
+        <p class="thesis">
+          Keeps today's plate exactly — crop marks, elevation, cream card — but the art grows
+          from 720px to 1040px and gains hover-revealed glass controls.
+        </p>
+        <ul>
+          <li>Least visual change; zero layout risk below the hero</li>
+          <li>Layers live in a compact popover</li>
+          <li>Viewer chrome invisible until you reach for it</li>
+        </ul>
+        <span class="open">Open variant A →</span>
+      </a>
+      <a class="card" href="./variant-b-framed-viewer.html">
+        <span class="card-tag">Variant B · instrument</span>
+        <h2>Framed viewer</h2>
+        <p class="thesis">
+          The stage becomes a framed instrument: a slim toolbar (layers count, fit, fullscreen)
+          over a full-width viewport. The art spans ~1216px. Reads as "this is a live plate."
+        </p>
+        <ul>
+          <li>Discoverable controls — nothing hidden behind hover</li>
+          <li>Layers slide in as a drawer; ⌥-click solos a layer</li>
+          <li>Fullscreen keeps the toolbar — most app-like</li>
+        </ul>
+        <span class="open">Open variant B →</span>
+      </a>
+      <a class="card" href="./variant-b2-full-viewport.html" style="border-color: var(--accent-color);">
+        <span class="card-tag" style="color: var(--accent-color);">Variant B·2 · chosen direction</span>
+        <h2>Frameless + full viewport</h2>
+        <p class="thesis">
+          Variant B after design review: the toolbar is gone entirely — just the framed art with a
+          hover-revealed fullscreen toggle. "Fullscreen" fills the browser viewport (a fixed
+          overlay), and the layers toggle appears only in that mode.
+        </p>
+        <ul>
+          <li>Quietest possible resting state: one glass button</li>
+          <li>Viewport-fill instead of the Fullscreen API</li>
+          <li>Layers drawer (⌥-click solo) gated to full-viewport mode</li>
+        </ul>
+        <span class="open">Open variant B·2 →</span>
+      </a>
+      <a class="card" href="./variant-c-full-bleed.html">
+        <span class="card-tag">Variant C · dramatic</span>
+        <h2>Full-bleed stage</h2>
+        <p class="thesis">
+          The viewport IS the plate: edge-to-edge art on a soft gradient backdrop, glass controls
+          floating in the corners, and a collapsible swatch-dot layers rail on the left.
+        </p>
+        <ul>
+          <li>Maximum art per pixel; tallest viewport</li>
+          <li>Signature move: the glass layers rail over the artwork</li>
+          <li>Crop-mark identity moves to the meta block below</li>
+        </ul>
+        <span class="open">Open variant C →</span>
+      </a>
+    </div>
+    <p class="foot">
+      Serve with <code>npm run serve:bbwp</code> → open via <code>localhost:3001</code> (the pages
+      fetch the compiled artwork + real theme/pan-zoom bundles from the repo).<br>
+      Exploration brief &amp; findings: <code>project-docs/detail-hero-viewer/README.md</code> ·
+      wiring: <code>mockup-shared.js</code> · assets: <code>../assets/</code>
+    </p>
+  </div>
+</body>
+</html>
