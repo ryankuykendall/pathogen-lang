@@ -1,5 +1,22 @@
 # Print-Ready PDF Export — Status
 
+## 2026-07-19 (night) — showSaveFilePicker user-activation hotfix
+
+Ryan's prod verification on a 13200×5200 piece hit
+`SecurityError: Failed to execute 'showSaveFilePicker' … Must be handling a
+user gesture`. Root cause: Chrome expires **transient user activation**
+(~5s); the export pipeline (decimation → outlining/font fetches → preview
+raster → cover → svg2pdf) outlives it on dense artwork, so the save dialog
+opened AFTER the gesture died. **The harness is structurally blind to this**
+— it stubs `showSaveFilePicker`, so real activation semantics never run.
+
+Fix: picker-FIRST flow (`_acquireSaveTarget` inside the click → generate →
+`_writeBlob` to the pre-acquired handle). `_downloadSvg`/`_downloadPdf` now
+return Blobs; `_saveBlob` split into acquire/write. Cancel in the dialog
+returns null from the acquire step and skips the export entirely — no work
+done, no error status (harness check A1b). *(Sentence was left dangling by
+the original session; completed 2026-07-29 from the shipped behavior.)*
+
 ## 2026-07-19 (evening) — Option B modal layout
 
 Ryan flagged the Download button living in the modal top bar, far from the
@@ -224,3 +241,41 @@ poster printing, plus the legend footer rebrand to "Created in pathogen.studio".
   cm → 3 mm), not the preset's native unit.
 - Non-latin artwork text may miss glyphs (font-loader fetches the Google Fonts
   latin subset) — documented in docs/exporting.md.
+
+## 2026-07-29 — Transparent workspace background painted the bleed fill black
+
+**User report:** PDF export (Match artwork, 0.5 in margins, Bleed + crop marks
+ON) produced a thick solid-black band across the margin+bleed area, framed by
+the white slug ring. Repro PDF: user's `bug-check-on-black-border.pdf`; page 2
+content stream began `0. g` + `18. 972. 1910.88 -954. re` + `f` — the bleed
+rect filled black.
+
+**Root cause:** the workspace background was `oklch(75% 75% 180 / 0%)` (fully
+transparent, set via the footer color input). `canvasResolve()` in
+`playground/utils/svg-pdf-colors.ts` returns `{ hex: '#000000', alpha: 0 }`
+for any zero-alpha color, and `resolveCssColorToHex()` dropped the alpha —
+so the bleed-edge background fill in `export-modal.ts` painted opaque black.
+Same class of bug: semi-transparent backgrounds painted at full strength
+(alpha silently dropped), and the raster/JPEG flatten used black instead of
+the white-paper fallback.
+
+**Fix:** `resolveCssColorToHex()` now returns `null` for zero-alpha colors
+(matching the `transparent` keyword → the bleed fill is skipped, paper stays
+white) and flattens partial alpha over white via the exported pure helpers
+`paintedOnWhite()` / `flattenOverWhite()`. `normalizeSvgPaintColors()` (the
+SVG paint path, which correctly folds alpha into `*-opacity`) is untouched.
+Review follow-up in the same change: `_downloadPdf` now strips the clone's
+`#preview-bg` rect — the page-level bleed fill is the single source of
+background paint; left in, a semi-transparent background would composite the
+raw color a second time on top of the flattened fill, printing a deeper tint
+inside the artwork than in the margins.
+
+**Verification:** red/green on the real `_downloadPdf` path via
+`repro-black-border.ts` (this dir) — pre-fix: `0. g` bleed fill (zero-alpha)
+and `0. 0.89 0.7 rg` (25% alpha, unflattened); post-fix: no bleed fill /
+`0.75 0.97 0.93 rg` (exact flatten-over-white values). Regression checks live
+in the **current** harness `project-docs/unified-export/verify-export.ts`
+(section 12b) — `verify-pdf-export.ts` in this dir predates the unified
+Export modal rename (`export-legend-modal` → `export-modal`, `export-legend`
+→ `open-export` event) and can no longer drive the UI; it remains a
+historical artifact. Unit tests: `tests/svg-pdf-colors.test.ts`.

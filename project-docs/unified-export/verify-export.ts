@@ -544,7 +544,14 @@ async function main(): Promise<void> {
      return { total: paths.length, visible: visible };`,
   );
   check('modal snapshot contains visible artwork layers', artwork.total > 0 && artwork.visible === artwork.total, `${artwork.visible}/${artwork.total} visible`);
-  await page.screenshot({ path: join(OUT_DIR, 'modal-default.png') });
+  // Illustrative artifact only — macOS graphics-stack flakiness can hang
+  // Page.captureScreenshot; never let that kill the check run (same guard as
+  // the pdf-export harness).
+  try {
+    await page.screenshot({ path: join(OUT_DIR, 'modal-default.png') });
+  } catch (err) {
+    console.warn('screenshot skipped (environmental):', (err as Error).message?.slice(0, 80));
+  }
 
   // --- 4. SVG export, legend off: watermark embedded, no legend ---
   const svgOff = await download(page);
@@ -572,7 +579,11 @@ async function main(): Promise<void> {
   check('legend toggle reveals fields + snap controls', !legendState.legendHidden && !legendState.snapHidden);
   check('highlighting defaults ON with colored keyword tspans in preview', legendState.highlightOn && legendState.kwTspans > 0, `${legendState.kwTspans} kw tspans`);
   check('watermark removed while legend is on', legendState.watermarkGone);
-  await page.screenshot({ path: join(OUT_DIR, 'modal-legend-highlight.png') });
+  try {
+    await page.screenshot({ path: join(OUT_DIR, 'modal-legend-highlight.png') });
+  } catch (err) {
+    console.warn('screenshot skipped (environmental):', (err as Error).message?.slice(0, 80));
+  }
 
   const svgOn = await download(page);
   const svgOnText = svgOn.bytes.toString('utf8');
@@ -682,6 +693,76 @@ async function main(): Promise<void> {
   const alphaTrans = await cornerAlpha(page, pngTrans.bytes);
   check('transparent PNG has alpha-0 corner', alphaTrans === 0, `alpha=${alphaTrans}`);
   writeFileSync(join(OUT_DIR, 'export-transparent.png'), pngTrans.bytes);
+
+  // --- 12b. Transparent / semi-transparent workspace background → PDF bleed fill ---
+  // The PDF paints the bleed+margin rect with the workspace background so
+  // trimmed posters are edge-to-edge. A fully transparent background
+  // (oklch … / 0%) used to resolve to #000000 and paint the whole band solid
+  // black (real user report, 2026-07-29); it must skip the fill instead —
+  // paper stays white. A semi-transparent background must flatten over white,
+  // not paint at full strength. The bleed fill is the only `re` followed by
+  // `f` in the page stream: svg2pdf draws rects as m/l/h paths and emits `re`
+  // only for clips (`re W n`), so jsPDF's doc.rect fill is unambiguous.
+  const setWorkspaceBackground = async (value: string): Promise<void> => {
+    await page.evaluate(`
+      (function() {
+        function findFooter(root) {
+          var els = root.querySelectorAll('*');
+          for (var i = 0; i < els.length; i++) {
+            if (els[i].tagName === 'PLAYGROUND-FOOTER') return els[i];
+            if (els[i].shadowRoot) {
+              var f = findFooter(els[i].shadowRoot);
+              if (f) return f;
+            }
+          }
+          return null;
+        }
+        var footer = findFooter(document);
+        var bg = footer && footer.shadowRoot.querySelector('#bg');
+        if (!bg) throw new Error('footer #bg not found');
+        bg.dispatchEvent(new CustomEvent('color-change', { detail: { value: '${value}' } }));
+      })();
+    `);
+  };
+  // `18.` = the bleed rect's x/top inset: bleed.x = trim.x − bleedPt = SLUG_PT
+  // (0.25 in × 72 = 18 pt) whenever print prep is on — an invariant of
+  // pdf-page-layout.ts independent of margins, unit, and page size. Update if
+  // SLUG_PT ever changes.
+  const bleedFillRe = /([\d.]+(?: [\d.]+ [\d.]+)?) (g|rg)\n18\. [\d.]+ [\d.]+ -[\d.]+ re\nf\n/;
+  const bgCase = async (bg: string): Promise<string> => {
+    // Full reload each time — the modal snapshots workspace state on open().
+    await page.goto(`${LOCAL_ORIGIN}/workspace/${mainWs}`, { waitUntil: 'networkidle2', timeout: 60_000 });
+    await waitFor(page, PREVIEW_READY, 60_000, 'preview recompile for background case');
+    await installSaveStub(page);
+    await setWorkspaceBackground(bg);
+    await openModal(page);
+    await inModal(page, `sr.querySelector('.format-toggle button[data-format="pdf"]').click(); return { ok: true };`);
+    return decodedStreams((await download(page)).bytes);
+  };
+
+  const zeroAlphaStreams = await bgCase('oklch(75% 75% 180 / 0%)');
+  check('transparent workspace background → no bleed fill (no black band)', !/re\nf\n/.test(zeroAlphaStreams));
+  // ` c` curve ops come only from the artwork's circle() calls via svg2pdf —
+  // crop-mark doc.line() segments are straight `l` ops and always present, so
+  // they must not satisfy this check.
+  check('transparent-background PDF still draws the artwork', / c\n/.test(zeroAlphaStreams));
+
+  const semiAlphaStreams = await bgCase('oklch(75% 75% 180 / 25%)');
+  const semiFill = bleedFillRe.exec(semiAlphaStreams);
+  const semiChannels = semiFill ? semiFill[1].split(' ').map(parseFloat) : [];
+  check('semi-transparent background → bleed fill present', !!semiFill, semiFill ? `${semiFill[1]} ${semiFill[2]}` : 'no fill op');
+  check(
+    'semi-transparent bleed fill flattened over white (all channels ≥ 0.7)',
+    semiChannels.length > 0 && semiChannels.every((c) => c >= 0.7),
+    semiChannels.join(', '),
+  );
+  // The clone's #preview-bg rect must be stripped for PDF: left in, it would
+  // re-composite the raw semi-transparent color on top of the already-
+  // flattened page fill (deeper tint inside the artwork than in the margins).
+  // MAIN_SOURCE draws exactly one full-canvas path itself (the background
+  // layer's rect(0,0,800,500)); #preview-bg would be a second one.
+  const fullCanvasEdges = (semiAlphaStreams.match(/800\. 0\. l\n/g) || []).length;
+  check('background painted once — #preview-bg stripped, no double composite', fullCanvasEdges === 1, `${fullCanvasEdges} full-canvas paths`);
 
   // --- 13. Standalone bundle registers the zoom pill (the VS Code webview
   // path: a bare page that loads ONLY pan-zoom.global.js — no playground

@@ -1278,6 +1278,12 @@ class ExportModal extends HTMLElement {
     // reopen the modal for a different workspace while awaits below resolve.
     const layout = computePdfLayout(this._layoutInput());
     const clone = this._prepareExportClone();
+    // The page-level background fill below covers the whole bleed box, so the
+    // clone's own background rect is redundant — and for a semi-transparent
+    // background it would composite the raw color a second time on top of the
+    // already-flattened fill, printing a deeper tint inside the artwork than
+    // in the margins. The page fill is the single source of background paint.
+    clone.querySelector('#preview-bg')?.remove();
     const background = this._getEffectiveState().background;
     const canvasWidth = this._canvasWidth;
     const canvasHeight = this._canvasHeight;

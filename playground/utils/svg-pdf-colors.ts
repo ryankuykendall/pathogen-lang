@@ -22,7 +22,7 @@ const ALREADY_SRGB = /^#|^rgb\(/i;
 
 let _ctx: CanvasRenderingContext2D | null = null;
 
-interface ResolvedColor {
+export interface ResolvedColor {
   hex: string;
   /** Color-carried alpha in [0, 1), or null when fully opaque. */
   alpha: number | null;
@@ -76,14 +76,45 @@ function applyAlpha(el: Element, attr: string, alpha: number): void {
 }
 
 /**
- * Resolve any CSS color (hex, rgb, named, oklch, lab, …) to sRGB hex, or null
- * if the value is missing, non-color, or unparseable. Alpha is dropped.
+ * Composite an sRGB hex color over white paper at the given alpha.
+ * Pure math — exported for unit testing. Expects the 6-digit `#rrggbb` form
+ * canvasResolve produces; no validation is performed on other shapes.
+ */
+export function flattenOverWhite(hex: string, alpha: number): string {
+  const channels = [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)].map((h) => parseInt(h, 16));
+  return `#${channels
+    .map((c) =>
+      Math.round(c * alpha + 255 * (1 - alpha))
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+}
+
+/**
+ * What a resolved color paints on white paper: null when nothing would be
+ * painted (unresolvable or fully transparent — zero alpha used to fall
+ * through as opaque #000000 and paint print backgrounds solid black), the
+ * color itself when opaque, or the color flattened over white when
+ * semi-transparent. Pure — exported for unit testing.
+ */
+export function paintedOnWhite(resolved: ResolvedColor | null): string | null {
+  if (!resolved || resolved.alpha === 0) return null;
+  return resolved.alpha === null ? resolved.hex : flattenOverWhite(resolved.hex, resolved.alpha);
+}
+
+/**
+ * Resolve any CSS color (hex, rgb, named, oklch, lab, …) to the opaque sRGB
+ * hex it paints on white paper, or null if nothing would be painted (missing,
+ * non-color, unparseable, or fully transparent — `oklch(… / 0)` behaves like
+ * the `transparent` keyword). Semi-transparent colors are flattened over
+ * white rather than painted at full strength.
  */
 export function resolveCssColorToHex(value: string | undefined): string | null {
   if (!value) return null;
   const trimmed = value.trim();
   if (SKIP_VALUE.test(trimmed)) return null;
-  return canvasResolve(trimmed)?.hex ?? null;
+  return paintedOnWhite(canvasResolve(trimmed));
 }
 
 /**

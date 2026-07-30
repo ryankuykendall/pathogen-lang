@@ -57,7 +57,7 @@ A single **Units** selector (inches or centimeters) applies to every dimension �
 ### Margins, bleed, and crop marks
 
 - **Margins** inset the printable area on all four sides (default 0.5 in). In Match-artwork mode they extend the page outward instead, so the artwork size you entered is preserved.
-- **Bleed + crop marks** adds a 0.125 in / 3 mm bleed around the trimmed page and corner crop marks outside it — the setup commercial printers ask for on edge-to-edge posters. The bleed convention follows your Units selection: 0.125 in when working in inches, 3 mm when working in centimeters. The artwork background color extends to the bleed edge, so there are no white slivers after trimming.
+- **Bleed + crop marks** adds a 0.125 in / 3 mm bleed around the trimmed page and corner crop marks outside it — the setup commercial printers ask for on edge-to-edge posters. The bleed convention follows your Units selection: 0.125 in when working in inches, 3 mm when working in centimeters. The artwork background color extends to the bleed edge, so there are no white slivers after trimming. A fully transparent workspace background prints as paper white, and a semi-transparent one is flattened over white — the printed tint matches what you see over a white canvas.
 
 If you're unsure whether your print shop wants bleed, leave the option on for posters and off for framed prints with a border.
 

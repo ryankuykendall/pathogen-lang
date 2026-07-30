@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-29 (PDF export: transparent-background black band)
+
+### Fixed
+
+#### Playground
+
+- **Thick black border in exported PDFs when the workspace background is transparent** — the PDF export paints the margin+bleed area with the workspace background so trimmed posters print edge-to-edge, but `resolveCssColorToHex` resolved any zero-alpha color (e.g. `oklch(75% 75% 180 / 0%)`) to opaque `#000000`, painting the whole band solid black (found via a real user export with Bleed + crop marks on). Zero-alpha colors now resolve to `null` — the fill is skipped and the paper stays white, matching the `transparent` keyword — and semi-transparent backgrounds are flattened over white (new pure helper `flattenOverWhite` in `playground/utils/svg-pdf-colors.ts`) instead of painting at full strength. The same resolution feeds the raster/JPEG flatten, which now correctly falls back to white paper instead of black. The SVG paint-normalization path (`normalizeSvgPaintColors`), which folds alpha into `*-opacity` attributes, is unchanged. The PDF path also strips the clone's `#preview-bg` rect — the page-level fill is the single source of background paint, so a semi-transparent background no longer composites a second time inside the artwork area (which would have printed a deeper tint there than in the margins). Unit tests in `tests/svg-pdf-colors.test.ts`; red/green E2E verification on the real export path plus regression checks in `project-docs/unified-export/verify-export.ts` (which also documents that the pre-unification `verify-pdf-export.ts` harness can no longer drive the renamed modal). One sentence added to `docs/exporting.md` documenting the transparent/semi-transparent background behavior.
+
 ## [Unreleased] - 2026-07-29 (array reverse + sort)
 
 ### Added
