@@ -63,6 +63,7 @@
     "cli": "tsx src/cli.ts",
     "serve:bbwp": "tsx scripts/serve-bbwp.ts",
     "update:bbwp-index": "tsx scripts/update-bbwp-index.ts",
+    "backfill:approval-svgs": "tsx scripts/backfill-approval-svgs.ts",
     "build:vscode": "tsx scripts/build-vscode-extension.ts",
     "build:vscode:install": "tsx scripts/build-vscode-extension.ts --install",
     "compile:bbwp": "tsx scripts/compile-bbwp.ts",

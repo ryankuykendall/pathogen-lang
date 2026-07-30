@@ -37,6 +37,7 @@ program.parse();
 | `migrate-anonymous-workspaces.ts` | One-off: re-key workspaces from anonymous user IDs to an authenticated user. Reads/writes WORKSPACES KV via wrangler. |
 | `kill-port.ts` | Kill processes on a port (default 3000); used by `kill:wrangler` |
 | `install-git-hooks.ts` | Install git hooks from `scripts/git-hooks/` |
+| `backfill-approval-svgs.ts` | Regenerate missing approval SVGs (detail-page hero viewer) via the admin pipeline: compiles each approval's frozen code in a puppeteer harness serving `public/` (real `compiler-worker.compileWithContext` + `generateSvg`), PUTs to `/admin/approval/:id/svg`. Sweeps approved + featured queues; skips GPU-gradient sources by default; `--dry-run`; non-local API requires `--confirm`. Run via `ADMIN_TOKEN=... npm run backfill:approval-svgs`. |
 | `compile-bbwp.ts` | Compile `.pathogen` → SVG → HTML artifact in `website/bbwp/` |
 | `serve-bbwp.ts` | HTTP server for browsing BBWP artifacts (default port 3001) |
 | `update-bbwp-index.ts` | Regenerate `website/bbwp/index.html` from directory listing |
