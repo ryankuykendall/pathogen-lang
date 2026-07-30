@@ -1,5 +1,19 @@
 # Detail-Page Hero Viewer — Status
 
+## 2026-07-30 — Shipped and verified in production
+
+Commit `9ac91e2` deployed via Pages auto-deploy; Ryan verified the live
+viewer working as expected in production (approval SVG regenerated for
+the motivating page). Remaining follow-ups, in no particular order:
+
+- Backfill sweep: regenerate approval SVGs for older approvals still
+  missing `svg`/`approvalSvgAt` so every detail page gets the viewer.
+- CHANGELOG.md entry covering work since the last entry.
+- Optional: flip `includeMetadata: true` in the admin approval capture
+  (`admin-moderation-view.ts` `lib.generateSvg`) for richer inspector
+  layer data (names/nesting/gradients) on future regenerations — weigh
+  against the script-tag-in-served-SVG security posture first.
+
 ## 2026-07-30 — Production implementation (B·2) on dev, verified
 
 Reuse-first build — all viewer behavior comes from existing components;
