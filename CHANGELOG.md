@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-07-31 (admin Set Thumbnail from moderation)
+
+### Added
+
+#### Playground
+
+- **Admin "Set thumbnail" on the moderation Approved/Featured tabs** — admins can now enter the interactive thumbnail crop workflow from `/admin/moderation` for workspaces they don't own. The button sits beside "Regenerate preview" and opens the existing `<thumbnail-crop-modal>` on a render of the frozen approval code (the same immutable source Regenerate uses), saving as `kind=manual` so the crop takes precedence over the auto layer on all public reads; the hero render refreshes from the same frozen SVG. Auth rides the session cookie via the existing session-admin upload bypass — no API changes. The modal's `open()` gained an optional `{workspaceId, context, title}` parameter (owner path unchanged): admin context hides the Clear button (DELETE remains owner-only), skips the owner-workspace store sync, shows the target workspace's name in the header, and adjusts the toast copy. The compiled SVG is origin-normalized before opening — the crop math assumes a `0 0 w h` viewBox but `define ViewBox` allows any origin — via the new pure helper `computeOriginNormalization` (`playground/utils/svg-origin.ts`, unit-tested in `tests/playground-svg-origin.test.ts`), and gets an injected white `#preview-bg` rect so the crop preview is WYSIWYG with the white-filled PNG output. The modal is body-mounted once (the view's `render()` wipes its shadow root on every state change), closed on SPA navigation, and guarded against two cards racing onto the shared instance. Owner-path Set Thumbnail has the same non-zero-origin latent bug — deferred, see `project-docs/admin-set-thumbnail/STATUS.md`.
+
+### Fixed
+
+#### Playground
+
+- **Moderation toasts were silent no-ops** — `admin-moderation-view`'s `_toast` dispatched a `'toast'` event, but the only listener anywhere is `<app-toast>`'s `'show-toast'`; every toast in the view ("Approved: …", "Regenerate failed: …") was a dead event. Now dispatches `show-toast` with `detail.title`, and failure toasts carry `type: 'error'` styling.
+- **Stale moderation card thumbnails after Regenerate / Set thumbnail** — the card's R2 `<img>` URL was stable, so the browser kept serving its cached PNG after a regenerate. The URL is now cache-busted on `thumbnailAt`, and a `thumbnail-updated` listener stamps the entry and drops the cached compile (which would otherwise shadow the fresh image) so the card repaints immediately.
+
+## [Unreleased] - 2026-07-30 (detail-page live hero viewer)
+
+### Added
+
+#### Website
+
+- **Live hero viewer on workspace detail pages** — the public `/u/:handle/:slug` hero upgraded from a static plate to a live viewer over the pre-compiled approval SVG: frameless stage, pan/zoom with the shared controller + zoom pill, a hover-revealed fullscreen button with viewport-fill fullscreen, and a layers inspector gated to fullscreen. All viewer behavior reuses the existing component stack (`<mini-preview>` sandboxed iframe, `<inspector-panel>`, shared fullscreen-toggle util); new code is host glue only (`playground/utils/detail-hero-mount.ts` hydration + `website/_worker.ts` gating so non-vector pages serve byte-identical HTML). The static object/img/swatch fallback chain is unchanged and remains the no-JS/failure experience. Verified 31/31 E2E checks on the dev stack in both themes.
+
+#### Development
+
+- **Approval-SVG backfill sweep** (`scripts/`) — regenerates missing approval SVGs through the exact admin "Regenerate preview" pipeline (puppeteer harness running the real compiler worker + `generateSvg`, PUT to `/admin/approval/:id/svg`). Unions the approved and featured listings (they're disjoint), skips GPU-gradient sources by default (their vector fallback would degrade accurate raster heroes; `--include-gpu` overrides), reports and leaves per-item failures untouched, and refuses non-local `--api-base` writes without `--confirm`. Local run: 15 candidates, 7 regenerated to the live viewer; over-cap/parse-error items correctly kept their static heroes.
+
 ## [Unreleased] - 2026-07-29 (PDF export: transparent-background black band)
 
 ### Fixed
