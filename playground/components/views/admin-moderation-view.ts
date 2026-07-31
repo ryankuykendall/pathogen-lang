@@ -26,10 +26,15 @@ import compilerWorker from '../../services/compiler-worker.js';
 import thumbnailService from '../../services/thumbnail-service.js';
 import { store } from '../../state/store.js';
 import { dimensionsOrDefault } from '../../utils/source-dimensions.js';
+import { computeOriginNormalization } from '../../utils/svg-origin.js';
 // Side-effect import: register the <mini-workspace> custom element so the
 // review modal can mount one. The component is already loaded for blog
 // pages; pulling it in here keeps the admin route self-sufficient.
 import '../blog/mini-workspace.js';
+// Side-effect import: register <thumbnail-crop-modal> for the admin
+// "Set thumbnail" action on Approved/Featured cards.
+import type ThumbnailCropModal from '../thumbnail-crop-modal.js';
+import '../thumbnail-crop-modal.js';
 
 declare const __PATHOGEN_API_BASE__: string;
 const API_BASE = __PATHOGEN_API_BASE__;
@@ -158,6 +163,19 @@ class AdminModerationView extends HTMLElement {
   private _rejectingId: string | null = null;
   private _rejectionNotes: Map<string, string> = new Map();
 
+  // Crop modal for the admin "Set thumbnail" action. Mounted once on
+  // document.body — NOT inside this shadow root, because render() wipes
+  // shadowRoot.innerHTML on every state change and would destroy the
+  // modal mid-crop. The modal is position:fixed and fully self-styled,
+  // so a light-DOM mount is safe.
+  private _cropModal: ThumbnailCropModal | null = null;
+
+  // Guards the fetch/compile window before the shared modal opens, so two
+  // different cards' "Set thumbnail" clicks can't race onto one instance.
+  private _setThumbnailOpening = false;
+
+  private _onThumbnailUpdated: ((e: Event) => void) | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -166,11 +184,24 @@ class AdminModerationView extends HTMLElement {
   connectedCallback(): void {
     this.render();
     this._unsubscribe = store.subscribe(['currentView'], () => {
-      if (store.get('currentView') === 'admin-moderation') this._loadIfAdmin();
+      if (store.get('currentView') === 'admin-moderation') {
+        this._loadIfAdmin();
+      } else {
+        // Views persist across SPA navigation (only `.active` toggles), so
+        // disconnectedCallback won't fire — close the body-mounted crop
+        // modal explicitly or its fixed overlay would sit on top of the
+        // next view.
+        this._cropModal?.close();
+      }
     });
     this._unsubscribeUser = store.subscribe(['currentUser'], () => {
       if (store.get('currentView') === 'admin-moderation') this._loadIfAdmin();
     });
+    this._onThumbnailUpdated = (e: Event) => {
+      const id = (e as CustomEvent).detail?.workspaceId as string | undefined;
+      if (id) this._reflectThumbnailUpdate(id);
+    };
+    document.addEventListener('thumbnail-updated', this._onThumbnailUpdated);
     if (store.get('currentView') === 'admin-moderation') this._loadIfAdmin();
   }
 
@@ -179,6 +210,38 @@ class AdminModerationView extends HTMLElement {
     this._unsubscribe = null;
     this._unsubscribeUser?.();
     this._unsubscribeUser = null;
+    if (this._onThumbnailUpdated) {
+      document.removeEventListener('thumbnail-updated', this._onThumbnailUpdated);
+      this._onThumbnailUpdated = null;
+    }
+    this._cropModal?.remove();
+    this._cropModal = null;
+  }
+
+  // Lazily create the body-mounted crop modal.
+  private _ensureCropModal(): ThumbnailCropModal {
+    if (!this._cropModal?.isConnected) {
+      this._cropModal = document.createElement('thumbnail-crop-modal') as ThumbnailCropModal;
+      document.body.appendChild(this._cropModal);
+    }
+    return this._cropModal;
+  }
+
+  // After a thumbnail save (crop modal dispatches 'thumbnail-updated'),
+  // repaint the card with the fresh image: stamp thumbnailAt (drives the
+  // cache-busted img URL) and drop the cached compile, which would
+  // otherwise shadow the R2 thumbnail.
+  private _reflectThumbnailUpdate(workspaceId: string): void {
+    const entries = [
+      this._approved.find((x) => x.workspaceId === workspaceId),
+      this._featured.find((x) => x.workspaceId === workspaceId),
+    ].filter((x): x is ApprovedEntry => Boolean(x));
+    if (entries.length === 0) return;
+    const stamp = new Date().toISOString();
+    for (const entry of entries) entry.thumbnailAt = stamp;
+    this._svg.delete(this._svgKey('approved', workspaceId));
+    this._svg.delete(this._svgKey('featured', workspaceId));
+    this.render();
   }
 
   private _isAdmin(): boolean {
@@ -385,7 +448,7 @@ class AdminModerationView extends HTMLElement {
       // re-fetches the destination). Cross-tab counts stay stale until
       // visited — an accepted trade for a responsive UI.
     } catch (err) {
-      this._toast(`Approve failed: ${(err as Error).message}`);
+      this._toast(`Approve failed: ${(err as Error).message}`, 'error');
     } finally {
       this._busy.delete(workspaceId);
       this.render();
@@ -411,7 +474,7 @@ class AdminModerationView extends HTMLElement {
       // See _approve: skip the full cross-tab refresh; counts on other
       // tabs self-correct on visit.
     } catch (err) {
-      this._toast(`Reject failed: ${(err as Error).message}`);
+      this._toast(`Reject failed: ${(err as Error).message}`, 'error');
     } finally {
       this._busy.delete(workspaceId);
       this.render();
@@ -501,7 +564,7 @@ class AdminModerationView extends HTMLElement {
       // which point _loadTab re-fetches them — an accepted trade for
       // avoiding the janky full refresh.
     } catch (err) {
-      this._toast(`Action failed: ${(err as Error).message}`);
+      this._toast(`Action failed: ${(err as Error).message}`, 'error');
     } finally {
       this._busy.delete(key);
       this.render();
@@ -529,10 +592,12 @@ class AdminModerationView extends HTMLElement {
     return { ok: res.ok, ...data };
   }
 
-  private _toast(message: string): void {
+  // Dispatch to <app-toast> (mounted in app-shell), which listens for
+  // 'show-toast' and requires detail.title.
+  private _toast(message: string, type: 'success' | 'error' = 'success'): void {
     document.dispatchEvent(
-      new CustomEvent('toast', {
-        detail: { message },
+      new CustomEvent('show-toast', {
+        detail: { type, title: message },
         bubbles: true,
         composed: true,
       }),
@@ -649,30 +714,43 @@ class AdminModerationView extends HTMLElement {
   // workspace). Heals entries whose preview was dropped by the old 1 MB cap or
   // that never got a thumbnail. Thumbnail upload rides the session cookie;
   // uploadThumbnail grants session-admins the ownership bypass.
+  // Fetch the frozen approval record and compile it to a full-aspect SVG
+  // string. Shared by "Regenerate preview" and "Set thumbnail" — both act
+  // on the immutable approval source, never the live workspace code.
+  private async _fetchAndCompileApproval(workspaceId: string): Promise<{
+    result: Record<string, unknown>;
+    svgString: string;
+    dims: { viewBox: string; width: string; height: string };
+    generateSvg: (r: unknown, o: unknown) => string;
+  }> {
+    // 1. Frozen approval record → immutable source.
+    const res = await fetch(`${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}`, {
+      credentials: 'include',
+    });
+    const data = (await res.json()) as { code?: string; error?: string };
+    if (!res.ok) throw new Error(data.error || 'Failed to load approval');
+    const code = (data.code ?? '').trim();
+    if (!code) throw new Error('Approval record has no source code');
+
+    // 2. Compile once; render the full-aspect preview.
+    const id = ++this._compilationCounter;
+    const result = (await compilerWorker.compileWithContext(code, id, undefined)) as Record<string, unknown>;
+    const lib = (
+      window as unknown as { PathogenLang?: { generateSvg?: (r: unknown, o: unknown) => string } }
+    ).PathogenLang;
+    if (!lib?.generateSvg) throw new Error('Compiler not available (PathogenLang.generateSvg missing)');
+    const dims = dimensionsOrDefault(code);
+    const svgString = lib.generateSvg(result, dims);
+    if (!svgString || svgString.length === 0) throw new Error('Compile produced no SVG');
+    return { result, svgString, dims, generateSvg: lib.generateSvg.bind(lib) };
+  }
+
   private async _regenerate(workspaceId: string): Promise<void> {
     if (this._busy.has(workspaceId)) return;
     this._busy.add(workspaceId);
     this.render();
     try {
-      // 1. Frozen approval record → immutable source.
-      const res = await fetch(`${API_BASE}/admin/approval/${encodeURIComponent(workspaceId)}`, {
-        credentials: 'include',
-      });
-      const data = (await res.json()) as { code?: string; error?: string };
-      if (!res.ok) throw new Error(data.error || 'Failed to load approval');
-      const code = (data.code ?? '').trim();
-      if (!code) throw new Error('Approval record has no source code');
-
-      // 2. Compile once; render the full-aspect preview + a square-crop variant.
-      const id = ++this._compilationCounter;
-      const result = (await compilerWorker.compileWithContext(code, id, undefined)) as Record<string, unknown>;
-      const lib = (
-        window as unknown as { PathogenLang?: { generateSvg?: (r: unknown, o: unknown) => string } }
-      ).PathogenLang;
-      if (!lib?.generateSvg) throw new Error('Compiler not available (PathogenLang.generateSvg missing)');
-      const dims = dimensionsOrDefault(code);
-      const previewSvg = lib.generateSvg(result, dims);
-      if (!previewSvg || previewSvg.length === 0) throw new Error('Compile produced no SVG');
+      const { result, svgString: previewSvg, dims, generateSvg } = await this._fetchAndCompileApproval(workspaceId);
 
       // 3. Preview → R2 (detail-page hero source). Best-effort: a gradient-heavy
       // workspace can bake GPU-rendered raster data into the SVG and exceed the
@@ -691,7 +769,7 @@ class AdminModerationView extends HTMLElement {
       // 4. Square-crop SVG → PNG grid thumbnails (used on /explore + /featured).
       // Always attempt this, even if the preview PUT failed.
       const square = this._squareDims(dims.viewBox);
-      const squareSvg = lib.generateSvg(result, square);
+      const squareSvg = generateSvg(result, square);
       const thumbOk = Boolean(
         await thumbnailService.generateThumbnail(workspaceId, null as unknown as SVGElement, {}, undefined, {
           svgString: squareSvg,
@@ -732,12 +810,79 @@ class AdminModerationView extends HTMLElement {
       }
 
       if (previewOk && thumbOk) this._toast('Regenerated preview + thumbnail');
-      else if (previewOk) this._toast('Saved preview; thumbnail generation failed');
+      else if (previewOk) this._toast('Saved preview; thumbnail generation failed', 'error');
       else this._toast(`Updated thumbnail. Preview not stored: ${previewErr}`);
     } catch (err) {
-      this._toast(`Regenerate failed: ${(err as Error).message}`);
+      this._toast(`Regenerate failed: ${(err as Error).message}`, 'error');
     } finally {
       this._busy.delete(workspaceId);
+      this.render();
+    }
+  }
+
+  // "Set thumbnail" — open the interactive crop modal on a render of the
+  // frozen approval code, targeting a workspace the admin doesn't own.
+  // Saves as kind=manual (via the modal's element path), which takes
+  // precedence over the auto layer on all public reads. The element path
+  // also re-uploads the detail-page hero render from the same frozen SVG
+  // (same as Regenerate and the owner flow).
+  private async _openSetThumbnail(workspaceId: string): Promise<void> {
+    if (this._busy.has(workspaceId)) return;
+    // One shared modal instance: don't let a second card's click race an
+    // in-flight fetch/compile (last .open() would silently win) or clobber
+    // a crop already in progress.
+    if (this._setThumbnailOpening || this._cropModal?.isOpen) return;
+    this._setThumbnailOpening = true;
+    this._busy.add(workspaceId);
+    this.render();
+    try {
+      const { svgString, dims } = await this._fetchAndCompileApproval(workspaceId);
+
+      const doc = new DOMParser().parseFromString(svgString, 'image/svg+xml');
+      if (doc.querySelector('parsererror')) throw new Error('Compiled SVG failed to parse');
+      const svgEl = document.importNode(doc.documentElement, true) as unknown as SVGSVGElement;
+
+      // The crop modal assumes a (0,0) viewBox origin throughout its crop
+      // and pan/zoom math, but `define ViewBox` allows any origin — shift
+      // the content so the origin lands on (0,0).
+      const norm = computeOriginNormalization(dims.viewBox);
+      svgEl.setAttribute('viewBox', `0 0 ${norm.width} ${norm.height}`);
+      svgEl.setAttribute('width', String(norm.width));
+      svgEl.setAttribute('height', String(norm.height));
+      if (norm.translate) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', norm.translate);
+        while (svgEl.firstChild) g.appendChild(svgEl.firstChild);
+        svgEl.appendChild(g);
+      }
+
+      // generateSvg output has no background element, so the modal's
+      // snapshot background override would no-op while the PNG rasterizer
+      // white-fills. Insert an explicit #preview-bg rect so the crop
+      // preview is WYSIWYG with the white PNG output.
+      const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      bg.setAttribute('id', 'preview-bg');
+      bg.setAttribute('x', '0');
+      bg.setAttribute('y', '0');
+      bg.setAttribute('width', String(norm.width));
+      bg.setAttribute('height', String(norm.height));
+      bg.setAttribute('fill', '#ffffff');
+      svgEl.insertBefore(bg, svgEl.firstChild);
+
+      const name =
+        this._approved.find((x) => x.workspaceId === workspaceId)?.name ??
+        this._featured.find((x) => x.workspaceId === workspaceId)?.name;
+      this._ensureCropModal().open(
+        svgEl,
+        { width: norm.width, height: norm.height, background: '#ffffff' },
+        { workspaceId, context: 'admin', title: name },
+      );
+    } catch (err) {
+      this._toast(`Set thumbnail failed: ${(err as Error).message}`, 'error');
+    } finally {
+      this._setThumbnailOpening = false;
+      this._busy.delete(workspaceId);
+      // Safe: the modal lives on document.body, outside this render cycle.
       this.render();
     }
   }
@@ -908,6 +1053,7 @@ class AdminModerationView extends HTMLElement {
               `
           }
           <button class="ghost" data-action="regenerate" data-id="${this._escapeHtml(e.workspaceId)}" ${busy ? 'disabled' : ''} title="Recompile from the frozen approval source and refresh the public preview + thumbnail">${busy ? 'Regenerating…' : 'Regenerate preview'}</button>
+          <button class="ghost" data-action="set-thumbnail" data-id="${this._escapeHtml(e.workspaceId)}" ${busy ? 'disabled' : ''} title="Crop and set the manual thumbnail from the frozen approval render">Set thumbnail</button>
         </div>
       </div>
     </li>`;
@@ -985,7 +1131,10 @@ class AdminModerationView extends HTMLElement {
       // lives at /thumbnail/:id/:size on that same origin in both prod
       // (https://api.pathogen.studio) and dev (http://localhost:8787).
       const base = API_BASE.replace(/\/+$/, '');
-      return `<div class="thumb"><img src="${base}/thumbnail/${encodeURIComponent(workspaceId)}/256" alt="" loading="lazy" /></div>`;
+      // Cache-bust on thumbnailAt so the card repaints after Set thumbnail /
+      // Regenerate instead of serving the browser's stale cached PNG.
+      const v = Date.parse(thumbnailAt) || 0;
+      return `<div class="thumb"><img src="${base}/thumbnail/${encodeURIComponent(workspaceId)}/256?v=${v}" alt="" loading="lazy" /></div>`;
     }
     return `<div class="thumb placeholder"><span>${workspaceId.slice(0, 2).toUpperCase()}</span></div>`;
   }
@@ -1161,6 +1310,11 @@ class AdminModerationView extends HTMLElement {
     root.querySelectorAll('[data-action="regenerate"]').forEach((btn) => {
       btn.addEventListener('click', (e) =>
         this._regenerate((e.currentTarget as HTMLElement).getAttribute('data-id')!),
+      );
+    });
+    root.querySelectorAll('[data-action="set-thumbnail"]').forEach((btn) => {
+      btn.addEventListener('click', (e) =>
+        this._openSetThumbnail((e.currentTarget as HTMLElement).getAttribute('data-id')!),
       );
     });
     root.querySelectorAll('[data-action="unfeature"]').forEach((btn) => {

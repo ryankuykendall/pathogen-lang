@@ -261,6 +261,17 @@ interface CropRegion {
   size: number;
 }
 
+interface OpenOptions {
+  /** Explicit target workspace; falls back to the store's open workspace. */
+  workspaceId?: string;
+  /** 'admin' targets a workspace the viewer doesn't own: no Clear button,
+   *  no store sync, admin-appropriate toast copy. */
+  context?: 'owner' | 'admin';
+  /** Workspace name shown in the header so the viewer can confirm which
+   *  workspace they're editing (important when targeting arbitrary ids). */
+  title?: string;
+}
+
 type ResizeCorner = 'nw' | 'ne' | 'sw' | 'se';
 
 class ThumbnailCropModal extends HTMLElement {
@@ -307,6 +318,10 @@ class ThumbnailCropModal extends HTMLElement {
 
   private _storeState: StoreState | null = null;
 
+  private _workspaceId: string | null = null;
+
+  private _context: 'owner' | 'admin' = 'owner';
+
   private _saving = false;
 
   // Document-level event handlers
@@ -332,12 +347,22 @@ class ThumbnailCropModal extends HTMLElement {
 
   // --- Public API ---
 
-  open(svgElement: SVGSVGElement, storeState: StoreState): void {
+  get isOpen(): boolean {
+    return this.classList.contains('open');
+  }
+
+  open(svgElement: SVGSVGElement, storeState: StoreState, options?: OpenOptions): void {
     this._svgElement = svgElement;
     this._storeState = { ...storeState };
+    this._workspaceId = options?.workspaceId ?? null;
+    this._context = options?.context ?? 'owner';
     this._canvasWidth = storeState.width || 200;
     this._canvasHeight = storeState.height || 200;
     this._saving = false;
+
+    // textContent, not innerHTML — the name is untrusted workspace data.
+    const heading = this.shadowRoot!.querySelector('.top-bar h2');
+    if (heading) heading.textContent = options?.title ? `Set Thumbnail — ${options.title}` : 'Set Thumbnail';
 
     // Default crop: centered square
     this._resetCrop();
@@ -362,12 +387,21 @@ class ThumbnailCropModal extends HTMLElement {
   private _updateClearButton(): void {
     const btn = this.shadowRoot!.querySelector('.clear-btn');
     if (!btn) return;
+    // Admins can only overwrite, not clear — DELETE /thumbnail is owner-only.
+    if (this._context === 'admin') {
+      (btn as HTMLElement).hidden = true;
+      return;
+    }
     const hasManual = Boolean(store.get('workspaceManualThumbnailAt'));
     (btn as HTMLElement).hidden = !hasManual;
   }
 
   close(): void {
     this.classList.remove('open');
+    // Reset targeting so a stale admin context can't leak into a later
+    // owner-path open.
+    this._workspaceId = null;
+    this._context = 'owner';
     this._removeDocumentListeners();
     this._panZoom?.destroy();
     this._panZoom = null;
@@ -707,7 +741,7 @@ class ThumbnailCropModal extends HTMLElement {
     this._updateSaveButton(true);
 
     try {
-      const workspaceId = store.get('workspaceId') as string | undefined;
+      const workspaceId = this._workspaceId ?? (store.get('workspaceId') as string | undefined);
       if (!workspaceId) throw new Error('No workspace ID');
 
       const cropRegion: CropRegion = {
@@ -724,8 +758,11 @@ class ThumbnailCropModal extends HTMLElement {
       )) as { manualThumbnailAt?: string | null } | null;
 
       // Keep the store in sync so the next open() of this modal correctly
-      // shows the Clear button.
-      store.set('workspaceManualThumbnailAt', result?.manualThumbnailAt ?? new Date().toISOString());
+      // shows the Clear button. Owner path only — in admin context the
+      // store mirrors the admin's own open workspace, not the target.
+      if (this._context === 'owner') {
+        store.set('workspaceManualThumbnailAt', result?.manualThumbnailAt ?? new Date().toISOString());
+      }
 
       // Dispatch event for landing-view refresh
       document.dispatchEvent(
@@ -745,7 +782,10 @@ class ThumbnailCropModal extends HTMLElement {
           detail: {
             type: 'success',
             title: 'Thumbnail set',
-            message: 'It will appear on your workspaces page.',
+            message:
+              this._context === 'admin'
+                ? "It will appear on the workspace's public thumbnails."
+                : 'It will appear on your workspaces page.',
             image: `${thumbnailApi.url(workspaceId, 256)}?v=${Date.now()}`,
           },
         }),
@@ -785,6 +825,9 @@ class ThumbnailCropModal extends HTMLElement {
   // page reverts to the letter avatar.
   async _clear(): Promise<void> {
     if (this._saving) return;
+    // Belt-and-braces: the Clear button is hidden in admin context, and the
+    // DELETE endpoint is owner-only anyway.
+    if (this._context === 'admin') return;
     const workspaceId = store.get('workspaceId') as string | undefined;
     if (!workspaceId) return;
 
