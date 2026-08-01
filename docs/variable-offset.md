@@ -28,7 +28,7 @@ let edge = spine.variableOffset() {|go, pb|
 };
 ```
 
-The path spans the first stop to the last stop. To add a lead-in or lead-out, compose path blocks with the `<<` concatenation operator — e.g. `@{ m -10 0 } << edge` — rather than adding endpoints inside the block.
+The path spans the first stop to the last stop. To add a lead-in or lead-out, compose path blocks with the `<<` concatenation operator — e.g. `@{ m -10 0 } << edge` — rather than adding endpoints inside the block. Concatenation returns a new path block that does not carry [`anchor`](#variable-offset-placement-origin-normalization-and-anchor); if you need it, read it before composing.
 
 ### `go.stop(time, normalOffset, continuity)`
 
@@ -118,6 +118,64 @@ The second block parameter, `pb`, is a read-only handle to the spine, mirroring 
 | `pb.normal(time)` | `{ point, angle }` — the normal at `time`; `angle` in radians |
 | `pb.vertices` | the spine's vertices as a list of points |
 
+## Placement — origin normalization and `anchor`
+
+An offset places freely by default and re-registers on demand: the result is normalized so you can drop it anywhere, and `anchor` puts it back exactly where the spine had it.
+
+Both forms return a path block **normalized to its own first point**: the result's local origin `(0,0)` is the first point of the curve — the spine sampled at the first stop's `time`, stepped out along the normal by that stop's offset (for `compoundVariableOffset`, by the first stop's `offset1`: the ribbon's traversal begins on profile 1). The spine's own position is *not* carried into the result. `draw()` therefore lands the curve's first point on the current cursor, and `drawTo(x, y)` lands it on `(x, y)` — for a normalized block the two are interchangeable.
+
+That is the right behavior for placing a ribbon freely, but when the offset should sit **on top of its spine** — tracing a glyph contour, casing an existing path — you need the subtracted position back. The result carries it as `anchor`: a point, in the spine's coordinate space, holding exactly the translation the normalization removed.
+
+"The spine's coordinate space" is whatever coordinates the spine's own commands carry. A `@{ }` block begins at its own `(0,0)`, so `anchor` is relative to wherever you land that block's first point. A glyph contour from `.contours` keeps glyph-space coordinates, so `anchor` is relative to the **glyph origin** — which is why the example below adds the glyph's `(x, y)` rather than any per-contour position.
+
+`edge.anchor` is the curve's first point, expressed in the spine's coordinates:
+
+| Form | `anchor` is |
+|------|-------------|
+| `variableOffset` | the spine sampled at the first stop's `time`, stepped along the normal by that stop's offset |
+| `compoundVariableOffset` | **profile 1's** first knot — the same sample, stepped by the first stop's `offset1`. `offset2` plays no part |
+
+Add `anchor` to the spine's own placement and the curve registers exactly, whatever the stop times and offsets:
+
+```
+@font "Baumans" 400;
+let glyphStyles = ${ font-family: "Baumans"; font-size: 120; };
+let glyphSet = PathBlock.fromGlyph('So', glyphStyles);
+let glyphLayer = PathLayer('glyphs') ${ fill: none; stroke: #999; };
+let ribbonLayer = PathLayer('ribbon') ${ fill: #c00; stroke: none; };
+
+let x = 20;
+let y = 120;
+for (glyph in glyphSet) {
+  glyphLayer.apply {
+    M x y
+    glyph.draw();
+  }
+
+  for (contour in glyph.contours) {
+    let ribbon = contour.compoundVariableOffset() {|go, pb|
+      go.startCap(Cap.tapered(10, CurveContinuity.G0));
+      go.stop(10%, 1, CurveContinuity.G2, -1, CurveContinuity.G2);
+      go.stop(50%, 8, CurveContinuity.G2, -8, CurveContinuity.G2);
+      go.stop(90%, 1, CurveContinuity.G2, -1, CurveContinuity.G2);
+      go.endCap(Cap.tapered(10, CurveContinuity.G0));
+    };
+
+    ribbonLayer.apply {
+      M calc(x + ribbon.anchor.x) calc(y + ribbon.anchor.y)
+      ribbon.draw();
+    }
+  }
+  x = calc(x + glyph.advanceWidth + 20);
+}
+```
+
+The `M` + `draw()` pair for the ribbon mirrors how the glyph itself is placed — both anchor a block's coordinates at a chosen origin. The `o` contributes two contours (outline and counter), and each gets its own correctly-registered ribbon.
+
+Sampling the spine yourself (`contour.get(10%)`) is *close* but off by the first stop's offset along the normal — and it silently drifts if you later edit the first `go.stop(...)`. `anchor` always matches the built curve.
+
+`anchor` lives only on the `variableOffset` / `compoundVariableOffset` result itself. Composing or transforming it (`@{ m -10 0 } << edge`, `.reverse()`, `.offset()`) produces a new path block that does **not** carry it — read `let a = edge.anchor;` before composing.
+
 ## Errors
 
 The compiler rejects:
@@ -129,10 +187,14 @@ The compiler rejects:
 - **A cap on the simple form** — `startCap`/`endCap` apply only to `compoundVariableOffset`.
 - **A tangent handle on the compound form** — `startTangent`/`endTangent` apply only to the simple `variableOffset`; a compound ribbon's ends are shaped by `startCap`/`endCap`.
 - **Fewer than two stops** — a path needs at least two points, so both forms require at least two `go.stop(...)` calls.
+- **`anchor` on a block that is not a `variableOffset` / `compoundVariableOffset` result** — including one produced by composing or transforming a result (`<<`, `.reverse()`, `.offset()`). Read `anchor` off the result before composing.
 
 Self-intersecting output is **not** an error: if dense stops or extreme offsets make the curve cross itself, Pathogen emits the true curve as-is rather than silently reshaping your geometry.
+
+> **Debug mode:** `variableOffset()` and `compoundVariableOffset()` are not yet supported in the CLI's `--annotated` debug mode. They work normally everywhere else — CLI compilation, the playground, and the VS Code preview.
 
 ## Related
 
 - [Path Blocks](#path-blocks-path-blocks) — the `@{ }` blocks and methods (`offset`, `partition`, `boundingBox`, `get`/`tangent`/`normal`) this builds on
+- [`PathBlock.fromGlyph`](#path-blocks-pathblockfromglyphtext-styles) and [`.contours`](#path-blocks-contours) — the glyph outlines used as spines in the placement example
 - [Standard Library](#stdlib-standard-library-reference) — `PolarVector` and the spine-sampling helpers

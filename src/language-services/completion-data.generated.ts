@@ -416,6 +416,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'startPoint', kind: 'property', detail: 'First point', boost: 8 },
       { label: 'endPoint', kind: 'property', detail: 'Last point', boost: 8 },
       { label: 'advanceWidth', kind: 'property', detail: 'Glyph advance width', boost: 8 },
+      { label: 'anchor', kind: 'property', detail: 'Spine-space position of a variableOffset/compoundVariableOffset result (the translation removed by origin normalization)', boost: 8 },
       { label: 'contours', kind: 'property', detail: 'Per-contour PathBlocks', boost: 8 },
     ],
     methods: [
@@ -1072,7 +1073,7 @@ export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
   'Point': { x: 'number', y: 'number' },
   'array': { length: 'number' },
   'string': { length: 'number' },
-  'PathBlock': { length: 'number', vertices: 'array', subPathCount: 'number', subPathCommands: 'array', startPoint: 'Point', endPoint: 'Point', advanceWidth: 'number', contours: 'array' },
+  'PathBlock': { length: 'number', vertices: 'array', subPathCount: 'number', subPathCommands: 'array', startPoint: 'Point', endPoint: 'Point', advanceWidth: 'number', anchor: 'Point', contours: 'array' },
   'PolarVector': { angle: 'number', distance: 'number' },
   'Cycler': { length: 'number' },
   'TextLayer': { name: 'string' },

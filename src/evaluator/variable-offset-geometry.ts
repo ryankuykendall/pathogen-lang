@@ -311,24 +311,37 @@ function normalizeToOrigin(cmds: GeomCmd[]): GeomCmd[] {
 }
 
 /**
+ * A built variable-offset curve. `commands` are origin-normalized (first point at
+ * (0,0), leading M stripped) so drawTo positions the curve freely; `anchor` is the
+ * translation that normalization subtracted — the curve's first point in the
+ * spine's coordinate space (spine sampled at the first stop, stepped out along the
+ * normal by that stop's offset). Adding `anchor` back registers the curve with its
+ * spine.
+ */
+export interface VariableOffsetResult {
+  commands: GeomCmd[];
+  anchor: Point;
+}
+
+/**
  * Full simple-offset pipeline: project each stop onto the spine → knots, resolve
  * endpoint tangents (spine-derived by default, or an explicit override vector),
  * build the continuity spline, and normalize to a (0,0) origin. Returns the
- * emitted command list (leading M + cubic `c` segments).
+ * emitted command list (cubic `c` segments, leading M stripped) plus the anchor.
  */
 export function buildSimpleVariableOffset(
   spine: GeomCmd[],
   stops: SimpleStop[],
   startOverride?: PolarOverride,
   endOverride?: PolarOverride,
-): GeomCmd[] {
+): VariableOffsetResult {
   const knots: Knot[] = stops.map((s) => {
     const { point, spineTangent } = projectStop(spine, s.time, s.offset);
     return { point, continuity: s.continuity, spineTangent };
   });
-  if (knots.length === 0) return [];
+  if (knots.length === 0) return { commands: [], anchor: { x: 0, y: 0 } };
   const spline = buildContinuitySpline(knots, endpointSpecs(knots, startOverride, endOverride));
-  return stripLeadingMove(normalizeToOrigin(spline));
+  return { commands: stripLeadingMove(normalizeToOrigin(spline)), anchor: { ...knots[0].point } };
 }
 
 /**
@@ -439,8 +452,8 @@ export function buildCompoundVariableOffset(
   spine: GeomCmd[],
   stops: CompoundStop[],
   opts: CompoundOptions = {},
-): GeomCmd[] {
-  if (stops.length === 0) return [];
+): VariableOffsetResult {
+  if (stops.length === 0) return { commands: [], anchor: { x: 0, y: 0 } };
   const project = (offsetKey: 'offset1' | 'offset2', contKey: 'continuity1' | 'continuity2'): Knot[] =>
     stops.map((s) => {
       const { point, spineTangent } = projectStop(spine, s.time, s[offsetKey]);
@@ -486,5 +499,7 @@ export function buildCompoundVariableOffset(
     cmds.push({ command: 'z', args: [], start: { ...p1Start }, end: { ...p1Start } });
   }
 
-  return stripLeadingMove(normalizeToOrigin(cmds));
+  // Traversal starts at profile 1's first knot, so that knot is what
+  // normalizeToOrigin subtracts — expose it as the anchor.
+  return { commands: stripLeadingMove(normalizeToOrigin(cmds)), anchor: { ...p1Start } };
 }

@@ -3677,6 +3677,15 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         const aw = (obj as PathBlockValue & { advanceWidth?: number }).advanceWidth;
         return aw !== undefined ? aw : 0;
       }
+      case 'anchor':
+        // variableOffset/compoundVariableOffset (the only anchor producers) are
+        // unsupported in --annotated mode, so anchor can never be present here.
+        throw new Error(
+          formatError(
+            "'anchor' is only available on variableOffset/compoundVariableOffset results, which are not supported in --annotated debug mode yet",
+            line,
+          ),
+        );
       case 'contours': {
         const contourGroups = splitContours(obj.commands);
         const contourBlocks: Value[] = contourGroups.map((cmds) => buildPathBlockFromCommands(cmds, { x: 0, y: 0 }));

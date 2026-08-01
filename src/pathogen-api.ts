@@ -670,6 +670,8 @@ export interface PathogenPathBlock {
   readonly endPoint: PathogenPoint;
   /** Glyph advance width */
   readonly advanceWidth: number;
+  /** Spine-space position of a variableOffset/compoundVariableOffset result (the translation removed by origin normalization) */
+  readonly anchor: PathogenPoint;
   /** Per-contour PathBlocks */
   readonly contours: PathogenArray<PathogenPathBlock>;
 

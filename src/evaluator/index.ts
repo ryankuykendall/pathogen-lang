@@ -2602,13 +2602,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
           continuity: continuityFromValue(s.continuity1),
         }));
         // PolarVectorValue ({angle, distance}) is structurally a PolarOverride.
-        const voResult = buildSimpleVariableOffset(
+        const { commands: voCmds, anchor: voAnchor } = buildSimpleVariableOffset(
           obj.commands,
           simpleStops,
           builder.startTangent,
           builder.endTangent,
         );
-        if (voResult.length === 0) {
+        if (voCmds.length === 0) {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
@@ -2617,14 +2617,17 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
             endPoint: { x: 0, y: 0 },
           };
         }
-        const voLast = voResult[voResult.length - 1];
-        return {
+        const voLast = voCmds[voCmds.length - 1];
+        const voBlock = {
           type: 'PathBlockValue' as const,
-          commands: voResult,
-          records: recordsFromCommands(voResult),
+          commands: voCmds,
+          records: recordsFromCommands(voCmds),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: voLast.end.x, y: voLast.end.y },
         };
+        // The translation normalizeToOrigin subtracted, in spine coordinates.
+        (voBlock as PathBlockValue & { anchor: { x: number; y: number } }).anchor = voAnchor;
+        return voBlock;
       }
 
       case 'compoundVariableOffset': {
@@ -2663,11 +2666,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
             : undefined;
         // No tangent overrides here: go.startTangent/endTangent throw in compound
         // mode (ribbon ends are shaped by caps), so the builder fields are never set.
-        const cvResult = buildCompoundVariableOffset(obj.commands, compStops, {
+        const { commands: cvCmds, anchor: cvAnchor } = buildCompoundVariableOffset(obj.commands, compStops, {
           startCap: capToSpec(builder.startCap),
           endCap: capToSpec(builder.endCap),
         });
-        if (cvResult.length === 0) {
+        if (cvCmds.length === 0) {
           return {
             type: 'PathBlockValue' as const,
             commands: [],
@@ -2676,14 +2679,17 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
             endPoint: { x: 0, y: 0 },
           };
         }
-        const cvLast = cvResult[cvResult.length - 1];
-        return {
+        const cvLast = cvCmds[cvCmds.length - 1];
+        const cvBlock = {
           type: 'PathBlockValue' as const,
-          commands: cvResult,
-          records: recordsFromCommands(cvResult),
+          commands: cvCmds,
+          records: recordsFromCommands(cvCmds),
           startPoint: { x: 0, y: 0 },
           endPoint: { x: cvLast.end.x, y: cvLast.end.y },
         };
+        // The translation normalizeToOrigin subtracted, in spine coordinates.
+        (cvBlock as PathBlockValue & { anchor: { x: number; y: number } }).anchor = cvAnchor;
+        return cvBlock;
       }
 
       case 'mirror': {
@@ -5524,6 +5530,14 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'advanceWidth': {
         const aw = (obj as PathBlockValue & { advanceWidth?: number }).advanceWidth;
         return aw !== undefined ? aw : 0;
+      }
+      case 'anchor': {
+        const anchor = (obj as PathBlockValue & { anchor?: { x: number; y: number } }).anchor;
+        if (anchor === undefined)
+          throw new Error(
+            "'anchor' is only available on variableOffset/compoundVariableOffset results — it recovers the position removed by origin normalization. Composing or transforming a result produces a new block without it; read anchor before composing",
+          );
+        return { type: 'PointValue' as const, x: anchor.x, y: anchor.y };
       }
       case 'contours': {
         // Decompose a multi-contour glyph into individual PathBlockValues

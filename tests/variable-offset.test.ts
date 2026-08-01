@@ -356,6 +356,96 @@ describe('variableOffset — editor completions (playground + VS Code LSP)', () 
     const labels = completeAtEnd('CurveContinuity.');
     expect(labels).toEqual(expect.arrayContaining(['G0', 'G1', 'G2']));
   });
+
+  it('offers anchor on a PathBlock', () => {
+    const labels = completeAtEnd('let s = @{ h 100 };\ns.');
+    expect(labels).toContain('anchor');
+  });
+});
+
+describe('anchor — placement recovery (origin normalization)', () => {
+  // Straight horizontal spine (0,0)→(100,0): left normal points up (0,-1),
+  // so a positive offset o at time t anchors at (100t, -o).
+
+  it('simple: M anchor + draw() reproduces the un-normalized first point', () => {
+    const result = compilePath(`
+      let s = @{ h 100 };
+      let e = s.variableOffset() {|go, pb|
+        go.stop(10%, 5, CurveContinuity.G1);
+        go.stop(90%, 5, CurveContinuity.G1);
+      };
+      M calc(20 + e.anchor.x) calc(30 + e.anchor.y)
+      e.draw();
+    `);
+    // anchor = (10, -5) → cursor at (30, 25); the spine's own placement (20,30)
+    // plus the anchor registers the curve where the un-normalized spline sat.
+    const parsed = parseSVGPath(result);
+    expect(parsed[0].command).toBe('M');
+    expect(parsed[0].args[0]).toBeCloseTo(30, 4);
+    expect(parsed[0].args[1]).toBeCloseTo(25, 4);
+  });
+
+  it('compound: anchor is profile 1\'s first knot (spine@t0 + offset1·normal)', () => {
+    const result = compilePath(`
+      let s = @{ h 100 };
+      let r = s.compoundVariableOffset() {|go, pb|
+        go.startCap(Cap.butt());
+        go.stop(10%, 6, CurveContinuity.G1, -6, CurveContinuity.G1);
+        go.stop(90%, 6, CurveContinuity.G1, -6, CurveContinuity.G1);
+        go.endCap(Cap.butt());
+      };
+      M calc(r.anchor.x) calc(r.anchor.y)
+      r.draw();
+    `);
+    // anchor = (10, -6): the ribbon starts exactly on its own profile-1 knot.
+    const parsed = parseSVGPath(result);
+    expect(parsed[0].command).toBe('M');
+    expect(parsed[0].args[0]).toBeCloseTo(10, 4);
+    expect(parsed[0].args[1]).toBeCloseTo(-6, 4);
+  });
+
+  it('anchor is unchanged by startTangent/endTangent overrides (they shape handles, not knots)', () => {
+    const spine: GeomCmd[] = [
+      { command: 'M', args: [0, 0], start: { x: 0, y: 0 }, end: { x: 0, y: 0 } },
+      { command: 'L', args: [100, 0], start: { x: 0, y: 0 }, end: { x: 100, y: 0 } },
+    ];
+    const stops: SimpleStop[] = [
+      { time: 0.1, offset: 5, continuity: 'G1' },
+      { time: 0.9, offset: 5, continuity: 'G1' },
+    ];
+    const base = buildSimpleVariableOffset(spine, stops);
+    const overridden = buildSimpleVariableOffset(
+      spine,
+      stops,
+      { angle: -Math.PI / 2, distance: 8 },
+      { angle: 0, distance: 6 },
+    );
+    expect(overridden.anchor).toEqual(base.anchor);
+    expect(base.anchor.x).toBeCloseTo(10, 6);
+    expect(base.anchor.y).toBeCloseTo(-5, 6);
+  });
+
+  it('anchor destructures like any Point', () => {
+    const result = compilePath(`
+      let s = @{ h 100 };
+      let e = s.variableOffset() {|go, pb|
+        go.stop(10%, 5, CurveContinuity.G1);
+        go.stop(90%, 5, CurveContinuity.G1);
+      };
+      let {x, y} = e.anchor;
+      M x y
+    `);
+    const parsed = parseSVGPath(result);
+    expect(parsed[0].command).toBe('M');
+    expect(parsed[0].args[0]).toBeCloseTo(10, 4);
+    expect(parsed[0].args[1]).toBeCloseTo(-5, 4);
+  });
+
+  it('anchor on a plain PathBlock is a clear error, not (0,0)', () => {
+    expect(() => compilePath('let s = @{ h 100 }; let p = s.anchor; M 0 0')).toThrow(
+      /anchor.*variableOffset/,
+    );
+  });
 });
 
 describe('variable-offset orchestration builders (exact coordinates)', () => {
@@ -370,8 +460,11 @@ describe('variable-offset orchestration builders (exact coordinates)', () => {
       { time: 0.1, offset: 10, continuity: 'G1' },
       { time: 0.9, offset: 10, continuity: 'G1' },
     ];
-    const cmds = buildSimpleVariableOffset(spine, stops);
+    const { commands: cmds, anchor } = buildSimpleVariableOffset(spine, stops);
     // knots (10,-10)→(90,-10); normalized to origin (10,-10) → segment (0,0)→(80,0).
+    // The subtracted origin is reported back as the anchor.
+    expect(anchor.x).toBeCloseTo(10, 6);
+    expect(anchor.y).toBeCloseTo(-10, 6);
     // spine-derived flat tangents, natural handle = chord/3 = 80/3.
     expect(cmds.length).toBe(1);
     expect(cmds[0].command).toBe('c');
@@ -389,10 +482,13 @@ describe('variable-offset orchestration builders (exact coordinates)', () => {
       { time: 0.1, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
       { time: 0.9, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
     ];
-    const cmds = buildCompoundVariableOffset(spine, stops, {
+    const { commands: cmds, anchor } = buildCompoundVariableOffset(spine, stops, {
       startCap: { cap: 'butt' },
       endCap: { cap: 'butt' },
     });
+    // Traversal starts at profile 1's first knot (10,-10) — that is the anchor.
+    expect(anchor.x).toBeCloseTo(10, 6);
+    expect(anchor.y).toBeCloseTo(-10, 6);
     // profile1 fwd → end butt cap → profile2 reversed → start butt cap → close.
     expect(cmds.map((c) => c.command)).toEqual(['c', 'l', 'c', 'l', 'z']);
     // end cap bridges p1End(90,-10)→p2End(90,10): a vertical line of +20 (relative).
@@ -406,7 +502,7 @@ describe('variable-offset orchestration builders (exact coordinates)', () => {
       { time: 0.1, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
       { time: 0.9, offset1: 10, continuity1: 'G1', offset2: -10, continuity2: 'G1' },
     ];
-    const cmds = buildCompoundVariableOffset(spine, stops);
+    const { commands: cmds } = buildCompoundVariableOffset(spine, stops);
     // profile1 cubic, then a lowercase RELATIVE m for the profile-2 subpath, then its
     // cubic. An uppercase 'M' here serialized as a literal absolute "M 0 0"
     // (commandsToRelativeD catch-all), teleporting profile 2 to the canvas origin.

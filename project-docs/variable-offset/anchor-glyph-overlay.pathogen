@@ -1,0 +1,67 @@
+//-- anchor demo: overlay compoundVariableOffset ribbons on glyph contours.
+//-- Ryan's "Strokey" experiment (2026-08-01), aligned with the new offset.anchor
+//-- property instead of manual origin recovery (contour.get(t0) + trig).
+//-- CLI note: file-path @font registers under the TTF filename stem, so the
+//-- font-family here is "Baumans-Regular" (playground equivalent: @font "Baumans" 400).
+
+define ViewBox(0, 0, 580, 200);
+let {width, height} = viewbox;
+define default PathLayer('main-path-layer') ${
+  fill: #bbb;
+  stroke: #222;
+  stroke-width: 0.2;
+};
+
+@font "../../fonts/Baumans/Baumans-Regular.ttf";
+let baseGlyphStyles = ${
+  fill: #ccc;
+  stroke: #222;
+  stroke-width: 1;
+  font-family: "Baumans-Regular";
+  font-size: 120;
+};
+let glyphSet = PathBlock.fromGlyph('Strokey', baseGlyphStyles);
+
+let glyphLayer = PathLayer(`glyph-layer`) << baseGlyphStyles;
+
+//-- Blue dots mark each ribbon's anchor — they must sit exactly where the
+//-- red ribbon begins, riding the glyph outline (1 unit off, the first stop's offset1).
+let anchorDotLayer = PathLayer('anchor-dots') ${
+  fill: #06c;
+  stroke: none;
+};
+
+let x = 20;
+let y = 120;
+for ([glyph, gIndex] in glyphSet) {
+  glyphLayer.apply {
+    M x y
+    glyph.draw();
+  }
+
+  for ([contour, cIndex] in glyph.contours) {
+    let offset = contour.compoundVariableOffset() {|vo, pb|
+      vo.startCap(Cap.tapered(10, CurveContinuity.G0));
+      vo.stop(10%, 1, CurveContinuity.G2, -1, CurveContinuity.G2);
+      vo.stop(50%, 8, CurveContinuity.G2, -8, CurveContinuity.G2);
+      vo.stop(90%, 1, CurveContinuity.G2, -1, CurveContinuity.G2);
+      vo.endCap(Cap.tapered(10, CurveContinuity.G0));
+    };
+
+    let contourStrokeyLayer = PathLayer(`strokey-layer-${gIndex}-${cIndex}`) ${
+      fill: #c00;
+      stroke: none;
+    };
+
+    contourStrokeyLayer.apply {
+      M calc(x + offset.anchor.x) calc(y + offset.anchor.y)
+      offset.draw();
+    }
+
+    anchorDotLayer.apply {
+      circle(calc(x + offset.anchor.x), calc(y + offset.anchor.y), 2.5);
+    }
+  }
+
+  x = calc(x + glyph.advanceWidth + 20);
+}
