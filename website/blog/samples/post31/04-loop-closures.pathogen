@@ -1,0 +1,74 @@
+// viewBox="0 0 400 560"
+//-- Closures dissolve the baked-constants problem. A lambda {|t| ...}
+//-- captures the scope where it is WRITTEN, so a parameterized envelope can
+//-- be built inline, wherever its parameters live. Compare with
+//-- 03-named-envelopes.pathogen: same wrapper, but the envelopes no longer
+//-- need to be named top-level fns with constants baked in.
+//--
+//-- Rows 2-4 are the payoff: lambdas built INSIDE a loop, each closing over
+//-- that iteration's center and peak. Loops create a fresh scope per
+//-- iteration, so each lambda remembers its own values.
+
+define ViewBox(0, 0, 400, 560);
+
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+//-- The identical wrapper — it neither knows nor cares whether env1 / env2
+//-- arrived as named fns or closures.
+fn strokeWithEnvelopes(pathBlock, steps, env1, env2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, env1(t), continuity, env2(t), continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.55 0.18 260);
+
+fn drawRow(name, ribbon, py, hueOffset) {
+  let rowColor = base.hueShift(hueOffset);
+  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  rowLayer.apply {
+    M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+//-- Row 1: inline lambda envelopes — the taper, without any named
+//-- top-level fns.
+let taperUp = {|t| return lerp(9, 0.5, t); };
+let taperDn = {|t| return -lerp(9, 0.5, t); };
+drawRow('taper', strokeWithEnvelopes(spine, 48, taperUp, taperDn, CurveContinuity.G1, taperCap), 95, 0);
+
+//-- Rows 2-4: closures born in a loop. Each iteration's lambdas capture THAT
+//-- iteration's center and peak (loops create a fresh scope per iteration).
+for (rowIndex in 0..2) {
+  let center = 0.25 + rowIndex * 0.25;
+  let peak = 6 + rowIndex * 3;
+  let envUp = {|t| return 0.5 + peak * bulge(t, center, 0.22); };
+  let envDn = {|t| return -(0.5 + peak * bulge(t, center, 0.22)); };
+  let ribbon = strokeWithEnvelopes(spine, 48, envUp, envDn, CurveContinuity.G1, taperCap);
+  drawRow(`loop-${rowIndex}`, ribbon, calc(225 + rowIndex * 130), calc(60 + rowIndex * 60));
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(78, 32)`inline lambdas: taperUp / taperDn`
+  text(78, 162)`loop closures: center 0.25, peak 6`
+  text(78, 292)`center 0.5, peak 9`
+  text(78, 422)`center 0.75, peak 12`
+}

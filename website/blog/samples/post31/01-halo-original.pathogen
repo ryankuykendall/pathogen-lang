@@ -1,0 +1,41 @@
+// viewBox="0 60 400 140"
+//-- A layered "glow" stroke: sixteen compoundVariableOffset passes, widths
+//-- driven by randomRange scaled by the layer index. Wide soft layers paint
+//-- first, a narrow bright core lands last. Organic -- and unrepeatable:
+//-- every compile rolls new widths.
+//-- (Ranges are inclusive on both ends: 0..stepMax yields stepMax + 1 stops.)
+
+define ViewBox(0, 60, 400, 140);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let base = oklch(0.72 0.14 20);
+
+for (haloIndex in 16..1) {
+  let halo = spine.compoundVariableOffset() {|vo, pb|
+    let stepMax = 48;
+    for (step in 0..stepMax) {
+      let time = step / stepMax;
+      vo.stop(time,
+          randomRange(0.1, 0.6 * haloIndex),
+          CurveContinuity.G1,
+          randomRange(-0.3 * haloIndex, -0.1),
+          CurveContinuity.G1);
+    }
+
+    vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+  };
+
+  let haloColor = base.hueShift(calc(haloIndex * -6));
+  let haloLayer = PathLayer(`halo-${haloIndex}`) ${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}

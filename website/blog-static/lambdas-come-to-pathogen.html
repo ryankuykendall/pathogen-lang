@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Shape of a Stroke: Envelopes, Bulges, and Lambdas — Pathogen Studio</title>
+  <meta name="description" content="Variable-width strokes get interesting when the width itself becomes a designed object — an envelope you can shape, compose, and reuse. This post builds a richer stroke step by step, shows where the abstraction outgrows named functions, and introduces Pathogen's new lambda expressions: {|a, b| ... } as a first-class closure.">
+  <link rel="canonical" href="https://pathogen.studio/blog/lambdas-come-to-pathogen">
+  <meta property="og:title" content="The Shape of a Stroke: Envelopes, Bulges, and Lambdas — Pathogen Studio">
+  <meta property="og:description" content="Variable-width strokes get interesting when the width itself becomes a designed object — an envelope you can shape, compose, and reuse. This post builds a richer stroke step by step, shows where the abstraction outgrows named functions, and introduces Pathogen's new lambda expressions: {|a, b| ... } as a first-class closure.">
+  <meta property="og:url" content="https://pathogen.studio/blog/lambdas-come-to-pathogen">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"The Shape of a Stroke: Envelopes, Bulges, and Lambdas","description":"Variable-width strokes get interesting when the width itself becomes a designed object — an envelope you can shape, compose, and reuse. This post builds a richer stroke step by step, shows where the abstraction outgrows named functions, and introduces Pathogen's new lambda expressions: {|a, b| ... } as a first-class closure.","datePublished":"2026-08-02","url":"https://pathogen.studio/blog/lambdas-come-to-pathogen","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">The Shape of a Stroke: Envelopes, Bulges, and Lambdas</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>The Shape of a Stroke: Envelopes, Bulges, and Lambdas</h1>
+        <p class="post-meta"><time datetime="2026-08-02">August 1, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><a href="/blog/the-swelling-line">The Swelling Line</a> introduced
+<a href="/docs#variable-offset-variable-offset"><code>variableOffset</code> and <code>compoundVariableOffset</code></a>: place stops along a path, give each one a distance,
+and the stroke breathes. That post ended with ribbons. This one asks the next
+question: what does it take to make a stroke genuinely <em>rich</em> — layered,
+shaped, textured — and still reusable?</p>
+<p>The answer turns out to be a ladder of abstractions over one idea: <strong>width as
+a function of position</strong>. Climbing that ladder is what this post is about, and
+near the top it required growing the language itself. Pathogen now has lambda
+expressions:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> f = {|a, b| <span class="hljs-keyword">return</span> a + b; };
+<span class="hljs-keyword">let</span> three = <span class="hljs-title function_">f</span>(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>);
+</code></pre><p>The same <code>{|...|}</code> block syntax you already know from <code>map</code> and the gradient
+builders, promoted to a first-class value — with true lexical capture. Here&#39;s
+the stroke that earns it.</p>
+<h2>A rich stroke is a stack of thin ones</h2>
+<p>One <code>compoundVariableOffset</code> pass gives you a ribbon. A <em>glow</em> takes sixteen:
+loop an index from 16 down to 1, and give each layer stop widths scaled by the
+index — wide soft passes first, a narrow bright core last. Drive the widths
+with <code>randomRange</code> and the result is pleasingly organic:</p>
+<p><mini-workspace code-open caption="Sixteen stacked compoundVariableOffset layers, widths driven by randomRange scaled by the layer index. Fuzzy, organic — and unrepeatable.">
+  <code>// viewBox="0 60 400 140"
+//-- A layered "glow" stroke: sixteen compoundVariableOffset passes, widths
+//-- driven by randomRange scaled by the layer index. Wide soft layers paint
+//-- first, a narrow bright core lands last. Organic -- and unrepeatable:
+//-- every compile rolls new widths.
+//-- (Ranges are inclusive on both ends: 0..stepMax yields stepMax + 1 stops.)
+
+define ViewBox(0, 60, 400, 140);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let base = oklch(0.72 0.14 20);
+
+for (haloIndex in 16..1) {
+  let halo = spine.compoundVariableOffset() {|vo, pb|
+    let stepMax = 48;
+    for (step in 0..stepMax) {
+      let time = step / stepMax;
+      vo.stop(time,
+          randomRange(0.1, 0.6 * haloIndex),
+          CurveContinuity.G1,
+          randomRange(-0.3 * haloIndex, -0.1),
+          CurveContinuity.G1);
+    }
+
+    vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+  };
+
+  let haloColor = base.hueShift(calc(haloIndex * -6));
+  let haloLayer = PathLayer(`halo-${haloIndex}`) ${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}
+</code>
+  <img src="/blog/samples/post31/01-halo-original.svg" alt="Sixteen stacked compoundVariableOffset layers, widths driven by randomRange scaled by the layer index. Fuzzy, organic — and unrepeatable." loading="lazy">
+</mini-workspace></p>
+<p>Organic, and a dead end. Every knob is buried in the loop body; the randomness
+means no two compiles match; and the moment you try to extract a reusable
+function, you hit the real design question: the thing you want to pass around
+isn&#39;t a number. It&#39;s a <strong>shape</strong>.</p>
+<h2>Width as a function: the envelope</h2>
+<p>Call that shape an <em>envelope</em> — width as a function of position <code>t</code> along the
+spine. The first envelope worth designing is a <strong>bulge</strong>: a chosen spot where
+the stroke swells, entered and left smoothly. A raised cosine does it in four
+lines:</p>
+<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">bulge</span>(<span class="hljs-params">t, center, spread</span>) {
+  <span class="hljs-keyword">let</span> d = <span class="hljs-title function_">clamp</span>(<span class="hljs-title function_">abs</span>(t - center) / spread, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);
+  <span class="hljs-keyword">return</span> <span class="hljs-number">0.5</span> * (<span class="hljs-number">1</span> + <span class="hljs-title function_">cos</span>(<span class="hljs-title function_">mpi</span>(d)));
+}
+</code></pre><p><code>d</code> is normalized distance from the bulge center; <code>0.5·(1 + cos(πd))</code> is
+easeInOutSine wearing its trig clothes. The property that matters: its
+derivative is zero at <em>both</em> ends, so the swell leaves the base width and
+rejoins it without a visible crease.</p>
+<p><mini-workspace code-open caption="Three candidate envelopes plotted above the stroke the winner produces. On a straight spine, the stroke's silhouette is its envelope — the dashed guide connects the plot's peak to the widest point. Smoothstep (drawn dashed) hides inside the cosine: the two differ by at most 1% of the peak height.">
+  <code>// viewBox="0 0 400 320"
+//-- SEE the easing: three candidate bulge envelopes plotted as graphs, with
+//-- the stroke the raised cosine produces rendered on a STRAIGHT spine below.
+//-- On a straight spine the silhouette of the stroke IS its envelope; the
+//-- dashed vertical guide ties the plot's peak to the stroke's widest point.
+//--
+//--   tent:       1 - d                     crease at the peak AND the edges
+//--   smoothstep: u*u*(3 - 2u), u = 1-d     polynomial ease, flat at both ends
+//--   raised cos: 0.5 * (1 + cos(pi*d))     = easeInOutSine; derivative is 0
+//--               at d=0 and d=1, so the width enters and leaves the bulge
+//--               flat -- no crease where the swell meets the base width.
+//-- Smoothstep tracks the raised cosine within 1% of the peak (max gap 0.010
+//-- at u = 0.72) -- drawn solid it would vanish underneath, hence the dashes.
+
+define ViewBox(0, 0, 400, 320);
+
+//-- Normalized distance from the bulge center: 0 at the peak, 1 at the edge
+//-- of the bulge window, clamped outside it.
+fn win(t, center, spread) {
+  return clamp(abs(t - center) / spread, 0, 1);
+}
+
+fn tentEnv(t, center, spread) {
+  let d = win(t, center, spread);
+  return 1 - d;
+}
+
+fn smoothEnv(t, center, spread) {
+  let d = win(t, center, spread);
+  let u = 1 - d;
+  return u * u * (3 - 2 * u);
+}
+
+fn cosEnv(t, center, spread) {
+  let d = win(t, center, spread);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+//-- The same shape-agnostic wrapper used throughout this post.
+fn strokeFromPathBlock(pathBlock, steps, bulgeTime, spread,
+                       base1, peak1, base2, peak2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      let e = cosEnv(t, bulgeTime, spread);
+      vo.stop(t, base1 + peak1 * e, continuity,
+                 base2 + peak2 * e, continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+//-- Plot geometry -----------------------------------------------------------
+let plotX = 80;
+let plotW = 240;
+let plotY = 150;
+let plotH = 80;
+let samples = 48;
+let center = 0.5;
+let spread = 0.35;
+
+//-- envFn arrives BY NAME — functions are first-class values in Pathogen.
+fn plotEnvelope(curveLayer, envFn) {
+  curveLayer.apply {
+    M plotX calc(plotY - plotH * envFn(0, center, spread))
+    for (i in 1..samples) {
+      let t = i / samples;
+      L calc(plotX + plotW * t) calc(plotY - plotH * envFn(t, center, spread))
+    }
+  }
+}
+
+let axis = PathLayer('axis') ${ fill: none; stroke: #bbb; stroke-width: 1; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+}
+
+//-- Vertical dashed guide through the bulge center: plot peak -&gt; stroke waist.
+let peakGuide = PathLayer('peak-guide') ${
+  fill: none;
+  stroke: #999;
+  stroke-width: 0.75;
+  stroke-dasharray: 4 3;
+};
+peakGuide.apply {
+  M calc(plotX + plotW * center) calc(plotY - plotH - 8)
+  L calc(plotX + plotW * center) 280
+}
+
+//-- Smoothstep is plotted last so its dashes sit on top of the cosine.
+let tentLayer = PathLayer('env-tent') ${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+let cosLayer = PathLayer('env-raised-cos') ${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+let smoothLayer = PathLayer('env-smoothstep') ${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+
+plotEnvelope(tentLayer, tentEnv);
+plotEnvelope(cosLayer, cosEnv);
+plotEnvelope(smoothLayer, smoothEnv);
+
+//-- The stroke shaped by the raised-cosine envelope, on a straight spine.
+let spine = @{ l 240 0 };
+let ribbon = strokeFromPathBlock(spine, 48, center, spread,
+                                 0.75, 13, -0.75, -13,
+                                 CurveContinuity.G1,
+                                 Cap.tapered(2, CurveContinuity.G0));
+let strokeLayer = PathLayer('shaped-stroke') ${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+strokeLayer.apply {
+  M calc(plotX + ribbon.anchor.x) calc(240 + ribbon.anchor.y)
+  ribbon.draw();
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(78, 28)`bulge envelopes`
+  text(80, 172)`t=0`
+  text(190, 172)`t=0.5`
+  text(304, 172)`t=1`
+  text(78, 292)`raised-cosine stroke (straight spine)`
+}
+//-- Legend: each entry gets a line sample drawn with that curve's real
+//-- stroke and dash pattern, so the key reads without relying on color.
+let swatchTent = PathLayer('swatch-tent') ${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+swatchTent.apply { M 252 37 L 268 37 }
+let legendTent = TextLayer('legend-tent') ${
+  font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: #b0b0b0;
+};
+legendTent.apply { text(274, 40)`linear tent` }
+let swatchSmooth = PathLayer('swatch-smoothstep') ${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+swatchSmooth.apply { M 252 51 L 268 51 }
+let legendSmooth = TextLayer('legend-smoothstep') ${
+  font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.62 0.16 160);
+};
+legendSmooth.apply { text(274, 54)`smoothstep` }
+let swatchCos = PathLayer('swatch-raised-cos') ${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+swatchCos.apply { M 252 65 L 268 65 }
+let legendCos = TextLayer('legend-raised-cos') ${
+  font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.72 0.15 260);
+};
+legendCos.apply { text(274, 68)`raised cosine` }
+
+let scene = GroupLayer('scene') ${};
+scene.append(axis, peakGuide, tentLayer, cosLayer, smoothLayer, strokeLayer,
+             labels, swatchTent, legendTent, swatchSmooth, legendSmooth, swatchCos, legendCos);
+</code>
+  <img src="/blog/samples/post31/02-envelope-plot.svg" alt="Three candidate envelopes plotted above the stroke the winner produces. On a straight spine, the stroke's silhouette is its envelope — the dashed guide connects the plot's peak to the widest point. Smoothstep (drawn dashed) hides inside the cosine: the two differ by at most 1% of the peak height." loading="lazy">
+</mini-workspace></p>
+<h2>Passing the shape</h2>
+<p>Pathogen functions are values: hand a named <code>fn</code> to another function and call
+it through the parameter. So the general stroke-maker takes its envelopes <em>as
+functions</em> — one per profile — and samples them at each stop:</p>
+<p><mini-workspace code-open caption="One wrapper, four envelope pairs passed by name: constant, taper, bulge, wave. The wrapper neither knows nor cares what shape arrives.">
+  <code>// viewBox="0 0 400 560"
+//-- Generalize the SHAPE, not the knobs: the wrapper takes envelope
+//-- functions (t) -&gt; signed offset and samples one per profile at each stop.
+//-- Functions are first-class values in Pathogen -- pass them by name, call
+//-- them through the parameter.
+//--
+//-- Convention: envelopes return SIGNED offsets (the sign picks the side),
+//-- matching vo.stop's profile semantics.
+
+define ViewBox(0, 0, 400, 560);
+
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+//-- The shape-agnostic wrapper. env1/env2 are functions.
+fn strokeWithEnvelopes(pathBlock, steps, env1, env2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, env1(t), continuity, env2(t), continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+//-- Plug-in envelopes as named fns. Before lambdas shipped, this was the
+//-- only form a passable envelope could take -- note how bulged1/bulged2
+//-- bake their center and peak in as constants.
+fn constant1(t) { return 4; }
+fn constant2(t) { return -4; }
+
+fn taper1(t) { return lerp(9, 0.5, t); }
+fn taper2(t) { return -lerp(9, 0.5, t); }
+
+fn bulged1(t) { return 0.5 + 10 * bulge(t, 0.55, 0.3); }
+fn bulged2(t) { return -(0.5 + 4 * bulge(t, 0.55, 0.3)); }
+
+//-- Both profiles ride the SAME sine, so the band wanders side to side while
+//-- its width stays near-constant — a wavy ribbon. (If an envelope crosses
+//-- zero, the profile crosses the spine; same-sign stretches legally float
+//-- off one side as a detached band.)
+fn wave1(t) { return  5 + 4 * sin(TAU() * 3 * t); }
+fn wave2(t) { return -5 + 4 * sin(TAU() * 3 * t); }
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.55 0.18 260);
+
+fn drawRow(name, ribbon, py, hueOffset) {
+  let rowColor = base.hueShift(hueOffset);
+  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  rowLayer.apply {
+    M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+drawRow('constant', strokeWithEnvelopes(spine, 48, constant1, constant2, CurveContinuity.G1, taperCap), 95, 0);
+drawRow('taper',    strokeWithEnvelopes(spine, 48, taper1,    taper2,    CurveContinuity.G1, taperCap), 225, 60);
+drawRow('bulge',    strokeWithEnvelopes(spine, 48, bulged1,   bulged2,   CurveContinuity.G1, taperCap), 355, 120);
+drawRow('wave',     strokeWithEnvelopes(spine, 96, wave1,     wave2,     CurveContinuity.G1, taperCap), 490, 180);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(78, 32)`constant1 / constant2`
+  text(78, 162)`taper1 / taper2 (lerp 9 -&gt; 0.5)`
+  text(78, 292)`bulged1 / bulged2 (asymmetric peaks)`
+  text(78, 425)`wave1 / wave2 (same sine: wandering ribbon)`
+}
+</code>
+  <img src="/blog/samples/post31/03-named-envelopes.svg" alt="One wrapper, four envelope pairs passed by name: constant, taper, bulge, wave. The wrapper neither knows nor cares what shape arrives." loading="lazy">
+</mini-workspace></p>
+<p>This is a real abstraction — the wrapper is finished, forever, no matter what
+envelope you invent next. But look at the envelopes themselves. Every one is a
+<strong>named, top-level function with its constants baked in</strong>. <code>bulged1</code>
+hard-codes its center and peak, because until now there was no way to write &quot;a
+bulge envelope <em>for these particular</em> parameters&quot; as a value. Pathogen&#39;s named
+functions are dynamically scoped — free names resolve in the <em>caller&#39;s</em> scope
+at call time — so a function couldn&#39;t carry values from where it was written.
+The workarounds are all familiar and all unsatisfying: top-level <code>let</code>s you
+hope nobody shadows, spec-object arrays interpreted by a helper, or parameter
+lists that grow a slot for every knob.</p>
+<h2><code>{|a, b| ... }</code> grows up</h2>
+<p>The missing piece is a function literal that <em>remembers</em>. A block literal in
+expression position is now a <strong>lambda</strong>: a function value that captures the
+scope where it was written.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> scale = <span class="hljs-number">3</span>;
+<span class="hljs-keyword">let</span> times = {|x| <span class="hljs-keyword">return</span> <span class="hljs-title function_">calc</span>(x * scale); };
+
+fn <span class="hljs-title function_">caller</span>(<span class="hljs-params"></span>) {
+  <span class="hljs-keyword">let</span> scale = <span class="hljs-number">100</span>;    <span class="hljs-comment">// does NOT affect the lambda</span>
+  <span class="hljs-keyword">return</span> <span class="hljs-title function_">times</span>(<span class="hljs-number">2</span>);
+}
+<span class="hljs-keyword">let</span> six = <span class="hljs-title function_">caller</span>();   <span class="hljs-comment">// 6 — lexical capture, not the caller&#x27;s scale</span>
+</code></pre><p>Three design decisions worth spelling out:</p>
+<ul>
+<li><strong>Lambdas are lexical; named <code>fn</code>s stay dynamic.</strong> Changing <code>fn</code> scoping
+would silently alter existing programs, so it doesn&#39;t. Both behaviors are
+now <a href="/docs#syntax-scoping-functions-vs-lambdas">documented</a> — and if you&#39;ve
+ever been surprised by a named function picking up a caller&#39;s variable,
+that section is worth two minutes.</li>
+<li><strong>Capture is by reference, per loop iteration.</strong> Loops create a fresh scope
+each pass, so lambdas born in a loop each remember <em>their</em> iteration — the
+classic capture trap from other languages resolves the friendly way here.</li>
+<li><strong>Zero parameters is <code>{|| ... }</code></strong> — one grammar wrinkle, since two bare
+pipes otherwise lex as logical-or.</li>
+</ul>
+<p>And the part that makes the feature feel native: <strong>builtins accept lambdas in
+place of trailing blocks.</strong> <code>items.map(f)</code>, <code>items.sort(cmp)</code>, <code>grid.fill(f)</code>,
+and — the one this post has been building toward —
+<code>spine.compoundVariableOffset(mk)</code>.</p>
+<h2>Envelopes on demand</h2>
+<p>The baked-constants problem, dissolved — twice. The first row replaces four
+named taper functions with two inline lambda literals. Then the payoff: three
+bulge strokes from one loop, each iteration&#39;s lambdas closing over that
+iteration&#39;s <code>center</code> and <code>peak</code>:</p>
+<p><mini-workspace code-open caption="Row 1: inline lambdas replace four named taper fns. Rows 2-4: each loop iteration builds envelope lambdas capturing that iteration's center and peak — the bulge marches along the spine.">
+  <code>// viewBox="0 0 400 560"
+//-- Closures dissolve the baked-constants problem. A lambda {|t| ...}
+//-- captures the scope where it is WRITTEN, so a parameterized envelope can
+//-- be built inline, wherever its parameters live. Compare with
+//-- 03-named-envelopes.pathogen: same wrapper, but the envelopes no longer
+//-- need to be named top-level fns with constants baked in.
+//--
+//-- Rows 2-4 are the payoff: lambdas built INSIDE a loop, each closing over
+//-- that iteration's center and peak. Loops create a fresh scope per
+//-- iteration, so each lambda remembers its own values.
+
+define ViewBox(0, 0, 400, 560);
+
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+//-- The identical wrapper — it neither knows nor cares whether env1 / env2
+//-- arrived as named fns or closures.
+fn strokeWithEnvelopes(pathBlock, steps, env1, env2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, env1(t), continuity, env2(t), continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.55 0.18 260);
+
+fn drawRow(name, ribbon, py, hueOffset) {
+  let rowColor = base.hueShift(hueOffset);
+  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  rowLayer.apply {
+    M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+//-- Row 1: inline lambda envelopes — the taper, without any named
+//-- top-level fns.
+let taperUp = {|t| return lerp(9, 0.5, t); };
+let taperDn = {|t| return -lerp(9, 0.5, t); };
+drawRow('taper', strokeWithEnvelopes(spine, 48, taperUp, taperDn, CurveContinuity.G1, taperCap), 95, 0);
+
+//-- Rows 2-4: closures born in a loop. Each iteration's lambdas capture THAT
+//-- iteration's center and peak (loops create a fresh scope per iteration).
+for (rowIndex in 0..2) {
+  let center = 0.25 + rowIndex * 0.25;
+  let peak = 6 + rowIndex * 3;
+  let envUp = {|t| return 0.5 + peak * bulge(t, center, 0.22); };
+  let envDn = {|t| return -(0.5 + peak * bulge(t, center, 0.22)); };
+  let ribbon = strokeWithEnvelopes(spine, 48, envUp, envDn, CurveContinuity.G1, taperCap);
+  drawRow(`loop-${rowIndex}`, ribbon, calc(225 + rowIndex * 130), calc(60 + rowIndex * 60));
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(78, 32)`inline lambdas: taperUp / taperDn`
+  text(78, 162)`loop closures: center 0.25, peak 6`
+  text(78, 292)`center 0.5, peak 9`
+  text(78, 422)`center 0.75, peak 12`
+}
+</code>
+  <img src="/blog/samples/post31/04-loop-closures.svg" alt="Row 1: inline lambdas replace four named taper fns. Rows 2-4: each loop iteration builds envelope lambdas capturing that iteration's center and peak — the bulge marches along the spine." loading="lazy">
+</mini-workspace></p>
+<p>The wrapper is untouched — it still just calls <code>env1(t)</code> and <code>env2(t)</code>. What
+changed is where envelopes can come from: anywhere, parameterized by whatever
+is in scope at that spot.</p>
+<h2>The rich stroke, assembled</h2>
+<p>Now rebuild the sixteen-layer glow with intent instead of <code>Math.random</code>. Each
+layer wants: a base width and two bulge peaks scaled by the layer index, a
+deterministic jitter texture with a per-layer stream, and tapered caps. As
+closures, that&#39;s three lambdas per layer — <code>width1</code>, <code>width2</code>, <code>jitter</code>, each
+capturing the layer index — plus a builder lambda <code>mk</code> that captures all
+three and goes straight into <code>compoundVariableOffset(mk)</code>:</p>
+<p><mini-workspace code-open caption="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda passed directly to compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical.">
+  <code>// viewBox="0 60 400 140"
+//-- The glow, rebuilt on closures -- deterministic this time. Without
+//-- closures this program threads TEN parameters through a helper
+//-- (pathBlock, steps, base1, bulges1, base2, bulges2, jitterAmount, salt,
+//-- continuity, cap). Here each layer builds lambdas that CAPTURE the layer
+//-- index and the scaled widths, and the builder lambda goes straight into
+//-- compoundVariableOffset(mk) -- a function value in place of a trailing
+//-- block. The closures carry the state; the parameter lists collapse.
+//-- Recompiles are byte-identical: the jitter is a hash of the stop index
+//-- and a captured per-layer salt, not randomRange.
+
+define ViewBox(0, 60, 400, 140);
+
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+fn hash01(i) {
+  let s = sin(i * 12.9898) * 43758.5453;
+  return s - floor(s);
+}
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let steps = 48;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.72 0.14 20);
+
+for (haloIndex in 16..1) {
+  //-- Everything below closes over THIS iteration's haloIndex.
+  let jitter = {|i| return 1 + (hash01(i * 7 + haloIndex * 1013) * 2 - 1) * 0.2; };
+  let width1 = {|t|
+    return 0.15 * haloIndex
+         + 0.6 * haloIndex * bulge(t, 0.35, 0.3)
+         + 0.35 * haloIndex * pow(bulge(t, 0.78, 0.18), 2);
+  };
+  let width2 = {|t|
+    return -0.15 * haloIndex - 0.3 * haloIndex * bulge(t, 0.55, 0.4);
+  };
+
+  //-- The builder itself is a lambda, passed as an argument — the interop
+  //-- form of `spine.compoundVariableOffset() {|vo, pb| ... }`.
+  let mk = {|vo, pb|
+    vo.startCap(taperCap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, width1(t) * jitter(i * 2), CurveContinuity.G1,
+                 width2(t) * jitter(i * 2 + 1), CurveContinuity.G1);
+    }
+    vo.endCap(taperCap);
+  };
+  let halo = spine.compoundVariableOffset(mk);
+
+  let haloColor = base.hueShift(calc(haloIndex * -6));
+  let haloLayer = PathLayer(`halo-${haloIndex}`) ${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}
+</code>
+  <img src="/blog/samples/post31/05-halo-lambdas.svg" alt="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda passed directly to compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical." loading="lazy">
+</mini-workspace></p>
+<p>Before lambdas, this program needed a ten-parameter helper function to thread
+base widths, bulge specs, jitter amount, salt, continuity, and caps down into
+the builder. The closure version was verified against that parameter-threaded
+build — the same deterministic design, <em>not</em> the randomized stroke that opened
+this post — by diffing the compiled SVG: <strong>byte-identical</strong>. Same geometry,
+radically less plumbing — which is the whole argument for closures in one
+sentence.</p>
+<p>And unlike the randomized original, this stroke is a <em>design</em>: move a bulge,
+sharpen a peak, retune the jitter, recompile, and get exactly what you asked
+for — every time.</p>
+<h2>The fine print</h2>
+<p>Version one has honest edges, all <a href="/docs#syntax-lambdas">documented</a>:</p>
+<ul>
+<li>Call lambdas through a plain name. <code>fns[0](5)</code>, <code>obj.f(1)</code>, and
+immediately-invoked literals aren&#39;t callable yet — bind to a <code>let</code> first.</li>
+<li>A lambda <em>literal</em> can&#39;t sit inside a call in path-argument position
+(<code>M use({|x| ...}) 0</code>) — path arguments stop at <code>|</code>. Pass a name.</li>
+<li>Constructor binding blocks (<code>LinearGradient(...) {|g| ...}</code>, <code>Marker</code>,
+<code>Pattern</code>, filters, <code>Grid(...) {|g| ...}</code>) still take literal blocks; the callback-style methods
+are where lambda arguments land.</li>
+</ul>
+<h2>Where this goes</h2>
+<p>An envelope is just the first function worth capturing. The same pattern —
+small lambdas closing over local parameters, handed to a builder — reaches
+anywhere Pathogen takes a callback: comparator families for <code>sort</code>, field
+functions for <code>Grid.fill</code>, per-glyph stroke treatments built inside a
+<code>contours</code> loop. Calligraphic nibs, pressure-simulating taper families,
+multi-pass glows with per-pass texture: all of them are a lambda closing over
+the parameters that make each instance <em>this</em> instance.</p>
+<p>Every sample on this page is live — open the code pane, change a captured
+<code>center</code> or <code>peak</code>, and watch the closure carry it into the stroke. The full
+reference is in the <a href="/docs#syntax-lambdas">Lambdas docs</a>, the scoping rules in
+<a href="/docs#syntax-scoping-functions-vs-lambdas">Functions vs lambdas</a>, and the
+stroke machinery in the <a href="/docs#variable-offset-variable-offset">Variable Offset docs</a>.</p>
+<p>The stroke was always a function. Now the language lets you treat it like one.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

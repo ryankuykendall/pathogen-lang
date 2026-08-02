@@ -1,0 +1,78 @@
+// viewBox="0 0 400 560"
+//-- Generalize the SHAPE, not the knobs: the wrapper takes envelope
+//-- functions (t) -> signed offset and samples one per profile at each stop.
+//-- Functions are first-class values in Pathogen -- pass them by name, call
+//-- them through the parameter.
+//--
+//-- Convention: envelopes return SIGNED offsets (the sign picks the side),
+//-- matching vo.stop's profile semantics.
+
+define ViewBox(0, 0, 400, 560);
+
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+//-- The shape-agnostic wrapper. env1/env2 are functions.
+fn strokeWithEnvelopes(pathBlock, steps, env1, env2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, env1(t), continuity, env2(t), continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+//-- Plug-in envelopes as named fns. Before lambdas shipped, this was the
+//-- only form a passable envelope could take -- note how bulged1/bulged2
+//-- bake their center and peak in as constants.
+fn constant1(t) { return 4; }
+fn constant2(t) { return -4; }
+
+fn taper1(t) { return lerp(9, 0.5, t); }
+fn taper2(t) { return -lerp(9, 0.5, t); }
+
+fn bulged1(t) { return 0.5 + 10 * bulge(t, 0.55, 0.3); }
+fn bulged2(t) { return -(0.5 + 4 * bulge(t, 0.55, 0.3)); }
+
+//-- Both profiles ride the SAME sine, so the band wanders side to side while
+//-- its width stays near-constant — a wavy ribbon. (If an envelope crosses
+//-- zero, the profile crosses the spine; same-sign stretches legally float
+//-- off one side as a detached band.)
+fn wave1(t) { return  5 + 4 * sin(TAU() * 3 * t); }
+fn wave2(t) { return -5 + 4 * sin(TAU() * 3 * t); }
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.55 0.18 260);
+
+fn drawRow(name, ribbon, py, hueOffset) {
+  let rowColor = base.hueShift(hueOffset);
+  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  rowLayer.apply {
+    M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+drawRow('constant', strokeWithEnvelopes(spine, 48, constant1, constant2, CurveContinuity.G1, taperCap), 95, 0);
+drawRow('taper',    strokeWithEnvelopes(spine, 48, taper1,    taper2,    CurveContinuity.G1, taperCap), 225, 60);
+drawRow('bulge',    strokeWithEnvelopes(spine, 48, bulged1,   bulged2,   CurveContinuity.G1, taperCap), 355, 120);
+drawRow('wave',     strokeWithEnvelopes(spine, 96, wave1,     wave2,     CurveContinuity.G1, taperCap), 490, 180);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(78, 32)`constant1 / constant2`
+  text(78, 162)`taper1 / taper2 (lerp 9 -> 0.5)`
+  text(78, 292)`bulged1 / bulged2 (asymmetric peaks)`
+  text(78, 425)`wave1 / wave2 (same sine: wandering ribbon)`
+}
