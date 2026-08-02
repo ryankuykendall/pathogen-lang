@@ -1,0 +1,113 @@
+// viewBox="0 0 400 400"
+//-- Stage 5: putting the randomness back — as a LAYER, not the foundation.
+//-- The width at each stop is (deterministic envelope) x (jitter factor).
+//-- jitterAmount 0 recovers the pure envelope exactly.
+//--
+//-- Two jitter sources:
+//--   hash01(i)    index-hash pseudo-random ("fract(sin(i*12.9898)*43758.5453)",
+//--                the classic shader one-liner; Pathogen has no fract, so it
+//--                is hand-rolled with floor). DETERMINISTIC: recompiling this
+//--                file yields byte-identical output. `salt` picks the stream.
+//--   randomRange  unseeded Math.random() — new geometry EVERY compile. Fine
+//--                for live texture, wrong for an artifact you want to
+//--                re-render identically (there is no seed facility).
+
+define ViewBox(0, 0, 400, 400);
+
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+fn bulgesOffset(t, base, bulges) {
+  let w = base;
+  for (b in bulges) {
+    w = w + b.peak * pow(bulge(t, b.center, b.spread), b.sharpness);
+  }
+  return w;
+}
+
+fn hash01(i) {
+  let s = sin(i * 12.9898) * 43758.5453;
+  return s - floor(s);
+}
+
+//-- Multiplicative jitter in [1 - amount, 1 + amount]: scales WITH the width,
+//-- so the bulge shimmers but thin sections stay thin. The salt stride (1013)
+//-- is much larger than any index span so small salts get genuinely
+//-- independent streams (a bare `+ salt` would let salt s+7 replay salt s's
+//-- other-profile sequence).
+fn jitterFactor(i, salt, amount) {
+  return 1 + (hash01(i * 7 + salt * 1013) * 2 - 1) * amount;
+}
+
+fn strokeJittered(pathBlock, steps, base1, bulges1, base2, bulges2,
+                  jitterAmount, salt, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t,
+          bulgesOffset(t, base1, bulges1) * jitterFactor(i * 2, salt, jitterAmount),
+          continuity,
+          bulgesOffset(t, base2, bulges2) * jitterFactor(i * 2 + 1, salt, jitterAmount),
+          continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+fn strokeRandomized(pathBlock, steps, base1, bulges1, base2, bulges2,
+                    jitterAmount, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t,
+          bulgesOffset(t, base1, bulges1) * randomRange(1 - jitterAmount, 1 + jitterAmount),
+          continuity,
+          bulgesOffset(t, base2, bulges2) * randomRange(1 - jitterAmount, 1 + jitterAmount),
+          continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.55 0.18 260);
+
+let bulgesUp = [{center: 0.5, spread: 0.35, peak: 10, sharpness: 1}];
+let bulgesDn = [{center: 0.5, spread: 0.35, peak: -10, sharpness: 1}];
+
+fn drawRow(name, ribbon, py, hueOffset) {
+  let rowColor = base.hueShift(hueOffset);
+  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  rowLayer.apply {
+    M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+drawRow('pure',
+        strokeJittered(spine, 48, 0.6, bulgesUp, -0.6, bulgesDn, 0, 1, CurveContinuity.G1, taperCap),
+        95, 0);
+drawRow('hash',
+        strokeJittered(spine, 48, 0.6, bulgesUp, -0.6, bulgesDn, 0.35, 1, CurveContinuity.G1, taperCap),
+        225, 60);
+drawRow('random',
+        strokeRandomized(spine, 48, 0.6, bulgesUp, -0.6, bulgesDn, 0.35, CurveContinuity.G1, taperCap),
+        355, 120);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(20, 32)`jitterAmount 0: the pure envelope`
+  text(20, 162)`hash jitter 0.35, salt 1 (identical on every recompile)`
+  text(20, 292)`randomRange jitter 0.35 (different on every recompile)`
+}

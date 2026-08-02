@@ -1,0 +1,92 @@
+// viewBox="0 0 400 400"
+//-- Stage 4: multiple bulges — the closure-free answer to parameterized
+//-- envelopes. Instead of baking constants into named fns (Stage 3's
+//-- limitation), describe each bulge as DATA and let one function interpret
+//-- the spec array: data in, shape out.
+//--
+//-- Contributions are SUMMED, not maxed: every raised-cosine term is smooth,
+//-- so the sum stays smooth, and overlapping bulges reinforce like superposed
+//-- waves (row 2). max() would crease wherever two envelopes cross.
+
+define ViewBox(0, 0, 400, 400);
+
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+//-- Signed offset at t: base plus every bulge's contribution.
+//-- Spec: { center, spread, peak, sharpness } — peak carries the sign.
+fn bulgesOffset(t, base, bulges) {
+  let w = base;
+  for (b in bulges) {
+    w = w + b.peak * pow(bulge(t, b.center, b.spread), b.sharpness);
+  }
+  return w;
+}
+
+fn strokeWithBulges(pathBlock, steps, base1, bulges1, base2, bulges2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, bulgesOffset(t, base1, bulges1), continuity,
+                 bulgesOffset(t, base2, bulges2), continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+let straightSpine = @{ l 240 0 };
+let curvedSpine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.55 0.18 260);
+
+fn drawRow(name, ribbon, py, hueOffset) {
+  let rowColor = base.hueShift(hueOffset);
+  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  rowLayer.apply {
+    M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+//-- Row 1: two separated bulges, mirrored on both profiles.
+let twoUp = [{center: 0.25, spread: 0.15, peak: 8,  sharpness: 1},
+             {center: 0.7,  spread: 0.2,  peak: 12, sharpness: 2}];
+let twoDn = [{center: 0.25, spread: 0.15, peak: -8,  sharpness: 1},
+             {center: 0.7,  spread: 0.2,  peak: -12, sharpness: 2}];
+drawRow('separated',
+        strokeWithBulges(straightSpine, 64, 0.6, twoUp, -0.6, twoDn, CurveContinuity.G1, taperCap),
+        85, 0);
+
+//-- Row 2: overlapping bulges SUM — two 8-unit peaks merge into one taller,
+//-- still-smooth swell.
+let overlapUp = [{center: 0.42, spread: 0.22, peak: 8, sharpness: 1},
+                 {center: 0.58, spread: 0.22, peak: 8, sharpness: 1}];
+let overlapDn = [{center: 0.42, spread: 0.22, peak: -8, sharpness: 1},
+                 {center: 0.58, spread: 0.22, peak: -8, sharpness: 1}];
+drawRow('overlapping',
+        strokeWithBulges(straightSpine, 64, 0.6, overlapUp, -0.6, overlapDn, CurveContinuity.G1, taperCap),
+        200, 60);
+
+//-- Row 3: each profile gets its OWN spec list (asymmetric, on the S-spine).
+let organicUp = [{center: 0.3, spread: 0.18, peak: 9, sharpness: 1},
+                 {center: 0.75, spread: 0.15, peak: 6, sharpness: 3}];
+let organicDn = [{center: 0.55, spread: 0.4, peak: -5, sharpness: 1}];
+drawRow('per-profile',
+        strokeWithBulges(curvedSpine, 64, 0.4, organicUp, -0.4, organicDn, CurveContinuity.G1, taperCap),
+        330, 120);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(20, 45)`two bulges: centers 0.25 and 0.7`
+  text(20, 160)`overlapping bulges sum into one smooth swell`
+  text(20, 262)`per-profile specs: two bulges up, one wide bulge down`
+}

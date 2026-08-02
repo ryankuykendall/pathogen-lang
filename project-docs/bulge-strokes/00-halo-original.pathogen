@@ -1,0 +1,52 @@
+// viewBox="0 0 400 240"
+//-- Stage 0: the original halo snippet, cleaned up and made self-contained.
+//-- Source: Ryan's playground workspace (glyph-halo program). The glyph contour
+//-- is replaced by a shared S-curve spine so the file compiles anywhere.
+//--
+//-- Four deltas vs the original, narrated in the tutorial:
+//--   1. Dead `min` FIXED: the original computed `(max - min) / stepMax * step`,
+//--      which never adds `min` back — the first stop landed at exactly 0, not
+//--      0.0001. (A probe shows stops at exactly t=0 / t=1 are fine under
+//--      tapered caps, so the epsilon isn't needed at all. We keep plain 0..1.)
+//--   2. `0..stepMax` is inclusive on BOTH ends (docs/syntax.md), so stepMax=48
+//--      yields 49 stops — "steps segments, steps+1 stops", stated on purpose.
+//--   3. Width scale reduced ~6.7x (0.6*haloIndex vs 4*haloIndex) and steps
+//--      100 -> 48: the original ran against ~120-unit glyph contours; this
+//--      spine is a bare S-curve, and dense stops x 16 halos is the documented
+//--      editor-perf hazard.
+//--   4. Glyph contour -> self-contained S-spine (no font loading in CLI).
+
+define ViewBox(0, 0, 400, 240);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let base = oklch(0.72 0.14 20);
+
+for (haloIndex in 16..1) {
+  let halo = spine.compoundVariableOffset() {|vo, pb|
+    let stepMax = 48;
+    for (step in 0..stepMax) {
+      let time = step / stepMax;
+      vo.stop(time,
+          randomRange(0.1, 0.6 * haloIndex),
+          CurveContinuity.G1,
+          randomRange(-0.3 * haloIndex, -0.1),
+          CurveContinuity.G1);
+    }
+
+    vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+  };
+
+  let haloColor = base.hueShift(calc(haloIndex * -6));
+  let haloLayer = PathLayer(`halo-${haloIndex}`) ${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}

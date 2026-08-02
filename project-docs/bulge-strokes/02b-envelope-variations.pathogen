@@ -1,0 +1,94 @@
+// viewBox="0 0 400 520"
+//-- Stage 2b: shaping the bulge. Straight spines, so each stroke's silhouette
+//-- IS its envelope graph.
+//--
+//-- Sharpness: pow(bulge(t), k). Near the edge e ~ s^2 (s = 1-d), so
+//-- e^k ~ s^(2k): the flat landing survives only for k > 0.5. k > 1 narrows
+//-- the peak and keeps the zero-slope edges; at exactly k = 0.5 the edge
+//-- slope is finite and nonzero — a real G1 crease where the bulge meets the
+//-- base width (look at row 1's angular junctions); below 0.5 it blows up.
+//--
+//-- Asymmetry: different spreads on the way in and the way out. The envelope
+//-- stays continuous at the center because both halves hit e = 1 there with
+//-- zero slope (another payoff of the raised cosine).
+
+define ViewBox(0, 0, 400, 520);
+
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+fn bulgePow(t, center, spread, sharpness) {
+  return pow(bulge(t, center, spread), sharpness);
+}
+
+fn bulgeAsym(t, center, spreadIn, spreadOut) {
+  let spread = spreadOut;
+  if (t < center) { spread = spreadIn; }
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+fn strokeSharp(pathBlock, steps, center, spread, sharpness,
+               base1, peak1, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      let e = bulgePow(t, center, spread, sharpness);
+      vo.stop(t, base1 + peak1 * e, continuity,
+                 -(base1 + peak1 * e), continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+fn strokeAsym(pathBlock, steps, center, spreadIn, spreadOut,
+              base1, peak1, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      let e = bulgeAsym(t, center, spreadIn, spreadOut);
+      vo.stop(t, base1 + peak1 * e, continuity,
+                 -(base1 + peak1 * e), continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+let spine = @{ l 240 0 };
+let px = 80;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.55 0.18 260);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+
+fn drawRow(name, ribbon, py, hueOffset) {
+  let rowColor = base.hueShift(hueOffset);
+  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  rowLayer.apply {
+    M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+drawRow('k-half', strokeSharp(spine, 48, 0.5, 0.35, 0.5, 0.75, 14, CurveContinuity.G1, taperCap), 80, 0);
+drawRow('k-1',    strokeSharp(spine, 48, 0.5, 0.35, 1,   0.75, 14, CurveContinuity.G1, taperCap), 175, 40);
+drawRow('k-2',    strokeSharp(spine, 48, 0.5, 0.35, 2,   0.75, 14, CurveContinuity.G1, taperCap), 270, 80);
+drawRow('k-4',    strokeSharp(spine, 48, 0.5, 0.35, 4,   0.75, 14, CurveContinuity.G1, taperCap), 365, 120);
+drawRow('asym',   strokeAsym(spine, 48, 0.55, 0.12, 0.45, 0.75, 14, CurveContinuity.G1, taperCap), 460, 160);
+
+labels.apply {
+  text(20, 48)`sharpness k = 0.5 (fatter peak - but the landing re-creases)`
+  text(20, 143)`k = 1 (the plain raised cosine)`
+  text(20, 238)`k = 2 (narrower peak)`
+  text(20, 333)`k = 4 (spike)`
+  text(20, 428)`asymmetric: spreadIn 0.12, spreadOut 0.45`
+}

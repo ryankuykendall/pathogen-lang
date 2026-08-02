@@ -1,0 +1,143 @@
+// viewBox="0 0 400 320"
+//-- Stage 2a: SEE the easing. Three candidate bulge envelopes plotted as
+//-- graphs, with the stroke they shape rendered on a STRAIGHT spine directly
+//-- below — same t axis, so the plot's peak sits exactly above the stroke's
+//-- widest point.
+//--
+//-- The build-up (full derivation in tutorial.md):
+//--   tent:       1 - d                     crease at the peak AND the edges
+//--   smoothstep: u*u*(3 - 2u), u = 1-d     polynomial ease, flat at both ends
+//--   raised cos: 0.5 * (1 + cos(pi*d))     = cos^2(pi*d/2) = easeInOutSine;
+//--               derivative -pi/2*sin(pi*d) is 0 at d=0 and d=1, so the width
+//--               ENTERS and LEAVES the bulge flat — G1-smooth against the base.
+//-- Pathogen's stdlib has no smoothstep/easing helpers; these are hand-rolled
+//-- from clamp/abs/cos/mpi (mpi(d) = d * pi).
+
+define ViewBox(0, 0, 400, 320);
+
+//-- Normalized distance from the bulge center: 0 at the peak, 1 at the edge
+//-- of the bulge window, clamped outside it.
+fn win(t, center, spread) {
+  return clamp(abs(t - center) / spread, 0, 1);
+}
+
+fn tentEnv(t, center, spread) {
+  let d = win(t, center, spread);
+  return 1 - d;
+}
+
+fn smoothEnv(t, center, spread) {
+  let d = win(t, center, spread);
+  let u = 1 - d;
+  return u * u * (3 - 2 * u);
+}
+
+fn cosEnv(t, center, spread) {
+  let d = win(t, center, spread);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+//-- Same wrapper as Stage 1 (each file is self-contained; Pathogen has no
+//-- import system yet, so shared helpers are repeated per stage).
+fn strokeFromPathBlock(pathBlock, steps, bulgeTime, spread,
+                       base1, peak1, base2, peak2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      let e = cosEnv(t, bulgeTime, spread);
+      vo.stop(t, base1 + peak1 * e, continuity,
+                 base2 + peak2 * e, continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+//-- Plot geometry -----------------------------------------------------------
+let plotX = 80;
+let plotW = 240;
+let plotY = 150;
+let plotH = 80;
+let samples = 48;
+let center = 0.5;
+let spread = 0.35;
+
+//-- envFn arrives BY NAME — functions are first-class values in Pathogen.
+fn plotEnvelope(curveLayer, envFn) {
+  curveLayer.apply {
+    M plotX calc(plotY - plotH * envFn(0, center, spread))
+    for (i in 1..samples) {
+      let t = i / samples;
+      L calc(plotX + plotW * t) calc(plotY - plotH * envFn(t, center, spread))
+    }
+  }
+}
+
+let axis = PathLayer('axis') ${ fill: none; stroke: #bbb; stroke-width: 1; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+}
+
+//-- Vertical dashed guide through the bulge center: plot peak -> stroke waist.
+let peakGuide = PathLayer('peak-guide') ${
+  fill: none;
+  stroke: #999;
+  stroke-width: 0.75;
+  stroke-dasharray: 4 3;
+};
+peakGuide.apply {
+  M calc(plotX + plotW * center) calc(plotY - plotH - 8)
+  L calc(plotX + plotW * center) 280
+}
+
+//-- Smoothstep is plotted LAST and dashed: it tracks the raised cosine within
+//-- 1% of the peak (max gap 0.010 at u = 0.72), so drawn solid it would vanish
+//-- underneath the cosine entirely.
+let tentLayer = PathLayer('env-tent') ${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+let cosLayer = PathLayer('env-raised-cos') ${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+let smoothLayer = PathLayer('env-smoothstep') ${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+
+plotEnvelope(tentLayer, tentEnv);
+plotEnvelope(cosLayer, cosEnv);
+plotEnvelope(smoothLayer, smoothEnv);
+
+//-- The stroke shaped by the raised-cosine envelope, on a straight spine.
+let spine = @{ l 240 0 };
+let ribbon = strokeFromPathBlock(spine, 48, center, spread,
+                                 0.75, 13, -0.75, -13,
+                                 CurveContinuity.G1,
+                                 Cap.tapered(2, CurveContinuity.G0));
+let strokeLayer = PathLayer('shaped-stroke') ${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+strokeLayer.apply {
+  M calc(plotX + ribbon.anchor.x) calc(240 + ribbon.anchor.y)
+  ribbon.draw();
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(20, 28)`bulge envelopes: center 0.5, spread 0.35`
+  text(80, 172)`t=0`
+  text(190, 172)`t=0.5`
+  text(304, 172)`t=1`
+  text(20, 292)`raised-cosine stroke (straight spine)`
+}
+//-- One TextLayer per legend entry (a style block belongs to a layer, not to
+//-- an individual text statement).
+let legendTent = TextLayer('legend-tent') ${
+  font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: #b0b0b0;
+};
+legendTent.apply { text(240, 40)`linear tent` }
+let legendSmooth = TextLayer('legend-smoothstep') ${
+  font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.62 0.16 160);
+};
+legendSmooth.apply { text(240, 54)`smoothstep (dashed - within 1%)` }
+let legendCos = TextLayer('legend-raised-cos') ${
+  font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.55 0.18 260);
+};
+legendCos.apply { text(240, 68)`raised cosine` }

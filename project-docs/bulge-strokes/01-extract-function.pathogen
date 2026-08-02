@@ -1,0 +1,96 @@
+// viewBox="0 0 400 480"
+//-- Stage 1: extract the halo body into a reusable function with a CONCRETE
+//-- signature. Compare with the aspirational signature
+//--   strokeFromPathBlock(pathBlock, bulgeTime, steps, bulgeLeftMax, bulgeRightMax, continuity)
+//-- which was missing: a base width for the bulge to rise from, a spread (how
+//-- wide the bulge window is), and cap control — and "left/right" misnames the
+//-- two vo.stop offsets, which are PROFILES whose side is chosen by SIGN.
+//-- So: offset1/offset2 vocabulary, caller owns the signs.
+//--
+//-- Three calls below, same function:
+//--   row 1  straddling ribbon   (peak1 +, peak2 −)  — the classic swell
+//--   row 2  asymmetric nib      (big peak1, small peak2)
+//--   row 3  detached band       (BOTH positive — floats off one side legally)
+
+define ViewBox(0, 0, 400, 480);
+
+//-- Raised-cosine bulge envelope: 1 at t == center, 0 at the window edge,
+//-- zero SLOPE at both ends (Stage 2 walks through why). Range [0, 1].
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+
+//-- The extracted function. Everything the builder needs comes in as a
+//-- parameter (self-containment armors against Pathogen's dynamic scoping).
+//-- A user fn cannot take a trailing block, so the builder block lives INSIDE.
+fn strokeFromPathBlock(pathBlock, steps, bulgeTime, spread,
+                       base1, peak1, base2, peak2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      let e = bulge(t, bulgeTime, spread);
+      vo.stop(t, base1 + peak1 * e, continuity,
+                 base2 + peak2 * e, continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+
+//-- A dashed guide layer shows the spine each ribbon rides on.
+let guide = PathLayer('spine-guide') ${
+  fill: none;
+  stroke: #999;
+  stroke-width: 0.75;
+  stroke-dasharray: 4 3;
+};
+
+fn drawRow(rowLayer, ribbon, py) {
+  guide.apply {
+    M px py
+    spine.draw();
+  }
+  rowLayer.apply {
+    M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+//-- Row 1: straddling, symmetric.
+let straddle = strokeFromPathBlock(spine, 48, 0.5, 0.35,
+                                   0.5, 9, -0.5, -9,
+                                   CurveContinuity.G1, taperCap);
+let row1 = PathLayer('row-straddle') ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.85; };
+drawRow(row1, straddle, 90);
+
+//-- Row 2: asymmetric — profile 1 swells hard, profile 2 barely moves.
+let nib = strokeFromPathBlock(spine, 48, 0.35, 0.3,
+                              0.3, 12, -0.3, -3,
+                              CurveContinuity.G1, taperCap);
+let row2 = PathLayer('row-nib') ${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
+drawRow(row2, nib, 250);
+
+//-- Row 3: SAME-SIGN offsets — the band detaches and floats above the spine.
+//-- "left/right" naming could never describe this; profile/sign naming can.
+let band = strokeFromPathBlock(spine, 48, 0.6, 0.3,
+                               2, 8, 0.5, 3,
+                               CurveContinuity.G1, taperCap);
+let row3 = PathLayer('row-band') ${ fill: oklch(0.62 0.16 20); stroke: none; opacity: 0.85; };
+drawRow(row3, band, 410);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(20, 30)`straddling: peak1 +9, peak2 -9`
+  text(20, 190)`asymmetric: peak1 +12, peak2 -3`
+  text(20, 350)`detached band: peak1 +8, peak2 +3 (same sign)`
+}
