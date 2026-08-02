@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-02 (lambda expressions)
+
+### Added
+
+#### Core
+
+- **Lambda expressions — function literals with lexical capture (closures)** — the trailing-block syntax is now a first-class expression: `let f = {|a, b| return a + b; };` then `f(1, 2)`. `{|| ... }` is the zero-parameter form (previously the two pipes lexed as logical-or). Lambdas capture the scope where they are *written* — by reference, so later reassignments are visible, and for-loops (which create a per-iteration scope) give each loop-born lambda its own iteration's bindings. Named `fn`s deliberately keep their historical dynamic scoping (free names resolve in the caller's scope); both behaviors are now pinned by tests (`tests/evaluator.test.ts` "scoping" describe) and documented for the first time. Grammar: `TrailingBlock` joined `primaryExpression` (zero LALR conflicts; parser regenerated — the generator now emits the `keyof` annotation itself, no hand patch needed). Runtime: `UserFunction` gained optional `closure`/`isLambda`; the call path is `createScope(fn.closure ?? scope)`, so named fns are untouched. Body semantics match named fns (`return` a value, or path-command fall-through → PathSegment), and the stdlib-vs-user Angle-unwrap asymmetry is preserved. Full parity in the annotated evaluator, including the PathCommand-arg second dispatch; `log()`/template display renders `Lambda(a, b)` / `Function(x)` instead of `[object Object]`.
+- **Builtins accept callbacks as arguments** — wherever an iteration builtin takes a trailing block, it now also accepts a lambda (or named fn) as its last argument: array `.map(f)`/`.reduce(init, f)`/`.sort(cmp)`, `Grid.fill(f)`/`.forEach(f)`/`.map(f)`, `spine.variableOffset(f)`/`.compoundVariableOffset(f)`. One shared `resolveCallbackBlock` helper per evaluator; lambda invocation rides the existing top-level-return fast path (64k-cell `Grid.fill` via lambda benches identical to the block form), and block-vs-lambda output parity is test-pinned per builtin family (`tests/lambdas.test.ts`, incl. a position coverage matrix). Deliberate v1 limits, documented in `docs/syntax.md`: callee expressions (`fns[0](5)`, `obj.f(1)`, IIFE) are not yet callable — bind to a `let` first (pre-existing gap shared with named fns); lambda *literals* cannot sit inside path-argument calls (path args stop at `|`); constructor binding blocks (gradients/Marker/Pattern/filters/Grid ctor) still require literal blocks.
+
+#### Development
+
+- Language services: lambda params bind as block parameters in scope analysis (rename/references/semantic tokens flow); `describeError` gained TrailingBlock-aware messages (malformed params, unclosed block, zero-param hint); formatter emits lambdas idempotently and never collapses `{||` to an object literal; `lambda` snippet + hover entry (static completion data and the VS Code snippet file); hover binding-form matrix rows for lambda literals and lambda params (documented-uninferable). TextMate grammar needed zero changes (its `{\|` rule is position-independent). Playground smoke-verified end-to-end via `scripts/smoke-lambda-playground.mts`.
+
+### Documentation
+
+- `docs/syntax.md` § Functions gained **Scoping: functions vs lambdas** (documents the long-standing dynamic scoping of named `fn`s, previously unwritten) and **§ Lambdas** (syntax, closures, loop capture, mutation visibility, builtin callback interop, limitations), plus a first-class-functions example under Defining Functions; existing Function examples gained their mandatory semicolons.
+- Fixed `docs/variable-offset.md`: same-sign compound offsets produce a **detached band** floating beside the spine (previously mis-described as a "self-intersecting ribbon" — contradicted by actual renders).
+- New blog post **"The Shape of a Stroke: Envelopes, Bulges, and Lambdas"** (`website/blog/lambdas-come-to-pathogen.md`, five interactive samples in `samples/post31/`) — builds a richer variable-width stroke via width-as-a-function envelopes and introduces lambdas as the capability that makes envelopes composable; validated via `scripts/validate-samples.ts` (0 warnings) and multi-persona agentic review.
+- Internal: `project-docs/bulge-strokes/` — the bulge-strokes tutorial (stages 0–6 plus lambda-refactored `03b`/`06b`, with `06b` diff-verified byte-identical to `06`), review fixes, self-contained preview renderer, and blog-context primer.
+
 ## [Unreleased] - 2026-08-01 (first-class Angle values)
 
 ### Changed

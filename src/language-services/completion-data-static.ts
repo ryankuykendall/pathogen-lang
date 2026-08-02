@@ -26,6 +26,7 @@ export const KEYWORD_COMPLETIONS: CompletionEntry[] = [
   { label: 'for', kind: 'keyword', detail: 'For loop — iterate over a range', boost: 10, insertText: 'for (${1:i} in ${2:0}..${3:10}) {\n\t$0\n}', isSnippet: true },
   { label: 'if', kind: 'keyword', detail: 'If statement — conditional', boost: 10, insertText: 'if (${1:condition}) {\n\t$0\n}', isSnippet: true },
   { label: 'fn', kind: 'keyword', detail: 'Function definition', boost: 10, insertText: 'fn ${1:name}(${2:params}) {\n\t$0\n}', isSnippet: true },
+  { label: 'lambda', kind: 'keyword', detail: 'Lambda expression — {|params| ... } closure literal', boost: 8, insertText: 'let ${1:name} = {|${2:params}| return ${3:value}; };$0', isSnippet: true },
   { label: 'define', kind: 'keyword', detail: 'Define a layer (PathLayer/TextLayer/GroupLayer) or ViewBox', boost: 8 },
   { label: 'ViewBox', kind: 'keyword', detail: 'Define the SVG viewBox: define ViewBox(originX, originY, width, height);', boost: 6 },
   { label: 'layer', kind: 'keyword', detail: 'Layer apply block', boost: 8 },

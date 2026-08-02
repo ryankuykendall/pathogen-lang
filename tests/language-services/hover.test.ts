@@ -27,6 +27,16 @@ describe('getHoverInfo', () => {
       expect(result!.contents).toContain('**fn**');
     });
 
+    it('a variable named `lambda` hovers as a variable, not a keyword', () => {
+      // `lambda` is a completion-snippet prefix only, NOT a grammar keyword —
+      // a KEYWORD_HOVER entry would shadow user variables of that name
+      // (regression guard for the entry removed in code review).
+      const result = hover('let lambda = 5;\ncircle(0, 0, lambda);', 1, 15); // cursor inside "lambda"
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('variable');
+      expect(result!.contents).not.toContain('lexical capture');
+    });
+
     it('shows hover for calc', () => {
       const result = hover('M calc(10 + 5) 0', 0, 3);
       expect(result).not.toBeNull();
@@ -405,6 +415,11 @@ describe('getHoverInfo', () => {
       { label: 'style block', source: 'let st = ${ stroke: #000; };', needle: 'st =', kind: 'variable', type: 'StyleBlock' },
       { label: 'array literal', source: 'let arr = [1, 2];', needle: 'arr =', kind: 'variable', type: 'array<number>' },
       { label: 'object literal', source: 'let o = { x: 1 };', needle: 'o =', kind: 'variable', type: 'object' },
+      // Lambda literal: the value itself is a function; no type name exists
+      // for it yet, so the declaration hovers untyped (null documents this).
+      { label: 'lambda literal', source: 'let f = {|a, b| return a; };\ncircle(0, 0, 1);', needle: 'f =', kind: 'variable', type: null },
+      // A lambda's own params are uninferable — no owning call site.
+      { label: 'lambda param', source: 'let f = {|amt| return amt; };\ncircle(0, 0, 1);', needle: 'amt|', kind: 'block parameter', type: null },
       { label: 'constructor', source: 'let pt = Point(1, 2);', needle: 'pt =', kind: 'variable', type: 'Point' },
       {
         label: 'method return',

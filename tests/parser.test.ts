@@ -1273,6 +1273,65 @@ L 10 20 // end point`;
       });
     });
 
+    it('parses lambda expression in let declaration', () => {
+      const ast = parse('let f = {|a, b| return a + b; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'LambdaExpression',
+        params: ['a', 'b'],
+        body: [{ type: 'ReturnStatement' }],
+      });
+      expect(decl.value.loc).toMatchObject({ line: 1, offset: 8 });
+    });
+
+    it('parses zero-param lambda {|| ... }', () => {
+      const ast = parse('let g = {|| return 1; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'LambdaExpression',
+        params: [],
+        body: [{ type: 'ReturnStatement', value: { type: 'NumberLiteral', value: 1 } }],
+      });
+    });
+
+    it('parses lambda as call argument', () => {
+      const ast = parse('let z = items.map({|v| return v * 2; });');
+      const decl = ast.body[0] as any;
+      expect(decl.value).toMatchObject({
+        type: 'MethodCallExpression',
+        method: 'map',
+        args: [{ type: 'LambdaExpression', params: ['v'] }],
+      });
+      expect(decl.value.block).toBeUndefined();
+    });
+
+    it('parses nested lambda inside lambda body', () => {
+      const ast = parse('let h = {|a| let k = {|b| return b; }; return k; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).toBe('LambdaExpression');
+      expect(decl.value.body[0]).toMatchObject({
+        type: 'LetDeclaration',
+        value: { type: 'LambdaExpression', params: ['b'] },
+      });
+    });
+
+    it('lambda does not disturb object literals or trailing blocks', () => {
+      expect((parse('let x = {};').body[0] as any).value.type).toBe('ObjectLiteral');
+      expect((parse('let x = {a: 1};').body[0] as any).value.type).toBe('ObjectLiteral');
+      const suffix = parse('let y = list.map {|item| return item; };').body[0] as any;
+      expect(suffix.value.type).toBe('MethodCallExpression');
+      expect(suffix.value.block.params).toEqual(['item']);
+    });
+
+    it('lambda in let is not misparsed as a bogus Identifier (isExpressionNode guard)', () => {
+      // If TrailingBlock were missing from isExpressionNode, dispatch would fall
+      // through to { type: 'Identifier', name: '<raw source>' } with no error.
+      const ast = parse('let f = {|t| return t; };');
+      const decl = ast.body[0] as any;
+      expect(decl.value.type).not.toBe('Identifier');
+      expect(decl.value.type).toBe('LambdaExpression');
+    });
+
     it('parses for-each loop', () => {
       const ast = parse('for (item in list) { M item 0 }');
       expect(ast.body[0]).toMatchObject({

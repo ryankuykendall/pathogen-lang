@@ -1347,6 +1347,13 @@ function buildExpression(cursor: TreeCursor, source: string): Expression {
     case 'LayerCallExpression': return buildLayerCallExpression(cursor, source);
     case 'Identifier': return buildIdentifier(cursor, source);
     case 'ParenExpression': return buildParenExpression(cursor, source);
+    // A TrailingBlock reached as an expression (not as a call suffix — those are
+    // consumed by explicit peeks in buildExpressionWithPostfix) is a lambda literal.
+    case 'TrailingBlock': {
+      const nodeLoc = loc(cursor, source);
+      const { params, body } = buildTrailingBlock(cursor, source);
+      return { type: 'LambdaExpression', params, body, loc: nodeLoc };
+    }
     case 'ArgList': return { type: 'NullLiteral' }; // ArgList is a postfix, handled in context
     default:
       // For postfix expressions, walk the chain
@@ -1498,7 +1505,10 @@ function buildTrailingBlock(cursor: TreeCursor, source: string): { params: strin
   let inParams = false;
   let passedParams = false;
   do {
-    if (cursor.name === '|' && !inParams) {
+    if (cursor.name === '||') {
+      // Zero-param form {|| ... } — both pipes lex as one logical-or token
+      passedParams = true;
+    } else if (cursor.name === '|' && !inParams) {
       inParams = true;
     } else if (cursor.name === '|' && inParams) {
       inParams = false;
@@ -2283,7 +2293,8 @@ function isExpressionNode(name: string): boolean {
     name === 'ColorLiteral' || name === 'CSSColorLiteral' || name === 'ArrayLiteral' ||
     name === 'ObjectLiteral' || name === 'StyleBlockLiteral' || name === 'PathBlockExpression' ||
     name === 'TextBlockExpression' || name === 'CalcExpression' || name === 'LayerConstructor' || name === 'LayerCallExpression' ||
-    name === 'Identifier' || name === 'ParenExpression' || name === 'ArgList';
+    name === 'Identifier' || name === 'ParenExpression' || name === 'ArgList' ||
+    name === 'TrailingBlock';
 }
 
 function isOperator(name: string): boolean {

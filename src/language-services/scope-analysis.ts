@@ -12,6 +12,7 @@ import type {
   SourceLocation,
   FunctionCall,
   MethodCallExpression,
+  LambdaExpression,
   PathArg,
   StyleBlockLiteral,
 } from '../parser/ast';
@@ -53,7 +54,10 @@ export type DeclTypeContext =
   /** for (i in 0..10) counter, or the index binding of for ([x, i] in arr) — always a number */
   | { kind: 'loopIndex' }
   /** {|p| ...} trailing-block param at position `index` of a call */
-  | { kind: 'blockParam'; call: FunctionCall | MethodCallExpression; index: number };
+  | { kind: 'blockParam'; call: FunctionCall | MethodCallExpression; index: number }
+  /** {|p| ...} lambda-literal param at position `index` — no owning call, so
+   *  the param type is uninferable (documented in the hover binding matrix) */
+  | { kind: 'lambdaParam'; lambda: LambdaExpression; index: number };
 
 export interface Declaration {
   name: string;
@@ -333,6 +337,15 @@ function walkExpr(expr: Expression, scope: Scope, col: Collector): void {
     case 'MethodCallExpression':
       walkMethodCall(expr, scope, col);
       break;
+    case 'LambdaExpression': {
+      // Lambda literal: params bind inside a fresh scope, like block params.
+      const lambdaScope = mkScope(scope);
+      expr.params.forEach((p, index) =>
+        addDecl(lambdaScope, p, 'blockParam', expr.loc, col, { kind: 'lambdaParam', lambda: expr, index }),
+      );
+      walkStatements(expr.body, lambdaScope, col);
+      break;
+    }
     case 'MemberExpression':
       walkExpr(expr.object, scope, col);
       break;

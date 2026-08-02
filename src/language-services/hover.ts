@@ -20,7 +20,11 @@ const KEYWORD_HOVER: Record<string, string> = {
   for: '**for** — Loop over a range or collection\n```\nfor (i in 0..10) { ... }\nfor (item in array) { ... }\n```',
   if: '**if** — Conditional execution\n```\nif (condition) { ... } else { ... }\n```',
   else: '**else** — Alternate branch of an if statement',
-  fn: '**fn** — Define a function\n```\nfn name(params) { ... }\n```',
+  // NOTE: no 'lambda' entry here — `lambda` is NOT a grammar keyword, just a
+  // completion-snippet prefix. A KEYWORD_HOVER entry would shadow the hover of
+  // any user variable literally named `lambda` (KEYWORD_HOVER is checked
+  // before scope resolution). Discoverability rides the fn entry + snippet.
+  fn: '**fn** — Define a function\n```\nfn name(params) { ... }\n```\nNamed functions resolve free names in the *caller\'s* scope (dynamic scoping). For lexical capture, use a lambda: `let f = {|x| ... };`',
   return: '**return** — Return a value from a function\n```\nreturn expression;\n```',
   define:
     "**define** — Define a layer (PathLayer / TextLayer / GroupLayer) or the SVG viewBox\n```\ndefine PathLayer('name') ${ stroke: #000; }\ndefine TextLayer('name') ${ font-size: 14; }\ndefine ViewBox(0, 0, 200, 200);\n```",

@@ -249,6 +249,13 @@ describe('getDiagnostics', () => {
       expect(diags[0].message).toBe("Expected '=' after variable name");
     });
 
+    it('reports helpful message for malformed lambda/block parameters', () => {
+      const diags = diagnose('let f = {|a b| return a; };');
+      expect(diags.length).toBeGreaterThanOrEqual(1);
+      expect(diags[0].message).toContain('block parameters');
+      expect(diags[0].message).toContain('{|a, b| ... }');
+    });
+
     it('reports expected ) before { in for loop', () => {
       const diags = diagnose('for (i in 0..5 { M i 0 }');
       expect(diags.length).toBeGreaterThanOrEqual(1);

@@ -56,6 +56,16 @@ describe('getInlayHints', () => {
       expect(h[2].label).toBe('max:');
     });
 
+    it('shows parameter names for a call inside a lambda body', () => {
+      // Backstop for the LambdaExpression case in walkExpr — without it,
+      // calls inside lambda bodies silently get no hints.
+      const h = paramHints('let f = {|x| return clamp(x, 0, 10); };');
+      expect(h.length).toBe(3);
+      expect(h[0].label).toBe('value:');
+      expect(h[1].label).toBe('min:');
+      expect(h[2].label).toBe('max:');
+    });
+
     it('does not show hints for single-arg functions', () => {
       const h = paramHints('let y = sin(1.5);');
       expect(h).toHaveLength(0); // sin has only 1 param

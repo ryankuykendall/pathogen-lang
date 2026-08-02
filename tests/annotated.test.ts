@@ -315,6 +315,61 @@ M 50 50 polarLine(ang, 100);`);
       expect(result).toContain(`M ${Math.sin(Math.PI / 4) * 10} ${Math.PI / 4}`);
     });
 
+    it('lambda closure resolves lexically under --annotated (parity with plain)', () => {
+      const result = compileAnnotated(`let scale = 3;
+let times = {|x| return calc(x * scale); };
+fn caller() { let scale = 100; return times(2); }
+M caller() 0`);
+      expect(result).toContain('M 6 0');
+    });
+
+    it('lambda called in path-arg position works under --annotated (2nd dispatch)', () => {
+      const result = compileAnnotated(`let f = {|x| return calc(x * 2); };
+M f(5) 0`);
+      expect(result).toContain('M 10 0');
+      expect(result).not.toContain('[object Object]');
+    });
+
+    it('lambda passed to array.map works under --annotated (no-crash + geometry)', () => {
+      const result = compileAnnotated(`let g = {|v| return calc(v + 1); };
+let a = [1, 2].map(g);
+M 0 0`);
+      expect(result).toContain('M 0 0');
+    });
+
+    it('reduce(init, f) evaluates init BEFORE the callback arg under --annotated (parity)', () => {
+      // Mirrors the plain-evaluator order test in tests/lambdas.test.ts —
+      // annotated.ts has its own resolveCallbackBlock copy (parity-drift
+      // history: 2nd dispatch, own sort, own formatters), so pin both.
+      // Geometry encodes the proof via an order-recording array (assignment
+      // statements and .length() aren't supported in annotated fn bodies /
+      // mode, so push() records and the first two entries discriminate):
+      // init-first single-eval → order [1, 2] → M 106 12. Reversed → 21;
+      // a double evaluation of init → 11.
+      const result = compileAnnotated(`let order = [];
+fn computeInit() { order.push(1); return 100; }
+fn makeFn() { order.push(2); return {|acc, v| return calc(acc + v); }; }
+let total = [1, 2, 3].reduce(computeInit(), makeFn());
+let first = order[0];
+let second = order[1];
+M total calc(first * 10 + second)`);
+      expect(result).toContain('M 106 12');
+    });
+
+    it('lambda arg renders as Lambda(params) in the function_call annotation', () => {
+      // The function_call trace line goes through displayArg — this is where
+      // the [object Object] regression would actually surface. Statement-level
+      // user-fn calls are what emit the trace line.
+      const result = compileAnnotated(`let g = {|v| return calc(v + 1); };
+fn spot(f) {
+  M f(1) 0
+}
+spot(g);`);
+      expect(result).toContain('spot(Lambda(v))');
+      expect(result).not.toContain('[object Object]');
+      expect(result).toContain('M 2 0');
+    });
+
     it('bare stdlib call statement unwraps Angle args (parity)', () => {
       // arc()'s x-axis-rotation slot receives an Angle via the bare
       // fn-call-statement branch, which has its own dispatch

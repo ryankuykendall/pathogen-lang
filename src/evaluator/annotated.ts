@@ -154,9 +154,43 @@ function toNumber(v: Value): number | undefined {
   return undefined;
 }
 
+// Mirror of evaluator/index.ts resolveCallbackBlock: the callback for a
+// block-consuming builtin is the literal trailing block, or a UserFunction
+// value (lambda or named fn) passed as the LAST argument. Lambda `closure`
+// makes the body resolve lexically; blocks/named fns keep caller-scope.
+// Args evaluate here ONCE, left-to-right; builtins consume `leadingArgs`.
+function resolveCallbackBlock(
+  expr: { block?: { params: string[]; body: Statement[] }; args: Expression[] },
+  scope: Scope,
+): { params: string[]; body: Statement[]; closure?: Scope; leadingArgs: Value[]; extraArgs: number } | null {
+  if (expr.block) {
+    const leadingArgs = expr.args.map((a) => evaluateExpression(a, scope));
+    return { params: expr.block.params, body: expr.block.body, leadingArgs, extraArgs: leadingArgs.length };
+  }
+  if (expr.args.length === 0) return null;
+  const values = expr.args.map((a) => evaluateExpression(a, scope));
+  const last = values[values.length - 1];
+  if (typeof last === 'object' && last !== null && 'type' in last && last.type === 'UserFunction') {
+    // closure is typed unknown on UserFunction (parallel evaluator Scope
+    // types); values in this evaluator always hold this evaluator's Scope.
+    return {
+      params: last.params,
+      body: last.body,
+      closure: last.closure as Scope | undefined,
+      leadingArgs: values.slice(0, -1),
+      extraArgs: values.length - 1,
+    };
+  }
+  return null;
+}
+
 /** Display a value in annotated output (Angles keep their written unit). */
 function displayArg(v: Value): string {
-  return isAngleValue(v) ? formatAngleForDisplay(v) : String(v);
+  if (isAngleValue(v)) return formatAngleForDisplay(v);
+  if (typeof v === 'object' && v !== null && 'type' in v && v.type === 'UserFunction') {
+    return `${v.isLambda ? 'Lambda' : 'Function'}(${v.params.join(', ')})`;
+  }
+  return String(v);
 }
 
 /**
@@ -2327,13 +2361,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return { type: 'ArrayValue' as const, elements: flat };
       }
       case 'fill': {
-        if (expr.args.length !== 0)
-          throw mError('Grid.fill() does not take arguments — use fill {|row, col, center| ... }');
-        if (!expr.block) throw mError('Grid.fill() requires a trailing block');
-        const params = expr.block.params;
+        const cb = resolveCallbackBlock(expr, scope);
+        if (!cb) throw mError('Grid.fill() requires a trailing block or function argument');
+        if (cb.extraArgs !== 0) throw mError('Grid.fill() takes no arguments besides the callback');
+        const params = cb.params;
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
-            const blockScope = createScope(scope);
+            const blockScope = createScope(cb.closure ?? scope);
             if (params.length > 0) setVariable(blockScope, params[0], r);
             if (params.length > 1) setVariable(blockScope, params[1], c);
             if (params.length > 2) {
@@ -2344,7 +2378,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
               });
             }
             try {
-              for (const stmt of expr.block.body) {
+              for (const stmt of cb.body) {
                 evaluateStatementPlain(stmt, blockScope);
               }
               obj.cells[r][c] = null;
@@ -2360,12 +2394,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return obj;
       }
       case 'forEach': {
-        if (expr.args.length !== 0) throw mError('Grid.forEach() does not take arguments');
-        if (!expr.block) throw mError('Grid.forEach() requires a trailing block');
-        const params = expr.block.params;
+        const cb = resolveCallbackBlock(expr, scope);
+        if (!cb) throw mError('Grid.forEach() requires a trailing block or function argument');
+        if (cb.extraArgs !== 0) throw mError('Grid.forEach() takes no arguments besides the callback');
+        const params = cb.params;
         for (let r = 0; r < obj.rows; r++) {
           for (let c = 0; c < obj.cols; c++) {
-            const blockScope = createScope(scope);
+            const blockScope = createScope(cb.closure ?? scope);
             if (params.length > 0) setVariable(blockScope, params[0], obj.cells[r][c]);
             if (params.length > 1) setVariable(blockScope, params[1], r);
             if (params.length > 2) setVariable(blockScope, params[2], c);
@@ -2377,7 +2412,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
               });
             }
             try {
-              for (const stmt of expr.block.body) {
+              for (const stmt of cb.body) {
                 evaluateStatementPlain(stmt, blockScope);
               }
             } catch (e) {
@@ -2392,14 +2427,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return null;
       }
       case 'map': {
-        if (expr.args.length !== 0) throw mError('Grid.map() does not take arguments');
-        if (!expr.block) throw mError('Grid.map() requires a trailing block');
-        const params = expr.block.params;
+        const cb = resolveCallbackBlock(expr, scope);
+        if (!cb) throw mError('Grid.map() requires a trailing block or function argument');
+        if (cb.extraArgs !== 0) throw mError('Grid.map() takes no arguments besides the callback');
+        const params = cb.params;
         const newCells: Value[][] = [];
         for (let r = 0; r < obj.rows; r++) {
           const row: Value[] = [];
           for (let c = 0; c < obj.cols; c++) {
-            const blockScope = createScope(scope);
+            const blockScope = createScope(cb.closure ?? scope);
             if (params.length > 0) setVariable(blockScope, params[0], obj.cells[r][c]);
             if (params.length > 1) setVariable(blockScope, params[1], r);
             if (params.length > 2) setVariable(blockScope, params[2], c);
@@ -2412,7 +2448,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
             }
             let cellResult: Value = null;
             try {
-              for (const stmt of expr.block.body) {
+              for (const stmt of cb.body) {
                 evaluateStatementPlain(stmt, blockScope);
               }
             } catch (e) {
@@ -3044,17 +3080,18 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       return obj.elements.length === 0 ? 1 : 0;
     }
     case 'map': {
-      if (expr.args.length !== 0) throw mError('map() does not take arguments — use map {|item| ... }');
-      if (!expr.block) throw mError('map() requires a trailing block: array.map {|item| return ...; }');
+      const cb = resolveCallbackBlock(expr, scope);
+      if (!cb) throw mError('map() requires a trailing block or function: array.map {|item| return ...; } or array.map(f)');
+      if (cb.extraArgs !== 0) throw mError('map() takes no arguments besides the callback');
       const result: Value[] = [];
-      const mapParams = expr.block.params;
+      const mapParams = cb.params;
       for (let i = 0; i < obj.elements.length; i++) {
-        const blockScope = createScope(scope);
+        const blockScope = createScope(cb.closure ?? scope);
         setVariable(blockScope, mapParams[0], obj.elements[i]);
         if (mapParams.length > 1) setVariable(blockScope, mapParams[1], i);
         if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
         try {
-          for (const stmt of expr.block.body) {
+          for (const stmt of cb.body) {
             evaluateStatementPlain(stmt, blockScope);
           }
           result.push(null);
@@ -3069,19 +3106,20 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       return { type: 'ArrayValue' as const, elements: result };
     }
     case 'reduce': {
-      if (expr.args.length !== 1) throw mError('reduce() expects 1 argument (initial value)');
-      if (!expr.block)
-        throw mError('reduce() requires a trailing block: array.reduce(init) {|acc, item| return acc; }');
-      let accumulator: Value = evaluateExpression(expr.args[0], scope);
-      const reduceParams = expr.block.params;
+      const cb = resolveCallbackBlock(expr, scope);
+      if (!cb)
+        throw mError('reduce() requires a trailing block or function: array.reduce(init) {|acc, item| return acc; } or array.reduce(init, f)');
+      if (cb.extraArgs !== 1) throw mError('reduce() expects 1 argument (initial value) plus the callback');
+      let accumulator: Value = cb.leadingArgs[0];
+      const reduceParams = cb.params;
       for (let i = 0; i < obj.elements.length; i++) {
-        const blockScope = createScope(scope);
+        const blockScope = createScope(cb.closure ?? scope);
         setVariable(blockScope, reduceParams[0], accumulator);
         if (reduceParams.length > 1) setVariable(blockScope, reduceParams[1], obj.elements[i]);
         if (reduceParams.length > 2) setVariable(blockScope, reduceParams[2], i);
         if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
         try {
-          for (const stmt of expr.block.body) {
+          for (const stmt of cb.body) {
             evaluateStatementPlain(stmt, blockScope);
           }
           accumulator = null;
@@ -3130,11 +3168,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       return { type: 'ArrayValue' as const, elements: [...obj.elements].reverse() };
     }
     case 'sort': {
-      if (expr.args.length !== 0) {
-        throw mError('sort() does not take arguments — use sort {|a, b| return ...; } for a custom order');
+      const cb = resolveCallbackBlock(expr, scope);
+      if (!cb && expr.args.length !== 0) {
+        throw mError('sort() does not take arguments — use sort {|a, b| return ...; } or sort(f) for a custom order');
+      }
+      if (cb && cb.extraArgs !== 0) {
+        throw mError('sort() takes no arguments besides the comparator');
       }
       const sorted = [...obj.elements];
-      if (!expr.block) {
+      if (!cb) {
         const allNumbers = sorted.every((e) => toNumber(e) !== undefined);
         const allStrings = !allNumbers && sorted.every((e) => typeof e === 'string');
         if (!allNumbers && !allStrings) {
@@ -3152,11 +3194,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         }
         return { type: 'ArrayValue' as const, elements: sorted };
       }
-      const sortParams = expr.block.params;
-      const sortBody = expr.block.body;
+      const sortParams = cb.params;
+      const sortBody = cb.body;
       const sortLine = getLine(expr);
       sorted.sort((a, b) => {
-        const blockScope = createScope(scope);
+        const blockScope = createScope(cb.closure ?? scope);
         if (sortParams.length > 0) setVariable(blockScope, sortParams[0], a);
         if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
         let cmp: Value = null;
@@ -3232,6 +3274,16 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       const idLoc = (expr as { loc?: { line: number; column: number } }).loc;
       return lookupVariable(scope, expr.name, idLoc?.line, idLoc?.column);
     }
+
+    case 'LambdaExpression':
+      // Mirrors evaluator/index.ts: capture the live definition scope.
+      return {
+        type: 'UserFunction' as const,
+        params: expr.params,
+        body: expr.body,
+        closure: scope,
+        isLambda: true as const,
+      };
 
     case 'ArrayLiteral': {
       const elements: Value[] = [];
@@ -4773,10 +4825,12 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     const args = call.args.map((arg) => evaluateExpression(arg, scope));
 
     if (args.length !== userFn.params.length) {
-      throw new Error(`Function ${call.name} expects ${userFn.params.length} arguments, got ${args.length}`);
+      throw new Error(`${userFn.isLambda ? 'Lambda' : 'Function'} ${call.name} expects ${userFn.params.length} arguments, got ${args.length}`);
     }
 
-    const fnScope = createScope(scope);
+    // Lambdas resolve free names lexically via their captured scope; named
+    // fns keep dynamic (caller-scope) resolution — mirrors evaluator/index.ts.
+    const fnScope = createScope((userFn.closure as Scope | undefined) ?? scope);
     userFn.params.forEach((param, i) => {
       setVariable(fnScope, param, args[i]);
     });
@@ -5913,6 +5967,7 @@ function exprSourceName(expr: Expression): string {
   if (expr.type === 'Identifier') return expr.name;
   if (expr.type === 'MemberExpression') return `${exprSourceName(expr.object)}.${expr.property}`;
   if (expr.type === 'MethodCallExpression') return `${exprSourceName(expr.object)}.${expr.method}`;
+  if (expr.type === 'LambdaExpression') return `{|${expr.params.join(', ')}| ...}`;
   return '?';
 }
 

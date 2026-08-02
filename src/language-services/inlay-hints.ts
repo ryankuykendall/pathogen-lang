@@ -170,6 +170,10 @@ function walkExpr(expr: Expression, source: string, range: Range, hints: InlayHi
       walkExpr(expr.object, source, range, hints);
       walkExpr(expr.index, source, range, hints);
       break;
+    case 'LambdaExpression':
+      // Calls inside a lambda body get param-name hints like any other body.
+      walkStatements(expr.body, source, range, hints);
+      break;
     default:
       break;
   }

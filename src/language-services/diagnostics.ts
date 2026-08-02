@@ -209,6 +209,24 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
     return `Expected property or method name after '${varName}.'`;
   }
 
+  // ── Trailing block / lambda literal issues ──
+  if (parentName === 'TrailingBlock') {
+    // Error before the closing '|' (or right after the opening one) is a
+    // parameter-list problem: {|a b| ...}, {|a,| ...}, {|1| ...}
+    const inParamList = nextName === '|' || prevName === '|' ||
+      (prevName === 'VariableName' && next?.name === '|');
+    if (errText && inParamList) {
+      return `Unexpected '${errText}' in block parameters — parameters are names separated by commas: {|a, b| ... }`;
+    }
+    if (prevName === '{' && !errText) {
+      return "Expected block parameters after '{' — use {|a, b| ... }, or {|| ... } for zero parameters";
+    }
+    if (!errText) {
+      return "Expected '}' to close the block — {|params| statements }";
+    }
+    return `Unexpected '${errText}' in block body`;
+  }
+
   // ── Missing semicolon patterns ──
   // LetDeclaration: previous is a value expression, no ';' follows
   if (parentName === 'LetDeclaration' && prevName && !nextName && !errText) {

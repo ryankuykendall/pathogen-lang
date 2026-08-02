@@ -34,6 +34,7 @@ export type Node =
   | TextStatement
   | CalcExpression
   | FunctionCall
+  | LambdaExpression
   | TernaryExpression
   | BinaryExpression
   | UnaryExpression
@@ -186,12 +187,24 @@ export interface CalcExpression {
   expression: Expression;
 }
 
+// Shared shape of a block-with-params: trailing blocks and lambda literals
+export interface BlockFunction {
+  params: string[];
+  body: Statement[];
+}
+
+// Lambda literal: {|a, b| return a + b; } in expression position
+export interface LambdaExpression extends BlockFunction {
+  type: 'LambdaExpression';
+  loc?: SourceLocation;
+}
+
 // sin(x), star(10, 20, 5, 6)
 export interface FunctionCall {
   type: 'FunctionCall';
   name: string;
   args: Expression[];
-  block?: { params: string[]; body: Statement[] }; // Trailing block: {|param1, param2, ...| statements}
+  block?: BlockFunction; // Trailing block: {|param1, param2, ...| statements}
   loc?: SourceLocation;
 }
 
@@ -334,7 +347,7 @@ export interface MethodCallExpression {
   object: Expression;
   method: string;
   args: Expression[];
-  block?: { params: string[]; body: Statement[] };
+  block?: BlockFunction;
   loc?: SourceLocation;
 }
 
@@ -475,6 +488,7 @@ export type Expression =
   | UnaryExpression
   | CalcExpression
   | FunctionCall
+  | LambdaExpression
   | MemberExpression
   | NullLiteral
   | BooleanLiteral

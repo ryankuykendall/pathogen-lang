@@ -265,7 +265,8 @@ primaryExpression {
   LayerConstructor |
   LayerCallExpression |
   Identifier ~applyDot |
-  ParenExpression
+  ParenExpression |
+  TrailingBlock
 }
 
 LayerCallExpression {
@@ -274,8 +275,12 @@ LayerCallExpression {
 
 ParenExpression { "(" expression ")" }
 
+//-- Appears in two positions: as a call suffix (trailing block) and as a
+//-- primaryExpression alternative (lambda literal). The AST builder decides
+//-- which by parent context. "||" admits the zero-param form {|| ... } —
+//-- without it the two pipes lex as the logical-or token and never match.
 TrailingBlock {
-  "{" "|" VariableName ("," VariableName)* "|" statement* "}"
+  "{" ("|" VariableName ("," VariableName)* "|" | "||") statement* "}"
 }
 
 CalcExpression {

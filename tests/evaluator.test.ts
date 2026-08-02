@@ -746,6 +746,100 @@ describe('Evaluator', () => {
     });
   });
 
+  describe('lambdas', () => {
+    it('calls a lambda stored in a variable', () => {
+      expect(compilePath('let f = {|a, b| return a + b; }; M f(1, 2) 0;')).toBe('M 3 0');
+    });
+
+    it('calls a zero-param lambda', () => {
+      expect(compilePath('let one = {|| return 1; }; M one() 0;')).toBe('M 1 0');
+    });
+
+    it('lambda body path-command fall-through matches named-fn fall-through exactly', () => {
+      const viaLambda = compilePath('let sq = {|x, y| rect(x, y, 10, 10); }; sq(0, 0);');
+      const viaFn = compilePath('fn sq(x, y) { rect(x, y, 10, 10); } sq(0, 0);');
+      expect(viaLambda).toBe(viaFn);
+      expect(viaLambda).toBe('M 0 0 l 10 0 l 0 10 l -10 0 z');
+    });
+
+    it('passes a lambda to a named function and calls it through the parameter', () => {
+      expect(compilePath('fn use(f, v) { return f(v); } let dbl = {|x| return calc(x * 2); }; M use(dbl, 5) 0;'))
+        .toBe('M 10 0');
+    });
+
+    it('nested lambdas: a lambda returned from a lambda closes over both scopes', () => {
+      const result = compilePath(`
+        let base = 100;
+        let outer = {|a| let inner = {|b| return calc(base + a + b); }; return inner; };
+        let addFive = outer(5);
+        M addFive(2) 0
+      `);
+      expect(result).toBe('M 107 0');
+    });
+
+    it('arity error names the lambda', () => {
+      expect(() => compilePath('let f = {|a, b| return a; }; M f(1) 0;'))
+        .toThrow(/Lambda f expects 2 arguments, got 1/);
+    });
+
+    it('formats as Lambda(params) in template interpolation', () => {
+      const result = compile('let f = {|a, b| return a; }; log(`${f}`); M 0 0;');
+      expect(result.logs[0].parts[0].value).toContain('Lambda(a, b)');
+    });
+  });
+
+  describe('scoping: named fns are dynamic, lambdas are lexical', () => {
+    it('PINS: named fn resolves free names in the CALLER scope (dynamic)', () => {
+      const result = compilePath(`
+        fn f() { return amt; }
+        fn g() { let amt = 7; return f(); }
+        let amt = 1;
+        M f() g()
+      `);
+      expect(result).toBe('M 1 7');
+    });
+
+    it('lambda resolves free names in the DEFINITION scope (lexical)', () => {
+      const result = compilePath(`
+        let scale = 3;
+        let times = {|x| return calc(x * scale); };
+        fn caller() { let scale = 100; return times(2); }
+        M caller() 0
+      `);
+      expect(result).toBe('M 6 0');
+    });
+
+    it('lambda parameter shadows a captured variable of the same name', () => {
+      expect(compilePath('let x = 50; let id = {|x| return x; }; M id(7) 0;')).toBe('M 7 0');
+    });
+
+    it('capture is by reference: lambda sees later reassignment', () => {
+      expect(compilePath('let n = 1; let get = {|| return n; }; n = 5; M get() 0;')).toBe('M 5 0');
+    });
+
+    it('lambdas created in a loop capture per-iteration values', () => {
+      const result = compilePath(`
+        let fns = [];
+        for (i in 1..3) {
+          fns.push({|| return i; });
+        }
+        let f0 = fns[0];
+        let f2 = fns[2];
+        M f0() f2()
+      `);
+      expect(result).toBe('M 1 3');
+    });
+
+    it('a lambda captured inside a named fn still sees the fn-call scope it was born in', () => {
+      const result = compilePath(`
+        fn make(k) { return {|x| return calc(x + k); }; }
+        let addTen = make(10);
+        M addTen(5) 0
+      `);
+      expect(result).toBe('M 15 0');
+    });
+  });
+
   describe('return statements', () => {
     it('returns a computed value from a function', () => {
       const result = compilePath(`
@@ -1406,7 +1500,7 @@ describe('Evaluator', () => {
       });
 
       it('with args throws', () => {
-        expect(() => compile('let arr = [1]; let b = arr.map(1) {|x| return x; };')).toThrow(/does not take arguments/);
+        expect(() => compile('let arr = [1]; let b = arr.map(1) {|x| return x; };')).toThrow(/takes no arguments besides the callback/);
       });
 
       it('wraps errors with map iteration context', () => {

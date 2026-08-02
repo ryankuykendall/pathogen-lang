@@ -1192,18 +1192,133 @@ Create reusable path generators with `fn`:
 
 ```
 fn square(x, y, size) {
-  rect(x, y, size, size)
+  rect(x, y, size, size);
 }
 ```
 
 ### Calling Functions
 
 ```
-square(10, 10, 50)
-square(70, 10, 50)
+square(10, 10, 50);
+square(70, 10, 50);
 ```
 
 Functions can call other functions and use all language features.
+
+Functions are values: pass one to another function by name and call it through
+the parameter.
+
+```
+fn double(x) { return calc(x * 2); }
+fn callWith(f, v) { return f(v); }
+
+let n = callWith(double, 5);   // 10
+```
+
+(Note: `apply` is reserved for layer blocks and can't be used as a function
+name.)
+
+A function body may either `return` a value, or fall through after emitting
+path commands — in that case the call produces a path segment that can be used
+directly in path context:
+
+```
+fn square(x, y, size) {
+  rect(x, y, size, size);
+}
+square(10, 10, 50);          // emits the rect's path commands
+```
+
+### Scoping: functions vs lambdas
+
+Named functions are **dynamically scoped**: a free name inside the body (one
+that isn't a parameter or a local `let`) resolves against the *caller's* scope
+at call time. Because top-level `let`s are visible from almost every call site,
+this usually behaves the way you'd expect — but a caller-local variable of the
+same name will take precedence:
+
+```
+fn f() { return amt; }
+fn g() { let amt = 7; return f(); }
+let amt = 1;
+let a = f();   // 1  — resolves from the top level
+let b = g();   // 7  — resolves from g's scope, the call site
+```
+
+If you need a function that remembers the variables where it was *written*,
+use a lambda.
+
+### Lambdas
+
+A lambda is a function literal, written with the same block syntax used by
+[array methods](#syntax-map-item-map-item-index-arrayref) and other builders, and stored or passed
+like any other value:
+
+```
+let add = {|a, b| return a + b; };
+let one = {|| return 1; };          // zero parameters
+
+let three = add(1, 2);
+```
+
+Unlike named functions, lambdas are **lexically scoped**: the body captures
+the scope where the lambda was written (a closure), not the caller's scope.
+
+```
+let scale = 3;
+let times = {|x| return calc(x * scale); };
+
+fn caller() {
+  let scale = 100;      // does NOT affect the lambda
+  return times(2);
+}
+let six = caller();     // 6
+```
+
+Capture is by reference — if a captured variable is reassigned later, the
+lambda sees the new value. Loops create a fresh scope per iteration, so
+lambdas created inside a loop each capture that iteration's values:
+
+```
+let fns = [];
+for (i in 1..3) {
+  fns.push({|| return i; });
+}
+let first = fns[0];
+let last = fns[2];
+// first() is 1, last() is 3  (bind to a name before calling — see limitations)
+```
+
+Lambda bodies have the same dual mode as named functions: `return` a value, or
+fall through after path commands to produce a path segment.
+
+**Lambdas as callbacks.** Anywhere a built-in accepts a trailing block, it
+also accepts a lambda (or a named function) passed as an argument:
+
+```
+let doubler = {|v| return calc(v * 2); };
+
+let a = [1, 2, 3].map(doubler);          // same as .map {|v| ...}
+let b = [1, 2, 3].map({|v| return calc(v * 2); });   // inline
+
+let grid = Grid(4, 4, { xDim: 25, yDim: 25 });
+grid.fill({|row, col| return calc(row * 4 + col); });
+```
+
+This works for array `.map`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
+and `variableOffset`/`compoundVariableOffset`.
+
+**Current limitations:**
+
+- A lambda must be called through a plain name (`f(1, 2)`). Calling the result
+  of an expression — `fns[0](5)`, `obj.f(1)`, or an immediately-invoked
+  literal — is not yet supported: assign to a `let` first.
+- A lambda *literal* cannot appear inside a call in path-argument position
+  (`M use({|x| ...}) 0`) — path arguments stop at `|`. Bind the lambda to a
+  variable and pass the name instead.
+- Constructor binding blocks (`LinearGradient(...) {|g| ...}`, `Marker`,
+  `Pattern`, filters, `Grid(...) {|g| ...}`) still require a literal trailing
+  block — lambda arguments work for the callback-style methods listed above.
 
 ## Comments
 

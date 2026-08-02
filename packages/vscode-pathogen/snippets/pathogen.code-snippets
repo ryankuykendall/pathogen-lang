@@ -36,6 +36,13 @@
     ],
     "description": "function definition"
   },
+  "Lambda Expression": {
+    "prefix": "lambda",
+    "body": [
+      "let ${1:name} = {|${2:params}| return ${3:value}; };$0"
+    ],
+    "description": "lambda expression — closure literal with lexical capture"
+  },
   "If Statement": {
     "prefix": "if",
     "body": [

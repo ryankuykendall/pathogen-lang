@@ -96,6 +96,11 @@ export function inferDeclType(decl: Declaration, seen?: Set<Declaration>): strin
 
     case 'blockParam':
       return inferBlockParam(ctx.call, ctx.index, decl.scope, visited);
+
+    case 'lambdaParam':
+      // A lambda literal has no owning call site, so its param types are
+      // uninferable (documented row in the hover binding matrix).
+      return null;
   }
 }
 

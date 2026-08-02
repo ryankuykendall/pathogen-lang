@@ -598,6 +598,14 @@ function formatExpression(expr: Expression, depth: number, indent: string, sourc
       return 'null';
     case 'Identifier':
       return expr.name;
+    case 'LambdaExpression': {
+      // Zero-param lambdas MUST print as {|| ...} — a bare {} would reparse
+      // as an ObjectLiteral.
+      const paramStr = expr.params.length > 0 ? `|${expr.params.join(', ')}|` : '||';
+      if (expr.body.length === 0) return `{${paramStr}}`;
+      const bodyLines = formatStatements(expr.body, depth + 1, indent, source);
+      return `{${paramStr}\n${bodyLines}\n${indent.repeat(depth)}}`;
+    }
     case 'ColorLiteral':
       return expr.raw;
     case 'BinaryExpression': {

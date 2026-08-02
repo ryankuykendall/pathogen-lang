@@ -17,6 +17,23 @@ describe('formatDocument', () => {
     expect(edits[0].newText).toContain('let x = 10;');
   });
 
+  describe('lambda expressions', () => {
+    it('formats a lambda in a let declaration and is idempotent', () => {
+      const once = format('let f = {|a, b|\nreturn a + b;\n};');
+      expect(once).toBe('let f = {|a, b|\n  return a + b;\n};');
+      expect(format(once)).toBe(once);
+    });
+
+    it('zero-param lambda keeps {|| — never collapses to an object literal', () => {
+      const result = format('let g = {||\nreturn 1;\n};');
+      expect(result).toContain('{||');
+      expect(format(result)).toBe(result);
+      // Round-trip: the formatted output must still parse as a lambda
+      const ast = parse(result);
+      expect((ast.body[0] as any).value.type).toBe('LambdaExpression');
+    });
+  });
+
   // --- Section 1: Indentation ---
   describe('indentation', () => {
     it('indents for-loop body with 2 spaces', () => {
