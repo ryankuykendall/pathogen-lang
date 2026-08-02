@@ -117,7 +117,7 @@ arrowMarker.orient = MarkerOrient.AutoStartReverse;
 | `refX` | number **or** enum value | `MarkerRefX` (`Left`, `Center`, `Right`) |
 | `refY` | number **or** enum value | `MarkerRefY` (`Top`, `Center`, `Bottom`) |
 | `markerUnits` | enum value | `MarkerUnits` (`StrokeWidth`, `UserSpaceOnUse`) |
-| `orient` | number (radians) **or** enum value | `MarkerOrient` (`Auto`, `AutoStartReverse`) |
+| `orient` | Angle value, number (radians), **or** enum value | `MarkerOrient` (`Auto`, `AutoStartReverse`) |
 | `preserveAspectRatio` | enum value | `MarkerPreserveAspectRatio` — `None`, or `{XMin,XMid,XMax}{YMin,YMid,YMax}{Meet,Slice}` (e.g. `XMidYMidMeet`, the default; `XMinYMinSlice`) |
 
 Invalid enum values throw an error that lists the valid options.
@@ -134,14 +134,17 @@ autoMarker.orient = MarkerOrient.Auto;
 // on both ends point outward
 reverseMarker.orient = MarkerOrient.AutoStartReverse;
 
-// Fixed angle — 45 degrees in radians
-fixedMarker.orient = PI() / 4;
+// Fixed angle — an Angle value works directly
+fixedMarker.orient = 45deg;
+
+// Plain numbers are radians
+plainMarker.orient = PI() / 4;
 
 // Explicit zero — always points right
 zeroMarker.orient = 0;
 ```
 
-Numeric values are interpreted as radians and converted to degrees for the generated SVG attribute.
+Numeric values are interpreted as radians and converted to degrees for the generated SVG attribute. [Angle values](#syntax-angle-units) are accepted too — `marker.orient = 45deg;` works, including via a variable.
 
 ## `context-stroke` and `context-fill`
 

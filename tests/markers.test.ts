@@ -158,6 +158,17 @@ describe('Markers', () => {
       expect(result.markers[0].orient).toBe('90');
     });
 
+    it('orient accepts an Angle value via a variable (first-class Angle)', () => {
+      const result = compile(`
+        let arrow = @{ m 0 0 l 10 5 l -10 5 z };
+        let m = Marker('a', 10, 10);
+        let a = 90deg;
+        m.orient = a;
+        m.append(arrow);
+      `);
+      expect(result.markers[0].orient).toBe('90');
+    });
+
     it('preserveAspectRatio accepts MarkerPreserveAspectRatio enum values', () => {
       const result = compile(`
         let arrow = @{ m 0 0 l 10 5 l -10 5 z };

@@ -320,7 +320,9 @@ The rest pattern must be the last binding in the destructuring pattern.
 Destructuring is not limited to object literals — it also works on Pathogen's
 fixed-shape struct values, the built-ins with a known, fixed set of
 properties: `Point`, `PolarVector`, `Grid`, `MeshPoint` (from mesh
-gradients), `Color`, and context objects like `ctx.position`. It does not
+gradients), `Color`, `Angle` (`let { deg, rad, pi, turns } = 90deg;` — see
+[Angle Units](#syntax-angle-units)), and context objects like
+`ctx.position`. It does not
 work on open-ended built-ins like `TextBlock` or `ProjectedPath`, even
 though those support dot access.
 
@@ -333,7 +335,8 @@ log(y);  // 20
 
 ```
 let { angle, distance } = PolarVector(45deg, 100);
-// angle is 0.7853... (radians), distance is 100
+// angle is 0.7853... — a plain number in radians, not an Angle value:
+// an Angle goes into the constructor, a number comes back out
 
 let grid = Grid(4, 5, { xDim: 10, yDim: 10 });
 let { rows, cols, width, height } = grid;

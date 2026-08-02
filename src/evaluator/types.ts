@@ -23,6 +23,7 @@ export type Value =
   | string
   | null
   | BooleanValue
+  | AngleValue
   | PathSegment
   | UserFunction
   | ContextObject
@@ -70,6 +71,17 @@ export type Value =
 export interface BooleanValue {
   type: 'BooleanValue';
   value: 0 | 1;
+}
+
+/**
+ * Represents an angle value (semantic subtype of number). Radians are the
+ * canonical measure; the unit is remembered only for display — 'turns' has
+ * no literal form and arises only from .toTurns() re-tagging.
+ */
+export interface AngleValue {
+  type: 'AngleValue';
+  radians: number;
+  unit: 'deg' | 'rad' | 'pi' | 'turns';
 }
 
 /**

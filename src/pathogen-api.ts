@@ -20,6 +20,30 @@
 type AngleSuffix = 'deg' | 'rad' | 'pi';
 type AngleValue = `${number}${AngleSuffix}` | number;
 
+/**
+ * First-class Angle runtime value, produced by angle-suffixed literals
+ * (90deg, 1.5pi, 2rad). Coerces to radians in numeric contexts.
+ * @type Angle
+ */
+export interface PathogenAngle {
+  /** The angle in degrees */
+  readonly deg: number;
+  /** The angle in radians */
+  readonly rad: number;
+  /** The angle in multiples of π (90deg → 0.5) */
+  readonly pi: number;
+  /** The angle in full circles (1 = 360°) */
+  readonly turns: number;
+  /** toDeg() — Same angle, displayed in degrees */
+  toDeg(): PathogenAngle;
+  /** toRad() — Same angle, displayed in radians */
+  toRad(): PathogenAngle;
+  /** toPi() — Same angle, displayed in multiples of π */
+  toPi(): PathogenAngle;
+  /** toTurns() — Same angle, displayed in full circles */
+  toTurns(): PathogenAngle;
+}
+
 // Forward-declared types (interfaces for runtime types defined at end of file)
 declare interface PathSegment {
   __brand: 'PathSegment';

@@ -130,7 +130,7 @@ let shifted = c.hueShift(180);   // shift hue by 180°
 let comp = c.complement();       // shorthand for hueShift(180)
 ```
 
-`hueShift` takes **degrees** when given a bare number — so you can write the angle in whatever unit the surrounding code already uses, without hand-converting. If the argument is written with an [angle unit](#syntax-angle-units) (`deg`, `rad`, or `pi`) — including `calc()` arithmetic over angle-suffixed literals — it is interpreted as an angle and converted to degrees automatically:
+`hueShift` takes **degrees** when given a bare number — so you can write the angle in whatever unit the surrounding code already uses, without hand-converting. An [Angle value](#syntax-angle-units) (anything written with a `deg`, `rad`, or `pi` **suffix**, including `calc()` arithmetic over angle-suffixed literals) is converted to degrees exactly, no matter how it reaches the call:
 
 ```
 let c = Color('#e63946');
@@ -140,8 +140,7 @@ let sameByPi = c.hueShift(0.5pi);    // 90° — π/2 radians
 ```
 
 ```
-// A hue wheel in nine swatches — the 2pi literal at the call site
-// is what makes this argument an angle
+// A hue wheel in nine swatches — the 2pi literal makes this an angle
 let c = Color('#e63946');
 for (i in 1..9) {
   let swatch = PathLayer(`shift-${i}`) ${
@@ -152,15 +151,19 @@ for (i in 1..9) {
 }
 ```
 
-> **Units do not survive a variable.** A suffix is consumed where it is written; by the time the value is in a variable it is just a number, and the call site cannot tell it was ever an angle. The sweep above works *only* because `2pi` appears at the call site — hoist it into a `let` and the shift silently collapses. The same applies to function results: `hueShift(calc(sin(t) * 180))` is degrees, because a call is never read as an angle. Use [`deg()`](#stdlib-angle-conversion) to convert explicitly:
+> **An angle is an angle wherever it flows.** `calc(i / 9 * 2pi)` is an [Angle value](#syntax-angle-units), and it stays one through a `let`, an array, or a function call — hoisting it into a variable does not change the shift. Only a genuinely bare number is read as degrees — and standard-library results are bare numbers, so `calc(sin(t) * 180)` is degrees:
+>
+> **Behavior change:** angle units used to be consumed at the literal — `let t = 0.5pi; c.hueShift(t)` shifted 1.57°, not 90°. Angles now survive variables, so that program shifts 90°.
 
 ```
-let angle = calc(i / 9 * 2pi);       // just a number now (radians)
-let wrong = c.hueShift(angle);       // read as degrees — a 6° sweep, not 360°
-let right = c.hueShift(deg(angle));  // deg() restores the intent
+let c = Color('#e63946');
+let sweep = calc(6 / 9 * 2pi);           // an Angle — 240°
+let a = c.hueShift(sweep);               // 240° — angle-ness survives the let
+let b = c.hueShift(deg(sweep));          // 240° — deg() returns a plain number of degrees
+let d = c.hueShift(calc(sin(1) * 180));  // ≈151° — sin() returns a plain number, read as degrees
 ```
 
-The same rules apply to [`analogous()`](#color-analogousangle) and [`splitComplementary()`](#color-splitcomplementaryangle), and to colors backed by `CSSVar(...)` — the emitted CSS hue expression uses degrees. Note that `Color(L, C, H)` and the `.hue` property are also in degrees but do **not** auto-convert — pass bare numbers there.
+The same rules apply to [`analogous()`](#color-analogousangle) and [`splitComplementary()`](#color-splitcomplementaryangle), and to colors backed by `CSSVar(...)` — the emitted CSS hue expression uses degrees. `Color(L, C, H)` follows suit: a bare `H` is degrees and an Angle `H` auto-converts, so `Color(0.6, 0.15, 90deg)` stores a hue of 90. The `.hue` property returns a plain number in degrees.
 
 ### Mixing
 

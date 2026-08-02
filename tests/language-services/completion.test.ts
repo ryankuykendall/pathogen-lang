@@ -149,6 +149,40 @@ describe('getCompletions', () => {
       expect(names).not.toContain('distance');
     });
 
+    it('offers Angle members for an angle-suffixed literal variable', () => {
+      const items = completeAtEnd('let a = 90deg;\na.');
+      const names = labels(items);
+      expect(names).toContain('deg');
+      expect(names).toContain('rad');
+      expect(names).toContain('pi');
+      expect(names).toContain('turns');
+    });
+
+    it('offers Angle members for a calc() over angle literals', () => {
+      const items = completeAtEnd('let a = calc(2 * 45deg);\na.');
+      const names = labels(items);
+      expect(names).toContain('deg');
+      expect(names).toContain('rad');
+      expect(names).toContain('pi');
+      expect(names).toContain('turns');
+    });
+
+    it('offers Angle members after a re-tagging chain (a.toPi().)', () => {
+      const items = completeAtEnd('let a = 90deg;\na.toPi().');
+      const names = labels(items);
+      expect(names).toContain('deg');
+      expect(names).toContain('toDeg');
+    });
+
+    it('offers Angle members when angle-ness flows through a variable in calc()', () => {
+      const items = completeAtEnd('let a = 90deg;\nlet b = calc(a * 2);\nb.');
+      const names = labels(items);
+      expect(names).toContain('deg');
+      expect(names).toContain('rad');
+      expect(names).toContain('pi');
+      expect(names).toContain('turns');
+    });
+
     it('offers Point members for a Grid origin destructured binding', () => {
       const items = completeAtEnd('let g = Grid(3, 4, { xDim: 10, yDim: 10 });\nlet { origin } = g;\norigin.');
       const names = labels(items);

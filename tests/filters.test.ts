@@ -516,6 +516,15 @@ describe('EmbossFilter', () => {
     expect(f.angle).toBeCloseTo(Math.PI / 2);
   });
 
+  it('accepts an Angle value via a variable on angle/elevation (first-class Angle)', () => {
+    const result = compile(
+      wrapInLayer('EmbossFilter() {|f| let a = 90deg; f.angle = a; f.elevation = calc(a / 3); }'),
+    );
+    const f = result.filters[0] as { angle: number; elevation: number };
+    expect(f.angle).toBeCloseTo(Math.PI / 2);
+    expect(f.elevation).toBeCloseTo(Math.PI / 6);
+  });
+
   it('rejects shininess below 1', () => {
     expect(() =>
       compile(`let f = EmbossFilter() {|f| f.shininess = 0.5; };`),

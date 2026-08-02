@@ -15,7 +15,8 @@ import { assignGradientProperty, assignMarkerProperty, assignMeshPointProperty, 
 import { getStructDescriptor } from './struct-properties';
 
 export { BUILTIN_ENUMS };
-import { angleArgToDegrees, checkAngleUnitMismatch, convertUnitSuffix } from './units';
+import { angle, angleMethod, formatAngleForDisplay, isAngleValue, radiansToDegreesSnapped } from './angle';
+import { checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
 
@@ -140,6 +141,7 @@ import type {
   TextLayerState,
   UserFunction,
   Value,
+  AngleValue,
   PathStore,
   VertexHandleValue,
 } from './types';
@@ -234,6 +236,7 @@ export type {
   TransformReference,
   UserFunction,
   Value,
+  AngleValue,
   PathRecord,
   PathStore,
   PathCommandMeta,
@@ -512,6 +515,19 @@ function boolVal(v: boolean | number): BooleanValue {
  * Returns undefined if the value is neither.
  */
 function toNumber(v: Value): number | undefined {
+  if (typeof v === 'number') return v;
+  if (isBooleanValue(v)) return v.value;
+  if (isAngleValue(v)) return v.radians;
+  return undefined;
+}
+
+/**
+ * Read a color-method angle argument (hueShift/analogous/splitComplementary
+ * and Color(L, C, H)'s hue): an Angle value converts to degrees exactly; a
+ * bare number is already degrees. Returns undefined for non-numeric values.
+ */
+function colorAngleDegrees(v: Value): number | undefined {
+  if (isAngleValue(v)) return radiansToDegreesSnapped(v.radians);
   if (typeof v === 'number') return v;
   if (isBooleanValue(v)) return v.value;
   return undefined;
@@ -1207,6 +1223,11 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
         if (typeof evaluated === 'number') {
           resolvedValue = formatNum(evaluated);
           trusted = true;
+        } else if (isAngleValue(evaluated)) {
+          // Angles emit their radians number (rotate: 45deg → rotate="0.785…"
+          // downstream converts to degrees at the transform boundary)
+          resolvedValue = formatNum(evaluated.radians);
+          trusted = true;
         } else if (typeof evaluated === 'string') {
           resolvedValue = evaluated;
           // Untrusted: user-supplied string. Validation runs below.
@@ -1271,6 +1292,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           }
           const v = evaluateExpression(parsed.value, scope);
           if (typeof v === 'number') return formatNum(v);
+          if (isAngleValue(v)) return formatNum(v.radians);
           if (typeof v === 'string') return v;
           // Typed values with a CSS form: var() strings from these are
           // compiler-emitted (validated at construction) — record them so
@@ -1384,6 +1406,8 @@ function tryResolveCSSFunctionArgs(raw: string, scope: Scope, emittedVars?: stri
       if (isColorValue(evaluated)) return colorValueToCSS(evaluated);
       if (isCSSVarValue(evaluated)) return cssVarValueToCSS(evaluated);
       if (typeof evaluated === 'number') return formatNum(evaluated);
+      // CSS angle slots (hue-rotate) need a unit — emit degrees
+      if (isAngleValue(evaluated)) return `${formatNum(radiansToDegreesSnapped(evaluated.radians))}deg`;
       return null;
     },
   }, emittedVars);
@@ -1392,6 +1416,9 @@ function tryResolveCSSFunctionArgs(raw: string, scope: Scope, emittedVars?: stri
 function evaluateExpression(expr: Expression, scope: Scope): Value {
   switch (expr.type) {
     case 'NumberLiteral':
+      if (expr.unit === 'deg' || expr.unit === 'rad' || expr.unit === 'pi') {
+        return angle(convertUnitSuffix(expr.value, expr.unit), expr.unit);
+      }
       return convertUnitSuffix(expr.value, expr.unit);
 
     case 'ColorLiteral': {
@@ -1463,7 +1490,8 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
     case 'TernaryExpression': {
       const condVal = evaluateExpression(expr.condition, scope);
-      const truthValue = typeof condVal === 'number' ? condVal !== 0 : (isBooleanValue(condVal) ? condVal.value !== 0 : condVal !== null);
+      const condNum = toNumber(condVal);
+      const truthValue = condNum !== undefined ? condNum !== 0 : condVal !== null;
       return truthValue ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
     }
 
@@ -1558,6 +1586,27 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         throw new Error(formatError(`Binary operator ${expr.operator} requires numeric operands`, getLineDeep(expr)));
       }
 
+      // Angle propagation: an angle stays an angle through +/-, scaling, and
+      // division by a plain number. Angle×angle and angle/angle cancel to a
+      // plain number (the literal-visible cases are rejected statically above).
+      const leftAngle = isAngleValue(left);
+      const rightAngle = isAngleValue(right);
+      if (leftAngle || rightAngle) {
+        const unit = leftAngle ? (left as AngleValue).unit : (right as AngleValue).unit;
+        switch (expr.operator) {
+          case '+':
+            return angle(leftNum + rightNum, unit);
+          case '-':
+            return angle(leftNum - rightNum, unit);
+          case '*':
+            if (leftAngle !== rightAngle) return angle(leftNum * rightNum, unit);
+            break;
+          case '/':
+            if (leftAngle && !rightAngle) return angle(leftNum / rightNum, unit);
+            break;
+        }
+      }
+
       switch (expr.operator) {
         case '+':
           return leftNum + rightNum;
@@ -1600,6 +1649,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       }
       switch (expr.operator) {
         case '-':
+          if (isAngleValue(arg)) return angle(-arg.radians, arg.unit);
           return -argNum;
         case '!':
           return boolVal(!argNum);
@@ -2052,8 +2102,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
     if (expr.method === 'set') {
       const args = expr.args.map((a) => {
-        const v = evaluateExpression(a, scope);
-        if (typeof v !== 'number') throw mError(`transform.${propRef.property}.set() arguments must be numbers`);
+        const v = toNumber(evaluateExpression(a, scope));
+        if (v === undefined) throw mError(`transform.${propRef.property}.set() arguments must be numbers`);
         return v;
       });
 
@@ -2694,8 +2744,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
       case 'mirror': {
         if (expr.args.length !== 1) throw mError('mirror() expects 1 argument (angle)');
-        const mAngle = evaluateExpression(expr.args[0], scope);
-        if (typeof mAngle !== 'number') throw mError('mirror() argument must be a number');
+        const mAngle = toNumber(evaluateExpression(expr.args[0], scope));
+        if (mAngle === undefined) throw mError('mirror() argument must be a number');
         const mirrored = mirrorCommands(obj.commands, mAngle, { x: 0, y: 0 });
         if (mirrored.length === 0) {
           return {
@@ -2727,9 +2777,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       case 'rotateAtVertexIndex': {
         if (expr.args.length !== 2) throw mError('rotateAtVertexIndex() expects 2 arguments (index, angle)');
         const rIdx = evaluateExpression(expr.args[0], scope);
-        const rAngle = evaluateExpression(expr.args[1], scope);
+        const rAngle = toNumber(evaluateExpression(expr.args[1], scope));
         if (typeof rIdx !== 'number') throw mError('rotateAtVertexIndex() index must be a number');
-        if (typeof rAngle !== 'number') throw mError('rotateAtVertexIndex() angle must be a number');
+        if (rAngle === undefined) throw mError('rotateAtVertexIndex() angle must be a number');
         if (!Number.isInteger(rIdx)) throw mError('rotateAtVertexIndex() index must be an integer');
         const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
         if (rotated.length === 0) {
@@ -2896,7 +2946,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (typeof efRy !== 'number') throw mError('ellipticalFillet() ry must be a number');
         let efRot = 0;
         if (expr.args.length === 3) {
-          efRot = evaluateExpression(expr.args[2], scope) as number;
+          efRot = toNumber(evaluateExpression(expr.args[2], scope)) as number;
           if (typeof efRot !== 'number') throw mError('ellipticalFillet() rotation must be a number');
         }
         const efResult = ellipticalFilletCommands(obj.commands, efRx, efRy, efRot, null);
@@ -2918,7 +2968,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (typeof efvRy !== 'number') throw mError('ellipticalFilletAtVertex() ry must be a number');
         let efvRot = 0;
         if (expr.args.length === 4) {
-          efvRot = evaluateExpression(expr.args[3], scope) as number;
+          efvRot = toNumber(evaluateExpression(expr.args[3], scope)) as number;
           if (typeof efvRot !== 'number') throw mError('ellipticalFilletAtVertex() rotation must be a number');
         }
         const efvResult = ellipticalFilletCommands(obj.commands, efvRx, efvRy, efvRot, [efvIdx]);
@@ -3242,8 +3292,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 
       case 'mirror': {
         if (expr.args.length !== 1) throw mError('mirror() expects 1 argument (angle)');
-        const mAngle = evaluateExpression(expr.args[0], scope);
-        if (typeof mAngle !== 'number') throw mError('mirror() argument must be a number');
+        const mAngle = toNumber(evaluateExpression(expr.args[0], scope));
+        if (mAngle === undefined) throw mError('mirror() argument must be a number');
         const mirrored = mirrorCommands(obj.commands, mAngle, obj.startPoint);
         const mStart = mirrored.length > 0 ? mirrored[0].start : obj.startPoint;
         const mEnd = mirrored.length > 0 ? mirrored[mirrored.length - 1].end : obj.endPoint;
@@ -3258,9 +3308,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       case 'rotateAtVertexIndex': {
         if (expr.args.length !== 2) throw mError('rotateAtVertexIndex() expects 2 arguments (index, angle)');
         const rIdx = evaluateExpression(expr.args[0], scope);
-        const rAngle = evaluateExpression(expr.args[1], scope);
+        const rAngle = toNumber(evaluateExpression(expr.args[1], scope));
         if (typeof rIdx !== 'number') throw mError('rotateAtVertexIndex() index must be a number');
-        if (typeof rAngle !== 'number') throw mError('rotateAtVertexIndex() angle must be a number');
+        if (rAngle === undefined) throw mError('rotateAtVertexIndex() angle must be a number');
         if (!Number.isInteger(rIdx)) throw mError('rotateAtVertexIndex() index must be an integer');
         const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
         const rStart = rotated.length > 0 ? rotated[0].start : obj.startPoint;
@@ -3393,7 +3443,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (typeof efRy !== 'number') throw mError('ellipticalFillet() ry must be a number');
         let efRot = 0;
         if (expr.args.length === 3) {
-          efRot = evaluateExpression(expr.args[2], scope) as number;
+          efRot = toNumber(evaluateExpression(expr.args[2], scope)) as number;
           if (typeof efRot !== 'number') throw mError('ellipticalFillet() rotation must be a number');
         }
         const efResult = ellipticalFilletCommands(obj.commands, efRx, efRy, efRot, null);
@@ -3413,7 +3463,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (typeof efvRy !== 'number') throw mError('ellipticalFilletAtVertex() ry must be a number');
         let efvRot = 0;
         if (expr.args.length === 4) {
-          efvRot = evaluateExpression(expr.args[3], scope) as number;
+          efvRot = toNumber(evaluateExpression(expr.args[3], scope)) as number;
           if (typeof efvRot !== 'number') throw mError('ellipticalFilletAtVertex() rotation must be a number');
         }
         const efvResult = ellipticalFilletCommands(obj.commands, efvRx, efvRy, efvRot, [efvIdx]);
@@ -3571,12 +3621,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length !== 5) throw mError('polarProject() expects 5 arguments (px, py, angle, distance, anchor)');
         const ppx = evaluateExpression(expr.args[0], scope);
         const ppy = evaluateExpression(expr.args[1], scope);
-        const ppAngle = evaluateExpression(expr.args[2], scope);
+        const ppAngle = toNumber(evaluateExpression(expr.args[2], scope));
         const ppDist = evaluateExpression(expr.args[3], scope);
         const ppAnchor = evaluateExpression(expr.args[4], scope);
         if (typeof ppx !== 'number') throw mError('polarProject() px must be a number');
         if (typeof ppy !== 'number') throw mError('polarProject() py must be a number');
-        if (typeof ppAngle !== 'number') throw mError('polarProject() angle must be a number');
+        if (ppAngle === undefined) throw mError('polarProject() angle must be a number');
         if (typeof ppDist !== 'number') throw mError('polarProject() distance must be a number');
         if (typeof ppAnchor !== 'string') throw mError('polarProject() anchor must be a BBoxAnchor enum value');
         const targetX = ppx + ppDist * Math.cos(ppAngle);
@@ -3704,7 +3754,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
         let dtRotation: number | undefined;
         if (expr.args.length === 3) {
-          dtRotation = evaluateExpression(expr.args[2], scope) as number;
+          dtRotation = toNumber(evaluateExpression(expr.args[2], scope)) as number;
           if (typeof dtRotation !== 'number') throw mError('drawTo() rotation must be a number');
         }
         const activeTextLayer = getActiveTextLayer(scope);
@@ -3872,12 +3922,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (expr.args.length !== 5) throw mError('polarProject() expects 5 arguments (px, py, angle, distance, anchor)');
         const ppx = evaluateExpression(expr.args[0], scope);
         const ppy = evaluateExpression(expr.args[1], scope);
-        const ppAngle = evaluateExpression(expr.args[2], scope);
+        const ppAngle = toNumber(evaluateExpression(expr.args[2], scope));
         const ppDist = evaluateExpression(expr.args[3], scope);
         const ppAnchor = evaluateExpression(expr.args[4], scope);
         if (typeof ppx !== 'number') throw mError('polarProject() px must be a number');
         if (typeof ppy !== 'number') throw mError('polarProject() py must be a number');
-        if (typeof ppAngle !== 'number') throw mError('polarProject() angle must be a number');
+        if (ppAngle === undefined) throw mError('polarProject() angle must be a number');
         if (typeof ppDist !== 'number') throw mError('polarProject() distance must be a number');
         if (typeof ppAnchor !== 'string') throw mError('polarProject() anchor must be a BBoxAnchor enum value');
         // Compute target point
@@ -3999,7 +4049,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
         let dtRotation: number | undefined;
         if (expr.args.length === 3) {
-          dtRotation = evaluateExpression(expr.args[2], scope) as number;
+          dtRotation = toNumber(evaluateExpression(expr.args[2], scope)) as number;
           if (typeof dtRotation !== 'number') throw mError('drawTo() rotation must be a number');
         }
         const activeTextLayer = getActiveTextLayer(scope);
@@ -4058,9 +4108,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       case 'polarTranslate': {
         if (expr.args.length !== 2) throw mError('polarTranslate() expects 2 arguments');
-        const angle = evaluateExpression(expr.args[0], scope);
+        const angle = toNumber(evaluateExpression(expr.args[0], scope));
         const distance = evaluateExpression(expr.args[1], scope);
-        if (typeof angle !== 'number') throw mError('polarTranslate() angle must be a number');
+        if (angle === undefined) throw mError('polarTranslate() angle must be a number');
         if (typeof distance !== 'number') throw mError('polarTranslate() distance must be a number');
         return { type: 'PointValue', x: obj.x + Math.cos(angle) * distance, y: obj.y + Math.sin(angle) * distance };
       }
@@ -4080,9 +4130,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       case 'rotate': {
         if (expr.args.length !== 2) throw mError('rotate() expects 2 arguments');
-        const angle = evaluateExpression(expr.args[0], scope);
+        const angle = toNumber(evaluateExpression(expr.args[0], scope));
         const origin = evaluateExpression(expr.args[1], scope);
-        if (typeof angle !== 'number') throw mError('rotate() angle must be a number');
+        if (angle === undefined) throw mError('rotate() angle must be a number');
         if (!isPointValue(origin)) throw mError('rotate() origin must be a Point');
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
@@ -4121,13 +4171,22 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
     }
   }
 
+  // Angle methods (.toDeg/.toRad/.toPi/.toTurns — display re-tagging)
+  if (isAngleValue(obj)) {
+    const retagged = angleMethod(obj, expr.method, expr.args.length, (m): never => {
+      throw mError(m);
+    });
+    if (retagged) return retagged;
+    throw mError(`Unknown Angle method: ${expr.method}`);
+  }
+
   // PolarVector methods
   if (isPolarVectorValue(obj)) {
     switch (expr.method) {
       case 'turn': {
         if (expr.args.length !== 1) throw mError('turn() expects 1 argument');
-        const delta = evaluateExpression(expr.args[0], scope);
-        if (typeof delta !== 'number') throw mError('turn() argument must be a number');
+        const delta = toNumber(evaluateExpression(expr.args[0], scope));
+        if (delta === undefined) throw mError('turn() argument must be a number');
         return { type: 'PolarVectorValue' as const, angle: obj.angle + delta, distance: obj.distance };
       }
       case 'scale': {
@@ -4822,8 +4881,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       case 'hueShift': {
         if (expr.args.length !== 1) throw mError('hueShift() expects 1 argument');
         const raw = evaluateExpression(expr.args[0], scope);
-        if (typeof raw !== 'number') throw mError('hueShift() degrees must be a number');
-        const degrees = angleArgToDegrees(expr.args[0], raw);
+        const degrees = colorAngleDegrees(raw);
+        if (degrees === undefined) throw mError('hueShift() degrees must be a number');
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         return {
           type: 'ColorValue',
@@ -4856,8 +4915,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         let angle = 30;
         if (expr.args.length === 1) {
           const a = evaluateExpression(expr.args[0], scope);
-          if (typeof a !== 'number') throw mError('analogous() angle must be a number');
-          angle = angleArgToDegrees(expr.args[0], a);
+          const d = colorAngleDegrees(a);
+          if (d === undefined) throw mError('analogous() angle must be a number');
+          angle = d;
         }
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         const colors: ColorValue[] = [
@@ -4897,8 +4957,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         let angle = 30;
         if (expr.args.length === 1) {
           const a = evaluateExpression(expr.args[0], scope);
-          if (typeof a !== 'number') throw mError('splitComplementary() angle must be a number');
-          angle = angleArgToDegrees(expr.args[0], a);
+          const d = colorAngleDegrees(a);
+          if (d === undefined) throw mError('splitComplementary() angle must be a number');
+          angle = d;
         }
         const src = cssSourceExpr(obj.cssVar, obj.cssExpr);
         const colors: ColorValue[] = [
@@ -5327,7 +5388,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
       const sorted = [...obj.elements];
       if (!expr.block) {
-        const allNumbers = sorted.every((e) => typeof e === 'number');
+        const allNumbers = sorted.every((e) => toNumber(e) !== undefined);
         const allStrings = !allNumbers && sorted.every((e) => typeof e === 'string');
         if (!allNumbers && !allStrings) {
           throw mError(
@@ -5337,10 +5398,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         if (allNumbers) {
           // NaN would be silently coerced to "equal" by the sort algorithm,
           // producing an arbitrary order instead of the documented ascending one.
-          if (sorted.some((e) => Number.isNaN(e as number))) {
+          if (sorted.some((e) => Number.isNaN(toNumber(e)))) {
             throw mError('sort() without a comparator cannot order NaN elements — remove them before sorting');
           }
-          sorted.sort((a, b) => (a as number) - (b as number));
+          sorted.sort((a, b) => (toNumber(a) as number) - (toNumber(b) as number));
         } else {
           sorted.sort((a, b) => ((a as string) < (b as string) ? -1 : (a as string) > (b as string) ? 1 : 0));
         }
@@ -5388,6 +5449,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
 function formatValueForDisplay(val: Value): string {
   if (val === null) return 'null';
   if (isBooleanValue(val)) return val.value ? 'true' : 'false';
+  if (isAngleValue(val)) return formatAngleForDisplay(val);
   if (typeof val === 'number') return formatNum(val);
   if (typeof val === 'string') return val;
   if (isPointValue(val)) {
@@ -6037,6 +6099,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
           stringValue = 'null';
         } else if (isBooleanValue(value)) {
           stringValue = formatValueForDisplay(value);
+        } else if (isAngleValue(value)) {
+          stringValue = formatValueForDisplay(value);
         } else if (isPointValue(value)) {
           stringValue = formatValueForDisplay(value);
         } else if (isPolarVectorValue(value)) {
@@ -6135,9 +6199,9 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (call.args.length !== 2) {
       throw new Error(`PolarVector() expects 2 arguments, got ${call.args.length}`);
     }
-    const angle = evaluateExpression(call.args[0], scope);
+    const angle = toNumber(evaluateExpression(call.args[0], scope));
     const distance = evaluateExpression(call.args[1], scope);
-    if (typeof angle !== 'number') throw new Error('PolarVector() angle must be a number');
+    if (angle === undefined) throw new Error('PolarVector() angle must be a number');
     if (typeof distance !== 'number') throw new Error('PolarVector() distance must be a number');
     return { type: 'PolarVectorValue' as const, angle, distance };
   }
@@ -7053,10 +7117,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       // Numeric OKLCH: Color(L, C, H) or Color(L, C, H, alpha)
       const L = evaluateExpression(call.args[0], scope);
       const C = evaluateExpression(call.args[1], scope);
-      const H = evaluateExpression(call.args[2], scope);
+      // Hue is degrees for bare numbers; an Angle value converts exactly
+      const H = colorAngleDegrees(evaluateExpression(call.args[2], scope));
       if (typeof L !== 'number') throw new Error(formatError('Color() L must be a number', cLine, cCol));
       if (typeof C !== 'number') throw new Error(formatError('Color() C must be a number', cLine, cCol));
-      if (typeof H !== 'number') throw new Error(formatError('Color() H must be a number', cLine, cCol));
+      if (H === undefined) throw new Error(formatError('Color() H must be a number', cLine, cCol));
       let alpha = 1;
       if (call.args.length === 4) {
         const a = evaluateExpression(call.args[3], scope);
@@ -7118,7 +7183,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (!scope.evalState) {
       throw new Error(`Function '${call.name}' requires evaluation context`);
     }
-    const args = call.args.map((arg) => evaluateExpression(arg, scope));
+    const args = call.args.map((arg) => {
+      const v = evaluateExpression(arg, scope);
+      return isAngleValue(v) ? v.radians : v;
+    });
     return evaluateContextAwareFunction(call.name, args, scope, call.loc);
   }
 
@@ -7131,7 +7199,10 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.calledStdlibFunctions.add(call.name);
     }
 
-    const args = call.args.map((arg) => evaluateExpression(arg, scope));
+    const args = call.args.map((arg) => {
+      const v = evaluateExpression(arg, scope);
+      return isAngleValue(v) ? v.radians : v;
+    });
     const result = (fn as (...args: number[]) => number)(...(args as number[]));
 
     // If stdlib function returns a PathSegment, track its commands
@@ -7197,11 +7268,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       if (value === null) {
         throw new Error('Cannot use null as a path argument');
       }
-      if (isBooleanValue(value)) {
-        return formatNum(value.value);
-      }
-      if (typeof value === 'number') {
-        return formatNum(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        return formatNum(n);
       }
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathSegment') {
         return value.value;
@@ -7214,13 +7283,11 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       if (value === null) {
         throw new Error('Cannot use null as a path argument');
       }
-      if (isBooleanValue(value)) {
-        return formatNum(value.value);
-      }
-      if (typeof value !== 'number') {
+      const n = toNumber(value);
+      if (n === undefined) {
         throw new Error('calc() must evaluate to a number');
       }
-      return formatNum(value);
+      return formatNum(n);
     }
 
     case 'FunctionCall': {
@@ -7229,8 +7296,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       if (value === undefined || value === null || value === '') {
         return '';
       }
-      if (typeof value === 'number') {
-        return formatNum(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        return formatNum(n);
       }
       if (typeof value === 'object' && value !== null && 'type' in value) {
         if (value.type === 'PathSegment') {
@@ -7249,11 +7317,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       if (value === null) {
         throw new Error('Cannot use null as a path argument');
       }
-      if (isBooleanValue(value)) {
-        return formatNum(value.value);
-      }
-      if (typeof value === 'number') {
-        return formatNum(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        return formatNum(n);
       }
       throw new Error(`Member expression did not evaluate to a number`);
     }
@@ -7263,11 +7329,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       if (value === null) {
         throw new Error('Cannot use null as a path argument');
       }
-      if (isBooleanValue(value)) {
-        return formatNum(value.value);
-      }
-      if (typeof value === 'number') {
-        return formatNum(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        return formatNum(n);
       }
       throw new Error('Index expression did not evaluate to a number');
     }
@@ -7278,8 +7342,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       if (value === undefined || value === null || value === '') {
         return '';
       }
-      if (typeof value === 'number') {
-        return formatNum(value);
+      const n = toNumber(value);
+      if (n !== undefined) {
+        return formatNum(n);
       }
       if (typeof value === 'object' && value !== null && 'type' in value) {
         if (value.type === 'PathSegment') {
@@ -7406,10 +7471,11 @@ function getActiveTextLayer(scope: Scope): TextLayerState | null {
 }
 
 function requireNumber(value: Value, label: string): number {
-  if (typeof value !== 'number') {
+  const n = toNumber(value);
+  if (n === undefined) {
     throw new Error(`${label} must be a number`);
   }
-  return value;
+  return n;
 }
 
 /**
@@ -7859,7 +7925,8 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
       }
     } else if (item.type === 'IfStatement') {
       const condition = evaluateExpression(item.condition, scope);
-      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      const condNum = toNumber(condition);
+      const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
       if (isTruthy) {
         evaluateTextBody(item.consequent as TextBodyItem[], scope, children);
       } else if (item.alternate) {
@@ -8085,10 +8152,10 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
     }
 
     case 'ForLoop': {
-      const start = evaluateExpression(stmt.start, scope);
-      const end = evaluateExpression(stmt.end, scope);
+      const start = toNumber(evaluateExpression(stmt.start, scope));
+      const end = toNumber(evaluateExpression(stmt.end, scope));
 
-      if (typeof start !== 'number' || typeof end !== 'number') {
+      if (start === undefined || end === undefined) {
         throw new Error(formatError('for loop range must be numeric', getLine(stmt)));
       }
 
@@ -8125,7 +8192,8 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
 
     case 'IfStatement': {
       const condition = evaluateExpression(stmt.condition, scope);
-      const isTruthy = condition !== null && (isBooleanValue(condition) ? condition.value !== 0 : typeof condition === 'number' ? condition !== 0 : Boolean(condition));
+      const condNum = toNumber(condition);
+      const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
 
       if (isTruthy) {
         evaluateStatementsToAccum(stmt.consequent, createScope(scope), accum);
@@ -8678,17 +8746,19 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       if (isEmbossFilterValue(obj)) {
         switch (stmt.property) {
           case 'angle': {
-            if (typeof value !== 'number' || !Number.isFinite(value)) {
+            const n = toNumber(value);
+            if (n === undefined || !Number.isFinite(n)) {
               throw new Error(formatError(`EmbossFilter.angle must be a finite number (with angle unit)`, getLine(stmt)));
             }
-            obj.angle = value;
+            obj.angle = n;
             return;
           }
           case 'elevation': {
-            if (typeof value !== 'number' || !Number.isFinite(value)) {
+            const n = toNumber(value);
+            if (n === undefined || !Number.isFinite(n)) {
               throw new Error(formatError(`EmbossFilter.elevation must be a finite number (with angle unit)`, getLine(stmt)));
             }
-            obj.elevation = value;
+            obj.elevation = n;
             return;
           }
           case 'depth': {
@@ -8751,12 +8821,13 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
             return;
           }
           case 'direction': {
-            if (typeof value !== 'number' || !Number.isFinite(value)) {
+            const n = toNumber(value);
+            if (n === undefined || !Number.isFinite(n)) {
               throw new Error(
                 formatError(`ElevationShadowFilter.direction must be a finite number (with angle unit)`, getLine(stmt)),
               );
             }
-            obj.direction = value;
+            obj.direction = n;
             return;
           }
           case 'tightness': {
@@ -8867,11 +8938,12 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
             return;
           }
           case 'angle': {
-            if (typeof value !== 'number' || !Number.isFinite(value))
+            const n = toNumber(value);
+            if (n === undefined || !Number.isFinite(n))
               throw new Error(
                 formatError(`MotionBlurFilter.angle must be a finite number (with angle unit)`, getLine(stmt)),
               );
-            obj.angle = value;
+            obj.angle = n;
             return;
           }
           case 'samples': {

@@ -487,17 +487,58 @@ describe('Color type', () => {
       expect(hues[8]).toBeCloseTo(30, 1); // full turn wraps home
     });
 
-    it('unit is lost through a variable (known limitation); deg() converts explicitly', () => {
+    it('angle survives a variable: hueShift(turn) and hueShift(deg(turn)) agree', () => {
       const result = compile(`
         let c = Color(0.5, 0.15, 30);
         let turn = 0.5pi;
         log(c.hueShift(deg(turn)).hue);
         log(c.hueShift(turn).hue);
       `);
+      // deg() returns a plain number of degrees; the Angle variable converts
+      // exactly — both shift 90°.
       expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(120, 1);
-      // A stored variable is a plain number in radians and reads as degrees:
-      // 30 + 1.5707… — the docs point at deg() as the escape hatch.
-      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(31.57, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(120, 1);
+    });
+
+    it('angle survives an array element', () => {
+      expect(
+        hueOf('let c = Color(0.5, 0.15, 30); let angles = [90deg, 45deg]; log(c.hueShift(angles[0]).hue);'),
+      ).toBeCloseTo(120, 1);
+    });
+
+    it('angle survives a user function parameter and return value', () => {
+      const result = compile(`
+        let c = Color(0.5, 0.15, 30);
+        fn shifted(a) { return c.hueShift(a); }
+        fn quarter() { return 0.5pi; }
+        log(shifted(90deg).hue);
+        log(c.hueShift(quarter()).hue);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(120, 1);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(120, 1);
+    });
+
+    it('the reported halo trap: hoisted calc angle drives a per-iteration sweep', () => {
+      const result = compile(`
+        let c = Color(0.5, 0.15, 30);
+        for (i in 0..8) {
+          let shift = calc(i / 8 * 2pi);
+          log(c.hueShift(shift).hue);
+        }
+      `);
+      const hues = result.logs.map((l) => parseFloat(l.parts[0].value));
+      expect(hues[2]).toBeCloseTo(120, 1); // quarter turn — was 30 + 1.57° before Angle values
+      expect(hues[4]).toBeCloseTo(210, 1); // half turn
+    });
+
+    it('Color(L, C, H) auto-converts an Angle hue', () => {
+      expect(hueOf('let c = Color(0.5, 0.15, 90deg); log(c.hue);')).toBeCloseTo(90, 5);
+      expect(hueOf('let h = 0.5pi; let c = Color(0.5, 0.15, h); log(c.hue);')).toBeCloseTo(90, 5);
+    });
+
+    it('deg-written angles convert without float noise: hueShift(30deg) hue is exactly 60', () => {
+      // The rad→deg round trip must keep the 1e10 snap (30deg → 29.999999999999996 without it)
+      expect(hueOf('let c = Color(0.5, 0.15, 30); log(c.hueShift(30deg).hue);')).toBe(60);
     });
 
     it('.analogous(45deg) equals .analogous(45)', () => {

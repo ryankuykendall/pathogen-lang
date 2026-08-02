@@ -191,7 +191,7 @@ M mid.x mid.y               // position at midpoint
 
 ### `tangent(t)` → `{ point, angle }`
 
-Returns the point and tangent angle (radians) at fraction `t`. The angle is the direction of travel.
+Returns the point and tangent angle at fraction `t`. The angle is the direction of travel, as a plain number in radians.
 
 ```
 let p = @{ v 50 h 100 };

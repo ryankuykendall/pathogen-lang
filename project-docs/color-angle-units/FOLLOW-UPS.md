@@ -6,6 +6,13 @@ landed (commit `a34e313`). Context: `project-docs/color-angle-units/`,
 
 ## 1. Language-service diagnostic: angle variable passed to a degrees method
 
+> **OBSOLETE (2026-08-01).** Superseded by the first-class Angle value work
+> (`project-docs/angle-values/PLAN.md`): angle-suffixed literals now evaluate
+> to a runtime Angle value that survives variables, so the trap this
+> diagnostic was designed to catch no longer exists. The "key invariant"
+> paragraph at the bottom of this file no longer holds — units are now a
+> property of the **value**. Kept for the historical design record.
+
 **The trap**: `let turn = 0.5pi; c.hueShift(turn)` compiles cleanly but shifts
 1.57° instead of 90° — the unit is consumed at the literal, and the call-site
 inference (`inferUnit`) never looks inside variables. Currently defended only

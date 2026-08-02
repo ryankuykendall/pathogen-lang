@@ -1,4 +1,5 @@
 import { oklchToCSS } from '../color';
+import { isAngleValue } from './angle';
 import { BUILTIN_ENUMS } from './builtin-enums';
 import { hasAngleUnit } from './units';
 
@@ -94,6 +95,10 @@ export function assignGradientProperty(
       // Also check negative unary on bare number
       if (valueExpr.type === 'UnaryExpression' && valueExpr.operator === '-' && !hasAngleUnit(valueExpr)) {
         fail(`ConicGradient '${property}' requires an angle unit`);
+      }
+      if (isAngleValue(value)) {
+        obj[property] = value.radians;
+        return;
       }
       if (typeof value !== 'number') fail(`ConicGradient '${property}' must be a number (with angle unit)`);
       obj[property] = value;
@@ -259,6 +264,8 @@ export function assignMarkerProperty(
     case 'orient': {
       if (typeof value === 'number') {
         obj.orient = value;
+      } else if (isAngleValue(value)) {
+        obj.orient = value.radians;
       } else if (typeof value === 'string') {
         obj.orient = validateEnum('MarkerOrient', value);
       } else {

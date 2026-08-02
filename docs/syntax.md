@@ -191,9 +191,9 @@ M calc(100 - r) 100
 L calc(100 + r) 100
 ```
 
-`calc()` computes on **values**, not on units. Unit suffixes (`deg`, `rad`, `pi`, `%`) are converted at each literal before any arithmetic happens (angles to radians, percents to fractions), so the value a `calc()` produces is always a plain number.
+`calc()` computes on **values**. Percent suffixes are converted at the literal (`20%` → 0.2), so they always produce plain numbers. Angle suffixes (`deg`, `rad`, `pi`) are different: an angle-suffixed literal produces an **Angle value**, and `calc()` arithmetic keeps angle-ness where it makes sense — scaling an angle by a plain number is still an angle, a ratio of two angles is a plain number. **An angle is an angle wherever it flows**: it survives being stored in a variable, put in an array, or passed through a function. See [Angle Units](#syntax-angle-units).
 
-Separately, the compiler reads the expression *as written* to decide whether it denotes an angle. That static reading is what rejects nonsense like `calc(0.25pi + 5)`, and what lets the degree-based color methods tell `hueShift(90deg)` from `hueShift(90)`. **Units are a property of how an expression is written, not of the number it produces** — which is why they do not survive being stored in a variable. See [Angle Units](#syntax-angle-units).
+Separately, the compiler still reads the expression *as written* to reject nonsense at compile time, like `calc(0.25pi + 5)` — see the mismatch rules under [Angle Units](#syntax-angle-units).
 
 ### Supported Operators
 
@@ -498,7 +498,7 @@ log(Symmetry.Bilateral);  // bilateral
 enum Season { Spring = 'vernal', Summer = 'estival' }
 
 // Explicit typed values — number, angle, color, boolean
-enum Angle { Quarter = 90deg, Half = 180deg, Full = 360deg }
+enum Turn { Quarter = 90deg, Half = 180deg, Full = 360deg }
 enum Palette { Primary = #0066ff, Accent = #ff6600, Muted = #999 }
 enum Weight { Thin = 1, Normal = 2, Bold = 4 }
 enum Toggle { On = true, Off = false }
@@ -541,7 +541,7 @@ L calc(pt.x + 10) pt.y  // L 110 200
 
 ### Methods
 
-All angles are in radians, consistent with the standard library.
+All angles are in radians, consistent with the standard library. [Angle values](#syntax-angle-units) are accepted anywhere an angle goes in (`.rotate(90deg, c)`); angles that come *out* (`.angleTo()`) are plain numbers in radians.
 
 #### `.translate(dx, dy)`
 
@@ -1033,45 +1033,102 @@ object with those variables as values — see
 
 ## Angle Units
 
-Numbers can have angle unit suffixes for convenience:
+Numbers can have angle unit suffixes:
 
 | Suffix | Description |
 |--------|-------------|
-| `45deg` | Degrees (converted to radians internally) |
-| `1.5rad` | Radians (no conversion) |
+| `45deg` | Degrees |
+| `1.5rad` | Radians |
 | `0.25pi` | Multiplied by π (i.e. `0.25 * π`) |
 
-```
-let angle = 90deg;
-M sin(45deg) cos(45deg)
+An angle-suffixed literal produces an **Angle value** — radians on the inside, with the written unit remembered for display. **An angle is an angle wherever it flows**: it survives variables, arrays, function parameters, and return values. In angle-accepting positions — path arguments, trig and polar functions, comparisons, loop bounds, `calc()` arithmetic, rotation and orient properties, gradient `from`/`to`, filter angles — an Angle reads as its radians value, so `sin(45deg)` and `sin(rad(45))` are identical. Slots that want a plain count or dimension still reject an Angle: `Grid(90deg, 4)` errors with *"must be a positive integer"*. The one place radians are **not** the reading is the degree-based color API — see [Angle Display](#syntax-angle-display) below.
 
-// Equivalent to:
-let angle = rad(90);
+> **Behavior change:** Angle units used to be consumed at the literal — `let t = 0.5pi; c.hueShift(t)` shifted 1.57°, not 90°. Angles are now values that survive variables, so that program shifts 90°. Likewise `Color(0.6, 0.15, 90deg)` now stores hue 90 (was 1.5708), interpolating an Angle prints `90deg` rather than a radians number, and `sort()` orders Angle arrays instead of erroring.
+
+```
+let quarter = 90deg;      // an Angle — prints "90deg", auto-converts for hue methods
+M sin(quarter) cos(quarter)
+
+// Only inside sin() are these equivalent — an Angle reads as radians there.
+// rad(45) itself returns a plain number, not an Angle:
 M sin(rad(45)) cos(rad(45))
 ```
 
 The `pi` suffix multiplies the number by π. This is especially convenient for polar coordinates and angles expressed as fractions of π:
 
 ```
-let quarter = 0.25pi;   // π/4
-let half = 0.5pi;       // π/2
-let full = 2pi;          // 2π
-M sin(0.25pi) cos(0.25pi)
+let eighth = 0.25pi;   // π/4
+let half = 0.5pi;      // π/2
+let full = 2pi;        // 2π
+M sin(eighth) cos(eighth)
 ```
 
-All angle suffixes participate in unit mismatch checking:
+### Angle Members
 
-- `calc(0.25pi + 5)` throws — adding an angle to a unitless number is ambiguous. `calc(90deg + 0.5pi)` is allowed (both are angles; `%` counts as unitless for this check).
-- `calc(90deg * 45deg)` throws — multiplying two angles has no meaning here. Scaling an angle by a plain number (`calc(2 * 45deg)`) is allowed and keeps the angle unit.
-- Division never throws: `calc(1pi / 2pi)` is a unitless ratio, and `calc(2pi / 4)` is still an angle.
+An Angle value exposes its measure in whichever unit you need:
+
+| Member | Description |
+|--------|-------------|
+| `.deg` | The angle in degrees |
+| `.rad` | The angle in radians |
+| `.pi` | The angle in multiples of π (`90deg.pi` is `0.5`) |
+| `.turns` | The angle in full circles (1 = 360°) |
+
+All members return **plain numbers**:
+
+```
+let a = 90deg;
+log(a.deg);    // 90
+log(a.rad);    // 1.5707963267948966
+log(a.pi);     // 0.5
+log(a.turns);  // 0.25
+```
+
+### Unit Re-tagging
+
+`.toDeg()`, `.toRad()`, `.toPi()`, and `.toTurns()` return the **same angle**
+with a different display unit — the value is unchanged (it still compares
+equal and reads as the same radians everywhere), only how it prints changes:
+
+```
+let a = 90deg;
+log(a.toPi());          // 0.5pi
+log(a.toRad());         // 1.5707963267948966rad
+log(a.toTurns());       // 0.25turns
+log(a.toPi() == 0.5pi); // true — same angle, different label
+```
+
+`turns` exists only as a display unit — there is no `0.25turns` literal; write
+`calc(0.25 * 2pi)` (or `90deg`) and re-tag with `.toTurns()` when you want it
+displayed that way.
+
+**Where Angles come from.** Only angle-suffixed literals — and `calc()` arithmetic over them — produce Angle values. Standard-library functions that *compute* an angle return **plain numbers in radians**: `atan2()`, `.angleTo()`, `tangent(t).angle`, `PolarVector.angle`, and [`deg()`/`rad()`](#stdlib-angle-conversion)/`mpi()`. That matters most for the degree-based color methods below, which read a bare number as **degrees** — write `c.hueShift(deg(p.angleTo(q)))`, not `c.hueShift(p.angleTo(q))`.
+
+### Angle Arithmetic
+
+`calc()` arithmetic keeps angle-ness where it makes sense:
+
+- Adding or subtracting angles gives an angle: `calc(90deg + 0.5pi)`.
+- Scaling an angle by a plain number keeps the angle: `calc(2 * 45deg)`, `calc(2pi / 4)`, and `calc(i / 9 * 2pi)` are all angles.
+- A ratio of two angles is a plain number: `calc(1pi / 2pi)` is `0.5`.
+- Everything else (`%`, comparisons, boolean logic) reads the radians value and produces a plain number.
+
+Unit mismatch checking rejects nonsense at compile time, reading the expression *as written*:
+
+- `calc(0.25pi + 5)` throws — adding an angle to a unitless number is ambiguous (`%` counts as unitless for this check).
+- `calc(90deg * 45deg)` throws — multiplying two angles has no meaning here.
 - Angle-ness propagates through a product: `calc((90deg * 2) + 5)` throws, because the product is still an angle.
-- The check only sees literals. `calc(x + 5)` is always allowed, even when `x` holds `90deg` — the compiler reads the expression as written and never looks inside a variable or a function's return value.
+- The static check only sees literals: `calc(x + 5)` is never rejected, even when `x` holds an angle. At runtime the result is still an angle — the plain `5` is read as radians.
 
-**Degree-based color methods**: `hueShift`, `analogous`, and `splitComplementary` are the only methods that read their argument in **degrees** and auto-convert angle units. Bare numbers are degrees; arguments written with `deg`/`rad`/`pi` — including `calc()` arithmetic over them, like `hueShift(calc(i / 9 * 2pi))` — are detected and converted for you. Everywhere else in the language, a bare number is radians.
+### Angle Display
 
-`Color(L, C, H)` and the `.hue` property are the exception in the other direction: their hue is in degrees, but they do **not** auto-convert. `Color(0.6, 0.15, 90deg)` stores a hue of 1.57, not 90 — pass a bare number there. See [Color § Hue](#color-hue).
+Interpolating an Angle into a [template literal](#syntax-strings-and-template-literals) or `log()` shows it in its written unit — `90deg`, `0.5pi`, `1.5708rad` — not the raw radians number. Use `.rad` or `.deg` when you need a bare number in text.
 
-**Note**: The `pi` suffix only works on numeric literals. For expressions or variables, use `mpi(x)` (see [Standard Library](#stdlib-standard-library-reference)).
+**Degree-based color methods**: `hueShift`, `analogous`, and `splitComplementary` read a **bare number** argument in degrees. An Angle value — however it arrives: literal, variable, array element, or the return value of a function you defined — is converted exactly, so `hueShift(90deg)`, `hueShift(90)`, and `let turn = 0.5pi; hueShift(turn)` all shift by 90°. Everywhere else in the language, a bare number is radians.
+
+`Color(L, C, H)` follows the same rule: a bare `H` is degrees, and an Angle `H` auto-converts — `Color(0.6, 0.15, 90deg)` stores a hue of 90. The `.hue` property returns a plain number in degrees. See [Color § Hue](#color-hue).
+
+**Note**: The `pi` suffix only works on numeric literals. To scale π by a variable, multiply inside `calc()` — `calc(x * 1pi)` — which keeps the result an Angle. `mpi(x)` also multiplies by π but returns a **plain number**, so it reads as radians in numeric slots and as *degrees* in the color methods above.
 
 ## For Loops
 

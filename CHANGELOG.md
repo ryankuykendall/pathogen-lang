@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-01 (first-class Angle values)
+
+### Changed
+
+#### Core
+
+- **Angle literals are now first-class Angle values** — `90deg`, `1.5pi`, `2rad` evaluate to a runtime Angle (radians inside, written unit remembered) instead of decaying to a plain number. An angle survives variables, arrays, and function calls, and coerces to its radians value in every ordinary numeric context (path arguments, trig, comparisons, loop bounds), so existing numeric behavior and emitted path output are byte-identical. Behavior changes, all deliberate:
+  - `let turn = 0.5pi; c.hueShift(turn)` now shifts 90° (previously a silent 1.57° shift — the angle-variable trap this feature removes). Same for `analogous`/`splitComplementary` and ConicGradient `from`/`to`, Marker `orient`, filter angle slots, and transform/rotation APIs, which all accept Angle-carrying variables.
+  - `Color(L, C, H)` with an Angle `H` auto-converts to degrees — `Color(0.6, 0.15, 90deg)` now stores hue 90, not 1.57. (`.hue` still returns a plain number in degrees.)
+  - Interpolating an Angle into a template literal or `log()` displays its written unit (`90deg`, `0.5pi`) instead of the raw radians number; use the new `.rad`/`.deg`/`.pi`/`.turns` members for bare numbers, or `.toDeg()`/`.toRad()`/`.toPi()`/`.toTurns()` to re-tag the display unit without changing the angle (`turns` is display-only — it has no literal form).
+  - `calc()` arithmetic propagates angle-ness (angle ± angle, angle × plain, angle ÷ plain stay angles; angle ÷ angle is a plain ratio). Static literal mismatch errors are unchanged.
+  - `sort()` now orders arrays of Angles (and booleans) instead of erroring.
+  - The `deg()` escape hatch is no longer needed (still works; returns a plain number).
+
+### Documentation
+
+- Rewrote `docs/syntax.md` § Angle Units around the new value semantics (members, arithmetic, display); inverted the "units do not survive a variable" callout in `docs/color.md` § Hue; updated gradients/stdlib/layers/filters/markers angle notes accordingly.
+
 ## [Unreleased] - 2026-07-31 (admin Set Thumbnail from moderation)
 
 ### Added

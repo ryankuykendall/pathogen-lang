@@ -30,6 +30,8 @@ log("radius is", r)
 
 Objects are expandable in the console - click the arrow to explore nested properties.
 
+[Angle values](#syntax-angle-units) log in their written unit (`90deg`, `0.5pi`) rather than as a radians number — use `.rad` or `.deg` to log a bare number.
+
 ## ctx Object
 
 The `ctx` object tracks path state during evaluation:

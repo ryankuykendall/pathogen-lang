@@ -444,7 +444,7 @@ layer('car').apply { roundRect(40, 80, 120, 40, 8); }
 
 Constructor signature: `MotionBlurFilter()` — no positional arguments. Configure via the trailing block.
 
-`distance` and `angle` use the same coordinate conventions as the rest of the language: `distance` is in **user-space units** (the same units as your `viewBox`, *not* CSS pixels), and `angle` takes an angle unit — `0deg` points right (+x), `90deg` points down (+y), matching `EmbossFilter` and `ElevationShadowFilter`.
+`distance` and `angle` use the same coordinate conventions as the rest of the language: `distance` is in **user-space units** (the same units as your `viewBox`, *not* CSS pixels), and `angle` takes an [Angle value](#syntax-angle-units) — `0deg` points right (+x), `90deg` points down (+y), matching `EmbossFilter` and `ElevationShadowFilter`. Angle values carried in variables work the same as inline literals.
 
 ### Properties
 

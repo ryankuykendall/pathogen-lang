@@ -889,6 +889,20 @@ describe('Gradients', () => {
       ).toThrow(/requires an angle unit.*135deg/);
     });
 
+    it('an Angle variable is accepted on from/to (first-class Angle)', () => {
+      const result = compile(`
+        let g = ConicGradient('cg', 50, 50) {|g|
+          g.stop(0, Color('#000'));
+          g.stop(1, Color('#fff'));
+        };
+        let start = 135deg;
+        g.from = start;
+        g.to = calc(start + 270deg);
+      `);
+      expect(result.gradients[0].from).toBeCloseTo((135 * Math.PI) / 180);
+      expect(result.gradients[0].to).toBeCloseTo((405 * Math.PI) / 180);
+    });
+
     it('computed expression without unit is accepted', () => {
       const result = compile(`
         let g = ConicGradient('cg', 50, 50) {|g|

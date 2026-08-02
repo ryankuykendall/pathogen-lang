@@ -286,6 +286,20 @@ export const STDLIB_COMPLETIONS: CompletionEntry[] = [
 
 /** Type member completion sets keyed by Pathogen type name */
 export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
+  'Angle': {
+    properties: [
+      { label: 'deg', kind: 'property', detail: 'The angle in degrees', boost: 8 },
+      { label: 'rad', kind: 'property', detail: 'The angle in radians', boost: 8 },
+      { label: 'pi', kind: 'property', detail: 'The angle in multiples of π (90deg → 0.5)', boost: 8 },
+      { label: 'turns', kind: 'property', detail: 'The angle in full circles (1 = 360°)', boost: 8 },
+    ],
+    methods: [
+      { label: 'toDeg', kind: 'function', detail: 'toDeg() — Same angle, displayed in degrees', boost: 8, insertText: 'toDeg()$0', isSnippet: true },
+      { label: 'toRad', kind: 'function', detail: 'toRad() — Same angle, displayed in radians', boost: 8, insertText: 'toRad()$0', isSnippet: true },
+      { label: 'toPi', kind: 'function', detail: 'toPi() — Same angle, displayed in multiples of π', boost: 8, insertText: 'toPi()$0', isSnippet: true },
+      { label: 'toTurns', kind: 'function', detail: 'toTurns() — Same angle, displayed in full circles', boost: 8, insertText: 'toTurns()$0', isSnippet: true },
+    ],
+  },
   'ColorInstance': {
     properties: [
       { label: 'css', kind: 'property', detail: 'CSS color string', boost: 8 },
@@ -1043,6 +1057,7 @@ export const CONSTRUCTOR_RETURN_TYPES: Record<string, { type: string; hasBinding
 
 /** Per-type method return types (resolves chains like grid.getPoint(0,0).x) */
 export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
+  'Angle': { toDeg: 'Angle', toRad: 'Angle', toPi: 'Angle', toTurns: 'Angle' },
   'ColorInstance': { lighten: 'ColorInstance', darken: 'ColorInstance', saturate: 'ColorInstance', desaturate: 'ColorInstance', alpha: 'ColorInstance', hueShift: 'ColorInstance', complement: 'ColorInstance', mix: 'ColorInstance', analogous: 'array', triadic: 'array', tetradic: 'array', splitComplementary: 'array' },
   'Grid': { set: 'Grid', getPoint: 'Point', getRow: 'array', getCol: 'array', cells: 'array', fill: 'Grid', map: 'Grid' },
   'Point': { translate: 'Point', rotate: 'Point', lerp: 'Point', midpoint: 'Point', polarTranslate: 'Point' },
@@ -1066,6 +1081,7 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
 
 /** Per-type data-property types (resolves destructured bindings like let { origin } = grid) */
 export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
+  'Angle': { deg: 'number', rad: 'number', pi: 'number', turns: 'number' },
   'ColorInstance': { css: 'string', hex: 'string', oklch: 'string', hsl: 'string', rgb: 'string', lightness: 'number', chroma: 'number', hue: 'number', a: 'number' },
   'ViewBox': { originX: 'number', originY: 'number', width: 'number', height: 'number' },
   'BoundingBox': { x: 'number', y: 'number', width: 'number', height: 'number' },

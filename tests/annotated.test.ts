@@ -283,6 +283,73 @@ if (c.hueShift(calc(1 / 2 * 2pi)).hue == c.hueShift(180).hue) { M 1 1 } else { M
     it('throws when multiplying two angle values (parity)', () => {
       expect(() => compileAnnotated('M calc(90deg * 45deg) 0')).toThrow(/Cannot multiply.*angle/);
     });
+
+    it('angle survives a variable into hueShift (first-class Angle parity)', () => {
+      const result = compileAnnotated(`let c = Color(0.5, 0.15, 30);
+let turn = 0.5pi;
+if (c.hueShift(turn).hue == c.hueShift(90).hue) { M 1 1 } else { M 9 9 }`);
+      expect(result).toContain('M 1 1');
+    });
+
+    it('an Angle variable reads as radians in a path argument (parity)', () => {
+      const result = compileAnnotated('let d = calc(90deg / 2);\nM d 0');
+      expect(result).toContain(`M ${Math.PI / 4} 0`);
+    });
+
+    it('context-aware call display shows the written unit (parity)', () => {
+      // The annotated function_call line renders the Angle in its unit while
+      // the geometry uses radians: 50 + 100*sin(90deg) = 150
+      const result = compileAnnotated('let a = 90deg;\nM 50 50 polarLine(a, 100);');
+      expect(result).toContain('polarLine(90deg, 100)');
+      expect(result).toContain('150');
+      expect(result).not.toContain('[object Object]');
+    });
+
+    it('no [object Object] when an Angle flows through path arg, fn call, and style', () => {
+      const result = compileAnnotated(`let ang = 45deg;
+fn spoke(angle) { return calc(sin(angle) * 10); }
+define PathLayer('p') \${ rotate: ang; }
+M spoke(ang) ang
+M 50 50 polarLine(ang, 100);`);
+      expect(result).not.toContain('[object Object]');
+      expect(result).toContain(`M ${Math.sin(Math.PI / 4) * 10} ${Math.PI / 4}`);
+    });
+
+    it('bare stdlib call statement unwraps Angle args (parity)', () => {
+      // arc()'s x-axis-rotation slot receives an Angle via the bare
+      // fn-call-statement branch, which has its own dispatch
+      const result = compileAnnotated('M 50 100\narc(50, 50, 30deg, 1, 1, 150, 100);');
+      expect(result).not.toContain('[object Object]');
+      expect(result).toContain(`A 50 50 ${(30 * Math.PI) / 180}`);
+    });
+
+    it('.toPi() re-tags display and keeps the radians value (parity)', () => {
+      // Geometry unchanged (sin reads radians); display in the context-aware
+      // call line shows the re-tagged unit
+      const result = compileAnnotated('let a = 90deg;\nlet b = a.toPi();\nM 50 50 polarLine(b, 100);');
+      expect(result).toContain('polarLine(0.5pi, 100)');
+      expect(result).toContain('150');
+    });
+
+    it('sort() orders Angle arrays (parity)', () => {
+      const result = compileAnnotated(
+        'let arr = [1pi, 90deg, 0.1rad];\nlet s = arr.sort();\nlet first = s[0];\nM first.rad 0',
+      );
+      expect(result).toContain('M 0.1 0');
+    });
+
+    it('hue-rotate with an Angle variable emits degrees in CSS (parity)', () => {
+      const result = compileAnnotated(
+        "let myAngle = 90deg;\ndefine PathLayer('p') ${ filter: hue-rotate(myAngle); }\nM 0 0",
+      );
+      expect(result).not.toContain('hue-rotate(myAngle)');
+    });
+
+    it('Color(L, C, H) auto-converts an Angle hue (parity)', () => {
+      const result = compileAnnotated(`let h = 90deg;
+if (Color(0.5, 0.15, h).hue == 90) { M 1 1 } else { M 9 9 }`);
+      expect(result).toContain('M 1 1');
+    });
   });
 
   describe('gradient property validation (parity with primary evaluator)', () => {

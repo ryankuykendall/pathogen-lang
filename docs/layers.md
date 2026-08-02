@@ -621,7 +621,7 @@ layer('shape').apply {
 
 ### Rotate
 
-Angles are in **radians** (consistent with polar commands). Use `deg` suffix for degrees:
+Angles are in **radians** (consistent with polar commands). Use `deg` suffix for degrees — [Angle values](#syntax-angle-units) work here whether written inline or carried in a variable:
 
 ```
 layer('shape').ctx.transform.rotate.set(45deg)         // around origin

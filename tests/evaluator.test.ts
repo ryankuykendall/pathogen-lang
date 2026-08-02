@@ -1231,9 +1231,11 @@ describe('Evaluator', () => {
     });
 
     it('explicit angle values', () => {
-      const result = compile('enum A { Quarter = 90deg } log(A.Quarter);');
-      // 90deg → PI/2 radians
-      expect(result.logs[0].parts[0].value).toBe(String(Math.PI / 2));
+      const result = compile('enum Ang { Quarter = 90deg } log(Ang.Quarter);');
+      // First-class Angle: displays in its written unit; reads as radians in
+      // numeric contexts (M Ang.Quarter 0 emits PI/2)
+      expect(result.logs[0].parts[0].value).toBe('90deg');
+      expect(compilePath('enum Ang { Quarter = 90deg } M Ang.Quarter 0')).toBe(`M ${Math.PI / 2} 0`);
     });
 
     it('explicit color values', () => {
@@ -4058,5 +4060,170 @@ describe('nested expression parsing (parse-depth regression)', () => {
   it('respects a true condition inside a path block returned from a function', () => {
     const result = compile('fn tab(withNotch) {\n  return @{\n    h 30\n    if (withNotch) {\n      v 99\n    }\n    h 40\n  };\n}\nlet a = tab(true);\na.drawTo(0, 0);');
     expect(result.layers[0].data).toBe('M 0 0 h 30 v 99 h 40');
+  });
+});
+
+describe('first-class Angle values', () => {
+  const logOf = (src: string): string => compile(src).logs[0].parts[0].value;
+
+  describe('numeric coercion', () => {
+    it('an Angle variable reads as radians in a path argument', () => {
+      // 90deg / 2 = π/4 ≈ 0.7853981633974483
+      const d = compilePath('let d = calc(90deg / 2);\nM d 0');
+      const [cmd] = parseSVGPath(d);
+      expect(cmd.command).toBe('M');
+      expect(cmd.args[0]).toBeCloseTo(Math.PI / 4, 10);
+    });
+
+    it('an Angle works in comparisons and as a ternary condition', () => {
+      expect(logOf('let a = 90deg; log(a > 1 ? "big" : "small");')).toBe('big');
+      expect(logOf('let a = 90deg; log(a ? "truthy" : "falsy");')).toBe('truthy');
+      expect(logOf('let a = 0deg; log(a ? "truthy" : "falsy");')).toBe('falsy');
+    });
+
+    it('an Angle works as a loop bound (radians value)', () => {
+      const result = compile('let n = 3rad;\nfor (i in 0..n) { log(i); }');
+      expect(result.logs).toHaveLength(4); // 0, 1, 2, 3
+    });
+
+    it('sin/cos receive radians from an Angle variable', () => {
+      // (assigned to a variable first — log(sin(x)) takes the math-log fast path)
+      expect(parseFloat(logOf('let a = 90deg; let s = calc(sin(a)); log(s);'))).toBeCloseTo(1, 10);
+      expect(parseFloat(logOf('let a = 1pi; let c = calc(cos(a)); log(c);'))).toBeCloseTo(-1, 10);
+    });
+  });
+
+  describe('arithmetic propagation', () => {
+    const hueOf = (src: string): number => parseFloat(compile(src).logs[0].parts[0].value);
+
+    it('Angle + Angle stays an angle through variables', () => {
+      expect(
+        hueOf('let c = Color(0.5, 0.15, 30); let a = 45deg; let b = calc(a + a); log(c.hueShift(b).hue);'),
+      ).toBeCloseTo(120, 1);
+    });
+
+    it('unary minus preserves the angle', () => {
+      expect(
+        hueOf('let c = Color(0.5, 0.15, 30); let a = 90deg; log(c.hueShift(-a).hue);'),
+      ).toBeCloseTo(300, 1);
+    });
+
+    it('Angle scaled by a plain number stays an angle', () => {
+      expect(
+        hueOf('let c = Color(0.5, 0.15, 30); let a = 45deg; log(c.hueShift(calc(a * 2)).hue);'),
+      ).toBeCloseTo(120, 1);
+      expect(
+        hueOf('let c = Color(0.5, 0.15, 30); let a = 1pi; log(c.hueShift(calc(a / 2)).hue);'),
+      ).toBeCloseTo(120, 1);
+    });
+
+    it('Angle / Angle is a plain ratio', () => {
+      // ratio 0.5 * 180 = 90 read as degrees
+      expect(
+        hueOf('let c = Color(0.5, 0.15, 30); let a = 1pi; let b = 2pi; log(c.hueShift(calc(a / b * 180)).hue);'),
+      ).toBeCloseTo(120, 1);
+    });
+
+    it('modulo drops angle-ness to a plain number', () => {
+      // 3pi % 2pi = pi radians = 3.14159… — read as DEGREES by hueShift (plain number)
+      expect(
+        hueOf('let c = Color(0.5, 0.15, 30); let a = 3pi; log(c.hueShift(a % calc(2pi)).hue);'),
+      ).toBeCloseTo(30 + Math.PI, 1);
+    });
+  });
+
+  describe('members', () => {
+    it('.deg, .rad, .pi, .turns', () => {
+      const result = compile('let a = 90deg;\nlog(a.deg);\nlog(a.rad);\nlog(a.pi);\nlog(a.turns);');
+      expect(parseFloat(result.logs[0].parts[0].value)).toBe(90);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(Math.PI / 2, 12);
+      expect(parseFloat(result.logs[2].parts[0].value)).toBe(0.5);
+      expect(parseFloat(result.logs[3].parts[0].value)).toBeCloseTo(0.25, 12);
+    });
+
+    it('.pi is snapped clean for deg-written angles', () => {
+      // 30deg → 30/180 must read exactly 0.16666666667-style snapped, not float noise
+      expect(parseFloat(logOf('let a = 45deg; log(a.pi);'))).toBe(0.25);
+      expect(parseFloat(logOf('let a = 0.5pi; log(a.pi);'))).toBe(0.5);
+    });
+
+    it('members work on a computed angle', () => {
+      expect(parseFloat(logOf('let a = calc(2 * 45deg); log(a.deg);'))).toBe(90);
+    });
+
+    it('.toPi()/.toDeg()/.toRad()/.toTurns() re-tag the display unit only', () => {
+      const result = compile(
+        'let a = 90deg;\nlog(a.toPi());\nlog(a.toRad());\nlog(a.toTurns());\nlog(a.toPi().toDeg());\nlog(a.toPi() == 0.5pi);\nlog(a.toTurns().rad);',
+      );
+      expect(result.logs[0].parts[0].value).toBe('0.5pi');
+      expect(result.logs[1].parts[0].value).toBe(`${Math.PI / 2}rad`);
+      expect(result.logs[2].parts[0].value).toBe('0.25turns');
+      expect(result.logs[3].parts[0].value).toBe('90deg'); // chains, round-trips exactly
+      expect(result.logs[4].parts[0].value).toBe('true'); // same angle — equality unchanged
+      expect(parseFloat(result.logs[5].parts[0].value)).toBeCloseTo(Math.PI / 2, 12); // members still work
+    });
+
+    it('re-tagged angles still convert in hueShift', () => {
+      expect(
+        parseFloat(compile('let c = Color(0.5, 0.15, 30); let a = 0.5pi; log(c.hueShift(a.toDeg()).hue);').logs[0].parts[0].value),
+      ).toBeCloseTo(120, 1);
+    });
+
+    it('.toX() methods reject arguments', () => {
+      expect(() => compile('let a = 90deg; let b = a.toPi(1);')).toThrow(/toPi\(\) expects 0 arguments/);
+    });
+  });
+
+  describe('display', () => {
+    it('template literal shows the written unit', () => {
+      expect(logOf('let a = 90deg; log(`${a}`);')).toBe('90deg');
+      expect(logOf('let a = 0.5pi; log(`${a}`);')).toBe('0.5pi');
+      expect(logOf('let a = 1.5rad; log(`${a}`);')).toBe('1.5rad');
+    });
+
+    it('log() of an Angle shows the written unit', () => {
+      expect(logOf('let a = 90deg; log(a);')).toBe('90deg');
+    });
+
+    it('.rad/.deg give bare numbers for text', () => {
+      expect(logOf('let a = 90deg; log(`${a.deg}`);')).toBe('90');
+    });
+  });
+
+  describe('style blocks', () => {
+    it('rotate: 90deg emits transform="rotate(90)" (unchanged contract)', () => {
+      const result = compile("define PathLayer('p') ${ rotate: 90deg; }\nlayer('p').apply { M 0 0 L 10 10 }");
+      const p = result.layers.find((l) => l.name === 'p');
+      expect(p?.transform).toBe('rotate(90)');
+    });
+
+    it('an Angle variable in a style value behaves like the inline literal', () => {
+      const result = compile("let a = 90deg;\ndefine PathLayer('p') ${ rotate: a; }\nlayer('p').apply { M 0 0 L 10 10 }");
+      const p = result.layers.find((l) => l.name === 'p');
+      expect(p?.transform).toBe('rotate(90)');
+    });
+  });
+
+  describe('arrays', () => {
+    it('sort() orders Angles by radians', () => {
+      const result = compile('let a = [1pi, 90deg, 0.1rad];\nlet s = a.sort();\nlog(`${s[0]} ${s[1]} ${s[2]}`);');
+      expect(result.logs[0].parts[0].value).toBe('0.1rad 90deg 1pi');
+    });
+  });
+
+  describe('strict non-angle slots', () => {
+    it('Grid rejects an Angle where no angle makes sense', () => {
+      expect(() => compile('let g = Grid(90deg, 4, 10);')).toThrow(/Grid\(\) rows/);
+    });
+  });
+
+  describe('nested angles in structured stdlib arguments', () => {
+    it('cubicSpline point angle: fields accept Angle values', () => {
+      const viaAngle = compilePath('M 0 0 cubicSpline([{x: 50, y: 20, angle: 30deg}, {x: 100, y: 0, angle: -20deg}]);');
+      const viaNumber = compilePath(
+        `M 0 0 cubicSpline([{x: 50, y: 20, angle: ${(30 * Math.PI) / 180}}, {x: 100, y: 0, angle: ${(-20 * Math.PI) / 180}}]);`,
+      );
+      expect(viaAngle).toBe(viaNumber);
+    });
   });
 });

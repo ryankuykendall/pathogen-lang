@@ -29,14 +29,16 @@ M calc(100 + cos(angle) * r) calc(100 + sin(angle) * r)
 
 | Function | Description |
 |----------|-------------|
-| `rad(degrees)` | Convert degrees to radians |
-| `deg(radians)` | Convert radians to degrees |
+| `rad(degrees)` | Convert degrees to a plain number of radians |
+| `deg(radians)` | Convert radians to a plain number of degrees |
 
 ```
 // Use degrees instead of radians
 let angle = rad(45);
 M calc(cos(angle) * 50) calc(sin(angle) * 50)
 ```
+
+These return **plain numbers**, not [Angle values](#syntax-angle-units) — handy when a bare number is what you want (e.g. in a template literal). For carrying an angle through your program, an angle-suffixed literal (`45deg`) does the same job and keeps its unit; its `.deg`/`.rad` members cover most conversion needs.
 
 ### Exponential & Logarithmic
 
@@ -161,7 +163,7 @@ let pv2 = PolarVector(rad(45), 30);      // equivalent
 
 #### .angle
 
-Returns the angle in radians.
+Returns the angle as a **plain number** in radians (not an [Angle value](#syntax-angle-units)).
 
 #### .distance
 

@@ -111,17 +111,3 @@ export function checkAngleUnitMismatch(left: Expression, right: Expression, oper
     }
   }
 }
-
-/**
- * Interpret an already-evaluated color-method angle argument.
- * Color methods (hueShift, analogous, splitComplementary) take degrees for
- * bare numbers; when the argument expression is written with angle units
- * (deg/rad/pi), its evaluated value is radians and is converted to degrees.
- */
-export function angleArgToDegrees(argExpr: Expression, value: number): number {
-  if (inferUnit(argExpr) !== 'angle') return value;
-  const degrees = (value * 180) / Math.PI;
-  // Snap float noise from the deg→rad→deg round trip (30deg → 29.999999999999996)
-  // so hue values and emitted CSS stay clean
-  return Math.round(degrees * 1e10) / 1e10;
-}

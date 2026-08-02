@@ -1,7 +1,7 @@
 // Path helper functions that return PathSegment values
 
 import { formatNum } from '../evaluator/format';
-import type { ArrayValue, ObjectValue, PointValue, PolarVectorValue, Value } from '../evaluator/types';
+import type { AngleValue, ArrayValue, ObjectValue, PointValue, PolarVectorValue, Value } from '../evaluator/types';
 
 export interface PathSegment {
   type: 'PathSegment';
@@ -18,6 +18,11 @@ function segment(value: string): PathSegment {
 
 function asNumber(v: Value): number {
   if (typeof v === 'number') return v;
+  // Angles nested inside object/array arguments (e.g. cubicSpline point
+  // `angle:` fields) read as their radians value
+  if (typeof v === 'object' && v !== null && 'type' in v && v.type === 'AngleValue') {
+    return (v as AngleValue).radians;
+  }
   throw new Error(`Expected number, got ${typeof v}`);
 }
 

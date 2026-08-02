@@ -220,8 +220,8 @@ Conic gradients use the same `.stop(offset, color)` method as linear and radial 
 
 | Property | Values | Default |
 |----------|--------|---------|
-| `from` | Start angle (requires unit: `deg`, `rad`, `pi`) | `0rad` (3 o'clock) |
-| `to` | End angle (requires unit) | `from + 2pi` (full revolution) |
+| `from` | Start angle — an Angle value, or a plain number in radians (a **literal** requires a unit: `deg`, `rad`, `pi`) | `0rad` (3 o'clock) |
+| `to` | End angle — same rule as `from` | `from + 2pi` (full revolution) |
 | `direction` | `'cw'`, `'ccw'` | `'cw'` |
 | `spread` | `'clamp'`, `'repeat'`, `'transparent'` | `'clamp'` |
 | `innerRadius` | Number (pixels) | `0` |
@@ -241,11 +241,15 @@ gauge.from = 0.75pi;     // multiples of π
 gauge.from = 135;        // ERROR: requires angle unit. Use 135deg
 ```
 
-Computed expressions and function results are accepted without unit checks (they are assumed to already be in radians):
+[Angle values](#syntax-angle-units) are accepted from anywhere — a variable, an array element, or a function parameter carries its angle with it:
 
 ```
-gauge.from = rad(135);   // OK — rad() returns radians
+let start = 135deg;
+gauge.from = start;      // OK — an Angle value stays an angle
+gauge.from = rad(135);   // OK — rad() returns a plain number of radians
 ```
+
+Plain computed numbers (like the `rad(135)` above) are accepted without unit checks and read as radians.
 
 ### Partial Sweep
 

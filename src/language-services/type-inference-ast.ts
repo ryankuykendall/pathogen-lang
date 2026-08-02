@@ -21,6 +21,7 @@ import {
   TYPE_PROPERTY_TYPES,
 } from './completion-data.generated';
 import { getMethodReturnType } from './type-inference';
+import { inferUnit } from '../evaluator/units';
 
 import type { Declaration, Scope, ScopeInfo } from './scope-analysis';
 import type { Position } from './types';
@@ -144,7 +145,7 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
 
   switch (expr.type) {
     case 'NumberLiteral':
-      return 'number';
+      return expr.unit === 'deg' || expr.unit === 'rad' || expr.unit === 'pi' ? 'Angle' : 'number';
     case 'StringLiteral':
     case 'TemplateLiteral':
       return 'string';
@@ -165,7 +166,10 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
     case 'NullLiteral':
       return null;
     case 'CalcExpression':
-      return 'number';
+      // Written-expression unit inference (calc(2 * 45deg)) or structural
+      // inference through variables (let a = 90deg; calc(a * 2))
+      if (inferUnit(expr.expression) === 'angle') return 'Angle';
+      return inferExprType(expr.expression, scope, visited) === 'Angle' ? 'Angle' : 'number';
     case 'LayerConstructorExpression':
       return expr.layerType;
 
@@ -175,8 +179,18 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
     case 'BinaryExpression': {
       if (!ARITHMETIC_OPS.has(expr.operator)) return null;
       const left = inferExprType(expr.left, scope, visited);
+      const right = left === 'string' ? null : inferExprType(expr.right, scope, visited);
+      // Angle propagation mirrors the evaluator: angle±any → Angle,
+      // angle×scalar → Angle, angle/scalar → Angle; angle/angle and
+      // angle×angle drop to number
+      if (left === 'Angle' || right === 'Angle') {
+        const bothAngle = left === 'Angle' && right === 'Angle';
+        if (expr.operator === '+' || expr.operator === '-') return 'Angle';
+        if (expr.operator === '*') return bothAngle ? 'number' : 'Angle';
+        if (expr.operator === '/') return left === 'Angle' && right !== 'Angle' ? 'Angle' : 'number';
+        return 'number';
+      }
       if (left === 'number' || left === 'string') return left;
-      const right = inferExprType(expr.right, scope, visited);
       return right === 'number' || right === 'string' ? right : null;
     }
 

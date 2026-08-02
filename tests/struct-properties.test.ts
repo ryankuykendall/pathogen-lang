@@ -60,6 +60,12 @@ const CASES: StructCase[] = [
     probe: { type: 'ColorValue' } as unknown as Value,
     numericKeys: ['lightness', 'chroma', 'hue', 'a'],
   },
+  {
+    name: 'Angle',
+    setup: 'let v = 90deg;',
+    probe: { type: 'AngleValue', radians: Math.PI / 2, unit: 'deg' } as unknown as Value,
+    numericKeys: ['deg', 'rad', 'pi', 'turns'],
+  },
 ];
 
 function outcome(source: string): { logs?: string[][]; error?: string } {

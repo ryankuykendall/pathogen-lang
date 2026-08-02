@@ -1,6 +1,7 @@
 import { oklchToCSS, oklchToHex, oklchToHSLString, oklchToOKLCHString, oklchToRGBString } from '../color';
+import { radiansToDegreesSnapped, radiansToPiMultipleSnapped, radiansToTurnsSnapped } from './angle';
 
-import type { ColorValue, ContextObject, GridValue, MeshPointValue, PointValue, PolarVectorValue, Value, VertexHandleValue, ViewBoxStructValue } from './types';
+import type { AngleValue, ColorValue, ContextObject, GridValue, MeshPointValue, PointValue, PolarVectorValue, Value, VertexHandleValue, ViewBoxStructValue } from './types';
 
 /**
  * Shared property registry for built-in struct values.
@@ -121,6 +122,13 @@ const VERTEX_HANDLE = staticDescriptor('VertexHandle', {
   label: (v) => (v as VertexHandleValue).label,
 });
 
+const ANGLE = staticDescriptor('Angle', {
+  deg: (v) => radiansToDegreesSnapped((v as AngleValue).radians),
+  rad: (v) => (v as AngleValue).radians,
+  pi: (v) => radiansToPiMultipleSnapped((v as AngleValue).radians),
+  turns: (v) => radiansToTurnsSnapped((v as AngleValue).radians),
+});
+
 const VIEW_BOX = staticDescriptor('ViewBox', {
   originX: (v) => (v as ViewBoxStructValue).originX,
   originY: (v) => (v as ViewBoxStructValue).originY,
@@ -134,6 +142,7 @@ const DESCRIPTORS: Record<string, StructDescriptor> = {
   GridValue: GRID,
   MeshPointValue: MESH_POINT,
   ColorValue: COLOR,
+  AngleValue: ANGLE,
   ContextObject: CONTEXT_OBJECT,
   VertexHandleValue: VERTEX_HANDLE,
   ViewBoxStructValue: VIEW_BOX,

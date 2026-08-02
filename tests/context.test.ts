@@ -336,14 +336,16 @@ describe('Path Context Tracking', () => {
   });
 
   describe('angle units', () => {
-    it('converts deg to radians', () => {
+    it('converts deg to radians (display keeps the unit; .rad reads radians)', () => {
       const result = compileWithContext(`
         M 100 100
         log(90deg);
+        let a = 90deg;
+        log(a.rad);
       `);
-      expect(result.logs).toHaveLength(1);
-      const value = parseFloat(result.logs[0].parts[0].value);
-      expect(approxEqual(value, Math.PI / 2)).toBe(true);
+      expect(result.logs).toHaveLength(2);
+      expect(result.logs[0].parts[0].value).toBe('90deg');
+      expect(approxEqual(parseFloat(result.logs[1].parts[0].value), Math.PI / 2)).toBe(true);
     });
 
     it('keeps rad as-is', () => {
@@ -372,7 +374,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let sum = calc(90deg + 90deg);
-        log(sum);
+        log(sum.rad);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -383,7 +385,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let doubled = calc(45deg * 2);
-        log(doubled);
+        log(doubled.rad);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -394,7 +396,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let halved = calc(90deg / 2);
-        log(halved);
+        log(halved.rad);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
@@ -406,7 +408,7 @@ describe('Path Context Tracking', () => {
       const result = compileWithContext(`
         M 100 100
         let mixed = calc(90deg + PI() / 2);
-        log(mixed);
+        log(mixed.rad);
       `);
       expect(result.logs).toHaveLength(1);
       const value = parseFloat(result.logs[0].parts[0].value);
