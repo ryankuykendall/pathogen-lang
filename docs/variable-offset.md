@@ -93,7 +93,7 @@ let ribbon = spine.compoundVariableOffset() {|go, pb|
 
 With both caps present the result is a **closed** path, assembled as: profile 1 forward → end cap → profile 2 back → start cap → close. **Omit a cap** and that end stays open — omitting both yields two separate, unconnected profiles.
 
-The offset **signs** decide which side each profile lands on. Opposite signs (as above) put the profiles on opposite sides of the spine; same-side offsets produce a self-intersecting ribbon (permitted — see [Errors](#variable-offset-errors)).
+The offset **signs** decide which side each profile lands on. Opposite signs (as above) put the profiles on opposite sides of the spine, straddling it; same-sign offsets put both profiles on the *same* side, producing a **detached band** that floats beside the spine without touching it — a legal and useful configuration (an offset ribbon riding one side of a curve). The band's width at each stop is the difference between the two offsets.
 
 ### End caps
 
