@@ -93,6 +93,22 @@ describe('getCompletions', () => {
       expect(item!.insertText).toBe('hash01(${1:n})$0');
     });
 
+    it('offers the hash range conveniences and shaping functions', () => {
+      const items = completeAtEnd('');
+      const names = labels(items);
+      expect(names).toContain('hash11');
+      expect(names).toContain('hashRange');
+      expect(names).toContain('bump');
+      expect(names).toContain('easeIn');
+      expect(names).toContain('easeOut');
+      expect(names).toContain('easeInOut');
+      const hashRange = items.find((i) => i.label === 'hashRange');
+      expect(hashRange!.detail).toBe('hashRange(n, min, max, seed?) — Deterministic hash of integer n to [min, max)');
+      expect(hashRange!.insertText).toBe('hashRange(${1:n}, ${2:min}, ${3:max})$0');
+      const bump = items.find((i) => i.label === 'bump');
+      expect(bump!.detail).toBe('bump(t, center, spread) — Raised-cosine kernel: 1 at center, easing to 0 at center ± spread');
+    });
+
     it('offers noise and noise2 with generated details', () => {
       const items = completeAtEnd('noi');
       const noise = items.find((i) => i.label === 'noise');

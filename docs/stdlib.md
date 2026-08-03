@@ -78,6 +78,7 @@ These return **plain numbers**, not [Angle values](#syntax-angle-units) — hand
 | `clamp(value, min, max)` | Constrain value to range |
 | `map(value, inMin, inMax, outMin, outMax)` | Map value from one range to another |
 | `smoothstep(edge0, edge1, x)` | Hermite ease from 0 to 1 as `x` crosses from `edge0` to `edge1` |
+| `bump(t, center, spread)` | Raised-cosine kernel: 1 at `center`, easing to 0 at `center ± spread` |
 
 ```
 // Interpolate between two positions
@@ -91,14 +92,54 @@ let x = clamp(150, 0, 100);  // Result: 100
 let w = smoothstep(0, 0.25, t);  // t = 0.5 → 1 (fully eased in)
 ```
 
-`smoothstep` uses the GLSL argument order and formula: `x` is clamped into
-the `[edge0, edge1]` range as `t = clamp((x - edge0) / (edge1 - edge0), 0, 1)`,
-then eased as `t * t * (3 - 2 * t)`. The result rises smoothly from 0 to 1
-with zero slope at both edges. Values of `x` outside the range saturate at
-0 or 1. Swapping the edges reverses the ramp — GLSL leaves that case
-undefined; Pathogen defines and tests it. When `edge0 === edge1` the ramp
-collapses to a hard step: 0 for `x` below the edge, 1 above it, and `NaN`
-exactly at `x === edge0`.
+**smoothstep.** `smoothstep` uses the GLSL argument order and formula: `x`
+is clamped into the `[edge0, edge1]` range as
+`t = clamp((x - edge0) / (edge1 - edge0), 0, 1)`, then eased as
+`t * t * (3 - 2 * t)`. The result rises smoothly from 0 to 1 with zero
+slope at both edges. Values of `x` outside the range saturate at 0 or 1.
+Swapping the edges reverses the ramp — GLSL leaves that case undefined;
+Pathogen defines and tests it. When `edge0 === edge1` the ramp collapses
+to a hard step: 0 for `x` below the edge, 1 above it, and `NaN` exactly at
+`x === edge0`.
+
+**bump.** `bump(t, center, spread)` is the raised-cosine kernel for
+building width envelopes: it peaks at exactly 1 when `t === center`, eases
+smoothly down to 0 as `|t − center|` approaches `spread`, and is exactly 0
+(with zero slope at the boundary) everywhere outside that window — a
+self-contained hill you can sum with other bumps. The formula is
+`0.5 * (1 + cos(PI() * clamp(abs(t - center) / spread, 0, 1)))`. `spread`
+must be positive: a `spread` of 0 returns 0 everywhere (and `NaN` exactly
+at `t === center`), and a negative `spread` clamps the ratio to 0 and
+returns 1 everywhere. Because it uses cosine, `bump` is deterministic on
+any one engine but not bit-pinned across engines the way the
+[hash family](#stdlib-hash-noise) is.
+
+```
+// Two bumps summed into one asymmetric envelope (a width profile)
+M 20 100
+for (i in 1..48) {
+  let t = i / 48;
+  L calc(20 + t * 160) calc(100 - 10 * bump(t, 0.35, 0.3) - 6 * bump(t, 0.78, 0.18))
+}
+```
+
+### Easing
+
+The easing trio — `easeIn(t)`, `easeOut(t)`, `easeInOut(t)` — are the
+callable forms of the [`Easing` enum](#syntax-built-in-enums) members used
+for gradient easing. Same formulas, so the curve `easeInOut(t)` traces is
+the curve the gradient renderer applies for `Easing.EaseInOut`:
+
+| Enum member | Callable form | Formula |
+|-------------|---------------|---------|
+| `Easing.Linear` | — (identity) | `t` |
+| `Easing.EaseIn` | `easeIn(t)` | `t²` |
+| `Easing.EaseOut` | `easeOut(t)` | `1 − (1−t)²` |
+| `Easing.EaseInOut` | `easeInOut(t)` | `2t²` below ½, `1 − 2(1−t)²` above |
+| `Easing.Smoothstep` | `smoothstep(0, 1, t)` | `t²(3 − 2t)` |
+
+These are quadratic eases — CSS's `ease-in` family is cubic-bézier, close
+but not identical. Inputs outside `[0, 1]` clamp to the nearer end.
 
 ### Constants
 
@@ -127,8 +168,9 @@ for (i in 0..20) {
 
 **Note**: Random functions are not deterministic. Each call produces a
 different value, and recompiling the same program produces different output.
-For reproducible randomness use `hash01(i)` with a loop or element index
-(see [Hash & Noise](#stdlib-hash-noise)).
+For reproducible randomness use `hash01(i)` with a loop or element index —
+`hashRange(i, min, max)` is the deterministic `randomRange` — see
+[Hash & Noise](#stdlib-hash-noise).
 
 ### Hash & Noise
 
@@ -140,6 +182,8 @@ recompiles are repeatable and a "seed" is just another argument.
 | `hash01(n, seed?)` | Deterministic hash of integer `n` to `[0, 1)`; `seed` defaults to 0 |
 | `noise(x, seed?)` | 1D value noise: smooth deterministic wobble of continuous `x`, range `[0, 1)`; `seed` defaults to 0 |
 | `noise2(x, y, seed?)` | 2D value noise: the same wobble over an x/y field, range `[0, 1)`; `seed` defaults to 0 |
+| `hash11(n, seed?)` | `hash01` remapped to `[-1, 1)` — signed jitter; `seed` defaults to 0 |
+| `hashRange(n, min, max, seed?)` | `hash01` scaled to `[min, max)` — the deterministic `randomRange`; `seed` defaults to 0 |
 
 ```
 // Jittered tick marks — identical on every recompile
@@ -163,9 +207,16 @@ unrelated sequences over the same indices. Use it to give each layer or
 element family its own randomness — `hash01(i, layerIndex)` — instead of
 ad-hoc arithmetic like `hash01(i * 7 + layerIndex * 1013)`.
 
-**Integers only.** Both `n` and `seed` are truncated to 32-bit integers
-before hashing: `hash01(0.9)` equals `hash01(0)`, and non-finite inputs
-(`NaN`, `Infinity`) truncate to 0 rather than propagating. Smoothly varying
+**Ranges.** `hash11(n, seed?)` is `hash01` remapped to `[-1, 1)` — the
+natural shape for signed jitter, e.g. `1 + hash11(i, layerIndex) * 0.2`
+for a ±20% wobble factor. `hashRange(n, min, max, seed?)` scales the same
+hash into `[min, max)`: a drop-in deterministic replacement for
+`randomRange(min, max)` — just give it the index you want the value pinned
+to.
+
+**Integers only.** Every hash function truncates `n` and `seed` to 32-bit
+integers before hashing: `hash01(0.9)` equals `hash01(0)`, and non-finite
+inputs (`NaN`, `Infinity`) truncate to 0 rather than propagating. Smoothly varying
 a *continuous* input is what `noise()` is for.
 
 **Noise.** `noise(x, seed?)` interpolates `hash01` smoothly along the

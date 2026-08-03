@@ -75,6 +75,16 @@ describe('getSignatureHelp', () => {
       expect(result!.activeParameter).toBe(1);
     });
 
+    it('shows signature for hashRange and bump with parameter names', () => {
+      const range = sigHelpAtEnd('let y = hashRange(1, 10, ');
+      expect(range).not.toBeNull();
+      expect(range!.signatures[0].parameters.map((p) => p.label)).toEqual(['n', 'min', 'max', 'seed']);
+      expect(range!.activeParameter).toBe(2);
+      const bump = sigHelpAtEnd('let y = bump(');
+      expect(bump).not.toBeNull();
+      expect(bump!.signatures[0].parameters.map((p) => p.label)).toEqual(['t', 'center', 'spread']);
+    });
+
     it('handles nested function calls', () => {
       // cursor inside sin(), not lerp()
       const result = sigHelpAtEnd('let x = lerp(sin(');

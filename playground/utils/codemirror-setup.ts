@@ -114,6 +114,10 @@ export const stdlibCompletions: CompletionItem[] = [
   { label: 'clamp', type: 'function', info: 'clamp(value, min, max) - Constrain to range' },
   { label: 'map', type: 'function', info: 'map(val, inMin, inMax, outMin, outMax) - Map between ranges' },
   { label: 'smoothstep', type: 'function', info: 'smoothstep(edge0, edge1, x) - Hermite ease from 0 to 1 between edges' },
+  { label: 'bump', type: 'function', info: 'bump(t, center, spread) - Raised-cosine kernel: 1 at center, 0 outside center ± spread' },
+  { label: 'easeIn', type: 'function', info: 'easeIn(t) - Quadratic ease-in over clamped [0, 1]' },
+  { label: 'easeOut', type: 'function', info: 'easeOut(t) - Quadratic ease-out over clamped [0, 1]' },
+  { label: 'easeInOut', type: 'function', info: 'easeInOut(t) - Quadratic ease-in-out over clamped [0, 1]' },
 
   // 7. Trigonometry
   { label: 'sin', type: 'function', info: 'sin(x) - Sine' },
@@ -145,6 +149,8 @@ export const stdlibCompletions: CompletionItem[] = [
   { label: 'hash01', type: 'function', info: 'hash01(n, seed?) - Deterministic hash of integer n to [0, 1)' },
   { label: 'noise', type: 'function', info: 'noise(x, seed?) - 1D value noise, smooth and deterministic, [0, 1)' },
   { label: 'noise2', type: 'function', info: 'noise2(x, y, seed?) - 2D value noise on the unit lattice, [0, 1)' },
+  { label: 'hash11', type: 'function', info: 'hash11(n, seed?) - Deterministic hash of integer n to [-1, 1)' },
+  { label: 'hashRange', type: 'function', info: 'hashRange(n, min, max, seed?) - Deterministic hash of integer n to [min, max)' },
 
   // 11. Exponential/Log
   { label: 'exp', type: 'function', info: 'exp(x) - e raised to power x' },

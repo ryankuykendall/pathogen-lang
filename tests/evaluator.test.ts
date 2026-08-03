@@ -396,6 +396,60 @@ describe('Evaluator', () => {
         expect(compilePath('M calc(smoothstep(5, 5, 0)) 0')).toBe('M 0 0');
         expect(compilePath('M calc(smoothstep(5, 5, 5)) 0')).toBe('M NaN 0');
       });
+
+      it('evaluates bump (raised-cosine kernel) to exact values', () => {
+        expect(compilePath('M calc(bump(0.5, 0.5, 0.4)) 0')).toBe('M 1 0'); // at center
+        expect(compilePath('M calc(bump(0.9, 0.5, 0.4)) 0')).toBe('M 0 0'); // at spread edge
+        expect(compilePath('M calc(bump(0.05, 0.5, 0.4)) 0')).toBe('M 0 0'); // outside window
+        // Near-symmetric pair: abs(0.7 - 0.5) is 0.19999999999999996 in IEEE
+        // arithmetic, so the two sides differ by two ulps — pinned as-is.
+        expect(compilePath('M calc(bump(0.3, 0.5, 0.4)) 0')).toBe('M 0.5 0');
+        expect(compilePath('M calc(bump(0.7, 0.5, 0.4)) 0')).toBe('M 0.5000000000000002 0');
+      });
+
+      it('bump with non-positive spread is degenerate (documented contract)', () => {
+        // spread = 0: the clamp absorbs the infinity, leaving 0 everywhere
+        // except the 0/0 NaN at t === center. Negative spread clamps the
+        // ratio to 0 and returns 1 for every t — no window at all.
+        expect(compilePath('M calc(bump(1, 0.5, 0)) 0')).toBe('M 0 0');
+        expect(compilePath('M calc(bump(0.5, 0.5, 0)) 0')).toBe('M NaN 0');
+        expect(compilePath('M calc(bump(0.1, 0.5, -0.4)) calc(bump(2, 0.5, -0.4))')).toBe('M 1 1');
+      });
+
+      it('bump is a drop-in for the hand-rolled raised-cosine bulge', () => {
+        // The published post-31 formula: 0.5 * (1 + cos(mpi(clamp(...)))).
+        // bump must agree exactly so user code can migrate term-for-term.
+        const program = `fn bulge(t, center, spread) {
+          let d = clamp(abs(t - center) / spread, 0, 1);
+          return 0.5 * (1 + cos(mpi(d)));
+        }
+        M calc(bump(0.35, 0.35, 0.3)) calc(bulge(0.35, 0.35, 0.3))
+        L calc(bump(0.6, 0.35, 0.3)) calc(bulge(0.6, 0.35, 0.3))
+        L calc(bump(0.78, 0.78, 0.18)) calc(bulge(0.78, 0.78, 0.18))`;
+        const result = compilePath(program);
+        const match = /^M (\S+) (\S+) L (\S+) (\S+) L (\S+) (\S+)$/.exec(result);
+        expect(match).not.toBeNull();
+        expect(match![1]).toBe(match![2]);
+        expect(match![3]).toBe(match![4]);
+        expect(match![5]).toBe(match![6]);
+      });
+
+      it('evaluates the quadratic easing trio to exact values', () => {
+        expect(compilePath('M calc(easeIn(0.25)) calc(easeIn(0.5))')).toBe('M 0.0625 0.25');
+        expect(compilePath('M calc(easeOut(0.25)) calc(easeOut(0.75))')).toBe('M 0.4375 0.9375');
+        expect(compilePath('M calc(easeInOut(0.25)) calc(easeInOut(0.75))')).toBe('M 0.125 0.875');
+        expect(compilePath('M calc(easeInOut(0.5)) 0')).toBe('M 0.5 0');
+      });
+
+      it('easing functions clamp inputs to [0, 1]', () => {
+        expect(compilePath('M calc(easeIn(-1)) calc(easeIn(2))')).toBe('M 0 1');
+        expect(compilePath('M calc(easeOut(-1)) calc(easeOut(2))')).toBe('M 0 1');
+        expect(compilePath('M calc(easeInOut(-1)) calc(easeInOut(2))')).toBe('M 0 1');
+      });
+
+      it('easeInOut midpoint agrees with smoothstep midpoint', () => {
+        expect(compilePath('M calc(easeInOut(0.5)) calc(smoothstep(0, 1, 0.5))')).toBe('M 0.5 0.5');
+      });
     });
 
     describe('angle conversions', () => {
@@ -514,6 +568,20 @@ describe('Evaluator', () => {
 
       it('hash01 truncates non-finite inputs to 0 (documented contract)', () => {
         expect(compilePath('M calc(hash01(1/0)) 0')).toBe(compilePath('M calc(hash01(0)) 0'));
+      });
+
+      it('evaluates hash11 to exact values in [-1, 1)', () => {
+        // hash11(n, seed) === hash01(n, seed) * 2 - 1
+        expect(compilePath('M calc(hash11(0)) 0')).toBe('M -0.24436709145084023 0');
+        expect(compilePath('M calc(hash11(1)) 0')).toBe('M -0.49362101359292865 0');
+        expect(compilePath('M calc(hash11(1, 7)) 0')).toBe('M 0.6417892719618976 0');
+        expect(compilePath('M calc(hash11(1)) 0')).toBe(compilePath('M calc(hash01(1) * 2 - 1) 0'));
+      });
+
+      it('evaluates hashRange to exact values in [min, max)', () => {
+        // hashRange(n, min, max) === min + hash01(n) * (max - min)
+        expect(compilePath('M calc(hashRange(1, 10, 20)) 0')).toBe('M 12.531894932035357 0');
+        expect(compilePath('M calc(hashRange(5, -3, 3)) 0')).toBe('M 1.848265984095633 0');
       });
 
       it('hash01 is deterministic across compiles', () => {

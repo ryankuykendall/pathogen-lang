@@ -79,6 +79,26 @@ export const mathFunctions = {
     const t = Math.min(Math.max((x - edge0) / (edge1 - edge0), 0), 1);
     return t * t * (3 - 2 * t);
   },
+  // Raised-cosine kernel: 1 at t === center, eased to 0 at |t - center| >=
+  // spread. Math.cos is deterministic per engine, not bit-pinned cross-engine.
+  bump: (t: number, center: number, spread: number) => {
+    const d = Math.min(Math.max(Math.abs(t - center) / spread, 0), 1);
+    return 0.5 * (1 + Math.cos(Math.PI * d));
+  },
+  // Quadratic eases mirroring the Easing enum runtime (getEasingFn in
+  // playground/gpu/gradient-service.ts); inputs clamp to [0, 1]
+  easeIn: (t: number) => {
+    const u = Math.min(Math.max(t, 0), 1);
+    return u * u;
+  },
+  easeOut: (t: number) => {
+    const u = Math.min(Math.max(t, 0), 1);
+    return 1 - (1 - u) * (1 - u);
+  },
+  easeInOut: (t: number) => {
+    const u = Math.min(Math.max(t, 0), 1);
+    return u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
+  },
 
   // Angle conversions
   deg: (radians: number) => (radians * 180) / Math.PI,
@@ -100,6 +120,9 @@ export const mathFunctions = {
 
   // Hash (deterministic; n and seed truncate to 32-bit integers)
   hash01: (n: number, seed: number = 0) => hashU32(n, seed) / 4294967296,
+  hash11: (n: number, seed: number = 0) => (hashU32(n, seed) / 4294967296) * 2 - 1,
+  hashRange: (n: number, min: number, max: number, seed: number = 0) =>
+    min + (hashU32(n, seed) / 4294967296) * (max - min),
 
   // Value noise (deterministic; hash01 at integer lattice points, smoothstep
   // fade between them — noise(k) === hash01(k) at integer k)

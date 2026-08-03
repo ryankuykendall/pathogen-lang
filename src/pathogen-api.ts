@@ -357,6 +357,14 @@ export declare function clamp(value: number, min: number, max: number): number;
 export declare function map(val: number, inMin: number, inMax: number, outMin: number, outMax: number): number;
 /** smoothstep(edge0, edge1, x) — Hermite ease from 0 to 1 between edges @boost 12 */
 export declare function smoothstep(edge0: number, edge1: number, x: number): number;
+/** bump(t, center, spread) — Raised-cosine kernel: 1 at center, easing to 0 at center ± spread @boost 10 */
+export declare function bump(t: number, center: number, spread: number): number;
+/** easeIn(t) — Quadratic ease-in: t² over clamped [0, 1] @boost 8 */
+export declare function easeIn(t: number): number;
+/** easeOut(t) — Quadratic ease-out: 1 − (1−t)² over clamped [0, 1] @boost 8 */
+export declare function easeOut(t: number): number;
+/** easeInOut(t) — Quadratic ease-in-out over clamped [0, 1] @boost 8 */
+export declare function easeInOut(t: number): number;
 
 // =============================================================================
 // Stdlib: Rounding
@@ -412,6 +420,10 @@ export declare function hash01(n: number, seed?: number): number;
 export declare function noise(x: number, seed?: number): number;
 /** noise2(x, y, seed?) — 2D value noise on the unit lattice, [0, 1) @boost 8 */
 export declare function noise2(x: number, y: number, seed?: number): number;
+/** hash11(n, seed?) — Deterministic hash of integer n to [-1, 1) @boost 8 */
+export declare function hash11(n: number, seed?: number): number;
+/** hashRange(n, min, max, seed?) — Deterministic hash of integer n to [min, max) @boost 10 */
+export declare function hashRange(n: number, min: number, max: number, seed?: number): number;
 
 // =============================================================================
 // Stdlib: Exp/Log

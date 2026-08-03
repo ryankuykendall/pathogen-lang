@@ -485,6 +485,10 @@ Enum values are interchangeable with their string equivalents:
 Easing.Linear == 'linear'  // true
 ```
 
+The `Easing` curves are also callable as stdlib functions (`easeIn`,
+`easeOut`, `easeInOut`, `smoothstep`) — the formulas and the enum↔function
+mapping are documented in [the stdlib's Easing section](#stdlib-easing).
+
 ### User-Defined Enums
 
 Define custom enums with `enum`:

@@ -99,6 +99,17 @@ describe('getHoverInfo', () => {
       expect(result!.contents).toContain('Deterministic hash of integer n to [0, 1)');
     });
 
+    it('shows hover for bump and easeInOut', () => {
+      const bumpResult = hover('let x = bump(0.5, 0.5, 0.4);', 0, 9);
+      expect(bumpResult).not.toBeNull();
+      expect(bumpResult!.contents).toContain('**bump**');
+      expect(bumpResult!.contents).toContain('Raised-cosine kernel');
+      const easeResult = hover('let x = easeInOut(0.5);', 0, 12);
+      expect(easeResult).not.toBeNull();
+      expect(easeResult!.contents).toContain('**easeInOut**');
+      expect(easeResult!.contents).toContain('Quadratic ease-in-out');
+    });
+
     it('shows hover for noise', () => {
       const result = hover('let x = noise(0.5);', 0, 10);
       expect(result).not.toBeNull();
