@@ -3,9 +3,10 @@
 //-- closures this program threads TEN parameters through a helper
 //-- (pathBlock, steps, base1, bulges1, base2, bulges2, jitterAmount, salt,
 //-- continuity, cap). Here each layer builds lambdas that CAPTURE the layer
-//-- index and the scaled widths, and the builder lambda goes straight into
-//-- compoundVariableOffset(mk) -- a function value in place of a trailing
-//-- block. The closures carry the state; the parameter lists collapse.
+//-- index and the scaled widths, and the builder lambda is applied with
+//-- compoundVariableOffset() << mk -- a function value doing the trailing
+//-- block's job. The closures carry the state; the parameter lists
+//-- collapse.
 //-- Recompiles are byte-identical: the jitter is a hash of the stop index
 //-- and a captured per-layer salt, not randomRange.
 
@@ -40,8 +41,8 @@ for (haloIndex in 16..1) {
     return -0.15 * haloIndex - 0.3 * haloIndex * bulge(t, 0.55, 0.4);
   };
 
-  //-- The builder itself is a lambda, passed as an argument — the interop
-  //-- form of `spine.compoundVariableOffset() {|vo, pb| ... }`.
+  //-- The builder itself is a lambda, applied with << — the worker form
+  //-- of `spine.compoundVariableOffset() {|vo, pb| ... }`.
   let mk = {|vo, pb|
     vo.startCap(taperCap);
     for (i in 0..steps) {
@@ -51,7 +52,7 @@ for (haloIndex in 16..1) {
     }
     vo.endCap(taperCap);
   };
-  let halo = spine.compoundVariableOffset(mk);
+  let halo = spine.compoundVariableOffset() << mk;
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
   let haloLayer = PathLayer(`halo-${haloIndex}`) ${

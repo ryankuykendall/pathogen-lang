@@ -5,6 +5,13 @@ date: 2026-08-02
 description: "Variable-width strokes get interesting when the width itself becomes a designed object — an envelope you can shape, compose, and reuse. This post builds a richer stroke step by step, shows where the abstraction outgrows named functions, and introduces Pathogen's new lambda expressions: {|a, b| ... } as a first-class closure."
 ---
 
+*Part 2 of 3 in our series on variable-width strokes.*
+
+> **Series: Variable-Width Strokes**
+> 1. [The Swelling Line](/blog/the-swelling-line) — variableOffset and compoundVariableOffset
+> 2. **The Shape of a Stroke** (this post) — envelopes, bulges, and lambdas
+> 3. [The Reliable Line](/blog/the-reliable-line) — hash, noise, and envelopes join the stdlib
+
 [The Swelling Line](/blog/the-swelling-line) introduced
 [`variableOffset` and `compoundVariableOffset`](/docs#variable-offset-variable-offset): place stops along a path, give each one a distance,
 and the stroke breathes. That post ended with ribbons. This one asks the next
@@ -109,10 +116,17 @@ Three design decisions worth spelling out:
 - **Zero parameters is `{|| ... }`** — one grammar wrinkle, since two bare
   pipes otherwise lex as logical-or.
 
-And the part that makes the feature feel native: **builtins accept lambdas in
-place of trailing blocks.** `items.map(f)`, `items.sort(cmp)`, `grid.fill(f)`,
-and — the one this post has been building toward —
-`spine.compoundVariableOffset(mk)`.
+And the part that makes the feature feel native: **a builtin can take a
+lambda you already built, applied with the `<<` operator** — the operator
+you already use to merge objects and apply style blocks, here wearing a
+second hat. A literal trailing block still works exactly as before —
+that's what every sample above uses. The `<<` form is the *worker* spelling
+of the same idea, for when the callback is a value with a name:
+`items.map() << f`, `items.sort() << cmp`, `grid.fill() << f`, and — the
+one this post has been building toward —
+`spine.compoundVariableOffset() << mk`. The parentheses keep the builtin's
+real parameters (`reduce(init) << f`); `<<` supplies the worker. The full
+rules live in [Applying workers](/docs#syntax-applying-workers).
 
 ## Envelopes on demand
 
@@ -133,10 +147,10 @@ Now rebuild the sixteen-layer glow with intent instead of `Math.random`. Each
 layer wants: a base width and two bulge peaks scaled by the layer index, a
 deterministic jitter texture with a per-layer stream, and tapered caps. As
 closures, that's three lambdas per layer — `width1`, `width2`, `jitter`, each
-capturing the layer index — plus a builder lambda `mk` that captures all
-three and goes straight into `compoundVariableOffset(mk)`:
+capturing the layer index — plus a builder lambda `mk`, applied with
+`spine.compoundVariableOffset() << mk`:
 
-<mini-workspace src="samples/post31/05-halo-lambdas.pathogen" caption="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda passed directly to compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical." code-open></mini-workspace>
+<mini-workspace src="samples/post31/05-halo-lambdas.pathogen" caption="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda applied with << onto compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical." code-open></mini-workspace>
 
 Before lambdas, this program needed a ten-parameter helper function to thread
 base widths, bulge specs, jitter amount, salt, continuity, and caps down into
@@ -159,15 +173,15 @@ Version one has honest edges, all [documented](/docs#syntax-lambdas):
 - A lambda *literal* can't sit inside a call in path-argument position
   (`M use({|x| ...}) 0`) — path arguments stop at `|`. Pass a name.
 - Constructor binding blocks (`LinearGradient(...) {|g| ...}`, `Marker`,
-  `Pattern`, filters, `Grid(...) {|g| ...}`) still take literal blocks; the callback-style methods
-  are where lambda arguments land.
+  `Pattern`, filters, `Grid(...) {|g| ...}`) still take literal blocks; the
+  callback-style methods also accept `<<` workers.
 
 ## Where this goes
 
 An envelope is just the first function worth capturing. The same pattern —
-small lambdas closing over local parameters, handed to a builder — reaches
-anywhere Pathogen takes a callback: comparator families for `sort`, field
-functions for `Grid.fill`, per-glyph stroke treatments built inside a
+small lambdas closing over local parameters, applied to a builder with `<<` —
+reaches anywhere Pathogen takes a callback: comparator families for `sort`,
+field functions for `Grid.fill`, per-glyph stroke treatments built inside a
 `contours` loop. Calligraphic nibs, pressure-simulating taper families,
 multi-pass glows with per-pass texture: all of them are a lambda closing over
 the parameters that make each instance *this* instance.

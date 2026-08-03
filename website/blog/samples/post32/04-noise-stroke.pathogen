@@ -1,0 +1,52 @@
+// viewBox="0 0 400 250"
+//-- From jitter to texture. hash01 gives every stop its own independent
+//-- value; noise() drives the width with a CONTINUOUS wobble instead, so
+//-- adjacent stops agree and the edge undulates organically. One knob
+//-- controls the character: the input scale is the frequency. Same seed,
+//-- three frequencies -- the shape family is recognizably the same wave,
+//-- refined three times.
+
+define ViewBox(0, 0, 400, 250);
+
+fn texturedStroke(strokeLayer, y, freq) {
+  let spine = @{ l 320 0 };
+  let ribbon = spine.compoundVariableOffset() {|vo, pb|
+    vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    for (i in 0..64) {
+      let t = i / 64;
+      //-- The end windows are smoothstep too: width eases to 0 at both
+      //-- tips, so the ribbon tapers instead of ending in a blunt edge.
+      let amp = smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t);
+      let w = (2 + noise(t * freq) * 14) * amp;
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+  };
+  strokeLayer.apply {
+    M calc(40 + ribbon.anchor.x) calc(y + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+let slow = PathLayer('freq-3') ${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+let mid = PathLayer('freq-6') ${ fill: oklch(0.58 0.17 220); stroke: none; opacity: 0.9; };
+let fast = PathLayer('freq-12') ${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.9; };
+
+texturedStroke(slow, 55, 3);
+texturedStroke(mid, 130, 6);
+texturedStroke(fast, 205, 12);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(40, 28)`noise(t * 3) — slow swells`
+  text(40, 101)`noise(t * 6) — undulating`
+  text(40, 176)`noise(t * 12) — chattering`
+}
+
+let scene = GroupLayer('scene') ${};
+scene.append(slow, mid, fast, labels);

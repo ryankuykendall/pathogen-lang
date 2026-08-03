@@ -251,7 +251,16 @@ code.hljs {
         <p class="post-meta"><time datetime="2026-08-02">August 1, 2026</time></p>
       </header>
       <div class="blog-content">
-        <p><a href="/blog/the-swelling-line">The Swelling Line</a> introduced
+        <p><em>Part 2 of 3 in our series on variable-width strokes.</em></p>
+<blockquote>
+<p><strong>Series: Variable-Width Strokes</strong></p>
+<ol>
+<li><a href="/blog/the-swelling-line">The Swelling Line</a> — variableOffset and compoundVariableOffset</li>
+<li><strong>The Shape of a Stroke</strong> (this post) — envelopes, bulges, and lambdas</li>
+<li><a href="/blog/the-reliable-line">The Reliable Line</a> — hash, noise, and envelopes join the stdlib</li>
+</ol>
+</blockquote>
+<p><a href="/blog/the-swelling-line">The Swelling Line</a> introduced
 <a href="/docs#variable-offset-variable-offset"><code>variableOffset</code> and <code>compoundVariableOffset</code></a>: place stops along a path, give each one a distance,
 and the stroke breathes. That post ended with ribbons. This one asks the next
 question: what does it take to make a stroke genuinely <em>rich</em> — layered,
@@ -606,10 +615,17 @@ classic capture trap from other languages resolves the friendly way here.</li>
 <li><strong>Zero parameters is <code>{|| ... }</code></strong> — one grammar wrinkle, since two bare
 pipes otherwise lex as logical-or.</li>
 </ul>
-<p>And the part that makes the feature feel native: <strong>builtins accept lambdas in
-place of trailing blocks.</strong> <code>items.map(f)</code>, <code>items.sort(cmp)</code>, <code>grid.fill(f)</code>,
-and — the one this post has been building toward —
-<code>spine.compoundVariableOffset(mk)</code>.</p>
+<p>And the part that makes the feature feel native: <strong>a builtin can take a
+lambda you already built, applied with the <code>&lt;&lt;</code> operator</strong> — the operator
+you already use to merge objects and apply style blocks, here wearing a
+second hat. A literal trailing block still works exactly as before —
+that&#39;s what every sample above uses. The <code>&lt;&lt;</code> form is the <em>worker</em> spelling
+of the same idea, for when the callback is a value with a name:
+<code>items.map() &lt;&lt; f</code>, <code>items.sort() &lt;&lt; cmp</code>, <code>grid.fill() &lt;&lt; f</code>, and — the
+one this post has been building toward —
+<code>spine.compoundVariableOffset() &lt;&lt; mk</code>. The parentheses keep the builtin&#39;s
+real parameters (<code>reduce(init) &lt;&lt; f</code>); <code>&lt;&lt;</code> supplies the worker. The full
+rules live in <a href="/docs#syntax-applying-workers">Applying workers</a>.</p>
 <h2>Envelopes on demand</h2>
 <p>The baked-constants problem, dissolved — twice. The first row replaces four
 named taper functions with two inline lambda literals. Then the payoff: three
@@ -701,17 +717,18 @@ is in scope at that spot.</p>
 layer wants: a base width and two bulge peaks scaled by the layer index, a
 deterministic jitter texture with a per-layer stream, and tapered caps. As
 closures, that&#39;s three lambdas per layer — <code>width1</code>, <code>width2</code>, <code>jitter</code>, each
-capturing the layer index — plus a builder lambda <code>mk</code> that captures all
-three and goes straight into <code>compoundVariableOffset(mk)</code>:</p>
-<p><mini-workspace code-open caption="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda passed directly to compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical.">
+capturing the layer index — plus a builder lambda <code>mk</code>, applied with
+<code>spine.compoundVariableOffset() &lt;&lt; mk</code>:</p>
+<p><mini-workspace code-open caption="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda applied with << onto compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical.">
   <code>// viewBox="0 60 400 140"
 //-- The glow, rebuilt on closures -- deterministic this time. Without
 //-- closures this program threads TEN parameters through a helper
 //-- (pathBlock, steps, base1, bulges1, base2, bulges2, jitterAmount, salt,
 //-- continuity, cap). Here each layer builds lambdas that CAPTURE the layer
-//-- index and the scaled widths, and the builder lambda goes straight into
-//-- compoundVariableOffset(mk) -- a function value in place of a trailing
-//-- block. The closures carry the state; the parameter lists collapse.
+//-- index and the scaled widths, and the builder lambda is applied with
+//-- compoundVariableOffset() &lt;&lt; mk -- a function value doing the trailing
+//-- block's job. The closures carry the state; the parameter lists
+//-- collapse.
 //-- Recompiles are byte-identical: the jitter is a hash of the stop index
 //-- and a captured per-layer salt, not randomRange.
 
@@ -746,8 +763,8 @@ for (haloIndex in 16..1) {
     return -0.15 * haloIndex - 0.3 * haloIndex * bulge(t, 0.55, 0.4);
   };
 
-  //-- The builder itself is a lambda, passed as an argument — the interop
-  //-- form of `spine.compoundVariableOffset() {|vo, pb| ... }`.
+  //-- The builder itself is a lambda, applied with &lt;&lt; — the worker form
+  //-- of `spine.compoundVariableOffset() {|vo, pb| ... }`.
   let mk = {|vo, pb|
     vo.startCap(taperCap);
     for (i in 0..steps) {
@@ -757,7 +774,7 @@ for (haloIndex in 16..1) {
     }
     vo.endCap(taperCap);
   };
-  let halo = spine.compoundVariableOffset(mk);
+  let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
   let haloLayer = PathLayer(`halo-${haloIndex}`) ${
@@ -771,7 +788,7 @@ for (haloIndex in 16..1) {
   }
 }
 </code>
-  <img src="/blog/samples/post31/05-halo-lambdas.svg" alt="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda passed directly to compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical." loading="lazy">
+  <img src="/blog/samples/post31/05-halo-lambdas.svg" alt="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda applied with << onto compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical." loading="lazy">
 </mini-workspace></p>
 <p>Before lambdas, this program needed a ten-parameter helper function to thread
 base widths, bulge specs, jitter amount, salt, continuity, and caps down into
@@ -791,14 +808,14 @@ immediately-invoked literals aren&#39;t callable yet — bind to a <code>let</co
 <li>A lambda <em>literal</em> can&#39;t sit inside a call in path-argument position
 (<code>M use({|x| ...}) 0</code>) — path arguments stop at <code>|</code>. Pass a name.</li>
 <li>Constructor binding blocks (<code>LinearGradient(...) {|g| ...}</code>, <code>Marker</code>,
-<code>Pattern</code>, filters, <code>Grid(...) {|g| ...}</code>) still take literal blocks; the callback-style methods
-are where lambda arguments land.</li>
+<code>Pattern</code>, filters, <code>Grid(...) {|g| ...}</code>) still take literal blocks; the
+callback-style methods also accept <code>&lt;&lt;</code> workers.</li>
 </ul>
 <h2>Where this goes</h2>
 <p>An envelope is just the first function worth capturing. The same pattern —
-small lambdas closing over local parameters, handed to a builder — reaches
-anywhere Pathogen takes a callback: comparator families for <code>sort</code>, field
-functions for <code>Grid.fill</code>, per-glyph stroke treatments built inside a
+small lambdas closing over local parameters, applied to a builder with <code>&lt;&lt;</code> —
+reaches anywhere Pathogen takes a callback: comparator families for <code>sort</code>,
+field functions for <code>Grid.fill</code>, per-glyph stroke treatments built inside a
 <code>contours</code> loop. Calligraphic nibs, pressure-simulating taper families,
 multi-pass glows with per-pass texture: all of them are a lambda closing over
 the parameters that make each instance <em>this</em> instance.</p>

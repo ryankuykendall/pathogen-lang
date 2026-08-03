@@ -1,0 +1,67 @@
+// viewBox="0 0 400 230"
+//-- Two hashes, same job: the sin-fract folklore hash from "The Shape of
+//-- a Stroke" (top)
+//-- against the stdlib hash01 (bottom), sampled at the same 72 indices.
+//-- Both scatter convincingly -- the difference is invisible here, and
+//-- that's the point. hash01 gives up nothing visually, and in exchange
+//-- every operation inside it is bit-specified by the ECMAScript standard,
+//-- so the bottom row is byte-identical on every JS engine. The top row is
+//-- only *almost*: Math.sin may differ in the last bit between engines.
+
+define ViewBox(0, 0, 400, 230);
+
+fn sinFract(i) {
+  let s = sin(i * 12.9898) * 43758.5453;
+  return s - floor(s);
+}
+
+let folk = PathLayer('sin-fract') ${
+  fill: oklch(0.6 0.15 20);
+  stroke: none;
+  opacity: 0.85;
+};
+let builtin = PathLayer('hash01') ${
+  fill: oklch(0.55 0.18 260);
+  stroke: none;
+  opacity: 0.85;
+};
+
+folk.apply {
+  for (i in 0..71) {
+    circle(calc(22 + i * 4.8), calc(38 + sinFract(i) * 56), 1.6);
+  }
+}
+builtin.apply {
+  for (i in 0..71) {
+    circle(calc(22 + i * 4.8), calc(148 + hash01(i) * 56), 1.6);
+  }
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 28)`fn sinFract(i) — the folklore hash (part 2)`
+  text(22, 138)`hash01(i) — built in, bit-exact on every engine`
+}
+
+//-- Value-axis ticks: vertical position IS the hash output, 0 at the top
+//-- of each band, 1 at the bottom.
+let ticks = TextLayer('value-ticks') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: #666;
+  text-anchor: start;
+};
+ticks.apply {
+  text(372, 41)`0`
+  text(372, 97)`1`
+  text(372, 151)`0`
+  text(372, 207)`1`
+}
+
+let scene = GroupLayer('scene') ${};
+scene.append(folk, builtin, labels, ticks);

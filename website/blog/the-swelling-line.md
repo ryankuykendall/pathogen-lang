@@ -5,6 +5,13 @@ date: 2026-07-13
 description: "Two new PathBlock methods — variableOffset and compoundVariableOffset — turn any path into a rail for expressive, variable-width strokes. We build up from the rail model to curvature-continuous joins, filled ribbons with end caps, and a glyph-wrapped Pathogen wordmark."
 ---
 
+*Part 1 of 3 in our series on variable-width strokes.*
+
+> **Series: Variable-Width Strokes**
+> 1. **The Swelling Line** (this post) — variableOffset and compoundVariableOffset
+> 2. [The Shape of a Stroke](/blog/lambdas-come-to-pathogen) — envelopes, bulges, and lambdas
+> 3. [The Reliable Line](/blog/the-reliable-line) — hash, noise, and envelopes join the stdlib
+
 Pathogen has always had [`offset()`](/docs#path-blocks-path-blocks): give it a path and a distance, and it hands back a uniform parallel curve. Useful — but static. The line never thickens, never tapers, never *breathes*.
 
 This post introduces two new PathBlock methods that let it breathe: **`variableOffset`** and **`compoundVariableOffset`**. The distance can now change along the path, and you decide — stop by stop — how smoothly the curve flows. By the end we'll wrap every letter of the word *Pathogen* in flowing, multi-colored ribbons.

@@ -1,0 +1,50 @@
+// viewBox="0 60 400 140"
+//-- Part 2's deterministic glow, third build, shortest yet. The two helper
+//-- fns are gone: bump() replaces fn bulge (term-for-term -- same raised
+//-- cosine), and hash11() replaces fn hash01 plus the *2-1 remap. The
+//-- per-layer stream is no longer smuggled through prime arithmetic
+//-- (i * 7 + haloIndex * 1013); the layer index is just the seed argument.
+
+define ViewBox(0, 60, 400, 140);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let steps = 48;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.72 0.14 20);
+
+for (haloIndex in 16..1) {
+  //-- Signed +/-20% jitter, stream selected by the captured layer index.
+  let jitter = {|i| return 1 + hash11(i, haloIndex) * 0.2; };
+  let width1 = {|t|
+    return 0.15 * haloIndex
+         + 0.6 * haloIndex * bump(t, 0.35, 0.3)
+         + 0.35 * haloIndex * pow(bump(t, 0.78, 0.18), 2);
+  };
+  let width2 = {|t|
+    return -0.15 * haloIndex - 0.3 * haloIndex * bump(t, 0.55, 0.4);
+  };
+
+  let mk = {|vo, pb|
+    vo.startCap(taperCap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, width1(t) * jitter(i * 2), CurveContinuity.G1,
+                 width2(t) * jitter(i * 2 + 1), CurveContinuity.G1);
+    }
+    vo.endCap(taperCap);
+  };
+  let halo = spine.compoundVariableOffset() << mk;
+
+  let haloColor = base.hueShift(calc(haloIndex * -6));
+  let haloLayer = PathLayer(`halo-${haloIndex}`) ${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}

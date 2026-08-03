@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "the-reliable-line",
+    "title": "The Reliable Line: Hash, Noise, and Envelopes Join the Stdlib",
+    "date": "2026-08-03",
+    "description": "'The Shape of a Stroke' ended with a glow built on a hand-rolled hash and a hand-rolled envelope. Both are now built in — and the built-in hash is a better one: bit-identical on every JavaScript engine, not just deterministic on yours. This post rebuilds the glow on hash11() and bump(), then goes somewhere the hash can't: continuous texture with noise() and a coherent 2D field with noise2()."
+  },
+  {
     "slug": "lambdas-come-to-pathogen",
     "title": "The Shape of a Stroke: Envelopes, Bulges, and Lambdas",
     "date": "2026-08-02",
@@ -9852,7 +9858,16 @@ M <span class="hljs-number">200</span> <span class="hljs-number">200</span>
 <p>Together, these two functions eliminate the dummy-segment workaround, enable clean <code>z</code> closure in path blocks, and unlock procedural shape construction — from simple arcs to regular polygons with any number of sides. They pair naturally with <code>tangentLine</code> and <code>tangentArc</code> to build complex shapes from simple, composable operations.</p>
 <p>For more on tangent-dependent functions, see the <a href="/docs#stdlib-tangent-functions">stdlib reference</a>. For path blocks, see the <a href="/blog/pathblock-introduction">PathBlock introduction</a>. For multi-segment smooth curves that benefit from <code>heading()</code>, see the <a href="/blog/chained-bezier-splines">chained Bézier splines post</a>.</p>
 `,
-  'lambdas-come-to-pathogen': `<p><a href="/blog/the-swelling-line">The Swelling Line</a> introduced
+  'lambdas-come-to-pathogen': `<p><em>Part 2 of 3 in our series on variable-width strokes.</em></p>
+<blockquote>
+<p><strong>Series: Variable-Width Strokes</strong></p>
+<ol>
+<li><a href="/blog/the-swelling-line">The Swelling Line</a> — variableOffset and compoundVariableOffset</li>
+<li><strong>The Shape of a Stroke</strong> (this post) — envelopes, bulges, and lambdas</li>
+<li><a href="/blog/the-reliable-line">The Reliable Line</a> — hash, noise, and envelopes join the stdlib</li>
+</ol>
+</blockquote>
+<p><a href="/blog/the-swelling-line">The Swelling Line</a> introduced
 <a href="/docs#variable-offset-variable-offset"><code>variableOffset</code> and <code>compoundVariableOffset</code></a>: place stops along a path, give each one a distance,
 and the stroke breathes. That post ended with ribbons. This one asks the next
 question: what does it take to make a stroke genuinely <em>rich</em> — layered,
@@ -10207,10 +10222,17 @@ classic capture trap from other languages resolves the friendly way here.</li>
 <li><strong>Zero parameters is <code>{|| ... }</code></strong> — one grammar wrinkle, since two bare
 pipes otherwise lex as logical-or.</li>
 </ul>
-<p>And the part that makes the feature feel native: <strong>builtins accept lambdas in
-place of trailing blocks.</strong> <code>items.map(f)</code>, <code>items.sort(cmp)</code>, <code>grid.fill(f)</code>,
-and — the one this post has been building toward —
-<code>spine.compoundVariableOffset(mk)</code>.</p>
+<p>And the part that makes the feature feel native: <strong>a builtin can take a
+lambda you already built, applied with the <code>&lt;&lt;</code> operator</strong> — the operator
+you already use to merge objects and apply style blocks, here wearing a
+second hat. A literal trailing block still works exactly as before —
+that&#39;s what every sample above uses. The <code>&lt;&lt;</code> form is the <em>worker</em> spelling
+of the same idea, for when the callback is a value with a name:
+<code>items.map() &lt;&lt; f</code>, <code>items.sort() &lt;&lt; cmp</code>, <code>grid.fill() &lt;&lt; f</code>, and — the
+one this post has been building toward —
+<code>spine.compoundVariableOffset() &lt;&lt; mk</code>. The parentheses keep the builtin&#39;s
+real parameters (<code>reduce(init) &lt;&lt; f</code>); <code>&lt;&lt;</code> supplies the worker. The full
+rules live in <a href="/docs#syntax-applying-workers">Applying workers</a>.</p>
 <h2>Envelopes on demand</h2>
 <p>The baked-constants problem, dissolved — twice. The first row replaces four
 named taper functions with two inline lambda literals. Then the payoff: three
@@ -10302,17 +10324,18 @@ is in scope at that spot.</p>
 layer wants: a base width and two bulge peaks scaled by the layer index, a
 deterministic jitter texture with a per-layer stream, and tapered caps. As
 closures, that&#39;s three lambdas per layer — <code>width1</code>, <code>width2</code>, <code>jitter</code>, each
-capturing the layer index — plus a builder lambda <code>mk</code> that captures all
-three and goes straight into <code>compoundVariableOffset(mk)</code>:</p>
-<p><mini-workspace code-open caption="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda passed directly to compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical.">
+capturing the layer index — plus a builder lambda <code>mk</code>, applied with
+<code>spine.compoundVariableOffset() &lt;&lt; mk</code>:</p>
+<p><mini-workspace code-open caption="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda applied with << onto compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical.">
   <code>// viewBox="0 60 400 140"
 //-- The glow, rebuilt on closures -- deterministic this time. Without
 //-- closures this program threads TEN parameters through a helper
 //-- (pathBlock, steps, base1, bulges1, base2, bulges2, jitterAmount, salt,
 //-- continuity, cap). Here each layer builds lambdas that CAPTURE the layer
-//-- index and the scaled widths, and the builder lambda goes straight into
-//-- compoundVariableOffset(mk) -- a function value in place of a trailing
-//-- block. The closures carry the state; the parameter lists collapse.
+//-- index and the scaled widths, and the builder lambda is applied with
+//-- compoundVariableOffset() &lt;&lt; mk -- a function value doing the trailing
+//-- block's job. The closures carry the state; the parameter lists
+//-- collapse.
 //-- Recompiles are byte-identical: the jitter is a hash of the stop index
 //-- and a captured per-layer salt, not randomRange.
 
@@ -10347,8 +10370,8 @@ for (haloIndex in 16..1) {
     return -0.15 * haloIndex - 0.3 * haloIndex * bulge(t, 0.55, 0.4);
   };
 
-  //-- The builder itself is a lambda, passed as an argument — the interop
-  //-- form of \`spine.compoundVariableOffset() {|vo, pb| ... }\`.
+  //-- The builder itself is a lambda, applied with &lt;&lt; — the worker form
+  //-- of \`spine.compoundVariableOffset() {|vo, pb| ... }\`.
   let mk = {|vo, pb|
     vo.startCap(taperCap);
     for (i in 0..steps) {
@@ -10358,7 +10381,7 @@ for (haloIndex in 16..1) {
     }
     vo.endCap(taperCap);
   };
-  let halo = spine.compoundVariableOffset(mk);
+  let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
   let haloLayer = PathLayer(\`halo-\${haloIndex}\`) \${
@@ -10372,7 +10395,7 @@ for (haloIndex in 16..1) {
   }
 }
 </code>
-  <img src="/blog/samples/post31/05-halo-lambdas.svg" alt="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda passed directly to compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical." loading="lazy">
+  <img src="/blog/samples/post31/05-halo-lambdas.svg" alt="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda applied with << onto compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical." loading="lazy">
 </mini-workspace></p>
 <p>Before lambdas, this program needed a ten-parameter helper function to thread
 base widths, bulge specs, jitter amount, salt, continuity, and caps down into
@@ -10392,14 +10415,14 @@ immediately-invoked literals aren&#39;t callable yet — bind to a <code>let</co
 <li>A lambda <em>literal</em> can&#39;t sit inside a call in path-argument position
 (<code>M use({|x| ...}) 0</code>) — path arguments stop at <code>|</code>. Pass a name.</li>
 <li>Constructor binding blocks (<code>LinearGradient(...) {|g| ...}</code>, <code>Marker</code>,
-<code>Pattern</code>, filters, <code>Grid(...) {|g| ...}</code>) still take literal blocks; the callback-style methods
-are where lambda arguments land.</li>
+<code>Pattern</code>, filters, <code>Grid(...) {|g| ...}</code>) still take literal blocks; the
+callback-style methods also accept <code>&lt;&lt;</code> workers.</li>
 </ul>
 <h2>Where this goes</h2>
 <p>An envelope is just the first function worth capturing. The same pattern —
-small lambdas closing over local parameters, handed to a builder — reaches
-anywhere Pathogen takes a callback: comparator families for <code>sort</code>, field
-functions for <code>Grid.fill</code>, per-glyph stroke treatments built inside a
+small lambdas closing over local parameters, applied to a builder with <code>&lt;&lt;</code> —
+reaches anywhere Pathogen takes a callback: comparator families for <code>sort</code>,
+field functions for <code>Grid.fill</code>, per-glyph stroke treatments built inside a
 <code>contours</code> loop. Calligraphic nibs, pressure-simulating taper families,
 multi-pass glows with per-pass texture: all of them are a lambda closing over
 the parameters that make each instance <em>this</em> instance.</p>
@@ -19729,7 +19752,440 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 <p>Text as geometry. That&#39;s where this is headed.</p>
 <p>Paste the collision-avoidance snippet into the <a href="/">playground</a> and change the data point positions — watch the labels redistribute automatically.</p>
 `,
-  'the-swelling-line': `<p>Pathogen has always had <a href="/docs#path-blocks-path-blocks"><code>offset()</code></a>: give it a path and a distance, and it hands back a uniform parallel curve. Useful — but static. The line never thickens, never tapers, never <em>breathes</em>.</p>
+  'the-reliable-line': `<p><em>Part 3 of 3 in our series on variable-width strokes.</em></p>
+<blockquote>
+<p><strong>Series: Variable-Width Strokes</strong></p>
+<ol>
+<li><a href="/blog/the-swelling-line">The Swelling Line</a> — variableOffset and compoundVariableOffset</li>
+<li><a href="/blog/lambdas-come-to-pathogen">The Shape of a Stroke</a> — envelopes, bulges, and lambdas</li>
+<li><strong>The Reliable Line</strong> (this post) — hash, noise, and envelopes join the stdlib</li>
+</ol>
+</blockquote>
+<p><a href="/blog/lambdas-come-to-pathogen">The Shape of a Stroke</a> closed on a promise: a glow whose fuzz was <em>designed</em> — a hash of the stop index instead of <code>randomRange</code> — so that recompiling the program reproduced it exactly. To get there it had to define two helper functions by hand: <code>bulge</code>, a raised-cosine envelope kernel, and <code>hash01</code>, the shader-folklore one-liner that turns an integer into a repeatable &quot;random&quot; number.</p>
+<p>Those helpers did their job so well that they&#39;ve stopped being helpers. As of this release, the whole toolkit is in the <a href="/docs#stdlib-hash-noise">standard library</a>: <code>hash01</code>, its signed sibling <code>hash11</code>, <code>hashRange</code>, the envelope kernel <code>bump</code>, <code>smoothstep</code>, a callable easing trio — and two functions the hand-rolled versions couldn&#39;t reach: <code>noise()</code> and <code>noise2()</code>, which trade per-index jitter for <em>continuous</em> texture.</p>
+<p>This post does three things: explains why the built-in hash is deliberately <strong>not</strong> the one from part 2, rebuilds the glow shorter than ever, and then pushes past jitter into noise fields.</p>
+<h2>Why not the folklore hash?</h2>
+<p>Part 2&#39;s hash is a classic for a reason — one line, no dependencies, instantly random-looking:</p>
+<pre><code class="hljs">fn <span class="hljs-title function_">hash01</span>(<span class="hljs-params">i</span>) {
+  <span class="hljs-keyword">let</span> s = <span class="hljs-title function_">sin</span>(i * <span class="hljs-number">12.9898</span>) * <span class="hljs-number">43758.5453</span>;
+  <span class="hljs-keyword">return</span> s - <span class="hljs-title function_">floor</span>(s);
+}
+</code></pre><p>But it has a quiet flaw for a language that promises <em>byte-identical recompiles</em>: it leans on <code>sin</code>, and the ECMAScript standard does not pin <code>Math.sin</code> to the bit. Engines are free to differ in the last decimal place — and multiplying by 43758.5453 amplifies that last bit into a visibly different fraction. Your glow is reproducible <em>on your machine</em>. Compile the same program in a different browser engine, and &quot;byte-identical&quot; quietly becomes &quot;almost identical&quot;. It also degrades at large inputs, where float precision starts eating the fractional bits the hash lives on.</p>
+<p>The built-in <a href="/docs#stdlib-hash-noise"><code>hash01</code></a> takes a different route: integer bit-mixing (a lowbias32 finalizer), built exclusively from operations the standard specifies exactly — <code>Math.imul</code>, bit operations, IEEE arithmetic. No trigonometry anywhere. The result is a hash that returns the identical value for identical arguments on <strong>every</strong> machine and JavaScript engine: CLI, playground, and VS Code preview agree, today and on every future recompile.</p>
+<p><mini-workspace code-open caption="72 indices through both hashes. Visually interchangeable — the difference is contractual, not aesthetic. The bottom row is bit-specified on every engine; the top row inherits Math.sin's engine-dependence.">
+  <code>// viewBox="0 0 400 230"
+//-- Two hashes, same job: the sin-fract folklore hash from "The Shape of
+//-- a Stroke" (top)
+//-- against the stdlib hash01 (bottom), sampled at the same 72 indices.
+//-- Both scatter convincingly -- the difference is invisible here, and
+//-- that's the point. hash01 gives up nothing visually, and in exchange
+//-- every operation inside it is bit-specified by the ECMAScript standard,
+//-- so the bottom row is byte-identical on every JS engine. The top row is
+//-- only *almost*: Math.sin may differ in the last bit between engines.
+
+define ViewBox(0, 0, 400, 230);
+
+fn sinFract(i) {
+  let s = sin(i * 12.9898) * 43758.5453;
+  return s - floor(s);
+}
+
+let folk = PathLayer('sin-fract') \${
+  fill: oklch(0.6 0.15 20);
+  stroke: none;
+  opacity: 0.85;
+};
+let builtin = PathLayer('hash01') \${
+  fill: oklch(0.55 0.18 260);
+  stroke: none;
+  opacity: 0.85;
+};
+
+folk.apply {
+  for (i in 0..71) {
+    circle(calc(22 + i * 4.8), calc(38 + sinFract(i) * 56), 1.6);
+  }
+}
+builtin.apply {
+  for (i in 0..71) {
+    circle(calc(22 + i * 4.8), calc(148 + hash01(i) * 56), 1.6);
+  }
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 28)\`fn sinFract(i) — the folklore hash (part 2)\`
+  text(22, 138)\`hash01(i) — built in, bit-exact on every engine\`
+}
+
+//-- Value-axis ticks: vertical position IS the hash output, 0 at the top
+//-- of each band, 1 at the bottom.
+let ticks = TextLayer('value-ticks') \${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  fill: #666;
+  text-anchor: start;
+};
+ticks.apply {
+  text(372, 41)\`0\`
+  text(372, 97)\`1\`
+  text(372, 151)\`0\`
+  text(372, 207)\`1\`
+}
+
+let scene = GroupLayer('scene') \${};
+scene.append(folk, builtin, labels, ticks);
+</code>
+  <img src="/blog/samples/post32/01-two-hashes.svg" alt="72 indices through both hashes. Visually interchangeable — the difference is contractual, not aesthetic. The bottom row is bit-specified on every engine; the top row inherits Math.sin's engine-dependence." loading="lazy">
+</mini-workspace></p>
+<p>Two contracts worth knowing before you use it:</p>
+<ul>
+<li><strong>It hashes integers.</strong> <code>hash01(0.9)</code> equals <code>hash01(0)</code> — inputs truncate to 32-bit integers. For a smooth function of a continuous input, that&#39;s what <code>noise()</code> is for (below).</li>
+<li><strong>The seed is an argument.</strong> &quot;The Shape of a Stroke&quot; smuggled a per-layer stream through prime arithmetic — <code>hash01(i * 7 + haloIndex * 1013)</code>. The built-in makes the stream a parameter: <code>hash01(i, haloIndex)</code>. Two seeds are two genuinely independent sequences, not shifted copies.</li>
+</ul>
+<p>(One naming note: the sample above calls its folklore hash <code>sinFract</code>, not <code>hash01</code>, for a load-bearing reason — a user-defined <code>fn hash01</code> would <em>shadow</em> the built-in, which is exactly the mechanism that keeps part 2&#39;s published samples byte-stable. More on that below.)</p>
+<p>And <code>randomRange</code> users get a drop-in — same call shape, an index in front:</p>
+<pre><code class="hljs"><span class="hljs-keyword">let</span> r = <span class="hljs-title function_">randomRange</span>(<span class="hljs-number">4</span>, <span class="hljs-number">12</span>);    <span class="hljs-comment">// different every compile</span>
+<span class="hljs-keyword">let</span> r = <span class="hljs-title function_">hashRange</span>(i, <span class="hljs-number">4</span>, <span class="hljs-number">12</span>);   <span class="hljs-comment">// pinned to index i, forever</span>
+</code></pre><h2>The glow, third build, shortest yet</h2>
+<p>Here is part 2&#39;s finale rebuilt on the stdlib. Both helper <code>fn</code>s are gone. <code>bump(t, center, spread)</code> <strong>is</strong> the raised cosine — term-for-term, the same formula <code>bulge</code> computed — and the jitter collapses to a single call: <code>hash11(i, haloIndex)</code> returns signed values in <code>[-1, 1)</code>, so &quot;±20% wobble, per-layer stream&quot; is just <code>1 + hash11(i, haloIndex) * 0.2</code>.</p>
+<p><mini-workspace code-open caption="Sixteen compound-offset layers, zero helper fns. bump() replaces bulge, hash11(i, haloIndex) replaces the hash-plus-remap, and the per-layer salt became the seed argument. The lambdas still capture haloIndex — that part 'The Shape of a Stroke' got right the first time. The builder mk is a named lambda, so it's applied with << (see the worker rules in the docs); samples 3 and 4 below pass their builders as literal blocks instead.">
+  <code>// viewBox="0 60 400 140"
+//-- Part 2's deterministic glow, third build, shortest yet. The two helper
+//-- fns are gone: bump() replaces fn bulge (term-for-term -- same raised
+//-- cosine), and hash11() replaces fn hash01 plus the *2-1 remap. The
+//-- per-layer stream is no longer smuggled through prime arithmetic
+//-- (i * 7 + haloIndex * 1013); the layer index is just the seed argument.
+
+define ViewBox(0, 60, 400, 140);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let steps = 48;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.72 0.14 20);
+
+for (haloIndex in 16..1) {
+  //-- Signed +/-20% jitter, stream selected by the captured layer index.
+  let jitter = {|i| return 1 + hash11(i, haloIndex) * 0.2; };
+  let width1 = {|t|
+    return 0.15 * haloIndex
+         + 0.6 * haloIndex * bump(t, 0.35, 0.3)
+         + 0.35 * haloIndex * pow(bump(t, 0.78, 0.18), 2);
+  };
+  let width2 = {|t|
+    return -0.15 * haloIndex - 0.3 * haloIndex * bump(t, 0.55, 0.4);
+  };
+
+  let mk = {|vo, pb|
+    vo.startCap(taperCap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, width1(t) * jitter(i * 2), CurveContinuity.G1,
+                 width2(t) * jitter(i * 2 + 1), CurveContinuity.G1);
+    }
+    vo.endCap(taperCap);
+  };
+  let halo = spine.compoundVariableOffset() &lt;&lt; mk;
+
+  let haloColor = base.hueShift(calc(haloIndex * -6));
+  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) \${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}
+</code>
+  <img src="/blog/samples/post32/02-halo-builtins.svg" alt="Sixteen compound-offset layers, zero helper fns. bump() replaces bulge, hash11(i, haloIndex) replaces the hash-plus-remap, and the per-layer salt became the seed argument. The lambdas still capture haloIndex — that part 'The Shape of a Stroke' got right the first time. The builder mk is a named lambda, so it's applied with << (see the worker rules in the docs); samples 3 and 4 below pass their builders as literal blocks instead." loading="lazy">
+</mini-workspace></p>
+<p>The character of the glow is unchanged; the individual sparkle differs, because integer mixing lands on different values than sin-fract. That&#39;s the trade made consciously: the published samples in &quot;The Shape of a Stroke&quot; keep their exact pixels — user-defined <code>fn hash01</code> shadows the built-in, so old programs are untouched — while new programs get the portable hash.</p>
+<p>One honest caveat: in this glow, the <em>jitter</em> is the bit-pinned part. The envelope isn&#39;t — <code>bump</code> uses cosine and the layer widths flow through <code>pow</code>, both implementation-approximated, so the shape is reproducible on any one engine rather than byte-identical across all of them. The randomness is the part that used to drift, and that&#39;s the part that&#39;s now pinned.</p>
+<h2>The envelope vocabulary, built in</h2>
+<p>&quot;The Shape of a Stroke&quot; spent a whole section defining envelope shapes by hand — tent, smoothstep, raised cosine — to argue that the raised cosine enters and leaves its bulge with zero slope. That vocabulary is now one call each, and it composes:</p>
+<p><mini-workspace code-open caption="Three envelope idioms, each one stdlib call: bump() is the raised-cosine hill; two opposing smoothsteps multiply into a flat-topped plateau; easeInOut() is the Easing enum, now callable. Below: the bump-shaped stroke on a straight spine — the silhouette is the envelope.">
+  <code>// viewBox="0 0 400 320"
+//-- The envelope vocabulary, built in. Part 2 defined win/tentEnv/
+//-- smoothEnv/cosEnv by hand; each shape is now one stdlib call. Three
+//-- curves, three idioms:
+//--   hill:    bump(t, 0.5, 0.35)                       the raised cosine
+//--   plateau: smoothstep(0.1, 0.3, t) * smoothstep(0.9, 0.7, t)
+//--            -- two opposing smoothsteps multiply into a flat-topped
+//--               window (rise 0.1-&gt;0.3, fall 0.7-&gt;0.9)
+//--   ramp:    easeInOut(t)                             the Easing enum,
+//--                                                     now callable
+//-- Below, the bump-shaped stroke on a straight spine: on a straight
+//-- spine the silhouette IS the envelope.
+
+define ViewBox(0, 0, 400, 320);
+
+//-- Plot geometry -----------------------------------------------------------
+let plotX = 80;
+let plotW = 240;
+let plotY = 150;
+let plotH = 80;
+let samples = 48;
+
+//-- Envelopes as lambdas over the plot domain t in [0, 1].
+let hill = {|t| return bump(t, 0.5, 0.35); };
+let plateau = {|t| return smoothstep(0.1, 0.3, t) * smoothstep(0.9, 0.7, t); };
+let ramp = {|t| return easeInOut(t); };
+
+fn plotCurve(curveLayer, envFn) {
+  curveLayer.apply {
+    M plotX calc(plotY - plotH * envFn(0))
+    for (i in 1..samples) {
+      let t = i / samples;
+      L calc(plotX + plotW * t) calc(plotY - plotH * envFn(t))
+    }
+  }
+}
+
+let axis = PathLayer('axis') \${ fill: none; stroke: #bbb; stroke-width: 1; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+}
+
+//-- Reference line at value 1.0 — bump's peak and the plateau's flat top
+//-- both touch it exactly, which is what makes them composable kernels.
+let unitLine = PathLayer('unit-line') \${
+  fill: none;
+  stroke: #555;
+  stroke-width: 0.75;
+  stroke-dasharray: 2 4;
+};
+unitLine.apply {
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+let unitLabel = TextLayer('unit-label') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #777;
+  text-anchor: start;
+};
+unitLabel.apply { text(56, 73)\`1.0\` }
+
+let hillLayer = PathLayer('env-bump') \${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+let plateauLayer = PathLayer('env-plateau') \${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+let rampLayer = PathLayer('env-ease') \${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+
+plotCurve(hillLayer, hill);
+plotCurve(plateauLayer, plateau);
+plotCurve(rampLayer, ramp);
+
+//-- The bump-shaped stroke on a straight spine.
+let spine = @{ l 240 0 };
+let ribbon = spine.compoundVariableOffset() {|vo, pb|
+  vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+  for (i in 0..samples) {
+    let t = i / samples;
+    let e = bump(t, 0.5, 0.35);
+    vo.stop(t, 0.75 + 13 * e, CurveContinuity.G1,
+               -0.75 - 13 * e, CurveContinuity.G1);
+  }
+  vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+};
+let strokeLayer = PathLayer('shaped-stroke') \${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+strokeLayer.apply {
+  M calc(plotX + ribbon.anchor.x) calc(240 + ribbon.anchor.y)
+  ribbon.draw();
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(78, 28)\`stdlib envelopes\`
+  text(80, 172)\`t=0\`
+  text(190, 172)\`t=0.5\`
+  text(304, 172)\`t=1\`
+  text(78, 292)\`bump(t, 0.5, 0.35) stroke (straight spine)\`
+}
+
+//-- Legend: line samples drawn with each curve's real stroke + dashes.
+let swatchHill = PathLayer('swatch-bump') \${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+swatchHill.apply { M 252 27 L 268 27 }
+let legendHill = TextLayer('legend-bump') \${
+  font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.72 0.15 260);
+};
+legendHill.apply { text(274, 30)\`bump()\` }
+let swatchPlateau = PathLayer('swatch-plateau') \${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+swatchPlateau.apply { M 252 41 L 268 41 }
+let legendPlateau = TextLayer('legend-plateau') \${
+  font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.62 0.16 160);
+};
+legendPlateau.apply { text(274, 44)\`smoothstep window\` }
+let swatchRamp = PathLayer('swatch-ease') \${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+swatchRamp.apply { M 252 55 L 268 55 }
+let legendRamp = TextLayer('legend-ease') \${
+  font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: #b0b0b0;
+};
+legendRamp.apply { text(274, 58)\`easeInOut()\` }
+
+let scene = GroupLayer('scene') \${};
+scene.append(axis, unitLine, unitLabel, hillLayer, plateauLayer, rampLayer,
+             strokeLayer, labels, swatchHill, legendHill, swatchPlateau,
+             legendPlateau, swatchRamp, legendRamp);
+</code>
+  <img src="/blog/samples/post32/03-envelope-builtins.svg" alt="Three envelope idioms, each one stdlib call: bump() is the raised-cosine hill; two opposing smoothsteps multiply into a flat-topped plateau; easeInOut() is the Easing enum, now callable. Below: the bump-shaped stroke on a straight spine — the silhouette is the envelope." loading="lazy">
+</mini-workspace></p>
+<p>The plateau idiom deserves a highlight: <code>smoothstep(0.1, 0.3, t) * smoothstep(0.9, 0.7, t)</code> — a rising ease times a falling ease (note the reversed edges) — is the standard way to build a smooth window with a flat top, and it&#39;s now a one-liner.</p>
+<p>The easing trio (<code>easeIn</code>, <code>easeOut</code>, <code>easeInOut</code>) are the callable forms of the <a href="/docs#syntax-built-in-enums"><code>Easing</code> enum</a> you already use for gradient easing, with the same quadratic formulas — the curve <code>easeInOut(t)</code> traces is the curve the gradient renderer applies for <code>Easing.EaseInOut</code>. The full mapping is in the <a href="/docs#stdlib-easing">stdlib docs</a>.</p>
+<h2>From jitter to texture: noise()</h2>
+<p>Everything so far assigns each stop its own unrelated value. That&#39;s what <em>jitter</em> is — and it&#39;s also its limit: adjacent stops can&#39;t cooperate, so the edge can shimmer but never <em>undulate</em>.</p>
+<p><code>noise(x, seed?)</code> is the continuous upgrade. It equals <code>hash01</code> exactly at every integer, and blends smoothly in between (value noise with a smoothstep fade — zero slope at every lattice point). One knob controls the whole character of the result: scale the input, and you scale the frequency.</p>
+<p><mini-workspace code-open caption="The same noise stream at three input scales. noise(t * 2) is one slow swell; noise(t * 11) chatters. Frequency is just multiplication — no new API.">
+  <code>// viewBox="0 0 400 250"
+//-- From jitter to texture. hash01 gives every stop its own independent
+//-- value; noise() drives the width with a CONTINUOUS wobble instead, so
+//-- adjacent stops agree and the edge undulates organically. One knob
+//-- controls the character: the input scale is the frequency. Same seed,
+//-- three frequencies -- the shape family is recognizably the same wave,
+//-- refined three times.
+
+define ViewBox(0, 0, 400, 250);
+
+fn texturedStroke(strokeLayer, y, freq) {
+  let spine = @{ l 320 0 };
+  let ribbon = spine.compoundVariableOffset() {|vo, pb|
+    vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    for (i in 0..64) {
+      let t = i / 64;
+      //-- The end windows are smoothstep too: width eases to 0 at both
+      //-- tips, so the ribbon tapers instead of ending in a blunt edge.
+      let amp = smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t);
+      let w = (2 + noise(t * freq) * 14) * amp;
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+  };
+  strokeLayer.apply {
+    M calc(40 + ribbon.anchor.x) calc(y + ribbon.anchor.y)
+    ribbon.draw();
+  }
+}
+
+let slow = PathLayer('freq-3') \${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+let mid = PathLayer('freq-6') \${ fill: oklch(0.58 0.17 220); stroke: none; opacity: 0.9; };
+let fast = PathLayer('freq-12') \${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.9; };
+
+texturedStroke(slow, 55, 3);
+texturedStroke(mid, 130, 6);
+texturedStroke(fast, 205, 12);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(40, 28)\`noise(t * 3) — slow swells\`
+  text(40, 101)\`noise(t * 6) — undulating\`
+  text(40, 176)\`noise(t * 12) — chattering\`
+}
+
+let scene = GroupLayer('scene') \${};
+scene.append(slow, mid, fast, labels);
+</code>
+  <img src="/blog/samples/post32/04-noise-stroke.svg" alt="The same noise stream at three input scales. noise(t * 2) is one slow swell; noise(t * 11) chatters. Frequency is just multiplication — no new API." loading="lazy">
+</mini-workspace></p>
+<p>Because <code>noise</code> is built on <code>hash01</code>, it inherits the portability contract: identical arguments, identical results, every engine. Your organic wobble is exactly as reproducible as your straight lines.</p>
+<h2>A field of texture: noise2()</h2>
+<p>One dimension of noise textures a stroke. Two dimensions texture a <em>family</em> of strokes.</p>
+<p>In the rebuilt glow above, each layer jitters independently — layer 7 has no idea what layer 8 is doing. <code>noise2(x, y, seed?)</code> makes the texture a <strong>field</strong>: run <code>t</code> along the stroke and the layer index across it, and because the field is continuous in both directions, neighboring layers sample neighboring rows — and swell together.</p>
+<p><mini-workspace code-open caption="The finale: one noise2 field textures all sixteen layers. t runs along the spine, haloIndex * 0.3 runs across the glow, and the layers breathe together instead of shimmering independently. In the hash-jittered glow above, sixteen edges move independently; here they move as one surface.">
+  <code>// viewBox="0 60 400 140"
+//-- A field of texture. Sample 02 jittered each layer independently --
+//-- hash11(i, haloIndex) gives layer 7 no idea what layer 8 is doing.
+//-- Here the texture is a 2D noise FIELD: t runs along the stroke,
+//-- haloIndex * 0.3 runs across the layers, and because noise2 is
+//-- continuous in BOTH directions, neighboring layers sample neighboring
+//-- rows and swell together. The glow stops shimmering and starts flowing.
+
+define ViewBox(0, 60, 400, 140);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let steps = 48;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.72 0.14 20);
+
+for (haloIndex in 16..1) {
+  //-- One texture field for the whole glow; each layer reads its own row.
+  //-- Centered on 1 so it scales widths by 0.7..1.3.
+  let texture = {|t| return 1 + (noise2(t * 6, haloIndex * 0.3) - 0.5) * 0.6; };
+  let width1 = {|t|
+    return (0.15 * haloIndex
+         + 0.6 * haloIndex * bump(t, 0.35, 0.3)
+         + 0.35 * haloIndex * pow(bump(t, 0.78, 0.18), 2)) * texture(t);
+  };
+  let width2 = {|t|
+    return (-0.15 * haloIndex - 0.3 * haloIndex * bump(t, 0.55, 0.4)) * texture(t);
+  };
+
+  let mk = {|vo, pb|
+    vo.startCap(taperCap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, width1(t), CurveContinuity.G1,
+                 width2(t), CurveContinuity.G1);
+    }
+    vo.endCap(taperCap);
+  };
+  let halo = spine.compoundVariableOffset() &lt;&lt; mk;
+
+  let haloColor = base.hueShift(calc(haloIndex * -6));
+  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) \${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}
+</code>
+  <img src="/blog/samples/post32/05-noise2-glow.svg" alt="The finale: one noise2 field textures all sixteen layers. t runs along the spine, haloIndex * 0.3 runs across the glow, and the layers breathe together instead of shimmering independently. In the hash-jittered glow above, sixteen edges move independently; here they move as one surface." loading="lazy">
+</mini-workspace></p>
+<p>This is the payoff of the whole series in one image. <a href="/blog/the-swelling-line">The Swelling Line</a> gave the line a width. <a href="/blog/lambdas-come-to-pathogen">The Shape of a Stroke</a> made the width a designed object. This post makes the design <em>portable</em> — reliable across engines, surfaces, and time — and gives it weather.</p>
+<h2>The determinism contract</h2>
+<p>What&#39;s guaranteed, precisely — the dividing line is whether the standard specifies the operations <em>exactly</em> or leaves them <em>implementation-approximated</em>:</p>
+<ul>
+<li><strong>Bit-exact everywhere</strong>: <code>hash01</code>, <code>hash11</code>, <code>hashRange</code>, <code>noise</code>, <code>noise2</code> — and every function built only from exactly-specified operations: <code>smoothstep</code>, <code>lerp</code>, <code>clamp</code>, <code>map</code>, the easing trio, <code>abs</code>, <code>floor</code>, <code>min</code>, <code>max</code>, <code>sqrt</code>. Same arguments, same bits — across machines, engines, surfaces, and time.</li>
+<li><strong>Deterministic per engine</strong>: anything built on an implementation-approximated <code>Math</code> operation — <code>bump</code> (cosine), <code>sin</code>/<code>cos</code>/<code>tan</code>, <code>pow</code>, <code>exp</code>, <code>log</code>. Reproducible on the engine you&#39;re on; not contractually pinned across engines.</li>
+<li><strong>Not deterministic at all</strong>: <code>random()</code> and <code>randomRange()</code> — still there when you genuinely want fresh entropy every compile.</li>
+</ul>
+<p>The full reference lives in the <a href="/docs#stdlib-hash-noise">Hash &amp; Noise</a>, <a href="/docs#stdlib-interpolation-clamping">Interpolation &amp; Clamping</a>, and <a href="/docs#stdlib-easing">Easing</a> sections of the stdlib docs.</p>
+<p>If you have a generative sketch driven by <code>randomRange</code>, the one-line substitution — <code>hashRange(i, min, max)</code> with your loop index — makes it reproducible; everything else stays the same. And if your program defines its own <code>fn hash01</code>, nothing changes at all: your function shadows the built-in, by design.</p>
+<p>The hand-rolled versions of these functions served three blog posts faithfully. They&#39;ve earned the promotion.</p>
+`,
+  'the-swelling-line': `<p><em>Part 1 of 3 in our series on variable-width strokes.</em></p>
+<blockquote>
+<p><strong>Series: Variable-Width Strokes</strong></p>
+<ol>
+<li><strong>The Swelling Line</strong> (this post) — variableOffset and compoundVariableOffset</li>
+<li><a href="/blog/lambdas-come-to-pathogen">The Shape of a Stroke</a> — envelopes, bulges, and lambdas</li>
+<li><a href="/blog/the-reliable-line">The Reliable Line</a> — hash, noise, and envelopes join the stdlib</li>
+</ol>
+</blockquote>
+<p>Pathogen has always had <a href="/docs#path-blocks-path-blocks"><code>offset()</code></a>: give it a path and a distance, and it hands back a uniform parallel curve. Useful — but static. The line never thickens, never tapers, never <em>breathes</em>.</p>
 <p>This post introduces two new PathBlock methods that let it breathe: <strong><code>variableOffset</code></strong> and <strong><code>compoundVariableOffset</code></strong>. The distance can now change along the path, and you decide — stop by stop — how smoothly the curve flows. By the end we&#39;ll wrap every letter of the word <em>Pathogen</em> in flowing, multi-colored ribbons.</p>
 <h2>The line that breathes</h2>
 <p>Start with the contrast. <code>offset(18)</code> holds one distance the whole way. <code>variableOffset</code> places <em>stops</em> along the path — each with its own distance — and threads a curve through the resulting points.</p>

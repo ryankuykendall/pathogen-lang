@@ -251,7 +251,16 @@ code.hljs {
         <p class="post-meta"><time datetime="2026-07-13">July 12, 2026</time></p>
       </header>
       <div class="blog-content">
-        <p>Pathogen has always had <a href="/docs#path-blocks-path-blocks"><code>offset()</code></a>: give it a path and a distance, and it hands back a uniform parallel curve. Useful — but static. The line never thickens, never tapers, never <em>breathes</em>.</p>
+        <p><em>Part 1 of 3 in our series on variable-width strokes.</em></p>
+<blockquote>
+<p><strong>Series: Variable-Width Strokes</strong></p>
+<ol>
+<li><strong>The Swelling Line</strong> (this post) — variableOffset and compoundVariableOffset</li>
+<li><a href="/blog/lambdas-come-to-pathogen">The Shape of a Stroke</a> — envelopes, bulges, and lambdas</li>
+<li><a href="/blog/the-reliable-line">The Reliable Line</a> — hash, noise, and envelopes join the stdlib</li>
+</ol>
+</blockquote>
+<p>Pathogen has always had <a href="/docs#path-blocks-path-blocks"><code>offset()</code></a>: give it a path and a distance, and it hands back a uniform parallel curve. Useful — but static. The line never thickens, never tapers, never <em>breathes</em>.</p>
 <p>This post introduces two new PathBlock methods that let it breathe: <strong><code>variableOffset</code></strong> and <strong><code>compoundVariableOffset</code></strong>. The distance can now change along the path, and you decide — stop by stop — how smoothly the curve flows. By the end we&#39;ll wrap every letter of the word <em>Pathogen</em> in flowing, multi-colored ribbons.</p>
 <h2>The line that breathes</h2>
 <p>Start with the contrast. <code>offset(18)</code> holds one distance the whole way. <code>variableOffset</code> places <em>stops</em> along the path — each with its own distance — and threads a curve through the resulting points.</p>
