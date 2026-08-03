@@ -143,6 +143,8 @@ export const stdlibCompletions: CompletionItem[] = [
   { label: 'random', type: 'function', info: 'random() - Random number 0-1' },
   { label: 'randomRange', type: 'function', info: 'randomRange(min, max) - Random in range' },
   { label: 'hash01', type: 'function', info: 'hash01(n, seed?) - Deterministic hash of integer n to [0, 1)' },
+  { label: 'noise', type: 'function', info: 'noise(x, seed?) - 1D value noise, smooth and deterministic, [0, 1)' },
+  { label: 'noise2', type: 'function', info: 'noise2(x, y, seed?) - 2D value noise on the unit lattice, [0, 1)' },
 
   // 11. Exponential/Log
   { label: 'exp', type: 'function', info: 'exp(x) - e raised to power x' },

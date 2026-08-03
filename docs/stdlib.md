@@ -133,12 +133,13 @@ For reproducible randomness use `hash01(i)` with a loop or element index
 ### Hash & Noise
 
 Deterministic randomness: the same inputs always produce the same output, so
-recompiles are repeatable and a "seed" is just another argument. Hash lands
-first; a continuous `noise()` companion follows.
+recompiles are repeatable and a "seed" is just another argument.
 
 | Function | Description |
 |----------|-------------|
 | `hash01(n, seed?)` | Deterministic hash of integer `n` to `[0, 1)`; `seed` defaults to 0 |
+| `noise(x, seed?)` | 1D value noise: smooth deterministic wobble of continuous `x`, range `[0, 1)`; `seed` defaults to 0 |
+| `noise2(x, y, seed?)` | 2D value noise: the same wobble over an x/y field, range `[0, 1)`; `seed` defaults to 0 |
 
 ```
 // Jittered tick marks — identical on every recompile
@@ -149,12 +150,12 @@ for (i in 0..18) {
 }
 ```
 
-**Determinism.** `hash01` is built entirely from integer bit-mixing and
-exactly-specified IEEE arithmetic — no trigonometry — so it returns the
-identical value for identical arguments on every machine and JavaScript
-engine: CLI, playground, and VS Code preview agree, today and on every
-future recompile. The hash constants are a fixed contract; changing them
-would be a breaking change.
+**Determinism.** `hash01` — and the noise functions built on it — use only
+integer bit-mixing and exactly-specified IEEE arithmetic (`floor`, no
+trigonometry), so they return identical values for identical arguments on
+every machine and JavaScript engine: CLI, playground, and VS Code preview
+agree, today and on every future recompile. The hash constants are a fixed
+contract; changing them would be a breaking change.
 
 **Seeds.** The optional `seed` (default 0, so `hash01(i)` is `hash01(i, 0)`)
 selects an independent stream: `hash01(i, 0)` and `hash01(i, 1)` are two
@@ -165,12 +166,39 @@ ad-hoc arithmetic like `hash01(i * 7 + layerIndex * 1013)`.
 **Integers only.** Both `n` and `seed` are truncated to 32-bit integers
 before hashing: `hash01(0.9)` equals `hash01(0)`, and non-finite inputs
 (`NaN`, `Infinity`) truncate to 0 rather than propagating. Smoothly varying
-a *continuous* input is what `noise()` is for — it joins this section
-shortly.
+a *continuous* input is what `noise()` is for.
+
+**Noise.** `noise(x, seed?)` interpolates `hash01` smoothly along the
+number line: at every integer `k`, `noise(k)` equals `hash01(k)` exactly,
+and between integers the two neighboring lattice values are blended with a
+smoothstep fade, so the result is continuous with zero slope at each
+lattice point. This is *value* noise (lattice values interpolated), not
+gradient/Perlin noise, so 2D fields show some axis-aligned structure.
+Unlike `hash01`, `noise` locates the lattice with `floor` — negative
+inputs interpolate as expected, and a non-finite `x` yields `NaN` rather
+than truncating to 0 (the `seed` still truncates like `hash01`'s).
+
+**Frequency and seeds.** Scale the input to set the wobble frequency —
+`noise(t * 8)` wobbles eight times as fast as `noise(t)` — and pass a seed
+for independent streams, exactly as with `hash01`.
+
+**2D noise.** `noise2(x, y, seed?)` extends the same construction to two
+dimensions, bilinearly blending the four surrounding lattice corners with
+the fade on both axes. At integer corners it returns a hash of the
+coordinate pair (there is no exposed 2D hash).
+
+```
+// A smooth wandering line — noise wobbles, hash01 jitters
+M 10 calc(100 - noise(0) * 40)
+for (i in 1..60) {
+  let t = i / 60;
+  L calc(10 + t * 180) calc(100 - noise(t * 6) * 40)
+}
+```
 
 **vs. Cycler.** `Cycler` (below) is the other deterministic tool: it assigns
-values round-robin by call order, while `hash01` assigns them positionally
-by index.
+values round-robin by call order, while the hash family assigns them
+positionally by index.
 
 ### Cycler
 

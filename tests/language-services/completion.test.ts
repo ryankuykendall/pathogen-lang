@@ -93,6 +93,18 @@ describe('getCompletions', () => {
       expect(item!.insertText).toBe('hash01(${1:n})$0');
     });
 
+    it('offers noise and noise2 with generated details', () => {
+      const items = completeAtEnd('noi');
+      const noise = items.find((i) => i.label === 'noise');
+      expect(noise).toBeDefined();
+      expect(noise!.detail).toBe('noise(x, seed?) — 1D value noise: smooth deterministic wobble of continuous x, [0, 1)');
+      expect(noise!.insertText).toBe('noise(${1:x})$0');
+      const noise2 = items.find((i) => i.label === 'noise2');
+      expect(noise2).toBeDefined();
+      expect(noise2!.detail).toBe('noise2(x, y, seed?) — 2D value noise on the unit lattice, [0, 1)');
+      expect(noise2!.insertText).toBe('noise2(${1:x}, ${2:y})$0');
+    });
+
     it('offers smoothstep with generated detail and snippet', () => {
       const items = completeAtEnd('smo');
       const item = items.find((i) => i.label === 'smoothstep');

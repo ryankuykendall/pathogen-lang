@@ -68,6 +68,13 @@ describe('getSignatureHelp', () => {
       expect(result!.activeParameter).toBe(0);
     });
 
+    it('shows signature for noise2 with parameter names', () => {
+      const result = sigHelpAtEnd('let y = noise2(1.5, ');
+      expect(result).not.toBeNull();
+      expect(result!.signatures[0].parameters.map((p) => p.label)).toEqual(['x', 'y', 'seed']);
+      expect(result!.activeParameter).toBe(1);
+    });
+
     it('handles nested function calls', () => {
       // cursor inside sin(), not lerp()
       const result = sigHelpAtEnd('let x = lerp(sin(');

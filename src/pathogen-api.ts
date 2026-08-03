@@ -408,6 +408,10 @@ export declare function randomRange(min: number, max: number): number;
 
 /** hash01(n, seed?) — Deterministic hash of integer n to [0, 1) @boost 12 */
 export declare function hash01(n: number, seed?: number): number;
+/** noise(x, seed?) — 1D value noise: smooth deterministic wobble of continuous x, [0, 1) @boost 10 */
+export declare function noise(x: number, seed?: number): number;
+/** noise2(x, y, seed?) — 2D value noise on the unit lattice, [0, 1) @boost 8 */
+export declare function noise2(x: number, y: number, seed?: number): number;
 
 // =============================================================================
 // Stdlib: Exp/Log

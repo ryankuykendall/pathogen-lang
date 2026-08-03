@@ -539,6 +539,63 @@ describe('Evaluator', () => {
         expect(compilePath(program)).toBe('M 0.5 0');
       });
     });
+
+    describe('value noise', () => {
+      // Expected values computed from the lattice construction: hash01 at
+      // integer lattice points, smoothstep fade (t*t*(3-2t)) between them.
+      it('noise equals hash01 exactly at integer lattice points', () => {
+        expect(compilePath('M calc(noise(0)) 0')).toBe(compilePath('M calc(hash01(0)) 0'));
+        expect(compilePath('M calc(noise(3)) 0')).toBe(compilePath('M calc(hash01(3)) 0'));
+        expect(compilePath('M calc(noise(3)) 0')).toBe('M 0.029182443395256996 0');
+      });
+
+      it('evaluates noise between lattice points to exact blended values', () => {
+        expect(compilePath('M calc(noise(0.5)) 0')).toBe('M 0.3155029737390578 0');
+        expect(compilePath('M calc(noise(1.25)) 0')).toBe('M 0.2877007486385992 0');
+      });
+
+      it('noise seed selects an independent stream', () => {
+        expect(compilePath('M calc(noise(2.5, 7)) 0')).toBe('M 0.18911002983804792 0');
+      });
+
+      it('noise handles negative x via floor', () => {
+        expect(compilePath('M calc(noise(-0.5)) 0')).toBe('M 0.5188321616733447 0');
+      });
+
+      it('noise propagates non-finite x but truncates non-finite seed (documented contract)', () => {
+        // Asymmetry with hash01: x flows through floor/IEEE blending, so NaN
+        // and Infinity surface as NaN; seed goes through the same 32-bit
+        // truncation as hash01's arguments.
+        expect(compilePath('M calc(noise(1/0)) 0')).toBe('M NaN 0');
+        expect(compilePath('M calc(noise(0.5, 1/0)) 0')).toBe(compilePath('M calc(noise(0.5)) 0'));
+      });
+
+      it('noise is continuous across a lattice point', () => {
+        // Approaching the lattice value from both sides: at t = k ± 1e-4 the
+        // smoothstep fade term u = t^2(3-2t) is ~3e-8, so both samples sit
+        // within |a - b| * 3e-8 < 1e-7 of the lattice value hash01(1).
+        const result = compilePath('M calc(noise(0.9999)) calc(noise(1.0001))');
+        const match = /^M (-?[\d.]+) (-?[\d.]+)$/.exec(result);
+        expect(match).not.toBeNull();
+        const latticeValue = 0.2531894932035357; // hash01(1)
+        expect(parseFloat(match![1])).toBeCloseTo(latticeValue, 6);
+        expect(parseFloat(match![2])).toBeCloseTo(latticeValue, 6);
+      });
+
+      it('evaluates noise2 to exact bilinear-blended values', () => {
+        expect(compilePath('M calc(noise2(0.5, 0.5)) 0')).toBe('M 0.44600557530066 0');
+        expect(compilePath('M calc(noise2(1.5, 2.5, 3)) 0')).toBe('M 0.5240841715713032 0');
+      });
+
+      it('noise2 collapses to the pair hash at integer lattice corners', () => {
+        expect(compilePath('M calc(noise2(1, 2)) 0')).toBe('M 0.1703541635069996 0');
+      });
+
+      it('noise is deterministic across compiles', () => {
+        const program = 'for (i in 0..20) { M calc(noise(i / 4) * 100) calc(noise2(i / 4, i / 8, 3) * 100) }';
+        expect(compilePath(program)).toBe(compilePath(program));
+      });
+    });
   });
 
   describe('stdlib path functions', () => {

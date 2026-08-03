@@ -99,6 +99,13 @@ describe('getHoverInfo', () => {
       expect(result!.contents).toContain('Deterministic hash of integer n to [0, 1)');
     });
 
+    it('shows hover for noise', () => {
+      const result = hover('let x = noise(0.5);', 0, 10);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('**noise**');
+      expect(result!.contents).toContain('1D value noise');
+    });
+
     it('shows hover for smoothstep', () => {
       const result = hover('let x = smoothstep(0, 1, 0.5);', 0, 12);
       expect(result).not.toBeNull();

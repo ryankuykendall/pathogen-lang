@@ -19,6 +19,11 @@ const mix32 = (x: number): number => {
 const hashU32 = (n: number, seed: number): number =>
   mix32((mix32(n | 0) ^ Math.imul((seed | 0) ^ 0x9e3779b9, 0x85ebca6b)) | 0) >>> 0;
 
+// Fold a 2D lattice point onto the integer line with a large odd multiplier
+// before the shared 1D hash.
+const hash2U32 = (ix: number, iy: number, seed: number): number =>
+  hashU32((ix + Math.imul(iy | 0, 0x9e3779b1)) | 0, seed);
+
 export const mathFunctions = {
   // Trigonometric (angles in radians)
   sin: Math.sin,
@@ -95,4 +100,28 @@ export const mathFunctions = {
 
   // Hash (deterministic; n and seed truncate to 32-bit integers)
   hash01: (n: number, seed: number = 0) => hashU32(n, seed) / 4294967296,
+
+  // Value noise (deterministic; hash01 at integer lattice points, smoothstep
+  // fade between them — noise(k) === hash01(k) at integer k)
+  noise: (x: number, seed: number = 0) => {
+    const xf = Math.floor(x);
+    const t = x - xf;
+    const a = hashU32(xf, seed) / 4294967296;
+    const b = hashU32(xf + 1, seed) / 4294967296;
+    const u = t * t * (3 - 2 * t);
+    return a + (b - a) * u;
+  },
+  noise2: (x: number, y: number, seed: number = 0) => {
+    const xf = Math.floor(x);
+    const yf = Math.floor(y);
+    const tx = x - xf;
+    const ty = y - yf;
+    const ux = tx * tx * (3 - 2 * tx);
+    const uy = ty * ty * (3 - 2 * ty);
+    const a = hash2U32(xf, yf, seed) / 4294967296;
+    const b = hash2U32(xf + 1, yf, seed) / 4294967296;
+    const c = hash2U32(xf, yf + 1, seed) / 4294967296;
+    const d = hash2U32(xf + 1, yf + 1, seed) / 4294967296;
+    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+  },
 };
