@@ -1,6 +1,7 @@
 import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
 const expressionParser = { parse: (input: string) => { const v = expressionParserFn(input); return { status: v !== null, value: v }; } };
 import { contextAwareFunctions, stdlib } from '../stdlib';
+import { CALLBACK_METHODS } from '../callback-methods';
 import {
   contextToObject,
   createPathContext,
@@ -1515,6 +1516,20 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         checkAngleUnitMismatch(expr.left, expr.right, expr.operator);
       }
 
+      // << worker application: a callback builtin written WITHOUT a trailing
+      // block takes its callback from the right operand. Must run before the
+      // eager operand evaluation below — the bare builtin call is not a
+      // complete expression on its own. A block-bearing call falls through to
+      // the merge path (vo() {|go,pb| ...} << edge is still concatenation).
+      if (
+        expr.operator === '<<' &&
+        expr.left.type === 'MethodCallExpression' &&
+        !expr.left.block &&
+        CALLBACK_METHODS.has(expr.left.method)
+      ) {
+        return evaluateMethodCall(expr.left, scope, expr.right);
+      }
+
       const left = evaluateExpression(expr.left, scope);
       const right = evaluateExpression(expr.right, scope);
 
@@ -1560,6 +1575,14 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
             merged.set(key, value);
           }
           return { type: 'ObjectValue', properties: merged };
+        }
+        if (isCallableValue(right)) {
+          throw new Error(
+            formatError(
+              'Operator << can apply a function or lambda only to a callback builtin call written without a trailing block (e.g. arr.map() << f, spine.variableOffset() << f) — the left side here is already a value',
+              getLine(expr),
+            ),
+          );
         }
         throw new Error(
           formatError(
@@ -2083,7 +2106,7 @@ function evaluateIndexExpression(expr: IndexExpression, scope: Scope): Value {
   return obj.elements[index];
 }
 
-function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
+function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr?: Expression): Value {
   const obj = evaluateExpression(expr.object, scope);
   const mLine = getLine(expr);
   const mCol = getCol(expr);
@@ -2642,11 +2665,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'variableOffset': {
-        const cb = resolveCallbackBlock(expr, scope);
+        const cb = resolveCallbackBlock(expr, scope, workerExpr);
         if (!cb)
-          throw mError('variableOffset() requires a block or function, e.g. variableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1); } or variableOffset(f)');
+          throw mError('variableOffset() requires a block or a << worker, e.g. variableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1); } or variableOffset() << f');
         if (cb.extraArgs !== 0)
-          throw mError('variableOffset() takes no arguments besides the callback — use variableOffset() {|go, pb| ... } or variableOffset(f)');
+          throw mError('variableOffset() takes no arguments besides the callback — use variableOffset() {|go, pb| ... } or variableOffset() << f');
         const builder: VariableOffsetBuilderValue = {
           type: 'VariableOffsetBuilderValue',
           compound: false,
@@ -2696,11 +2719,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       }
 
       case 'compoundVariableOffset': {
-        const cb = resolveCallbackBlock(expr, scope);
+        const cb = resolveCallbackBlock(expr, scope, workerExpr);
         if (!cb)
-          throw mError('compoundVariableOffset() requires a block or function, e.g. compoundVariableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1, -10, CurveContinuity.G1); } or compoundVariableOffset(f)');
+          throw mError('compoundVariableOffset() requires a block or a << worker, e.g. compoundVariableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1, -10, CurveContinuity.G1); } or compoundVariableOffset() << f');
         if (cb.extraArgs !== 0)
-          throw mError('compoundVariableOffset() takes no arguments besides the callback — use compoundVariableOffset() {|go, pb| ... } or compoundVariableOffset(f)');
+          throw mError('compoundVariableOffset() takes no arguments besides the callback — use compoundVariableOffset() {|go, pb| ... } or compoundVariableOffset() << f');
         const builder: VariableOffsetBuilderValue = {
           type: 'VariableOffsetBuilderValue',
           compound: true,
@@ -4510,8 +4533,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return { type: 'ArrayValue' as const, elements: flat };
       }
       case 'fill': {
-        const cb = resolveCallbackBlock(expr, scope);
-        if (!cb) throw mError('Grid.fill() requires a trailing block or function: grid.fill {|row, col, center| return ...; } or grid.fill(f)');
+        const cb = resolveCallbackBlock(expr, scope, workerExpr);
+        if (!cb) throw mError('Grid.fill() requires a trailing block or a << worker: grid.fill {|row, col, center| return ...; } or grid.fill() << f');
         if (cb.extraArgs !== 0) throw mError('Grid.fill() takes no arguments besides the callback');
         const params = cb.params;
         const body = cb.body;
@@ -4548,8 +4571,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return obj;
       }
       case 'forEach': {
-        const cb = resolveCallbackBlock(expr, scope);
-        if (!cb) throw mError('Grid.forEach() requires a trailing block or function argument');
+        const cb = resolveCallbackBlock(expr, scope, workerExpr);
+        if (!cb) throw mError('Grid.forEach() requires a trailing block or a << worker: grid.forEach {|cell, row, col| ... } or grid.forEach() << f');
         if (cb.extraArgs !== 0) throw mError('Grid.forEach() takes no arguments besides the callback');
         const params = cb.params;
         const callLine = getLine(expr);
@@ -4591,8 +4614,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
         return null;
       }
       case 'map': {
-        const cb = resolveCallbackBlock(expr, scope);
-        if (!cb) throw mError('Grid.map() requires a trailing block or function argument');
+        const cb = resolveCallbackBlock(expr, scope, workerExpr);
+        if (!cb) throw mError('Grid.map() requires a trailing block or a << worker: grid.map {|cell, row, col| return ...; } or grid.map() << f');
         if (cb.extraArgs !== 0) throw mError('Grid.map() takes no arguments besides the callback');
         const params = cb.params;
         const callLine = getLine(expr);
@@ -5306,8 +5329,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       return boolVal(obj.elements.length === 0);
     }
     case 'map': {
-      const cb = resolveCallbackBlock(expr, scope);
-      if (!cb) throw mError('map() requires a trailing block or function: array.map {|item| return ...; } or array.map(f)');
+      const cb = resolveCallbackBlock(expr, scope, workerExpr);
+      if (!cb) throw mError('map() requires a trailing block or a << worker: array.map {|item| return ...; } or array.map() << f');
       if (cb.extraArgs !== 0) throw mError('map() takes no arguments besides the callback');
       const result: Value[] = [];
       const mapParams = cb.params;
@@ -5338,8 +5361,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       return { type: 'ArrayValue' as const, elements: result };
     }
     case 'reduce': {
-      const cb = resolveCallbackBlock(expr, scope);
-      if (!cb) throw mError('reduce() requires a trailing block or function: array.reduce(init) {|acc, item| return acc; } or array.reduce(init, f)');
+      const cb = resolveCallbackBlock(expr, scope, workerExpr);
+      if (!cb) throw mError('reduce() requires a trailing block or a << worker: array.reduce(init) {|acc, item| return acc; } or array.reduce(init) << f');
       if (cb.extraArgs !== 1) throw mError('reduce() expects 1 argument (initial value) plus the callback');
       let accumulator: Value = cb.leadingArgs[0];
       const reduceParams = cb.params;
@@ -5404,9 +5427,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope): Value {
       return { type: 'ArrayValue' as const, elements: [...obj.elements].reverse() };
     }
     case 'sort': {
-      const cb = resolveCallbackBlock(expr, scope);
+      const cb = resolveCallbackBlock(expr, scope, workerExpr);
       if (!cb && expr.args.length !== 0) {
-        throw mError('sort() does not take arguments — use sort {|a, b| return ...; } or sort(f) for a custom order');
+        throw mError('sort() does not take arguments — use sort {|a, b| return ...; } or sort() << cmp for a custom order');
       }
       if (cb && cb.extraArgs !== 0) {
         throw mError('sort() takes no arguments besides the comparator');
@@ -7292,33 +7315,45 @@ function isCallableValue(v: Value): v is UserFunction {
 }
 
 // The callback for a block-consuming builtin: the literal trailing block, or a
-// UserFunction value (lambda or named fn) passed as the LAST argument. A
-// lambda's `closure` makes the callback body resolve free names lexically;
-// blocks and named fns leave it undefined and keep today's caller-scope
-// resolution. All args are evaluated here ONCE, left-to-right (preserving
-// source evaluation order — reduce's init must run before a callback arg);
-// `leadingArgs` holds the evaluated non-callback values for the builtin,
-// which must consume them from here rather than re-evaluating expr.args.
+// UserFunction value (lambda or named fn) applied with `<<` (the workerExpr,
+// passed unevaluated from the BinaryExpression pre-dispatch). A lambda's
+// `closure` makes the callback body resolve free names lexically; blocks and
+// named fns leave it undefined and keep today's caller-scope resolution.
+// Parenthesized args are evaluated here ONCE, left-to-right, BEFORE the worker
+// expression (reduce's init runs before the worker); `leadingArgs` holds the
+// evaluated values for the builtin, which must consume them from here rather
+// than re-evaluating expr.args. The old argument form (map(f)) is gone: a
+// callable in the parentheses is just an arg, and the builtin's own arity
+// error points the user at `<<`.
 function resolveCallbackBlock(
-  expr: { block?: { params: string[]; body: Statement[] }; args: Expression[] },
+  expr: { block?: { params: string[]; body: Statement[] }; args: Expression[]; method: string },
   scope: Scope,
+  workerExpr?: Expression,
 ): { params: string[]; body: Statement[]; closure?: Scope; leadingArgs: Value[]; extraArgs: number } | null {
   if (expr.block) {
+    // Pre-dispatch never routes a worker to a block-bearing call.
     const leadingArgs = expr.args.map((a) => evaluateExpression(a, scope));
     return { params: expr.block.params, body: expr.block.body, leadingArgs, extraArgs: leadingArgs.length };
   }
-  if (expr.args.length === 0) return null;
-  const values = expr.args.map((a) => evaluateExpression(a, scope));
-  const last = values[values.length - 1];
-  if (isCallableValue(last)) {
+  if (workerExpr) {
+    const leadingArgs = expr.args.map((a) => evaluateExpression(a, scope));
+    const worker = evaluateExpression(workerExpr, scope);
+    if (!isCallableValue(worker)) {
+      throw new Error(
+        formatError(
+          `${expr.method}() << expects a function or lambda on the right side`,
+          getLine(workerExpr),
+        ),
+      );
+    }
     // closure is typed unknown on UserFunction (parallel evaluator Scope
     // types); values in this evaluator always hold this evaluator's Scope.
     return {
-      params: last.params,
-      body: last.body,
-      closure: last.closure as Scope | undefined,
-      leadingArgs: values.slice(0, -1),
-      extraArgs: values.length - 1,
+      params: worker.params,
+      body: worker.body,
+      closure: worker.closure as Scope | undefined,
+      leadingArgs,
+      extraArgs: leadingArgs.length,
     };
   }
   return null;

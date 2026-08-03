@@ -108,6 +108,11 @@ field.fill {|row, col, center|
 
 The block receives the cell's row, col, and center point. `fill` mutates in place and returns the grid for chaining.
 
+A reusable field function (a *worker*) applies with `<<` instead of a
+block — `field.fill() << waveFn;` — see
+[Applying workers](#syntax-applying-workers). The same applies to
+`forEach` and `map` below.
+
 ### `forEach {|cell, row, col, center| ... }`
 
 Iterates every cell in row-major order for side effects. The standard way to draw something *at* each cell:

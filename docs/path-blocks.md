@@ -568,7 +568,7 @@ let rev = combined.reverse();
 let mid = combined.get(0.5);
 ```
 
-The `<<` operator also works for [style block merging](#syntax-style-blocks). The operand types must match — mixing PathBlocks and style blocks throws an error.
+The `<<` operator also works for [style block merging](#syntax-style-blocks). The operand types must match — mixing PathBlocks and style blocks throws an error. `<<` has one more job on PathBlocks: applying a [worker function](#syntax-applying-workers) to a `variableOffset()`/`compoundVariableOffset()` call written without a trailing block.
 
 ## Chamfers
 

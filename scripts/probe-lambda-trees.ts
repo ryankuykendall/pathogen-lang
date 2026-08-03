@@ -11,7 +11,7 @@ const probes: Array<[string, string]> = [
   ['empty object', 'let x = {};'],
   ['shorthand object', 'let x = {a};'],
   ['object literal', 'let x = {a: 1};'],
-  ['lambda as argument', 'let z = items.map({|v| return v * 2; });'],
+  ['lambda as << worker', 'let z = items.map() << {|v| return v * 2; };'],
 ];
 
 for (const [name, src] of probes) {

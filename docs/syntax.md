@@ -214,7 +214,7 @@ Separately, the compiler still reads the expression *as written* to reject nonse
 | `\|\|` | Logical OR |
 | `!` | Logical NOT (unary) |
 | `-` | Negation (unary) |
-| `<<` | Merge (objects, style blocks, path blocks, text blocks) |
+| `<<` | Merge (objects, style blocks, path blocks, text blocks) — or [apply a worker function](#syntax-applying-workers) to a callback builtin: `arr.map() << f` |
 
 Operator precedence follows standard mathematical conventions.
 
@@ -335,6 +335,56 @@ let b = a << { y: 99, z: 3 };
 ```
 
 Multiple merges can be chained: `a << b << c`. See also [Objects — Merging](#objects-merging-objects).
+
+### Applying workers (`<<`)
+
+`<<` has a second job: it applies a **worker function** to a callback
+builtin. The parentheses parameterize the call; `<<` supplies the function
+that does the work. (The shape rhymes with `PathLayer('name') << styles` —
+though that one is mechanically a merge, the reading "feed the right side
+into the left" is the same.)
+
+```
+let doubler = {|v| return calc(v * 2); };
+let doubled = [1, 2, 3].map() << doubler;
+
+let cells = Grid(4, 4, { xDim: 25, yDim: 25 });
+cells.fill() << {|row, col| return calc(row * 4 + col); };
+
+let total = [1, 2, 3].reduce(0) << {|acc, v| return calc(acc + v); };
+
+let spine = @{ l 120 0 };
+let ribbon = spine.variableOffset() << {|go, pb|
+  go.stop(0, 4, CurveContinuity.G1);
+  go.stop(1, 12, CurveContinuity.G1);
+};
+```
+
+The rule is structural: when the **left side is one of the eight callback
+builtins** — array `.map`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
+`variableOffset`/`compoundVariableOffset` — written **without** a trailing
+block, `<<` provides its callback. The right side may be a lambda variable,
+a named `fn`, or a lambda literal. Anywhere else, `<<` is the ordinary
+merge above.
+
+Evaluation order: the receiver, then the parenthesized arguments (e.g.
+`reduce`'s initial value), then the worker expression, then the iteration.
+
+A few consequences of the structural rule:
+
+- **A trailing block and a `<<` worker are mutually exclusive.** If the
+  call already carries a literal block, `<<` falls back to merge — so
+  `spine.variableOffset() {|go, pb| ... } << edge` still means "build the
+  offset, then concatenate the `edge` path block", exactly as before.
+  (And `arr.map {|v| ... } << f` errors: the block completed the call, and
+  a function is not a mergeable value.)
+- **Application happens once.** `arr.map() << f << g` applies `f`, and the
+  second `<<` then sees an array on its left — already a value, so the
+  error says exactly that. Apply then merge is fine when the types line
+  up: `spine.compoundVariableOffset() << mk << tail` builds the ribbon and
+  concatenates `tail`.
+- Passing the worker *inside* the parentheses (`map(f)`) is not supported —
+  the error message points you to `<<`.
 
 ### Property Access
 
@@ -769,7 +819,7 @@ let head = arr.slice(0, -2);  // [10, 20, 30, 40] — up to second-to-last
 
 #### `.map {|item| ... }` / `.map {|item, index, arrayRef| ... }`
 
-Transforms each element using a trailing block, returning a new array. Use `return` to specify the mapped value. If no `return` is executed, the element maps to `null`.
+Transforms each element using a trailing block, returning a new array. Use `return` to specify the mapped value. If no `return` is executed, the element maps to `null`. A reusable worker applies with `<<` — `prices.map() << f;` (see [Applying workers](#syntax-applying-workers)).
 
 The block receives up to three parameters:
 - `item` — the current element
@@ -854,6 +904,10 @@ let result = [].reduce(42) {|acc, n| return calc(acc + n); };
 // result is 42
 ```
 
+A reusable worker applies with `<<` — the initial value stays in the
+parentheses: `values.reduce(0) << sumFn;` (see
+[Applying workers](#syntax-applying-workers)).
+
 #### `.mapSlice(length)`
 
 Returns a new array where each element is a sub-array (slice) of `length` elements starting at that element's index. Near the end of the array, slices are shorter as they extend past the bounds.
@@ -916,7 +970,10 @@ let bad = mixed.sort();
 
 `NaN` has no defined order, so a numeric array containing `NaN` is also an error. An empty array sorts to an empty array. A single-element array of an unsortable type still errors — the element check does not depend on the array's size.
 
-For custom ordering, pass a comparator as a trailing block. `.sort()` takes no parenthesized arguments — the comparator must be a block:
+For custom ordering, supply a comparator as a trailing block or apply one
+with `<<` (`values.sort() << cmp` — see
+[Applying workers](#syntax-applying-workers)). `.sort()` takes no
+parenthesized arguments:
 
 ```
 let points = [Point(30, 0), Point(10, 0), Point(20, 0)];
@@ -1296,21 +1353,35 @@ let last = fns[2];
 Lambda bodies have the same dual mode as named functions: `return` a value, or
 fall through after path commands to produce a path segment.
 
-**Lambdas as callbacks.** Anywhere a built-in accepts a trailing block, it
-also accepts a lambda (or a named function) passed as an argument:
+**Applying workers with `<<`.** Anywhere a **callback builtin** accepts a
+trailing block, a lambda (or a named function) can do the same job —
+applied with the `<<` operator, never passed inside the parentheses.
+(Constructor binding blocks are the exception — see the limitations
+below.) A worker earns its keep when it's reused:
+
+```
+let ease = {|t| return calc(t * t * (3 - 2 * t)); };
+let rows = [0.2, 0.5, 0.9].map() << ease;
+let cols = [0.1, 0.6].map() << ease;
+```
 
 ```
 let doubler = {|v| return calc(v * 2); };
 
-let a = [1, 2, 3].map(doubler);          // same as .map {|v| ...}
-let b = [1, 2, 3].map({|v| return calc(v * 2); });   // inline
+let a = [1, 2, 3].map() << doubler;      // same as .map {|v| ...}
+let b = [1, 2, 3].map() << {|v| return calc(v * 2); };   // inline literal
 
 let grid = Grid(4, 4, { xDim: 25, yDim: 25 });
-grid.fill({|row, col| return calc(row * 4 + col); });
+grid.fill() << {|row, col| return calc(row * 4 + col); };
 ```
 
 This works for array `.map`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
-and `variableOffset`/`compoundVariableOffset`.
+and `variableOffset`/`compoundVariableOffset`. The parentheses keep their
+ordinary parameters — `reduce(init) << f` — and the worker stays outside
+them. The full rules (evaluation order, chaining, interaction with merge)
+live in [Applying workers](#syntax-applying-workers) under the `<<`
+operator. The old argument form (`map(f)`) was removed before any
+production use; it now errors with a pointer to `<<`.
 
 **Current limitations:**
 
@@ -1319,10 +1390,11 @@ and `variableOffset`/`compoundVariableOffset`.
   literal — is not yet supported: assign to a `let` first.
 - A lambda *literal* cannot appear inside a call in path-argument position
   (`M use({|x| ...}) 0`) — path arguments stop at `|`. Bind the lambda to a
-  variable and pass the name instead.
+  variable and pass the name instead. (Worker application is unaffected:
+  `<< {|x| ... }` sits in ordinary expression position.)
 - Constructor binding blocks (`LinearGradient(...) {|g| ...}`, `Marker`,
   `Pattern`, filters, `Grid(...) {|g| ...}`) still require a literal trailing
-  block — lambda arguments work for the callback-style methods listed above.
+  block — `<<` worker application is a possible future extension there.
 
 ## Comments
 

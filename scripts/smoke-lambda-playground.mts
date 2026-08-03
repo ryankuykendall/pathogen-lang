@@ -6,7 +6,7 @@ import puppeteer from 'puppeteer';
 
 const CODE = `define ViewBox(0, 0, 100, 100);
 let f = {|x| return calc(x * 10); };
-let vals = [1, 2, 3].map(f);
+let vals = [1, 2, 3].map() << f;
 let v0 = vals[0];
 M f(2) f(3)
 L v0 0

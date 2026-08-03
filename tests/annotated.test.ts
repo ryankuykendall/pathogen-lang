@@ -330,17 +330,58 @@ M f(5) 0`);
       expect(result).not.toContain('[object Object]');
     });
 
-    it('lambda passed to array.map works under --annotated (no-crash + geometry)', () => {
+    it('lambda applied to array.map via << works under --annotated (no-crash + geometry)', () => {
       const result = compileAnnotated(`let g = {|v| return calc(v + 1); };
-let a = [1, 2].map(g);
+let a = [1, 2].map() << g;
 M 0 0`);
       expect(result).toContain('M 0 0');
     });
 
-    it('reduce(init, f) evaluates init BEFORE the callback arg under --annotated (parity)', () => {
+    it('Grid.fill/map/forEach, sort, and reduce accept << workers under --annotated (parity)', () => {
+      // All six annotated resolveCallbackBlock sites — the two VO methods
+      // throw "not supported in --annotated" and are pinned separately.
+      // (Assignment statements are unsupported in annotated callback bodies —
+      // pre-existing limitation — so forEach is exercised no-op style and the
+      // sum goes through reduce.)
+      const result = compileAnnotated(`let g = Grid(2, 2);
+g.fill() << {|r, c| return calc(r * 10 + c); };
+let doubled = g.map() << {|cell| return calc(cell * 2); };
+doubled.forEach() << {|cell| return cell; };
+let cells = doubled.cells();
+let total = cells.reduce(0) << {|acc, v| return calc(acc + v); };
+let s = [3, 1, 2].sort() << {|a, b| return calc(a - b); };
+let first = s[0];
+M total first`);
+      expect(result).toContain('M 44 1'); // (0+1+10+11)*2 = 44; sort asc → 1
+    });
+
+    it('object merge via << works under --annotated (parity with the main evaluator)', () => {
+      // Pins the ObjectValue << ObjectValue case added for parity — this
+      // previously threw in annotated mode while compiling fine normally.
+      const result = compileAnnotated(`let a = { x: 1 };
+let b = a << { y: 2, x: 9 };
+M b.x b.y`);
+      expect(result).toContain('M 9 2');
+    });
+
+    it('a callable landing on the merge path gets the targeted hint under --annotated', () => {
+      expect(() => compileAnnotated(`let f = {|v| return v; };
+let a = 5 << f;
+M 0 0`)).toThrow(/can apply a function or lambda only to a callback builtin call/);
+    });
+
+    it('variableOffset() << worker still reports the annotated-mode limitation', () => {
+      expect(() => compileAnnotated(`let mk = {|go, pb| go.stop(0, 2, CurveContinuity.G1); };
+let s = @{ l 100 0 };
+let e = s.variableOffset() << mk;
+M 0 0`)).toThrow(/not supported in --annotated/);
+    });
+
+    it('reduce(init) << worker evaluates init BEFORE the worker under --annotated (parity)', () => {
       // Mirrors the plain-evaluator order test in tests/lambdas.test.ts —
       // annotated.ts has its own resolveCallbackBlock copy (parity-drift
       // history: 2nd dispatch, own sort, own formatters), so pin both.
+      // Contract: receiver -> parenthesized args -> << worker expression.
       // Geometry encodes the proof via an order-recording array (assignment
       // statements and .length() aren't supported in annotated fn bodies /
       // mode, so push() records and the first two entries discriminate):
@@ -349,7 +390,7 @@ M 0 0`);
       const result = compileAnnotated(`let order = [];
 fn computeInit() { order.push(1); return 100; }
 fn makeFn() { order.push(2); return {|acc, v| return calc(acc + v); }; }
-let total = [1, 2, 3].reduce(computeInit(), makeFn());
+let total = [1, 2, 3].reduce(computeInit()) << makeFn();
 let first = order[0];
 let second = order[1];
 M total calc(first * 10 + second)`);

@@ -30,6 +30,31 @@ let edge = spine.variableOffset() {|go, pb|
 
 The path spans the first stop to the last stop. To add a lead-in or lead-out, compose path blocks with the `<<` concatenation operator — e.g. `@{ m -10 0 } << edge` — rather than adding endpoints inside the block. Concatenation returns a new path block that does not carry [`anchor`](#variable-offset-placement-origin-normalization-and-anchor); if you need it, read it before composing.
 
+A reusable builder applies with the same operator: writing the call
+**without** a trailing block and following it with `<<` supplies the
+builder as a [worker function](#syntax-applying-workers) —
+
+```
+let mk = {|go, pb|
+  go.stop(10%, 5,  CurveContinuity.G1);
+  go.stop(90%, 20, CurveContinuity.G1);
+};
+let edge = spine.variableOffset() << mk;
+```
+
+The rule separating the two meanings is the trailing block: with a block
+present the call is already complete, so `... {|go, pb| ...} << other`
+concatenates path blocks; with empty parentheses and no block, `<<`
+provides the builder. One composition trap to know: `<<` is
+left-associative, so `@{ m -10 0 } << spine.variableOffset() << mk` groups
+the *bare* builder call with the lead-in first and errors ("requires a
+block or a << worker"). Apply the worker in its own step, then compose:
+
+```
+let edge = spine.variableOffset() << mk;
+let full = @{ m -10 0 } << edge;
+```
+
 ### `go.stop(time, normalOffset, continuity)`
 
 | Argument | Meaning |
@@ -82,6 +107,10 @@ let ribbon = spine.compoundVariableOffset() {|go, pb|
   go.endCap(Cap.tapered(12, CurveContinuity.G2));
 };
 ```
+
+`compoundVariableOffset` takes a [worker](#syntax-applying-workers) the
+same way as the simple form — `spine.compoundVariableOffset() << mk` —
+which is how a ribbon builder gets reused across many layers.
 
 ### `go.stop(time, offset1, continuity1, offset2, continuity2)` (compound)
 
