@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-02 (deterministic hash & shaping stdlib)
+
+### Added
+
+#### Core
+
+- **`hash01(n, seed?)` — deterministic random, bit-identical everywhere** — hashes an integer index to `[0, 1)` using only exactly-specified operations (lowbias32 integer mixing, `Math.imul`, IEEE arithmetic — no trigonometry), so it returns the identical value for identical arguments on every engine and surface — CLI, playground, and VS Code preview agree on every recompile, and the hash constants are a fixed contract. The optional `seed` selects an independent stream (`hash01(i, layerIndex)` replaces ad-hoc salts like `hash01(i * 7 + layer * 1013)`). Inputs truncate to 32-bit integers (`hash01(0.9) === hash01(0)`, non-finite inputs truncate to 0 — documented; continuous-input `noise()` is the companion). Supersedes the sin-fract folklore hash from blog post 31, whose `Math.sin` core is not bit-specified across JS engines. User-defined `fn hash01` still shadows the builtin (test-pinned), so existing programs are untouched.
+- **`smoothstep(edge0, edge1, x)`** — the GLSL Hermite ease (`t*t*(3-2*t)` over the clamped normalized range): rises 0 → 1 with zero slope at both edges, saturates outside them, reverses when the edges are swapped (defined and tested, unlike GLSL), and collapses to a hard step when the edges are equal (NaN only at `x === edge0`). The callable analog of `Easing.Smoothstep`.
+
+#### Documentation
+
+- `docs/stdlib.md`: new **Hash & Noise** section (determinism contract, seed streams, integer-truncation note, Cycler cross-reference), `smoothstep` in Interpolation & Clamping, and the Random section now points to `hash01` for reproducible output.
+
 ## [Unreleased] - 2026-08-02 (lambda expressions)
 
 ### Added

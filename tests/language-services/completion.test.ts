@@ -84,6 +84,22 @@ describe('getCompletions', () => {
       const items = completeAtEnd('ct');
       expect(labels(items)).toContain('ctx');
     });
+
+    it('offers hash01 with generated detail and snippet', () => {
+      const items = completeAtEnd('ha');
+      const item = items.find((i) => i.label === 'hash01');
+      expect(item).toBeDefined();
+      expect(item!.detail).toBe('hash01(n, seed?) — Deterministic hash of integer n to [0, 1)');
+      expect(item!.insertText).toBe('hash01(${1:n})$0');
+    });
+
+    it('offers smoothstep with generated detail and snippet', () => {
+      const items = completeAtEnd('smo');
+      const item = items.find((i) => i.label === 'smoothstep');
+      expect(item).toBeDefined();
+      expect(item!.detail).toBe('smoothstep(edge0, edge1, x) — Hermite ease from 0 to 1 between edges');
+      expect(item!.insertText).toBe('smoothstep(${1:edge0}, ${2:edge1}, ${3:x})$0');
+    });
   });
 
   describe('user definitions (scope-aware)', () => {

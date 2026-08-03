@@ -77,6 +77,7 @@ These return **plain numbers**, not [Angle values](#syntax-angle-units) — hand
 | `lerp(a, b, t)` | Linear interpolation: `a + (b - a) * t` |
 | `clamp(value, min, max)` | Constrain value to range |
 | `map(value, inMin, inMax, outMin, outMax)` | Map value from one range to another |
+| `smoothstep(edge0, edge1, x)` | Hermite ease from 0 to 1 as `x` crosses from `edge0` to `edge1` |
 
 ```
 // Interpolate between two positions
@@ -85,7 +86,19 @@ M calc(lerp(0, 100, t)) calc(lerp(0, 50, t))
 
 // Clamp a value
 let x = clamp(150, 0, 100);  // Result: 100
+
+// Ease a width profile in over the first quarter of a stroke
+let w = smoothstep(0, 0.25, t);  // t = 0.5 → 1 (fully eased in)
 ```
+
+`smoothstep` uses the GLSL argument order and formula: `x` is clamped into
+the `[edge0, edge1]` range as `t = clamp((x - edge0) / (edge1 - edge0), 0, 1)`,
+then eased as `t * t * (3 - 2 * t)`. The result rises smoothly from 0 to 1
+with zero slope at both edges. Values of `x` outside the range saturate at
+0 or 1. Swapping the edges reverses the ramp — GLSL leaves that case
+undefined; Pathogen defines and tests it. When `edge0 === edge1` the ramp
+collapses to a hard step: 0 for `x` below the edge, 1 above it, and `NaN`
+exactly at `x === edge0`.
 
 ### Constants
 
@@ -112,7 +125,52 @@ for (i in 0..20) {
 | `random()` | Random number between 0 and 1 |
 | `randomRange(min, max)` | Random number in range |
 
-**Note**: Random functions are not deterministic. Each call produces a different value.
+**Note**: Random functions are not deterministic. Each call produces a
+different value, and recompiling the same program produces different output.
+For reproducible randomness use `hash01(i)` with a loop or element index
+(see [Hash & Noise](#stdlib-hash-noise)).
+
+### Hash & Noise
+
+Deterministic randomness: the same inputs always produce the same output, so
+recompiles are repeatable and a "seed" is just another argument. Hash lands
+first; a continuous `noise()` companion follows.
+
+| Function | Description |
+|----------|-------------|
+| `hash01(n, seed?)` | Deterministic hash of integer `n` to `[0, 1)`; `seed` defaults to 0 |
+
+```
+// Jittered tick marks — identical on every recompile
+for (i in 0..18) {
+  let x = i * 10 + hash01(i) * 4;
+  M x 0
+  L x calc(10 + hash01(i, 1) * 20)
+}
+```
+
+**Determinism.** `hash01` is built entirely from integer bit-mixing and
+exactly-specified IEEE arithmetic — no trigonometry — so it returns the
+identical value for identical arguments on every machine and JavaScript
+engine: CLI, playground, and VS Code preview agree, today and on every
+future recompile. The hash constants are a fixed contract; changing them
+would be a breaking change.
+
+**Seeds.** The optional `seed` (default 0, so `hash01(i)` is `hash01(i, 0)`)
+selects an independent stream: `hash01(i, 0)` and `hash01(i, 1)` are two
+unrelated sequences over the same indices. Use it to give each layer or
+element family its own randomness — `hash01(i, layerIndex)` — instead of
+ad-hoc arithmetic like `hash01(i * 7 + layerIndex * 1013)`.
+
+**Integers only.** Both `n` and `seed` are truncated to 32-bit integers
+before hashing: `hash01(0.9)` equals `hash01(0)`, and non-finite inputs
+(`NaN`, `Infinity`) truncate to 0 rather than propagating. Smoothly varying
+a *continuous* input is what `noise()` is for — it joins this section
+shortly.
+
+**vs. Cycler.** `Cycler` (below) is the other deterministic tool: it assigns
+values round-robin by call order, while `hash01` assigns them positionally
+by index.
 
 ### Cycler
 

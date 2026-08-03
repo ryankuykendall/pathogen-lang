@@ -368,6 +368,34 @@ describe('Evaluator', () => {
         expect(compilePath('M calc(map(0, 0, 10, 0, 100)) 0')).toBe('M 0 0');
         expect(compilePath('M calc(map(10, 0, 10, 0, 100)) 0')).toBe('M 100 0');
       });
+
+      it('evaluates smoothstep (Hermite 3t^2 - 2t^3 over clamped t)', () => {
+        // t = 0.25 → 0.25^2 * (3 - 0.5) = 0.15625
+        expect(compilePath('M calc(smoothstep(0, 1, 0.25)) 0')).toBe('M 0.15625 0');
+        expect(compilePath('M calc(smoothstep(0, 1, 0.5)) 0')).toBe('M 0.5 0');
+        expect(compilePath('M calc(smoothstep(0, 1, 0.75)) 0')).toBe('M 0.84375 0');
+      });
+
+      it('smoothstep normalizes x into the edge range (GLSL argument order)', () => {
+        expect(compilePath('M calc(smoothstep(10, 20, 15)) 0')).toBe('M 0.5 0');
+      });
+
+      it('smoothstep saturates outside the edges', () => {
+        expect(compilePath('M calc(smoothstep(0, 1, -1)) 0')).toBe('M 0 0');
+        expect(compilePath('M calc(smoothstep(0, 1, 2)) 0')).toBe('M 1 0');
+      });
+
+      it('smoothstep with reversed edges reverses the ramp', () => {
+        expect(compilePath('M calc(smoothstep(1, 0, 0.25)) 0')).toBe('M 0.84375 0');
+      });
+
+      it('smoothstep with equal edges collapses to a hard step', () => {
+        // The clamp absorbs the divide-by-zero infinities; NaN appears only
+        // when x also equals the shared edge (0/0). Documented contract.
+        expect(compilePath('M calc(smoothstep(5, 5, 10)) 0')).toBe('M 1 0');
+        expect(compilePath('M calc(smoothstep(5, 5, 0)) 0')).toBe('M 0 0');
+        expect(compilePath('M calc(smoothstep(5, 5, 5)) 0')).toBe('M NaN 0');
+      });
     });
 
     describe('angle conversions', () => {
@@ -454,6 +482,61 @@ describe('Evaluator', () => {
         const value = parseFloat(match![1]);
         expect(value).toBeGreaterThanOrEqual(10);
         expect(value).toBeLessThan(20);
+      });
+    });
+
+    describe('hash functions', () => {
+      // Expected values computed from the lowbias32 double-mix construction:
+      //   mix32(x): x ^= x>>>16; x = imul(x, 0x7feb352d); x ^= x>>>15;
+      //             x = imul(x, 0x846ca68b); x ^= x>>>16;
+      //   hashU32(n, seed) = mix32(mix32(n|0) ^ imul((seed|0) ^ 0x9e3779b9, 0x85ebca6b)) >>> 0
+      //   hash01(n, seed?) = hashU32(n, seed ?? 0) / 2^32
+      // These are bit-exact contracts: any change to the constants or mixing
+      // steps is a breaking change to every program using hash01.
+      it('evaluates hash01 to exact bit-specified values', () => {
+        expect(compilePath('M calc(hash01(0)) 0')).toBe('M 0.3778164542745799 0');
+        expect(compilePath('M calc(hash01(1)) 0')).toBe('M 0.2531894932035357 0');
+        expect(compilePath('M calc(hash01(2)) 0')).toBe('M 0.4740615279879421 0');
+        expect(compilePath('M calc(hash01(42)) 0')).toBe('M 0.6516876730602235 0');
+      });
+
+      it('hash01 handles negative indices', () => {
+        expect(compilePath('M calc(hash01(-1)) 0')).toBe('M 0.6598478690721095 0');
+      });
+
+      it('hash01 seed selects an independent stream', () => {
+        expect(compilePath('M calc(hash01(1, 7)) 0')).toBe('M 0.8208946359809488 0');
+      });
+
+      it('hash01 truncates n to a 32-bit integer (documented contract)', () => {
+        expect(compilePath('M calc(hash01(0.9)) 0')).toBe(compilePath('M calc(hash01(0)) 0'));
+      });
+
+      it('hash01 truncates non-finite inputs to 0 (documented contract)', () => {
+        expect(compilePath('M calc(hash01(1/0)) 0')).toBe(compilePath('M calc(hash01(0)) 0'));
+      });
+
+      it('hash01 is deterministic across compiles', () => {
+        const program = 'for (i in 0..10) { M calc(hash01(i) * 100) calc(hash01(i, 1) * 100) }';
+        expect(compilePath(program)).toBe(compilePath(program));
+      });
+
+      it('hash01 stays in [0, 1) with a balanced mean over 1000 indices', () => {
+        // Supplementary distribution invariant; exact-value tests above carry
+        // the primary contract.
+        const result = compilePath('let s = 0; for (i in 0..999) { s = s + hash01(i); } M calc(s / 1000) 0');
+        const match = /^M (-?[\d.]+) 0$/.exec(result);
+        expect(match).not.toBeNull();
+        const mean = parseFloat(match![1]);
+        expect(mean).toBeGreaterThan(0.45);
+        expect(mean).toBeLessThan(0.55);
+      });
+
+      it('user-defined fn hash01 shadows the stdlib function', () => {
+        // Protects published blog samples that define their own hash01: user
+        // scope must win over stdlib so their output never drifts.
+        const program = 'fn hash01(i) { return 0.5; } M calc(hash01(3)) 0';
+        expect(compilePath(program)).toBe('M 0.5 0');
       });
     });
   });

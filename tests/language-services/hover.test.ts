@@ -92,6 +92,20 @@ describe('getHoverInfo', () => {
       expect(result!.contents).toContain('**sin**');
     });
 
+    it('shows hover for hash01', () => {
+      const result = hover('let x = hash01(3);', 0, 10);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('**hash01**');
+      expect(result!.contents).toContain('Deterministic hash of integer n to [0, 1)');
+    });
+
+    it('shows hover for smoothstep', () => {
+      const result = hover('let x = smoothstep(0, 1, 0.5);', 0, 12);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('**smoothstep**');
+      expect(result!.contents).toContain('Hermite ease');
+    });
+
     it('shows hover for ctx', () => {
       const result = hover('let pos = ctx;', 0, 11);
       expect(result).not.toBeNull();

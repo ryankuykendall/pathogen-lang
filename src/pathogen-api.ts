@@ -355,6 +355,8 @@ export declare function lerp(a: number, b: number, t: number): number;
 export declare function clamp(value: number, min: number, max: number): number;
 /** map(val, inMin, inMax, outMin, outMax) — Map between ranges @boost 12 */
 export declare function map(val: number, inMin: number, inMax: number, outMin: number, outMax: number): number;
+/** smoothstep(edge0, edge1, x) — Hermite ease from 0 to 1 between edges @boost 12 */
+export declare function smoothstep(edge0: number, edge1: number, x: number): number;
 
 // =============================================================================
 // Stdlib: Rounding
@@ -399,6 +401,13 @@ export declare function polarY(cy: number, angle: AngleValue, radius: number): n
 export declare function random(): number;
 /** randomRange(min, max) — Random in range @boost 8 */
 export declare function randomRange(min: number, max: number): number;
+
+// =============================================================================
+// Stdlib: Hash & Noise
+// =============================================================================
+
+/** hash01(n, seed?) — Deterministic hash of integer n to [0, 1) @boost 12 */
+export declare function hash01(n: number, seed?: number): number;
 
 // =============================================================================
 // Stdlib: Exp/Log

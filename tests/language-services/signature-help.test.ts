@@ -55,6 +55,19 @@ describe('getSignatureHelp', () => {
       expect(result!.signatures[0].parameters.map((p) => p.label)).toEqual(['value', 'min', 'max']);
     });
 
+    it('shows signature for smoothstep with parameter names', () => {
+      const result = sigHelpAtEnd('let y = smoothstep(');
+      expect(result).not.toBeNull();
+      expect(result!.signatures[0].parameters.map((p) => p.label)).toEqual(['edge0', 'edge1', 'x']);
+    });
+
+    it('shows signature for hash01 including the optional seed', () => {
+      const result = sigHelpAtEnd('let y = hash01(');
+      expect(result).not.toBeNull();
+      expect(result!.signatures[0].parameters.map((p) => p.label)).toEqual(['n', 'seed']);
+      expect(result!.activeParameter).toBe(0);
+    });
+
     it('handles nested function calls', () => {
       // cursor inside sin(), not lerp()
       const result = sigHelpAtEnd('let x = lerp(sin(');

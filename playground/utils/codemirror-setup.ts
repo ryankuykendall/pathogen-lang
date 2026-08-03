@@ -113,6 +113,7 @@ export const stdlibCompletions: CompletionItem[] = [
   { label: 'lerp', type: 'function', info: 'lerp(a, b, t) - Linear interpolation' },
   { label: 'clamp', type: 'function', info: 'clamp(value, min, max) - Constrain to range' },
   { label: 'map', type: 'function', info: 'map(val, inMin, inMax, outMin, outMax) - Map between ranges' },
+  { label: 'smoothstep', type: 'function', info: 'smoothstep(edge0, edge1, x) - Hermite ease from 0 to 1 between edges' },
 
   // 7. Trigonometry
   { label: 'sin', type: 'function', info: 'sin(x) - Sine' },
@@ -141,6 +142,7 @@ export const stdlibCompletions: CompletionItem[] = [
   // 10. Random
   { label: 'random', type: 'function', info: 'random() - Random number 0-1' },
   { label: 'randomRange', type: 'function', info: 'randomRange(min, max) - Random in range' },
+  { label: 'hash01', type: 'function', info: 'hash01(n, seed?) - Deterministic hash of integer n to [0, 1)' },
 
   // 11. Exponential/Log
   { label: 'exp', type: 'function', info: 'exp(x) - e raised to power x' },
