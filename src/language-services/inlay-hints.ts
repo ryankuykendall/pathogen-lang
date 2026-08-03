@@ -1,5 +1,6 @@
 import { parse } from '../parser';
 import { STDLIB_COMPLETIONS } from './completion-data.generated';
+import { CALLBACK_METHODS } from '../callback-methods';
 
 import type { TextDocument } from './document';
 import type { Position, Range } from './types';
@@ -356,7 +357,25 @@ function inferExprType(expr: Expression): string | null {
     case 'LayerConstructorExpression':
       return expr.layerType;
     case 'BinaryExpression':
-      if (expr.operator === '<<') return inferExprType(expr.left); // merge preserves left type
+      if (expr.operator === '<<') {
+        // Worker application types as the completed builtin call; plain
+        // merges preserve the left type.
+        if (
+          expr.left.type === 'MethodCallExpression' &&
+          !expr.left.block &&
+          CALLBACK_METHODS.has(expr.left.method)
+        ) {
+          const method = expr.left.method;
+          if (method === 'fill') return 'Grid';
+          if (method === 'variableOffset' || method === 'compoundVariableOffset') return 'PathBlock';
+          if (method === 'map' || method === 'sort') {
+            const recv = inferExprType(expr.left.object);
+            return recv === 'Grid' ? 'Grid' : recv === 'Array' ? 'Array' : recv;
+          }
+          return null; // reduce (worker-determined) / forEach (void)
+        }
+        return inferExprType(expr.left); // merge preserves left type
+      }
       return null;
     default:
       return null;

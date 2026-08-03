@@ -2,6 +2,7 @@ import { parseLezer } from '../parser';
 import { parser as styleParser } from '../parser/style.generated';
 import { parseExpressionAtOffset } from '../parser/lezer-expression';
 import { stdlib } from '../stdlib';
+import { CALLBACK_METHODS } from '../callback-methods';
 
 import type { TextDocument } from './document';
 import type { Range } from './types';
@@ -56,7 +57,9 @@ export type DeclTypeContext =
   /** {|p| ...} trailing-block param at position `index` of a call */
   | { kind: 'blockParam'; call: FunctionCall | MethodCallExpression; index: number }
   /** {|p| ...} lambda-literal param at position `index` — no owning call, so
-   *  the param type is uninferable (documented in the hover binding matrix) */
+   *  the param type is uninferable (documented in the hover binding matrix),
+   *  UNLESS the literal is the right operand of a `<<` worker application —
+   *  those bind as blockParam of the owning builtin call instead. */
   | { kind: 'lambdaParam'; lambda: LambdaExpression; index: number };
 
 export interface Declaration {
@@ -355,7 +358,27 @@ function walkExpr(expr: Expression, scope: Scope, col: Collector): void {
       break;
     case 'BinaryExpression':
       walkExpr(expr.left, scope, col);
-      walkExpr(expr.right, scope, col);
+      // << worker application: a lambda literal applied to a callback builtin
+      // (arr.map() << {|v| ...}) HAS an owning call site — bind its params as
+      // blockParam of that call so inferBlockParam types them exactly like
+      // trailing-block params (go/pb member completions + hover).
+      if (
+        expr.operator === '<<' &&
+        expr.right.type === 'LambdaExpression' &&
+        expr.left.type === 'MethodCallExpression' &&
+        !expr.left.block &&
+        CALLBACK_METHODS.has(expr.left.method)
+      ) {
+        const lambda = expr.right;
+        const owningCall = expr.left;
+        const lambdaScope = mkScope(scope);
+        lambda.params.forEach((p, index) =>
+          addDecl(lambdaScope, p, 'blockParam', lambda.loc, col, { kind: 'blockParam', call: owningCall, index }),
+        );
+        walkStatements(lambda.body, lambdaScope, col);
+      } else {
+        walkExpr(expr.right, scope, col);
+      }
       break;
     case 'UnaryExpression':
       walkExpr(expr.argument, scope, col);

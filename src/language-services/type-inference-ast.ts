@@ -22,6 +22,7 @@ import {
 } from './completion-data.generated';
 import { getMethodReturnType } from './type-inference';
 import { inferUnit } from '../evaluator/units';
+import { CALLBACK_METHODS } from '../callback-methods';
 
 import type { Declaration, Scope, ScopeInfo } from './scope-analysis';
 import type { Position } from './types';
@@ -99,7 +100,9 @@ export function inferDeclType(decl: Declaration, seen?: Set<Declaration>): strin
 
     case 'lambdaParam':
       // A lambda literal has no owning call site, so its param types are
-      // uninferable (documented row in the hover binding matrix).
+      // uninferable (documented row in the hover binding matrix). The one
+      // exception — a literal applied as a `<<` worker — is bound as
+      // blockParam by scope-analysis and never reaches this branch.
       return null;
   }
 }
@@ -182,6 +185,25 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
       return expr.operator === '!' ? 'boolean' : inferExprType(expr.argument, scope, visited);
 
     case 'BinaryExpression': {
+      if (expr.operator === '<<') {
+        // Worker application: the expression types as the completed builtin
+        // call. Otherwise << is merge/concat, which preserves the left type.
+        if (
+          expr.left.type === 'MethodCallExpression' &&
+          !expr.left.block &&
+          CALLBACK_METHODS.has(expr.left.method)
+        ) {
+          const method = expr.left.method;
+          if (method === 'fill') return 'Grid';
+          if (method === 'variableOffset' || method === 'compoundVariableOffset') return 'PathBlock';
+          if (method === 'map' || method === 'sort') {
+            const recv = inferExprType(expr.left.object, scope, visited);
+            return recv === 'Grid' ? 'Grid' : recv === 'array' ? 'array' : recv;
+          }
+          return null; // reduce (worker-determined) / forEach (void)
+        }
+        return inferExprType(expr.left, scope, visited);
+      }
       if (!ARITHMETIC_OPS.has(expr.operator)) return null;
       const left = inferExprType(expr.left, scope, visited);
       const right = left === 'string' ? null : inferExprType(expr.right, scope, visited);

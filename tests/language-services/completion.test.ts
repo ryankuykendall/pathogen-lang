@@ -1382,6 +1382,33 @@ describe('variableOffset builder completions', () => {
     expect(names).toContain('boundingBox');
     expect(names).toContain('contours');
   });
+
+  it('types << worker-lambda params exactly like trailing-block params', () => {
+    // The << bridge: a lambda literal applied as a worker has an owning call.
+    const goItems = completeAtEnd('let spine = @{ M 0 0 L 100 0 };\nlet halo = spine.variableOffset() << {|go, pb|\n  go.');
+    const goNames = goItems.map((i) => i.label);
+    expect(goNames).toContain('stop');
+    expect(goNames).toContain('startTangent');
+    const stop = goItems.find((i) => i.label === 'stop');
+    expect(stop!.detail).toContain('Place an offset stop along the spine');
+    const pbItems = completeAtEnd('let spine = @{ M 0 0 L 100 0 };\nlet halo = spine.compoundVariableOffset() << {|go, pb|\n  pb.');
+    expect(pbItems.map((i) => i.label)).toContain('boundingBox');
+  });
+
+  it('types array-element << worker params via the receiver', () => {
+    const items = completeAtEnd("let glyphs = PathBlock.fromGlyph('AB', ${ font-family: 'B'; });\nlet moved = glyphs.map() << {|glyph|\n  glyph.");
+    const names = items.map((i) => i.label);
+    expect(names).toContain('contours');
+    expect(names).toContain('drawTo');
+  });
+
+  it('types the result of a << worker application as the completed call', () => {
+    // let rib = spine.variableOffset() << mk → PathBlock members on rib.
+    const items = completeAtEnd('let mk = {|go, pb| go.stop(0, 5, CurveContinuity.G1); };\nlet spine = @{ M 0 0 L 100 0 };\nlet rib = spine.variableOffset() << mk;\nrib.');
+    const names = items.map((i) => i.label);
+    expect(names).toContain('draw');
+    expect(names).toContain('boundingBox');
+  });
 });
 
 describe('AST-based receiver typing (destructured loops over method-returned arrays)', () => {

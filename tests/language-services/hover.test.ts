@@ -360,6 +360,19 @@ describe('getHoverInfo', () => {
       expect(result!.contents).toContain('*block parameter: VariableOffsetBuilder*');
     });
 
+    it('types << worker-lambda params like trailing-block params', () => {
+      const workerProgram = `let spine = @{ M 0 0 L 100 0 };
+let rib = spine.variableOffset() << {|wgo, wpb|
+  wgo.stop(0, 5, CurveContinuity.G1);
+  wpb.boundingBox();
+};
+M 0 0`;
+      const goHover = hoverOn(workerProgram, 'wgo.stop');
+      expect(goHover!.contents).toContain('*block parameter: VariableOffsetBuilder*');
+      const pbHover = hoverOn(workerProgram, 'wpb.boundingBox');
+      expect(pbHover!.contents).toContain('*block parameter: PathBlock*');
+    });
+
     it('shows the builder stop method doc', () => {
       const result = hoverOn(program, 'stop(calc');
       expect(result!.contents).toContain('**stop**');
