@@ -600,5 +600,46 @@ describe('formatDocument', () => {
       // Stops should be indented
       expect(result).toContain('  g.stop');
     });
+
+    it('formats method trailing blocks and normalizes to parens form', () => {
+      const result = format('let a = [1, 2].map {|v|\nreturn calc(v * 2);\n};');
+      expect(result).toContain('.map() {|v|');
+      expect(result).toContain('  return calc(v * 2);');
+      expect(format(result)).toBe(result); // idempotent
+    });
+  });
+
+  // --- << worker application ---
+  describe('<< worker application', () => {
+    it('formats a named-worker application on one line', () => {
+      const src = 'let f = {|v| return calc(v * 2); };\nlet a = [1, 2].map() << f;';
+      const result = format(src);
+      expect(result).toContain('.map() << f;');
+      expect(format(result)).toBe(result);
+    });
+
+    it('formats a literal-lambda worker with an indented multi-line body', () => {
+      const src = 'let a = [1, 2].reduce(0) << {|acc, v|\nreturn calc(acc + v);\n};';
+      const result = format(src);
+      expect(result).toContain('.reduce(0) << {|acc, v|');
+      expect(result).toContain('  return calc(acc + v);');
+      expect(result).toMatch(/\n\};/); // closing brace back at statement depth
+      expect(format(result)).toBe(result);
+    });
+
+    it('preserves user parens on a right-nested << (non-associative)', () => {
+      // Re-grouping to the left would evaluate the bare builder call and error.
+      const src = 'let mk = {|go, pb| go.stop(0, 5, CurveContinuity.G1); };\nlet spine = @{ l 100 0 };\nlet full = @{ m -10 0 } << (spine.variableOffset() << mk);';
+      const result = format(src);
+      expect(result).toContain('<< (spine.variableOffset() << mk)');
+      expect(format(result)).toBe(result);
+    });
+
+    it('left-nested << chains stay paren-free', () => {
+      const src = 'let a = b << c << d;';
+      const result = format(src);
+      expect(result).toContain('let a = b << c << d;');
+      expect(format(result)).toBe(result);
+    });
   });
 });

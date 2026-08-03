@@ -536,8 +536,12 @@ const OP_PRECEDENCE: Record<string, number> = {
   '%': 7,
 };
 
-/** Operators where (a op b) op c === a op (b op c) — equal-precedence right children need no parens. */
-const ASSOCIATIVE_OPS = new Set(['+', '*', '&&', '||', '<<']);
+/** Operators where (a op b) op c === a op (b op c) — equal-precedence right
+ * children need no parens. `<<` is deliberately NOT here: worker application
+ * makes it non-associative — `a << (vo() << f)` applies f to the builder,
+ * while the re-grouped `(a << vo()) << f` evaluates the bare builder call
+ * and errors. User-written parens on << right children must survive. */
+const ASSOCIATIVE_OPS = new Set(['+', '*', '&&', '||']);
 
 /**
  * Format one operand of a binary expression, parenthesizing when required to

@@ -105,6 +105,7 @@ const ANON_OP_CLASS: Record<string, string> = {
   '>': 'op',
   '||': 'op',
   '&&': 'op',
+  '<<': 'op',
   '!': 'op',
   '=': 'op',
   '?': 'op',

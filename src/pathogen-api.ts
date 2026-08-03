@@ -618,11 +618,11 @@ export interface PathogenGrid {
   getCol(col: number): PathogenArray;
   /** cells() — Flat row-major array of every cell */
   cells(): PathogenArray;
-  /** fill {|row, col, center| return ...} — Populate every cell from a block (mutates) @snippet fill {|${1:row}, ${2:col}, ${3:center}|\n\treturn $0;\n} */
+  /** fill {|row, col, center| return ...} — Populate every cell from a block (mutates); or fill() << worker @snippet fill {|${1:row}, ${2:col}, ${3:center}|\n\treturn $0;\n} */
   fill(): PathogenGrid;
-  /** forEach {|cell, row, col, center| ...} — Side-effect iteration in row-major order @snippet forEach {|${1:cell}, ${2:row}, ${3:col}, ${4:center}|\n\t$0\n} */
+  /** forEach {|cell, row, col, center| ...} — Side-effect iteration in row-major order; or forEach() << worker @snippet forEach {|${1:cell}, ${2:row}, ${3:col}, ${4:center}|\n\t$0\n} */
   forEach(): void;
-  /** map {|cell, row, col, center| return ...} — Return a new grid with transformed cells @snippet map {|${1:cell}, ${2:row}, ${3:col}, ${4:center}|\n\treturn $0;\n} */
+  /** map {|cell, row, col, center| return ...} — Return a new grid with transformed cells; or map() << worker @snippet map {|${1:cell}, ${2:row}, ${3:col}, ${4:center}|\n\treturn $0;\n} */
   map(): PathogenGrid;
   /** sample(x, y) — Lookup using grid's default interpolation mode */
   sample(x: number, y: number): Value;
@@ -670,18 +670,18 @@ export interface PathogenArray<T = Value> {
   unshift(item: T): number;
   /** empty() — Check if array is empty */
   empty(): boolean;
-  /** map {|item| ...} — Transform elements @snippet map {|${1:item}|\n\treturn $0;\n} */
-  map(block: (item: T, index?: number) => unknown): PathogenArray;
-  /** reduce(init) {|acc, item| ...} — Reduce @snippet reduce(${1:init}) {|${2:acc}, ${3:item}|\n\treturn $0;\n} */
-  reduce(init: Value, block: (acc: Value, item: T) => Value): Value;
+  /** map {|item| ...} — Transform elements; or map() << worker @snippet map {|${1:item}|\n\treturn $0;\n} */
+  map(): PathogenArray;
+  /** reduce(init) {|acc, item| ...} — Reduce; or reduce(init) << worker @snippet reduce(${1:init}) {|${2:acc}, ${3:item}|\n\treturn $0;\n} */
+  reduce(init: Value): Value;
   /** mapSlice(length) — Sliding window slices */
   mapSlice(length: number): PathogenArray;
   /** slice(start, end?) — Get sub-array */
   slice(start: number, end?: number): PathogenArray<T>;
   /** reverse() — Reversed copy (non-mutating) */
   reverse(): PathogenArray<T>;
-  /** sort() — Sorted copy, ascending; optional comparator block for custom order */
-  sort(block?: (a: T, b: T) => number): PathogenArray<T>;
+  /** sort() — Sorted copy, ascending; comparator via trailing block or sort() << cmp */
+  sort(): PathogenArray<T>;
 }
 
 /** @type string */
@@ -745,9 +745,9 @@ export interface PathogenPathBlock {
   // Transforms
   /** offset(distance) — Offset path */
   offset(distance: number): PathogenPathBlock;
-  /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity @blockparams VariableOffsetBuilder, PathBlock @snippet variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
+  /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity; or variableOffset() << worker @blockparams VariableOffsetBuilder, PathBlock @snippet variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
   variableOffset(): PathogenPathBlock;
-  /** compoundVariableOffset() {|go, pb| ...} — Trace a two-profile (closeable) offset ribbon @blockparams CompoundVariableOffsetBuilder, PathBlock @snippet compoundVariableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
+  /** compoundVariableOffset() {|go, pb| ...} — Trace a two-profile (closeable) offset ribbon; or compoundVariableOffset() << worker @blockparams CompoundVariableOffsetBuilder, PathBlock @snippet compoundVariableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
   compoundVariableOffset(): PathogenPathBlock;
   /** mirror(angle) — Mirror path */
   mirror(angle: AngleValue): PathogenPathBlock;
