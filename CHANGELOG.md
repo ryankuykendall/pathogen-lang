@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-04 (stdlib primers)
+
+### Added
+
+#### Development
+
+- **Internal stdlib primers** (`project-docs/stdlib-primers/`, linked from the pinned section atop `website/bbwp/index.html`) — seven standalone blog-post-style pages, one per deterministic stdlib function (`hash01`, `hash11`, `hashRange`, `smoothstep`, `bump`, `noise`, `noise2`), each with a plain-language mental model and five worked examples climbing from a bare function plot to a finished composition. 35 compiled-in-process `.pathogen` examples; regenerable via `build-primers.ts` (`--only`, `--check`); local-only (serve:bbwp), never deployed. Multi-persona reviewed.
+
 ## [Unreleased] - 2026-08-03 (`<<` worker application)
 
 ### Changed
