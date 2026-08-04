@@ -1,0 +1,37 @@
+// Color.flatten() demo — translucent ink flattened onto white, black, and a brand color.
+// Top row: the translucent source (rendered over whatever is behind it).
+// Bottom row: the same color flattened — opaque, matches what the top row
+// looks like over each background.
+define ViewBox(0, 0, 320, 220);
+
+let ink = oklch(0.55 0.18 265 / 0.5);
+let brand = #e63946;
+
+// backgrounds for the top row
+let bgWhite = PathLayer('bgWhite') ${ stroke: none; fill: #fff; };
+bgWhite.apply { rect(10, 10, 90, 90); }
+let bgBlack = PathLayer('bgBlack') ${ stroke: none; fill: #000; };
+bgBlack.apply { rect(115, 10, 90, 90); }
+let bgBrand = PathLayer('bgBrand') ${ stroke: none; fill: brand; };
+bgBrand.apply { rect(220, 10, 90, 90); }
+
+// translucent ink over each background
+let inkTop = PathLayer('inkTop') ${ stroke: none; fill: ink; };
+inkTop.apply {
+  rect(25, 25, 60, 60);
+  rect(130, 25, 60, 60);
+  rect(235, 25, 60, 60);
+}
+
+// bottom row: flattened (opaque) equivalents
+let flatWhite = PathLayer('flatWhite') ${ stroke: none; fill: ink.flatten(); };
+flatWhite.apply { rect(25, 130, 60, 60); }
+let flatBlack = PathLayer('flatBlack') ${ stroke: none; fill: ink.flatten(#000); };
+flatBlack.apply { rect(130, 130, 60, 60); }
+let flatBrand = PathLayer('flatBrand') ${ stroke: none; fill: ink.flatten(brand); };
+flatBrand.apply { rect(235, 130, 60, 60); }
+
+log(`ink:          ${ink.css}`);
+log(`over white →  ${ink.flatten().hex}`);
+log(`over black →  ${ink.flatten(#000).hex}`);
+log(`over brand →  ${ink.flatten(brand).hex}`);

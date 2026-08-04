@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220">
+
+  <path data-layer-name="bgWhite" id="bgWhite" d="M 10 10 l 90 0 l 0 90 l -90 0 z" fill="#fff" stroke="none" stroke-width="2"/>
+  <path data-layer-name="bgBlack" id="bgBlack" d="M 115 10 l 90 0 l 0 90 l -90 0 z" fill="#000" stroke="none" stroke-width="2"/>
+  <path data-layer-name="bgBrand" id="bgBrand" d="M 220 10 l 90 0 l 0 90 l -90 0 z" fill="#e63946" stroke="none" stroke-width="2"/>
+  <path data-layer-name="inkTop" id="inkTop" d="M 25 25 l 60 0 l 0 60 l -60 0 z M 130 25 l 60 0 l 0 60 l -60 0 z M 235 25 l 60 0 l 0 60 l -60 0 z" fill="rgba(60, 104, 217, 0.5)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="flatWhite" id="flatWhite" d="M 25 130 l 60 0 l 0 60 l -60 0 z" fill="#9eb4ec" stroke="none" stroke-width="2"/>
+  <path data-layer-name="flatBlack" id="flatBlack" d="M 130 130 l 60 0 l 0 60 l -60 0 z" fill="#1e346c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="flatBrand" id="flatBrand" d="M 235 130 l 60 0 l 0 60 l -60 0 z" fill="#91518f" stroke="none" stroke-width="2"/>
+</svg>

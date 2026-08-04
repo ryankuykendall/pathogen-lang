@@ -72,6 +72,7 @@ export function getMethodReturnType(method: string): string | null {
     hueShift: 'ColorInstance',
     complement: 'ColorInstance',
     mix: 'ColorInstance',
+    flatten: 'ColorInstance',
 
     // Point methods returning Point
     translate: 'Point',

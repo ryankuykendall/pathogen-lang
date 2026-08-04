@@ -122,6 +122,24 @@ let semi = c.alpha(0.5);
 log(semi.css);  // rgba(230, 57, 70, 0.5)
 ```
 
+### Flattening
+
+`flatten(background?)` merges a translucent color down onto a background color, the way an image editor flattens layers — the result is the color you actually see when the translucent color is drawn over that background. Reach for it when transparency has to go: print and [PDF export](#exporting-pdf-export-print-ready) is the canonical case — paper has no alpha channel, so a tint designed as a translucent overlay becomes its equivalent opaque ink.
+
+```
+let ink = (#ff0000).alpha(0.5);   // 50%-opaque red
+let onWhite = ink.flatten();      // background defaults to white
+let onBlack = ink.flatten(#000);  // any Color works as the background
+log(onWhite.hex);  // ≈#ff8080 — half red, half white, per channel
+log(onWhite.a);    // 1 — transparency is gone
+```
+
+Compositing uses the standard source-over formula on gamma-encoded sRGB channels, matching how a browser paints a translucent color over a solid background with normal blending — so for in-gamut colors `flatten()` returns the color you already see on screen, with the transparency baked in. Because the math runs in sRGB, a color outside the sRGB gamut is clipped into it, even when it is already opaque.
+
+Flattening an already-opaque, in-gamut color returns it unchanged, and flattening a fully transparent color returns the background. The background may itself be translucent: the result then keeps the correctly composited alpha (`out = srcAlpha + bgAlpha * (1 - srcAlpha)`); flattening onto any opaque background always produces a fully opaque color.
+
+Theme-dynamic colors are rejected: calling `flatten()` on (or with) a color backed by `CSSVar(...)` or `Color.lightDark(...)` is an error, because CSS has no equivalent of alpha compositing — the result could no longer follow the theme. Flatten the underlying static color instead.
+
 ### Hue
 
 ```

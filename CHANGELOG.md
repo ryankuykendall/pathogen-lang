@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-04 (Color.flatten)
+
+### Added
+
+#### Core
+
+- **`Color.flatten(background?)`** — merges a translucent color down onto a solid background, image-editor style, returning the opaque color the user actually sees on screen. Compositing is Porter-Duff source-over on gamma-encoded sRGB channels (the same math browsers use to paint a translucent CSS color over a page), with the background defaulting to white. A translucent background is allowed and keeps the correctly composited alpha (`αs + αbg·(1−αs)`); flattening onto any opaque background always yields alpha 1. Theme-dynamic colors (`CSSVar(...)`-backed or `Color.lightDark(...)`) are rejected with a targeted error — CSS has no alpha-compositing expression, so the result could not follow the theme. Implemented in both evaluators with parity tests; completions, hover, and inlay hints flow via `pathogen-api.ts`; documented in `docs/color.md` → Flattening.
+
 ## [Unreleased] - 2026-08-04 (stdlib primers)
 
 ### Added

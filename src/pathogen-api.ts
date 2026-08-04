@@ -526,6 +526,8 @@ export interface PathogenColorInstance {
   complement(): PathogenColorInstance;
   /** mix(other, t) — Mix with another color */
   mix(other: PathogenColorInstance, t: number): PathogenColorInstance;
+  /** flatten(background?) — Alpha-composite onto a background color (default white), baking transparency into the result */
+  flatten(background?: PathogenColorInstance): PathogenColorInstance;
   /** analogous(angle?) — Analogous color harmony (3 colors; degrees, default 30; angle-suffixed values auto-convert) */
   analogous(angle?: number): PathogenColorInstance[];
   /** triadic() — Triadic color harmony (3 colors) */

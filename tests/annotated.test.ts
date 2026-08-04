@@ -270,6 +270,26 @@ if (c.hueShift(90deg).hue == c.hueShift(90).hue) { M 1 1 } else { M 9 9 }`);
       expect(result).toContain('M 1 1');
     });
 
+    it('flatten() composites 50% red over default white (parity)', () => {
+      const result = compileAnnotated(`let c = Color("#ff0000").alpha(0.5);
+let flat = c.flatten();
+if (flat.a == 1) { M 1 1 } else { M 9 9 }`);
+      expect(result).toContain('M 1 1');
+    });
+
+    it('flatten() onto translucent background composites alpha (parity)', () => {
+      const result = compileAnnotated(`let c = Color("#ff0000").alpha(0.5);
+let bg = Color("#ffffff").alpha(0.5);
+if (c.flatten(bg).a == 0.75) { M 1 1 } else { M 9 9 }`);
+      expect(result).toContain('M 1 1');
+    });
+
+    it('flatten() throws on theme-dynamic colors (parity)', () => {
+      expect(() => compileAnnotated('let c = Color(CSSVar("--x", "#ff0000")); c.flatten();')).toThrow(
+        'theme-dynamic'
+      );
+    });
+
     it('hueShift over calc angle arithmetic matches degrees (parity)', () => {
       const result = compileAnnotated(`let c = Color(0.5, 0.15, 30);
 if (c.hueShift(calc(1 / 2 * 2pi)).hue == c.hueShift(180).hue) { M 1 1 } else { M 9 9 }`);

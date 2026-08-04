@@ -340,6 +340,30 @@ export function mixColors(c1: OKLCH, c2: OKLCH, t: number): OKLCH {
   };
 }
 
+/**
+ * Alpha-composite `src` over `bg` (Porter-Duff source-over) on
+ * gamma-encoded sRGB channels — matches how browsers paint a translucent
+ * CSS color over a background, so the result is the color the user
+ * already sees on screen.
+ */
+export function flattenColor(src: OKLCH, bg: OKLCH): OKLCH {
+  const s = oklchToSRGB(src);
+  const b = oklchToSRGB(bg);
+  const alphaOut = s.alpha + b.alpha * (1 - s.alpha);
+  if (alphaOut === 0) {
+    return { L: 0, C: 0, H: 0, alpha: 0 };
+  }
+  const channel = (cs: number, cb: number) =>
+    (cs * s.alpha + cb * b.alpha * (1 - s.alpha)) / alphaOut;
+  const out = srgbToOKLCH({
+    r: channel(s.r, b.r),
+    g: channel(s.g, b.g),
+    b: channel(s.b, b.b),
+    alpha: 1,
+  });
+  return { ...out, alpha: alphaOut };
+}
+
 // ── CSS relative color expression generators ─────────────────────────
 
 /** Build CSS source string from cssVar or cssExpr */

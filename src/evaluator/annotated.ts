@@ -43,6 +43,7 @@ import {
   darkenCSS,
   desaturate,
   desaturateCSS,
+  flattenColor,
   hueShift,
   hueShiftCSS,
   lighten,
@@ -2793,6 +2794,21 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const otherSrc = cssSourceExpr(other.cssVar, other.cssExpr);
         const cssExpr = src ? mixCSS(src, otherSrc || oklchToCSS(other.oklch), t) : undefined;
         return { type: 'ColorValue', oklch: mixColors(obj.oklch, other.oklch, t), cssExpr };
+      }
+      case 'flatten': {
+        if (expr.args.length > 1) throw mError('flatten() expects 0 or 1 arguments');
+        let bg: ColorValue = { type: 'ColorValue', oklch: { L: 1, C: 0, H: 0, alpha: 1 } };
+        if (expr.args.length === 1) {
+          const arg = evaluateExpression(expr.args[0], scope);
+          if (!isColorValue(arg)) throw mError('flatten() background must be a Color');
+          bg = arg;
+        }
+        if (obj.cssVar || obj.cssExpr || obj.lightDark || bg.cssVar || bg.cssExpr || bg.lightDark) {
+          throw mError(
+            'flatten() cannot be used with theme-dynamic colors (CSSVar or Color.lightDark) — CSS has no alpha-compositing expression, so the result could not follow the theme. Flatten the underlying static color instead.'
+          );
+        }
+        return { type: 'ColorValue', oklch: flattenColor(obj.oklch, bg.oklch) };
       }
       case 'analogous': {
         if (expr.args.length > 1) throw mError('analogous() expects 0 or 1 arguments');

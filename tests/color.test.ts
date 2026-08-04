@@ -378,6 +378,104 @@ describe('Color type', () => {
       expect(parseFloat(result.logs[1].parts[0].value)).toBeCloseTo(200, 1);
     });
 
+    it('.flatten() composites 50% red onto default white in gamma sRGB', () => {
+      const result = compile(`
+        let c = Color("#ff0000").alpha(0.5);
+        let flat = c.flatten();
+        log(flat.hex);
+        log(flat.a);
+      `);
+      // source-over on gamma sRGB: (1, 0, 0)·0.5 + (1, 1, 1)·0.5 = (1, 0.5, 0.5) → #ff8080
+      const hex = result.logs[0].parts[0].value;
+      const [r, g, b] = [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)].map((h) => parseInt(h, 16));
+      expect(r).toBe(255);
+      expect(g).toBeGreaterThanOrEqual(127);
+      expect(g).toBeLessThanOrEqual(128);
+      expect(b).toBeGreaterThanOrEqual(127);
+      expect(b).toBeLessThanOrEqual(128);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBe(1);
+    });
+
+    it('.flatten() with no argument equals .flatten(white)', () => {
+      const result = compile(`
+        let c = Color(0.6, 0.2, 250, 0.4);
+        log(c.flatten().hex);
+        log(c.flatten(Color("#ffffff")).hex);
+      `);
+      expect(result.logs[0].parts[0].value).toBe(result.logs[1].parts[0].value);
+    });
+
+    it('.flatten() accepts a hex-literal background', () => {
+      const result = compile(`
+        let c = Color("#ffffff").alpha(0.5);
+        let flat = c.flatten(#000);
+        log(flat.hex);
+      `);
+      // 50% white over black: each channel 0.5 → #808080
+      const hex = result.logs[0].parts[0].value;
+      const channels = [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)].map((h) => parseInt(h, 16));
+      for (const ch of channels) {
+        expect(ch).toBeGreaterThanOrEqual(127);
+        expect(ch).toBeLessThanOrEqual(128);
+      }
+    });
+
+    it('.flatten() leaves an opaque color unchanged', () => {
+      const result = compile(`
+        let c = Color("#3366cc");
+        log(c.hex);
+        log(c.flatten(#000).hex);
+        log(c.flatten(#000).a);
+      `);
+      expect(result.logs[1].parts[0].value).toBe(result.logs[0].parts[0].value);
+      expect(parseFloat(result.logs[2].parts[0].value)).toBe(1);
+    });
+
+    it('.flatten() clips an out-of-gamut opaque color into sRGB gamut', () => {
+      const result = compile(`
+        let vivid = Color(0.7, 0.35, 150);
+        let flat = vivid.flatten();
+        log(flat.chroma);
+        log(flat.a);
+      `);
+      // oklch(0.7 0.35 150) is far outside sRGB; the composite round-trips
+      // through clamped sRGB, so chroma lands at the gamut boundary
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeLessThan(0.35);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBe(1);
+    });
+
+    it('.flatten() of a fully transparent color returns the background', () => {
+      const result = compile(`
+        let c = Color("#ff0000").alpha(0);
+        let bg = Color("#00ff00");
+        log(c.flatten(bg).hex);
+        log(bg.hex);
+      `);
+      expect(result.logs[0].parts[0].value).toBe(result.logs[1].parts[0].value);
+    });
+
+    it('.flatten() of fully transparent over fully transparent yields alpha 0 without NaN', () => {
+      const result = compile(`
+        let c = Color("#ff0000").alpha(0);
+        let bg = Color("#00ff00").alpha(0);
+        let flat = c.flatten(bg);
+        log(flat.a);
+        log(flat.lightness);
+      `);
+      expect(parseFloat(result.logs[0].parts[0].value)).toBe(0);
+      expect(parseFloat(result.logs[1].parts[0].value)).toBe(0);
+    });
+
+    it('.flatten() onto a translucent background composites alpha (source-over)', () => {
+      const result = compile(`
+        let c = Color("#ff0000").alpha(0.5);
+        let bg = Color("#ffffff").alpha(0.5);
+        log(c.flatten(bg).a);
+      `);
+      // αout = 0.5 + 0.5·(1 − 0.5) = 0.75
+      expect(parseFloat(result.logs[0].parts[0].value)).toBeCloseTo(0.75, 5);
+    });
+
     it('method chaining works', () => {
       const result = compile(`
         let c = Color(0.5, 0.2, 30)
@@ -407,6 +505,46 @@ describe('Color type', () => {
 
     it('.mix() throws on wrong arg count', () => {
       expect(() => compile('let c = Color("#ff0000"); c.mix(c);')).toThrow('expects 2 arguments');
+    });
+
+    it('.flatten() throws on non-Color background', () => {
+      expect(() => compile('let c = Color("#ff0000"); c.flatten("white");')).toThrow('must be a Color');
+    });
+
+    it('.flatten() throws on too many arguments', () => {
+      expect(() => compile('let c = Color("#ff0000"); c.flatten(c, c);')).toThrow('expects 0 or 1 arguments');
+    });
+
+    it('.flatten() throws on a CSSVar-backed source', () => {
+      expect(() =>
+        compile('let c = Color(CSSVar("--x", "#ff0000")); c.flatten();')
+      ).toThrow('theme-dynamic');
+    });
+
+    it('.flatten() throws on a CSSVar-derived (cssExpr) source', () => {
+      expect(() =>
+        compile('let c = Color(CSSVar("--x", "#ff0000")).lighten(0.1); c.flatten();')
+      ).toThrow('theme-dynamic');
+    });
+
+    it('.flatten() throws on a CSSVar-backed background', () => {
+      expect(() =>
+        compile('let c = Color("#ff0000").alpha(0.5); let bg = Color(CSSVar("--x", "#ffffff")); c.flatten(bg);')
+      ).toThrow('theme-dynamic');
+    });
+
+    it('.flatten() throws on a lightDark background', () => {
+      expect(() =>
+        compile(
+          "let c = Color('#ff0000').alpha(0.5); let bg = Color.lightDark(Color('#fff'), Color('#000')); c.flatten(bg);"
+        )
+      ).toThrow('theme-dynamic');
+    });
+
+    it('.flatten() throws on a lightDark source', () => {
+      expect(() =>
+        compile("let c = Color.lightDark(Color('#333'), Color('#eee')); c.flatten();")
+      ).toThrow('theme-dynamic');
     });
 
     it('unknown method throws', () => {

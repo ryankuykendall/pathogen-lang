@@ -339,7 +339,8 @@ function inferExprType(expr: Expression): string | null {
           expr.method === 'difference' || expr.method === 'intersection' || expr.method === 'xor') return 'PathBlock';
       if (expr.method === 'lighten' || expr.method === 'darken' || expr.method === 'alpha' ||
           expr.method === 'hueShift' || expr.method === 'complement' || expr.method === 'mix' ||
-          expr.method === 'saturate' || expr.method === 'desaturate') return 'Color';
+          expr.method === 'saturate' || expr.method === 'desaturate' ||
+          expr.method === 'flatten') return 'Color';
       if (expr.method === 'toPathBlock') return 'PathBlock';
       return null;
     case 'ArrayLiteral':

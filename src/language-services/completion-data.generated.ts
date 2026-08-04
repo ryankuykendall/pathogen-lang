@@ -331,6 +331,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'hueShift', kind: 'function', detail: 'hueShift(degrees) — Rotate hue (degrees; angle-suffixed values like 90deg auto-convert)', boost: 8, insertText: 'hueShift(${1:degrees})$0', isSnippet: true },
       { label: 'complement', kind: 'function', detail: 'complement() — Complementary color', boost: 8, insertText: 'complement()$0', isSnippet: true },
       { label: 'mix', kind: 'function', detail: 'mix(other, t) — Mix with another color', boost: 8, insertText: 'mix(${1:other}, ${2:t})$0', isSnippet: true },
+      { label: 'flatten', kind: 'function', detail: 'flatten(background?) — Alpha-composite onto a background color (default white), baking transparency into the result', boost: 8, insertText: 'flatten()$0', isSnippet: true },
       { label: 'analogous', kind: 'function', detail: 'analogous(angle?) — Analogous color harmony (3 colors; degrees, default 30; angle-suffixed values auto-convert)', boost: 8, insertText: 'analogous()$0', isSnippet: true },
       { label: 'triadic', kind: 'function', detail: 'triadic() — Triadic color harmony (3 colors)', boost: 8, insertText: 'triadic()$0', isSnippet: true },
       { label: 'tetradic', kind: 'function', detail: 'tetradic() — Tetradic color harmony (4 colors)', boost: 8, insertText: 'tetradic()$0', isSnippet: true },
@@ -1078,7 +1079,7 @@ export const CONSTRUCTOR_RETURN_TYPES: Record<string, { type: string; hasBinding
 /** Per-type method return types (resolves chains like grid.getPoint(0,0).x) */
 export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'Angle': { toDeg: 'Angle', toRad: 'Angle', toPi: 'Angle', toTurns: 'Angle' },
-  'ColorInstance': { lighten: 'ColorInstance', darken: 'ColorInstance', saturate: 'ColorInstance', desaturate: 'ColorInstance', alpha: 'ColorInstance', hueShift: 'ColorInstance', complement: 'ColorInstance', mix: 'ColorInstance', analogous: 'array', triadic: 'array', tetradic: 'array', splitComplementary: 'array' },
+  'ColorInstance': { lighten: 'ColorInstance', darken: 'ColorInstance', saturate: 'ColorInstance', desaturate: 'ColorInstance', alpha: 'ColorInstance', hueShift: 'ColorInstance', complement: 'ColorInstance', mix: 'ColorInstance', flatten: 'ColorInstance', analogous: 'array', triadic: 'array', tetradic: 'array', splitComplementary: 'array' },
   'Grid': { set: 'Grid', getPoint: 'Point', getRow: 'array', getCol: 'array', cells: 'array', fill: 'Grid', map: 'Grid' },
   'Point': { translate: 'Point', rotate: 'Point', lerp: 'Point', midpoint: 'Point', polarTranslate: 'Point' },
   'array': { map: 'array', mapSlice: 'array', slice: 'array', reverse: 'array', sort: 'array' },
