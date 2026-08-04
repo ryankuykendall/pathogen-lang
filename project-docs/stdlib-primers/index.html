@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pathogen Stdlib Primers</title>
+  <link rel="stylesheet" href="../../playground/styles/theme.css">
+  <script>(function () {
+      try {
+        var stored = localStorage.getItem('pathogen-theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+    })();</script>
+  <script type="module" src="../../public/components/shared/theme-toggle.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-primary, #1e1e2e);
+      color: var(--text-primary, #cdd6f4);
+      font-family: var(--font-sans, system-ui, sans-serif);
+      line-height: 1.65;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .page-head { border-bottom: 1px solid var(--border-color, #313244); padding-bottom: 1.25rem; margin-bottom: 2rem; position: relative; }
+    .eyebrow { font-size: 0.8rem; color: var(--text-secondary, #a6adc8); letter-spacing: 0.04em; text-transform: uppercase; }
+    .eyebrow a { color: var(--accent-color, #89b4fa); text-decoration: none; }
+    .page-head h1 { font-size: 2rem; margin: 0.35rem 0 0.25rem; }
+    .page-head h1 code { font-family: var(--font-mono, ui-monospace, monospace); color: var(--accent-color, #89b4fa); }
+    .hook { font-size: 1.1rem; color: var(--text-secondary, #a6adc8); font-style: italic; }
+    theme-toggle { position: absolute; top: 0; right: 0; }
+    .prose { margin-bottom: 1.5rem; }
+    .prose p, .prose ul { margin-bottom: 0.9rem; max-width: 72ch; }
+    .prose ul { padding-left: 1.4rem; }
+    .prose li { margin-bottom: 0.35rem; }
+    .prose h2 { font-size: 1.35rem; margin: 2.2rem 0 0.8rem; }
+    .prose h3 { font-size: 1.1rem; margin: 1.6rem 0 0.6rem; }
+    .prose code, .example-head code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.9em; background: var(--bg-elevated, #24243a); padding: 0.1em 0.35em; border-radius: 4px; }
+    .prose a { color: var(--accent-color, #89b4fa); }
+    .prose strong { color: var(--text-primary, #cdd6f4); }
+    .example { margin: 2.75rem 0; border-top: 1px solid var(--border-color, #313244); padding-top: 1.6rem; }
+    .example-head { font-size: 1.3rem; margin-bottom: 0.9rem; }
+    .ex-num { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-color, #89b4fa); border: 1px solid var(--border-color, #313244); border-radius: 999px; padding: 0.1rem 0.6rem; margin-right: 0.6rem; vertical-align: middle; }
+    pre.code {
+      background: var(--bg-secondary, #181825);
+      border: 1px solid var(--border-color, #313244);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      font-family: var(--font-mono, ui-monospace, monospace);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      margin: 1rem 0;
+    }
+    pre.code .kw  { color: var(--code-keyword, #c4a4e8); font-weight: 600; }
+    pre.code .fn  { color: var(--code-fn, #f7b56e); }
+    pre.code .num { color: var(--code-num, #f0a07b); }
+    pre.code .str { color: var(--code-str, #8fc4a1); }
+    pre.code .cm  { color: var(--code-comment, #7a6f8a); font-style: italic; }
+    pre.code .op  { color: var(--code-op, #a8a0b8); }
+    pre.code .tp  { color: var(--code-tp, #e8b48a); }
+    pre.code .id  { color: var(--text-primary, #cdd6f4); }
+    figure {
+      /* Pinned dark: all example artwork is tuned for a dark plate; the
+         light theme's --bg-elevated (#fff) washes out labels and scene
+         fills, so the plate deliberately does NOT follow the theme. */
+      background: #24243a;
+      border: 1px solid var(--border-color, #313244);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0 1.2rem;
+      text-align: center;
+    }
+    figure svg { max-width: 100%; height: auto; }
+    figcaption { font-size: 0.85rem; color: var(--text-secondary, #a6adc8); margin-top: 0.7rem; text-align: left; max-width: 72ch; margin-left: auto; margin-right: auto; }
+    .page-foot { border-top: 1px solid var(--border-color, #313244); margin-top: 3rem; padding-top: 1.25rem; font-size: 0.9rem; color: var(--text-secondary, #a6adc8); }
+    .page-foot nav { display: flex; justify-content: space-between; margin-bottom: 0.8rem; }
+    .page-foot a { color: var(--accent-color, #89b4fa); text-decoration: none; }
+    .page-foot .regen { font-size: 0.75rem; opacity: 0.7; margin-top: 0.6rem; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+  <header class="page-head">
+    <p class="eyebrow">Pathogen · internal primers</p>
+    <h1>Stdlib Primers</h1>
+    <p class="hook">Seven standalone walkthroughs of the deterministic hash, noise, and shaping functions — what each one does, why you'd reach for it, and five worked examples from a bare number line to a finished composition.</p>
+    <theme-toggle></theme-toggle>
+  </header>
+  <main class="prose">
+    <p>Reading order matters a little: the hash trio (<code>hash01</code> → <code>hash11</code> → <code>hashRange</code>) builds one mental model in three steps, <code>smoothstep</code> sets up <code>bump</code>, and both set up the noise pair. Each page also stands alone.</p>
+    <ul class="hub-list">
+      <li>
+        <span class="num">01</span>
+        <a class="card" href="./hash01.html"><code>hash01</code><span class="hook-line">A random number that never changes its mind.</span></a>
+      </li>
+      <li>
+        <span class="num">02</span>
+        <a class="card" href="./hash11.html"><code>hash11</code><span class="hook-line">The same dice, rolled between −1 and 1.</span></a>
+      </li>
+      <li>
+        <span class="num">03</span>
+        <a class="card" href="./hashRange.html"><code>hashRange</code><span class="hook-line">randomRange with a memory.</span></a>
+      </li>
+      <li>
+        <span class="num">04</span>
+        <a class="card" href="./smoothstep.html"><code>smoothstep</code><span class="hook-line">The S-curve that turns a cliff into a ramp.</span></a>
+      </li>
+      <li>
+        <span class="num">05</span>
+        <a class="card" href="./bump.html"><code>bump</code><span class="hook-line">A hill you can put anywhere.</span></a>
+      </li>
+      <li>
+        <span class="num">06</span>
+        <a class="card" href="./noise.html"><code>noise</code><span class="hook-line">Randomness with a smooth ride.</span></a>
+      </li>
+      <li>
+        <span class="num">07</span>
+        <a class="card" href="./noise2.html"><code>noise2</code><span class="hook-line">A weather map of smooth randomness.</span></a>
+      </li>
+    </ul>
+    <p>Published reference: <a href="https://pathogen.studio/docs#stdlib-hash-noise">Hash &amp; Noise</a> · <a href="https://pathogen.studio/docs#stdlib-interpolation-clamping">Interpolation &amp; Clamping</a> · <a href="https://pathogen.studio/docs#stdlib-easing">Easing</a></p>
+  </main>
+  <footer class="page-foot">
+    <p class="regen">Generated by project-docs/stdlib-primers/build-primers.ts — edit content/, not this file.</p>
+  </footer>
+  <style>
+    .hub-list { list-style: none; padding: 0; }
+    .hub-list li { display: flex; align-items: baseline; gap: 0.8rem; margin-bottom: 0.35rem; }
+    .hub-list .num { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.8rem; color: var(--text-secondary, #a6adc8); }
+    .hub-list .card { text-decoration: none; color: var(--text-primary, #cdd6f4); }
+    .hub-list .card code { color: var(--accent-color, #89b4fa); font-size: 1.05rem; margin-right: 0.6rem; }
+    .hub-list .hook-line { color: var(--text-secondary, #a6adc8); font-style: italic; font-size: 0.95rem; }
+  </style>
+  </div>
+</body>
+</html>

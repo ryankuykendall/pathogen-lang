@@ -1,0 +1,40 @@
+// viewBox="0 0 400 210"
+//-- Sums of hills make arbitrary skylines. One filled silhouette whose
+//-- height is three amplitude-times-bump terms: a tall mid peak, a low
+//-- wide shoulder, and a small right summit.
+
+define ViewBox(0, 0, 400, 210);
+
+let range = PathLayer('mountain') ${ fill: oklch(0.45 0.08 265); stroke: none; };
+range.apply {
+  M 20 185
+  for (i in 0..140) {
+    let t = i / 140;
+    let h = 45 * bump(t, 0.25, 0.28) + 95 * bump(t, 0.52, 0.3) + 38 * bump(t, 0.82, 0.16);
+    L calc(20 + t * 360) calc(185 - h)
+  }
+  L 380 185
+  Z
+}
+
+let mist = PathLayer('mist') ${ fill: oklch(0.6 0.05 265); stroke: none; opacity: 0.5; };
+mist.apply {
+  M 20 185
+  for (i in 0..140) {
+    let t = i / 140;
+    let h = 26 * bump(t, 0.38, 0.34) + 40 * bump(t, 0.7, 0.24);
+    L calc(20 + t * 360) calc(185 - h)
+  }
+  L 380 185
+  Z
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 26)`h = 45·bump(t, 0.25, 0.28) + 95·bump(t, 0.52, 0.3) + 38·bump(t, 0.82, 0.16)`
+}

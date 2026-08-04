@@ -1,0 +1,36 @@
+// viewBox="0 0 400 190"
+//-- The same 10 x 6 dot grid three times. The only difference is j -- the
+//-- jitter amplitude multiplying hash11: 0 (rigid), 2 (relaxed), 5
+//-- (scattered). One number is the entire design decision.
+
+define ViewBox(0, 0, 400, 190);
+
+fn jitteredGrid(name, x0, j) {
+  let g = PathLayer(name) ${ fill: oklch(0.68 0.13 200); stroke: none; };
+  g.apply {
+    for (row in 0..5) {
+      for (col in 0..9) {
+        let idx = row * 10 + col;
+        circle(calc(x0 + col * 11 + hash11(idx) * j),
+               calc(48 + row * 11 + hash11(idx, 1) * j),
+               1.7);
+      }
+    }
+  }
+}
+
+jitteredGrid('rigid', 30, 0);
+jitteredGrid('relaxed', 160, 2);
+jitteredGrid('scattered', 290, 5);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(30, 26)`j = 0`
+  text(160, 26)`j = 2`
+  text(290, 26)`j = 5`
+}

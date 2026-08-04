@@ -1,0 +1,34 @@
+// viewBox="0 0 400 180"
+//-- Same randomness source, sampled two ways. Top: each bar's lightness
+//-- is hash01(i) -- neighbors are strangers, it reads as static. Bottom:
+//-- lightness is noise(i * 0.15) -- neighbors agree, it reads as light
+//-- moving across a surface.
+
+define ViewBox(0, 0, 400, 180);
+
+for (i in 0..59) {
+  let Lh = 0.3 + hash01(i) * 0.5;
+  let ch = Color(Lh, 0.05, 260);
+  let barH = PathLayer(`static-${i}`) ${ fill: ch; stroke: none; };
+  barH.apply {
+    rect(calc(24 + i * 5.9), 34, 5.4, 50);
+  }
+
+  let Ln = 0.3 + noise(i * 0.15) * 0.5;
+  let cn = Color(Ln, 0.05, 260);
+  let barN = PathLayer(`smooth-${i}`) ${ fill: cn; stroke: none; };
+  barN.apply {
+    rect(calc(24 + i * 5.9), 112, 5.4, 50);
+  }
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(24, 26)`hash01(i) — per-bar strangers`
+  text(24, 104)`noise(i * 0.15) — neighbors agree`
+}

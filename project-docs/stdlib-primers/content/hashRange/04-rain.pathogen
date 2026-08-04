@@ -1,0 +1,36 @@
+// viewBox="0 0 400 200"
+//-- Eighty slanted rain streaks. Position and length are ranged picks;
+//-- each streak also lands in one of three depth buckets --
+//-- floor(hashRange(i, 0, 3, 2)) picks 0, 1, or 2 -- and the bucket sets
+//-- the opacity, so the rain reads as near, middle, and far.
+
+define ViewBox(0, 0, 400, 200);
+
+let far = PathLayer('far') ${ stroke: oklch(0.6 0.05 260); stroke-width: 1; fill: none; opacity: 0.25; };
+let mid = PathLayer('mid') ${ stroke: oklch(0.65 0.06 260); stroke-width: 1.1; fill: none; opacity: 0.5; };
+let near = PathLayer('near') ${ stroke: oklch(0.72 0.07 260); stroke-width: 1.3; fill: none; opacity: 0.9; };
+
+far.apply {
+  for (i in 0..79) {
+    if (floor(hashRange(i, 0, 3, 2)) == 0) {
+      M calc(hashRange(i, 20, 375)) calc(hashRange(i, 18, 150, 1))
+      l 4 calc(hashRange(i, 8, 26, 3))
+    }
+  }
+}
+mid.apply {
+  for (i in 0..79) {
+    if (floor(hashRange(i, 0, 3, 2)) == 1) {
+      M calc(hashRange(i, 20, 375)) calc(hashRange(i, 18, 150, 1))
+      l 4 calc(hashRange(i, 8, 26, 3))
+    }
+  }
+}
+near.apply {
+  for (i in 0..79) {
+    if (floor(hashRange(i, 0, 3, 2)) == 2) {
+      M calc(hashRange(i, 20, 375)) calc(hashRange(i, 18, 150, 1))
+      l 4 calc(hashRange(i, 8, 26, 3))
+    }
+  }
+}

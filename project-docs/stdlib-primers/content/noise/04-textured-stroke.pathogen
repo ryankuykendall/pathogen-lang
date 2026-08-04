@@ -1,0 +1,36 @@
+// viewBox="0 0 400 130"
+//-- Everything so far, on one ribbon: noise drives the width for organic
+//-- undulation, and a smoothstep end-window eases both tips to a point.
+//-- Width = (2 + noise(t*6) * 13) * smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t).
+
+define ViewBox(0, 0, 400, 130);
+
+let mk = {|vo, pb|
+  vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+  for (i in 0..63) {
+    let t = i / 63;
+    let amp = smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t);
+    let w = (2 + noise(t * 6) * 13) * amp;
+    vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+  }
+  vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+};
+
+let spine = @{ l 340 0 };
+let rib = spine.compoundVariableOffset() << mk;
+
+let band = PathLayer('textured') ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.92; };
+band.apply {
+  M calc(30 + rib.anchor.x) calc(72 + rib.anchor.y)
+  rib.draw();
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(30, 24)`width = (2 + noise(t·6) · 13) × end-window`
+}

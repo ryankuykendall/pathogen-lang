@@ -1,0 +1,44 @@
+// viewBox="0 0 400 230"
+//-- On a straight spine, the silhouette of a stroke IS its width profile.
+//-- Three ribbons: a plain bump, the same bump squared (sharper peak,
+//-- softer feet), and an asymmetric two-bump sum.
+
+define ViewBox(0, 0, 400, 230);
+
+fn ribbon(name, y0, kind) {
+  let mk = {|vo, pb|
+    vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    for (i in 0..47) {
+      let t = i / 47;
+      let w = 0.6;
+      if (kind == 0) { w = 0.6 + 13 * bump(t, 0.5, 0.35); }
+      if (kind == 1) { w = 0.6 + 13 * pow(bump(t, 0.5, 0.35), 2); }
+      if (kind == 2) { w = 0.6 + 10 * bump(t, 0.35, 0.25) + 6 * bump(t, 0.72, 0.18); }
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+  };
+  let spine = @{ l 330 0 };
+  let rib = spine.compoundVariableOffset() << mk;
+  let band = PathLayer(name) ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  band.apply {
+    M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
+    rib.draw();
+  }
+}
+
+ribbon('plain-bump', 48, 0);
+ribbon('bump-squared', 118, 1);
+ribbon('two-bump-sum', 188, 2);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(35, 26)`bump(t, 0.5, 0.35)`
+  text(35, 96)`pow(bump(t, 0.5, 0.35), 2)`
+  text(35, 166)`10·bump(t, 0.35, 0.25) + 6·bump(t, 0.72, 0.18)`
+}

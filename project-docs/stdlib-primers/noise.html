@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>noise — Pathogen stdlib primer</title>
+  <link rel="stylesheet" href="../../playground/styles/theme.css">
+  <script>(function () {
+      try {
+        var stored = localStorage.getItem('pathogen-theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+    })();</script>
+  <script type="module" src="../../public/components/shared/theme-toggle.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-primary, #1e1e2e);
+      color: var(--text-primary, #cdd6f4);
+      font-family: var(--font-sans, system-ui, sans-serif);
+      line-height: 1.65;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .page-head { border-bottom: 1px solid var(--border-color, #313244); padding-bottom: 1.25rem; margin-bottom: 2rem; position: relative; }
+    .eyebrow { font-size: 0.8rem; color: var(--text-secondary, #a6adc8); letter-spacing: 0.04em; text-transform: uppercase; }
+    .eyebrow a { color: var(--accent-color, #89b4fa); text-decoration: none; }
+    .page-head h1 { font-size: 2rem; margin: 0.35rem 0 0.25rem; }
+    .page-head h1 code { font-family: var(--font-mono, ui-monospace, monospace); color: var(--accent-color, #89b4fa); }
+    .hook { font-size: 1.1rem; color: var(--text-secondary, #a6adc8); font-style: italic; }
+    theme-toggle { position: absolute; top: 0; right: 0; }
+    .prose { margin-bottom: 1.5rem; }
+    .prose p, .prose ul { margin-bottom: 0.9rem; max-width: 72ch; }
+    .prose ul { padding-left: 1.4rem; }
+    .prose li { margin-bottom: 0.35rem; }
+    .prose h2 { font-size: 1.35rem; margin: 2.2rem 0 0.8rem; }
+    .prose h3 { font-size: 1.1rem; margin: 1.6rem 0 0.6rem; }
+    .prose code, .example-head code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.9em; background: var(--bg-elevated, #24243a); padding: 0.1em 0.35em; border-radius: 4px; }
+    .prose a { color: var(--accent-color, #89b4fa); }
+    .prose strong { color: var(--text-primary, #cdd6f4); }
+    .example { margin: 2.75rem 0; border-top: 1px solid var(--border-color, #313244); padding-top: 1.6rem; }
+    .example-head { font-size: 1.3rem; margin-bottom: 0.9rem; }
+    .ex-num { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-color, #89b4fa); border: 1px solid var(--border-color, #313244); border-radius: 999px; padding: 0.1rem 0.6rem; margin-right: 0.6rem; vertical-align: middle; }
+    pre.code {
+      background: var(--bg-secondary, #181825);
+      border: 1px solid var(--border-color, #313244);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      font-family: var(--font-mono, ui-monospace, monospace);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      margin: 1rem 0;
+    }
+    pre.code .kw  { color: var(--code-keyword, #c4a4e8); font-weight: 600; }
+    pre.code .fn  { color: var(--code-fn, #f7b56e); }
+    pre.code .num { color: var(--code-num, #f0a07b); }
+    pre.code .str { color: var(--code-str, #8fc4a1); }
+    pre.code .cm  { color: var(--code-comment, #7a6f8a); font-style: italic; }
+    pre.code .op  { color: var(--code-op, #a8a0b8); }
+    pre.code .tp  { color: var(--code-tp, #e8b48a); }
+    pre.code .id  { color: var(--text-primary, #cdd6f4); }
+    figure {
+      /* Pinned dark: all example artwork is tuned for a dark plate; the
+         light theme's --bg-elevated (#fff) washes out labels and scene
+         fills, so the plate deliberately does NOT follow the theme. */
+      background: #24243a;
+      border: 1px solid var(--border-color, #313244);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0 1.2rem;
+      text-align: center;
+    }
+    figure svg { max-width: 100%; height: auto; }
+    figcaption { font-size: 0.85rem; color: var(--text-secondary, #a6adc8); margin-top: 0.7rem; text-align: left; max-width: 72ch; margin-left: auto; margin-right: auto; }
+    .page-foot { border-top: 1px solid var(--border-color, #313244); margin-top: 3rem; padding-top: 1.25rem; font-size: 0.9rem; color: var(--text-secondary, #a6adc8); }
+    .page-foot nav { display: flex; justify-content: space-between; margin-bottom: 0.8rem; }
+    .page-foot a { color: var(--accent-color, #89b4fa); text-decoration: none; }
+    .page-foot .regen { font-size: 0.75rem; opacity: 0.7; margin-top: 0.6rem; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+  <header class="page-head">
+    <p class="eyebrow"><a href="./index.html">Stdlib primers</a> · 06 of 07</p>
+    <h1><code>noise</code></h1>
+    <p class="hook">Randomness with a smooth ride.</p>
+    <theme-toggle></theme-toggle>
+  </header>
+  <main class="prose">
+<h2>What it does</h2>
+<p><a href="./hash01.html"><code>hash01</code></a> rolls dice. <code>noise(x, seed?)</code> draws the smooth
+curve <em>through</em> the dice rolls.</p>
+<p>The mental model is <strong>pins and a glide</strong>. At every whole number there&#39;s a
+pin at a random height — in fact, exactly the <code>hash01</code> of that number:
+<code>noise(3)</code> <em>equals</em> <code>hash01(3)</code>, precisely. Between pins, the curve glides
+using the same S-shaped ease as <a href="./smoothstep.html"><code>smoothstep</code></a>,
+flattening as it touches each pin. So the result is never jumpy and never
+cornered: continuous randomness you can drive along without the wheels
+leaving the road. Answers stay in [0, 1), seeds pick independent pin
+sequences, and negative <code>x</code> works fine.</p>
+<p>The one knob that matters is <strong>input scale = frequency</strong>: <code>noise(t * 8)</code>
+passes 8 pins while <code>t</code> goes 0→1, so it wobbles 8 times as fast as
+<code>noise(t)</code>. You don&#39;t configure the character of the wobble — you just
+drive faster or slower past the pins.</p>
+<p>One difference from its integer cousin: as the <code>hash01</code> primer noted, the
+hash shrugs at weird input (anything non-finite is treated as label 0) —
+but <code>noise</code> assumes you&#39;re driving along a real road. Feed it Infinity or
+NaN and you get NaN back.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Whenever <em>neighbors should agree</em>. Hashed randomness gives each index its
+own unrelated answer — perfect for scatter, wrong for anything that should
+feel like one continuous thing. Surfaces, edges, paths, lighting, and
+motion all read as organic only when nearby samples rise and fall
+together. <code>noise</code> is that agreement, with the amount of change per unit
+distance under your control.</p>
+<h2>Example 1 — The curve through the dice</h2>
+<p>The exact relationship, plotted. Dots mark <code>hash01(k)</code> at the whole
+numbers 0 through 8; the curve is <code>noise(x)</code> sampled 160 times across the
+same span.</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 190"</span>
+<span class="cm">//-- The relationship in one picture: dots mark hash01(k) at every whole</span>
+<span class="cm">//-- number 0..8; the curve is noise(x) sampled finely across the same</span>
+<span class="cm">//-- span. The curve threads EXACTLY through every dot -- and flattens as</span>
+<span class="cm">//-- it touches each one.</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">190</span>);
+
+<span class="kw">let</span> <span class="id">axis</span> = <span class="tp">PathLayer</span>(<span class="str">'axis'</span>) ${<span class="str"> stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; </span>};
+<span class="id">axis</span>.<span class="kw">apply</span> {
+  M 30 155 L 370 155
+}
+
+<span class="kw">let</span> <span class="id">curve</span> = <span class="tp">PathLayer</span>(<span class="str">'noise-curve'</span>) ${<span class="str"> stroke: oklch(0.68 0.13 200); stroke-width: 2; fill: none; </span>};
+<span class="id">curve</span>.<span class="kw">apply</span> {
+  M 30 calc(155 - noise(0) * 115)
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">160</span>) {
+    <span class="kw">let</span> <span class="id">x</span> = <span class="id">i</span> / <span class="num">160</span> * <span class="num">8</span>;
+    L calc(30 + x * 42.5) calc(155 - noise(x) * 115)
+  }
+}
+
+<span class="kw">let</span> <span class="id">pins</span> = <span class="tp">PathLayer</span>(<span class="str">'hash-pins'</span>) ${<span class="str"> fill: oklch(0.62 0.16 260); stroke: none; </span>};
+<span class="id">pins</span>.<span class="kw">apply</span> {
+  <span class="kw">for</span> (<span class="id">k</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">8</span>) {
+    <span class="id">circle</span>(<span class="kw">calc</span>(<span class="num">30</span> + <span class="id">k</span> * <span class="num">42.5</span>), <span class="kw">calc</span>(<span class="num">155</span> - <span class="id">hash01</span>(<span class="id">k</span>) * <span class="num">115</span>), <span class="num">3</span>);
+  }
+}
+
+<span class="cm">//-- Legend tinted to match the geometry.</span>
+<span class="kw">let</span> <span class="id">legendDots</span> = <span class="tp">TextLayer</span>(<span class="str">'legend-dots'</span>) ${<span class="str"> font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.15 260); text-anchor: start; </span>};
+<span class="id">legendDots</span>.<span class="kw">apply</span> { <span class="kw">text</span>(<span class="num">30</span>, <span class="num">26</span>)`dots: hash01(k) at whole numbers` }
+<span class="kw">let</span> <span class="id">legendCurve</span> = <span class="tp">TextLayer</span>(<span class="str">'legend-curve'</span>) ${<span class="str"> font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.72 0.13 200); text-anchor: start; </span>};
+<span class="id">legendCurve</span>.<span class="kw">apply</span> { <span class="kw">text</span>(<span class="num">230</span>, <span class="num">26</span>)`curve: noise(x)` }
+
+<span class="kw">let</span> <span class="id">labels</span> = <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${<span class="str">
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+</span>};
+<span class="id">labels</span>.<span class="kw">apply</span> {
+  <span class="kw">text</span>(<span class="num">28</span>, <span class="num">172</span>)`0`
+  <span class="kw">text</span>(<span class="num">360</span>, <span class="num">172</span>)`8`
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 190" width="400" height="190">
+
+  <path data-layer-name="axis" id="axis" d="M 30 155 L 370 155" fill="none" stroke="oklch(0.55 0.02 260)" stroke-width="1"/>
+  <path data-layer-name="noise-curve" id="noise-curve" d="M 30 111.55110775842331 L 32.125 111.6550154872163 L 34.25 111.95240657307207 L 36.375 112.4217828652059 L 38.5 113.041646212833 L 40.625 113.79049846516864 L 42.75 114.64684147142805 L 44.875 115.58917708082649 L 47 116.59600714257918 L 49.125 117.6458335059014 L 51.25 118.71715802000836 L 53.375 119.78848253411532 L 55.5 120.83830889743753 L 57.625 121.84513895919022 L 59.75 122.78747456858866 L 61.875 123.64381757484807 L 64 124.39266982718371 L 66.125 125.01253317481081 L 68.25 125.48190946694463 L 70.375 125.77930055280041 L 72.5 125.8832082815934 L 74.625 125.6990562225919 L 76.75 125.1720003295876 L 78.875 124.34014102858085 L 81 123.2415787455719 L 83.125 121.9144139065611 L 85.25 120.39674693754874 L 87.375 118.72667826453514 L 89.5 116.94230831352063 L 91.625 115.08173751050549 L 93.75 113.18306628149003 L 95.875 111.28439505247457 L 98 109.42382424945943 L 100.125 107.63945429844492 L 102.25 105.96938562543131 L 104.375 104.45171865641896 L 106.5 103.12455381740816 L 108.625 102.02599153439921 L 110.75 101.19413223339245 L 112.875 100.66707634038815 L 115 100.48292428138666 L 117.12499999999999 100.8538422181658 L 119.25 101.9154349337751 L 121.375 103.59096078612231 L 123.50000000000001 105.80367813311518 L 125.625 108.47684533266147 L 127.74999999999999 111.53372074266895 L 129.875 114.8975627210454 L 132 118.49162962569855 L 134.125 122.2391798145362 L 136.25 126.06347164546605 L 138.375 129.88776347639592 L 140.5 133.63531366523355 L 142.625 137.2293805698867 L 144.75 140.59322254826316 L 146.875 143.65009795827063 L 149 146.32326515781693 L 151.125 148.5359825048098 L 153.25 150.211508357157 L 155.375 151.27310107276628 L 157.5 151.64401900954545 L 159.625 151.25827350657374 L 161.75 150.15424327393063 L 163.875 148.411737726024 L 166 146.11056627726182 L 168.125 143.33053834205202 L 170.25 140.15146333480254 L 172.375 136.6531506699213 L 174.5 132.91540976181628 L 176.625 129.01805002489533 L 178.75 125.0408808735665 L 180.875 121.06371172223766 L 183 117.16635198531671 L 185.125 113.42861107721168 L 187.25 109.93029841233044 L 189.375 106.75122340508096 L 191.5 103.97119546987118 L 193.625 101.67002402110899 L 195.75 99.92751847320237 L 197.875 98.82348824055924 L 200 98.43774273758754 L 202.125 98.17411214203341 L 204.24999999999997 97.4195831961371 L 206.37500000000003 96.22870016104774 L 208.5 94.65600729791447 L 210.625 92.75604886788642 L 212.75 90.58336913211272 L 214.87499999999997 88.1925123517425 L 217.00000000000003 85.63802278792484 L 219.125 82.97444470180896 L 221.25 80.25632235454395 L 223.375 77.53820000727895 L 225.49999999999997 74.87462192116307 L 227.62500000000003 72.32013235734541 L 229.75 69.92927557697519 L 231.875 67.75659584120149 L 234 65.85663741117344 L 236.12499999999997 64.28394454804018 L 238.25000000000003 63.09306151295081 L 240.375 62.338532567054486 L 242.5 62.07490197150037 L 244.625 62.62049489608442 L 246.74999999999997 64.18201947334221 L 248.87500000000003 66.64659440853228 L 251 69.90133840691298 L 253.125 73.83337017374288 L 255.25 78.3298084142804 L 257.375 83.27777183378402 L 259.5 88.56437913751233 L 261.625 94.07674903072359 L 263.75 99.7020002186764 L 265.875 105.3272514066292 L 268 110.83962129984047 L 270.125 116.12622860356878 L 272.25 121.07419202307241 L 274.375 125.57063026360993 L 276.5 129.5026620304398 L 278.625 132.75740602882053 L 280.75 135.22198096401058 L 282.875 136.7835055412684 L 285 137.32909846585244 L 287.125 137.14184298965236 L 289.25 136.60590490259696 L 291.375 135.76002671700348 L 293.5 134.64295094518923 L 295.625 133.2934200994714 L 297.75 131.75017669216732 L 299.875 130.05196323559417 L 302 128.23752224206925 L 304.125 126.34559622390981 L 306.25 124.41492769343313 L 308.375 122.48425916295645 L 310.5 120.59233314479702 L 312.625 118.77789215127208 L 314.75 117.07967869469896 L 316.875 115.53643528739485 L 319 114.18690444167703 L 321.125 113.06982866986277 L 323.25 112.2239504842693 L 325.375 111.6880123972139 L 327.5 111.50075692101382 L 329.625 111.41656454406592 L 331.75 111.1756001548702 L 333.875 110.79528286589863 L 336 110.2930317896232 L 338.125 109.6862660385159 L 340.25 108.99240472504869 L 342.375 108.22886696169357 L 344.5 107.41307186092249 L 346.625 106.56243853520748 L 348.75 105.69438609702047 L 350.875 104.82633365883346 L 353 103.97570033311844 L 355.125 103.15990523234737 L 357.25 102.39636746899225 L 359.375 101.70250615552504 L 361.5 101.09574040441774 L 363.625 100.59348932814231 L 365.75 100.21317203917074 L 367.875 99.97220764997502 L 370 99.88801527302712" fill="none" stroke="oklch(0.68 0.13 200)" stroke-width="2"/>
+  <path data-layer-name="hash-pins" id="hash-pins" d="M 27 111.55110775842331 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 69.5 125.8832082815934 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 112 100.48292428138666 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 154.5 151.64401900954545 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 197 98.43774273758754 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 239.5 62.07490197150037 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 282 137.32909846585244 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 324.5 111.50075692101382 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 367 99.88801527302712 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="oklch(0.62 0.16 260)" stroke="none" stroke-width="2"/>
+  <text data-layer-name="legend-dots" id="legend-dots" x="30" y="26" font-family="system-ui, sans-serif" font-size="10" fill="oklch(0.7 0.15 260)" text-anchor="start">dots: hash01(k) at whole numbers</text>
+  <text data-layer-name="legend-curve" id="legend-curve" x="230" y="26" font-family="system-ui, sans-serif" font-size="10" fill="oklch(0.72 0.13 200)" text-anchor="start">curve: noise(x)</text>
+  <text data-layer-name="labels" id="labels" x="28" y="172" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">0</text>
+  <text data-layer-name="labels" x="360" y="172" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">8</text>
+</svg></figure>
+<p>The curve doesn&#39;t approximate the dots — it passes <em>exactly</em> through
+every one, because at whole numbers <code>noise</code> <strong>is</strong> <code>hash01</code>. And watch how
+it arrives: flat at every pin, courtesy of the smoothstep glide. Those two
+facts are the entire function.</p>
+<h2>Example 2 — The frequency knob</h2>
+<p>Three wandering lines, one seed, three input scales: <code>t*3</code>, <code>t*6</code>,
+<code>t*12</code>.</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 230"</span>
+<span class="cm">//-- One knob controls the character: the input scale. noise(t * 3) passes</span>
+<span class="cm">//-- 3 pins while t crosses 0..1 -- slow swells. noise(t * 6) undulates.</span>
+<span class="cm">//-- noise(t * 12) chatters. Same function, same seed, different speed</span>
+<span class="cm">//-- past the pins.</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">230</span>);
+
+<span class="kw">fn</span> <span class="id">wander</span>(<span class="id">name</span>, <span class="id">y0</span>, <span class="id">freq</span>, <span class="id">hue</span>) {
+  <span class="kw">let</span> <span class="id">c</span> = <span class="id">Color</span>(<span class="num">0.65</span>, <span class="num">0.13</span>, <span class="id">hue</span>);
+  <span class="kw">let</span> <span class="id">line</span> = <span class="tp">PathLayer</span>(<span class="id">name</span>) ${<span class="str"> stroke: c; stroke-width: 1.8; fill: none; </span>};
+  <span class="id">line</span>.<span class="kw">apply</span> {
+    M 30 calc(y0 - noise(0) * 34)
+    <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">120</span>) {
+      <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">120</span>;
+      L calc(30 + t * 340) calc(y0 - noise(t * freq) * 34)
+    }
+  }
+}
+
+<span class="cm">//-- Note: the slow line also LOOKS smaller in amplitude -- crossing only</span>
+<span class="cm">//-- 3 pins, it rarely reaches the range extremes. That's frequency, not a</span>
+<span class="cm">//-- different amplitude setting.</span>
+<span class="id">wander</span>(<span class="str">'swells'</span>, <span class="num">70</span>, <span class="num">3</span>, <span class="num">260</span>);
+<span class="id">wander</span>(<span class="str">'undulating'</span>, <span class="num">140</span>, <span class="num">6</span>, <span class="num">200</span>);
+<span class="id">wander</span>(<span class="str">'chattering'</span>, <span class="num">210</span>, <span class="num">12</span>, <span class="num">150</span>);
+
+<span class="kw">let</span> <span class="id">labels</span> = <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${<span class="str">
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+</span>};
+<span class="id">labels</span>.<span class="kw">apply</span> {
+  <span class="kw">text</span>(<span class="num">30</span>, <span class="num">24</span>)`noise(t * 3)`
+  <span class="kw">text</span>(<span class="num">30</span>, <span class="num">94</span>)`noise(t * 6)`
+  <span class="kw">text</span>(<span class="num">30</span>, <span class="num">164</span>)`noise(t * 12)`
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 230" width="400" height="230">
+
+  <path data-layer-name="swells" id="swells" d="M 30 57.154240554664284 L 32.833333333333336 57.162053107286425 L 35.666666666666664 57.184961100568295 L 38.5 57.22217003763307 L 41.333333333333336 57.27288542160392 L 44.166666666666664 57.33631275560401 L 47 57.41165754275653 L 49.83333333333333 57.49812528618463 L 52.66666666666667 57.5949214890115 L 55.5 57.7012516543603 L 58.33333333333333 57.816321285354206 L 61.166666666666664 57.93933588511639 L 64 58.069500956770035 L 66.83333333333334 58.20602200343829 L 69.66666666666666 58.34810452824435 L 72.5 58.49495403431138 L 75.33333333333334 58.64577602476254 L 78.16666666666666 58.79977600272102 L 81 58.956159471309974 L 83.83333333333333 59.114131933652594 L 86.66666666666666 59.272898892872036 L 89.5 59.43166585209148 L 92.33333333333333 59.5896383144341 L 95.16666666666667 59.74602178302305 L 98 59.90002176098153 L 100.83333333333334 60.050843751432694 L 103.66666666666667 60.19769325749972 L 106.5 60.33977578230578 L 109.33333333333333 60.476296828974036 L 112.16666666666667 60.60646190062768 L 115 60.729476500389865 L 117.83333333333334 60.84454613138377 L 120.66666666666667 60.950876296732574 L 123.50000000000001 61.04767249955944 L 126.33333333333333 61.13414024298754 L 129.16666666666669 61.20948503014006 L 132 61.272912364140154 L 134.83333333333334 61.323627748111 L 137.66666666666666 61.36083668517578 L 140.5 61.383744678457646 L 143.33333333333331 61.39155723107979 L 146.16666666666669 61.37771131539924 L 149 61.33711227450543 L 151.83333333333331 61.27116816762011 L 154.66666666666666 61.181287053965036 L 157.5 61.06887699276194 L 160.33333333333334 60.9353460432326 L 163.16666666666666 60.782102264598734 L 166 60.61055371608212 L 168.83333333333334 60.4221084569045 L 171.66666666666669 60.21817454628763 L 174.5 60.00016004345325 L 177.33333333333334 59.769473007623105 L 180.16666666666666 59.52752149801896 L 183 59.27571357386256 L 185.83333333333331 59.015457294375665 L 188.66666666666666 58.748160718780014 L 191.5 58.47523190629736 L 194.33333333333334 58.19807891614945 L 197.16666666666666 57.91810980755804 L 200 57.63673263974488 L 202.83333333333331 57.355355471931716 L 205.66666666666669 57.07538636334031 L 208.5 56.798233373192396 L 211.33333333333334 56.52530456070974 L 214.16666666666666 56.25800798511409 L 217.00000000000003 55.99775170562719 L 219.83333333333334 55.74594378147079 L 222.66666666666666 55.50399227186665 L 225.49999999999997 55.273305236036514 L 228.33333333333334 55.05529073320213 L 231.16666666666666 54.85135682258525 L 234 54.66291156340763 L 236.83333333333331 54.49136301489102 L 239.66666666666669 54.33811923625716 L 242.5 54.20458828672781 L 245.33333333333331 54.09217822552472 L 248.16666666666669 54.00229711186964 L 251 53.936353004984326 L 253.83333333333334 53.89575396409052 L 256.66666666666663 53.88190804840997 L 259.5 53.90979640602538 L 262.33333333333337 53.991570742762065 L 265.16666666666663 54.12439495445577 L 268 54.3054329369422 L 270.83333333333337 54.531848586057095 L 273.66666666666663 54.80080579763616 L 276.5 55.10946846751512 L 279.3333333333333 55.4550004915297 L 282.1666666666667 55.83456576551563 L 285 56.24532818530861 L 287.8333333333333 56.68445164674438 L 290.6666666666667 57.149100045658656 L 293.5 57.636437277887154 L 296.3333333333333 58.1436272392656 L 299.16666666666663 58.667833825629714 L 302 59.20622093281523 L 304.8333333333333 59.755952456657845 L 307.6666666666667 60.31419229299331 L 310.5 60.87810433765731 L 313.33333333333337 61.444852486485615 L 316.1666666666667 62.011600635313904 L 319 62.57551267997792 L 321.8333333333333 63.13375251631338 L 324.6666666666667 63.68348404015601 L 327.5 64.22187114734152 L 330.3333333333333 64.74607773370563 L 333.1666666666667 65.25326769508409 L 336 65.74060492731259 L 338.8333333333333 66.20525332622685 L 341.66666666666663 66.64437678766262 L 344.5 67.05513920745561 L 347.3333333333333 67.43470448144153 L 350.1666666666667 67.7802365054561 L 353 68.08889917533507 L 355.83333333333337 68.35785638691414 L 358.6666666666667 68.58427203602902 L 361.5 68.76531001851546 L 364.3333333333333 68.89813423020917 L 367.1666666666667 68.97990856694585 L 370 69.00779692456126" fill="none" stroke="#5f8fde" stroke-width="1.8"/>
+  <path data-layer-name="undulating" id="undulating" d="M 30 127.15424055466428 L 32.833333333333336 127.1849611005683 L 35.666666666666664 127.27288542160392 L 38.5 127.41165754275653 L 41.333333333333336 127.5949214890115 L 44.166666666666664 127.8163212853542 L 47 128.06950095677004 L 49.83333333333333 128.34810452824436 L 52.66666666666667 128.64577602476254 L 55.5 128.95615947130997 L 58.33333333333333 129.27289889287204 L 61.166666666666664 129.5896383144341 L 64 129.90002176098153 L 66.83333333333334 130.1976932574997 L 69.66666666666666 130.47629682897403 L 72.5 130.72947650038986 L 75.33333333333334 130.9508762967326 L 78.16666666666666 131.13414024298754 L 81 131.27291236414015 L 83.83333333333333 131.36083668517577 L 86.66666666666666 131.3915572310798 L 89.5 131.33711227450544 L 92.33333333333333 131.18128705396504 L 95.16666666666667 130.93534604323258 L 98 130.61055371608214 L 100.83333333333334 130.21817454628763 L 103.66666666666667 129.7694730076231 L 106.5 129.27571357386256 L 109.33333333333333 128.74816071878 L 112.16666666666667 128.19807891614946 L 115 127.63673263974488 L 117.83333333333334 127.0753863633403 L 120.66666666666667 126.52530456070974 L 123.50000000000001 125.9977517056272 L 126.33333333333333 125.50399227186665 L 129.16666666666669 125.05529073320213 L 132 124.66291156340763 L 134.83333333333334 124.33811923625716 L 137.66666666666666 124.09217822552472 L 140.5 123.93635300498433 L 143.33333333333331 123.88190804840997 L 146.16666666666669 123.99157074276206 L 149 124.3054329369422 L 151.83333333333331 124.80080579763616 L 154.66666666666666 125.4550004915297 L 157.5 126.24532818530861 L 160.33333333333334 127.14910004565866 L 163.16666666666666 128.14362723926558 L 166 129.20622093281523 L 168.83333333333334 130.3141922929933 L 171.66666666666669 131.44485248648562 L 174.5 132.57551267997792 L 177.33333333333334 133.683484040156 L 180.16666666666666 134.74607773370565 L 183 135.74060492731257 L 185.83333333333331 136.64437678766262 L 188.66666666666666 137.4347044814415 L 191.5 138.08889917533506 L 194.33333333333334 138.58427203602903 L 197.16666666666666 138.89813423020917 L 200 139.00779692456126 L 202.83333333333331 138.8937504280305 L 205.66666666666669 138.56734148968383 L 208.5 138.0521659363897 L 211.33333333333334 137.37181959501655 L 214.16666666666666 136.54989829243277 L 217.00000000000003 135.60999785550683 L 219.83333333333334 134.57571411110717 L 222.66666666666666 133.4706428861022 L 225.49999999999997 132.31838000736036 L 228.33333333333334 131.1425213017501 L 231.16666666666666 129.96666259613983 L 234 128.814399717398 L 236.83333333333331 127.70932849239303 L 239.66666666666669 126.67504474799335 L 242.5 125.73514431106742 L 245.33333333333331 124.91322300848366 L 248.16666666666669 124.23287666711047 L 251 123.71770111381635 L 253.83333333333334 123.39129217546969 L 256.66666666666663 123.27724567893893 L 259.5 123.19930272025336 L 262.33333333333337 122.9762245971188 L 265.16666666666663 122.62413743891847 L 268 122.1591673750356 L 270.83333333333337 121.59744053485338 L 273.66666666666663 120.95508304775507 L 276.5 120.24822104312386 L 279.3333333333333 119.49298065034301 L 282.1666666666667 118.70548799879569 L 285 117.90186921786517 L 287.8333333333333 117.09825043693465 L 290.6666666666667 116.31075778538732 L 293.5 115.55551739260648 L 296.3333333333333 114.84865538797527 L 299.16666666666663 114.20629790087696 L 302 113.64457106069474 L 304.8333333333333 113.17960099681187 L 307.6666666666667 112.82751383861154 L 310.5 112.60443571547698 L 313.33333333333337 112.52649275679141 L 316.1666666666667 112.68779849101627 L 319 113.14946662690117 L 321.8333333333333 113.8781235642617 L 324.6666666666667 114.84039570291341 L 327.5 116.00290944267181 L 330.3333333333333 117.33229118335247 L 333.1666666666667 118.79516732477096 L 336 120.35816426674278 L 338.8333333333333 121.9879084090835 L 341.66666666666663 123.65102615160868 L 344.5 125.31414389413388 L 347.3333333333333 126.94388803647458 L 350.1666666666667 128.5068849784464 L 353 129.96976111986487 L 355.83333333333337 131.29914286054554 L 358.6666666666667 132.46165660030394 L 361.5 133.42392873895562 L 364.3333333333333 134.15258567631616 L 367.1666666666667 134.6142538122011 L 370 134.77555954642594" fill="none" stroke="#00a6ae" stroke-width="1.8"/>
+  <path data-layer-name="chattering" id="chattering" d="M 30 197.15424055466428 L 32.833333333333336 197.27288542160392 L 35.666666666666664 197.59492148901148 L 38.5 198.06950095677004 L 41.333333333333336 198.64577602476254 L 44.166666666666664 199.27289889287204 L 47 199.90002176098153 L 49.83333333333333 200.47629682897403 L 52.66666666666667 200.9508762967326 L 55.5 201.27291236414015 L 58.33333333333333 201.3915572310798 L 61.166666666666664 201.18128705396504 L 64 200.61055371608214 L 66.83333333333334 199.7694730076231 L 69.66666666666666 198.74816071878 L 72.5 197.63673263974488 L 75.33333333333334 196.52530456070974 L 78.16666666666666 195.50399227186665 L 81 194.66291156340762 L 83.83333333333333 194.09217822552472 L 86.66666666666666 193.88190804840997 L 89.5 194.3054329369422 L 92.33333333333333 195.4550004915297 L 95.16666666666667 197.14910004565866 L 98 199.20622093281523 L 100.83333333333334 201.44485248648562 L 103.66666666666667 203.683484040156 L 106.5 205.74060492731257 L 109.33333333333333 207.4347044814415 L 112.16666666666667 208.58427203602903 L 115 209.00779692456126 L 117.83333333333334 208.56734148968383 L 120.66666666666667 207.37181959501655 L 123.50000000000001 205.60999785550683 L 126.33333333333333 203.4706428861022 L 129.16666666666669 201.1425213017501 L 132 198.814399717398 L 134.83333333333334 196.67504474799335 L 137.66666666666666 194.91322300848364 L 140.5 193.71770111381636 L 143.33333333333331 193.27724567893893 L 146.16666666666669 192.9762245971188 L 149 192.1591673750356 L 151.83333333333331 190.95508304775507 L 154.66666666666666 189.49298065034301 L 157.5 187.90186921786517 L 160.33333333333334 186.31075778538732 L 163.16666666666666 184.84865538797527 L 166 183.64457106069474 L 168.83333333333334 182.82751383861154 L 171.66666666666669 182.5264927567914 L 174.5 183.1494666269012 L 177.33333333333334 184.8403957029134 L 180.16666666666666 187.33229118335248 L 183 190.3581642667428 L 185.83333333333331 193.65102615160868 L 188.66666666666666 196.94388803647456 L 191.5 199.96976111986487 L 194.33333333333334 202.46165660030394 L 197.16666666666666 204.15258567631616 L 200 204.77555954642594 L 202.83333333333331 204.56174579728955 L 205.66666666666669 203.9813941924907 L 208.5 203.12613919594511 L 211.33333333333334 202.0876152715683 L 214.16666666666666 200.95745688327588 L 217.00000000000003 199.82729849498347 L 219.83333333333334 198.78877457060665 L 222.66666666666666 197.93351957406105 L 225.49999999999997 197.35316796926224 L 228.33333333333334 197.13935422012582 L 231.16666666666666 197.04322091535292 L 234 196.78228765954077 L 236.83333333333331 196.39775444044918 L 239.66666666666669 195.93082124583796 L 242.5 195.42268806346692 L 245.33333333333331 194.91455488109588 L 248.16666666666669 194.44762168648467 L 251 194.06308846739307 L 253.83333333333334 193.80215521158092 L 256.66666666666663 193.70602190680802 L 259.5 194.05976182082296 L 262.33333333333337 195.01991301600634 L 265.16666666666663 196.4348726720661 L 268 198.15303796871004 L 270.83333333333337 200.02280608564615 L 273.66666666666663 201.89257420258224 L 276.5 203.6107394992262 L 279.3333333333333 205.02569915528593 L 282.1666666666667 205.98585035046935 L 285 206.3395902644843 L 287.8333333333333 206.15839908805677 L 290.6666666666667 205.66659446632488 L 293.5 204.94182976061478 L 296.3333333333333 204.0617583322525 L 299.16666666666663 203.10403354256414 L 302 202.14630875287577 L 304.8333333333333 201.2662373245135 L 307.6666666666667 200.54147261880337 L 310.5 200.04966799707154 L 313.33333333333337 199.868476820644 L 316.1666666666667 199.46016719989478 L 319 198.35189822928982 L 321.8333333333333 196.71865974629299 L 324.6666666666667 194.73544158836825 L 327.5 192.5772335929796 L 330.3333333333333 190.41902559759097 L 333.1666666666667 188.43580743966623 L 336 186.8025689566694 L 338.8333333333333 185.69429998606444 L 341.66666666666663 185.28599036531523 L 344.5 185.23344049146584 L 347.3333333333333 185.09080511958896 L 350.1666666666667 184.88060562419145 L 353 184.6253633797802 L 355.83333333333337 184.34759976086207 L 358.6666666666667 184.06983614194394 L 361.5 183.8145938975327 L 364.3333333333333 183.60439440213517 L 367.1666666666667 183.4617590302583 L 370 183.4092091564089" fill="none" stroke="#4ca563" stroke-width="1.8"/>
+  <text data-layer-name="labels" id="labels" x="30" y="24" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">noise(t * 3)</text>
+  <text data-layer-name="labels" x="30" y="94" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">noise(t * 6)</text>
+  <text data-layer-name="labels" x="30" y="164" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">noise(t * 12)</text>
+</svg></figure>
+<p>Slow swells, undulation, chatter — the whole personality range is
+multiplication on the input. No settings, no modes. When something
+noise-driven feels too busy or too sleepy, tune the factor, nothing else.
+(One perceptual note: the slow line also <em>looks</em> smaller in amplitude —
+crossing only three pins, it rarely reaches the range extremes. That&#39;s
+frequency at work, not a different amplitude setting.)</p>
+<h2>Example 3 — Smooth color</h2>
+<p>The same randomness source, sampled two ways. Both rows color 60 bars by
+lightness; the top asks <code>hash01(i)</code>, the bottom asks <code>noise(i * 0.15)</code>.</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 180"</span>
+<span class="cm">//-- Same randomness source, sampled two ways. Top: each bar's lightness</span>
+<span class="cm">//-- is hash01(i) -- neighbors are strangers, it reads as static. Bottom:</span>
+<span class="cm">//-- lightness is noise(i * 0.15) -- neighbors agree, it reads as light</span>
+<span class="cm">//-- moving across a surface.</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">180</span>);
+
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">59</span>) {
+  <span class="kw">let</span> <span class="id">Lh</span> = <span class="num">0.3</span> + <span class="id">hash01</span>(<span class="id">i</span>) * <span class="num">0.5</span>;
+  <span class="kw">let</span> <span class="id">ch</span> = <span class="id">Color</span>(<span class="id">Lh</span>, <span class="num">0.05</span>, <span class="num">260</span>);
+  <span class="kw">let</span> <span class="id">barH</span> = <span class="tp">PathLayer</span>(`static-${<span class="id">i</span>}`) ${<span class="str"> fill: ch; stroke: none; </span>};
+  <span class="id">barH</span>.<span class="kw">apply</span> {
+    <span class="id">rect</span>(<span class="kw">calc</span>(<span class="num">24</span> + <span class="id">i</span> * <span class="num">5.9</span>), <span class="num">34</span>, <span class="num">5.4</span>, <span class="num">50</span>);
+  }
+
+  <span class="kw">let</span> <span class="id">Ln</span> = <span class="num">0.3</span> + <span class="id">noise</span>(<span class="id">i</span> * <span class="num">0.15</span>) * <span class="num">0.5</span>;
+  <span class="kw">let</span> <span class="id">cn</span> = <span class="id">Color</span>(<span class="id">Ln</span>, <span class="num">0.05</span>, <span class="num">260</span>);
+  <span class="kw">let</span> <span class="id">barN</span> = <span class="tp">PathLayer</span>(`smooth-${<span class="id">i</span>}`) ${<span class="str"> fill: cn; stroke: none; </span>};
+  <span class="id">barN</span>.<span class="kw">apply</span> {
+    <span class="id">rect</span>(<span class="kw">calc</span>(<span class="num">24</span> + <span class="id">i</span> * <span class="num">5.9</span>), <span class="num">112</span>, <span class="num">5.4</span>, <span class="num">50</span>);
+  }
+}
+
+<span class="kw">let</span> <span class="id">labels</span> = <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${<span class="str">
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+</span>};
+<span class="id">labels</span>.<span class="kw">apply</span> {
+  <span class="kw">text</span>(<span class="num">24</span>, <span class="num">26</span>)`hash01(i) — per-bar strangers`
+  <span class="kw">text</span>(<span class="num">24</span>, <span class="num">104</span>)`noise(i * 0.15) — neighbors agree`
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 180" width="400" height="180">
+
+  <path data-layer-name="static-0" id="static-0" d="M 24 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#50617d" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-0" id="smooth-0" d="M 24 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#50617d" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-1" id="static-1" d="M 29.9 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#3f4f6b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-1" id="smooth-1" d="M 29.9 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#4f607c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-2" id="static-2" d="M 35.8 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5d6f8b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-2" id="smooth-2" d="M 35.8 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#4c5d79" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-3" id="static-3" d="M 41.7 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#22324b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-3" id="smooth-3" d="M 41.7 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#485975" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-4" id="static-4" d="M 47.6 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5f718e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-4" id="smooth-4" d="M 47.6 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#455571" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-5" id="static-5" d="M 53.5 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#8ea1bf" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-5" id="smooth-5" d="M 53.5 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#41526d" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-6" id="static-6" d="M 59.400000000000006 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#32425c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-6" id="smooth-6" d="M 59.400000000000006 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#3f506b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-7" id="static-7" d="M 65.30000000000001 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#50617d" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-7" id="smooth-7" d="M 65.30000000000001 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#3f506b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-8" id="static-8" d="M 71.2 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5e6f8c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-8" id="smooth-8" d="M 71.2 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#42536e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-9" id="static-9" d="M 77.1 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#2c3c56" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-9" id="smooth-9" d="M 77.1 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#475874" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-10" id="static-10" d="M 83 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#455671" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-10" id="smooth-10" d="M 83 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#4e5f7b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-11" id="static-11" d="M 88.9 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#8294b2" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-11" id="smooth-11" d="M 88.9 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#546682" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-12" id="static-12" d="M 94.80000000000001 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#8a9dbb" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-12" id="smooth-12" d="M 94.80000000000001 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5a6b88" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-13" id="static-13" d="M 100.7 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#3d4e69" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-13" id="smooth-13" d="M 100.7 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5d6e8b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-14" id="static-14" d="M 106.60000000000001 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#3b4b66" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-14" id="smooth-14" d="M 106.60000000000001 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5b6d89" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-15" id="static-15" d="M 112.5 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#7f92b0" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-15" id="smooth-15" d="M 112.5 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#536581" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-16" id="static-16" d="M 118.4 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#9cafce" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-16" id="smooth-16" d="M 118.4 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#475874" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-17" id="static-17" d="M 124.30000000000001 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#a7bbda" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-17" id="smooth-17" d="M 124.30000000000001 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#3a4b65" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-18" id="static-18" d="M 130.2 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5d6f8b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-18" id="smooth-18" d="M 130.2 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#2e3e58" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-19" id="static-19" d="M 136.10000000000002 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#33435e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-19" id="smooth-19" d="M 136.10000000000002 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#26354f" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-20" id="static-20" d="M 142 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#7f92b0" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-20" id="smooth-20" d="M 142 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#22324b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-21" id="static-21" d="M 147.9 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#4e5f7b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-21" id="smooth-21" d="M 147.9 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#26354f" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-22" id="static-22" d="M 153.8 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#7588a5" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-22" id="smooth-22" d="M 153.8 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#2f3f59" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-23" id="static-23" d="M 159.70000000000002 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#566783" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-23" id="smooth-23" d="M 159.70000000000002 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#3b4c67" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-24" id="static-24" d="M 165.60000000000002 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#93a6c5" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-24" id="smooth-24" d="M 165.60000000000002 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#495a76" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-25" id="static-25" d="M 171.5 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#566884" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-25" id="smooth-25" d="M 171.5 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#556783" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-26" id="static-26" d="M 177.4 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#8093b1" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-26" id="smooth-26" d="M 177.4 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5e6f8c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-27" id="static-27" d="M 183.3 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#42536e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-27" id="smooth-27" d="M 183.3 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#60728e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-28" id="static-28" d="M 189.20000000000002 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#25354e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-28" id="smooth-28" d="M 189.20000000000002 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#647693" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-29" id="static-29" d="M 195.10000000000002 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#abbede" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-29" id="smooth-29" d="M 195.10000000000002 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#6c7e9c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-30" id="static-30" d="M 201 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#52637f" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-30" id="smooth-30" d="M 201 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#7689a6" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-31" id="static-31" d="M 206.9 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#556683" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-31" id="smooth-31" d="M 206.9 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#8093b1" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-32" id="static-32" d="M 212.8 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#7789a7" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-32" id="smooth-32" d="M 212.8 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#899cba" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-33" id="static-33" d="M 218.70000000000002 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5a6b88" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-33" id="smooth-33" d="M 218.70000000000002 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#8da0bf" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-34" id="static-34" d="M 224.60000000000002 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#475874" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-34" id="smooth-34" d="M 224.60000000000002 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#8b9ebc" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-35" id="static-35" d="M 230.5 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#798ba9" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-35" id="smooth-35" d="M 230.5 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#7e91af" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-36" id="static-36" d="M 236.4 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#9baecd" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-36" id="smooth-36" d="M 236.4 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#6c7e9b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-37" id="static-37" d="M 242.3 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#2e3e59" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-37" id="smooth-37" d="M 242.3 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#576985" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-38" id="static-38" d="M 248.20000000000002 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#a3b6d6" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-38" id="smooth-38" d="M 248.20000000000002 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#445571" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-39" id="static-39" d="M 254.10000000000002 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#7183a0" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-39" id="smooth-39" d="M 254.10000000000002 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#374762" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-40" id="static-40" d="M 260 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#31415b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-40" id="smooth-40" d="M 260 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#32425c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-41" id="static-41" d="M 265.9 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#8c9fbd" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-41" id="smooth-41" d="M 265.9 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#34445e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-42" id="static-42" d="M 271.8 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#7689a7" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-42" id="smooth-42" d="M 271.8 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#384863" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-43" id="static-43" d="M 277.70000000000005 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#9eb2d1" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-43" id="smooth-43" d="M 277.70000000000005 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#3e4f6a" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-44" id="static-44" d="M 283.6 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#7e91af" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-44" id="smooth-44" d="M 283.6 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#455671" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-45" id="static-45" d="M 289.5 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#455672" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-45" id="smooth-45" d="M 289.5 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#4b5c78" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-46" id="static-46" d="M 295.40000000000003 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#2d3d57" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-46" id="smooth-46" d="M 295.40000000000003 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#4f607c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-47" id="static-47" d="M 301.3 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#9db0d0" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-47" id="smooth-47" d="M 301.3 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#50617d" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-48" id="static-48" d="M 307.20000000000005 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#98abca" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-48" id="smooth-48" d="M 307.20000000000005 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#51627e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-49" id="static-49" d="M 313.1 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#637592" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-49" id="smooth-49" d="M 313.1 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#546581" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-50" id="static-50" d="M 319 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#42526e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-50" id="smooth-50" d="M 319 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#576884" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-51" id="static-51" d="M 324.90000000000003 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#485974" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-51" id="smooth-51" d="M 324.90000000000003 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5a6b88" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-52" id="static-52" d="M 330.8 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#96a9c8" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-52" id="smooth-52" d="M 330.8 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5c6e8a" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-53" id="static-53" d="M 336.70000000000005 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#9aadcd" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-53" id="smooth-53" d="M 336.70000000000005 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5e6f8c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-54" id="static-54" d="M 342.6 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#6f819e" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-54" id="smooth-54" d="M 342.6 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5c6e8b" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-55" id="static-55" d="M 348.5 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#1f2e47" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-55" id="smooth-55" d="M 348.5 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#566783" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-56" id="static-56" d="M 354.40000000000003 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5c6e8a" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-56" id="smooth-56" d="M 354.40000000000003 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#4c5d78" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-57" id="static-57" d="M 360.3 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#2d3d57" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-57" id="smooth-57" d="M 360.3 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#40516c" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-58" id="static-58" d="M 366.20000000000005 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#5b6c89" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-58" id="smooth-58" d="M 366.20000000000005 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#364761" stroke="none" stroke-width="2"/>
+  <path data-layer-name="static-59" id="static-59" d="M 372.1 34 l 5.4 0 l 0 50 l -5.4 0 z" fill="#627491" stroke="none" stroke-width="2"/>
+  <path data-layer-name="smooth-59" id="smooth-59" d="M 372.1 112 l 5.4 0 l 0 50 l -5.4 0 z" fill="#2f3f59" stroke="none" stroke-width="2"/>
+  <text data-layer-name="labels" id="labels" x="24" y="26" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">hash01(i) — per-bar strangers</text>
+  <text data-layer-name="labels" x="24" y="104" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">noise(i * 0.15) — neighbors agree</text>
+</svg></figure>
+<p>Top: neighbors are strangers — it reads as static. Bottom: each bar sits
+0.15 of the way to the next pin from its neighbor, so consecutive bars
+<em>agree</em> — and the row reads as light moving across one surface. Same
+determinism, same range; the only change is sampling with a glide.</p>
+<h2>Example 4 — A stroke with texture</h2>
+<p>Every ingredient so far on one ribbon (machinery glossed in the
+<a href="./hash11.html"><code>hash11</code> primer</a>). The width is
+<code>(2 + noise(t*6) * 13)</code> — organic undulation — times the
+<a href="./smoothstep.html"><code>smoothstep</code></a> end-window <code>smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t)</code>, which eases both tips to a point.</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 130"</span>
+<span class="cm">//-- Everything so far, on one ribbon: noise drives the width for organic</span>
+<span class="cm">//-- undulation, and a smoothstep end-window eases both tips to a point.</span>
+<span class="cm">//-- Width = (2 + noise(t*6) * 13) * smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t).</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">130</span>);
+
+<span class="kw">let</span> <span class="id">mk</span> = {|<span class="id">vo</span>, <span class="id">pb</span>|
+  <span class="id">vo</span>.<span class="id">startCap</span>(<span class="id">Cap</span>.<span class="id">tapered</span>(<span class="num">2</span>, <span class="id">CurveContinuity</span>.<span class="id">G0</span>));
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">63</span>) {
+    <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">63</span>;
+    <span class="kw">let</span> <span class="id">amp</span> = <span class="id">smoothstep</span>(<span class="num">0</span>, <span class="num">0.08</span>, <span class="id">t</span>) * <span class="id">smoothstep</span>(<span class="num">1</span>, <span class="num">0.92</span>, <span class="id">t</span>);
+    <span class="kw">let</span> <span class="id">w</span> = (<span class="num">2</span> + <span class="id">noise</span>(<span class="id">t</span> * <span class="num">6</span>) * <span class="num">13</span>) * <span class="id">amp</span>;
+    <span class="id">vo</span>.<span class="id">stop</span>(<span class="id">t</span>, <span class="id">w</span>, <span class="id">CurveContinuity</span>.<span class="id">G1</span>, -<span class="id">w</span>, <span class="id">CurveContinuity</span>.<span class="id">G1</span>);
+  }
+  <span class="id">vo</span>.<span class="id">endCap</span>(<span class="id">Cap</span>.<span class="id">tapered</span>(<span class="num">2</span>, <span class="id">CurveContinuity</span>.<span class="id">G0</span>));
+};
+
+<span class="kw">let</span> <span class="id">spine</span> = @{ l 340 0 };
+<span class="kw">let</span> <span class="id">rib</span> = <span class="id">spine</span>.<span class="id">compoundVariableOffset</span>() &lt;&lt; <span class="id">mk</span>;
+
+<span class="kw">let</span> <span class="id">band</span> = <span class="tp">PathLayer</span>(<span class="str">'textured'</span>) ${<span class="str"> fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.92; </span>};
+<span class="id">band</span>.<span class="kw">apply</span> {
+  M calc(30 + rib.anchor.x) calc(72 + rib.anchor.y)
+  rib.draw();
+}
+
+<span class="kw">let</span> <span class="id">labels</span> = <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${<span class="str">
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+</span>};
+<span class="id">labels</span>.<span class="kw">apply</span> {
+  <span class="kw">text</span>(<span class="num">30</span>, <span class="num">24</span>)`width = (2 + noise(t·6) · 13) × end-window`
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 130" width="400" height="130">
+
+  <path data-layer-name="textured" id="textured" d="M 30 72 c 1.814186307647132 0 3.6137497962861223 -0.3190072710960165 5.396825396825396 -0.704076179024271 c 1.8153882580868999 -0.39204707517498305 3.6035870308072147 -1.059006492000182 5.396825396825396 -1.643770577262417 c 1.8047184911830154 -0.588507684004 3.5878971998145506 -1.3194746275797669 5.396825396825397 -1.8774643567258167 c 1.7891723387628211 -0.5518957526073018 3.5835949403550558 -1.1344812282960275 5.396825396825395 -1.4566126826623655 c 1.7850931569876423 -0.31713269142809164 3.5965418075948854 -0.43521904521139465 5.396825396825399 -0.4762759031886237 c 1.79760399999207 -0.04099574787465521 3.5978442160461945 0.1546166340638253 5.396825396825395 0.22906772546918486 c 1.7989024205526363 0.0744478319022086 3.5977916228063833 0.1499818197593905 5.396825396825399 0.21762954480519614 c 1.7988498426704922 0.06764080881250756 3.597765920325763 0.13318762043580445 5.396825396825392 0.1882390596546557 c 1.79882415216737 0.05504423826560689 3.5977761124058887 0.1051983284234117 5.396825396825399 0.14205401156094855 c 1.7988343391466728 0.03685127972572566 3.5978358499082645 0.06726933687852465 5.396825396825399 0.07907440052407466 c 1.7988940560352802 0.011804437029380388 3.5980346251391353 0.016483314872417054 5.396825396825392 -0.008241263735524917 c 1.7990928769313754 -0.024728731078034194 3.5982207074586796 -0.0748436595136095 5.396825396825399 -0.14014081377747267 c 1.7992791613946935 -0.06532164052497347 3.5982522615723695 -0.154221820757793 5.396825396825392 -0.2517573911223616 c 1.7993107650848827 -0.0975755715994131 3.5981714878421656 -0.21374704037385683 5.396825396825406 -0.33360954784194696 c 1.7992298733059329 -0.11990088979811198 3.598019637565457 -0.2534215365636028 5.396825396825392 -0.3856972839362296 c 1.799077879786509 -0.13229575784115166 3.5978374009446554 -0.2732505200070001 5.396825396825392 -0.40802059940520685 c 1.7988956067477346 -0.13476315812312478 3.597665196752345 -0.27323996459225963 5.396825396825406 -0.4005794942488823 c 1.7987235038193035 -0.12730862151650602 3.597543615836017 -0.25339440622363085 5.396825396825392 -0.36337396846725145 c 1.7986020737129422 -0.10993801571683015 3.5975137656563447 -0.21371470610109178 5.396825396825392 -0.2964040220603179 c 1.7985722705898581 -0.0826553378425503 3.5976172573828507 -0.15419574406654135 5.396825396825406 -0.19966965502807987 c 1.798675616078782 -0.04546045175162483 3.598009884154976 -0.08553307792308651 5.396825396825392 -0.07317086737053913 c 1.7990681206844812 0.012363946580192575 3.598959971179255 0.055893677029288824 5.396825396825392 0.14738030790739032 c 1.8000207545542963 0.09159630748538738 3.599370957160076 0.23583339156078242 5.396825396825406 0.4021733825947482 c 1.80043409351903 0.16661573409836272 3.5992446445827824 0.3757299724120031 5.396825396825392 0.5970151455909614 c 1.8003069771194475 0.22162077598469665 3.5987552597764534 0.4755835822983352 5.396825396825392 0.7319055968960324 c 1.7998151535411182 0.25657077360524205 3.5980678264813264 0.5354268300215672 5.396825396825392 0.8068447365099605 c 1.7991261030374233 0.2714735150783181 3.5973402121605886 0.5553063325057082 5.396825396825392 0.8218325644327429 c 1.7983990689637608 0.26636536462581883 3.5967294419933182 0.5352660207693178 5.39682539682542 0.7768690806643903 c 1.7977905973807822 0.24129364227047878 3.5963984248548684 0.4753303081623823 5.396825396825392 0.6719542852048894 c 1.7974615142987034 0.19630012048499967 3.5965192976358367 0.37548537158812234 5.396825396825392 0.5070881780542464 c 1.7975816248684282 0.13140364674158178 3.5972688843918945 0.23549576131233207 5.396825396825392 0.28227075921246403 c 1.798327924514325 0.04674306381140436 3.598547423618271 0.047602670260895596 5.396825396825392 -0.0015228226496639685 c 1.7996066059557165 -0.049161788599905165 3.5993538232667106 -0.15691121999799318 5.39682539682542 -0.29355462540342314 c 1.8004168463900783 -0.13686730441748995 3.5994828187945416 -0.3232292085449724 5.396825396825392 -0.5273591943087999 c 1.8005467268440327 -0.20449389126498874 3.599126747752962 -0.44789114035475563 5.396825396825392 -0.6988158781727467 c 1.8001883946280373 -0.25127225921769725 3.5984695320525475 -0.5309182991219394 5.396825396825392 -0.8079246769952535 c 1.7995284974862784 -0.2771870021573539 3.597684622031153 -0.5723575728960206 5.39682539682542 -0.8546855907763327 c 1.7987429110829964 -0.28226558359247544 3.5969404845741053 -0.572262009037555 5.396825396825363 -0.8390986195159726 c 1.798000659240671 -0.26655726612522823 3.5964087251995522 -0.5306724253323987 5.39682539682542 -0.761163763214185 c 1.7974717471822146 -0.23011432539036036 3.5962705515765947 -0.44759767006118256 5.396825396825392 -0.6208810218709511 c 1.7973345174052326 -0.17297343111830354 3.596716839602493 -0.3229921520776502 5.396825396825392 -0.41825039548629217 c 1.7977780597753394 -0.09513491801683038 3.5977869864796617 -0.11026665896250343 5.396825396825392 -0.15327188406019232 c 1.7988452082873039 -0.04300060668711758 3.598428515182121 -0.03968945057322415 5.39682539682542 -0.10475082085262244 c 1.79948737728472 -0.06510082160487585 3.5986388710050505 -0.16755203320454193 5.396825396825363 -0.28584546029274627 c 1.7996983425817348 -0.11839288172389928 3.598576840017074 -0.266980443218948 5.39682539682542 -0.42432959633520007 c 1.7996361113192734 -0.15747056599122544 3.5983285382878876 -0.3379744405093863 5.396825396825392 -0.5202032289799696 c 1.7993871799785381 -0.18231899835712007 3.5979777104303423 -0.3805457468954483 5.396825396825392 -0.5734663582270709 c 1.799035931186836 -0.1929407999782704 3.5976062292604922 -0.39471141176109015 5.396825396825392 -0.5841189840764844 c 1.7986646012768688 -0.18934919196007272 3.5972957474344867 -0.3804875044829643 5.39682539682542 -0.5521611065282315 c 1.7983547158706301 -0.17156151438410205 3.597129460418614 -0.3378827814824774 5.396825396825363 -0.47759272558229426 c 1.7981889239331394 -0.13959295509951986 3.5971929484379075 -0.26689200075771957 5.39682539682542 -0.3604138412386835 c 1.7982522084860193 -0.0934501132924428 3.597579428792642 -0.17202149957420865 5.396825396825363 -0.20062445349739377 c 1.7986378354301564 -0.028593286324024803 3.599202219520862 -0.04491943220904382 5.39682539682542 0.028958132131954528 c 1.800264298140803 0.07398610743110368 3.6008018938536566 0.22217770539849546 5.396825396825363 0.41519946536040386 c 1.8018791552232187 0.1936510770624036 3.6010363411624553 0.4574903787623601 5.39682539682542 0.7458893050279904 c 1.8021167997353587 0.28941514506393773 3.600320368808582 0.6337606973914802 5.39682539682542 0.9883951874508732 c 1.8013918448077106 0.35559915965598066 3.599054954304279 0.7508094892231938 5.39682539682542 1.1427171126290876 c 1.800116214181628 0.3924189933643536 3.6136308046450267 0.6936381266665332 5.396825396825363 1.2103489271986607 c 1.8152604380671846 0.526002421856341 3.6103456625418175 1.2191558626643264 5.39682539682542 1.9301207535965608 c 1.8117590440089089 0.7210252914712418 3.58628119714308 1.643451620784492 5.396825396825363 2.371629038507655 c 1.7876312039235245 0.718962107714781 3.5808512104345596 1.4363374967949958 5.39682539682542 1.9744951081263995 c 1.782530976098144 0.5282468326974128 3.587675839008284 0.9595020602819224 5.396825396825363 1.237856552537303 c 1.7889605931432584 0.27524823219708267 3.5921323034294232 0.4318912922730426 5.39682539682542 0.4318912922730426 c -1.804693093395997 0 -3.607864803682162 0.15664306007595996 -5.39682539682542 0.4318912922730426 c -1.8091495578170793 0.27835449225538067 -3.6142944207272194 0.7096097198398903 -5.396825396825363 1.237856552537303 c -1.8159741863908607 0.5381576113314037 -3.609194192901896 1.2555330004116185 -5.39682539682542 1.9744951081263995 c -1.8105441996822833 0.7281774177231628 -3.5850663528164546 1.650603747036413 -5.396825396825363 2.371629038507655 c -1.7864797342836027 0.7109648909322344 -3.5815649587582357 1.4041183317402197 -5.39682539682542 1.9301207535965608 c -1.7831945921803367 0.5167108005321275 -3.5967091826437354 0.8179299338343071 -5.396825396825363 1.2103489271986607 c -1.7977704425211414 0.3919076234058938 -3.5954335520177096 0.7871179529731069 -5.39682539682542 1.1427171126290876 c -1.7965050280168384 0.35463449005939296 -3.5947085970900616 0.6989800423869355 -5.39682539682542 0.9883951874508732 c -1.795789055662965 0.28839892626563035 -3.5949462416022016 0.5522382279655869 -5.39682539682542 0.7458893050279904 c -1.7960235029717069 0.1930217599619084 -3.5965610986845604 0.3412133579293002 -5.396825396825363 0.41519946536040386 c -1.7976231773045583 0.07387756434099835 -3.598187561395264 0.05755141845597933 -5.39682539682542 0.028958132131954528 c -1.7992459680327215 -0.028602953923185126 -3.598573188339344 -0.10717434020495098 -5.396825396825363 -0.20062445349739377 c -1.7996324483875128 -0.0935218404809639 -3.598636472892281 -0.22082088613916362 -5.39682539682542 -0.3604138412386835 c -1.7996959364067493 -0.13970994409981685 -3.5984706809547333 -0.3060312111981922 -5.396825396825363 -0.47759272558229426 c -1.7995296493909336 -0.17167360204526716 -3.5981607955485515 -0.36281191456815876 -5.39682539682542 -0.5521611065282315 c -1.7992191675648996 -0.1894075723153943 -3.597789465638556 -0.39117818409821403 -5.396825396825392 -0.5841189840764844 c -1.7988476863950495 -0.19292061133162264 -3.5974382168468537 -0.39114735986995086 -5.396825396825392 -0.5734663582270709 c -1.7984968585375043 -0.18222878847058332 -3.5971892855061185 -0.3627326629887442 -5.396825396825392 -0.5202032289799696 c -1.7982485568083462 -0.15734915311625208 -3.5971270542436855 -0.3059367146113008 -5.39682539682542 -0.42432959633520007 c -1.798186525820313 -0.11829342708820434 -3.5973380195406435 -0.22074463868787042 -5.396825396825363 -0.28584546029274627 c -1.7983968816432991 -0.06506137027939829 -3.5979801885381164 -0.06175021416550486 -5.39682539682542 -0.10475082085262244 c -1.7990384103457302 -0.04300522509768889 -3.5990473370500524 -0.05813696604336194 -5.396825396825392 -0.15327188406019232 c -1.8001085572228988 -0.09525824340864197 -3.599490879420159 -0.24527696436798863 -5.396825396825392 -0.41825039548629217 c -1.8005548452487972 -0.1732833518097685 -3.5993536496431773 -0.3907666964805907 -5.396825396825392 -0.6208810218709511 c -1.800416671625868 -0.23049133788178633 -3.5988247375847493 -0.49460649708895676 -5.39682539682542 -0.761163763214185 c -1.7998849122512581 -0.26683661047841767 -3.598082485742367 -0.5568330359234972 -5.396825396825363 -0.8390986195159726 c -1.7991407747942674 -0.28232801788031203 -3.597296899339142 -0.5774985886189787 -5.39682539682542 -0.8546855907763327 c -1.7983558647728444 -0.27700637787331406 -3.5966370021973546 -0.5566524177775563 -5.396825396825392 -0.8079246769952535 c -1.79769864907243 -0.2509247378179911 -3.596278669981359 -0.49432198690775797 -5.396825396825392 -0.6988158781727467 c -1.7973425780308503 -0.20412998576382746 -3.5964085504353136 -0.3904918898913099 -5.396825396825392 -0.5273591943087999 c -1.7974715735587097 -0.13664340540542996 -3.5972187908697038 -0.24439283680351798 -5.39682539682542 -0.29355462540342314 c -1.7982779732071208 -0.049125492910559565 -3.5984974723110668 -0.04826588646106833 -5.396825396825392 -0.0015228226496639685 c -1.7995565124334973 0.046774997900131954 -3.5992437719569637 0.15086711247088225 -5.396825396825392 0.28227075921246403 c -1.8003060991895552 0.1316028064661241 -3.5993638825266885 0.31078805756924677 -5.396825396825392 0.5070881780542464 c -1.8004269719705235 0.19662397704250711 -3.5990347994446097 0.43066064293441064 -5.396825396825392 0.6719542852048894 c -1.800095954832102 0.24160305989507247 -3.5984263278616595 0.5105037160385715 -5.39682539682542 0.7768690806643903 c -1.7994851846648032 0.26652623192703473 -3.5976992937879686 0.5503590493544248 -5.396825396825392 0.8218325644327429 c -1.7987575703440655 0.27141790648839326 -3.5970102432842737 0.5502739629047184 -5.396825396825392 0.8068447365099605 c -1.7980701370489385 0.2563220145976972 -3.5965184197059443 0.5102848209113358 -5.396825396825392 0.7319055968960324 c -1.7975807522426095 0.22128517317895824 -3.596391303306362 0.43039941149259864 -5.396825396825392 0.5970151455909614 c -1.79745443966533 0.1663399910339658 -3.5968046422711097 0.31057707510936083 -5.396825396825406 0.4021733825947482 c -1.7978654256461368 0.0914866308781015 -3.5977572761409107 0.13501636132719774 -5.396825396825392 0.14738030790739032 c -1.7988155126704157 0.012362210552547381 -3.59814978074661 -0.027710415618914297 -5.396825396825392 -0.07317086737053913 c -1.7992081394425554 -0.04547391096153852 -3.598253126235548 -0.11701431718552957 -5.396825396825406 -0.19966965502807987 c -1.7993116311690471 -0.08268931595922613 -3.5982233231124496 -0.18646600634348776 -5.396825396825392 -0.2964040220603179 c -1.799281780989375 -0.1099795622436206 -3.5981018930060884 -0.23606534695074544 -5.396825396825392 -0.36337396846725145 c -1.7991602000730609 -0.12733952965662265 -3.5979297900776714 -0.2658163361257575 -5.396825396825406 -0.4005794942488823 c -1.7989879958807364 -0.13477007939820673 -3.597747517038883 -0.2757248415640552 -5.396825396825392 -0.40802059940520685 c -1.7988057592599347 -0.13227574737262682 -3.597595523519459 -0.2657963941381176 -5.396825396825392 -0.3856972839362296 c -1.7986539089832405 -0.11986250746809013 -3.5975146317405233 -0.23603397624253386 -5.396825396825406 -0.33360954784194696 c -1.7985731352530223 -0.09753557036456861 -3.5975462354306984 -0.18643575059738815 -5.396825396825392 -0.2517573911223616 c -1.7986046893667194 -0.06529715426386318 -3.5977325198940235 -0.11541208269943848 -5.396825396825399 -0.14014081377747267 c -1.7987907716862566 -0.02472457860794197 -3.5979313407901117 -0.020045700764905305 -5.396825396825392 -0.008241263735524917 c -1.7989895469171344 0.011805063645550007 -3.597991057678726 0.042223120798349 -5.396825396825399 0.07907440052407466 c -1.7990492844195103 0.03685568313753684 -3.598001244658029 0.08700977329534165 -5.396825396825399 0.14205401156094855 c -1.7990594764996288 0.05505143921885125 -3.5979755541548997 0.12059825084214815 -5.396825396825392 0.1882390596546557 c -1.7990337740190157 0.06764772504580563 -3.5979229762727627 0.14318171290298753 -5.396825396825399 0.21762954480519614 c -1.7989811807792009 0.07445109140535955 -3.5992213968333253 0.27006347334384007 -5.396825396825395 0.22906772546918486 c -1.8002835892305136 -0.04105685797722902 -3.6117322398377567 -0.15914321176053203 -5.396825396825399 -0.4762759031886237 c -1.8132304564703396 -0.32213145436633805 -3.6076530580625743 -0.9047169300550637 -5.396825396825395 -1.4566126826623655 c -1.8089281970108466 -0.5579897291460498 -3.5921069056423818 -1.2889566727218167 -5.396825396825397 -1.8774643567258167 c -1.7932383660181817 -0.5847640852622349 -3.5814371387384965 -1.251723502087434 -5.396825396825396 -1.643770577262417 c -1.783075600539274 -0.3850689079282545 -3.5826390891782642 -0.704076179024271 -5.396825396825396 -0.704076179024271 z" fill="oklch(0.62 0.16 260)" stroke="none" stroke-width="2" opacity="0.92"/>
+  <text data-layer-name="labels" id="labels" x="30" y="24" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">width = (2 + noise(t·6) · 13) × end-window</text>
+</svg></figure>
+<p>Walk the width line from the inside out: <code>noise(t*6)</code> is the texture
+(frequency 6 — moderate undulation), <code>2 +</code> keeps a minimum body, <code>* 13</code>
+sets the amplitude, and the end-window multiplies the whole thing so the
+ribbon enters and exits cleanly. Compare the shimmer of
+<a href="./hash11.html"><code>hash11</code></a>&#39;s jittered ribbon: there, adjacent stops
+disagree on purpose; here they cooperate — that&#39;s the whole difference
+between <em>jitter</em> and <em>texture</em>.</p>
+<h2>Example 5 — Parallax ridges</h2>
+<p>A finished scene from seeds and frequencies. Four filled ridgelines, back
+to front — each its own seeded stream, with nearer ridges darker, with
+bigger swings and finer detail. The front ridge stacks <strong>two</strong> streams: a
+slow, tall one for shape plus a fast, quiet one for detail.</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 250"</span>
+<span class="cm">//-- Four mountain ridgelines, back to front. Each ridge is one seeded</span>
+<span class="cm">//-- noise stream; nearer ridges are darker, taller, and busier. The front</span>
+<span class="cm">//-- ridge stacks two streams -- a slow tall one plus a fast quiet one --</span>
+<span class="cm">//-- for detail on top of shape.</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">250</span>);
+
+<span class="kw">fn</span> <span class="id">ridge</span>(<span class="id">name</span>, <span class="id">baseY</span>, <span class="id">seed</span>, <span class="id">freq</span>, <span class="id">amp</span>, <span class="id">L</span>) {
+  <span class="kw">let</span> <span class="id">c</span> = <span class="id">Color</span>(<span class="id">L</span>, <span class="num">0.06</span>, <span class="num">265</span>);
+  <span class="kw">let</span> <span class="id">hill</span> = <span class="tp">PathLayer</span>(<span class="id">name</span>) ${<span class="str"> fill: c; stroke: none; </span>};
+  <span class="id">hill</span>.<span class="kw">apply</span> {
+    M 15 235
+    L 15 calc(baseY - noise(0, seed) * amp)
+    <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">140</span>) {
+      <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">140</span>;
+      L calc(15 + t * 370) calc(baseY - noise(t * freq, seed) * amp)
+    }
+    L 385 235
+    Z
+  }
+}
+
+<span class="id">ridge</span>(<span class="str">'far'</span>, <span class="num">105</span>, <span class="num">1</span>, <span class="num">3</span>, <span class="num">40</span>, <span class="num">0.72</span>);
+<span class="id">ridge</span>(<span class="str">'middle'</span>, <span class="num">135</span>, <span class="num">2</span>, <span class="num">4</span>, <span class="num">48</span>, <span class="num">0.58</span>);
+<span class="id">ridge</span>(<span class="str">'near'</span>, <span class="num">170</span>, <span class="num">3</span>, <span class="num">5</span>, <span class="num">55</span>, <span class="num">0.44</span>);
+
+<span class="cm">//-- Front ridge: slow + tall stacked with fast + quiet.</span>
+<span class="kw">let</span> <span class="id">front</span> = <span class="tp">PathLayer</span>(<span class="str">'front'</span>) ${<span class="str"> fill: oklch(0.3 0.06 265); stroke: none; </span>};
+<span class="id">front</span>.<span class="kw">apply</span> {
+  M 15 235
+  <span class="kw">let</span> <span class="id">h0</span> = <span class="id">noise</span>(<span class="num">0</span>, <span class="num">4</span>) * <span class="num">55</span> + <span class="id">noise</span>(<span class="num">0</span>, <span class="num">5</span>) * <span class="num">12</span>;
+  L 15 calc(205 - h0)
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">140</span>) {
+    <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">140</span>;
+    <span class="kw">let</span> <span class="id">h</span> = <span class="id">noise</span>(<span class="id">t</span> * <span class="num">3</span>, <span class="num">4</span>) * <span class="num">55</span> + <span class="id">noise</span>(<span class="id">t</span> * <span class="num">9</span>, <span class="num">5</span>) * <span class="num">12</span>;
+    L calc(15 + t * 370) calc(205 - h)
+  }
+  L 385 235
+  Z
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="400" height="250">
+
+  <path data-layer-name="far" id="far" d="M 15 235 L 15 70.57809107936919 L 17.642857142857142 70.5834165663833 L 20.285714285714285 70.59908430354078 L 22.92857142857143 70.6246312050143 L 25.57142857142857 70.65959418497654 L 28.214285714285715 70.70351015760019 L 30.857142857142858 70.75591603705794 L 33.5 70.8163487375225 L 36.14285714285714 70.88434517316651 L 38.785714285714285 70.95944225816268 L 41.42857142857143 71.04117690668369 L 44.07142857142857 71.12908603290222 L 46.714285714285715 71.22270655099096 L 49.35714285714286 71.3215753751226 L 52 71.42522941946984 L 54.64285714285714 71.53320559820533 L 57.285714285714285 71.64504082550178 L 59.92857142857143 71.76027201553187 L 62.57142857142857 71.87843608246828 L 65.21428571428571 71.99906994048371 L 67.85714285714286 72.12171050375082 L 70.5 72.24589468644234 L 73.14285714285714 72.37115940273091 L 75.78571428571428 72.49704156678922 L 78.42857142857143 72.62307809279 L 81.07142857142857 72.74880589490587 L 83.71428571428572 72.87376188730957 L 86.35714285714286 72.99748298417376 L 89 73.11950609967113 L 91.64285714285715 73.23936814797436 L 94.28571428571428 73.35660604325615 L 96.92857142857143 73.47075669968916 L 99.57142857142857 73.58135703144612 L 102.21428571428571 73.68794395269967 L 104.85714285714286 73.79005437762251 L 107.5 73.88722522038734 L 110.14285714285714 73.97899339516682 L 112.78571428571429 74.06489581613366 L 115.42857142857142 74.14446939746054 L 118.07142857142857 74.21725105332013 L 120.71428571428571 74.28277769788514 L 123.35714285714286 74.34058624532823 L 126 74.3902136098221 L 128.64285714285717 74.43119670553943 L 131.28571428571428 74.46307244665292 L 133.92857142857144 74.48537774733522 L 136.57142857142856 74.49764952175906 L 139.21428571428572 74.49894503468869 L 141.85714285714286 74.48295165095467 L 144.5 74.44849360261811 L 147.14285714285714 74.39641019261548 L 149.78571428571428 74.32754072388326 L 152.42857142857144 74.24272449935795 L 155.07142857142856 74.142800821976 L 157.71428571428572 74.0286089946739 L 160.35714285714286 73.90098832038814 L 163 73.76077810205518 L 165.64285714285714 73.60881764261153 L 168.2857142857143 73.44594624499365 L 170.92857142857142 73.27300321213801 L 173.57142857142856 73.09082784698109 L 176.21428571428572 72.90025945245938 L 178.85714285714286 72.70213733150936 L 181.5 72.4973007870675 L 184.14285714285714 72.2865891220703 L 186.78571428571428 72.07084163945422 L 189.42857142857142 71.85089764215573 L 192.07142857142858 71.62759643311134 L 194.71428571428572 71.4017773152575 L 197.35714285714286 71.1742795915307 L 200 70.94594256486744 L 202.64285714285714 70.71760553820417 L 205.28571428571428 70.49010781447737 L 207.92857142857144 70.26428869662354 L 210.57142857142858 70.04098748757914 L 213.21428571428572 69.82104349028066 L 215.85714285714283 69.60529600766458 L 218.50000000000003 69.39458434266737 L 221.14285714285714 69.18974779822551 L 223.78571428571428 68.9916256772755 L 226.42857142857142 68.80105728275379 L 229.07142857142858 68.61888191759688 L 231.71428571428572 68.44593888474122 L 234.35714285714286 68.28306748712335 L 237 68.13110702767969 L 239.64285714285714 67.99089680934674 L 242.2857142857143 67.86327613506097 L 244.92857142857144 67.74908430775886 L 247.57142857142856 67.64916063037693 L 250.2142857142857 67.56434440585161 L 252.85714285714286 67.4954749371194 L 255.5 67.44339152711676 L 258.1428571428571 67.4089334787802 L 260.7857142857143 67.39294009504619 L 263.42857142857144 67.39526936403104 L 266.07142857142856 67.41287517060039 L 268.7142857142857 67.44487566178616 L 271.35714285714283 67.49060646752915 L 274 67.54940321777016 L 276.64285714285717 67.62060154244995 L 279.2857142857143 67.70353707150929 L 281.92857142857144 67.79754543488896 L 284.57142857142856 67.90196226252976 L 287.2142857142857 68.01612318437246 L 289.8571428571429 68.13936383035784 L 292.5 68.27101983042667 L 295.1428571428571 68.41042681451974 L 297.7857142857143 68.55692041257782 L 300.42857142857144 68.70983625454171 L 303.07142857142856 68.86850997035216 L 305.7142857142857 69.03227718994998 L 308.35714285714283 69.20047354327593 L 311 69.37243466027081 L 313.64285714285717 69.54749617087538 L 316.2857142857143 69.72499370503041 L 318.92857142857144 69.90426289267671 L 321.5714285714286 70.08463936375503 L 324.2142857142857 70.26545874820617 L 326.85714285714283 70.44605667597091 L 329.5 70.62576877699001 L 332.1428571428571 70.80393068120426 L 334.7857142857143 70.97987801855446 L 337.42857142857144 71.15294641898136 L 340.07142857142856 71.32247151242575 L 342.7142857142857 71.48778892882842 L 345.3571428571429 71.64823429813013 L 348 71.80314325027169 L 350.64285714285717 71.95185141519383 L 353.2857142857143 72.09369442283739 L 355.9285714285714 72.2280079031431 L 358.57142857142856 72.35412748605177 L 361.2142857142857 72.47138880150415 L 363.85714285714283 72.57912747944104 L 366.5 72.67667914980323 L 369.14285714285717 72.76337944253149 L 371.7857142857143 72.8385639875666 L 374.42857142857144 72.90156841484932 L 377.07142857142856 72.95172835432047 L 379.7142857142857 72.98837943592079 L 382.3571428571429 73.01085728959109 L 385 73.01849754527211 L 385 235 Z" fill="#92a5cb" stroke="none" stroke-width="2"/>
+  <path data-layer-name="middle" id="middle" d="M 15 235 L 15 105.86585049703717 L 17.642857142857142 105.8618662418081 L 20.285714285714285 105.85022293283771 L 22.92857142857143 105.83138475520123 L 25.57142857142857 105.80581589397389 L 28.214285714285715 105.77398053423092 L 30.857142857142858 105.73634286104755 L 33.5 105.69336705949902 L 36.14285714285714 105.64551731466057 L 38.785714285714285 105.5932578116074 L 41.42857142857143 105.53705273541478 L 44.07142857142857 105.4773662711579 L 46.714285714285715 105.41466260391203 L 49.35714285714286 105.3494059187524 L 52 105.28206040075422 L 54.64285714285714 105.2130902349927 L 57.285714285714285 105.14295960654314 L 59.92857142857143 105.07213270048072 L 62.57142857142857 105.00107370188067 L 65.21428571428571 104.93024679581825 L 67.85714285714286 104.86011616736869 L 70.5 104.79114600160717 L 73.14285714285714 104.723800483609 L 75.78571428571428 104.65854379844936 L 78.42857142857143 104.59584013120349 L 81.07142857142857 104.53615366694662 L 83.71428571428572 104.47994859075399 L 86.35714285714286 104.42768908770083 L 89 104.37983934286237 L 91.64285714285715 104.33686354131385 L 94.28571428571428 104.29922586813048 L 96.92857142857143 104.2673905083875 L 99.57142857142857 104.24182164716017 L 102.21428571428571 104.22298346952368 L 104.85714285714286 104.21134016055329 L 107.5 104.20735590532422 L 110.14285714285714 104.17174337110384 L 112.78571428571429 104.06767179051806 L 115.42857142857142 103.89929019667994 L 118.07142857142857 103.67074762270255 L 120.71428571428571 103.38619310169891 L 123.35714285714286 103.0497756667821 L 126 102.66564435106515 L 128.64285714285717 102.23794818766115 L 131.28571428571428 101.77083620968314 L 133.92857142857144 101.26845745024414 L 136.57142857142856 100.73496094245726 L 139.21428571428572 100.17449571943553 L 141.85714285714286 99.59121081429198 L 144.5 98.98925526013971 L 147.14285714285714 98.37277809009173 L 149.78571428571428 97.74592833726112 L 152.42857142857144 97.11285503476094 L 155.07142857142856 96.47770721570421 L 157.71428571428572 95.84463391320404 L 160.35714285714286 95.21778416037343 L 163 94.60130699032544 L 165.64285714285714 93.99935143617317 L 168.2857142857143 93.41606653102963 L 170.92857142857142 92.85560130800789 L 173.57142857142856 92.32210480022101 L 176.21428571428572 91.81972604078202 L 178.85714285714286 91.352614062804 L 181.5 90.9249178994 L 184.14285714285714 90.54078658368306 L 186.78571428571428 90.20436914876625 L 189.42857142857142 89.9198146277626 L 192.07142857142858 89.69127205378521 L 194.71428571428572 89.52289045994709 L 197.35714285714286 89.41881887936131 L 200 89.38320634514093 L 202.64285714285714 89.47912567685636 L 205.28571428571428 89.75943362682085 L 207.92857142857144 90.21295512726174 L 210.57142857142858 90.82851511040634 L 213.21428571428572 91.594938508482 L 215.85714285714283 92.50105025371604 L 218.50000000000003 93.53567527833582 L 221.14285714285714 94.68763851456862 L 223.78571428571428 95.94576489464178 L 226.42857142857142 97.29887935078266 L 229.07142857142858 98.73580681521858 L 231.71428571428572 100.24537222017682 L 234.35714285714286 101.81640049788477 L 237 103.43771658056974 L 239.64285714285714 105.09814540045906 L 242.2857142857143 106.78651188978006 L 244.92857142857144 108.49164098076005 L 247.57142857142856 110.20235760562639 L 250.2142857142857 111.90748669660638 L 252.85714285714286 113.59585318592738 L 255.5 115.2562820058167 L 258.1428571428571 116.87759808850166 L 260.7857142857143 118.44862636620961 L 263.42857142857144 119.95819177116788 L 266.07142857142856 121.3951192356038 L 268.7142857142857 122.74823369174466 L 271.35714285714283 124.00636007181784 L 274 125.15832330805063 L 276.64285714285717 126.1929483326704 L 279.2857142857143 127.09906007790444 L 281.92857142857144 127.8654834759801 L 284.57142857142856 128.4810434591247 L 287.2142857142857 128.9345649595656 L 289.8571428571429 129.2148729095301 L 292.5 129.3107922412455 L 295.1428571428571 129.26280519702067 L 297.7857142857143 129.12257121341213 L 300.42857142857144 128.89568101401892 L 303.07142857142856 128.58772532244004 L 305.7142857142857 128.20429486227454 L 308.35714285714283 127.75098035712136 L 311 127.23337253057956 L 313.64285714285717 126.65706210624815 L 316.2857142857143 126.02763980772613 L 318.92857142857144 125.35069635861252 L 321.5714285714286 124.63182248250631 L 324.2142857142857 123.87660890300654 L 326.85714285714283 123.09064634371221 L 329.5 122.27952552822232 L 332.1428571428571 121.44883718013591 L 334.7857142857143 120.60417202305194 L 337.42857142857144 119.75112078056947 L 340.07142857142856 118.8952741762875 L 342.7142857142857 118.04222293380502 L 345.3571428571429 117.19755777672107 L 348 116.36686942863464 L 350.64285714285717 115.55574861314476 L 353.2857142857143 114.76978605385042 L 355.9285714285714 114.01457247435066 L 358.57142857142856 113.29569859824444 L 361.2142857142857 112.61875514913083 L 363.85714285714283 111.9893328506088 L 366.5 111.41302242627741 L 369.14285714285717 110.8954145997356 L 371.7857142857143 110.44210009458243 L 374.42857142857144 110.05866963441692 L 377.07142857142856 109.75071394283805 L 379.7142857142857 109.52382374344484 L 382.3571428571429 109.3835897598363 L 385 109.33560271561146 L 385 235 Z" fill="#697a9f" stroke="none" stroke-width="2"/>
+  <path data-layer-name="near" id="near" d="M 15 235 L 15 129.46076076943427 L 17.642857142857142 129.5808905606101 L 20.285714285714285 129.92955995451064 L 22.92857142857143 130.48918898169558 L 25.57142857142857 131.24219767272447 L 28.214285714285715 132.17100605815705 L 30.857142857142858 133.25803416855288 L 33.5 134.48570203447161 L 36.14285714285714 135.8364296864729 L 38.785714285714285 137.29263715511638 L 41.42857142857143 138.83674447096166 L 44.07142857142857 140.45117166456842 L 46.714285714285715 142.11833876649627 L 49.35714285714286 143.82066580730483 L 52 145.54057281755377 L 54.64285714285714 147.2604798278027 L 57.285714285714285 148.96280686861127 L 59.92857142857143 150.6299739705391 L 62.57142857142857 152.24440116414587 L 65.21428571428571 153.78850847999115 L 67.85714285714286 155.24471594863462 L 70.5 156.59544360063592 L 73.14285714285714 157.82311146655465 L 75.78571428571428 158.91013957695048 L 78.42857142857143 159.83894796238306 L 81.07142857142857 160.59195665341198 L 83.71428571428572 161.1515856805969 L 86.35714285714286 161.50025507449743 L 89 161.62038486567326 L 91.64285714285715 161.61591777503105 L 94.28571428571428 161.60295231682562 L 96.92857142857143 161.5821422116387 L 99.57142857142857 161.55414118005217 L 102.21428571428571 161.51960294264777 L 104.85714285714286 161.47918122000726 L 107.5 161.4335297327125 L 110.14285714285714 161.3833022013452 L 112.78571428571429 161.32915234648718 L 115.42857142857142 161.2717338887202 L 118.07142857142857 161.2117005486261 L 120.71428571428571 161.14970604678666 L 123.35714285714286 161.08640410378362 L 126 161.0224484401988 L 128.64285714285717 160.95849277661395 L 131.28571428571428 160.8951908336109 L 133.92857142857144 160.83319633177146 L 136.57142857142856 160.77316299167737 L 139.21428571428572 160.7157445339104 L 141.85714285714286 160.66159467905237 L 144.5 160.6113671476851 L 147.14285714285714 160.5657156603903 L 149.78571428571428 160.5252939377498 L 152.42857142857144 160.4907557003454 L 155.07142857142856 160.46275466875886 L 157.71428571428572 160.44194456357195 L 160.35714285714286 160.42897910536652 L 163 160.42451201472431 L 165.64285714285714 160.4298023757816 L 168.2857142857143 160.44515732616736 L 170.92857142857142 160.46980266670246 L 173.57142857142856 160.50296419820785 L 176.21428571428572 160.54386772150434 L 178.85714285714286 160.59173903741288 L 181.5 160.6458039467543 L 184.14285714285714 160.70528825034955 L 186.78571428571428 160.76941774901945 L 189.42857142857142 160.83741824358495 L 192.07142857142858 160.9085155348669 L 194.71428571428572 160.98193542368617 L 197.35714285714286 161.05690371086368 L 200 161.1326461972203 L 202.64285714285714 161.20838868357694 L 205.28571428571428 161.28335697075445 L 207.92857142857144 161.35677685957373 L 210.57142857142858 161.42787415085567 L 213.21428571428572 161.49587464542117 L 215.85714285714283 161.56000414409107 L 218.50000000000003 161.6194884476863 L 221.14285714285714 161.67355335702774 L 223.78571428571428 161.72142467293628 L 226.42857142857142 161.76232819623277 L 229.07142857142858 161.79548972773816 L 231.71428571428572 161.8201350682733 L 234.35714285714286 161.83549001865902 L 237 161.8407803797163 L 239.64285714285714 161.76989234622818 L 242.2857142857143 161.56414415146992 L 244.92857142857144 161.2339096540008 L 247.57142857142856 160.78956271238008 L 250.2142857142857 160.24147718516693 L 252.85714285714286 159.60002693092062 L 255.5 158.8755858082004 L 258.1428571428571 158.07852767556554 L 260.7857142857143 157.2192263915752 L 263.42857142857144 156.3080558147887 L 266.07142857142856 155.3553898037652 L 268.7142857142857 154.371602217064 L 271.35714285714283 153.36706691324434 L 274 152.35215775086544 L 276.64285714285717 151.33724858848652 L 279.2857142857143 150.33271328466685 L 281.92857142857144 149.34892569796568 L 284.57142857142856 148.3962596869422 L 287.2142857142857 147.48508911015568 L 289.8571428571429 146.62578782616535 L 292.5 145.82872969353048 L 295.1428571428571 145.10428857081027 L 297.7857142857143 144.462838316564 L 300.42857142857144 143.9147527893508 L 303.07142857142856 143.4704058477301 L 305.7142857142857 143.14017135026097 L 308.35714285714283 142.9344231555027 L 311 142.86353512201458 L 313.64285714285717 142.87315780743694 L 316.2857142857143 142.90108706512618 L 318.92857142857144 142.94591469721567 L 321.5714285714286 143.00623250583868 L 324.2142857142857 143.08063229312856 L 326.85714285714283 143.1677058612186 L 329.5 143.2660450122421 L 332.1428571428571 143.3742415483324 L 334.7857142857143 143.49088727162285 L 337.42857142857144 143.6145739842467 L 340.07142857142856 143.74389348833728 L 342.7142857142857 143.87743758602792 L 345.3571428571429 144.01379807945193 L 348 144.15156677074265 L 350.64285714285717 144.28933546203336 L 353.2857142857143 144.42569595545737 L 355.9285714285714 144.55924005314802 L 358.57142857142856 144.6885595572386 L 361.2142857142857 144.81224626986244 L 363.85714285714283 144.9288919931529 L 366.5 145.0370885292432 L 369.14285714285717 145.1354276802667 L 371.7857142857143 145.22250124835674 L 374.42857142857144 145.2969010356466 L 377.07142857142856 145.35721884426962 L 379.7142857142857 145.40204647635912 L 382.3571428571429 145.42997573404836 L 385 145.4395984194707 L 385 235 Z" fill="#425274" stroke="none" stroke-width="2"/>
+  <path data-layer-name="front" id="front" d="M 15 235 L 15 179.8501054449007 L 17.642857142857142 179.85539559794685 L 20.285714285714285 179.87377540286965 L 22.92857142857143 179.9090088783455 L 25.57142857142857 179.96486004305086 L 28.214285714285715 180.04509291566214 L 30.857142857142858 180.15347151485582 L 33.5 180.2937598593083 L 36.14285714285714 180.46972196769605 L 38.785714285714285 180.6851218586955 L 41.42857142857143 180.94372355098307 L 44.07142857142857 181.24929106323523 L 46.714285714285715 181.6055884141284 L 49.35714285714286 182.016379622339 L 52 182.48542870654353 L 54.64285714285714 183.01649968541835 L 57.285714285714285 183.60923172725444 L 59.92857142857143 184.23367021507363 L 62.57142857142857 184.88024785464103 L 65.21428571428571 185.54546899041745 L 67.85714285714286 186.22583796686368 L 70.5 186.91785912844057 L 73.14285714285714 187.61803681960888 L 75.78571428571428 188.32287538482944 L 78.42857142857143 189.0288791685631 L 81.07142857142857 189.7325525152706 L 83.71428571428572 190.4303997694128 L 86.35714285714286 191.1189252754505 L 89 191.79463337784446 L 91.64285714285715 192.45402842105557 L 94.28571428571428 193.09361474954457 L 96.92857142857143 193.70989670777232 L 99.57142857142857 194.2841513165603 L 102.21428571428571 194.79412149731962 L 104.85714285714286 195.24331928117962 L 107.5 195.63550956561085 L 110.14285714285714 195.97445724808392 L 112.78571428571429 196.26392722606943 L 115.42857142857142 196.507684397038 L 118.07142857142857 196.7094936584602 L 120.71428571428571 196.87311990780663 L 123.35714285714286 197.00232804254793 L 126 197.10088296015468 L 128.64285714285717 197.17254955809747 L 131.28571428571428 197.22109273384692 L 133.92857142857144 197.2502773848736 L 136.57142857142856 197.26386840864816 L 139.21428571428572 197.26235166885562 L 141.85714285714286 197.2077012917801 L 144.5 197.09318062733027 L 147.14285714285714 196.9253783275634 L 149.78571428571428 196.71088304453676 L 152.42857142857144 196.45628343030762 L 155.07142857142856 196.16816813693328 L 157.71428571428572 195.85312581647096 L 160.35714285714286 195.51774512097796 L 163 195.16861470251158 L 165.64285714285714 194.81232321312905 L 168.2857142857143 194.45545930488768 L 170.92857142857142 194.1046116298447 L 173.57142857142856 193.76636884005742 L 176.21428571428572 193.4473195875831 L 178.85714285714286 193.15405252447903 L 181.5 192.88113467197277 L 184.14285714285714 192.60523650227415 L 186.78571428571428 192.32598514949726 L 189.42857142857142 192.04393947748852 L 192.07142857142858 191.75965835009427 L 194.71428571428572 191.4737006311609 L 197.35714285714286 191.1866251845348 L 200 190.8989908740623 L 202.64285714285714 190.6113565635898 L 205.28571428571428 190.32428111696368 L 207.92857142857144 190.03832339803031 L 210.57142857142858 189.75404227063606 L 213.21428571428572 189.47199659862733 L 215.85714285714283 189.19274524585043 L 218.50000000000003 188.9168470761518 L 221.14285714285714 188.64671407610805 L 223.78571428571428 188.43125887021048 L 226.42857142857142 188.2859984695458 L 229.07142857142858 188.2028809676725 L 231.71428571428572 188.1738544581491 L 234.35714285714286 188.19086703453408 L 237 188.24586679038592 L 239.64285714285714 188.33080181926312 L 242.2857142857143 188.43762021472412 L 244.92857142857144 188.5582700703275 L 247.57142857142856 188.68469947963166 L 250.2142857142857 188.80885653619515 L 252.85714285714286 188.92268933357641 L 255.5 189.01814596533399 L 258.1428571428571 189.0871745250263 L 260.7857142857143 189.1217231062119 L 263.42857142857144 189.1167360429487 L 266.07142857142856 189.07521125399526 L 268.7142857142857 188.9926274254179 L 271.35714285714283 188.86376666490114 L 274 188.68341108012945 L 276.64285714285717 188.44634277878737 L 279.2857142857143 188.14734386855943 L 281.92857142857144 187.7811964571301 L 284.57142857142856 187.34268265218395 L 287.2142857142857 186.82658456140544 L 289.8571428571429 186.22768429247913 L 292.5 185.54076395308948 L 295.1428571428571 184.76060565092104 L 297.7857142857143 183.88199149365832 L 300.42857142857144 182.8997035889858 L 303.07142857142856 181.8077332144757 L 305.7142857142857 180.53165402632808 L 308.35714285714283 179.04729373796124 L 311 177.38589451440794 L 313.64285714285717 175.5786985207012 L 316.2857142857143 173.65694792187386 L 318.92857142857144 171.65188488295883 L 321.5714285714286 169.59475156898893 L 324.2142857142857 167.51679014499712 L 326.85714285714283 165.44924277601632 L 329.5 163.4233516270793 L 332.1428571428571 161.47035886321908 L 334.7857142857143 159.62150664946847 L 337.42857142857144 157.90803715086037 L 340.07142857142856 156.36119253242774 L 342.7142857142857 155.0122149592034 L 345.3571428571429 153.88851459878657 L 348 152.98216628811508 L 350.64285714285717 152.2725126911981 L 353.2857142857143 151.73966564750307 L 355.9285714285714 151.36373699649744 L 358.57142857142856 151.1248385776486 L 361.2142857142857 151.00308223042404 L 363.85714285714283 150.9785797942912 L 366.5 151.03144310871744 L 369.14285714285717 151.1417840131703 L 371.7857142857143 151.28971434711718 L 374.42857142857144 151.4553459500255 L 377.07142857142856 151.61879066136277 L 379.7142857142857 151.76016032059636 L 382.3571428571429 151.8595667671937 L 385 151.89712184062228 L 385 235 Z" fill="oklch(0.3 0.06 265)" stroke="none" stroke-width="2"/>
+</svg></figure>
+<p>That stacking line — <code>noise(t*3, 4) * 55 + noise(t*9, 5) * 12</code> — is a
+technique worth naming: big slow waves carry the form, small fast waves
+carry the texture, and adding them gives you both at once. Graphics people
+call the layers <em>octaves</em> and build entire terrains this way — now you can
+too, and the whole scene stays as reproducible as everything else in this
+series: same seeds, same mountains, every compile. To turn these
+ridgelines into fog, water, or anything else that varies in <em>two</em>
+directions, you need the second dimension — that&#39;s
+<a href="./noise2.html"><code>noise2</code></a>.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="./noise2.html"><code>noise2</code></a> — the same idea spread across a surface.</li>
+<li><a href="./hash01.html"><code>hash01</code></a> — the pins themselves.</li>
+<li><a href="./smoothstep.html"><code>smoothstep</code></a> — the glide between them.</li>
+<li>Reference: <a href="https://pathogen.studio/docs#stdlib-hash-noise">Hash &amp; Noise docs</a>.</li>
+</ul>
+
+  </main>
+  <footer class="page-foot">
+    <nav>
+      <span>← <a href="./bump.html"><code>bump</code></a></span>
+      <a href="./index.html">all primers</a>
+      <span><a href="./noise2.html"><code>noise2</code></a> →</span>
+    </nav>
+    <p>Reference: <a href="https://pathogen.studio/docs#stdlib-hash-noise">noise docs</a> · Siblings: <a href="./hash01.html"><code>hash01</code></a> · <a href="./hash11.html"><code>hash11</code></a> · <a href="./hashRange.html"><code>hashRange</code></a> · <a href="./smoothstep.html"><code>smoothstep</code></a> · <a href="./bump.html"><code>bump</code></a> · <a href="./noise2.html"><code>noise2</code></a></p>
+    <p class="regen">Generated by project-docs/stdlib-primers/build-primers.ts — edit content/, not this file.</p>
+  </footer>
+  </div>
+</body>
+</html>

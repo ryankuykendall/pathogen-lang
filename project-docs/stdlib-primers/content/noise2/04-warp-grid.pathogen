@@ -1,0 +1,41 @@
+// viewBox="0 0 400 230"
+//-- Displacement: two fields make a push direction. Every vertex of a
+//-- ruled grid moves by ((noise2(x,y) - 0.5) * 14, (noise2(x,y,1) - 0.5) * 14)
+//-- -- the default field pushes horizontally, the seed-1 field vertically.
+//-- The low frequency (0.14) keeps neighboring vertices agreeing, so the
+//-- grid billows like a flag instead of crumpling.
+
+define ViewBox(0, 0, 400, 230);
+
+fn warpX(gx, gy) {
+  return (noise2(gx * 0.14, gy * 0.14) - 0.5) * 14;
+}
+fn warpY(gx, gy) {
+  return (noise2(gx * 0.14, gy * 0.14, 1) - 0.5) * 14;
+}
+
+let grid = PathLayer('warped-grid') ${ stroke: oklch(0.64 0.12 200); stroke-width: 1; fill: none; };
+grid.apply {
+  //-- Horizontal rules
+  for (gy in 0..12) {
+    let x0 = calc(30 + warpX(0, gy));
+    let y0 = calc(28 + gy * 14.5 + warpY(0, gy));
+    M x0 y0
+    for (gx in 1..24) {
+      let x = calc(30 + gx * 14.2 + warpX(gx, gy));
+      let y = calc(28 + gy * 14.5 + warpY(gx, gy));
+      L x y
+    }
+  }
+  //-- Vertical rules
+  for (gx in 0..24) {
+    let x0 = calc(30 + gx * 14.2 + warpX(gx, 0));
+    let y0 = calc(28 + warpY(gx, 0));
+    M x0 y0
+    for (gy in 1..12) {
+      let x = calc(30 + gx * 14.2 + warpX(gx, gy));
+      let y = calc(28 + gy * 14.5 + warpY(gx, gy));
+      L x y
+    }
+  }
+}

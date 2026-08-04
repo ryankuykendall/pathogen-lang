@@ -1,0 +1,28 @@
+// viewBox="0 0 400 170"
+//-- The house idiom: 1 + hash11(i) * 0.25 is a +/-25% wobble factor you
+//-- multiply onto anything. Top ribbon: a smooth width profile. Bottom:
+//-- the same profile times the wobble -- the edge gets tooth.
+
+define ViewBox(0, 0, 400, 170);
+
+fn ribbon(name, y0, wobble) {
+  let mk = {|vo, pb|
+    vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    for (i in 0..47) {
+      let t = i / 47;
+      let w = (3 + 9 * bump(t, 0.5, 0.55)) * (1 + hash11(i) * wobble);
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+  };
+  let spine = @{ l 330 0 };
+  let rib = spine.compoundVariableOffset() << mk;
+  let band = PathLayer(name) ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  band.apply {
+    M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
+    rib.draw();
+  }
+}
+
+ribbon('smooth', 48, 0);
+ribbon('jittered', 122, 0.25);

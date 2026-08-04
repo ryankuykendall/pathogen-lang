@@ -1,0 +1,19 @@
+// viewBox="0 0 400 240"
+//-- A 14 x 8 grid of tiles. Every tile's lightness comes from one hashed
+//-- stream and its hue from another -- the grid reads as a woven textile
+//-- swatch, and it's the same swatch on every compile.
+
+define ViewBox(0, 0, 400, 240);
+
+for (row in 0..7) {
+  for (col in 0..13) {
+    let idx = row * 14 + col;
+    let L = 0.5 + hash01(idx) * 0.3;
+    let H = 200 + hash01(idx, 1) * 130;
+    let c = Color(L, 0.11, H);
+    let cell = PathLayer(`cell-${idx}`) ${ fill: c; stroke: none; };
+    cell.apply {
+      roundRect(calc(20 + col * 26), calc(20 + row * 26), 22, 22, 5);
+    }
+  }
+}

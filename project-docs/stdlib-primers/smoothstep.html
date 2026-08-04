@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>smoothstep — Pathogen stdlib primer</title>
+  <link rel="stylesheet" href="../../playground/styles/theme.css">
+  <script>(function () {
+      try {
+        var stored = localStorage.getItem('pathogen-theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+    })();</script>
+  <script type="module" src="../../public/components/shared/theme-toggle.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-primary, #1e1e2e);
+      color: var(--text-primary, #cdd6f4);
+      font-family: var(--font-sans, system-ui, sans-serif);
+      line-height: 1.65;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .page-head { border-bottom: 1px solid var(--border-color, #313244); padding-bottom: 1.25rem; margin-bottom: 2rem; position: relative; }
+    .eyebrow { font-size: 0.8rem; color: var(--text-secondary, #a6adc8); letter-spacing: 0.04em; text-transform: uppercase; }
+    .eyebrow a { color: var(--accent-color, #89b4fa); text-decoration: none; }
+    .page-head h1 { font-size: 2rem; margin: 0.35rem 0 0.25rem; }
+    .page-head h1 code { font-family: var(--font-mono, ui-monospace, monospace); color: var(--accent-color, #89b4fa); }
+    .hook { font-size: 1.1rem; color: var(--text-secondary, #a6adc8); font-style: italic; }
+    theme-toggle { position: absolute; top: 0; right: 0; }
+    .prose { margin-bottom: 1.5rem; }
+    .prose p, .prose ul { margin-bottom: 0.9rem; max-width: 72ch; }
+    .prose ul { padding-left: 1.4rem; }
+    .prose li { margin-bottom: 0.35rem; }
+    .prose h2 { font-size: 1.35rem; margin: 2.2rem 0 0.8rem; }
+    .prose h3 { font-size: 1.1rem; margin: 1.6rem 0 0.6rem; }
+    .prose code, .example-head code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.9em; background: var(--bg-elevated, #24243a); padding: 0.1em 0.35em; border-radius: 4px; }
+    .prose a { color: var(--accent-color, #89b4fa); }
+    .prose strong { color: var(--text-primary, #cdd6f4); }
+    .example { margin: 2.75rem 0; border-top: 1px solid var(--border-color, #313244); padding-top: 1.6rem; }
+    .example-head { font-size: 1.3rem; margin-bottom: 0.9rem; }
+    .ex-num { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-color, #89b4fa); border: 1px solid var(--border-color, #313244); border-radius: 999px; padding: 0.1rem 0.6rem; margin-right: 0.6rem; vertical-align: middle; }
+    pre.code {
+      background: var(--bg-secondary, #181825);
+      border: 1px solid var(--border-color, #313244);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      font-family: var(--font-mono, ui-monospace, monospace);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      margin: 1rem 0;
+    }
+    pre.code .kw  { color: var(--code-keyword, #c4a4e8); font-weight: 600; }
+    pre.code .fn  { color: var(--code-fn, #f7b56e); }
+    pre.code .num { color: var(--code-num, #f0a07b); }
+    pre.code .str { color: var(--code-str, #8fc4a1); }
+    pre.code .cm  { color: var(--code-comment, #7a6f8a); font-style: italic; }
+    pre.code .op  { color: var(--code-op, #a8a0b8); }
+    pre.code .tp  { color: var(--code-tp, #e8b48a); }
+    pre.code .id  { color: var(--text-primary, #cdd6f4); }
+    figure {
+      /* Pinned dark: all example artwork is tuned for a dark plate; the
+         light theme's --bg-elevated (#fff) washes out labels and scene
+         fills, so the plate deliberately does NOT follow the theme. */
+      background: #24243a;
+      border: 1px solid var(--border-color, #313244);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0 1.2rem;
+      text-align: center;
+    }
+    figure svg { max-width: 100%; height: auto; }
+    figcaption { font-size: 0.85rem; color: var(--text-secondary, #a6adc8); margin-top: 0.7rem; text-align: left; max-width: 72ch; margin-left: auto; margin-right: auto; }
+    .page-foot { border-top: 1px solid var(--border-color, #313244); margin-top: 3rem; padding-top: 1.25rem; font-size: 0.9rem; color: var(--text-secondary, #a6adc8); }
+    .page-foot nav { display: flex; justify-content: space-between; margin-bottom: 0.8rem; }
+    .page-foot a { color: var(--accent-color, #89b4fa); text-decoration: none; }
+    .page-foot .regen { font-size: 0.75rem; opacity: 0.7; margin-top: 0.6rem; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+  <header class="page-head">
+    <p class="eyebrow"><a href="./index.html">Stdlib primers</a> · 04 of 07</p>
+    <h1><code>smoothstep</code></h1>
+    <p class="hook">The S-curve that turns a cliff into a ramp.</p>
+    <theme-toggle></theme-toggle>
+  </header>
+  <main class="prose">
+<h2>What it does</h2>
+<p><code>smoothstep(edge0, edge1, x)</code> is a <strong>dimmer between two markers</strong>. As <code>x</code>
+travels from <code>edge0</code> to <code>edge1</code>, the answer glides from 0 up to 1. Outside
+the window it just holds: 0 before, 1 after — it <em>saturates</em>, never
+overshooting in either direction.</p>
+<p>What makes it special is the shape of the glide. It&#39;s an S-curve whose
+slope is <strong>zero at both ends</strong> — it leaves the floor flat and arrives at
+the ceiling flat. (The math name is a Hermite curve; all you need is the
+flat-at-both-ends part.) That flatness is why things driven by
+<code>smoothstep</code> never kink: whatever you attach to it — a size, a color, a
+width — eases out of &quot;off&quot; and eases into &quot;on.&quot;</p>
+<p>Two idioms are worth learning as vocabulary:</p>
+<ul>
+<li><strong>Reversed markers run the ramp downhill.</strong> <code>smoothstep(1.0, 0.6, t)</code>
+fades from 1 down to 0 as <code>t</code> climbs through 0.6→1.0. (Shader languages
+leave this case undefined; Pathogen defines and tests it.)</li>
+<li><strong>The plateau: uphill × downhill = a flat-topped window.</strong>
+<code>smoothstep(0.1, 0.3, t) * smoothstep(0.9, 0.7, t)</code> rises, holds at 1,
+and falls — the standard way to build &quot;on in the middle, off at the
+ends.&quot;</li>
+</ul>
+<p>One gentle warning: keep the markers apart. <code>smoothstep(e, e, x)</code> collapses
+to a hard step (and exactly <em>at</em> the shared edge, the math divides zero by
+zero and answers NaN).</p>
+<h2>Why you&#39;d use it</h2>
+<p>Every time a hard boundary looks mechanical: fading elements in near an
+edge, easing a stroke width to zero at its tips, blending two colors
+across a horizon, weighting anything by &quot;how far into this zone are we?&quot;
+It replaces both the <code>if (x &gt; threshold)</code> cliff <em>and</em> the straight-line
+ramp with something that reads as designed. And like everything in this
+series, it&#39;s a pure function of its inputs — the fades you tune today
+render identically on every future compile. It&#39;s also the workhorse under
+two of its siblings: <a href="./bump.html"><code>bump</code></a> is a hill built from the same
+easing idea, and <a href="./noise.html"><code>noise</code></a> uses this exact glide between its
+random pins.</p>
+<h2>Example 1 — Cliff, ramp, S-curve</h2>
+<p>Three ways from 0 to 1 across the same window. The dashed line is a hard
+step. The thin line is a straight ramp. The bold line is <code>smoothstep</code>.</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 200"</span>
+<span class="cm">//-- Three ways to get from 0 to 1 across the window 0.3..0.7: a hard step</span>
+<span class="cm">//-- (cliff), a straight lerp-style ramp, and smoothstep -- the S-curve</span>
+<span class="cm">//-- that leaves the floor flat and arrives at the ceiling flat.</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">200</span>);
+
+<span class="kw">let</span> <span class="id">plotX</span> = <span class="num">50</span>;
+<span class="kw">let</span> <span class="id">plotW</span> = <span class="num">300</span>;
+<span class="kw">let</span> <span class="id">plotY</span> = <span class="num">150</span>;
+<span class="kw">let</span> <span class="id">plotH</span> = <span class="num">90</span>;
+
+<span class="kw">let</span> <span class="id">axis</span> = <span class="tp">PathLayer</span>(<span class="str">'axis'</span>) ${<span class="str"> stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; </span>};
+<span class="id">axis</span>.<span class="kw">apply</span> {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+<span class="cm">//-- Hard step: 0 before the midpoint of the window, 1 after.</span>
+<span class="kw">let</span> <span class="id">cliff</span> = <span class="tp">PathLayer</span>(<span class="str">'cliff'</span>) ${<span class="str"> stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; </span>};
+<span class="id">cliff</span>.<span class="kw">apply</span> {
+  M plotX plotY
+  L calc(plotX + plotW * 0.5) plotY
+  L calc(plotX + plotW * 0.5) calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+<span class="cm">//-- Straight ramp across the window.</span>
+<span class="kw">let</span> <span class="id">ramp</span> = <span class="tp">PathLayer</span>(<span class="str">'ramp'</span>) ${<span class="str"> stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; </span>};
+<span class="id">ramp</span>.<span class="kw">apply</span> {
+  M plotX plotY
+  L calc(plotX + plotW * 0.3) plotY
+  L calc(plotX + plotW * 0.7) calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+<span class="cm">//-- The S-curve.</span>
+<span class="kw">let</span> <span class="id">scurve</span> = <span class="tp">PathLayer</span>(<span class="str">'smoothstep'</span>) ${<span class="str"> stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; </span>};
+<span class="id">scurve</span>.<span class="kw">apply</span> {
+  M plotX plotY
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">96</span>) {
+    <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">96</span>;
+    <span class="kw">let</span> <span class="id">s</span> = <span class="id">smoothstep</span>(<span class="num">0.3</span>, <span class="num">0.7</span>, <span class="id">t</span>);
+    L calc(plotX + plotW * t) calc(plotY - plotH * s)
+  }
+}
+
+<span class="kw">let</span> <span class="id">labels</span> = <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${<span class="str">
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+</span>};
+<span class="id">labels</span>.<span class="kw">apply</span> {
+  <span class="kw">text</span>(<span class="num">50</span>, <span class="num">176</span>)`0`
+  <span class="kw">text</span>(<span class="num">160</span>, <span class="num">176</span>)`edge0 = 0.3`
+  <span class="kw">text</span>(<span class="num">255</span>, <span class="num">176</span>)`edge1 = 0.7`
+  <span class="kw">text</span>(<span class="num">50</span>, <span class="num">36</span>)`smoothstep(0.3, 0.7, t) — bold · straight ramp — thin · hard step — dashed`
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+
+  <path data-layer-name="axis" id="axis" d="M 50 150 L 350 150 M 50 60 L 350 60" fill="none" stroke="oklch(0.55 0.02 260)" stroke-width="1"/>
+  <path data-layer-name="cliff" id="cliff" d="M 50 150 L 200 150 L 200 60 L 350 60" fill="none" stroke="oklch(0.6 0.1 20)" stroke-width="1.25" stroke-dasharray="4 3"/>
+  <path data-layer-name="ramp" id="ramp" d="M 50 150 L 140 150 L 260 60 L 350 60" fill="none" stroke="oklch(0.72 0.06 260)" stroke-width="1.25"/>
+  <path data-layer-name="smoothstep" id="smoothstep" d="M 50 150 L 53.125 150 L 56.25 150 L 59.375 150 L 62.5 150 L 65.625 150 L 68.75 150 L 71.875 150 L 75 150 L 78.125 150 L 81.25 150 L 84.375 150 L 87.5 150 L 90.625 150 L 93.75 150 L 96.875 150 L 100 150 L 103.125 150 L 106.25 150 L 109.375 150 L 112.5 150 L 115.625 150 L 118.75 150 L 121.875 150 L 125 150 L 128.125 150 L 131.25 150 L 134.375 150 L 137.5 150 L 140.625 149.9927012125651 L 143.75 149.7418212890625 L 146.875 149.14761861165366 L 150 148.22916666666666 L 153.125 147.0055389404297 L 156.25 145.49580891927081 L 159.375 143.71905008951822 L 162.5 141.6943359375 L 165.625 139.44073994954425 L 168.75 136.97733561197916 L 171.875 134.3231964111328 L 175 131.49739583333331 L 178.125 128.51900736490884 L 181.25 125.40710449218749 L 184.375 122.18076070149738 L 187.5 118.85904947916666 L 190.625 115.46104431152344 L 193.75 112.00581868489581 L 196.875 108.51244608561198 L 200 105 L 203.125 101.48755391438803 L 206.25 97.99418131510414 L 209.375 94.53895568847656 L 212.5 91.14095052083334 L 215.625 87.8192392985026 L 218.75 84.59289550781249 L 221.875 81.48099263509114 L 225 78.50260416666666 L 228.125 75.67680358886719 L 231.25 73.02266438802084 L 234.375 70.55926005045572 L 237.5 68.30566406249999 L 240.625 66.28094991048178 L 243.75 64.50419108072916 L 246.875 62.9944610595703 L 250 61.77083333333333 L 253.125 60.852381388346345 L 256.25 60.2581787109375 L 259.375 60.00729878743489 L 262.5 60 L 265.625 60 L 268.75 60 L 271.875 60 L 275 60 L 278.125 60 L 281.25 60 L 284.375 60 L 287.5 60 L 290.625 60 L 293.75 60 L 296.875 60 L 300 60 L 303.125 60 L 306.25 60 L 309.375 60 L 312.5 60 L 315.625 60 L 318.75 60 L 321.875 60 L 325 60 L 328.125 60 L 331.25 60 L 334.375 60 L 337.5 60 L 340.625 60 L 343.75 60 L 346.875 60 L 350 60" fill="none" stroke="oklch(0.62 0.16 260)" stroke-width="2.25"/>
+  <text data-layer-name="labels" id="labels" x="50" y="176" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">0</text>
+  <text data-layer-name="labels" x="160" y="176" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">edge0 = 0.3</text>
+  <text data-layer-name="labels" x="255" y="176" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">edge1 = 0.7</text>
+  <text data-layer-name="labels" x="50" y="36" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">smoothstep(0.3, 0.7, t) — bold · straight ramp — thin · hard step — dashed</text>
+</svg></figure>
+<p>Look at where the bold curve meets the floor and ceiling: it lands flat
+both times. The straight ramp has corners at both markers — attach a
+width or a motion to it and you&#39;ll <em>see</em> those corners. The S-curve is
+corner-free by construction.</p>
+<h2>Example 2 — Fade a row in — and out</h2>
+<p>The dimmer applied spatially. Top row: dot sizes fade in over the left
+half. Bottom row: the markers are <strong>reversed</strong> — <code>smoothstep(1.0, 0.6, t)</code>
+— so the fade runs the other way.</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 170"</span>
+<span class="cm">//-- Applying the dimmer spatially. Top row: dot size fades IN across the</span>
+<span class="cm">//-- left half via smoothstep(0.1, 0.5, t). Bottom row: swap the markers --</span>
+<span class="cm">//-- smoothstep(1.0, 0.6, t) -- and the ramp runs downhill, fading OUT</span>
+<span class="cm">//-- toward the right.</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">170</span>);
+
+<span class="kw">let</span> <span class="id">labels</span> = <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${<span class="str">
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+</span>};
+<span class="id">labels</span>.<span class="kw">apply</span> {
+  <span class="kw">text</span>(<span class="num">24</span>, <span class="num">28</span>)`smoothstep(0.1, 0.5, t) — fade in`
+  <span class="kw">text</span>(<span class="num">24</span>, <span class="num">100</span>)`smoothstep(1.0, 0.6, t) — reversed markers, fade out`
+}
+
+<span class="kw">let</span> <span class="id">fadeIn</span> = <span class="tp">PathLayer</span>(<span class="str">'fade-in'</span>) ${<span class="str"> fill: oklch(0.62 0.16 260); stroke: none; </span>};
+<span class="id">fadeIn</span>.<span class="kw">apply</span> {
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">47</span>) {
+    <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">47</span>;
+    <span class="kw">let</span> <span class="id">s</span> = <span class="id">smoothstep</span>(<span class="num">0.1</span>, <span class="num">0.5</span>, <span class="id">t</span>);
+    <span class="id">circle</span>(<span class="kw">calc</span>(<span class="num">24</span> + <span class="id">i</span> * <span class="num">7.4</span>), <span class="num">55</span>, <span class="kw">calc</span>(<span class="num">0.4</span> + <span class="num">3.4</span> * <span class="id">s</span>));
+  }
+}
+
+<span class="kw">let</span> <span class="id">fadeOut</span> = <span class="tp">PathLayer</span>(<span class="str">'fade-out'</span>) ${<span class="str"> fill: oklch(0.68 0.13 200); stroke: none; </span>};
+<span class="id">fadeOut</span>.<span class="kw">apply</span> {
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">47</span>) {
+    <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">47</span>;
+    <span class="kw">let</span> <span class="id">s</span> = <span class="id">smoothstep</span>(<span class="num">1.0</span>, <span class="num">0.6</span>, <span class="id">t</span>);
+    <span class="id">circle</span>(<span class="kw">calc</span>(<span class="num">24</span> + <span class="id">i</span> * <span class="num">7.4</span>), <span class="num">127</span>, <span class="kw">calc</span>(<span class="num">0.4</span> + <span class="num">3.4</span> * <span class="id">s</span>));
+  }
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 170" width="400" height="170">
+
+  <text data-layer-name="labels" id="labels" x="24" y="28" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">smoothstep(0.1, 0.5, t) — fade in</text>
+  <text data-layer-name="labels" x="24" y="100" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">smoothstep(1.0, 0.6, t) — reversed markers, fade out</text>
+  <path data-layer-name="fade-in" id="fade-in" d="M 23.6 55 a 0.4 0.4 0 1 1 0.8 0 a 0.4 0.4 0 1 1 -0.8 0 M 31 55 a 0.4 0.4 0 1 1 0.8 0 a 0.4 0.4 0 1 1 -0.8 0 M 38.4 55 a 0.4 0.4 0 1 1 0.8 0 a 0.4 0.4 0 1 1 -0.8 0 M 45.800000000000004 55 a 0.4 0.4 0 1 1 0.8 0 a 0.4 0.4 0 1 1 -0.8 0 M 53.2 55 a 0.4 0.4 0 1 1 0.8 0 a 0.4 0.4 0 1 1 -0.8 0 M 60.59743030205253 55 a 0.40256969794746833 0.40256969794746833 0 1 1 0.8051393958949367 0 a 0.40256969794746833 0.40256969794746833 0 1 1 -0.8051393958949367 0 M 67.95347628897258 55 a 0.44652371102742167 0.44652371102742167 0 1 1 0.8930474220548433 0 a 0.44652371102742167 0.44652371102742167 0 1 1 -0.8930474220548433 0 M 75.2597861865868 55 a 0.5402138134132128 0.5402138134132128 0 1 1 1.0804276268264257 0 a 0.5402138134132128 0.5402138134132128 0 1 1 -1.0804276268264257 0 M 82.52250025283415 55 a 0.6774997471658495 0.6774997471658495 0 1 1 1.354999494331699 0 a 0.6774997471658495 0.6774997471658495 0 1 1 -1.354999494331699 0 M 89.74775874565367 55 a 0.8522412543463393 0.8522412543463393 0 1 1 1.7044825086926787 0 a 0.8522412543463393 0.8522412543463393 0 1 1 -1.7044825086926787 0 M 96.94170192298431 55 a 1.05829807701569 1.05829807701569 0 1 1 2.11659615403138 0 a 1.05829807701569 1.05829807701569 0 1 1 -2.11659615403138 0 M 104.1104700427651 55 a 1.289529957234909 1.289529957234909 0 1 1 2.579059914469818 0 a 1.289529957234909 1.289529957234909 0 1 1 -2.579059914469818 0 M 111.260203362935 55 a 1.5397966370650047 1.5397966370650047 0 1 1 3.0795932741300094 0 a 1.5397966370650047 1.5397966370650047 0 1 1 -3.0795932741300094 0 M 118.39704214143302 55 a 1.8029578585669843 1.8029578585669843 0 1 1 3.6059157171339686 0 a 1.8029578585669843 1.8029578585669843 0 1 1 -3.6059157171339686 0 M 125.52712663619815 55 a 2.072873363801855 2.072873363801855 0 1 1 4.14574672760371 0 a 2.072873363801855 2.072873363801855 0 1 1 -4.14574672760371 0 M 132.65659710516937 55 a 2.343402894830625 2.343402894830625 0 1 1 4.68680578966125 0 a 2.343402894830625 2.343402894830625 0 1 1 -4.68680578966125 0 M 139.7915938062857 55 a 2.6084061937143015 2.6084061937143015 0 1 1 5.216812387428603 0 a 2.6084061937143015 2.6084061937143015 0 1 1 -5.216812387428603 0 M 146.93825699748612 55 a 2.8617430025138937 2.8617430025138937 0 1 1 5.723486005027787 0 a 2.8617430025138937 2.8617430025138937 0 1 1 -5.723486005027787 0 M 154.10272693670962 55 a 3.0972730632904075 3.0972730632904075 0 1 1 6.194546126580815 0 a 3.0972730632904075 3.0972730632904075 0 1 1 -6.194546126580815 0 M 161.29114388189515 55 a 3.308856118104851 3.308856118104851 0 1 1 6.617712236209702 0 a 3.308856118104851 3.308856118104851 0 1 1 -6.617712236209702 0 M 168.50964809098176 55 a 3.4903519090182322 3.4903519090182322 0 1 1 6.9807038180364644 0 a 3.4903519090182322 3.4903519090182322 0 1 1 -6.9807038180364644 0 M 175.76437982190845 55 a 3.635620178091559 3.635620178091559 0 1 1 7.271240356183118 0 a 3.635620178091559 3.635620178091559 0 1 1 -7.271240356183118 0 M 183.06147933261417 55 a 3.7385206673858393 3.7385206673858393 0 1 1 7.477041334771679 0 a 3.7385206673858393 3.7385206673858393 0 1 1 -7.477041334771679 0 M 190.40708688103794 55 a 3.7929131189620793 3.7929131189620793 0 1 1 7.5858262379241586 0 a 3.7929131189620793 3.7929131189620793 0 1 1 -7.5858262379241586 0 M 197.8 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 205.2 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 212.6 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 220 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 227.4 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 234.8 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 242.2 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 249.6 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 257 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 264.40000000000003 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 271.8 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 279.2 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 286.6 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 294 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 301.4 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 308.8 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 316.2 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 323.6 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 331 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 338.4 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 345.8 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 353.2 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 360.6 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 368 55 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0" fill="oklch(0.62 0.16 260)" stroke="none" stroke-width="2"/>
+  <path data-layer-name="fade-out" id="fade-out" d="M 20.2 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 27.599999999999998 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 35 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 42.400000000000006 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 49.800000000000004 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 57.2 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 64.60000000000001 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 72.00000000000001 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 79.4 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 86.80000000000001 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 94.2 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 101.60000000000001 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 109.00000000000001 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 116.4 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 123.80000000000001 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 131.2 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 138.6 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 146 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 153.4 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 160.79999999999998 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 168.2 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 175.6 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 183 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 190.4 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 197.8 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 205.2 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 212.6 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 220 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 227.4 127 a 3.8 3.8 0 1 1 7.6 0 a 3.8 3.8 0 1 1 -7.6 0 M 234.81794592720306 127 a 3.7820540727969716 3.7820540727969716 0 1 1 7.564108145593943 0 a 3.7820540727969716 3.7820540727969716 0 1 1 -7.564108145593943 0 M 242.28753551717827 127 a 3.712464482821725 3.712464482821725 0 1 1 7.42492896564345 0 a 3.712464482821725 3.712464482821725 0 1 1 -7.42492896564345 0 M 249.80379106748987 127 a 3.5962089325101374 3.5962089325101374 0 1 1 7.192417865020275 0 a 3.5962089325101374 3.5962089325101374 0 1 1 -7.192417865020275 0 M 257.3605723201988 127 a 3.4394276798012 3.4394276798012 0 1 1 6.8788553596024 0 a 3.4394276798012 3.4394276798012 0 1 1 -6.8788553596024 0 M 264.95173901736615 127 a 3.2482609826339055 3.2482609826339055 0 1 1 6.496521965267811 0 a 3.2482609826339055 3.2482609826339055 0 1 1 -6.496521965267811 0 M 272.57115090105276 127 a 3.0288490989472456 3.0288490989472456 0 1 1 6.057698197894491 0 a 3.0288490989472456 3.0288490989472456 0 1 1 -6.057698197894491 0 M 280.2126677133198 127 a 2.7873322866802153 2.7873322866802153 0 1 1 5.5746645733604305 0 a 2.7873322866802153 2.7873322866802153 0 1 1 -5.5746645733604305 0 M 287.8701491962282 127 a 2.5298508037718035 2.5298508037718035 0 1 1 5.059701607543607 0 a 2.5298508037718035 2.5298508037718035 0 1 1 -5.059701607543607 0 M 295.53745509183904 127 a 2.262544908161004 2.262544908161004 0 1 1 4.525089816322008 0 a 2.262544908161004 2.262544908161004 0 1 1 -4.525089816322008 0 M 303.2084451422132 127 a 1.9915548577868107 1.9915548577868107 0 1 1 3.9831097155736215 0 a 1.9915548577868107 1.9915548577868107 0 1 1 -3.9831097155736215 0 M 310.8769790894118 127 a 1.7230209105882128 1.7230209105882128 0 1 1 3.4460418211764257 0 a 1.7230209105882128 1.7230209105882128 0 1 1 -3.4460418211764257 0 M 318.5369166754958 127 a 1.463083324504204 1.463083324504204 0 1 1 2.926166649008408 0 a 1.463083324504204 1.463083324504204 0 1 1 -2.926166649008408 0 M 326.18211764252624 127 a 1.2178823574737772 1.2178823574737772 0 1 1 2.4357647149475543 0 a 1.2178823574737772 1.2178823574737772 0 1 1 -2.4357647149475543 0 M 333.8064417325641 127 a 0.993558267435925 0.993558267435925 0 1 1 1.98711653487185 0 a 0.993558267435925 0.993558267435925 0 1 1 -1.98711653487185 0 M 341.4037486876704 127 a 0.796251312329638 0.796251312329638 0 1 1 1.592502624659276 0 a 0.796251312329638 0.796251312329638 0 1 1 -1.592502624659276 0 M 348.9678982499061 127 a 0.6321017500939097 0.6321017500939097 0 1 1 1.2642035001878194 0 a 0.6321017500939097 0.6321017500939097 0 1 1 -1.2642035001878194 0 M 356.49275016133225 127 a 0.5072498386677324 0.5072498386677324 0 1 1 1.0144996773354649 0 a 0.5072498386677324 0.5072498386677324 0 1 1 -1.0144996773354649 0 M 363.97216416400994 127 a 0.4278358359900986 0.4278358359900986 0 1 1 0.8556716719801972 0 a 0.4278358359900986 0.4278358359900986 0 1 1 -0.8556716719801972 0 M 371.40000000000003 127 a 0.4 0.4 0 1 1 0.8 0 a 0.4 0.4 0 1 1 -0.8 0" fill="oklch(0.68 0.13 200)" stroke="none" stroke-width="2"/>
+</svg></figure>
+<p>Reversed markers are the idiomatic way to say &quot;fade out&quot;: no <code>1 - s</code>
+arithmetic, just swap the edges and the ramp runs downhill.</p>
+<h2>Example 3 — The plateau</h2>
+<p>The flagship idiom. One lambda —
+<code>smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)</code> — drives both the
+plot (top) and the bar heights (bottom).</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 250"</span>
+<span class="cm">//-- The plateau idiom: an uphill ramp TIMES a downhill ramp makes a</span>
+<span class="cm">//-- flat-topped window -- rise, hold, fall. The plot (top) and the bar</span>
+<span class="cm">//-- heights (bottom) share the exact same lambda.</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">250</span>);
+
+<span class="kw">let</span> <span class="id">win</span> = {|<span class="id">t</span>| <span class="kw">return</span> <span class="id">smoothstep</span>(<span class="num">0.1</span>, <span class="num">0.3</span>, <span class="id">t</span>) * <span class="id">smoothstep</span>(<span class="num">0.9</span>, <span class="num">0.7</span>, <span class="id">t</span>); };
+
+<span class="kw">let</span> <span class="id">plotX</span> = <span class="num">50</span>;
+<span class="kw">let</span> <span class="id">plotW</span> = <span class="num">300</span>;
+<span class="kw">let</span> <span class="id">plotY</span> = <span class="num">110</span>;
+<span class="kw">let</span> <span class="id">plotH</span> = <span class="num">70</span>;
+
+<span class="kw">let</span> <span class="id">unitLine</span> = <span class="tp">PathLayer</span>(<span class="str">'unit-line'</span>) ${<span class="str"> stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; </span>};
+<span class="id">unitLine</span>.<span class="kw">apply</span> {
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+<span class="kw">let</span> <span class="id">axis</span> = <span class="tp">PathLayer</span>(<span class="str">'axis'</span>) ${<span class="str"> stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; </span>};
+<span class="id">axis</span>.<span class="kw">apply</span> {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+}
+
+<span class="kw">let</span> <span class="id">curve</span> = <span class="tp">PathLayer</span>(<span class="str">'window-curve'</span>) ${<span class="str"> stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; </span>};
+<span class="id">curve</span>.<span class="kw">apply</span> {
+  M plotX plotY
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">96</span>) {
+    <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">96</span>;
+    <span class="kw">let</span> <span class="id">s</span> = <span class="id">win</span>(<span class="id">t</span>);
+    L calc(plotX + plotW * t) calc(plotY - plotH * s)
+  }
+}
+
+<span class="kw">let</span> <span class="id">bars</span> = <span class="tp">PathLayer</span>(<span class="str">'bars'</span>) ${<span class="str"> fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; </span>};
+<span class="id">bars</span>.<span class="kw">apply</span> {
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">47</span>) {
+    <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">47</span>;
+    <span class="kw">let</span> <span class="id">h</span> = <span class="id">win</span>(<span class="id">t</span>) * <span class="num">60</span>;
+    <span class="kw">if</span> (<span class="id">h</span> &gt; <span class="num">0.2</span>) {
+      <span class="id">rect</span>(<span class="kw">calc</span>(<span class="num">48</span> + <span class="id">i</span> * <span class="num">6.4</span>), <span class="kw">calc</span>(<span class="num">225</span> - <span class="id">h</span>), <span class="num">4.4</span>, <span class="id">h</span>);
+    }
+  }
+}
+
+<span class="kw">let</span> <span class="id">labels</span> = <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${<span class="str">
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+</span>};
+<span class="id">labels</span>.<span class="kw">apply</span> {
+  <span class="kw">text</span>(<span class="num">48</span>, <span class="num">28</span>)`win = smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)`
+  <span class="kw">text</span>(<span class="num">356</span>, <span class="num">44</span>)`1.0`
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="400" height="250">
+
+  <path data-layer-name="unit-line" id="unit-line" d="M 50 40 L 350 40" fill="none" stroke="oklch(0.5 0.02 260)" stroke-width="0.75" stroke-dasharray="2 4"/>
+  <path data-layer-name="axis" id="axis" d="M 50 110 L 350 110" fill="none" stroke="oklch(0.55 0.02 260)" stroke-width="1"/>
+  <path data-layer-name="window-curve" id="window-curve" d="M 50 110 L 53.125 110 L 56.25 110 L 59.375 110 L 62.5 110 L 65.625 110 L 68.75 110 L 71.875 110 L 75 110 L 78.125 110 L 81.25 109.91012008101852 L 84.375 108.93773961950231 L 87.5 106.9921875 L 90.625 104.19214319299769 L 93.75 100.65628616898148 L 96.875 96.5032958984375 L 100 91.85185185185186 L 103.125 86.82063349971064 L 106.25 81.5283203125 L 109.375 76.09359176070602 L 112.5 70.63512731481481 L 115.625 65.2716064453125 L 118.75 60.12170862268519 L 121.875 55.304113317418974 L 125 50.9375 L 128.125 47.14054814091434 L 131.25 44.03193721064814 L 134.375 41.7303466796875 L 137.5 40.35445601851852 L 140.625 40 L 143.75 40 L 146.875 40 L 150 40 L 153.125 40 L 156.25 40 L 159.375 40 L 162.5 40 L 165.625 40 L 168.75 40 L 171.875 40 L 175 40 L 178.125 40 L 181.25 40 L 184.375 40 L 187.5 40 L 190.625 40 L 193.75 40 L 196.875 40 L 200 40 L 203.125 40 L 206.25 40 L 209.375 40 L 212.5 40 L 215.625 40 L 218.75 40 L 221.875 40 L 225 40 L 228.125 40 L 231.25 40 L 234.375 40 L 237.5 40 L 240.625 40 L 243.75 40 L 246.875 40 L 250 40 L 253.125 40 L 256.25 40 L 259.375 40 L 262.5 40.35445601851852 L 265.625 41.730346679687514 L 268.75 44.03193721064814 L 271.875 47.14054814091437 L 275 50.9375 L 278.125 55.304113317418974 L 281.25 60.121708622685205 L 284.375 65.2716064453125 L 287.5 70.63512731481481 L 290.625 76.09359176070603 L 293.75 81.5283203125 L 296.875 86.82063349971062 L 300 91.85185185185186 L 303.125 96.5032958984375 L 306.25 100.65628616898147 L 309.375 104.19214319299769 L 312.5 106.9921875 L 315.625 108.93773961950231 L 318.75 109.91012008101852 L 321.875 110 L 325 110 L 328.125 110 L 331.25 110 L 334.375 110 L 337.5 110 L 340.625 110 L 343.75 110 L 346.875 110 L 350 110" fill="none" stroke="oklch(0.62 0.16 160)" stroke-width="2"/>
+  <path data-layer-name="bars" id="bars" d="M 86.4 221.8746809473816 l 4.4 0 l 0 3.1253190526183956 l -4.4 0 z M 92.80000000000001 215.98147809252285 l 4.4 0 l 0 9.018521907477146 l -4.4 0 z M 99.2 208.00781137127612 l 4.4 0 l 0 16.992188628723888 l -4.4 0 z M 105.6 198.82054072796973 l 4.4 0 l 0 26.179459272030282 l -4.4 0 z M 112 189.286526106932 l 4.4 0 l 0 35.71347389306801 l -4.4 0 z M 118.4 180.27262745249126 l 4.4 0 l 0 44.72737254750874 l -4.4 0 z M 124.80000000000001 172.64570470897584 l 4.4 0 l 0 52.35429529102415 l -4.4 0 z M 131.2 167.2726178207141 l 4.4 0 l 0 57.727382179285904 l -4.4 0 z M 137.60000000000002 165.02022673203433 l 4.4 0 l 0 59.979773267965676 l -4.4 0 z M 144 165 l 4.4 0 l 0 60 l -4.4 0 z M 150.4 165 l 4.4 0 l 0 60 l -4.4 0 z M 156.8 165 l 4.4 0 l 0 60 l -4.4 0 z M 163.2 165 l 4.4 0 l 0 60 l -4.4 0 z M 169.60000000000002 165 l 4.4 0 l 0 60 l -4.4 0 z M 176 165 l 4.4 0 l 0 60 l -4.4 0 z M 182.4 165 l 4.4 0 l 0 60 l -4.4 0 z M 188.8 165 l 4.4 0 l 0 60 l -4.4 0 z M 195.20000000000002 165 l 4.4 0 l 0 60 l -4.4 0 z M 201.60000000000002 165 l 4.4 0 l 0 60 l -4.4 0 z M 208 165 l 4.4 0 l 0 60 l -4.4 0 z M 214.4 165 l 4.4 0 l 0 60 l -4.4 0 z M 220.8 165 l 4.4 0 l 0 60 l -4.4 0 z M 227.20000000000002 165 l 4.4 0 l 0 60 l -4.4 0 z M 233.60000000000002 165 l 4.4 0 l 0 60 l -4.4 0 z M 240 165 l 4.4 0 l 0 60 l -4.4 0 z M 246.4 165 l 4.4 0 l 0 60 l -4.4 0 z M 252.8 165 l 4.4 0 l 0 60 l -4.4 0 z M 259.20000000000005 165.02022673203433 l 4.4 0 l 0 59.97977326796567 l -4.4 0 z M 265.6 167.27261782071412 l 4.4 0 l 0 57.72738217928589 l -4.4 0 z M 272 172.64570470897584 l 4.4 0 l 0 52.35429529102415 l -4.4 0 z M 278.4 180.27262745249126 l 4.4 0 l 0 44.727372547508736 l -4.4 0 z M 284.8 189.286526106932 l 4.4 0 l 0 35.713473893067984 l -4.4 0 z M 291.20000000000005 198.8205407279697 l 4.4 0 l 0 26.179459272030304 l -4.4 0 z M 297.6 208.0078113712761 l 4.4 0 l 0 16.992188628723895 l -4.4 0 z M 304 215.98147809252285 l 4.4 0 l 0 9.018521907477147 l -4.4 0 z M 310.40000000000003 221.87468094738162 l 4.4 0 l 0 3.1253190526183934 l -4.4 0 z" fill="oklch(0.62 0.16 160)" stroke="none" stroke-width="2" opacity="0.85"/>
+  <text data-layer-name="labels" id="labels" x="48" y="28" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">win = smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)</text>
+  <text data-layer-name="labels" x="356" y="44" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">1.0</text>
+</svg></figure>
+<p>Read the two factors: the first is 0 until t=0.1, then rises to 1 by
+t=0.3 and <em>stays</em> 1. The second stays 1 until t=0.7, then falls to 0 by
+t=0.9. Multiplied, you get rise–hold–fall with a genuinely flat top
+(touching the dashed 1.0 line). Any &quot;active in the middle&quot; behavior —
+visibility, width, intensity — is this one expression with your own four
+numbers.</p>
+<h2>Example 4 — No more blunt ends</h2>
+<p>A stroke-width application. The top ribbon has constant width, so it ends
+in chopped-off vertical edges. The bottom multiplies the same width by an
+end-window: <code>smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t)</code>. (The
+ribbon machinery — <code>compoundVariableOffset</code>, <code>vo.stop</code>, the <code>&lt;&lt;</code> worker —
+is glossed in the <a href="./hash11.html"><code>hash11</code> primer</a>; the only part that
+matters here is that each stop&#39;s width is a number we compute.)</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 160"</span>
+<span class="cm">//-- End windows on a stroke. Top: constant width -- the ribbon ends in</span>
+<span class="cm">//-- chopped-off vertical edges. Bottom: the same width times</span>
+<span class="cm">//-- smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t), which eases the</span>
+<span class="cm">//-- width to zero at both tips.</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">160</span>);
+
+<span class="kw">fn</span> <span class="id">band</span>(<span class="id">name</span>, <span class="id">y0</span>, <span class="id">windowed</span>) {
+  <span class="kw">let</span> <span class="id">mk</span> = {|<span class="id">vo</span>, <span class="id">pb</span>|
+    <span class="cm">//-- The blunt band gets Cap.butt() -- an honest straight edge -- so</span>
+    <span class="cm">//-- the "before" picture really is chopped off.</span>
+    <span class="kw">if</span> (<span class="id">windowed</span> == <span class="num">1</span>) {
+      <span class="id">vo</span>.<span class="id">startCap</span>(<span class="id">Cap</span>.<span class="id">tapered</span>(<span class="num">2</span>, <span class="id">CurveContinuity</span>.<span class="id">G0</span>));
+    }
+    <span class="kw">if</span> (<span class="id">windowed</span> == <span class="num">0</span>) {
+      <span class="id">vo</span>.<span class="id">startCap</span>(<span class="id">Cap</span>.<span class="id">butt</span>());
+    }
+    <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">47</span>) {
+      <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">47</span>;
+      <span class="kw">let</span> <span class="id">amp</span> = <span class="num">1</span>;
+      <span class="kw">if</span> (<span class="id">windowed</span> == <span class="num">1</span>) {
+        <span class="id">amp</span> = <span class="id">smoothstep</span>(<span class="num">0</span>, <span class="num">0.12</span>, <span class="id">t</span>) * <span class="id">smoothstep</span>(<span class="num">1</span>, <span class="num">0.88</span>, <span class="id">t</span>);
+      }
+      <span class="kw">let</span> <span class="id">w</span> = <span class="num">9</span> * <span class="id">amp</span>;
+      <span class="id">vo</span>.<span class="id">stop</span>(<span class="id">t</span>, <span class="id">w</span>, <span class="id">CurveContinuity</span>.<span class="id">G1</span>, -<span class="id">w</span>, <span class="id">CurveContinuity</span>.<span class="id">G1</span>);
+    }
+    <span class="kw">if</span> (<span class="id">windowed</span> == <span class="num">1</span>) {
+      <span class="id">vo</span>.<span class="id">endCap</span>(<span class="id">Cap</span>.<span class="id">tapered</span>(<span class="num">2</span>, <span class="id">CurveContinuity</span>.<span class="id">G0</span>));
+    }
+    <span class="kw">if</span> (<span class="id">windowed</span> == <span class="num">0</span>) {
+      <span class="id">vo</span>.<span class="id">endCap</span>(<span class="id">Cap</span>.<span class="id">butt</span>());
+    }
+  };
+  <span class="kw">let</span> <span class="id">spine</span> = @{ l 330 0 };
+  <span class="kw">let</span> <span class="id">rib</span> = <span class="id">spine</span>.<span class="id">compoundVariableOffset</span>() &lt;&lt; <span class="id">mk</span>;
+  <span class="kw">let</span> <span class="id">stroke</span> = <span class="tp">PathLayer</span>(<span class="id">name</span>) ${<span class="str"> fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; </span>};
+  <span class="id">stroke</span>.<span class="kw">apply</span> {
+    M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
+    rib.draw();
+  }
+}
+
+<span class="id">band</span>(<span class="str">'blunt'</span>, <span class="num">45</span>, <span class="num">0</span>);
+<span class="id">band</span>(<span class="str">'windowed'</span>, <span class="num">115</span>, <span class="num">1</span>);
+
+<span class="kw">let</span> <span class="id">labels</span> = <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${<span class="str">
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+</span>};
+<span class="id">labels</span>.<span class="kw">apply</span> {
+  <span class="kw">text</span>(<span class="num">35</span>, <span class="num">24</span>)`constant width — chopped-off ends`
+  <span class="kw">text</span>(<span class="num">35</span>, <span class="num">94</span>)`× smoothstep(0, 0.12, t) × smoothstep(1, 0.88, t)`
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" width="400" height="160">
+
+  <path data-layer-name="blunt" id="blunt" d="M 35 36 c 2.340425531914893 0 4.680851063829787 0 7.0212765957446805 0 c 2.3404255319148923 0 4.680851063829788 0 7.0212765957446805 0 c 2.3404255319148923 0 4.680851063829785 0 7.0212765957446805 0 c 2.3404255319148923 0 4.680851063829788 0 7.0212765957446805 0 c 2.3404255319148923 0 4.680851063829785 0 7.0212765957446805 0 c 2.340425531914896 0 4.680851063829785 0 7.0212765957446805 0 c 2.340425531914896 0 4.680851063829785 0 7.0212765957446805 0 c 2.340425531914896 0 4.680851063829785 0 7.0212765957446805 0 c 2.340425531914896 0 4.680851063829785 0 7.0212765957446805 0 c 2.340425531914889 0 4.680851063829792 0 7.0212765957446805 0 c 2.340425531914889 0 4.680851063829792 0 7.0212765957446805 0 c 2.340425531914889 0 4.680851063829778 0 7.0212765957446805 0 c 2.340425531914903 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914903 0 4.680851063829792 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914903 0 4.680851063829792 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829749 0 7.021276595744638 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829749 0 7.021276595744638 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829834 0 7.021276595744723 0 c 2.340425531914889 0 4.680851063829721 0 7.0212765957446095 0 c 2.340425531914889 0 4.680851063829834 0 7.021276595744723 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829834 0 7.021276595744723 0 c 2.340425531914889 0 4.680851063829721 0 7.0212765957446095 0 c 2.340425531914889 0 4.680851063829834 0 7.021276595744723 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829834 0 7.021276595744723 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 l 0 18 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829834 0 -7.021276595744723 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829834 0 -7.021276595744723 0 c -2.340425531914889 0 -4.680851063829721 0 -7.0212765957446095 0 c -2.340425531914889 0 -4.680851063829834 0 -7.021276595744723 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829834 0 -7.021276595744723 0 c -2.340425531914889 0 -4.680851063829721 0 -7.0212765957446095 0 c -2.340425531914889 0 -4.680851063829834 0 -7.021276595744723 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829749 0 -7.021276595744638 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829749 0 -7.021276595744638 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914903 0 -4.680851063829792 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914903 0 -4.680851063829792 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829792 0 -7.021276595744695 0 c -2.340425531914903 0 -4.680851063829792 0 -7.0212765957446805 0 c -2.340425531914889 0 -4.680851063829792 0 -7.0212765957446805 0 c -2.340425531914889 0 -4.680851063829792 0 -7.0212765957446805 0 c -2.340425531914896 0 -4.680851063829785 0 -7.0212765957446805 0 c -2.340425531914896 0 -4.680851063829785 0 -7.0212765957446805 0 c -2.340425531914896 0 -4.680851063829785 0 -7.0212765957446805 0 c -2.340425531914896 0 -4.680851063829785 0 -7.0212765957446805 0 c -2.340425531914896 0 -4.680851063829788 0 -7.0212765957446805 0 c -2.3404255319148923 0 -4.680851063829788 0 -7.0212765957446805 0 c -2.340425531914896 0 -4.680851063829788 0 -7.0212765957446805 0 c -2.3404255319148923 0 -4.680851063829788 0 -7.0212765957446805 0 c -2.340425531914893 0 -4.680851063829787 0 -7.0212765957446805 0 l 0 -18 z" fill="oklch(0.68 0.13 200)" stroke="none" stroke-width="2" opacity="0.9"/>
+  <path data-layer-name="windowed" id="windowed" d="M 35 115 c 2.3536857951816965 0 4.696837122772559 -0.3218403850728479 7.0212765957446805 -0.7484693500797833 c 2.3568606464831774 -0.4325795659411239 4.691984281222549 -1.1512198114524637 7.0212765957446805 -1.8440840019391973 c 2.3517747026860043 -0.6995517331271541 4.678189313320811 -1.5757099852813914 7.0212765957446805 -2.3377125813483843 c 2.3377758353510885 -0.760275244086257 4.665947031352761 -1.6021474195578254 7.0212765957446805 -2.2293550883073436 c 2.325891724261748 -0.6193685793243269 4.667941224193214 -1.2127798919720556 7.0212765957446805 -1.5190115228160765 c 2.3277943951089455 -0.3029080693304813 4.680238503090493 -0.2678202242025858 7.0212765957446805 -0.32136745550921475 c 2.3398136118082604 -0.05351922340735982 4.680851063829785 0 7.0212765957446805 0 c 2.340425531914896 0 4.680851063829785 0 7.0212765957446805 0 c 2.340425531914896 0 4.680851063829785 0 7.0212765957446805 0 c 2.340425531914889 0 4.680851063829792 0 7.0212765957446805 0 c 2.340425531914889 0 4.680851063829792 0 7.0212765957446805 0 c 2.340425531914889 0 4.680851063829792 0 7.0212765957446805 0 c 2.340425531914903 0 4.680851063829792 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914903 0 4.680851063829792 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914903 0 4.680851063829792 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829749 0 7.021276595744638 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829749 0 7.021276595744638 0 c 2.340425531914889 0 4.680851063829806 0 7.021276595744695 0 c 2.340425531914889 0 4.680851063829834 0 7.021276595744723 0 c 2.340425531914889 0 4.680851063829721 0 7.0212765957446095 0 c 2.340425531914889 0 4.680851063829834 0 7.021276595744723 0 c 2.340425531914889 0 4.680851063829778 0 7.021276595744666 0 c 2.340425531914889 0 4.681462983936456 -0.05351922340735982 7.021276595744723 0 c 2.3410380926541734 0.05354723130662897 4.693482200635685 0.01845938617873699 7.0212765957446095 0.32136745550921475 c 2.3533353715514522 0.30623163084402094 4.695384871482986 0.8996429434917452 7.021276595744723 1.5190115228160739 c 2.3553295643919228 0.6272076687495183 4.683500760393599 1.469079844221092 7.021276595744666 2.229355088307348 c 2.3430872824238804 0.7620025960669956 4.669501893058737 1.6381608482212324 7.021276595744723 2.337712581348387 c 2.3292923145221494 0.6928641904867312 4.6644159492615245 1.411504435998068 7.021276595744666 1.844084001939191 c 2.3244394729721307 0.42662896500693637 4.667590800562948 0.7484693500797853 7.021276595744666 0.7484693500797853 c -2.3536857951817183 0 -4.696837122772536 0.32184038507284896 -7.021276595744666 0.7484693500797853 c -2.356860646483142 0.4325795659411231 -4.691984281222517 1.1512198114524599 -7.021276595744666 1.844084001939191 c -2.3517747026859865 0.6995517331271546 -4.678189313320843 1.5757099852813914 -7.021276595744723 2.337712581348387 c -2.337775835351067 0.7602752440862561 -4.665947031352744 1.6021474195578298 -7.021276595744666 2.229355088307348 c -2.325891724261737 0.6193685793243286 -4.667941224193271 1.212779891972053 -7.021276595744723 1.5190115228160739 c -2.327794395108924 0.30290806933047776 -4.680238503090436 0.2678202242025858 -7.0212765957446095 0.32136745550921475 c -2.3398136118082675 0.05351922340735982 -4.680851063829834 0 -7.021276595744723 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829834 0 -7.021276595744723 0 c -2.340425531914889 0 -4.680851063829721 0 -7.0212765957446095 0 c -2.340425531914889 0 -4.680851063829834 0 -7.021276595744723 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829749 0 -7.021276595744638 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829749 0 -7.021276595744638 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829806 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914903 0 -4.680851063829792 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914903 0 -4.680851063829792 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829778 0 -7.021276595744666 0 c -2.340425531914903 0 -4.680851063829792 0 -7.021276595744695 0 c -2.340425531914889 0 -4.680851063829792 0 -7.0212765957446805 0 c -2.340425531914889 0 -4.680851063829792 0 -7.0212765957446805 0 c -2.340425531914889 0 -4.680851063829792 0 -7.0212765957446805 0 c -2.340425531914896 0 -4.680851063829785 0 -7.0212765957446805 0 c -2.340425531914896 0 -4.680851063829785 0 -7.0212765957446805 0 c -2.340425531914896 0 -4.68146298393642 0.05351922340735982 -7.0212765957446805 0 c -2.3410380926541876 -0.05354723130662897 -4.693482200635735 -0.01845938617873344 -7.0212765957446805 -0.32136745550921475 c -2.3533353715514664 -0.30623163084402094 -4.695384871482933 -0.8996429434917497 -7.0212765957446805 -1.5190115228160765 c -2.355329564391919 -0.6272076687495183 -4.683500760393592 -1.4690798442210866 -7.0212765957446805 -2.2293550883073436 c -2.3430872824238698 -0.7620025960669929 -4.669501893058676 -1.6381608482212302 -7.0212765957446805 -2.3377125813483843 c -2.3292923145221316 -0.6928641904867336 -4.664415949261503 -1.4115044359980735 -7.0212765957446805 -1.8440840019391973 c -2.324439472972122 -0.4266289650069354 -4.667590800562984 -0.7484693500797833 -7.0212765957446805 -0.7484693500797833 z" fill="oklch(0.68 0.13 200)" stroke="none" stroke-width="2" opacity="0.9"/>
+  <text data-layer-name="labels" id="labels" x="35" y="24" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">constant width — chopped-off ends</text>
+  <text data-layer-name="labels" x="35" y="94" font-family="system-ui, sans-serif" font-size="10" fill="#888" text-anchor="start">× smoothstep(0, 0.12, t) × smoothstep(1, 0.88, t)</text>
+</svg></figure>
+<p>Same plateau idiom, tighter windows: the width is full-strength for the
+middle 76% of the stroke and eases to zero over the first and last 12%.
+Both tips taper to a point — and because smoothstep arrives flat, the
+taper has no corner where it meets the full width.</p>
+<h2>Example 5 — Horizon</h2>
+<p>A dusk seascape with no gradients. Sixty horizontal strips each compute
+one mix factor — <code>m = smoothstep(0.38, 0.58, t)</code> where <code>t</code> is vertical
+position — and use it to blend lightness, hue, and chroma from &quot;sky
+values&quot; to &quot;sea values.&quot; The sun&#39;s halo rings shrink by a reversed
+smoothstep of ring index.</p>
+<pre class="code"><code><span class="cm">// viewBox="0 0 400 230"</span>
+<span class="cm">//-- A dusk seascape with no gradients: sixty horizontal strips, each</span>
+<span class="cm">//-- strip's color MIXED between a sky color and a sea color by one</span>
+<span class="cm">//-- smoothstep of its vertical position. The soft horizon line is the</span>
+<span class="cm">//-- S-curve; the sun's halo rings shrink by a reversed smoothstep.</span>
+
+<span class="kw">define</span> ViewBox(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">230</span>);
+
+<span class="cm">//-- Sky: light warm violet.  Sea: deep teal.</span>
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">59</span>) {
+  <span class="kw">let</span> <span class="id">t</span> = <span class="id">i</span> / <span class="num">59</span>;
+  <span class="kw">let</span> <span class="id">m</span> = <span class="id">smoothstep</span>(<span class="num">0.38</span>, <span class="num">0.58</span>, <span class="id">t</span>);
+  <span class="kw">let</span> <span class="id">L</span> = <span class="num">0.78</span> - <span class="num">0.42</span> * <span class="id">m</span>;
+  <span class="kw">let</span> <span class="id">H</span> = <span class="num">300</span> - <span class="num">100</span> * <span class="id">m</span>;
+  <span class="kw">let</span> <span class="id">C</span> = <span class="num">0.05</span> + <span class="num">0.06</span> * <span class="id">m</span>;
+  <span class="kw">let</span> <span class="id">c</span> = <span class="id">Color</span>(<span class="id">L</span>, <span class="id">C</span>, <span class="id">H</span>);
+  <span class="kw">let</span> <span class="id">strip</span> = <span class="tp">PathLayer</span>(`strip-${<span class="id">i</span>}`) ${<span class="str"> fill: c; stroke: none; </span>};
+  <span class="id">strip</span>.<span class="kw">apply</span> {
+    <span class="id">rect</span>(<span class="num">15</span>, <span class="kw">calc</span>(<span class="num">15</span> + <span class="id">i</span> * <span class="num">3.34</span>), <span class="num">370</span>, <span class="num">3.5</span>);
+  }
+}
+
+<span class="cm">//-- Sun + halo: ring radius eases DOWN with ring index (reversed markers).</span>
+<span class="kw">for</span> (<span class="id">k</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">5</span>) {
+  <span class="kw">let</span> <span class="id">u</span> = <span class="id">k</span> / <span class="num">5</span>;
+  <span class="kw">let</span> <span class="id">fade</span> = <span class="id">smoothstep</span>(<span class="num">1</span>, <span class="num">0.2</span>, <span class="id">u</span>);
+  <span class="kw">let</span> <span class="id">r</span> = <span class="num">6</span> + <span class="num">16</span> * (<span class="num">1</span> - <span class="id">fade</span>);
+  <span class="kw">let</span> <span class="id">ring</span> = <span class="tp">PathLayer</span>(`halo-${<span class="id">k</span>}`) ${<span class="str"> stroke: oklch(0.88 0.09 75); stroke-width: 1; fill: none; opacity: calc(0.15 + fade * 0.5); </span>};
+  <span class="id">ring</span>.<span class="kw">apply</span> {
+    <span class="id">circle</span>(<span class="num">300</span>, <span class="num">96</span>, <span class="id">r</span>);
+  }
+}
+<span class="kw">let</span> <span class="id">sun</span> = <span class="tp">PathLayer</span>(<span class="str">'sun'</span>) ${<span class="str"> fill: oklch(0.92 0.1 75); stroke: none; </span>};
+<span class="id">sun</span>.<span class="kw">apply</span> {
+  <span class="id">circle</span>(<span class="num">300</span>, <span class="num">96</span>, <span class="num">6</span>);
+}</code></pre>
+<figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 230" width="400" height="230">
+
+  <path data-layer-name="strip-0" id="strip-0" d="M 15 15 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-1" id="strip-1" d="M 15 18.34 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-2" id="strip-2" d="M 15 21.68 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-3" id="strip-3" d="M 15 25.02 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-4" id="strip-4" d="M 15 28.36 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-5" id="strip-5" d="M 15 31.7 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-6" id="strip-6" d="M 15 35.04 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-7" id="strip-7" d="M 15 38.379999999999995 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-8" id="strip-8" d="M 15 41.72 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-9" id="strip-9" d="M 15 45.06 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-10" id="strip-10" d="M 15 48.4 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-11" id="strip-11" d="M 15 51.739999999999995 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-12" id="strip-12" d="M 15 55.08 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-13" id="strip-13" d="M 15 58.42 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-14" id="strip-14" d="M 15 61.76 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-15" id="strip-15" d="M 15 65.1 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-16" id="strip-16" d="M 15 68.44 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-17" id="strip-17" d="M 15 71.78 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-18" id="strip-18" d="M 15 75.12 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-19" id="strip-19" d="M 15 78.46 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-20" id="strip-20" d="M 15 81.8 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-21" id="strip-21" d="M 15 85.14 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-22" id="strip-22" d="M 15 88.47999999999999 l 370 0 l 0 3.5 l -370 0 z" fill="#bcb1d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-23" id="strip-23" d="M 15 91.82 l 370 0 l 0 3.5 l -370 0 z" fill="#bbb0d3" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-24" id="strip-24" d="M 15 95.16 l 370 0 l 0 3.5 l -370 0 z" fill="#b3abd0" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-25" id="strip-25" d="M 15 98.5 l 370 0 l 0 3.5 l -370 0 z" fill="#a5a2ca" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-26" id="strip-26" d="M 15 101.84 l 370 0 l 0 3.5 l -370 0 z" fill="#9197c2" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-27" id="strip-27" d="M 15 105.17999999999999 l 370 0 l 0 3.5 l -370 0 z" fill="#788bb7" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-28" id="strip-28" d="M 15 108.52 l 370 0 l 0 3.5 l -370 0 z" fill="#5c7faa" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-29" id="strip-29" d="M 15 111.86 l 370 0 l 0 3.5 l -370 0 z" fill="#3b739a" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-30" id="strip-30" d="M 15 115.19999999999999 l 370 0 l 0 3.5 l -370 0 z" fill="#0a6788" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-31" id="strip-31" d="M 15 118.53999999999999 l 370 0 l 0 3.5 l -370 0 z" fill="#005d76" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-32" id="strip-32" d="M 15 121.88 l 370 0 l 0 3.5 l -370 0 z" fill="#005566" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-33" id="strip-33" d="M 15 125.22 l 370 0 l 0 3.5 l -370 0 z" fill="#004f59" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-34" id="strip-34" d="M 15 128.56 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-35" id="strip-35" d="M 15 131.89999999999998 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-36" id="strip-36" d="M 15 135.24 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-37" id="strip-37" d="M 15 138.57999999999998 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-38" id="strip-38" d="M 15 141.92 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-39" id="strip-39" d="M 15 145.26 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-40" id="strip-40" d="M 15 148.6 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-41" id="strip-41" d="M 15 151.94 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-42" id="strip-42" d="M 15 155.28 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-43" id="strip-43" d="M 15 158.62 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-44" id="strip-44" d="M 15 161.95999999999998 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-45" id="strip-45" d="M 15 165.29999999999998 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-46" id="strip-46" d="M 15 168.64 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-47" id="strip-47" d="M 15 171.98 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-48" id="strip-48" d="M 15 175.32 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-49" id="strip-49" d="M 15 178.66 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-50" id="strip-50" d="M 15 182 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-51" id="strip-51" d="M 15 185.34 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-52" id="strip-52" d="M 15 188.68 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-53" id="strip-53" d="M 15 192.01999999999998 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-54" id="strip-54" d="M 15 195.35999999999999 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-55" id="strip-55" d="M 15 198.7 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-56" id="strip-56" d="M 15 202.04 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-57" id="strip-57" d="M 15 205.38 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-58" id="strip-58" d="M 15 208.72 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="strip-59" id="strip-59" d="M 15 212.06 l 370 0 l 0 3.5 l -370 0 z" fill="#004c54" stroke="none" stroke-width="2"/>
+  <path data-layer-name="halo-0" id="halo-0" d="M 294 96 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0" fill="none" stroke="oklch(0.88 0.09 75)" stroke-width="1" opacity="0.65"/>
+  <path data-layer-name="halo-1" id="halo-1" d="M 294 96 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0" fill="none" stroke="oklch(0.88 0.09 75)" stroke-width="1" opacity="0.65"/>
+  <path data-layer-name="halo-2" id="halo-2" d="M 291.5 96 a 8.5 8.5 0 1 1 17 0 a 8.5 8.5 0 1 1 -17 0" fill="none" stroke="oklch(0.88 0.09 75)" stroke-width="1" opacity="0.571875"/>
+  <path data-layer-name="halo-3" id="halo-3" d="M 286 96 a 14 14 0 1 1 28 0 a 14 14 0 1 1 -28 0" fill="none" stroke="oklch(0.88 0.09 75)" stroke-width="1" opacity="0.4"/>
+  <path data-layer-name="halo-4" id="halo-4" d="M 280.5 96 a 19.5 19.5 0 1 1 39 0 a 19.5 19.5 0 1 1 -39 0" fill="none" stroke="oklch(0.88 0.09 75)" stroke-width="1" opacity="0.22812499999999997"/>
+  <path data-layer-name="halo-5" id="halo-5" d="M 278 96 a 22 22 0 1 1 44 0 a 22 22 0 1 1 -44 0" fill="none" stroke="oklch(0.88 0.09 75)" stroke-width="1" opacity="0.15"/>
+  <path data-layer-name="sun" id="sun" d="M 294 96 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0" fill="oklch(0.92 0.1 75)" stroke="none" stroke-width="2"/>
+</svg></figure>
+<p>The blend pattern is worth keeping:
+<code>value = skyValue + (seaValue - skyValue) * m</code> — with <code>m</code> eased, every
+channel crosses the horizon softly and <em>in sync</em>, because they all share
+one <code>m</code>. Every soft edge in this scene is the same three-argument call
+wearing different numbers.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="./bump.html"><code>bump</code></a> — when you want a hill that touches 1 and leaves,
+rather than a ramp that holds. (The plateau reappears there as its
+flat-topped cousin.)</li>
+<li><a href="./noise.html"><code>noise</code></a> — smoothstep is the glue between its random
+pins.</li>
+<li>Reference:
+<a href="https://pathogen.studio/docs#stdlib-interpolation-clamping">Interpolation &amp; Clamping docs</a>
+and the callable <a href="https://pathogen.studio/docs#stdlib-easing">Easing family</a>
+(<code>smoothstep(0, 1, t)</code> is <code>Easing.Smoothstep</code>).</li>
+</ul>
+
+  </main>
+  <footer class="page-foot">
+    <nav>
+      <span>← <a href="./hashRange.html"><code>hashRange</code></a></span>
+      <a href="./index.html">all primers</a>
+      <span><a href="./bump.html"><code>bump</code></a> →</span>
+    </nav>
+    <p>Reference: <a href="https://pathogen.studio/docs#stdlib-interpolation-clamping">smoothstep docs</a> · Siblings: <a href="./hash01.html"><code>hash01</code></a> · <a href="./hash11.html"><code>hash11</code></a> · <a href="./hashRange.html"><code>hashRange</code></a> · <a href="./bump.html"><code>bump</code></a> · <a href="./noise.html"><code>noise</code></a> · <a href="./noise2.html"><code>noise2</code></a></p>
+    <p class="regen">Generated by project-docs/stdlib-primers/build-primers.ts — edit content/, not this file.</p>
+  </footer>
+  </div>
+</body>
+</html>

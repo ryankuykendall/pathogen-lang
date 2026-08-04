@@ -1,0 +1,38 @@
+// viewBox="0 0 400 230"
+//-- One knob controls the character: the input scale. noise(t * 3) passes
+//-- 3 pins while t crosses 0..1 -- slow swells. noise(t * 6) undulates.
+//-- noise(t * 12) chatters. Same function, same seed, different speed
+//-- past the pins.
+
+define ViewBox(0, 0, 400, 230);
+
+fn wander(name, y0, freq, hue) {
+  let c = Color(0.65, 0.13, hue);
+  let line = PathLayer(name) ${ stroke: c; stroke-width: 1.8; fill: none; };
+  line.apply {
+    M 30 calc(y0 - noise(0) * 34)
+    for (i in 1..120) {
+      let t = i / 120;
+      L calc(30 + t * 340) calc(y0 - noise(t * freq) * 34)
+    }
+  }
+}
+
+//-- Note: the slow line also LOOKS smaller in amplitude -- crossing only
+//-- 3 pins, it rarely reaches the range extremes. That's frequency, not a
+//-- different amplitude setting.
+wander('swells', 70, 3, 260);
+wander('undulating', 140, 6, 200);
+wander('chattering', 210, 12, 150);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(30, 24)`noise(t * 3)`
+  text(30, 94)`noise(t * 6)`
+  text(30, 164)`noise(t * 12)`
+}

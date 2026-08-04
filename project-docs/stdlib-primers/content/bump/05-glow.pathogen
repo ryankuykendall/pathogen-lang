@@ -1,0 +1,38 @@
+// viewBox="0 60 400 140"
+//-- Twelve compound-offset layers on one curved spine, every width a sum
+//-- of bump terms scaled by the layer index, hue shifted per layer. No
+//-- jitter, no noise -- bump algebra alone carries the whole glow.
+
+define ViewBox(0, 60, 400, 140);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.72 0.14 20);
+
+for (k in 12..1) {
+  let mk = {|vo, pb|
+    vo.startCap(taperCap);
+    for (i in 0..47) {
+      let t = i / 47;
+      let w = 0.15 * k
+            + 0.6 * k * bump(t, 0.35, 0.3)
+            + 0.35 * k * pow(bump(t, 0.78, 0.18), 2);
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(taperCap);
+  };
+  let halo = spine.compoundVariableOffset() << mk;
+
+  let haloColor = base.hueShift(calc(k * -6));
+  let haloLayer = PathLayer(`halo-${k}`) ${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}

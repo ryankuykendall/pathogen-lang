@@ -1,0 +1,56 @@
+// viewBox="0 0 400 160"
+//-- End windows on a stroke. Top: constant width -- the ribbon ends in
+//-- chopped-off vertical edges. Bottom: the same width times
+//-- smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t), which eases the
+//-- width to zero at both tips.
+
+define ViewBox(0, 0, 400, 160);
+
+fn band(name, y0, windowed) {
+  let mk = {|vo, pb|
+    //-- The blunt band gets Cap.butt() -- an honest straight edge -- so
+    //-- the "before" picture really is chopped off.
+    if (windowed == 1) {
+      vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    }
+    if (windowed == 0) {
+      vo.startCap(Cap.butt());
+    }
+    for (i in 0..47) {
+      let t = i / 47;
+      let amp = 1;
+      if (windowed == 1) {
+        amp = smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t);
+      }
+      let w = 9 * amp;
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    if (windowed == 1) {
+      vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+    }
+    if (windowed == 0) {
+      vo.endCap(Cap.butt());
+    }
+  };
+  let spine = @{ l 330 0 };
+  let rib = spine.compoundVariableOffset() << mk;
+  let stroke = PathLayer(name) ${ fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; };
+  stroke.apply {
+    M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
+    rib.draw();
+  }
+}
+
+band('blunt', 45, 0);
+band('windowed', 115, 1);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(35, 24)`constant width — chopped-off ends`
+  text(35, 94)`× smoothstep(0, 0.12, t) × smoothstep(1, 0.88, t)`
+}
