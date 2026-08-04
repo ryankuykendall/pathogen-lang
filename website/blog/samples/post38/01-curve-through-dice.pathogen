@@ -1,0 +1,48 @@
+// viewBox="0 0 400 190"
+//-- The relationship in one picture: dots mark hash01(k) at every whole
+//-- number 0..8; the curve is noise(x) sampled finely across the same
+//-- span. The curve threads EXACTLY through every dot -- and flattens as
+//-- it touches each one.
+
+define ViewBox(0, 0, 400, 190);
+
+let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M 30 155 L 370 155
+}
+
+let curve = PathLayer('noise-curve') ${ stroke: oklch(0.68 0.13 200); stroke-width: 2; fill: none; };
+curve.apply {
+  M 30 calc(155 - noise(0) * 115)
+  for (i in 1..160) {
+    let x = i / 160 * 8;
+    L calc(30 + x * 42.5) calc(155 - noise(x) * 115)
+  }
+}
+
+let pins = PathLayer('hash-pins') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+pins.apply {
+  for (k in 0..8) {
+    circle(calc(30 + k * 42.5), calc(155 - hash01(k) * 115), 3);
+  }
+}
+
+//-- Legend tinted to match the geometry.
+let legendDots = TextLayer('legend-dots') ${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.15 260); text-anchor: start; };
+legendDots.apply { text(30, 26)`dots: hash01(k) at whole numbers` }
+let legendCurve = TextLayer('legend-curve') ${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.72 0.13 200); text-anchor: start; };
+legendCurve.apply { text(230, 26)`curve: noise(x)` }
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(28, 172)`0`
+  text(360, 172)`8`
+}
+
+let scene = GroupLayer('scene') ${};
+scene.append(axis, curve, pins, legendDots, legendCurve, labels);

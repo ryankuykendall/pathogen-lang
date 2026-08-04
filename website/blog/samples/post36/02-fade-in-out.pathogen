@@ -1,0 +1,36 @@
+// viewBox="0 0 400 170"
+//-- Applying the dimmer spatially. Top row: dot size fades IN across the
+//-- left half via smoothstep(0.1, 0.5, t). Bottom row: swap the markers --
+//-- smoothstep(1.0, 0.6, t) -- and the ramp runs downhill, fading OUT
+//-- toward the right.
+
+define ViewBox(0, 0, 400, 170);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(24, 28)`smoothstep(0.1, 0.5, t) — fade in`
+  text(24, 100)`smoothstep(1.0, 0.6, t) — reversed markers, fade out`
+}
+
+let fadeIn = PathLayer('fade-in') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+fadeIn.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let s = smoothstep(0.1, 0.5, t);
+    circle(calc(24 + i * 7.4), 55, calc(0.4 + 3.4 * s));
+  }
+}
+
+let fadeOut = PathLayer('fade-out') ${ fill: oklch(0.68 0.13 200); stroke: none; };
+fadeOut.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let s = smoothstep(1.0, 0.6, t);
+    circle(calc(24 + i * 7.4), 127, calc(0.4 + 3.4 * s));
+  }
+}

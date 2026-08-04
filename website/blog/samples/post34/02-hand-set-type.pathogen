@@ -1,0 +1,24 @@
+// viewBox="0 0 400 170"
+//-- Two rows of "type": equal-width bars standing on a baseline. The top
+//-- row is machine-set. The bottom row nudges each bar's baseline up or
+//-- down and leans it left or right -- instantly warmer, and repeatable.
+
+define ViewBox(0, 0, 400, 170);
+
+let machine = PathLayer('machine-set') ${ stroke: oklch(0.7 0.03 260); stroke-width: 7; fill: none; };
+machine.apply {
+  for (i in 0..25) {
+    M calc(28 + i * 13.5) 62
+    l 0 -32
+  }
+}
+
+let hand = PathLayer('hand-set') ${ stroke: oklch(0.75 0.12 60); stroke-width: 7; fill: none; };
+hand.apply {
+  for (i in 0..25) {
+    let drop = calc(hash11(i) * 5);
+    let lean = calc(hash11(i, 1) * 4);
+    M calc(28 + i * 13.5) calc(138 + drop)
+    l lean -32
+  }
+}

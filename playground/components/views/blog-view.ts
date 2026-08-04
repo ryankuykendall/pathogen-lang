@@ -28,6 +28,7 @@ class BlogView extends HTMLElement {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: 'UTC',
     });
   }
 

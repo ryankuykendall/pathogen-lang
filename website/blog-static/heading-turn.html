@@ -248,7 +248,7 @@ code.hljs {
     <article>
       <header class="post-header">
         <h1>Clean Tangent Control: heading() and turn() in Pathogen</h1>
-        <p class="post-meta"><time datetime="2026-03-22">March 21, 2026</time></p>
+        <p class="post-meta"><time datetime="2026-03-22">March 22, 2026</time></p>
       </header>
       <div class="blog-content">
         <p>Pathogen&#39;s tangent-dependent functions — <a href="/docs#stdlib-tangent-functions"><code>tangentLine</code></a> and <a href="/docs#stdlib-tangent-functions"><code>tangentArc</code></a> — continue drawing in the direction established by the previous command. But what if there <em>is</em> no previous command? After an <code>M</code> (moveTo), the pen has a position but no heading. Calling <code>tangentArc</code> right after <code>M</code> would fail because there&#39;s no direction to continue from.</p>

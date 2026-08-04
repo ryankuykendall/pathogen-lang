@@ -1,0 +1,60 @@
+// viewBox="0 0 400 250"
+//-- The plateau idiom: an uphill ramp TIMES a downhill ramp makes a
+//-- flat-topped window -- rise, hold, fall. The plot (top) and the bar
+//-- heights (bottom) share the exact same lambda.
+
+define ViewBox(0, 0, 400, 250);
+
+let win = {|t| return smoothstep(0.1, 0.3, t) * smoothstep(0.9, 0.7, t); };
+
+let plotX = 50;
+let plotW = 300;
+let plotY = 110;
+let plotH = 70;
+
+let unitLine = PathLayer('unit-line') ${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
+unitLine.apply {
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+}
+
+let curve = PathLayer('window-curve') ${ stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; };
+curve.apply {
+  M plotX plotY
+  for (i in 1..96) {
+    let t = i / 96;
+    let s = win(t);
+    L calc(plotX + plotW * t) calc(plotY - plotH * s)
+  }
+}
+
+let bars = PathLayer('bars') ${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
+bars.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let h = win(t) * 60;
+    if (h > 0.2) {
+      rect(calc(48 + i * 6.4), calc(225 - h), 4.4, h);
+    }
+  }
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(48, 28)`win = smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)`
+  text(356, 44)`1.0`
+}
+
+let scene = GroupLayer('scene') ${};
+scene.append(unitLine, axis, curve, bars, labels);

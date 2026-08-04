@@ -1,0 +1,41 @@
+// viewBox="0 78 400 103"
+//-- The series finale: bump-shaped widths (part 5) textured by ONE
+//-- noise2 field. t runs along the stroke; layer * 0.3 runs across the
+//-- layers. Because the field is continuous in both directions,
+//-- neighboring layers sample neighboring rows -- and the whole glow
+//-- flows as one surface instead of shimmering.
+
+define ViewBox(0, 78, 400, 103);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.72 0.14 20);
+
+for (k in 12..1) {
+  let texture = {|t| return 1 + (noise2(t * 6, k * 0.3) - 0.5) * 0.9; };
+  let mk = {|vo, pb|
+    vo.startCap(taperCap);
+    for (i in 0..47) {
+      let t = i / 47;
+      let w = (0.15 * k
+            + 0.6 * k * bump(t, 0.35, 0.3)
+            + 0.35 * k * pow(bump(t, 0.78, 0.18), 2)) * texture(t);
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(taperCap);
+  };
+  let halo = spine.compoundVariableOffset() << mk;
+
+  let haloColor = base.hueShift(calc(k * -6));
+  let haloLayer = PathLayer(`halo-${k}`) ${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}

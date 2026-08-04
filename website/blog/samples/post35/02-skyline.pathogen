@@ -1,0 +1,25 @@
+// viewBox="0 0 400 210"
+//-- A night skyline where the ranges read like a spec: buildings between
+//-- 35 and 125 tall, between 10 and 22 wide. Tighten either range and the
+//-- whole city changes character -- without touching the structure.
+
+define ViewBox(0, 0, 400, 210);
+
+let sky = PathLayer('sky') ${ fill: oklch(0.24 0.05 275); stroke: none; };
+sky.apply {
+  rect(15, 15, 370, 175);
+}
+
+let x = 20;
+for (i in 0..25) {
+  let w = hashRange(i, 10, 22, 1);
+  let h = hashRange(i, 35, 125);
+  let shade = Color(0.36 + hashRange(i, 0, 0.1, 2), 0.03, 275);
+  if (x + w < 382) {
+    let tower = PathLayer(`tower-${i}`) ${ fill: shade; stroke: none; };
+    tower.apply {
+      rect(x, calc(190 - h), w, h);
+    }
+  }
+  x = x + w + 3;
+}

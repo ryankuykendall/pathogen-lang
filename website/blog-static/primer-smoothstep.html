@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>smoothstep: The S-Curve That Turns a Cliff into a Ramp — Pathogen Studio</title>
+  <meta name="description" content="Part 4 of the stdlib primers: smoothstep is a dimmer between two markers — 0 before, 1 after, a corner-free glide in between. Fades, plateaus, tapered stroke tips, and a dusk seascape with no gradients.">
+  <link rel="canonical" href="https://pathogen.studio/blog/primer-smoothstep">
+  <meta property="og:title" content="smoothstep: The S-Curve That Turns a Cliff into a Ramp — Pathogen Studio">
+  <meta property="og:description" content="Part 4 of the stdlib primers: smoothstep is a dimmer between two markers — 0 before, 1 after, a corner-free glide in between. Fades, plateaus, tapered stroke tips, and a dusk seascape with no gradients.">
+  <meta property="og:url" content="https://pathogen.studio/blog/primer-smoothstep">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"smoothstep: The S-Curve That Turns a Cliff into a Ramp","description":"Part 4 of the stdlib primers: smoothstep is a dimmer between two markers — 0 before, 1 after, a corner-free glide in between. Fades, plateaus, tapered stroke tips, and a dusk seascape with no gradients.","datePublished":"2026-08-07","url":"https://pathogen.studio/blog/primer-smoothstep","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">smoothstep: The S-Curve That Turns a Cliff into a Ramp</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>smoothstep: The S-Curve That Turns a Cliff into a Ramp</h1>
+        <p class="post-meta"><time datetime="2026-08-07">August 7, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 4 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><a href="/blog/primer-hash01">hash01</a> — a random number that never changes its mind</li>
+<li><a href="/blog/primer-hash11">hash11</a> — the same dice, rolled between −1 and 1</li>
+<li><a href="/blog/primer-hashrange">hashRange</a> — randomRange with a memory</li>
+<li><strong>smoothstep</strong> (this post) — the S-curve that turns a cliff into a ramp</li>
+<li><a href="/blog/primer-bump">bump</a> — a hill you can put anywhere</li>
+<li><a href="/blog/primer-noise">noise</a> — randomness with a smooth ride</li>
+<li><a href="/blog/primer-noise2">noise2</a> — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><code>smoothstep(edge0, edge1, x)</code> is a <strong>dimmer between two markers</strong>. As <code>x</code>
+travels from <code>edge0</code> to <code>edge1</code>, the answer glides from 0 up to 1. Outside
+the window it just holds: 0 before, 1 after — it <em>saturates</em>, never
+overshooting in either direction.</p>
+<p>What makes it special is the shape of the glide. It&#39;s an S-curve whose
+slope is <strong>zero at both ends</strong> — it leaves the floor flat and arrives at
+the ceiling flat. (The math name is a Hermite curve; all you need is the
+flat-at-both-ends part.) That flatness is why things driven by
+<code>smoothstep</code> never kink: whatever you attach to it — a size, a color, a
+width — eases out of &quot;off&quot; and eases into &quot;on.&quot;</p>
+<p>Two idioms are worth learning as vocabulary:</p>
+<ul>
+<li><strong>Reversed markers run the ramp downhill.</strong> <code>smoothstep(1.0, 0.6, t)</code>
+fades from 1 down to 0 as <code>t</code> climbs through 0.6→1.0. (Shader languages
+leave this case undefined; Pathogen defines and tests it.)</li>
+<li><strong>The plateau: uphill × downhill = a flat-topped window.</strong>
+<code>smoothstep(0.1, 0.3, t) * smoothstep(0.9, 0.7, t)</code> rises, holds at 1,
+and falls — the standard way to build &quot;on in the middle, off at the
+ends.&quot;</li>
+</ul>
+<p>One gentle warning: keep the markers apart. <code>smoothstep(e, e, x)</code> collapses
+to a hard step (and exactly <em>at</em> the shared edge, the math divides zero by
+zero and answers NaN).</p>
+<h2>Why you&#39;d use it</h2>
+<p>Every time a hard boundary looks mechanical: fading elements in near an
+edge, easing a stroke width to zero at its tips, blending two colors
+across a horizon, weighting anything by &quot;how far into this zone are we?&quot;
+It replaces both the <code>if (x &gt; threshold)</code> cliff <em>and</em> the straight-line
+ramp with something that reads as designed. And like everything in this
+series, it&#39;s a pure function of its inputs — the fades you tune today
+render identically on every future compile. It&#39;s also the workhorse under
+two of its siblings: <a href="/blog/primer-bump"><code>bump</code></a> is a hill built from the
+same easing idea, and <a href="/blog/primer-noise"><code>noise</code></a> uses this exact glide
+between its random pins.</p>
+<h2>Example 1 — Cliff, ramp, S-curve</h2>
+<p>Three ways from 0 to 1 across the same window. The dashed line is a hard
+step. The thin line is a straight ramp. The bold line is <code>smoothstep</code>.</p>
+<p><mini-workspace code-open caption="Three routes across the 0.3–0.7 window: hard step (dashed), straight ramp (thin), smoothstep (bold).">
+  <code>// viewBox="0 0 400 200"
+//-- Three ways to get from 0 to 1 across the window 0.3..0.7: a hard step
+//-- (cliff), a straight lerp-style ramp, and smoothstep -- the S-curve
+//-- that leaves the floor flat and arrives at the ceiling flat.
+
+define ViewBox(0, 0, 400, 200);
+
+let plotX = 50;
+let plotW = 300;
+let plotY = 150;
+let plotH = 90;
+
+let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+//-- Hard step: 0 before the midpoint of the window, 1 after.
+let cliff = PathLayer('cliff') ${ stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; };
+cliff.apply {
+  M plotX plotY
+  L calc(plotX + plotW * 0.5) plotY
+  L calc(plotX + plotW * 0.5) calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+//-- Straight ramp across the window.
+let ramp = PathLayer('ramp') ${ stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; };
+ramp.apply {
+  M plotX plotY
+  L calc(plotX + plotW * 0.3) plotY
+  L calc(plotX + plotW * 0.7) calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+//-- The S-curve.
+let scurve = PathLayer('smoothstep') ${ stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; };
+scurve.apply {
+  M plotX plotY
+  for (i in 1..96) {
+    let t = i / 96;
+    let s = smoothstep(0.3, 0.7, t);
+    L calc(plotX + plotW * t) calc(plotY - plotH * s)
+  }
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(50, 176)`0`
+  text(160, 176)`edge0 = 0.3`
+  text(255, 176)`edge1 = 0.7`
+  text(50, 36)`smoothstep — bold · ramp — thin · step — dashed`
+}
+
+let scene = GroupLayer('scene') ${};
+scene.append(axis, cliff, ramp, scurve, labels);
+</code>
+  <img src="/blog/samples/post36/01-cliff-ramp-scurve.svg" alt="Three routes across the 0.3–0.7 window: hard step (dashed), straight ramp (thin), smoothstep (bold)." loading="lazy">
+</mini-workspace></p>
+<p>Look at where the bold curve meets the floor and ceiling: it lands flat
+both times. The straight ramp has corners at both markers — attach a
+width or a motion to it and you&#39;ll <em>see</em> those corners. The S-curve is
+corner-free by construction.</p>
+<h2>Example 2 — Fade a row in — and out</h2>
+<p>The dimmer applied spatially. Top row: dot sizes fade in over the left
+half. Bottom row: the markers are <strong>reversed</strong> — <code>smoothstep(1.0, 0.6, t)</code>
+— so the fade runs the other way.</p>
+<p><mini-workspace code-open caption="Forward markers fade in; reversed markers fade out — no 1 − s arithmetic, just swap the edges and the ramp runs downhill.">
+  <code>// viewBox="0 0 400 170"
+//-- Applying the dimmer spatially. Top row: dot size fades IN across the
+//-- left half via smoothstep(0.1, 0.5, t). Bottom row: swap the markers --
+//-- smoothstep(1.0, 0.6, t) -- and the ramp runs downhill, fading OUT
+//-- toward the right.
+
+define ViewBox(0, 0, 400, 170);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(24, 28)`smoothstep(0.1, 0.5, t) — fade in`
+  text(24, 100)`smoothstep(1.0, 0.6, t) — reversed markers, fade out`
+}
+
+let fadeIn = PathLayer('fade-in') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+fadeIn.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let s = smoothstep(0.1, 0.5, t);
+    circle(calc(24 + i * 7.4), 55, calc(0.4 + 3.4 * s));
+  }
+}
+
+let fadeOut = PathLayer('fade-out') ${ fill: oklch(0.68 0.13 200); stroke: none; };
+fadeOut.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let s = smoothstep(1.0, 0.6, t);
+    circle(calc(24 + i * 7.4), 127, calc(0.4 + 3.4 * s));
+  }
+}
+</code>
+  <img src="/blog/samples/post36/02-fade-in-out.svg" alt="Forward markers fade in; reversed markers fade out — no 1 − s arithmetic, just swap the edges and the ramp runs downhill." loading="lazy">
+</mini-workspace></p>
+<p>Reversed markers are the idiomatic way to say &quot;fade out&quot;: no <code>1 - s</code>
+arithmetic, just swap the edges and the ramp runs downhill.</p>
+<h2>Example 3 — The plateau</h2>
+<p>The flagship idiom. One lambda —
+<code>smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)</code> — drives both the
+plot (top) and the bar heights (bottom).</p>
+<p><mini-workspace code-open caption="Uphill times downhill: rise, hold at a genuinely flat 1.0 (the dashed line), fall. The plot and the bars share one win lambda — the picture and the application are the same function.">
+  <code>// viewBox="0 0 400 250"
+//-- The plateau idiom: an uphill ramp TIMES a downhill ramp makes a
+//-- flat-topped window -- rise, hold, fall. The plot (top) and the bar
+//-- heights (bottom) share the exact same lambda.
+
+define ViewBox(0, 0, 400, 250);
+
+let win = {|t| return smoothstep(0.1, 0.3, t) * smoothstep(0.9, 0.7, t); };
+
+let plotX = 50;
+let plotW = 300;
+let plotY = 110;
+let plotH = 70;
+
+let unitLine = PathLayer('unit-line') ${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
+unitLine.apply {
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+}
+
+let curve = PathLayer('window-curve') ${ stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; };
+curve.apply {
+  M plotX plotY
+  for (i in 1..96) {
+    let t = i / 96;
+    let s = win(t);
+    L calc(plotX + plotW * t) calc(plotY - plotH * s)
+  }
+}
+
+let bars = PathLayer('bars') ${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
+bars.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let h = win(t) * 60;
+    if (h &gt; 0.2) {
+      rect(calc(48 + i * 6.4), calc(225 - h), 4.4, h);
+    }
+  }
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(48, 28)`win = smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)`
+  text(356, 44)`1.0`
+}
+
+let scene = GroupLayer('scene') ${};
+scene.append(unitLine, axis, curve, bars, labels);
+</code>
+  <img src="/blog/samples/post36/03-plateau.svg" alt="Uphill times downhill: rise, hold at a genuinely flat 1.0 (the dashed line), fall. The plot and the bars share one win lambda — the picture and the application are the same function." loading="lazy">
+</mini-workspace></p>
+<p>Read the two factors: the first is 0 until t=0.1, then rises to 1 by
+t=0.3 and <em>stays</em> 1. The second stays 1 until t=0.7, then falls to 0 by
+t=0.9. Multiplied, you get rise–hold–fall with a genuinely flat top
+(touching the dashed 1.0 line). Any &quot;active in the middle&quot; behavior —
+visibility, width, intensity — is this one expression with your own four
+numbers.</p>
+<h2>Example 4 — No more blunt ends</h2>
+<p>A stroke-width application. The top ribbon has constant width, so it ends
+in chopped-off edges. The bottom multiplies the same width by an
+end-window: <code>smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t)</code>. (The
+ribbon machinery — <code>compoundVariableOffset</code>, <code>vo.stop</code>, the <code>&lt;&lt;</code> worker —
+is glossed in <a href="/blog/primer-hash11">part 2</a>; the only part that matters
+here is that each stop&#39;s width is a number we compute.)</p>
+<p><mini-workspace code-open caption="The same 9-unit width, without and with the smoothstep end-window.">
+  <code>// viewBox="0 0 400 160"
+//-- End windows on a stroke. Top: constant width -- the ribbon ends in
+//-- chopped-off vertical edges. Bottom: the same width times
+//-- smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t), which eases the
+//-- width to zero at both tips.
+
+define ViewBox(0, 0, 400, 160);
+
+fn band(name, y0, windowed) {
+  let mk = {|vo, pb|
+    //-- The blunt band gets Cap.butt() -- an honest straight edge -- so
+    //-- the "before" picture really is chopped off.
+    if (windowed == 1) {
+      vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    }
+    if (windowed == 0) {
+      vo.startCap(Cap.butt());
+    }
+    for (i in 0..47) {
+      let t = i / 47;
+      let amp = 1;
+      if (windowed == 1) {
+        amp = smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t);
+      }
+      let w = 9 * amp;
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    if (windowed == 1) {
+      vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+    }
+    if (windowed == 0) {
+      vo.endCap(Cap.butt());
+    }
+  };
+  let spine = @{ l 330 0 };
+  let rib = spine.compoundVariableOffset() &lt;&lt; mk;
+  let stroke = PathLayer(name) ${ fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; };
+  stroke.apply {
+    M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
+    rib.draw();
+  }
+}
+
+band('blunt', 45, 0);
+band('windowed', 115, 1);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(35, 27)`constant width — chopped-off ends`
+  text(35, 94)`× smoothstep(0, 0.12, t) × smoothstep(1, 0.88, t)`
+}
+</code>
+  <img src="/blog/samples/post36/04-blunt-ends.svg" alt="The same 9-unit width, without and with the smoothstep end-window." loading="lazy">
+</mini-workspace></p>
+<p>Same plateau idiom, tighter windows: the width is full-strength for the
+middle 76% of the stroke and eases to zero over the first and last 12%.
+Both tips taper to a point — and because smoothstep arrives flat, the
+taper has no corner where it meets the full width.</p>
+<h2>Example 5 — Horizon</h2>
+<p>A dusk seascape with no gradients. Sixty horizontal strips each compute
+one mix factor — <code>m = smoothstep(0.38, 0.58, t)</code> where <code>t</code> is vertical
+position — and use it to blend lightness, hue, and chroma from &quot;sky
+values&quot; to &quot;sea values.&quot; The sun&#39;s halo rings shrink by a reversed
+smoothstep of ring index.</p>
+<p><mini-workspace code-open caption="Sixty strips, one eased mix factor m blending every color channel from sky to sea in sync. Every soft edge in this scene is the same three-argument call wearing different numbers.">
+  <code>// viewBox="0 0 400 230"
+//-- A dusk seascape with no gradients: sixty horizontal strips, each
+//-- strip's color MIXED between a sky color and a sea color by one
+//-- smoothstep of its vertical position. The soft horizon line is the
+//-- S-curve; the sun's halo rings shrink by a reversed smoothstep.
+
+define ViewBox(0, 0, 400, 230);
+
+//-- Sky: light warm violet.  Sea: deep teal.
+for (i in 0..59) {
+  let t = i / 59;
+  let m = smoothstep(0.38, 0.58, t);
+  let L = 0.78 - 0.42 * m;
+  let H = 300 - 100 * m;
+  let C = 0.05 + 0.06 * m;
+  let c = Color(L, C, H);
+  let strip = PathLayer(`strip-${i}`) ${ fill: c; stroke: none; };
+  strip.apply {
+    rect(15, calc(15 + i * 3.32), 370, 3.45);
+  }
+}
+
+//-- Sun + halo: ring radius eases DOWN with ring index (reversed markers).
+for (k in 0..5) {
+  let u = k / 5;
+  let fade = smoothstep(1, 0.2, u);
+  let r = 6 + 16 * (1 - fade);
+  let ring = PathLayer(`halo-${k}`) ${ stroke: oklch(0.88 0.09 75); stroke-width: 1; fill: none; opacity: calc(0.15 + fade * 0.5); };
+  ring.apply {
+    circle(300, 96, r);
+  }
+}
+let sun = PathLayer('sun') ${ fill: oklch(0.92 0.1 75); stroke: none; };
+sun.apply {
+  circle(300, 96, 6);
+}
+</code>
+  <img src="/blog/samples/post36/05-horizon.svg" alt="Sixty strips, one eased mix factor m blending every color channel from sky to sea in sync. Every soft edge in this scene is the same three-argument call wearing different numbers." loading="lazy">
+</mini-workspace></p>
+<p>The blend pattern is worth keeping:
+<code>value = skyValue + (seaValue - skyValue) * m</code> — with <code>m</code> eased, every
+channel crosses the horizon softly and <em>in sync</em>, because they all share
+one <code>m</code>. Every soft edge in this scene is the same three-argument call
+wearing different numbers.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-bump"><code>bump</code></a> — when you want a hill that touches 1 and
+leaves, rather than a ramp that holds. (The plateau reappears there as
+its flat-topped cousin.)</li>
+<li><a href="/blog/primer-noise"><code>noise</code></a> — smoothstep is the glue between its
+random pins.</li>
+<li>Reference:
+<a href="/docs#stdlib-interpolation-clamping">Interpolation &amp; Clamping docs</a>
+and the callable <a href="/docs#stdlib-easing">Easing family</a>
+(<code>smoothstep(0, 1, t)</code> is <code>Easing.Smoothstep</code>).</li>
+</ul>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

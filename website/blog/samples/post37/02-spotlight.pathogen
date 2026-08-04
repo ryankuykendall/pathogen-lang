@@ -1,0 +1,36 @@
+// viewBox="0 0 400 170"
+//-- Attention without if-statements. Top row: dot radius follows one
+//-- bump -- a spotlight at t = 0.5. Bottom row: TWO bumps summed in one
+//-- expression -- two spotlights, and outside their feet the sum
+//-- contributes exactly nothing.
+
+define ViewBox(0, 0, 400, 170);
+
+let one = PathLayer('one-spotlight') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+one.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let b = bump(t, 0.5, 0.25);
+    circle(calc(24 + i * 7.4), 55, calc(0.8 + 5.5 * b));
+  }
+}
+
+let two = PathLayer('two-spotlights') ${ fill: oklch(0.68 0.13 200); stroke: none; };
+two.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let b = bump(t, 0.3, 0.2) + bump(t, 0.8, 0.15);
+    circle(calc(24 + i * 7.4), 125, calc(0.8 + 5.5 * b));
+  }
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(24, 26)`bump(t, 0.5, 0.25)`
+  text(24, 96)`bump(t, 0.3, 0.2) + bump(t, 0.8, 0.15)`
+}

@@ -3,6 +3,48 @@
 
 export const blogIndex = [
   {
+    "slug": "primer-noise2",
+    "title": "noise2: A Weather Map of Smooth Randomness",
+    "date": "2026-08-10",
+    "description": "The stdlib primers finale: noise2 spreads smooth randomness across a surface — fog, terrain, warped grids, and the trick that makes a whole family of strokes flow as one. The series' three glows, compared."
+  },
+  {
+    "slug": "primer-noise",
+    "title": "noise: Randomness with a Smooth Ride",
+    "date": "2026-08-09",
+    "description": "Part 6 of the stdlib primers: hash01 rolls dice; noise draws the smooth curve through the rolls. Pins and a glide, one frequency knob, and randomness that neighbors agree on — texture instead of jitter."
+  },
+  {
+    "slug": "primer-bump",
+    "title": "bump: A Hill You Can Put Anywhere",
+    "date": "2026-08-08",
+    "description": "Part 5 of the stdlib primers: bump is one smooth hill — exactly 1 at the center you pick, exactly 0 at the spread you pick, flat everywhere it matters. Hills sum into spotlights, mountains, and the width envelopes behind the blog's glow strokes."
+  },
+  {
+    "slug": "primer-smoothstep",
+    "title": "smoothstep: The S-Curve That Turns a Cliff into a Ramp",
+    "date": "2026-08-07",
+    "description": "Part 4 of the stdlib primers: smoothstep is a dimmer between two markers — 0 before, 1 after, a corner-free glide in between. Fades, plateaus, tapered stroke tips, and a dusk seascape with no gradients."
+  },
+  {
+    "slug": "primer-hashrange",
+    "title": "hashRange: randomRange with a Memory",
+    "date": "2026-08-06",
+    "description": "Part 3 of the stdlib primers: hashRange(i, min, max) is the deterministic drop-in for randomRange — put an index in front and the pick keeps its word forever. Ranges become the design's tuning panel."
+  },
+  {
+    "slug": "primer-hash11",
+    "title": "hash11: The Same Dice, Rolled Between −1 and 1",
+    "date": "2026-08-05",
+    "description": "Part 2 of the stdlib primers: hash11 is hash01's twin for nudges — signed, deterministic jitter in [−1, 1). Baseline wobble, tilt, and the ±20% idiom that textures the blog's glow strokes."
+  },
+  {
+    "slug": "primer-hash01",
+    "title": "hash01: A Random Number That Never Changes Its Mind",
+    "date": "2026-08-04",
+    "description": "First in a seven-part tour of Pathogen's deterministic stdlib: hash01 gives every whole-number label a random-looking value that is really a lookup — same label, same answer, on every machine, forever. Scatter, jitter, and texture you can ship."
+  },
+  {
     "slug": "the-reliable-line",
     "title": "The Reliable Line: Hash, Noise, and Envelopes Join the Stdlib",
     "date": "2026-08-03",
@@ -15985,6 +16027,2163 @@ layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), laye
 <p>The traditional workflow for themeable SVG is painful: generate variants, swap files, or embed JavaScript to manipulate the DOM. Pathogen&#39;s approach eliminates all of that. You write color logic at a high level — harmonies, palettes, lightness ramps — and the compiler translates it into CSS that browsers already know how to execute.</p>
 <p>The result is SVG illustration that participates in the web platform&#39;s theming infrastructure. Set CSS custom properties from your design system. Let <code>prefers-color-scheme</code> drive light and dark variants. Animate color transitions with CSS. No runtime JavaScript needed, no asset pipeline for variants.</p>
 <p>SVG was always a dynamic format hiding behind static tooling. The Color system gives it the vocabulary to express what it was designed for.</p>
+`,
+  'primer-bump': `<p><em>Part 5 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><a href="/blog/primer-hash01">hash01</a> — a random number that never changes its mind</li>
+<li><a href="/blog/primer-hash11">hash11</a> — the same dice, rolled between −1 and 1</li>
+<li><a href="/blog/primer-hashrange">hashRange</a> — randomRange with a memory</li>
+<li><a href="/blog/primer-smoothstep">smoothstep</a> — the S-curve that turns a cliff into a ramp</li>
+<li><strong>bump</strong> (this post) — a hill you can put anywhere</li>
+<li><a href="/blog/primer-noise">noise</a> — randomness with a smooth ride</li>
+<li><a href="/blog/primer-noise2">noise2</a> — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><code>bump(t, center, spread)</code> is one smooth hill: <strong>exactly 1</strong> at the center
+you pick, easing down to <strong>exactly 0</strong> at a distance of <code>spread</code> on either
+side — and flat everywhere it matters. Flat at the peak, and flat where
+the feet touch the floor.</p>
+<p>The shape is a <em>raised cosine</em> — which just means: take one arch of a
+cosine wave and lift it so its feet rest on the ground. It&#39;s the smoothest
+hill you can cut from a single wave. Think of it as a tent with rounded
+everything: rounded peak, rounded feet, no poles poking out.</p>
+<p>The load-bearing property is what happens <strong>outside</strong> the feet: beyond
+<code>center ± spread</code>, <code>bump</code> is not &quot;small&quot; — it is <em>exactly zero, arriving
+flat</em>. That&#39;s what makes bumps composable. Put two hills on the same shelf
+and they don&#39;t interfere; overlap them and they <strong>sum</strong> into a bigger
+landform with no seams or kinks anywhere.</p>
+<p>Two honest footnotes:</p>
+<ul>
+<li><strong><code>spread</code> must be positive.</strong> A zero spread is a nothing-hill (and
+exactly at its center the math falls apart into NaN); a <em>negative</em>
+spread quietly answers 1 everywhere. If a picture unexpectedly goes
+all-on, check your spread.</li>
+<li><strong>Determinism:</strong> same everywhere for practical purposes, but <code>bump</code> is
+built on cosine, so it&#39;s pinned per browser engine rather than
+bit-for-bit across all engines the way the
+<a href="/blog/primer-hash01">hash family</a> is.</li>
+</ul>
+<h2>Why you&#39;d use it</h2>
+<p>Anywhere you want &quot;strong here, fading to nothing there&quot; without an
+if-statement: a spotlight of emphasis in a row of elements, a swell in a
+stroke&#39;s width, a peak in a skyline, a pocket of influence in a layout.
+And because bumps sum cleanly, they&#39;re a <em>vocabulary</em>: tall-narrow,
+low-wide, and combinations of them describe surprisingly rich profiles in
+one readable expression — profiles that, like everything in this series,
+land identically on every recompile. If
+<a href="/blog/primer-smoothstep"><code>smoothstep</code></a> is the ramp (&quot;off → on&quot;), <code>bump</code>
+is the visit (&quot;off → on → off&quot;).</p>
+<h2>Example 1 — Center and spread</h2>
+<p>The two knobs, plotted. Three hills: two share a center (one with wider
+feet), and one is simply moved.</p>
+<p><mini-workspace code-open caption="center places the peak; spread is the peak-to-foot distance. Every hill touches the dashed 1.0 line at its center mark and rests at exactly zero outside its feet.">
+  <code>// viewBox="0 0 400 190"
+//-- The two knobs. Three hills on one axis: same center with a wider
+//-- spread, and a moved center. Each peaks at exactly 1 and its feet rest
+//-- at exactly 0.
+
+define ViewBox(0, 0, 400, 190);
+
+let plotX = 40;
+let plotW = 320;
+let plotY = 150;
+let plotH = 100;
+
+let scene = GroupLayer('scene') \${};
+
+let axis = PathLayer('axis') \${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+}
+
+fn hill(name, center, spread, hue) {
+  //-- fns are dynamically scoped, so \`scene\` resolves at the call site.
+  let mark = PathLayer(\`\${name}-mark\`) \${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 3 3; fill: none; };
+  scene.append(mark);
+  mark.apply {
+    M calc(plotX + plotW * center) calc(plotY - plotH - 6)
+    L calc(plotX + plotW * center) calc(plotY + 6)
+  }
+  let c = Color(0.64, 0.15, hue);
+  let curve = PathLayer(name) \${ stroke: c; stroke-width: 2; fill: none; };
+  scene.append(curve);
+  curve.apply {
+    M plotX calc(plotY - plotH * bump(0, center, spread))
+    for (i in 1..120) {
+      let t = i / 120;
+      let b = bump(t, center, spread);
+      L calc(plotX + plotW * t) calc(plotY - plotH * b)
+    }
+  }
+}
+
+let unitLine = PathLayer('unit-line') \${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
+unitLine.apply {
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+hill('narrow', 0.3, 0.15, 260);
+hill('wide', 0.3, 0.28, 200);
+hill('moved', 0.75, 0.2, 20);
+
+//-- Legend entries tinted to match their curves.
+let legendA = TextLayer('legend-narrow') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 260); text-anchor: start; };
+legendA.apply { text(40, 27)\`bump(t, 0.3, 0.15)\` }
+let legendB = TextLayer('legend-wide') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 200); text-anchor: start; };
+legendB.apply { text(160, 27)\`bump(t, 0.3, 0.28)\` }
+let legendC = TextLayer('legend-moved') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 20); text-anchor: start; };
+legendC.apply { text(280, 27)\`bump(t, 0.75, 0.2)\` }
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(40, 172)\`0\`
+  text(348, 172)\`1\`
+  text(366, 54)\`1.0\`
+}
+
+scene.append(axis, unitLine, legendA, legendB, legendC, labels);
+</code>
+  <img src="/blog/samples/post37/01-center-spread.svg" alt="center places the peak; spread is the peak-to-foot distance. Every hill touches the dashed 1.0 line at its center mark and rests at exactly zero outside its feet." loading="lazy">
+</mini-workspace></p>
+<p><code>center</code> places the peak; <code>spread</code> is the distance from peak to each foot.
+Every hill touches 1 at its dashed line and rests at 0 outside its feet —
+not near zero, <em>at</em> zero.</p>
+<h2>Example 2 — Spotlight a row</h2>
+<p>The simplest application: attention. Top row — dot size follows one bump,
+a spotlight at the middle. Bottom row — <strong>two bumps added in one
+expression</strong>, two spotlights.</p>
+<p><mini-workspace code-open caption="Dot radius follows one bump above, a sum of two bumps below.">
+  <code>// viewBox="0 0 400 170"
+//-- Attention without if-statements. Top row: dot radius follows one
+//-- bump -- a spotlight at t = 0.5. Bottom row: TWO bumps summed in one
+//-- expression -- two spotlights, and outside their feet the sum
+//-- contributes exactly nothing.
+
+define ViewBox(0, 0, 400, 170);
+
+let one = PathLayer('one-spotlight') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+one.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let b = bump(t, 0.5, 0.25);
+    circle(calc(24 + i * 7.4), 55, calc(0.8 + 5.5 * b));
+  }
+}
+
+let two = PathLayer('two-spotlights') \${ fill: oklch(0.68 0.13 200); stroke: none; };
+two.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let b = bump(t, 0.3, 0.2) + bump(t, 0.8, 0.15);
+    circle(calc(24 + i * 7.4), 125, calc(0.8 + 5.5 * b));
+  }
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(24, 26)\`bump(t, 0.5, 0.25)\`
+  text(24, 96)\`bump(t, 0.3, 0.2) + bump(t, 0.8, 0.15)\`
+}
+</code>
+  <img src="/blog/samples/post37/02-spotlight.svg" alt="Dot radius follows one bump above, a sum of two bumps below." loading="lazy">
+</mini-workspace></p>
+<p>No conditionals, no ranges to check: outside the feet, the bump
+<em>contributes</em> exactly nothing (the dots keep their small base radius —
+that&#39;s the <code>0.8 +</code> in the expression, not the bump). And the sum in the
+bottom row is safe precisely because each bump is zero outside its own
+window — the two spotlights can&#39;t contaminate each other.</p>
+<h2>Example 3 — Build a mountain from hills</h2>
+<p>Sums scale up. This skyline&#39;s height is one expression:
+<code>45·bump(t, 0.25, 0.28) + 95·bump(t, 0.52, 0.3) + 38·bump(t, 0.82, 0.16)</code>
+— a shoulder, a main peak, a small right summit. A second, softer layer
+uses two more bumps as mist.</p>
+<p><mini-workspace code-open caption="amplitude × bump is a term you can say out loud: 'ninety-five tall, centered past the middle, feet 0.3 wide.' Three sayable terms describe the ridge; moving a peak is editing one number.">
+  <code>// viewBox="0 0 400 210"
+//-- Sums of hills make arbitrary skylines. One filled silhouette whose
+//-- height is three amplitude-times-bump terms: a tall mid peak, a low
+//-- wide shoulder, and a small right summit.
+
+define ViewBox(0, 0, 400, 210);
+
+let range = PathLayer('mountain') \${ fill: oklch(0.45 0.08 265); stroke: none; };
+range.apply {
+  M 20 185
+  for (i in 0..140) {
+    let t = i / 140;
+    let h = 45 * bump(t, 0.25, 0.28) + 95 * bump(t, 0.52, 0.3) + 38 * bump(t, 0.82, 0.16);
+    L calc(20 + t * 360) calc(185 - h)
+  }
+  L 380 185
+  Z
+}
+
+let mist = PathLayer('mist') \${ fill: oklch(0.6 0.05 265); stroke: none; opacity: 0.5; };
+mist.apply {
+  M 20 185
+  for (i in 0..140) {
+    let t = i / 140;
+    let h = 26 * bump(t, 0.38, 0.34) + 40 * bump(t, 0.7, 0.24);
+    L calc(20 + t * 360) calc(185 - h)
+  }
+  L 380 185
+  Z
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 26)\`h = 45·bump(0.25) + 95·bump(0.52) + 38·bump(0.82)\`
+}
+</code>
+  <img src="/blog/samples/post37/03-mountain.svg" alt="amplitude × bump is a term you can say out loud: 'ninety-five tall, centered past the middle, feet 0.3 wide.' Three sayable terms describe the ridge; moving a peak is editing one number." loading="lazy">
+</mini-workspace></p>
+<p><code>amplitude × bump(t, center, spread)</code> is a term you can say out loud:
+&quot;ninety-five tall, centered just past the middle, feet 0.3 wide.&quot; Three
+sayable terms describe the whole ridge — and moving one peak is editing
+one number, not redrawing a curve.</p>
+<h2>Example 4 — The silhouette is the envelope</h2>
+<p>On a straight spine, a stroke&#39;s silhouette <em>is</em> its width profile — which
+makes ribbons the perfect x-ray for width functions. (Ribbon machinery
+glossed in <a href="/blog/primer-hash11">part 2</a>.) Three ribbons: a plain bump,
+the same bump <strong>squared</strong>, and an asymmetric sum.</p>
+<p><mini-workspace code-open caption="pow(bump, 2) is a one-token remix: sub-1 values shrink when squared, so the peak stays put while the flanks pull in — sharper swell, softer feet. The third ribbon sums two bumps into an asymmetric envelope.">
+  <code>// viewBox="0 0 400 230"
+//-- On a straight spine, the silhouette of a stroke IS its width profile.
+//-- Three ribbons: a plain bump, the same bump squared (sharper peak,
+//-- softer feet), and an asymmetric two-bump sum.
+
+define ViewBox(0, 0, 400, 230);
+
+fn ribbon(name, y0, kind) {
+  let mk = {|vo, pb|
+    vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    for (i in 0..47) {
+      let t = i / 47;
+      let w = 0.6;
+      if (kind == 0) { w = 0.6 + 13 * bump(t, 0.5, 0.35); }
+      if (kind == 1) { w = 0.6 + 13 * pow(bump(t, 0.5, 0.35), 2); }
+      if (kind == 2) { w = 0.6 + 10 * bump(t, 0.35, 0.25) + 6 * bump(t, 0.72, 0.18); }
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+  };
+  let spine = @{ l 330 0 };
+  let rib = spine.compoundVariableOffset() &lt;&lt; mk;
+  let band = PathLayer(name) \${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  band.apply {
+    M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
+    rib.draw();
+  }
+}
+
+ribbon('plain-bump', 48, 0);
+ribbon('bump-squared', 118, 1);
+ribbon('two-bump-sum', 188, 2);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(35, 26)\`bump(t, 0.5, 0.35)\`
+  text(35, 96)\`pow(bump(t, 0.5, 0.35), 2)\`
+  text(35, 166)\`10·bump(t, 0.35, 0.25) + 6·bump(t, 0.72, 0.18)\`
+}
+</code>
+  <img src="/blog/samples/post37/04-envelope-triptych.svg" alt="pow(bump, 2) is a one-token remix: sub-1 values shrink when squared, so the peak stays put while the flanks pull in — sharper swell, softer feet. The third ribbon sums two bumps into an asymmetric envelope." loading="lazy">
+</mini-workspace></p>
+<p>Squaring a bump (<code>pow(bump(...), 2)</code>) is a one-token remix: values below
+1 shrink when squared, so the peak stays put while the flanks pull in —
+a sharper swell with even softer feet. The third ribbon shows the same
+summing trick as the mountain, now shaping ink instead of terrain.</p>
+<h2>Example 5 — The glow</h2>
+<p>The finale: twelve translucent layers on one curved spine. Every layer&#39;s
+width is the same three-term bump expression scaled by its layer index
+<code>k</code>, with a per-layer hue shift — bump algebra alone carries the whole
+effect.</p>
+<p><mini-workspace code-open caption="Twelve layers, one three-term bump expression scaled by k, hue shifted per layer. No jitter, no noise — the swells sit where the centers put them, on every layer, on every compile.">
+  <code>// viewBox="0 60 400 140"
+//-- Twelve compound-offset layers on one curved spine, every width a sum
+//-- of bump terms scaled by the layer index, hue shifted per layer. No
+//-- jitter, no noise -- bump algebra alone carries the whole glow.
+
+define ViewBox(0, 60, 400, 140);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.72 0.14 20);
+
+for (k in 12..1) {
+  let mk = {|vo, pb|
+    vo.startCap(taperCap);
+    for (i in 0..47) {
+      let t = i / 47;
+      let w = 0.15 * k
+            + 0.6 * k * bump(t, 0.35, 0.3)
+            + 0.35 * k * pow(bump(t, 0.78, 0.18), 2);
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(taperCap);
+  };
+  let halo = spine.compoundVariableOffset() &lt;&lt; mk;
+
+  let haloColor = base.hueShift(calc(k * -6));
+  let haloLayer = PathLayer(\`halo-\${k}\`) \${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}
+</code>
+  <img src="/blog/samples/post37/05-glow.svg" alt="Twelve layers, one three-term bump expression scaled by k, hue shifted per layer. No jitter, no noise — the swells sit where the centers put them, on every layer, on every compile." loading="lazy">
+</mini-workspace></p>
+<p>This is the deterministic glow from
+<a href="/blog/the-reliable-line">&quot;The Reliable Line&quot;</a> with the jitter
+deliberately removed, so you can see exactly what the envelope
+contributes: the swells sit where the centers put them, on every layer, on
+every compile. To add texture back, the sibling posts pick up exactly
+here — <a href="/blog/primer-hash11"><code>hash11</code></a> adds per-stop shimmer, and
+<a href="/blog/primer-noise2"><code>noise2</code></a> makes the whole glow flow as one surface.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-smoothstep"><code>smoothstep</code></a> — the ramp to this function&#39;s
+hill; use its plateau when you want to <em>hold</em> at 1 instead of touching
+and leaving.</li>
+<li><a href="/blog/primer-hash11"><code>hash11</code></a> / <a href="/blog/primer-noise2"><code>noise2</code></a> —
+texture on top of bump-shaped envelopes.</li>
+<li>Reference:
+<a href="/docs#stdlib-interpolation-clamping">Interpolation &amp; Clamping docs</a>.</li>
+</ul>
+`,
+  'primer-hash01': `<p><em>Part 1 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><strong>hash01</strong> (this post) — a random number that never changes its mind</li>
+<li><a href="/blog/primer-hash11">hash11</a> — the same dice, rolled between −1 and 1</li>
+<li><a href="/blog/primer-hashrange">hashRange</a> — randomRange with a memory</li>
+<li><a href="/blog/primer-smoothstep">smoothstep</a> — the S-curve that turns a cliff into a ramp</li>
+<li><a href="/blog/primer-bump">bump</a> — a hill you can put anywhere</li>
+<li><a href="/blog/primer-noise">noise</a> — randomness with a smooth ride</li>
+<li><a href="/blog/primer-noise2">noise2</a> — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><code>hash01(n)</code> takes a whole number — an index, a loop counter, any integer
+label — and hands back a number between 0 (inclusive) and 1 (exclusive)
+that <em>looks</em> random. It isn&#39;t random at all: it&#39;s a <strong>lookup</strong>. The same
+label always produces the same answer, on every machine, in every browser,
+on every recompile, forever.</p>
+<p>Under the hood it&#39;s a <strong>hash</strong> — which is just a scrambler: a fixed recipe
+of bit-mixing that turns the label <code>7</code> into <code>0.9646…</code> so thoroughly that
+neighboring labels produce completely unrelated outputs. <code>hash01(7)</code> and
+<code>hash01(8)</code> have nothing to do with each other. And because every step of
+the recipe is pinned down exactly by the JavaScript standard — no
+trigonometry, no rounding wiggle room — there is no drift between engines.
+Your artwork compiles to the same bytes in the CLI, the playground, and the
+VS Code preview.</p>
+<p>The second argument is a <strong>seed</strong>: <code>hash01(i, 3)</code> reads the same card
+number <code>i</code> from a <em>different shuffled deck</em>. <code>hash01(i, 0)</code> and
+<code>hash01(i, 1)</code> are two unrelated sequences over the same indices — which is
+how one loop index can drive many independent random-looking properties at
+once. (Leaving the seed off means deck 0.)</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because <code>random()</code> and <code>randomRange()</code> re-roll on every compile. That&#39;s
+fine for exploring, but the moment you <em>like</em> what you see, you want it to
+stay. <code>hash01</code> is the version with a memory: randomness as a <strong>design
+decision</strong> rather than a dice throw. Scatter, jitter, texture, variation —
+all reproducible, all tunable, all shippable.</p>
+<p>Two things to know before the examples:</p>
+<ul>
+<li><strong>It reads only the label, not the fraction.</strong> Inputs are truncated to
+whole numbers, so <code>hash01(0.9)</code> is the same as <code>hash01(0)</code> — and
+anything that isn&#39;t a real number at all (a divide-by-zero infinity, a
+NaN) is quietly treated as label 0. If you want a <em>smooth</em> function of a
+continuously varying input, that&#39;s what <a href="/blog/primer-noise"><code>noise()</code></a>
+is for.</li>
+<li><strong>The range is 0 up to (but never exactly) 1</strong> — written [0, 1). In
+practice you&#39;ll multiply it into whatever range you need, and the
+missing endpoint never matters visually.</li>
+</ul>
+<h2>Example 1 — Ask twice, same answer</h2>
+<p>The whole function in one picture. The first two rows ask <code>hash01(i)</code> the
+same 48 questions from two <em>separate</em> loops. The third row asks
+<code>randomRange(0, 1)</code> instead.</p>
+<p><mini-workspace code-open caption="Three rows of 48 dots: two separate hash01 loops (blue), one randomRange loop (red).">
+  <code>// viewBox="0 0 400 210"
+//-- Three rows of 48 dots. Rows one and two ask hash01 the same questions
+//-- from two separate loops -- identical answers, identical rows. Row three
+//-- asks randomRange, which re-rolls on every compile.
+
+define ViewBox(0, 0, 400, 210);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 26)\`hash01(i) — first loop\`
+  text(22, 87)\`hash01(i) — second loop, same answers\`
+  text(22, 152)\`randomRange(0, 1) — different every compile\`
+}
+
+let rowA = PathLayer('hash-first-ask') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+let rowB = PathLayer('hash-second-ask') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+let rowC = PathLayer('random-every-time') \${ fill: oklch(0.6 0.15 20); stroke: none; };
+
+rowA.apply {
+  for (i in 0..47) {
+    circle(calc(22 + i * 7.6), calc(30 + hash01(i) * 30), 1.8);
+  }
+}
+rowB.apply {
+  for (i in 0..47) {
+    circle(calc(22 + i * 7.6), calc(95 + hash01(i) * 30), 1.8);
+  }
+}
+rowC.apply {
+  for (i in 0..47) {
+    circle(calc(22 + i * 7.6), calc(160 + randomRange(0, 1) * 30), 1.8);
+  }
+}
+
+let scene = GroupLayer('scene') \${};
+scene.append(labels, rowA, rowB, rowC);
+</code>
+  <img src="/blog/samples/post33/01-ask-twice.svg" alt="Three rows of 48 dots: two separate hash01 loops (blue), one randomRange loop (red)." loading="lazy">
+</mini-workspace></p>
+<p>The two blue rows are identical — not similar, identical — because
+<code>hash01</code> is a lookup, not a roll. And here&#39;s the part worth trying
+yourself: <strong>drop this code in the playground and recompile — only the red
+row changes.</strong> The blue rows are fixtures; the red row is weather. (This
+is the one example in this post that uses <code>randomRange</code> — the contrast is
+the whole lesson.)</p>
+<h2>Example 2 — One label, three decks: a starfield</h2>
+<p>One index <code>i</code>, three seeds. The x-position reads deck 0, the y-position
+deck 1, the size deck 2 — three independent random-looking properties from
+one loop counter.</p>
+<p><mini-workspace code-open caption="140 stars from one loop: x from seed 0, y from seed 1, radius from seed 2. Three independent streams, one index — and the same sky on every compile.">
+  <code>// viewBox="0 0 400 220"
+//-- One index, three decks: x from the default deck, y from deck 1, size
+//-- from deck 2. 140 stars land convincingly at random -- and land in
+//-- exactly the same places on every compile.
+
+define ViewBox(0, 0, 400, 220);
+
+let backdrop = PathLayer('night') \${ fill: oklch(0.22 0.04 275); stroke: none; };
+backdrop.apply {
+  rect(15, 15, 370, 190);
+}
+
+let stars = PathLayer('stars') \${ fill: oklch(0.92 0.03 260); stroke: none; };
+stars.apply {
+  for (i in 0..139) {
+    circle(calc(22 + hash01(i) * 356),
+           calc(22 + hash01(i, 1) * 176),
+           calc(0.5 + hash01(i, 2) * 1.4));
+  }
+}
+</code>
+  <img src="/blog/samples/post33/02-starfield.svg" alt="140 stars from one loop: x from seed 0, y from seed 1, radius from seed 2. Three independent streams, one index — and the same sky on every compile." loading="lazy">
+</mini-workspace></p>
+<p>If x and y came from the <em>same</em> deck, every star would sit on the diagonal
+(x always equal to y, scaled). The seeds are what make the scatter
+two-dimensional. This is the core <code>hash01</code> idiom: <strong>one index in, as many
+independent properties out as you have seeds.</strong></p>
+<h2>Example 3 — A grid that isn&#39;t boring</h2>
+<p>Regular structure plus hashed variation. Every tile in this 14×8 grid
+sits exactly on its grid cell, but its lightness comes from one stream and
+its hue from another — a woven-textile effect from two lines of code.</p>
+<p><mini-workspace code-open caption="Structure from the grid, variation from two hashed streams: lightness on one deck, hue on another. row * 14 + col gives every cell its own integer label.">
+  <code>// viewBox="0 0 400 240"
+//-- A 14 x 8 grid of tiles. Every tile's lightness comes from one hashed
+//-- stream and its hue from another -- the grid reads as a woven textile
+//-- swatch, and it's the same swatch on every compile.
+
+define ViewBox(0, 0, 400, 240);
+
+for (row in 0..7) {
+  for (col in 0..13) {
+    let idx = row * 14 + col;
+    let L = 0.5 + hash01(idx) * 0.3;
+    let H = 200 + hash01(idx, 1) * 130;
+    let c = Color(L, 0.11, H);
+    let cell = PathLayer(\`cell-\${idx}\`) \${ fill: c; stroke: none; };
+    cell.apply {
+      roundRect(calc(20 + col * 26), calc(20 + row * 26), 22, 22, 5);
+    }
+  }
+}
+</code>
+  <img src="/blog/samples/post33/03-woven-grid.svg" alt="Structure from the grid, variation from two hashed streams: lightness on one deck, hue on another. row * 14 + col gives every cell its own integer label." loading="lazy">
+</mini-workspace></p>
+<p>Note how the index is built: <code>row * 14 + col</code> gives every cell its own
+integer label. That little arithmetic pattern — flattening a 2D position
+into one index — is how you hash grids, and it shows up again in
+<a href="/blog/primer-noise2"><code>noise2</code></a>, where the grid itself becomes the random
+thing.</p>
+<h2>Example 4 — The hand-drawn ruler</h2>
+<p>Rigid layouts read as mechanical; a few hashed nudges make them read as
+human. The bottom ruler jitters each tick&#39;s x-position, lean, and length
+by small hashed amounts.</p>
+<p><mini-workspace code-open caption="Same ruler twice: machine-perfect above, three small hashed nudges below. The lean line's * 2 - 1 remap — 'either direction' instead of 'one way' — is the next post's whole reason to exist.">
+  <code>// viewBox="0 0 400 150"
+//-- Two rulers. The top one is machine-perfect. The bottom one nudges every
+//-- tick's position, lean, and length by a hashed amount -- it reads as
+//-- drawn by a person, and redraws identically forever.
+
+define ViewBox(0, 0, 400, 150);
+
+let rigid = PathLayer('machine') \${ stroke: oklch(0.65 0.02 260); stroke-width: 1.2; fill: none; };
+rigid.apply {
+  M 20 48 L 380 48
+  for (i in 0..35) {
+    M calc(25 + i * 10) 48
+    l 0 -12
+  }
+}
+
+let loose = PathLayer('hand-drawn') \${ stroke: oklch(0.75 0.12 60); stroke-width: 1.2; fill: none; };
+loose.apply {
+  M 20 115 L 380 115
+  for (i in 0..35) {
+    let x = calc(25 + i * 10 + hash01(i) * 3);
+    let lean = calc(hash01(i, 1) * 2 - 1);
+    let len = calc(10 + hash01(i, 2) * 6);
+    M x 115
+    l lean calc(0 - len)
+  }
+}
+</code>
+  <img src="/blog/samples/post33/04-hand-drawn-ruler.svg" alt="Same ruler twice: machine-perfect above, three small hashed nudges below. The lean line's * 2 - 1 remap — 'either direction' instead of 'one way' — is the next post's whole reason to exist." loading="lazy">
+</mini-workspace></p>
+<p>Look at the lean line: <code>hash01(i, 1) * 2 - 1</code>. That <code>* 2 - 1</code> remaps
+[0, 1) into [-1, 1) — &quot;nudge either direction&quot; instead of &quot;nudge one way.&quot;
+It&#39;s such a common move that it has its own function:
+<a href="/blog/primer-hash11"><code>hash11</code></a>, the next post in this series.</p>
+<h2>Example 5 — A meadow that ships</h2>
+<p>Everything at once: ninety grass blades and a dozen seed heads, with
+position, height, lean, and color each drawn from its own seeded stream,
+composed into a finished little landscape.</p>
+<p><mini-workspace code-open caption="Ninety grass blades and a dozen seed heads — position, height, lean, and color each on its own seeded stream.">
+  <code>// viewBox="0 128 400 132"
+//-- Ninety grass blades and a dozen seed heads, every property -- position,
+//-- height, lean, color -- drawn from its own hashed stream. A finished
+//-- little landscape that regenerates identically on every compile: change
+//-- any one seed constant and the whole meadow re-lands in a new (but
+//-- equally final) arrangement.
+
+define ViewBox(0, 128, 400, 132);
+
+let ground = PathLayer('ground') \${ fill: oklch(0.32 0.06 145); stroke: none; };
+ground.apply {
+  rect(15, 228, 370, 17);
+}
+
+fn blade(i) {
+  let x = 22 + hash01(i) * 356;
+  let h = 25 + hash01(i, 1) * 55;
+  let lean = hash01(i, 2) * 30 - 15;
+  let c = Color(0.52 + hash01(i, 3) * 0.18, 0.13, 135 + hash01(i, 3) * 30);
+  let g = PathLayer(\`blade-\${i}\`) \${ stroke: c; stroke-width: 1.6; fill: none; };
+  g.apply {
+    M x 230
+    q calc(lean * 0.3) calc(0 - h * 0.6) lean calc(0 - h)
+  }
+}
+
+for (i in 0..89) {
+  blade(i);
+}
+
+let heads = PathLayer('seed-heads') \${ fill: oklch(0.8 0.1 85); stroke: none; };
+heads.apply {
+  for (k in 0..11) {
+    let hx = 30 + hash01(k, 10) * 340;
+    let hy = 150 + hash01(k, 11) * 60;
+    circle(hx, hy, calc(1.5 + hash01(k, 12) * 1.5));
+  }
+}
+</code>
+  <img src="/blog/samples/post33/05-meadow.svg" alt="Ninety grass blades and a dozen seed heads — position, height, lean, and color each on its own seeded stream." loading="lazy">
+</mini-workspace></p>
+<p>The payoff of determinism is right here: this meadow is <em>done</em>. It will
+render exactly like this in a blog post, a client deliverable, or a print
+export, next week and next year. And it&#39;s still one knob away from being a
+different meadow — bump any seed constant (<code>hash01(i, 3)</code> → <code>hash01(i, 7)</code>)
+and every blade re-lands in a new, equally settled arrangement. Randomness
+you can direct.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-hash11"><code>hash11</code></a> — the same dice, rolled between −1 and 1
+(the <code>* 2 - 1</code> remap, built in).</li>
+<li><a href="/blog/primer-hashrange"><code>hashRange</code></a> — <code>randomRange</code> with a memory.</li>
+<li><a href="/blog/primer-noise"><code>noise</code></a> — the smooth version, for continuously
+varying input.</li>
+<li>Reference: <a href="/docs#stdlib-hash-noise">Hash &amp; Noise docs</a>.</li>
+</ul>
+`,
+  'primer-hash11': `<p><em>Part 2 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><a href="/blog/primer-hash01">hash01</a> — a random number that never changes its mind</li>
+<li><strong>hash11</strong> (this post) — the same dice, rolled between −1 and 1</li>
+<li><a href="/blog/primer-hashrange">hashRange</a> — randomRange with a memory</li>
+<li><a href="/blog/primer-smoothstep">smoothstep</a> — the S-curve that turns a cliff into a ramp</li>
+<li><a href="/blog/primer-bump">bump</a> — a hill you can put anywhere</li>
+<li><a href="/blog/primer-noise">noise</a> — randomness with a smooth ride</li>
+<li><a href="/blog/primer-noise2">noise2</a> — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><code>hash11(n, seed?)</code> is <a href="/blog/primer-hash01"><code>hash01</code></a>&#39;s twin for <em>nudges</em>.
+Same deterministic lookup, same seeds-as-decks behavior, same &quot;truncates
+to whole numbers&quot; rule — but the answer lands between <strong>−1 and 1</strong> (−1
+inclusive, 1 exclusive) instead of 0 and 1.</p>
+<p>The relationship is exact and worth seeing once:
+<code>hash11(n)</code> is precisely <code>hash01(n) * 2 - 1</code>. Everything you learned in
+part 1 — determinism, bit-exactness across machines, seeds, integer
+truncation — carries over unchanged, so this post won&#39;t repeat it.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because most design randomness isn&#39;t &quot;pick a value&quot; — it&#39;s &quot;<strong>start from
+the right value and drift a little, either direction</strong>.&quot; Signed means the
+drift can be negative: a push left as easily as right, down as easily as
+up. Baseline wobble, tilt, breathing room, hand-drawn looseness — they&#39;re
+all symmetric drifts around a deliberate center, and <code>[−1, 1)</code> is their
+natural shape.</p>
+<p>The idiom to memorize (it&#39;s all over this blog):</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> wobble = <span class="hljs-number">1</span> + <span class="hljs-title function_">hash11</span>(i, layerIndex) * <span class="hljs-number">0.2</span>;
+</code></pre><p>That&#39;s &quot;a ±20% factor, per index, per layer&quot; — multiply it onto a width, a
+radius, a spacing, anything. The <code>0.2</code> is the amplitude dial; the seed
+keeps each layer&#39;s wobble independent.</p>
+<h2>Example 1 — Above and below the line</h2>
+<p>The range, visually: 48 dots whose height is <code>hash11(i) * 43</code> measured
+from a center axis. About half land above, half below, at unrelated
+heights.</p>
+<p><mini-workspace code-open caption="48 dots at hash11(i) · 43 from the center axis — ticks mark −1, 0, and +1.">
+  <code>// viewBox="0 0 400 190"
+//-- 48 dots straddling an axis: hash11(i) answers between -1 and 1, so
+//-- roughly half land above the line and half below, at hashed heights.
+
+define ViewBox(0, 0, 400, 190);
+
+let axis = PathLayer('axis') \${ stroke: oklch(0.5 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M 40 95 L 380 95
+}
+
+let ticks = TextLayer('ticks') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: end;
+};
+ticks.apply {
+  text(34, 52)\`+1\`
+  text(34, 99)\`0\`
+  text(34, 146)\`−1\`
+}
+
+let dots = PathLayer('dots') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+dots.apply {
+  for (i in 0..47) {
+    circle(calc(44 + i * 7), calc(95 - hash11(i) * 43), 2);
+  }
+}
+</code>
+  <img src="/blog/samples/post34/01-above-below.svg" alt="48 dots at hash11(i) · 43 from the center axis — ticks mark −1, 0, and +1." loading="lazy">
+</mini-workspace></p>
+<p>Note the y expression: <code>95 - hash11(i) * 43</code>. Screen y grows downward, so
+subtracting a positive answer moves the dot <em>up</em> — the sign of <code>hash11</code>
+maps directly onto &quot;which side of the line.&quot;</p>
+<h2>Example 2 — Hand-set type</h2>
+<p>The simplest real use: baseline jitter. Both rows are the same 26 bars;
+the bottom row drops each baseline by <code>hash11(i) * 5</code> and leans each bar
+by <code>hash11(i, 1) * 4</code>.</p>
+<p><mini-workspace code-open caption="The same 26 bars twice: machine-set above, baseline-and-lean jittered below.">
+  <code>// viewBox="0 0 400 170"
+//-- Two rows of "type": equal-width bars standing on a baseline. The top
+//-- row is machine-set. The bottom row nudges each bar's baseline up or
+//-- down and leans it left or right -- instantly warmer, and repeatable.
+
+define ViewBox(0, 0, 400, 170);
+
+let machine = PathLayer('machine-set') \${ stroke: oklch(0.7 0.03 260); stroke-width: 7; fill: none; };
+machine.apply {
+  for (i in 0..25) {
+    M calc(28 + i * 13.5) 62
+    l 0 -32
+  }
+}
+
+let hand = PathLayer('hand-set') \${ stroke: oklch(0.75 0.12 60); stroke-width: 7; fill: none; };
+hand.apply {
+  for (i in 0..25) {
+    let drop = calc(hash11(i) * 5);
+    let lean = calc(hash11(i, 1) * 4);
+    M calc(28 + i * 13.5) calc(138 + drop)
+    l lean -32
+  }
+}
+</code>
+  <img src="/blog/samples/post34/02-hand-set-type.svg" alt="The same 26 bars twice: machine-set above, baseline-and-lean jittered below." loading="lazy">
+</mini-workspace></p>
+<p>Five pixels of drop and four of lean — tiny numbers, big warmth. Because
+the amounts are signed, bars drift both up <em>and</em> down, left <em>and</em> right;
+with <code>hash01</code> you&#39;d get a row that only ever sagged one way.</p>
+<h2>Example 3 — The jitter knob</h2>
+<p>Jitter amplitude as a single tunable dial. Three copies of one 10×6 grid,
+with every dot offset by <code>(hash11(idx) * j, hash11(idx, 1) * j)</code> — and
+<code>j</code> set to 0, 2, and 5.</p>
+<p><mini-workspace code-open caption="One 10×6 grid, three amplitudes: j = 0, 2, 5.">
+  <code>// viewBox="0 0 400 132"
+//-- The same 10 x 6 dot grid three times. The only difference is j -- the
+//-- jitter amplitude multiplying hash11: 0 (rigid), 2 (relaxed), 5
+//-- (scattered). One number is the entire design decision.
+
+define ViewBox(0, 0, 400, 132);
+
+fn jitteredGrid(name, x0, j) {
+  let g = PathLayer(name) \${ fill: oklch(0.68 0.13 200); stroke: none; };
+  g.apply {
+    for (row in 0..5) {
+      for (col in 0..9) {
+        let idx = row * 10 + col;
+        circle(calc(x0 + col * 11 + hash11(idx) * j),
+               calc(48 + row * 11 + hash11(idx, 1) * j),
+               1.7);
+      }
+    }
+  }
+}
+
+jitteredGrid('rigid', 28, 0);
+jitteredGrid('relaxed', 153, 2);
+jitteredGrid('scattered', 278, 5);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(28, 26)\`j = 0\`
+  text(153, 26)\`j = 2\`
+  text(278, 26)\`j = 5\`
+}
+</code>
+  <img src="/blog/samples/post34/03-jitter-knob.svg" alt="One 10×6 grid, three amplitudes: j = 0, 2, 5." loading="lazy">
+</mini-workspace></p>
+<p>Read it left to right: rigid, relaxed, scattered. Same underlying pattern,
+same hashed offsets — the <em>entire</em> difference is one number. This is what
+&quot;randomness as a design decision&quot; means in practice: the amount of chaos
+is a parameter you tune, not a property you hope for.</p>
+<h2>Example 4 — ±20% on a stroke</h2>
+<p>The house idiom applied to a variable-width stroke. Both ribbons share one
+smooth width profile (a <a href="/blog/primer-bump"><code>bump</code></a> — covered in part 5);
+the bottom one multiplies each stop&#39;s width by <code>1 + hash11(i) * 0.25</code> —
+the memorized idiom with its amplitude dialed up to 0.25.</p>
+<p>A quick gloss on the stroke machinery, since this is its first appearance
+in the series: <code>compoundVariableOffset</code> turns a path into a ribbon by
+placing width <em>stops</em> along it — each <code>vo.stop(t, w, ..., -w, ...)</code> call
+says &quot;at position t, extend w units each side.&quot; The builder function is
+applied with the <code>&lt;&lt;</code> operator, <code>CurveContinuity.G1</code> means &quot;no kinks
+between stops,&quot; and <code>Cap.tapered</code> closes the ends to points. Full story in
+the <a href="/docs#variable-offset-variable-offset">variable-offset docs</a>; here,
+all that matters is <em>the width at each stop is a number you compute</em>.</p>
+<p><mini-workspace code-open caption="One smooth width profile, twice: clean above, times 1 + hash11(i) · 0.25 below. The profile is the design; the wobble factor is the texture — and each is tunable without touching the other.">
+  <code>// viewBox="0 0 400 170"
+//-- The house idiom: 1 + hash11(i) * 0.25 is a +/-25% wobble factor you
+//-- multiply onto anything. Top ribbon: a smooth width profile. Bottom:
+//-- the same profile times the wobble -- the edge gets tooth.
+
+define ViewBox(0, 0, 400, 170);
+
+fn ribbon(name, y0, wobble) {
+  let mk = {|vo, pb|
+    vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    for (i in 0..47) {
+      let t = i / 47;
+      let w = (3 + 9 * bump(t, 0.5, 0.55)) * (1 + hash11(i) * wobble);
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+  };
+  let spine = @{ l 330 0 };
+  let rib = spine.compoundVariableOffset() &lt;&lt; mk;
+  let band = PathLayer(name) \${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  band.apply {
+    M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
+    rib.draw();
+  }
+}
+
+ribbon('smooth', 48, 0);
+ribbon('jittered', 122, 0.25);
+</code>
+  <img src="/blog/samples/post34/04-stroke-jitter.svg" alt="One smooth width profile, twice: clean above, times 1 + hash11(i) · 0.25 below. The profile is the design; the wobble factor is the texture — and each is tunable without touching the other." loading="lazy">
+</mini-workspace></p>
+<p>The smooth profile is the <em>design</em>; the wobble factor is the <em>texture</em>.
+Keeping them separate — a clean profile times a signed jitter — means you
+can retune either without touching the other. This is exactly how the
+sixteen-layer glow in
+<a href="/blog/the-reliable-line">&quot;The Reliable Line&quot;</a> gets its shimmer.</p>
+<h2>Example 5 — Sketchy circles</h2>
+<p>A finished effect: five concentric &quot;pencil&quot; rings, each drawn twice like
+overlapping pencil passes. Every ring is a 64-sided polygon whose vertex
+radius wobbles by ±7%, with the ring-and-pass number as the seed — so
+every pass wobbles its own way.</p>
+<p><mini-workspace code-open caption="Two passes per ring at 65% opacity: where they agree the line darkens, where they disagree it feathers — a pencil, from one signed wobble and disciplined seeds.">
+  <code>// viewBox="0 0 400 260"
+//-- Five concentric "pencil" rings, each drawn twice like overlapping
+//-- pencil passes. Every vertex radius wobbles by a few percent, with the
+//-- ring number and pass number as seeds -- so every pass wobbles its own
+//-- way, and the whole sketch is repeatable.
+
+define ViewBox(0, 0, 400, 260);
+
+fn ring(name, r, seed) {
+  let g = PathLayer(name) \${ stroke: oklch(0.6 0.11 280); stroke-width: 1; fill: none; opacity: 0.65; };
+  g.apply {
+    let r0 = calc(r * (1 + hash11(0, seed) * 0.07));
+    M calc(200 + r0) 130
+    for (k in 1..64) {
+      let a = k / 64 * 2 * PI();
+      let rk = r * (1 + hash11(k, seed) * 0.07);
+      L calc(200 + rk * cos(a)) calc(130 + rk * sin(a))
+    }
+  }
+}
+
+for (i in 0..4) {
+  let radius = 28 + i * 20;
+  ring(\`ring-\${i}-a\`, radius, calc(i * 2));
+  ring(\`ring-\${i}-b\`, radius, calc(i * 2 + 1));
+}
+</code>
+  <img src="/blog/samples/post34/05-sketchy-circles.svg" alt="Two passes per ring at 65% opacity: where they agree the line darkens, where they disagree it feathers — a pencil, from one signed wobble and disciplined seeds." loading="lazy">
+</mini-workspace></p>
+<p>Two passes at 65% opacity is what sells the pencil: where the passes agree
+the line darkens, where they disagree it feathers. The whole effect is
+one signed wobble (<code>r * (1 + hash11(k, seed) * 0.07)</code>) plus disciplined
+seeds — pass A and pass B of ring 2 read decks 4 and 5, so no two strokes
+ever wobble in sync.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-hashrange"><code>hashRange</code></a> — when the drift should live in a
+min/max band instead of around a center.</li>
+<li><a href="/blog/primer-bump"><code>bump</code></a> — the smooth width profiles this post&#39;s
+example 4 jitters.</li>
+<li><a href="/blog/primer-noise"><code>noise</code></a> — when neighboring indices should <em>agree</em>
+instead of drifting independently.</li>
+<li>Reference: <a href="/docs#stdlib-hash-noise">Hash &amp; Noise docs</a>.</li>
+</ul>
+`,
+  'primer-hashrange': `<p><em>Part 3 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><a href="/blog/primer-hash01">hash01</a> — a random number that never changes its mind</li>
+<li><a href="/blog/primer-hash11">hash11</a> — the same dice, rolled between −1 and 1</li>
+<li><strong>hashRange</strong> (this post) — randomRange with a memory</li>
+<li><a href="/blog/primer-smoothstep">smoothstep</a> — the S-curve that turns a cliff into a ramp</li>
+<li><a href="/blog/primer-bump">bump</a> — a hill you can put anywhere</li>
+<li><a href="/blog/primer-noise">noise</a> — randomness with a smooth ride</li>
+<li><a href="/blog/primer-noise2">noise2</a> — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><code>hashRange(n, min, max, seed?)</code> picks a value between <code>min</code> and <code>max</code> —
+deterministically, keyed by the whole-number index <code>n</code>. It&#39;s
+<a href="/blog/primer-hash01"><code>hash01</code></a> scaled into your range:
+<code>min + hash01(n, seed) * (max - min)</code>, exactly.</p>
+<p>The pitch is the title of this post: <strong><code>randomRange</code> that keeps its word.</strong>
+Same idea, same feel, one extra argument — the index that pins the answer.
+<code>randomRange(4, 12)</code> re-rolls on every compile; <code>hashRange(i, 4, 12)</code> gives
+element <code>i</code> the same answer forever.</p>
+<p>One notation note: the result lives in <strong>[min, max)</strong> — it can land
+exactly on <code>min</code> and gets arbitrarily close to <code>max</code> without ever hitting
+it. In graphics you will never see the difference, and it has one genuinely
+useful consequence: <code>floor(hashRange(i, 0, 3))</code> divides <em>perfectly evenly</em>
+into buckets 0, 1, 2 — no edge case where the answer lands on 3.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Two reasons, one practical and one about how you think:</p>
+<ol>
+<li><strong>Migration.</strong> If your sketches are sprinkled with <code>randomRange</code> and
+you&#39;re tired of the artwork reshuffling every time you save, the
+rewrite is mechanical: add an index as the first argument, move on
+with your life.</li>
+<li><strong>Ranges read like a spec.</strong> <code>hashRange(i, 35, 125)</code> says &quot;buildings
+between 35 and 125 tall&quot; — the design intent is <em>in the call</em>.
+Tightening the numbers tightens the design; the ranges become the
+tuning panel for the whole piece.</li>
+</ol>
+<p>Everything about seeds, determinism, and integer truncation is inherited
+from <a href="/blog/primer-hash01"><code>hash01</code></a> — this post won&#39;t repeat it.</p>
+<h2>Example 1 — The drop-in swap</h2>
+<p>Both rows size 40 dots from the same 1.5-to-5 range. The top row asks
+<code>randomRange</code>; the bottom asks <code>hashRange</code> with the loop index in front.</p>
+<p><mini-workspace code-open caption="Forty dots sized from the same 1.5–5 range: randomRange above, hashRange(i, ...) below.">
+  <code>// viewBox="0 0 400 160"
+//-- The migration in one picture. Top row: dot sizes from
+//-- randomRange(1.5, 5) -- they reshuffle on every compile. Bottom row:
+//-- hashRange(i, 1.5, 5) -- same call shape with an index in front, and
+//-- the sizes are a fixture.
+
+define ViewBox(0, 0, 400, 160);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 26)\`randomRange(1.5, 5) — reshuffles every compile\`
+  text(22, 96)\`hashRange(i, 1.5, 5) — a fixture\`
+}
+
+let rolling = PathLayer('rolling') \${ fill: oklch(0.6 0.15 20); stroke: none; };
+rolling.apply {
+  for (i in 0..39) {
+    circle(calc(26 + i * 9), 50, calc(randomRange(1.5, 5)));
+  }
+}
+
+let pinned = PathLayer('pinned') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+pinned.apply {
+  for (i in 0..39) {
+    circle(calc(26 + i * 9), 120, calc(hashRange(i, 1.5, 5)));
+  }
+}
+</code>
+  <img src="/blog/samples/post35/01-drop-in-swap.svg" alt="Forty dots sized from the same 1.5–5 range: randomRange above, hashRange(i, ...) below." loading="lazy">
+</mini-workspace></p>
+<p>On the page they look equivalent — that&#39;s the point; you give up nothing
+visually. The difference is behavioral: <strong>paste this into the playground
+and recompile — the top row reshuffles while the bottom row doesn&#39;t
+move.</strong> (This is the one <code>randomRange</code> appearance in this post; the
+contrast is the lesson.)</p>
+<h2>Example 2 — Skyline</h2>
+<p>One range per design property. Building height comes from
+<code>hashRange(i, 35, 125)</code>, width from <code>hashRange(i, 10, 22, 1)</code>, and a
+subtle facade shade from a third stream.</p>
+<p><mini-workspace code-open caption="The two range calls ARE the spec: heights 35–125, widths 10–22. Edit the height line to (i, 50, 90) and the same code draws a suburb.">
+  <code>// viewBox="0 0 400 210"
+//-- A night skyline where the ranges read like a spec: buildings between
+//-- 35 and 125 tall, between 10 and 22 wide. Tighten either range and the
+//-- whole city changes character -- without touching the structure.
+
+define ViewBox(0, 0, 400, 210);
+
+let sky = PathLayer('sky') \${ fill: oklch(0.24 0.05 275); stroke: none; };
+sky.apply {
+  rect(15, 15, 370, 175);
+}
+
+let x = 20;
+for (i in 0..25) {
+  let w = hashRange(i, 10, 22, 1);
+  let h = hashRange(i, 35, 125);
+  let shade = Color(0.36 + hashRange(i, 0, 0.1, 2), 0.03, 275);
+  if (x + w &lt; 382) {
+    let tower = PathLayer(\`tower-\${i}\`) \${ fill: shade; stroke: none; };
+    tower.apply {
+      rect(x, calc(190 - h), w, h);
+    }
+  }
+  x = x + w + 3;
+}
+</code>
+  <img src="/blog/samples/post35/02-skyline.svg" alt="The two range calls ARE the spec: heights 35–125, widths 10–22. Edit the height line to (i, 50, 90) and the same code draws a suburb." loading="lazy">
+</mini-workspace></p>
+<p>Read the two range calls as the spec they are: &quot;heights 35–125, widths
+10–22.&quot; Now imagine editing just the height line to <code>(i, 50, 90)</code> — the
+towers even out and the same code draws a suburb. That&#39;s the tuning-panel
+idea: structure stays, character is in the numbers.</p>
+<h2>Example 3 — Confetti, spec&#39;d</h2>
+<p>Four properties, four ranges, four seeds — a complete scatter system in
+four lines: position (x, y), size, and hue.</p>
+<p><mini-workspace code-open caption="Four lines, four independent streams: x, y, radius, hue. Each range line is a design decision you can tighten or loosen without touching the others.">
+  <code>// viewBox="0 0 400 190"
+//-- Four ranges as a spec sheet: where (x, y), how big (r), what color
+//-- (hue). Each property reads its own seed; each range line is a design
+//-- decision you can tighten or loosen independently.
+
+define ViewBox(0, 0, 400, 190);
+
+for (i in 0..119) {
+  let cx = hashRange(i, 22, 378);
+  let cy = hashRange(i, 22, 168, 1);
+  let r = hashRange(i, 1.5, 5, 2);
+  let hue = hashRange(i, 0, 360, 3);
+  let c = Color(0.72, 0.16, hue);
+  let dot = PathLayer(\`confetti-\${i}\`) \${ fill: c; stroke: none; };
+  dot.apply {
+    circle(cx, cy, r);
+  }
+}
+</code>
+  <img src="/blog/samples/post35/03-confetti.svg" alt="Four lines, four independent streams: x, y, radius, hue. Each range line is a design decision you can tighten or loosen without touching the others." loading="lazy">
+</mini-workspace></p>
+<p>Two things worth copying. First, each property gets its <strong>own seed</strong>
+(0, 1, 2, 3) so streams stay independent — reusing a seed would correlate,
+say, size with hue. Second, notice every value is bound to a <code>let</code> before
+the drawing call. That&#39;s a readability choice, not a requirement (a
+<code>calc(...)</code> expression works directly in an argument) — but it&#39;s what
+makes the four lines read as a spec sheet.</p>
+<h2>Example 4 — Rain</h2>
+<p>Ranges can pick <em>categories</em>, not just quantities. Each of 80 streaks
+computes <code>floor(hashRange(i, 0, 3, 2))</code> — an even three-way pick — and the
+bucket routes it to a near, middle, or far layer with matching opacity.</p>
+<p><mini-workspace code-open caption="floor(hashRange(i, 0, 3, 2)) buckets every streak into exactly {0, 1, 2} with equal shares — the half-open range earning its keep. One population, three depth styles.">
+  <code>// viewBox="0 0 400 200"
+//-- Eighty slanted rain streaks. Position and length are ranged picks;
+//-- each streak also lands in one of three depth buckets --
+//-- floor(hashRange(i, 0, 3, 2)) picks 0, 1, or 2 -- and the bucket sets
+//-- the opacity, so the rain reads as near, middle, and far.
+
+define ViewBox(0, 0, 400, 200);
+
+let far = PathLayer('far') \${ stroke: oklch(0.6 0.05 260); stroke-width: 1; fill: none; opacity: 0.25; };
+let mid = PathLayer('mid') \${ stroke: oklch(0.65 0.06 260); stroke-width: 1.1; fill: none; opacity: 0.5; };
+let near = PathLayer('near') \${ stroke: oklch(0.72 0.07 260); stroke-width: 1.3; fill: none; opacity: 0.9; };
+
+far.apply {
+  for (i in 0..79) {
+    if (floor(hashRange(i, 0, 3, 2)) == 0) {
+      M calc(hashRange(i, 20, 375)) calc(hashRange(i, 18, 150, 1))
+      l 4 calc(hashRange(i, 8, 26, 3))
+    }
+  }
+}
+mid.apply {
+  for (i in 0..79) {
+    if (floor(hashRange(i, 0, 3, 2)) == 1) {
+      M calc(hashRange(i, 20, 375)) calc(hashRange(i, 18, 150, 1))
+      l 4 calc(hashRange(i, 8, 26, 3))
+    }
+  }
+}
+near.apply {
+  for (i in 0..79) {
+    if (floor(hashRange(i, 0, 3, 2)) == 2) {
+      M calc(hashRange(i, 20, 375)) calc(hashRange(i, 18, 150, 1))
+      l 4 calc(hashRange(i, 8, 26, 3))
+    }
+  }
+}
+</code>
+  <img src="/blog/samples/post35/04-rain.svg" alt="floor(hashRange(i, 0, 3, 2)) buckets every streak into exactly {0, 1, 2} with equal shares — the half-open range earning its keep. One population, three depth styles." loading="lazy">
+</mini-workspace></p>
+<p>This is the half-open range earning its keep: <code>[0, 3)</code> floors to exactly
+{0, 1, 2} with equal shares. The same loop runs in all three layers and
+each keeps only its own bucket — a common Pathogen pattern for &quot;one
+population, several styles.&quot;</p>
+<h2>Example 5 — Pebble beach</h2>
+<p>The finale is a tuning exercise. Four overlapping rows of pebbles, back to
+front; each pebble&#39;s width, squash, position, and warmth come from named
+ranges, and nearer rows draw from bigger width ranges.</p>
+<p><mini-workspace code-open caption="Four overlapping rows, back to front — width, squash, position, and warmth all named ranges, with nearer rows drawing from bigger ones.">
+  <code>// viewBox="0 88 400 152"
+//-- Four overlapping rows of pebbles, back to front. Every knob is a
+//-- named range: width, squash, and gray-warmth per pebble, with nearer
+//-- rows drawing from bigger ranges. Tuning the beach means tuning
+//-- ranges -- narrow one row's width range and the rows behind stay put.
+
+define ViewBox(0, 88, 400, 152);
+
+fn pebbleRow(row, y0, minW, maxW, count) {
+  for (i in 0..count) {
+    let idx = row * 100 + i;
+    let w = hashRange(idx, minW, maxW);
+    let h = w * hashRange(idx, 0.55, 0.75, 1);
+    let x = hashRange(idx, 18, 380 - maxW, 2);
+    let L = hashRange(idx, 0.45, 0.68, 3) + row * 0.04;
+    let warm = Color(L, 0.02, 75);
+    let stone = PathLayer(\`pebble-\${idx}\`) \${ fill: warm; stroke: none; };
+    stone.apply {
+      roundRect(x, calc(y0 - h), w, h, calc(h / 2));
+    }
+  }
+}
+
+pebbleRow(0, 120, 8, 18, 26);
+pebbleRow(1, 155, 10, 24, 22);
+pebbleRow(2, 192, 14, 32, 18);
+pebbleRow(3, 224, 18, 42, 14);
+</code>
+  <img src="/blog/samples/post35/05-pebble-beach.svg" alt="Four overlapping rows, back to front — width, squash, position, and warmth all named ranges, with nearer rows drawing from bigger ones." loading="lazy">
+</mini-workspace></p>
+<p>Here&#39;s the workflow this function buys you. Suppose the beach feels too
+busy: narrow the width range on the front row (<code>18, 42</code> → <code>24, 38</code>) and
+recompile. <strong>Every pebble in the rows behind stays exactly where it
+was.</strong> With <code>randomRange</code>, that one edit would have re-rolled the entire
+beach — you&#39;d be judging a different design, not your adjustment.
+Deterministic ranges turn tuning into a controlled experiment.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-hash01"><code>hash01</code></a> — the mechanics underneath (seeds,
+determinism, truncation).</li>
+<li><a href="/blog/primer-hash11"><code>hash11</code></a> — when the natural range is a symmetric
+±drift around a center.</li>
+<li><a href="/blog/primer-noise"><code>noise</code></a> — when neighboring picks should flow into
+each other instead of being independent.</li>
+<li>Reference: <a href="/docs#stdlib-hash-noise">Hash &amp; Noise docs</a>.</li>
+</ul>
+`,
+  'primer-noise': `<p><em>Part 6 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><a href="/blog/primer-hash01">hash01</a> — a random number that never changes its mind</li>
+<li><a href="/blog/primer-hash11">hash11</a> — the same dice, rolled between −1 and 1</li>
+<li><a href="/blog/primer-hashrange">hashRange</a> — randomRange with a memory</li>
+<li><a href="/blog/primer-smoothstep">smoothstep</a> — the S-curve that turns a cliff into a ramp</li>
+<li><a href="/blog/primer-bump">bump</a> — a hill you can put anywhere</li>
+<li><strong>noise</strong> (this post) — randomness with a smooth ride</li>
+<li><a href="/blog/primer-noise2">noise2</a> — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><a href="/blog/primer-hash01"><code>hash01</code></a> rolls dice. <code>noise(x, seed?)</code> draws the
+smooth curve <em>through</em> the dice rolls.</p>
+<p>The mental model is <strong>pins and a glide</strong>. At every whole number there&#39;s a
+pin at a random height — in fact, exactly the <code>hash01</code> of that number:
+<code>noise(3)</code> <em>equals</em> <code>hash01(3)</code>, precisely. Between pins, the curve glides
+using the same S-shaped ease as <a href="/blog/primer-smoothstep"><code>smoothstep</code></a>,
+flattening as it touches each pin. So the result is never jumpy and never
+cornered: continuous randomness you can drive along without the wheels
+leaving the road. Answers stay in [0, 1), seeds pick independent pin
+sequences, and negative <code>x</code> works fine.</p>
+<p>The one knob that matters is <strong>input scale = frequency</strong>: <code>noise(t * 8)</code>
+passes 8 pins while <code>t</code> goes 0→1, so it wobbles 8 times as fast as
+<code>noise(t)</code>. You don&#39;t configure the character of the wobble — you just
+drive faster or slower past the pins.</p>
+<p>One difference from its integer cousin: as part 1 noted, the hash shrugs
+at weird input (anything non-finite is treated as label 0) — but <code>noise</code>
+assumes you&#39;re driving along a real road. Feed it Infinity or NaN and you
+get NaN back.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Whenever <em>neighbors should agree</em>. Hashed randomness gives each index its
+own unrelated answer — perfect for scatter, wrong for anything that should
+feel like one continuous thing. Surfaces, edges, paths, lighting, and
+motion all read as organic only when nearby samples rise and fall
+together. <code>noise</code> is that agreement, with the amount of change per unit
+distance under your control.</p>
+<h2>Example 1 — The curve through the dice</h2>
+<p>The exact relationship, plotted. Dots mark <code>hash01(k)</code> at the whole
+numbers 0 through 8; the curve is <code>noise(x)</code> sampled 160 times across the
+same span.</p>
+<p><mini-workspace code-open caption="The curve doesn't approximate the dots — it passes exactly through every one, because at whole numbers noise IS hash01. And it arrives flat at every pin, courtesy of the smoothstep glide.">
+  <code>// viewBox="0 0 400 190"
+//-- The relationship in one picture: dots mark hash01(k) at every whole
+//-- number 0..8; the curve is noise(x) sampled finely across the same
+//-- span. The curve threads EXACTLY through every dot -- and flattens as
+//-- it touches each one.
+
+define ViewBox(0, 0, 400, 190);
+
+let axis = PathLayer('axis') \${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M 30 155 L 370 155
+}
+
+let curve = PathLayer('noise-curve') \${ stroke: oklch(0.68 0.13 200); stroke-width: 2; fill: none; };
+curve.apply {
+  M 30 calc(155 - noise(0) * 115)
+  for (i in 1..160) {
+    let x = i / 160 * 8;
+    L calc(30 + x * 42.5) calc(155 - noise(x) * 115)
+  }
+}
+
+let pins = PathLayer('hash-pins') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+pins.apply {
+  for (k in 0..8) {
+    circle(calc(30 + k * 42.5), calc(155 - hash01(k) * 115), 3);
+  }
+}
+
+//-- Legend tinted to match the geometry.
+let legendDots = TextLayer('legend-dots') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.15 260); text-anchor: start; };
+legendDots.apply { text(30, 26)\`dots: hash01(k) at whole numbers\` }
+let legendCurve = TextLayer('legend-curve') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.72 0.13 200); text-anchor: start; };
+legendCurve.apply { text(230, 26)\`curve: noise(x)\` }
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(28, 172)\`0\`
+  text(360, 172)\`8\`
+}
+
+let scene = GroupLayer('scene') \${};
+scene.append(axis, curve, pins, legendDots, legendCurve, labels);
+</code>
+  <img src="/blog/samples/post38/01-curve-through-dice.svg" alt="The curve doesn't approximate the dots — it passes exactly through every one, because at whole numbers noise IS hash01. And it arrives flat at every pin, courtesy of the smoothstep glide." loading="lazy">
+</mini-workspace></p>
+<p>The curve doesn&#39;t approximate the dots — it passes <em>exactly</em> through
+every one, because at whole numbers <code>noise</code> <strong>is</strong> <code>hash01</code>. And watch how
+it arrives: flat at every pin, courtesy of the smoothstep glide. Those two
+facts are the entire function.</p>
+<h2>Example 2 — The frequency knob</h2>
+<p>Three wandering lines, one seed, three input scales: <code>t*3</code>, <code>t*6</code>,
+<code>t*12</code>.</p>
+<p><mini-workspace code-open caption="Slow swells, undulation, chatter — the whole personality range is multiplication on the input. (The slow line also LOOKS lower-amplitude: crossing only three pins, it rarely reaches the range extremes.)">
+  <code>// viewBox="0 0 400 230"
+//-- One knob controls the character: the input scale. noise(t * 3) passes
+//-- 3 pins while t crosses 0..1 -- slow swells. noise(t * 6) undulates.
+//-- noise(t * 12) chatters. Same function, same seed, different speed
+//-- past the pins.
+
+define ViewBox(0, 0, 400, 230);
+
+fn wander(name, y0, freq, hue) {
+  let c = Color(0.65, 0.13, hue);
+  let line = PathLayer(name) \${ stroke: c; stroke-width: 1.8; fill: none; };
+  line.apply {
+    M 30 calc(y0 - noise(0) * 34)
+    for (i in 1..120) {
+      let t = i / 120;
+      L calc(30 + t * 340) calc(y0 - noise(t * freq) * 34)
+    }
+  }
+}
+
+//-- Note: the slow line also LOOKS smaller in amplitude -- crossing only
+//-- 3 pins, it rarely reaches the range extremes. That's frequency, not a
+//-- different amplitude setting.
+wander('swells', 70, 3, 260);
+wander('undulating', 140, 6, 200);
+wander('chattering', 210, 12, 150);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(30, 27)\`noise(t * 3)\`
+  text(30, 94)\`noise(t * 6)\`
+  text(30, 164)\`noise(t * 12)\`
+}
+</code>
+  <img src="/blog/samples/post38/02-frequency-knob.svg" alt="Slow swells, undulation, chatter — the whole personality range is multiplication on the input. (The slow line also LOOKS lower-amplitude: crossing only three pins, it rarely reaches the range extremes.)" loading="lazy">
+</mini-workspace></p>
+<p>Slow swells, undulation, chatter — the whole personality range is
+multiplication on the input. No settings, no modes. When something
+noise-driven feels too busy or too sleepy, tune the factor, nothing else.
+(One perceptual note: the slow line also <em>looks</em> smaller in amplitude —
+crossing only three pins, it rarely reaches the range extremes. That&#39;s
+frequency at work, not a different amplitude setting.)</p>
+<h2>Example 3 — Smooth color</h2>
+<p>The same randomness source, sampled two ways. Both rows color 60 bars by
+lightness; the top asks <code>hash01(i)</code>, the bottom asks <code>noise(i * 0.15)</code>.</p>
+<p><mini-workspace code-open caption="Sixty bars colored by lightness, twice: hash01(i) above, noise(i · 0.15) below.">
+  <code>// viewBox="0 0 400 180"
+//-- Same randomness source, sampled two ways. Top: each bar's lightness
+//-- is hash01(i) -- neighbors are strangers, it reads as static. Bottom:
+//-- lightness is noise(i * 0.15) -- neighbors agree, it reads as light
+//-- moving across a surface.
+
+define ViewBox(0, 0, 400, 180);
+
+for (i in 0..59) {
+  let Lh = 0.3 + hash01(i) * 0.5;
+  let ch = Color(Lh, 0.05, 260);
+  let barH = PathLayer(\`static-\${i}\`) \${ fill: ch; stroke: none; };
+  barH.apply {
+    rect(calc(24 + i * 5.9), 34, 5.4, 50);
+  }
+
+  let Ln = 0.3 + noise(i * 0.15) * 0.5;
+  let cn = Color(Ln, 0.05, 260);
+  let barN = PathLayer(\`smooth-\${i}\`) \${ fill: cn; stroke: none; };
+  barN.apply {
+    rect(calc(24 + i * 5.9), 112, 5.4, 50);
+  }
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(24, 26)\`hash01(i) — per-bar strangers\`
+  text(24, 104)\`noise(i * 0.15) — neighbors agree\`
+}
+</code>
+  <img src="/blog/samples/post38/03-smooth-color.svg" alt="Sixty bars colored by lightness, twice: hash01(i) above, noise(i · 0.15) below." loading="lazy">
+</mini-workspace></p>
+<p>Top: neighbors are strangers — it reads as static. Bottom: each bar sits
+0.15 of the way to the next pin from its neighbor, so consecutive bars
+<em>agree</em> — and the row reads as light moving across one surface. Same
+determinism, same range; the only change is sampling with a glide.</p>
+<h2>Example 4 — A stroke with texture</h2>
+<p>Every ingredient so far on one ribbon (machinery glossed in
+<a href="/blog/primer-hash11">part 2</a>). The width is <code>(2 + noise(t*6) * 13)</code> —
+organic undulation — times the <a href="/blog/primer-smoothstep"><code>smoothstep</code></a>
+end-window <code>smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t)</code>, which eases
+both tips to a point.</p>
+<p><mini-workspace code-open caption="From the inside out: noise(t·6) is the texture, 2 + keeps a minimum body, · 13 sets the amplitude, and the end-window lets the ribbon enter and exit cleanly. Adjacent stops cooperate — that's texture, not jitter.">
+  <code>// viewBox="0 0 400 130"
+//-- Everything so far, on one ribbon: noise drives the width for organic
+//-- undulation, and a smoothstep end-window eases both tips to a point.
+//-- Width = (2 + noise(t*6) * 13) * smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t).
+
+define ViewBox(0, 0, 400, 130);
+
+let mk = {|vo, pb|
+  vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+  for (i in 0..63) {
+    let t = i / 63;
+    let amp = smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t);
+    let w = (2 + noise(t * 6) * 13) * amp;
+    vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+  }
+  vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+};
+
+let spine = @{ l 340 0 };
+let rib = spine.compoundVariableOffset() &lt;&lt; mk;
+
+let band = PathLayer('textured') \${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.92; };
+band.apply {
+  M calc(30 + rib.anchor.x) calc(72 + rib.anchor.y)
+  rib.draw();
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(30, 27)\`width = (2 + noise(t·6) · 13) × end-window\`
+}
+</code>
+  <img src="/blog/samples/post38/04-textured-stroke.svg" alt="From the inside out: noise(t·6) is the texture, 2 + keeps a minimum body, · 13 sets the amplitude, and the end-window lets the ribbon enter and exit cleanly. Adjacent stops cooperate — that's texture, not jitter." loading="lazy">
+</mini-workspace></p>
+<p>Walk the width line from the inside out: <code>noise(t*6)</code> is the texture
+(frequency 6 — moderate undulation), <code>2 +</code> keeps a minimum body, <code>* 13</code>
+sets the amplitude, and the end-window multiplies the whole thing so the
+ribbon enters and exits cleanly. Compare the shimmer of
+<a href="/blog/primer-hash11"><code>hash11</code></a>&#39;s jittered ribbon: there, adjacent stops
+disagree on purpose; here they cooperate — that&#39;s the whole difference
+between <em>jitter</em> and <em>texture</em>.</p>
+<h2>Example 5 — Parallax ridges</h2>
+<p>A finished scene from seeds and frequencies. Four filled ridgelines, back
+to front — each its own seeded stream, with nearer ridges darker, with
+bigger swings and finer detail. The front ridge stacks <strong>two</strong> streams: a
+slow, tall one for shape plus a fast, quiet one for detail.</p>
+<p><mini-workspace code-open caption="Four seeded ridgelines, back to front — the front one stacks a slow, tall stream with a fast, quiet one.">
+  <code>// viewBox="0 0 400 250"
+//-- Four mountain ridgelines, back to front. Each ridge is one seeded
+//-- noise stream; nearer ridges are darker, taller, and busier. The front
+//-- ridge stacks two streams -- a slow tall one plus a fast quiet one --
+//-- for detail on top of shape.
+
+define ViewBox(0, 0, 400, 250);
+
+fn ridge(name, baseY, seed, freq, amp, L) {
+  let c = Color(L, 0.06, 265);
+  let hill = PathLayer(name) \${ fill: c; stroke: none; };
+  hill.apply {
+    M 15 235
+    L 15 calc(baseY - noise(0, seed) * amp)
+    for (i in 1..140) {
+      let t = i / 140;
+      L calc(15 + t * 370) calc(baseY - noise(t * freq, seed) * amp)
+    }
+    L 385 235
+    Z
+  }
+}
+
+ridge('far', 105, 1, 3, 40, 0.72);
+ridge('middle', 135, 2, 4, 48, 0.58);
+ridge('near', 170, 3, 5, 55, 0.44);
+
+//-- Front ridge: slow + tall stacked with fast + quiet.
+let front = PathLayer('front') \${ fill: oklch(0.3 0.06 265); stroke: none; };
+front.apply {
+  M 15 235
+  let h0 = noise(0, 4) * 55 + noise(0, 5) * 12;
+  L 15 calc(205 - h0)
+  for (i in 1..140) {
+    let t = i / 140;
+    let h = noise(t * 3, 4) * 55 + noise(t * 9, 5) * 12;
+    L calc(15 + t * 370) calc(205 - h)
+  }
+  L 385 235
+  Z
+}
+</code>
+  <img src="/blog/samples/post38/05-parallax-ridges.svg" alt="Four seeded ridgelines, back to front — the front one stacks a slow, tall stream with a fast, quiet one." loading="lazy">
+</mini-workspace></p>
+<p>That stacking line — <code>noise(t*3, 4) * 55 + noise(t*9, 5) * 12</code> — is a
+technique worth naming: big slow waves carry the form, small fast waves
+carry the texture, and adding them gives you both at once. Graphics people
+call the layers <em>octaves</em> and build entire terrains this way — now you can
+too, and the whole scene stays as reproducible as everything else in this
+series: same seeds, same mountains, every compile. To turn these
+ridgelines into fog, water, or anything else that varies in <em>two</em>
+directions, you need the second dimension — that&#39;s
+<a href="/blog/primer-noise2"><code>noise2</code></a>.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-noise2"><code>noise2</code></a> — the same idea spread across a surface.</li>
+<li><a href="/blog/primer-hash01"><code>hash01</code></a> — the pins themselves.</li>
+<li><a href="/blog/primer-smoothstep"><code>smoothstep</code></a> — the glide between them.</li>
+<li>Reference: <a href="/docs#stdlib-hash-noise">Hash &amp; Noise docs</a>.</li>
+</ul>
+`,
+  'primer-noise2': `<p><em>Part 7 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><a href="/blog/primer-hash01">hash01</a> — a random number that never changes its mind</li>
+<li><a href="/blog/primer-hash11">hash11</a> — the same dice, rolled between −1 and 1</li>
+<li><a href="/blog/primer-hashrange">hashRange</a> — randomRange with a memory</li>
+<li><a href="/blog/primer-smoothstep">smoothstep</a> — the S-curve that turns a cliff into a ramp</li>
+<li><a href="/blog/primer-bump">bump</a> — a hill you can put anywhere</li>
+<li><a href="/blog/primer-noise">noise</a> — randomness with a smooth ride</li>
+<li><strong>noise2</strong> (this post) — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><a href="/blog/primer-noise"><code>noise</code></a> wanders along a line. <code>noise2(x, y, seed?)</code>
+spreads the same smooth randomness across a <strong>surface</strong> — fog, terrain,
+water, or &quot;many strokes that agree with their neighbors.&quot;</p>
+<p>Extend the pins model to a <strong>pegboard</strong>: random heights pinned at every
+whole-number grid corner. Anywhere inside a cell, the answer smoothly
+mixes the four surrounding corner pins — nearer corners count more. That
+one sentence is the whole mechanism. As with 1D noise, the mixing uses the
+flat-arriving <a href="/blog/primer-smoothstep"><code>smoothstep</code></a> glide, so the field
+has no seams, and answers stay in [0, 1).</p>
+<p>The second coordinate wears three costumes in practice:</p>
+<ol>
+<li><strong>A real y</strong> — you&#39;re sampling an actual 2D field (fog, terrain).</li>
+<li><strong>A layer index</strong> — line or layer <code>j</code> samples row <code>j * someScale</code>, so
+siblings stay <em>coherent</em>: neighbors in the stack sample neighboring
+rows of one field.</li>
+<li><strong>A phase/time</strong> — slide <code>y</code> slowly to animate a 1D wobble. (Worth
+knowing about; not built in these examples.)</li>
+</ol>
+<p>One honesty note: this is the simple corner-value kind of noise, not the
+fancier &quot;Perlin&quot; kind that stores slopes at the pins. At large scales you
+can spot faint row-and-column grain in it; at the scales in this post, you
+won&#39;t.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Whenever smooth randomness needs to vary in <em>two</em> directions at once —
+across a grid of cells, over the area of a texture, or <strong>across a family
+of related strokes</strong>. That last one is the sleeper use: give each stroke
+in a stack its own row of one shared field and the whole stack starts
+behaving like a single surface. It&#39;s the difference between sixteen
+strokes that shimmer independently and one glow that flows.</p>
+<h2>Example 1 — Fog on a grid</h2>
+<p>The 2D field made visible, against its opposite. Both panels shade a
+16×16 grid from the same palette; the left asks <code>hash01</code> of each cell&#39;s
+index, the right asks <code>noise2</code> of each cell&#39;s position.</p>
+<p><mini-workspace code-open caption="One palette, two samplers: hash01 of the cell index (left) versus noise2 of the cell position (right).">
+  <code>// viewBox="0 0 400 220"
+//-- Two shaded grids, same size, same palette. Left: each cell's shade is
+//-- hash01 of its index -- TV static. Right: noise2 of its (col, row)
+//-- position scaled down -- cloudy patches. Neighboring cells agree in
+//-- BOTH directions.
+
+define ViewBox(0, 0, 400, 220);
+
+//-- Shades are bucketed into 16 layers per panel (not one per cell) to
+//-- keep the SVG lean -- fine enough that the stepping doesn't read as
+//-- banding.
+fn panel(prefix, x0, useNoise) {
+  for (b in 0..15) {
+    let L = 0.28 + b * 0.0325;
+    let c = Color(L, 0.04, 265);
+    let bucketLayer = PathLayer(\`\${prefix}-b\${b}\`) \${ fill: c; stroke: none; };
+    bucketLayer.apply {
+      for (row in 0..15) {
+        for (col in 0..15) {
+          let v = 0;
+          if (useNoise == 1) {
+            v = noise2(col * 0.22, row * 0.22);
+          }
+          if (useNoise == 0) {
+            v = hash01(row * 16 + col);
+          }
+          if (floor(v * 16) == b) {
+            rect(calc(x0 + col * 10.3), calc(40 + row * 10.3), 9.8, 9.8);
+          }
+        }
+      }
+    }
+  }
+}
+
+panel('static', 22, 0);
+panel('fog', 208, 1);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 28)\`hash01(idx) — static\`
+  text(208, 28)\`noise2(col·0.22, row·0.22) — fog\`
+}
+</code>
+  <img src="/blog/samples/post39/01-fog-grid.svg" alt="One palette, two samplers: hash01 of the cell index (left) versus noise2 of the cell position (right)." loading="lazy">
+</mini-workspace></p>
+<p>Static versus weather. In the right panel, every cell agrees with its
+neighbors <em>up, down, left, and right</em> — that&#39;s the &quot;nearer corners count
+more&quot; mixing at work. (Implementation note: the shades are bucketed into
+sixteen layers instead of one layer per cell — a useful economy whenever a
+grid gets large.)</p>
+<h2>Example 2 — Swelling dot field</h2>
+<p>Sampling the field at each element&#39;s own position. A 30×17 dot grid where
+each radius is <code>0.6 + 3 * noise2(col * 0.12, row * 0.12)</code>.</p>
+<p><mini-workspace code-open caption="Sizes swell in blobs like rain intensity across pavement. The · 0.12 on both coordinates is the frequency knob in 2D — smaller factors, bigger weather systems.">
+  <code>// viewBox="0 0 400 220"
+//-- A 30 x 17 dot grid where each dot's radius samples the field at its
+//-- own position: 0.6 + 3 * noise2(col * 0.12, row * 0.12). Sizes swell
+//-- in blobs, like rain intensity across pavement.
+
+define ViewBox(0, 0, 400, 220);
+
+let dots = PathLayer('field') \${ fill: oklch(0.66 0.14 220); stroke: none; };
+dots.apply {
+  for (row in 0..16) {
+    for (col in 0..29) {
+      let v = noise2(col * 0.12, row * 0.12);
+      circle(calc(26 + col * 12), calc(38 + row * 10.2), calc(0.6 + 3 * v));
+    }
+  }
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(26, 27)\`radius = 0.6 + 3 · noise2(col·0.12, row·0.12)\`
+}
+</code>
+  <img src="/blog/samples/post39/02-dot-field.svg" alt="Sizes swell in blobs like rain intensity across pavement. The · 0.12 on both coordinates is the frequency knob in 2D — smaller factors, bigger weather systems." loading="lazy">
+</mini-workspace></p>
+<p>The sizes swell in blobs, like rain intensity across pavement. The
+<code>* 0.12</code> on both coordinates is the
+<a href="/blog/primer-noise">frequency knob</a> in 2D: smaller factors give bigger
+weather systems, larger factors give choppier ones — tune it exactly as
+you did in part 6.</p>
+<h2>Example 3 — Rows of one field</h2>
+<p>The layer-index costume, and the visual argument for this function&#39;s
+existence. Left: line <code>j</code> samples <code>noise2(t*4, j*0.3)</code> — twelve rows of
+<em>one field</em>, so neighboring lines rise and fall together and the stack
+reads as a flowing sheet. Right: the same twelve lines with independent
+1D streams — they ignore each other.</p>
+<p><mini-workspace code-open caption="Twelve lines twice: rows of one noise2 field (left) versus independent noise seeds (right).">
+  <code>// viewBox="0 0 400 230"
+//-- The layer-index trick. Left stack: line j samples noise2(t*4, j*0.3)
+//-- -- rows of ONE field, so neighboring lines rise and fall together and
+//-- the stack reads as a flowing sheet. Right stack: each line gets its
+//-- own independent 1D stream -- the lines ignore each other.
+
+define ViewBox(0, 0, 400, 230);
+
+fn strandCoherent(name, y0, j) {
+  let line = PathLayer(name) \${ stroke: oklch(0.66 0.14 220); stroke-width: 1.3; fill: none; };
+  line.apply {
+    M 22 calc(y0 - noise2(0, j * 0.3) * 26)
+    for (i in 1..56) {
+      let t = i / 56;
+      L calc(22 + t * 165) calc(y0 - noise2(t * 4, j * 0.3) * 26)
+    }
+  }
+}
+
+fn strandIndependent(name, y0, j) {
+  let line = PathLayer(name) \${ stroke: oklch(0.62 0.1 300); stroke-width: 1.3; fill: none; };
+  line.apply {
+    M 213 calc(y0 - noise(0, j) * 26)
+    for (i in 1..56) {
+      let t = i / 56;
+      L calc(213 + t * 165) calc(y0 - noise(t * 4, j) * 26)
+    }
+  }
+}
+
+for (j in 0..11) {
+  let y = 62 + j * 13;
+  strandCoherent(\`sheet-\${j}\`, y, j);
+  strandIndependent(\`solo-\${j}\`, y, j);
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 26)\`noise2(t·4, j·0.3) — one field\`
+  text(213, 26)\`noise(t·4, j) — independent seeds\`
+}
+</code>
+  <img src="/blog/samples/post39/03-rows-of-field.svg" alt="Twelve lines twice: rows of one noise2 field (left) versus independent noise seeds (right)." loading="lazy">
+</mini-workspace></p>
+<p>The only difference between the stacks is where the second number goes:
+<code>noise2(t*4, j*0.3)</code> versus <code>noise(t*4, j)</code>. As a <em>coordinate</em>, <code>j</code> puts
+the lines on the same continuous surface; as a <em>seed</em>, it isolates them.
+Choosing between those two spellings is choosing between coherence and
+independence.</p>
+<h2>Example 4 — Warp a grid</h2>
+<p>Displacement: two fields make a push direction. Every vertex of a ruled
+grid moves horizontally by field 0 and vertically by field 1 —
+<code>(noise2(x, y) - 0.5) * 14</code> each way (the <code>- 0.5</code> recenters [0,1) into a
+signed push, the same remap trick from <a href="/blog/primer-hash11"><code>hash11</code></a>).</p>
+<p><mini-workspace code-open caption="Two smooth fields make a push direction — neighboring vertices get nearly the same push, so the rules bend instead of scattering. The doorway to flow fields, fabric, and water.">
+  <code>// viewBox="0 0 400 230"
+//-- Displacement: two fields make a push direction. Every vertex of a
+//-- ruled grid moves by ((noise2(x,y) - 0.5) * 14, (noise2(x,y,1) - 0.5) * 14)
+//-- -- the default field pushes horizontally, the seed-1 field vertically.
+//-- The low frequency (0.14) keeps neighboring vertices agreeing, so the
+//-- grid billows like a flag instead of crumpling.
+
+define ViewBox(0, 0, 400, 230);
+
+fn warpX(gx, gy) {
+  return (noise2(gx * 0.14, gy * 0.14) - 0.5) * 14;
+}
+fn warpY(gx, gy) {
+  return (noise2(gx * 0.14, gy * 0.14, 1) - 0.5) * 14;
+}
+
+let grid = PathLayer('warped-grid') \${ stroke: oklch(0.64 0.12 200); stroke-width: 1; fill: none; };
+grid.apply {
+  //-- Horizontal rules
+  for (gy in 0..12) {
+    let x0 = calc(30 + warpX(0, gy));
+    let y0 = calc(28 + gy * 14.5 + warpY(0, gy));
+    M x0 y0
+    for (gx in 1..24) {
+      let x = calc(30 + gx * 14.2 + warpX(gx, gy));
+      let y = calc(28 + gy * 14.5 + warpY(gx, gy));
+      L x y
+    }
+  }
+  //-- Vertical rules
+  for (gx in 0..24) {
+    let x0 = calc(30 + gx * 14.2 + warpX(gx, 0));
+    let y0 = calc(28 + warpY(gx, 0));
+    M x0 y0
+    for (gy in 1..12) {
+      let x = calc(30 + gx * 14.2 + warpX(gx, gy));
+      let y = calc(28 + gy * 14.5 + warpY(gx, gy));
+      L x y
+    }
+  }
+}
+</code>
+  <img src="/blog/samples/post39/04-warp-grid.svg" alt="Two smooth fields make a push direction — neighboring vertices get nearly the same push, so the rules bend instead of scattering. The doorway to flow fields, fabric, and water." loading="lazy">
+</mini-workspace></p>
+<p>The grid billows like a flag because both displacement fields are smooth:
+neighboring vertices get nearly the same push, so the rules bend instead
+of scattering. Warping positions through a pair of fields like this is
+the doorway to flow fields, fabric, and water — all &quot;move everything, but
+smoothly, and differently everywhere.&quot;</p>
+<h2>Example 5 — The flowing glow</h2>
+<p>The series finale, combining five posts. Twelve glow layers whose width
+profile is <a href="/blog/primer-bump"><code>bump</code></a> algebra, each multiplied by a
+texture factor <code>1 + (noise2(t*6, k*0.3) - 0.5) * 0.9</code> — with <code>t</code> running
+along the stroke and layer index <code>k</code> running <em>across</em> the field.</p>
+<p><mini-workspace code-open caption="One noise2 field textures all twelve layers: t along the stroke, k · 0.3 across the stack.">
+  <code>// viewBox="0 78 400 103"
+//-- The series finale: bump-shaped widths (part 5) textured by ONE
+//-- noise2 field. t runs along the stroke; layer * 0.3 runs across the
+//-- layers. Because the field is continuous in both directions,
+//-- neighboring layers sample neighboring rows -- and the whole glow
+//-- flows as one surface instead of shimmering.
+
+define ViewBox(0, 78, 400, 103);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.72 0.14 20);
+
+for (k in 12..1) {
+  let texture = {|t| return 1 + (noise2(t * 6, k * 0.3) - 0.5) * 0.9; };
+  let mk = {|vo, pb|
+    vo.startCap(taperCap);
+    for (i in 0..47) {
+      let t = i / 47;
+      let w = (0.15 * k
+            + 0.6 * k * bump(t, 0.35, 0.3)
+            + 0.35 * k * pow(bump(t, 0.78, 0.18), 2)) * texture(t);
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(taperCap);
+  };
+  let halo = spine.compoundVariableOffset() &lt;&lt; mk;
+
+  let haloColor = base.hueShift(calc(k * -6));
+  let haloLayer = PathLayer(\`halo-\${k}\`) \${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}
+</code>
+  <img src="/blog/samples/post39/05-flowing-glow.svg" alt="One noise2 field textures all twelve layers: t along the stroke, k · 0.3 across the stack." loading="lazy">
+</mini-workspace></p>
+<p>This series has now built the same glow three ways, and the differences
+are the lesson. <a href="/blog/primer-bump"><code>bump</code></a>&#39;s finale is clean
+architecture — smooth swells, nothing else.
+<a href="/blog/primer-hash11"><code>hash11</code></a>&#39;s ±wobble would make it shimmer, every
+stop independent. This one makes it <strong>flow</strong>: watch the striations —
+neighboring layers swell <em>together</em> as one surface, because everything
+samples one continuous field. One argument&#39;s costume change (seed → row
+coordinate) is the entire difference between shimmer and weather.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-noise"><code>noise</code></a> — the 1D story: pins, glide, frequency.</li>
+<li><a href="/blog/primer-bump"><code>bump</code></a> — the width profiles under this finale&#39;s
+texture.</li>
+<li><a href="/blog/primer-hash01"><code>hash01</code></a> — the 1D pins. (noise2&#39;s corners hash
+<em>both</em> coordinates as a pair, so there&#39;s no direct <code>hash01</code> equivalence
+in 2D — the exact-identity story is a 1D privilege.)</li>
+<li>Reference: <a href="/docs#stdlib-hash-noise">Hash &amp; Noise docs</a> — and that&#39;s
+the series. Seven functions, one promise: randomness, smoothness, and
+shape you can direct, tune, and ship.</li>
+</ul>
+`,
+  'primer-smoothstep': `<p><em>Part 4 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><a href="/blog/primer-hash01">hash01</a> — a random number that never changes its mind</li>
+<li><a href="/blog/primer-hash11">hash11</a> — the same dice, rolled between −1 and 1</li>
+<li><a href="/blog/primer-hashrange">hashRange</a> — randomRange with a memory</li>
+<li><strong>smoothstep</strong> (this post) — the S-curve that turns a cliff into a ramp</li>
+<li><a href="/blog/primer-bump">bump</a> — a hill you can put anywhere</li>
+<li><a href="/blog/primer-noise">noise</a> — randomness with a smooth ride</li>
+<li><a href="/blog/primer-noise2">noise2</a> — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><code>smoothstep(edge0, edge1, x)</code> is a <strong>dimmer between two markers</strong>. As <code>x</code>
+travels from <code>edge0</code> to <code>edge1</code>, the answer glides from 0 up to 1. Outside
+the window it just holds: 0 before, 1 after — it <em>saturates</em>, never
+overshooting in either direction.</p>
+<p>What makes it special is the shape of the glide. It&#39;s an S-curve whose
+slope is <strong>zero at both ends</strong> — it leaves the floor flat and arrives at
+the ceiling flat. (The math name is a Hermite curve; all you need is the
+flat-at-both-ends part.) That flatness is why things driven by
+<code>smoothstep</code> never kink: whatever you attach to it — a size, a color, a
+width — eases out of &quot;off&quot; and eases into &quot;on.&quot;</p>
+<p>Two idioms are worth learning as vocabulary:</p>
+<ul>
+<li><strong>Reversed markers run the ramp downhill.</strong> <code>smoothstep(1.0, 0.6, t)</code>
+fades from 1 down to 0 as <code>t</code> climbs through 0.6→1.0. (Shader languages
+leave this case undefined; Pathogen defines and tests it.)</li>
+<li><strong>The plateau: uphill × downhill = a flat-topped window.</strong>
+<code>smoothstep(0.1, 0.3, t) * smoothstep(0.9, 0.7, t)</code> rises, holds at 1,
+and falls — the standard way to build &quot;on in the middle, off at the
+ends.&quot;</li>
+</ul>
+<p>One gentle warning: keep the markers apart. <code>smoothstep(e, e, x)</code> collapses
+to a hard step (and exactly <em>at</em> the shared edge, the math divides zero by
+zero and answers NaN).</p>
+<h2>Why you&#39;d use it</h2>
+<p>Every time a hard boundary looks mechanical: fading elements in near an
+edge, easing a stroke width to zero at its tips, blending two colors
+across a horizon, weighting anything by &quot;how far into this zone are we?&quot;
+It replaces both the <code>if (x &gt; threshold)</code> cliff <em>and</em> the straight-line
+ramp with something that reads as designed. And like everything in this
+series, it&#39;s a pure function of its inputs — the fades you tune today
+render identically on every future compile. It&#39;s also the workhorse under
+two of its siblings: <a href="/blog/primer-bump"><code>bump</code></a> is a hill built from the
+same easing idea, and <a href="/blog/primer-noise"><code>noise</code></a> uses this exact glide
+between its random pins.</p>
+<h2>Example 1 — Cliff, ramp, S-curve</h2>
+<p>Three ways from 0 to 1 across the same window. The dashed line is a hard
+step. The thin line is a straight ramp. The bold line is <code>smoothstep</code>.</p>
+<p><mini-workspace code-open caption="Three routes across the 0.3–0.7 window: hard step (dashed), straight ramp (thin), smoothstep (bold).">
+  <code>// viewBox="0 0 400 200"
+//-- Three ways to get from 0 to 1 across the window 0.3..0.7: a hard step
+//-- (cliff), a straight lerp-style ramp, and smoothstep -- the S-curve
+//-- that leaves the floor flat and arrives at the ceiling flat.
+
+define ViewBox(0, 0, 400, 200);
+
+let plotX = 50;
+let plotW = 300;
+let plotY = 150;
+let plotH = 90;
+
+let axis = PathLayer('axis') \${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+//-- Hard step: 0 before the midpoint of the window, 1 after.
+let cliff = PathLayer('cliff') \${ stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; };
+cliff.apply {
+  M plotX plotY
+  L calc(plotX + plotW * 0.5) plotY
+  L calc(plotX + plotW * 0.5) calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+//-- Straight ramp across the window.
+let ramp = PathLayer('ramp') \${ stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; };
+ramp.apply {
+  M plotX plotY
+  L calc(plotX + plotW * 0.3) plotY
+  L calc(plotX + plotW * 0.7) calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+//-- The S-curve.
+let scurve = PathLayer('smoothstep') \${ stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; };
+scurve.apply {
+  M plotX plotY
+  for (i in 1..96) {
+    let t = i / 96;
+    let s = smoothstep(0.3, 0.7, t);
+    L calc(plotX + plotW * t) calc(plotY - plotH * s)
+  }
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(50, 176)\`0\`
+  text(160, 176)\`edge0 = 0.3\`
+  text(255, 176)\`edge1 = 0.7\`
+  text(50, 36)\`smoothstep — bold · ramp — thin · step — dashed\`
+}
+
+let scene = GroupLayer('scene') \${};
+scene.append(axis, cliff, ramp, scurve, labels);
+</code>
+  <img src="/blog/samples/post36/01-cliff-ramp-scurve.svg" alt="Three routes across the 0.3–0.7 window: hard step (dashed), straight ramp (thin), smoothstep (bold)." loading="lazy">
+</mini-workspace></p>
+<p>Look at where the bold curve meets the floor and ceiling: it lands flat
+both times. The straight ramp has corners at both markers — attach a
+width or a motion to it and you&#39;ll <em>see</em> those corners. The S-curve is
+corner-free by construction.</p>
+<h2>Example 2 — Fade a row in — and out</h2>
+<p>The dimmer applied spatially. Top row: dot sizes fade in over the left
+half. Bottom row: the markers are <strong>reversed</strong> — <code>smoothstep(1.0, 0.6, t)</code>
+— so the fade runs the other way.</p>
+<p><mini-workspace code-open caption="Forward markers fade in; reversed markers fade out — no 1 − s arithmetic, just swap the edges and the ramp runs downhill.">
+  <code>// viewBox="0 0 400 170"
+//-- Applying the dimmer spatially. Top row: dot size fades IN across the
+//-- left half via smoothstep(0.1, 0.5, t). Bottom row: swap the markers --
+//-- smoothstep(1.0, 0.6, t) -- and the ramp runs downhill, fading OUT
+//-- toward the right.
+
+define ViewBox(0, 0, 400, 170);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(24, 28)\`smoothstep(0.1, 0.5, t) — fade in\`
+  text(24, 100)\`smoothstep(1.0, 0.6, t) — reversed markers, fade out\`
+}
+
+let fadeIn = PathLayer('fade-in') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+fadeIn.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let s = smoothstep(0.1, 0.5, t);
+    circle(calc(24 + i * 7.4), 55, calc(0.4 + 3.4 * s));
+  }
+}
+
+let fadeOut = PathLayer('fade-out') \${ fill: oklch(0.68 0.13 200); stroke: none; };
+fadeOut.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let s = smoothstep(1.0, 0.6, t);
+    circle(calc(24 + i * 7.4), 127, calc(0.4 + 3.4 * s));
+  }
+}
+</code>
+  <img src="/blog/samples/post36/02-fade-in-out.svg" alt="Forward markers fade in; reversed markers fade out — no 1 − s arithmetic, just swap the edges and the ramp runs downhill." loading="lazy">
+</mini-workspace></p>
+<p>Reversed markers are the idiomatic way to say &quot;fade out&quot;: no <code>1 - s</code>
+arithmetic, just swap the edges and the ramp runs downhill.</p>
+<h2>Example 3 — The plateau</h2>
+<p>The flagship idiom. One lambda —
+<code>smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)</code> — drives both the
+plot (top) and the bar heights (bottom).</p>
+<p><mini-workspace code-open caption="Uphill times downhill: rise, hold at a genuinely flat 1.0 (the dashed line), fall. The plot and the bars share one win lambda — the picture and the application are the same function.">
+  <code>// viewBox="0 0 400 250"
+//-- The plateau idiom: an uphill ramp TIMES a downhill ramp makes a
+//-- flat-topped window -- rise, hold, fall. The plot (top) and the bar
+//-- heights (bottom) share the exact same lambda.
+
+define ViewBox(0, 0, 400, 250);
+
+let win = {|t| return smoothstep(0.1, 0.3, t) * smoothstep(0.9, 0.7, t); };
+
+let plotX = 50;
+let plotW = 300;
+let plotY = 110;
+let plotH = 70;
+
+let unitLine = PathLayer('unit-line') \${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
+unitLine.apply {
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+let axis = PathLayer('axis') \${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+}
+
+let curve = PathLayer('window-curve') \${ stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; };
+curve.apply {
+  M plotX plotY
+  for (i in 1..96) {
+    let t = i / 96;
+    let s = win(t);
+    L calc(plotX + plotW * t) calc(plotY - plotH * s)
+  }
+}
+
+let bars = PathLayer('bars') \${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
+bars.apply {
+  for (i in 0..47) {
+    let t = i / 47;
+    let h = win(t) * 60;
+    if (h &gt; 0.2) {
+      rect(calc(48 + i * 6.4), calc(225 - h), 4.4, h);
+    }
+  }
+}
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(48, 28)\`win = smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)\`
+  text(356, 44)\`1.0\`
+}
+
+let scene = GroupLayer('scene') \${};
+scene.append(unitLine, axis, curve, bars, labels);
+</code>
+  <img src="/blog/samples/post36/03-plateau.svg" alt="Uphill times downhill: rise, hold at a genuinely flat 1.0 (the dashed line), fall. The plot and the bars share one win lambda — the picture and the application are the same function." loading="lazy">
+</mini-workspace></p>
+<p>Read the two factors: the first is 0 until t=0.1, then rises to 1 by
+t=0.3 and <em>stays</em> 1. The second stays 1 until t=0.7, then falls to 0 by
+t=0.9. Multiplied, you get rise–hold–fall with a genuinely flat top
+(touching the dashed 1.0 line). Any &quot;active in the middle&quot; behavior —
+visibility, width, intensity — is this one expression with your own four
+numbers.</p>
+<h2>Example 4 — No more blunt ends</h2>
+<p>A stroke-width application. The top ribbon has constant width, so it ends
+in chopped-off edges. The bottom multiplies the same width by an
+end-window: <code>smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t)</code>. (The
+ribbon machinery — <code>compoundVariableOffset</code>, <code>vo.stop</code>, the <code>&lt;&lt;</code> worker —
+is glossed in <a href="/blog/primer-hash11">part 2</a>; the only part that matters
+here is that each stop&#39;s width is a number we compute.)</p>
+<p><mini-workspace code-open caption="The same 9-unit width, without and with the smoothstep end-window.">
+  <code>// viewBox="0 0 400 160"
+//-- End windows on a stroke. Top: constant width -- the ribbon ends in
+//-- chopped-off vertical edges. Bottom: the same width times
+//-- smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t), which eases the
+//-- width to zero at both tips.
+
+define ViewBox(0, 0, 400, 160);
+
+fn band(name, y0, windowed) {
+  let mk = {|vo, pb|
+    //-- The blunt band gets Cap.butt() -- an honest straight edge -- so
+    //-- the "before" picture really is chopped off.
+    if (windowed == 1) {
+      vo.startCap(Cap.tapered(2, CurveContinuity.G0));
+    }
+    if (windowed == 0) {
+      vo.startCap(Cap.butt());
+    }
+    for (i in 0..47) {
+      let t = i / 47;
+      let amp = 1;
+      if (windowed == 1) {
+        amp = smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t);
+      }
+      let w = 9 * amp;
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    if (windowed == 1) {
+      vo.endCap(Cap.tapered(2, CurveContinuity.G0));
+    }
+    if (windowed == 0) {
+      vo.endCap(Cap.butt());
+    }
+  };
+  let spine = @{ l 330 0 };
+  let rib = spine.compoundVariableOffset() &lt;&lt; mk;
+  let stroke = PathLayer(name) \${ fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; };
+  stroke.apply {
+    M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
+    rib.draw();
+  }
+}
+
+band('blunt', 45, 0);
+band('windowed', 115, 1);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(35, 27)\`constant width — chopped-off ends\`
+  text(35, 94)\`× smoothstep(0, 0.12, t) × smoothstep(1, 0.88, t)\`
+}
+</code>
+  <img src="/blog/samples/post36/04-blunt-ends.svg" alt="The same 9-unit width, without and with the smoothstep end-window." loading="lazy">
+</mini-workspace></p>
+<p>Same plateau idiom, tighter windows: the width is full-strength for the
+middle 76% of the stroke and eases to zero over the first and last 12%.
+Both tips taper to a point — and because smoothstep arrives flat, the
+taper has no corner where it meets the full width.</p>
+<h2>Example 5 — Horizon</h2>
+<p>A dusk seascape with no gradients. Sixty horizontal strips each compute
+one mix factor — <code>m = smoothstep(0.38, 0.58, t)</code> where <code>t</code> is vertical
+position — and use it to blend lightness, hue, and chroma from &quot;sky
+values&quot; to &quot;sea values.&quot; The sun&#39;s halo rings shrink by a reversed
+smoothstep of ring index.</p>
+<p><mini-workspace code-open caption="Sixty strips, one eased mix factor m blending every color channel from sky to sea in sync. Every soft edge in this scene is the same three-argument call wearing different numbers.">
+  <code>// viewBox="0 0 400 230"
+//-- A dusk seascape with no gradients: sixty horizontal strips, each
+//-- strip's color MIXED between a sky color and a sea color by one
+//-- smoothstep of its vertical position. The soft horizon line is the
+//-- S-curve; the sun's halo rings shrink by a reversed smoothstep.
+
+define ViewBox(0, 0, 400, 230);
+
+//-- Sky: light warm violet.  Sea: deep teal.
+for (i in 0..59) {
+  let t = i / 59;
+  let m = smoothstep(0.38, 0.58, t);
+  let L = 0.78 - 0.42 * m;
+  let H = 300 - 100 * m;
+  let C = 0.05 + 0.06 * m;
+  let c = Color(L, C, H);
+  let strip = PathLayer(\`strip-\${i}\`) \${ fill: c; stroke: none; };
+  strip.apply {
+    rect(15, calc(15 + i * 3.32), 370, 3.45);
+  }
+}
+
+//-- Sun + halo: ring radius eases DOWN with ring index (reversed markers).
+for (k in 0..5) {
+  let u = k / 5;
+  let fade = smoothstep(1, 0.2, u);
+  let r = 6 + 16 * (1 - fade);
+  let ring = PathLayer(\`halo-\${k}\`) \${ stroke: oklch(0.88 0.09 75); stroke-width: 1; fill: none; opacity: calc(0.15 + fade * 0.5); };
+  ring.apply {
+    circle(300, 96, r);
+  }
+}
+let sun = PathLayer('sun') \${ fill: oklch(0.92 0.1 75); stroke: none; };
+sun.apply {
+  circle(300, 96, 6);
+}
+</code>
+  <img src="/blog/samples/post36/05-horizon.svg" alt="Sixty strips, one eased mix factor m blending every color channel from sky to sea in sync. Every soft edge in this scene is the same three-argument call wearing different numbers." loading="lazy">
+</mini-workspace></p>
+<p>The blend pattern is worth keeping:
+<code>value = skyValue + (seaValue - skyValue) * m</code> — with <code>m</code> eased, every
+channel crosses the horizon softly and <em>in sync</em>, because they all share
+one <code>m</code>. Every soft edge in this scene is the same three-argument call
+wearing different numbers.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-bump"><code>bump</code></a> — when you want a hill that touches 1 and
+leaves, rather than a ramp that holds. (The plateau reappears there as
+its flat-topped cousin.)</li>
+<li><a href="/blog/primer-noise"><code>noise</code></a> — smoothstep is the glue between its
+random pins.</li>
+<li>Reference:
+<a href="/docs#stdlib-interpolation-clamping">Interpolation &amp; Clamping docs</a>
+and the callable <a href="/docs#stdlib-easing">Easing family</a>
+(<code>smoothstep(0, 1, t)</code> is <code>Easing.Smoothstep</code>).</li>
+</ul>
 `,
   'radial-bar-chart': `<blockquote>
 <p><strong>Prerequisites:</strong> This post uses <a href="/blog/pathblock-introduction">PathBlocks</a>, <a href="/blog/textblock-introduction">TextBlocks</a>, <a href="/docs#layers-defining-layers">GroupLayers</a>, and <a href="/docs#syntax-destructuring">for-loop destructuring</a>. If you&#39;re new to Pathogen, start with those introductions.</p>

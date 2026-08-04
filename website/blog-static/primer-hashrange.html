@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>hashRange: randomRange with a Memory — Pathogen Studio</title>
+  <meta name="description" content="Part 3 of the stdlib primers: hashRange(i, min, max) is the deterministic drop-in for randomRange — put an index in front and the pick keeps its word forever. Ranges become the design's tuning panel.">
+  <link rel="canonical" href="https://pathogen.studio/blog/primer-hashrange">
+  <meta property="og:title" content="hashRange: randomRange with a Memory — Pathogen Studio">
+  <meta property="og:description" content="Part 3 of the stdlib primers: hashRange(i, min, max) is the deterministic drop-in for randomRange — put an index in front and the pick keeps its word forever. Ranges become the design's tuning panel.">
+  <meta property="og:url" content="https://pathogen.studio/blog/primer-hashrange">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"hashRange: randomRange with a Memory","description":"Part 3 of the stdlib primers: hashRange(i, min, max) is the deterministic drop-in for randomRange — put an index in front and the pick keeps its word forever. Ranges become the design's tuning panel.","datePublished":"2026-08-06","url":"https://pathogen.studio/blog/primer-hashrange","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">hashRange: randomRange with a Memory</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>hashRange: randomRange with a Memory</h1>
+        <p class="post-meta"><time datetime="2026-08-06">August 6, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 3 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><a href="/blog/primer-hash01">hash01</a> — a random number that never changes its mind</li>
+<li><a href="/blog/primer-hash11">hash11</a> — the same dice, rolled between −1 and 1</li>
+<li><strong>hashRange</strong> (this post) — randomRange with a memory</li>
+<li><a href="/blog/primer-smoothstep">smoothstep</a> — the S-curve that turns a cliff into a ramp</li>
+<li><a href="/blog/primer-bump">bump</a> — a hill you can put anywhere</li>
+<li><a href="/blog/primer-noise">noise</a> — randomness with a smooth ride</li>
+<li><a href="/blog/primer-noise2">noise2</a> — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><code>hashRange(n, min, max, seed?)</code> picks a value between <code>min</code> and <code>max</code> —
+deterministically, keyed by the whole-number index <code>n</code>. It&#39;s
+<a href="/blog/primer-hash01"><code>hash01</code></a> scaled into your range:
+<code>min + hash01(n, seed) * (max - min)</code>, exactly.</p>
+<p>The pitch is the title of this post: <strong><code>randomRange</code> that keeps its word.</strong>
+Same idea, same feel, one extra argument — the index that pins the answer.
+<code>randomRange(4, 12)</code> re-rolls on every compile; <code>hashRange(i, 4, 12)</code> gives
+element <code>i</code> the same answer forever.</p>
+<p>One notation note: the result lives in <strong>[min, max)</strong> — it can land
+exactly on <code>min</code> and gets arbitrarily close to <code>max</code> without ever hitting
+it. In graphics you will never see the difference, and it has one genuinely
+useful consequence: <code>floor(hashRange(i, 0, 3))</code> divides <em>perfectly evenly</em>
+into buckets 0, 1, 2 — no edge case where the answer lands on 3.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Two reasons, one practical and one about how you think:</p>
+<ol>
+<li><strong>Migration.</strong> If your sketches are sprinkled with <code>randomRange</code> and
+you&#39;re tired of the artwork reshuffling every time you save, the
+rewrite is mechanical: add an index as the first argument, move on
+with your life.</li>
+<li><strong>Ranges read like a spec.</strong> <code>hashRange(i, 35, 125)</code> says &quot;buildings
+between 35 and 125 tall&quot; — the design intent is <em>in the call</em>.
+Tightening the numbers tightens the design; the ranges become the
+tuning panel for the whole piece.</li>
+</ol>
+<p>Everything about seeds, determinism, and integer truncation is inherited
+from <a href="/blog/primer-hash01"><code>hash01</code></a> — this post won&#39;t repeat it.</p>
+<h2>Example 1 — The drop-in swap</h2>
+<p>Both rows size 40 dots from the same 1.5-to-5 range. The top row asks
+<code>randomRange</code>; the bottom asks <code>hashRange</code> with the loop index in front.</p>
+<p><mini-workspace code-open caption="Forty dots sized from the same 1.5–5 range: randomRange above, hashRange(i, ...) below.">
+  <code>// viewBox="0 0 400 160"
+//-- The migration in one picture. Top row: dot sizes from
+//-- randomRange(1.5, 5) -- they reshuffle on every compile. Bottom row:
+//-- hashRange(i, 1.5, 5) -- same call shape with an index in front, and
+//-- the sizes are a fixture.
+
+define ViewBox(0, 0, 400, 160);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 26)`randomRange(1.5, 5) — reshuffles every compile`
+  text(22, 96)`hashRange(i, 1.5, 5) — a fixture`
+}
+
+let rolling = PathLayer('rolling') ${ fill: oklch(0.6 0.15 20); stroke: none; };
+rolling.apply {
+  for (i in 0..39) {
+    circle(calc(26 + i * 9), 50, calc(randomRange(1.5, 5)));
+  }
+}
+
+let pinned = PathLayer('pinned') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+pinned.apply {
+  for (i in 0..39) {
+    circle(calc(26 + i * 9), 120, calc(hashRange(i, 1.5, 5)));
+  }
+}
+</code>
+  <img src="/blog/samples/post35/01-drop-in-swap.svg" alt="Forty dots sized from the same 1.5–5 range: randomRange above, hashRange(i, ...) below." loading="lazy">
+</mini-workspace></p>
+<p>On the page they look equivalent — that&#39;s the point; you give up nothing
+visually. The difference is behavioral: <strong>paste this into the playground
+and recompile — the top row reshuffles while the bottom row doesn&#39;t
+move.</strong> (This is the one <code>randomRange</code> appearance in this post; the
+contrast is the lesson.)</p>
+<h2>Example 2 — Skyline</h2>
+<p>One range per design property. Building height comes from
+<code>hashRange(i, 35, 125)</code>, width from <code>hashRange(i, 10, 22, 1)</code>, and a
+subtle facade shade from a third stream.</p>
+<p><mini-workspace code-open caption="The two range calls ARE the spec: heights 35–125, widths 10–22. Edit the height line to (i, 50, 90) and the same code draws a suburb.">
+  <code>// viewBox="0 0 400 210"
+//-- A night skyline where the ranges read like a spec: buildings between
+//-- 35 and 125 tall, between 10 and 22 wide. Tighten either range and the
+//-- whole city changes character -- without touching the structure.
+
+define ViewBox(0, 0, 400, 210);
+
+let sky = PathLayer('sky') ${ fill: oklch(0.24 0.05 275); stroke: none; };
+sky.apply {
+  rect(15, 15, 370, 175);
+}
+
+let x = 20;
+for (i in 0..25) {
+  let w = hashRange(i, 10, 22, 1);
+  let h = hashRange(i, 35, 125);
+  let shade = Color(0.36 + hashRange(i, 0, 0.1, 2), 0.03, 275);
+  if (x + w &lt; 382) {
+    let tower = PathLayer(`tower-${i}`) ${ fill: shade; stroke: none; };
+    tower.apply {
+      rect(x, calc(190 - h), w, h);
+    }
+  }
+  x = x + w + 3;
+}
+</code>
+  <img src="/blog/samples/post35/02-skyline.svg" alt="The two range calls ARE the spec: heights 35–125, widths 10–22. Edit the height line to (i, 50, 90) and the same code draws a suburb." loading="lazy">
+</mini-workspace></p>
+<p>Read the two range calls as the spec they are: &quot;heights 35–125, widths
+10–22.&quot; Now imagine editing just the height line to <code>(i, 50, 90)</code> — the
+towers even out and the same code draws a suburb. That&#39;s the tuning-panel
+idea: structure stays, character is in the numbers.</p>
+<h2>Example 3 — Confetti, spec&#39;d</h2>
+<p>Four properties, four ranges, four seeds — a complete scatter system in
+four lines: position (x, y), size, and hue.</p>
+<p><mini-workspace code-open caption="Four lines, four independent streams: x, y, radius, hue. Each range line is a design decision you can tighten or loosen without touching the others.">
+  <code>// viewBox="0 0 400 190"
+//-- Four ranges as a spec sheet: where (x, y), how big (r), what color
+//-- (hue). Each property reads its own seed; each range line is a design
+//-- decision you can tighten or loosen independently.
+
+define ViewBox(0, 0, 400, 190);
+
+for (i in 0..119) {
+  let cx = hashRange(i, 22, 378);
+  let cy = hashRange(i, 22, 168, 1);
+  let r = hashRange(i, 1.5, 5, 2);
+  let hue = hashRange(i, 0, 360, 3);
+  let c = Color(0.72, 0.16, hue);
+  let dot = PathLayer(`confetti-${i}`) ${ fill: c; stroke: none; };
+  dot.apply {
+    circle(cx, cy, r);
+  }
+}
+</code>
+  <img src="/blog/samples/post35/03-confetti.svg" alt="Four lines, four independent streams: x, y, radius, hue. Each range line is a design decision you can tighten or loosen without touching the others." loading="lazy">
+</mini-workspace></p>
+<p>Two things worth copying. First, each property gets its <strong>own seed</strong>
+(0, 1, 2, 3) so streams stay independent — reusing a seed would correlate,
+say, size with hue. Second, notice every value is bound to a <code>let</code> before
+the drawing call. That&#39;s a readability choice, not a requirement (a
+<code>calc(...)</code> expression works directly in an argument) — but it&#39;s what
+makes the four lines read as a spec sheet.</p>
+<h2>Example 4 — Rain</h2>
+<p>Ranges can pick <em>categories</em>, not just quantities. Each of 80 streaks
+computes <code>floor(hashRange(i, 0, 3, 2))</code> — an even three-way pick — and the
+bucket routes it to a near, middle, or far layer with matching opacity.</p>
+<p><mini-workspace code-open caption="floor(hashRange(i, 0, 3, 2)) buckets every streak into exactly {0, 1, 2} with equal shares — the half-open range earning its keep. One population, three depth styles.">
+  <code>// viewBox="0 0 400 200"
+//-- Eighty slanted rain streaks. Position and length are ranged picks;
+//-- each streak also lands in one of three depth buckets --
+//-- floor(hashRange(i, 0, 3, 2)) picks 0, 1, or 2 -- and the bucket sets
+//-- the opacity, so the rain reads as near, middle, and far.
+
+define ViewBox(0, 0, 400, 200);
+
+let far = PathLayer('far') ${ stroke: oklch(0.6 0.05 260); stroke-width: 1; fill: none; opacity: 0.25; };
+let mid = PathLayer('mid') ${ stroke: oklch(0.65 0.06 260); stroke-width: 1.1; fill: none; opacity: 0.5; };
+let near = PathLayer('near') ${ stroke: oklch(0.72 0.07 260); stroke-width: 1.3; fill: none; opacity: 0.9; };
+
+far.apply {
+  for (i in 0..79) {
+    if (floor(hashRange(i, 0, 3, 2)) == 0) {
+      M calc(hashRange(i, 20, 375)) calc(hashRange(i, 18, 150, 1))
+      l 4 calc(hashRange(i, 8, 26, 3))
+    }
+  }
+}
+mid.apply {
+  for (i in 0..79) {
+    if (floor(hashRange(i, 0, 3, 2)) == 1) {
+      M calc(hashRange(i, 20, 375)) calc(hashRange(i, 18, 150, 1))
+      l 4 calc(hashRange(i, 8, 26, 3))
+    }
+  }
+}
+near.apply {
+  for (i in 0..79) {
+    if (floor(hashRange(i, 0, 3, 2)) == 2) {
+      M calc(hashRange(i, 20, 375)) calc(hashRange(i, 18, 150, 1))
+      l 4 calc(hashRange(i, 8, 26, 3))
+    }
+  }
+}
+</code>
+  <img src="/blog/samples/post35/04-rain.svg" alt="floor(hashRange(i, 0, 3, 2)) buckets every streak into exactly {0, 1, 2} with equal shares — the half-open range earning its keep. One population, three depth styles." loading="lazy">
+</mini-workspace></p>
+<p>This is the half-open range earning its keep: <code>[0, 3)</code> floors to exactly
+{0, 1, 2} with equal shares. The same loop runs in all three layers and
+each keeps only its own bucket — a common Pathogen pattern for &quot;one
+population, several styles.&quot;</p>
+<h2>Example 5 — Pebble beach</h2>
+<p>The finale is a tuning exercise. Four overlapping rows of pebbles, back to
+front; each pebble&#39;s width, squash, position, and warmth come from named
+ranges, and nearer rows draw from bigger width ranges.</p>
+<p><mini-workspace code-open caption="Four overlapping rows, back to front — width, squash, position, and warmth all named ranges, with nearer rows drawing from bigger ones.">
+  <code>// viewBox="0 88 400 152"
+//-- Four overlapping rows of pebbles, back to front. Every knob is a
+//-- named range: width, squash, and gray-warmth per pebble, with nearer
+//-- rows drawing from bigger ranges. Tuning the beach means tuning
+//-- ranges -- narrow one row's width range and the rows behind stay put.
+
+define ViewBox(0, 88, 400, 152);
+
+fn pebbleRow(row, y0, minW, maxW, count) {
+  for (i in 0..count) {
+    let idx = row * 100 + i;
+    let w = hashRange(idx, minW, maxW);
+    let h = w * hashRange(idx, 0.55, 0.75, 1);
+    let x = hashRange(idx, 18, 380 - maxW, 2);
+    let L = hashRange(idx, 0.45, 0.68, 3) + row * 0.04;
+    let warm = Color(L, 0.02, 75);
+    let stone = PathLayer(`pebble-${idx}`) ${ fill: warm; stroke: none; };
+    stone.apply {
+      roundRect(x, calc(y0 - h), w, h, calc(h / 2));
+    }
+  }
+}
+
+pebbleRow(0, 120, 8, 18, 26);
+pebbleRow(1, 155, 10, 24, 22);
+pebbleRow(2, 192, 14, 32, 18);
+pebbleRow(3, 224, 18, 42, 14);
+</code>
+  <img src="/blog/samples/post35/05-pebble-beach.svg" alt="Four overlapping rows, back to front — width, squash, position, and warmth all named ranges, with nearer rows drawing from bigger ones." loading="lazy">
+</mini-workspace></p>
+<p>Here&#39;s the workflow this function buys you. Suppose the beach feels too
+busy: narrow the width range on the front row (<code>18, 42</code> → <code>24, 38</code>) and
+recompile. <strong>Every pebble in the rows behind stays exactly where it
+was.</strong> With <code>randomRange</code>, that one edit would have re-rolled the entire
+beach — you&#39;d be judging a different design, not your adjustment.
+Deterministic ranges turn tuning into a controlled experiment.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-hash01"><code>hash01</code></a> — the mechanics underneath (seeds,
+determinism, truncation).</li>
+<li><a href="/blog/primer-hash11"><code>hash11</code></a> — when the natural range is a symmetric
+±drift around a center.</li>
+<li><a href="/blog/primer-noise"><code>noise</code></a> — when neighboring picks should flow into
+each other instead of being independent.</li>
+<li>Reference: <a href="/docs#stdlib-hash-noise">Hash &amp; Noise docs</a>.</li>
+</ul>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

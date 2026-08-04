@@ -1,0 +1,48 @@
+// viewBox="0 0 400 220"
+//-- Two shaded grids, same size, same palette. Left: each cell's shade is
+//-- hash01 of its index -- TV static. Right: noise2 of its (col, row)
+//-- position scaled down -- cloudy patches. Neighboring cells agree in
+//-- BOTH directions.
+
+define ViewBox(0, 0, 400, 220);
+
+//-- Shades are bucketed into 16 layers per panel (not one per cell) to
+//-- keep the SVG lean -- fine enough that the stepping doesn't read as
+//-- banding.
+fn panel(prefix, x0, useNoise) {
+  for (b in 0..15) {
+    let L = 0.28 + b * 0.0325;
+    let c = Color(L, 0.04, 265);
+    let bucketLayer = PathLayer(`${prefix}-b${b}`) ${ fill: c; stroke: none; };
+    bucketLayer.apply {
+      for (row in 0..15) {
+        for (col in 0..15) {
+          let v = 0;
+          if (useNoise == 1) {
+            v = noise2(col * 0.22, row * 0.22);
+          }
+          if (useNoise == 0) {
+            v = hash01(row * 16 + col);
+          }
+          if (floor(v * 16) == b) {
+            rect(calc(x0 + col * 10.3), calc(40 + row * 10.3), 9.8, 9.8);
+          }
+        }
+      }
+    }
+  }
+}
+
+panel('static', 22, 0);
+panel('fog', 208, 1);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 28)`hash01(idx) — static`
+  text(208, 28)`noise2(col·0.22, row·0.22) — fog`
+}

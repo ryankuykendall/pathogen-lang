@@ -1,0 +1,29 @@
+// viewBox="0 0 400 190"
+//-- 48 dots straddling an axis: hash11(i) answers between -1 and 1, so
+//-- roughly half land above the line and half below, at hashed heights.
+
+define ViewBox(0, 0, 400, 190);
+
+let axis = PathLayer('axis') ${ stroke: oklch(0.5 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M 40 95 L 380 95
+}
+
+let ticks = TextLayer('ticks') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: end;
+};
+ticks.apply {
+  text(34, 52)`+1`
+  text(34, 99)`0`
+  text(34, 146)`−1`
+}
+
+let dots = PathLayer('dots') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+dots.apply {
+  for (i in 0..47) {
+    circle(calc(44 + i * 7), calc(95 - hash11(i) * 43), 2);
+  }
+}

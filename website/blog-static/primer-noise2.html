@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noise2: A Weather Map of Smooth Randomness — Pathogen Studio</title>
+  <meta name="description" content="The stdlib primers finale: noise2 spreads smooth randomness across a surface — fog, terrain, warped grids, and the trick that makes a whole family of strokes flow as one. The series' three glows, compared.">
+  <link rel="canonical" href="https://pathogen.studio/blog/primer-noise2">
+  <meta property="og:title" content="noise2: A Weather Map of Smooth Randomness — Pathogen Studio">
+  <meta property="og:description" content="The stdlib primers finale: noise2 spreads smooth randomness across a surface — fog, terrain, warped grids, and the trick that makes a whole family of strokes flow as one. The series' three glows, compared.">
+  <meta property="og:url" content="https://pathogen.studio/blog/primer-noise2">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"noise2: A Weather Map of Smooth Randomness","description":"The stdlib primers finale: noise2 spreads smooth randomness across a surface — fog, terrain, warped grids, and the trick that makes a whole family of strokes flow as one. The series' three glows, compared.","datePublished":"2026-08-10","url":"https://pathogen.studio/blog/primer-noise2","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.7.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">noise2: A Weather Map of Smooth Randomness</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>noise2: A Weather Map of Smooth Randomness</h1>
+        <p class="post-meta"><time datetime="2026-08-10">August 10, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 7 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.</em></p>
+<blockquote>
+<p><strong>Series: Stdlib Primers</strong></p>
+<ol>
+<li><a href="/blog/primer-hash01">hash01</a> — a random number that never changes its mind</li>
+<li><a href="/blog/primer-hash11">hash11</a> — the same dice, rolled between −1 and 1</li>
+<li><a href="/blog/primer-hashrange">hashRange</a> — randomRange with a memory</li>
+<li><a href="/blog/primer-smoothstep">smoothstep</a> — the S-curve that turns a cliff into a ramp</li>
+<li><a href="/blog/primer-bump">bump</a> — a hill you can put anywhere</li>
+<li><a href="/blog/primer-noise">noise</a> — randomness with a smooth ride</li>
+<li><strong>noise2</strong> (this post) — a weather map of smooth randomness</li>
+</ol>
+</blockquote>
+<h2>What it does</h2>
+<p><a href="/blog/primer-noise"><code>noise</code></a> wanders along a line. <code>noise2(x, y, seed?)</code>
+spreads the same smooth randomness across a <strong>surface</strong> — fog, terrain,
+water, or &quot;many strokes that agree with their neighbors.&quot;</p>
+<p>Extend the pins model to a <strong>pegboard</strong>: random heights pinned at every
+whole-number grid corner. Anywhere inside a cell, the answer smoothly
+mixes the four surrounding corner pins — nearer corners count more. That
+one sentence is the whole mechanism. As with 1D noise, the mixing uses the
+flat-arriving <a href="/blog/primer-smoothstep"><code>smoothstep</code></a> glide, so the field
+has no seams, and answers stay in [0, 1).</p>
+<p>The second coordinate wears three costumes in practice:</p>
+<ol>
+<li><strong>A real y</strong> — you&#39;re sampling an actual 2D field (fog, terrain).</li>
+<li><strong>A layer index</strong> — line or layer <code>j</code> samples row <code>j * someScale</code>, so
+siblings stay <em>coherent</em>: neighbors in the stack sample neighboring
+rows of one field.</li>
+<li><strong>A phase/time</strong> — slide <code>y</code> slowly to animate a 1D wobble. (Worth
+knowing about; not built in these examples.)</li>
+</ol>
+<p>One honesty note: this is the simple corner-value kind of noise, not the
+fancier &quot;Perlin&quot; kind that stores slopes at the pins. At large scales you
+can spot faint row-and-column grain in it; at the scales in this post, you
+won&#39;t.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Whenever smooth randomness needs to vary in <em>two</em> directions at once —
+across a grid of cells, over the area of a texture, or <strong>across a family
+of related strokes</strong>. That last one is the sleeper use: give each stroke
+in a stack its own row of one shared field and the whole stack starts
+behaving like a single surface. It&#39;s the difference between sixteen
+strokes that shimmer independently and one glow that flows.</p>
+<h2>Example 1 — Fog on a grid</h2>
+<p>The 2D field made visible, against its opposite. Both panels shade a
+16×16 grid from the same palette; the left asks <code>hash01</code> of each cell&#39;s
+index, the right asks <code>noise2</code> of each cell&#39;s position.</p>
+<p><mini-workspace code-open caption="One palette, two samplers: hash01 of the cell index (left) versus noise2 of the cell position (right).">
+  <code>// viewBox="0 0 400 220"
+//-- Two shaded grids, same size, same palette. Left: each cell's shade is
+//-- hash01 of its index -- TV static. Right: noise2 of its (col, row)
+//-- position scaled down -- cloudy patches. Neighboring cells agree in
+//-- BOTH directions.
+
+define ViewBox(0, 0, 400, 220);
+
+//-- Shades are bucketed into 16 layers per panel (not one per cell) to
+//-- keep the SVG lean -- fine enough that the stepping doesn't read as
+//-- banding.
+fn panel(prefix, x0, useNoise) {
+  for (b in 0..15) {
+    let L = 0.28 + b * 0.0325;
+    let c = Color(L, 0.04, 265);
+    let bucketLayer = PathLayer(`${prefix}-b${b}`) ${ fill: c; stroke: none; };
+    bucketLayer.apply {
+      for (row in 0..15) {
+        for (col in 0..15) {
+          let v = 0;
+          if (useNoise == 1) {
+            v = noise2(col * 0.22, row * 0.22);
+          }
+          if (useNoise == 0) {
+            v = hash01(row * 16 + col);
+          }
+          if (floor(v * 16) == b) {
+            rect(calc(x0 + col * 10.3), calc(40 + row * 10.3), 9.8, 9.8);
+          }
+        }
+      }
+    }
+  }
+}
+
+panel('static', 22, 0);
+panel('fog', 208, 1);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 28)`hash01(idx) — static`
+  text(208, 28)`noise2(col·0.22, row·0.22) — fog`
+}
+</code>
+  <img src="/blog/samples/post39/01-fog-grid.svg" alt="One palette, two samplers: hash01 of the cell index (left) versus noise2 of the cell position (right)." loading="lazy">
+</mini-workspace></p>
+<p>Static versus weather. In the right panel, every cell agrees with its
+neighbors <em>up, down, left, and right</em> — that&#39;s the &quot;nearer corners count
+more&quot; mixing at work. (Implementation note: the shades are bucketed into
+sixteen layers instead of one layer per cell — a useful economy whenever a
+grid gets large.)</p>
+<h2>Example 2 — Swelling dot field</h2>
+<p>Sampling the field at each element&#39;s own position. A 30×17 dot grid where
+each radius is <code>0.6 + 3 * noise2(col * 0.12, row * 0.12)</code>.</p>
+<p><mini-workspace code-open caption="Sizes swell in blobs like rain intensity across pavement. The · 0.12 on both coordinates is the frequency knob in 2D — smaller factors, bigger weather systems.">
+  <code>// viewBox="0 0 400 220"
+//-- A 30 x 17 dot grid where each dot's radius samples the field at its
+//-- own position: 0.6 + 3 * noise2(col * 0.12, row * 0.12). Sizes swell
+//-- in blobs, like rain intensity across pavement.
+
+define ViewBox(0, 0, 400, 220);
+
+let dots = PathLayer('field') ${ fill: oklch(0.66 0.14 220); stroke: none; };
+dots.apply {
+  for (row in 0..16) {
+    for (col in 0..29) {
+      let v = noise2(col * 0.12, row * 0.12);
+      circle(calc(26 + col * 12), calc(38 + row * 10.2), calc(0.6 + 3 * v));
+    }
+  }
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(26, 27)`radius = 0.6 + 3 · noise2(col·0.12, row·0.12)`
+}
+</code>
+  <img src="/blog/samples/post39/02-dot-field.svg" alt="Sizes swell in blobs like rain intensity across pavement. The · 0.12 on both coordinates is the frequency knob in 2D — smaller factors, bigger weather systems." loading="lazy">
+</mini-workspace></p>
+<p>The sizes swell in blobs, like rain intensity across pavement. The
+<code>* 0.12</code> on both coordinates is the
+<a href="/blog/primer-noise">frequency knob</a> in 2D: smaller factors give bigger
+weather systems, larger factors give choppier ones — tune it exactly as
+you did in part 6.</p>
+<h2>Example 3 — Rows of one field</h2>
+<p>The layer-index costume, and the visual argument for this function&#39;s
+existence. Left: line <code>j</code> samples <code>noise2(t*4, j*0.3)</code> — twelve rows of
+<em>one field</em>, so neighboring lines rise and fall together and the stack
+reads as a flowing sheet. Right: the same twelve lines with independent
+1D streams — they ignore each other.</p>
+<p><mini-workspace code-open caption="Twelve lines twice: rows of one noise2 field (left) versus independent noise seeds (right).">
+  <code>// viewBox="0 0 400 230"
+//-- The layer-index trick. Left stack: line j samples noise2(t*4, j*0.3)
+//-- -- rows of ONE field, so neighboring lines rise and fall together and
+//-- the stack reads as a flowing sheet. Right stack: each line gets its
+//-- own independent 1D stream -- the lines ignore each other.
+
+define ViewBox(0, 0, 400, 230);
+
+fn strandCoherent(name, y0, j) {
+  let line = PathLayer(name) ${ stroke: oklch(0.66 0.14 220); stroke-width: 1.3; fill: none; };
+  line.apply {
+    M 22 calc(y0 - noise2(0, j * 0.3) * 26)
+    for (i in 1..56) {
+      let t = i / 56;
+      L calc(22 + t * 165) calc(y0 - noise2(t * 4, j * 0.3) * 26)
+    }
+  }
+}
+
+fn strandIndependent(name, y0, j) {
+  let line = PathLayer(name) ${ stroke: oklch(0.62 0.1 300); stroke-width: 1.3; fill: none; };
+  line.apply {
+    M 213 calc(y0 - noise(0, j) * 26)
+    for (i in 1..56) {
+      let t = i / 56;
+      L calc(213 + t * 165) calc(y0 - noise(t * 4, j) * 26)
+    }
+  }
+}
+
+for (j in 0..11) {
+  let y = 62 + j * 13;
+  strandCoherent(`sheet-${j}`, y, j);
+  strandIndependent(`solo-${j}`, y, j);
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 26)`noise2(t·4, j·0.3) — one field`
+  text(213, 26)`noise(t·4, j) — independent seeds`
+}
+</code>
+  <img src="/blog/samples/post39/03-rows-of-field.svg" alt="Twelve lines twice: rows of one noise2 field (left) versus independent noise seeds (right)." loading="lazy">
+</mini-workspace></p>
+<p>The only difference between the stacks is where the second number goes:
+<code>noise2(t*4, j*0.3)</code> versus <code>noise(t*4, j)</code>. As a <em>coordinate</em>, <code>j</code> puts
+the lines on the same continuous surface; as a <em>seed</em>, it isolates them.
+Choosing between those two spellings is choosing between coherence and
+independence.</p>
+<h2>Example 4 — Warp a grid</h2>
+<p>Displacement: two fields make a push direction. Every vertex of a ruled
+grid moves horizontally by field 0 and vertically by field 1 —
+<code>(noise2(x, y) - 0.5) * 14</code> each way (the <code>- 0.5</code> recenters [0,1) into a
+signed push, the same remap trick from <a href="/blog/primer-hash11"><code>hash11</code></a>).</p>
+<p><mini-workspace code-open caption="Two smooth fields make a push direction — neighboring vertices get nearly the same push, so the rules bend instead of scattering. The doorway to flow fields, fabric, and water.">
+  <code>// viewBox="0 0 400 230"
+//-- Displacement: two fields make a push direction. Every vertex of a
+//-- ruled grid moves by ((noise2(x,y) - 0.5) * 14, (noise2(x,y,1) - 0.5) * 14)
+//-- -- the default field pushes horizontally, the seed-1 field vertically.
+//-- The low frequency (0.14) keeps neighboring vertices agreeing, so the
+//-- grid billows like a flag instead of crumpling.
+
+define ViewBox(0, 0, 400, 230);
+
+fn warpX(gx, gy) {
+  return (noise2(gx * 0.14, gy * 0.14) - 0.5) * 14;
+}
+fn warpY(gx, gy) {
+  return (noise2(gx * 0.14, gy * 0.14, 1) - 0.5) * 14;
+}
+
+let grid = PathLayer('warped-grid') ${ stroke: oklch(0.64 0.12 200); stroke-width: 1; fill: none; };
+grid.apply {
+  //-- Horizontal rules
+  for (gy in 0..12) {
+    let x0 = calc(30 + warpX(0, gy));
+    let y0 = calc(28 + gy * 14.5 + warpY(0, gy));
+    M x0 y0
+    for (gx in 1..24) {
+      let x = calc(30 + gx * 14.2 + warpX(gx, gy));
+      let y = calc(28 + gy * 14.5 + warpY(gx, gy));
+      L x y
+    }
+  }
+  //-- Vertical rules
+  for (gx in 0..24) {
+    let x0 = calc(30 + gx * 14.2 + warpX(gx, 0));
+    let y0 = calc(28 + warpY(gx, 0));
+    M x0 y0
+    for (gy in 1..12) {
+      let x = calc(30 + gx * 14.2 + warpX(gx, gy));
+      let y = calc(28 + gy * 14.5 + warpY(gx, gy));
+      L x y
+    }
+  }
+}
+</code>
+  <img src="/blog/samples/post39/04-warp-grid.svg" alt="Two smooth fields make a push direction — neighboring vertices get nearly the same push, so the rules bend instead of scattering. The doorway to flow fields, fabric, and water." loading="lazy">
+</mini-workspace></p>
+<p>The grid billows like a flag because both displacement fields are smooth:
+neighboring vertices get nearly the same push, so the rules bend instead
+of scattering. Warping positions through a pair of fields like this is
+the doorway to flow fields, fabric, and water — all &quot;move everything, but
+smoothly, and differently everywhere.&quot;</p>
+<h2>Example 5 — The flowing glow</h2>
+<p>The series finale, combining five posts. Twelve glow layers whose width
+profile is <a href="/blog/primer-bump"><code>bump</code></a> algebra, each multiplied by a
+texture factor <code>1 + (noise2(t*6, k*0.3) - 0.5) * 0.9</code> — with <code>t</code> running
+along the stroke and layer index <code>k</code> running <em>across</em> the field.</p>
+<p><mini-workspace code-open caption="One noise2 field textures all twelve layers: t along the stroke, k · 0.3 across the stack.">
+  <code>// viewBox="0 78 400 103"
+//-- The series finale: bump-shaped widths (part 5) textured by ONE
+//-- noise2 field. t runs along the stroke; layer * 0.3 runs across the
+//-- layers. Because the field is continuous in both directions,
+//-- neighboring layers sample neighboring rows -- and the whole glow
+//-- flows as one surface instead of shimmering.
+
+define ViewBox(0, 78, 400, 103);
+
+let spine = @{ c 80 -100 160 100 240 0 };
+let px = 80;
+let py = 130;
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let base = oklch(0.72 0.14 20);
+
+for (k in 12..1) {
+  let texture = {|t| return 1 + (noise2(t * 6, k * 0.3) - 0.5) * 0.9; };
+  let mk = {|vo, pb|
+    vo.startCap(taperCap);
+    for (i in 0..47) {
+      let t = i / 47;
+      let w = (0.15 * k
+            + 0.6 * k * bump(t, 0.35, 0.3)
+            + 0.35 * k * pow(bump(t, 0.78, 0.18), 2)) * texture(t);
+      vo.stop(t, w, CurveContinuity.G1, -w, CurveContinuity.G1);
+    }
+    vo.endCap(taperCap);
+  };
+  let halo = spine.compoundVariableOffset() &lt;&lt; mk;
+
+  let haloColor = base.hueShift(calc(k * -6));
+  let haloLayer = PathLayer(`halo-${k}`) ${
+    fill: haloColor;
+    stroke: none;
+    opacity: 0.25;
+  };
+  haloLayer.apply {
+    M calc(px + halo.anchor.x) calc(py + halo.anchor.y)
+    halo.draw();
+  }
+}
+</code>
+  <img src="/blog/samples/post39/05-flowing-glow.svg" alt="One noise2 field textures all twelve layers: t along the stroke, k · 0.3 across the stack." loading="lazy">
+</mini-workspace></p>
+<p>This series has now built the same glow three ways, and the differences
+are the lesson. <a href="/blog/primer-bump"><code>bump</code></a>&#39;s finale is clean
+architecture — smooth swells, nothing else.
+<a href="/blog/primer-hash11"><code>hash11</code></a>&#39;s ±wobble would make it shimmer, every
+stop independent. This one makes it <strong>flow</strong>: watch the striations —
+neighboring layers swell <em>together</em> as one surface, because everything
+samples one continuous field. One argument&#39;s costume change (seed → row
+coordinate) is the entire difference between shimmer and weather.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/primer-noise"><code>noise</code></a> — the 1D story: pins, glide, frequency.</li>
+<li><a href="/blog/primer-bump"><code>bump</code></a> — the width profiles under this finale&#39;s
+texture.</li>
+<li><a href="/blog/primer-hash01"><code>hash01</code></a> — the 1D pins. (noise2&#39;s corners hash
+<em>both</em> coordinates as a pair, so there&#39;s no direct <code>hash01</code> equivalence
+in 2D — the exact-identity story is a 1D privilege.)</li>
+<li>Reference: <a href="/docs#stdlib-hash-noise">Hash &amp; Noise docs</a> — and that&#39;s
+the series. Seven functions, one promise: randomness, smoothness, and
+shape you can direct, tune, and ship.</li>
+</ul>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

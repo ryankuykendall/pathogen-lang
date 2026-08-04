@@ -1090,6 +1090,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
         year: 'numeric',
         month: 'long',
         day: 'numeric',
+        timeZone: 'UTC',
       })
     : '';
 

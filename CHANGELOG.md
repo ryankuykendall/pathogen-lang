@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Documentation
+
+- **"Stdlib Primers" blog series (posts 33–39)** — the seven internal primers published to pathogen.studio as a seven-part series (`primer-hash01` … `primer-noise2`, dated 2026-08-04 → 08-10), one post per deterministic stdlib function, each with five interactive mini-workspace examples (35 samples in `samples/post33..39/`, all validated at 0 warnings). Series TOC + part subtitles per the multi-part conventions; the internal `project-docs/stdlib-primers/` pages remain as the paper trail, cross-linked from the BBWP pinned section.
+- **Blog date rendering fixed across surfaces** — `YYYY-MM-DD` frontmatter dates parse as UTC midnight but were formatted in the local/runtime timezone, so the static build (PDT) showed one day earlier than the CF worker (UTC). All five blog-date formatters now pass `timeZone: 'UTC'`; "The Reliable Line" renders August 3 everywhere.
+
 #### Development
 
 - **Internal stdlib primers** (`project-docs/stdlib-primers/`, linked from the pinned section atop `website/bbwp/index.html`) — seven standalone blog-post-style pages, one per deterministic stdlib function (`hash01`, `hash11`, `hashRange`, `smoothstep`, `bump`, `noise`, `noise2`), each with a plain-language mental model and five worked examples climbing from a bare function plot to a finished composition. 35 compiled-in-process `.pathogen` examples; regenerable via `build-primers.ts` (`--only`, `--check`); local-only (serve:bbwp), never deployed. Multi-persona reviewed.

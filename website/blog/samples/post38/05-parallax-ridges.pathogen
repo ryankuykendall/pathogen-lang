@@ -1,0 +1,41 @@
+// viewBox="0 0 400 250"
+//-- Four mountain ridgelines, back to front. Each ridge is one seeded
+//-- noise stream; nearer ridges are darker, taller, and busier. The front
+//-- ridge stacks two streams -- a slow tall one plus a fast quiet one --
+//-- for detail on top of shape.
+
+define ViewBox(0, 0, 400, 250);
+
+fn ridge(name, baseY, seed, freq, amp, L) {
+  let c = Color(L, 0.06, 265);
+  let hill = PathLayer(name) ${ fill: c; stroke: none; };
+  hill.apply {
+    M 15 235
+    L 15 calc(baseY - noise(0, seed) * amp)
+    for (i in 1..140) {
+      let t = i / 140;
+      L calc(15 + t * 370) calc(baseY - noise(t * freq, seed) * amp)
+    }
+    L 385 235
+    Z
+  }
+}
+
+ridge('far', 105, 1, 3, 40, 0.72);
+ridge('middle', 135, 2, 4, 48, 0.58);
+ridge('near', 170, 3, 5, 55, 0.44);
+
+//-- Front ridge: slow + tall stacked with fast + quiet.
+let front = PathLayer('front') ${ fill: oklch(0.3 0.06 265); stroke: none; };
+front.apply {
+  M 15 235
+  let h0 = noise(0, 4) * 55 + noise(0, 5) * 12;
+  L 15 calc(205 - h0)
+  for (i in 1..140) {
+    let t = i / 140;
+    let h = noise(t * 3, 4) * 55 + noise(t * 9, 5) * 12;
+    L calc(15 + t * 370) calc(205 - h)
+  }
+  L 385 235
+  Z
+}

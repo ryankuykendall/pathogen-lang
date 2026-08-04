@@ -1,0 +1,26 @@
+// viewBox="0 0 400 220"
+//-- A 30 x 17 dot grid where each dot's radius samples the field at its
+//-- own position: 0.6 + 3 * noise2(col * 0.12, row * 0.12). Sizes swell
+//-- in blobs, like rain intensity across pavement.
+
+define ViewBox(0, 0, 400, 220);
+
+let dots = PathLayer('field') ${ fill: oklch(0.66 0.14 220); stroke: none; };
+dots.apply {
+  for (row in 0..16) {
+    for (col in 0..29) {
+      let v = noise2(col * 0.12, row * 0.12);
+      circle(calc(26 + col * 12), calc(38 + row * 10.2), calc(0.6 + 3 * v));
+    }
+  }
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(26, 27)`radius = 0.6 + 3 · noise2(col·0.12, row·0.12)`
+}

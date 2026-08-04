@@ -1,0 +1,26 @@
+// viewBox="0 0 400 260"
+//-- Five concentric "pencil" rings, each drawn twice like overlapping
+//-- pencil passes. Every vertex radius wobbles by a few percent, with the
+//-- ring number and pass number as seeds -- so every pass wobbles its own
+//-- way, and the whole sketch is repeatable.
+
+define ViewBox(0, 0, 400, 260);
+
+fn ring(name, r, seed) {
+  let g = PathLayer(name) ${ stroke: oklch(0.6 0.11 280); stroke-width: 1; fill: none; opacity: 0.65; };
+  g.apply {
+    let r0 = calc(r * (1 + hash11(0, seed) * 0.07));
+    M calc(200 + r0) 130
+    for (k in 1..64) {
+      let a = k / 64 * 2 * PI();
+      let rk = r * (1 + hash11(k, seed) * 0.07);
+      L calc(200 + rk * cos(a)) calc(130 + rk * sin(a))
+    }
+  }
+}
+
+for (i in 0..4) {
+  let radius = 28 + i * 20;
+  ring(`ring-${i}-a`, radius, calc(i * 2));
+  ring(`ring-${i}-b`, radius, calc(i * 2 + 1));
+}

@@ -1,0 +1,32 @@
+// viewBox="0 0 400 160"
+//-- The migration in one picture. Top row: dot sizes from
+//-- randomRange(1.5, 5) -- they reshuffle on every compile. Bottom row:
+//-- hashRange(i, 1.5, 5) -- same call shape with an index in front, and
+//-- the sizes are a fixture.
+
+define ViewBox(0, 0, 400, 160);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(22, 26)`randomRange(1.5, 5) — reshuffles every compile`
+  text(22, 96)`hashRange(i, 1.5, 5) — a fixture`
+}
+
+let rolling = PathLayer('rolling') ${ fill: oklch(0.6 0.15 20); stroke: none; };
+rolling.apply {
+  for (i in 0..39) {
+    circle(calc(26 + i * 9), 50, calc(randomRange(1.5, 5)));
+  }
+}
+
+let pinned = PathLayer('pinned') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+pinned.apply {
+  for (i in 0..39) {
+    circle(calc(26 + i * 9), 120, calc(hashRange(i, 1.5, 5)));
+  }
+}

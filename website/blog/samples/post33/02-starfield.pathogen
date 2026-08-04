@@ -1,0 +1,20 @@
+// viewBox="0 0 400 220"
+//-- One index, three decks: x from the default deck, y from deck 1, size
+//-- from deck 2. 140 stars land convincingly at random -- and land in
+//-- exactly the same places on every compile.
+
+define ViewBox(0, 0, 400, 220);
+
+let backdrop = PathLayer('night') ${ fill: oklch(0.22 0.04 275); stroke: none; };
+backdrop.apply {
+  rect(15, 15, 370, 190);
+}
+
+let stars = PathLayer('stars') ${ fill: oklch(0.92 0.03 260); stroke: none; };
+stars.apply {
+  for (i in 0..139) {
+    circle(calc(22 + hash01(i) * 356),
+           calc(22 + hash01(i, 1) * 176),
+           calc(0.5 + hash01(i, 2) * 1.4));
+  }
+}

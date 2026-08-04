@@ -1,0 +1,64 @@
+// viewBox="0 0 400 200"
+//-- Three ways to get from 0 to 1 across the window 0.3..0.7: a hard step
+//-- (cliff), a straight lerp-style ramp, and smoothstep -- the S-curve
+//-- that leaves the floor flat and arrives at the ceiling flat.
+
+define ViewBox(0, 0, 400, 200);
+
+let plotX = 50;
+let plotW = 300;
+let plotY = 150;
+let plotH = 90;
+
+let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+axis.apply {
+  M plotX plotY
+  L calc(plotX + plotW) plotY
+  M plotX calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+//-- Hard step: 0 before the midpoint of the window, 1 after.
+let cliff = PathLayer('cliff') ${ stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; };
+cliff.apply {
+  M plotX plotY
+  L calc(plotX + plotW * 0.5) plotY
+  L calc(plotX + plotW * 0.5) calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+//-- Straight ramp across the window.
+let ramp = PathLayer('ramp') ${ stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; };
+ramp.apply {
+  M plotX plotY
+  L calc(plotX + plotW * 0.3) plotY
+  L calc(plotX + plotW * 0.7) calc(plotY - plotH)
+  L calc(plotX + plotW) calc(plotY - plotH)
+}
+
+//-- The S-curve.
+let scurve = PathLayer('smoothstep') ${ stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; };
+scurve.apply {
+  M plotX plotY
+  for (i in 1..96) {
+    let t = i / 96;
+    let s = smoothstep(0.3, 0.7, t);
+    L calc(plotX + plotW * t) calc(plotY - plotH * s)
+  }
+}
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  fill: #888;
+  text-anchor: start;
+};
+labels.apply {
+  text(50, 176)`0`
+  text(160, 176)`edge0 = 0.3`
+  text(255, 176)`edge1 = 0.7`
+  text(50, 36)`smoothstep — bold · ramp — thin · step — dashed`
+}
+
+let scene = GroupLayer('scene') ${};
+scene.append(axis, cliff, ramp, scurve, labels);

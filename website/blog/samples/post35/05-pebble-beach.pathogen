@@ -1,0 +1,27 @@
+// viewBox="0 88 400 152"
+//-- Four overlapping rows of pebbles, back to front. Every knob is a
+//-- named range: width, squash, and gray-warmth per pebble, with nearer
+//-- rows drawing from bigger ranges. Tuning the beach means tuning
+//-- ranges -- narrow one row's width range and the rows behind stay put.
+
+define ViewBox(0, 88, 400, 152);
+
+fn pebbleRow(row, y0, minW, maxW, count) {
+  for (i in 0..count) {
+    let idx = row * 100 + i;
+    let w = hashRange(idx, minW, maxW);
+    let h = w * hashRange(idx, 0.55, 0.75, 1);
+    let x = hashRange(idx, 18, 380 - maxW, 2);
+    let L = hashRange(idx, 0.45, 0.68, 3) + row * 0.04;
+    let warm = Color(L, 0.02, 75);
+    let stone = PathLayer(`pebble-${idx}`) ${ fill: warm; stroke: none; };
+    stone.apply {
+      roundRect(x, calc(y0 - h), w, h, calc(h / 2));
+    }
+  }
+}
+
+pebbleRow(0, 120, 8, 18, 26);
+pebbleRow(1, 155, 10, 24, 22);
+pebbleRow(2, 192, 14, 32, 18);
+pebbleRow(3, 224, 18, 42, 14);

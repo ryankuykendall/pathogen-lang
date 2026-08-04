@@ -508,6 +508,7 @@ export const latestBlogPost: BlogPostMeta | null = null;
         year: 'numeric',
         month: 'long',
         day: 'numeric',
+        timeZone: 'UTC',
       });
       return `    <article class="blog-card" onclick="location.href='/blog/${entry.slug}'">
       <a href="/blog/${entry.slug}" style="text-decoration:none;color:inherit;display:block;">
@@ -545,6 +546,7 @@ ${indexCards}
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: 'UTC',
     });
 
     const postJsonLd = JSON.stringify({
