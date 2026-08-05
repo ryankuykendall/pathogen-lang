@@ -3053,12 +3053,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
               startPoint: { x: 0, y: 0 },
               endPoint: { x: 0, y: 0 },
             };
-            (pb as PathBlockValue & { advanceWidth: number }).advanceWidth = advanceWidth;
+            (pb as PathBlockValue & { advanceWidth: number; char: string }).advanceWidth = advanceWidth;
+            (pb as PathBlockValue & { advanceWidth: number; char: string }).char = char;
             glyphs.push(pb);
             continue;
           }
           const normalized = buildPathBlockFromCommands(commands, { x: 0, y: 0 });
-          (normalized as PathBlockValue & { advanceWidth: number }).advanceWidth = advanceWidth;
+          (normalized as PathBlockValue & { advanceWidth: number; char: string }).advanceWidth = advanceWidth;
+          (normalized as PathBlockValue & { advanceWidth: number; char: string }).char = char;
           glyphs.push(normalized);
         }
 
@@ -3869,6 +3871,30 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         const contourBlocks: Value[] = contourGroups.map((cmds) => buildPathBlockFromCommands(cmds, { x: 0, y: 0 }));
         return { type: 'ArrayValue' as const, elements: contourBlocks };
       }
+      case 'isEmpty':
+        return boolVal(obj.commands.length === 0);
+      case 'char': {
+        const char = (obj as PathBlockValue & { char?: string }).char;
+        if (char === undefined)
+          throw new Error(
+            formatError(
+              "'char' is only available on glyphs produced by PathBlock.fromGlyph() — it records the source character. Composing or transforming a glyph produces a new block without it",
+              line,
+            ),
+          );
+        return char;
+      }
+      case 'isWhitespace': {
+        const char = (obj as PathBlockValue & { char?: string }).char;
+        if (char === undefined)
+          throw new Error(
+            formatError(
+              "'isWhitespace' is only available on glyphs produced by PathBlock.fromGlyph() — it classifies the source character. Use 'isEmpty' to test whether any PathBlock has no commands",
+              line,
+            ),
+          );
+        return boolVal(/\s/.test(char));
+      }
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on PathBlock`, line));
     }
@@ -3896,6 +3922,8 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return { type: 'ArrayValue' as const, elements: [] };
       case 'subPathCommands':
         return { type: 'ArrayValue' as const, elements: [] };
+      case 'isEmpty':
+        return boolVal(obj.commands.length === 0);
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on ProjectedPath`, line));
     }

@@ -67,14 +67,24 @@ for ([glyph, gIndex] in glyphSet) {
 }
 `;
 
+// Also exercises the glyph provenance members (char / isWhitespace / isEmpty):
+// the space at index 5 must log " " / true / true, and empty glyphs are
+// skipped via !glyph.isEmpty during layout.
 const LATIN_PROGRAM = `define ViewBox(0, 0, 800, 200);
 @font "Inter" 400;
 let styles = \${ font-family: Inter; font-size: 64; };
 let glyphSet = PathBlock.fromGlyph(\`Latin only\`, styles);
+log(glyphSet[5].char);
+log(glyphSet[5].isWhitespace);
+log(glyphSet[5].isEmpty);
+log(glyphSet[0].char);
+log(glyphSet[0].isEmpty);
 let x = 20;
 let glyphLayer = PathLayer(\`latin-layer\`) << styles;
 for (glyph in glyphSet) {
-  glyphLayer.apply { M x 120 glyph.draw() }
+  if (!glyph.isEmpty) {
+    glyphLayer.apply { M x 120 glyph.draw() }
+  }
   x = calc(x + glyph.advanceWidth);
 }
 `;
@@ -88,6 +98,7 @@ interface ProbeResult {
   svgOuterHTML: string | null;
   errorPanelText: string | null;
   warnLogText: string | null;
+  consoleLogs: string[];
   previewStale: boolean | null;
 }
 
@@ -126,6 +137,7 @@ async function probe(page: Page): Promise<ProbeResult> {
       svgOuterHTML: null,
       errorPanelText: null,
       warnLogText: null,
+      consoleLogs: [],
       previewStale: null,
     };
 
@@ -155,12 +167,17 @@ async function probe(page: Page): Promise<ProbeResult> {
     // The console pane renders lazily — open it (as a user would) so the
     // log entries exist in the DOM, then look for the [warn] entry.
     const consolePane = deepQuery(document, 'console-pane') as
-      | (HTMLElement & { open?: () => void; shadowRoot: ShadowRoot | null })
+      | (HTMLElement & {
+          open?: () => void;
+          logs?: { parts?: { value?: string }[] }[];
+          shadowRoot: ShadowRoot | null;
+        })
       | null;
     if (consolePane?.open) consolePane.open();
     result.warnLogText = consolePane?.shadowRoot
       ? deepFindText(consolePane.shadowRoot, '[warn]')
       : deepFindText(document, '[warn]');
+    result.consoleLogs = (consolePane?.logs ?? []).map((l) => l.parts?.[0]?.value ?? '');
     return result;
   });
 }
@@ -269,6 +286,11 @@ const latin = await runScenario('Latin-only regression (Inter)', LATIN_PROGRAM);
   check('no compile error', !latin.result?.errorPanelText);
   check(`exactly one binary request (got ${binaries.length})`, binaries.length === 1);
   check('no [warn] log', !latin.result?.warnLogText);
+  const logs = latin.result?.consoleLogs ?? [];
+  check(
+    `glyph provenance members (char/isWhitespace/isEmpty) log correctly (got ${JSON.stringify(logs)})`,
+    logs[0] === ' ' && logs[1] === 'true' && logs[2] === 'true' && logs[3] === 'L' && logs[4] === 'false',
+  );
 }
 
 const nanum = await runScenario(

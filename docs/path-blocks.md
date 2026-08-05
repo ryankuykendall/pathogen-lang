@@ -91,6 +91,7 @@ let proj = shape.project(10, 10);
 | `subPathCommands` | `object[]` | Structured command list (see below) |
 | `startPoint` | `Point` | Always `Point(0, 0)` |
 | `endPoint` | `Point` | Final cursor position (relative to origin) |
+| `isEmpty` | `boolean` | `true` when the block contains no path commands — e.g. a space glyph from `fromGlyph`, or `subPath(t, t)` |
 
 ### ProjectedPath
 
@@ -884,11 +885,45 @@ let y = 100;
 for (g in glyphs) {
   M x y
   g.draw()
-  let x = calc(x + g.advanceWidth);
+  x = calc(x + g.advanceWidth);
 }
 ```
 
+Note the plain assignment `x = calc(...)` — a `let` inside the loop body would declare a fresh per-iteration variable that shadows the outer `x`, so the cursor would never advance.
+
 Space characters return an empty PathBlock (no path commands) but still have a non-zero `advanceWidth`.
+
+### char, isWhitespace, isEmpty
+
+Each glyph PathBlock records where it came from and whether it drew anything:
+
+| Property | Type | Description |
+|---|---|---|
+| `char` | `string` | The source character this glyph was generated from (1 character) |
+| `isWhitespace` | `boolean` | `true` when the source character is whitespace (space, tab, newline, …) |
+| `isEmpty` | `boolean` | `true` when the glyph produced no outline commands (spaces, and other outline-less characters) |
+
+`char` and `isWhitespace` exist only on glyphs produced by `fromGlyph` — reading them on any other PathBlock is an error. `isEmpty` works on every PathBlock (and ProjectedPath).
+
+Use `isWhitespace` to skip whitespace during layout:
+
+```
+@font "Inter";
+let styles = ${ font-family: Inter; font-size: 48; };
+let glyphs = PathBlock.fromGlyph("Hello world", styles);
+
+let x = 10;
+let y = 100;
+for (g in glyphs) {
+  if (!g.isWhitespace) {
+    M x y
+    g.draw()
+  }
+  x = calc(x + g.advanceWidth);
+}
+```
+
+`isWhitespace` and `isEmpty` are not the same test, in either direction: `isWhitespace` classifies the *source character*, while `isEmpty` reports whether the *outline* is blank. An unmapped control character can be empty without being whitespace — and whitespace can be non-empty: a tab or newline has no glyph in most fonts, so it renders the font's placeholder box (some fonts' placeholder has a visible outline, some don't). That is why the layout example above skips on `isWhitespace`, not `isEmpty`.
 
 ### contours
 

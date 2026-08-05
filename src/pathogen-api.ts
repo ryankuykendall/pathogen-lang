@@ -725,6 +725,12 @@ export interface PathogenPathBlock {
   readonly anchor: PathogenPoint;
   /** Per-contour PathBlocks */
   readonly contours: PathogenArray<PathogenPathBlock>;
+  /** True when the block has no path commands (e.g. a space glyph) */
+  readonly isEmpty: boolean;
+  /** Source character of a fromGlyph() glyph (fromGlyph results only) */
+  readonly char: string;
+  /** True when the fromGlyph() source character is whitespace (fromGlyph results only) */
+  readonly isWhitespace: boolean;
 
   // Core methods
   /** draw() — Emit path at the current pen position; returns a ProjectedPath */
@@ -1088,6 +1094,8 @@ export interface PathogenProjectedPath {
   readonly startPoint: PathogenPoint;
   /** Last point (absolute) */
   readonly endPoint: PathogenPoint;
+  /** True when the path has no commands */
+  readonly isEmpty: boolean;
   /** drawTo(x, y) — Re-draw translated to a new origin; returns a ProjectedPath */
   drawTo(x: number, y: number): PathogenProjectedPath;
   /** get(t) — Sample point at t */

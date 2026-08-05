@@ -388,6 +388,40 @@ describe('PathBlock.fromGlyph()', () => {
     expect(contourCount).toBeGreaterThanOrEqual(2); // O has inner + outer contour
   });
 
+  it('glyphs record their source character, whitespace flag, and emptiness', () => {
+    const result = compile(
+      `@font "Inter";
+       let glyphs = PathBlock.fromGlyph("A b", \${ font-family: Inter; font-size: 48; });
+       log(glyphs[0].char);
+       log(glyphs[0].isWhitespace);
+       log(glyphs[0].isEmpty);
+       log(glyphs[1].char);
+       log(glyphs[1].isWhitespace);
+       log(glyphs[1].isEmpty);
+       log(glyphs[2].char);`,
+      { fonts: registry },
+    );
+    const values = result.logs.map((l) => l.parts[0].value);
+    expect(values).toEqual(['A', 'false', 'false', ' ', 'true', 'true', 'b']);
+  });
+
+  it('isEmpty works on non-glyph PathBlocks and ProjectedPaths; char/isWhitespace do not', () => {
+    const result = compile(
+      `let pb = @{ m 0 0 l 10 0 };
+       log(pb.isEmpty);
+       log(pb.project(5, 5).isEmpty);`,
+    );
+    expect(result.logs[0].parts[0].value).toBe('false');
+    expect(result.logs[1].parts[0].value).toBe('false');
+
+    expect(() => compile(`let pb = @{ m 0 0 l 10 0 };\nlog(pb.char);`)).toThrow(
+      /char.*fromGlyph/s,
+    );
+    expect(() => compile(`let pb = @{ m 0 0 l 10 0 };\nlog(pb.isWhitespace);`)).toThrow(
+      /isWhitespace.*fromGlyph/s,
+    );
+  });
+
   it('throws without font registry', () => {
     expect(() =>
       compile(

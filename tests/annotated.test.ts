@@ -1029,3 +1029,30 @@ describe('array sort NaN guard (annotated parity)', () => {
     );
   });
 });
+
+describe('PathBlock isEmpty / char / isWhitespace (annotated parity)', () => {
+  // fromGlyph itself is unreachable in annotated mode (compileAnnotated has
+  // no font option), so only the non-glyph paths are testable here: isEmpty
+  // must resolve, and char/isWhitespace must throw the same guidance as the
+  // main evaluator.
+  it('isEmpty resolves on a PathBlock without throwing', () => {
+    expect(() =>
+      compileAnnotated('let pb = @{ m 0 0 l 10 0 };\nlet e = pb.isEmpty;\nM 0 0'),
+    ).not.toThrow();
+  });
+
+  it('isEmpty resolves on a ProjectedPath without throwing', () => {
+    expect(() =>
+      compileAnnotated('let pb = @{ m 0 0 l 10 0 };\nlet e = pb.project(5, 5).isEmpty;\nM 0 0'),
+    ).not.toThrow();
+  });
+
+  it('char and isWhitespace on non-glyph PathBlocks throw the fromGlyph guidance', () => {
+    expect(() =>
+      compileAnnotated('let pb = @{ m 0 0 l 10 0 };\nlet c = pb.char;\nM 0 0'),
+    ).toThrow(/char.*fromGlyph/s);
+    expect(() =>
+      compileAnnotated('let pb = @{ m 0 0 l 10 0 };\nlet w = pb.isWhitespace;\nM 0 0'),
+    ).toThrow(/isWhitespace.*fromGlyph/s);
+  });
+});

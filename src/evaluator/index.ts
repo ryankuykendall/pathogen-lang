@@ -5246,16 +5246,18 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
               startPoint: { x: 0, y: 0 },
               endPoint: { x: 0, y: 0 },
             };
-            // Store advanceWidth as expando property
-            (pb as PathBlockValue & { advanceWidth: number }).advanceWidth = advanceWidth;
+            // Store advanceWidth + source char as expando properties
+            (pb as PathBlockValue & { advanceWidth: number; char: string }).advanceWidth = advanceWidth;
+            (pb as PathBlockValue & { advanceWidth: number; char: string }).char = char;
             glyphs.push(pb);
             continue;
           }
 
           // Normalize to (0,0) origin
           const normalized = buildPathBlockFromCommands(commands, { x: 0, y: 0 });
-          // Attach advanceWidth as expando property
-          (normalized as PathBlockValue & { advanceWidth: number }).advanceWidth = advanceWidth;
+          // Attach advanceWidth + source char as expando properties
+          (normalized as PathBlockValue & { advanceWidth: number; char: string }).advanceWidth = advanceWidth;
+          (normalized as PathBlockValue & { advanceWidth: number; char: string }).char = char;
           glyphs.push(normalized);
         }
 
@@ -5685,6 +5687,24 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         );
         return { type: 'ArrayValue' as const, elements: contourBlocks };
       }
+      case 'isEmpty':
+        return boolVal(obj.commands.length === 0);
+      case 'char': {
+        const char = (obj as PathBlockValue & { char?: string }).char;
+        if (char === undefined)
+          throw new Error(
+            "'char' is only available on glyphs produced by PathBlock.fromGlyph() — it records the source character. Composing or transforming a glyph produces a new block without it",
+          );
+        return char;
+      }
+      case 'isWhitespace': {
+        const char = (obj as PathBlockValue & { char?: string }).char;
+        if (char === undefined)
+          throw new Error(
+            "'isWhitespace' is only available on glyphs produced by PathBlock.fromGlyph() — it classifies the source character. Use 'isEmpty' to test whether any PathBlock has no commands",
+          );
+        return boolVal(/\s/.test(char));
+      }
       default:
         throw new Error(`Property '${expr.property}' does not exist on PathBlock`);
     }
@@ -5742,6 +5762,8 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return { type: 'PointValue' as const, x: obj.startPoint.x, y: obj.startPoint.y };
       case 'endPoint':
         return { type: 'PointValue' as const, x: obj.endPoint.x, y: obj.endPoint.y };
+      case 'isEmpty':
+        return boolVal(obj.commands.length === 0);
       default:
         throw new Error(`Property '${expr.property}' does not exist on ProjectedPath`);
     }

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-05 (glyph provenance: char / isWhitespace / isEmpty)
+
+### Added
+
+#### Core
+
+- **`PathBlock.isEmpty`** — `true` when a block has no path commands; the documented way to detect space glyphs from `fromGlyph` (and other empty blocks like `subPath(t, t)`), replacing the undocumented `subPathCount == 0` idiom.
+- **`glyph.char` and `glyph.isWhitespace`** on `PathBlock.fromGlyph()` results — each glyph now records its source character (1-char string expando, like `advanceWidth`) and whether it is whitespace. Reading them on a non-glyph PathBlock errors with a pointer to `fromGlyph`/`isEmpty`. Implemented in both evaluators; completions/hover flow via `pathogen-api.ts`; documented in `docs/path-blocks.md` → "char, isWhitespace, isEmpty".
+
 ## [Unreleased] - 2026-08-05 (CJK Google Fonts subset loading)
 
 ### Fixed
