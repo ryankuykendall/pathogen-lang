@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { annotateUncuratedResolution } from '../playground/services/compiler-worker';
 import type { FontBinaryEntry } from '../playground/services/font-loader';
 
@@ -71,5 +71,110 @@ describe('annotateUncuratedResolution', () => {
       new Set(['Gravitas One']),
     );
     expect(notices).toHaveLength(1);
+  });
+});
+
+describe('resolveMissingGlyphSubsets', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const cjkCss = (family: string) => `@font-face {
+  font-family: '${family}';
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/fake/k0.woff2) format('woff2');
+  unicode-range: U+AC00-AC1F;
+}
+@font-face {
+  font-family: '${family}';
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/fake/k1.woff2) format('woff2');
+  unicode-range: U+D700-D7A3;
+}
+/* latin */
+@font-face {
+  font-family: '${family}';
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/fake/latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF;
+}`;
+
+  async function seedSubsetIndex(family: string) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.startsWith('https://fonts.googleapis.com/css2')) {
+          return new Response(cjkCss(family), { status: 200 });
+        }
+        return new Response(new Uint8Array([1, 2, 3, 4]).buffer, { status: 200 });
+      }),
+    );
+    const { fetchFontBinary } = await import('../playground/services/font-loader');
+    const outcome = await fetchFontBinary(family, 400);
+    if (!outcome.ok) throw new Error(`seed fetch failed: ${outcome.reason}`);
+    return binary(family, 400);
+  }
+
+  it('fetches covering slices and recompiles once, then stops when the report clears', async () => {
+    const { resolveMissingGlyphSubsets } = await import('../playground/services/compiler-worker');
+    const primary = await seedSubsetIndex('GlyphLoopFixTest');
+
+    const first = { missingGlyphs: [{ family: 'GlyphLoopFixTest', weight: 400, chars: ['가'] }] };
+    const second = { missingGlyphs: undefined };
+    const recompile = vi.fn(async () => second);
+
+    const { result, binaries } = await resolveMissingGlyphSubsets(first, recompile, [primary]);
+
+    expect(result).toBe(second);
+    expect(recompile).toHaveBeenCalledTimes(1);
+    expect(binaries).toHaveLength(2);
+    expect(binaries[1]).toMatchObject({
+      family: 'GlyphLoopFixTest',
+      weight: 400,
+      subsetUrl: 'https://fonts.gstatic.com/s/fake/k0.woff2',
+      unicodeRanges: [[0xac00, 0xac1f]],
+    });
+  });
+
+  it('does not recompile when no slice covers the missing chars', async () => {
+    const { resolveMissingGlyphSubsets } = await import('../playground/services/compiler-worker');
+    const primary = await seedSubsetIndex('GlyphLoopUncoveredTest');
+
+    // U+4E00 is outside every slice range — nothing fetchable
+    const first = { missingGlyphs: [{ family: 'GlyphLoopUncoveredTest', weight: 400, chars: ['一'] }] };
+    const recompile = vi.fn();
+
+    const { result, binaries } = await resolveMissingGlyphSubsets(first, recompile, [primary]);
+
+    expect(result).toBe(first); // unchanged — its [warn] logs stand
+    expect(recompile).not.toHaveBeenCalled();
+    expect(binaries).toEqual([primary]);
+  });
+
+  it('never exceeds 2 recompile passes even if misses keep being reported', async () => {
+    const { resolveMissingGlyphSubsets } = await import('../playground/services/compiler-worker');
+    const primary = await seedSubsetIndex('GlyphLoopCapTest');
+
+    // Each recompile reports a NEW fetchable char, so only the pass cap stops the loop.
+    const reports = [
+      { missingGlyphs: [{ family: 'GlyphLoopCapTest', weight: 400, chars: ['힣'] }] }, // k1
+      { missingGlyphs: [{ family: 'GlyphLoopCapTest', weight: 400, chars: ['가'] }] }, // k0 — never acted on
+    ];
+    let call = 0;
+    const recompile = vi.fn(async () => reports[call++]);
+
+    const first = { missingGlyphs: [{ family: 'GlyphLoopCapTest', weight: 400, chars: ['가'] }] };
+    await resolveMissingGlyphSubsets(first, recompile, [primary]);
+
+    expect(recompile).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns results without a missingGlyphs field untouched', async () => {
+    const { resolveMissingGlyphSubsets } = await import('../playground/services/compiler-worker');
+    const plain = { layers: [] };
+    const recompile = vi.fn();
+    const { result } = await resolveMissingGlyphSubsets(plain, recompile, []);
+    expect(result).toBe(plain);
+    expect(recompile).not.toHaveBeenCalled();
   });
 });

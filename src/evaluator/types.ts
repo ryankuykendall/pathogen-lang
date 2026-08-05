@@ -974,6 +974,13 @@ export interface CompileResult {
   logs: LogEntry[];
   calledStdlibFunctions: string[];
   viewBox?: ViewBoxValue;
+  /**
+   * Characters that had no glyph in any registered variant of the font they
+   * were rendered with. Hosts use this to fetch additional Google Fonts
+   * unicode-range subsets and recompile; anything still missing after that is
+   * genuinely absent from the font.
+   */
+  missingGlyphs?: Array<{ family: string; weight: number; chars: string[] }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -988,6 +995,12 @@ export interface FontData {
   weight: number; // 100-900
   style: 'normal' | 'italic';
   buffer: ArrayBuffer;
+  /**
+   * Inclusive codepoint ranges this buffer claims to cover (from the
+   * @font-face unicode-range of a Google Fonts subset slice). Absent means
+   * the buffer makes no claim and its cmap is the arbiter.
+   */
+  unicodeRanges?: Array<[number, number]>;
   _parsed?: unknown; // lazily parsed opentype.js Font object
 }
 
@@ -1044,6 +1057,7 @@ export interface EvaluationState {
   filters: Map<string, FilterValue>; // Filter definitions by ID
   cssProperties: Map<string, CSSPropertyDeclaration>; // @property declarations from Color(CSSVar(...))
   fontRegistry?: FontRegistry; // Loaded font data for precise metrics and glyph extraction
+  missingGlyphs?: Map<string, Set<string>>; // "family:weight" → chars with no glyph in any variant
   viewBox?: ViewBoxValue & { loc?: SourceLocation }; // Resolved viewBox from `define ViewBox(...)`
 }
 

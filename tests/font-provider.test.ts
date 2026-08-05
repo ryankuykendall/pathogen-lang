@@ -9,7 +9,14 @@ import {
   getFontFromRegistry,
   resolveFontDirectives,
 } from '../src/index';
-import { getAdvanceWidth, getVerticalMetrics, glyphToPathBlockCommands, splitContours } from '../src/evaluator/font-provider';
+import {
+  getAdvanceWidth,
+  getFontVariants,
+  getVerticalMetrics,
+  glyphToPathBlockCommands,
+  lookupGlyph,
+  splitContours,
+} from '../src/evaluator/font-provider';
 import type { FontRegistry } from '../src/index';
 
 // Load test fixture font
@@ -48,6 +55,78 @@ describe('FontRegistry', () => {
     const font = getFontFromRegistry(registry, 'Inter', 700);
     expect(font).not.toBeNull();
     expect(font!.weight).toBe(400); // nearest available
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getFontVariants + coverage-aware lookupGlyph
+// ---------------------------------------------------------------------------
+describe('getFontVariants', () => {
+  it('returns all buffers registered at the same weight, insertion order first', () => {
+    const r = createFontRegistry();
+    addFont(r, 'Inter', 400, 'normal', fontBuffer, [[0x00, 0xff]]);
+    addFont(r, 'Inter', 400, 'normal', fontBuffer, [[0xac00, 0xd7a3]]);
+    const variants = getFontVariants(r, 'Inter', 400);
+    expect(variants).toHaveLength(2);
+    expect(variants[0].unicodeRanges).toEqual([[0x00, 0xff]]);
+    expect(variants[1].unicodeRanges).toEqual([[0xac00, 0xd7a3]]);
+  });
+
+  it('orders exact weight matches before nearest-weight variants', () => {
+    const r = createFontRegistry();
+    addFont(r, 'Inter', 700, 'normal', fontBuffer);
+    addFont(r, 'Inter', 400, 'normal', fontBuffer);
+    const variants = getFontVariants(r, 'Inter', 400);
+    expect(variants.map((v) => v.weight)).toEqual([400, 700]);
+  });
+
+  it('preserves getFont semantics: first variant is the old best match', () => {
+    const r = createFontRegistry();
+    addFont(r, 'Inter', 300, 'normal', fontBuffer);
+    addFont(r, 'Inter', 500, 'normal', fontBuffer);
+    // 400 is equidistant; the old reduce kept the first-registered variant
+    expect(getFontFromRegistry(r, 'Inter', 400)!.weight).toBe(300);
+  });
+});
+
+describe('lookupGlyph', () => {
+  it('prefers the variant whose unicode-range covers the character', () => {
+    const r = createFontRegistry();
+    // Same buffer registered twice with disjoint fake ranges — only the
+    // range gate can distinguish them.
+    addFont(r, 'Inter', 400, 'normal', fontBuffer, [[0x41, 0x5a]]); // A-Z
+    addFont(r, 'Inter', 400, 'normal', fontBuffer, [[0x61, 0x7a]]); // a-z
+    const result = lookupGlyph(r, 'Inter', 400, 'normal', 'a', 48)!;
+    expect(result.missing).toBe(false);
+    expect(result.fontData.unicodeRanges).toEqual([[0x61, 0x7a]]);
+    expect(result.commands.length).toBeGreaterThan(0);
+  });
+
+  it('falls back to range-less variants via cmap check', () => {
+    const r = createFontRegistry();
+    addFont(r, 'Inter', 400, 'normal', fontBuffer, [[0xac00, 0xd7a3]]); // Hangul-only claim
+    addFont(r, 'Inter', 400, 'normal', fontBuffer); // no claim — cmap decides
+    const result = lookupGlyph(r, 'Inter', 400, 'normal', 'A', 48)!;
+    expect(result.missing).toBe(false);
+    expect(result.fontData.unicodeRanges).toBeUndefined();
+  });
+
+  it('flags characters no variant covers as missing', () => {
+    // Inter-Regular has no Hangul glyphs
+    const result = lookupGlyph(registry, 'Inter', 400, 'normal', '한', 48)!;
+    expect(result.missing).toBe(true);
+    expect(result.fontData.family).toBe('Inter');
+  });
+
+  it('does not flag whitespace as missing', () => {
+    const result = lookupGlyph(registry, 'Inter', 400, 'normal', ' ', 48)!;
+    expect(result.missing).toBe(false);
+    expect(result.commands).toEqual([]);
+    expect(result.advanceWidth).toBeGreaterThan(0);
+  });
+
+  it('returns null when the family has no variants', () => {
+    expect(lookupGlyph(registry, 'NotAFont', 400, 'normal', 'A', 48)).toBeNull();
   });
 });
 
@@ -333,6 +412,56 @@ describe('PathBlock.fromGlyph()', () => {
         { fonts: registry },
       ),
     ).toThrow('requires font-family');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Missing-glyph reporting (CompileResult.missingGlyphs + [warn] logs)
+// ---------------------------------------------------------------------------
+describe('missing glyph reporting', () => {
+  it('reports characters the font cannot render and warns', () => {
+    const result = compile(
+      `@font "Inter";
+       let glyphs = PathBlock.fromGlyph("A한B", \${ font-family: Inter; font-size: 48; });
+       log(glyphs.length);`,
+      { fonts: registry },
+    );
+    // Program still compiles — 3 glyphs, the Hangul one as .notdef placeholder
+    expect(result.logs[0].parts[0].value).toBe('3');
+    expect(result.missingGlyphs).toEqual([{ family: 'Inter', weight: 400, chars: ['한'] }]);
+    const warn = result.logs.find((l) => l.parts[0]?.value?.startsWith?.('[warn]'));
+    expect(warn).toBeDefined();
+    expect(warn!.parts[0].value).toContain("Font 'Inter' (weight 400)");
+    expect(warn!.parts[0].value).toContain('한');
+  });
+
+  it('omits missingGlyphs when everything is covered', () => {
+    const result = compile(
+      `@font "Inter";
+       let glyphs = PathBlock.fromGlyph("AB c", \${ font-family: Inter; font-size: 48; });`,
+      { fonts: registry },
+    );
+    expect(result.missingGlyphs).toBeUndefined();
+    expect(result.logs.some((l) => l.parts[0]?.value?.startsWith?.('[warn]'))).toBe(false);
+  });
+
+  it('deduplicates repeated missing characters', () => {
+    const result = compile(
+      `@font "Inter";
+       let glyphs = PathBlock.fromGlyph("한한한", \${ font-family: Inter; font-size: 48; });`,
+      { fonts: registry },
+    );
+    expect(result.missingGlyphs).toEqual([{ family: 'Inter', weight: 400, chars: ['한'] }]);
+  });
+
+  it('toPathBlock() records missing glyphs too', () => {
+    const result = compile(
+      `@font "Inter";
+       let tb = &{ text(0, 16)\`A한\` } << \${ font-family: Inter; font-size: 48; };
+       let pb = tb.toPathBlock();`,
+      { fonts: registry },
+    );
+    expect(result.missingGlyphs).toEqual([{ family: 'Inter', weight: 400, chars: ['한'] }]);
   });
 });
 

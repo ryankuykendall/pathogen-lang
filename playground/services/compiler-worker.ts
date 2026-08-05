@@ -5,6 +5,8 @@ import {
   extractFontReferences,
   extractFontReferencesFromCompileResult,
   extractUnknownFontDirectiveFamilies,
+  fetchFontSubsetsForChars,
+  getFetchedSubsetEntries,
   resolveFontBinaries,
 } from './font-loader.js';
 import type {
@@ -190,7 +192,7 @@ async function fallbackSync(
     }
     const registry = lib.createFontRegistry();
     for (const fb of fontBuffers) {
-      lib.addFont(registry, fb.family, fb.weight, fb.style, fb.buffer);
+      lib.addFont(registry, fb.family, fb.weight, fb.style, fb.buffer, fb.unicodeRanges);
     }
     compileOptions = { ...(options ?? {}), fonts: registry };
   }
@@ -367,9 +369,13 @@ export async function compile(
   if (failures.length > 0) {
     throw new Error(formatFontFailures(failures));
   }
-  const result = await sendRequest('compile', source, compilationId, isStale, options, binaries);
-  const post = await resolvePostCompileFonts(result, binaries);
-  return attachFontDiagnostics(result, post.binaries, [...substitutions, ...post.substitutions], notices);
+  const withSubsets = appendCachedSubsetEntries(binaries);
+  const recompile = (bins: FontBinaryEntry[]) =>
+    sendRequest('compile', source, compilationId, isStale, options, bins);
+  const first = await recompile(withSubsets);
+  const glyphPass = await resolveMissingGlyphSubsets(first, recompile, withSubsets);
+  const post = await resolvePostCompileFonts(glyphPass.result, glyphPass.binaries);
+  return attachFontDiagnostics(glyphPass.result, post.binaries, [...substitutions, ...post.substitutions], notices);
 }
 
 /**
@@ -405,9 +411,77 @@ export async function compileWithContext(
   if (failures.length > 0) {
     throw new Error(formatFontFailures(failures));
   }
-  const result = await sendRequest('compileWithContext', source, compilationId, isStale, options, binaries);
-  const post = await resolvePostCompileFonts(result, binaries);
-  return attachFontDiagnostics(result, post.binaries, [...substitutions, ...post.substitutions], notices);
+  const withSubsets = appendCachedSubsetEntries(binaries);
+  const recompile = (bins: FontBinaryEntry[]) =>
+    sendRequest('compileWithContext', source, compilationId, isStale, options, bins);
+  const first = await recompile(withSubsets);
+  const glyphPass = await resolveMissingGlyphSubsets(first, recompile, withSubsets);
+  const post = await resolvePostCompileFonts(glyphPass.result, glyphPass.binaries);
+  return attachFontDiagnostics(glyphPass.result, post.binaries, [...substitutions, ...post.substitutions], notices);
+}
+
+/**
+ * Include any previously fetched subset slices alongside the primary
+ * binaries so steady-state compiles of a CJK program carry full coverage up
+ * front and skip the missing-glyph recompile below.
+ */
+function appendCachedSubsetEntries(binaries: FontBinaryEntry[]): FontBinaryEntry[] {
+  const extras: FontBinaryEntry[] = [];
+  for (const b of binaries) {
+    if (b.subsetUrl) continue; // already a subset slice
+    for (const entry of getFetchedSubsetEntries(b.family, b.weight)) {
+      const seen = [...binaries, ...extras].some(
+        (x) => x.family === entry.family && x.weight === entry.weight && x.subsetUrl === entry.subsetUrl,
+      );
+      if (!seen) extras.push(entry);
+    }
+  }
+  return extras.length > 0 ? [...binaries, ...extras] : binaries;
+}
+
+/**
+ * Missing-glyph resolution: the initial load fetches only the primary
+ * (latin) slice of a Google Fonts family, but fromGlyph/toPathBlock text is
+ * only known at eval time. When a compile reports characters no loaded
+ * buffer covers, fetch the unicode-range slices covering them and recompile
+ * with the augmented set. Capped at 2 passes and gated on progress (new
+ * entries fetched), so a font that genuinely lacks the characters
+ * terminates immediately — its result keeps the evaluator's [warn] logs.
+ *
+ * Exported for unit tests.
+ */
+export async function resolveMissingGlyphSubsets(
+  result: unknown,
+  recompile: (binaries: FontBinaryEntry[]) => Promise<unknown>,
+  binaries: FontBinaryEntry[],
+): Promise<{ result: unknown; binaries: FontBinaryEntry[] }> {
+  let currentResult = result;
+  let currentBinaries = binaries;
+
+  for (let pass = 0; pass < 2; pass++) {
+    if (!currentResult || typeof currentResult !== 'object') break;
+    const reports = (currentResult as {
+      missingGlyphs?: Array<{ family: string; weight: number; chars: string[] }>;
+    }).missingGlyphs;
+    if (!Array.isArray(reports) || reports.length === 0) break;
+
+    const newEntries: FontBinaryEntry[] = [];
+    for (const report of reports) {
+      const { entries } = await fetchFontSubsetsForChars(report.family, report.weight, report.chars);
+      for (const entry of entries) {
+        const seen = [...currentBinaries, ...newEntries].some(
+          (b) => b.family === entry.family && b.weight === entry.weight && b.subsetUrl === entry.subsetUrl,
+        );
+        if (!seen) newEntries.push(entry);
+      }
+    }
+
+    if (newEntries.length === 0) break; // nothing fetchable — warnings stand
+    currentBinaries = [...currentBinaries, ...newEntries];
+    currentResult = await recompile(currentBinaries);
+  }
+
+  return { result: currentResult, binaries: currentBinaries };
 }
 
 /**

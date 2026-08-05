@@ -72,14 +72,46 @@ export function addFont(
   weight: number,
   style: 'normal' | 'italic',
   buffer: ArrayBuffer,
+  unicodeRanges?: Array<[number, number]>,
 ): void {
   const fontData: FontData = { family, weight, style, buffer };
+  if (unicodeRanges) fontData.unicodeRanges = unicodeRanges;
   const existing = registry.fonts.get(family);
   if (existing) {
     existing.push(fontData);
   } else {
     registry.fonts.set(family, [fontData]);
   }
+}
+
+/**
+ * All variants of a family ordered by match quality: exact weight+style
+ * matches first (insertion order — several subset slices can share one
+ * weight), then same-style by weight distance, then the rest by weight
+ * distance. Stable, so ties keep registration order.
+ */
+export function getFontVariants(
+  registry: FontRegistry,
+  family: string,
+  weight = 400,
+  style = 'normal',
+): FontData[] {
+  const variants = registry.fonts.get(family);
+  if (!variants || variants.length === 0) return [];
+
+  const exact: FontData[] = [];
+  const sameStyle: FontData[] = [];
+  const rest: FontData[] = [];
+  for (const v of variants) {
+    if (v.weight === weight && v.style === style) exact.push(v);
+    else if (v.style === style) sameStyle.push(v);
+    else rest.push(v);
+  }
+  const byDistance = (a: FontData, b: FontData) =>
+    Math.abs(a.weight - weight) - Math.abs(b.weight - weight);
+  sameStyle.sort(byDistance);
+  rest.sort(byDistance);
+  return [...exact, ...sameStyle, ...rest];
 }
 
 /**
@@ -91,25 +123,7 @@ export function getFont(
   weight = 400,
   style = 'normal',
 ): FontData | null {
-  const variants = registry.fonts.get(family);
-  if (!variants || variants.length === 0) return null;
-
-  // Exact match first
-  const exact = variants.find((v) => v.weight === weight && v.style === style);
-  if (exact) return exact;
-
-  // Match style, nearest weight
-  const sameStyle = variants.filter((v) => v.style === style);
-  if (sameStyle.length > 0) {
-    return sameStyle.reduce((best, v) =>
-      Math.abs(v.weight - weight) < Math.abs(best.weight - weight) ? v : best,
-    );
-  }
-
-  // Any variant, nearest weight
-  return variants.reduce((best, v) =>
-    Math.abs(v.weight - weight) < Math.abs(best.weight - weight) ? v : best,
-  );
+  return getFontVariants(registry, family, weight, style)[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -271,6 +285,124 @@ export function glyphToPathBlockCommands(
   }
 
   return { commands: pbCommands, advanceWidth };
+}
+
+/**
+ * Whether a variant's cmap actually maps this character. opentype.js
+ * `hasChar` is unusable here: the cmap lookup returns `|| 0` and hasChar
+ * tests `!== null`, so it is true for every input. Glyph index 0 is .notdef
+ * by the OpenType spec, so `> 0` is the real coverage test.
+ */
+function variantCoversChar(fontData: FontData, char: string): boolean {
+  return getParsedFont(fontData).charToGlyphIndex(char) > 0;
+}
+
+export interface GlyphLookupResult {
+  commands: PathBlockCommand[];
+  advanceWidth: number;
+  /** True when no registered variant has a glyph for this character (rendered as .notdef). */
+  missing: boolean;
+  fontData: FontData;
+}
+
+/**
+ * Coverage-aware glyph lookup across all registered variants of a family.
+ *
+ * Google Fonts serves one buffer per unicode-range subset, so a single
+ * family+weight can have many buffers each covering a different script.
+ * Variants that declare unicodeRanges are consulted first (cheap gate that
+ * avoids parsing buffers that can't cover the char), then range-less
+ * variants; the cmap is always the final arbiter. If nothing covers the
+ * char, the best-match variant renders its .notdef and `missing` is set —
+ * except for whitespace, which many fonts legitimately leave unmapped.
+ *
+ * Returns null when the family has no variants at all (callers surface
+ * their own "font not found" errors).
+ */
+export function lookupGlyph(
+  registry: FontRegistry,
+  family: string,
+  weight: number,
+  style: 'normal' | 'italic',
+  char: string,
+  fontSize: number,
+): GlyphLookupResult | null {
+  const variants = getFontVariants(registry, family, weight, style);
+  if (variants.length === 0) return null;
+
+  const codePoint = char.codePointAt(0) ?? 0;
+
+  for (const v of variants) {
+    if (!v.unicodeRanges) continue;
+    const inRange = v.unicodeRanges.some(([lo, hi]) => codePoint >= lo && codePoint <= hi);
+    if (inRange && variantCoversChar(v, char)) {
+      return { ...glyphToPathBlockCommands(v, char, fontSize), missing: false, fontData: v };
+    }
+  }
+
+  for (const v of variants) {
+    if (v.unicodeRanges) continue;
+    if (variantCoversChar(v, char)) {
+      return { ...glyphToPathBlockCommands(v, char, fontSize), missing: false, fontData: v };
+    }
+  }
+
+  const fallback = variants[0];
+  const missing = !/\s/.test(char);
+  return { ...glyphToPathBlockCommands(fallback, char, fontSize), missing, fontData: fallback };
+}
+
+/**
+ * Record a character that no variant of `family` could render, keyed
+ * "family:weight" on the shared evaluation state (lazily created — most
+ * programs never miss).
+ */
+export function recordMissingGlyph(
+  state: { missingGlyphs?: Map<string, Set<string>> },
+  family: string,
+  weight: number,
+  char: string,
+): void {
+  if (!state.missingGlyphs) state.missingGlyphs = new Map();
+  const key = `${family}:${weight}`;
+  let chars = state.missingGlyphs.get(key);
+  if (!chars) {
+    chars = new Set();
+    state.missingGlyphs.set(key, chars);
+  }
+  chars.add(char);
+}
+
+const MISSING_GLYPH_WARN_LIMIT = 20;
+
+/**
+ * Convert the recorded misses into the CompileResult report plus one [warn]
+ * log line per family:weight group. Shared by both evaluators' result
+ * assembly so the wording can't drift.
+ */
+export function buildMissingGlyphReports(
+  missingGlyphs: Map<string, Set<string>> | undefined,
+): { reports: Array<{ family: string; weight: number; chars: string[] }>; warnings: string[] } {
+  const reports: Array<{ family: string; weight: number; chars: string[] }> = [];
+  const warnings: string[] = [];
+  if (!missingGlyphs) return { reports, warnings };
+
+  for (const [key, charSet] of missingGlyphs) {
+    const sep = key.lastIndexOf(':');
+    const family = key.slice(0, sep);
+    const weight = parseInt(key.slice(sep + 1), 10) || 400;
+    const chars = Array.from(charSet);
+    reports.push({ family, weight, chars });
+
+    const shown = chars.slice(0, MISSING_GLYPH_WARN_LIMIT).join(', ');
+    const more = chars.length > MISSING_GLYPH_WARN_LIMIT
+      ? ` … and ${chars.length - MISSING_GLYPH_WARN_LIMIT} more`
+      : '';
+    warnings.push(
+      `[warn] Font '${family}' (weight ${weight}) has no loaded glyph for: ${shown}${more} — rendered as placeholder boxes`,
+    );
+  }
+  return { reports, warnings };
 }
 
 /**

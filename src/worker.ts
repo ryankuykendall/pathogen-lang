@@ -10,6 +10,8 @@ export interface FontBuffer {
   weight: number;
   style: 'normal' | 'italic';
   buffer: ArrayBuffer;
+  // Codepoint coverage claim of a Google Fonts subset slice (see FontData.unicodeRanges)
+  unicodeRanges?: Array<[number, number]>;
 }
 
 export interface WorkerRequest {
@@ -34,7 +36,7 @@ export interface WorkerResponse {
 function buildRegistryFromBuffers(buffers: FontBuffer[]): FontRegistry {
   const registry = createFontRegistry();
   for (const fb of buffers) {
-    addFont(registry, fb.family, fb.weight, fb.style, fb.buffer);
+    addFont(registry, fb.family, fb.weight, fb.style, fb.buffer, fb.unicodeRanges);
   }
   return registry;
 }

@@ -8,6 +8,10 @@ export interface FontBinaryEntry {
   weight: number;
   style: 'normal' | 'italic';
   buffer: ArrayBuffer;
+  /** Codepoint coverage claim when this entry is a Google Fonts subset slice. */
+  unicodeRanges?: Array<[number, number]>;
+  /** Source URL of the subset slice — dedup identity across recompiles. */
+  subsetUrl?: string;
 }
 
 export interface FontResolutionFailure {
@@ -71,6 +75,27 @@ const fontFailureCache: Map<string, { reason: string; expires: number }> = new M
 // (the curated equivalent is recomputed from getKnownVariants; unknown
 // families have no catalog entry).
 const defaultWeightServed: Map<string, number> = new Map();
+
+/** One unicode-range slice of a family:weight from a multi-block css2 response. */
+interface FontSubsetSlice {
+  url: string;
+  unicodeRanges: Array<[number, number]> | null;
+  label: string | null;
+  /** The slice extractFontUrlFromGoogleFontsCss picked — its buffer is the primary binary. */
+  primary: boolean;
+  fetched: boolean;
+  buffer?: ArrayBuffer;
+}
+
+// "family:weight" → subset slices, populated only when a css2 response has
+// multiple @font-face blocks (Google splits CJK fonts into ~100 slices).
+// Keyed with the same key pairs as fontBinaryCache so lookups by requested
+// weight always hit. Single-block responses (and non-browser-UA full TTFs)
+// store nothing.
+const fontSubsetIndex: Map<string, FontSubsetSlice[]> = new Map();
+
+// In-flight slice fetch dedup, keyed by slice URL.
+const pendingSliceFetches: Map<string, Promise<ArrayBuffer>> = new Map();
 
 /**
  * Fetch a font binary from Google Fonts CDN.
@@ -146,9 +171,13 @@ export async function fetchFontBinary(
 
   const fetchPromise = (async (): Promise<FontFetchOutcome> => {
     try {
-      const { buffer } = await fetchFontBinaryUncached(family, weightUsed);
+      const { buffer, slices } = await fetchFontBinaryUncached(family, weightUsed);
       fontBinaryCache.set(cacheKey, buffer);
       fontBinaryCache.set(`${family}:${weight}`, buffer);
+      if (slices) {
+        fontSubsetIndex.set(cacheKey, slices);
+        fontSubsetIndex.set(`${family}:${weight}`, slices);
+      }
       return { ok: true, buffer, weightUsed };
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
@@ -162,12 +191,16 @@ export async function fetchFontBinary(
       // family's default style — a real family with a wrong weight must not
       // masquerade as "font not found".
       try {
-        const { buffer, cssWeight } = await fetchFontBinaryUncached(family, null);
+        const { buffer, cssWeight, slices } = await fetchFontBinaryUncached(family, null);
         const served = cssWeight ?? 400;
         defaultWeightServed.set(`${family}:${weight}`, served);
         defaultWeightServed.set(`${family}:${weightUsed}`, served);
         fontBinaryCache.set(`${family}:${served}`, buffer);
         fontBinaryCache.set(`${family}:${weight}`, buffer);
+        if (slices) {
+          fontSubsetIndex.set(`${family}:${served}`, slices);
+          fontSubsetIndex.set(`${family}:${weight}`, slices);
+        }
         return { ok: true, buffer, weightUsed: served };
       } catch {
         // Report the ORIGINAL reason — it corresponds to the request the
@@ -190,7 +223,7 @@ export async function fetchFontBinary(
 async function fetchFontBinaryUncached(
   family: string,
   weight: number | null, // null → omit ":wght@…" so css2 serves the family default
-): Promise<{ buffer: ArrayBuffer; cssWeight: number | null }> {
+): Promise<{ buffer: ArrayBuffer; cssWeight: number | null; slices: FontSubsetSlice[] | null }> {
   // Browsers ignore custom User-Agent headers in fetch (per Fetch spec
   // forbidden-header rules), so Google Fonts always returns multi-block
   // WOFF2 for browser UAs. We pick the latin block (ASCII glyphs) and
@@ -225,10 +258,194 @@ async function fetchFontBinaryUncached(
       throw new Error(`WOFF2 decode failed: ${detail}`);
     }
   }
+
+  // Multi-block responses (one @font-face per unicode-range subset) are
+  // indexed so fetchFontSubsetsForChars can pull non-latin slices on demand.
+  const cssBlocks = parseGoogleFontsCss(css);
+  const slices: FontSubsetSlice[] | null =
+    cssBlocks.length > 1
+      ? cssBlocks.map((b) => ({
+          url: b.url,
+          unicodeRanges: b.unicodeRanges,
+          label: b.label,
+          primary: b.url === fontUrl,
+          fetched: b.url === fontUrl,
+          ...(b.url === fontUrl ? { buffer } : {}),
+        }))
+      : null;
+
   // Report the weight css2 actually served (its @font-face declares it) so a
   // default-weight fallback can attribute the substitution accurately.
   const weightMatch = css.match(/font-weight:\s*(\d+)/);
-  return { buffer, cssWeight: weightMatch ? parseInt(weightMatch[1], 10) : null };
+  return { buffer, cssWeight: weightMatch ? parseInt(weightMatch[1], 10) : null, slices };
+}
+
+/**
+ * Locate the subset slice list for a family+weight, mirroring the
+ * requested/snapped-weight key fallback used by fontBinaryCache lookups.
+ */
+function lookupSubsetSlices(family: string, weight: number): FontSubsetSlice[] | null {
+  const variants = getKnownVariants(family);
+  const weightUsed = variants !== null ? nearestWeight(weight, variants) : weight;
+  return (
+    fontSubsetIndex.get(`${family}:${weight}`) ??
+    fontSubsetIndex.get(`${family}:${weightUsed}`) ??
+    null
+  );
+}
+
+function sliceToEntry(family: string, weight: number, slice: FontSubsetSlice): FontBinaryEntry {
+  return {
+    // Register under the REQUESTED weight (same policy as resolveFontBinaries):
+    // the source's font-weight reaches the SVG verbatim and must match.
+    family,
+    weight,
+    style: 'normal',
+    buffer: slice.buffer!,
+    ...(slice.unicodeRanges ? { unicodeRanges: slice.unicodeRanges } : {}),
+    subsetUrl: slice.url,
+  };
+}
+
+/**
+ * Fetch the unicode-range subset slices of `family` that cover `chars`.
+ *
+ * Used after a compile reports characters no loaded buffer could render:
+ * Google Fonts splits CJK families into ~100 slices and the initial load
+ * fetches only the latin one. Returns entries for every fetched covering
+ * slice beyond the primary (already-fetched slices included, so the caller
+ * can rebuild the full binary set) plus the characters nothing covers.
+ *
+ * Never throws — a slice fetch failure just leaves its characters in
+ * `uncoveredChars`, downgrading the fix to a warning.
+ */
+export async function fetchFontSubsetsForChars(
+  family: string,
+  weight: number,
+  chars: string[],
+): Promise<{ entries: FontBinaryEntry[]; uncoveredChars: string[] }> {
+  const slices = lookupSubsetSlices(family, weight);
+  if (!slices) {
+    // No subset index: single-block response (full font) — the cmap already
+    // decided, nothing more to fetch.
+    return { entries: [], uncoveredChars: [...chars] };
+  }
+
+  const covering = (char: string): FontSubsetSlice[] => {
+    const cp = char.codePointAt(0) ?? 0;
+    return slices.filter((s) => s.unicodeRanges?.some(([lo, hi]) => cp >= lo && cp <= hi));
+  };
+
+  const needed = new Set<FontSubsetSlice>();
+  for (const char of chars) {
+    for (const slice of covering(char)) needed.add(slice);
+  }
+
+  await Promise.all(
+    Array.from(needed)
+      .filter((slice) => !slice.fetched)
+      .map(async (slice) => {
+        try {
+          let promise = pendingSliceFetches.get(slice.url);
+          if (!promise) {
+            promise = (async () => {
+              const res = await fetch(slice.url);
+              if (!res.ok) throw new Error(`Font subset fetch failed: ${res.status}`);
+              let buf = await res.arrayBuffer();
+              if (isWoff2(buf)) buf = await decompressWoff2(buf);
+              return buf;
+            })();
+            pendingSliceFetches.set(slice.url, promise);
+          }
+          slice.buffer = await promise;
+          slice.fetched = true;
+        } catch {
+          // Leave unfetched — its chars stay uncovered. A subset failure must
+          // not abort a compile that already succeeded.
+        } finally {
+          pendingSliceFetches.delete(slice.url);
+        }
+      }),
+  );
+
+  const uncoveredChars = chars.filter((char) => !covering(char).some((s) => s.fetched));
+  const entries = Array.from(needed)
+    .filter((s) => s.fetched && !s.primary)
+    .map((s) => sliceToEntry(family, weight, s));
+  return { entries, uncoveredChars };
+}
+
+/**
+ * Already-fetched non-primary subset slices for a family+weight, as binary
+ * entries. Lets a recompile include previously fetched slices up front so
+ * steady-state compiles of a CJK program skip the missing-glyph round trip.
+ */
+export function getFetchedSubsetEntries(family: string, weight: number): FontBinaryEntry[] {
+  const slices = lookupSubsetSlices(family, weight);
+  if (!slices) return [];
+  return slices.filter((s) => s.fetched && !s.primary).map((s) => sliceToEntry(family, weight, s));
+}
+
+/** One @font-face block from a Google Fonts css2 response. */
+export interface GoogleFontsCssBlock {
+  url: string;
+  /** Label from the comment Google places before the block (e.g. "latin"); CJK slices are unlabeled, so null. */
+  label: string | null;
+  weight: number | null;
+  style: 'normal' | 'italic';
+  unicodeRanges: Array<[number, number]> | null;
+}
+
+/**
+ * Parse a CSS `unicode-range` descriptor value into inclusive codepoint
+ * ranges. Handles single points (`U+0131`), ranges (`U+D723-D728`), and
+ * wildcards (`U+4??` → U+400-4FF). Malformed segments are skipped.
+ */
+export function parseUnicodeRange(value: string): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  for (const segment of value.split(',')) {
+    const m = segment.trim().match(/^U\+([0-9A-F?]{1,6})(?:-([0-9A-F]{1,6}))?$/i);
+    if (!m) continue;
+    if (m[1].includes('?')) {
+      if (m[2]) continue; // wildcards can't combine with an explicit end
+      const lo = parseInt(m[1].replace(/\?/g, '0'), 16);
+      const hi = parseInt(m[1].replace(/\?/g, 'F'), 16);
+      if (!Number.isNaN(lo) && !Number.isNaN(hi)) ranges.push([lo, hi]);
+      continue;
+    }
+    const lo = parseInt(m[1], 16);
+    const hi = m[2] ? parseInt(m[2], 16) : lo;
+    if (!Number.isNaN(lo) && !Number.isNaN(hi) && hi >= lo) ranges.push([lo, hi]);
+  }
+  return ranges;
+}
+
+/**
+ * Parse every @font-face block of a Google Fonts css2 response. Blocks
+ * without a url() (e.g. local()-only) are skipped. For CJK families the
+ * response has ~100 unlabeled blocks, each covering a unicode-range slice
+ * of the glyph repertoire.
+ */
+export function parseGoogleFontsCss(css: string): GoogleFontsCssBlock[] {
+  const blocks: GoogleFontsCssBlock[] = [];
+  const blockRe = /(?:\/\*\s*([^*/]*?)\s*\*\/\s*)?@font-face\s*\{([^}]*)\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = blockRe.exec(css)) !== null) {
+    const body = m[2];
+    const url = body.match(/url\(([^)]+)\)/)?.[1];
+    if (!url) continue;
+    const weightMatch = body.match(/font-weight:\s*(\d+)/);
+    const styleMatch = body.match(/font-style:\s*(normal|italic)/);
+    const rangeMatch = body.match(/unicode-range:\s*([^;]+)/);
+    blocks.push({
+      url,
+      label: m[1] || null,
+      weight: weightMatch ? parseInt(weightMatch[1], 10) : null,
+      style: styleMatch ? (styleMatch[1] as 'normal' | 'italic') : 'normal',
+      unicodeRanges: rangeMatch ? parseUnicodeRange(rangeMatch[1]) : null,
+    });
+  }
+  return blocks;
 }
 
 /**
@@ -237,11 +454,17 @@ async function fetchFontBinaryUncached(
  * Google Fonts splits a single weight into multiple `@font-face` blocks, one
  * per Unicode subset (latin, latin-ext, cyrillic, vietnamese, …). We prefer
  * the latin block since that's where ASCII glyphs live; if no labeled block
- * matches, we fall back to the first `url(...)` in the document.
+ * matches, we fall back to the first `url(...)` in the document. Non-latin
+ * slices are indexed separately and fetched on demand — see
+ * fetchFontSubsetsForChars.
  */
 export function extractFontUrlFromGoogleFontsCss(css: string): string | null {
-  const latinMatch = css.match(/\/\*\s*latin\s*\*\/[\s\S]*?url\(([^)]+)\)/);
-  if (latinMatch) return latinMatch[1];
+  const blocks = parseGoogleFontsCss(css);
+  const latin = blocks.find((b) => b.label === 'latin');
+  if (latin) return latin.url;
+  if (blocks.length > 0) return blocks[0].url;
+  // Defensive parity with the pre-parser fallback: a url() outside any
+  // parseable @font-face block.
   const anyMatch = css.match(/src:[^;]*url\(([^)]+)\)/);
   return anyMatch ? anyMatch[1] : null;
 }
@@ -658,11 +881,22 @@ export function fontBinariesToCss(entries: FontBinaryEntry[]): string {
   return entries
     .map((e) => {
       const b64 = arrayBufferToBase64(e.buffer);
+      // Subset slices declare their coverage so the browser composes them
+      // into one logical face instead of letting the last-declared win.
+      const rangeDecl = e.unicodeRanges?.length
+        ? `\n  unicode-range: ${e.unicodeRanges
+            .map(([lo, hi]) =>
+              lo === hi
+                ? `U+${lo.toString(16).toUpperCase()}`
+                : `U+${lo.toString(16).toUpperCase()}-${hi.toString(16).toUpperCase()}`,
+            )
+            .join(', ')};`
+        : '';
       return `@font-face {
   font-family: "${escapeFontFamily(e.family)}";
   font-weight: ${e.weight};
   font-style: ${e.style};
-  font-display: swap;
+  font-display: swap;${rangeDecl}
   src: url("data:font/ttf;base64,${b64}") format("truetype");
 }`;
     })

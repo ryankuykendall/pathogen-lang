@@ -68,7 +68,7 @@ import {
   type CapSpec,
 } from './variable-offset-geometry';
 import { estimateTextBoundingBox, bboxOverlaps, bboxPathIntersects, bboxPathIntersectionPoints, resolveFontFamily, resolveFontWeight, resolveEffectiveFontSize } from './font-metrics';
-import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';
+import { getFont, lookupGlyph, recordMissingGlyph, buildMissingGlyphReports, splitContours } from './font-provider';
 import { normalizeCodeText, tokenizeLine, getTokenColor } from './code-snippet';
 
 import type { PathContext, TransformState } from './context';
@@ -3852,20 +3852,26 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             if (!fontFamily) {
               throw mError('toPathBlock() requires font-family to be set in styles');
             }
-            const fontData = getFont(fontRegistry, fontFamily, fontWeight);
-            if (!fontData) {
+            if (!getFont(fontRegistry, fontFamily, fontWeight)) {
               const available = Array.from(fontRegistry.fonts.keys()).join(', ');
               throw mError(`toPathBlock() font '${fontFamily}' not loaded. Available: ${available || 'none'}`);
             }
 
             for (const char of text) {
               if (char === ' ' || char === '\t') {
-                // Space: advance cursor without generating outline commands
-                const { advanceWidth } = glyphToPathBlockCommands(fontData, char, fontSize);
+                // Space: advance cursor without generating outline commands.
+                // Still goes through lookupGlyph so the advance width comes
+                // from a variant that actually maps the character, not from
+                // whichever buffer happens to be registered first.
+                const { advanceWidth } = lookupGlyph(fontRegistry, fontFamily, fontWeight, 'normal', char, fontSize)!;
                 cursorX += advanceWidth + letterSpacing;
                 continue;
               }
-              const { commands: glyphCmds, advanceWidth } = glyphToPathBlockCommands(fontData, char, fontSize);
+              const lookup = lookupGlyph(fontRegistry, fontFamily, fontWeight, 'normal', char, fontSize)!;
+              const { commands: glyphCmds, advanceWidth } = lookup;
+              if (lookup.missing && scope.evalState) {
+                recordMissingGlyph(scope.evalState, fontFamily, fontWeight, char);
+              }
               // Offset glyph commands by cursor position
               for (const cmd of glyphCmds) {
                 allCommands.push({
@@ -5217,8 +5223,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           );
         }
 
-        const fontData = getFont(registry, fontFamily, fontWeight);
-        if (!fontData) {
+        if (!getFont(registry, fontFamily, fontWeight)) {
           const available = Array.from(registry.fonts.keys()).join(', ');
           throw mError(`Font '${fontFamily}' not found in font registry. Available fonts: ${available || 'none'}`);
         }
@@ -5226,7 +5231,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         // Convert each character to a PathBlockValue
         const glyphs: Value[] = [];
         for (const char of textArg) {
-          const { commands, advanceWidth } = glyphToPathBlockCommands(fontData, char, fontSize);
+          const lookup = lookupGlyph(registry, fontFamily, fontWeight, 'normal', char, fontSize)!;
+          const { commands, advanceWidth } = lookup;
+          if (lookup.missing && scope.evalState) {
+            recordMissingGlyph(scope.evalState, fontFamily, fontWeight, char);
+          }
 
           if (commands.length === 0) {
             // Space or empty glyph — return an empty PathBlockValue with advanceWidth
@@ -9694,6 +9703,13 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
   // Build cssProperties output
   const cssProperties: CSSPropertyDeclaration[] = Array.from(evalState.cssProperties.values());
 
+  const { reports: missingGlyphs, warnings: missingGlyphWarnings } = buildMissingGlyphReports(
+    evalState.missingGlyphs,
+  );
+  for (const warning of missingGlyphWarnings) {
+    evalState.logs.push({ line: null, parts: [{ type: 'string', value: warning }] });
+  }
+
   return {
     layers,
     masks,
@@ -9705,6 +9721,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
     cssProperties,
     logs: evalState.logs,
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
+    ...(missingGlyphs.length > 0 ? { missingGlyphs } : {}),
     viewBox: evalState.viewBox
       ? {
           originX: evalState.viewBox.originX,
@@ -9777,6 +9794,7 @@ export interface EvaluateWithContextResult {
   filters: FilterOutput[];
   cssProperties: CSSPropertyDeclaration[];
   viewBox?: import('./types').ViewBoxValue;
+  missingGlyphs?: Array<{ family: string; weight: number; chars: string[] }>;
 }
 
 /**
@@ -9865,6 +9883,7 @@ export function evaluateWithContext(
       filters: compileResult.filters,
       cssProperties: compileResult.cssProperties,
       viewBox: compileResult.viewBox,
+      ...(compileResult.missingGlyphs ? { missingGlyphs: compileResult.missingGlyphs } : {}),
     };
   } finally {
     resetNumberFormat();

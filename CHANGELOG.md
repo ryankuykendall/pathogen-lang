@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-05 (CJK Google Fonts subset loading)
+
+### Fixed
+
+#### Core
+
+- **Non-Latin text in `PathBlock.fromGlyph()` / `TextBlock.toPathBlock()` no longer renders as placeholder boxes** — the playground fetched only the latin `@font-face` block of a Google Fonts css2 response, so CJK families (Google splits e.g. Korean fonts into ~90 `unicode-range` slices) silently mapped every non-Latin character to `.notdef`. The registry now supports multiple subset buffers per family+weight (`FontData.unicodeRanges`, `getFontVariants`), and a new coverage-aware `lookupGlyph` in `font-provider.ts` — shared by both evaluators and all three glyph call sites — selects the variant whose unicode-range and cmap actually cover each character.
+- **Missing glyphs now warn instead of failing silently** — characters no registered variant can render still draw the font's placeholder box but emit a `[warn]` log naming the font, weight, and characters, and are reported structurally via `CompileResult.missingGlyphs`.
+
+#### Playground
+
+- **On-demand unicode-range subset fetching** — `font-loader.ts` parses all css2 `@font-face` blocks into a per-family subset index (`parseGoogleFontsCss`, `parseUnicodeRange`); when a compile reports missing glyphs, `compiler-worker.ts` fetches only the slices covering those codepoints and recompiles once (max 2 passes, progress-gated). Fetched slices are cached and included up front on later compiles, so steady-state stays at one compile per keystroke. Preview-iframe `@font-face` data URIs now carry `unicode-range` so `<text>` rendering composes the slices correctly.
+- Known follow-ups: (1) PDF-export text outlining (`svg-text-outliner.ts`) still resolves only the primary subset per family; per-character variant selection there is deferred. (2) Once fetched, all of a family's subset slices ride every keystroke recompile's postMessage clone — fine for a handful of slices, but a CJK-heavy document touching many Hangul-block slices deserves a perf check and possibly a worker-side buffer cache. (3) `font-metrics.ts` bounding-box estimation still uses weight-only `getFont`, so CJK `.boundingBox()` estimates use the primary subset's metrics.
+
+#### Documentation
+
+- `docs/path-blocks.md`: `@font` now documents automatic script-subset loading; new "Non-Latin text and missing glyphs" section documents the placeholder-box + `[warn]` behavior.
+
 ## [Unreleased] - 2026-08-04 (Color.flatten)
 
 ### Added

@@ -868,3 +868,204 @@ describe('extractFontReferencesFromCompileResult', () => {
     expect(refs).toEqual([{ family: 'Roboto', weight: 400 }]);
   });
 });
+
+describe('parseUnicodeRange', () => {
+  // Imported lazily to keep the top-of-file import list focused on the
+  // long-standing API; these are new subset-loading helpers.
+  it('parses single codepoints, ranges, and lists', async () => {
+    const { parseUnicodeRange } = await import('../playground/services/font-loader');
+    expect(parseUnicodeRange('U+0131')).toEqual([[0x131, 0x131]]);
+    expect(parseUnicodeRange('U+D723-D728')).toEqual([[0xd723, 0xd728]]);
+    expect(parseUnicodeRange('U+d723-d728, U+d72a-d733')).toEqual([
+      [0xd723, 0xd728],
+      [0xd72a, 0xd733],
+    ]);
+  });
+
+  it('expands wildcard ranges', async () => {
+    const { parseUnicodeRange } = await import('../playground/services/font-loader');
+    expect(parseUnicodeRange('U+4??')).toEqual([[0x400, 0x4ff]]);
+  });
+
+  it('skips malformed segments without throwing', async () => {
+    const { parseUnicodeRange } = await import('../playground/services/font-loader');
+    expect(parseUnicodeRange('garbage, U+41, U+ZZ, U+42-')).toEqual([[0x41, 0x41]]);
+    expect(parseUnicodeRange('')).toEqual([]);
+  });
+});
+
+describe('parseGoogleFontsCss', () => {
+  it('parses labeled and unlabeled blocks with unicode-range', async () => {
+    const { parseGoogleFontsCss } = await import('../playground/services/font-loader');
+    const css = `@font-face {
+  font-family: 'Fake CJK';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/fakecjk/k0.woff2) format('woff2');
+  unicode-range: U+AC00-AC1F;
+}
+/* latin */
+@font-face {
+  font-family: 'Fake CJK';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/fakecjk/latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF;
+}`;
+    const blocks = parseGoogleFontsCss(css);
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0]).toMatchObject({
+      url: 'https://fonts.gstatic.com/s/fakecjk/k0.woff2',
+      label: null,
+      weight: 400,
+      style: 'normal',
+      unicodeRanges: [[0xac00, 0xac1f]],
+    });
+    expect(blocks[1]).toMatchObject({
+      url: 'https://fonts.gstatic.com/s/fakecjk/latin.woff2',
+      label: 'latin',
+      unicodeRanges: [[0x0, 0xff]],
+    });
+  });
+
+  it('skips blocks without a url()', async () => {
+    const { parseGoogleFontsCss } = await import('../playground/services/font-loader');
+    const css = `@font-face { font-family: 'X'; src: local('X'); }
+@font-face { font-family: 'X'; src: url(https://fonts.gstatic.com/x.ttf); }`;
+    const blocks = parseGoogleFontsCss(css);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].url).toBe('https://fonts.gstatic.com/x.ttf');
+    expect(blocks[0].unicodeRanges).toBeNull();
+  });
+});
+
+describe('CJK subset loading', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  // Multi-block css2 response shaped like a Korean font: unlabeled ranged
+  // slices first, labeled latin blocks last (matches the real API).
+  const cjkCss = (family: string) => `@font-face {
+  font-family: '${family}';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/fake/k0.woff2) format('woff2');
+  unicode-range: U+AC00-AC1F;
+}
+@font-face {
+  font-family: '${family}';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/fake/k1.woff2) format('woff2');
+  unicode-range: U+D700-D7A3;
+}
+/* latin-ext */
+@font-face {
+  font-family: '${family}';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/fake/latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-024F;
+}
+/* latin */
+@font-face {
+  font-family: '${family}';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/fake/latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF;
+}`;
+
+  // Plain (non-WOFF2) bytes so decompressWoff2 is never invoked.
+  const fakeBinary = () => new Response(new Uint8Array([1, 2, 3, 4]).buffer, { status: 200 });
+
+  function stubCss2(family: string, failUrls: Set<string> = new Set()) {
+    const spy = vi.fn(async (url: string) => {
+      if (url.startsWith('https://fonts.googleapis.com/css2')) {
+        return new Response(cjkCss(family), { status: 200 });
+      }
+      if (failUrls.has(url)) return new Response('', { status: 500 });
+      return fakeBinary();
+    });
+    vi.stubGlobal('fetch', spy);
+    return spy;
+  }
+
+  it('multi-block CSS still fetches exactly one primary (latin) binary', async () => {
+    const spy = stubCss2('SubsetPrimaryTest');
+    const outcome = await fetchFontBinary('SubsetPrimaryTest', 400);
+    expect(outcome.ok).toBe(true);
+    const urls = spy.mock.calls.map((c) => c[0]);
+    expect(urls).toHaveLength(2); // css + one binary
+    expect(urls[1]).toBe('https://fonts.gstatic.com/s/fake/latin.woff2');
+  });
+
+  it('fetchFontSubsetsForChars fetches only the covering slice', async () => {
+    const { fetchFontSubsetsForChars } = await import('../playground/services/font-loader');
+    const spy = stubCss2('SubsetCoverTest');
+    await fetchFontBinary('SubsetCoverTest', 400);
+    spy.mockClear();
+
+    // '가' is U+AC00 → covered by k0 only
+    const { entries, uncoveredChars } = await fetchFontSubsetsForChars('SubsetCoverTest', 400, ['가']);
+    expect(uncoveredChars).toEqual([]);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      family: 'SubsetCoverTest',
+      weight: 400,
+      style: 'normal',
+      subsetUrl: 'https://fonts.gstatic.com/s/fake/k0.woff2',
+      unicodeRanges: [[0xac00, 0xac1f]],
+    });
+    expect(spy.mock.calls.map((c) => c[0])).toEqual(['https://fonts.gstatic.com/s/fake/k0.woff2']);
+  });
+
+  it('second call for the same chars makes no new network requests', async () => {
+    const { fetchFontSubsetsForChars, getFetchedSubsetEntries } = await import(
+      '../playground/services/font-loader'
+    );
+    const spy = stubCss2('SubsetSteadyTest');
+    await fetchFontBinary('SubsetSteadyTest', 400);
+    await fetchFontSubsetsForChars('SubsetSteadyTest', 400, ['가']);
+    spy.mockClear();
+
+    const { entries } = await fetchFontSubsetsForChars('SubsetSteadyTest', 400, ['가']);
+    expect(entries).toHaveLength(1); // still returned so callers can rebuild the set
+    expect(spy).not.toHaveBeenCalled();
+
+    // Steady-state accessor sees the fetched slice too
+    const cached = getFetchedSubsetEntries('SubsetSteadyTest', 400);
+    expect(cached).toHaveLength(1);
+    expect(cached[0].subsetUrl).toBe('https://fonts.gstatic.com/s/fake/k0.woff2');
+  });
+
+  it('reports characters no slice covers', async () => {
+    const { fetchFontSubsetsForChars } = await import('../playground/services/font-loader');
+    stubCss2('SubsetUncoveredTest');
+    await fetchFontBinary('SubsetUncoveredTest', 400);
+
+    // U+4E00 (CJK ideograph) is outside every declared range
+    const { entries, uncoveredChars } = await fetchFontSubsetsForChars('SubsetUncoveredTest', 400, ['一']);
+    expect(entries).toEqual([]);
+    expect(uncoveredChars).toEqual(['一']);
+  });
+
+  it('a failed slice fetch degrades to uncovered instead of throwing', async () => {
+    const { fetchFontSubsetsForChars } = await import('../playground/services/font-loader');
+    stubCss2('SubsetFailTest', new Set(['https://fonts.gstatic.com/s/fake/k1.woff2']));
+    await fetchFontBinary('SubsetFailTest', 400);
+
+    // '힣' is U+D7A3 → covered only by the failing k1 slice
+    const { entries, uncoveredChars } = await fetchFontSubsetsForChars('SubsetFailTest', 400, ['힣']);
+    expect(entries).toEqual([]);
+    expect(uncoveredChars).toEqual(['힣']);
+  });
+
+  it('families without a subset index report all chars uncovered', async () => {
+    const { fetchFontSubsetsForChars } = await import('../playground/services/font-loader');
+    const { entries, uncoveredChars } = await fetchFontSubsetsForChars('NeverFetchedFamilyTest', 400, ['가']);
+    expect(entries).toEqual([]);
+    expect(uncoveredChars).toEqual(['가']);
+  });
+});

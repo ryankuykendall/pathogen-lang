@@ -806,7 +806,7 @@ Declare it at the top level: let x = "Family Name";
 **Font loading by environment:**
 
 - **CLI**: Loads from local file paths (relative to source file) or searches system font directories (`/Library/Fonts`, `/System/Library/Fonts`, `~/Library/Fonts` on macOS; equivalent paths on Linux/Windows)
-- **Playground**: Fetches from Google Fonts CDN automatically
+- **Playground**: Fetches from Google Fonts CDN automatically. Google serves large fonts split into per-script subsets (a Korean family like `"Nanum Gothic"` or `"Moirai One"` ships as ~100 small slices); the playground loads the Latin subset up front and fetches additional slices automatically when the text you render needs them — no extra directives required
 
 The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, the CLI logs a warning and compilation continues; in the playground it is a compile error (what counts as "cannot be found" is explained below).
 
@@ -907,6 +907,26 @@ for (c in contours) {
 ```
 
 Each contour is a closed PathBlock with all standard properties and methods.
+
+### Non-Latin text and missing glyphs
+
+`fromGlyph` handles any script the font provides glyphs for — Hangul, Cyrillic, Greek, kana, and so on:
+
+```
+@font "Nanum Gothic";
+let styles = ${ font-family: "Nanum Gothic"; font-size: 48; };
+let glyphs = PathBlock.fromGlyph("안녕하세요", styles);
+```
+
+In the playground, the extra script subsets are fetched automatically on the first compile that needs them (see the `@font` directive above).
+
+When a character has **no glyph in the font at all** — for example Hangul text with a Latin-only family, or an emoji — the glyph renders as the font's placeholder box and a warning is logged to the console pane:
+
+```
+[warn] Font 'Inter' (weight 400) has no loaded glyph for: 한 — rendered as placeholder boxes
+```
+
+The program still compiles; the warning tells you the font itself lacks those characters, so switch to a family that covers the script. `TextBlock.toPathBlock()` reports missing glyphs the same way.
 
 ### Error cases
 

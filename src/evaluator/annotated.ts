@@ -5,7 +5,7 @@ import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-
 import { DEFS_CONSTRUCTORS } from './constructor-registry';
 import { contextToObject, createPathContext, setLastTangent, updateContextForCommand } from './context';
 import { estimateTextBoundingBox } from './font-metrics';
-import { getFont, glyphToPathBlockCommands, splitContours } from './font-provider';
+import { getFont, lookupGlyph, recordMissingGlyph, splitContours } from './font-provider';
 import {
   chamferCommands,
   commandToPathString,
@@ -567,6 +567,7 @@ class ReturnSignal {
 export interface EvaluationState {
   pathContext: PathContext;
   fontRegistry?: import('./types').FontRegistry;
+  missingGlyphs?: Map<string, Set<string>>; // "family:weight" → chars with no glyph in any variant
   viewBox?: ViewBoxValue & { loc?: SourceLocation };
   insideLayerApply?: boolean;
 }
@@ -3029,15 +3030,21 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           );
         }
 
-        const fontData = getFont(registry, fontFamily, fontWeight);
-        if (!fontData) {
+        if (!getFont(registry, fontFamily, fontWeight)) {
           const available = Array.from(registry.fonts.keys()).join(', ');
           throw mError(`Font '${fontFamily}' not found in font registry. Available fonts: ${available || 'none'}`);
         }
 
         const glyphs: Value[] = [];
         for (const char of textArg) {
-          const { commands, advanceWidth } = glyphToPathBlockCommands(fontData, char, fontSize);
+          const lookup = lookupGlyph(registry, fontFamily, fontWeight, 'normal', char, fontSize)!;
+          const { commands, advanceWidth } = lookup;
+          // Recorded for parity with the main evaluator, but currently inert:
+          // compileAnnotated() returns only the formatted line output and has
+          // no logs/missingGlyphs channel to surface these through.
+          if (lookup.missing && scope.evalState) {
+            recordMissingGlyph(scope.evalState, fontFamily, fontWeight, char);
+          }
           if (commands.length === 0) {
             const pb: PathBlockValue = {
               type: 'PathBlockValue' as const,

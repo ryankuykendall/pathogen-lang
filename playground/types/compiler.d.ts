@@ -244,6 +244,10 @@ export interface CompileResult {
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
   calledStdlibFunctions: string[];
+  // Engine-provided (unlike the host-attached font fields below): characters
+  // no registered font variant could render. compiler-worker.ts uses this to
+  // fetch additional Google Fonts unicode-range subsets and recompile.
+  missingGlyphs?: { family: string; weight: number; chars: string[] }[];
   // Attached host-side by playground/services/compiler-worker.ts after the
   // worker returns, so the preview iframe can inject @font-face data URIs
   // (its CSP forbids external font requests). Not part of the underlying
@@ -253,6 +257,8 @@ export interface CompileResult {
     weight: number;
     style: 'normal' | 'italic';
     buffer: ArrayBuffer;
+    unicodeRanges?: [number, number][];
+    subsetUrl?: string;
   }[];
   // Attached host-side alongside fontBinaries: weights the requested family
   // doesn't offer, snapped to the nearest available variant. Feeds the
@@ -275,6 +281,7 @@ export interface FontData {
   weight: number;
   style: 'normal' | 'italic';
   buffer: ArrayBuffer;
+  unicodeRanges?: [number, number][];
   _parsed?: unknown;
 }
 
