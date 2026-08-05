@@ -1925,3 +1925,32 @@ describe('z-command suffix clauses mid-document (GLR precedence regression)', ()
     expect(z.annotations.labels[0].name.value).toBe('s');
   });
 });
+
+describe('break and continue statements', () => {
+  it('parses continue inside a for loop', () => {
+    const ast = parse('for (i in 0..5) { continue; }');
+    const loop = ast.body[0] as { type: string; body: { type: string }[] };
+    expect(loop.type).toBe('ForLoop');
+    expect(loop.body[0].type).toBe('ContinueStatement');
+  });
+
+  it('parses break inside a for-each loop', () => {
+    const ast = parse('for (x in items) { break; }');
+    const loop = ast.body[0] as { type: string; body: { type: string }[] };
+    expect(loop.type).toBe('ForEachLoop');
+    expect(loop.body[0].type).toBe('BreakStatement');
+  });
+
+  it('parses break/continue inside if branches nested in a loop', () => {
+    const ast = parse('for (i in 0..5) { if (i == 2) { continue; } else { break; } }');
+    const loop = ast.body[0] as { type: string; body: { type: string; consequent: { type: string }[]; alternate: { type: string }[] }[] };
+    expect(loop.body[0].consequent[0].type).toBe('ContinueStatement');
+    expect(loop.body[0].alternate[0].type).toBe('BreakStatement');
+  });
+
+  it('records source locations on break/continue', () => {
+    const ast = parse('for (i in 0..5) {\n  break;\n}');
+    const loop = ast.body[0] as { body: { type: string; loc?: { line: number } }[] };
+    expect(loop.body[0].loc?.line).toBe(2);
+  });
+});

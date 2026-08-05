@@ -1911,7 +1911,9 @@ function evaluatePathBlockStatement(stmt: Statement, scope: Scope, accum: PathSt
       );
     }
   }
-  evaluateStatementToAccum(stmt, scope, accum);
+  // Path-block top level is a break/continue boundary (builder-enforced; defensive)
+  const flow = evaluateStatementToAccum(stmt, scope, accum);
+  if (flow) throw loopFlowBoundaryError(flow);
 }
 
 /**
@@ -1951,7 +1953,10 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
   const elements: TextBlockElement[] = [];
   const blockStyles: Record<string, string> = {};
 
-  evaluateTextBlockBody(expr.body, blockScope, elements);
+  // Text-block-expression top level is a break/continue boundary
+  // (builder-enforced; defensive)
+  const bodyFlow = evaluateTextBlockBody(expr.body, blockScope, elements);
+  if (bodyFlow) throw loopFlowBoundaryError(bodyFlow);
 
   return {
     type: 'TextBlockValue',
@@ -1963,9 +1968,17 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
 /**
  * Recursively evaluate statements inside a text block, accumulating TextBlockElements.
  * Handles text statements directly and recurses into for/if control flow.
+ * Returns a LoopFlow signal when a break/continue executes so nested loops
+ * inside &{ } bodies consume it — same contract as evaluateTextBody.
  */
-function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextBlockElement[]): void {
+function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextBlockElement[]): LoopFlow {
   for (const stmt of stmts) {
+    if (stmt.type === 'BreakStatement') {
+      return { flow: 'break', line: getLine(stmt) ?? null };
+    }
+    if (stmt.type === 'ContinueStatement') {
+      return { flow: 'continue', line: getLine(stmt) ?? null };
+    }
     if (stmt.type === 'LayerDefinition') {
       throw new Error(formatError('Layer definitions are not allowed inside text blocks', getLine(stmt)));
     }
@@ -1996,7 +2009,9 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
         elements.push({ x, y, rotation, styles: textStyles, children: [{ type: 'run', text }] });
       } else if (stmt.body) {
         const children: TextChild[] = [];
-        evaluateTextBody(stmt.body, scope, children);
+        // Nested text-statement body top level is a boundary (defensive)
+        const nestedFlow = evaluateTextBody(stmt.body, scope, children);
+        if (nestedFlow) throw loopFlowBoundaryError(nestedFlow);
         elements.push({ x, y, rotation, styles: textStyles, children });
       }
       continue;
@@ -2013,7 +2028,8 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
         const loopScope = createScope(scope);
         loopScope.evalState = scope.evalState;
         setVariable(loopScope, stmt.variable, i);
-        evaluateTextBlockBody(stmt.body, loopScope, elements);
+        const flow = evaluateTextBlockBody(stmt.body, loopScope, elements);
+        if (flow?.flow === 'break') break;
       }
       continue;
     }
@@ -2026,7 +2042,8 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
         loopScope.evalState = scope.evalState;
         setVariable(loopScope, stmt.variable, iterVal.elements[idx]);
         if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, idx);
-        evaluateTextBlockBody(stmt.body, loopScope, elements);
+        const flow = evaluateTextBlockBody(stmt.body, loopScope, elements);
+        if (flow?.flow === 'break') break;
       }
       continue;
     }
@@ -2034,10 +2051,13 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
     if (stmt.type === 'IfStatement') {
       const cond = evaluateExpression(stmt.condition, scope);
       const truthValue = typeof cond === 'number' ? cond !== 0 : (isBooleanValue(cond) ? cond.value !== 0 : cond !== null);
+      // Propagate loop flow out of the taken branch to the enclosing loop
       if (truthValue) {
-        evaluateTextBlockBody(stmt.consequent, scope, elements);
+        const flow = evaluateTextBlockBody(stmt.consequent, scope, elements);
+        if (flow) return flow;
       } else if (stmt.alternate) {
-        evaluateTextBlockBody(stmt.alternate, scope, elements);
+        const flow = evaluateTextBlockBody(stmt.alternate, scope, elements);
+        if (flow) return flow;
       }
       continue;
     }
@@ -2069,6 +2089,7 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
       continue;
     }
   }
+  return undefined;
 }
 
 function evaluateIndexExpression(expr: IndexExpression, scope: Scope): Value {
@@ -5369,7 +5390,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
         try {
           for (const stmt of cb.body) {
-            evaluateStatementToAccum(stmt, blockScope, createPathStore());
+            // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+            const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+            if (flow) throw loopFlowBoundaryError(flow);
           }
           result.push(null); // no return → null
         } catch (e) {
@@ -5402,7 +5425,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
         try {
           for (const stmt of cb.body) {
-            evaluateStatementToAccum(stmt, blockScope, createPathStore());
+            // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+            const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+            if (flow) throw loopFlowBoundaryError(flow);
           }
           accumulator = null; // no return → null
         } catch (e) {
@@ -6445,7 +6470,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return gradient;
@@ -6511,7 +6540,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return gradient;
@@ -6565,7 +6598,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], pattern);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return pattern;
@@ -6623,7 +6660,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], marker);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return marker;
@@ -6722,7 +6763,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], grid);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return grid;
@@ -6747,7 +6792,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return filter;
@@ -6772,7 +6821,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return filter;
@@ -6797,7 +6850,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return filter;
@@ -6822,7 +6879,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return filter;
@@ -6847,7 +6908,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return filter;
@@ -6900,7 +6965,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return filter;
@@ -6926,7 +6995,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], filter);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return filter;
@@ -6982,7 +7055,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return gradient;
@@ -7068,7 +7145,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return gradient;
@@ -7122,7 +7203,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return gradient;
@@ -7179,7 +7264,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const blockScope = createScope(scope);
       setVariable(blockScope, call.block.params[0], gradient);
       for (const stmt of call.block.body) {
-        evaluateStatementToAccum(stmt, blockScope, createPathStore());
+        // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+        {
+          const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
       }
     }
     return gradient;
@@ -8015,9 +8104,13 @@ function parseAndTrackPathString(pathStr: string, scope: Scope): PathBlockComman
  * Evaluate text body items (TemplateLiteral, TspanStatement, ForLoop, IfStatement, LetDeclaration)
  * into TextChild array. Used by TextStatement block form evaluation.
  */
-function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChild[]): void {
+function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChild[]): LoopFlow {
   for (const item of items) {
-    if (item.type === 'TemplateLiteral') {
+    if (item.type === 'BreakStatement') {
+      return { flow: 'break', line: getLine(item) ?? null };
+    } else if (item.type === 'ContinueStatement') {
+      return { flow: 'continue', line: getLine(item) ?? null };
+    } else if (item.type === 'TemplateLiteral') {
       const text = evaluateTemplateLiteral(item, scope);
       children.push({ type: 'run', text });
     } else if (item.type === 'TspanStatement') {
@@ -8052,13 +8145,15 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
         for (let i = start; i <= end; i++) {
           const loopScope = createScope(scope);
           setVariable(loopScope, item.variable, i);
-          evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
+          const flow = evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
+          if (flow?.flow === 'break') break;
         }
       } else {
         for (let i = start; i >= end; i--) {
           const loopScope = createScope(scope);
           setVariable(loopScope, item.variable, i);
-          evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
+          const flow = evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
+          if (flow?.flow === 'break') break;
         }
       }
     } else if (item.type === 'ForEachLoop') {
@@ -8072,16 +8167,20 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
         if (item.indexVariable) {
           setVariable(loopScope, item.indexVariable, i);
         }
-        evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
+        const flow = evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
+        if (flow?.flow === 'break') break;
       }
     } else if (item.type === 'IfStatement') {
       const condition = evaluateExpression(item.condition, scope);
       const condNum = toNumber(condition);
       const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
+      // Propagate loop flow out of the taken branch to the enclosing loop
       if (isTruthy) {
-        evaluateTextBody(item.consequent as TextBodyItem[], scope, children);
+        const flow = evaluateTextBody(item.consequent as TextBodyItem[], scope, children);
+        if (flow) return flow;
       } else if (item.alternate) {
-        evaluateTextBody(item.alternate as TextBodyItem[], scope, children);
+        const flow = evaluateTextBody(item.alternate as TextBodyItem[], scope, children);
+        if (flow) return flow;
       }
     } else if (item.type === 'LetDeclaration') {
       const value = evaluateExpression(item.value, scope);
@@ -8092,6 +8191,7 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
       }
     }
   }
+  return undefined;
 }
 
 /**
@@ -8185,7 +8285,9 @@ function evaluateGridCellBody(
     if (stmt.type === 'ReturnStatement') {
       return { returned: true, value: evaluateExpression(stmt.value, scope) };
     }
-    evaluateStatementToAccum(stmt, scope, accum);
+    // Grid cell bodies are break/continue boundaries (builder-enforced; defensive)
+    const flow = evaluateStatementToAccum(stmt, scope, accum);
+    if (flow) throw loopFlowBoundaryError(flow);
   }
   return { returned: false, value: null };
 }
@@ -8246,7 +8348,27 @@ function evaluatePathAnnotations(
   return result;
 }
 
-function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStore): void {
+/**
+ * Loop-control signal propagated by RETURN VALUE, never by throw: the Grid
+ * callback fast path exists because per-cell throw/catch deopted V8 (~100x on
+ * 64k cells), and for loops run up to MAX_ITERATIONS statements per pass.
+ * `undefined` (the implicit return of every ordinary statement) means normal
+ * completion, so the hot path allocates nothing; a flow object is created
+ * only when a break/continue actually executes. Only statements that can
+ * carry flow propagate it (Break/Continue themselves, IfStatement branches,
+ * the statement-list driver); loops consume it. The AST builder guarantees
+ * lexical placement, so flow reaching any other boundary is a bug guarded by
+ * the defensive throws at those boundaries.
+ */
+type LoopFlow = { flow: 'continue' | 'break'; line: number | null } | undefined;
+
+function loopFlowBoundaryError(flow: NonNullable<LoopFlow>): Error {
+  return new Error(
+    formatError(`'${flow.flow}' is only valid inside a for loop`, flow.line ?? undefined),
+  );
+}
+
+function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStore): LoopFlow {
   switch (stmt.type) {
     case 'LetDeclaration': {
       const value = evaluateExpression(stmt.value, scope);
@@ -8328,14 +8450,17 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         for (let i = start; i <= end; i++) {
           const loopScope = createScope(scope);
           setVariable(loopScope, stmt.variable, i);
-          evaluateStatementsToAccum(stmt.body, loopScope, accum);
+          const flow = evaluateStatementsToAccum(stmt.body, loopScope, accum);
+          if (flow?.flow === 'break') break;
+          // 'continue' already ended this iteration's body — fall through
         }
       } else {
         // Descending range
         for (let i = start; i >= end; i--) {
           const loopScope = createScope(scope);
           setVariable(loopScope, stmt.variable, i);
-          evaluateStatementsToAccum(stmt.body, loopScope, accum);
+          const flow = evaluateStatementsToAccum(stmt.body, loopScope, accum);
+          if (flow?.flow === 'break') break;
         }
       }
       return;
@@ -8346,10 +8471,11 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       const condNum = toNumber(condition);
       const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
 
+      // Propagate loop flow out of the taken branch to the enclosing loop
       if (isTruthy) {
-        evaluateStatementsToAccum(stmt.consequent, createScope(scope), accum);
+        return evaluateStatementsToAccum(stmt.consequent, createScope(scope), accum);
       } else if (stmt.alternate) {
-        evaluateStatementsToAccum(stmt.alternate, createScope(scope), accum);
+        return evaluateStatementsToAccum(stmt.alternate, createScope(scope), accum);
       }
       return;
     }
@@ -8370,7 +8496,8 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
             // for (key in obj) — keys only
             setVariable(loopScope, stmt.variable, key);
           }
-          evaluateStatementsToAccum(stmt.body, loopScope, accum);
+          const flow = evaluateStatementsToAccum(stmt.body, loopScope, accum);
+          if (flow?.flow === 'break') break;
         }
         return;
       }
@@ -8385,7 +8512,8 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         const element = iterable.elements[i];
         setVariable(loopScope, stmt.variable, element);
         if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
-        evaluateStatementsToAccum(stmt.body, loopScope, accum);
+        const flow = evaluateStatementsToAccum(stmt.body, loopScope, accum);
+        if (flow?.flow === 'break') break;
       }
       return;
     }
@@ -8652,7 +8780,9 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         const prevActiveLayerName = scope.evalState.activeLayerName;
         scope.evalState.activeLayerName = nameValue;
         for (const bodyStmt of stmt.body) {
-          evaluateStatementToAccum(bodyStmt, createScope(scope), createPathStore());
+          // Apply blocks are break/continue boundaries (builder-enforced; defensive)
+          const flow = evaluateStatementToAccum(bodyStmt, createScope(scope), createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
         }
         scope.evalState.activeLayerName = prevActiveLayerName;
         return;
@@ -8663,7 +8793,9 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       scope.evalState.pathContext = (layer as PathLayerState).pathContext;
       scope.evalState.activeLayerName = nameValue;
       updateCtxVariable(scope);
-      evaluateStatementsToAccum(stmt.body, createScope(scope), (layer as PathLayerState).accum);
+      // Apply blocks are break/continue boundaries (builder-enforced; defensive)
+      const applyFlow = evaluateStatementsToAccum(stmt.body, createScope(scope), (layer as PathLayerState).accum);
+      if (applyFlow) throw loopFlowBoundaryError(applyFlow);
       scope.evalState.pathContext = prevPathContext;
       scope.evalState.activeLayerName = prevActiveLayerName;
       updateCtxVariable(scope);
@@ -8696,7 +8828,9 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       } else if (stmt.body) {
         // Block form: text(x, y) { `text` tspan() for/if/let... }
         const children: TextChild[] = [];
-        evaluateTextBody(stmt.body, scope, children);
+        // Text-block top level is a break/continue boundary (builder-enforced; defensive)
+        const textFlow = evaluateTextBody(stmt.body, scope, children);
+        if (textFlow) throw loopFlowBoundaryError(textFlow);
         activeTextLayer.textElements.push({ x, y, rotation, styles: textStyles, children });
       }
       return;
@@ -9136,6 +9270,12 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       throw new ReturnSignal(value);
     }
 
+    case 'BreakStatement':
+      return { flow: 'break', line: getLine(stmt) ?? null };
+
+    case 'ContinueStatement':
+      return { flow: 'continue', line: getLine(stmt) ?? null };
+
     case 'FontDirective':
       // Declarative metadata — font loading handled by host environment before compilation
       return;
@@ -9151,11 +9291,15 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
 
 /**
  * Evaluate statements, appending output to the accumulator array.
+ * Stops at (and returns) the first break/continue flow signal so the
+ * enclosing loop can consume it; returns undefined on normal completion.
  */
-function evaluateStatementsToAccum(stmts: Statement[], scope: Scope, accum: PathStore): void {
+function evaluateStatementsToAccum(stmts: Statement[], scope: Scope, accum: PathStore): LoopFlow {
   for (const stmt of stmts) {
-    evaluateStatementToAccum(stmt, scope, accum);
+    const flow = evaluateStatementToAccum(stmt, scope, accum);
+    if (flow) return flow;
   }
+  return undefined;
 }
 
 /**
@@ -9164,7 +9308,10 @@ function evaluateStatementsToAccum(stmts: Statement[], scope: Scope, accum: Path
  */
 function evaluateStatements(stmts: Statement[], scope: Scope): string {
   const accum = createPathStore();
-  evaluateStatementsToAccum(stmts, scope, accum);
+  const flow = evaluateStatementsToAccum(stmts, scope, accum);
+  // Defensive: the AST builder rejects break/continue outside loops, so flow
+  // can only surface here through a builder gap.
+  if (flow) throw loopFlowBoundaryError(flow);
   // Corner ops recorded inside this body (e.g. a user function) finalize here,
   // since the joined string is this store's only output channel.
   const finalized = applyRecordedCornerOps(accum.records.flatMap((r) => r.commands));
@@ -9791,7 +9938,9 @@ export function evaluate(program: Program, options?: { toFixed?: number; fonts?:
 
     const accum = createPathStore();
     evalState.rootAccum = accum;
-    evaluateStatementsToAccum(program.body, scope, accum);
+    // Top level is a break/continue boundary (builder-enforced; defensive)
+    const topFlow = evaluateStatementsToAccum(program.body, scope, accum);
+    if (topFlow) throw loopFlowBoundaryError(topFlow);
 
     return buildCompileResult(accum, evalState);
   } finally {
@@ -9877,7 +10026,9 @@ export function evaluateWithContext(
 
     const accum = createPathStore();
     evalState.rootAccum = accum;
-    evaluateStatementsToAccum(program.body, scope, accum);
+    // Top level is a break/continue boundary (builder-enforced; defensive)
+    const topFlow = evaluateStatementsToAccum(program.body, scope, accum);
+    if (topFlow) throw loopFlowBoundaryError(topFlow);
 
     const compileResult = buildCompileResult(accum, evalState);
 

@@ -31,6 +31,8 @@ export const KEYWORD_COMPLETIONS: CompletionEntry[] = [
   { label: 'ViewBox', kind: 'keyword', detail: 'Define the SVG viewBox: define ViewBox(originX, originY, width, height);', boost: 6 },
   { label: 'layer', kind: 'keyword', detail: 'Layer apply block', boost: 8 },
   { label: 'return', kind: 'keyword', detail: 'Return from function', boost: 6 },
+  { label: 'continue', kind: 'keyword', detail: 'Skip to the next loop iteration', boost: 6 },
+  { label: 'break', kind: 'keyword', detail: 'Exit the innermost for loop', boost: 6 },
   { label: 'enum', kind: 'keyword', detail: 'Enum definition', boost: 6, insertText: 'enum ${1:Name} {\n\t${0}\n}', isSnippet: true },
   { label: 'text', kind: 'keyword', detail: 'Text element', boost: 6 },
   { label: 'tspan', kind: 'keyword', detail: 'Text span inside text block', boost: 4 },

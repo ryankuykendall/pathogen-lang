@@ -4,7 +4,7 @@ import { styleTags, tags as t } from '@lezer/highlight';
 /// Maps Lezer parse tree node types to CodeMirror highlight tags.
 export const pathogenHighlighting = styleTags({
   // Keywords
-  'define default calc layer apply text tspan for in if else let enum fn return with as': t.keyword,
+  'define default calc layer apply text tspan for in if else let enum fn return break continue with as': t.keyword,
 
   // Path-command suffix clauses: corner-op and label kinds read as functions
   'CornerOpCall/Identifier LabelCall/Identifier': t.function(t.variableName),

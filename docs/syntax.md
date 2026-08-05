@@ -1227,6 +1227,51 @@ for (row in 0..2) {
 
 This creates a 3x3 grid (rows 0, 1, 2 and cols 0, 1, 2).
 
+### Loop Control: continue and break
+
+`continue;` skips the rest of the current iteration and moves to the next one; `break;` exits the loop entirely:
+
+```
+// Draw circles at 0, 20, 40, 80, 100 — skipping 60
+for (i in 0..5) {
+  if (i == 3) {
+    continue;
+  }
+  circle(calc(i * 20), 50, 8);
+}
+
+// Stop the first time a threshold is crossed
+for (i in 0..100) {
+  if (calc(i * i) > 500) {
+    break;
+  }
+  M calc(i * 10) calc(i * i)
+}
+```
+
+Both work in range loops and for-each loops (over arrays and objects), and inside loops in `text` blocks. A typical use with glyph layout — skip whitespace without drawing:
+
+```
+for (g in glyphs) {
+  if (g.isWhitespace) {
+    x = calc(x + g.advanceWidth);
+    continue;
+  }
+  M x y
+  g.draw()
+  x = calc(x + g.advanceWidth);
+}
+```
+
+**Placement rules:**
+
+- In nested loops, `continue`/`break` control the **innermost** enclosing loop.
+- They may appear directly in a loop body or inside `if`/`else` branches nested in it.
+- Everything else is a boundary: `fn` bodies, lambdas, callback blocks (`Grid.fill`, `.map`, …), `apply { }` blocks, path blocks (`@{ }`), and text blocks (outside their own loops). Using `continue` or `break` there — or outside any loop — is a compile error: `'continue' is only valid inside a for loop`.
+- `break` and `continue` are reserved words and cannot be used as variable names.
+
+Note: the loop-size safety limit (32,000 iterations) is checked against the range *before* the loop runs, so a `break` cannot make an over-limit range acceptable.
+
 ## Conditionals
 
 Use `if`, `else if`, and `else` for conditional path generation:

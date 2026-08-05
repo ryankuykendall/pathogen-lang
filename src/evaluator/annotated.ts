@@ -561,6 +561,26 @@ class ReturnSignal {
   constructor(public value: Value) {}
 }
 
+// Pending break/continue signal. Unlike index.ts (whose statement drivers
+// return a LoopFlow code), the annotated walkers return strings consumed at
+// ~25 sites, so a module-level flag avoids a signature churn. Safe because
+// evaluation is synchronous: the flag is set only by executing a
+// Break/ContinueStatement, and every statement loop between that point and
+// the enclosing for-loop driver checks-and-stops, so the driver consumes it
+// before any unrelated statement runs. Reset at evaluateAnnotated entry as a
+// belt-and-braces guard; boundary walkers (top level, fn bodies, grid cells)
+// clear-and-throw if it ever reaches them (the AST builder makes that
+// unreachable for valid programs).
+let pendingFlow: 'continue' | 'break' | null = null;
+
+function consumePendingFlowAtBoundary(): void {
+  if (pendingFlow) {
+    const keyword = pendingFlow;
+    pendingFlow = null;
+    throw new Error(`'${keyword}' is only valid inside a for loop`);
+  }
+}
+
 /**
  * Evaluation state for context-aware evaluation
  */
@@ -3279,6 +3299,8 @@ function evaluateBlockBodyPlain(body: Statement[], scope: Scope): { returned: bo
       return { returned: true, value: evaluateExpression(stmt.value, scope) };
     }
     evaluateStatementPlain(stmt, scope);
+    // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+    consumePendingFlowAtBoundary();
   }
   return { returned: false, value: null };
 }
@@ -3706,6 +3728,8 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
       } else if (stmt.body) {
         const children: TextChild[] = [];
         evaluateAnnotatedTextBody(stmt.body, blockScope, children);
+        // Text-block top level is a break/continue boundary (builder-enforced; defensive)
+        consumePendingFlowAtBoundary();
         elements.push({ x, y, rotation, styles: textStyles, children });
       }
       continue;
@@ -3748,7 +3772,14 @@ function evaluateAnnotatedTemplateLiteral(tl: TemplateLiteral, scope: Scope): st
  */
 function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children: TextChild[]): void {
   for (const item of items) {
-    if (item.type === 'TemplateLiteral') {
+    if (pendingFlow) return; // stop this body; the enclosing loop consumes the flag
+    if (item.type === 'BreakStatement') {
+      pendingFlow = 'break';
+      return;
+    } else if (item.type === 'ContinueStatement') {
+      pendingFlow = 'continue';
+      return;
+    } else if (item.type === 'TemplateLiteral') {
       const text = evaluateAnnotatedTemplateLiteral(item, scope);
       children.push({ type: 'run', text });
     } else if (item.type === 'TspanStatement') {
@@ -3772,12 +3803,22 @@ function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children
           const loopScope = createScope(scope);
           setVariable(loopScope, item.variable, i);
           evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
+          if (pendingFlow) {
+            const flow = pendingFlow;
+            pendingFlow = null;
+            if (flow === 'break') break;
+          }
         }
       } else {
         for (let i = start; i >= end; i--) {
           const loopScope = createScope(scope);
           setVariable(loopScope, item.variable, i);
           evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
+          if (pendingFlow) {
+            const flow = pendingFlow;
+            pendingFlow = null;
+            if (flow === 'break') break;
+          }
         }
       }
     } else if (item.type === 'ForEachLoop') {
@@ -3788,6 +3829,11 @@ function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children
           setVariable(loopScope, item.variable, arr.elements[idx]);
           if (item.indexVariable) setVariable(loopScope, item.indexVariable, idx);
           evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
+          if (pendingFlow) {
+            const flow = pendingFlow;
+            pendingFlow = null;
+            if (flow === 'break') break;
+          }
         }
       }
     } else if (item.type === 'IfStatement') {
@@ -5228,6 +5274,13 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
           for (const bodyStmt of stmt.body) {
             const result = evaluateStatementPlain(bodyStmt, loopScope);
             if (result) results.push(result);
+            if (pendingFlow) break;
+          }
+          if (pendingFlow) {
+            const flow = pendingFlow;
+            pendingFlow = null;
+            if (flow === 'break') break;
+            // 'continue' → next iteration
           }
         }
       } else {
@@ -5237,6 +5290,12 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
           for (const bodyStmt of stmt.body) {
             const result = evaluateStatementPlain(bodyStmt, loopScope);
             if (result) results.push(result);
+            if (pendingFlow) break;
+          }
+          if (pendingFlow) {
+            const flow = pendingFlow;
+            pendingFlow = null;
+            if (flow === 'break') break;
           }
         }
       }
@@ -5248,11 +5307,14 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       const condNum = toNumber(condition);
       const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
 
+      // pendingFlow checks let a break/continue in a branch stop the branch
+      // and propagate (flag stays set) to the enclosing loop driver.
       if (isTruthy) {
         const results: string[] = [];
         for (const bodyStmt of stmt.consequent) {
           const result = evaluateStatementPlain(bodyStmt, createScope(scope));
           if (result) results.push(result);
+          if (pendingFlow) break;
         }
         return results.join(' ');
       }
@@ -5261,6 +5323,7 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
         for (const bodyStmt of stmt.alternate) {
           const result = evaluateStatementPlain(bodyStmt, createScope(scope));
           if (result) results.push(result);
+          if (pendingFlow) break;
         }
         return results.join(' ');
       }
@@ -5305,6 +5368,12 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
           for (const bodyStmt of stmt.body) {
             const result = evaluateStatementPlain(bodyStmt, loopScope);
             if (result) results.push(result);
+            if (pendingFlow) break;
+          }
+          if (pendingFlow) {
+            const flow = pendingFlow;
+            pendingFlow = null;
+            if (flow === 'break') break;
           }
         }
         return results.join(' ');
@@ -5320,6 +5389,12 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
         for (const bodyStmt of stmt.body) {
           const result = evaluateStatementPlain(bodyStmt, loopScope);
           if (result) results.push(result);
+          if (pendingFlow) break;
+        }
+        if (pendingFlow) {
+          const flow = pendingFlow;
+          pendingFlow = null;
+          if (flow === 'break') break;
         }
       }
       return results.join(' ');
@@ -5462,6 +5537,14 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       throw new ReturnSignal(value);
     }
 
+    case 'BreakStatement':
+      pendingFlow = 'break';
+      return '';
+
+    case 'ContinueStatement':
+      pendingFlow = 'continue';
+      return '';
+
     case 'FontDirective':
       return '';
 
@@ -5587,6 +5670,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
           for (const bodyStmt of stmt.body) {
             evaluateStatementAnnotated(bodyStmt, loopScope, ctx);
+            if (pendingFlow) break;
           }
         } else {
           // Still need to evaluate for side effects (variable assignments, etc.)
@@ -5594,7 +5678,15 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
           setVariable(loopScope, stmt.variable, i);
           for (const bodyStmt of stmt.body) {
             evaluateStatementPlain(bodyStmt, loopScope);
+            if (pendingFlow) break;
           }
+        }
+        if (pendingFlow) {
+          const flow = pendingFlow;
+          pendingFlow = null;
+          // break falls through to the loop_end epilogue below — the
+          // indent/loop_end events must still emit
+          if (flow === 'break') break;
         }
       }
 
@@ -5608,13 +5700,16 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       const condNum = toNumber(condition);
       const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
 
+      // pendingFlow stops the branch and propagates to the enclosing loop
       if (isTruthy) {
         for (const bodyStmt of stmt.consequent) {
           evaluateStatementAnnotated(bodyStmt, createScope(scope), ctx);
+          if (pendingFlow) break;
         }
       } else if (stmt.alternate) {
         for (const bodyStmt of stmt.alternate) {
           evaluateStatementAnnotated(bodyStmt, createScope(scope), ctx);
+          if (pendingFlow) break;
         }
       }
       break;
@@ -5664,6 +5759,12 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
           }
           for (const bodyStmt of stmt.body) {
             evaluateStatementAnnotated(bodyStmt, loopScope, ctx);
+            if (pendingFlow) break;
+          }
+          if (pendingFlow) {
+            const flow = pendingFlow;
+            pendingFlow = null;
+            if (flow === 'break') break;
           }
         }
         ctx.indentLevel--;
@@ -5708,6 +5809,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
           }
           for (const bodyStmt of stmt.body) {
             evaluateStatementAnnotated(bodyStmt, loopScope, ctx);
+            if (pendingFlow) break;
           }
         } else {
           const loopScope = createScope(scope);
@@ -5721,7 +5823,13 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
           }
           for (const bodyStmt of stmt.body) {
             evaluateStatementPlain(bodyStmt, loopScope);
+            if (pendingFlow) break;
           }
+        }
+        if (pendingFlow) {
+          const flow = pendingFlow;
+          pendingFlow = null;
+          if (flow === 'break') break; // loop_end epilogue still emits below
         }
       }
 
@@ -6044,6 +6152,14 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       throw new ReturnSignal(value);
     }
 
+    case 'BreakStatement':
+      pendingFlow = 'break';
+      break;
+
+    case 'ContinueStatement':
+      pendingFlow = 'continue';
+      break;
+
     case 'FontDirective':
       // Declarative metadata — no annotated output
       break;
@@ -6079,10 +6195,13 @@ function emitPathString(pathStr: string, ctx: AnnotatedContext): void {
 function evaluateStatementsAnnotated(stmts: Statement[], scope: Scope, ctx: AnnotatedContext): void {
   for (const stmt of stmts) {
     evaluateStatementAnnotated(stmt, scope, ctx);
+    // Top level is a break/continue boundary (builder-enforced; defensive)
+    consumePendingFlowAtBoundary();
   }
 }
 
 export function evaluateAnnotated(program: Program, comments: Comment[]): AnnotatedOutput {
+  pendingFlow = null; // belt-and-braces: a prior thrown eval can't leak flow
   const scope = createScope();
 
   // Initialize path context and evaluation state

@@ -26,6 +26,10 @@ const KEYWORD_HOVER: Record<string, string> = {
   // before scope resolution). Discoverability rides the fn entry + snippet.
   fn: '**fn** — Define a function\n```\nfn name(params) { ... }\n```\nNamed functions resolve free names in the *caller\'s* scope (dynamic scoping). For lexical capture, use a lambda: `let f = {|x| ... };`',
   return: '**return** — Return a value from a function\n```\nreturn expression;\n```',
+  continue:
+    '**continue** — Skip the rest of the current loop iteration\n```\nfor (i in 0..10) {\n  if (i == 3) { continue; }\n  ...\n}\n```\nValid only inside a for loop body (or `if` branches nested in it); controls the innermost enclosing loop.',
+  break:
+    '**break** — Exit the innermost enclosing for loop\n```\nfor (i in 0..10) {\n  if (done) { break; }\n  ...\n}\n```\nValid only inside a for loop body (or `if` branches nested in it).',
   define:
     "**define** — Define a layer (PathLayer / TextLayer / GroupLayer) or the SVG viewBox\n```\ndefine PathLayer('name') ${ stroke: #000; }\ndefine TextLayer('name') ${ font-size: 14; }\ndefine ViewBox(0, 0, 200, 200);\n```",
   ViewBox:

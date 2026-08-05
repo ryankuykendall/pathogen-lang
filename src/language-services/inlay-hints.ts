@@ -109,6 +109,10 @@ function walkStatement(stmt: Statement, source: string, range: Range, hints: Inl
     case 'ReturnStatement':
       walkExpr(stmt.value, source, range, hints);
       break;
+    case 'BreakStatement':
+    case 'ContinueStatement':
+      // No child expressions
+      break;
     case 'LayerApplyBlock':
       walkStatements(stmt.body, source, range, hints);
       break;

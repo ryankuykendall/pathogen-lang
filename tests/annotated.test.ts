@@ -1056,3 +1056,39 @@ describe('PathBlock isEmpty / char / isWhitespace (annotated parity)', () => {
     ).toThrow(/isWhitespace.*fromGlyph/s);
   });
 });
+
+describe('loop control: continue and break (annotated parity)', () => {
+  it('continue skips the iteration body in annotated mode', () => {
+    const out = compileAnnotated('for (i in 0..4) {\n  if (i == 2) {\n    continue;\n  }\n  M calc(i * 10) 0\n}');
+    expect(out).toContain('M 10 0');
+    expect(out).not.toContain('M 20 0');
+    expect(out).toContain('M 30 0');
+  });
+
+  it('break exits the loop and still emits the remaining iteration markers correctly', () => {
+    const out = compileAnnotated('for (i in 0..5) {\n  if (i == 2) {\n    break;\n  }\n  M calc(i * 10) 0\n}');
+    expect(out).toContain('M 0 0');
+    expect(out).toContain('M 10 0');
+    expect(out).not.toContain('M 20 0');
+    expect(out).not.toContain('iteration 3');
+  });
+
+  it('break inside a truncated (>10 iteration) loop still terminates and emits loop structure', () => {
+    // Break fires at i == 1, within the shown-first-3 window; the loop must
+    // stop entirely (no skip marker, no tail iterations).
+    const out = compileAnnotated('for (i in 0..50) {\n  if (i == 1) {\n    break;\n  }\n  M i 0\n}');
+    expect(out).toContain('M 0 0');
+    expect(out).not.toContain('M 2 0');
+    expect(out).not.toContain('skipping');
+    expect(out).toContain('for (i in 0..50)');
+  });
+
+  it('matches the main evaluator output for a continue program', () => {
+    const src = 'for (i in 0..4) { if (i == 2) { continue; } M calc(i * 10) 0 }';
+    const plain = compile(src);
+    // Annotated path commands, stripped of annotations, must equal the plain output
+    const annotated = compileAnnotated(src.replace(/ }/g, '\n}').replace(/{ /g, '{\n'));
+    const commands = annotated.split('\n').filter((l) => l.trim().startsWith('M')).map((l) => l.trim());
+    expect(commands.join(' ')).toBe(plain.layers[0].data);
+  });
+});

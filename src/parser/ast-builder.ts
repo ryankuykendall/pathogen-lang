@@ -22,6 +22,8 @@ import type {
   IfStatement,
   FunctionDefinition,
   ReturnStatement,
+  BreakStatement,
+  ContinueStatement,
   EnumDefinition,
   PathCommand,
   PathArg,
@@ -130,6 +132,14 @@ function adjustLocations(node: any, lineOffset: number, colOffset: number, seen:
  * This produces the same AST as the Parsimmon parser's `parse()` function.
  */
 export function buildAST(tree: Tree, source: string): Program {
+  // Save/zero/restore loopDepth rather than plain-resetting: buildAST is
+  // re-entered mid-build via parseExpressionString (if-conditions, for-each
+  // iterables wrap sub-expressions as `let _ = expr;`), and a plain reset
+  // would clobber the enclosing build's depth. The zero also guarantees a
+  // previously thrown parse error can't leak stale depth into this build.
+  const savedLoopDepth = loopDepth;
+  loopDepth = 0;
+  try {
   const body: Statement[] = [];
   const cursor = tree.cursor();
 
@@ -159,6 +169,9 @@ export function buildAST(tree: Tree, source: string): Program {
   }
 
   return { type: 'Program', body };
+  } finally {
+    loopDepth = savedLoopDepth;
+  }
 }
 
 /**
@@ -166,23 +179,30 @@ export function buildAST(tree: Tree, source: string): Program {
  * Used by compileAnnotated() — replaces the old parseWithComments().
  */
 export function buildASTWithComments(tree: Tree, source: string): { program: Program; comments: Comment[] } {
-  const body: Statement[] = [];
-  const comments: Comment[] = [];
-  const cursor = tree.cursor();
+  // Save/zero/restore — see buildAST for why (re-entrancy via parseExpressionString)
+  const savedLoopDepth = loopDepth;
+  loopDepth = 0;
+  try {
+    const body: Statement[] = [];
+    const comments: Comment[] = [];
+    const cursor = tree.cursor();
 
-  if (!cursor.firstChild()) return { program: { type: 'Program', body }, comments };
+    if (!cursor.firstChild()) return { program: { type: 'Program', body }, comments };
 
-  do {
-    if (cursor.name === 'Comment') {
-      const comment = buildComment(cursor, source);
-      comments.push(comment);
-    } else {
-      const stmt = buildStatement(cursor, source);
-      if (stmt) body.push(stmt);
-    }
-  } while (cursor.nextSibling());
+    do {
+      if (cursor.name === 'Comment') {
+        const comment = buildComment(cursor, source);
+        comments.push(comment);
+      } else {
+        const stmt = buildStatement(cursor, source);
+        if (stmt) body.push(stmt);
+      }
+    } while (cursor.nextSibling());
 
-  return { program: { type: 'Program', body }, comments };
+    return { program: { type: 'Program', body }, comments };
+  } finally {
+    loopDepth = savedLoopDepth;
+  }
 }
 
 // --- Helpers ---
@@ -240,6 +260,51 @@ function childText(cursor: TreeCursor, source: string, name: string): string | n
   return null;
 }
 
+// --- Loop-depth tracking for break/continue validation ---
+//
+// break/continue are valid only lexically inside a for-loop body (nested if
+// branches included). fn bodies, lambdas/callback blocks, apply blocks, path
+// blocks, and text-block top levels are boundaries: they reset the depth so
+// a stray break/continue inside them errors at build time even when the
+// surrounding source contains a loop. Depth is module state (the builder is
+// synchronous and single-entry); buildAST/buildASTWithComments reset it so a
+// previously thrown parse error cannot leave stale depth behind.
+let loopDepth = 0;
+
+function buildLoopBody(cursor: TreeCursor, source: string): Statement[] {
+  loopDepth++;
+  try {
+    return buildBlock(cursor, source);
+  } finally {
+    loopDepth--;
+  }
+}
+
+function atLoopBoundary<T>(build: () => T): T {
+  const saved = loopDepth;
+  loopDepth = 0;
+  try {
+    return build();
+  } finally {
+    loopDepth = saved;
+  }
+}
+
+function buildLoopControl(
+  cursor: TreeCursor,
+  source: string,
+  type: 'BreakStatement' | 'ContinueStatement',
+): BreakStatement | ContinueStatement {
+  const nodeLoc = loc(cursor, source);
+  if (loopDepth === 0) {
+    const keyword = type === 'BreakStatement' ? 'break' : 'continue';
+    throw new Error(
+      `Parse error at line ${nodeLoc.line}, column ${nodeLoc.column}: '${keyword}' is only valid inside a for loop`,
+    );
+  }
+  return { type, loc: nodeLoc };
+}
+
 // --- Statement builders ---
 
 function buildStatement(cursor: TreeCursor, source: string): Statement | null {
@@ -252,6 +317,8 @@ function buildStatement(cursor: TreeCursor, source: string): Statement | null {
     case 'IfStatement': return buildIfStatement(cursor, source);
     case 'FunctionDefinition': return buildFunctionDefinition(cursor, source);
     case 'ReturnStatement': return buildReturnStatement(cursor, source);
+    case 'BreakStatement': return buildLoopControl(cursor, source, 'BreakStatement');
+    case 'ContinueStatement': return buildLoopControl(cursor, source, 'ContinueStatement');
     case 'EnumDefinition': return buildEnumDefinition(cursor, source);
     case 'PathCommand': return buildPathCommand(cursor, source);
     case 'TspanStatement': return buildTspanStatement(cursor, source);
@@ -476,7 +543,7 @@ function buildForLoop(cursor: TreeCursor, source: string): ForLoop {
     } else if (phase === 2 && isExpressionNode(cursor.name)) {
       end = buildExpression(cursor, source);
     } else if (cursor.name === 'Block') {
-      body = buildBlock(cursor, source);
+      body = buildLoopBody(cursor, source);
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -516,7 +583,7 @@ function buildForEachLoop(cursor: TreeCursor, source: string): ForEachLoop {
       const parsed = parseExpressionString(iterStr);
       if (parsed) iterable = parsed;
     } else if (cursor.name === 'Block') {
-      body = buildBlock(cursor, source);
+      body = buildLoopBody(cursor, source);
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -596,7 +663,7 @@ function buildFunctionDefinition(cursor: TreeCursor, source: string): FunctionDe
     } else if (cursor.name === 'VariableName' && foundParen && !closedParen) {
       params.push(text(cursor, source));
     } else if (cursor.name === 'Block') {
-      body = buildBlock(cursor, source);
+      body = atLoopBoundary(() => buildBlock(cursor, source));
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -1056,7 +1123,7 @@ function buildLayerApplyBlock(cursor: TreeCursor, source: string): LayerApplyBlo
     else if (!foundApply && isExpressionNode(cursor.name) && cursor.name !== 'layer') {
       layerName = buildExpression(cursor, source);
     } else if (cursor.name === 'Block') {
-      body = buildBlock(cursor, source);
+      body = atLoopBoundary(() => buildBlock(cursor, source));
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -1097,7 +1164,7 @@ function buildTextStatement(cursor: TreeCursor, source: string): TextStatement {
     if (!inParens && cursor.name === 'TemplateLiteral') {
       content = buildTemplateLiteral(cursor, source);
     } else if (!inParens && cursor.name === 'TextBlock') {
-      body = buildTextBlock(cursor, source);
+      body = atLoopBoundary(() => buildTextBlock(cursor, source));
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -1192,13 +1259,18 @@ function buildTextForLoop(cursor: TreeCursor, source: string): ForLoop {
     } else if (phase === 2 && isExpressionNode(cursor.name)) {
       end = buildExpression(cursor, source);
     } else if (cursor.name === '{') {
-      // Collect text body items
-      while (cursor.nextSibling() && cursor.name !== '}') {
-        if (cursor.name === 'TspanStatement') body.push(buildTspanStatement(cursor, source));
-        else if (cursor.name === 'TemplateLiteral') body.push(buildTemplateLiteral(cursor, source) as any);
-        else if (cursor.name === 'TextForLoop') body.push(buildTextForLoop(cursor, source));
-        else if (cursor.name === 'TextIfStatement') body.push(buildTextIfStatement(cursor, source));
-        else { const s = buildStatement(cursor, source); if (s) body.push(s); }
+      // Collect text body items (a loop body — break/continue become valid)
+      loopDepth++;
+      try {
+        while (cursor.nextSibling() && cursor.name !== '}') {
+          if (cursor.name === 'TspanStatement') body.push(buildTspanStatement(cursor, source));
+          else if (cursor.name === 'TemplateLiteral') body.push(buildTemplateLiteral(cursor, source) as any);
+          else if (cursor.name === 'TextForLoop') body.push(buildTextForLoop(cursor, source));
+          else if (cursor.name === 'TextIfStatement') body.push(buildTextIfStatement(cursor, source));
+          else { const s = buildStatement(cursor, source); if (s) body.push(s); }
+        }
+      } finally {
+        loopDepth--;
       }
     }
   } while (cursor.nextSibling());
@@ -1226,10 +1298,16 @@ function buildTextForEachLoop(cursor: TreeCursor, source: string): ForEachLoop {
     else if (foundIn && isExpressionNode(cursor.name) && cursor.name !== ')') {
       iterable = buildExpressionWithPostfix(cursor, source);
     } else if (cursor.name === '{') {
-      while (cursor.nextSibling() && cursor.name !== '}') {
-        if (cursor.name === 'TspanStatement') body.push(buildTspanStatement(cursor, source));
-        else if (cursor.name === 'TemplateLiteral') body.push(buildTemplateLiteral(cursor, source) as any);
-        else { const s = buildStatement(cursor, source); if (s) body.push(s); }
+      // Loop body — break/continue become valid
+      loopDepth++;
+      try {
+        while (cursor.nextSibling() && cursor.name !== '}') {
+          if (cursor.name === 'TspanStatement') body.push(buildTspanStatement(cursor, source));
+          else if (cursor.name === 'TemplateLiteral') body.push(buildTemplateLiteral(cursor, source) as any);
+          else { const s = buildStatement(cursor, source); if (s) body.push(s); }
+        }
+      } finally {
+        loopDepth--;
       }
     }
   } while (cursor.nextSibling());
@@ -1501,26 +1579,33 @@ function buildTrailingBlock(cursor: TreeCursor, source: string): { params: strin
   const params: string[] = [];
   const body: Statement[] = [];
 
-  cursor.firstChild(); // Enter TrailingBlock
-  let inParams = false;
-  let passedParams = false;
-  do {
-    if (cursor.name === '||') {
-      // Zero-param form {|| ... } — both pipes lex as one logical-or token
-      passedParams = true;
-    } else if (cursor.name === '|' && !inParams) {
-      inParams = true;
-    } else if (cursor.name === '|' && inParams) {
-      inParams = false;
-      passedParams = true;
-    } else if (inParams && (cursor.name === 'VariableName' || cursor.name === 'Identifier')) {
-      params.push(text(cursor, source));
-    } else if (passedParams && cursor.name !== '{' && cursor.name !== '}') {
-      const stmt = buildStatement(cursor, source);
-      if (stmt) body.push(stmt);
-    }
-  } while (cursor.nextSibling());
-  cursor.parent();
+  // Lambda / callback bodies are break/continue boundaries
+  const savedLoopDepth = loopDepth;
+  loopDepth = 0;
+  try {
+    cursor.firstChild(); // Enter TrailingBlock
+    let inParams = false;
+    let passedParams = false;
+    do {
+      if (cursor.name === '||') {
+        // Zero-param form {|| ... } — both pipes lex as one logical-or token
+        passedParams = true;
+      } else if (cursor.name === '|' && !inParams) {
+        inParams = true;
+      } else if (cursor.name === '|' && inParams) {
+        inParams = false;
+        passedParams = true;
+      } else if (inParams && (cursor.name === 'VariableName' || cursor.name === 'Identifier')) {
+        params.push(text(cursor, source));
+      } else if (passedParams && cursor.name !== '{' && cursor.name !== '}') {
+        const stmt = buildStatement(cursor, source);
+        if (stmt) body.push(stmt);
+      }
+    } while (cursor.nextSibling());
+    cursor.parent();
+  } finally {
+    loopDepth = savedLoopDepth;
+  }
 
   return { params, body };
 }
@@ -2169,29 +2254,37 @@ function parseStyleDeclarations(
 
 function buildPathBlockExpression(cursor: TreeCursor, source: string): PathBlockExpression {
   const nodeLoc = loc(cursor, source);
-  const body: Statement[] = [];
-  cursor.firstChild();
-  do {
-    if (cursor.name !== 'pathBlockOpen' && cursor.name !== '}') {
-      const stmt = buildStatement(cursor, source);
-      if (stmt) body.push(stmt);
-    }
-  } while (cursor.nextSibling());
-  cursor.parent();
+  // Path-block bodies are break/continue boundaries
+  const body = atLoopBoundary(() => {
+    const stmts: Statement[] = [];
+    cursor.firstChild();
+    do {
+      if (cursor.name !== 'pathBlockOpen' && cursor.name !== '}') {
+        const stmt = buildStatement(cursor, source);
+        if (stmt) stmts.push(stmt);
+      }
+    } while (cursor.nextSibling());
+    cursor.parent();
+    return stmts;
+  });
   return { type: 'PathBlockExpression', body, loc: nodeLoc };
 }
 
 function buildTextBlockExpression(cursor: TreeCursor, source: string): TextBlockExpression {
   const nodeLoc = loc(cursor, source);
-  const body: Statement[] = [];
-  cursor.firstChild();
-  do {
-    if (cursor.name !== 'textBlockOpen' && cursor.name !== '}') {
-      const stmt = buildStatement(cursor, source);
-      if (stmt) body.push(stmt);
-    }
-  } while (cursor.nextSibling());
-  cursor.parent();
+  // Text-block-expression bodies are break/continue boundaries
+  const body = atLoopBoundary(() => {
+    const stmts: Statement[] = [];
+    cursor.firstChild();
+    do {
+      if (cursor.name !== 'textBlockOpen' && cursor.name !== '}') {
+        const stmt = buildStatement(cursor, source);
+        if (stmt) stmts.push(stmt);
+      }
+    } while (cursor.nextSibling());
+    cursor.parent();
+    return stmts;
+  });
   return { type: 'TextBlockExpression', body, loc: nodeLoc };
 }
 

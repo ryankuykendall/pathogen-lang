@@ -39,6 +39,8 @@ const NODE_CLASS: Record<string, string> = {
   if: 'kw',
   else: 'kw',
   return: 'kw',
+  break: 'kw',
+  continue: 'kw',
   apply: 'kw',
   layer: 'kw',
   text: 'kw',

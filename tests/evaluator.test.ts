@@ -4529,3 +4529,120 @@ describe('first-class Angle values', () => {
     });
   });
 });
+
+describe('loop control: continue and break', () => {
+  it('continue skips the rest of the iteration body', () => {
+    const result = compilePath('for (i in 0..5) { if (i == 3) { continue; } M calc(i * 10) 0 }');
+    expect(result).toBe('M 0 0 M 10 0 M 20 0 M 40 0 M 50 0');
+  });
+
+  it('break exits the loop', () => {
+    const result = compilePath('for (i in 0..100) { if (i == 3) { break; } M calc(i * 10) 0 }');
+    expect(result).toBe('M 0 0 M 10 0 M 20 0');
+  });
+
+  it('break in a descending range', () => {
+    const result = compilePath('for (i in 5..1) { if (i == 3) { break; } M calc(i * 10) 0 }');
+    expect(result).toBe('M 50 0 M 40 0');
+  });
+
+  it('nested loops: break/continue control the innermost loop only', () => {
+    const result = compilePath('for (i in 0..2) { for (j in 0..5) { if (j == 1) { break; } M calc(i * 100 + j) 0 } }');
+    expect(result).toBe('M 0 0 M 100 0 M 200 0');
+  });
+
+  it('continue in a for-each over an array', () => {
+    const result = compilePath('let xs = [1, 2, 3, 4];\nfor (x in xs) { if (x == 2) { continue; } M x 0 }');
+    expect(result).toBe('M 1 0 M 3 0 M 4 0');
+  });
+
+  it('break in a for-each over an object', () => {
+    const result = compile(
+      `let obj = { a: 1, b: 2, c: 3 };
+       let seen = [];
+       for ([k, v] in obj) { if (v == 2) { break; } seen.push(k); }
+       log(seen.length);`,
+    );
+    expect(result.logs[0].parts[0].value).toBe('1');
+  });
+
+  it('return from a fn still unwinds past an enclosing loop (D6)', () => {
+    const result = compile('fn firstOver(n) { for (i in 0..100) { if (calc(i * i) > n) { return i; } } return -1; }\nlog(firstOver(50));');
+    expect(result.logs[0].parts[0].value).toBe('8');
+  });
+
+  it('break inside a fn called from a loop does not affect the caller loop', () => {
+    const result = compilePath(
+      `fn probe() { for (j in 0..10) { if (j == 1) { break; } } return 0; }
+       for (i in 0..2) { let _ = probe(); M i 0 }`,
+    );
+    expect(result).toBe('M 0 0 M 1 0 M 2 0');
+  });
+
+  it('continue works in text-block loops', () => {
+    const result = compile(
+      `define default TextLayer('t') \${ font-size: 12; }
+       layer('t').apply {
+         text(0, 0) {
+           for (i in 0..3) {
+             if (i == 1) { continue; }
+             \`v\${i}\`
+           }
+         }
+       }`,
+    );
+    const texts = result.layers[0].textElements?.[0]?.children?.map((c: { text?: string }) => c.text) ?? [];
+    expect(texts).toEqual(['v0', 'v2', 'v3']);
+  });
+
+  it('break works in loops inside &{ } text-block expressions', () => {
+    // Regression: evaluateTextBlockBody is a separate walker from the
+    // text(x,y){} statement form and silently ignored loop control at first.
+    const result = compile(
+      `let tb = &{
+         for (i in 0..5) {
+           if (i == 2) { break; }
+           text(calc(i * 10), 10)\`v\${i}\`;
+         }
+       };
+       log(tb.elementCount);`,
+    );
+    expect(result.logs[0].parts[0].value).toBe('2');
+  });
+
+  it('continue works in loops inside &{ } text-block expressions', () => {
+    const result = compile(
+      `let tb = &{
+         for (i in 0..5) {
+           if (i == 2) { continue; }
+           text(calc(i * 10), 10)\`v\${i}\`;
+         }
+       };
+       log(tb.elementCount);`,
+    );
+    expect(result.logs[0].parts[0].value).toBe('5');
+  });
+
+  it('break in a for-each inside &{ } text-block expressions', () => {
+    const result = compile(
+      `let xs = [10, 20, 30, 40];
+       let tb = &{
+         for (x in xs) {
+           if (x == 30) { break; }
+           text(x, 10)\`v\${x}\`;
+         }
+       };
+       log(tb.elementCount);`,
+    );
+    expect(result.logs[0].parts[0].value).toBe('2');
+  });
+
+  it('grid fast-path suite behavior is unchanged by flow plumbing', () => {
+    const result = compile(
+      `let g = Grid(2, 2);
+       g.fill {|x, y| return calc(x + y); };
+       log(g.get(1, 1));`,
+    );
+    expect(result.logs[0].parts[0].value).toBe('2');
+  });
+});

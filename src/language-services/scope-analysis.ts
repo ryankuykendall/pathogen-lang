@@ -275,6 +275,10 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
     case 'ReturnStatement':
       walkExpr(stmt.value, scope, col);
       break;
+    case 'BreakStatement':
+    case 'ContinueStatement':
+      // No child expressions or declarations
+      break;
     case 'TextStatement':
       walkExpr(stmt.x, scope, col);
       walkExpr(stmt.y, scope, col);

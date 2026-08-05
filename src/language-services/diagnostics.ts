@@ -242,6 +242,12 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
   if (parentName === 'ReturnStatement' && !errText) {
     return "Missing ';' after return statement";
   }
+  if (parentName === 'BreakStatement' && !errText) {
+    return "Missing ';' after break statement";
+  }
+  if (parentName === 'ContinueStatement' && !errText) {
+    return "Missing ';' after continue statement";
+  }
 
   // ── let declaration issues ──
   if (parentName === 'LetDeclaration') {

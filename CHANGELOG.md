@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-05 (loop control: continue / break)
+
+### Added
+
+#### Core
+
+- **`continue;` and `break;` loop-control statements** — C-family semantics: `continue` skips to the next iteration of the innermost enclosing `for` loop, `break` exits it. Valid in range loops, for-each loops (arrays and objects), loops inside `text` blocks, and `if`/`else` branches nested in a loop body. Everything else is a boundary — `fn` bodies, lambdas, callback blocks, `apply { }`, path blocks, text-block top levels — enforced at parse time with `'break' is only valid inside a for loop`. Implemented as no-throw flow codes in the main evaluator (per the Grid callback throw-deopt lesson — zero allocation and no try/catch on the hot path) and a flag in the annotated evaluator, with full parity. Editor surfaces flow through: completions, hover, syntax highlighting (playground + VS Code TextMate), formatter, and missing-`;` diagnostics. Documented in `docs/syntax.md` → "Loop Control: continue and break".
+- **Compatibility note**: `break` and `continue` are now reserved words and can no longer be used as variable names.
+- Review hardening: loop control also works in loops inside `&{ }` text-block *expressions* (a separate evaluator walker from the `text(x,y){}` statement form — caught in review with an empirical repro), and every callback/defs-producer body site carries the defensive boundary guard.
+- Known pre-existing follow-up (not from this change): `buildTextIfStatement` drops the body of a text-for-loop nested inside a text-block `if` (`ast-builder.ts` uses the generic loop builder there), so statements in that position are silently discarded — needs its own fix.
+
 ## [Unreleased] - 2026-08-05 (glyph provenance: char / isWhitespace / isEmpty)
 
 ### Added

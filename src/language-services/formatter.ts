@@ -188,6 +188,10 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
     }
     case 'ReturnStatement':
       return `${prefix}return ${formatExpression(stmt.value, depth, indent, source)};`;
+    case 'BreakStatement':
+      return `${prefix}break;`;
+    case 'ContinueStatement':
+      return `${prefix}continue;`;
     case 'ExpressionStatement':
       return `${prefix}${formatExpression(stmt.expression, depth, indent, source)};`;
     case 'LayerDefinition': {

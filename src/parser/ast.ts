@@ -75,6 +75,8 @@ export type Statement =
   | FunctionDefinition
   | EnumDefinition
   | ReturnStatement
+  | BreakStatement
+  | ContinueStatement
   | PathCommand
   | ViewBoxDefinition
   | LayerDefinition
@@ -141,6 +143,18 @@ export interface FunctionDefinition {
 export interface ReturnStatement {
   type: 'ReturnStatement';
   value: Expression;
+}
+
+// break;
+export interface BreakStatement {
+  type: 'BreakStatement';
+  loc?: SourceLocation;
+}
+
+// continue;
+export interface ContinueStatement {
+  type: 'ContinueStatement';
+  loc?: SourceLocation;
 }
 
 // `with <cornerOp>(...)` — behavior recorded on the vertex this command creates
@@ -363,7 +377,7 @@ export interface StyleBlockLiteral {
 }
 
 // text(x, y)`content` or text(x, y) { `text` tspan()... }
-export type TextBodyItem = TspanStatement | TemplateLiteral | ForLoop | ForEachLoop | IfStatement | LetDeclaration;
+export type TextBodyItem = TspanStatement | TemplateLiteral | ForLoop | ForEachLoop | IfStatement | LetDeclaration | BreakStatement | ContinueStatement;
 
 export interface TextStatement {
   type: 'TextStatement';

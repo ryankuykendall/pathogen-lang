@@ -35,6 +35,8 @@ statement {
   IfStatement |
   FunctionDefinition |
   ReturnStatement |
+  BreakStatement |
+  ContinueStatement |
   PathCommand |
   ExpressionStatement
 }
@@ -75,6 +77,14 @@ ReturnStatement {
   kw<"return"> expression ";"
 }
 
+BreakStatement {
+  kw<"break"> ";"
+}
+
+ContinueStatement {
+  kw<"continue"> ";"
+}
+
 EnumDefinition {
   kw<"enum"> VariableName "{" EnumMember ("," EnumMember)* ","? "}"
 }
@@ -111,7 +121,9 @@ textBodyItem {
   TextForLoop |
   TextForEachLoop |
   TextIfStatement |
-  LetDeclaration
+  LetDeclaration |
+  BreakStatement |
+  ContinueStatement
 }
 
 TspanStatement {

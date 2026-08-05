@@ -702,3 +702,48 @@ let x = arr['oops'];`;
     });
   });
 });
+
+describe('break and continue placement errors', () => {
+  it('rejects break and continue as variable names (reserved words)', () => {
+    expect(() => compile('let break = 10;')).toThrow();
+    expect(() => compile('let continue = 10;')).toThrow();
+  });
+
+  it('errors on continue outside any loop', () => {
+    expect(() => compile('continue;')).toThrow(/'continue' is only valid inside a for loop/);
+  });
+
+  it('errors on break outside any loop with line/column', () => {
+    expect(() => compile('let x = 1;\nbreak;')).toThrow(/line 2.*'break' is only valid inside a for loop/s);
+  });
+
+  it('errors on break in a fn body even when the fn is defined inside a loop', () => {
+    expect(() => compile('for (i in 0..5) { fn f() { break; } }')).toThrow(
+      /'break' is only valid inside a for loop/,
+    );
+  });
+
+  it('errors on continue in a lambda body inside a loop', () => {
+    expect(() => compile('for (i in 0..5) { let f = {|a| continue; }; }')).toThrow(
+      /'continue' is only valid inside a for loop/,
+    );
+  });
+
+  it('errors on break inside an apply block inside a loop (apply is a boundary)', () => {
+    expect(() =>
+      compile(`let gl = PathLayer('g');\nfor (i in 0..5) { gl.apply { break; } }`),
+    ).toThrow(/'break' is only valid inside a for loop/);
+  });
+
+  it('errors on continue inside a path block inside a loop', () => {
+    expect(() => compile('for (i in 0..5) { let pb = @{ continue; }; }')).toThrow(
+      /'continue' is only valid inside a for loop/,
+    );
+  });
+
+  it('errors on break in a Grid callback inside a loop', () => {
+    expect(() =>
+      compile('let g = Grid(2, 2);\nfor (i in 0..2) { g.fill {|x, y| break; }; }'),
+    ).toThrow(/'break' is only valid inside a for loop/);
+  });
+});
