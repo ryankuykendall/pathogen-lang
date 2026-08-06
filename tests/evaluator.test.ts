@@ -2080,6 +2080,30 @@ describe('Evaluator', () => {
         expect(result.logs[0].parts[0].value).toBe('[1, 2, 3, 10, 20, 30]');
       });
 
+      it('a helper fn mutating the locked array throws (lock is value-scoped, not lexical)', () => {
+        expect(() =>
+          compile(`
+            let nums = [1, 2, 3];
+            fn addOne() { nums.push(1); return 0; }
+            let r = nums.filter {|n| let x = addOne(); return 1; };
+          `),
+        ).toThrow(/Cannot call push\(\) on an array while it is being iterated/);
+      });
+
+      it('mutating the iterated object inside object for-each is allowed (keys snapshot)', () => {
+        const result = compile(`
+          let obj = { a: 1, b: 2 };
+          let visited = [];
+          for ([k, v] in obj) {
+            obj['c'] = 99;
+            visited.push(k);
+          }
+          log(visited); log(obj.c);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[a, b]');
+        expect(result.logs[1].parts[0].value).toBe('99');
+      });
+
       it('a for-each over an object with array mutation inside is unaffected', () => {
         const result = compile(`
           let nums = [1];
