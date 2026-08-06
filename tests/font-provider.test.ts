@@ -17,6 +17,7 @@ import {
   lookupGlyph,
   splitContours,
 } from '../src/evaluator/font-provider';
+import { isMarkChar, isNewlineChar, isSpaceChar, isTabChar } from '../src/evaluator/char-class';
 import type { FontRegistry } from '../src/index';
 
 // Load test fixture font
@@ -446,6 +447,150 @@ describe('PathBlock.fromGlyph()', () => {
         { fonts: registry },
       ),
     ).toThrow('requires font-family');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Glyph character classes (isSpace / isTab / isNewline / isMark / codePoint)
+// ---------------------------------------------------------------------------
+describe('fromGlyph character classes', () => {
+  // Coverage matrix over the classifier itself: every whitespace character
+  // must satisfy exactly one of isSpaceChar/isTabChar/isNewlineChar, and
+  // non-whitespace characters none — the documented partition invariant.
+  const MATRIX: Array<[string, string, 'space' | 'tab' | 'newline' | 'mark' | 'none']> = [
+    ['U+0020 space', ' ', 'space'],
+    ['U+00A0 no-break space', '\u00A0', 'space'],
+    ['U+1680 ogham space mark', '\u1680', 'space'],
+    ['U+2003 em space', '\u2003', 'space'],
+    ['U+202F narrow no-break space', '\u202F', 'space'],
+    ['U+3000 ideographic space', '\u3000', 'space'],
+    ['U+FEFF zero-width no-break space', '\uFEFF', 'space'],
+    ['U+0009 tab', '\t', 'tab'],
+    ['U+000A line feed', '\n', 'newline'],
+    ['U+000B vertical tab', '\v', 'newline'],
+    ['U+000C form feed', '\f', 'newline'],
+    ['U+000D carriage return', '\r', 'newline'],
+    // NEL is Unicode White_Space but NOT JS \s (= isWhitespace); it is
+    // excluded from isNewline so the partition against isWhitespace holds.
+    ['U+0085 next line', '\u0085', 'none'],
+    ['U+2028 line separator', '\u2028', 'newline'],
+    ['U+2029 paragraph separator', '\u2029', 'newline'],
+    ['U+0301 combining acute accent', '\u0301', 'mark'],
+    ['U+064B Arabic fathatan', '\u064B', 'mark'],
+    ['U+05B8 Hebrew qamats', '\u05B8', 'mark'],
+    ['U+0E31 Thai mai han-akat', '\u0E31', 'mark'],
+    ['Latin letter', 'A', 'none'],
+    ['Hangul syllable', '\uD55C', 'none'],
+    ['CJK ideograph', '\u4E2D', 'none'],
+    ['digit', '0', 'none'],
+    ['punctuation', '.', 'none'],
+    ['astral emoji', '\u{1F600}', 'none'],
+    ['U+200B zero-width space (format char, not whitespace)', '\u200B', 'none'],
+    ['U+200D zero-width joiner', '\u200D', 'none'],
+  ];
+
+  it.each(MATRIX)('%s classification and partition invariant', (_label, ch, cls) => {
+    expect(isSpaceChar(ch)).toBe(cls === 'space');
+    expect(isTabChar(ch)).toBe(cls === 'tab');
+    expect(isNewlineChar(ch)).toBe(cls === 'newline');
+    expect(isMarkChar(ch)).toBe(cls === 'mark');
+
+    // Partition invariant: whitespace ⇔ exactly one of space/tab/newline.
+    const whitespaceFlags = [isSpaceChar(ch), isTabChar(ch), isNewlineChar(ch)].filter(Boolean).length;
+    expect(whitespaceFlags).toBe(/^\s$/u.test(ch) ? 1 : 0);
+    // Marks are never whitespace.
+    if (isMarkChar(ch)) expect(/^\s$/u.test(ch)).toBe(false);
+  });
+
+  it('glyphs expose the classifications and codePoint end-to-end', () => {
+    const result = compile(
+      `@font "Inter";
+       let glyphs = PathBlock.fromGlyph("A \u00A0\u3000\\t\\n\u0301", \${ font-family: Inter; font-size: 48; });
+       for (g in glyphs) {
+         log(\`\${g.codePoint} \${g.isSpace} \${g.isTab} \${g.isNewline} \${g.isMark} \${g.isWhitespace}\`);
+       }`,
+      { fonts: registry },
+    );
+    const values = result.logs
+      .map((l) => l.parts.map((p) => p.value).join(''))
+      .filter((v) => !v.startsWith('[warn]'));
+    expect(values).toEqual([
+      '65 false false false false false',    // A
+      '32 true false false false true',      // space
+      '160 true false false false true',     // no-break space
+      '12288 true false false false true',   // ideographic space
+      '9 false true false false true',       // tab
+      '10 false false true false true',      // newline
+      '769 false false false true false',    // combining acute accent
+    ]);
+  });
+
+  it('codePoint returns the full code point for astral characters', () => {
+    const result = compile(
+      `@font "Inter";
+       let glyphs = PathBlock.fromGlyph("😀", \${ font-family: Inter; font-size: 48; });
+       log(glyphs.length);
+       log(glyphs[0].codePoint);`,
+      { fonts: registry },
+    );
+    const values = result.logs
+      .map((l) => l.parts[0].value)
+      .filter((v) => !v.startsWith?.('[warn]'));
+    expect(values).toEqual(['1', '128512']);
+  });
+
+  it('docs hard-line-break layout example compiles and wraps to the second line', () => {
+    // Mirrors docs/path-blocks.md "Glyph provenance and character classes":
+    // isNewline resets the cursor to the margin one lineHeight down.
+    const result = compile(
+      `@font "Inter";
+       let styles = \${ font-family: Inter; font-size: 48; };
+       let glyphs = PathBlock.fromGlyph("Hello\\nworld", styles);
+
+       let marginX = 10;
+       let x = marginX;
+       let y = 60;
+       let lineHeight = 56;
+       for (g in glyphs) {
+         if (g.isNewline) {
+           y = calc(y + lineHeight);
+           x = marginX;
+           continue;
+         }
+         if (!g.isWhitespace) {
+           M x y
+           g.draw()
+         }
+         x = calc(x + g.advanceWidth);
+       }`,
+      { fonts: registry },
+    );
+    const data = result.layers[0].data;
+    expect(data).toContain('M 10 60'); // "H" at the margin, first line
+    expect(data).toContain('M 10 116'); // "w" at the margin, second line: 60 + 56
+  });
+
+  it('docs tracking example: decomposed é yields a mark glyph with codePoint 769', () => {
+    const result = compile(
+      `@font "Inter";
+       let styles = \${ font-family: Inter; font-size: 48; };
+       let glyphs = PathBlock.fromGlyph("é", styles);
+       log(glyphs[1].isMark);
+       log(glyphs[1].codePoint);`,
+      { fonts: registry },
+    );
+    const values = result.logs
+      .map((l) => l.parts[0].value)
+      .filter((v) => !v.startsWith?.('[warn]'));
+    expect(values).toEqual(['true', '769']);
+  });
+
+  it('classification members on non-glyph PathBlocks throw the fromGlyph guidance', () => {
+    for (const prop of ['isSpace', 'isTab', 'isNewline', 'isMark', 'codePoint']) {
+      expect(() => compile(`let pb = @{ m 0 0 l 10 0 };\nlog(pb.${prop});`)).toThrow(
+        new RegExp(`${prop}.*fromGlyph`, 's'),
+      );
+    }
   });
 });
 

@@ -893,28 +893,40 @@ Note the plain assignment `x = calc(...)` — a `let` inside the loop body would
 
 Space characters return an empty PathBlock (no path commands) but still have a non-zero `advanceWidth`.
 
-### char, isWhitespace, isEmpty
+### Glyph provenance and character classes
 
 Each glyph PathBlock records where it came from and whether it drew anything:
 
 | Property | Type | Description |
 |---|---|---|
 | `char` | `string` | The source character this glyph was generated from (1 character) |
+| `codePoint` | `number` | The Unicode code point of `char` (e.g. `32` for a space, `12288` for the ideographic space `U+3000`) |
 | `isWhitespace` | `boolean` | `true` when the source character is whitespace (space, tab, newline, …) |
+| `isSpace` | `boolean` | `true` for every whitespace character that is not a tab or a line break — regular space, no-break space, ideographic space `U+3000`, en/em/thin spaces, and the zero-width no-break space `U+FEFF` |
+| `isTab` | `boolean` | `true` for the tab character `U+0009` |
+| `isNewline` | `boolean` | `true` for line-break characters — `\n`, `\r`, vertical tab, form feed, and the Unicode line/paragraph separators `U+2028`/`U+2029` |
+| `isMark` | `boolean` | `true` for combining marks — accents and vowel signs that overlay the previous glyph (see below) |
 | `isEmpty` | `boolean` | `true` when the glyph produced no outline commands (spaces, and other outline-less characters) |
 
-`char` and `isWhitespace` exist only on glyphs produced by `fromGlyph` — reading them on any other PathBlock is an error. `isEmpty` works on every PathBlock (and ProjectedPath).
+`char`, `codePoint`, and the `is*` classifications exist only on glyphs produced by `fromGlyph` — reading them on any other PathBlock is an error. `isEmpty` works on every PathBlock (and ProjectedPath).
 
-Use `isWhitespace` to skip whitespace during layout:
+Use `isNewline` to honor hard line breaks during layout:
 
 ```
 @font "Inter";
 let styles = ${ font-family: Inter; font-size: 48; };
-let glyphs = PathBlock.fromGlyph("Hello world", styles);
+let glyphs = PathBlock.fromGlyph("Hello\nworld", styles);
 
-let x = 10;
-let y = 100;
+let marginX = 10;
+let x = marginX;
+let y = 60;
+let lineHeight = 56;
 for (g in glyphs) {
+  if (g.isNewline) {
+    y = calc(y + lineHeight);
+    x = marginX;
+    continue;
+  }
   if (!g.isWhitespace) {
     M x y
     g.draw()
@@ -923,7 +935,43 @@ for (g in glyphs) {
 }
 ```
 
+`isSpace`, `isTab`, and `isNewline` partition `isWhitespace` exactly: every whitespace character is exactly one of the three, and a non-whitespace character is none of them. That is what makes the loop above safe — a whitespace glyph that is not a newline can only be a space or a tab, and both just advance the cursor. Two caveats worth knowing:
+
+- **Tabs are not tab stops.** A tab has no glyph in most fonts, so its `advanceWidth` is the font's placeholder-box width — commonly about half an em — not a jump to the next tab column. If tab stops matter, branch on `isTab` and compute the next stop yourself (or expand tabs to spaces before calling `fromGlyph`).
+- **Windows line endings.** `\r\n` is two characters, both `isNewline`; break-once code should treat a `\r` followed by `\n` as one break or normalize the input string first.
+
 `isWhitespace` and `isEmpty` are not the same test, in either direction: `isWhitespace` classifies the *source character*, while `isEmpty` reports whether the *outline* is blank. An unmapped control character can be empty without being whitespace — and whitespace can be non-empty: a tab or newline has no glyph in most fonts, so it renders the font's placeholder box (some fonts' placeholder has a visible outline, some don't). That is why the layout example above skips on `isWhitespace`, not `isEmpty`.
+
+`isMark` matters whenever you add your own spacing: a combining mark must stay on top of its base glyph, so never insert tracking (or a line break) between a base and its mark:
+
+```
+@font "Inter";
+let styles = ${ font-family: Inter; font-size: 48; };
+// Decomposed "é": "e" followed by the combining acute U+0301 (code point 769)
+let glyphs = PathBlock.fromGlyph("é", styles);
+log(glyphs[1].isMark);      // true
+log(glyphs[1].codePoint);   // 769
+
+let tracking = 6;
+let x = 10;
+for (g in glyphs) {
+  M x 60
+  g.draw()
+  x = calc(x + g.advanceWidth);
+  if (!g.isMark) {
+    x = calc(x + tracking);  // letter-space after base glyphs only —
+  }                          // never between a base and its combining mark
+}
+```
+
+#### Scripts and Unicode notes
+
+- **Newlines are universal.** Every script — Latin, Arabic, Hangul, CJK, Devanagari — uses the same Unicode line-break characters, so `isNewline` works identically for all of them. (One deliberate exclusion: the rare legacy NEL character `U+0085` is not `isNewline` — it is not `isWhitespace` either, and the three classes always partition `isWhitespace` exactly.)
+- **Spaces are more than `U+0020`.** `isSpace` also covers the no-break space, the ideographic (full-width) space `U+3000` used in CJK text, and the typographic en/em/thin spaces — so CJK spacing works without special cases. Note that Chinese, Japanese, and Thai text does not separate words with spaces at all; space-based word handling only applies to scripts that use spaces.
+- **Zero-width space is not whitespace.** `U+200B`, the break-opportunity character often used in CJK and Thai text, is a format character: every `is*` member here is `false` for it (it renders as an invisible zero-advance glyph). Detect it with `g.codePoint == 8203` if your layout should treat it as a break opportunity.
+- **Combining marks overlay, they don't advance.** Characters like Arabic harakat, Hebrew niqqud, Thai vowel signs, or a decomposed accent (`e` + `◌́`) are *combining marks*: they render on top of the previous base glyph and typically have little or no `advanceWidth`. Use `isMark` to detect them and keep them attached to the preceding glyph (see the tracking example above).
+- **No contextual shaping.** `fromGlyph` looks up one glyph per character, so scripts that reshape letters by position — Arabic's isolated/initial/medial/final forms — render each letter in its isolated form. Full shaping is outside `fromGlyph`'s per-character model.
+- **`codePoint` is the escape hatch.** For any classification not covered above, compare code points directly, e.g. `if (g.codePoint == 12288) { … }` to detect the ideographic space `U+3000` (Pathogen number literals are decimal, so write the code point in decimal).
 
 ### contours
 

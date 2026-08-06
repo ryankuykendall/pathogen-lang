@@ -731,6 +731,16 @@ export interface PathogenPathBlock {
   readonly char: string;
   /** True when the fromGlyph() source character is whitespace (fromGlyph results only) */
   readonly isWhitespace: boolean;
+  /** True when the fromGlyph() source character is a horizontal space — space, no-break space, ideographic space, … (fromGlyph results only) */
+  readonly isSpace: boolean;
+  /** True when the fromGlyph() source character is a tab (fromGlyph results only) */
+  readonly isTab: boolean;
+  /** True when the fromGlyph() source character is a line break — \n, \r, U+2028, … (fromGlyph results only) */
+  readonly isNewline: boolean;
+  /** True when the fromGlyph() source character is a combining mark that overlays the previous glyph (fromGlyph results only) */
+  readonly isMark: boolean;
+  /** Unicode code point of the fromGlyph() source character (fromGlyph results only) */
+  readonly codePoint: number;
 
   // Core methods
   /** draw() — Emit path at the current pen position; returns a ProjectedPath */

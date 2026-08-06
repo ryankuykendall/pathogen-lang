@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-06 (glyph character classes: isSpace / isTab / isNewline / isMark / codePoint)
+
+### Added
+
+#### Core
+
+- **Granular character classes on `fromGlyph()` glyphs** — five new read-time members alongside `char`/`isWhitespace`: `isSpace` (all horizontal spaces: regular, no-break, ideographic `U+3000`, en/em/thin), `isTab`, `isNewline` (`\n`, `\r`, VT, FF, `U+2028`/`U+2029`), `isMark` (combining marks — harakat, niqqud, Thai vowel signs, combining accents), and `codePoint` (numeric escape hatch). `isSpace`/`isTab`/`isNewline` partition `isWhitespace` exactly — every whitespace character is exactly one of the three — so layout loops can branch space-vs-newline safely. NEL `U+0085` is deliberately excluded from `isNewline`: JS `\s` (the shipped `isWhitespace` test) does not match it, and the partition invariant wins over Unicode completeness. Astral-safe (`for...of` iteration + `codePointAt`). Implemented via a shared classifier (`src/evaluator/char-class.ts`) used by both evaluators — identical fromGlyph-only error guidance in each; completions/hover flow from `pathogen-api.ts`. Documented in `docs/path-blocks.md` ("Glyph provenance and character classes") with a hard-line-break layout example, an `isMark`-aware letter-spacing example (decomposed `é`), a tabs-are-not-tab-stops caveat, and a "Scripts and Unicode notes" section (newlines are script-universal, NEL exclusion noted; CJK spacing covered by `isSpace`; zero-width space `U+200B` is *not* whitespace — detect via `codePoint`; marks overlay rather than advance; no Arabic contextual shaping in the per-character model). Both doc examples are backed by compile tests. Multi-persona docs review applied (hex literals removed — Pathogen numbers are decimal; `isSpace` defined as the whitespace remainder incl. `U+FEFF`).
+
+#### Development
+
+- `scripts/debug-glyph-char-classes.ts` — puppeteer verification that the classification members and the docs' line-wrap pattern work end-to-end in the playground surface.
+- Tests: unit coverage matrix over the classifier (27 characters spanning space/tab/newline/mark/none classes, asserting the partition invariant per character), end-to-end compile tests (including NBSP, ideographic space, combining accent, astral emoji `codePoint`), and non-glyph error paths in both evaluators.
+
 ## [Unreleased] - 2026-08-06 (workspace breadcrumb: export SVG size)
 
 ### Added

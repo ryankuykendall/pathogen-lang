@@ -2,6 +2,7 @@
 import { contextAwareFunctions, stdlib } from '../stdlib';
 import { CALLBACK_METHODS } from '../callback-methods';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
+import { CHAR_CLASS_PREDICATES, isWhitespaceChar } from './char-class';
 import { DEFS_CONSTRUCTORS } from './constructor-registry';
 import { contextToObject, createPathContext, setLastTangent, updateContextForCommand } from './context';
 import { estimateTextBoundingBox } from './font-metrics';
@@ -3939,7 +3940,32 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
               line,
             ),
           );
-        return boolVal(/\s/.test(char));
+        return boolVal(isWhitespaceChar(char));
+      }
+      case 'codePoint': {
+        const char = (obj as PathBlockValue & { char?: string }).char;
+        if (char === undefined)
+          throw new Error(
+            formatError(
+              "'codePoint' is only available on glyphs produced by PathBlock.fromGlyph() — it reports the source character's Unicode code point. Composing or transforming a glyph produces a new block without it",
+              line,
+            ),
+          );
+        return char.codePointAt(0)!;
+      }
+      case 'isSpace':
+      case 'isTab':
+      case 'isNewline':
+      case 'isMark': {
+        const char = (obj as PathBlockValue & { char?: string }).char;
+        if (char === undefined)
+          throw new Error(
+            formatError(
+              `'${expr.property}' is only available on glyphs produced by PathBlock.fromGlyph() — it classifies the source character. Use 'isEmpty' to test whether any PathBlock has no commands`,
+              line,
+            ),
+          );
+        return boolVal(CHAR_CLASS_PREDICATES[expr.property](char));
       }
       default:
         throw new Error(formatError(`Property '${expr.property}' does not exist on PathBlock`, line));

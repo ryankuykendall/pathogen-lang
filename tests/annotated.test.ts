@@ -1055,6 +1055,14 @@ describe('PathBlock isEmpty / char / isWhitespace (annotated parity)', () => {
       compileAnnotated('let pb = @{ m 0 0 l 10 0 };\nlet w = pb.isWhitespace;\nM 0 0'),
     ).toThrow(/isWhitespace.*fromGlyph/s);
   });
+
+  it('character-class members on non-glyph PathBlocks throw the fromGlyph guidance', () => {
+    for (const prop of ['isSpace', 'isTab', 'isNewline', 'isMark', 'codePoint']) {
+      expect(() =>
+        compileAnnotated(`let pb = @{ m 0 0 l 10 0 };\nlet v = pb.${prop};\nM 0 0`),
+      ).toThrow(new RegExp(`${prop}.*fromGlyph`, 's'));
+    }
+  });
 });
 
 describe('loop control: continue and break (annotated parity)', () => {
