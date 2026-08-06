@@ -87,6 +87,17 @@
   font-family: var(--font-mono, 'Inconsolata', monospace);
 }
 
+/* Estimated Export → SVG size — sibling of .workspace-name so it stays
+   visible after the title's ellipsis truncation. */
+.workspace-size {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary, #9087a0);
+  margin-left: 0.375rem;
+  font-family: var(--font-mono, 'Inconsolata', monospace);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
 /* ---------- RIGHT zone — workspace controls cluster ---------- */
 .workspace-controls-wrapper {
   display: grid;
@@ -461,6 +472,9 @@
   }
   .workspace-name {
     max-width: 120px;
+  }
+  .workspace-size {
+    display: none;
   }
   .workspace-controls-wrapper {
     justify-self: start;

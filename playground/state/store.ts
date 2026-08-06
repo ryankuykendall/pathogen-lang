@@ -137,6 +137,10 @@ export const store = createStore({
   cssProperties: [], // Array of CSSPropertyDeclaration from last compilation
   layerVisibility: {}, // { [layerName]: boolean } — true = visible (default)
   defsVisibility: {}, // { ['mask:id'|'clip-path:id']: boolean } — true = visible (default)
+  // UTF-8 byte size of the default-settings Export → SVG file (watermark,
+  // grid off, precision off). null until the first successful compute; kept
+  // last-good across compile errors. Written by workspace-view (idle-scheduled).
+  exportSvgBytes: null,
 
   // Compilation status (for async worker)
   compilationStatus: 'idle', // 'idle', 'compiling', 'rendering', 'completed', 'error'

@@ -624,7 +624,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
     id: 'app-breadcrumb',
     name: 'App Breadcrumb',
     category: 'Navigation',
-    description: 'Breadcrumb navigation trail showing current location',
+    description:
+      'Breadcrumb navigation trail showing current location; in workspace view the title is followed by the estimated Export → SVG size',
     stories: [
       {
         name: 'Default',
@@ -651,7 +652,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
       note.style.fontStyle = 'italic';
       note.style.marginTop = '8px';
       note.textContent =
-        'Note: Shows breadcrumb for current storybook view. Navigation links are disabled in this demo.';
+        'Note: Shows breadcrumb for current storybook view. Navigation links are disabled in this demo. ' +
+        'The export-size indicator after the title only renders in workspace view, so it is not visible here.';
       container.appendChild(note);
     },
   },

@@ -25,6 +25,13 @@ import { outlineSvgText } from '../utils/svg-text-outliner.js';
 import { CODE_PRINT_COLORS, CODE_PRINT_DEFAULT } from '../utils/code-print-palette.js';
 import { layoutCodeLines } from '../utils/legend-code-tokens.js';
 import type { CodeToken } from '../utils/legend-code-tokens.js';
+import {
+  buildWatermarkGroup,
+  CHAR_WIDTH_FACTOR,
+  computeExportScaleFactor,
+  createBrandText,
+} from '../utils/export-chrome.js';
+import { fetchChromeFontRules, injectFontRules } from '../utils/export-fonts.js';
 import type { PanZoomController, ZoomPillElement } from '../../dist/pan-zoom';
 import styles from './export-modal.css';
 import './shared/pathogen-color-input.js';
@@ -162,8 +169,6 @@ interface JsPdfDoc {
 }
 
 class ExportModal extends HTMLElement {
-  static _fontCache: Record<string, string> = {};
-
   // Shared pan/zoom controller (transform-during-gesture → bake-on-idle).
   // Destroyed + reconstructed whenever the preview SVG is rebuilt — the
   // controller holds a reference to a specific <svg> element.
@@ -263,8 +268,6 @@ class ExportModal extends HTMLElement {
   // Base dimensions (at scale factor 1.0, fits 80 monospace chars)
   private readonly BASE_WIDTH = 560;
 
-  private readonly CHAR_WIDTH_FACTOR = 0.6;
-
   // Base (unscaled) typography & spacing
   private readonly BASE_PADDING = 16;
 
@@ -355,8 +358,7 @@ class ExportModal extends HTMLElement {
     this._snapSize = storeState.gridSize || 10;
 
     // Compute scale factor from canvas dimensions
-    const shortSide = Math.min(this._canvasWidth, this._canvasHeight);
-    this._scaleFactor = Math.max(0.2, Math.min(8, shortSide / 2000));
+    this._scaleFactor = computeExportScaleFactor(this._canvasWidth, this._canvasHeight);
     this._legendWidth = this._computeBaseWidth() * this._scaleFactor;
 
     // Re-derive ratio-locked dimensions from this workspace's canvas
@@ -535,32 +537,18 @@ class ExportModal extends HTMLElement {
   }
 
   /**
-   * Brand watermark for legend-less exports: the same two-tspan pattern as
-   * the legend footer, tucked into the artwork's bottom-right corner. Fixed
-   * and non-interactive — it IS the export's attribution, shown in the
-   * preview so the download never surprises.
+   * Brand watermark for legend-less exports — shown in the preview so the
+   * download never surprises. Shared with the breadcrumb size estimate via
+   * utils/export-chrome.ts.
    */
   _buildWatermarkGroup(): SVGGElement {
-    const ns = 'http://www.w3.org/2000/svg';
-    const g = document.createElementNS(ns, 'g');
-    g.setAttribute('id', 'pathogen-watermark');
-
-    const inset = this._s(10);
-    const brandText = this._createBrandText(
-      this._canvasWidth - inset,
-      this._canvasHeight - inset,
-      this._s(this.BASE_BRAND_FONT_SIZE),
-      this._s(this.BASE_SMALL_FONT_SIZE) * 1.2,
-      'end',
-    );
-    g.appendChild(brandText);
-    return g;
+    return buildWatermarkGroup(this._canvasWidth, this._canvasHeight, this._scaleFactor);
   }
 
   /**
    * "Created in pathogen.studio" as one <text> with two tspans (Inter +
-   * Baumans). y is the text baseline. Shared by the legend footer and the
-   * watermark; the PDF cover sheet keeps its own pt-coordinate copy.
+   * Baumans). Shared by the legend footer and the watermark; the PDF cover
+   * sheet keeps its own pt-coordinate copy.
    */
   _createBrandText(
     x: number,
@@ -569,29 +557,7 @@ class ExportModal extends HTMLElement {
     pathogenFontSize: number,
     anchor?: string,
   ): SVGTextElement {
-    const ns = 'http://www.w3.org/2000/svg';
-    const brandText = document.createElementNS(ns, 'text');
-    brandText.setAttribute('x', String(x));
-    brandText.setAttribute('y', String(y));
-    brandText.setAttribute('dominant-baseline', 'auto');
-    brandText.setAttribute('fill', '#94a3b8');
-    if (anchor) brandText.setAttribute('text-anchor', anchor);
-
-    const brandSpan1 = document.createElementNS(ns, 'tspan');
-    brandSpan1.setAttribute('font-size', String(brandFontSize));
-    brandSpan1.setAttribute('font-family', "'Inter', -apple-system, BlinkMacSystemFont, sans-serif");
-    brandSpan1.textContent = 'Created in';
-
-    const brandSpan2 = document.createElementNS(ns, 'tspan');
-    brandSpan2.setAttribute('font-size', String(pathogenFontSize));
-    brandSpan2.setAttribute('font-weight', '400');
-    brandSpan2.setAttribute('font-family', "'Baumans', cursive");
-    brandSpan2.setAttribute('dx', String(brandFontSize * this.CHAR_WIDTH_FACTOR));
-    brandSpan2.textContent = 'pathogen.studio';
-
-    brandText.appendChild(brandSpan1);
-    brandText.appendChild(brandSpan2);
-    return brandText;
+    return createBrandText(x, y, brandFontSize, pathogenFontSize, anchor);
   }
 
   _buildLegendGroup(): SVGGElement {
@@ -771,7 +737,7 @@ class ExportModal extends HTMLElement {
   ): WrappedTextResult {
     const ns = 'http://www.w3.org/2000/svg';
     const fSize = opts.fontSize || this._s(this.BASE_FONT_SIZE);
-    const charWidth = fSize * this.CHAR_WIDTH_FACTOR;
+    const charWidth = fSize * CHAR_WIDTH_FACTOR;
     const charsPerLine = Math.max(10, Math.floor(maxWidth / charWidth));
     const lines = this._wrapText(content, charsPerLine);
     const lineGap = opts.lineGap ?? fSize + this._s(3);
@@ -825,7 +791,7 @@ class ExportModal extends HTMLElement {
   ): WrappedTextResult {
     const ns = 'http://www.w3.org/2000/svg';
     const fSize = opts.fontSize || this._s(this.BASE_SMALL_FONT_SIZE);
-    const monoCharWidth = fSize * this.CHAR_WIDTH_FACTOR;
+    const monoCharWidth = fSize * CHAR_WIDTH_FACTOR;
     const charsPerLine = Math.max(10, Math.floor(maxWidth / monoCharWidth));
     const maxLines = 128;
     const lineGap = fSize + this._s(2);
@@ -895,7 +861,7 @@ class ExportModal extends HTMLElement {
 
   _computeBaseWidth(): number {
     const titleChars = Math.min((this._formData.name || '').length, 60);
-    const titleWidth = titleChars * this.BASE_TITLE_FONT_SIZE * this.CHAR_WIDTH_FACTOR + 2 * this.BASE_PADDING;
+    const titleWidth = titleChars * this.BASE_TITLE_FONT_SIZE * CHAR_WIDTH_FACTOR + 2 * this.BASE_PADDING;
 
     let maxCodeLineLen = 0;
     if (this._formData.code) {
@@ -904,7 +870,7 @@ class ExportModal extends HTMLElement {
       }
     }
     const codeChars = Math.min(maxCodeLineLen, 80);
-    const codeWidth = codeChars * this.BASE_SMALL_FONT_SIZE * this.CHAR_WIDTH_FACTOR + 2 * this.BASE_PADDING;
+    const codeWidth = codeChars * this.BASE_SMALL_FONT_SIZE * CHAR_WIDTH_FACTOR + 2 * this.BASE_PADDING;
 
     const MIN_BASE_WIDTH = 200;
     return Math.max(MIN_BASE_WIDTH, titleWidth, codeWidth);
@@ -988,89 +954,10 @@ class ExportModal extends HTMLElement {
 
   // --- Font embedding ---
 
+  // Fetch/cache logic lives in utils/export-fonts.ts, shared with the
+  // breadcrumb size estimate so both resolve identical rules from one cache.
   async _embedFonts(svgClone: SVGSVGElement): Promise<void> {
-    const fonts = [
-      {
-        family: 'Baumans',
-        url: `https://fonts.googleapis.com/css2?family=Baumans&text=${encodeURIComponent('pathogen.studio')}`,
-      },
-      {
-        // Just the brand line's prefix — the rest of the legend's Inter
-        // text keeps the system-sans fallback, as before.
-        family: 'Inter',
-        url: `https://fonts.googleapis.com/css2?family=Inter&text=${encodeURIComponent('Created in')}`,
-      },
-      {
-        family: 'Inconsolata',
-        url: `https://fonts.googleapis.com/css2?family=Inconsolata&text=${encodeURIComponent(
-          ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~',
-        )}`,
-      },
-    ];
-
-    const fontFaceRules: string[] = [];
-
-    for (const font of fonts) {
-      try {
-        // Check session cache
-        if (ExportModal._fontCache[font.family]) {
-          fontFaceRules.push(ExportModal._fontCache[font.family]);
-          continue;
-        }
-
-        // Fetch CSS from Google Fonts
-        const cssRes = await fetch(font.url);
-        if (!cssRes.ok) throw new Error(`CSS fetch failed: ${cssRes.status}`);
-        const css = await cssRes.text();
-
-        // Extract src url and format from @font-face rule
-        const srcMatch = /src:\s*url\(([^)]+)\)\s*format\(['"]([^'"]+)['"]\)/.exec(css);
-        if (!srcMatch) throw new Error('Could not parse font CSS');
-
-        const fontUrl = srcMatch[1];
-        const fontFormat = srcMatch[2];
-
-        // Fetch font binary
-        const fontRes = await fetch(fontUrl);
-        if (!fontRes.ok) throw new Error(`Font fetch failed: ${fontRes.status}`);
-        const buffer = await fontRes.arrayBuffer();
-
-        // Convert to base64 using chunked approach to avoid call stack limits
-        const bytes = new Uint8Array(buffer);
-        const chunkSize = 8192;
-        let binary = '';
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          const chunk = bytes.subarray(i, i + chunkSize);
-          binary += String.fromCharCode.apply(null, chunk as unknown as number[]);
-        }
-        const b64 = btoa(binary);
-
-        // Determine MIME type
-        const mime = fontFormat === 'woff2' ? 'font/woff2' : 'font/ttf';
-
-        // Build @font-face rule with data URI
-        const rule = `@font-face {\n  font-family: '${font.family}';\n  src: url(data:${mime};base64,${b64}) format('${fontFormat}');\n}`;
-
-        ExportModal._fontCache[font.family] = rule;
-        fontFaceRules.push(rule);
-      } catch (err: unknown) {
-        console.warn(`Font embedding failed for ${font.family}:`, err);
-      }
-    }
-
-    if (fontFaceRules.length === 0) return;
-
-    // Inject into <defs> <style>
-    const ns = 'http://www.w3.org/2000/svg';
-    let defs = svgClone.querySelector('defs');
-    if (!defs) {
-      defs = document.createElementNS(ns, 'defs');
-      svgClone.insertBefore(defs, svgClone.firstChild);
-    }
-
-    const styleEl = document.createElementNS(ns, 'style');
-    styleEl.textContent = fontFaceRules.join('\n');
-    defs.appendChild(styleEl);
+    injectFontRules(svgClone, await fetchChromeFontRules());
   }
 
   // --- Export / Download ---
@@ -1620,7 +1507,7 @@ class ExportModal extends HTMLElement {
     // every text field needs a width bound or long input silently clips at
     // the page edge. Char budgets use the same width heuristic as _wrapText.
     const fitChars = (widthPt: number, fontSize: number): number =>
-      Math.max(8, Math.floor(widthPt / (fontSize * this.CHAR_WIDTH_FACTOR)));
+      Math.max(8, Math.floor(widthPt / (fontSize * CHAR_WIDTH_FACTOR)));
     const fitLine = (text: string, maxChars: number): string =>
       text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text;
     // _wrapText breaks on word boundaries only — hard-split any single token

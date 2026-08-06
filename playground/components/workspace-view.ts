@@ -27,6 +27,8 @@ import { getUserId } from '../services/user-id.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
 import { installPerfObservers, perfSpan, perfSpanAsync } from '../utils/perf-marks.js';
+import { computeDefaultExportSvgBytes } from '../utils/svg-export-size.js';
+import { ensureChromeFontRules, getChromeFontRulesIfReady } from '../utils/export-fonts.js';
 import { updateWorkspaceSlugUrl } from '../utils/workspace-slug-url.js';
 import './shared/error-panel.js';
 
@@ -93,6 +95,22 @@ export class WorkspaceView extends HTMLElement {
   private _handleDefsVisibilityChange: ((e: Event) => void) | null = null;
 
   private _isPreviewFullscreen = false;
+
+  // Export-size estimate (breadcrumb): pending idle-callback bookkeeping
+  private _sizeIdleId: number | null = null;
+
+  private _sizeUsesTimeout = false;
+
+  private _sizeRetryCount = 0;
+
+  private _sizeTriggerUnsubscribe: (() => void) | null = null;
+
+  // False until the current workspace's first successful render. Guards the
+  // async continuations (idle callback, font-fetch .then) against computing a
+  // size from a half-torn-down preview right after a workspace switch —
+  // previewPane.clear() empties the SVG but keeps the element truthy, so the
+  // !preview guard alone can't catch it.
+  private _sizeArmed = false;
 
   constructor() {
     super();
@@ -277,7 +295,12 @@ export class WorkspaceView extends HTMLElement {
       workspaceManualThumbnailAt: null,
       saveStatus: SaveStatus.IDLE,
       saveError: null,
+      // The size belongs to the previous workspace's compile output
+      exportSvgBytes: null,
     });
+    // Disarm pending size computes until this workspace's first successful
+    // compile — see _sizeArmed.
+    this._sizeArmed = false;
 
     // Check for URL state (backward compatibility for shareable links)
     if (routeQuery.state) {
@@ -756,6 +779,14 @@ export class WorkspaceView extends HTMLElement {
       },
     );
 
+    // Non-compile changes that move the exported bytes: background recolors
+    // the snapshot's #preview-bg; visibility toggles set inline display:none
+    // that the export clone captures. Grid keys are irrelevant (export forces
+    // the grid off) and zoom/pan is reset by the snapshot's viewBox override.
+    this._sizeTriggerUnsubscribe = store.subscribe(['background', 'layerVisibility', 'defsVisibility'], () => {
+      this._scheduleExportSizeUpdate();
+    });
+
     // Layer visibility changes from inspector — write back to store
     this._handleLayerVisibilityChange = (e: Event): void => {
       const { name, visible } = (e as CustomEvent).detail;
@@ -806,6 +837,71 @@ export class WorkspaceView extends HTMLElement {
     if (this._multiTabUnsubscribe) this._multiTabUnsubscribe();
     if (this._fontWarningsUnsubscribe) this._fontWarningsUnsubscribe();
     if (this._inspectorDataUnsubscribe) this._inspectorDataUnsubscribe();
+    if (this._sizeTriggerUnsubscribe) this._sizeTriggerUnsubscribe();
+    if (this._sizeIdleId != null) {
+      if (this._sizeUsesTimeout) clearTimeout(this._sizeIdleId);
+      else cancelIdleCallback(this._sizeIdleId);
+      this._sizeIdleId = null;
+    }
+  }
+
+  // --- Export size estimate (breadcrumb) ---
+
+  /**
+   * Schedule a recompute of the default Export → SVG byte size shown in the
+   * breadcrumb. Runs at idle so it never lands in the compile/render path;
+   * coalesced so back-to-back compiles do a single compute.
+   */
+  _scheduleExportSizeUpdate(): void {
+    if (this._sizeIdleId != null) {
+      if (this._sizeUsesTimeout) clearTimeout(this._sizeIdleId);
+      else cancelIdleCallback(this._sizeIdleId);
+    }
+    const run = (): void => {
+      this._sizeIdleId = null;
+      this._computeExportSize();
+    };
+    if (typeof requestIdleCallback === 'function') {
+      this._sizeUsesTimeout = false;
+      this._sizeIdleId = requestIdleCallback(run, { timeout: 2000 });
+    } else {
+      this._sizeUsesTimeout = true;
+      this._sizeIdleId = window.setTimeout(run, 250);
+    }
+  }
+
+  _computeExportSize(): void {
+    if (!this._sizeArmed) return;
+    if (store.get('currentView') !== 'workspace') return;
+    const preview = this.previewPane?.preview;
+    if (!preview) {
+      // Iframe still parsing srcdoc — bounded retry; the next compile
+      // reschedules anyway.
+      if (this._sizeRetryCount++ < 5) this._scheduleExportSizeUpdate();
+      return;
+    }
+    this._sizeRetryCount = 0;
+
+    const rules = getChromeFontRulesIfReady();
+    if (rules == null) {
+      // Kick off the session's single background fetch of the chrome font
+      // rules; recompute with the font bytes included once it settles.
+      ensureChromeFontRules().then(() => this._scheduleExportSizeUpdate());
+    }
+
+    try {
+      const bytes = perfSpan('export-size', () =>
+        computeDefaultExportSvgBytes(preview, {
+          width: store.get('width') as number,
+          height: store.get('height') as number,
+          background: store.get('background') as string,
+          fontRules: rules ?? [],
+        }),
+      );
+      store.set('exportSvgBytes', bytes);
+    } catch (err) {
+      console.warn('Export size estimate failed:', err);
+    }
   }
 
   copyCode(): void {
@@ -977,6 +1073,11 @@ export class WorkspaceView extends HTMLElement {
           calledStdlibFunctions: result.calledStdlibFunctions || [],
         });
       });
+
+      // Refresh the breadcrumb's export-size estimate (runs at idle, after
+      // the preview iframe has the new content).
+      this._sizeArmed = true;
+      this._scheduleExportSizeUpdate();
 
       // Auto-hide completion status after a brief moment
       setTimeout(() => {

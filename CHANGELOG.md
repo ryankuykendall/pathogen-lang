@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-06 (workspace breadcrumb: export SVG size)
+
+### Added
+
+#### Playground
+
+- **Export-SVG size in the workspace breadcrumb** — the breadcrumb now shows the generated SVG's human-readable size in parentheses after the workspace title (as a sibling of the ellipsis-truncated title span, so it survives long names; hidden ≤600px). The number is the **default-settings Export → SVG download size** (watermark, grid off, precision off) and is byte-identical to the file the export modal produces — verified end-to-end by comparing against the modal's real `_downloadSvg()` blob (`scripts/debug-export-size-breadcrumb.ts`). Computed via `requestIdleCallback` after successful compiles only (coalesced, `perfSpan('export-size')`-instrumented, never in the compile/render path); recomputes on background and layer/defs-visibility changes; keeps the last-good value on compile errors (matching stale-preview behavior) and resets on workspace switch, with an armed-flag guard against stale idle/font-fetch continuations writing a size from a half-cleared preview (caught in review).
+- New store key `exportSvgBytes` (number | null) and `playground/utils/format-bytes.ts` (1000-based B/KB/MB, matches Finder).
+
+#### Development
+
+- **Export chrome extracted into shared utils** — the modal's watermark/brand-text (`playground/utils/export-chrome.ts`) and chrome-font fetch/cache/inject logic (`playground/utils/export-fonts.ts`, replacing `ExportModal._fontCache`) are now single-source modules delegated to by both the export modal and the size estimate, so the two paths cannot drift. `playground/utils/svg-export-size.ts` mirrors the download pipeline exactly.
+- `scripts/debug-export-size-breadcrumb.ts` — puppeteer verification of span rendering, format, byte-identity with the export blob, and absence outside workspace view.
+- Tests: `tests/format-bytes.test.ts` and `tests/svg-export-size.test.ts` (12 tests, exact byte-delta assertions incl. UTF-8 multi-byte and font-rule injection). Full suite: 4561 passing.
+- Known limitations (pre-existing, flagged): SVG export embeds only the watermark/legend chrome fonts, never artwork fonts (`result.fontBinaries` lives in the iframe head, outside the cloned SVG) — the size correctly reflects this; and the breadcrumb story cannot demonstrate the span because storybook must not mutate `currentView`.
+
 ## [Unreleased] - 2026-08-05 (loop control: continue / break)
 
 ### Added

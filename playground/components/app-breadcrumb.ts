@@ -24,6 +24,7 @@ import { store } from '../state/store.js';
 import { navigateTo, parseWorkspaceSlugId } from '../utils/router.js';
 import { copyURL } from '../utils/url-state.js';
 import { materialIcon } from '../utils/material-icons.js';
+import { formatBytes } from '../utils/format-bytes.js';
 import styles from './app-breadcrumb.css';
 
 interface ViewConfig {
@@ -86,6 +87,7 @@ class AppBreadcrumb extends HTMLElement {
         'saveError',
         'compilationStatus',
         'calledStdlibFunctions',
+        'exportSvgBytes',
       ],
       () => this.render(),
     );
@@ -354,6 +356,15 @@ class AppBreadcrumb extends HTMLElement {
 
     const crumbs = this.buildBreadcrumbs();
 
+    // Estimated Export → SVG size (default settings), shown after the
+    // ellipsis-truncated title. Must be a SIBLING of .breadcrumb-current —
+    // anything inside .workspace-name is clipped when the title is long.
+    const exportBytes = store.get('exportSvgBytes') as number | null;
+    const sizeHtml =
+      isWorkspaceView && exportBytes != null
+        ? `<span class="workspace-size" title="${exportBytes.toLocaleString('en-US')} bytes — Export SVG size with default settings">(${formatBytes(exportBytes)})</span>`
+        : '';
+
     this.shadowRoot!.innerHTML = `
       <style>${styles}</style>
 
@@ -366,7 +377,7 @@ class AppBreadcrumb extends HTMLElement {
               ${index > 0 ? '<span class="separator">/</span>' : ''}
               ${
                 crumb.isCurrent
-                  ? `<span class="breadcrumb-current ${crumb.route === null ? 'workspace-name' : ''}">${crumb.label}${crumb.id ? `<span class="workspace-id">(${crumb.id})</span>` : ''}</span>`
+                  ? `<span class="breadcrumb-current ${crumb.route === null ? 'workspace-name' : ''}">${crumb.label}${crumb.id ? `<span class="workspace-id">(${crumb.id})</span>` : ''}</span>${sizeHtml}`
                   : `<button class="breadcrumb-link" data-route="${crumb.route}">${crumb.label}</button>`
               }
             </span>
