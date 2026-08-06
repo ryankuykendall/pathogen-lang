@@ -790,6 +790,8 @@ if (list.empty()) {
 
 ### Methods
 
+The four mutating methods — `.push()`, `.pop()`, `.unshift()`, and `.shift()` — throw if called while the array is being iterated (see [Reference Semantics](#syntax-reference-semantics)).
+
 #### `.push(value)`
 
 Appends a value to the end. Returns the new length.
@@ -850,7 +852,7 @@ Transforms each element using a trailing block, returning a new array. Use `retu
 The block receives up to three parameters:
 - `item` — the current element
 - `index` (optional) — the zero-based index
-- `arrayRef` (optional) — a reference to the original array
+- `arrayRef` (optional) — a reference to the original array (reading is fine; mutating it throws — see [Reference Semantics](#syntax-reference-semantics))
 
 ```
 let prices = [10, 25, 50];
@@ -909,7 +911,7 @@ Returns a new array containing only the elements for which the trailing block re
 The block receives up to three parameters:
 - `item` — the current element
 - `index` (optional) — the zero-based index
-- `arrayRef` (optional) — a reference to the original array
+- `arrayRef` (optional) — a reference to the original array (reading is fine; mutating it throws — see [Reference Semantics](#syntax-reference-semantics))
 
 ```
 let nums = [4, -2, 7, 0, -5];
@@ -949,7 +951,7 @@ The block receives up to four parameters:
 - `accumulator` — the current accumulated value
 - `item` (optional) — the current element
 - `index` (optional) — the zero-based index
-- `arrayRef` (optional) — a reference to the original array
+- `arrayRef` (optional) — a reference to the original array (reading is fine; mutating it throws — see [Reference Semantics](#syntax-reference-semantics))
 
 ```
 let sum = [1, 2, 3, 4].reduce(0) {|acc, n|
@@ -1003,7 +1005,7 @@ let rev = arr.reverse();
 
 Returns a new array with the elements sorted. Sorting is how you z-order shapes by area, order gradient stops by offset, or arrange points by angle before drawing.
 
-> **Note:** Unlike JavaScript, `.sort()` and `.reverse()` do not sort or reverse in place — they return new arrays and leave the original untouched. Of the array methods, `.push()`, `.pop()`, `.unshift()`, and `.shift()` mutate the array; `.slice()`, `.map()`, `.filter()`, `.mapSlice()`, `.reverse()`, and `.sort()` return copies. See [Reference Semantics](#syntax-reference-semantics) for why the distinction matters when an array has more than one binding.
+> **Note:** Unlike JavaScript, `.sort()` and `.reverse()` do not sort or reverse in place — they return new arrays and leave the original untouched. Of the array methods, `.push()`, `.pop()`, `.unshift()`, and `.shift()` mutate the array; `.slice()`, `.map()`, `.filter()`, `.mapSlice()`, `.reverse()`, and `.sort()` return copies. The mutating methods throw while the array is being iterated — see [Reference Semantics](#syntax-reference-semantics) for the iteration lock and why the mutate-vs-copy distinction matters when an array has more than one binding.
 
 Called without a block, `.sort()` sorts in natural ascending order — numbers sort numerically, strings by character code order:
 
@@ -1074,7 +1076,7 @@ let descending = [3, 1, 2].sort {|a, b|
 // descending is [3, 2, 1]
 ```
 
-The comparator can read variables from the enclosing scope, but any path commands it emits are discarded — a comparator is for ordering only.
+The comparator can read variables from the enclosing scope, but any path commands it emits are discarded — a comparator is for ordering only. The array being sorted is locked while comparators run: mutating it from inside the block is an error (see [Reference Semantics](#syntax-reference-semantics)).
 
 ### Reference Semantics
 
@@ -1085,6 +1087,34 @@ let a = [1, 2, 3];
 let b = a;
 b.push(4);
 log(a.length);  // 4 — same underlying array
+```
+
+#### Iteration Lock
+
+Because every binding — including the `arrayRef` parameter that `.map`, `.filter`, and `.reduce` pass to their blocks — refers to the same array, an array is **read-only while it is being iterated**. Calling `.push()`, `.pop()`, `.shift()`, or `.unshift()` on it, or assigning to an element (`arr[i] = x`), from inside a `.map`/`.filter`/`.reduce`/`.sort` block or a `for (item in arr)` body is an error:
+
+```
+let nums = [1, 2, 3];
+let bad = nums.filter {|n, i, ref|
+  ref.push(99);  // Error!
+  return n > 1;
+};
+```
+
+> Cannot call push() on an array while it is being iterated — callbacks and for-each bodies receive the array read-only. Iterate a copy with .slice(0) if you need to mutate.
+>
+> Assigning to an element raises the same guidance: `Cannot assign to an element of an array while it is being iterated — ...`
+
+The lock belongs to the array value, not to the syntax you wrote: it is held until every in-progress iteration of that array finishes, it applies equally to callbacks applied with `<<` workers, and a mutation throws wherever it happens — including inside a helper `fn` called from the loop body. Reading is always fine — nested iteration of the same array is legal (the lock stacks) — and so is mutating a *different* array (building a result array inside a callback is the normal pattern). Unlike JavaScript — where `map`/`filter` capture the length up front so appended elements are silently never visited, and `for...of` or index loops can skip or revisit elements after a `shift`/`unshift` — Pathogen fails loudly. If you need to append while walking an array, iterate a snapshot:
+
+```
+let queue = [1, 2, 3];
+for (item in queue.slice(0)) {
+  queue.push(calc(item * 10));  // fine — the loop iterates the copy
+}
+// queue is [1, 2, 3, 10, 20, 30]
+// The loop ran three times: appended elements belong to queue,
+// not the snapshot, so they are never visited.
 ```
 
 ### For-Each Iteration
@@ -1107,6 +1137,8 @@ for ([size, i] in sizes) {
   circle(calc(i * 40 + 20), 50, size)
 }
 ```
+
+The array is locked during the loop — mutating it from inside the body (`points.push(...)`, `points[i] = x`) is an error. To append to an array while walking it, iterate a snapshot — `for (p in list.slice(0))` — but note the loop visits only the elements the snapshot captured; anything appended during the loop is not visited (see [Reference Semantics](#syntax-reference-semantics)).
 
 Iterating over an empty array produces no output.
 

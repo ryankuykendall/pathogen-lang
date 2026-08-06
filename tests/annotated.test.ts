@@ -1080,6 +1080,52 @@ describe('array first/last/filter (annotated parity)', () => {
   });
 });
 
+describe('array iteration lock (annotated parity)', () => {
+  it('push via arrayRef inside filter throws the same error as main mode', () => {
+    expect(() => compileAnnotated('let r = [1, 2].filter {|n, i, ref| ref.push(9); return 1; };')).toThrow(
+      /Cannot call push\(\) on an array while it is being iterated/,
+    );
+  });
+
+  it('push via the closure variable inside map throws', () => {
+    expect(() => compileAnnotated('let nums = [1, 2]; let r = nums.map {|n| nums.push(9); return n; };')).toThrow(
+      /Cannot call push\(\) on an array while it is being iterated/,
+    );
+  });
+
+  it('push inside a for-each body throws', () => {
+    expect(() => compileAnnotated('let nums = [1, 2]; for (n in nums) { nums.push(9); }')).toThrow(
+      /Cannot call push\(\) on an array while it is being iterated/,
+    );
+  });
+
+  it('indexed assignment inside a for-each body throws', () => {
+    expect(() => compileAnnotated('let nums = [1, 2]; for (n in nums) { nums[0] = 9; }')).toThrow(
+      /Cannot assign to an element of an array while it is being iterated/,
+    );
+  });
+
+  it('push inside a sort comparator throws', () => {
+    expect(() =>
+      compileAnnotated('let nums = [2, 1]; let r = nums.sort {|a, b| nums.push(9); return calc(a - b); };'),
+    ).toThrow(/Cannot call push\(\) on an array while it is being iterated/);
+  });
+
+  it('the lock is released after iteration completes', () => {
+    const result = compileAnnotated(
+      'let nums = [1, 2, 3]; let r = nums.filter {|n| return n > 1; }; nums.push(4); M nums.length 0',
+    );
+    expect(result).toContain('M 4 0');
+  });
+
+  it('iterating a slice copy allows mutating the original', () => {
+    const result = compileAnnotated(
+      'let queue = [1, 2]; for (item in queue.slice(0)) { queue.push(calc(item * 10)); } M queue.length 0',
+    );
+    expect(result).toContain('M 4 0');
+  });
+});
+
 describe('array sort NaN guard (annotated parity)', () => {
   it('bare sort on numeric array containing NaN throws the same error as main mode', () => {
     expect(() => compileAnnotated('let a = [3, 1]; a.push(calc(1 % 0)); let r = a.sort();')).toThrow(

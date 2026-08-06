@@ -666,13 +666,13 @@ export interface PathogenArray<T = Value> {
   readonly first: T | null;
   /** Last element, or null if the array is empty (non-mutating) */
   readonly last: T | null;
-  /** push(item) — Add to end */
+  /** push(item) — Add to end; throws while the array is being iterated */
   push(item: T): number;
-  /** pop() — Remove and return last element */
+  /** pop() — Remove and return last element; throws while the array is being iterated */
   pop(): T | null;
-  /** shift() — Remove and return first element */
+  /** shift() — Remove and return first element; throws while the array is being iterated */
   shift(): T | null;
-  /** unshift(item) — Add to beginning */
+  /** unshift(item) — Add to beginning; throws while the array is being iterated */
   unshift(item: T): number;
   /** empty() — Check if array is empty */
   empty(): boolean;

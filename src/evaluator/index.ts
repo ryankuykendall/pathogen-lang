@@ -2,6 +2,7 @@ import { parseExpression as expressionParserFn } from '../parser/lezer-expressio
 const expressionParser = { parse: (input: string) => { const v = expressionParserFn(input); return { status: v !== null, value: v }; } };
 import { contextAwareFunctions, stdlib } from '../stdlib';
 import { CALLBACK_METHODS } from '../callback-methods';
+import { arrayMutationError, isArrayLocked, lockArray, unlockArray } from './iteration-lock';
 import {
   contextToObject,
   createPathContext,
@@ -2038,13 +2039,18 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
     if (stmt.type === 'ForEachLoop') {
       const iterVal = evaluateExpression(stmt.iterable, scope);
       if (!isArrayValue(iterVal)) throw new Error('for-each requires an array');
-      for (let idx = 0; idx < iterVal.elements.length; idx++) {
-        const loopScope = createScope(scope);
-        loopScope.evalState = scope.evalState;
-        setVariable(loopScope, stmt.variable, iterVal.elements[idx]);
-        if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, idx);
-        const flow = evaluateTextBlockBody(stmt.body, loopScope, elements);
-        if (flow?.flow === 'break') break;
+      lockArray(iterVal);
+      try {
+        for (let idx = 0; idx < iterVal.elements.length; idx++) {
+          const loopScope = createScope(scope);
+          loopScope.evalState = scope.evalState;
+          setVariable(loopScope, stmt.variable, iterVal.elements[idx]);
+          if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, idx);
+          const flow = evaluateTextBlockBody(stmt.body, loopScope, elements);
+          if (flow?.flow === 'break') break;
+        }
+      } finally {
+        unlockArray(iterVal);
       }
       continue;
     }
@@ -5353,22 +5359,26 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
   switch (expr.method) {
     case 'push': {
       if (expr.args.length !== 1) throw mError('push() expects 1 argument');
+      if (isArrayLocked(obj)) throw mError(arrayMutationError('call push() on'));
       const val = evaluateExpression(expr.args[0], scope);
       obj.elements.push(val);
       return obj.elements.length;
     }
     case 'pop': {
       if (expr.args.length !== 0) throw mError('pop() expects 0 arguments');
+      if (isArrayLocked(obj)) throw mError(arrayMutationError('call pop() on'));
       if (obj.elements.length === 0) return null;
       return obj.elements.pop()!;
     }
     case 'shift': {
       if (expr.args.length !== 0) throw mError('shift() expects 0 arguments');
+      if (isArrayLocked(obj)) throw mError(arrayMutationError('call shift() on'));
       if (obj.elements.length === 0) return null;
       return obj.elements.shift()!;
     }
     case 'unshift': {
       if (expr.args.length !== 1) throw mError('unshift() expects 1 argument');
+      if (isArrayLocked(obj)) throw mError(arrayMutationError('call unshift() on'));
       const val = evaluateExpression(expr.args[0], scope);
       obj.elements.unshift(val);
       return obj.elements.length;
@@ -5384,30 +5394,35 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       const result: Value[] = [];
       const mapParams = cb.params;
       const mapLine = getLine(expr);
-      for (let i = 0; i < obj.elements.length; i++) {
-        const blockScope = createScope(cb.closure ?? scope);
-        setVariable(blockScope, mapParams[0], obj.elements[i]);
-        if (mapParams.length > 1) setVariable(blockScope, mapParams[1], i);
-        if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
-        try {
-          for (const stmt of cb.body) {
-            // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-            const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-            if (flow) throw loopFlowBoundaryError(flow);
-          }
-          result.push(null); // no return → null
-        } catch (e) {
-          if (e instanceof ReturnSignal) {
-            result.push(e.value);
-          } else {
-            // Wrap error with map iteration context
-            const msg = e instanceof Error ? e.message : String(e);
-            throw new Error(formatError(
-              `Error in .map() callback at index ${i}: ${msg}`,
-              mapLine,
-            ));
+      lockArray(obj);
+      try {
+        for (let i = 0; i < obj.elements.length; i++) {
+          const blockScope = createScope(cb.closure ?? scope);
+          setVariable(blockScope, mapParams[0], obj.elements[i]);
+          if (mapParams.length > 1) setVariable(blockScope, mapParams[1], i);
+          if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
+          try {
+            for (const stmt of cb.body) {
+              // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+              const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+              if (flow) throw loopFlowBoundaryError(flow);
+            }
+            result.push(null); // no return → null
+          } catch (e) {
+            if (e instanceof ReturnSignal) {
+              result.push(e.value);
+            } else {
+              // Wrap error with map iteration context
+              const msg = e instanceof Error ? e.message : String(e);
+              throw new Error(formatError(
+                `Error in .map() callback at index ${i}: ${msg}`,
+                mapLine,
+              ));
+            }
           }
         }
+      } finally {
+        unlockArray(obj);
       }
       return { type: 'ArrayValue' as const, elements: result };
     }
@@ -5418,34 +5433,39 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       const kept: Value[] = [];
       const filterParams = cb.params;
       const filterLine = getLine(expr);
-      for (let i = 0; i < obj.elements.length; i++) {
-        const blockScope = createScope(cb.closure ?? scope);
-        setVariable(blockScope, filterParams[0], obj.elements[i]);
-        if (filterParams.length > 1) setVariable(blockScope, filterParams[1], i);
-        if (filterParams.length > 2) setVariable(blockScope, filterParams[2], obj);
-        let verdict: Value = null;
-        try {
-          for (const stmt of cb.body) {
-            // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-            const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-            if (flow) throw loopFlowBoundaryError(flow);
+      lockArray(obj);
+      try {
+        for (let i = 0; i < obj.elements.length; i++) {
+          const blockScope = createScope(cb.closure ?? scope);
+          setVariable(blockScope, filterParams[0], obj.elements[i]);
+          if (filterParams.length > 1) setVariable(blockScope, filterParams[1], i);
+          if (filterParams.length > 2) setVariable(blockScope, filterParams[2], obj);
+          let verdict: Value = null;
+          try {
+            for (const stmt of cb.body) {
+              // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+              const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+              if (flow) throw loopFlowBoundaryError(flow);
+            }
+            // no return → null → falsy → dropped
+          } catch (e) {
+            if (e instanceof ReturnSignal) {
+              verdict = e.value;
+            } else {
+              const msg = e instanceof Error ? e.message : String(e);
+              throw new Error(formatError(
+                `Error in .filter() callback at index ${i}: ${msg}`,
+                filterLine,
+              ));
+            }
           }
-          // no return → null → falsy → dropped
-        } catch (e) {
-          if (e instanceof ReturnSignal) {
-            verdict = e.value;
-          } else {
-            const msg = e instanceof Error ? e.message : String(e);
-            throw new Error(formatError(
-              `Error in .filter() callback at index ${i}: ${msg}`,
-              filterLine,
-            ));
+          const verdictNum = toNumber(verdict);
+          if (verdict !== null && (verdictNum !== undefined ? verdictNum !== 0 : Boolean(verdict))) {
+            kept.push(obj.elements[i]);
           }
         }
-        const verdictNum = toNumber(verdict);
-        if (verdict !== null && (verdictNum !== undefined ? verdictNum !== 0 : Boolean(verdict))) {
-          kept.push(obj.elements[i]);
-        }
+      } finally {
+        unlockArray(obj);
       }
       return { type: 'ArrayValue' as const, elements: kept };
     }
@@ -5456,30 +5476,35 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       let accumulator: Value = cb.leadingArgs[0];
       const reduceParams = cb.params;
       const reduceLine = getLine(expr);
-      for (let i = 0; i < obj.elements.length; i++) {
-        const blockScope = createScope(cb.closure ?? scope);
-        setVariable(blockScope, reduceParams[0], accumulator);
-        if (reduceParams.length > 1) setVariable(blockScope, reduceParams[1], obj.elements[i]);
-        if (reduceParams.length > 2) setVariable(blockScope, reduceParams[2], i);
-        if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
-        try {
-          for (const stmt of cb.body) {
-            // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-            const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-            if (flow) throw loopFlowBoundaryError(flow);
-          }
-          accumulator = null; // no return → null
-        } catch (e) {
-          if (e instanceof ReturnSignal) {
-            accumulator = e.value;
-          } else {
-            const msg = e instanceof Error ? e.message : String(e);
-            throw new Error(formatError(
-              `Error in .reduce() callback at index ${i}: ${msg}`,
-              reduceLine,
-            ));
+      lockArray(obj);
+      try {
+        for (let i = 0; i < obj.elements.length; i++) {
+          const blockScope = createScope(cb.closure ?? scope);
+          setVariable(blockScope, reduceParams[0], accumulator);
+          if (reduceParams.length > 1) setVariable(blockScope, reduceParams[1], obj.elements[i]);
+          if (reduceParams.length > 2) setVariable(blockScope, reduceParams[2], i);
+          if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
+          try {
+            for (const stmt of cb.body) {
+              // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+              const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+              if (flow) throw loopFlowBoundaryError(flow);
+            }
+            accumulator = null; // no return → null
+          } catch (e) {
+            if (e instanceof ReturnSignal) {
+              accumulator = e.value;
+            } else {
+              const msg = e instanceof Error ? e.message : String(e);
+              throw new Error(formatError(
+                `Error in .reduce() callback at index ${i}: ${msg}`,
+                reduceLine,
+              ));
+            }
           }
         }
+      } finally {
+        unlockArray(obj);
       }
       return accumulator;
     }
@@ -5555,29 +5580,36 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       // avoids the per-invocation throw/catch deopt; the comparator runs
       // O(n log n) times.
       const sortSink = createPathStore();
-      sorted.sort((a, b) => {
-        const blockScope = createScope(cb.closure ?? scope);
-        if (sortParams.length > 0) setVariable(blockScope, sortParams[0], a);
-        if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
-        let cmp: Value = null;
-        try {
-          const res = evaluateGridCellBody(sortBody, blockScope, sortSink);
-          cmp = res.returned ? res.value : null;
-        } catch (e) {
-          if (e instanceof ReturnSignal) {
-            cmp = e.value;
-          } else {
-            const msg = e instanceof Error ? e.message : String(e);
-            throw new Error(formatError(`Error in .sort() comparator: ${msg}`, sortLine));
+      // sort iterates a copy, but the receiver stays locked while comparators
+      // run — mutating the array being sorted is still an iteration hazard.
+      lockArray(obj);
+      try {
+        sorted.sort((a, b) => {
+          const blockScope = createScope(cb.closure ?? scope);
+          if (sortParams.length > 0) setVariable(blockScope, sortParams[0], a);
+          if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
+          let cmp: Value = null;
+          try {
+            const res = evaluateGridCellBody(sortBody, blockScope, sortSink);
+            cmp = res.returned ? res.value : null;
+          } catch (e) {
+            if (e instanceof ReturnSignal) {
+              cmp = e.value;
+            } else {
+              const msg = e instanceof Error ? e.message : String(e);
+              throw new Error(formatError(`Error in .sort() comparator: ${msg}`, sortLine));
+            }
           }
-        }
-        if (typeof cmp !== 'number' || Number.isNaN(cmp)) {
-          throw mError(
-            'sort() comparator must return a number (negative = a first, positive = b first, zero = keep order) — e.g. return calc(a - b);',
-          );
-        }
-        return cmp;
-      });
+          if (typeof cmp !== 'number' || Number.isNaN(cmp)) {
+            throw mError(
+              'sort() comparator must return a number (negative = a first, positive = b first, zero = keep order) — e.g. return calc(a - b);',
+            );
+          }
+          return cmp;
+        });
+      } finally {
+        unlockArray(obj);
+      }
       return { type: 'ArrayValue' as const, elements: sorted };
     }
     default:
@@ -8225,14 +8257,19 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
       if (!isArrayValue(iterable)) {
         throw new Error('for-each requires an array');
       }
-      for (let i = 0; i < iterable.elements.length; i++) {
-        const loopScope = createScope(scope);
-        setVariable(loopScope, item.variable, iterable.elements[i]);
-        if (item.indexVariable) {
-          setVariable(loopScope, item.indexVariable, i);
+      lockArray(iterable);
+      try {
+        for (let i = 0; i < iterable.elements.length; i++) {
+          const loopScope = createScope(scope);
+          setVariable(loopScope, item.variable, iterable.elements[i]);
+          if (item.indexVariable) {
+            setVariable(loopScope, item.indexVariable, i);
+          }
+          const flow = evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
+          if (flow?.flow === 'break') break;
         }
-        const flow = evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
-        if (flow?.flow === 'break') break;
+      } finally {
+        unlockArray(iterable);
       }
     } else if (item.type === 'IfStatement') {
       const condition = evaluateExpression(item.condition, scope);
@@ -8479,6 +8516,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         return;
       }
       if (isArrayValue(obj)) {
+        if (isArrayLocked(obj)) throw new Error(formatError(arrayMutationError('assign to an element of'), getLine(stmt)));
         if (typeof index !== 'number') throw new Error(formatError('Array index must be a number', getLine(stmt)));
         if (!Number.isInteger(index) || index < 0 || index >= obj.elements.length)
           throw new Error(formatError(`Array index ${index} out of bounds (length ${obj.elements.length})`, getLine(stmt)));
@@ -8571,13 +8609,18 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         throw new Error(formatError('for-each requires an array or object', getLine(stmt)));
       }
 
-      for (let i = 0; i < iterable.elements.length; i++) {
-        const loopScope = createScope(scope);
-        const element = iterable.elements[i];
-        setVariable(loopScope, stmt.variable, element);
-        if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
-        const flow = evaluateStatementsToAccum(stmt.body, loopScope, accum);
-        if (flow?.flow === 'break') break;
+      lockArray(iterable);
+      try {
+        for (let i = 0; i < iterable.elements.length; i++) {
+          const loopScope = createScope(scope);
+          const element = iterable.elements[i];
+          setVariable(loopScope, stmt.variable, element);
+          if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
+          const flow = evaluateStatementsToAccum(stmt.body, loopScope, accum);
+          if (flow?.flow === 'break') break;
+        }
+      } finally {
+        unlockArray(iterable);
       }
       return;
     }

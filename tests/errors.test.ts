@@ -332,6 +332,18 @@ describe('Array errors', () => {
       /Property 'middle' does not exist on array/i,
     );
   });
+
+  it('mutation during iteration reports the exact message with the slice hint', () => {
+    expect(() => compilePath('let nums = [1, 2]; for (n in nums) { nums.push(9); }')).toThrow(
+      /Cannot call push\(\) on an array while it is being iterated — callbacks and for-each bodies receive the array read-only\. Iterate a copy with \.slice\(0\) if you need to mutate\./,
+    );
+  });
+
+  it('indexed assignment during iteration reports the exact message', () => {
+    expect(() => compilePath('let nums = [1, 2]; for (n in nums) { nums[0] = 9; }')).toThrow(
+      /Cannot assign to an element of an array while it is being iterated — callbacks and for-each bodies receive the array read-only\./,
+    );
+  });
 });
 
 describe('String errors', () => {

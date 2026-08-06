@@ -151,6 +151,8 @@ let arr = [1, 2, 3];
 arr[0] = 99;  // arr is now [99, 2, 3]
 ```
 
+Assigning to an element of an array that is currently being iterated — from inside a `.map`/`.filter`/`.reduce`/`.sort` block or a `for (item in arr)` body — is an error. See the syntax reference's Reference Semantics section for the iteration lock.
+
 ## Checking Key Existence
 
 Use `.has()` to check if a key exists:
@@ -241,6 +243,8 @@ let b = a;
 b['x'] = 99;
 log(a.x);  // 99 — both a and b point to the same object
 ```
+
+Unlike arrays, objects are **not** locked during iteration — `for (key in obj)` walks a snapshot of the keys, and mutating the object inside the body is allowed. The iteration lock described in the syntax reference's Reference Semantics section applies to arrays only.
 
 ## Merging Objects (`<<`)
 

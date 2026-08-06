@@ -1974,6 +1974,123 @@ describe('Evaluator', () => {
       });
     });
 
+    describe('iteration lock', () => {
+      it('push via arrayRef inside filter throws', () => {
+        expect(() => compile('let r = [1, 2, 3].filter {|n, i, ref| ref.push(9); return 1; };')).toThrow(
+          /Cannot call push\(\) on an array while it is being iterated/,
+        );
+      });
+
+      it('push via the closure variable inside map throws', () => {
+        expect(() => compile('let nums = [1, 2]; let r = nums.map {|n| nums.push(9); return n; };')).toThrow(
+          /Cannot call push\(\) on an array while it is being iterated/,
+        );
+      });
+
+      it('pop inside reduce throws', () => {
+        expect(() => compile('let nums = [1, 2]; let r = nums.reduce(0) {|acc, n| nums.pop(); return acc; };')).toThrow(
+          /Cannot call pop\(\) on an array while it is being iterated/,
+        );
+      });
+
+      it('shift and unshift inside filter throw', () => {
+        expect(() => compile('let nums = [1, 2]; let r = nums.filter {|n| nums.shift(); return 1; };')).toThrow(
+          /Cannot call shift\(\) on an array/,
+        );
+        expect(() => compile('let nums = [1, 2]; let r = nums.filter {|n| nums.unshift(0); return 1; };')).toThrow(
+          /Cannot call unshift\(\) on an array/,
+        );
+      });
+
+      it('indexed assignment inside a callback throws', () => {
+        expect(() => compile('let nums = [1, 2]; let r = nums.filter {|n, i, ref| ref[0] = 99; return 1; };')).toThrow(
+          /Cannot assign to an element of an array while it is being iterated/,
+        );
+      });
+
+      it('push inside a for-each body throws', () => {
+        expect(() => compile('let nums = [1, 2]; for (n in nums) { nums.push(9); }')).toThrow(
+          /Cannot call push\(\) on an array while it is being iterated/,
+        );
+      });
+
+      it('indexed assignment inside a for-each body throws', () => {
+        expect(() => compile('let nums = [1, 2]; for (n in nums) { nums[0] = 9; }')).toThrow(
+          /Cannot assign to an element of an array while it is being iterated/,
+        );
+      });
+
+      it('push inside a sort comparator throws', () => {
+        expect(() => compile('let nums = [2, 1]; let r = nums.sort {|a, b| nums.push(9); return calc(a - b); };')).toThrow(
+          /Cannot call push\(\) on an array while it is being iterated/,
+        );
+      });
+
+      it('pushing to the reduce accumulator throws when it IS the receiver', () => {
+        expect(() => compile('let nums = [1, 2]; let r = nums.reduce(nums) {|acc, n| acc.push(n); return acc; };')).toThrow(
+          /Cannot call push\(\) on an array while it is being iterated/,
+        );
+      });
+
+      it('nested read-only iteration of the same array works', () => {
+        const result = compile(`
+          let nums = [1, 2, 3];
+          let r = nums.filter {|n|
+            let bigger = nums.filter {|m| return m > n; };
+            return bigger.length > 0;
+          };
+          log(r);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[1, 2]');
+      });
+
+      it('mutating a DIFFERENT array inside a callback works', () => {
+        const result = compile(`
+          let out = [];
+          let r = [1, 2, 3].filter {|n|
+            out.push(calc(n * 10));
+            return n > 1;
+          };
+          log(out); log(r);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[10, 20, 30]');
+        expect(result.logs[1].parts[0].value).toBe('[2, 3]');
+      });
+
+      it('the lock is released after iteration completes', () => {
+        const result = compile(`
+          let nums = [1, 2, 3];
+          let r = nums.filter {|n| return n > 1; };
+          nums.push(4);
+          for (n in nums) { }
+          nums[0] = 0;
+          log(nums);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[0, 2, 3, 4]');
+      });
+
+      it('iterating a slice copy allows mutating the original (docs example)', () => {
+        const result = compile(`
+          let queue = [1, 2, 3];
+          for (item in queue.slice(0)) {
+            queue.push(calc(item * 10));
+          }
+          log(queue);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[1, 2, 3, 10, 20, 30]');
+      });
+
+      it('a for-each over an object with array mutation inside is unaffected', () => {
+        const result = compile(`
+          let nums = [1];
+          let obj = { a: 10, b: 20 };
+          for ([k, v] in obj) { nums.push(v); }
+          log(nums);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[1, 10, 20]');
+      });
+    });
+
     describe('reduce', () => {
       it('sums numbers', () => {
         const result = compile('let sum = [1, 2, 3, 4].reduce(0) {|acc, n| return calc(acc + n); }; log(sum);');

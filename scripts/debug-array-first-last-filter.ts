@@ -6,6 +6,8 @@
 // error panel.
 // Scenario 2 — filter without a block: asserts the compile error surfaces in
 // the error panel with the trailing-block message.
+// Scenario 3 — mutation during iteration: asserts the iteration-lock error
+// (push inside a filter callback) surfaces in the error panel.
 //
 // Requires `npm run dev:website` (or dev:stack) on localhost:3000, with the
 // playground rebuilt after any src/ change.
@@ -36,6 +38,13 @@ circle(250, 50, big.length);
 `;
 
 const MISSING_BLOCK_PROGRAM = `let r = [1, 2, 3].filter();
+`;
+
+const MUTATION_PROGRAM = `let nums = [1, 2, 3];
+let r = nums.filter {|n, i, ref|
+  ref.push(9);
+  return 1;
+};
 `;
 
 interface ProbeResult {
@@ -136,6 +145,14 @@ const missingBlock = await runScenario('filter without a block errors', MISSING_
   check(
     'trailing-block error shown',
     !!missingBlock?.errorPanelText && /filter\(\) requires a trailing block/.test(missingBlock.errorPanelText),
+  );
+}
+
+const mutation = await runScenario('mutation during iteration errors', MUTATION_PROGRAM);
+{
+  check(
+    'iteration-lock error shown',
+    !!mutation?.errorPanelText && /Cannot call push\(\) on an array while it is being iterated/.test(mutation.errorPanelText),
   );
 }
 

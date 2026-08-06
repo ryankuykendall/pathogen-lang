@@ -90,6 +90,8 @@ export interface AngleValue {
 export interface ArrayValue {
   type: 'ArrayValue';
   elements: Value[];
+  /** Iteration-lock counter (see evaluator/iteration-lock.ts); >0 means mutations throw */
+  iterationLock?: number;
 }
 
 /**

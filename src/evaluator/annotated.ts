@@ -7,6 +7,7 @@ import { DEFS_CONSTRUCTORS } from './constructor-registry';
 import { contextToObject, createPathContext, setLastTangent, updateContextForCommand } from './context';
 import { estimateTextBoundingBox } from './font-metrics';
 import { getFont, lookupGlyph, recordMissingGlyph, splitContours } from './font-provider';
+import { arrayMutationError, isArrayLocked, lockArray, unlockArray } from './iteration-lock';
 import {
   chamferCommands,
   commandToPathString,
@@ -464,6 +465,8 @@ function isCSSVarValue(value: Value): value is CSSVarValue {
 export interface ArrayValue {
   type: 'ArrayValue';
   elements: Value[];
+  /** Iteration-lock counter (see evaluator/iteration-lock.ts); >0 means mutations throw */
+  iterationLock?: number;
 }
 
 function isArrayValue(value: Value): value is ArrayValue {
@@ -3116,22 +3119,26 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
   switch (expr.method) {
     case 'push': {
       if (expr.args.length !== 1) throw mError('push() expects 1 argument');
+      if (isArrayLocked(obj)) throw mError(arrayMutationError('call push() on'));
       const val = evaluateExpression(expr.args[0], scope);
       obj.elements.push(val);
       return obj.elements.length;
     }
     case 'pop': {
       if (expr.args.length !== 0) throw mError('pop() expects 0 arguments');
+      if (isArrayLocked(obj)) throw mError(arrayMutationError('call pop() on'));
       if (obj.elements.length === 0) return null;
       return obj.elements.pop()!;
     }
     case 'shift': {
       if (expr.args.length !== 0) throw mError('shift() expects 0 arguments');
+      if (isArrayLocked(obj)) throw mError(arrayMutationError('call shift() on'));
       if (obj.elements.length === 0) return null;
       return obj.elements.shift()!;
     }
     case 'unshift': {
       if (expr.args.length !== 1) throw mError('unshift() expects 1 argument');
+      if (isArrayLocked(obj)) throw mError(arrayMutationError('call unshift() on'));
       const val = evaluateExpression(expr.args[0], scope);
       obj.elements.unshift(val);
       return obj.elements.length;
@@ -3146,23 +3153,28 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       if (cb.extraArgs !== 0) throw mError('map() takes no arguments besides the callback');
       const result: Value[] = [];
       const mapParams = cb.params;
-      for (let i = 0; i < obj.elements.length; i++) {
-        const blockScope = createScope(cb.closure ?? scope);
-        setVariable(blockScope, mapParams[0], obj.elements[i]);
-        if (mapParams.length > 1) setVariable(blockScope, mapParams[1], i);
-        if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
-        try {
-          for (const stmt of cb.body) {
-            evaluateStatementPlain(stmt, blockScope);
-          }
-          result.push(null);
-        } catch (e) {
-          if (e instanceof ReturnSignal) {
-            result.push(e.value);
-          } else {
-            throw e;
+      lockArray(obj);
+      try {
+        for (let i = 0; i < obj.elements.length; i++) {
+          const blockScope = createScope(cb.closure ?? scope);
+          setVariable(blockScope, mapParams[0], obj.elements[i]);
+          if (mapParams.length > 1) setVariable(blockScope, mapParams[1], i);
+          if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
+          try {
+            for (const stmt of cb.body) {
+              evaluateStatementPlain(stmt, blockScope);
+            }
+            result.push(null);
+          } catch (e) {
+            if (e instanceof ReturnSignal) {
+              result.push(e.value);
+            } else {
+              throw e;
+            }
           }
         }
+      } finally {
+        unlockArray(obj);
       }
       return { type: 'ArrayValue' as const, elements: result };
     }
@@ -3172,27 +3184,32 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       if (cb.extraArgs !== 0) throw mError('filter() takes no arguments besides the callback');
       const kept: Value[] = [];
       const filterParams = cb.params;
-      for (let i = 0; i < obj.elements.length; i++) {
-        const blockScope = createScope(cb.closure ?? scope);
-        setVariable(blockScope, filterParams[0], obj.elements[i]);
-        if (filterParams.length > 1) setVariable(blockScope, filterParams[1], i);
-        if (filterParams.length > 2) setVariable(blockScope, filterParams[2], obj);
-        let verdict: Value = null;
-        try {
-          for (const stmt of cb.body) {
-            evaluateStatementPlain(stmt, blockScope);
+      lockArray(obj);
+      try {
+        for (let i = 0; i < obj.elements.length; i++) {
+          const blockScope = createScope(cb.closure ?? scope);
+          setVariable(blockScope, filterParams[0], obj.elements[i]);
+          if (filterParams.length > 1) setVariable(blockScope, filterParams[1], i);
+          if (filterParams.length > 2) setVariable(blockScope, filterParams[2], obj);
+          let verdict: Value = null;
+          try {
+            for (const stmt of cb.body) {
+              evaluateStatementPlain(stmt, blockScope);
+            }
+          } catch (e) {
+            if (e instanceof ReturnSignal) {
+              verdict = e.value;
+            } else {
+              throw e;
+            }
           }
-        } catch (e) {
-          if (e instanceof ReturnSignal) {
-            verdict = e.value;
-          } else {
-            throw e;
+          const verdictNum = toNumber(verdict);
+          if (verdict !== null && (verdictNum !== undefined ? verdictNum !== 0 : Boolean(verdict))) {
+            kept.push(obj.elements[i]);
           }
         }
-        const verdictNum = toNumber(verdict);
-        if (verdict !== null && (verdictNum !== undefined ? verdictNum !== 0 : Boolean(verdict))) {
-          kept.push(obj.elements[i]);
-        }
+      } finally {
+        unlockArray(obj);
       }
       return { type: 'ArrayValue' as const, elements: kept };
     }
@@ -3203,24 +3220,29 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       if (cb.extraArgs !== 1) throw mError('reduce() expects 1 argument (initial value) plus the callback');
       let accumulator: Value = cb.leadingArgs[0];
       const reduceParams = cb.params;
-      for (let i = 0; i < obj.elements.length; i++) {
-        const blockScope = createScope(cb.closure ?? scope);
-        setVariable(blockScope, reduceParams[0], accumulator);
-        if (reduceParams.length > 1) setVariable(blockScope, reduceParams[1], obj.elements[i]);
-        if (reduceParams.length > 2) setVariable(blockScope, reduceParams[2], i);
-        if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
-        try {
-          for (const stmt of cb.body) {
-            evaluateStatementPlain(stmt, blockScope);
-          }
-          accumulator = null;
-        } catch (e) {
-          if (e instanceof ReturnSignal) {
-            accumulator = e.value;
-          } else {
-            throw e;
+      lockArray(obj);
+      try {
+        for (let i = 0; i < obj.elements.length; i++) {
+          const blockScope = createScope(cb.closure ?? scope);
+          setVariable(blockScope, reduceParams[0], accumulator);
+          if (reduceParams.length > 1) setVariable(blockScope, reduceParams[1], obj.elements[i]);
+          if (reduceParams.length > 2) setVariable(blockScope, reduceParams[2], i);
+          if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
+          try {
+            for (const stmt of cb.body) {
+              evaluateStatementPlain(stmt, blockScope);
+            }
+            accumulator = null;
+          } catch (e) {
+            if (e instanceof ReturnSignal) {
+              accumulator = e.value;
+            } else {
+              throw e;
+            }
           }
         }
+      } finally {
+        unlockArray(obj);
       }
       return accumulator;
     }
@@ -3288,29 +3310,36 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       const sortParams = cb.params;
       const sortBody = cb.body;
       const sortLine = getLine(expr);
-      sorted.sort((a, b) => {
-        const blockScope = createScope(cb.closure ?? scope);
-        if (sortParams.length > 0) setVariable(blockScope, sortParams[0], a);
-        if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
-        let cmp: Value = null;
-        try {
-          const res = evaluateBlockBodyPlain(sortBody, blockScope);
-          cmp = res.returned ? res.value : null;
-        } catch (e) {
-          if (e instanceof ReturnSignal) {
-            cmp = e.value;
-          } else {
-            const msg = e instanceof Error ? e.message : String(e);
-            throw new Error(formatError(`Error in .sort() comparator: ${msg}`, sortLine));
+      // sort iterates a copy, but the receiver stays locked while comparators
+      // run — mutating the array being sorted is still an iteration hazard.
+      lockArray(obj);
+      try {
+        sorted.sort((a, b) => {
+          const blockScope = createScope(cb.closure ?? scope);
+          if (sortParams.length > 0) setVariable(blockScope, sortParams[0], a);
+          if (sortParams.length > 1) setVariable(blockScope, sortParams[1], b);
+          let cmp: Value = null;
+          try {
+            const res = evaluateBlockBodyPlain(sortBody, blockScope);
+            cmp = res.returned ? res.value : null;
+          } catch (e) {
+            if (e instanceof ReturnSignal) {
+              cmp = e.value;
+            } else {
+              const msg = e instanceof Error ? e.message : String(e);
+              throw new Error(formatError(`Error in .sort() comparator: ${msg}`, sortLine));
+            }
           }
-        }
-        if (typeof cmp !== 'number' || Number.isNaN(cmp)) {
-          throw mError(
-            'sort() comparator must return a number (negative = a first, positive = b first, zero = keep order) — e.g. return calc(a - b);',
-          );
-        }
-        return cmp;
-      });
+          if (typeof cmp !== 'number' || Number.isNaN(cmp)) {
+            throw mError(
+              'sort() comparator must return a number (negative = a first, positive = b first, zero = keep order) — e.g. return calc(a - b);',
+            );
+          }
+          return cmp;
+        });
+      } finally {
+        unlockArray(obj);
+      }
       return { type: 'ArrayValue' as const, elements: sorted };
     }
     default:
@@ -3855,16 +3884,21 @@ function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children
     } else if (item.type === 'ForEachLoop') {
       const arr = evaluateExpression(item.iterable, scope);
       if (isArrayValue(arr)) {
-        for (let idx = 0; idx < arr.elements.length; idx++) {
-          const loopScope = createScope(scope);
-          setVariable(loopScope, item.variable, arr.elements[idx]);
-          if (item.indexVariable) setVariable(loopScope, item.indexVariable, idx);
-          evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
-          if (pendingFlow) {
-            const flow = pendingFlow;
-            pendingFlow = null;
-            if (flow === 'break') break;
+        lockArray(arr);
+        try {
+          for (let idx = 0; idx < arr.elements.length; idx++) {
+            const loopScope = createScope(scope);
+            setVariable(loopScope, item.variable, arr.elements[idx]);
+            if (item.indexVariable) setVariable(loopScope, item.indexVariable, idx);
+            evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
+            if (pendingFlow) {
+              const flow = pendingFlow;
+              pendingFlow = null;
+              if (flow === 'break') break;
+            }
           }
+        } finally {
+          unlockArray(arr);
         }
       }
     } else if (item.type === 'IfStatement') {
@@ -5398,6 +5432,7 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
         if (typeof index !== 'string') throw aError('Object key must be a string');
         obj.properties.set(index, value);
       } else if (isArrayValue(obj)) {
+        if (isArrayLocked(obj)) throw aError(arrayMutationError('assign to an element of'));
         if (typeof index !== 'number') throw aError('Array index must be a number');
         if (!Number.isInteger(index) || index < 0 || index >= obj.elements.length)
           throw aError(`Array index ${index} out of bounds (length ${obj.elements.length})`);
@@ -5439,21 +5474,26 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
 
       if (!isArrayValue(iterable)) throw new Error('for-each requires an array or object');
       const results: string[] = [];
-      for (let i = 0; i < iterable.elements.length; i++) {
-        const loopScope = createScope(scope);
-        const element = iterable.elements[i];
-        setVariable(loopScope, stmt.variable, element);
-        if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
-        for (const bodyStmt of stmt.body) {
-          const result = evaluateStatementPlain(bodyStmt, loopScope);
-          if (result) results.push(result);
-          if (pendingFlow) break;
+      lockArray(iterable);
+      try {
+        for (let i = 0; i < iterable.elements.length; i++) {
+          const loopScope = createScope(scope);
+          const element = iterable.elements[i];
+          setVariable(loopScope, stmt.variable, element);
+          if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
+          for (const bodyStmt of stmt.body) {
+            const result = evaluateStatementPlain(bodyStmt, loopScope);
+            if (result) results.push(result);
+            if (pendingFlow) break;
+          }
+          if (pendingFlow) {
+            const flow = pendingFlow;
+            pendingFlow = null;
+            if (flow === 'break') break;
+          }
         }
-        if (pendingFlow) {
-          const flow = pendingFlow;
-          pendingFlow = null;
-          if (flow === 'break') break;
-        }
+      } finally {
+        unlockArray(iterable);
       }
       return results.join(' ');
     }
@@ -5783,6 +5823,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
         if (typeof index !== 'string') throw aError('Object key must be a string');
         obj.properties.set(index, value);
       } else if (isArrayValue(obj)) {
+        if (isArrayLocked(obj)) throw aError(arrayMutationError('assign to an element of'));
         if (typeof index !== 'number') throw aError('Array index must be a number');
         if (!Number.isInteger(index) || index < 0 || index >= obj.elements.length)
           throw aError(`Array index ${index} out of bounds (length ${obj.elements.length})`);
@@ -5844,51 +5885,56 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       const SHOW_COUNT = 3;
       const totalIterations = iterable.elements.length;
 
-      for (let i = 0; i < totalIterations; i++) {
-        const isFirstFew = i < SHOW_COUNT;
-        const isLastFew = i >= totalIterations - SHOW_COUNT;
-        const shouldShow = totalIterations <= TRUNCATE_THRESHOLD || isFirstFew || isLastFew;
+      lockArray(iterable);
+      try {
+        for (let i = 0; i < totalIterations; i++) {
+          const isFirstFew = i < SHOW_COUNT;
+          const isLastFew = i >= totalIterations - SHOW_COUNT;
+          const shouldShow = totalIterations <= TRUNCATE_THRESHOLD || isFirstFew || isLastFew;
 
-        if (totalIterations > TRUNCATE_THRESHOLD && i === SHOW_COUNT) {
-          const skipCount = totalIterations - SHOW_COUNT * 2;
-          ctx.output.push({ type: 'iteration_skip', count: skipCount });
-        }
+          if (totalIterations > TRUNCATE_THRESHOLD && i === SHOW_COUNT) {
+            const skipCount = totalIterations - SHOW_COUNT * 2;
+            ctx.output.push({ type: 'iteration_skip', count: skipCount });
+          }
 
-        if (shouldShow) {
-          ctx.output.push({ type: 'iteration', index: i });
-          const loopScope = createScope(scope);
-          const element = iterable.elements[i];
-          if (stmt.indexVariable && isArrayValue(element)) {
-            setVariable(loopScope, stmt.variable, element.elements[0] ?? null);
-            setVariable(loopScope, stmt.indexVariable, element.elements[1] ?? null);
+          if (shouldShow) {
+            ctx.output.push({ type: 'iteration', index: i });
+            const loopScope = createScope(scope);
+            const element = iterable.elements[i];
+            if (stmt.indexVariable && isArrayValue(element)) {
+              setVariable(loopScope, stmt.variable, element.elements[0] ?? null);
+              setVariable(loopScope, stmt.indexVariable, element.elements[1] ?? null);
+            } else {
+              setVariable(loopScope, stmt.variable, element);
+              if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
+            }
+            for (const bodyStmt of stmt.body) {
+              evaluateStatementAnnotated(bodyStmt, loopScope, ctx);
+              if (pendingFlow) break;
+            }
           } else {
-            setVariable(loopScope, stmt.variable, element);
-            if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
+            const loopScope = createScope(scope);
+            const element = iterable.elements[i];
+            if (stmt.indexVariable && isArrayValue(element)) {
+              setVariable(loopScope, stmt.variable, element.elements[0] ?? null);
+              setVariable(loopScope, stmt.indexVariable, element.elements[1] ?? null);
+            } else {
+              setVariable(loopScope, stmt.variable, element);
+              if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
+            }
+            for (const bodyStmt of stmt.body) {
+              evaluateStatementPlain(bodyStmt, loopScope);
+              if (pendingFlow) break;
+            }
           }
-          for (const bodyStmt of stmt.body) {
-            evaluateStatementAnnotated(bodyStmt, loopScope, ctx);
-            if (pendingFlow) break;
-          }
-        } else {
-          const loopScope = createScope(scope);
-          const element = iterable.elements[i];
-          if (stmt.indexVariable && isArrayValue(element)) {
-            setVariable(loopScope, stmt.variable, element.elements[0] ?? null);
-            setVariable(loopScope, stmt.indexVariable, element.elements[1] ?? null);
-          } else {
-            setVariable(loopScope, stmt.variable, element);
-            if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, i);
-          }
-          for (const bodyStmt of stmt.body) {
-            evaluateStatementPlain(bodyStmt, loopScope);
-            if (pendingFlow) break;
+          if (pendingFlow) {
+            const flow = pendingFlow;
+            pendingFlow = null;
+            if (flow === 'break') break; // loop_end epilogue still emits below
           }
         }
-        if (pendingFlow) {
-          const flow = pendingFlow;
-          pendingFlow = null;
-          if (flow === 'break') break; // loop_end epilogue still emits below
-        }
+      } finally {
+        unlockArray(iterable);
       }
 
       ctx.indentLevel--;

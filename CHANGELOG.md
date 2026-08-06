@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-06 (arrays are read-only while being iterated)
+
+### Changed
+
+#### Core
+
+- **Arrays are now locked against mutation during iteration** — calling `.push()`/`.pop()`/`.shift()`/`.unshift()` on an array, or assigning to an element (`arr[i] = x`), from inside a `.map`/`.filter`/`.reduce`/`.sort` block or a `for (item in arr)` body throws `Cannot call push() on an array while it is being iterated — callbacks and for-each bodies receive the array read-only. Iterate a copy with .slice(0) if you need to mutate.` Previously the iteration loops re-read the live length, so a callback pushing to its own array visited (and could keep) the appended elements — flagged in the `.filter` review as a plausible-bug generator. **Behavior change**: this is stricter than JavaScript (which permits mid-iteration mutation and snapshots the length in `map`/`filter`), and it intentionally breaks the for-each worklist pattern (`for (job in queue) { queue.push(...) }`) — iterate a copy (`queue.slice(0)`) instead. Reading the array (including nested read-only iteration of the same array) and mutating *other* arrays inside callbacks are unaffected; `.sort` locks its receiver while comparators run even though it sorts a copy. Implemented as a shared counter-based lock (`src/evaluator/iteration-lock.ts`) with an `iterationLock` field on both evaluators' `ArrayValue` types, acquired in `try/finally` at all 14 iteration sites (4 callback methods + 3 for-each walkers, per evaluator) and checked at all 11 mutation sites (4 mutator methods per evaluator + 3 indexed-assignment handlers). Documented authoritatively in `docs/syntax.md` → Reference Semantics, with pointers from the `arrayRef` param lists, the mutate-vs-copy note, the sort comparator restriction, and For-Each Iteration.
+
+#### Development
+
+- `scripts/debug-array-first-last-filter.ts` gained a third scenario asserting the iteration-lock error surfaces in the playground error panel.
+- Tests: 23 new (evaluator lock matrix incl. arrayRef-vs-closure routes, sort comparator, reduce accumulator === receiver, lock release after completion, slice-copy escape hatch, object-for-each unaffected; annotated parity subset; exact-message assertions in errors suite). Full suite: 4657 passing. Zero pre-existing tests needed changes — no shipped program in the repo relied on mutation during iteration.
+
 ## [Unreleased] - 2026-08-06 (arrays: .first / .last / .filter)
 
 ### Added
