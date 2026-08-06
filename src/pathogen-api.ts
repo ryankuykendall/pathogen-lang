@@ -662,6 +662,10 @@ export interface PathogenPoint {
 export interface PathogenArray<T = Value> {
   /** Number of elements */
   readonly length: number;
+  /** First element, or null if the array is empty (non-mutating) */
+  readonly first: T | null;
+  /** Last element, or null if the array is empty (non-mutating) */
+  readonly last: T | null;
   /** push(item) — Add to end */
   push(item: T): number;
   /** pop() — Remove and return last element */
@@ -674,6 +678,8 @@ export interface PathogenArray<T = Value> {
   empty(): boolean;
   /** map {|item| ...} — Transform elements; or map() << worker @snippet map {|${1:item}|\n\treturn $0;\n} */
   map(): PathogenArray;
+  /** filter {|item| ...} — Keep elements whose block returns truthy; or filter() << worker @snippet filter {|${1:item}|\n\treturn $0;\n} */
+  filter(): PathogenArray<T>;
   /** reduce(init) {|acc, item| ...} — Reduce; or reduce(init) << worker @snippet reduce(${1:init}) {|${2:acc}, ${3:item}|\n\treturn $0;\n} */
   reduce(init: Value): Value;
   /** mapSlice(length) — Sliding window slices */

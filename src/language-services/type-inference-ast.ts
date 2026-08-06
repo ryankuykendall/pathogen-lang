@@ -122,7 +122,7 @@ function inferBlockParam(
   }
 
   // Array iteration blocks: element and numeric index positions
-  if (call.method === 'map' || call.method === 'mapSlice') {
+  if (call.method === 'map' || call.method === 'mapSlice' || call.method === 'filter') {
     if (index === 0) return inferExprElementType(call.object, scope, seen);
     if (index === 1) return 'number';
     return null;
@@ -196,7 +196,7 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
           const method = expr.left.method;
           if (method === 'fill') return 'Grid';
           if (method === 'variableOffset' || method === 'compoundVariableOffset') return 'PathBlock';
-          if (method === 'map' || method === 'sort') {
+          if (method === 'map' || method === 'sort' || method === 'filter') {
             const recv = inferExprType(expr.left.object, scope, visited);
             return recv === 'Grid' ? 'Grid' : recv === 'array' ? 'array' : recv;
           }

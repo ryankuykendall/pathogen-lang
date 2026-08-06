@@ -5411,6 +5411,44 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       }
       return { type: 'ArrayValue' as const, elements: result };
     }
+    case 'filter': {
+      const cb = resolveCallbackBlock(expr, scope, workerExpr);
+      if (!cb) throw mError('filter() requires a trailing block or a << worker: array.filter {|item| return ...; } or array.filter() << f');
+      if (cb.extraArgs !== 0) throw mError('filter() takes no arguments besides the callback');
+      const kept: Value[] = [];
+      const filterParams = cb.params;
+      const filterLine = getLine(expr);
+      for (let i = 0; i < obj.elements.length; i++) {
+        const blockScope = createScope(cb.closure ?? scope);
+        setVariable(blockScope, filterParams[0], obj.elements[i]);
+        if (filterParams.length > 1) setVariable(blockScope, filterParams[1], i);
+        if (filterParams.length > 2) setVariable(blockScope, filterParams[2], obj);
+        let verdict: Value = null;
+        try {
+          for (const stmt of cb.body) {
+            // Callback bodies are break/continue boundaries (builder-enforced; defensive)
+            const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
+            if (flow) throw loopFlowBoundaryError(flow);
+          }
+          // no return → null → falsy → dropped
+        } catch (e) {
+          if (e instanceof ReturnSignal) {
+            verdict = e.value;
+          } else {
+            const msg = e instanceof Error ? e.message : String(e);
+            throw new Error(formatError(
+              `Error in .filter() callback at index ${i}: ${msg}`,
+              filterLine,
+            ));
+          }
+        }
+        const verdictNum = toNumber(verdict);
+        if (verdict !== null && (verdictNum !== undefined ? verdictNum !== 0 : Boolean(verdict))) {
+          kept.push(obj.elements[i]);
+        }
+      }
+      return { type: 'ArrayValue' as const, elements: kept };
+    }
     case 'reduce': {
       const cb = resolveCallbackBlock(expr, scope, workerExpr);
       if (!cb) throw mError('reduce() requires a trailing block or a << worker: array.reduce(init) {|acc, item| return acc; } or array.reduce(init) << f');
@@ -6173,6 +6211,12 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   if (isArrayValue(obj)) {
     if (expr.property === 'length') {
       return obj.elements.length;
+    }
+    if (expr.property === 'first') {
+      return obj.elements.length === 0 ? null : obj.elements[0];
+    }
+    if (expr.property === 'last') {
+      return obj.elements.length === 0 ? null : obj.elements[obj.elements.length - 1];
     }
     throw new Error(`Property '${expr.property}' does not exist on array. Use methods like .push(), .pop(), etc.`);
   }

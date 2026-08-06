@@ -404,7 +404,10 @@ describe('getCompletions', () => {
       const items = completeAtEnd('let items = [1, 2, 3];\nitems.');
       const names = labels(items);
       expect(names).toContain('length');
+      expect(names).toContain('first');
+      expect(names).toContain('last');
       expect(names).toContain('map');
+      expect(names).toContain('filter');
       expect(names).toContain('push');
       expect(names).toContain('pop');
       expect(names).toContain('mapSlice');
@@ -418,12 +421,23 @@ describe('getCompletions', () => {
       const sort = items.find((i) => i.label === 'sort')!;
       expect(sort.detail).toContain('Sorted copy');
       expect(sort.insertText).toBe('sort()$0');
+
+      const first = items.find((i) => i.label === 'first')!;
+      expect(first.kind).toBe('property');
+      expect(first.detail).toContain('First element, or null');
+
+      const last = items.find((i) => i.label === 'last')!;
+      expect(last.kind).toBe('property');
+      expect(last.detail).toContain('Last element, or null');
+
+      const filter = items.find((i) => i.label === 'filter')!;
+      expect(filter.detail).toContain('Keep elements whose block returns truthy');
+      expect(filter.insertText).toBe('filter {|${1:item}|\n\treturn $0;\n}');
     });
 
     it('does not offer phantom Array methods', () => {
       const items = completeAtEnd('let a = [1, 2, 3];\na.');
       const names = labels(items);
-      expect(names).not.toContain('filter');
       expect(names).not.toContain('flatMap');
       expect(names).not.toContain('indexOf');
     });

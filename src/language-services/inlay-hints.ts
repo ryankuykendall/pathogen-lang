@@ -330,7 +330,7 @@ function inferExprType(expr: Expression): string | null {
       if (expr.method === 'boundingBox' || expr.method === 'paddedBoundingBox') return 'BBox';
       if (expr.method === 'get' || expr.method === 'anchor') return 'Point';
       if (expr.method === 'slice' || expr.method === 'map' || expr.method === 'mapSlice' ||
-          expr.method === 'sort') return 'Array';
+          expr.method === 'sort' || expr.method === 'filter') return 'Array';
       if (expr.method === 'pick') return inferExprType(expr.object) === 'Cycler' ? null : null;
       // reverse() exists on Array AND PathBlock/ProjectedPath. This function is
       // scope-less, so an Identifier receiver infers null and keeps the
@@ -373,7 +373,7 @@ function inferExprType(expr: Expression): string | null {
           const method = expr.left.method;
           if (method === 'fill') return 'Grid';
           if (method === 'variableOffset' || method === 'compoundVariableOffset') return 'PathBlock';
-          if (method === 'map' || method === 'sort') {
+          if (method === 'map' || method === 'sort' || method === 'filter') {
             const recv = inferExprType(expr.left.object);
             return recv === 'Grid' ? 'Grid' : recv === 'Array' ? 'Array' : recv;
           }

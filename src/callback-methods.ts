@@ -9,7 +9,7 @@
 // dispatch into that method with the worker attached — the method must
 // consume it via resolveCallbackBlock or reject it.
 export const CALLBACK_METHODS: ReadonlySet<string> = new Set([
-  'map', 'reduce', 'sort', // array (map also Grid)
+  'map', 'filter', 'reduce', 'sort', // array (map also Grid)
   'fill', 'forEach', // Grid
   'variableOffset', 'compoundVariableOffset', // PathBlock
 ]);

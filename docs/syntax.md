@@ -360,8 +360,8 @@ let ribbon = spine.variableOffset() << {|go, pb|
 };
 ```
 
-The rule is structural: when the **left side is one of the eight callback
-builtins** — array `.map`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
+The rule is structural: when the **left side is one of the nine callback
+builtins** — array `.map`/`.filter`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
 `variableOffset`/`compoundVariableOffset` — written **without** a trailing
 block, `<<` provides its callback. The right side may be a lambda variable,
 a named `fn`, or a lambda literal. Anywhere else, `<<` is the ordinary
@@ -403,7 +403,7 @@ Style blocks are used in layer definitions and can be passed as per-element styl
 
 ## Null
 
-The `null` literal represents the absence of a value. It is returned by `pop()` and `shift()` on empty arrays, and can be used in variable assignments and conditionals.
+The `null` literal represents the absence of a value. It is returned by `.pop()` and `.shift()`, and by the `.first` and `.last` properties, on empty arrays, and can be used in variable assignments and conditionals.
 
 ```
 let x = null;
@@ -751,6 +751,32 @@ let list = [1, 2, 3];
 log(list.length);  // 3
 ```
 
+### `.first`
+
+Returns the first element, or `null` if the array is empty (see [Null](#syntax-null)) — unlike `list[0]`, which throws when the array is empty. The array is not modified (unlike `.shift()`, which removes the element it returns).
+
+```
+let list = [10, 20, 30];
+log(list.first);   // 10
+
+let empty = [];
+log(empty.first);  // null
+```
+
+> **Note:** If the first element is itself `null`, the result is indistinguishable from the empty-array case (the same is true of `.last`, `.pop()`, and `.shift()`). Check `.length` when the distinction matters.
+
+### `.last`
+
+Returns the last element, or `null` if the array is empty (see [Null](#syntax-null)) — unlike `list[list.length - 1]`, which throws when the array is empty. The array is not modified (unlike `.pop()`, which removes the element it returns). The empty-vs-`null`-element ambiguity noted under [`.first`](#syntax-first) applies here too.
+
+```
+let list = [10, 20, 30];
+log(list.last);    // 30
+
+let empty = [];
+log(empty.last);   // null
+```
+
 ### `.empty()`
 
 Returns `1` (truthy) if the array has no elements, `0` (falsy) otherwise:
@@ -874,6 +900,47 @@ let shifted = [1, 2, 3].map {|x|
 // shifted is [101, 102, 103]
 ```
 
+#### `.filter {|item| ... }` / `.filter {|item, index, arrayRef| ... }`
+
+Returns a new array containing only the elements for which the trailing block returns a truthy value. Filtering is how you keep only the points inside a region, drop whitespace glyphs before layout, or cull segments below a size threshold before drawing.
+
+`null`, `0`, and `false` are falsy; non-zero numbers, `true`, and non-empty strings are truthy (see [Null](#syntax-null) and [Booleans](#syntax-booleans)). The original array is not modified. If no `return` is executed, the block produces `null`, which is falsy — the element is dropped. A reusable worker applies with `<<` — `nums.filter() << isPositive;` (see [Applying workers](#syntax-applying-workers)).
+
+The block receives up to three parameters:
+- `item` — the current element
+- `index` (optional) — the zero-based index
+- `arrayRef` (optional) — a reference to the original array
+
+```
+let nums = [4, -2, 7, 0, -5];
+let positive = nums.filter {|n|
+  return n > 0;
+};
+// positive is [4, 7]
+// nums is still [4, -2, 7, 0, -5]
+```
+
+Use the index parameter for position-aware filtering:
+
+```
+let items = [10, 20, 30, 40];
+let evens = items.filter {|val, i|
+  return calc(i % 2) == 0;
+};
+// evens is [10, 30] — elements at even indexes
+```
+
+Use the array reference to compare against neighbors:
+
+```
+let arr = [1, 5, 3, 8, 2];
+let rising = arr.filter {|item, idx, ref|
+  if (idx == 0) { return true; }
+  return item > ref[idx - 1];
+};
+// rising is [1, 5, 8] — elements greater than their predecessor
+```
+
 #### `.reduce(initialValue) {|accumulator, item, index, arrayRef| ... }`
 
 Iterates the array, threading an accumulator through each step. The `initialValue` argument sets the starting accumulator. The block must `return` the new accumulator value; if no `return` is executed, the accumulator becomes `null`.
@@ -936,7 +1003,7 @@ let rev = arr.reverse();
 
 Returns a new array with the elements sorted. Sorting is how you z-order shapes by area, order gradient stops by offset, or arrange points by angle before drawing.
 
-> **Note:** Unlike JavaScript, `.sort()` and `.reverse()` do not sort or reverse in place — they return new arrays and leave the original untouched. Of the array methods, `.push()`, `.pop()`, `.unshift()`, and `.shift()` mutate the array; `.slice()`, `.map()`, `.mapSlice()`, `.reverse()`, and `.sort()` return copies. See [Reference Semantics](#syntax-reference-semantics) for why the distinction matters when an array has more than one binding.
+> **Note:** Unlike JavaScript, `.sort()` and `.reverse()` do not sort or reverse in place — they return new arrays and leave the original untouched. Of the array methods, `.push()`, `.pop()`, `.unshift()`, and `.shift()` mutate the array; `.slice()`, `.map()`, `.filter()`, `.mapSlice()`, `.reverse()`, and `.sort()` return copies. See [Reference Semantics](#syntax-reference-semantics) for why the distinction matters when an array has more than one binding.
 
 Called without a block, `.sort()` sorts in natural ascending order — numbers sort numerically, strings by character code order:
 
@@ -1420,7 +1487,7 @@ let grid = Grid(4, 4, { xDim: 25, yDim: 25 });
 grid.fill() << {|row, col| return calc(row * 4 + col); };
 ```
 
-This works for array `.map`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
+This works for array `.map`/`.filter`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
 and `variableOffset`/`compoundVariableOffset`. The parentheses keep their
 ordinary parameters — `reduce(init) << f` — and the worker stays outside
 them. The full rules (evaluation order, chaining, interaction with merge)

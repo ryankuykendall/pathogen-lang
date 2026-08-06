@@ -1574,6 +1574,44 @@ describe('Evaluator', () => {
       expect(result.logs[0].parts[0].value).toBe('3');
     });
 
+    it('.first returns the first element', () => {
+      expect(compilePath('let list = [10, 20, 30]; M list.first 0')).toBe('M 10 0');
+    });
+
+    it('.first on empty array returns null', () => {
+      expect(compilePath('let list = []; if (list.first == null) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+
+    it('.first does not mutate the array', () => {
+      const result = compile('let list = [10, 20]; let f = list.first; log(list); log(f);');
+      expect(result.logs[0].parts[0].value).toBe('[10, 20]');
+      expect(result.logs[1].parts[0].value).toBe('10');
+    });
+
+    it('.last returns the last element', () => {
+      expect(compilePath('let list = [10, 20, 30]; M list.last 0')).toBe('M 30 0');
+    });
+
+    it('.last on empty array returns null', () => {
+      expect(compilePath('let list = []; if (list.last == null) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
+    });
+
+    it('.last does not mutate the array', () => {
+      const result = compile('let list = [10, 20]; let l = list.last; log(list); log(l);');
+      expect(result.logs[0].parts[0].value).toBe('[10, 20]');
+      expect(result.logs[1].parts[0].value).toBe('20');
+    });
+
+    it('.first and .last on a single-element array are the same element', () => {
+      expect(compilePath('let list = [42]; M list.first list.last')).toBe('M 42 42');
+    });
+
+    it('.first works on an array expression result', () => {
+      const result = compile('let r = [3, 1, 2].sort(); log(r.first); log(r.last);');
+      expect(result.logs[0].parts[0].value).toBe('1');
+      expect(result.logs[1].parts[0].value).toBe('3');
+    });
+
     it('empty() on empty array', () => {
       expect(compilePath('let list = []; if (list.empty()) { M 1 0 } else { M 0 0 }')).toBe('M 1 0');
     });
@@ -1846,6 +1884,93 @@ describe('Evaluator', () => {
       it('unused extra params are harmless', () => {
         const result = compile('let r = [5, 6].map {|item, idx, ref| return item; }; log(r);');
         expect(result.logs[0].parts[0].value).toBe('[5, 6]');
+      });
+    });
+
+    describe('filter', () => {
+      it('keeps elements whose block returns truthy', () => {
+        const result = compile('let r = [4, -2, 7, 0, -5].filter {|n| return n > 0; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[4, 7]');
+      });
+
+      it('does not mutate the original array', () => {
+        const result = compile('let a = [1, 2, 3]; let r = a.filter {|n| return n > 1; }; log(a); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 2, 3]');
+        expect(result.logs[1].parts[0].value).toBe('[2, 3]');
+      });
+
+      it('index param works', () => {
+        const result = compile('let r = [10, 20, 30, 40].filter {|val, i| return i % 2 == 0; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[10, 30]');
+      });
+
+      it('arrayRef param works', () => {
+        const result = compile(`
+          let r = [1, 5, 3, 8, 2].filter {|item, idx, ref|
+            if (idx == 0) { return 1; }
+            return item > ref[idx - 1];
+          };
+          log(r);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[1, 5, 8]');
+      });
+
+      it('no return in block drops the element', () => {
+        const result = compile('let r = [1, 2, 3].filter {|n| let x = 1; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[]');
+      });
+
+      it('returning 0 drops, non-zero keeps', () => {
+        const result = compile('let r = [1, 2, 3, 4].filter {|n| return n % 2; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[1, 3]');
+      });
+
+      it('returning null drops the element', () => {
+        const result = compile('let r = [1, 2].filter {|n| return null; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[]');
+      });
+
+      it('non-empty strings are truthy', () => {
+        const result = compile('let r = [`a`, `b`].filter {|s| return s; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[a, b]');
+      });
+
+      it('empty array returns empty array', () => {
+        const result = compile('let r = [].filter {|n| return 1; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[]');
+      });
+
+      it('filtered result is a new array — pushing to it leaves the original alone', () => {
+        const result = compile(`
+          let a = [1, 2, 3];
+          let r = a.filter {|n| return n > 1; };
+          r.push(99);
+          log(a); log(r);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('[1, 2, 3]');
+        expect(result.logs[1].parts[0].value).toBe('[2, 3, 99]');
+      });
+
+      it('block has access to enclosing scope', () => {
+        const result = compile('let min = 2; let r = [1, 2, 3].filter {|n| return n >= min; }; log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[2, 3]');
+      });
+
+      it('chains with other array methods', () => {
+        const result = compile('let r = [5, 1, 4, 2].filter {|n| return n > 1; }.sort(); log(r);');
+        expect(result.logs[0].parts[0].value).toBe('[2, 4, 5]');
+      });
+
+      it('missing block throws', () => {
+        expect(() => compile('let r = [1].filter();')).toThrow(/requires a trailing block/);
+      });
+
+      it('argument besides callback throws', () => {
+        expect(() => compile('let r = [1].filter(5) {|n| return 1; };')).toThrow(/takes no arguments/);
+      });
+
+      it('error inside callback is wrapped with index context', () => {
+        expect(() => compile('let r = [1, 2].filter {|n| return undefinedVar; };')).toThrow(/Error in .filter\(\) callback at index 0/);
       });
     });
 

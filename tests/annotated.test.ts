@@ -1022,6 +1022,64 @@ describe('array reverse and sort (annotated parity)', () => {
   });
 });
 
+describe('array first/last/filter (annotated parity)', () => {
+  it('.first returns the first element', () => {
+    const result = compileAnnotated('let list = [10, 20, 30]; M list.first 0');
+    expect(result).toContain('M 10 0');
+  });
+
+  it('.last returns the last element', () => {
+    const result = compileAnnotated('let list = [10, 20, 30]; M list.last 0');
+    expect(result).toContain('M 30 0');
+  });
+
+  it('.first/.last on empty array return null', () => {
+    const result = compileAnnotated(
+      'let list = []; if (list.first == null && list.last == null) { M 1 0 } else { M 0 0 }',
+    );
+    expect(result).toContain('M 1 0');
+  });
+
+  it('unknown array property still throws', () => {
+    expect(() => compileAnnotated('let list = [1]; M list.middle 0')).toThrow(/does not exist on array/);
+  });
+
+  it('filter keeps elements whose block returns truthy', () => {
+    const result = compileAnnotated('let r = [4, -2, 7, 0, -5].filter {|n| return n > 0; }; M r[0] r[1]');
+    expect(result).toContain('M 4 7');
+  });
+
+  it('filter does not mutate the original array', () => {
+    const result = compileAnnotated('let orig = [1, 2, 3]; let r = orig.filter {|n| return n > 1; }; M orig.length r.length');
+    expect(result).toContain('M 3 2');
+  });
+
+  it('filter index param works', () => {
+    const result = compileAnnotated('let r = [10, 20, 30, 40].filter {|val, i| return i % 2 == 0; }; M r[0] r[1]');
+    expect(result).toContain('M 10 30');
+  });
+
+  it('filter with no return drops every element', () => {
+    const result = compileAnnotated('let r = [1, 2, 3].filter {|n| let x = 1; }; M r.length 0');
+    expect(result).toContain('M 0 0');
+  });
+
+  it('filter() << worker matches the trailing-block form', () => {
+    const viaBlock = compileAnnotated('let r = [4, -2, 7, 0].filter {|v| return v > 0; }; M r[0] r[1]');
+    const viaWorker = compileAnnotated('let pos = {|v| return v > 0; }; let r = [4, -2, 7, 0].filter() << pos; M r[0] r[1]');
+    expect(viaBlock).toContain('M 4 7');
+    expect(viaWorker).toContain('M 4 7');
+  });
+
+  it('filter without a block throws the same error as main mode', () => {
+    expect(() => compileAnnotated('let r = [1].filter();')).toThrow(/requires a trailing block/);
+  });
+
+  it('filter with an extra argument throws the same error as main mode', () => {
+    expect(() => compileAnnotated('let r = [1].filter(5) {|n| return 1; };')).toThrow(/takes no arguments/);
+  });
+});
+
 describe('array sort NaN guard (annotated parity)', () => {
   it('bare sort on numeric array containing NaN throws the same error as main mode', () => {
     expect(() => compileAnnotated('let a = [3, 1]; a.push(calc(1 % 0)); let r = a.sort();')).toThrow(

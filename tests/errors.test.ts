@@ -308,6 +308,30 @@ describe('Array errors', () => {
       /sort\(\) comparator/i,
     );
   });
+
+  it('filter without a block or worker throws', () => {
+    expect(() => compilePath('let r = [1].filter();')).toThrow(
+      /filter\(\) requires a trailing block or a << worker/i,
+    );
+  });
+
+  it('filter with an argument besides the callback throws', () => {
+    expect(() => compilePath('let r = [1].filter(5) {|n| return 1; };')).toThrow(
+      /filter\(\) takes no arguments besides the callback/i,
+    );
+  });
+
+  it('error inside filter callback is wrapped with index context', () => {
+    expect(() => compilePath('let r = [1, 2].filter {|n| return undefinedVar; };')).toThrow(
+      /Error in .filter\(\) callback at index 0/i,
+    );
+  });
+
+  it('unknown array property still throws with method hint', () => {
+    expect(() => compilePath('let list = [1]; M list.middle 0')).toThrow(
+      /Property 'middle' does not exist on array/i,
+    );
+  });
 });
 
 describe('String errors', () => {

@@ -43,6 +43,20 @@ describe('<< worker application to builtins', () => {
     expect(out).toContain('[11, 12]');
   });
 
+  it('array.filter() << f produces output identical to the trailing-block form', () => {
+    const viaBlock = logValue('let a = [4, -2, 7, 0].filter {|v| return v > 0; }; log(`${a}`); M 0 0;');
+    const viaLambda = logValue('let f = {|v| return v > 0; }; let a = [4, -2, 7, 0].filter() << f; log(`${a}`); M 0 0;');
+    const inline = logValue('let a = [4, -2, 7, 0].filter() << {|v| return v > 0; }; log(`${a}`); M 0 0;');
+    expect(viaLambda).toBe(viaBlock);
+    expect(inline).toBe(viaBlock);
+    expect(viaLambda).toContain('[4, 7]');
+  });
+
+  it('array.filter() << namedFn accepts a named fn value too', () => {
+    const out = logValue('fn pos(v) { return v > 0; } let a = [4, -2, 7].filter() << pos; log(`${a}`); M 0 0;');
+    expect(out).toContain('[4, 7]');
+  });
+
   it('reduce(init) << worker evaluates init BEFORE the worker expression', () => {
     // The evaluation-order contract: receiver -> parenthesized args -> worker.
     const result = compile(`

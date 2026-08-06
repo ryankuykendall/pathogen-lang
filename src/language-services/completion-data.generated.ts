@@ -404,6 +404,8 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
   'array': {
     properties: [
       { label: 'length', kind: 'property', detail: 'Number of elements', boost: 8 },
+      { label: 'first', kind: 'property', detail: 'First element, or null if the array is empty (non-mutating)', boost: 8 },
+      { label: 'last', kind: 'property', detail: 'Last element, or null if the array is empty (non-mutating)', boost: 8 },
     ],
     methods: [
       { label: 'push', kind: 'function', detail: 'push(item) — Add to end', boost: 8, insertText: 'push(${1:item})$0', isSnippet: true },
@@ -412,6 +414,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'unshift', kind: 'function', detail: 'unshift(item) — Add to beginning', boost: 8, insertText: 'unshift(${1:item})$0', isSnippet: true },
       { label: 'empty', kind: 'function', detail: 'empty() — Check if array is empty', boost: 8, insertText: 'empty()$0', isSnippet: true },
       { label: 'map', kind: 'function', detail: 'map {|item| ...} — Transform elements; or map() << worker', boost: 8, insertText: 'map {|${1:item}|\n\treturn $0;\n}', isSnippet: true },
+      { label: 'filter', kind: 'function', detail: 'filter {|item| ...} — Keep elements whose block returns truthy; or filter() << worker', boost: 8, insertText: 'filter {|${1:item}|\n\treturn $0;\n}', isSnippet: true },
       { label: 'reduce', kind: 'function', detail: 'reduce(init) {|acc, item| ...} — Reduce; or reduce(init) << worker', boost: 8, insertText: 'reduce(${1:init}) {|${2:acc}, ${3:item}|\n\treturn $0;\n}', isSnippet: true },
       { label: 'mapSlice', kind: 'function', detail: 'mapSlice(length) — Sliding window slices', boost: 8, insertText: 'mapSlice(${1:length})$0', isSnippet: true },
       { label: 'slice', kind: 'function', detail: 'slice(start, end?) — Get sub-array', boost: 8, insertText: 'slice(${1:start})$0', isSnippet: true },
@@ -1091,7 +1094,7 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'ColorInstance': { lighten: 'ColorInstance', darken: 'ColorInstance', saturate: 'ColorInstance', desaturate: 'ColorInstance', alpha: 'ColorInstance', hueShift: 'ColorInstance', complement: 'ColorInstance', mix: 'ColorInstance', flatten: 'ColorInstance', analogous: 'array', triadic: 'array', tetradic: 'array', splitComplementary: 'array' },
   'Grid': { set: 'Grid', getPoint: 'Point', getRow: 'array', getCol: 'array', cells: 'array', fill: 'Grid', map: 'Grid' },
   'Point': { translate: 'Point', rotate: 'Point', lerp: 'Point', midpoint: 'Point', polarTranslate: 'Point' },
-  'array': { map: 'array', mapSlice: 'array', slice: 'array', reverse: 'array', sort: 'array' },
+  'array': { map: 'array', filter: 'array', mapSlice: 'array', slice: 'array', reverse: 'array', sort: 'array' },
   'string': { split: 'array', append: 'string', prepend: 'string', slice: 'string' },
   'PathBlock': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'PathBlock', offset: 'PathBlock', variableOffset: 'PathBlock', compoundVariableOffset: 'PathBlock', mirror: 'PathBlock', scale: 'PathBlock', rotateAtVertexIndex: 'PathBlock', subPath: 'PathBlock', project: 'ProjectedPath', chamfer: 'PathBlock', chamferAtVertex: 'PathBlock', fillet: 'PathBlock', filletAtVertex: 'PathBlock', ellipticalFillet: 'PathBlock', ellipticalFilletAtVertex: 'PathBlock', union: 'PathBlock', difference: 'PathBlock', intersection: 'PathBlock', xor: 'PathBlock', intersectionPoints: 'array', segment: 'PathBlock', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
   'VariableOffsetBuilder': { stop: 'VariableOffsetBuilder', startTangent: 'VariableOffsetBuilder', endTangent: 'VariableOffsetBuilder' },

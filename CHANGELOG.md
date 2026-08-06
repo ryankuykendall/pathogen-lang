@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-06 (arrays: .first / .last / .filter)
+
+### Added
+
+#### Core
+
+- **`.first` and `.last` array properties** — return the first/last element, or `null` when the array is empty (same contract as `.pop()`/`.shift()`), without mutating the array. The safe alternative to `list[0]` / `list[list.length - 1]`, which throw on empty arrays. Implemented as inline branches beside `.length` in both evaluators (deliberately *not* a `struct-properties.ts` descriptor, which would have silently enabled `let { first, last } = arr;` destructuring); completions/hover flow from `pathogen-api.ts`.
+- **`.filter {|item, index, arrayRef| ... }` array method** — returns a new array containing the elements whose callback returns a truthy value (`null`/`0`/`false` falsy; non-zero numbers, `true`, non-empty strings truthy — same rules as `if`). No `return` in the block yields `null`, so the element is dropped. Supports the `<<` worker form (`arr.filter() << pred`) via `CALLBACK_METHODS` — now nine callback builtins. Modeled on `.map` in both evaluators: per-index error wrapping (`Error in .filter() callback at index N`), discard-sink callback bodies, original array untouched. Type inference and inlay hints treat `filter` like `map` (element/index block params, array-preserving returns).
+- Known limitation (inherited from `.map`, flagged in review): a callback that pushes to the array being iterated visits the appended elements — iteration re-reads the live length. A follow-up change locks arrays against mutation during iteration.
+
+#### Documentation
+
+- `docs/syntax.md`: new `.first`/`.last` sections (with the `null`-element-vs-empty ambiguity note) and a `.filter` section styled after `.map` (three-example scaffold: item → index → arrayRef neighbor-reads), all examples verified against the evaluator. Multi-persona review fixes: the `<<` rule's "eight callback builtins" enumeration corrected to nine (two locations), the `## Null` intro now names `.first`/`.last` among null-on-empty sources, filter's truthiness rules stated inline with links to Null + Booleans, and the mutate-vs-copy note includes `.filter()`.
+
+#### Development
+
+- `scripts/debug-array-first-last-filter.ts` — puppeteer verification that `.filter`/`.first`/`.last` render correctly in the playground surface and the missing-block error reaches the error panel.
+- Tests: ~40 new across evaluator (filter semantics, truthiness, copy behavior), annotated parity (incl. `<<` worker form — added from review), errors (exact messages), lambdas (`filter() << f` ≡ trailing block), and completions (phantom-method guard updated). Full suite: 4634 passing.
+
 ## [Unreleased] - 2026-08-06 (glyph character classes: isSpace / isTab / isNewline / isMark / codePoint)
 
 ### Added
