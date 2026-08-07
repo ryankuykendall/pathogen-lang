@@ -145,84 +145,73 @@ async function processOnMainThread(bitmap: ImageBitmap): Promise<Record<number, 
 }
 
 /**
- * Render and upload the hero image: a single uncropped raster at the source viewBox
- * aspect ratio (aspect-fit to HERO_MAX_DIM). Used only by the workspace detail page,
- * which would otherwise fall back to the square-cropped thumbnail and clip non-square
- * artwork. Unlike the square crop, this preserves the full `define ViewBox(...)` shape.
+ * Serialize BOTH raster sources (square-crop thumbnail + full-aspect hero)
+ * from the live SVG element in one synchronous pass. Exported for tests.
+ *
+ * MUST stay synchronous end-to-end: callers on the workspace-switch path
+ * capture the outgoing workspace's render while its element is still
+ * populated — the preview pane is a singleton whose `#preview` node is
+ * emptied IN PLACE by `svg-preview-pane.clear()` when the next workspace
+ * initializes, so any read of the element after an await sees the next
+ * workspace's (or empty) content.
  */
-async function uploadHeroRender(
-  workspaceId: string,
+export function buildRenderSnapshots(
   svgElement: SVGElement,
   storeState: Record<string, unknown>,
-  adminToken?: string,
-): Promise<void> {
+  cropRegion?: { x: number; y: number; size: number },
+): { thumbSvgString: string; heroSvgString: string; canvasWidth: number; canvasHeight: number } {
   const canvasWidth = (storeState.width as number) || 200;
   const canvasHeight = (storeState.height as number) || 200;
 
-  // Aspect-fit to HERO_MAX_DIM, preserving ratio (never upscale beyond source units).
-  const scale = Math.min(1, HERO_MAX_DIM / Math.max(canvasWidth, canvasHeight));
-  const outW = Math.max(1, Math.round(canvasWidth * scale));
-  const outH = Math.max(1, Math.round(canvasHeight * scale));
+  // Square crop for the card thumbnails: explicit region or auto center-crop.
+  let cropX: number;
+  let cropY: number;
+  let cropSize: number;
+  if (cropRegion) {
+    cropX = cropRegion.x;
+    cropY = cropRegion.y;
+    cropSize = cropRegion.size;
+  } else {
+    cropSize = Math.min(canvasWidth, canvasHeight);
+    cropX = (canvasWidth - cropSize) / 2;
+    cropY = (canvasHeight - cropSize) / 2;
+  }
+  // Supersample: rasterize at up to 1:1 SVG-unit-to-pixel, capped at MAX_RASTER_SIZE.
+  const rasterSize = Math.max(1024, Math.min(Math.ceil(cropSize), MAX_RASTER_SIZE));
+  const thumbClone = createSvgSnapshot(svgElement, {
+    width: rasterSize,
+    height: rasterSize,
+    viewBox: `${cropX} ${cropY} ${cropSize} ${cropSize}`,
+  });
 
-  // Full viewBox (no crop) at the aspect-fit output size.
-  const clone = createSvgSnapshot(svgElement, {
-    width: outW,
-    height: outH,
+  // Hero: full viewBox (no crop), aspect-fit to HERO_MAX_DIM (never upscale
+  // beyond source units) — preserves non-square `define ViewBox(...)` shapes.
+  const scale = Math.min(1, HERO_MAX_DIM / Math.max(canvasWidth, canvasHeight));
+  const heroW = Math.max(1, Math.round(canvasWidth * scale));
+  const heroH = Math.max(1, Math.round(canvasHeight * scale));
+  const heroClone = createSvgSnapshot(svgElement, {
+    width: heroW,
+    height: heroH,
     viewBox: `0 0 ${canvasWidth} ${canvasHeight}`,
   });
-  const svgString = new XMLSerializer().serializeToString(clone);
-  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(svgBlob);
 
-  try {
-    const img: HTMLImageElement = await new Promise((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error('Failed to load hero SVG image'));
-      image.src = url;
-    });
-
-    // Vector → raster directly at target size, so no supersampling needed.
-    let blob: Blob;
-    if (typeof OffscreenCanvas !== 'undefined') {
-      const canvas = new OffscreenCanvas(outW, outH);
-      const ctx = canvas.getContext('2d')!;
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, outW, outH);
-      ctx.drawImage(img, 0, 0, outW, outH);
-      blob = await canvas.convertToBlob({ type: 'image/png' });
-    } else {
-      const canvas = document.createElement('canvas');
-      canvas.width = outW;
-      canvas.height = outH;
-      const ctx = canvas.getContext('2d')!;
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, outW, outH);
-      ctx.drawImage(img, 0, 0, outW, outH);
-      // Reject (rather than upload a null/garbage blob) so the best-effort caller
-      // logs a warning instead of silently PUTing an invalid hero.
-      blob = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob returned null'))), 'image/png'),
-      );
-    }
-
-    await thumbnailApi.uploadHero(workspaceId, blob, { adminToken });
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  const serializer = new XMLSerializer();
+  return {
+    thumbSvgString: serializer.serializeToString(thumbClone),
+    heroSvgString: serializer.serializeToString(heroClone),
+    canvasWidth,
+    canvasHeight,
+  };
 }
 
 /**
- * Hero render from a pre-built FULL-aspect SVG string. The admin "Regenerate"
- * path has no live <svg> element to clone (it works from a compiled string), so
- * it can't use uploadHeroRender. Without an uncropped hero, the detail page
- * falls back to the SQUARE 1024 thumbnail — which distorts/clips non-square
- * artwork. This rasterizes the full viewBox at aspect-fit HERO_MAX_DIM,
- * preserving the source ratio. Best-effort; callers ignore failure.
+ * Hero render from a pre-built FULL-aspect SVG string — the hero half of a
+ * buildRenderSnapshots capture, or the admin "Regenerate" path's compiled
+ * string (which has no live <svg> element at all). Without an uncropped hero,
+ * the detail page falls back to the SQUARE 1024 thumbnail — which
+ * distorts/clips non-square artwork. This rasterizes the full viewBox at
+ * aspect-fit HERO_MAX_DIM, preserving the source ratio. Best-effort; callers
+ * ignore failure.
  */
 async function uploadHeroFromSvgString(
   workspaceId: string,
@@ -311,6 +300,14 @@ async function generateThumbnail(
   _generating = true;
 
   try {
+    // Capture EVERYTHING that reads the live element or module tracking state
+    // synchronously, before the first await below. On the workspace-switch
+    // path the caller's element is emptied in place (previewPane.clear())
+    // and the tracking state is re-targeted at the next workspace
+    // (startAutoGeneration/setThumbnailContentHash) while this generation is
+    // still in flight — late reads would render the wrong workspace's
+    // content or stamp the wrong workspace's hash.
+    let snapshots: ReturnType<typeof buildRenderSnapshots> | null = null;
     let svgString: string;
 
     if (options?.svgString) {
@@ -318,38 +315,10 @@ async function generateThumbnail(
       // bypassing DOM clone/serialize which can produce namespace issues.
       svgString = options.svgString;
     } else {
-      // 1. Determine crop viewBox
-      const canvasWidth = (storeState.width as number) || 200;
-      const canvasHeight = (storeState.height as number) || 200;
-
-      let cropX: number;
-      let cropY: number;
-      let cropSize: number;
-      if (cropRegion) {
-        cropX = cropRegion.x;
-        cropY = cropRegion.y;
-        cropSize = cropRegion.size;
-      } else {
-        // Auto center-crop: square crop = min(width, height), centered
-        cropSize = Math.min(canvasWidth, canvasHeight);
-        cropX = (canvasWidth - cropSize) / 2;
-        cropY = (canvasHeight - cropSize) / 2;
-      }
-
-      // 2. Supersample: rasterize at up to 1:1 SVG-unit-to-pixel, capped at MAX_RASTER_SIZE.
-      const rasterSize = Math.max(1024, Math.min(Math.ceil(cropSize), MAX_RASTER_SIZE));
-
-      // 3. Clone SVG via shared snapshot utility
-      const clone = createSvgSnapshot(svgElement, {
-        width: rasterSize,
-        height: rasterSize,
-        viewBox: `${cropX} ${cropY} ${cropSize} ${cropSize}`,
-      });
-
-      // 4. Serialize SVG -> Blob -> object URL
-      const serializer = new XMLSerializer();
-      svgString = serializer.serializeToString(clone);
+      snapshots = buildRenderSnapshots(svgElement, storeState, cropRegion);
+      svgString = snapshots.thumbSvgString;
     }
+    const latestHashAtStart = _latestContentHash;
 
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
@@ -383,19 +352,33 @@ async function generateThumbnail(
       });
 
       // 8b. Hero: an uncropped, source-aspect-ratio render for the workspace detail
-      // page (so non-square art isn't clipped like the square card thumbnails). Skipped
+      // page (so non-square art isn't clipped like the square card thumbnails).
+      // Rendered from the string captured synchronously above — NEVER from the
+      // live element, which may already show the next workspace by now. Skipped
       // on the admin svgString path, which only has the pre-cropped square string.
       // Best-effort: a hero failure must not fail the (already-uploaded) thumbnails.
-      if (!options?.svgString) {
+      if (snapshots) {
         try {
-          await uploadHeroRender(workspaceId, svgElement, storeState, options?.adminToken);
+          await uploadHeroFromSvgString(
+            workspaceId,
+            snapshots.heroSvgString,
+            snapshots.canvasWidth,
+            snapshots.canvasHeight,
+            options?.adminToken,
+          );
         } catch (err) {
           console.warn('Hero render failed (thumbnails unaffected):', err);
         }
       }
 
-      // 9. Update tracking
-      _thumbnailContentHash = _latestContentHash;
+      // 9. Update tracking — per-generation, and only if no workspace switch
+      // happened mid-flight: stamping the CURRENT _latestContentHash here
+      // would mark the NEXT workspace's edits as already-thumbnailed (its
+      // thumbnail would then never regenerate), and edits typed during this
+      // generation must stay dirty.
+      if (_workspaceId === workspaceId) {
+        _thumbnailContentHash = latestHashAtStart;
+      }
 
       return result;
     } finally {

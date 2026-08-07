@@ -259,6 +259,12 @@ interface RecordedSave {
   at: number;
 }
 
+interface RecordedThumbnailPut {
+  wsId: string;
+  kind: string;
+  at: number;
+}
+
 let failures = 0;
 function check(label: string, ok: boolean): void {
   console.log(`${ok ? 'PASS' : 'FAIL'}: ${label}`);
@@ -280,6 +286,7 @@ const browser: Browser = await puppeteer.launch({
 });
 
 const saves: RecordedSave[] = [];
+const thumbnailPuts: RecordedThumbnailPut[] = [];
 
 async function newAppPage(): Promise<Page> {
   const page = await browser.newPage();
@@ -289,6 +296,12 @@ async function newAppPage(): Promise<Page> {
   page.on('pageerror', (err) => console.log('[pageerror]', err.message));
   page.on('request', (req) => {
     if (req.method() !== 'PUT') return;
+    const thumb = new RegExp(`^${DEV_API}/workspace/([^/?]+)/thumbnail(?:\\?|$)`).exec(req.url());
+    if (thumb) {
+      const kind = new URL(req.url()).searchParams.get('kind') ?? 'manual';
+      thumbnailPuts.push({ wsId: thumb[1], kind, at: Date.now() });
+      return;
+    }
     const m = new RegExp(`^${DEV_API}/workspace/([^/?]+)`).exec(req.url());
     if (!m) return;
     try {
@@ -301,6 +314,12 @@ async function newAppPage(): Promise<Page> {
   await page.evaluateOnNewDocument(
     (key: string, id: string) => {
       (window as unknown as { __name?: <T>(fn: T) => T }).__name = <T>(fn: T): T => fn;
+      // Record thumbnail-updated dispatches so scenarios can assert on them.
+      document.addEventListener('thumbnail-updated', (e) => {
+        const w = window as unknown as { __thumbnailEvents?: string[] };
+        const detail = (e as unknown as { detail?: { workspaceId?: string } }).detail;
+        (w.__thumbnailEvents ??= []).push(String(detail?.workspaceId ?? ''));
+      });
       try {
         localStorage.setItem(key, id);
       } catch {
@@ -542,6 +561,71 @@ try {
       '  [debug] all recorded saves to ws5A:',
       JSON.stringify(savesTo(ws5A, 0).map((s) => s.code.slice(0, 60))),
     );
+  }
+
+  // -------------------------------------------------------------------------
+  // Scenario 6 — in-app switch refreshes the OLD workspace's thumbnail
+  // -------------------------------------------------------------------------
+  // Leaving the workspace view generates the old workspace's thumbnail if its
+  // content changed; a workspace→workspace switch used to skip this entirely,
+  // leaving A's card thumbnail stale. Also backstops the cross-workspace hash
+  // stamp: A's generation completing after B loads must not mark B "clean"
+  // (which would suppress B's own thumbnail on its next leave).
+  console.log("\n--- scenario 6: switching refreshes the old workspace's thumbnail ---");
+  const ws6A = await createLocalWorkspace('e2e-thumb-A', CODE_A);
+  const ws6B = await createLocalWorkspace('e2e-thumb-B', CODE_B);
+  const s6Start = Date.now();
+  {
+    const page = await newAppPage();
+    await openWorkspace(page, ws6A, 'WORKSPACE-A');
+    await typeInEditor(page, '// thumb-edit-A\n');
+    await waitForEditorContains(page, 'thumb-edit-A');
+    // Let the compile settle so the preview holds A's rendered content.
+    await new Promise((r) => setTimeout(r, 1_000));
+    await navigateInApp(page, `/workspace/${ws6B}`);
+    await waitForEditorContains(page, 'WORKSPACE-B');
+    await waitForEditorReady(page);
+    // Type in B promptly — pre-fix, A's in-flight generation completing after
+    // this would stamp B's content hash as "already thumbnailed".
+    await typeInEditor(page, '// thumb-edit-B\n');
+    await waitForEditorContains(page, 'thumb-edit-B');
+    await new Promise((r) => setTimeout(r, OBSERVE_MS));
+
+    const thumbsA = thumbnailPuts.filter((t) => t.wsId === ws6A && t.at >= s6Start);
+    check(
+      'switch triggers an auto thumbnail upload for workspace A',
+      thumbsA.some((t) => t.kind === 'auto'),
+    );
+    check(
+      'switch triggers a hero upload for workspace A',
+      thumbsA.some((t) => t.kind === 'hero'),
+    );
+    const events = await page.evaluate(
+      () => (window as unknown as { __thumbnailEvents?: string[] }).__thumbnailEvents ?? [],
+    );
+    check('thumbnail-updated event fired for workspace A', events.includes(ws6A));
+
+    // Leave to the landing view: B was edited, so B's thumbnail must generate
+    // now — the regression backstop for the cross-workspace hash stamp.
+    await navigateInApp(page, '/workspaces');
+    await new Promise((r) => setTimeout(r, OBSERVE_MS));
+    const thumbsB = thumbnailPuts.filter((t) => t.wsId === ws6B && t.at >= s6Start);
+    check(
+      'leaving after the switch uploads workspace B thumbnail (no cross-workspace stamp)',
+      thumbsB.some((t) => t.kind === 'auto'),
+    );
+    await page.close();
+  }
+
+  // Global invariant across all scenarios: thumbnail uploads only ever
+  // target real workspaces this user owns — never `scratch`, a 404 id, or
+  // someone else's workspace (the ownership guard; pre-guard, leaving a
+  // ?state= visit PUT a thumbnail to the bogus id "scratch" and surfaced a
+  // spurious "Thumbnail not updated" error toast).
+  const foreignThumbPuts = thumbnailPuts.filter((t) => !createdWorkspaces.includes(t.wsId));
+  check('thumbnail uploads only target owned workspaces', foreignThumbPuts.length === 0);
+  if (failures > 0) {
+    console.log('  [debug] recorded thumbnail PUTs:', JSON.stringify(thumbnailPuts));
   }
 } finally {
   await browser.close();

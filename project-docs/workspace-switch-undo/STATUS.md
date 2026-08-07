@@ -94,7 +94,23 @@ destroying the workspace.
    `handleRouteChange` flush wouldn't fail them). Option: extract an
    `autosave.handoff()` (await-flush + stop) so the ordering lives in the
    tested unit, or add a workspace-view test with mocked services.
-5. **Switch-time thumbnail gap (pre-existing).** The leave-view branch runs
-   `thumbnailService.generateIfDirty(previousId, …)`; the switch branch does
-   not, so the previous workspace's thumbnail can stay stale after an in-app
-   switch.
+5. ~~**Switch-time thumbnail gap (pre-existing).**~~
+   **FIXED (2026-08-07, third commit).** The switch branch now refreshes the
+   outgoing workspace's thumbnail via a shared, ownership-guarded helper
+   (also used by leave/idle/beforeunload — kills the pre-existing 403 error
+   toast for non-owned/`?state=`/404 visits). Shipping this required fixing
+   two latent thumbnail-service defects the switch path would have tripped:
+   (a) the hero render re-cloned the LIVE preview element after an await —
+   on a switch it would have rasterized empty/next-workspace content over
+   the old hero; both raster sources are now serialized synchronously
+   (`buildRenderSnapshots`, unit-tested in
+   `tests/playground-thumbnail-capture.test.ts`) and the hero renders from
+   the captured string; (b) the completion stamp wrote the CURRENT global
+   content hash — a switch mid-generation would have marked the NEXT
+   workspace clean, suppressing its own thumbnail forever; the stamp is now
+   per-generation and skipped when a switch happened mid-flight.
+   Regression-tested by scenario 6 + a global owned-targets-only invariant
+   in `debug-workspace-switch-undo.ts`. Known remaining nits: the global
+   `_generating` mutex silently skips a second generation during rapid
+   switching (stays dirty, self-heals next opportunity), and thumbnail
+   tracking is still module-global rather than per-workspace.

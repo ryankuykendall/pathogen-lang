@@ -165,6 +165,9 @@ export class WorkspaceView extends HTMLElement {
       // Check if we need to load a different workspace
       if (!this._initialized || this._currentWorkspaceId !== workspaceId) {
         const isSwitch = this._initialized && this._currentWorkspaceId !== workspaceId;
+        // The old workspace's id is overwritten on the next line — capture it
+        // for the thumbnail refresh below.
+        const previousWorkspaceId = this._currentWorkspaceId;
         this._currentWorkspaceId = workspaceId;
         if (isSwitch) {
           // In-app workspace→workspace switch: persist the previous
@@ -176,6 +179,17 @@ export class WorkspaceView extends HTMLElement {
           // fails, the pending edit is dropped — same preexisting behavior
           // as leaving the workspace view.)
           autosave.flush();
+          // Refresh the outgoing workspace's thumbnail if its content
+          // changed this visit. Must be called synchronously here:
+          // generateIfDirty serializes BOTH raster sources (square crop +
+          // hero) before its first await, so the capture happens while the
+          // preview still shows the old workspace — initialize() empties the
+          // singleton preview node in place shortly after.
+          this._generateThumbnailFor(previousWorkspaceId);
+          // loadWorkspace() only re-arms auto-generation when the incoming
+          // workspace is owned — clear the outgoing workspace's idle timer
+          // and tracking explicitly so no stale state lingers otherwise.
+          thumbnailService.stopAutoGeneration();
         }
         // This element is a reused singleton — clear the previous workspace's
         // font warnings and dismissal memory so a stale banner can't show for
@@ -200,22 +214,7 @@ export class WorkspaceView extends HTMLElement {
         store.set('fontWarnings', []);
 
         // Generate thumbnail if content changed since last thumbnail
-        const wsId = this._currentWorkspaceId;
-        if (wsId) {
-          thumbnailService
-            .generateIfDirty(wsId, () => this.previewPane?.preview ?? null, store.getAll())
-            .then((result: unknown) => {
-              if (result) {
-                document.dispatchEvent(
-                  new CustomEvent('thumbnail-updated', {
-                    bubbles: true,
-                    composed: true,
-                    detail: { workspaceId: wsId },
-                  }),
-                );
-              }
-            });
-        }
+        this._generateThumbnailFor(this._currentWorkspaceId);
         thumbnailService.stopAutoGeneration();
 
         // Leaving tears down per-visit services (autosave stopped by the
@@ -231,6 +230,33 @@ export class WorkspaceView extends HTMLElement {
         }
       }
     }
+  }
+
+  /**
+   * Regenerate a workspace's thumbnail if its content changed this visit,
+   * and notify listeners (landing-view cards) on success. Owned workspaces
+   * only: for non-owned workspaces, `?state=` scratch docs, and the 404
+   * fallback the upload would just 403/404 and surface a spurious
+   * "Thumbnail not updated" error toast. At every call site the store still
+   * holds the target workspace's `workspaceOwnerId` (initialize() resets it
+   * later), so the guard reads current state.
+   */
+  private _generateThumbnailFor(wsId: string | null | undefined): void {
+    if (!wsId) return;
+    if (store.get('workspaceOwnerId') !== getUserId()) return;
+    thumbnailService
+      .generateIfDirty(wsId, () => this.previewPane?.preview ?? null, store.getAll())
+      .then((result: unknown) => {
+        if (result) {
+          document.dispatchEvent(
+            new CustomEvent('thumbnail-updated', {
+              bubbles: true,
+              composed: true,
+              detail: { workspaceId: wsId },
+            }),
+          );
+        }
+      });
   }
 
   get editorPane(): HTMLElement & {
@@ -752,11 +778,7 @@ export class WorkspaceView extends HTMLElement {
       if (store.get('currentView') !== 'workspace') return;
       const { workspaceId } = (e as CustomEvent<{ workspaceId: string }>).detail;
       if (workspaceId !== this._currentWorkspaceId) return;
-
-      const svgElement = this.previewPane?.preview ?? null;
-      if (svgElement) {
-        thumbnailService.generateIfDirty(workspaceId, () => svgElement, store.getAll());
-      }
+      this._generateThumbnailFor(workspaceId);
     };
     document.addEventListener('thumbnail-auto-generate', this._handleThumbnailAutoGenerate);
 
@@ -767,11 +789,7 @@ export class WorkspaceView extends HTMLElement {
       if (store.get('currentView') === 'workspace' && this._currentWorkspaceId) {
         const unsaved = autosave.hasUnsavedChanges();
         autosave.saveNow({ keepalive: true });
-        thumbnailService.generateIfDirty(
-          this._currentWorkspaceId,
-          () => this.previewPane?.preview ?? null,
-          store.getAll(),
-        );
+        this._generateThumbnailFor(this._currentWorkspaceId);
         if (unsaved) {
           // Native "Leave site? Changes you made may not be saved." prompt.
           e.preventDefault();

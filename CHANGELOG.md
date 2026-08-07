@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-07 (workspace switches refresh the old workspace's thumbnail)
+
+### Fixed
+
+#### Playground
+
+- **In-app workspace→workspace switches now refresh the outgoing workspace's thumbnail** — previously only leaving the workspace view (to the landing page etc.) regenerated a changed workspace's card thumbnail; switching directly to another workspace left it stale. The switch branch now captures the old workspace id before it's overwritten and runs the same generate-if-dirty path, plus dispatches `thumbnail-updated` so landing-view cards refresh, and explicitly stops the old workspace's auto-generation timer (it previously leaked when the incoming workspace wasn't owned).
+- **Hero renders are captured synchronously (blank-hero clobber fix)** — the hero image (uncropped render for the workspace detail page) was re-cloned from the **live** preview element *after* the thumbnail upload await. The preview pane is a singleton whose SVG node is emptied in place when the next workspace initializes, so on a switch the old workspace's hero would have been rasterized from empty/next-workspace content and silently overwritten. Both raster sources (square-crop thumbnail + full-aspect hero) are now serialized in one synchronous pass (`buildRenderSnapshots`, exported for tests) before any await; the hero rasterizes from the captured string via the existing `uploadHeroFromSvgString` (the now-redundant `uploadHeroRender` is removed).
+- **Thumbnail tracking is stamped per-generation and switch-guarded** — completion previously wrote the *current* content hash into the "already thumbnailed" tracking slot. Because tracking is module-global, a generation for workspace A completing after workspace B loaded would stamp **B's** hash, falsely marking B clean so its thumbnail never regenerated; edits typed *during* a generation were likewise marked clean. The hash is now captured at generation start and only stamped if no workspace switch happened mid-flight.
+- **Thumbnails are only generated for workspaces you own** — the navigate-away path ran generate-if-dirty unconditionally, so editing a `?state=` scratch doc or someone else's workspace produced a doomed upload (403/404) and a spurious "Thumbnail not updated" error toast (reproduced: leaving a share-link visit PUT a thumbnail to the literal id `scratch`). All four call sites (leave, switch, idle auto-generate, beforeunload) now share one ownership-guarded helper.
+
+#### Development
+
+- `scripts/debug-workspace-switch-undo.ts` gained scenario 6 (switch triggers auto + hero uploads for the old workspace, `thumbnail-updated` fires, and the next workspace's own thumbnail still generates — the cross-stamp backstop) and a global invariant that thumbnail uploads only ever target owned workspaces. Now 6 scenarios / 23 checks.
+- `tests/playground-thumbnail-capture.test.ts` — 6 jsdom tests pinning the synchronous-capture contract (snapshots survive the source element being cleared in place) and the crop/hero geometry (centered square crop, supersample floor, explicit crop regions, 1440px aspect-fit hero, grid-chrome stripping).
+
 ## [Unreleased] - 2026-08-07 (returning to a workspace re-arms autosave)
 
 ### Fixed
