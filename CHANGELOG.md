@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-07 (workspace switches: undo isolation + autosave flush)
+
+### Fixed
+
+#### Playground
+
+- **Undo can no longer resurrect the previous workspace's code (data loss)** — the code editor is a per-tab singleton, and switching workspaces used to load the new document via an ordinary (undoable) full-document transaction. In workspace B, one Cmd+Z past your own edits restored workspace A's entire text, which autosave then persisted into B — destroying it. Workspace loads now install a **fresh `EditorState`** (`_resetDocument` in `code-editor-pane.ts`): undo history starts empty on every switch, and since `setState` fires no update listener, programmatic loads no longer emit spurious `code-change`/`isModified`/autosave signals (callers set `store('code')` explicitly — all existing call sites already did). The error-highlight extension set and theme compartment are cached across resets so diagnostics and theme toggling keep working; behavior delta: loading a workspace no longer marks it modified, and auto-thumbnails now require an actual edit.
+- **Stale autosave can no longer write foreign code into the previous workspace** — an in-app workspace→workspace switch never flushed/stopped autosave, leaving a live debounce (and page-teardown keepalive) save bound to workspace A while the next route's code streamed in. On the `?state=` share-link, non-owned-workspace, and 404/defaultCode paths — which never re-init autosave — that stale save wrote the *new* page's code into A (reproduced: a share-link visit persisted the shared code into the previously open workspace on tab close). `handleRouteChange` now flushes A's pending edits at switch time (they were previously **dropped** if you switched within the 5s debounce window) and `initialize()` awaits the flush then stops autosave unconditionally before any new-workspace state exists.
+
+#### Development
+
+- `scripts/debug-workspace-switch-undo.ts` — puppeteer repro + verification (4 scenarios, 15 checks: undo bleed incl. server-side destruction via the teardown keepalive save, flush-on-switch, share-link and 404 stale-save vectors; `--slow` waits out the 30s autosave interval). Pre-fix it fails 10/15, reproducing the reported data loss exactly.
+- Tests: 6 new service-level tests (`tests/playground-workspace-switch-autosave.test.ts`) pinning the flush/stop/init ordering contract that workspace-view relies on. Full suite: 4665 passing.
+
 ## [Unreleased] - 2026-08-06 (arrays are read-only while being iterated)
 
 ### Changed

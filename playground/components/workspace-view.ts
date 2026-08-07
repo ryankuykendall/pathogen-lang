@@ -161,7 +161,19 @@ export class WorkspaceView extends HTMLElement {
     if (isActive) {
       // Check if we need to load a different workspace
       if (!this._initialized || this._currentWorkspaceId !== workspaceId) {
+        const isSwitch = this._initialized && this._currentWorkspaceId !== workspaceId;
         this._currentWorkspaceId = workspaceId;
+        if (isSwitch) {
+          // In-app workspace→workspace switch: persist the previous
+          // workspace's pending edits NOW, while autosave is still bound to
+          // it. flush() captures the workspace id and pending code
+          // synchronously before its first await, so firing-and-forgetting
+          // ahead of initialize() is safe — initialize() awaits the flush
+          // before touching autosave state. (If the flush's network save
+          // fails, the pending edit is dropped — same preexisting behavior
+          // as leaving the workspace view.)
+          autosave.flush();
+        }
         // This element is a reused singleton — clear the previous workspace's
         // font warnings and dismissal memory so a stale banner can't show for
         // (or stay suppressed in) the newly opened workspace.
@@ -275,12 +287,33 @@ export class WorkspaceView extends HTMLElement {
 
   async initialize(): Promise<void> {
     this._initialized = true;
-    this.previewPane.clear();
-    this.previewPane.showLoading();
+    // Capture the route identity BEFORE any await: if another navigation
+    // lands while we wait on the flush below, this call is superseded and
+    // must bail rather than resume against the newer route's params.
     const routeParams = (store.get('routeParams') || {}) as Record<string, string>;
     const routeQuery = (store.get('routeQuery') || {}) as Record<string, string>;
     // Parse workspace ID from slugId (format: slug--id or just id)
     const { id: workspaceId } = parseWorkspaceSlugId(routeParams.slugId);
+
+    // Let any in-flight flush of the PREVIOUS workspace finish before its
+    // autosave state is torn down (stop() during a flush would drop the
+    // pending save), then disarm autosave unconditionally. The stop() is the
+    // backstop for every branch below that never calls autosave.init() —
+    // `?state=` links, non-owned workspaces, and the 404/defaultCode
+    // fallback — so no stale debounce/keepalive save can ever write this
+    // route's code into the previous workspace.
+    await autosave.awaitPendingFlush();
+    autosave.stop();
+
+    // Superseded while awaiting (rapid A→B→C switch, or the user left the
+    // workspace view): the newer navigation's own initialize() owns the
+    // store from here — resuming would reset it underneath the winner.
+    if ((store.get('currentView') as string) !== 'workspace' || this._currentWorkspaceId !== workspaceId) {
+      return;
+    }
+
+    this.previewPane.clear();
+    this.previewPane.showLoading();
 
     // Reset workspace state
     store.update({
