@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-07 (returning to a workspace re-arms autosave)
+
+### Fixed
+
+#### Playground
+
+- **Leaving the workspace view and returning to the same workspace no longer disarms autosave for the rest of the session** — leaving flushes and stops autosave (correct), but returning to the *same* workspace skipped `initialize()` via the `_initialized && same-id` guard, so `autosave.init()` never re-fired: every edit made after returning was silently never saved (reproduced: zero save requests for the remainder of the session). The leave branch now marks the view uninitialized — but only when the visit actually armed autosave (owned workspaces), so `?state=` scratch visits and non-owned workspaces keep the non-destructive skip path and in-memory edits survive an away-and-back (review-caught: an unconditional re-init would have re-decoded the share link's original code over the user's tweaks). A return then re-runs the full `initialize()` path — re-arming autosave (at a fresh server rev), the multi-tab coordinator, and thumbnail auto-generation. `initialize()` also gained a generation stamp so a leave/return oscillation faster than the flush round-trip can't overlap two same-id initializations (review-caught), and a bail caused by leaving mid-load marks the view uninitialized so the next return recovers instead of resuming half-loaded. Side benefit: returning re-fetches the workspace, so edits saved from another tab meanwhile are picked up instead of resuming a stale in-memory document (which previously guaranteed a 409 conflict on the next save). Note: per-visit undo semantics apply — returning starts a fresh visit with fresh undo history, consistent with the workspace-switch isolation fix below.
+
+#### Development
+
+- `scripts/debug-workspace-switch-undo.ts` gained scenario 5 (away-and-back re-arms autosave — pre-fix: the after-return edit produced zero save requests and was lost; exactly-once save assertion; `?state=` scratch edits survive leave-and-return). Now 5 scenarios / 19 checks.
+
 ## [Unreleased] - 2026-08-07 (workspace switches: undo isolation + autosave flush)
 
 ### Fixed

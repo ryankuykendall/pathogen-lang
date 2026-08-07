@@ -60,13 +60,26 @@ destroying the workspace.
 
 ## Deferred follow-ups (from pre-commit code review)
 
-1. **Away-and-back disarms autosave permanently (pre-existing).** Navigating
-   workspace → landing/preferences → back to the *same* workspace never
-   re-runs `initialize()` (`!this._initialized || _currentWorkspaceId !==
-   workspaceId` guard), so `autosave.init()` never re-fires after the
-   leave-view `flush()` stopped it — autosave stays disarmed for the rest of
-   the session. Same failure class as this fix; predates it. Needs a
-   re-init (or re-arm) on the returning branch.
+1. ~~**Away-and-back disarms autosave permanently (pre-existing).**~~
+   **FIXED (2026-08-07, second commit).** Leaving the workspace view now
+   marks the view uninitialized — gated on the visit having actually armed
+   autosave, so `?state=` scratch visits and non-owned workspaces keep the
+   non-destructive skip path (review-caught: unconditional re-init would
+   re-decode a share link's original code over in-memory edits). Returning
+   re-runs `initialize()` → `loadWorkspace()` → `autosave.init()` at a fresh
+   server rev (also re-arms tabCoordinator + thumbnail auto-gen, and picks
+   up remote edits instead of resuming a stale doc that would 409).
+   `initialize()` gained a generation stamp (review-caught): a leave/return
+   oscillation faster than the flush round-trip can't overlap two same-id
+   initializations, and a bail caused by leaving mid-load marks the view
+   uninitialized so the next return recovers rather than resuming
+   half-loaded with autosave disarmed. Regression-tested by scenario 5 of
+   `debug-workspace-switch-undo.ts` (pre-fix: the after-return edit produced
+   zero save requests; also asserts exactly-once save and scratch-edit
+   survival). Known trade-offs, consistent with per-visit semantics: undo
+   history resets on return, and if the leave-time flush failed (offline),
+   the return re-fetch shows the server's (older) code rather than the
+   unsaved local doc — same window as follow-up 2's failure class.
 2. **Keystroke window during the flush await.** Between the switch-time
    `flush()` and the doc swap, the editor still accepts input for the old
    workspace; an edit landing exactly in the flush's network round-trip is

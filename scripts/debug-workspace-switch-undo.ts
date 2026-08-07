@@ -480,6 +480,69 @@ try {
       JSON.stringify(savesTo(ws4A, 0).map((s) => s.code.slice(0, 60))),
     );
   }
+
+  // -------------------------------------------------------------------------
+  // Scenario 5 — leaving the workspace view and returning re-arms autosave
+  // -------------------------------------------------------------------------
+  // Leaving flushes AND stops autosave; returning to the SAME workspace used
+  // to skip initialize() entirely (the `_initialized && same id` guard), so
+  // autosave.init() never re-fired — every edit after returning was silently
+  // never saved for the rest of the session.
+  console.log('\n--- scenario 5: away-and-back to the same workspace re-arms autosave ---');
+  const ws5A = await createLocalWorkspace('e2e-return-A', CODE_A);
+  const s5Start = Date.now();
+  {
+    const page = await newAppPage();
+    await openWorkspace(page, ws5A, 'WORKSPACE-A');
+    // Leave to the landing view and come back — all in-app, same tab.
+    await navigateInApp(page, '/workspaces');
+    await new Promise((r) => setTimeout(r, 1_000));
+    await navigateInApp(page, `/workspace/${ws5A}`);
+    await waitForEditorContains(page, 'WORKSPACE-A');
+    await waitForEditorReady(page);
+    // Edit after returning, then leave again: the leave-view flush must
+    // persist it (it force-saves past MIN_INTERVAL). With autosave disarmed,
+    // this flush is a silent no-op and the edit is lost.
+    await typeInEditor(page, '// after-return-edit\n');
+    await waitForEditorContains(page, 'after-return-edit');
+    await navigateInApp(page, '/workspaces');
+    await new Promise((r) => setTimeout(r, 3_000));
+    const savedAfterReturn = savesTo(ws5A, s5Start).filter((s) => s.code.includes('after-return-edit'));
+    check('edit made after returning to the workspace is persisted', savedAfterReturn.length >= 1);
+    check('after-return edit is saved exactly once', savedAfterReturn.length === 1);
+
+    // Regression guard for the other half of the contract: a `?state=`
+    // scratch visit never arms autosave, so leaving and returning must NOT
+    // force a re-initialize (which would re-decode the URL's original code
+    // and discard the user's in-memory edits).
+    await navigateInApp(page, `/workspace/scratch?state=${encodeState(SHARED_CODE)}`);
+    await waitForEditorContains(page, 'SHARED-LINK');
+    await waitForEditorReady(page);
+    await typeInEditor(page, '// scratch-tweak\n');
+    await waitForEditorContains(page, 'scratch-tweak');
+    await navigateInApp(page, '/workspaces');
+    await new Promise((r) => setTimeout(r, 500));
+    await navigateInApp(page, `/workspace/scratch?state=${encodeState(SHARED_CODE)}`);
+    await new Promise((r) => setTimeout(r, 1_500));
+    const scratchDoc = await readEditorCode(page);
+    check(
+      'in-memory edits to a ?state= scratch doc survive leaving and returning',
+      scratchDoc?.includes('scratch-tweak') === true,
+    );
+    await page.close();
+  }
+  const persisted5A = await fetchWorkspaceCode(ws5A);
+  check(
+    'workspace A server-side code contains the after-return edit',
+    persisted5A?.includes('after-return-edit') === true,
+  );
+  if (persisted5A?.includes('after-return-edit') !== true) {
+    console.log('  [debug] ws5A server code:', JSON.stringify(persisted5A?.slice(0, 200) ?? null));
+    console.log(
+      '  [debug] all recorded saves to ws5A:',
+      JSON.stringify(savesTo(ws5A, 0).map((s) => s.code.slice(0, 60))),
+    );
+  }
 } finally {
   await browser.close();
   for (const id of createdWorkspaces) await deleteLocalWorkspace(id);

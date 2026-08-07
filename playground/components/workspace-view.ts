@@ -39,6 +39,9 @@ export class WorkspaceView extends HTMLElement {
 
   private _initialized = false;
 
+  // Monotonic stamp for initialize() calls — see the generation check there.
+  private _initGeneration = 0;
+
   private _routeUnsubscribe: (() => void) | null = null;
 
   private _loadingWorkspace = false;
@@ -184,6 +187,13 @@ export class WorkspaceView extends HTMLElement {
     } else {
       // Flush pending saves when leaving workspace view
       if (this._initialized) {
+        // Capture BEFORE flush(): its async teardown clears this state. Only
+        // a visit that actually armed autosave needs a forced re-initialize
+        // on return (see below) — `?state=` scratch visits and non-owned
+        // workspaces never arm it, and re-initializing those on return would
+        // discard the user's in-memory edits (the `?state=` branch re-decodes
+        // the URL's original code).
+        const hadArmedAutosave = autosave.isEnabled && autosave.workspaceId === this._currentWorkspaceId;
         autosave.flush();
         tabCoordinator.close();
         store.set('multiTabWarning', false);
@@ -207,6 +217,18 @@ export class WorkspaceView extends HTMLElement {
             });
         }
         thumbnailService.stopAutoGeneration();
+
+        // Leaving tears down per-visit services (autosave stopped by the
+        // flush, tab coordinator closed, thumbnail auto-gen stopped), so a
+        // return — even to the SAME workspace — must run initialize() again
+        // to re-arm them. Without this, coming back skipped initialize()
+        // via the same-id guard above and autosave stayed disarmed for the
+        // rest of the session: every edit after returning was silently
+        // never saved. Re-initializing also re-fetches the workspace, so a
+        // return picks up changes saved from another tab at a fresh rev.
+        if (hadArmedAutosave) {
+          this._initialized = false;
+        }
       }
     }
   }
@@ -287,6 +309,11 @@ export class WorkspaceView extends HTMLElement {
 
   async initialize(): Promise<void> {
     this._initialized = true;
+    // Generation stamp: distinguishes THIS call from any initialize() that
+    // starts while we're suspended below — including one for the SAME
+    // workspace id (leave/return oscillation), which the route-identity
+    // check alone can't tell apart.
+    const generation = ++this._initGeneration;
     // Capture the route identity BEFORE any await: if another navigation
     // lands while we wait on the flush below, this call is superseded and
     // must bail rather than resume against the newer route's params.
@@ -305,10 +332,18 @@ export class WorkspaceView extends HTMLElement {
     await autosave.awaitPendingFlush();
     autosave.stop();
 
-    // Superseded while awaiting (rapid A→B→C switch, or the user left the
-    // workspace view): the newer navigation's own initialize() owns the
-    // store from here — resuming would reset it underneath the winner.
+    // A newer initialize() started while we awaited (rapid switching or a
+    // leave/return oscillation): it owns the store from here — resuming
+    // would reset it underneath the winner.
+    if (generation !== this._initGeneration) {
+      return;
+    }
+    // The user left the workspace view (or the route moved on) while we
+    // awaited, and no newer initialize() has run. Mark the view
+    // uninitialized so the next return re-runs the full path instead of
+    // resuming a half-loaded visit with autosave disarmed.
     if ((store.get('currentView') as string) !== 'workspace' || this._currentWorkspaceId !== workspaceId) {
+      this._initialized = false;
       return;
     }
 
