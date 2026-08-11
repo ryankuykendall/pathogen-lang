@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-11 (voice-and-audience writing standard, blog series grouping)
+
+### Added
+
+#### Documentation
+
+- **`website/guidelines/voice-and-audience.md` — the canonical audience/voice standard for user-facing writing** (docs, blog, website copy; **new writing only** — existing pages are not retroactively rewritten). Generalizes the stdlib-primers positioning: written for people who build things with code — working developers, designers who code, creative coders — with no formal CS background or deep mathematical expertise assumed. Four voice principles (physical-object mental models, jargon translated on first use, examples laddered simple → complex, gotchas stated early), a short-form/UI-copy section pinning canonical audience phrasings so surfaces don't drift, the Prerequisites-callout convention, an adjacency caveat for tonal seams next to older content, and a review checklist. Wired into `docs/CLAUDE.md`, `website/CLAUDE.md`, and `website/blog/CLAUDE.md` (whose shared-guideline link lists were also de-drifted), the agentic-review personas (PM audience-fit + ID voice-alignment focus areas, a new **change scope** prerequisite so voice review can target new/changed text only, and a prose-only carve-out for the PNG-preview requirement), the content-reviewer agent, and the `new-blog-post.ts` scaffold (Prerequisites stub in an HTML comment + a `build-blog.ts` warning on leftover scaffold text).
+- **Blog index series grouping** — posts carrying `series`/`seriesPart` frontmatter (plus `seriesDescription` on part 1) render as one labeled series section on the blog index: eyebrow with part count, `aria-labelledby` section header, parts ascending as `h3` cards under the series `h2`. Implemented in parallel on the static index (`build-blog.ts`) and the SPA view (`blog-view.ts`); grouping is by series key across the whole date-sorted index, so a post dated between two parts can't split the section. The seven stdlib primers are the first series.
+
+### Changed
+
+#### Documentation
+
+- **Website copy now names the audience** per the new standard: homepage lede/meta/JSON-LD gained "made for anyone who builds things with code"; blog index subtitle is now "Tutorials, deep-dives, and updates about pathogen-lang — written in plain language for people who build things with code"; docs meta descriptions gained plain-language framing; /explore and /featured subtitles and both of their `<meta name="description">` tags were rewritten; and the default title fallback no longer leaks the internal repo name ("SVG Path Extended") into title tags.
+
+### Development
+
+- `project-docs/writing-voice/` — implementation plan, the 4-persona agentic-review synthesis with per-finding dispositions (all 7 must-fix findings applied in-session), and the deferred-opportunities list. Most urgent deferral: the homepage hero code sample now sits directly under a lede promising approachability while opening with raw OKLCH triples and radians.
+
 ## [Unreleased] - 2026-08-07 (workspace switches refresh the old workspace's thumbnail)
 
 ### Fixed
