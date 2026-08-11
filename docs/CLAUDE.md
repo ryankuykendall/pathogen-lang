@@ -27,7 +27,9 @@ This directory is **user-facing developer documentation**. Every file here is pu
 
 The following shared guidelines apply to documentation content:
 
+- [Voice and Audience](../website/guidelines/voice-and-audience.md) — Audience definition and voice principles for all user-facing writing (applies to new writing only)
 - [Code Example Guidelines](../website/guidelines/code-example-guidelines.md) — Standards for all embedded code examples
+- [Example Design System](../website/guidelines/example-design-system.md) — Token-level design system (colors, typography, spacing, annotation patterns) for every example surface
 - [Schematic and Diagram Checklist](../website/guidelines/schematic-and-diagram-checklist-plus-antipatterns.md) — Review checklist and anti-patterns for diagrams
 - [Agentic Review Process](../website/guidelines/agentic-review.md) — Multi-persona review process (mandatory for all published content including documentation)
 - [Text Collision Debugging](../website/guidelines/text-collision-debugging.md) — Rules for diagnosing and preventing text-vs-element collisions in diagrams

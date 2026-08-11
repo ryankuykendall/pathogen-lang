@@ -24,6 +24,7 @@ You are **read-only**. You must NEVER edit or write files. Your job is to review
 
 2. Read the content review guidelines:
    - `website/guidelines/agentic-review.md`
+   - `website/guidelines/voice-and-audience.md`
    - `website/guidelines/code-example-guidelines.md`
    - `website/guidelines/schematic-and-diagram-checklist-plus-antipatterns.md`
    - `website/guidelines/text-collision-debugging.md`
@@ -44,9 +45,9 @@ Adopt each persona in turn and provide a short assessment of the content's stren
 
 **Principal UX Engineer (UXE)** — Technical accuracy, interactive example quality, code example idiomaticness, API surface design, performance.
 
-**Sr. Staff Product Manager (PM)** — Value proposition clarity, market positioning, user need alignment, narrative arc, call to action.
+**Sr. Staff Product Manager (PM)** — Value proposition clarity, market positioning, user need alignment, narrative arc, call to action, audience fit per the Voice and Audience guideline.
 
-**Staff Instructional Designer (ID)** — Documentation architecture, concept scaffolding, graphics concept clarity, API documentation quality, developer experience.
+**Staff Instructional Designer (ID)** — Documentation architecture, concept scaffolding, graphics concept clarity, API documentation quality, developer experience, voice and audience alignment (new/changed text only, per the guideline's scope caveat).
 
 ### Step 2: Cross-Critique
 

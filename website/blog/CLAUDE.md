@@ -17,6 +17,10 @@ title: "Post Title"
 slug: post-slug
 date: 2026-01-15
 description: "Optional description shown in blog index"
+# Optional — posts in a multi-part series (see Multi-Part Series below):
+# series: "Series Name"
+# seriesPart: 1
+# seriesDescription: "Shown on the blog index's series section (part 1 only)"
 ---
 ```
 
@@ -24,6 +28,7 @@ The `slug` must match the filename (without `.md`).
 
 ## Content Guidelines
 
+- Open posts that assume prior material with a `> **Prerequisites:** …` blockquote naming assumed knowledge, with links — per [Voice and Audience](../guidelines/voice-and-audience.md)
 - Use proper heading hierarchy (h1 title auto-added, start content at h2)
 - Use `<code>` for inline code, fenced code blocks with language tags
 - Supported syntax highlighting languages: javascript/js, bash/shell, json, html/xml, toml
@@ -122,7 +127,7 @@ The end-to-end process for creating, reviewing, and publishing blog posts:
 
 ### 1. Synopsis
 
-Author and review with the user a ~250-word synopsis for each blog post, including the title. This sets the scope, audience, and goals before any code or prose is written.
+Author and review with the user a ~250-word synopsis for each blog post, including the title. This sets the scope, audience, and goals before any code or prose is written. The default audience and voice come from [Voice and Audience](../guidelines/voice-and-audience.md) — the synopsis may narrow the audience for a given post but must not contradict it.
 
 ### 2. Code Examples
 
@@ -182,11 +187,15 @@ When publishing a multi-part blog series:
 1. **Different dates** — Posts should be published on different days to correctly preserve their desired order.
 2. **Series TOC** — Posts should include a table of contents at the top showing each entry in the series and where the current post is ordered.
 3. **Part subtitle** — Posts in a series should include a subtitle worded something like "Part N in our series on [topic or feature area]".
+4. **Series frontmatter** — Every post in a series carries `series: "Series Name"` and `seriesPart: N` in its frontmatter; part 1 additionally carries `seriesDescription: "…"`. The blog index uses these keys to group the series into a single labeled section with parts listed in order.
 
 ## Shared Content Guidelines
 
 The following shared guidelines apply to blog content:
 
+- [Voice and Audience](../guidelines/voice-and-audience.md) — Audience definition and voice principles for all user-facing writing (applies to new writing only)
 - [Code Example Guidelines](../guidelines/code-example-guidelines.md) — Standards for all embedded code examples
+- [Example Design System](../guidelines/example-design-system.md) — Token-level design system (colors, typography, spacing, annotation patterns) for every example surface
 - [Schematic and Diagram Checklist](../guidelines/schematic-and-diagram-checklist-plus-antipatterns.md) — Review checklist and anti-patterns for diagrams
 - [Agentic Review Process](../guidelines/agentic-review.md) — Multi-persona review process for published content
+- [Text Collision Debugging](../guidelines/text-collision-debugging.md) — Rules for diagnosing and preventing text-vs-element collisions in diagrams

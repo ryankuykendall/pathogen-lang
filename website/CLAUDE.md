@@ -82,6 +82,7 @@ Blog authoring pipeline and playbook → see [`website/blog/CLAUDE.md`](blog/CLA
 
 Standards that apply across blog posts, documentation, and tutorials:
 
+- [Voice and Audience](guidelines/voice-and-audience.md) — Audience definition and voice principles for all user-facing writing (applies to new writing only)
 - [Code Example Guidelines](guidelines/code-example-guidelines.md) — Standards for all embedded code examples
 - [Example Design System](guidelines/example-design-system.md) — Token-level design system (colors, typography, spacing, annotation patterns) for every example surface
 - [Schematic and Diagram Checklist](guidelines/schematic-and-diagram-checklist-plus-antipatterns.md) — Review checklist and anti-patterns for diagrams

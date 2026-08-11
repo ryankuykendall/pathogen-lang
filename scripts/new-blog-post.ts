@@ -82,6 +82,12 @@ description: "${description}"
 
 # ${title}
 
+<!-- Prerequisites callout: name what the reader should already know, with
+     links to earlier posts or docs pages. See
+     website/guidelines/voice-and-audience.md. Delete the callout (and this
+     comment) only if the post is truly standalone. -->
+> **Prerequisites:**
+
 `;
 
       // Write file
@@ -100,6 +106,7 @@ description: "${description}"
       await fs.writeFile(filepath, frontmatter);
 
       console.log(`\nCreated: website/blog/${filename}`);
+      console.log('\nBefore you write: read website/guidelines/voice-and-audience.md');
       console.log('\nNext steps:');
       console.log(`  1. Edit website/blog/${filename}`);
       console.log('  2. Run: npm run build:blog');
