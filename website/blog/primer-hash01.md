@@ -3,6 +3,9 @@ title: "hash01: A Random Number That Never Changes Its Mind"
 slug: primer-hash01
 date: 2026-08-04
 description: "First in a seven-part tour of Pathogen's deterministic stdlib: hash01 gives every whole-number label a random-looking value that is really a lookup — same label, same answer, on every machine, forever. Scatter, jitter, and texture you can ship."
+series: "Stdlib Primers"
+seriesPart: 1
+seriesDescription: "Seven short guides to the functions behind Pathogen's repeatable randomness — random-looking values that never change between runs — and the smooth curves that shape them. Each starts from a bare picture of one function and climbs to a finished composition you could ship."
 ---
 
 *Part 1 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.*

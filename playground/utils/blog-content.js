@@ -6,43 +6,58 @@ export const blogIndex = [
     "slug": "primer-noise2",
     "title": "noise2: A Weather Map of Smooth Randomness",
     "date": "2026-08-10",
-    "description": "The stdlib primers finale: noise2 spreads smooth randomness across a surface — fog, terrain, warped grids, and the trick that makes a whole family of strokes flow as one. The series' three glows, compared."
+    "description": "The stdlib primers finale: noise2 spreads smooth randomness across a surface — fog, terrain, warped grids, and the trick that makes a whole family of strokes flow as one. The series' three glows, compared.",
+    "series": "Stdlib Primers",
+    "seriesPart": 7
   },
   {
     "slug": "primer-noise",
     "title": "noise: Randomness with a Smooth Ride",
     "date": "2026-08-09",
-    "description": "Part 6 of the stdlib primers: hash01 rolls dice; noise draws the smooth curve through the rolls. Pins and a glide, one frequency knob, and randomness that neighbors agree on — texture instead of jitter."
+    "description": "Part 6 of the stdlib primers: hash01 rolls dice; noise draws the smooth curve through the rolls. Pins and a glide, one frequency knob, and randomness that neighbors agree on — texture instead of jitter.",
+    "series": "Stdlib Primers",
+    "seriesPart": 6
   },
   {
     "slug": "primer-bump",
     "title": "bump: A Hill You Can Put Anywhere",
     "date": "2026-08-08",
-    "description": "Part 5 of the stdlib primers: bump is one smooth hill — exactly 1 at the center you pick, exactly 0 at the spread you pick, flat everywhere it matters. Hills sum into spotlights, mountains, and the width envelopes behind the blog's glow strokes."
+    "description": "Part 5 of the stdlib primers: bump is one smooth hill — exactly 1 at the center you pick, exactly 0 at the spread you pick, flat everywhere it matters. Hills sum into spotlights, mountains, and the width envelopes behind the blog's glow strokes.",
+    "series": "Stdlib Primers",
+    "seriesPart": 5
   },
   {
     "slug": "primer-smoothstep",
     "title": "smoothstep: The S-Curve That Turns a Cliff into a Ramp",
     "date": "2026-08-07",
-    "description": "Part 4 of the stdlib primers: smoothstep is a dimmer between two markers — 0 before, 1 after, a corner-free glide in between. Fades, plateaus, tapered stroke tips, and a dusk seascape with no gradients."
+    "description": "Part 4 of the stdlib primers: smoothstep is a dimmer between two markers — 0 before, 1 after, a corner-free glide in between. Fades, plateaus, tapered stroke tips, and a dusk seascape with no gradients.",
+    "series": "Stdlib Primers",
+    "seriesPart": 4
   },
   {
     "slug": "primer-hashrange",
     "title": "hashRange: randomRange with a Memory",
     "date": "2026-08-06",
-    "description": "Part 3 of the stdlib primers: hashRange(i, min, max) is the deterministic drop-in for randomRange — put an index in front and the pick keeps its word forever. Ranges become the design's tuning panel."
+    "description": "Part 3 of the stdlib primers: hashRange(i, min, max) is the deterministic drop-in for randomRange — put an index in front and the pick keeps its word forever. Ranges become the design's tuning panel.",
+    "series": "Stdlib Primers",
+    "seriesPart": 3
   },
   {
     "slug": "primer-hash11",
     "title": "hash11: The Same Dice, Rolled Between −1 and 1",
     "date": "2026-08-05",
-    "description": "Part 2 of the stdlib primers: hash11 is hash01's twin for nudges — signed, deterministic jitter in [−1, 1). Baseline wobble, tilt, and the ±20% idiom that textures the blog's glow strokes."
+    "description": "Part 2 of the stdlib primers: hash11 is hash01's twin for nudges — signed, deterministic jitter in [−1, 1). Baseline wobble, tilt, and the ±20% idiom that textures the blog's glow strokes.",
+    "series": "Stdlib Primers",
+    "seriesPart": 2
   },
   {
     "slug": "primer-hash01",
     "title": "hash01: A Random Number That Never Changes Its Mind",
     "date": "2026-08-04",
-    "description": "First in a seven-part tour of Pathogen's deterministic stdlib: hash01 gives every whole-number label a random-looking value that is really a lookup — same label, same answer, on every machine, forever. Scatter, jitter, and texture you can ship."
+    "description": "First in a seven-part tour of Pathogen's deterministic stdlib: hash01 gives every whole-number label a random-looking value that is really a lookup — same label, same answer, on every machine, forever. Scatter, jitter, and texture you can ship.",
+    "series": "Stdlib Primers",
+    "seriesPart": 1,
+    "seriesDescription": "Seven short guides to the functions behind Pathogen's repeatable randomness — random-looking values that never change between runs — and the smooth curves that shape them. Each starts from a bare picture of one function and climbs to a finished composition you could ship."
   },
   {
     "slug": "the-reliable-line",

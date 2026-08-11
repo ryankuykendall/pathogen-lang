@@ -3,6 +3,8 @@ title: "bump: A Hill You Can Put Anywhere"
 slug: primer-bump
 date: 2026-08-08
 description: "Part 5 of the stdlib primers: bump is one smooth hill — exactly 1 at the center you pick, exactly 0 at the spread you pick, flat everywhere it matters. Hills sum into spotlights, mountains, and the width envelopes behind the blog's glow strokes."
+series: "Stdlib Primers"
+seriesPart: 5
 ---
 
 *Part 5 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.*

@@ -3,6 +3,8 @@ title: "noise2: A Weather Map of Smooth Randomness"
 slug: primer-noise2
 date: 2026-08-10
 description: "The stdlib primers finale: noise2 spreads smooth randomness across a surface — fog, terrain, warped grids, and the trick that makes a whole family of strokes flow as one. The series' three glows, compared."
+series: "Stdlib Primers"
+seriesPart: 7
 ---
 
 *Part 7 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.*

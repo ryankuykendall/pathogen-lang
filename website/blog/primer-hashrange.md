@@ -3,6 +3,8 @@ title: "hashRange: randomRange with a Memory"
 slug: primer-hashrange
 date: 2026-08-06
 description: "Part 3 of the stdlib primers: hashRange(i, min, max) is the deterministic drop-in for randomRange — put an index in front and the pick keeps its word forever. Ranges become the design's tuning panel."
+series: "Stdlib Primers"
+seriesPart: 3
 ---
 
 *Part 3 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.*

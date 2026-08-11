@@ -73,7 +73,7 @@ function renderPage({
   headExtra?: string;
   currentUser?: SsrUser | null;
 }): string {
-  const fullTitle = title ? `${title} — Pathogen Studio` : 'Pathogen Studio — SVG Path Extended Playground';
+  const fullTitle = title ? `${title} — Pathogen Studio` : 'Pathogen Studio — a typed, expression-first language for SVG paths';
   const desc =
     description ||
     'A visual playground for pathogen-lang — variables, expressions, control flow, functions, and more for SVG paths.';
@@ -204,7 +204,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
 
   const content = `
     <h1>Explore Public Workspaces</h1>
-    <p class="explore-subtitle">Discover what others are creating with pathogen-lang</p>
+    <p class="explore-subtitle">See what developers, designers, and creative coders are making with pathogen-lang</p>
     ${cardsHtml}
     ${paginationHtml}
   `;
@@ -214,7 +214,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "name": "Explore Public Workspaces",
-    "description": "Browse public workspaces created with pathogen-lang",
+    "description": "Browse public workspaces made by developers, designers, and creative coders using pathogen-lang",
     "url": "https://pathogen.studio/explore",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
@@ -268,7 +268,7 @@ async function renderExplorePage(request: Request, env: Env, url: URL): Promise<
 
   const html = renderPage({
     title: 'Explore',
-    description: 'Browse public workspaces created with pathogen-lang',
+    description: 'Browse public workspaces made by developers, designers, and creative coders using pathogen-lang',
     path: '/explore',
     content,
     headExtra,
@@ -959,7 +959,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
 
   const content = `
     <h1>Featured Workspaces</h1>
-    <p class="featured-subtitle">Hand-picked examples showcasing what's possible with pathogen-lang</p>
+    <p class="featured-subtitle">Hand-picked examples of what a few lines of Pathogen can draw — from first shapes to finished compositions</p>
     ${cardsHtml}
   `;
 
@@ -968,7 +968,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "name": "Featured Workspaces",
-    "description": "Hand-picked pathogen-lang workspace showcases",
+    "description": "Hand-picked pathogen-lang showcases — from first shapes to finished compositions",
     "url": "https://pathogen.studio/featured",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
@@ -1010,7 +1010,7 @@ async function renderFeaturedPage(request: Request, env: Env, _url: URL): Promis
 
   const html = renderPage({
     title: 'Featured',
-    description: 'Hand-picked pathogen-lang workspace showcases',
+    description: 'Hand-picked pathogen-lang showcases — from first shapes to finished compositions',
     path: '/featured',
     content,
     headExtra,
@@ -1161,7 +1161,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
             </span>
           </p>
           <h1>From a one-liner to a thousand-line <em>composition.</em></h1>
-          <p class="lede">Pathogen Studio is a typed, expression-first language for SVG paths. Compile from the CLI, the playground, or your editor — get the same path output every time.</p>
+          <p class="lede">Pathogen Studio is a typed, expression-first language for SVG paths, made for anyone who builds things with code. Compile from the CLI, the playground, or your editor — get the same path output every time.</p>
           <div class="dev-cta-cluster">
             <a class="cta-primary" href="/workspace/new">
               <span>Create new workspace</span>
@@ -1231,7 +1231,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Pathogen Studio",
-    "description": "A typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by pathogen-lang.",
+    "description": "A typed, expression-first language for SVG paths, made for anyone who builds things with code. CLI, playground, and editor integration powered by pathogen-lang.",
     "url": "https://pathogen.studio/",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
@@ -1240,7 +1240,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
   const html = renderPage({
     title: '',
     description:
-      'Pathogen Studio — a typed, expression-first language for SVG paths. CLI, playground, and editor integration powered by pathogen-lang.',
+      'Pathogen Studio — a typed, expression-first language for SVG paths, made for anyone who builds things with code. CLI, playground, and editor integration powered by pathogen-lang.',
     path: '/',
     content,
     headExtra,

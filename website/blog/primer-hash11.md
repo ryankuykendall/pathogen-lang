@@ -3,6 +3,8 @@ title: "hash11: The Same Dice, Rolled Between −1 and 1"
 slug: primer-hash11
 date: 2026-08-05
 description: "Part 2 of the stdlib primers: hash11 is hash01's twin for nudges — signed, deterministic jitter in [−1, 1). Baseline wobble, tilt, and the ±20% idiom that textures the blog's glow strokes."
+series: "Stdlib Primers"
+seriesPart: 2
 ---
 
 *Part 2 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.*

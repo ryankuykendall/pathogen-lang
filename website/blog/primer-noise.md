@@ -3,6 +3,8 @@ title: "noise: Randomness with a Smooth Ride"
 slug: primer-noise
 date: 2026-08-09
 description: "Part 6 of the stdlib primers: hash01 rolls dice; noise draws the smooth curve through the rolls. Pins and a glide, one frequency knob, and randomness that neighbors agree on — texture instead of jitter."
+series: "Stdlib Primers"
+seriesPart: 6
 ---
 
 *Part 6 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.*

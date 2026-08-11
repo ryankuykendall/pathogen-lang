@@ -74,6 +74,46 @@ h1 {
   line-height: 1.5;
 }
 
+/* Series grouping — mirrors the static index in build-blog.ts:
+ * container on --bg-primary, cards keep their --bg-secondary base (and their
+ * default hover), series title keeps heading authority over card titles. */
+.series-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-primary, #ffffff);
+}
+
+.series-group .post-title {
+  font-size: 1.125rem;
+}
+
+.series-header .series-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.series-eyebrow {
+  margin: 0 0 0.375rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-color, #0066cc);
+}
+
+.series-description {
+  margin: 0;
+  color: var(--text-secondary, #666);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem;

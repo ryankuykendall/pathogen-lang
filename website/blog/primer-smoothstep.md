@@ -3,6 +3,8 @@ title: "smoothstep: The S-Curve That Turns a Cliff into a Ramp"
 slug: primer-smoothstep
 date: 2026-08-07
 description: "Part 4 of the stdlib primers: smoothstep is a dimmer between two markers — 0 before, 1 after, a corner-free glide in between. Fades, plateaus, tapered stroke tips, and a dusk seascape with no gradients."
+series: "Stdlib Primers"
+seriesPart: 4
 ---
 
 *Part 4 of 7 in our series of stdlib primers — the deterministic hash, noise, and shaping functions.*

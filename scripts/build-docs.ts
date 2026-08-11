@@ -282,10 +282,10 @@ async function buildDocs(): Promise<void> {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Documentation — Pathogen</title>
-  <meta name="description" content="Complete language reference for pathogen-lang — variables, expressions, control flow, functions, layers, and more.">
+  <meta name="description" content="Complete language reference for pathogen-lang — variables, expressions, control flow, functions, layers, and more, explained in plain language for people who build things with code.">
   <link rel="canonical" href="https://pathogen.studio/docs">
   <meta property="og:title" content="Documentation — Pathogen">
-  <meta property="og:description" content="Complete language reference for pathogen-lang — variables, expressions, control flow, functions, layers, and more.">
+  <meta property="og:description" content="Complete language reference for pathogen-lang — variables, expressions, control flow, functions, layers, and more, explained in plain language for people who build things with code.">
   <meta property="og:url" content="https://pathogen.studio/docs">
   <meta property="og:type" content="website">
   <script type="application/ld+json">
@@ -293,7 +293,7 @@ async function buildDocs(): Promise<void> {
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "name": "Pathogen Documentation",
-    "description": "Complete language reference for pathogen-lang",
+    "description": "Plain-language reference for pathogen-lang, written for working developers, designers who code, and creative coders",
     "url": "https://pathogen.studio/docs",
     "publisher": { "@type": "Organization", "name": "Pedestal Design", "url": "https://pathogen.studio" }
   }
