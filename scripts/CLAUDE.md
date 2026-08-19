@@ -42,6 +42,7 @@ program.parse();
 | `serve-bbwp.ts` | HTTP server for browsing BBWP artifacts (default port 3001) |
 | `update-bbwp-index.ts` | Regenerate `website/bbwp/index.html` from directory listing |
 | `check-links.ts` | Puppeteer link checker for blog posts and documentation pages |
+| `inspect-pdf.ts` | PDF/raster inspection CLI (`npm run inspect:pdf`): page + embedded-image summary, image extraction, pixel statistics (uniform/black detection — the black-page failure signature), decoded content streams. Shares `scripts/lib/pdf-inspect.ts` with the unified-export E2E harness. |
 | `validate-samples.ts` | Puppeteer sample validator: margins, collisions, GroupLayer checks + PNG previews |
 | `security-browser-audit.ts` | Puppeteer audit: injects malicious SVG payloads directly into the playground's preview iframe (bypassing the compiler) and verifies the iframe sandbox + CSP block every outbound request. The browser-only counterpart to `tests/security/`, since JSDOM does not enforce CSP. Run via `npm run security:browser-audit` (requires `npm run dev:website` running on :3000). |
 | `perf-pan-zoom-audit.ts` | Puppeteer pan/zoom performance profiler. Creates a throwaway workspace from a `.pathogen` source, drives the real pan/wheel handlers, and reports the main-thread split (page.metrics) + off-main raster/commit totals per scenario. Built to diagnose interactive jank and A/B fixes. Run via `npm run perf:panzoom` (requires `npm run dev:stack`). See `project-docs/pan-zoom-performance/`. |

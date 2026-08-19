@@ -16,6 +16,8 @@ import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import puppeteer, { type Page } from 'puppeteer';
 
+import { decodeJpeg, decodePng, listImages, loadPdf, pixelStats } from '../../scripts/lib/pdf-inspect';
+
 const LOCAL_ORIGIN = 'http://localhost:3000';
 const DEV_API = 'http://localhost:8787';
 const ANON_KEY = 'pathogen-lang:userId';
@@ -665,6 +667,174 @@ async function main(): Promise<void> {
   check('raster PDF embeds exactly one image', imageCount(pdfRaster.bytes) === 1, `${imageCount(pdfRaster.bytes)} images`);
   check('raster PDF still carries vector watermark outlines', rasterCurves > 20, `${rasterCurves} curve ops`);
   writeFileSync(join(OUT_DIR, 'export-legend-off-raster.pdf'), pdfRaster.bytes);
+
+  // --- 10b. Raster pixel truth: the embedded JPEG must contain real artwork ---
+  // Regression guard for the 2026-08-18 black-page export: every structural
+  // check above passed while the embedded image was 100% black. MAIN_SOURCE
+  // has a dark background, so assert variation, not lightness.
+  {
+    const images = listImages(await loadPdf(pdfRaster.bytes));
+    check('raster PDF image is DCTDecode', images.length === 1 && images[0].filter === 'DCTDecode', images.map((i) => i.filter).join(','));
+    const stats = pixelStats(decodeJpeg(images[0].bytes));
+    check(
+      'raster artwork pixels are not uniform/black',
+      !stats.uniform && stats.pctBlack < 0.99 && stats.maxLuminance - stats.minLuminance > 40,
+      `uniform=${stats.uniform} black=${(stats.pctBlack * 100).toFixed(1)}% lumRange=${(stats.maxLuminance - stats.minLuminance).toFixed(0)}`,
+    );
+  }
+
+  // --- 10c. Cover sheet + raster: both embedded JPEGs carry real pixels ---
+  await inModal(page, `sr.querySelector('#pdf-cover-sheet').click(); return { ok: true };`);
+  const pdfCover = await download(page);
+  {
+    const doc = await loadPdf(pdfCover.bytes);
+    check('cover PDF has 2 pages', doc.getPageCount() === 2, `${doc.getPageCount()} pages`);
+    const images = listImages(doc).sort((a, b) => a.width - b.width);
+    check('cover PDF embeds preview + artwork images', images.length === 2, `${images.length} images`);
+    if (images.length === 2) {
+      const preview = pixelStats(decodeJpeg(images[0].bytes));
+      const artwork = pixelStats(decodeJpeg(images[1].bytes));
+      check(
+        'cover preview pixels non-uniform',
+        !preview.uniform && preview.maxLuminance - preview.minLuminance > 40,
+        `uniform=${preview.uniform} lumRange=${(preview.maxLuminance - preview.minLuminance).toFixed(0)}`,
+      );
+      check(
+        'cover artwork raster pixels non-uniform',
+        !artwork.uniform && artwork.pctBlack < 0.99 && artwork.maxLuminance - artwork.minLuminance > 40,
+        `uniform=${artwork.uniform} black=${(artwork.pctBlack * 100).toFixed(1)}%`,
+      );
+    }
+  }
+  writeFileSync(join(OUT_DIR, 'export-cover-raster.pdf'), pdfCover.bytes);
+  await inModal(page, `sr.querySelector('#pdf-cover-sheet').click(); return { ok: true };`); // cover off again
+
+  // --- 10d. Failure injection: single-shot draws fail → tiled full-res succeeds ---
+  // SwiftShader cannot lose a real GPU context, so the failure paths are
+  // exercised by patching the verification/attempt seams on the prototype
+  // (no shipped test hooks). 24 in wide × 800×500 viewBox → 7200×4500 raster.
+  await inModal(page, `var w = sr.querySelector('#pdf-art-w'); w.value = '24'; w.dispatchEvent(new Event('input')); return { ok: true };`);
+  await page.evaluate(`
+    (function () {
+      var proto = customElements.get('export-modal').prototype;
+      window.__origAttempt = proto._attemptRasterDraw;
+      window.__origVerify = proto._verifyCanvasDraw;
+      proto._attemptRasterDraw = function (img, w, h, opts) {
+        if (Math.max(w, h) > 3000) return { canvas: null, verdict: 'wiped' };
+        return window.__origAttempt.call(this, img, w, h, opts);
+      };
+    })();
+  `);
+  const pdfTiled = await download(page);
+  {
+    const images = listImages(await loadPdf(pdfTiled.bytes)).sort((a, b) => b.width - a.width);
+    const art = images[0];
+    check('tiled fallback keeps the full 300 DPI raster', art.width === 7200 && art.height === 4500, `${art.width}×${art.height}`);
+    const stats = pixelStats(decodeJpeg(art.bytes));
+    check(
+      'tiled raster pixels non-uniform',
+      !stats.uniform && stats.maxLuminance - stats.minLuminance > 40,
+      `uniform=${stats.uniform} lumRange=${(stats.maxLuminance - stats.minLuminance).toFixed(0)}`,
+    );
+  }
+
+  // --- 10e. Failure injection: verification fails above 3000px → size ladder engages ---
+  await page.evaluate(`
+    (function () {
+      var proto = customElements.get('export-modal').prototype;
+      proto._attemptRasterDraw = window.__origAttempt;
+      proto._verifyCanvasDraw = function (ctx, w, h, opts) {
+        if (Math.max(w, h) > 3000) return 'wiped';
+        return window.__origVerify.call(this, ctx, w, h, opts);
+      };
+    })();
+  `);
+  const pdfLadder = await download(page);
+  {
+    const images = listImages(await loadPdf(pdfLadder.bytes)).sort((a, b) => b.width - a.width);
+    const art = images[0];
+    // 7200×4500 ladder: 5091 (fails) → 3600 (fails) → 2546 (first ≤3000).
+    check('ladder produced a reduced raster within [2048, 3000]', art.width <= 3000 && art.width >= 2048, `${art.width}×${art.height}`);
+    const stats = pixelStats(decodeJpeg(art.bytes));
+    check(
+      'reduced raster pixels non-uniform',
+      !stats.uniform && stats.maxLuminance - stats.minLuminance > 40,
+      `uniform=${stats.uniform} lumRange=${(stats.maxLuminance - stats.minLuminance).toFixed(0)}`,
+    );
+  }
+  const ladderStatus = await inModal<{ text: string }>(page, `return { text: sr.querySelector('.export-status').textContent };`);
+  check('reduced-DPI notice shown', /DPI instead of 300 DPI/.test(ladderStatus.text), ladderStatus.text);
+
+  // --- 10f. Failure injection: everything fails → loud error, no file ---
+  await page.evaluate(`
+    (function () {
+      var proto = customElements.get('export-modal').prototype;
+      proto._verifyCanvasDraw = function () { return 'wiped'; };
+    })();
+  `);
+  await page.evaluate(`window.__saved = null;`);
+  await inModal(page, `sr.querySelector('.download-btn').click(); return { ok: true };`);
+  {
+    const start = Date.now();
+    let statusText = '';
+    let isError = false;
+    while (Date.now() - start < 60_000) {
+      const s = await inModal<{ text: string; err: boolean }>(
+        page,
+        `var el = sr.querySelector('.export-status'); return { text: el.textContent, err: el.classList.contains('error') };`,
+      );
+      statusText = s.text;
+      isError = s.err;
+      if (isError) break;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    check('all-fail raster export raises a red error', isError && /exceeds what your browser can rasterize/.test(statusText), statusText);
+    const savedAfterFail = await page.evaluate(`window.__saved`);
+    check('all-fail raster export writes no file', savedAfterFail === null);
+  }
+
+  // --- 10g. PNG path: same verification + ladder (user-reported blank 4× PNG class) ---
+  await page.evaluate(`
+    (function () {
+      var proto = customElements.get('export-modal').prototype;
+      proto._verifyCanvasDraw = function (ctx, w, h, opts) {
+        if (Math.max(w, h) > 3000) return 'wiped';
+        return window.__origVerify.call(this, ctx, w, h, opts);
+      };
+    })();
+  `);
+  await inModal(page, `sr.querySelector('.format-toggle button[data-format="png"]').click(); return { ok: true };`);
+  await inModal(
+    page,
+    `var sel = sr.querySelector('#png-scale'); sel.value = 'custom'; sel.dispatchEvent(new Event('change'));
+     var w = sr.querySelector('#png-width'); w.value = '6000'; w.dispatchEvent(new Event('input'));
+     return { ok: true };`,
+  );
+  const pngLadder = await download(page);
+  const infoLadder = pngInfo(pngLadder.bytes);
+  // 6000×3750 ladder: 4243 (fails) → 3000 (first ≤3000).
+  check('PNG ladder reduced the 6000px request to 3000×1875', infoLadder.w === 3000 && infoLadder.h === 1875, `${infoLadder.w}×${infoLadder.h}`);
+  {
+    const stats = pixelStats(decodePng(pngLadder.bytes));
+    check(
+      'reduced PNG pixels non-blank',
+      !stats.uniform && stats.pctTransparent < 0.99,
+      `uniform=${stats.uniform} transparent=${(stats.pctTransparent * 100).toFixed(1)}%`,
+    );
+  }
+  const pngStatus = await inModal<{ text: string }>(page, `return { text: sr.querySelector('.export-status').textContent };`);
+  check('PNG reduced-size notice shown', /instead of 6,000/.test(pngStatus.text), pngStatus.text);
+
+  // Restore the real methods and the state section 11 expects (PDF selected).
+  await page.evaluate(`
+    (function () {
+      var proto = customElements.get('export-modal').prototype;
+      proto._attemptRasterDraw = window.__origAttempt;
+      proto._verifyCanvasDraw = window.__origVerify;
+    })();
+  `);
+  await inModal(page, `var sel = sr.querySelector('#png-scale'); sel.value = '2'; sel.dispatchEvent(new Event('change')); return { ok: true };`);
+  await inModal(page, `sr.querySelector('.format-toggle button[data-format="pdf"]').click(); return { ok: true };`);
 
   // --- 11. Picker-cancel skips the export ---
   await page.evaluate(`window.__rejectPicker = true; window.__saved = null;`);

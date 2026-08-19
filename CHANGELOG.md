@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-19 (verified export rasterization — no more black/blank exports)
+
+### Fixed
+
+#### Playground
+
+- **PDF and PNG exports of very complex artwork no longer silently ship black or blank images** (real report: a 24×24 in filter-forced raster PDF whose artwork page was solid black, and a blank 4× PNG of the same piece). At print resolution (~52–77 MP) with thousands of `drop-shadow`-filtered layers, the browser loses the canvas context or silently no-ops the `drawImage`; the export then encoded the untouched buffer without ever looking at it (transparent → solid-black JPEG / blank PNG). Every raster attempt is now verified (context-loss check + pixel classification; pure decision logic in `playground/utils/raster-verify.ts`), and on failure the export recovers in stages: a tiled full-resolution render (2048px tiles composited into a CPU-backed destination — the single giant GPU surface allocation was the observed failure on real hardware), then a ×1/√2 size ladder down to a 2048px floor with a notice reporting the resolution actually achieved, and finally a clear error — never a blank file. Targets above 32 MP skip the doomed full-size single draw entirely (field data: single draws silently no-op somewhere between 19 MP and 39 MP even on an M2 Max).
+- **Export rasterization now shows live progress** — the modal status line narrates each stage ("Rendering the artwork at 8,800 × 8,800 px in tiles — 12/25…", "Retrying at a reduced …") with paint-flushing yields (`requestAnimationFrame` → `setTimeout`; a bare `setTimeout(0)` resumes before the next frame, so messages were written but never rendered). Verification of large GPU canvases uses a single downscale-probe readback instead of banded `getImageData` scans, which forced repeated GPU pipeline syncs and locked the UI for about a minute in the field.
+- **Honest resource-limit notices** — "Your browser limits how much it can rasterize at once…" replaces the misleading "free up GPU memory (close other tabs)" framing: the binding constraint is the browser's per-context budget, which doesn't scale with the machine.
+
+### Added
+
+#### Development
+
+- **PDF/raster inspection dev tooling** — `npm run inspect:pdf` (`scripts/inspect-pdf.ts` + shared `scripts/lib/pdf-inspect.ts`; devDependencies `pdf-lib`, `jpeg-js`, `pngjs`): page/MediaBox summary, embedded-image listing and extraction, pixel statistics (a solid-black page prints `UNIFORM (failure signature!)`), and decoded content streams. Shared with the export E2E harness so raster pixel-truth is a permanent regression check — the original bug passed every structural assertion because nothing ever decoded the embedded image.
+- `tests/raster-verify.test.ts` (25 tests) covering the pure verification/size-ladder/tile-grid logic; the export harness (`project-docs/unified-export/verify-export.ts`) grew sections 10b–10g: embedded-image pixel truth on raster and cover-sheet PDFs, prototype-patch failure injection (headless SwiftShader cannot lose a real GPU context) proving the tiled path keeps full 300 DPI, the size ladder lands in range with the reduced-DPI notice, total failure raises a red error with no file written, and the PNG path reduces with its notice — 62/62 checks.
+
+### Changed
+
+#### Documentation
+
+- `docs/exporting.md` known limitations now covers complexity-limited rasterization: automatic tiled and stepped-down retries with live progress in the export dialog, the achieved-resolution notice, and a hard error instead of a blank image when even the minimum fails.
+
 ## [Unreleased] - 2026-08-11 (voice-and-audience writing standard, blog series grouping)
 
 ### Added

@@ -32,6 +32,15 @@ import {
   createBrandText,
 } from '../utils/export-chrome.js';
 import { fetchChromeFontRules, injectFontRules } from '../utils/export-fonts.js';
+import {
+  bandHasInk,
+  bandHasNonOpaque,
+  buildSampleGrid,
+  buildSizeLadder,
+  buildTileGrid,
+  classifyRasterSamples,
+  hexToRgb,
+} from '../utils/raster-verify.js';
 import type { PanZoomController, ZoomPillElement } from '../../dist/pan-zoom';
 import styles from './export-modal.css';
 import './shared/pathogen-color-input.js';
@@ -53,6 +62,43 @@ const RASTER_MAX_SIDE_PX = 8192;
 
 /** Hard cap for PNG export dimensions (canvas element limit). */
 const PNG_MAX_SIDE_PX = 16384;
+
+/**
+ * Verified-rasterization retry limits. Very complex artwork (thousands of
+ * filtered layers) can make the browser silently wipe or no-op a print-
+ * resolution canvas draw; when that is detected the export retries tiled at
+ * full size, then down a ×1/√2 size ladder to these floors (long side, px).
+ */
+const RASTER_MIN_SIDE_PX = 2048;
+const PREVIEW_MIN_SIDE_PX = 600;
+const RASTER_TILE_PX = 2048;
+
+/**
+ * Above this area, skip the single full-canvas draw and go straight to the
+ * tiled path: field data (M2 Max, 2026-08-19) shows Chrome silently no-ops
+ * single draws somewhere between 19 MP (worked) and 39 MP (blank), so a
+ * full-size attempt on a large target is a slow guaranteed failure.
+ */
+const RASTER_SINGLE_DRAW_MAX_PX = 32_000_000;
+
+/**
+ * Verification strategy switch. At or below this area (one readback band),
+ * precise pixel scans are cheap. Above it on a GPU-backed canvas, banded
+ * getImageData forces repeated full pipeline syncs — a 77 MP scan locked the
+ * UI for ~a minute in the field — so large GPU canvases are verified via a
+ * single downscale probe instead.
+ */
+const VERIFY_SCAN_MAX_PX = 4_194_304;
+const VERIFY_PROBE_MAX_SIDE = 1024;
+
+/** Outcome of one verified draw attempt (see _verifyCanvasDraw). */
+type DrawVerdict = 'ok' | 'wiped' | 'uniform';
+
+interface RasterResult {
+  blob: Blob;
+  width: number;
+  height: number;
+}
 
 interface LegendFormData {
   name: string;
@@ -1156,7 +1202,23 @@ class ExportModal extends HTMLElement {
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     clone.setAttribute('width', String(this._canvasWidth));
     clone.setAttribute('height', String(this._canvasHeight));
-    return this._rasterizeSvg(clone, dims.w, dims.h, { type: 'image/png' });
+    // Artwork that genuinely paints nothing must not trip the blank-canvas
+    // verification (transparent PNGs have no background fill to compare to).
+    const expectInk = !!clone.querySelector('path, circle, rect, ellipse, line, polyline, polygon, use, image, text');
+    const { blob, width, height } = await this._rasterizeSvg(clone, dims.w, dims.h, {
+      type: 'image/png',
+      expectInk,
+      label: 'PNG',
+      onProgress: (message) => this._setExportStatus(message),
+    });
+    if (width < dims.w) {
+      this._setExportStatus(
+        `Your browser limits how much it can rasterize at once — the PNG was rendered at ${width.toLocaleString()} × ${height.toLocaleString()} px instead of ${dims.w.toLocaleString()} × ${dims.h.toLocaleString()} px. A smaller export size or fewer filtered layers may allow full resolution.`,
+      );
+    } else {
+      this._setExportStatus('');
+    }
+    return blob;
   }
 
   async _downloadPdf(downloadBtn: HTMLButtonElement): Promise<Blob> {
@@ -1231,7 +1293,19 @@ class ExportModal extends HTMLElement {
       const previewScale = 1200 / Math.max(canvasWidth, canvasHeight);
       const pw = Math.max(1, Math.round(canvasWidth * previewScale));
       const ph = Math.max(1, Math.round(canvasHeight * previewScale));
-      previewBytes = await this._rasterizeSvgToJpeg(previewSvg, pw, ph, background, 0.85);
+      const preview = await this._rasterizeSvgToJpeg(
+        previewSvg,
+        pw,
+        ph,
+        background,
+        0.85,
+        PREVIEW_MIN_SIDE_PX,
+        'cover preview',
+      );
+      previewBytes = preview.bytes;
+      if (preview.width < pw) {
+        notices.push('Cover preview rendered at reduced resolution (browser rasterization limit).');
+      }
     }
 
     // Raster the artwork when the user chose it (default for very complex
@@ -1242,12 +1316,23 @@ class ExportModal extends HTMLElement {
     // the call stack on print-resolution images.
     let rasterBytes: Uint8Array | null = null;
     if (wantRaster || forcedRaster) {
-      rasterBytes = await this._rasterizeArtwork(clone, layout, canvasWidth, canvasHeight, background);
+      const raster = await this._rasterizeArtwork(clone, layout, canvasWidth, canvasHeight, background);
+      rasterBytes = raster.bytes;
       notices.push(
         forcedRaster && !wantRaster
           ? 'Artwork uses a mask or filter — it was embedded as a 300 DPI raster image; the legend stays vector.'
           : 'Artwork embedded as a print-resolution raster image; the legend stays vector.',
       );
+      if (raster.width < raster.requestedW) {
+        // Compare against the DPI actually requested — RASTER_MAX_SIDE_PX may
+        // already have capped very large pages below the nominal 300.
+        const contentIn = layout.content.w / PT_PER_IN;
+        const achievedDpi = Math.max(1, Math.round(raster.width / contentIn));
+        const requestedDpi = Math.max(1, Math.round(raster.requestedW / contentIn));
+        notices.push(
+          `Your browser limits how much it can rasterize at once — the artwork was rendered at ~${achievedDpi} DPI instead of ${requestedDpi} DPI. A smaller print size or fewer filtered layers may allow full resolution.`,
+        );
+      }
     }
 
     // Cover sheet SVG — built after optimization so the manifest can report
@@ -1377,7 +1462,9 @@ class ExportModal extends HTMLElement {
       }
     }
 
-    if (notices.length > 0) this._setExportStatus(notices.join(' '));
+    // Unconditional: an empty string clears any lingering rasterization
+    // progress message from the status line.
+    this._setExportStatus(notices.join(' '));
 
     return doc.output('blob');
   }
@@ -1397,7 +1484,7 @@ class ExportModal extends HTMLElement {
     canvasWidth: number,
     canvasHeight: number,
     background: string | undefined,
-  ): Promise<Uint8Array> {
+  ): Promise<{ bytes: Uint8Array; width: number; height: number; requestedW: number; requestedH: number }> {
     const ns = 'http://www.w3.org/2000/svg';
     const legend = clone.querySelector('#pathogen-legend');
     const watermark = clone.querySelector('#pathogen-watermark');
@@ -1415,7 +1502,15 @@ class ExportModal extends HTMLElement {
     pxW = Math.max(1, Math.round(pxW * cap));
     pxH = Math.max(1, Math.round(pxH * cap));
 
-    const bytes = await this._rasterizeSvgToJpeg(artOnly, pxW, pxH, background);
+    const { bytes, width, height } = await this._rasterizeSvgToJpeg(
+      artOnly,
+      pxW,
+      pxH,
+      background,
+      0.95,
+      RASTER_MIN_SIDE_PX,
+      'artwork',
+    );
 
     // Only the legend/watermark overlays remain for the vector pass — the
     // brand line stays crisp vector even when the artwork is a raster.
@@ -1423,16 +1518,39 @@ class ExportModal extends HTMLElement {
     if (legend) clone.appendChild(legend);
     if (watermark) clone.appendChild(watermark);
 
-    return bytes;
+    return { bytes, width, height, requestedW: pxW, requestedH: pxH };
   }
 
-  /** Serialize an SVG element and rasterize it to an image Blob. */
+  /**
+   * Serialize an SVG element and rasterize it to an image Blob, VERIFYING
+   * that the draw actually landed. At print resolution (tens of megapixels)
+   * with heavily filtered artwork, the browser can lose the canvas context
+   * (buffer resets to transparent black → JPEG encodes solid black, PNG comes
+   * out blank) or silently no-op the drawImage. Both shipped undetected once
+   * (all-black PDF page 2 / blank 4× PNG, 2026-08-18). Strategy:
+   *   A. single full-size draw + verification (the fast path)
+   *   B. tiled full-resolution draw (smaller per-operation GPU load)
+   *   C. ×1/√2 size ladder down to floorMaxSide, verified at each step
+   * and a thrown error if everything fails — never a black/blank image.
+   * Returns the achieved size so callers can tell the user when it was
+   * reduced.
+   */
   async _rasterizeSvg(
     svg: SVGSVGElement,
     pxW: number,
     pxH: number,
-    opts: { type: 'image/jpeg' | 'image/png'; quality?: number; background?: string },
-  ): Promise<Blob> {
+    opts: {
+      type: 'image/jpeg' | 'image/png';
+      quality?: number;
+      background?: string;
+      floorMaxSide?: number;
+      expectInk?: boolean;
+      /** Human label for progress messages, e.g. 'artwork', 'cover preview'. */
+      label?: string;
+      /** Live progress reporter (rasterization can run tens of seconds on complex artwork). */
+      onProgress?: (message: string) => void;
+    },
+  ): Promise<RasterResult> {
     const svgString = new XMLSerializer().serializeToString(svg);
     const url = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml' }));
     try {
@@ -1443,30 +1561,352 @@ class ExportModal extends HTMLElement {
         img.src = url;
       });
 
-      const canvas = document.createElement('canvas');
-      canvas.width = pxW;
-      canvas.height = pxH;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Could not rasterize the artwork — a canvas drawing context was unavailable');
-      if (opts.type === 'image/jpeg') {
-        // Flatten onto the page background (white paper fallback) — JPEG has
-        // no alpha, and the artwork sits on the printed page anyway. PNG
-        // keeps the canvas transparent; any background rect is in the SVG.
-        ctx.fillStyle = resolveCssColorToHex(opts.background) ?? '#ffffff';
-        ctx.fillRect(0, 0, pxW, pxH);
-      }
-      ctx.drawImage(img, 0, 0, pxW, pxH);
+      // Flatten JPEG onto the page background (white paper fallback) — JPEG
+      // has no alpha, and the artwork sits on the printed page anyway. PNG
+      // keeps the canvas transparent; any background rect is in the SVG.
+      const mode: 'opaque' | 'transparent' = opts.type === 'image/jpeg' ? 'opaque' : 'transparent';
+      const drawOpts = {
+        mode,
+        fillHex: opts.type === 'image/jpeg' ? (resolveCssColorToHex(opts.background) ?? '#ffffff') : null,
+        expectInk: opts.expectInk ?? true,
+      };
+      const floor = Math.min(opts.floorMaxSide ?? RASTER_MIN_SIDE_PX, Math.max(pxW, pxH));
 
-      return await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error('Artwork rasterization produced no image'))),
-          opts.type,
-          opts.quality,
+      // A 'uniform' verdict (buffer intact but ink-free) can mean a silent
+      // draw no-op OR artwork that genuinely paints nothing over the
+      // background. Kept as a fallback: it is only shipped when the LAST
+      // attempt (the smallest ladder rung, or the tiled draw when the
+      // requested size is already at the floor) is also uniform — strong
+      // evidence the artwork really is uniform, not a masked draw failure.
+      // The first uniform result wins the fallback slot, so the full-size
+      // render is what ships. Failed canvases are released eagerly (dims
+      // zeroed) so retries don't stack multi-hundred-MB buffers while the
+      // browser is already under the memory pressure being recovered from.
+      let uniformFallback: RasterResult | null = null;
+      const settle = async (a: {
+        canvas: HTMLCanvasElement | null;
+        verdict: DrawVerdict;
+      }): Promise<RasterResult | null> => {
+        let result: RasterResult | null = null;
+        if (a.canvas && a.verdict === 'ok') {
+          result = await this._encodeCanvas(a.canvas, opts);
+        } else if (a.canvas && a.verdict === 'uniform' && !uniformFallback) {
+          uniformFallback = await this._encodeCanvas(a.canvas, opts);
+        }
+        this._releaseCanvas(a.canvas);
+        return result;
+      };
+      const label = opts.label ?? 'artwork';
+      const report = opts.onProgress ?? ((): void => {});
+      const fmt = (n: number): string => n.toLocaleString();
+      const onTile = (done: number, total: number): void =>
+        report(`Rendering the ${label} in tiles — ${done}/${total}…`);
+      // Size-aware attempt: single draws silently no-op above
+      // RASTER_SINGLE_DRAW_MAX_PX on real hardware, so large sizes go
+      // straight to the tiled path (including ladder rungs).
+      const attemptAt = async (
+        w: number,
+        h: number,
+      ): Promise<{ canvas: HTMLCanvasElement | null; verdict: DrawVerdict }> => {
+        await this._afterPaint();
+        if (w * h <= RASTER_SINGLE_DRAW_MAX_PX) return this._attemptRasterDraw(img, w, h, drawOpts);
+        return this._attemptTiledRasterDraw(img, w, h, drawOpts, onTile);
+      };
+      const bigTarget = pxW * pxH > RASTER_SINGLE_DRAW_MAX_PX;
+
+      // Attempt A: single full-size draw (skipped for large targets — a
+      // full-size single draw there is a slow guaranteed failure).
+      let attempt: { canvas: HTMLCanvasElement | null; verdict: DrawVerdict } = {
+        canvas: null,
+        verdict: 'wiped',
+      };
+      let settled: RasterResult | null = null;
+      if (!bigTarget) {
+        report(`Rendering the ${label} at ${fmt(pxW)} × ${fmt(pxH)} px…`);
+        await this._afterPaint();
+        attempt = this._attemptRasterDraw(img, pxW, pxH, drawOpts);
+        settled = await settle(attempt);
+        if (settled) return settled;
+        console.warn(
+          `Export raster: full-size draw failed verification at ${pxW}×${pxH} (${attempt.verdict}) — retrying tiled.`,
         );
-      });
+      }
+
+      // Attempt B: tiled full-resolution draw (the primary path for large targets).
+      report(
+        bigTarget
+          ? `Rendering the ${label} at ${fmt(pxW)} × ${fmt(pxH)} px in tiles…`
+          : `Browser limit hit — rendering the ${label} in tiles at full resolution…`,
+      );
+      await this._afterPaint();
+      attempt = await this._attemptTiledRasterDraw(img, pxW, pxH, drawOpts, onTile);
+      settled = await settle(attempt);
+      if (settled) return settled;
+
+      // Attempt C: reduced-resolution ladder (index 0 is the full size,
+      // already tried above).
+      for (const step of buildSizeLadder(pxW, pxH, floor).slice(1)) {
+        console.warn(`Export raster: retrying at ${step.w}×${step.h}.`);
+        report(`Retrying the ${label} at a reduced ${fmt(step.w)} × ${fmt(step.h)} px…`);
+        attempt = await attemptAt(step.w, step.h);
+        settled = await settle(attempt);
+        if (settled) return settled;
+      }
+
+      if (uniformFallback && attempt.verdict === 'uniform') return uniformFallback;
+
+      throw new Error(
+        'This artwork exceeds what your browser can rasterize, even at reduced resolution. ' +
+          'Reduce the export size, or simplify the artwork — for example fewer layers with filters — and try again.',
+      );
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+
+  /** Zero a canvas's dimensions so its (potentially multi-hundred-MB) backing store is released immediately, not at GC time. */
+  _releaseCanvas(canvas: HTMLCanvasElement | null): void {
+    if (!canvas) return;
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+
+  /** One verified single-pass draw at w×h. Fresh canvas per attempt — a lost context is never reused. */
+  _attemptRasterDraw(
+    img: HTMLImageElement,
+    w: number,
+    h: number,
+    opts: { mode: 'opaque' | 'transparent'; fillHex: string | null; expectInk: boolean },
+  ): { canvas: HTMLCanvasElement | null; verdict: DrawVerdict } {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const fail = (): { canvas: null; verdict: DrawVerdict } => {
+      this._releaseCanvas(canvas);
+      return { canvas: null, verdict: 'wiped' };
+    };
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return fail();
+    let fill: { r: number; g: number; b: number } | undefined;
+    let preFill: Uint8ClampedArray[] | undefined;
+    if (opts.fillHex) {
+      ctx.fillStyle = opts.fillHex;
+      ctx.fillRect(0, 0, w, h);
+      fill = hexToRgb(opts.fillHex);
+      // The pre-fill sample snapshot only feeds the precise (small-canvas)
+      // verification path; large GPU canvases use the downscale probe, so
+      // skip the 25 pipeline-syncing readbacks there.
+      if (w * h <= VERIFY_SCAN_MAX_PX) {
+        preFill = this._readSamples(ctx, w, h) ?? undefined;
+        if (!preFill) return fail();
+      }
+    }
+    try {
+      ctx.drawImage(img, 0, 0, w, h);
+    } catch {
+      return fail();
+    }
+    const verdict = this._verifyCanvasDraw(ctx, w, h, { mode: opts.mode, fill, preFill, expectInk: opts.expectInk });
+    return { canvas, verdict };
+  }
+
+  /**
+   * One verified full-size draw assembled from ≤RASTER_TILE_PX tiles: the SVG
+   * image is drawn tile-by-tile into a small scratch canvas and composited,
+   * keeping each rasterization operation's GPU footprint bounded.
+   */
+  async _attemptTiledRasterDraw(
+    img: HTMLImageElement,
+    w: number,
+    h: number,
+    opts: { mode: 'opaque' | 'transparent'; fillHex: string | null; expectInk: boolean },
+    onTile?: (done: number, total: number) => void,
+  ): Promise<{ canvas: HTMLCanvasElement | null; verdict: DrawVerdict }> {
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const scratch = document.createElement('canvas');
+    const fail = (): { canvas: null; verdict: DrawVerdict } => {
+      this._releaseCanvas(canvas);
+      this._releaseCanvas(scratch);
+      return { canvas: null, verdict: 'wiped' };
+    };
+    // CPU-backed destination: a print-resolution accelerated canvas is a
+    // single giant GPU allocation — the very thing observed failing on real
+    // hardware (an 8800² surface refused even on an M2 Max; Chrome's
+    // per-context budgets don't scale with the machine). willReadFrequently
+    // keeps the big surface in system RAM; the filter-heavy SVG still
+    // rasterizes hardware-accelerated on the small scratch canvas per tile.
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return fail();
+    let fill: { r: number; g: number; b: number } | undefined;
+    let preFill: Uint8ClampedArray[] | undefined;
+    if (opts.fillHex) {
+      ctx.fillStyle = opts.fillHex;
+      ctx.fillRect(0, 0, w, h);
+      fill = hexToRgb(opts.fillHex);
+      preFill = this._readSamples(ctx, w, h) ?? undefined;
+      if (!preFill) return fail();
+    }
+    scratch.width = Math.min(RASTER_TILE_PX, w);
+    scratch.height = Math.min(RASTER_TILE_PX, h);
+    const sctx = scratch.getContext('2d');
+    if (!sctx) return fail();
+    try {
+      const tiles = buildTileGrid(w, h, RASTER_TILE_PX);
+      for (const [i, t] of tiles.entries()) {
+        sctx.clearRect(0, 0, scratch.width, scratch.height);
+        // Full image scaled to w×h, offset so this tile's region lands at
+        // the scratch origin — the browser only rasterizes the clipped area.
+        sctx.drawImage(img, -t.x, -t.y, w, h);
+        if (this._isContextLost(sctx) || this._isContextLost(ctx)) return fail();
+        ctx.drawImage(scratch, 0, 0, t.w, t.h, t.x, t.y, t.w, t.h);
+        onTile?.(i + 1, tiles.length);
+        // Paint-flushing yield so the tile progress message actually renders.
+        await this._afterPaint();
+      }
+    } catch {
+      return fail();
+    }
+    this._releaseCanvas(scratch);
+    const verdict = this._verifyCanvasDraw(ctx, w, h, {
+      mode: opts.mode,
+      fill,
+      preFill,
+      expectInk: opts.expectInk,
+      // The destination is willReadFrequently (CPU-backed): direct pixel
+      // scans are cheap here and avoid a pointless CPU→GPU probe upload.
+      cpuBacked: true,
+    });
+    return { canvas, verdict };
+  }
+
+  /**
+   * Resolve after the browser has painted pending DOM changes: a bare
+   * setTimeout(0) macrotask usually fires BEFORE the next frame, so a status
+   * message written just before heavy synchronous canvas work would never
+   * render (field report: no progress visible during a ~1 min rasterization).
+   * rAF fires just before paint; the timeout then lands just after it.
+   */
+  async _afterPaint(): Promise<void> {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => setTimeout(resolve, 0));
+    });
+  }
+
+  /**
+   * Post-draw verification: context loss, then pixel-content classification.
+   * A discrete method so the E2E harness can inject failures by patching the
+   * prototype.
+   *
+   * Small or CPU-backed canvases get the precise path (sparse sample grid,
+   * banded full scan on suspicion). Large GPU-backed canvases are verified
+   * via a single downscale probe instead: banded getImageData on a big
+   * accelerated canvas forces repeated GPU pipeline syncs (observed locking
+   * the UI ~1 min on a 77 MP canvas), while one GPU-side downscale plus one
+   * small readback costs milliseconds.
+   */
+  _verifyCanvasDraw(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    opts: {
+      mode: 'opaque' | 'transparent';
+      fill?: { r: number; g: number; b: number };
+      preFill?: Uint8ClampedArray[];
+      expectInk: boolean;
+      cpuBacked?: boolean;
+    },
+  ): DrawVerdict {
+    if (this._isContextLost(ctx)) return 'wiped';
+    if (!opts.cpuBacked && w * h > VERIFY_SCAN_MAX_PX) return this._probeVerifyCanvas(ctx, w, h, opts);
+    const samples = this._readSamples(ctx, w, h);
+    if (!samples) return 'wiped';
+    const verdict = classifyRasterSamples(samples, opts.mode, opts.preFill);
+    if (verdict === 'ok') return 'ok';
+    if (verdict === 'wiped') return 'wiped';
+    // Suspect (samples saw no ink): sparse grids can legitimately miss sparse
+    // artwork — full scan in bands of ≤~4M px before concluding anything.
+    if (!opts.expectInk) return 'ok';
+    const rowsPerBand = Math.max(1, Math.floor(VERIFY_SCAN_MAX_PX / w));
+    try {
+      for (let y = 0; y < h; y += rowsPerBand) {
+        const band = ctx.getImageData(0, y, w, Math.min(rowsPerBand, h - y)).data;
+        if (opts.mode === 'opaque' && bandHasNonOpaque(band)) return 'wiped';
+        if (bandHasInk(band, opts.mode, opts.fill)) return 'ok';
+      }
+    } catch {
+      return 'wiped';
+    }
+    return 'uniform';
+  }
+
+  /**
+   * Downscale-probe verification for large GPU canvases: draw the canvas
+   * into a ≤VERIFY_PROBE_MAX_SIDE probe (GPU-side scale), read it back once.
+   * Sub-pixel-thin ink can theoretically vanish in the downscale and read as
+   * 'uniform' — safe by construction: a false 'uniform' only causes retries,
+   * and the uniform fallback that ultimately ships is the REAL full canvas
+   * (encoded before release), so the missed ink is still in the output.
+   */
+  _probeVerifyCanvas(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    opts: { mode: 'opaque' | 'transparent'; fill?: { r: number; g: number; b: number }; expectInk: boolean },
+  ): DrawVerdict {
+    const scale = Math.min(1, VERIFY_PROBE_MAX_SIDE / Math.max(w, h));
+    const pw = Math.max(1, Math.round(w * scale));
+    const ph = Math.max(1, Math.round(h * scale));
+    const probe = document.createElement('canvas');
+    probe.width = pw;
+    probe.height = ph;
+    const pctx = probe.getContext('2d');
+    if (!pctx) return 'wiped';
+    let data: Uint8ClampedArray;
+    try {
+      pctx.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, pw, ph);
+      data = pctx.getImageData(0, 0, pw, ph).data;
+    } catch {
+      this._releaseCanvas(probe);
+      return 'wiped';
+    }
+    this._releaseCanvas(probe);
+    if (opts.mode === 'opaque') {
+      if (bandHasNonOpaque(data)) return 'wiped';
+      if (opts.fill && bandHasInk(data, 'opaque', opts.fill)) return 'ok';
+      return opts.expectInk ? 'uniform' : 'ok';
+    }
+    if (bandHasInk(data, 'transparent')) return 'ok';
+    return opts.expectInk ? 'uniform' : 'ok';
+  }
+
+  _isContextLost(ctx: CanvasRenderingContext2D): boolean {
+    const maybe = ctx as CanvasRenderingContext2D & { isContextLost?: () => boolean };
+    return typeof maybe.isContextLost === 'function' && maybe.isContextLost();
+  }
+
+  /** Sparse sample-grid readback; null when getImageData itself fails (lost context). */
+  _readSamples(ctx: CanvasRenderingContext2D, w: number, h: number): Uint8ClampedArray[] | null {
+    try {
+      return buildSampleGrid(w, h).map((p) => ctx.getImageData(p.x, p.y, 1, 1).data);
+    } catch {
+      return null;
+    }
+  }
+
+  async _encodeCanvas(
+    canvas: HTMLCanvasElement,
+    opts: { type: 'image/jpeg' | 'image/png'; quality?: number },
+  ): Promise<RasterResult> {
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('Artwork rasterization produced no image'))),
+        opts.type,
+        opts.quality,
+      );
+    });
+    return { blob, width: canvas.width, height: canvas.height };
   }
 
   /** Rasterize to flattened JPEG bytes (PDF pipeline: raw bytes, never data URLs). */
@@ -1476,9 +1916,18 @@ class ExportModal extends HTMLElement {
     pxH: number,
     background: string | undefined,
     quality = 0.95,
-  ): Promise<Uint8Array> {
-    const blob = await this._rasterizeSvg(svg, pxW, pxH, { type: 'image/jpeg', quality, background });
-    return new Uint8Array(await blob.arrayBuffer());
+    floorMaxSide?: number,
+    label?: string,
+  ): Promise<{ bytes: Uint8Array; width: number; height: number }> {
+    const { blob, width, height } = await this._rasterizeSvg(svg, pxW, pxH, {
+      type: 'image/jpeg',
+      quality,
+      background,
+      floorMaxSide,
+      label,
+      onProgress: (message) => this._setExportStatus(message),
+    });
+    return { bytes: new Uint8Array(await blob.arrayBuffer()), width, height };
   }
 
   /**

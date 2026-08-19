@@ -109,3 +109,4 @@ Paths, strokes, linear and radial gradients, patterns, clip paths, and all text 
 
 - Text outlining fetches font glyph data from Google Fonts, using the Latin subset. Text in non-Latin scripts may be missing glyphs in the outlined output.
 - Outlined text is no longer selectable or searchable in the PDF — a deliberate trade for guaranteed print fidelity.
+- Extremely complex artwork (for example, thousands of layers with filters) can exceed what your browser is able to rasterize at 300 DPI. The export verifies every raster and automatically retries — first in tiles at full resolution, then at stepped-down sizes — with live progress shown in the export dialog, which also reports the resolution actually achieved. If even the minimum fails, the export stops with an error rather than producing a blank image.
