@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-08-19 (angles survive stdlib calls — hueShift(randomRange(…)) fixed)
+## [0.8.0] - 2026-08-19 (angles survive stdlib calls — hueShift(randomRange(…)) fixed)
 
 ### Fixed
 
@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New **Angle-Preserving Functions** section in the stdlib reference: the same-space rule, the deciding-slot table, a deterministic `hashRange` hue-jitter example, and an explicit warning that mixing bare numbers with Angles in deciding slots reads the bare number as radians (`min(90deg, 1)` is `57.2957795131deg`, not `1deg`). `normalizeAngle` gains its first published definition (Angle Conversion table). The syntax and color guides' "an angle is an angle wherever it flows" narratives and behavior-change callouts extended to cover the stdlib boundary.
 
-## [Unreleased] - 2026-08-19 (verified export rasterization — no more black/blank exports)
+## [0.8.0] - 2026-08-19 (verified export rasterization — no more black/blank exports)
 
 ### Fixed
 
@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `docs/exporting.md` known limitations now covers complexity-limited rasterization: automatic tiled and stepped-down retries with live progress in the export dialog, the achieved-resolution notice, and a hard error instead of a blank image when even the minimum fails.
 
-## [Unreleased] - 2026-08-11 (voice-and-audience writing standard, blog series grouping)
+## [0.8.0] - 2026-08-11 (voice-and-audience writing standard, blog series grouping)
 
 ### Added
 
@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `project-docs/writing-voice/` — implementation plan, the 4-persona agentic-review synthesis with per-finding dispositions (all 7 must-fix findings applied in-session), and the deferred-opportunities list. Most urgent deferral: the homepage hero code sample now sits directly under a lede promising approachability while opening with raw OKLCH triples and radians.
 
-## [Unreleased] - 2026-08-07 (workspace switches refresh the old workspace's thumbnail)
+## [0.8.0] - 2026-08-07 (workspace switches refresh the old workspace's thumbnail)
 
 ### Fixed
 
@@ -78,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/debug-workspace-switch-undo.ts` gained scenario 6 (switch triggers auto + hero uploads for the old workspace, `thumbnail-updated` fires, and the next workspace's own thumbnail still generates — the cross-stamp backstop) and a global invariant that thumbnail uploads only ever target owned workspaces. Now 6 scenarios / 23 checks.
 - `tests/playground-thumbnail-capture.test.ts` — 6 jsdom tests pinning the synchronous-capture contract (snapshots survive the source element being cleared in place) and the crop/hero geometry (centered square crop, supersample floor, explicit crop regions, 1440px aspect-fit hero, grid-chrome stripping).
 
-## [Unreleased] - 2026-08-07 (returning to a workspace re-arms autosave)
+## [0.8.0] - 2026-08-07 (returning to a workspace re-arms autosave)
 
 ### Fixed
 
@@ -90,7 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `scripts/debug-workspace-switch-undo.ts` gained scenario 5 (away-and-back re-arms autosave — pre-fix: the after-return edit produced zero save requests and was lost; exactly-once save assertion; `?state=` scratch edits survive leave-and-return). Now 5 scenarios / 19 checks.
 
-## [Unreleased] - 2026-08-07 (workspace switches: undo isolation + autosave flush)
+## [0.8.0] - 2026-08-07 (workspace switches: undo isolation + autosave flush)
 
 ### Fixed
 
@@ -104,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/debug-workspace-switch-undo.ts` — puppeteer repro + verification (4 scenarios, 15 checks: undo bleed incl. server-side destruction via the teardown keepalive save, flush-on-switch, share-link and 404 stale-save vectors; `--slow` waits out the 30s autosave interval). Pre-fix it fails 10/15, reproducing the reported data loss exactly.
 - Tests: 6 new service-level tests (`tests/playground-workspace-switch-autosave.test.ts`) pinning the flush/stop/init ordering contract that workspace-view relies on. Full suite: 4665 passing.
 
-## [Unreleased] - 2026-08-06 (arrays are read-only while being iterated)
+## [0.8.0] - 2026-08-06 (arrays are read-only while being iterated)
 
 ### Changed
 
@@ -117,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/debug-array-first-last-filter.ts` gained a third scenario asserting the iteration-lock error surfaces in the playground error panel.
 - Tests: 23 new (evaluator lock matrix incl. arrayRef-vs-closure routes, sort comparator, reduce accumulator === receiver, lock release after completion, slice-copy escape hatch, object-for-each unaffected; annotated parity subset; exact-message assertions in errors suite). Full suite: 4657 passing. Zero pre-existing tests needed changes — no shipped program in the repo relied on mutation during iteration.
 
-## [Unreleased] - 2026-08-06 (arrays: .first / .last / .filter)
+## [0.8.0] - 2026-08-06 (arrays: .first / .last / .filter)
 
 ### Added
 
@@ -136,7 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/debug-array-first-last-filter.ts` — puppeteer verification that `.filter`/`.first`/`.last` render correctly in the playground surface and the missing-block error reaches the error panel.
 - Tests: ~40 new across evaluator (filter semantics, truthiness, copy behavior), annotated parity (incl. `<<` worker form — added from review), errors (exact messages), lambdas (`filter() << f` ≡ trailing block), and completions (phantom-method guard updated). Full suite: 4634 passing.
 
-## [Unreleased] - 2026-08-06 (glyph character classes: isSpace / isTab / isNewline / isMark / codePoint)
+## [0.8.0] - 2026-08-06 (glyph character classes: isSpace / isTab / isNewline / isMark / codePoint)
 
 ### Added
 
@@ -149,7 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/debug-glyph-char-classes.ts` — puppeteer verification that the classification members and the docs' line-wrap pattern work end-to-end in the playground surface.
 - Tests: unit coverage matrix over the classifier (27 characters spanning space/tab/newline/mark/none classes, asserting the partition invariant per character), end-to-end compile tests (including NBSP, ideographic space, combining accent, astral emoji `codePoint`), and non-glyph error paths in both evaluators.
 
-## [Unreleased] - 2026-08-06 (workspace breadcrumb: export SVG size)
+## [0.8.0] - 2026-08-06 (workspace breadcrumb: export SVG size)
 
 ### Added
 
@@ -165,7 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests: `tests/format-bytes.test.ts` and `tests/svg-export-size.test.ts` (12 tests, exact byte-delta assertions incl. UTF-8 multi-byte and font-rule injection). Full suite: 4561 passing.
 - Known limitations (pre-existing, flagged): SVG export embeds only the watermark/legend chrome fonts, never artwork fonts (`result.fontBinaries` lives in the iframe head, outside the cloned SVG) — the size correctly reflects this; and the breadcrumb story cannot demonstrate the span because storybook must not mutate `currentView`.
 
-## [Unreleased] - 2026-08-05 (loop control: continue / break)
+## [0.8.0] - 2026-08-05 (loop control: continue / break)
 
 ### Added
 
@@ -176,7 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Review hardening: loop control also works in loops inside `&{ }` text-block *expressions* (a separate evaluator walker from the `text(x,y){}` statement form — caught in review with an empirical repro), and every callback/defs-producer body site carries the defensive boundary guard.
 - Known pre-existing follow-up (not from this change): `buildTextIfStatement` drops the body of a text-for-loop nested inside a text-block `if` (`ast-builder.ts` uses the generic loop builder there), so statements in that position are silently discarded — needs its own fix.
 
-## [Unreleased] - 2026-08-05 (glyph provenance: char / isWhitespace / isEmpty)
+## [0.8.0] - 2026-08-05 (glyph provenance: char / isWhitespace / isEmpty)
 
 ### Added
 
@@ -185,7 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`PathBlock.isEmpty`** — `true` when a block has no path commands; the documented way to detect space glyphs from `fromGlyph` (and other empty blocks like `subPath(t, t)`), replacing the undocumented `subPathCount == 0` idiom.
 - **`glyph.char` and `glyph.isWhitespace`** on `PathBlock.fromGlyph()` results — each glyph now records its source character (1-char string expando, like `advanceWidth`) and whether it is whitespace. Reading them on a non-glyph PathBlock errors with a pointer to `fromGlyph`/`isEmpty`. Implemented in both evaluators; completions/hover flow via `pathogen-api.ts`; documented in `docs/path-blocks.md` → "char, isWhitespace, isEmpty".
 
-## [Unreleased] - 2026-08-05 (CJK Google Fonts subset loading)
+## [0.8.0] - 2026-08-05 (CJK Google Fonts subset loading)
 
 ### Fixed
 
@@ -203,7 +203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `docs/path-blocks.md`: `@font` now documents automatic script-subset loading; new "Non-Latin text and missing glyphs" section documents the placeholder-box + `[warn]` behavior.
 
-## [Unreleased] - 2026-08-04 (Color.flatten)
+## [0.8.0] - 2026-08-04 (Color.flatten)
 
 ### Added
 
@@ -211,7 +211,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`Color.flatten(background?)`** — merges a translucent color down onto a solid background, image-editor style, returning the opaque color the user actually sees on screen. Compositing is Porter-Duff source-over on gamma-encoded sRGB channels (the same math browsers use to paint a translucent CSS color over a page), with the background defaulting to white. A translucent background is allowed and keeps the correctly composited alpha (`αs + αbg·(1−αs)`); flattening onto any opaque background always yields alpha 1. Theme-dynamic colors (`CSSVar(...)`-backed or `Color.lightDark(...)`) are rejected with a targeted error — CSS has no alpha-compositing expression, so the result could not follow the theme. Implemented in both evaluators with parity tests; completions, hover, and inlay hints flow via `pathogen-api.ts`; documented in `docs/color.md` → Flattening.
 
-## [Unreleased] - 2026-08-04 (stdlib primers)
+## [0.8.0] - 2026-08-04 (stdlib primers)
 
 ### Added
 
@@ -224,7 +224,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Internal stdlib primers** (`project-docs/stdlib-primers/`, linked from the pinned section atop `website/bbwp/index.html`) — seven standalone blog-post-style pages, one per deterministic stdlib function (`hash01`, `hash11`, `hashRange`, `smoothstep`, `bump`, `noise`, `noise2`), each with a plain-language mental model and five worked examples climbing from a bare function plot to a finished composition. 35 compiled-in-process `.pathogen` examples; regenerable via `build-primers.ts` (`--only`, `--check`); local-only (serve:bbwp), never deployed. Multi-persona reviewed.
 
-## [Unreleased] - 2026-08-03 (`<<` worker application)
+## [0.8.0] - 2026-08-03 (`<<` worker application)
 
 ### Changed
 
@@ -232,7 +232,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Lambda application to callback builtins moved from argument position to the `<<` operator** — `arr.map(f)` / `spine.compoundVariableOffset(mk)` are replaced by `arr.map() << f` / `spine.compoundVariableOffset() << mk` across all eight callback positions (array `.map`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`, `variableOffset`/`compoundVariableOffset`). Rationale: parentheses parameterize the builtin (`reduce(init) << f`), `<<` supplies the worker — the same application shape as `PathLayer('name') << styleBlock` and object merge, and it keeps the parens free for future parameters on block-taking builtins. The argument form is removed (it never reached production use) and errors with a pointer to `<<`. Trailing literal blocks are unchanged; lambdas remain first-class values and user functions still take them as ordinary arguments. Evaluation order: receiver → parenthesized args → worker → iteration. Error text at every site now advertises the `<<` form, and a callable landing on the merge path gets a targeted hint. Annotated-evaluator parity rides along: the previously missing `ObjectValue << ObjectValue` merge case now works under `--annotated`, and its `<<` error text matches the main evaluator. Editor intelligence follows (test-pinned): worker-lambda params (`<< {|go, pb| ...}`) bind to their owning call and get the same member completions and typed hover as trailing-block params, and `let a = arr.map() << f;` infers the completed call's type for chain completions.
 
-## [Unreleased] - 2026-08-02 (deterministic hash & shaping stdlib)
+## [0.8.0] - 2026-08-02 (deterministic hash & shaping stdlib)
 
 ### Added
 
@@ -251,7 +251,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New blog post **"The Reliable Line: Hash, Noise, and Envelopes Join the Stdlib"** (`website/blog/the-reliable-line.md`, five samples in `samples/post32/`) — why the built-in hash is deliberately not the sin-fract folklore hash (bit-exactness argument), the glow from "The Shape of a Stroke" rebuilt on `bump`/`hash11` with zero helper fns, the envelope vocabulary as one-liners (including the two-smoothstep plateau idiom), `noise()` frequency sweeps, and the `noise2()` coherent-field finale. Validated (0 warnings) + multi-persona agentic review applied.
 - **Variable-Width Strokes series formalized**: "The Swelling Line" (part 1), "The Shape of a Stroke" (part 2), and "The Reliable Line" (part 3) now carry part subtitles and a shared series TOC with forward/back links.
 
-## [Unreleased] - 2026-08-02 (lambda expressions)
+## [0.8.0] - 2026-08-02 (lambda expressions)
 
 ### Added
 
@@ -271,7 +271,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New blog post **"The Shape of a Stroke: Envelopes, Bulges, and Lambdas"** (`website/blog/lambdas-come-to-pathogen.md`, five interactive samples in `samples/post31/`) — builds a richer variable-width stroke via width-as-a-function envelopes and introduces lambdas as the capability that makes envelopes composable; validated via `scripts/validate-samples.ts` (0 warnings) and multi-persona agentic review.
 - Internal: `project-docs/bulge-strokes/` — the bulge-strokes tutorial (stages 0–6 plus lambda-refactored `03b`/`06b`, with `06b` diff-verified byte-identical to `06`), review fixes, self-contained preview renderer, and blog-context primer.
 
-## [Unreleased] - 2026-08-01 (first-class Angle values)
+## [0.8.0] - 2026-08-01 (first-class Angle values)
 
 ### Changed
 
@@ -289,7 +289,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Rewrote `docs/syntax.md` § Angle Units around the new value semantics (members, arithmetic, display); inverted the "units do not survive a variable" callout in `docs/color.md` § Hue; updated gradients/stdlib/layers/filters/markers angle notes accordingly.
 
-## [Unreleased] - 2026-07-31 (admin Set Thumbnail from moderation)
+## [0.8.0] - 2026-07-31 (admin Set Thumbnail from moderation)
 
 ### Added
 
@@ -304,7 +304,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Moderation toasts were silent no-ops** — `admin-moderation-view`'s `_toast` dispatched a `'toast'` event, but the only listener anywhere is `<app-toast>`'s `'show-toast'`; every toast in the view ("Approved: …", "Regenerate failed: …") was a dead event. Now dispatches `show-toast` with `detail.title`, and failure toasts carry `type: 'error'` styling.
 - **Stale moderation card thumbnails after Regenerate / Set thumbnail** — the card's R2 `<img>` URL was stable, so the browser kept serving its cached PNG after a regenerate. The URL is now cache-busted on `thumbnailAt`, and a `thumbnail-updated` listener stamps the entry and drops the cached compile (which would otherwise shadow the fresh image) so the card repaints immediately.
 
-## [Unreleased] - 2026-07-30 (detail-page live hero viewer)
+## [0.8.0] - 2026-07-30 (detail-page live hero viewer)
 
 ### Added
 
@@ -316,7 +316,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Approval-SVG backfill sweep** (`scripts/`) — regenerates missing approval SVGs through the exact admin "Regenerate preview" pipeline (puppeteer harness running the real compiler worker + `generateSvg`, PUT to `/admin/approval/:id/svg`). Unions the approved and featured listings (they're disjoint), skips GPU-gradient sources by default (their vector fallback would degrade accurate raster heroes; `--include-gpu` overrides), reports and leaves per-item failures untouched, and refuses non-local `--api-base` writes without `--confirm`. Local run: 15 candidates, 7 regenerated to the live viewer; over-cap/parse-error items correctly kept their static heroes.
 
-## [Unreleased] - 2026-07-29 (PDF export: transparent-background black band)
+## [0.8.0] - 2026-07-29 (PDF export: transparent-background black band)
 
 ### Fixed
 
@@ -324,7 +324,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Thick black border in exported PDFs when the workspace background is transparent** — the PDF export paints the margin+bleed area with the workspace background so trimmed posters print edge-to-edge, but `resolveCssColorToHex` resolved any zero-alpha color (e.g. `oklch(75% 75% 180 / 0%)`) to opaque `#000000`, painting the whole band solid black (found via a real user export with Bleed + crop marks on). Zero-alpha colors now resolve to `null` — the fill is skipped and the paper stays white, matching the `transparent` keyword — and semi-transparent backgrounds are flattened over white (new pure helper `flattenOverWhite` in `playground/utils/svg-pdf-colors.ts`) instead of painting at full strength. The same resolution feeds the raster/JPEG flatten, which now correctly falls back to white paper instead of black. The SVG paint-normalization path (`normalizeSvgPaintColors`), which folds alpha into `*-opacity` attributes, is unchanged. The PDF path also strips the clone's `#preview-bg` rect — the page-level fill is the single source of background paint, so a semi-transparent background no longer composites a second time inside the artwork area (which would have printed a deeper tint there than in the margins). Unit tests in `tests/svg-pdf-colors.test.ts`; red/green E2E verification on the real export path plus regression checks in `project-docs/unified-export/verify-export.ts` (which also documents that the pre-unification `verify-pdf-export.ts` harness can no longer drive the renamed modal). One sentence added to `docs/exporting.md` documenting the transparent/semi-transparent background behavior.
 
-## [Unreleased] - 2026-07-29 (array reverse + sort)
+## [0.8.0] - 2026-07-29 (array reverse + sort)
 
 ### Added
 
@@ -332,7 +332,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`.reverse()` and `.sort()` array methods** — both return a new array, leaving the original unmodified. Bare `.sort()` sorts in natural ascending order (numbers numerically, strings by character-code order); arrays holding anything else (Points, Colors, `null`, mixed types) — or numeric arrays containing `NaN`, which the sort algorithm would otherwise silently treat as "equal" — throw a clear error directing the user to a comparator. `.sort {|a, b| return calc(a - b); }` takes a JS-style comparator trailing block (negative → `a` first, positive → `b` first, zero → keep order; stable). A comparator that returns a non-number — including a boolean from `return a < b;` or nothing at all — is an error naming the `calc(a - b)` form. The comparator loop uses the top-level-return fast path (no per-comparison throw/catch), and both methods behave identically in the annotated evaluator. Editor support flows end-to-end: completions with snippets, hover, chain return-type inference, comparator block params infer the array's element type, and array-receiver `.reverse()` inlay hints now say `Array` instead of `PathBlock`. Documented in `docs/syntax.md` (Arrays → Methods).
 
-## [Unreleased] - 2026-07-29 (editor typing-latency overhaul)
+## [0.8.0] - 2026-07-29 (editor typing-latency overhaul)
 
 ### Fixed
 
@@ -348,7 +348,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`npm run perf:typing`** (`scripts/perf-typing-audit.ts`) — puppeteer editor-latency profiler: loads a `.pathogen` source (or a generated heavy program) via `/workspace/scratch?state=`, drives real typing / cursor-movement / error-state bursts against live CodeMirror, and aggregates the perf spans per phase. Diagnosis narrative and before/after numbers in `project-docs/editor-perf/FINDINGS.md`.
 - Benchmarked but deferred (tracked in `project-docs/editor-perf/FINDINGS.md`): `showError()`'s main-thread `getDiagnostics` re-evaluates the whole program per errored compile — ~64 ms per keystroke pause in a long-lived error state on a loop-heavy program, scaling 1:1 with compile time (glyph-font programs dodge it because the fonts-absent main-thread evaluation skips glyph loops — itself a diagnostics-divergence hazard). Fix direction: run diagnostics in the existing compiler worker.
 
-## [Unreleased] - 2026-07-28 (readable `viewbox` global)
+## [0.8.0] - 2026-07-28 (readable `viewbox` global)
 
 ### Added
 
@@ -366,7 +366,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`log(viewbox)` and `` `${viewbox}` `` interpolation format as `ViewBox(originX, originY, width, height)`** instead of `[object Object]`.
 - **Annotated evaluator rejects `viewbox` member assignment** (`Cannot assign to property 'width'`), matching the main evaluator. (The annotated evaluator's broader silent-accept of unhandled member assignments — e.g. `point.x = 5` — predates this work and is left as a tracked follow-up, since fixing it wholesale needs its own regression pass.)
 
-## [Unreleased] - 2026-07-28 (any Google Font via @font)
+## [0.8.0] - 2026-07-28 (any Google Font via @font)
 
 ### Added
 
@@ -380,7 +380,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`check-links` was validating almost nothing** — the link checker now actually resolves and verifies cross-references; running the fixed checker surfaced 30 broken cross-references across the docs, all repaired.
 
-## [Unreleased] - 2026-07-28 (object shorthand + style-value interpolation)
+## [0.8.0] - 2026-07-28 (object shorthand + style-value interpolation)
 
 ### Added
 
@@ -409,7 +409,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `docs/layers.md` documents fragment interpolation, unit-inside vs unit-outside equivalence, and numeric substitution; `docs/security.md` states that interpolation results are validated post-evaluation; `docs/filters.md` adds a dynamic filter-arguments example.
 
-## [Unreleased] - 2026-07-26 (unit-aware color-method angles)
+## [0.8.0] - 2026-07-26 (unit-aware color-method angles)
 
 ### Fixed
 
@@ -424,7 +424,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `docs/color.md` now states the degrees contract for hue/harmony methods (previously the unit was documented only by a `°` in a code comment) with the auto-conversion rules and the `deg()` escape hatch; `docs/syntax.md` documents that `calc()` is unit-blind and the extended mismatch rules.
 
-## [Unreleased] - 2026-07-26 (template literals: CST-walk fix + parseMixed assessment)
+## [0.8.0] - 2026-07-26 (template literals: CST-walk fix + parseMixed assessment)
 
 ### Fixed
 
@@ -442,7 +442,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **parseMixed assessment recorded** (`project-docs/template-literals/ASSESSMENT.md`): extracting template literals into a separate parseMixed-mounted parser would *subtract* structure — the grammar already parses interpolations inline as real expression subtrees, a mount would replace them unless unproven `overlay` machinery re-mounted the full parser inside every interpolation, and the `${` token-group fragility stays either way. The inner style grammar's opaque `Template` token remains the one legitimate future parseMixed candidate.
 
-## [Unreleased] - 2026-07-25 (style-block scope awareness: references in values, rename/find-refs, Member expressions)
+## [0.8.0] - 2026-07-25 (style-block scope awareness: references in values, rename/find-refs, Member expressions)
 
 ### Added
 
@@ -456,7 +456,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Variable references inside style values take the variable color again.** A new decoration extension (`cm-style-ref-recolor.ts`) marks style-value identifiers that resolve to declarations, so `stroke: c;` and `drop-shadow(1px 1px c)` render `c` coral in dark mode / default text in light — matching the variable everywhere else — while CSS keywords (`middle`) and undeclared names keep the value color. Backed by a shared size-1 scope-analysis memo (`scope-cache.ts`) reused by the color-chip extension. **Post-ship fix (2026-07-26):** the theme rule must target the NESTED syntax span (`.cm-style-var-ref span`) — CodeMirror nests the highlight span inside the mark span, so styling only the mark recolors the wrapper while the glyphs keep the old color; `getComputedStyle` on the mark reports success while the screen disagrees. Found via Ryan's side-by-side color-literal calibration; verification scripts now measure the deepest span.
 - **Color chips are scope-aware**: `let tomato = ...; stroke: tomato;` no longer renders a chip (clicking it would have overwritten the variable reference with a literal color — the KNOWN LIMITATION from the previous entry, now fixed in both the mounted-tree and regex-fallback chip paths). An undeclared `stroke: tomato;` still chips.
 
-## [Unreleased] - 2026-07-25 (style-block structure: comma-form filter error, inner grammar, editor intelligence)
+## [0.8.0] - 2026-07-25 (style-block structure: comma-form filter error, inner grammar, editor intelligence)
 
 ### Fixed
 
@@ -486,7 +486,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `project-docs/style-block-structure/` — plan, primer (parser-identity diagram, comma policy, inner-grammar boundary rules), demo `.pathogen`, and the puppeteer verification scripts used for the playground surface checks.
 
-## [Unreleased] - 2026-07-25 (font weight fallback)
+## [0.8.0] - 2026-07-25 (font weight fallback)
 
 ### Fixed
 
@@ -504,7 +504,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `path-blocks.md` @font section: documents playground weight substitution, and corrects the load-failure claim (CLI warns and continues; the playground reports a compile error).
 
-## [Unreleased] - 2026-07-24 (AST-based type inference + member hover)
+## [0.8.0] - 2026-07-24 (AST-based type inference + member hover)
 
 ### Added
 
@@ -527,7 +527,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hover test suite gains the full variableOffset repro program as an integration fixture plus a binding-form × hover-site coverage matrix (every literal kind, destructure position, loop form, and block-param form) so future inference holes fail a test instead of surfacing as UX reports.
 - `src/language-services/CLAUDE.md` and the cross-system lifecycle checklist now cover trailing-block methods (`@blockparams` + builder `@type` interface) and direct new inference rules to the AST module.
 
-## [Unreleased] - 2026-07-23 (zoom/pan parity + shared zoom pill)
+## [0.8.0] - 2026-07-23 (zoom/pan parity + shared zoom pill)
 
 ### Added
 
@@ -552,7 +552,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `project-docs/unified-export/verify-export.ts` extended to 41 checks: PointerEvent pan gestures, predicate veto on legend targets, mid-gesture byte-clean download, a fills-the-pane zoom-window geometry pin, a visible-artwork-layers guard, and a standalone-bundle check that `pan-zoom.global.js` alone registers a styled pill (the VS Code path). Execution record in `project-docs/pan-zoom-performance/zoom-surface-parity.md`.
 
-## [Unreleased] - 2026-07-21 (unified export workflow)
+## [0.8.0] - 2026-07-21 (unified export workflow)
 
 ### Added
 
@@ -574,7 +574,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New tests: `highlight-tokens`, `legend-code-tokens`, `code-print-palette` (drift-guard against theme.css), outliner multi-tspan fills; Puppeteer E2E harness `project-docs/unified-export/verify-export.ts`.
 
-## [Unreleased] - 2026-07-20 (font-family variables)
+## [0.8.0] - 2026-07-20 (font-family variables)
 
 ### Added
 
@@ -604,7 +604,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/debug-font-variable-resolution.ts` — puppeteer verification that the Noto Sans binary is fetched, injected into `#pathogen-fonts`, and computed on the rendered `<text>` for the variable program; plus a cold repro of the quoted-literal case. Artifacts in `project-docs/font-variable-resolution/`.
 - Deferred: scope-analysis reference (rename/go-to-def) for the `@font` identifier — needs an `identifierLoc` on the AST node first (see `project-docs/font-variable-resolution/STATUS.md`).
 
-## [Unreleased] - 2026-07-19 (export output optimization)
+## [0.8.0] - 2026-07-19 (export output optimization)
 
 ### Added
 
@@ -644,7 +644,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New suites `tests/path-precision.test.ts` (18), `tests/path-decimate.test.ts` (13), and `tests/pdf-cover-sheet.test.ts` (15) — incl. a no-drift proof vs naive relative rounding, epsilon-monotonicity/idempotence invariants, S/T reflection normalization across subpath boundaries, and cover manifest formatting. E2E harness extended to 56 checks (decimation op-count reduction, precision decimals/absolute assertions, floatPrecision probe, marker-untouched guard, cover-sheet page structure incl. the long-values + Standard-detail combination).
 - `playground/CLAUDE.md` drive-by: the browser global is `window.PathogenLang` (stale `SvgPathExtended` reference fixed).
 
-## [Unreleased] - 2026-07-18 (print-ready PDF export)
+## [0.8.0] - 2026-07-18 (print-ready PDF export)
 
 ### Added
 
@@ -680,7 +680,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dynamic vendor imports in `font-loader.ts`/`svg-text-outliner.ts` use variable specifiers + `@vite-ignore` so jsdom vitest suites can import these modules.
 - New suites: `tests/pdf-page-layout.test.ts` (23 tests — preset/pt conversions, bleed+slug+crop-mark geometry, centering, match/custom modes, bounds), `tests/svg-text-outliner.test.ts` (12 tests against the Inter fixture font). End-to-end Puppeteer verification harness at `project-docs/pdf-export/verify-pdf-export.ts` (21 checks incl. PDF MediaBox, no-font-programs probe, raster fallback, margin-error surfacing).
 
-## [Unreleased] - 2026-07-18 (regex-audit remediation)
+## [0.8.0] - 2026-07-18 (regex-audit remediation)
 
 Audit and remediation of risky regex-based parsing in the compiler (see
 `project-docs/regex-audit/`). Structured, grammar-shaped content that was being
@@ -709,7 +709,7 @@ several latent correctness bugs and two confirmed security vulnerabilities.
 - **Style-block grammar note.** A Lezer-grammar approach to structuring style declarations was attempted and abandoned: `${` is shared between `styleBlockOpen` and `templateInterpStart`, and structuring `StyleBlockLiteral` merges their LALR states, breaking template interpolation. The declaration parser lives in the AST builder instead; the grammar's `StyleContent` token stays opaque.
 - New/expanded suites: `tests/path-data.test.ts`, `tests/path-roundtrip.test.ts`, `tests/color-parse.test.ts`, `tests/color-conformance.test.ts`, plus F8/F9 sanitizer fixtures and strict style-declaration tests across `parser`/`errors`/`diagnostics`.
 
-## [Unreleased] - 2026-07-17 (segment labels & corner suffixes)
+## [0.8.0] - 2026-07-17 (segment labels & corner suffixes)
 
 ### Added
 
@@ -737,7 +737,7 @@ several latent correctness bugs and two confirmed security vulnerabilities.
 - **Fixed a latent double-adjustment bug in `parseExpressionAt`** — AST nodes sharing a `loc` object (method call + its object) were line-shifted twice, corrupting error locations for single-letter-variable method calls (`s.foo();`). Locations are now adjusted exactly once (visited-set guard).
 - New suites: `tests/segments.test.ts` (store/parse units + 30k-command perf smoke), `tests/segment-labels.test.ts` (recording, validation, finalization equivalence), snapshot fixture `13-segment-suffixes` exercising the syntax end-to-end. Note for grammar regens: `npx lezer-generator src/parser/pathogen.grammar -o src/parser/pathogen.generated.ts`, then re-apply the `keyof typeof spec_Identifier` type patch on the `specialized:` line (required for the DTS build).
 
-## [Unreleased] - 2026-07-17
+## [0.8.0] - 2026-07-17
 
 ### Added
 
@@ -754,7 +754,7 @@ several latent correctness bugs and two confirmed security vulnerabilities.
 - **Shared type-inference module.** `inferType` and friends moved out of `completion.ts` into `src/language-services/type-inference.ts` so hover and completion share one inference engine; new `inferRhsType` handles destructuring right-hand sides (`ctx.position`, constructor calls, color literals, variables).
 - Destructuring error messages in text-block bodies now carry line numbers (three `bindDestructuringPattern` call sites previously dropped them).
 
-## [Unreleased] - 2026-07-13
+## [0.8.0] - 2026-07-13
 
 ### Added
 
@@ -981,7 +981,7 @@ After commit b784152 surfaced 27 pre-existing compile failures:
 
 `npm run compile:samples` final state: **143 compiled, 0 errors**.
 
-## [Older Unreleased] - 2026-05-13
+## [0.8.0] - 2026-05-13
 
 ### Added
 
@@ -1103,7 +1103,7 @@ After commit b784152 surfaced 27 pre-existing compile failures:
 - New `scripts/seed-dev-users.ts` (`npm run seed:dev`) seeds 10 mock users (admin, verified, unverified, flagged) with sample workspaces into the local dev D1 + KV. Idempotent (deletes seed-prefixed rows first), refuses to run with `PRODUCTION=1`.
 - Backstop tests: `tests/auth/features.test.ts` pins the Publishing/AdminModeration deny-list rules across 11 cases (case-insensitive admin matching, multi-entry lists, pre-migration row tolerance).
 
-## [Unreleased pre-moderation] - 2026-05-11
+## [0.8.0] - 2026-05-11 (pre-moderation)
 
 Post-0.7.0 polish. Custom filter pipeline added with six constructors (Noise, Glow, Emboss, ElevationShadow, InnerShadow, Pixelate). Inspector population is now correct on every blog post; sitewide typography refresh; homepage and docs responsive cleanup.
 
@@ -1244,7 +1244,7 @@ Old URLs 301 to their new locations.
 - Pedestal-Design apex landing page (`website/index.html`) — the Pages worker now SSRs the apex directly via `renderHomepage()`.
 - Pages worker's `apiHandlers` + `handleApiRequest` + wildcard CORS — moved to the API Worker. The Pages worker is now SSR + static-fallback only; old `/pathogen/api/*` URLs return 410 with a hint pointing at `api.pathogen.studio`.
 
-## [Unreleased] - 2026-04-10
+## [0.7.0] - 2026-04-10
 
 ### Added
 
@@ -1349,7 +1349,7 @@ Old URLs 301 to their new locations.
 - VS Code extension CLAUDE.md updated with readiness status and development lifecycle.
 - Quality standard: no placeholders in shipped code, end-to-end verification mandatory, be honest about readiness.
 
-## [Unreleased] - 2026-03-21
+## [0.7.0] - 2026-03-21
 
 ### Added
 
@@ -1418,7 +1418,7 @@ Old URLs 301 to their new locations.
 - Removed old `.js` utility files replaced by TypeScript migration.
 - Gitignored `tests/tmp/` and `website/bbwp/` render artifacts.
 
-## [Unreleased] - 2026-03-08
+## [0.7.0] - 2026-03-08
 
 ### Added
 
@@ -1510,7 +1510,7 @@ Old URLs 301 to their new locations.
 - Cmd/Ctrl+S now saves immediately instead of exporting.
 - Thumbnail-updated event dispatched on workspace exit.
 
-## [Unreleased] - 2026-02-16
+## [0.7.0] - 2026-02-16
 
 ### Added
 
@@ -1561,7 +1561,7 @@ Old URLs 301 to their new locations.
 - Git hook installer (`install-git-hooks.ts`) now writes shims that invoke TypeScript source via `npx tsx`.
 - Added `playground/CLAUDE.md` and `src/CLAUDE.md` with conventions and workflow guardrails; refreshed project-level CLAUDE.md for multi-layer era.
 
-## [Unreleased] - 2026-02-09
+## [0.7.0] - 2026-02-09
 
 ### Added
 
@@ -1595,7 +1595,7 @@ Old URLs 301 to their new locations.
 #### Deployment
 - Migrated from GitHub Pages to Cloudflare Pages; removed GitHub Actions deploy workflow.
 
-## [Unreleased] - 2026-02-02
+## [0.7.0] - 2026-02-02
 
 ### Added
 
