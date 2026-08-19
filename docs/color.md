@@ -169,9 +169,9 @@ for (i in 1..9) {
 }
 ```
 
-> **An angle is an angle wherever it flows.** `calc(i / 9 * 2pi)` is an [Angle value](#syntax-angle-units), and it stays one through a `let`, an array, or a function call — hoisting it into a variable does not change the shift. Only a genuinely bare number is read as degrees — and standard-library results are bare numbers, so `calc(sin(t) * 180)` is degrees:
+> **An angle is an angle wherever it flows.** `calc(i / 9 * 2pi)` is an [Angle value](#syntax-angle-units), and it stays one through a `let`, an array, a function call, or an [angle-preserving standard-library function](#stdlib-angle-preserving-functions) like `clamp`, `lerp`, or `randomRange` — hoisting it into a variable does not change the shift. Only a genuinely bare number is read as degrees — and results of angle-*consuming* functions are bare numbers, so `calc(sin(t) * 180)` is degrees.
 >
-> **Behavior change:** angle units used to be consumed at the literal — `let t = 0.5pi; c.hueShift(t)` shifted 1.57°, not 90°. Angles now survive variables, so that program shifts 90°.
+> **Behavior change:** angle units used to be consumed at the literal — `let t = 0.5pi; c.hueShift(t)` shifted 1.57°, not 90°. Angles now survive variables, so that program shifts 90°. They also survive angle-preserving standard-library calls: `c.hueShift(randomRange(-0.5pi, 0.5pi))` used to shift by a near-invisible ±1.57° (the angle range was flattened to bare radians, read as degrees) and now shifts within ±90°.
 
 ```
 let c = Color('#e63946');
@@ -179,6 +179,7 @@ let sweep = calc(6 / 9 * 2pi);           // an Angle — 240°
 let a = c.hueShift(sweep);               // 240° — angle-ness survives the let
 let b = c.hueShift(deg(sweep));          // 240° — deg() returns a plain number of degrees
 let d = c.hueShift(calc(sin(1) * 180));  // ≈151° — sin() returns a plain number, read as degrees
+let e = c.hueShift(randomRange(-0.5pi, 0.5pi));  // random shift in ±90° — the angle survives randomRange
 ```
 
 The same rules apply to [`analogous()`](#color-analogousangle) and [`splitComplementary()`](#color-splitcomplementaryangle), and to colors backed by `CSSVar(...)` — the emitted CSS hue expression uses degrees. `Color(L, C, H)` follows suit: a bare `H` is degrees and an Angle `H` auto-converts, so `Color(0.6, 0.15, 90deg)` stores a hue of 90. The `.hue` property returns a plain number in degrees.

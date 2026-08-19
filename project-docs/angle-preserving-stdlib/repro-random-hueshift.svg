@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 600" width="200" height="600">
+
+  <path data-layer-name="main-path-layer" d="" fill="#bbb" stroke="#222" stroke-width="1"/>
+  <path data-layer-name="some-layer-1" id="some-layer-1" d="M 20 24 l 20 0 l 0 20 l -20 0 z" fill="#c60061" stroke="#7e002c" stroke-width="2"/>
+  <path data-layer-name="some-layer-2" id="some-layer-2" d="M 20 48 l 20 0 l 0 20 l -20 0 z" fill="#797100" stroke="#433600" stroke-width="2"/>
+  <path data-layer-name="some-layer-3" id="some-layer-3" d="M 20 72 l 20 0 l 0 20 l -20 0 z" fill="#9f5c00" stroke="#611e00" stroke-width="2"/>
+  <path data-layer-name="some-layer-4" id="some-layer-4" d="M 20 96 l 20 0 l 0 20 l -20 0 z" fill="#a02cb8" stroke="#610077" stroke-width="2"/>
+  <path data-layer-name="some-layer-5" id="some-layer-5" d="M 20 120 l 20 0 l 0 20 l -20 0 z" fill="#cb003a" stroke="#830000" stroke-width="2"/>
+  <path data-layer-name="some-layer-6" id="some-layer-6" d="M 20 144 l 20 0 l 0 20 l -20 0 z" fill="#af4d00" stroke="#6e0000" stroke-width="2"/>
+  <path data-layer-name="some-layer-7" id="some-layer-7" d="M 20 168 l 20 0 l 0 20 l -20 0 z" fill="#9d2ebb" stroke="#5e007b" stroke-width="2"/>
+  <path data-layer-name="some-layer-8" id="some-layer-8" d="M 20 192 l 20 0 l 0 20 l -20 0 z" fill="#9a30bf" stroke="#5c007e" stroke-width="2"/>
+  <path data-layer-name="some-layer-9" id="some-layer-9" d="M 20 216 l 20 0 l 0 20 l -20 0 z" fill="#bf067a" stroke="#790042" stroke-width="2"/>
+  <path data-layer-name="some-layer-10" id="some-layer-10" d="M 20 240 l 20 0 l 0 20 l -20 0 z" fill="#a65600" stroke="#671400" stroke-width="2"/>
+  <path data-layer-name="some-layer-11" id="some-layer-11" d="M 20 264 l 20 0 l 0 20 l -20 0 z" fill="#c50064" stroke="#7e002e" stroke-width="2"/>
+  <path data-layer-name="some-layer-12" id="some-layer-12" d="M 20 288 l 20 0 l 0 20 l -20 0 z" fill="#b8148c" stroke="#740051" stroke-width="2"/>
+  <path data-layer-name="some-layer-13" id="some-layer-13" d="M 20 312 l 20 0 l 0 20 l -20 0 z" fill="#bd0a7f" stroke="#770046" stroke-width="2"/>
+  <path data-layer-name="some-layer-14" id="some-layer-14" d="M 20 336 l 20 0 l 0 20 l -20 0 z" fill="#8c38cd" stroke="#53008a" stroke-width="2"/>
+  <path data-layer-name="some-layer-15" id="some-layer-15" d="M 20 360 l 20 0 l 0 20 l -20 0 z" fill="#cc0022" stroke="#840000" stroke-width="2"/>
+  <path data-layer-name="some-layer-16" id="some-layer-16" d="M 20 384 l 20 0 l 0 20 l -20 0 z" fill="#bb3d00" stroke="#770000" stroke-width="2"/>
+  <path data-layer-name="some-layer-17" id="some-layer-17" d="M 20 408 l 20 0 l 0 20 l -20 0 z" fill="#896900" stroke="#502e00" stroke-width="2"/>
+  <path data-layer-name="some-layer-18" id="some-layer-18" d="M 20 432 l 20 0 l 0 20 l -20 0 z" fill="#cc0034" stroke="#830000" stroke-width="2"/>
+  <path data-layer-name="some-layer-19" id="some-layer-19" d="M 20 456 l 20 0 l 0 20 l -20 0 z" fill="#8f6600" stroke="#542b00" stroke-width="2"/>
+  <path data-layer-name="some-layer-20" id="some-layer-20" d="M 20 480 l 20 0 l 0 20 l -20 0 z" fill="#a95300" stroke="#690f00" stroke-width="2"/>
+</svg>

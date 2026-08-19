@@ -103,7 +103,7 @@ describe('getCompletions', () => {
       expect(names).toContain('easeOut');
       expect(names).toContain('easeInOut');
       const hashRange = items.find((i) => i.label === 'hashRange');
-      expect(hashRange!.detail).toBe('hashRange(n, min, max, seed?) — Deterministic hash of integer n to [min, max)');
+      expect(hashRange!.detail).toBe('hashRange(n, min, max, seed?) — Deterministic hash of integer n to [min, max); angle-preserving (min, max)');
       expect(hashRange!.insertText).toBe('hashRange(${1:n}, ${2:min}, ${3:max})$0');
       const bump = items.find((i) => i.label === 'bump');
       expect(bump!.detail).toBe('bump(t, center, spread) — Raised-cosine kernel: 1 at center, easing to 0 at center ± spread');
@@ -225,6 +225,28 @@ describe('getCompletions', () => {
       expect(names).toContain('rad');
       expect(names).toContain('pi');
       expect(names).toContain('turns');
+    });
+
+    it('offers Angle members for an angle-preserving stdlib call result', () => {
+      const items = completeAtEnd('let b = clamp(0deg, 0deg, 1pi);\nb.');
+      const names = labels(items);
+      expect(names).toContain('deg');
+      expect(names).toContain('rad');
+      expect(names).toContain('pi');
+      expect(names).toContain('turns');
+    });
+
+    it('offers Angle members when the Angle sits past a variadic declared arity', () => {
+      const items = completeAtEnd('let b = max(1, 2, 0.5pi);\nb.');
+      const names = labels(items);
+      expect(names).toContain('deg');
+      expect(names).toContain('toDeg');
+    });
+
+    it('does not offer Angle members for an angle-consuming stdlib call', () => {
+      const items = completeAtEnd('let b = sin(0.5pi);\nb.');
+      const names = labels(items);
+      expect(names).not.toContain('toDeg');
     });
 
     it('offers Point members for a Grid origin destructured binding', () => {

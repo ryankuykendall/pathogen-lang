@@ -23,6 +23,7 @@ import {
 import { getMethodReturnType } from './type-inference';
 import { inferUnit } from '../evaluator/units';
 import { CALLBACK_METHODS } from '../callback-methods';
+import { ANGLE_PRESERVING_ARGS } from '../stdlib/angle-preserving';
 
 import type { Declaration, Scope, ScopeInfo } from './scope-analysis';
 import type { Position } from './types';
@@ -246,6 +247,14 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
       if (expr.name === 'layer') return 'PathLayer';
       if (PATH_FUNCTION_NAMES.has(expr.name)) return 'PathBlock';
       if (expr.name === 'calc') return 'number';
+      // Angle-preserving stdlib fns (clamp, lerp, randomRange, …) mirror the
+      // runtime contract: an Angle in a deciding slot means an Angle result
+      const preserving = ANGLE_PRESERVING_ARGS[expr.name];
+      if (preserving) {
+        const carriers =
+          preserving === 'all' ? expr.args : preserving.filter((i) => i < expr.args.length).map((i) => expr.args[i]);
+        if (carriers.some((a) => inferExprType(a, scope, visited) === 'Angle')) return 'Angle';
+      }
       return null;
     }
 

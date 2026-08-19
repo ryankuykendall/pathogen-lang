@@ -1,0 +1,23 @@
+// Repro for the angle-preserving stdlib fix (2026-08-19).
+// Before: randomRange flattened the pi-suffixed range to bare radians, which
+// hueShift read as degrees — a ±1.57° shift, visually no variation at all.
+// After: the Angle survives randomRange, so each square shifts within ±90°.
+define ViewBox(0, 0, 200, 600);
+define default PathLayer('main-path-layer') ${
+  fill: #bbb;
+  stroke: #222;
+  stroke-width: 1;
+};
+
+let glyphFontColor = #c00;
+
+for (i in 1..20) {
+  let currentColor = glyphFontColor.hueShift(randomRange(-0.5pi, 0.5pi));
+  let currentLayer = PathLayer(`some-layer-${i}`) ${
+    fill: currentColor;
+    stroke: currentColor.darken(20%);
+  };
+  currentLayer.apply {
+    rect(20, calc(i * 24), 20, 20);
+  }
+}

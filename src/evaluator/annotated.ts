@@ -33,7 +33,7 @@ import {
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { BUILTIN_ENUMS } from './builtin-enums';
 import { assignGradientProperty, assignMarkerProperty, assignMeshPointProperty, assignPatternProperty } from './member-assign';
-import { angle, angleMethod, formatAngleForDisplay, isAngleValue, radiansToDegreesSnapped } from './angle';
+import { angle, angleMethod, callStdlibPreservingAngles, formatAngleForDisplay, isAngleValue, radiansToDegreesSnapped } from './angle';
 import { checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { tryResolveCSSFunctionArgs } from './css-function-resolve';
 import { spliceTemplateFragments } from '../css-value-utils';
@@ -5036,6 +5036,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
     if (!scope.evalState) {
       throw new Error(`Function '${call.name}' requires evaluation context`);
     }
+    // Intentionally unwrap-only: context-aware functions consume angles into
+    // geometry (heading() is documented plain radians) — no angle re-wrap.
     const args = call.args.map((arg) => {
       const v = evaluateExpression(arg, scope);
       return isAngleValue(v) ? v.radians : v;
@@ -5046,11 +5048,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
   const fn = lookupVariable(scope, call.name);
 
   if (typeof fn === 'function') {
-    const args = call.args.map((arg) => {
-      const v = evaluateExpression(arg, scope);
-      return isAngleValue(v) ? v.radians : v;
-    });
-    return (fn as (...args: number[]) => number)(...(args as number[]));
+    return callStdlibPreservingAngles(
+      call.name,
+      fn as (...ns: number[]) => unknown,
+      call.args.map((arg) => evaluateExpression(arg, scope)),
+    ) as Value;
   }
 
   if (typeof fn === 'object' && fn !== null && 'type' in fn && fn.type === 'UserFunction') {
@@ -6027,6 +6029,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
             throw new Error(`Function '${funcCall.name}' requires evaluation context`);
           }
           const rawArgs = funcCall.args.map((arg) => evaluateExpression(arg, scope));
+          // Intentionally unwrap-only (see the expression-call site above).
           const args = rawArgs.map((v) => (isAngleValue(v) ? v.radians : v));
           const result = evaluateContextAwareFunction(funcCall.name, args, scope, funcCall.loc);
           const argsStr = rawArgs.map((a) => displayArg(a)).join(', ');
@@ -6057,10 +6060,10 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
         const fn = lookupVariable(scope, funcCall.name);
 
         if (typeof fn === 'function') {
-          // Stdlib function - evaluate and emit result
+          // Stdlib function - evaluate and emit result (args kept raw for the
+          // displayArg trace lines)
           const args = funcCall.args.map((arg) => evaluateExpression(arg, scope));
-          const callArgs = args.map((v) => (isAngleValue(v) ? v.radians : v));
-          const result = (fn as (...args: number[]) => number)(...(callArgs as number[]));
+          const result = callStdlibPreservingAngles(funcCall.name, fn as (...ns: number[]) => unknown, args);
           if (
             typeof result === 'object' &&
             result !== null &&

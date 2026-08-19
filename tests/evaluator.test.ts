@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../src';
+import { ANGLE_PRESERVING_ARGS } from '../src/stdlib/angle-preserving';
+import { mathFunctions } from '../src/stdlib/math';
 import { compilePath, expectSVGPathCommandSequence, parseSVGPath } from './helpers';
 
 describe('Evaluator', () => {
@@ -4792,6 +4794,103 @@ describe('first-class Angle values', () => {
         `M 0 0 cubicSpline([{x: 50, y: 20, angle: ${(30 * Math.PI) / 180}}, {x: 100, y: 0, angle: ${(-20 * Math.PI) / 180}}]);`,
       );
       expect(viaAngle).toBe(viaNumber);
+    });
+  });
+
+  describe('angle-preserving stdlib functions', () => {
+    // Coverage matrix driven by the contract itself (src/stdlib/angle-preserving.ts),
+    // so a function added to the map without the behavior — or vice versa — fails here.
+    const fns = mathFunctions as Record<string, (...ns: number[]) => unknown>;
+
+    // Build a call with `angleToken` in every relevant slot and distinct plain
+    // fillers elsewhere. Equal values in all relevant slots make every
+    // transparent function's result exactly that value (even randomRange).
+    const buildCall = (name: string, token: string): string => {
+      const relevant = ANGLE_PRESERVING_ARGS[name];
+      const n = Math.max(fns[name].length, relevant === 'all' ? 2 : Math.max(...relevant) + 1);
+      const slots: string[] = [];
+      for (let i = 0; i < n; i++) {
+        const isRelevant = relevant === 'all' || relevant.includes(i);
+        slots.push(isRelevant ? token : String(i + 2));
+      }
+      return `${name}(${slots.join(', ')})`;
+    };
+
+    it('every contract entry names a real mathFunctions export', () => {
+      for (const name of Object.keys(ANGLE_PRESERVING_ARGS)) {
+        expect(typeof fns[name], `${name} is in ANGLE_PRESERVING_ARGS but not in mathFunctions`).toBe('function');
+      }
+    });
+
+    it.each(Object.keys(ANGLE_PRESERVING_ARGS))('%s: angle in relevant slots → Angle out, unit preserved', (name) => {
+      const call = buildCall(name, '0.25pi');
+      expect(compilePath(`let r = ${call};\nM r.deg 0`)).toBe('M 45 0');
+      const result = compile(`let r = ${call};\nlog(\`\${r}\`);`);
+      expect(result.logs[0].parts[0].value).toBe('0.25pi');
+    });
+
+    it.each(Object.keys(ANGLE_PRESERVING_ARGS))('%s: plain numbers in → plain number out', (name) => {
+      const call = buildCall(name, String(Math.PI / 4));
+      const result = compile(`let r = ${call};\nlog(\`\${r}\`);`);
+      expect(result.logs[0].parts[0].value).not.toMatch(/deg|rad|pi|turns/);
+    });
+
+    it('non-transparent math functions still return plain numbers for angle args', () => {
+      // 'log' is shadowed by the logging builtin in program source, so Math.log
+      // can't be exercised this way
+      const skip = new Set([...Object.keys(ANGLE_PRESERVING_ARGS), 'log']);
+      for (const [name, fn] of Object.entries(fns)) {
+        if (skip.has(name) || fn.length === 0) continue;
+        // Distinct per-slot angles keep every function's math well-defined
+        // (smoothstep edges differ, bump spread positive, log/sqrt positive).
+        const call = `${name}(${Array.from({ length: fn.length }, (_, i) => `${(i + 1) / 10}rad`).join(', ')})`;
+        const result = compile(`let r = ${call};\nlog(\`\${r}\`);`);
+        expect(result.logs[0].parts[0].value, `${name} should stay a plain number`).not.toMatch(/deg|rad|pi|turns/);
+      }
+    });
+
+    it('map takes its unit from the output range, not the input', () => {
+      const result = compile('let r = map(0.5, 0, 1, 0deg, 90deg);\nlog(`${r}`);');
+      expect(result.logs[0].parts[0].value).toBe('45deg');
+      expect(compilePath('let r = map(0.5, 0, 1, 0deg, 90deg);\nM r.deg 0')).toBe('M 45 0');
+    });
+
+    it('variadic min picks among mixed angle/plain args and stays an Angle', () => {
+      const result = compile('let r = min(90deg, 100);\nlog(`${r}`);');
+      expect(result.logs[0].parts[0].value).toBe('90deg');
+    });
+
+    it('display unit comes from the first relevant Angle argument', () => {
+      const result = compile('let r = lerp(0.5pi, 90deg, 0.5);\nlog(`${r}`);');
+      expect(result.logs[0].parts[0].value).toBe('0.5pi');
+    });
+
+    it('mixed-magnitude endpoints interpolate in radian space', () => {
+      // lerp(0deg, 0.5pi, 0.5) = π/4 radians, displayed in the first
+      // endpoint's unit — pins the math, not just the unit tag
+      const result = compile('let r = lerp(0deg, 0.5pi, 0.5);\nlog(`${r}`);');
+      expect(result.logs[0].parts[0].value).toBe('45deg');
+    });
+
+    it('variadic max preserves an Angle appearing past the declared arity', () => {
+      // Math.max.length is 2; the 'all' contract must still see index 2.
+      // Radian-space max(1, 2, 0.5pi) is the plain 2, tagged with the pi unit
+      // (the documented mixed-slot behavior).
+      expect(compilePath('let r = max(1, 2, 0.5pi);\nM r.rad 0')).toBe('M 2 0');
+      const result = compile('let r = max(1, 2, 0.5pi);\nlog(`${r}`);');
+      expect(result.logs[0].parts[0].value).toBe('0.6366197724pi');
+    });
+
+    it('hueShift(randomRange(angle, angle)) shifts by the angle, not bare radians', () => {
+      // The original bug: randomRange flattened its pi-suffixed range to bare
+      // radians, which hueShift read as degrees — a ±1.57° shift instead of ±90°.
+      const result = compile('let s = Color(0.5, 0.15, 0).hueShift(randomRange(0.5pi, 0.5pi));\nlog(`${s.hue}`);');
+      expect(result.logs[0].parts[0].value).toBe('90');
+    });
+
+    it('hueShift(hashRange(n, angle, angle)) — deterministic mirror of the repro', () => {
+      const result = compile('let s = Color(0.5, 0.15, 0).hueShift(hashRange(1, 0.5pi, 0.5pi));\nlog(`${s.hue}`);');
+      expect(result.logs[0].parts[0].value).toBe('90');
     });
   });
 });

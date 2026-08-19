@@ -1,4 +1,5 @@
 import { formatNum } from './format';
+import { ANGLE_PRESERVING_ARGS } from '../stdlib/angle-preserving';
 
 import type { AngleValue } from './types';
 
@@ -48,6 +49,29 @@ export function formatAngleForDisplay(a: AngleValue): string {
   if (a.unit === 'pi') return `${formatNum(radiansToPiMultipleSnapped(a.radians))}pi`;
   if (a.unit === 'turns') return `${formatNum(radiansToTurnsSnapped(a.radians))}turns`;
   return `${formatNum(a.radians)}rad`;
+}
+
+/**
+ * Invoke a plain stdlib function (a bare (…numbers) => value), unwrapping
+ * AngleValue arguments to radians as the stdlib contract requires, then
+ * re-wrapping the numeric result as an AngleValue when the function is
+ * angle-preserving (see stdlib/angle-preserving.ts) and an Angle flowed into
+ * one of its value-carrying slots. The display unit comes from the first such
+ * Angle argument. Shared by both evaluators' stdlib dispatch.
+ */
+export function callStdlibPreservingAngles(
+  name: string,
+  fn: (...ns: number[]) => unknown,
+  rawArgs: unknown[],
+): unknown {
+  const args = rawArgs.map((v) => (isAngleValue(v) ? v.radians : v));
+  const result = fn(...(args as number[]));
+  if (typeof result !== 'number') return result;
+  const relevant = ANGLE_PRESERVING_ARGS[name];
+  if (!relevant) return result;
+  const carriers = relevant === 'all' ? rawArgs : relevant.filter((i) => i < rawArgs.length).map((i) => rawArgs[i]);
+  const unitSource = carriers.find(isAngleValue);
+  return unitSource ? angle(result, unitSource.unit) : result;
 }
 
 /**

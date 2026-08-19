@@ -342,18 +342,18 @@ export declare function mpi(x: number): number;
 export declare function deg(radians: AngleValue): number;
 /** rad(degrees) — Convert degrees to radians @boost 10 */
 export declare function rad(degrees: AngleValue): number;
-/** normalizeAngle(angle) — Normalize to [0, 2pi) @boost 6 */
+/** normalizeAngle(angle) — Normalize to [0, 2pi); angle-preserving @boost 6 */
 export declare function normalizeAngle(angle: AngleValue): number;
 
 // =============================================================================
 // Stdlib: Interpolation
 // =============================================================================
 
-/** lerp(a, b, t) — Linear interpolation @boost 14 */
+/** lerp(a, b, t) — Linear interpolation; angle-preserving (a, b) @boost 14 */
 export declare function lerp(a: number, b: number, t: number): number;
-/** clamp(value, min, max) — Constrain to range @boost 14 */
+/** clamp(value, min, max) — Constrain to range; angle-preserving @boost 14 */
 export declare function clamp(value: number, min: number, max: number): number;
-/** map(val, inMin, inMax, outMin, outMax) — Map between ranges @boost 12 */
+/** map(val, inMin, inMax, outMin, outMax) — Map between ranges; angle-preserving (outMin, outMax) @boost 12 */
 export declare function map(val: number, inMin: number, inMax: number, outMin: number, outMax: number): number;
 /** smoothstep(edge0, edge1, x) — Hermite ease from 0 to 1 between edges @boost 12 */
 export declare function smoothstep(edge0: number, edge1: number, x: number): number;
@@ -383,13 +383,13 @@ export declare function trunc(x: number): number;
 // Stdlib: Utility
 // =============================================================================
 
-/** abs(x) — Absolute value @boost 10 */
+/** abs(x) — Absolute value; angle-preserving @boost 10 */
 export declare function abs(x: number): number;
 /** sign(x) — Sign (-1, 0, or 1) @boost 6 */
 export declare function sign(x: number): number;
-/** min(a, b, ...) — Minimum @boost 10 */
+/** min(a, b, ...) — Minimum; angle-preserving @boost 10 */
 export declare function min(...values: number[]): number;
-/** max(a, b, ...) — Maximum @boost 10 */
+/** max(a, b, ...) — Maximum; angle-preserving @boost 10 */
 export declare function max(...values: number[]): number;
 
 // =============================================================================
@@ -407,7 +407,7 @@ export declare function polarY(cy: number, angle: AngleValue, radius: number): n
 
 /** random() — Random 0-1 @boost 8 */
 export declare function random(): number;
-/** randomRange(min, max) — Random in range @boost 8 */
+/** randomRange(min, max) — Random in range; angle-preserving @boost 8 */
 export declare function randomRange(min: number, max: number): number;
 
 // =============================================================================
@@ -422,7 +422,7 @@ export declare function noise(x: number, seed?: number): number;
 export declare function noise2(x: number, y: number, seed?: number): number;
 /** hash11(n, seed?) — Deterministic hash of integer n to [-1, 1) @boost 8 */
 export declare function hash11(n: number, seed?: number): number;
-/** hashRange(n, min, max, seed?) — Deterministic hash of integer n to [min, max) @boost 10 */
+/** hashRange(n, min, max, seed?) — Deterministic hash of integer n to [min, max); angle-preserving (min, max) @boost 10 */
 export declare function hashRange(n: number, min: number, max: number, seed?: number): number;
 
 // =============================================================================

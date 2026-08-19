@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-08-19 (angles survive stdlib calls — hueShift(randomRange(…)) fixed)
+
+### Fixed
+
+#### Core
+
+- **Angle values now survive angle-preserving standard-library calls** (real report: `c.hueShift(randomRange(-0.5pi, 0.5pi))` showed no visible hue variation — the pi-suffixed range was flattened to bare radians at the stdlib call boundary, and the degree-based color methods read the bare result as degrees: a ±1.57° shift instead of ±90°). `abs`, `min`, `max`, `lerp`, `clamp`, `map`, `normalizeAngle`, `randomRange`, and `hashRange` now pass angle-ness through — an Angle in a deciding slot means an Angle result, with the display unit taken from the first Angle among those slots (`map` decides by its output range, `lerp`'s `t` stays a plain ratio). The per-function contract lives in `src/stdlib/angle-preserving.ts` — a single source of truth consumed by both evaluators' dispatch and locked by a metadata-driven coverage-matrix test, so a function added to the map without the behavior (or vice versa) fails CI. Angle-*consuming* functions (`sin`, `cos`, `deg`, rounding) and angle-*computing* functions (`atan2`, `rad`, `mpi`) still return plain numbers as documented. Visible behavior change: interpolating such a result now prints its unit — `${lerp(0deg, 90deg, 0.5)}` is `45deg`, no longer `0.7853981633974483`.
+- **Editor type inference follows the same contract** — `let b = clamp(0deg, 0deg, 1pi)` now hovers as an Angle and offers `.deg`/`.rad`/`.pi`/`.turns` member completions in the playground and VS Code (previously untyped); the inference consults the same `ANGLE_PRESERVING_ARGS` map the runtime uses.
+
+### Changed
+
+#### Documentation
+
+- New **Angle-Preserving Functions** section in the stdlib reference: the same-space rule, the deciding-slot table, a deterministic `hashRange` hue-jitter example, and an explicit warning that mixing bare numbers with Angles in deciding slots reads the bare number as radians (`min(90deg, 1)` is `57.2957795131deg`, not `1deg`). `normalizeAngle` gains its first published definition (Angle Conversion table). The syntax and color guides' "an angle is an angle wherever it flows" narratives and behavior-change callouts extended to cover the stdlib boundary.
+
 ## [Unreleased] - 2026-08-19 (verified export rasterization — no more black/blank exports)
 
 ### Fixed

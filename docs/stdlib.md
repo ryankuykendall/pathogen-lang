@@ -31,6 +31,7 @@ M calc(100 + cos(angle) * r) calc(100 + sin(angle) * r)
 |----------|-------------|
 | `rad(degrees)` | Convert degrees to a plain number of radians |
 | `deg(radians)` | Convert radians to a plain number of degrees |
+| `normalizeAngle(angle)` | Wrap an angle into the `[0, 2pi)` range — [angle-preserving](#stdlib-angle-preserving-functions) |
 
 ```
 // Use degrees instead of radians
@@ -122,6 +123,42 @@ for (i in 1..48) {
   L calc(20 + t * 160) calc(100 - 10 * bump(t, 0.35, 0.3) - 6 * bump(t, 0.78, 0.18))
 }
 ```
+
+### Angle-Preserving Functions
+
+These functions return a value in the same space as their inputs, so an [Angle](#syntax-angle-units) in means an Angle out — the result keeps its unit for display and for the degree-based color methods. Bare-number inputs produce bare numbers.
+
+| Function | Arguments that set the result's unit |
+|----------|--------------------------------------|
+| `abs(x)` | `x` |
+| `min(a, b, ...)`, `max(a, b, ...)` | all |
+| `lerp(a, b, t)` | `a`, `b` |
+| `clamp(value, min, max)` | all |
+| `map(value, inMin, inMax, outMin, outMax)` | `outMin`, `outMax` |
+| `normalizeAngle(angle)` | `angle` |
+| `randomRange(min, max)` | `min`, `max` |
+| `hashRange(n, min, max, seed?)` | `min`, `max` |
+
+Arguments outside those slots are plain numbers by contract — `lerp`'s `t` is a ratio, and `map`'s result lives in its output range, which is why only `outMin`/`outMax` decide the unit. The display unit comes from the first Angle among the deciding arguments — `lerp(0deg, 0.5pi, t)` prints in degrees. (`randomRange` and `hashRange` are defined under [Random](#stdlib-random) and [Hash & Noise](#stdlib-hash-noise).)
+
+**Don't mix bare numbers and Angles in the deciding slots.** A bare number there is read as **radians**, and the result still takes the Angle's unit — `min(90deg, 1)` is `57.2957795131deg`, not `1deg`. Give every deciding argument a unit, or give none of them one.
+
+```
+// Random hue jitter, reproducible on every recompile — the pi-suffixed
+// range keeps each hashRange result an Angle, so hueShift reads ±90°
+let c = Color('#c00');
+for (i in 1..9) {
+  let swatch = PathLayer(`jitter-${i}`) ${
+    stroke: none;
+    fill: c.hueShift(hashRange(i, -0.5pi, 0.5pi));
+  };
+  swatch.apply { rect(0, calc(i * 24), 20, 20); }
+}
+```
+
+Everything else is unchanged: functions that *consume* angles into a plain result (`sin`, `cos`, `deg`, `polarX`, the rounding family — `round(90deg)` is `2`, because it rounds the radians) still return bare numbers, and functions that *compute* an angle (`atan2`, `rad`, `mpi`) still return plain radians — see [Angle Units](#syntax-angle-units).
+
+> **Behavior change:** these functions used to flatten angles to bare radians — `c.hueShift(randomRange(-0.5pi, 0.5pi))` shifted by at most ±1.57° because the color methods read bare numbers as degrees. The angle now survives the call, so that program shifts within ±90°. Interpolating such a result also prints with its unit: `${lerp(0deg, 90deg, 0.5)}` is `45deg`, no longer `0.7853981633974483`.
 
 ### Easing
 

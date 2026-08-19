@@ -18,7 +18,7 @@ import { assignGradientProperty, assignMarkerProperty, assignMeshPointProperty, 
 import { getStructDescriptor } from './struct-properties';
 
 export { BUILTIN_ENUMS };
-import { angle, angleMethod, formatAngleForDisplay, isAngleValue, radiansToDegreesSnapped } from './angle';
+import { angle, angleMethod, callStdlibPreservingAngles, formatAngleForDisplay, isAngleValue, radiansToDegreesSnapped } from './angle';
 import { checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
@@ -7468,6 +7468,8 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     if (!scope.evalState) {
       throw new Error(`Function '${call.name}' requires evaluation context`);
     }
+    // Intentionally unwrap-only: context-aware functions consume angles into
+    // geometry (heading() is documented plain radians) — no angle re-wrap.
     const args = call.args.map((arg) => {
       const v = evaluateExpression(arg, scope);
       return isAngleValue(v) ? v.radians : v;
@@ -7484,11 +7486,11 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.calledStdlibFunctions.add(call.name);
     }
 
-    const args = call.args.map((arg) => {
-      const v = evaluateExpression(arg, scope);
-      return isAngleValue(v) ? v.radians : v;
-    });
-    const result = (fn as (...args: number[]) => number)(...(args as number[]));
+    const result = callStdlibPreservingAngles(
+      call.name,
+      fn as (...ns: number[]) => unknown,
+      call.args.map((arg) => evaluateExpression(arg, scope)),
+    ) as Value;
 
     // If stdlib function returns a PathSegment, track its commands
     if (typeof result === 'object' && result !== null && 'type' in result) {

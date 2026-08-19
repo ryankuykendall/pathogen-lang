@@ -433,10 +433,34 @@ spot(g);`);
 
     it('bare stdlib call statement unwraps Angle args (parity)', () => {
       // arc()'s x-axis-rotation slot receives an Angle via the bare
-      // fn-call-statement branch, which has its own dispatch
+      // fn-call-statement branch, which has its own dispatch. arc() is NOT in
+      // ANGLE_PRESERVING_ARGS (it returns a PathSegment, not a value picked
+      // from its inputs), so unwrap-to-radians remains the contract here.
       const result = compileAnnotated('M 50 100\narc(50, 50, 30deg, 1, 1, 150, 100);');
       expect(result).not.toContain('[object Object]');
       expect(result).toContain(`A 50 50 ${(30 * Math.PI) / 180}`);
+    });
+
+    it('bare angle-preserving stdlib call statement is discarded without error (parity)', () => {
+      // The bare-statement branch shares callStdlibPreservingAngles; a numeric
+      // (now AngleValue) result is discarded there, same as pre-change numbers
+      const result = compileAnnotated('clamp(0.25pi, 0pi, 1pi);\nM 1 1');
+      expect(result).toContain('M 1 1');
+    });
+
+    it('angle-preserving stdlib call keeps the Angle (parity)', () => {
+      // 'r', not 'a' — single letters that are path commands can't be
+      // variables in path argument positions
+      const result = compileAnnotated('let r = randomRange(0.5pi, 0.5pi);\nM r.deg 0');
+      expect(result).toContain('M 90 0');
+    });
+
+    it('hueShift(randomRange(angle, angle)) shifts by the angle (parity)', () => {
+      // The original bug repro: the pi-suffixed range must survive randomRange
+      // so hueShift reads 90°, not 1.57 bare radians as degrees.
+      const result = compileAnnotated(`let s = Color(0.5, 0.15, 0).hueShift(randomRange(0.5pi, 0.5pi));
+if (s.hue == 90) { M 1 1 } else { M 9 9 }`);
+      expect(result).toContain('M 1 1');
     });
 
     it('.toPi() re-tags display and keeps the radians value (parity)', () => {

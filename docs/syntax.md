@@ -1201,9 +1201,9 @@ Numbers can have angle unit suffixes:
 | `1.5rad` | Radians |
 | `0.25pi` | Multiplied by π (i.e. `0.25 * π`) |
 
-An angle-suffixed literal produces an **Angle value** — radians on the inside, with the written unit remembered for display. **An angle is an angle wherever it flows**: it survives variables, arrays, function parameters, and return values. In angle-accepting positions — path arguments, trig and polar functions, comparisons, loop bounds, `calc()` arithmetic, rotation and orient properties, gradient `from`/`to`, filter angles — an Angle reads as its radians value, so `sin(45deg)` and `sin(rad(45))` are identical. Slots that want a plain count or dimension still reject an Angle: `Grid(90deg, 4)` errors with *"must be a positive integer"*. The one place radians are **not** the reading is the degree-based color API — see [Angle Display](#syntax-angle-display) below.
+An angle-suffixed literal produces an **Angle value** — radians on the inside, with the written unit remembered for display. **An angle is an angle wherever it flows**: it survives variables, arrays, function parameters, return values, and [angle-preserving standard-library functions](#stdlib-angle-preserving-functions) like `clamp`, `lerp`, and `randomRange`. In angle-accepting positions — path arguments, trig and polar functions, comparisons, loop bounds, `calc()` arithmetic, rotation and orient properties, gradient `from`/`to`, filter angles — an Angle reads as its radians value, so `sin(45deg)` and `sin(rad(45))` are identical. Slots that want a plain count or dimension still reject an Angle: `Grid(90deg, 4)` errors with *"must be a positive integer"*. The one place radians are **not** the reading is the degree-based color API — see [Angle Display](#syntax-angle-display) below.
 
-> **Behavior change:** Angle units used to be consumed at the literal — `let t = 0.5pi; c.hueShift(t)` shifted 1.57°, not 90°. Angles are now values that survive variables, so that program shifts 90°. Likewise `Color(0.6, 0.15, 90deg)` now stores hue 90 (was 1.5708), interpolating an Angle prints `90deg` rather than a radians number, and `sort()` orders Angle arrays instead of erroring.
+> **Behavior change:** Angle units used to be consumed at the literal — `let t = 0.5pi; c.hueShift(t)` shifted 1.57°, not 90°. Angles are now values that survive variables, so that program shifts 90°. Likewise `Color(0.6, 0.15, 90deg)` now stores hue 90 (was 1.5708), interpolating an Angle prints `90deg` rather than a radians number, and `sort()` orders Angle arrays instead of erroring. Angle-preserving standard-library calls now pass the angle through too — `randomRange(-0.5pi, 0.5pi)` returns an Angle, not bare radians.
 
 ```
 let quarter = 90deg;      // an Angle — prints "90deg", auto-converts for hue methods
@@ -1262,7 +1262,7 @@ log(a.toPi() == 0.5pi); // true — same angle, different label
 `calc(0.25 * 2pi)` (or `90deg`) and re-tag with `.toTurns()` when you want it
 displayed that way.
 
-**Where Angles come from.** Only angle-suffixed literals — and `calc()` arithmetic over them — produce Angle values. Standard-library functions that *compute* an angle return **plain numbers in radians**: `atan2()`, `.angleTo()`, `tangent(t).angle`, `PolarVector.angle`, and [`deg()`/`rad()`](#stdlib-angle-conversion)/`mpi()`. That matters most for the degree-based color methods below, which read a bare number as **degrees** — write `c.hueShift(deg(p.angleTo(q)))`, not `c.hueShift(p.angleTo(q))`.
+**Where Angles come from.** Only angle-suffixed literals — plus `calc()` arithmetic over them and [angle-preserving standard-library functions](#stdlib-angle-preserving-functions) fed an Angle (`clamp(90deg, 0deg, 1pi)` is an Angle) — produce Angle values. Standard-library functions that *compute* an angle return **plain numbers in radians**: `atan2()`, `.angleTo()`, `tangent(t).angle`, `PolarVector.angle`, and [`deg()`/`rad()`](#stdlib-angle-conversion)/`mpi()`. That matters most for the degree-based color methods below, which read a bare number as **degrees** — write `c.hueShift(deg(p.angleTo(q)))`, not `c.hueShift(p.angleTo(q))`.
 
 ### Angle Arithmetic
 
