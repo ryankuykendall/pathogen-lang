@@ -1948,7 +1948,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       expr.method === 'point' ||
       expr.method === 'pointAll' ||
       expr.method === 'vertex' ||
-      expr.method === 'vertexAll'
+      expr.method === 'vertexAll' ||
+      expr.method === 'cut'
     ) {
       throw mError(
         `${expr.method}() is not supported in --annotated debug mode yet; compile normally (it works in the CLI, playground, and VS Code preview).`,
@@ -2003,6 +2004,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     // Transform methods: reverse, boundingBox, offset
     const pathTransformResult = evaluateAnnotatedPathTransforms(obj, expr, scope);
     if (pathTransformResult !== null) return pathTransformResult;
+    if (expr.method === 'cut') {
+      throw mError(
+        'cut() is not supported in --annotated debug mode yet; compile normally (it works in the CLI, playground, and VS Code preview).',
+      );
+    }
     throw mError(`Unknown ProjectedPath method: ${expr.method}`);
   }
 

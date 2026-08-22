@@ -710,7 +710,7 @@ one.draw()
 
 ## Boolean Operations
 
-Boolean operations combine two closed paths using set operations. Both paths must be closed (end with `z` or have coincident start and end points). The result preserves original curve types — no linearization.
+The four set operations — `union`, `difference`, `intersection`, and `xor` — combine two closed paths. Both operands must be closed (end with `z` or have coincident start and end points). The result preserves original curve types — no linearization. To slice a path along open cut lines instead, see [Cutting Paths](#path-blocks-cutting-paths).
 
 See also: [Standard Library path functions](#stdlib-path-functions) for creating shapes to use with boolean operations.
 
@@ -719,8 +719,8 @@ See also: [Standard Library path functions](#stdlib-path-functions) for creating
 Combines two paths into their union (outer boundary):
 
 ```
-let a = @{ circle(30) };
-let b = @{ circle(30) };
+let a = @{ circle(0, 0, 30); };
+let b = @{ circle(0, 0, 30); };
 let combined = a.project(50, 50).union(b.project(70, 50));
 ```
 
@@ -729,8 +729,8 @@ let combined = a.project(50, 50).union(b.project(70, 50));
 Subtracts `other` from the path:
 
 ```
-let plate = @{ circle(40) };
-let hole = @{ circle(15) };
+let plate = @{ circle(0, 0, 40); };
+let hole = @{ circle(0, 0, 15); };
 let result = plate.project(50, 50).difference(hole.project(50, 50));
 ```
 
@@ -739,8 +739,8 @@ let result = plate.project(50, 50).difference(hole.project(50, 50));
 Returns only the overlapping region:
 
 ```
-let a = @{ circle(30) };
-let b = @{ circle(30) };
+let a = @{ circle(0, 0, 30); };
+let b = @{ circle(0, 0, 30); };
 let overlap = a.project(50, 50).intersection(b.project(70, 50));
 ```
 
@@ -749,18 +749,139 @@ let overlap = a.project(50, 50).intersection(b.project(70, 50));
 Returns the symmetric difference — everything in either path but not both:
 
 ```
-let a = @{ circle(30) };
-let b = @{ circle(30) };
+let a = @{ circle(0, 0, 30); };
+let b = @{ circle(0, 0, 30); };
 let exclusive = a.project(50, 50).xor(b.project(70, 50));
 ```
 
 ### Requirements and behavior
 
-- Both paths must be closed. Open paths throw an error.
+- Both paths must be closed for `union`, `difference`, `intersection`, and `xor`. Open paths throw an error. ([`cut()`](#path-blocks-cutting-paths) is the exception — its cutter is usually open, and its subject may be too.)
 - The `other` argument can be a PathBlock or ProjectedPath.
 - Multi-component results produce multiple subpaths (`M...z M...z`).
 - All curve types (lines, cubics, quadratics, arcs) are preserved through the operation.
 - Results are always returned as PathBlock values (normalized to `(0, 0)` origin).
+
+## Cutting Paths
+
+Where the [set operations](#path-blocks-boolean-operations) combine two closed shapes, `cut()` slices one shape along cut lines — like drawing a knife across it — and hands back the resulting pieces. Each piece is a complete PathBlock, healed shut along the lines that cut it (a cut *open* path is the exception: its pieces stay open fragments).
+
+> **Debug mode:** `cut()` is not yet supported in the CLI's `--annotated` debug mode. It works normally everywhere else — CLI compilation, the playground, and the VS Code preview.
+
+### `cut(cutter)` → array of PathBlock
+
+Cuts the path along every stroke of `cutter` and returns the pieces:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let knife = @{ m 30 -10 l 0 60 };
+let pieces = box.cut(knife);
+log(pieces.length);    // 2
+```
+
+Each subpath of the cutter is one knife stroke, and strokes may be lines or curves. An open stroke slices the shape wherever it crosses. A closed loop acts as a cookie cutter, stamping out the region inside it — and the loop doesn't have to be authored with `z`: separate strokes whose endpoints meet are recognized as a loop geometrically:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let stamp = @{ circle(0, 0, 10); };
+let pieces = box.cut(stamp.project(30, 20));
+log(pieces.length);    // 2 — the stamped-out disk, and the box now carrying a hole
+```
+
+Alignment works exactly like the set operations: both blocks are overlaid in block-local coordinates, and you position the cutter with [`project()`](#path-blocks-projecting-without-drawing):
+
+```
+let plate = @{ circle(0, 0, 40); };
+let knife = @{ l 100 20 };
+let pieces = plate.project(50, 50).cut(knife.project(0, 40));
+log(pieces.length);    // 2
+```
+
+Pieces keep their original placement inside the subject, so drawing them all at the same position reassembles the shape — and offsetting each one produces an exploded view:
+
+```
+let box = @{ h 60 v 40 h -60 z };
+let knife = @{ m 30 -10 l 0 60 };
+let pieces = box.cut(knife);
+
+for ([piece, i] in pieces) {
+  M calc(20 + i * 10) 20
+  piece.draw()
+}
+```
+
+Cutting works on multi-contour subjects — a glyph, a donut, a shape with holes. Here the knife crosses both contours of an 'O' (from [`PathBlock.fromGlyph`](#path-blocks-pathblockfromglyphtext-styles)), so each piece's boundary follows the outer edge, the cut line, and the inner edge — two C-shapes:
+
+```
+@font "Inter";
+let styles = ${ font-family: Inter; font-size: 96; };
+let glyphs = PathBlock.fromGlyph("O", styles);
+let knife = @{ m -10 -40 l 90 8 };
+let pieces = glyphs[0].cut(knife);
+log(pieces.length);    // 2 — two C-shaped pieces
+```
+
+A hole the cut *misses* isn't lost — it rides along as an extra subpath inside whichever piece contains it (inspect it with [`contours`](#path-blocks-contours)).
+
+Open subjects can be cut too. Cutting an open path severs it at each crossing and returns the open fragments — no healing, since there is no interior to close:
+
+```
+let wave = @{ q 20 -20 40 0 q 20 20 40 0 };
+let knife = @{ m 30 -30 l 0 60 };
+let parts = wave.cut(knife);    // 2 open fragments
+```
+
+Because every piece is a full PathBlock, styling them individually is just iteration — cut once, then route pieces to differently-styled layers:
+
+```
+let warm = PathLayer(`warm`) ${ fill: #e0b17c; stroke: #40311f; stroke-width: 1; };
+let cool = PathLayer(`cool`) ${ fill: #7c9ce0; stroke: #1f2540; stroke-width: 1; };
+
+let disc = @{ circle(0, 0, 40); };
+let knives = @{ m -20 -50 l 0 100 m 20 -100 l 0 100 m 20 -100 l 0 100 };
+let slices = disc.cut(knives);    // 4 slices
+
+for ([piece, i] in slices) {
+  if (calc(i % 2) == 0) {
+    warm.apply {
+      M calc(50 + i * 6) 50
+      piece.draw()
+    }
+  } else {
+    cool.apply {
+      M calc(50 + i * 6) 50
+      piece.draw()
+    }
+  }
+}
+```
+
+### Cutting behavior
+
+**Arguments and results**
+
+- The `cutter` argument can be a PathBlock or ProjectedPath; so can the receiver. Pieces always come back as PathBlock values, even from a ProjectedPath receiver.
+- Pieces keep their original placement inside the subject (like the set operations, results are normalized to a `(0, 0)` origin). Drawing every piece at one position reassembles the shape.
+- Piece order is deterministic but unspecified — style pieces by iterating, not by assuming which index is which.
+- Labels don't survive: pieces (like the results of the set operations) are plain geometry, so `as segment(...)` / `as endpoint(...)` names from the original path can't be queried on them.
+
+**Tolerances and fidelity**
+
+- A cutter endpoint that lands on the subject's boundary — or close to it — snaps onto the boundary and completes the cut there (a T-junction). "Close" means about half a unit for typical viewBox-scale drawings, growing with the drawing's size (`max(0.5, bounding-box diagonal × 0.001)`) — so on very small coordinate systems the snap is proportionally generous. The same snapping applies when a stroke passes through a subject vertex.
+- All curve types are preserved through the cut; the healed edges follow the cutter's own geometry.
+
+**Strokes that don't cut**
+
+- A stroke that ends deep inside the shape without reaching the far boundary does not cut — that stroke is ignored and the region stays whole. Cutting never invents geometry beyond the tolerance snap.
+- A stroke that only grazes the boundary tangentially, or runs collinear along an edge, also leaves the shape whole.
+- Portions of the cutter outside the shape (or inside a hole) are ignored.
+- A cutter that never touches the shape — or has no drawable strokes at all — returns a single-element array containing the original. Cutting an empty PathBlock returns an empty array.
+
+**Compound cases**
+
+- Strokes crossing each other inside the shape subdivide it together: an X of two strokes produces four pieces from one region.
+- A subject mixing closed and open subpaths returns both kinds of pieces: healed closed pieces for the closed contours, open fragments for the open ones.
+- In rare degenerate cases — a fragment that can't be traced cleanly, or a sliver thinner than the geometric tolerance — `cut()` drops the fragment and emits a `[warn]` entry in the log output rather than failing.
 
 ## Font Integration
 

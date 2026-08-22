@@ -397,6 +397,13 @@ let e = s.variableOffset() << mk;
 M 0 0`)).toThrow(/not supported in --annotated/);
     });
 
+    it('cut() reports the annotated-mode limitation', () => {
+      expect(() => compileAnnotated(`let box = @{ h 60 v 40 h -60 z };
+let knife = @{ m 30 -10 l 0 60 };
+let pieces = box.cut(knife);
+M 0 0`)).toThrow(/cut\(\) is not supported in --annotated/);
+    });
+
     it('reduce(init) << worker evaluates init BEFORE the worker under --annotated (parity)', () => {
       // Mirrors the plain-evaluator order test in tests/lambdas.test.ts —
       // annotated.ts has its own resolveCallbackBlock copy (parity-drift

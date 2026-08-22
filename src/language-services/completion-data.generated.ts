@@ -484,6 +484,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'xor', kind: 'function', detail: 'xor(other) — Boolean XOR', boost: 8, insertText: 'xor(${1:other})$0', isSnippet: true },
       { label: 'intersects', kind: 'function', detail: 'intersects(other) — Check for intersections', boost: 8, insertText: 'intersects(${1:other})$0', isSnippet: true },
       { label: 'intersectionPoints', kind: 'function', detail: 'intersectionPoints(other) — Get intersection points', boost: 8, insertText: 'intersectionPoints(${1:other})$0', isSnippet: true },
+      { label: 'cut', kind: 'function', detail: 'cut(cutter) — Slice along the cutter\'s open or closed strokes; returns the healed pieces', boost: 8, insertText: 'cut(${1:cutter})$0', isSnippet: true },
       { label: 'segment', kind: 'function', detail: 'segment(name) — First labeled sub-path matching name; returns a PathBlock', boost: 8, insertText: 'segment(\'${1:name}\')$0', isSnippet: true },
       { label: 'segmentAll', kind: 'function', detail: 'segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array', boost: 8, insertText: 'segmentAll(\'${1:name}\')$0', isSnippet: true },
       { label: 'point', kind: 'function', detail: 'point(name) — First labeled point matching name; returns a Point', boost: 8, insertText: 'point(\'${1:name}\')$0', isSnippet: true },
@@ -740,6 +741,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'difference', kind: 'function', detail: 'difference(other) — Boolean difference', boost: 8, insertText: 'difference(${1:other})$0', isSnippet: true },
       { label: 'intersection', kind: 'function', detail: 'intersection(other) — Boolean intersection', boost: 8, insertText: 'intersection(${1:other})$0', isSnippet: true },
       { label: 'xor', kind: 'function', detail: 'xor(other) — Boolean XOR', boost: 8, insertText: 'xor(${1:other})$0', isSnippet: true },
+      { label: 'cut', kind: 'function', detail: 'cut(cutter) — Slice along the cutter\'s open or closed strokes; returns the healed pieces', boost: 8, insertText: 'cut(${1:cutter})$0', isSnippet: true },
       { label: 'segment', kind: 'function', detail: 'segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords)', boost: 8, insertText: 'segment(\'${1:name}\')$0', isSnippet: true },
       { label: 'segmentAll', kind: 'function', detail: 'segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array', boost: 8, insertText: 'segmentAll(\'${1:name}\')$0', isSnippet: true },
       { label: 'point', kind: 'function', detail: 'point(name) — First labeled point matching name; returns a Point', boost: 8, insertText: 'point(\'${1:name}\')$0', isSnippet: true },
@@ -1096,13 +1098,13 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'Point': { translate: 'Point', rotate: 'Point', lerp: 'Point', midpoint: 'Point', polarTranslate: 'Point' },
   'array': { map: 'array', filter: 'array', mapSlice: 'array', slice: 'array', reverse: 'array', sort: 'array' },
   'string': { split: 'array', append: 'string', prepend: 'string', slice: 'string' },
-  'PathBlock': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'PathBlock', offset: 'PathBlock', variableOffset: 'PathBlock', compoundVariableOffset: 'PathBlock', mirror: 'PathBlock', scale: 'PathBlock', rotateAtVertexIndex: 'PathBlock', subPath: 'PathBlock', project: 'ProjectedPath', chamfer: 'PathBlock', chamferAtVertex: 'PathBlock', fillet: 'PathBlock', filletAtVertex: 'PathBlock', ellipticalFillet: 'PathBlock', ellipticalFilletAtVertex: 'PathBlock', union: 'PathBlock', difference: 'PathBlock', intersection: 'PathBlock', xor: 'PathBlock', intersectionPoints: 'array', segment: 'PathBlock', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
+  'PathBlock': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'PathBlock', offset: 'PathBlock', variableOffset: 'PathBlock', compoundVariableOffset: 'PathBlock', mirror: 'PathBlock', scale: 'PathBlock', rotateAtVertexIndex: 'PathBlock', subPath: 'PathBlock', project: 'ProjectedPath', chamfer: 'PathBlock', chamferAtVertex: 'PathBlock', fillet: 'PathBlock', filletAtVertex: 'PathBlock', ellipticalFillet: 'PathBlock', ellipticalFilletAtVertex: 'PathBlock', union: 'PathBlock', difference: 'PathBlock', intersection: 'PathBlock', xor: 'PathBlock', intersectionPoints: 'array', cut: 'array', segment: 'PathBlock', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
   'VariableOffsetBuilder': { stop: 'VariableOffsetBuilder', startTangent: 'VariableOffsetBuilder', endTangent: 'VariableOffsetBuilder' },
   'CompoundVariableOffsetBuilder': { stop: 'CompoundVariableOffsetBuilder', startCap: 'CompoundVariableOffsetBuilder', endCap: 'CompoundVariableOffsetBuilder' },
   'PolarVector': { turn: 'PolarVector', scale: 'PolarVector', mirror: 'PolarVector' },
   'PathLayer': { segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
   'ProjectedText': { translate: 'ProjectedText' },
-  'ProjectedPath': { drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', offset: 'ProjectedPath', mirror: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'ProjectedPath', difference: 'ProjectedPath', intersection: 'ProjectedPath', xor: 'ProjectedPath', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
+  'ProjectedPath': { drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', offset: 'ProjectedPath', mirror: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'ProjectedPath', difference: 'ProjectedPath', intersection: 'ProjectedPath', xor: 'ProjectedPath', cut: 'array', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
   'VertexHandle': { fillet: 'PathBlock', chamfer: 'PathBlock', ellipticalFillet: 'PathBlock' },
   'LinearGradient': { inherit: 'LinearGradient' },
   'RadialGradient': { inherit: 'RadialGradient' },
@@ -1156,9 +1158,9 @@ export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
 /** Per-type array element types for members typed PathogenArray<X> / X[] (parallel to TYPE_METHOD_RETURNS / TYPE_PROPERTY_TYPES, whose values stay bare 'array') */
 export const TYPE_ELEMENT_TYPES: Record<string, Record<string, string>> = {
   'ColorInstance': { analogous: 'ColorInstance', triadic: 'ColorInstance', tetradic: 'ColorInstance', splitComplementary: 'ColorInstance' },
-  'PathBlock': { vertices: 'Point', contours: 'PathBlock', intersectionPoints: 'Point', segmentAll: 'PathBlock', pointAll: 'Point', vertexAll: 'VertexHandle' },
+  'PathBlock': { vertices: 'Point', contours: 'PathBlock', intersectionPoints: 'Point', cut: 'PathBlock', segmentAll: 'PathBlock', pointAll: 'Point', vertexAll: 'VertexHandle' },
   'PathLayer': { segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'VertexHandle' },
-  'ProjectedPath': { vertices: 'Point', segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'VertexHandle' },
+  'ProjectedPath': { vertices: 'Point', cut: 'PathBlock', segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'VertexHandle' },
   'MeshGradient': { getRow: 'MeshPoint', getCol: 'MeshPoint' },
 };
 

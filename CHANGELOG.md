@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-22 (PathBlock.cut() — slice paths apart with knife strokes)
+
+### Added
+
+#### Core
+
+- **`PathBlock.cut(cutter)`** — slice a subject path along the strokes of a second PathBlock and get back an array of pieces, each a complete PathBlock healed shut along the cut lines. Subjects may be open, closed, or multi-contour (glyphs, donuts, islands); holes ride along as extra subpaths in whichever piece contains them. Each cutter subpath is one knife stroke: open strokes (lines or curves) slice wherever they fully cross material, closed loops act as cookie cutters (a loop assembled geometrically from separate meeting strokes counts), and strokes crossing each other subdivide together (an X quarters a region). Cutter endpoints on or near the boundary snap onto it (scale-aware tolerance, `max(0.5, bboxDiag × 0.001)`); a stroke that dead-ends inside cuts nothing — no invented geometry. Open subjects sever into open fragments. Pieces keep subject-local placement, so drawing them at one position reassembles the shape and per-piece offsets make exploded views. Curve types are preserved end to end. Works on both PathBlock and ProjectedPath receivers; degenerate drops (untraceable fragment, sub-tolerance sliver, unassignable hole) surface as `[warn]` log entries rather than failing silently. Implementation: a planar-arrangement face walk in `boolean-ops.ts` (`pathCut`) — winding canonicalization puts material on the left of every boundary edge, one-sided subject half-edges + twinned cutter fragments make every traced face a piece, and a union-find node table with scale-aware clustering keeps distinct cuts distinct at tiny coordinate scales. Declared in `pathogen-api.ts`, so completions, hover, signature help, and array-element type inference flow to the playground and VS Code. Not yet supported in `--annotated` debug mode (clear error, matching the `variableOffset` precedent). 30 new tests (`tests/path-cut.test.ts` + annotated) cover the edge-case catalog: T-junctions, vertex crossings, tangency/collinear no-ops, donuts, islands, cookie cutters (inside, straddling, stroke-assembled), 16-cell grid decomposition, radial sectoring on arc subjects, tiny scales, mixed open+closed subjects, and both receivers.
+
+### Fixed
+
+#### Core
+
+- **Winding classification no longer degenerates on chord-symmetric contours** — `subpathSignedArea` used a chord-only shoelace that evaluates to exactly 0 for a circle built from two arcs, so the §2.14 normalization prologue classified a circle-built donut's outer and hole as "same winding" and silently deleted the hole on any subsequent boolean/cut operation. Curves are now sampled for area, fixing hole preservation for all `circle()`/`arc()`-derived inputs.
+- **Arc-heavy winding tests are ~15x faster** — `adaptiveCrossing` re-derived the arc's center parameterization at every recursion sample; it now takes a precomputed evaluator and threads endpoints through the recursion. An 80-stroke cut of a circle drops from ~1s to 70ms, and the boolean-ops test suite itself runs ~9x faster (6.1s → 0.7s).
+
+### Changed
+
+#### Documentation
+
+- **New "Cutting Paths" section in the Path Blocks reference** — knife mental model, seven compiling examples with verified outcomes (basic slice, cookie cutter, projected alignment, exploded reassembly, two-contour glyph cut, open-path severing, and a closing per-piece-styling composition), a grouped behavior contract (arguments/results, tolerances, strokes that don't cut, compound cases), and the `--annotated` limitation callout. Passed the four-persona agentic review with all must-fix findings applied. The Boolean Operations lede is now scoped to the four set operations with a cross-link, and its example blocks were repaired — they called a one-argument `circle(30)` that compiled to NaN geometry (`circle` is `(cx, cy, r)`, and calls inside `@{}` need a trailing `;`).
+
 ## [0.8.0] - 2026-08-19 (angles survive stdlib calls — hueShift(randomRange(…)) fixed)
 
 ### Fixed

@@ -1276,7 +1276,9 @@ function getDrawCmds(cmds: TransformCmd[]): TransformCmd[] {
 
 function findAllIntersections(
   segsA: TransformCmd[], segsB: TransformCmd[],
+  opts: { vertexPolicy?: 'drop' | 'snap'; vertexSnapDist?: number } = {},
 ): { intersections: Intersection[]; sharedEdges: SharedEdgeRange[] } {
+  const vertexPolicy = opts.vertexPolicy ?? 'drop';
   const results: Intersection[] = [];
   for (let ia = 0; ia < segsA.length; ia++) {
     for (let ib = 0; ib < segsB.length; ib++) {
@@ -1321,6 +1323,9 @@ function findAllIntersections(
   // legitimate cross-path intersections that the boundary classifier
   // depends on (e.g., `radialWedge xor` test). §2.13 + iter-3d.
   const VERTEX_SNAP_DIST = 0.5;
+  // Under 'drop' (the boolean ops) the distance is the historical absolute
+  // 0.5; 'snap' callers may pass a scale-aware distance instead.
+  const vertexSnapDist = vertexPolicy === 'snap' ? (opts.vertexSnapDist ?? VERTEX_SNAP_DIST) : VERTEX_SNAP_DIST;
   const filtered: Intersection[] = [];
   let droppedCount = 0;
   for (const r of deduped) {
@@ -1332,7 +1337,31 @@ function findAllIntersections(
     const segB = segsB[r.segB];
     const distA = Math.min(dist(r.point, segA.start), dist(r.point, segA.end));
     const distB = Math.min(dist(r.point, segB.start), dist(r.point, segB.end));
-    if (distA < VERTEX_SNAP_DIST && distB < VERTEX_SNAP_DIST) {
+    if (distA < vertexSnapDist && distB < vertexSnapDist) {
+      if (vertexPolicy === 'snap') {
+        // Cut-mode policy: a vertex-vertex intersection is a real crossing
+        // that must not be lost (dropping it breaks crossing parity for an
+        // open cutter). Clamp both t's onto the nearest endpoint and anchor
+        // the record at the subject-side (A) vertex so downstream node
+        // unification resolves to the existing vertex.
+        const aStartCloser = dist(r.point, segA.start) <= dist(r.point, segA.end);
+        const bStartCloser = dist(r.point, segB.start) <= dist(r.point, segB.end);
+        const anchored: Intersection = {
+          point: aStartCloser ? { ...segA.start } : { ...segA.end },
+          tA: aStartCloser ? 0 : 1,
+          tB: bStartCloser ? 0 : 1,
+          segA: r.segA,
+          segB: r.segB,
+          ...(r.boundary !== undefined ? { boundary: r.boundary } : {}),
+        };
+        // Dedupe records that collapse onto the same snapped position.
+        const isDup = filtered.some(f =>
+          f.segA === anchored.segA && f.segB === anchored.segB &&
+          Math.abs(f.tA - anchored.tA) < PARAMETRIC_EPSILON * 100 &&
+          Math.abs(f.tB - anchored.tB) < PARAMETRIC_EPSILON * 100);
+        if (!isDup) filtered.push(anchored);
+        continue;
+      }
       droppedCount++;
       if (typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1') {
         // eslint-disable-next-line no-console
@@ -1827,35 +1856,44 @@ function lineCrossing(pt: Point, p0: Point, p1: Point): number {
 
 function cubicCrossing(pt: Point, cmd: TransformCmd): number {
   // Adaptive subdivision approach for cubic ray crossing
-  return adaptiveCrossing(pt, cmd, 0, 1, 8);
+  const evalAt = (t: number): Point => evalCmd(cmd, t);
+  return adaptiveCrossing(pt, evalAt, 0, evalAt(0), 1, evalAt(1), 8);
 }
 
 function quadraticCrossing(pt: Point, cmd: TransformCmd): number {
-  return adaptiveCrossing(pt, cmd, 0, 1, 8);
+  const evalAt = (t: number): Point => evalCmd(cmd, t);
+  return adaptiveCrossing(pt, evalAt, 0, evalAt(0), 1, evalAt(1), 8);
 }
 
 function arcCrossing(pt: Point, cmd: TransformCmd): number {
-  return adaptiveCrossing(pt, cmd, 0, 1, 12);
+  // Derive the arc's center parameterization ONCE and sample against it.
+  // Going through evalCmd would re-run the endpoint-to-center conversion at
+  // every recursion sample, which made winding tests on arc-heavy subjects
+  // (circle()/arc()/roundRect()) ~100x slower than line/cubic subjects.
+  const center = cmdArcCenter(cmd);
+  const evalAt = center
+    ? (t: number): Point => arcPointAt(center, t)
+    : (t: number): Point => evalLine(cmd.start, cmd.end, t);
+  return adaptiveCrossing(pt, evalAt, 0, evalAt(0), 1, evalAt(1), 12);
 }
 
 /**
  * Adaptive subdivision for winding number contribution.
  * Subdivide the curve and count crossings of linearized segments.
+ * Endpoints are threaded through the recursion so each level evaluates
+ * only its midpoint.
  */
 function adaptiveCrossing(
-  pt: Point, cmd: TransformCmd,
-  t0: number, t1: number, depth: number,
+  pt: Point, evalAt: (t: number) => Point,
+  t0: number, p0: Point, t1: number, p1: Point, depth: number,
 ): number {
-  const p0 = evalCmd(cmd, t0);
-  const p1 = evalCmd(cmd, t1);
-
   if (depth <= 0) {
     return lineCrossing(pt, p0, p1);
   }
 
   // Check if we need to subdivide: if the segment is mostly flat, linearize
   const tMid = (t0 + t1) / 2;
-  const pMid = evalCmd(cmd, tMid);
+  const pMid = evalAt(tMid);
   const linearMid = lerpPt(p0, p1, 0.5);
   const dev = dist(pMid, linearMid);
 
@@ -1863,8 +1901,8 @@ function adaptiveCrossing(
     return lineCrossing(pt, p0, p1);
   }
 
-  return adaptiveCrossing(pt, cmd, t0, tMid, depth - 1) +
-         adaptiveCrossing(pt, cmd, tMid, t1, depth - 1);
+  return adaptiveCrossing(pt, evalAt, t0, p0, tMid, pMid, depth - 1) +
+         adaptiveCrossing(pt, evalAt, tMid, pMid, t1, p1, depth - 1);
 }
 
 type SegmentClass = 'inside' | 'outside' | 'on';
@@ -3116,11 +3154,20 @@ function includeClosingSegment(cmds: TransformCmd[]): TransformCmd[] {
  * = "hole" winding.
  */
 function subpathSignedArea(cmds: TransformCmd[]): number {
+  // Curves are sampled rather than reduced to their chords: a chord-only
+  // shoelace degenerates to exactly 0 for chord-symmetric contours (e.g.
+  // a circle built from two arcs), which misclassifies winding direction.
   let area = 0;
   for (const cmd of cmds) {
     const u = cmd.command.toLowerCase();
     if (u === 'm' || u === 'z') continue;
-    area += cmd.start.x * cmd.end.y - cmd.end.x * cmd.start.y;
+    const n = (u === 'c' || u === 'q' || u === 'a') ? 8 : 1;
+    let prev = cmd.start;
+    for (let i = 1; i <= n; i++) {
+      const p = i === n ? cmd.end : evalCmd(cmd, i / n);
+      area += prev.x * p.y - p.x * prev.y;
+      prev = p;
+    }
   }
   return area / 2;
 }
@@ -3815,4 +3862,919 @@ export function pathXor(cmdsA: TransformCmd[], cmdsB: TransformCmd[]): Transform
   const aMinusB = booleanOp(cmdsA, cmdsB, 'difference');
   const bMinusA = booleanOp(cmdsB, cmdsA, 'difference');
   return [...aMinusB, ...bMinusA];
+}
+
+// ─── Path Cutting (pathCut) ─────────────────────────────────────────────────
+//
+// Slices a subject path (open or closed, multi-contour) along the strokes of
+// a cutter path whose subpaths are open chains (a knife) or closed loops
+// (cookie cutters). Unlike the boolean ops above, the cutter is never closed
+// and the assembly stage is a planar-arrangement face walk rather than the
+// winding-classified ring/run pipeline: subject boundary fragments are
+// one-sided half-edges (material on the left after winding canonicalization),
+// cutter fragments are twinned, and every traced face is a material piece.
+
+const CUT_JUNCTION_EPS = PARAMETRIC_EPSILON * 100;
+/** Scale-aware distance under which nearby intersection records collapse
+ *  into one arrangement node: capped at the module's historical absolute
+ *  0.5 so idiomatic viewBox-scale drawings behave as before, but shrinking
+ *  with the drawing so tiny-coordinate cuts don't get swallowed. */
+function cutNodeMergeDist(bboxDiag: number): number {
+  return Math.max(1e-9, Math.min(0.5, bboxDiag * 2.5e-3));
+}
+
+function cutDebug(msg: string): void {
+  if (typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1') {
+    // eslint-disable-next-line no-console
+    console.error(`  pathCut: ${msg}`);
+  }
+}
+
+function angleOfVec(p: Point): number {
+  return Math.atan2(p.y, p.x);
+}
+
+function mod2pi(a: number): number {
+  const t = a % (2 * Math.PI);
+  return t < 0 ? t + 2 * Math.PI : t;
+}
+
+/** Recompute a command's args for a nudged end point (start unchanged).
+ *  Interior control data is preserved; only the trailing end delta moves. */
+function adjustArgsForEnd(cmd: TransformCmd, newEnd: Point): number[] {
+  const u = cmd.command.toLowerCase();
+  const dx = newEnd.x - cmd.start.x;
+  const dy = newEnd.y - cmd.start.y;
+  if (cmdIsLine(cmd)) return [dx, dy];
+  if (u === 'c') {
+    const [dx1, dy1, dx2, dy2] = cmd.args;
+    return [dx1, dy1, dx2, dy2, dx, dy];
+  }
+  if (u === 'q') {
+    const [dx1, dy1] = cmd.args;
+    return [dx1, dy1, dx, dy];
+  }
+  if (u === 'a') {
+    const [rx, ry, rot, la, sw] = cmd.args;
+    return [rx, ry, rot, la, sw, dx, dy];
+  }
+  return [dx, dy];
+}
+
+function rebaseCmdStart(cmd: TransformCmd, newStart: Point): TransformCmd {
+  if (ptEq(cmd.start, newStart)) return cmd;
+  return { command: cmd.command, args: adjustArgsForStart(cmd, newStart), start: { ...newStart }, end: { ...cmd.end } };
+}
+
+function rebaseCmdEnd(cmd: TransformCmd, newEnd: Point): TransformCmd {
+  if (ptEq(cmd.end, newEnd)) return cmd;
+  return { command: cmd.command, args: adjustArgsForEnd(cmd, newEnd), start: { ...cmd.start }, end: { ...newEnd } };
+}
+
+/** Signed area of a closed ring of draw commands. Curve-sampled (see
+ *  subpathSignedArea). Positive = interior on the left of travel. */
+function ringSignedArea(cmds: TransformCmd[]): number {
+  return subpathSignedArea(cmds);
+}
+
+function ringDiag(cmds: TransformCmd[]): number {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const cmd of cmds) {
+    for (const p of [cmd.start, cmd.end]) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+  }
+  if (!isFinite(minX)) return 0;
+  return Math.sqrt((maxX - minX) ** 2 + (maxY - minY) ** 2);
+}
+
+/** Find a point strictly inside the region enclosed by a closed ring, by
+ *  offsetting from segment midpoints along both normals. */
+function interiorSampleOfRing(cmds: TransformCmd[]): Point | null {
+  const diag = ringDiag(cmds);
+  const deltas = [Math.max(1e-3, diag * 1e-3), Math.max(1e-2, diag * 1e-2)];
+  for (const cmd of cmds) {
+    const u = cmd.command.toLowerCase();
+    if (u === 'm' || u === 'z') continue;
+    const p = evalCmd(cmd, 0.5);
+    const p2 = evalCmd(cmd, 0.55);
+    let tx = p2.x - p.x, ty = p2.y - p.y;
+    const len = Math.sqrt(tx * tx + ty * ty);
+    if (len < 1e-12) continue;
+    tx /= len; ty /= len;
+    for (const delta of deltas) {
+      for (const s of [1, -1]) {
+        const q = { x: p.x + s * delta * -ty, y: p.y + s * delta * tx };
+        if (windingNumber(q, cmds) !== 0) return q;
+      }
+    }
+  }
+  return null;
+}
+
+/** Reverse a ring in place-order: commands reversed and each command flipped. */
+function reverseRing(cmds: TransformCmd[]): TransformCmd[] {
+  const out: TransformCmd[] = [];
+  for (let i = cmds.length - 1; i >= 0; i--) out.push(reverseCmd(cmds[i]));
+  return out;
+}
+
+/**
+ * Canonicalize winding of the subject's closed rings so material is always
+ * on the LEFT of every directed boundary segment: rings at even containment
+ * depth get positive signed area, rings at odd depth negative. This is the
+ * invariant the face walk depends on.
+ */
+function canonicalizeRingWindings(rings: TransformCmd[][]): TransformCmd[][] {
+  const samples = rings.map(r => interiorSampleOfRing(r));
+  return rings.map((ring, i) => {
+    const sample = samples[i];
+    let depth = 0;
+    if (sample) {
+      for (let j = 0; j < rings.length; j++) {
+        if (j === i) continue;
+        if (windingNumber(sample, rings[j]) !== 0) depth++;
+      }
+    }
+    const wantPositive = depth % 2 === 0;
+    const area = ringSignedArea(ring);
+    if ((area > 0) === wantPositive || area === 0) return ring;
+    return reverseRing(ring);
+  });
+}
+
+/** Split a flat draw-segment array into chains at endpoint discontinuities. */
+function splitSegsIntoChains(segs: TransformCmd[]): { segs: TransformCmd[]; startIdx: number; isClosed: boolean }[] {
+  const chains: { segs: TransformCmd[]; startIdx: number; isClosed: boolean }[] = [];
+  let current: TransformCmd[] = [];
+  let startIdx = 0;
+  const flush = () => {
+    if (current.length > 0) {
+      const isClosed = ptEq(current[0].start, current[current.length - 1].end);
+      chains.push({ segs: current, startIdx, isClosed });
+    }
+  };
+  for (let i = 0; i < segs.length; i++) {
+    if (current.length > 0 && !ptEq(current[current.length - 1].end, segs[i].start)) {
+      flush();
+      current = [];
+      startIdx = i;
+    }
+    current.push(segs[i]);
+  }
+  flush();
+  return chains;
+}
+
+/** Nearest point on a command to `pt` — coarse sampling + golden-section refine. */
+function nearestOnCmd(pt: Point, cmd: TransformCmd): { t: number; d2: number } {
+  let bestT = 0;
+  let bestD2 = Infinity;
+  const f = (t: number): number => {
+    const p = evalCmd(cmd, t);
+    return (p.x - pt.x) ** 2 + (p.y - pt.y) ** 2;
+  };
+  for (let i = 0; i <= 32; i++) {
+    const t = i / 32;
+    const d2 = f(t);
+    if (d2 < bestD2) { bestD2 = d2; bestT = t; }
+  }
+  let lo = Math.max(0, bestT - 1 / 32);
+  let hi = Math.min(1, bestT + 1 / 32);
+  const phi = (Math.sqrt(5) - 1) / 2;
+  let c = hi - phi * (hi - lo);
+  let d = lo + phi * (hi - lo);
+  let fc = f(c), fd = f(d);
+  for (let i = 0; i < 48; i++) {
+    if (fc < fd) {
+      hi = d; d = c; fd = fc;
+      c = hi - phi * (hi - lo); fc = f(c);
+    } else {
+      lo = c; c = d; fc = fd;
+      d = lo + phi * (hi - lo); fd = f(d);
+    }
+  }
+  const t = (lo + hi) / 2;
+  return { t, d2: f(t) };
+}
+
+interface CutNodeTable {
+  points: Point[];
+  parent: number[];
+  /** Node-clustering distance (see cutNodeMergeDist). */
+  mergeDist: number;
+}
+
+function cutNodeFind(table: CutNodeTable, id: number): number {
+  let root = id;
+  while (table.parent[root] !== root) root = table.parent[root];
+  while (table.parent[id] !== root) {
+    const next = table.parent[id];
+    table.parent[id] = root;
+    id = next;
+  }
+  return root;
+}
+
+function cutNodeUnion(table: CutNodeTable, a: number, b: number): number {
+  const ra = cutNodeFind(table, a);
+  const rb = cutNodeFind(table, b);
+  if (ra !== rb) table.parent[rb] = ra;
+  return ra;
+}
+
+/** Get-or-create the node for a record point, clustering within the table's merge distance. */
+function cutNodeFor(table: CutNodeTable, pt: Point): number {
+  for (let i = 0; i < table.points.length; i++) {
+    if (cutNodeFind(table, i) !== i) continue;
+    if (dist(table.points[i], pt) < table.mergeDist) return i;
+  }
+  table.points.push({ ...pt });
+  table.parent.push(table.points.length - 1);
+  return table.points.length - 1;
+}
+
+interface CutEdge {
+  cmds: TransformCmd[];
+  fromNode: number; // -1 = dangling (unlabeled chain end)
+  toNode: number;
+  /** All fragments lie on a shared (collinear) stretch of the subject boundary. */
+  boundary: boolean;
+}
+
+interface CutChainSplit {
+  edges: CutEdge[];
+  /** Non-null when the chain has no arrangement nodes: a closed, uncut loop. */
+  cycle: TransformCmd[] | null;
+}
+
+/**
+ * Split one chain at its labeled (noded) positions into arrangement edges.
+ * Boundaries within MIN-length of each other merge (their nodes unioned).
+ * `entries[localSeg]` lists `{ t, node }` intersection positions on that
+ * segment; `sharedRanges[localSeg]` lists parametric ranges lying on a
+ * shared edge with the other path (used to flag boundary fragments).
+ */
+function splitChainAtNodes(
+  chain: { segs: TransformCmd[]; isClosed: boolean },
+  entries: Map<number, { t: number; node: number }[]>,
+  sharedRanges: Map<number, { start: number; end: number }[]>,
+  table: CutNodeTable,
+): CutChainSplit {
+  const segs = chain.segs;
+  // Ordered stream of items along the chain: draw fragments and noded boundaries.
+  type Item = { kind: 'cmd'; cmd: TransformCmd; boundary: boolean } | { kind: 'node'; node: number };
+  const items: Item[] = [];
+  // Junction labels indexed by junction position (0..segs.length); merged below.
+  const junctionNodes: (number | null)[] = new Array(segs.length + 1).fill(null);
+  const interiorBySeg: { t: number; node: number }[][] = segs.map(() => []);
+
+  for (let i = 0; i < segs.length; i++) {
+    const list = entries.get(i);
+    if (!list || list.length === 0) continue;
+    const sorted = [...list].sort((a, b) => a.t - b.t);
+    for (const e of sorted) {
+      if (e.t <= CUT_JUNCTION_EPS) {
+        junctionNodes[i] = junctionNodes[i] === null ? e.node : cutNodeUnion(table, junctionNodes[i]!, e.node);
+      } else if (e.t >= 1 - CUT_JUNCTION_EPS) {
+        junctionNodes[i + 1] = junctionNodes[i + 1] === null ? e.node : cutNodeUnion(table, junctionNodes[i + 1]!, e.node);
+      } else {
+        interiorBySeg[i].push(e);
+      }
+    }
+    // Merge near-coincident interior boundaries (same crossing found twice).
+    const interior = interiorBySeg[i];
+    const merged: { t: number; node: number }[] = [];
+    for (const e of interior) {
+      const prev = merged[merged.length - 1];
+      if (prev) {
+        const pPrev = evalCmd(segs[i], prev.t);
+        const pCur = evalCmd(segs[i], e.t);
+        if (dist(pPrev, pCur) < table.mergeDist) {
+          prev.node = cutNodeUnion(table, prev.node, e.node);
+          prev.t = (prev.t + e.t) / 2;
+          continue;
+        }
+      }
+      merged.push({ t: e.t, node: e.node });
+    }
+    interiorBySeg[i] = merged;
+  }
+
+  // For a closed chain the first and last junction are the same place.
+  if (chain.isClosed) {
+    const a = junctionNodes[0], b = junctionNodes[segs.length];
+    if (a !== null && b !== null) {
+      const u = cutNodeUnion(table, a, b);
+      junctionNodes[0] = u;
+      junctionNodes[segs.length] = u;
+    } else if (a !== null) {
+      junctionNodes[segs.length] = a;
+    } else if (b !== null) {
+      junctionNodes[0] = b;
+    }
+  }
+
+  for (let i = 0; i < segs.length; i++) {
+    if (junctionNodes[i] !== null) items.push({ kind: 'node', node: junctionNodes[i]! });
+    const ranges = sharedRanges.get(i) ?? [];
+    const inShared = (t0: number, t1: number): boolean =>
+      ranges.some(r => t0 >= r.start - CUT_JUNCTION_EPS && t1 <= r.end + CUT_JUNCTION_EPS);
+    const cuts = interiorBySeg[i];
+    let prevT = 0;
+    for (const e of cuts) {
+      if (e.t - prevT > PARAMETRIC_EPSILON) {
+        items.push({ kind: 'cmd', cmd: splitCmdRange(segs[i], prevT, e.t), boundary: inShared(prevT, e.t) });
+      }
+      items.push({ kind: 'node', node: e.node });
+      prevT = e.t;
+    }
+    if (1 - prevT > PARAMETRIC_EPSILON) {
+      items.push({ kind: 'cmd', cmd: splitCmdRange(segs[i], prevT, 1), boundary: inShared(prevT, 1) });
+    }
+  }
+  if (junctionNodes[segs.length] !== null && !chain.isClosed) {
+    items.push({ kind: 'node', node: junctionNodes[segs.length]! });
+  }
+
+  const hasNode = items.some(it => it.kind === 'node');
+  if (!hasNode) {
+    return { edges: [], cycle: items.map(it => (it as { kind: 'cmd'; cmd: TransformCmd }).cmd) };
+  }
+
+  // For closed chains, rotate the stream so it starts at a node — the
+  // wraparound run before the first node belongs to the last edge.
+  let stream = items;
+  if (chain.isClosed) {
+    const firstNodeIdx = items.findIndex(it => it.kind === 'node');
+    stream = [...items.slice(firstNodeIdx), ...items.slice(0, firstNodeIdx)];
+    stream.push(stream[0]); // close the loop back to the starting node
+  }
+
+  const edges: CutEdge[] = [];
+  let currentCmds: TransformCmd[] = [];
+  let currentBoundary = true;
+  let fromNode = -1;
+  let sawFirstNode = false;
+  for (const it of stream) {
+    if (it.kind === 'cmd') {
+      currentCmds.push(it.cmd);
+      currentBoundary = currentBoundary && it.boundary;
+    } else {
+      if (sawFirstNode || currentCmds.length > 0) {
+        if (currentCmds.length > 0) {
+          edges.push({ cmds: currentCmds, fromNode, toNode: it.node, boundary: currentBoundary });
+        }
+      }
+      fromNode = it.node;
+      sawFirstNode = true;
+      currentCmds = [];
+      currentBoundary = true;
+    }
+  }
+  if (currentCmds.length > 0) {
+    edges.push({ cmds: currentCmds, fromNode, toNode: -1, boundary: currentBoundary });
+  }
+  return { edges, cycle: null };
+}
+
+/** Snap an edge's boundary command endpoints onto its canonical node points. */
+function snapEdgeToNodes(edge: CutEdge, table: CutNodeTable): CutEdge {
+  let cmds = edge.cmds;
+  if (edge.fromNode >= 0 && cmds.length > 0) {
+    const pt = table.points[cutNodeFind(table, edge.fromNode)];
+    cmds = [rebaseCmdStart(cmds[0], pt), ...cmds.slice(1)];
+  }
+  if (edge.toNode >= 0 && cmds.length > 0) {
+    const pt = table.points[cutNodeFind(table, edge.toNode)];
+    cmds = [...cmds.slice(0, -1), rebaseCmdEnd(cmds[cmds.length - 1], pt)];
+  }
+  return { ...edge, cmds };
+}
+
+interface CutHalfEdge {
+  cmds: TransformCmd[];
+  fromNode: number;
+  toNode: number;
+  twin: number; // index into the half-edge array, or -1 for one-sided
+  visited: boolean;
+}
+
+/**
+ * Trace the faces of the arrangement. At each node the successor of an
+ * arriving half-edge is the clockwise-most outgoing half-edge relative to
+ * the reversed arrival direction — the standard interior-to-the-left face
+ * walk. Because subject edges are one-sided with material on the left,
+ * every traced face is a material region; the unbounded face and hole
+ * interiors are never traced.
+ */
+function traceCutFaces(halfEdges: CutHalfEdge[], table: CutNodeTable, warnings?: string[]): TransformCmd[][] {
+  const outsByNode = new Map<number, number[]>();
+  for (let i = 0; i < halfEdges.length; i++) {
+    const n = cutNodeFind(table, halfEdges[i].fromNode);
+    if (!outsByNode.has(n)) outsByNode.set(n, []);
+    outsByNode.get(n)!.push(i);
+  }
+
+  const departureAngle = (heIdx: number): number => angleOfVec(tangentAtStart(halfEdges[heIdx].cmds[0]));
+  const probeAngle = (heIdx: number): number => {
+    const he = halfEdges[heIdx];
+    const origin = he.cmds[0].start;
+    const probe = evalCmd(he.cmds[0], 0.1);
+    return angleOfVec({ x: probe.x - origin.x, y: probe.y - origin.y });
+  };
+
+  const successor = (arriving: number): number | null => {
+    const he = halfEdges[arriving];
+    const node = cutNodeFind(table, he.toNode);
+    const outs = outsByNode.get(node);
+    if (!outs || outs.length === 0) return null;
+    const dirIn = tangentAtEnd(he.cmds[he.cmds.length - 1]);
+    const thetaRev = angleOfVec({ x: -dirIn.x, y: -dirIn.y });
+    let best: number | null = null;
+    let bestDelta = Infinity;
+    let secondDelta = Infinity;
+    let second: number | null = null;
+    for (const cand of outs) {
+      let delta = mod2pi(thetaRev - departureAngle(cand));
+      // The exact reversal (the twin) must rank last, not first —
+      // otherwise every face would immediately U-turn.
+      if (delta < 1e-9) delta = 2 * Math.PI;
+      if (delta < bestDelta) {
+        second = best; secondDelta = bestDelta;
+        best = cand; bestDelta = delta;
+      } else if (delta < secondDelta) {
+        second = cand; secondDelta = delta;
+      }
+    }
+    // Tangent-coincident tie (e.g. a curve splitting off a tangent line):
+    // separate by curvature using a probe point along each candidate.
+    if (best !== null && second !== null && Math.abs(bestDelta - secondDelta) < 1e-7) {
+      const thetaRevProbe = thetaRev;
+      let dBest = mod2pi(thetaRevProbe - probeAngle(best));
+      let dSecond = mod2pi(thetaRevProbe - probeAngle(second));
+      if (dBest < 1e-9) dBest = 2 * Math.PI;
+      if (dSecond < 1e-9) dSecond = 2 * Math.PI;
+      if (dSecond < dBest) best = second;
+    }
+    return best;
+  };
+
+  const faces: TransformCmd[][] = [];
+  for (let start = 0; start < halfEdges.length; start++) {
+    if (halfEdges[start].visited) continue;
+    const face: TransformCmd[] = [];
+    let cur = start;
+    let ok = true;
+    let guard = 0;
+    for (;;) {
+      const he = halfEdges[cur];
+      if (he.visited) { ok = cur === start && face.length > 0; break; }
+      he.visited = true;
+      // Bridge sub-tolerance gaps between consecutive fragments.
+      if (face.length > 0) {
+        const prevEnd = face[face.length - 1].end;
+        const curStart = he.cmds[0].start;
+        if (!ptEq(prevEnd, curStart) && dist(prevEnd, curStart) > 1e-6) {
+          face.push({
+            command: 'l',
+            args: [curStart.x - prevEnd.x, curStart.y - prevEnd.y],
+            start: { ...prevEnd },
+            end: { ...curStart },
+          });
+        }
+      }
+      face.push(...he.cmds);
+      const next = successor(cur);
+      if (next === null) { ok = false; break; }
+      if (next === start) break;
+      cur = next;
+      if (++guard > halfEdges.length + 8) { ok = false; break; }
+    }
+    if (ok && face.length > 0) {
+      faces.push(face);
+    } else if (face.length > 0) {
+      warnings?.push('cut(): a piece could not be traced cleanly and was dropped — the result may be missing a fragment');
+      cutDebug(`dropped malformed face of ${face.length} cmds starting at half-edge ${start}`);
+    }
+  }
+  return faces;
+}
+
+/** Append a ring's draw commands to `out`, closed with `z`. The first ring
+ *  of a piece carries no leading `m` — the serializer's bridgeOriginGap
+ *  positions it (same convention as fillet-shifted closed paths), which
+ *  keeps bounding boxes free of a fictitious origin point. Subsequent rings
+ *  are separated by an `m` (the cursor-aware serializer only reads its
+ *  `end`). */
+function emitRing(ring: TransformCmd[], out: TransformCmd[]): void {
+  if (ring.length === 0) return;
+  const first = ring[0];
+  if (out.length > 0) {
+    out.push({
+      command: 'm',
+      args: [first.start.x, first.start.y],
+      start: { ...first.start },
+      end: { ...first.start },
+    });
+  }
+  for (const cmd of ring) out.push(cmd);
+  const last = ring[ring.length - 1];
+  out.push({
+    command: 'z',
+    args: [],
+    start: { ...last.end },
+    end: { ...first.start },
+  });
+}
+
+/**
+ * Cut a path with the strokes of another path.
+ *
+ * The subject may be open or closed and may contain multiple contours
+ * (islands and holes). Each cutter subpath is one knife stroke: open chains
+ * slice wherever they fully cross material; closed loops act as cookie
+ * cutters. Cutter endpoints within a scale-relative tolerance of the subject
+ * boundary snap onto it; a stroke that dead-ends inside contributes nothing.
+ *
+ * Returns one command array per resulting piece. Closed pieces are healed
+ * (re-closed along the cut lines) with holes carried as extra subpaths;
+ * open-subject pieces are open fragments. If nothing is cut, returns the
+ * subject verbatim as a single piece.
+ */
+export function pathCut(subjectCmds: TransformCmd[], cutterCmds: TransformCmd[], warnings?: string[]): TransformCmd[][] {
+  if (subjectCmds.length === 0) return [];
+
+  // ── Cutter prep: draw segments only, never re-closed ──
+  const cutterSegsAll = extractDrawCmds(cutterCmds);
+  if (cutterSegsAll.length === 0) return [[...subjectCmds]];
+
+  // ── Subject prep: partition subpaths into closed and open ──
+  const closedGroups: TransformCmd[][] = [];
+  const openChains: TransformCmd[][] = [];
+  for (const sp of splitCmdsIntoSubpaths(subjectCmds)) {
+    // splitCmdsIntoSubpaths only splits on z; also split on m/discontinuity.
+    const draw = extractDrawCmds(sp);
+    if (draw.length === 0) continue;
+    for (const chain of splitSegsIntoChains(draw)) {
+      if (chain.isClosed) closedGroups.push(chain.segs);
+      else openChains.push(chain.segs);
+    }
+  }
+
+  // Closed subject rings: normalization prologue (glyph outlines are often
+  // self-touching), then re-extract, close, and canonicalize winding.
+  let subjRings: TransformCmd[][] = [];
+  if (closedGroups.length > 0) {
+    let closedCmds: TransformCmd[] = [];
+    for (const g of closedGroups) {
+      emitRing(g, closedCmds);
+    }
+    closedCmds = splitSelfIntersectingContour(closedCmds);
+    closedCmds = unionIntersectingSameWindingSubpaths(closedCmds);
+    const segs = includeClosingSegment(extractDrawCmds(closedCmds));
+    subjRings = splitSegsIntoChains(segs).map(c => c.segs);
+    subjRings = canonicalizeRingWindings(subjRings);
+  }
+  const subjSegs: TransformCmd[] = subjRings.flat();
+  const openSegs: TransformCmd[] = openChains.flat();
+
+  // ── Scale-aware endpoint snap tolerance ──
+  const bboxDiag = computeBBoxDiag([...subjSegs, ...openSegs], cutterSegsAll);
+  const snapTol = Math.max(0.5, bboxDiag * 1e-3);
+  const mergeDist = cutNodeMergeDist(bboxDiag);
+
+  // ── Endpoint snap: open cutter chain ends near the subject boundary ──
+  const cutterChains = splitSegsIntoChains(cutterSegsAll);
+  const snapTargets = [...subjSegs, ...openSegs];
+  interface SnapInfo { subjSeg: number; tA: number; point: Point; cutterSeg: number; tB: number }
+  const snaps: SnapInfo[] = [];
+  if (snapTargets.length > 0) {
+    for (const chain of cutterChains) {
+      if (chain.isClosed) continue;
+      for (const endKind of ['start', 'end'] as const) {
+        const terminal = endKind === 'start' ? chain.segs[0] : chain.segs[chain.segs.length - 1];
+        const pt = endKind === 'start' ? terminal.start : terminal.end;
+        let best: { segIdx: number; t: number; d2: number } | null = null;
+        for (let i = 0; i < snapTargets.length; i++) {
+          const bb = cmdBBox(snapTargets[i]);
+          if (pt.x < bb.minX - snapTol || pt.x > bb.maxX + snapTol ||
+              pt.y < bb.minY - snapTol || pt.y > bb.maxY + snapTol) continue;
+          const near = nearestOnCmd(pt, snapTargets[i]);
+          if (!best || near.d2 < best.d2) best = { segIdx: i, t: near.t, d2: near.d2 };
+        }
+        if (!best || best.d2 > snapTol * snapTol) continue;
+        const target = snapTargets[best.segIdx];
+        let snapped = evalCmd(target, best.t);
+        let snappedT = best.t;
+        // Prefer the exact vertex when the projection lands near one.
+        if (dist(snapped, target.start) < mergeDist) { snapped = { ...target.start }; snappedT = 0; }
+        else if (dist(snapped, target.end) < mergeDist) { snapped = { ...target.end }; snappedT = 1; }
+        const chainIdxInAll = cutterSegsAll.indexOf(terminal);
+        if (endKind === 'start') {
+          const rebased = rebaseCmdStart(terminal, snapped);
+          chain.segs[0] = rebased;
+          cutterSegsAll[chainIdxInAll] = rebased;
+        } else {
+          const rebased = rebaseCmdEnd(terminal, snapped);
+          chain.segs[chain.segs.length - 1] = rebased;
+          cutterSegsAll[chainIdxInAll] = rebased;
+        }
+        if (best.segIdx < subjSegs.length) {
+          snaps.push({
+            subjSeg: best.segIdx, tA: snappedT, point: snapped,
+            cutterSeg: chainIdxInAll, tB: endKind === 'start' ? 0 : 1,
+          });
+        }
+        cutDebug(`snapped cutter ${endKind} onto boundary at (${snapped.x.toFixed(3)}, ${snapped.y.toFixed(3)})`);
+      }
+    }
+  }
+
+  const pieces: TransformCmd[][] = [];
+  let anyCut = false;
+
+  // ── Closed-subject pipeline: planar arrangement + face walk ──
+  if (subjRings.length > 0) {
+    const closedPieces = cutClosedRings(subjRings, subjSegs, cutterChains, cutterSegsAll, snaps, mergeDist, warnings);
+    if (closedPieces === null) {
+      // No cutter fragment survived: the closed portion stays whole.
+      const wholeClosed: TransformCmd[] = [];
+      for (const ring of subjRings) emitRing(ring, wholeClosed);
+      pieces.push(wholeClosed);
+    } else {
+      anyCut = true;
+      pieces.push(...closedPieces);
+    }
+  }
+
+  // ── Open-subject pipeline: sever at crossings ──
+  for (const chainSegs of openChains) {
+    const fragments = cutOpenChain(chainSegs, cutterSegsAll, mergeDist);
+    if (fragments.length > 1) anyCut = true;
+    pieces.push(...fragments);
+  }
+
+  if (!anyCut) return [[...subjectCmds]];
+  if (pieces.length === 0) return [[...subjectCmds]];
+  return pieces;
+}
+
+function cutClosedRings(
+  subjRings: TransformCmd[][],
+  subjSegs: TransformCmd[],
+  cutterChains: { segs: TransformCmd[]; startIdx: number; isClosed: boolean }[],
+  cutterSegsAll: TransformCmd[],
+  snaps: { subjSeg: number; tA: number; point: Point; cutterSeg: number; tB: number }[],
+  mergeDist: number,
+  warnings?: string[],
+): TransformCmd[][] | null {
+  // ── Intersections: subject × cutter ──
+  const { intersections, sharedEdges } = findAllIntersections(subjSegs, cutterSegsAll, { vertexPolicy: 'snap', vertexSnapDist: mergeDist });
+
+  // Synthetic records for snapped endpoints the pairwise pass missed.
+  for (const s of snaps) {
+    const covered = intersections.some(ix =>
+      ix.segA === s.subjSeg && ix.segB === s.cutterSeg && dist(ix.point, s.point) < mergeDist);
+    if (!covered) {
+      intersections.push({ point: { ...s.point }, tA: s.tA, tB: s.tB, segA: s.subjSeg, segB: s.cutterSeg });
+    }
+  }
+
+  // ── Intersections: cutter × cutter (crossing knives subdivide each other) ──
+  interface CutterPairHit { point: Point; segI: number; tI: number; segJ: number; tJ: number }
+  const cutterHits: CutterPairHit[] = [];
+  const chainOfSeg = new Map<number, number>();
+  cutterChains.forEach((chain, ci) => {
+    for (let k = 0; k < chain.segs.length; k++) chainOfSeg.set(chain.startIdx + k, ci);
+  });
+  for (let i = 0; i < cutterSegsAll.length; i++) {
+    for (let j = i + 1; j < cutterSegsAll.length; j++) {
+      const bbI = cmdBBox(cutterSegsAll[i]);
+      const bbJ = cmdBBox(cutterSegsAll[j]);
+      if (!bboxOverlap(bbI, bbJ)) continue;
+      const sameChain = chainOfSeg.get(i) === chainOfSeg.get(j);
+      const chain = sameChain ? cutterChains[chainOfSeg.get(i)!] : null;
+      const adjacent = sameChain && chain !== null && (
+        j - i === 1 ||
+        (chain.isClosed && i === chain.startIdx && j === chain.startIdx + chain.segs.length - 1)
+      );
+      const hits = pairwiseIntersect(cutterSegsAll[i], cutterSegsAll[j]);
+      for (const h of hits) {
+        if (adjacent) {
+          // Skip the shared junction of consecutive chain segments.
+          const atJunction =
+            (Math.abs(h.tA - 1) < CUT_JUNCTION_EPS && Math.abs(h.tB) < CUT_JUNCTION_EPS) ||
+            (Math.abs(h.tA) < CUT_JUNCTION_EPS && Math.abs(h.tB - 1) < CUT_JUNCTION_EPS);
+          if (atJunction) continue;
+        }
+        cutterHits.push({ point: h.point, segI: i, tI: h.tA, segJ: j, tJ: h.tB });
+      }
+    }
+  }
+
+  // ── Node table: cluster records into arrangement nodes ──
+  const table: CutNodeTable = { points: [], parent: [], mergeDist };
+  const subjEntries = new Map<number, { t: number; node: number }[]>();
+  const cutterEntries = new Map<number, { t: number; node: number }[]>();
+  const addEntry = (map: Map<number, { t: number; node: number }[]>, seg: number, t: number, node: number): void => {
+    if (!map.has(seg)) map.set(seg, []);
+    map.get(seg)!.push({ t, node });
+  };
+  for (const ix of intersections) {
+    const node = cutNodeFor(table, ix.point);
+    addEntry(subjEntries, ix.segA, ix.tA, node);
+    addEntry(cutterEntries, ix.segB, ix.tB, node);
+  }
+  for (const h of cutterHits) {
+    const node = cutNodeFor(table, h.point);
+    addEntry(cutterEntries, h.segI, h.tI, node);
+    addEntry(cutterEntries, h.segJ, h.tJ, node);
+  }
+
+  // ── Split subject rings into edges ──
+  const subjEdges: CutEdge[] = [];
+  const subjCycles: TransformCmd[][] = [];
+  let segBase = 0;
+  for (const ring of subjRings) {
+    const localEntries = new Map<number, { t: number; node: number }[]>();
+    const localShared = new Map<number, { start: number; end: number }[]>();
+    for (let k = 0; k < ring.length; k++) {
+      const global = segBase + k;
+      const list = subjEntries.get(global);
+      if (list) localEntries.set(k, list);
+      const ranges = sharedEdges.filter(se => se.segA === global)
+        .map(se => ({ start: Math.min(se.aStart, se.aEnd), end: Math.max(se.aStart, se.aEnd) }));
+      if (ranges.length > 0) localShared.set(k, ranges);
+    }
+    const split = splitChainAtNodes({ segs: ring, isClosed: true }, localEntries, localShared, table);
+    if (split.cycle) subjCycles.push(split.cycle);
+    else subjEdges.push(...split.edges);
+    segBase += ring.length;
+  }
+
+  // ── Split cutter chains into edges ──
+  const cutterEdges: CutEdge[] = [];
+  const cutterCycles: TransformCmd[][] = [];
+  for (const chain of cutterChains) {
+    const localEntries = new Map<number, { t: number; node: number }[]>();
+    const localShared = new Map<number, { start: number; end: number }[]>();
+    for (let k = 0; k < chain.segs.length; k++) {
+      const global = chain.startIdx + k;
+      const list = cutterEntries.get(global);
+      if (list) localEntries.set(k, list);
+      const ranges = sharedEdges.filter(se => se.segB === global)
+        .map(se => ({ start: Math.min(se.bStart, se.bEnd), end: Math.max(se.bStart, se.bEnd) }));
+      if (ranges.length > 0) localShared.set(k, ranges);
+    }
+    const split = splitChainAtNodes(chain, localEntries, localShared, table);
+    if (split.cycle) {
+      if (chain.isClosed) cutterCycles.push(split.cycle);
+      // An open, uncrossed chain contributes nothing.
+    } else {
+      cutterEdges.push(...split.edges);
+    }
+  }
+
+  // ── Prune cutter fragments ──
+  // 1. Boundary-coincident fragments duplicate subject edges — drop.
+  // 2. Fragments outside material (winding 0 vs the canonicalized subject,
+  //    which zeroes both the exterior and hole interiors) — drop.
+  // 3. Dangling fragments (unlabeled chain ends, or ends orphaned by prior
+  //    pruning) — drop iteratively.
+  let alive = cutterEdges.filter(e => {
+    if (e.boundary) return false;
+    if (e.fromNode < 0 || e.toNode < 0) return false;
+    const mid = e.cmds[Math.floor(e.cmds.length / 2)];
+    const sample = evalCmd(mid, 0.5);
+    return windingNumber(sample, subjSegs) !== 0;
+  });
+  for (;;) {
+    const degree = new Map<number, number>();
+    const bump = (n: number): void => {
+      const c = cutNodeFind(table, n);
+      degree.set(c, (degree.get(c) ?? 0) + 1);
+    };
+    for (const e of subjEdges) { bump(e.fromNode); bump(e.toNode); }
+    for (const e of alive) { bump(e.fromNode); bump(e.toNode); }
+    const next = alive.filter(e =>
+      (degree.get(cutNodeFind(table, e.fromNode)) ?? 0) > 1 &&
+      (degree.get(cutNodeFind(table, e.toNode)) ?? 0) > 1);
+    if (next.length === alive.length) break;
+    alive = next;
+  }
+
+  // Surviving closed cutter loops entirely inside material: cookie cutters.
+  const cookies = cutterCycles.filter(cycle => {
+    const mid = cycle[Math.floor(cycle.length / 2)];
+    const sample = evalCmd(mid, 0.5);
+    return windingNumber(sample, subjSegs) !== 0;
+  });
+
+  if (alive.length === 0 && cookies.length === 0) return null;
+
+  // ── Snap edge endpoints onto canonical node coordinates ──
+  const snappedSubj = subjEdges.map(e => snapEdgeToNodes(e, table));
+  const snappedCutter = alive.map(e => snapEdgeToNodes(e, table));
+
+  // ── Half-edge graph ──
+  const halfEdges: CutHalfEdge[] = [];
+  for (const e of snappedSubj) {
+    halfEdges.push({ cmds: e.cmds, fromNode: e.fromNode, toNode: e.toNode, twin: -1, visited: false });
+  }
+  for (const e of snappedCutter) {
+    const fwd = halfEdges.length;
+    halfEdges.push({ cmds: e.cmds, fromNode: e.fromNode, toNode: e.toNode, twin: fwd + 1, visited: false });
+    halfEdges.push({ cmds: reverseRing(e.cmds), fromNode: e.toNode, toNode: e.fromNode, twin: fwd, visited: false });
+  }
+
+  const faces = halfEdges.length > 0 ? traceCutFaces(halfEdges, table, warnings) : [];
+
+  // ── Collect rings: traced faces + uncut subject cycles + cookie loops ──
+  interface CutRing { cmds: TransformCmd[]; area: number }
+  const positives: CutRing[] = [];
+  const negatives: CutRing[] = [];
+  const bboxArea = ringDiag(subjSegs) ** 2 / 2;
+  const areaEps = Math.max(1e-4, bboxArea * 1e-8);
+  const addRing = (cmds: TransformCmd[]): void => {
+    const area = ringSignedArea(cmds);
+    if (Math.abs(area) < areaEps) {
+      warnings?.push('cut(): a sliver piece thinner than the geometric tolerance was dropped');
+      cutDebug(`dropped sliver ring, |area|=${Math.abs(area).toExponential(2)}`);
+      return;
+    }
+    (area > 0 ? positives : negatives).push({ cmds, area });
+  };
+  for (const face of faces) addRing(face);
+  for (const cycle of subjCycles) addRing(cycle);
+  for (const cookie of cookies) {
+    // A cookie loop both stamps out a piece and punches a hole in its host.
+    const area = ringSignedArea(cookie);
+    const positive = area > 0 ? cookie : reverseRing(cookie);
+    const negative = area > 0 ? reverseRing(cookie) : cookie;
+    addRing(positive);
+    addRing(negative);
+  }
+
+  if (positives.length === 0) return null;
+
+  // ── Assign holes to the smallest strictly-larger containing outer ──
+  const holeAssignment = new Map<number, TransformCmd[][]>();
+  for (const hole of negatives) {
+    const sample = interiorSampleOfRing(hole.cmds);
+    if (!sample) {
+      warnings?.push('cut(): a hole contour could not be located and was dropped — a piece may be missing its hole');
+      cutDebug('hole ring with no interior sample dropped');
+      continue;
+    }
+    let bestIdx = -1;
+    let bestArea = Infinity;
+    for (let i = 0; i < positives.length; i++) {
+      const outer = positives[i];
+      if (outer.area <= Math.abs(hole.area) + 1e-9) continue; // never its own reversal
+      if (windingNumber(sample, outer.cmds) === 0) continue;
+      if (outer.area < bestArea) { bestArea = outer.area; bestIdx = i; }
+    }
+    if (bestIdx >= 0) {
+      if (!holeAssignment.has(bestIdx)) holeAssignment.set(bestIdx, []);
+      holeAssignment.get(bestIdx)!.push(hole.cmds);
+    } else {
+      warnings?.push('cut(): a hole contour had no containing piece and was dropped — a piece may be missing its hole');
+      cutDebug('hole ring with no containing outer dropped');
+    }
+  }
+
+  // ── Emit pieces ──
+  const pieces: TransformCmd[][] = [];
+  for (let i = 0; i < positives.length; i++) {
+    const piece: TransformCmd[] = [];
+    emitRing(positives[i].cmds, piece);
+    for (const hole of holeAssignment.get(i) ?? []) emitRing(hole, piece);
+    pieces.push(piece);
+  }
+  return pieces;
+}
+
+/** Sever an open subject chain at every cutter crossing. */
+function cutOpenChain(chainSegs: TransformCmd[], cutterSegs: TransformCmd[], mergeDist: number): TransformCmd[][] {
+  const table: CutNodeTable = { points: [], parent: [], mergeDist };
+  const entries = new Map<number, { t: number; node: number }[]>();
+  for (let i = 0; i < chainSegs.length; i++) {
+    for (const cSeg of cutterSegs) {
+      if (!bboxOverlap(cmdBBox(chainSegs[i]), cmdBBox(cSeg))) continue;
+      const hits = pairwiseIntersect(chainSegs[i], cSeg);
+      for (const h of hits) {
+        const node = cutNodeFor(table, h.point);
+        if (!entries.has(i)) entries.set(i, []);
+        entries.get(i)!.push({ t: h.tA, node });
+      }
+    }
+  }
+  const split = splitChainAtNodes({ segs: chainSegs, isClosed: false }, entries, new Map(), table);
+  const runs = split.cycle ? [split.cycle] : split.edges.map(e => e.cmds);
+  // Open fragments need no leading m — bridgeOriginGap positions each piece.
+  return runs.filter(r => r.length > 0).map(run => [...run]);
 }

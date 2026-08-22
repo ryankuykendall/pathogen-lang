@@ -1,0 +1,72 @@
+// viewBox="0 0 240 160"
+// Motivating example for PathBlock.cut(): a two-contour 'O' glyph cut by a
+// two-stroke knife. Left: both strokes cross the glyph → 4 healed pieces.
+// Right: the same knife shifted so it clips less of the glyph → fewer pieces.
+// Pieces are exploded outward from the glyph center to show the healed
+// closed outlines.
+define ViewBox(0, 0, 240, 160);
+let {width, height} = viewbox;
+
+@font "/System/Library/Fonts/Supplemental/Georgia.ttf";
+let styles = ${
+  font-family: Georgia;
+  font-size: 120;
+};
+
+let glyphs = PathBlock.fromGlyph("O", styles);
+let o = glyphs[0];
+
+let cutPB = @{
+  m 20 40
+  l 90 30
+  m -90 30
+  l 90 -24
+};
+
+let pieceLayer = PathLayer(`pieces`) ${
+  fill: #9db8ec;
+  stroke: #223;
+  stroke-width: 1;
+};
+let cutLayer = PathLayer(`cuts`) ${
+  stroke: #c00;
+  stroke-width: 0.5;
+};
+
+let x = 20;
+let y = 120;
+let x2 = calc(width / 2 + x);
+
+let bb = o.boundingBox();
+let cx = calc(bb.x + bb.width / 2);
+let cy = calc(bb.y + bb.height / 2);
+
+fn drawExploded(pieces, ox, oy) {
+  for ([p, i] in pieces) {
+    let pb = p.boundingBox();
+    let px = calc(pb.x + pb.width / 2 - cx);
+    let py = calc(pb.y + pb.height / 2 - cy);
+    let len = calc(sqrt(px * px + py * py) + 0.001);
+    M calc(ox + px / len * 5) calc(oy + py / len * 5)
+    p.draw();
+  }
+}
+
+// Left: knife at world (0, 0) against the glyph at (x, y).
+let piecesL = o.cut(cutPB.project(calc(0 - x), calc(0 - y)));
+log(piecesL.length);
+pieceLayer.apply {
+  drawExploded(piecesL, x, y);
+}
+
+// Right: the same knife shifted right — it exits the glyph earlier.
+let piecesR = o.cut(cutPB.project(calc(width / 2 - 30 - x2), calc(0 - y)));
+log(piecesR.length);
+pieceLayer.apply {
+  drawExploded(piecesR, x2, y);
+}
+
+cutLayer.apply {
+  cutPB.drawTo(0, 0);
+  cutPB.drawTo(calc(width / 2 - 30), 0);
+}

@@ -59,7 +59,7 @@ import {
   scaleCommands,
   subPathCommands,
 } from './path-transforms';
-import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
+import { pathCut, pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { calculatePathLength, partitionPath, samplePathAtFraction } from './sampling';
 import {
   buildSimpleVariableOffset,
@@ -3076,6 +3076,32 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         return buildPathBlockFromCommands(resultCmds, { x: 0, y: 0 });
       }
 
+      case 'cut': {
+        if (expr.args.length !== 1) throw mError('cut() expects 1 argument (cutter path)');
+        const cutterVal = evaluateExpression(expr.args[0], scope);
+        let cutterCmds: PathBlockCommand[];
+        if (isPathBlockValue(cutterVal)) {
+          cutterCmds = cutterVal.commands;
+        } else if (isProjectedPathValue(cutterVal)) {
+          cutterCmds = cutterVal.commands;
+        } else {
+          throw mError('cut() argument must be a PathBlock or ProjectedPath');
+        }
+        const cutWarnings: string[] = [];
+        const pieceCmds = pathCut(obj.commands, cutterCmds, cutWarnings);
+        for (const w of cutWarnings) {
+          if (scope.evalState) {
+            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          }
+        }
+        return {
+          type: 'ArrayValue' as const,
+          // Origin (0,0) keeps each piece's subject-local placement, so
+          // drawing every piece at one position reassembles the shape.
+          elements: pieceCmds.map(p => buildPathBlockFromCommands(p, { x: 0, y: 0 })),
+        };
+      }
+
       case 'intersects': {
         if (expr.args.length !== 1) throw mError('intersects() expects 1 argument');
         const otherVal = evaluateExpression(expr.args[0], scope);
@@ -3566,6 +3592,32 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           default: resultCmds = [];
         }
         return buildPathBlockFromCommands(resultCmds, { x: 0, y: 0 });
+      }
+
+      case 'cut': {
+        if (expr.args.length !== 1) throw mError('cut() expects 1 argument (cutter path)');
+        const cutterVal = evaluateExpression(expr.args[0], scope);
+        let cutterCmds: PathBlockCommand[];
+        if (isPathBlockValue(cutterVal)) {
+          cutterCmds = cutterVal.commands;
+        } else if (isProjectedPathValue(cutterVal)) {
+          cutterCmds = cutterVal.commands;
+        } else {
+          throw mError('cut() argument must be a PathBlock or ProjectedPath');
+        }
+        const cutWarnings: string[] = [];
+        const pieceCmds = pathCut(obj.commands, cutterCmds, cutWarnings);
+        for (const w of cutWarnings) {
+          if (scope.evalState) {
+            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          }
+        }
+        return {
+          type: 'ArrayValue' as const,
+          // Origin (0,0) keeps each piece's subject-local placement, so
+          // drawing every piece at one position reassembles the shape.
+          elements: pieceCmds.map(p => buildPathBlockFromCommands(p, { x: 0, y: 0 })),
+        };
       }
 
       case 'intersects': {
