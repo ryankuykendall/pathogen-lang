@@ -1,8 +1,8 @@
 define ViewBox(0, 0, 600, 300);
 // Hello World glyph layout — advance-width loop placing each letter
 
-@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
-@font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
+@font "Bebas Neue";
+@font "Inconsolata";
 
 // --- Background ---
 
@@ -12,7 +12,7 @@ layer('bg').apply { rect(0, 0, 600, 300); }
 // ─── Glyph layout with advance widths ────────────────────────────
 
 let word = "PATHOGEN";
-let styles = ${ font-family: BebasNeue-Regular; font-size: 64; };
+let styles = ${ font-family: "Bebas Neue"; font-size: 64; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 // Place glyphs using advance width accumulation
@@ -65,7 +65,7 @@ layer('ticks').apply {
 // --- Second row: Inconsolata (monospace) ---
 
 let word2 = "PATHOGEN";
-let styles2 = ${ font-family: Inconsolata-Regular; font-size: 48; };
+let styles2 = ${ font-family: Inconsolata; font-size: 48; };
 let glyphs2 = PathBlock.fromGlyph(word2, styles2);
 
 let glyph_layer2 = PathLayer('glyphs2') ${

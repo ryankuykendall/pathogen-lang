@@ -49,6 +49,16 @@ Standards for code examples embedded in blog posts, documentation, and tutorials
 
 - When including Pathogen Language code snippets in generated SVG files, pre-pad lines to preserve indentation for readability.
 - Indentation is critical for conveying code structure — never flatten or strip leading whitespace from code rendered as SVG text.
+- **Path blocks with more than one command are written multiline — one command per line:**
+
+  ```pathogen
+  let knife = @{
+    m 90 -15
+    l 0 130
+  };
+  ```
+
+  not `let knife = @{ m 90 -15 l 0 130 };`. A block containing a single statement (e.g. `@{ circle(0, 0, 40); }`) may stay on one line.
 
 ---
 

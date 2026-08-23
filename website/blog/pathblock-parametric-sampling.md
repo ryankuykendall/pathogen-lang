@@ -3,15 +3,18 @@ title: "Parametric Sampling: Placing Elements Along Curves"
 slug: pathblock-parametric-sampling
 date: 2026-03-11
 description: "How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves."
+series: "PathBlock Extensions"
+seriesPart: 2
 ---
 
-*Part 2 of 4 in our series on PathBlock extensions.*
+*Part 2 of 5 in our series on PathBlock extensions.*
 
 > **Series: PathBlock Extensions**
 > 1. [Introduction to PathBlocks](/blog/pathblock-introduction)
 > 2. **Exploring Parametric Sampling** (this post)
 > 3. [Fillets and Chamfers](/blog/pathblock-fillets-chamfers)
 > 4. [Boolean Operations](/blog/pathblock-boolean-operations)
+> 5. [Cutting Paths](/blog/pathblock-cutting)
 
 The [previous post](/blog/pathblock-introduction) introduced PathBlocks as reusable shape primitives — define once, draw anywhere. But drawing is just the beginning. Parametric sampling lets you ask questions about a path's geometry: where is the midpoint? What direction is the curve heading at 30% of the way? What's the perpendicular at every quarter mark? These answers let you place elements precisely along arbitrary curves.
 

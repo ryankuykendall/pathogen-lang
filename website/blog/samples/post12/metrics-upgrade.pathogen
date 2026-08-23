@@ -1,8 +1,8 @@
 define ViewBox(0, 0, 600, 340);
 // @font precision — fromGlyph() uses the exact same font for both paths and metrics
 
-@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
-@font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
+@font "Bebas Neue";
+@font "Inconsolata";
 
 // --- Background ---
 
@@ -14,7 +14,7 @@ layer('bg').apply { rect(0, 0, 600, 340); }
 let g_left = GroupLayer('glyph-side') ${ translate-x: 30; translate-y: 50; };
 
 let word = "LAYOUT";
-let styles = ${ font-family: BebasNeue-Regular; font-size: 56; };
+let styles = ${ font-family: "Bebas Neue"; font-size: 56; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 let path_layer = PathLayer('glyph-paths') ${

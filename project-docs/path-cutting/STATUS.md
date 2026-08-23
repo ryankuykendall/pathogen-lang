@@ -132,3 +132,61 @@ compiled and verified). Deferred "consider" items: dedupe of the repaired
 boolean examples, blog-post link once Part 5 lands.
 
 Blog synopsis v1 at `blog-synopsis-v1.md` (awaiting user review).
+
+## Pre-publish fixes (2026-08-22, user review of draft)
+
+1. **File-path @font breaks "Open in a new workspace"** (user report,
+   generalized): the playground can't load file-path fonts, so any blog
+   sample using them breaks when opened as a workspace. Root fix in
+   `src/cli.ts`: named-family @font resolution now searches
+   `PATHOGEN_FONT_DIRS`, then a `fonts/` dir found by walking up from the
+   source file, then system dirs — matching Google filename conventions
+   (`@font "Playfair Display" 700;` → `PlayfairDisplay-Bold.ttf`), so the
+   same family-name declaration works in CLI and playground. 3 new CLI
+   tests; docs @font section updated. Migrated ALL file-path samples:
+   post40 (Playfair Display 700, Baumans) and post12's six samples
+   (Bebas Neue, Inconsolata, Raleway 700); recompiled, renders identical.
+2. **Series block buried the new post** (user report): implemented the
+   latest-part spotlight (user-approved design) in BOTH index surfaces —
+   `scripts/build-blog.ts` (SSR) and
+   `playground/components/views/blog-view.ts` + `.css` (SPA): newest part
+   renders as a full accent-bordered card with a "New · Part N" pill
+   ("Latest" after 45 days), earlier parts collapse to a compact ordered
+   list. NOTE: playground bundle NOT rebuilt in-session (dev:stack was
+   live — PATHOGEN_API_BASE trap); SPA change verified by esbuild syntax
+   gate and mirrors the verified SSR markup; picks up on next
+   dev:website/deploy build.
+3. **Spotlight over-applied to burst-published series** (user report: Stdlib
+   Primers, seven parts over seven days, got a "NEW · Part 7" spotlight):
+   the spotlight is now gated on the newest part being a LATE ADDITION —
+   published ≥14 days after the part before it. Sequential-run series keep
+   the plain all-cards layout; late-addition series (PathBlock Extensions)
+   keep the spotlight. Gated identically in build-blog.ts and blog-view.ts.
+
+## Post round-table review (2026-08-22)
+
+Four-persona review of the blog post + samples. Applied in-session:
+- MUST-FIX: broken `plate.cut(...)` line (undefined var, truncated docs
+  paste) removed — project() teaching moved to the o-cut section where the
+  sample actually uses it; rotateAtVertexIndex claim narrowed to the
+  verified normalize-to-start behavior; o-cut knives no longer merge into a
+  flow-arrow (viewBox 620, panels separated, dashed divider, explosion
+  8→14); minimal on-canvas labeling added to samples 1–5 (piece counts,
+  knife legend, dividers) with GroupLayer wraps; cookie-cutter now draws
+  the cutter loop in red.
+- SHOULD-IMPROVE: labels-don't-survive carve-out (intro + closing);
+  --annotated bullet in "What doesn't cut"; i%2 stability-vs-meaning
+  sentence; "one-liner" overclaim dropped; hashRange/advanceWidth/
+  rotateAtVertexIndex linked + "subpath" glossed; 'O' paragraph re-sequenced
+  (picture first, dead-end rule as the general principle); dashes sample
+  draws its nine knives as faint hairlines; donut panels labeled.
+- CONSIDER applied: frontmatter description covers open subjects; contours
+  sentence softened to a pointer; code-open closed on the two longest
+  samples (shattered 82 lines, o-cut). Label placement respects the
+  validator's bbox-based collision checks (no "knife" word inside the
+  plate bbox — red-is-knife carried by the earlier legends).
+- Deferred to user: pathblock-glyph-extraction series membership (PM wants
+  "of 6", ID wants a Related-reading line); accepted as deliberate:
+  shattered 960×170 wordmark strip; hardcoded palette (series convention).
+- Reviewer verdict on series-header edits in parts 1–4: clean, no findings.
+- All six samples revalidate with 0 warnings after the label work.

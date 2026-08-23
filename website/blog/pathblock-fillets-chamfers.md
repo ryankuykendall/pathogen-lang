@@ -3,15 +3,18 @@ title: "Fillets and Chamfers: Rounding and Cutting Corners"
 slug: pathblock-fillets-chamfers
 date: 2026-03-12
 description: "Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses."
+series: "PathBlock Extensions"
+seriesPart: 3
 ---
 
-*Part 3 of 4 in our series on PathBlock extensions.*
+*Part 3 of 5 in our series on PathBlock extensions.*
 
 > **Series: PathBlock Extensions**
 > 1. [Introduction to PathBlocks](/blog/pathblock-introduction)
 > 2. [Exploring Parametric Sampling](/blog/pathblock-parametric-sampling)
 > 3. **Fillets and Chamfers** (this post)
 > 4. [Boolean Operations](/blog/pathblock-boolean-operations)
+> 5. [Cutting Paths](/blog/pathblock-cutting)
 
 Sharp corners are the default in SVG paths. Every junction between two line segments creates a hard vertex. Chamfers and fillets transform these corners — chamfers cut them with straight lines, fillets round them with arcs. Both operations work on [PathBlocks](/blog/pathblock-introduction) and return new PathBlocks, so you can chain them with other transforms.
 

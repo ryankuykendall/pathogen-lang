@@ -99,7 +99,24 @@ class BlogView extends HTMLElement {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')}`;
-    return `
+    // Latest-part spotlight — mirrors build-blog.ts: only when the newest
+    // part is a LATE ADDITION (published well after the part before it) does
+    // it render as a full accented card with earlier parts collapsed to a
+    // compact list. A series published in one sequential run keeps the plain
+    // all-cards layout.
+    const newest = parts.reduce((best, p) => {
+      if (p.date > best.date) return p;
+      if (p.date === best.date && (p.seriesPart ?? 0) > (best.seriesPart ?? 0)) return p;
+      return best;
+    }, parts[0]);
+    const earlier = parts.filter((p) => p !== newest);
+    const LATE_ADDITION_GAP_MS = 14 * 24 * 60 * 60 * 1000;
+    const prevDate = earlier.reduce<string | null>((max, p) => (max === null || p.date > max ? p.date : max), null);
+    const isLateAddition =
+      prevDate !== null &&
+      new Date(newest.date).getTime() - new Date(prevDate).getTime() >= LATE_ADDITION_GAP_MS;
+    if (!isLateAddition) {
+      return `
               <section class="series-group" aria-labelledby="${seriesId}">
                 <header class="series-header">
                   <p class="series-eyebrow">Series · ${parts.length} ${parts.length === 1 ? 'part' : 'parts'}</p>
@@ -107,6 +124,44 @@ class BlogView extends HTMLElement {
                   ${seriesDescription ? `<p class="series-description">${seriesDescription}</p>` : ''}
                 </header>
                 ${parts.map((p) => this.renderCard(p, 'h3')).join('')}
+              </section>
+            `;
+    }
+    const NEW_WINDOW_MS = 45 * 24 * 60 * 60 * 1000;
+    const pillWord = Date.now() - new Date(newest.date).getTime() < NEW_WINDOW_MS ? 'New' : 'Latest';
+    const spotlight = `
+              <article class="post-card series-spotlight" data-slug="${newest.slug}">
+                <span class="series-pill">${pillWord}${newest.seriesPart ? ` · Part ${newest.seriesPart}` : ''}</span>
+                <h3 class="post-title">${newest.title}</h3>
+                <p class="post-date">${this.formatDate(newest.date)}</p>
+                ${newest.description ? `<p class="post-description">${newest.description}</p>` : ''}
+              </article>
+            `;
+    const earlierList =
+      earlier.length === 0
+        ? ''
+        : `
+              <nav class="series-earlier" aria-label="Earlier parts of ${group.series}">
+                <p class="series-earlier-label">Earlier in this series:</p>
+                <ol>
+                  ${earlier
+                    .map(
+                      (p) =>
+                        `<li${p.seriesPart ? ` value="${p.seriesPart}"` : ''} data-slug="${p.slug}"><span class="series-earlier-title">${p.title}</span><span class="series-earlier-date">${this.formatDate(p.date)}</span></li>`,
+                    )
+                    .join('')}
+                </ol>
+              </nav>
+            `;
+    return `
+              <section class="series-group" aria-labelledby="${seriesId}">
+                <header class="series-header">
+                  <p class="series-eyebrow">Series · ${parts.length} ${parts.length === 1 ? 'part' : 'parts'}</p>
+                  <h2 class="series-title" id="${seriesId}">${group.series}</h2>
+                  ${seriesDescription ? `<p class="series-description">${seriesDescription}</p>` : ''}
+                </header>
+                ${spotlight}
+                ${earlierList}
               </section>
             `;
   }

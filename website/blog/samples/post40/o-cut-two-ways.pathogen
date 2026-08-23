@@ -1,0 +1,74 @@
+define ViewBox(0, 0, 620, 290);
+// The example that motivated cut(): the same two-stroke knife, two positions.
+// Left: both strokes cross the whole 'O' — four pieces.
+// Right: the knife shifted so its strokes dead-end inside the counter —
+// they sever only the left ring, leaving two pieces.
+
+@font "Playfair Display" 700;
+
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+layer('bg').apply { rect(0, 0, 620, 290); }
+
+let scene = GroupLayer('scene') ${};
+let pieceLayer = PathLayer('pieces') ${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
+let knifeLayer = PathLayer('knife') ${ stroke: #ef4444; stroke-width: 1.2; fill: none; };
+let divider = PathLayer('divider') ${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
+let labels = TextLayer('labels') ${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
+let knifeLabel = TextLayer('knife-label') ${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
+scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+
+let styles = ${ font-family: "Playfair Display"; font-weight: 700; font-size: 200; };
+let glyphs = PathBlock.fromGlyph("O", styles);
+let o = glyphs[0];
+
+// Knife in glyph-local coordinates: two strokes converging to the right.
+let knife = @{
+  m -20 -125
+  l 190 45
+  m -190 55
+  l 190 -35
+};
+
+let x1 = 75;
+let x2 = 390;
+let y = 220;
+let bb = o.boundingBox();
+let cx = calc(bb.x + bb.width / 2);
+let cy = calc(bb.y + bb.height / 2);
+
+fn drawExploded(pieces, ox, oy) {
+  for ([p, i] in pieces) {
+    let pb = p.boundingBox();
+    let px = calc(pb.x + pb.width / 2 - cx);
+    let py = calc(pb.y + pb.height / 2 - cy);
+    let len = calc(sqrt(px * px + py * py) + 0.001);
+    M calc(ox + px / len * 14) calc(oy + py / len * 14)
+    p.draw();
+  }
+}
+
+let piecesL = o.cut(knife);
+let piecesR = o.cut(knife.project(-95, 0));
+
+pieceLayer.apply {
+  drawExploded(piecesL, x1, y);
+  drawExploded(piecesR, x2, y);
+}
+
+knifeLayer.apply {
+  knife.drawTo(x1, y);
+  knife.drawTo(calc(x2 - 95), y);
+}
+
+divider.apply {
+  M 262 30
+  L 262 260
+}
+
+labels.apply {
+  text(150, 262)`4 pieces`
+  text(465, 262)`2 pieces — strokes end in the counter`
+}
+knifeLabel.apply {
+  text(48, 82)`knife`
+}

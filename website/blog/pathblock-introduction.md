@@ -3,15 +3,19 @@ title: "PathBlocks: Reusable Shape Primitives in Pathogen"
 slug: pathblock-introduction
 date: 2026-03-10
 description: "How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely."
+series: "PathBlock Extensions"
+seriesPart: 1
+seriesDescription: "PathBlocks turn SVG paths into first-class values — this series builds from the basics through sampling, corner shaping, boolean operations, and cutting shapes apart."
 ---
 
-*Part 1 of 4 in our series on PathBlock extensions.*
+*Part 1 of 5 in our series on PathBlock extensions.*
 
 > **Series: PathBlock Extensions**
 > 1. **Introduction to PathBlocks** (this post)
 > 2. [Exploring Parametric Sampling](/blog/pathblock-parametric-sampling)
 > 3. [Fillets and Chamfers](/blog/pathblock-fillets-chamfers)
 > 4. [Boolean Operations](/blog/pathblock-boolean-operations)
+> 5. [Cutting Paths](/blog/pathblock-cutting)
 
 If you build parametric SVGs, icon systems, or generative art, you've felt the friction: repeating the same shapes at different positions means copy-pasting `<path>` elements, tweaking `d` attributes, adjusting coordinates. PathBlocks solve this by capturing relative path commands as first-class values that you can draw, position, transform, and compose.
 

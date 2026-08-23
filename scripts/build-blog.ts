@@ -453,6 +453,19 @@ export const latestBlogPost: BlogPostMeta | null = null;
       color: var(--accent-color, #10b981);
     }
     .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
 
     /* Post header */
     .post-header { margin-bottom: 2rem; }
@@ -587,13 +600,56 @@ export const latestBlogPost: BlogPostMeta | null = null;
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '')}`;
-      return `    <section class="blog-series" aria-labelledby="${seriesId}">
+      // Latest-part spotlight: when the newest part is a LATE ADDITION to
+      // the series (published well after the part before it), it renders as
+      // a full accented card under the series header and earlier parts
+      // collapse into a compact ordered list. A series published in one
+      // sequential run keeps the plain all-cards layout — its last part
+      // isn't news relative to the block.
+      const newest = parts.reduce((best, e) => {
+        if (e.date > best.date) return e;
+        if (e.date === best.date && (e.seriesPart ?? 0) > (best.seriesPart ?? 0)) return e;
+        return best;
+      }, parts[0]);
+      const earlier = parts.filter((e) => e !== newest);
+      const LATE_ADDITION_GAP_MS = 14 * 24 * 60 * 60 * 1000;
+      const prevDate = earlier.reduce<string | null>((max, e) => (max === null || e.date > max ? e.date : max), null);
+      const isLateAddition = prevDate !== null &&
+        new Date(newest.date).getTime() - new Date(prevDate).getTime() >= LATE_ADDITION_GAP_MS;
+      if (!isLateAddition) {
+        return `    <section class="blog-series" aria-labelledby="${seriesId}">
       <header class="blog-series-header">
         <p class="blog-series-eyebrow">Series · ${parts.length} ${parts.length === 1 ? 'part' : 'parts'}</p>
         <h2 id="${seriesId}">${escapeHtmlAttr(group.series)}</h2>
         ${seriesDescription ? `<p class="blog-series-description">${escapeHtmlAttr(seriesDescription)}</p>` : ''}
       </header>
 ${parts.map((e) => renderIndexCard(e, 'h3')).join('\n')}
+    </section>`;
+      }
+      const NEW_WINDOW_MS = 45 * 24 * 60 * 60 * 1000;
+      const pillWord = Date.now() - new Date(newest.date).getTime() < NEW_WINDOW_MS ? 'New' : 'Latest';
+      const spotlight = `    <article class="blog-card blog-series-spotlight" onclick="location.href='/blog/${newest.slug}'">
+      <a href="/blog/${newest.slug}" style="text-decoration:none;color:inherit;display:block;">
+        <span class="blog-series-pill">${pillWord}${newest.seriesPart ? ` · Part ${newest.seriesPart}` : ''}</span>
+        <h3>${escapeHtmlAttr(newest.title)}</h3>
+        <time datetime="${newest.date}">${formatCardDate(newest.date)}</time>
+        ${newest.description ? `<p>${escapeHtmlAttr(newest.description)}</p>` : ''}
+      </a>
+    </article>`;
+      const earlierList = earlier.length === 0 ? '' : `    <nav class="blog-series-earlier" aria-label="Earlier parts of ${escapeHtmlAttr(group.series)}">
+      <p class="blog-series-earlier-label">Earlier in this series:</p>
+      <ol>
+${earlier.map((e) => `        <li${e.seriesPart ? ` value="${e.seriesPart}"` : ''}><a href="/blog/${e.slug}">${escapeHtmlAttr(e.title)}</a><time datetime="${e.date}">${formatCardDate(e.date)}</time></li>`).join('\n')}
+      </ol>
+    </nav>`;
+      return `    <section class="blog-series" aria-labelledby="${seriesId}">
+      <header class="blog-series-header">
+        <p class="blog-series-eyebrow">Series · ${parts.length} ${parts.length === 1 ? 'part' : 'parts'}</p>
+        <h2 id="${seriesId}">${escapeHtmlAttr(group.series)}</h2>
+        ${seriesDescription ? `<p class="blog-series-description">${escapeHtmlAttr(seriesDescription)}</p>` : ''}
+      </header>
+${spotlight}
+${earlierList}
     </section>`;
     })
     .join('\n');

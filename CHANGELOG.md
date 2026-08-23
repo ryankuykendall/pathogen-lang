@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-22 (Cutting Paths blog post, CLI named-font resolution, series spotlight)
+
+### Added
+
+#### Documentation
+
+- **Blog: "Cutting Paths: Slicing Shapes Apart with cut()"** — Part 5 of the PathBlock Extensions series, closing on a shattered "pathogen.studio" wordmark (every glyph laid out by advance width, cut with its own hash-varied knife, fragments drifting and rotating per piece). Six interactive samples with on-canvas piece-count labels, knife legends, and panel dividers; every numeric claim verified by compilation; four-persona agentic review completed with all must-fix findings applied. Parts 1–4 updated to "of 5" with five-entry TOCs and `series`/`seriesPart` frontmatter.
+
+#### Core
+
+- **CLI resolves `@font` family names against local font files** — named lookup now searches `PATHOGEN_FONT_DIRS`, then a `fonts/` directory found by walking up from the source file, then system font directories, matching files by the Google Fonts naming convention (`@font "Playfair Display" 700;` → `PlayfairDisplay-Bold.ttf`). The same family-name declaration now works in the CLI and the playground, which fixed a class of blog samples whose file-path `@font` declarations broke the playground's "Open in a new workspace" (post12's six samples migrated alongside the new post's).
+
+### Changed
+
+#### Playground
+
+- **Blog index: latest-part series spotlight** — when the newest part of a series is a late addition (published ≥14 days after the part before it), it renders as a full accent-bordered card with a "New · Part N" pill (aging to "Latest" after 45 days) while earlier parts collapse into a compact ordered list. Series published as one sequential run keep the plain all-cards layout. Implemented in both index surfaces (static SSR pages and the SPA blog view).
+
+#### Development
+
+- Code-example guidelines: path blocks with more than one command in published samples are written multiline, one command per line.
+
 ## [0.8.0] - 2026-08-22 (PathBlock.cut() — slice paths apart with knife strokes)
 
 ### Added

@@ -1,7 +1,7 @@
 define ViewBox(0, 0, 660, 400);
 // Contour decomposition — .contours splits multi-contour glyphs across "Bingo!"
 
-@font "../../../../fonts/Raleway/Raleway-Bold.ttf"
+@font "Raleway" 700;
 
 // --- Background ---
 
@@ -50,7 +50,7 @@ let subtitle = TextLayer('subtitle') ${
 layer('subtitle').apply { text(0, 44)`.contours splits glyphs into individual PathBlocks` }
 
 // Assembled word — size to fit within ~290px column
-let asm_styles = ${ font-family: Raleway-Bold; font-size: 72; };
+let asm_styles = ${ font-family: "Raleway"; font-weight: 700; font-size: 72; };
 let asm_glyphs = PathBlock.fromGlyph(word, asm_styles);
 
 let asm_layer = PathLayer('assembled') ${
@@ -80,7 +80,7 @@ g_left.append(title, subtitle, asm_layer, asm_label);
 
 let g_decomp = GroupLayer('decomposed') ${ translate-x: 30; translate-y: 176; };
 
-let dec_styles = ${ font-family: Raleway-Bold; font-size: 56; };
+let dec_styles = ${ font-family: "Raleway"; font-weight: 700; font-size: 56; };
 let dec_glyphs = PathBlock.fromGlyph(word, dec_styles);
 
 let letter_gap = 6;

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -697,33 +697,30 @@ async function loadFontsFromDirectives(source: string, sourceFile?: string): Pro
         console.warn(`[pathogen-lang] Failed to load font: ${fontPath} — ${(err as Error).message}`);
       }
     } else {
-      // Named font (e.g., "Inter") — check system font directories
-      const systemDirs = getSystemFontDirs();
+      // Named font (e.g., "Inter" or "Playfair Display" 700) — search project
+      // font directories (PATHOGEN_FONT_DIRS, then a fonts/ dir found by
+      // walking up from the source file), then system font directories.
+      // Filenames follow the Google Fonts convention: FamilyName-Weight.ttf.
+      const searchDirs = getNamedFontSearchDirs(baseDir);
+      const filenames = namedFontFilenames(fontSource, weight);
       let found = false;
-      for (const dir of systemDirs) {
-        // Try common filename patterns
-        const candidates = [
-          join(dir, `${fontSource}.ttf`),
-          join(dir, `${fontSource}.otf`),
-          join(dir, `${fontSource.replace(/\s+/g, '')}.ttf`),
-          join(dir, `${fontSource.replace(/\s+/g, '')}.otf`),
-          join(dir, `${fontSource.replace(/\s+/g, '-')}.ttf`),
-          join(dir, `${fontSource.replace(/\s+/g, '-')}.otf`),
-        ];
-        for (const candidate of candidates) {
-          if (existsSync(candidate)) {
+      outer: for (const { dir, deep } of searchDirs) {
+        const dirs = deep ? [dir, ...listSubdirs(dir)] : [dir];
+        for (const d of dirs) {
+          for (const name of filenames) {
+            const candidate = join(d, name);
+            if (!existsSync(candidate)) continue;
             try {
               const buffer = readFileSync(candidate);
               const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
               addFont(registry, fontSource, weight, 'normal', arrayBuffer);
               found = true;
-              break;
+              break outer;
             } catch {
               // Try next candidate
             }
           }
         }
-        if (found) break;
       }
       if (!found) {
         console.warn(`[pathogen-lang] Font '${fontSource}' not found locally. CLI Google Fonts download coming in a future release.`);
@@ -732,6 +729,73 @@ async function loadFontsFromDirectives(source: string, sourceFile?: string): Pro
   }
 
   return registry.fonts.size > 0 ? registry : undefined;
+}
+
+/** Google Fonts weight-name suffixes for named-font filename matching. */
+const WEIGHT_SUFFIXES: Record<number, string[]> = {
+  100: ['Thin'],
+  200: ['ExtraLight'],
+  300: ['Light'],
+  400: ['Regular'],
+  500: ['Medium'],
+  600: ['SemiBold'],
+  700: ['Bold'],
+  800: ['ExtraBold'],
+  900: ['Black'],
+};
+
+/** Candidate filenames for a family + weight, most specific first. The plain
+ *  (suffix-less) name is kept as a fallback for any weight, preserving the
+ *  historical behavior of loading `Family.ttf` under whatever weight was
+ *  requested. */
+function namedFontFilenames(family: string, weight: number): string[] {
+  const bases = [family.replace(/\s+/g, ''), family, family.replace(/\s+/g, '-')];
+  const suffixes = [...(WEIGHT_SUFFIXES[weight] ?? []), ''];
+  const names: string[] = [];
+  for (const suffix of suffixes) {
+    for (const base of bases) {
+      for (const ext of ['ttf', 'otf']) {
+        names.push(suffix ? `${base}-${suffix}.${ext}` : `${base}.${ext}`);
+      }
+    }
+  }
+  return names;
+}
+
+/** Search-dir list for named fonts. Project dirs (env + walked-up fonts/)
+ *  are searched one subdirectory deep — Google Fonts downloads unpack as
+ *  fonts/Family_Name/File.ttf. System dirs stay shallow. */
+function getNamedFontSearchDirs(baseDir: string): { dir: string; deep: boolean }[] {
+  const dirs: { dir: string; deep: boolean }[] = [];
+  const envDirs = process.env.PATHOGEN_FONT_DIRS;
+  if (envDirs) {
+    for (const d of envDirs.split(':')) {
+      if (d) dirs.push({ dir: d, deep: true });
+    }
+  }
+  let cur = baseDir;
+  for (let i = 0; i < 8; i++) {
+    const fontsDir = join(cur, 'fonts');
+    if (existsSync(fontsDir)) {
+      dirs.push({ dir: fontsDir, deep: true });
+      break;
+    }
+    const parent = dirname(cur);
+    if (parent === cur) break;
+    cur = parent;
+  }
+  for (const d of getSystemFontDirs()) dirs.push({ dir: d, deep: false });
+  return dirs;
+}
+
+function listSubdirs(dir: string): string[] {
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => join(dir, e.name));
+  } catch {
+    return [];
+  }
 }
 
 /**

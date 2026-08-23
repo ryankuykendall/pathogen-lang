@@ -1,7 +1,7 @@
 define ViewBox(0, 0, 900, 310);
 // Text cutout — seven-glyph pipeline: glyph outlines → union → difference
 
-@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+@font "Bebas Neue";
 
 // --- Background ---
 
@@ -28,7 +28,7 @@ let palette_fill = [Color('#3b82f618'), Color('#22c55e18'), Color('#f59e0b18'), 
 // ─── Build glyph paths with advance-width layout ──────────────────
 
 let word = "CUTTING";
-let styles = ${ font-family: BebasNeue-Regular; font-size: 60; };
+let styles = ${ font-family: "Bebas Neue"; font-size: 60; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 // Compute cursor positions with tracking

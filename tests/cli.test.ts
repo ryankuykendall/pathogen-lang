@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -739,6 +740,75 @@ g[0].draw()
       expect(result.status).not.toBe(0);
       expect(result.stderr).toMatch(/references 'mystery'/);
       expect(result.stderr).toMatch(/not a top-level string variable/);
+    });
+  });
+
+  describe('@font named-family resolution against a project fonts/ directory', () => {
+    it('resolves a Google-style family name by walking up to the repo fonts/ dir', () => {
+      // fonts/Baumans/Baumans-Regular.ttf, found by walking up from tests/tmp.
+      const inputFile = join(TMP_DIR, 'font-named.pathogen');
+      writeFileSync(
+        inputFile,
+        `@font "Baumans";
+let g = PathBlock.fromGlyph("A", \${ font-family: Baumans; font-size: 48; });
+M 10 100
+g[0].draw()
+`,
+      );
+      const result = runCli([`--src=${inputFile}`]);
+      expect(result.status).toBe(0);
+      expect(result.stderr).not.toMatch(/not found locally/);
+      expect(result.stdout).toMatch(/M 10 100/);
+      expect(result.stdout.length).toBeGreaterThan(40);
+
+      unlinkSync(inputFile);
+    });
+
+    it('maps weights to Google filename suffixes (700 → -Bold, 200 → -ExtraLight)', () => {
+      // fonts/Playfair_Display/PlayfairDisplay-Bold.ttf and
+      // fonts/Raleway/Raleway-ExtraLight.ttf — spaced family names, subdirs.
+      const inputFile = join(TMP_DIR, 'font-weights.pathogen');
+      writeFileSync(
+        inputFile,
+        `@font "Playfair Display" 700;
+@font "Raleway" 200;
+let po = PathBlock.fromGlyph("O", \${ font-family: "Playfair Display"; font-weight: 700; font-size: 48; });
+let ro = PathBlock.fromGlyph("O", \${ font-family: "Raleway"; font-weight: 200; font-size: 48; });
+M 10 100
+po[0].draw()
+M 80 100
+ro[0].draw()
+`,
+      );
+      const result = runCli([`--src=${inputFile}`]);
+      expect(result.status).toBe(0);
+      expect(result.stderr).not.toMatch(/not found locally/);
+      expect(result.stdout).toMatch(/M 10 100/);
+      expect(result.stdout).toMatch(/M 80 100/);
+
+      unlinkSync(inputFile);
+    });
+
+    it('honors PATHOGEN_FONT_DIRS as an explicit search path', () => {
+      const inputFile = join(TMP_DIR, 'font-envdir.pathogen');
+      writeFileSync(
+        inputFile,
+        `@font "Baumans";
+let g = PathBlock.fromGlyph("A", \${ font-family: Baumans; font-size: 48; });
+M 10 100
+g[0].draw()
+`,
+      );
+      const result = spawnSync('npx', ['tsx', CLI_PATH, `--src=${inputFile}`], {
+        encoding: 'utf-8',
+        cwd: tmpdir(), // outside the repo, so walk-up cannot find fonts/
+        env: { ...process.env, PATHOGEN_FONT_DIRS: join(__dirname, '..', 'fonts') },
+      });
+      expect(result.status).toBe(0);
+      expect(result.stderr || '').not.toMatch(/not found locally/);
+      expect(result.stdout || '').toMatch(/M 10 100/);
+
+      unlinkSync(inputFile);
     });
   });
 });

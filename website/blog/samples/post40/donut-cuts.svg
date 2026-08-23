@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 250" width="520" height="250">
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 520 0 l 0 250 l -520 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <g data-layer-name="scene" id="scene">
+    <path data-layer-name="pieces" id="pieces" d="M 8 0 m 130 50 a 70 70 0 0 1 70 69.99999999999999 a 70 70 0 0 1 -70 70 l 0 -40.00000000000003 a 30 30 0 0 0 30 -30 a 30 30 0 0 0 -30 -30 l 0 -40 z M -8 0 m 130 190 a 70 70 0 0 1 -70 -69.99999999999999 a 70 70 0 0 1 70 -70.00000000000001 l 0 40 a 30 30 0 0 0 -30 30 a 30 30 0 0 0 30 30 l 0 40.00000000000003 z M -8 0 m 390 120 m -70 0 a 70 70 0 1 1 140 0 a 70 70 0 1 1 -140 0 m 40 0 a 30 30 0 1 0 60 0 a 30 30 0 1 0 -60 0 z" fill="#3b82f6" stroke="#0f172a" stroke-width="2"/>
+    <path data-layer-name="knife" id="knife" d="M 0 0 m 130 34 l 0 172 M 0 0 m 345 34 l 0 172" fill="none" stroke="#ef4444" stroke-width="1.2"/>
+    <path data-layer-name="divider" id="divider" d="M 260 30 L 260 220" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="4 4"/>
+    <text data-layer-name="labels" id="labels" x="130" y="232" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="middle">crosses the hole — two C-shapes</text>
+    <text data-layer-name="labels" x="390" y="232" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="middle">misses the hole — the hole rides along</text>
+    <text data-layer-name="knife-label" id="knife-label" x="130" y="26" font-family="monospace" font-size="9" fill="#ef4444" text-anchor="middle">knife</text>
+  </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"pieces","type":"path","styles":{"fill":"#3b82f6","stroke":"#0f172a","stroke-width":"2"},"isDefault":false},{"name":"knife","type":"path","styles":{"stroke":"#ef4444","stroke-width":"1.2","fill":"none"},"isDefault":false},{"name":"divider","type":"path","styles":{"stroke":"#334155","stroke-width":"1","stroke-dasharray":"4 4","fill":"none"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false},{"name":"knife-label","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#ef4444","text-anchor":"middle"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":520,"height":250}}]]></script>
+</svg>

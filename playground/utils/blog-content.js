@@ -3,6 +3,14 @@
 
 export const blogIndex = [
   {
+    "slug": "pathblock-cutting",
+    "title": "Cutting Paths: Slicing Shapes Apart with cut()",
+    "date": "2026-08-22",
+    "description": "PathBlock.cut() slices a shape along the strokes of a second PathBlock — a knife — and returns the pieces: closed shapes healed shut along the cut, open paths severed into fragments.",
+    "series": "PathBlock Extensions",
+    "seriesPart": 5
+  },
+  {
     "slug": "primer-noise2",
     "title": "noise2: A Weather Map of Smooth Randomness",
     "date": "2026-08-10",
@@ -159,25 +167,34 @@ export const blogIndex = [
     "slug": "pathblock-boolean-operations",
     "title": "Boolean Operations: Combining Shapes with Union, Difference, Intersection, and XOR",
     "date": "2026-03-13",
-    "description": "How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves."
+    "description": "How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves.",
+    "series": "PathBlock Extensions",
+    "seriesPart": 4
   },
   {
     "slug": "pathblock-fillets-chamfers",
     "title": "Fillets and Chamfers: Rounding and Cutting Corners",
     "date": "2026-03-12",
-    "description": "Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses."
+    "description": "Chamfer, fillet, and elliptical fillet operations on PathBlocks — cut corners with straight lines, round them with circular arcs, or shape them with ellipses.",
+    "series": "PathBlock Extensions",
+    "seriesPart": 3
   },
   {
     "slug": "pathblock-parametric-sampling",
     "title": "Parametric Sampling: Placing Elements Along Curves",
     "date": "2026-03-11",
-    "description": "How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves."
+    "description": "How to query points, tangents, and normals along any path — and use partition() to distribute elements evenly along curves.",
+    "series": "PathBlock Extensions",
+    "seriesPart": 2
   },
   {
     "slug": "pathblock-introduction",
     "title": "PathBlocks: Reusable Shape Primitives in Pathogen",
     "date": "2026-03-10",
-    "description": "How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely."
+    "description": "How PathBlocks turn SVG path fragments into composable, reusable building blocks — define once, draw anywhere, transform freely.",
+    "series": "PathBlock Extensions",
+    "seriesPart": 1,
+    "seriesDescription": "PathBlocks turn SVG paths into first-class values — this series builds from the basics through sampling, corner shaping, boolean operations, and cutting shapes apart."
   },
   {
     "slug": "gradient-pipeline",
@@ -10490,7 +10507,7 @@ reference is in the <a href="/docs#syntax-lambdas">Lambdas docs</a>, the scoping
 stroke machinery in the <a href="/docs#variable-offset-variable-offset">Variable Offset docs</a>.</p>
 <p>The stroke was always a function. Now the language lets you treat it like one.</p>
 `,
-  'pathblock-boolean-operations': `<p><em>Part 4 of 4 in our series on PathBlock extensions.</em></p>
+  'pathblock-boolean-operations': `<p><em>Part 4 of 5 in our series on PathBlock extensions.</em></p>
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
@@ -10498,6 +10515,7 @@ stroke machinery in the <a href="/docs#variable-offset-variable-offset">Variable
 <li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
 <li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
 <li><strong>Boolean Operations</strong> (this post)</li>
+<li><a href="/blog/pathblock-cutting">Cutting Paths</a></li>
 </ol>
 </blockquote>
 <p>Boolean operations are the heavy machinery of computational geometry. Given two closed shapes, they answer fundamental questions: what&#39;s the combined outline? What&#39;s left after subtracting one from the other? Where do they overlap? Pathogen&#39;s <a href="/docs#path-blocks-boolean-operations">PathBlock boolean operations</a> bring these capabilities directly into the language.</p>
@@ -11226,7 +11244,500 @@ rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 </code></pre><p>Define once (<a href="/blog/pathblock-introduction">PathBlocks</a>), query geometry (<a href="/blog/pathblock-parametric-sampling">parametric sampling</a>), transform corners (<a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a>), combine shapes (<a href="/blog/pathblock-boolean-operations">boolean operations</a>) — all in a single composable pipeline. The full API reference is in the <a href="/docs#path-blocks-syntax">PathBlocks documentation</a>.</p>
 <p>Try it yourself in the <a href="/">Pathogen playground</a> — paste any example from this series and experiment.</p>
 `,
-  'pathblock-fillets-chamfers': `<p><em>Part 3 of 4 in our series on PathBlock extensions.</em></p>
+  'pathblock-cutting': `<p><em>Part 5 of 5 in our series on PathBlock extensions.</em></p>
+<blockquote>
+<p><strong>Series: PathBlock Extensions</strong></p>
+<ol>
+<li><a href="/blog/pathblock-introduction">Introduction to PathBlocks</a></li>
+<li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
+<li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
+<li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><strong>Cutting Paths</strong> (this post)</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes familiarity with PathBlock basics — the
+<code>@{}</code> sigil, <code>.draw()</code>, and <code>.project()</code>. If you&#39;re new to Pathogen, start
+with <a href="/blog/pathblock-introduction">Introduction to PathBlocks</a>. The
+<a href="/blog/pathblock-boolean-operations">Boolean Operations post</a> is useful
+contrast but not required.</p>
+</blockquote>
+<p><a href="/blog/pathblock-boolean-operations">Boolean operations</a> combine two closed shapes into one. <a href="/docs#path-blocks-cutting-paths"><code>cut()</code></a> goes the other direction: it takes a shape apart.</p>
+<p>You draw a second PathBlock whose strokes act as a knife — open lines and curves, as many as you like — and <code>shape.cut(knife)</code> hands back an array of pieces. Each piece is a complete PathBlock, sealed shut along the lines that cut it. And because every piece is a real PathBlock, nearly everything you already know applies: give each piece its own fill, measure it with <code>boundingBox()</code>, offset it, rotate it, cut it again. (The one carve-out: <code>as segment(...)</code> labels from the original path don&#39;t survive — pieces come back as plain geometry.)</p>
+<h2>One rectangle, one stroke</h2>
+<p>The barest possible picture: a rectangle, a single straight stroke through it, two pieces.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{
+  h <span class="hljs-number">140</span>
+  v <span class="hljs-number">100</span>
+  h -<span class="hljs-number">140</span>
+  z
+};
+<span class="hljs-keyword">let</span> knife = @{
+  m <span class="hljs-number">90</span> -<span class="hljs-number">15</span>
+  l <span class="hljs-number">0</span> <span class="hljs-number">130</span>
+};
+<span class="hljs-keyword">let</span> pieces = box.<span class="hljs-title function_">cut</span>(knife);
+<span class="hljs-title function_">log</span>(pieces.<span class="hljs-property">length</span>);    <span class="hljs-comment">// 2</span>
+</code></pre><p>Two things to notice before anything fancier. First, the knife overshoots the box on both ends — a stroke cuts wherever it <em>fully crosses</em> the shape, so the safe habit is to draw strokes a little longer than they need to be. Second, the pieces come back exactly where they were: drawing them all at the same position reassembles the rectangle, and nudging each one apart produces an exploded view. That&#39;s the left and right halves of this demo — same pieces, two ways of placing them:</p>
+<p><mini-workspace code-open caption="One cut, two pieces. Left: drawn at the same position, the shape reassembles. Right: each piece nudged away from the cut line.">
+  <code>define ViewBox(0, 0, 480, 240);
+// The barest picture: one rectangle, one straight stroke, two pieces.
+// Left: the pieces drawn at the same position — the shape reassembles.
+// Right: the same pieces pushed apart to show the cut.
+
+let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+layer('bg').apply { rect(0, 0, 480, 240); }
+
+let scene = GroupLayer('scene') \${};
+let pieceLayer = PathLayer('pieces') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
+let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 1.5; fill: none; };
+let divider = PathLayer('divider') \${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
+let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
+let knifeLabel = TextLayer('knife-label') \${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
+scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+
+let box = @{
+  h 140
+  v 100
+  h -140
+  z
+};
+let knife = @{
+  m 90 -15
+  l 0 130
+};
+let pieces = box.cut(knife);
+let kx = 90;
+
+pieceLayer.apply {
+  // Reassembled: every piece at one position.
+  for ([p, i] in pieces) {
+    M 50 70
+    p.draw();
+  }
+  // Exploded: each piece nudged away from the cut line.
+  for ([p, i] in pieces) {
+    let bb = p.boundingBox();
+    let side = calc(bb.x + bb.width / 2 &lt; kx ? -9 : 9);
+    M calc(280 + side) 70
+    p.draw();
+  }
+}
+
+knifeLayer.apply {
+  knife.drawTo(50, 70);
+}
+
+divider.apply {
+  M 237 30
+  L 237 210
+}
+
+labels.apply {
+  text(120, 200)\`drawn at one position — reassembles\`
+  text(355, 200)\`nudged apart — 2 pieces\`
+}
+knifeLabel.apply {
+  text(140, 45)\`knife\`
+}
+</code>
+  <img src="/blog/samples/post40/first-cut.svg" alt="One cut, two pieces. Left: drawn at the same position, the shape reassembles. Right: each piece nudged away from the cut line." loading="lazy">
+</mini-workspace></p>
+<h2>The cut that started it</h2>
+<p>This feature began with a sketch: the letter &#39;O&#39;, one two-stroke knife, two positions. On the left, both strokes cross the whole glyph — four pieces. On the right, the same knife sits so its strokes run into the letter&#39;s <em>counter</em> (the hole in the middle) and stop there — they only sever the left ring, so you get two pieces.</p>
+<p><mini-workspace caption="The same two-stroke knife at two positions: four pieces, then two.">
+  <code>define ViewBox(0, 0, 620, 290);
+// The example that motivated cut(): the same two-stroke knife, two positions.
+// Left: both strokes cross the whole 'O' — four pieces.
+// Right: the knife shifted so its strokes dead-end inside the counter —
+// they sever only the left ring, leaving two pieces.
+
+@font "Playfair Display" 700;
+
+let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+layer('bg').apply { rect(0, 0, 620, 290); }
+
+let scene = GroupLayer('scene') \${};
+let pieceLayer = PathLayer('pieces') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
+let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 1.2; fill: none; };
+let divider = PathLayer('divider') \${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
+let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
+let knifeLabel = TextLayer('knife-label') \${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
+scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+
+let styles = \${ font-family: "Playfair Display"; font-weight: 700; font-size: 200; };
+let glyphs = PathBlock.fromGlyph("O", styles);
+let o = glyphs[0];
+
+// Knife in glyph-local coordinates: two strokes converging to the right.
+let knife = @{
+  m -20 -125
+  l 190 45
+  m -190 55
+  l 190 -35
+};
+
+let x1 = 75;
+let x2 = 390;
+let y = 220;
+let bb = o.boundingBox();
+let cx = calc(bb.x + bb.width / 2);
+let cy = calc(bb.y + bb.height / 2);
+
+fn drawExploded(pieces, ox, oy) {
+  for ([p, i] in pieces) {
+    let pb = p.boundingBox();
+    let px = calc(pb.x + pb.width / 2 - cx);
+    let py = calc(pb.y + pb.height / 2 - cy);
+    let len = calc(sqrt(px * px + py * py) + 0.001);
+    M calc(ox + px / len * 14) calc(oy + py / len * 14)
+    p.draw();
+  }
+}
+
+let piecesL = o.cut(knife);
+let piecesR = o.cut(knife.project(-95, 0));
+
+pieceLayer.apply {
+  drawExploded(piecesL, x1, y);
+  drawExploded(piecesR, x2, y);
+}
+
+knifeLayer.apply {
+  knife.drawTo(x1, y);
+  knife.drawTo(calc(x2 - 95), y);
+}
+
+divider.apply {
+  M 262 30
+  L 262 260
+}
+
+labels.apply {
+  text(150, 262)\`4 pieces\`
+  text(465, 262)\`2 pieces — strokes end in the counter\`
+}
+knifeLabel.apply {
+  text(48, 82)\`knife\`
+}
+</code>
+  <img src="/blog/samples/post40/o-cut-two-ways.svg" alt="The same two-stroke knife at two positions: four pieces, then two." loading="lazy">
+</mini-workspace></p>
+<p>The right-hand case is worth a second look. Those strokes <em>look</em> like they stop mid-letter — but the middle of an &#39;O&#39; is a hole, and the part of a stroke that lands in a hole (or outside the shape) is simply ignored. Each stroke crosses the left ring completely, outer edge to inner edge, so the left ring severs cleanly. Behind it is the rule the whole feature is built on: <strong>a stroke must fully cross material to cut it — one that dead-ends inside solid material cuts nothing.</strong></p>
+<p>This sample also shows how a knife is positioned. Both blocks overlay in block-local coordinates, exactly like the boolean operations, and you slide the knife with <a href="/docs#path-blocks-projecting-without-drawing"><code>project()</code></a>: the right-hand cut is <code>o.cut(knife.project(-95, 0))</code> — the same knife, 95 units further left relative to the glyph.</p>
+<h2>What doesn&#39;t cut</h2>
+<p>Naming the sharp edges now, before the pretty pictures:</p>
+<ul>
+<li><strong>Dead-end strokes.</strong> As above — a stroke that stops inside solid material leaves that region whole. <code>cut()</code> never invents geometry to finish your stroke for you.</li>
+<li><strong>Almost-touching endpoints are forgiven.</strong> If a stroke&#39;s endpoint lands <em>on</em> the boundary — or within about half a unit of it at typical drawing scales — it snaps onto the boundary and the cut completes there, like a T-junction. The same forgiveness applies to strokes passing through a corner vertex.</li>
+<li><strong>Grazes and edge-riders.</strong> A stroke that only touches the boundary tangentially, or runs along an edge without crossing it, doesn&#39;t cut.</li>
+<li><strong><code>--annotated</code> debug mode doesn&#39;t support <code>cut()</code> yet.</strong> The CLI&#39;s annotated output reports a clear error; everything else — normal CLI compilation, the playground, the VS Code preview — works.</li>
+<li><strong>Piece order is deterministic but unspecified.</strong> The same program always produces the same array, but don&#39;t assume which index is which piece — inspect pieces (<code>boundingBox()</code>, <a href="/docs#path-blocks-pathblock"><code>subPathCount</code></a>) or just iterate.</li>
+</ul>
+<p>The full contract lives in the <a href="/docs#path-blocks-cutting-paths">Cutting Paths documentation</a>.</p>
+<h2>Cutting through holes</h2>
+<p>Shapes with holes — a donut, a glyph with a counter — cut the way you&#39;d hope. When the knife crosses the hole, each piece&#39;s boundary heals across <em>both</em> contours: outer edge, cut line, inner edge, cut line. A donut split through its middle becomes two C-shapes, each a single clean closed contour.</p>
+<p>And when the knife <em>misses</em> the hole? The hole isn&#39;t lost — it rides along as an extra subpath (a separate contour inside the same piece) in whichever piece contains it. Cut a sliver off a donut and the big remaining piece still has its hole; each piece&#39;s <a href="/docs#path-blocks-contours"><code>contours</code></a> property exposes that structure when you want to look inside.</p>
+<p><mini-workspace code-open caption="Left: the knife crosses the hole — two C-shapes. Right: the knife misses it — the hole rides along in the larger piece.">
+  <code>define ViewBox(0, 0, 520, 250);
+// Cutting multi-contour shapes. Left: the knife crosses the donut AND its
+// hole — two C-shapes whose boundaries heal across both contours.
+// Right: the knife misses the hole — a lens comes off, and the hole rides
+// along inside the big remaining piece.
+
+let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+layer('bg').apply { rect(0, 0, 520, 250); }
+
+let scene = GroupLayer('scene') \${};
+let pieceLayer = PathLayer('pieces') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
+let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 1.2; fill: none; };
+let divider = PathLayer('divider') \${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
+let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
+let knifeLabel = TextLayer('knife-label') \${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
+scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+
+let big = @{ circle(0, 0, 70); };
+let small = @{ circle(0, 0, 30); };
+
+fn drawSplit(pieces, centerX) {
+  for ([p, i] in pieces) {
+    let pb = p.boundingBox();
+    let side = calc(pb.x + pb.width / 2 &lt; centerX ? -8 : 8);
+    M calc(side) 0
+    p.draw();
+  }
+}
+
+// Left donut, centered (130, 120): knife straight through the hole.
+let donutL = big.project(130, 120).difference(small.project(130, 120));
+let knifeL = @{
+  m 130 34
+  l 0 172
+};
+let piecesL = donutL.cut(knifeL);
+pieceLayer.apply {
+  drawSplit(piecesL, 130);
+}
+
+// Right donut, centered (390, 120): knife 45 units off-center misses the
+// 30-unit hole entirely.
+let donutR = big.project(390, 120).difference(small.project(390, 120));
+let knifeR = @{
+  m 345 34
+  l 0 172
+};
+let piecesR = donutR.cut(knifeR);
+pieceLayer.apply {
+  drawSplit(piecesR, 345);
+}
+
+knifeLayer.apply {
+  knifeL.drawTo(0, 0);
+  knifeR.drawTo(0, 0);
+}
+
+divider.apply {
+  M 260 30
+  L 260 220
+}
+
+labels.apply {
+  text(130, 232)\`crosses the hole — two C-shapes\`
+  text(390, 232)\`misses the hole — the hole rides along\`
+}
+knifeLabel.apply {
+  text(130, 26)\`knife\`
+}
+</code>
+  <img src="/blog/samples/post40/donut-cuts.svg" alt="Left: the knife crosses the hole — two C-shapes. Right: the knife misses it — the hole rides along in the larger piece." loading="lazy">
+</mini-workspace></p>
+<h2>Cookie cutters</h2>
+<p>Every stroke so far has been open. A <em>closed</em> stroke — a loop — acts as a cookie cutter: it stamps the region inside it out of the shape. You get the stamped piece and the shape it left behind, which now carries a hole.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> plate = @{ <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">220</span>, <span class="hljs-number">150</span>, <span class="hljs-number">18</span>); };
+<span class="hljs-keyword">let</span> stamp = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">42</span>); };
+<span class="hljs-keyword">let</span> pieces = plate.<span class="hljs-title function_">cut</span>(stamp.<span class="hljs-title function_">project</span>(<span class="hljs-number">140</span>, <span class="hljs-number">60</span>));
+</code></pre><p>Since piece order is unspecified, this demo tells the pieces apart by structure instead: the stamped disk has one subpath (<code>subPathCount == 1</code>), the plate-with-a-hole has two. That&#39;s usually the most robust way to route pieces to different treatments.</p>
+<p><mini-workspace code-open caption="A closed loop stamps a disk out of the plate; the plate keeps the hole.">
+  <code>define ViewBox(0, 0, 480, 240);
+// A closed cutter loop is a cookie cutter: it stamps the region inside it
+// out of the shape. The stamped disk lifts away; the plate keeps the hole.
+
+let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+layer('bg').apply { rect(0, 0, 480, 240); }
+
+let scene = GroupLayer('scene') \${};
+let plateLayer = PathLayer('plate') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
+let cookieLayer = PathLayer('cookie') \${ fill: #f59e0b; stroke: #0f172a; stroke-width: 2; };
+let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 1.2; fill: none; };
+let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
+scene.append(plateLayer, cookieLayer, knifeLayer, labels);
+
+let plate = @{ roundRect(0, 0, 220, 150, 18); };
+let stamp = @{ circle(0, 0, 42); };
+
+let pieces = plate.cut(stamp.project(140, 60));
+
+for ([p, i] in pieces) {
+  if (p.subPathCount == 1) {
+    // The stamped-out disk: lift it up and away.
+    cookieLayer.apply {
+      M 200 10
+      p.draw();
+    }
+  }
+  if (p.subPathCount == 2) {
+    // The plate, now carrying the hole.
+    plateLayer.apply {
+      M 60 60
+      p.draw();
+    }
+  }
+}
+
+// The cutter loop itself, traced where it cut the plate.
+knifeLayer.apply {
+  stamp.drawTo(200, 120);
+}
+
+labels.apply {
+  text(170, 48)\`subPathCount == 2 — the plate keeps the hole\`
+  text(370, 130)\`subPathCount == 1 — the disk\`
+}
+</code>
+  <img src="/blog/samples/post40/cookie-cutter.svg" alt="A closed loop stamps a disk out of the plate; the plate keeps the hole." loading="lazy">
+</mini-workspace></p>
+<p>One nicety: the loop doesn&#39;t have to be authored as a single closed subpath. Separate strokes whose endpoints meet are recognized as a loop geometrically — draw four sides in any order and they still stamp.</p>
+<h2>Severing open paths</h2>
+<p>Everything above cut closed outlines. Open paths cut too, with simpler results: each crossing severs the path, and you get the open fragments back. No healing — there&#39;s no interior to close.</p>
+<p><mini-workspace code-open caption="Nine vertical strokes turn one wave into alternating-color dashes.">
+  <code>define ViewBox(0, 0, 480, 170);
+// Open paths cut too: each crossing severs the path into open fragments —
+// no healing, since there's no interior to close. Nine vertical strokes
+// turn one long wave into alternating-color dashes.
+
+let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+layer('bg').apply { rect(0, 0, 480, 170); }
+
+let scene = GroupLayer('scene') \${};
+let warm = PathLayer('warm') \${ stroke: #f59e0b; stroke-width: 5; fill: none; stroke-linecap: round; };
+let cool = PathLayer('cool') \${ stroke: #3b82f6; stroke-width: 5; fill: none; stroke-linecap: round; };
+let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 0.75; fill: none; opacity: 0.55; };
+let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
+scene.append(warm, cool, knifeLayer, labels);
+
+let wave = @{
+  q 50 -70 100 0
+  q 50 70 100 0
+  q 50 -70 100 0
+  q 50 70 100 0
+};
+
+let knives = @{
+  m 40 -90
+  for (i in 0..8) {
+    l 0 180
+    m 40 -180
+  }
+};
+
+// Shorter display copy of the knives, trimmed to the canvas.
+let knifeMarks = @{
+  m 40 -45
+  for (i in 0..8) {
+    l 0 90
+    m 40 -90
+  }
+};
+
+let parts = wave.cut(knives);
+
+for ([p, i] in parts) {
+  if (calc(i % 2) == 0) {
+    warm.apply {
+      M 40 82
+      p.draw();
+    }
+  }
+  if (calc(i % 2) == 1) {
+    cool.apply {
+      M 40 82
+      p.draw();
+    }
+  }
+}
+
+knifeLayer.apply {
+  knifeMarks.drawTo(40, 82);
+}
+
+labels.apply {
+  text(240, 152)\`9 knives -&gt; 10 fragments\`
+}
+</code>
+  <img src="/blog/samples/post40/open-path-dashes.svg" alt="Nine vertical strokes turn one wave into alternating-color dashes." loading="lazy">
+</mini-workspace></p>
+<p>Here one long quadratic wave is crossed by nine vertical strokes and comes back as ten open fragments, drawn alternately from two differently-styled layers. (Alternating by index is fine here — it only needs the order to be <em>stable</em>, which determinism guarantees. It&#39;s assigning <em>meaning</em> to a particular index that the earlier gotcha warns against.) The payoff: real, individually addressable dash pieces that follow the curve, not a <code>stroke-dasharray</code> illusion.</p>
+<h2>Finale: shattering a wordmark</h2>
+<p>Everything in one place: the full &quot;pathogen.studio&quot; wordmark, every glyph shattered.</p>
+<p><mini-workspace caption="Every glyph laid out by advance width, cut with its own knife, every fragment drifting and rotating a little.">
+  <code>define ViewBox(0, 0, 960, 170);
+// The finale: "pathogen.studio", every glyph shattered. Each letter is laid
+// out by its advance width, cut with its own two-stroke knife (angles and
+// positions varied deterministically with hashRange), and every fragment
+// drifts outward and rotates a little — offsets and spins are per-piece,
+// because each piece is a full PathBlock.
+
+@font "Baumans";
+
+let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+layer('bg').apply { rect(0, 0, 960, 170); }
+
+let wordmark = GroupLayer('wordmark') \${};
+let shard0 = PathLayer('shard0') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 1.5; };
+let shard1 = PathLayer('shard1') \${ fill: #a78bfa; stroke: #0f172a; stroke-width: 1.5; };
+let shard2 = PathLayer('shard2') \${ fill: #f59e0b; stroke: #0f172a; stroke-width: 1.5; };
+wordmark.append(shard0, shard1, shard2);
+
+let styles = \${ font-family: Baumans; font-size: 120; };
+let glyphs = PathBlock.fromGlyph("pathogen.studio", styles);
+
+let x = 50;
+let baseline = 106;
+
+for ([g, i] in glyphs) {
+  let bb = g.boundingBox();
+  let w = bb.width;
+  let gcx = calc(bb.x + w / 2);
+  let gcy = calc(bb.y + bb.height / 2);
+
+  // A two-stroke knife per glyph: one steep stroke, one shallow stroke,
+  // both overshooting the glyph so every crossing is a full cut.
+  let vx = calc(w * hashRange(i, 0.3, 0.7));
+  let vs = hashRange(i, -24, 24, 5);
+  let hy = calc(bb.y + bb.height * hashRange(i, 0.3, 0.7, 9));
+  let ht = hashRange(i, -16, 16, 13);
+  let knife = @{
+    m vx -130
+    l vs 175
+    m calc(-15 - vx - vs) calc(hy - ht / 2 - 45)
+    l calc(w + 30) ht
+  };
+
+  let pieces = g.cut(knife);
+
+  for ([p, j] in pieces) {
+    let n = calc(i * 41 + j);
+    let pb = p.boundingBox();
+    let px = calc(pb.x + pb.width / 2 - gcx);
+    let py = calc(pb.y + pb.height / 2 - gcy);
+    let len = calc(sqrt(px * px + py * py) + 0.001);
+    let dx = calc(px / len * 3.5 + hashRange(n, -1.5, 1.5, 17));
+    let dy = calc(py / len * 3.5 + hashRange(n, -1.5, 1.5, 23));
+    // rotateAtVertexIndex rebases its result to the pivot vertex, so add
+    // the pivot's glyph-local position back when placing the shard.
+    let pivot = p.vertices[0];
+    let rp = p.rotateAtVertexIndex(0, hashRange(n, -0.07, 0.07, 29));
+    let sx = calc(x + pivot.x + dx);
+    let sy = calc(baseline + pivot.y + dy);
+
+    if (calc(n % 3) == 0) {
+      shard0.apply {
+        M sx sy
+        rp.draw();
+      }
+    }
+    if (calc(n % 3) == 1) {
+      shard1.apply {
+        M sx sy
+        rp.draw();
+      }
+    }
+    if (calc(n % 3) == 2) {
+      shard2.apply {
+        M sx sy
+        rp.draw();
+      }
+    }
+  }
+
+  x = calc(x + g.advanceWidth);
+}
+</code>
+  <img src="/blog/samples/post40/shattered-glyph.svg" alt="Every glyph laid out by advance width, cut with its own knife, every fragment drifting and rotating a little." loading="lazy">
+</mini-workspace></p>
+<p>The composition stacks four ideas from this series:</p>
+<ol>
+<li><strong>Layout</strong> — each glyph comes from <a href="/docs#path-blocks-pathblockfromglyphtext-styles"><code>PathBlock.fromGlyph</code></a> and is placed by accumulating <a href="/docs#path-blocks-advancewidth"><code>advanceWidth</code></a>, the same technique as the <a href="/blog/pathblock-glyph-extraction">glyph extraction post</a>.</li>
+<li><strong>A knife per glyph</strong> — two strokes whose position and slant vary per letter via <a href="/blog/primer-hashrange"><code>hashRange</code></a> (a deterministic random pick — same inputs, same answer, forever), so every glyph shatters differently but <em>deterministically</em>: the composition renders identically on every compile.</li>
+<li><strong>Per-piece drift</strong> — each fragment moves a few units outward from its glyph&#39;s center, plus a little hashed jitter.</li>
+<li><strong>Per-piece rotation</strong> — each fragment turns up to ±4° with <a href="/docs#path-blocks-rotateatvertexindexindex-angle-pathblock-projectedpath"><code>rotateAtVertexIndex</code></a>.</li>
+</ol>
+<p>One honest gotcha from building it: like the other transforms, <code>rotateAtVertexIndex</code> normalizes its result to start at the origin — the rotated piece forgets where it lived inside its glyph. The fix is to read the pivot&#39;s position first (<code>p.vertices[0]</code>) and add it back when placing the shard. The sample&#39;s comments show the pattern; the first draft without it rendered the wordmark as very legible confetti.</p>
+<h2>Where to go next</h2>
+<p>The <a href="/docs#path-blocks-cutting-paths">Cutting Paths documentation</a> has the full behavior contract — tolerances, the degenerate cases, and what happens to mixed open-and-closed subjects. The <a href="/blog/pathblock-boolean-operations">Boolean Operations post</a> covers the combining half of this toolbox: <code>union</code>, <code>difference</code>, <code>intersection</code>, and <code>xor</code>.</p>
+<p>And since every piece is a PathBlock, the rest of the series applies to each one (minus the labels carve-out above): <a href="/blog/pathblock-parametric-sampling">sample along a piece&#39;s edge</a>, <a href="/blog/pathblock-fillets-chamfers">round a piece&#39;s corners</a>, or cut the pieces again.</p>
+`,
+  'pathblock-fillets-chamfers': `<p><em>Part 3 of 5 in our series on PathBlock extensions.</em></p>
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
@@ -11234,6 +11745,7 @@ rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-numbe
 <li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
 <li><strong>Fillets and Chamfers</strong> (this post)</li>
 <li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><a href="/blog/pathblock-cutting">Cutting Paths</a></li>
 </ol>
 </blockquote>
 <p>Sharp corners are the default in SVG paths. Every junction between two line segments creates a hard vertex. Chamfers and fillets transform these corners — chamfers cut them with straight lines, fillets round them with arcs. Both operations work on <a href="/blog/pathblock-introduction">PathBlocks</a> and return new PathBlocks, so you can chain them with other transforms.</p>
@@ -12341,8 +12853,8 @@ glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">dr
   <code>define ViewBox(0, 0, 600, 300);
 // Hello World glyph layout — advance-width loop placing each letter
 
-@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
-@font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
+@font "Bebas Neue";
+@font "Inconsolata";
 
 // --- Background ---
 
@@ -12352,7 +12864,7 @@ layer('bg').apply { rect(0, 0, 600, 300); }
 // ─── Glyph layout with advance widths ────────────────────────────
 
 let word = "PATHOGEN";
-let styles = \${ font-family: BebasNeue-Regular; font-size: 64; };
+let styles = \${ font-family: "Bebas Neue"; font-size: 64; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 // Place glyphs using advance width accumulation
@@ -12405,7 +12917,7 @@ layer('ticks').apply {
 // --- Second row: Inconsolata (monospace) ---
 
 let word2 = "PATHOGEN";
-let styles2 = \${ font-family: Inconsolata-Regular; font-size: 48; };
+let styles2 = \${ font-family: Inconsolata; font-size: 48; };
 let glyphs2 = PathBlock.fromGlyph(word2, styles2);
 
 let glyph_layer2 = PathLayer('glyphs2') \${
@@ -12539,7 +13051,7 @@ code_group.append(code, kw);
   <code>define ViewBox(0, 0, 660, 400);
 // Contour decomposition — .contours splits multi-contour glyphs across "Bingo!"
 
-@font "../../../../fonts/Raleway/Raleway-Bold.ttf"
+@font "Raleway" 700;
 
 // --- Background ---
 
@@ -12588,7 +13100,7 @@ let subtitle = TextLayer('subtitle') \${
 layer('subtitle').apply { text(0, 44)\`.contours splits glyphs into individual PathBlocks\` }
 
 // Assembled word — size to fit within ~290px column
-let asm_styles = \${ font-family: Raleway-Bold; font-size: 72; };
+let asm_styles = \${ font-family: "Raleway"; font-weight: 700; font-size: 72; };
 let asm_glyphs = PathBlock.fromGlyph(word, asm_styles);
 
 let asm_layer = PathLayer('assembled') \${
@@ -12618,7 +13130,7 @@ g_left.append(title, subtitle, asm_layer, asm_label);
 
 let g_decomp = GroupLayer('decomposed') \${ translate-x: 30; translate-y: 176; };
 
-let dec_styles = \${ font-family: Raleway-Bold; font-size: 56; };
+let dec_styles = \${ font-family: "Raleway"; font-weight: 700; font-size: 56; };
 let dec_glyphs = PathBlock.fromGlyph(word, dec_styles);
 
 let letter_gap = 6;
@@ -12891,7 +13403,7 @@ layer('divider').apply { M 345 20 v 370 }
   <code>define ViewBox(0, 0, 600, 220);
 // Per-character transforms — wave, scale, and arc effects on individual glyphs
 
-@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+@font "Bebas Neue";
 
 // --- Background ---
 
@@ -12899,7 +13411,7 @@ let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 600, 220); }
 
 // Shared font styles
-let styles = \${ font-family: BebasNeue-Regular; font-size: 72; };
+let styles = \${ font-family: "Bebas Neue"; font-size: 72; };
 let label_styles = \${ font-family: monospace; font-size: 8; };
 
 // Column geometry: three equal columns across 600px
@@ -13033,7 +13545,7 @@ let arc_title = TextLayer('arc-title') \${
 layer('arc-title').apply { text(0, 0)\`CIRCULAR\` }
 
 let word3 = "CIRCULAR";
-let arc_styles = \${ font-family: BebasNeue-Regular; font-size: 30; };
+let arc_styles = \${ font-family: "Bebas Neue"; font-size: 30; };
 let glyphs3 = PathBlock.fromGlyph(word3, arc_styles);
 
 // Compute total width for arc distribution
@@ -13164,7 +13676,7 @@ layer('title').apply { text(30, 205)\`Per-Character Transforms\` }
   <code>define ViewBox(0, 0, 900, 310);
 // Text cutout — seven-glyph pipeline: glyph outlines → union → difference
 
-@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
+@font "Bebas Neue";
 
 // --- Background ---
 
@@ -13191,7 +13703,7 @@ let palette_fill = [Color('#3b82f618'), Color('#22c55e18'), Color('#f59e0b18'), 
 // ─── Build glyph paths with advance-width layout ──────────────────
 
 let word = "CUTTING";
-let styles = \${ font-family: BebasNeue-Regular; font-size: 60; };
+let styles = \${ font-family: "Bebas Neue"; font-size: 60; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 // Compute cursor positions with tracking
@@ -13358,8 +13870,8 @@ code_group.append(code_bg, code, kw);
   <code>define ViewBox(0, 0, 600, 340);
 // @font precision — fromGlyph() uses the exact same font for both paths and metrics
 
-@font "../../../../fonts/Bebas_Neue/BebasNeue-Regular.ttf"
-@font "../../../../fonts/Inconsolata/Inconsolata-Regular.ttf"
+@font "Bebas Neue";
+@font "Inconsolata";
 
 // --- Background ---
 
@@ -13371,7 +13883,7 @@ layer('bg').apply { rect(0, 0, 600, 340); }
 let g_left = GroupLayer('glyph-side') \${ translate-x: 30; translate-y: 50; };
 
 let word = "LAYOUT";
-let styles = \${ font-family: BebasNeue-Regular; font-size: 56; };
+let styles = \${ font-family: "Bebas Neue"; font-size: 56; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 let path_layer = PathLayer('glyph-paths') \${
@@ -13583,7 +14095,7 @@ layer('insight').apply {
 <p>The font integration features build directly on the PathBlock foundation covered in the <a href="/blog/pathblock-introduction">PathBlock series</a> — if you haven&#39;t explored <a href="/docs#path-blocks-transforms">transforms</a>, <a href="/blog/pathblock-parametric-sampling">sampling</a>, <a href="/blog/pathblock-fillets-chamfers">fillets</a>, and <a href="/blog/pathblock-boolean-operations">boolean operations</a>, those posts show the full range of what glyph PathBlocks inherit. Every operation that works on a hand-drawn <code>@{ h 50 v 30 z }</code> shape works identically on a glyph extracted from a font.</p>
 <p>Try it yourself in the <a href="/">Pathogen playground</a> — load a font with <code>@font</code>, extract some glyphs, and see what happens when typography becomes geometry.</p>
 `,
-  'pathblock-introduction': `<p><em>Part 1 of 4 in our series on PathBlock extensions.</em></p>
+  'pathblock-introduction': `<p><em>Part 1 of 5 in our series on PathBlock extensions.</em></p>
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
@@ -13591,6 +14103,7 @@ layer('insight').apply {
 <li><a href="/blog/pathblock-parametric-sampling">Exploring Parametric Sampling</a></li>
 <li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
 <li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><a href="/blog/pathblock-cutting">Cutting Paths</a></li>
 </ol>
 </blockquote>
 <p>If you build parametric SVGs, icon systems, or generative art, you&#39;ve felt the friction: repeating the same shapes at different positions means copy-pasting <code>&lt;path&gt;</code> elements, tweaking <code>d</code> attributes, adjusting coordinates. PathBlocks solve this by capturing relative path commands as first-class values that you can draw, position, transform, and compose.</p>
@@ -14342,7 +14855,7 @@ subtitle.apply {
 <p>PathBlocks are the foundation for everything that follows. In the next post, we&#39;ll explore <a href="/blog/pathblock-parametric-sampling">parametric sampling</a> — querying points, tangents, and normals along a path to place elements precisely along curves. After that, <a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a> show how to round and cut corners, and <a href="/blog/pathblock-boolean-operations">boolean operations</a> combine shapes using union, difference, intersection, and xor.</p>
 <p>Try it yourself in the <a href="/">Pathogen playground</a> — paste any of the examples above and see the SVG output live.</p>
 `,
-  'pathblock-parametric-sampling': `<p><em>Part 2 of 4 in our series on PathBlock extensions.</em></p>
+  'pathblock-parametric-sampling': `<p><em>Part 2 of 5 in our series on PathBlock extensions.</em></p>
 <blockquote>
 <p><strong>Series: PathBlock Extensions</strong></p>
 <ol>
@@ -14350,6 +14863,7 @@ subtitle.apply {
 <li><strong>Exploring Parametric Sampling</strong> (this post)</li>
 <li><a href="/blog/pathblock-fillets-chamfers">Fillets and Chamfers</a></li>
 <li><a href="/blog/pathblock-boolean-operations">Boolean Operations</a></li>
+<li><a href="/blog/pathblock-cutting">Cutting Paths</a></li>
 </ol>
 </blockquote>
 <p>The <a href="/blog/pathblock-introduction">previous post</a> introduced PathBlocks as reusable shape primitives — define once, draw anywhere. But drawing is just the beginning. Parametric sampling lets you ask questions about a path&#39;s geometry: where is the midpoint? What direction is the curve heading at 30% of the way? What&#39;s the perpendicular at every quarter mark? These answers let you place elements precisely along arbitrary curves.</p>

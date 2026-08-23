@@ -773,8 +773,16 @@ Where the [set operations](#path-blocks-boolean-operations) combine two closed s
 Cuts the path along every stroke of `cutter` and returns the pieces:
 
 ```
-let box = @{ h 60 v 40 h -60 z };
-let knife = @{ m 30 -10 l 0 60 };
+let box = @{
+  h 60
+  v 40
+  h -60
+  z
+};
+let knife = @{
+  m 30 -10
+  l 0 60
+};
 let pieces = box.cut(knife);
 log(pieces.length);    // 2
 ```
@@ -782,7 +790,12 @@ log(pieces.length);    // 2
 Each subpath of the cutter is one knife stroke, and strokes may be lines or curves. An open stroke slices the shape wherever it crosses. A closed loop acts as a cookie cutter, stamping out the region inside it — and the loop doesn't have to be authored with `z`: separate strokes whose endpoints meet are recognized as a loop geometrically:
 
 ```
-let box = @{ h 60 v 40 h -60 z };
+let box = @{
+  h 60
+  v 40
+  h -60
+  z
+};
 let stamp = @{ circle(0, 0, 10); };
 let pieces = box.cut(stamp.project(30, 20));
 log(pieces.length);    // 2 — the stamped-out disk, and the box now carrying a hole
@@ -792,7 +805,9 @@ Alignment works exactly like the set operations: both blocks are overlaid in blo
 
 ```
 let plate = @{ circle(0, 0, 40); };
-let knife = @{ l 100 20 };
+let knife = @{
+  l 100 20
+};
 let pieces = plate.project(50, 50).cut(knife.project(0, 40));
 log(pieces.length);    // 2
 ```
@@ -800,8 +815,16 @@ log(pieces.length);    // 2
 Pieces keep their original placement inside the subject, so drawing them all at the same position reassembles the shape — and offsetting each one produces an exploded view:
 
 ```
-let box = @{ h 60 v 40 h -60 z };
-let knife = @{ m 30 -10 l 0 60 };
+let box = @{
+  h 60
+  v 40
+  h -60
+  z
+};
+let knife = @{
+  m 30 -10
+  l 0 60
+};
 let pieces = box.cut(knife);
 
 for ([piece, i] in pieces) {
@@ -826,8 +849,14 @@ A hole the cut *misses* isn't lost — it rides along as an extra subpath inside
 Open subjects can be cut too. Cutting an open path severs it at each crossing and returns the open fragments — no healing, since there is no interior to close:
 
 ```
-let wave = @{ q 20 -20 40 0 q 20 20 40 0 };
-let knife = @{ m 30 -30 l 0 60 };
+let wave = @{
+  q 20 -20 40 0
+  q 20 20 40 0
+};
+let knife = @{
+  m 30 -30
+  l 0 60
+};
 let parts = wave.cut(knife);    // 2 open fragments
 ```
 
@@ -838,7 +867,14 @@ let warm = PathLayer(`warm`) ${ fill: #e0b17c; stroke: #40311f; stroke-width: 1;
 let cool = PathLayer(`cool`) ${ fill: #7c9ce0; stroke: #1f2540; stroke-width: 1; };
 
 let disc = @{ circle(0, 0, 40); };
-let knives = @{ m -20 -50 l 0 100 m 20 -100 l 0 100 m 20 -100 l 0 100 };
+let knives = @{
+  m -20 -50
+  l 0 100
+  m 20 -100
+  l 0 100
+  m 20 -100
+  l 0 100
+};
 let slices = disc.cut(knives);    // 4 slices
 
 for ([piece, i] in slices) {
@@ -927,7 +963,7 @@ Declare it at the top level: let x = "Family Name";
 
 **Font loading by environment:**
 
-- **CLI**: Loads from local file paths (relative to source file) or searches system font directories (`/Library/Fonts`, `/System/Library/Fonts`, `~/Library/Fonts` on macOS; equivalent paths on Linux/Windows)
+- **CLI**: Loads from local file paths (relative to source file), or resolves family names against font files on disk. Named lookup searches, in order: any directories in the `PATHOGEN_FONT_DIRS` environment variable (colon-separated), a `fonts/` directory found by walking up from the source file (so a project-local font mirror works from anywhere in the repo), and the system font directories (`/Library/Fonts`, `/System/Library/Fonts`, `~/Library/Fonts` on macOS; equivalent paths on Linux/Windows). Files are matched by the Google Fonts naming convention — `@font "Playfair Display" 700;` finds `PlayfairDisplay-Bold.ttf` — so a family name that works in the playground also compiles in the CLI when the font file is mirrored locally.
 - **Playground**: Fetches from Google Fonts CDN automatically. Google serves large fonts split into per-script subsets (a Korean family like `"Nanum Gothic"` or `"Moirai One"` ships as ~100 small slices); the playground loads the Latin subset up front and fetches additional slices automatically when the text you render needs them — no extra directives required
 
 The directive is declarative metadata — the host environment loads fonts before compilation begins. If a font cannot be found, the CLI logs a warning and compilation continues; in the playground it is a compile error (what counts as "cannot be found" is explained below).

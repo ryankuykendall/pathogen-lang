@@ -1,0 +1,82 @@
+define ViewBox(0, 0, 960, 170);
+// The finale: "pathogen.studio", every glyph shattered. Each letter is laid
+// out by its advance width, cut with its own two-stroke knife (angles and
+// positions varied deterministically with hashRange), and every fragment
+// drifts outward and rotates a little — offsets and spins are per-piece,
+// because each piece is a full PathBlock.
+
+@font "Baumans";
+
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+layer('bg').apply { rect(0, 0, 960, 170); }
+
+let wordmark = GroupLayer('wordmark') ${};
+let shard0 = PathLayer('shard0') ${ fill: #3b82f6; stroke: #0f172a; stroke-width: 1.5; };
+let shard1 = PathLayer('shard1') ${ fill: #a78bfa; stroke: #0f172a; stroke-width: 1.5; };
+let shard2 = PathLayer('shard2') ${ fill: #f59e0b; stroke: #0f172a; stroke-width: 1.5; };
+wordmark.append(shard0, shard1, shard2);
+
+let styles = ${ font-family: Baumans; font-size: 120; };
+let glyphs = PathBlock.fromGlyph("pathogen.studio", styles);
+
+let x = 50;
+let baseline = 106;
+
+for ([g, i] in glyphs) {
+  let bb = g.boundingBox();
+  let w = bb.width;
+  let gcx = calc(bb.x + w / 2);
+  let gcy = calc(bb.y + bb.height / 2);
+
+  // A two-stroke knife per glyph: one steep stroke, one shallow stroke,
+  // both overshooting the glyph so every crossing is a full cut.
+  let vx = calc(w * hashRange(i, 0.3, 0.7));
+  let vs = hashRange(i, -24, 24, 5);
+  let hy = calc(bb.y + bb.height * hashRange(i, 0.3, 0.7, 9));
+  let ht = hashRange(i, -16, 16, 13);
+  let knife = @{
+    m vx -130
+    l vs 175
+    m calc(-15 - vx - vs) calc(hy - ht / 2 - 45)
+    l calc(w + 30) ht
+  };
+
+  let pieces = g.cut(knife);
+
+  for ([p, j] in pieces) {
+    let n = calc(i * 41 + j);
+    let pb = p.boundingBox();
+    let px = calc(pb.x + pb.width / 2 - gcx);
+    let py = calc(pb.y + pb.height / 2 - gcy);
+    let len = calc(sqrt(px * px + py * py) + 0.001);
+    let dx = calc(px / len * 3.5 + hashRange(n, -1.5, 1.5, 17));
+    let dy = calc(py / len * 3.5 + hashRange(n, -1.5, 1.5, 23));
+    // rotateAtVertexIndex rebases its result to the pivot vertex, so add
+    // the pivot's glyph-local position back when placing the shard.
+    let pivot = p.vertices[0];
+    let rp = p.rotateAtVertexIndex(0, hashRange(n, -0.07, 0.07, 29));
+    let sx = calc(x + pivot.x + dx);
+    let sy = calc(baseline + pivot.y + dy);
+
+    if (calc(n % 3) == 0) {
+      shard0.apply {
+        M sx sy
+        rp.draw();
+      }
+    }
+    if (calc(n % 3) == 1) {
+      shard1.apply {
+        M sx sy
+        rp.draw();
+      }
+    }
+    if (calc(n % 3) == 2) {
+      shard2.apply {
+        M sx sy
+        rp.draw();
+      }
+    }
+  }
+
+  x = calc(x + g.advanceWidth);
+}

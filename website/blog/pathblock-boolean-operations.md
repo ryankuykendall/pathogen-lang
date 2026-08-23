@@ -3,15 +3,18 @@ title: "Boolean Operations: Combining Shapes with Union, Difference, Intersectio
 slug: pathblock-boolean-operations
 date: 2026-03-13
 description: "How PathBlocks support curve-preserving boolean operations — combine closed shapes using set operations without linearizing curves."
+series: "PathBlock Extensions"
+seriesPart: 4
 ---
 
-*Part 4 of 4 in our series on PathBlock extensions.*
+*Part 4 of 5 in our series on PathBlock extensions.*
 
 > **Series: PathBlock Extensions**
 > 1. [Introduction to PathBlocks](/blog/pathblock-introduction)
 > 2. [Exploring Parametric Sampling](/blog/pathblock-parametric-sampling)
 > 3. [Fillets and Chamfers](/blog/pathblock-fillets-chamfers)
 > 4. **Boolean Operations** (this post)
+> 5. [Cutting Paths](/blog/pathblock-cutting)
 
 Boolean operations are the heavy machinery of computational geometry. Given two closed shapes, they answer fundamental questions: what's the combined outline? What's left after subtracting one from the other? Where do they overlap? Pathogen's [PathBlock boolean operations](/docs#path-blocks-boolean-operations) bring these capabilities directly into the language.
 
