@@ -777,6 +777,8 @@ export interface PathogenPathBlock {
   mirror(angle: AngleValue): PathogenPathBlock;
   /** scale(sx, sy) — Scale path */
   scale(sx: number, sy?: number): PathogenPathBlock;
+  /** rotate(angle, origin?) — Rotate about a point (default: the block origin); the result keeps its frame */
+  rotate(angle: AngleValue, origin?: PathogenPoint): PathogenPathBlock;
   /** rotateAtVertexIndex(index, angle) — Rotate at vertex */
   rotateAtVertexIndex(index: number, angle: AngleValue): PathogenPathBlock;
   /** subPath(startT, endT) — Extract sub-path */
@@ -1132,6 +1134,8 @@ export interface PathogenProjectedPath {
   offset(distance: number): PathogenProjectedPath;
   /** mirror(angle) — Mirror path */
   mirror(angle: AngleValue): PathogenProjectedPath;
+  /** rotate(angle, origin?) — Rotate about an absolute point (default: the projection start) */
+  rotate(angle: AngleValue, origin?: PathogenPoint): PathogenProjectedPath;
   /** rotateAtVertexIndex(index, angle) — Rotate at vertex */
   rotateAtVertexIndex(index: number, angle: AngleValue): PathogenProjectedPath;
   /** scale(sx, sy) — Scale path */

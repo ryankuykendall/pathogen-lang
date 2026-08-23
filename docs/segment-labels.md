@@ -253,6 +253,43 @@ layer('markers').apply {
 }
 ```
 
+## Labels Survive Derived Paths
+
+Operations that produce a new PathBlock or ProjectedPath carry your labels with them. A path labeled `as segment('rim')` still answers `segment('rim')` after it has been transformed, combined, or cut:
+
+- **Transforms**: `reverse`, `offset`, `mirror`, `scale`, `rotate`, `rotateAtVertexIndex`, `subPath`
+- **Corner shaping**: `fillet`, `chamfer`, `ellipticalFillet` and their `AtVertex` variants
+- **Set operations**: `union`, `difference`, `intersection`, `xor` — labels from *both* operands coexist in the result
+- **Cutting**: [`cut()`](#path-blocks-cutting-paths) — pieces keep the subject's labels on their surviving boundary fragments
+
+**Cut seams are labeled for you.** Every healed edge a cut creates — the cutter's strokes where they sealed a piece shut, a cookie cutter's stamped boundary (in both the stamped piece and the hole it left), and any bridging segments — carries the segment label `cut`. That makes the seams queryable like any other group:
+
+```
+let pieces = shape.cut(knife);
+for ([p, i] in pieces) {
+  // Project the piece to where it is drawn — the projected form answers
+  // queries in absolute coordinates (segment() sub-blocks are rebased).
+  let placed = p.project(20, 20);
+  for (seam in placed.segmentAll('cut')) {
+    for (op in seam.partition(4)) {
+      circle(op.point.x, op.point.y, 1.5);
+    }
+  }
+}
+```
+
+If you label your own geometry `as segment('cut')`, it merges into the same group — labels form groups by design.
+
+**What to know about derived labels:**
+
+- **Runs merge.** Adjacent commands with the same label merge into one queryable run, so two seam edges that meet end-to-end come back from `segmentAll('cut')` as a single run, not two.
+- **Queries answer finalized geometry.** A derived block's `point()`/`vertex()` answer the geometry as it exists after the operation — e.g. the trimmed corner after a fillet, not the authored sharp one (the authored-position preference applies only to the original block).
+- **Reversal moves endpoint labels correctly** — an `as endpoint(...)` name stays on its vertex when a path is reversed. One exception: on an *open* path, an endpoint label on the final vertex does not survive `reverse()` (that vertex becomes the start point, which carries no command metadata).
+- **Corner-op suffixes don't carry.** A pending `with fillet(...)` is consumed by the block it was written in; it never re-applies on a derived path.
+- **Labels on `m` commands survive only point-mapping transforms.** A label on a move command (e.g. `m 10 10 as endpoint('start')`) carries through `mirror()`, `scale()`, `rotate()`, `rotateAtVertexIndex()`, and `offset()`, which map commands one-to-one — but `reverse()`, `subPath()`, the boolean operations, and `cut()` rebuild the path from its drawing commands and drop moves along the way, taking their labels with them. Prefer labeling a drawing command.
+- **Excluded**: `variableOffset` and `compoundVariableOffset` resample the geometry entirely, so there is no correspondence to carry labels through — their results are unlabeled.
+- The cutter's own labels do not propagate into cut pieces; its strokes become the `cut` seams.
+
 ## Errors & Notes
 
 - **Shared labels form groups.** Label names do **not** have to be unique: reusing `segment('rib')` across several statements creates a group, and `segmentAll('rib')` returns every member (singular `segment('rib')` returns the first, querySelector-style). The same applies to `endpoint` labels via `pointAll`/`vertexAll`. Segment and endpoint labels are separate namespaces, so `segment('x')` and `endpoint('x')` may coexist (they answer different queries).
@@ -260,4 +297,3 @@ layer('markers').apply {
 - **Clause ordering.** `with` must precede `as`, each may appear at most once, and only `as` takes a comma list. `as segment('x') with fillet(5)` (wrong order) and two `with` clauses on one command are both errors.
 - **Unknown labels.** A singular query for a name that was never defined — `pb.segment('nope')` — is an error that lists the labels the path actually has, so a typo tells you what was available. The `All` queries return an **empty array** instead of erroring, matching `querySelectorAll`, so `for (x in pb.segmentAll('maybe'))` is safe without a guard.
 - **Vertex corner ops: PathBlocks for now.** `vertex('name').fillet(...)` and its siblings apply on `PathBlock` and `ProjectedPath` sources. On a **layer** vertex handle they report that corner operations are not supported on layers yet — layer and projected `segment`/`point` queries work fully; only the vertex-handle corner operations are deferred.
-```

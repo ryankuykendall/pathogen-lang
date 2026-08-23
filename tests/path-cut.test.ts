@@ -460,3 +460,122 @@ describe('PathBlock.cut()', () => {
     });
   });
 });
+
+describe('labels through cut()', () => {
+  it('pieces keep subject labels and every piece answers segmentAll("cut")', () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60 as segment('top')
+        v 40
+        h -60 as segment('bottom')
+        z
+      };
+      let knife = @{
+        m 30 -10
+        l 0 60
+      };
+      let pieces = box.cut(knife);
+      log(pieces.length);
+      for ([p, i] in pieces) {
+        log(p.segmentAll('cut').length);
+        log(calc(p.segmentAll('top').length + p.segmentAll('bottom').length));
+      }
+    `);
+    expect(logs[0]).toBe('2');
+    // Each piece has at least one healed seam...
+    expect(Number(logs[1])).toBeGreaterThanOrEqual(1);
+    expect(Number(logs[3])).toBeGreaterThanOrEqual(1);
+    // ...and keeps some of the subject's own labels on its boundary.
+    expect(Number(logs[2])).toBeGreaterThanOrEqual(1);
+    expect(Number(logs[4])).toBeGreaterThanOrEqual(1);
+  });
+
+  it('cookie-cutter seams are labeled in both pieces', () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let stamp = @{ circle(0, 0, 10); };
+      let pieces = box.cut(stamp.project(30, 20));
+      log(pieces.length);
+      for ([p, i] in pieces) {
+        log(p.segmentAll('cut').length);
+      }
+    `);
+    expect(logs[0]).toBe('2');
+    expect(Number(logs[1])).toBeGreaterThanOrEqual(1);
+    expect(Number(logs[2])).toBeGreaterThanOrEqual(1);
+  });
+
+  it("a user's own 'cut' label merges into the seam group", () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60 as segment('cut')
+        v 40
+        h -60
+        z
+      };
+      let knife = @{
+        m 30 -10
+        l 0 60
+      };
+      let pieces = box.cut(knife);
+      let total = 0;
+      for ([p, i] in pieces) {
+        total = calc(total + p.segmentAll('cut').length);
+      }
+      log(total);
+    `);
+    // Seams from the knife PLUS the user's labeled top edge fragments.
+    expect(Number(logs[0])).toBeGreaterThanOrEqual(3);
+  });
+
+  it('labels never change cut geometry (byte guard)', () => {
+    const mk = (labels: boolean) => compileWithLogs(`
+      let box = @{
+        h 60${labels ? " as segment('top'), endpoint('ne')" : ''}
+        v 40
+        h -60
+        z
+      };
+      let knife = @{
+        m 30 -10
+        l 0 60
+      };
+      let pieces = box.cut(knife);
+      for ([p, i] in pieces) {
+        p.drawTo(0, 0);
+      }
+    `).path;
+    expect(mk(true)).toBe(mk(false));
+  });
+});
+
+describe('endpoint labels on zero-length z through cut()', () => {
+  it('a label on a zero-length z lands on exactly one piece', () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        v -40
+        z as endpoint('home')
+      };
+      let knife = @{
+        m 30 -10
+        l 0 60
+      };
+      let pieces = box.cut(knife);
+      log(pieces.length);
+      for ([p, i] in pieces) {
+        log(p.pointAll('home').length);
+      }
+    `);
+    expect(logs[0]).toBe('2');
+    const counts = [Number(logs[1]), Number(logs[2])];
+    expect(counts[0] + counts[1]).toBe(1);
+  });
+});

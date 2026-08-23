@@ -85,6 +85,7 @@ export function reverseCommands(commands: TransformCmd[]): TransformCmd[] {
 
   // Step 2: check for closing z
   let wasClosed = false;
+  let zeroZMeta: PathCommandMeta | undefined;
   const working = [...resolved];
   if (working.length > 0 && working[working.length - 1].command.toUpperCase() === 'Z') {
     const zCmd = working.pop()!;
@@ -98,7 +99,12 @@ export function reverseCommands(commands: TransformCmd[]): TransformCmd[] {
         args: [zdx, zdy],
         start: { ...zCmd.start },
         end: { ...zCmd.end },
+        ...(zCmd.meta !== undefined ? { meta: zCmd.meta } : {}),
       });
+    } else {
+      // Zero-length z: its meta (an endpoint label on the close vertex)
+      // re-attaches to the z we append after reversing.
+      zeroZMeta = zCmd.meta;
     }
   }
 
@@ -203,6 +209,24 @@ export function reverseCommands(commands: TransformCmd[]): TransformCmd[] {
       }
     }
 
+    // Meta: the segment label travels with the command; an endpoint label
+    // names the command's END vertex, which after reversal is the end of the
+    // NEXT reversed command — so endVertex shifts one command toward the
+    // source start (wrapping mod n on closed paths, whose vertices are
+    // cyclic; on open paths the forward-last endpoint label has no home and
+    // drops — documented).
+    const j = result.length;
+    const n = drawCommands.length;
+    const segLabel = cmd.meta?.segmentLabel;
+    let evSourceIdx = n - 2 - j;
+    if (evSourceIdx < 0 && wasClosed) evSourceIdx = ((evSourceIdx % n) + n) % n;
+    const ev = evSourceIdx >= 0 ? drawCommands[evSourceIdx].meta?.endVertex : undefined;
+    if (segLabel !== undefined || ev !== undefined) {
+      newCmd.meta = {
+        ...(segLabel !== undefined ? { segmentLabel: segLabel } : {}),
+        ...(ev !== undefined ? { endVertex: { ...ev } } : {}),
+      };
+    }
     result.push(newCmd);
     cursor = { ...newCmd.end };
   }
@@ -216,6 +240,7 @@ export function reverseCommands(commands: TransformCmd[]): TransformCmd[] {
       args: [],
       start: { ...cursor },
       end: { ...startOfReversed },
+      ...(zeroZMeta !== undefined ? { meta: { ...zeroZMeta, ...(zeroZMeta.endVertex ? { endVertex: { ...zeroZMeta.endVertex } } : {}) } } : {}),
     });
   }
 
@@ -378,6 +403,7 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
       args: [...c.args],
       start: { ...c.start },
       end: { ...c.end },
+      ...(c.meta !== undefined ? { meta: c.meta } : {}),
     }));
 
   // Step 1: resolve S→C, T→Q
@@ -571,6 +597,7 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
         args: [...seg.cmd.args],
         start: { x: seg.cmd.start.x + offset.x, y: seg.cmd.start.y + offset.y },
         end: { x: seg.cmd.end.x + offset.x, y: seg.cmd.end.y + offset.y },
+        ...(seg.cmd.meta !== undefined ? { meta: seg.cmd.meta } : {}),
       });
       continue;
     }
@@ -689,6 +716,8 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
         end: newEnd,
       });
     }
+    // 1:1 offset image of the source segment — labels carry straight across.
+    if (seg.cmd.meta !== undefined) result[result.length - 1].meta = seg.cmd.meta;
   }
 
   return result;
@@ -929,6 +958,9 @@ function transformPathPoints(commands: TransformCmd[], transformPoint: (p: Point
         break;
       }
     }
+    // Every branch pushes exactly one command for this source command —
+    // point transforms are 1:1, so meta (labels) carries straight across.
+    if (cmd.meta !== undefined) result[result.length - 1].meta = cmd.meta;
   }
 
   return result;
@@ -1151,7 +1183,12 @@ export function rotateAtVertexCommands(commands: TransformCmd[], vertexIndex: nu
     throw new Error(`rotateAtVertexIndex() vertex index ${vertexIndex} out of range [0, ${vertices.length - 1}]`);
   }
 
-  const center = vertices[vertexIndex];
+  return rotateAboutPointCommands(commands, angle, vertices[vertexIndex]);
+}
+
+/** Rotate commands about an arbitrary pivot point (in the commands' own
+ *  coordinate frame). Shared by rotateAtVertexCommands and `rotate()`. */
+export function rotateAboutPointCommands(commands: TransformCmd[], angle: number, center: Point): TransformCmd[] {
   const cosA = Math.cos(angle);
   const sinA = Math.sin(angle);
 
@@ -1172,6 +1209,21 @@ export function rotateAtVertexCommands(commands: TransformCmd[], vertexIndex: nu
     if (cmd.command.toUpperCase() === 'A') {
       cmd.args[2] += angleDeg; // adjust rotation
     }
+  }
+
+  // Snap sub-epsilon float residue (cos/sin of right angles) so emitted
+  // output stays free of `1.5e-15`-style artifacts.
+  const snap = (v: number): number => (Math.abs(v) < 1e-9 ? 0 : v);
+  for (const cmd of result) {
+    const u = cmd.command.toUpperCase();
+    if (u !== 'A') {
+      for (let i = 0; i < cmd.args.length; i++) cmd.args[i] = snap(cmd.args[i]);
+    } else {
+      cmd.args[5] = snap(cmd.args[5]);
+      cmd.args[6] = snap(cmd.args[6]);
+    }
+    cmd.start = { x: snap(cmd.start.x), y: snap(cmd.start.y) };
+    cmd.end = { x: snap(cmd.end.x), y: snap(cmd.end.y) };
   }
 
   return result;
@@ -1412,6 +1464,17 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
     const dy = middle.end.y - middle.start.y;
     if (middle.args.length === 0 && Math.abs(dx) < 1e-10 && Math.abs(dy) < 1e-10) return [];
 
+    // Labels: the fragment keeps its source segment label; the endpoint
+    // label only applies when the fragment retains the command's true end.
+    if (cmd.meta !== undefined) {
+      const keepEnd = endParamT >= 1 - 1e-12;
+      const mid: PathCommandMeta = {
+        ...(cmd.meta.segmentLabel !== undefined ? { segmentLabel: cmd.meta.segmentLabel } : {}),
+        ...(keepEnd && cmd.meta.endVertex ? { endVertex: { ...cmd.meta.endVertex } } : {}),
+      };
+      if (mid.segmentLabel !== undefined || mid.endVertex !== undefined) middle.meta = mid;
+    }
+
     return [middle];
   }
 
@@ -1421,6 +1484,8 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
   // Tail of start command
   if (startParamT < 1) {
     const [, startTail] = splitCommandAtParametricT(drawCmds[startLoc.cmdIndex], startParamT);
+    const startMeta = drawCmds[startLoc.cmdIndex].meta;
+    if (startMeta !== undefined) startTail.meta = startMeta; // tail keeps the true end vertex
     const sdx = startTail.end.x - startTail.start.x;
     const sdy = startTail.end.y - startTail.start.y;
     const hasLength = startTail.args.length > 0 || Math.abs(sdx) > 1e-10 || Math.abs(sdy) > 1e-10;
@@ -1434,12 +1499,15 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
       args: [...drawCmds[i].args],
       start: { ...drawCmds[i].start },
       end: { ...drawCmds[i].end },
+      ...(drawCmds[i].meta !== undefined ? { meta: drawCmds[i].meta } : {}),
     });
   }
 
   // Head of end command
   if (endParamT > 0) {
     const [endHead] = splitCommandAtParametricT(drawCmds[endLoc.cmdIndex], endParamT);
+    const endSegLabel = drawCmds[endLoc.cmdIndex].meta?.segmentLabel;
+    if (endSegLabel !== undefined) endHead.meta = { segmentLabel: endSegLabel };
     const edx = endHead.end.x - endHead.start.x;
     const edy = endHead.end.y - endHead.start.y;
     const hasLength = endHead.args.length > 0 || Math.abs(edx) > 1e-10 || Math.abs(edy) > 1e-10;

@@ -1,0 +1,47 @@
+// viewBox="0 0 480 240"
+// rotate() + label preservation demo: a plate with labeled edges is cut,
+// every piece spins slightly in place via frame-preserving rotate(), and
+// the healed seams — queryable as segment('cut') — get dotted decoration.
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+layer('bg').apply { rect(0, 0, 480, 240); }
+
+let pieces1 = PathLayer('pieces') ${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
+let seams = PathLayer('seams') ${ fill: #f59e0b; stroke: none; };
+
+let plate = @{
+  h 160 as segment('top')
+  v 110
+  h -160
+  z
+};
+let knives = @{
+  m 55 -15
+  l 30 140
+  m 25 -140
+  l 30 140
+};
+
+let cutPieces = plate.cut(knives);
+
+for ([p, i] in cutPieces) {
+  let bb = p.boundingBox();
+  let c = Point(calc(bb.x + bb.width / 2), calc(bb.y + bb.height / 2));
+  // Frame-preserving rotate: the piece spins in place, no compensation.
+  let spun = p.rotate(hashRange(i, -0.12, 0.12), c);
+  let placed = spun.project(calc(160 + i * 4), 65);
+  pieces1.apply {
+    M calc(160 + i * 4) 65
+    spun.draw();
+  }
+  // Decorate every healed seam of the spun piece with dots — the projected
+  // form answers segmentAll('cut') in absolute coordinates.
+  seams.apply {
+    for (seam in placed.segmentAll('cut')) {
+      for (op in seam.partition(5)) {
+        circle(op.point.x, op.point.y, 2);
+      }
+    }
+  }
+}

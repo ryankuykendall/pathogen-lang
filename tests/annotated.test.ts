@@ -1235,3 +1235,56 @@ describe('loop control: continue and break (annotated parity)', () => {
     expect(commands.join(' ')).toBe(plain.layers[0].data);
   });
 });
+
+describe('rotate() and label carriage parity', () => {
+  it('rotate() produces the same geometry as the main evaluator', () => {
+    const main = compile('let p = @{ h 50 v 50 };\nlet r = p.rotate(0.5pi, Point(25, 25));\nr.drawTo(10, 10);').layers[0].data;
+    const annotated = compileAnnotated('let p = @{ h 50 v 50 };\nlet r = p.rotate(0.5pi, Point(25, 25));\nr.drawTo(10, 10);');
+    const flat = annotated
+      .split('\n')
+      .filter((l) => !l.trim().startsWith('//'))
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0)
+      .join(' ');
+    expect(flat).toContain(main);
+  });
+
+  it('labeled blocks pass through scale/union byte-equal under --annotated', () => {
+    const mk = (labels) => compileAnnotated(`let a = @{
+  h 40${labels ? " as segment('top')" : ''}
+  v 40
+  h -40
+  z
+};
+let b = a.scale(2, 1);
+b.drawTo(0, 0);`);
+    expect(mk(true)).toBe(mk(false));
+  });
+});
+
+describe('label carriage byte-guards across the derived-path family (annotated)', () => {
+  // The isBlock branches now route through buildPathBlockFromCommands, which
+  // carries derivedMeta. Labels must never change the annotated geometry.
+  const OPS: [string, string][] = [
+    ['reverse', 'a.reverse()'],
+    ['offset', 'a.offset(4)'],
+    ['mirror', 'a.mirror(0.25pi)'],
+    ['rotate', 'a.rotate(0.3)'],
+    ['rotateAtVertexIndex', 'a.rotateAtVertexIndex(1, 0.3)'],
+    ['subPath', 'a.subPath(0.2, 0.9)'],
+  ];
+
+  for (const [name, expr] of OPS) {
+    it(`${name}: labeled and unlabeled blocks emit identical annotated output`, () => {
+      const mk = (labels: boolean) => compileAnnotated(`let a = @{
+  h 40${labels ? " as segment('top'), endpoint('ne')" : ''}
+  v 40
+  h -40
+  z
+};
+let b = ${expr};
+b.drawTo(0, 0);`);
+      expect(mk(true)).toBe(mk(false));
+    });
+  }
+});

@@ -1097,3 +1097,135 @@ merged.drawTo(40, 130);
     });
   });
 });
+
+describe('labels through boolean operations', () => {
+  it('difference: labels from BOTH operands coexist; B labels survive reversal', () => {
+    const src = `
+      let a = @{
+        h 60 as segment('top')
+        v 40
+        h -60
+        z
+      };
+      let b = @{
+        h 20
+        v 20
+        h -20 as segment('bite')
+        z
+      };
+      let d = a.difference(b.project(20, -5));
+      log(d.segmentAll('top').length, d.segmentAll('bite').length);
+      d.drawTo(0, 0);
+    `;
+    const result = compile(src);
+    expect(Number(result.logs[0].parts[0].value)).toBeGreaterThanOrEqual(1);
+    expect(Number(result.logs[0].parts[1].value)).toBeGreaterThanOrEqual(1);
+  });
+
+  it('union: labels from both operands coexist', () => {
+    const src = `
+      let a = @{
+        h 40 as segment('left-top')
+        v 40
+        h -40
+        z
+      };
+      let b = @{
+        h 40
+        v 40 as segment('right-side')
+        h -40
+        z
+      };
+      let u = a.union(b.project(20, 0));
+      log(u.segmentAll('left-top').length, u.segmentAll('right-side').length);
+      u.drawTo(0, 0);
+    `;
+    const result = compile(src);
+    expect(Number(result.logs[0].parts[0].value)).toBeGreaterThanOrEqual(1);
+    expect(Number(result.logs[0].parts[1].value)).toBeGreaterThanOrEqual(1);
+  });
+
+  it('labels never change boolean geometry (byte guard)', () => {
+    const mk = (labels: boolean) => compile(`
+      let a = @{
+        h 60${labels ? " as segment('top')" : ''}
+        v 40
+        h -60
+        z
+      };
+      let b = @{
+        h 30${labels ? " as segment('bite'), endpoint('bx')" : ''}
+        v 30
+        h -30
+        z
+      };
+      let d = a.difference(b.project(40, 20));
+      d.drawTo(0, 0);
+    `).layers[0].data;
+    expect(mk(true)).toBe(mk(false));
+  });
+});
+
+describe('endpoint labels on zero-length z through boolean operations', () => {
+  it('difference: a label on a zero-length z survives (reattached to the close vertex)', () => {
+    // The close vertex 'home' is at a-local (0,0), far from the bite at the
+    // top-right corner. bbox stays (0,0)-(60,40), so home == bbox top-left.
+    const result = compile(`
+      let a = @{
+        h 60
+        v 40
+        h -60
+        v -40
+        z as endpoint('home')
+      };
+      let b = @{
+        h 20
+        v 20
+        h -20
+        z
+      };
+      let d = a.difference(b.project(50, -5));
+      log(d.pointAll('home').length);
+      let e = d.point('home');
+      let bb = d.boundingBox();
+      log(e.x - bb.x);
+      log(e.y - bb.y);
+      d.drawTo(0, 0);
+    `);
+    const logs = result.logs.map((entry) => entry.parts.map((p) => String(p.value)).join(''));
+    expect(logs[0]).toBe('1');
+    expect(Number(logs[1])).toBeCloseTo(0, 5);
+    expect(Number(logs[2])).toBeCloseTo(0, 5);
+  });
+
+  it('ring reversal shifts endpoint labels to the correct coordinate (hole winding)', () => {
+    // B sits fully inside A, so difference reverses B's ring for the hole —
+    // exercising shiftRingEndVertices. 'corner' names b-local (20,20), placed
+    // at world (40,40); after reversal it must still answer at that point.
+    const result = compile(`
+      let a = @{
+        h 60
+        v 60
+        h -60
+        z
+      };
+      let b = @{
+        h 20
+        v 20 as endpoint('corner')
+        h -20
+        z
+      };
+      let d = a.difference(b.project(20, 20));
+      log(d.pointAll('corner').length);
+      let e = d.point('corner');
+      let bb = d.boundingBox();
+      log(e.x - bb.x);
+      log(e.y - bb.y);
+      d.drawTo(0, 0);
+    `);
+    const logs = result.logs.map((entry) => entry.parts.map((p) => String(p.value)).join(''));
+    expect(logs[0]).toBe('1');
+    expect(Number(logs[1])).toBeCloseTo(40, 5);
+    expect(Number(logs[2])).toBeCloseTo(40, 5);
+  });
+});

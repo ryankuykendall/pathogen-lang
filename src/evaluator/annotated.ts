@@ -19,11 +19,12 @@ import {
   offsetCommands,
   reverseCommands,
   rotateAtVertexCommands,
+  rotateAboutPointCommands,
   scaleCommands,
   subPathCommands,
 } from './path-transforms';
 import { partitionPath, samplePathAtFraction } from './sampling';
-import { recordsFromCommands } from './segments';
+import { recordsFromCommands, derivedMeta } from './segments';
 import {
   commandsToRelativeD,
   parsePathStringToCommands,
@@ -502,12 +503,16 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
   }
   const originX = origin ? origin.x : cmds[0].start.x;
   const originY = origin ? origin.y : cmds[0].start.y;
-  const normalized = cmds.map((cmd) => ({
-    command: cmd.command,
-    args: [...cmd.args],
-    start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
-    end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
-  }));
+  const normalized = cmds.map((cmd) => {
+    const meta = derivedMeta(cmd.meta);
+    return {
+      command: cmd.command,
+      args: [...cmd.args],
+      start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
+      end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
+      ...(meta !== undefined ? { meta } : {}),
+    };
+  });
   const last = normalized[normalized.length - 1];
   return {
     type: 'PathBlockValue' as const,
@@ -1390,31 +1395,7 @@ function evaluateAnnotatedPathTransforms(
       if (expr.args.length !== 0) throw new Error('reverse() expects 0 arguments');
       const reversed = reverseCommands(obj.commands);
       if (isBlock) {
-        if (reversed.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
-        }
-        const originX = reversed[0].start.x;
-        const originY = reversed[0].start.y;
-        const normalizedCmds = reversed.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
-          end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
-        }));
-        const lastCmd = normalizedCmds[normalizedCmds.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: normalizedCmds,
-          records: recordsFromCommands(normalizedCmds),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
-        };
+        return buildPathBlockFromCommands(reversed);
       }
       const projStartPoint = obj.endPoint;
       const projEndPoint = reversed.length > 0 ? reversed[reversed.length - 1].end : obj.startPoint;
@@ -1446,31 +1427,7 @@ function evaluateAnnotatedPathTransforms(
       if (typeof dist !== 'number') throw new Error('offset() argument must be a number');
       const offsetResult = offsetCommands(obj.commands, dist);
       if (isBlock) {
-        if (offsetResult.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
-        }
-        const oOriginX = offsetResult[0].start.x;
-        const oOriginY = offsetResult[0].start.y;
-        const oNormalized = offsetResult.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - oOriginX, y: cmd.start.y - oOriginY },
-          end: { x: cmd.end.x - oOriginX, y: cmd.end.y - oOriginY },
-        }));
-        const oLast = oNormalized[oNormalized.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: oNormalized,
-          records: recordsFromCommands(oNormalized),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: oLast.end.x, y: oLast.end.y },
-        };
+        return buildPathBlockFromCommands(offsetResult);
       }
       const oStart = offsetResult.length > 0 ? offsetResult[0].start : obj.startPoint;
       const oEnd = offsetResult.length > 0 ? offsetResult[offsetResult.length - 1].end : obj.endPoint;
@@ -1488,31 +1445,7 @@ function evaluateAnnotatedPathTransforms(
       if (mAngle === undefined) throw new Error('mirror() argument must be a number');
       if (isBlock) {
         const mirrored = mirrorCommands(obj.commands, mAngle, { x: 0, y: 0 });
-        if (mirrored.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
-        }
-        const mOriginX = mirrored[0].start.x;
-        const mOriginY = mirrored[0].start.y;
-        const mNormalized = mirrored.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - mOriginX, y: cmd.start.y - mOriginY },
-          end: { x: cmd.end.x - mOriginX, y: cmd.end.y - mOriginY },
-        }));
-        const mLast = mNormalized[mNormalized.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: mNormalized,
-          records: recordsFromCommands(mNormalized),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: mLast.end.x, y: mLast.end.y },
-        };
+        return buildPathBlockFromCommands(mirrored);
       }
       const mirrored = mirrorCommands(obj.commands, mAngle, obj.startPoint);
       const mStart = mirrored.length > 0 ? mirrored[0].start : obj.startPoint;
@@ -1525,6 +1458,34 @@ function evaluateAnnotatedPathTransforms(
       };
     }
 
+    case 'rotate': {
+      if (expr.args.length < 1 || expr.args.length > 2) throw new Error('rotate() expects 1-2 arguments (angle) or (angle, origin)');
+      const rotAngle = toNumber(evaluateExpression(expr.args[0], scope));
+      if (rotAngle === undefined) throw new Error('rotate() angle must be a number');
+      let rotPivot = isBlock ? { x: 0, y: 0 } : { x: obj.startPoint.x, y: obj.startPoint.y };
+      if (expr.args.length === 2) {
+        const rotOrigin = evaluateExpression(expr.args[1], scope);
+        if (typeof rotOrigin !== 'object' || rotOrigin === null || (rotOrigin as { type?: string }).type !== 'PointValue') {
+          throw new Error('rotate() origin must be a Point');
+        }
+        const originPt = rotOrigin as { x: number; y: number };
+        rotPivot = { x: originPt.x, y: originPt.y };
+      }
+      // Frame-preserving (matches the main evaluator): no re-base.
+      const rotCmds = rotateAboutPointCommands(obj.commands, rotAngle, rotPivot);
+      if (isBlock) {
+        return buildPathBlockFromCommands(rotCmds, { x: 0, y: 0 });
+      }
+      const rotFirst = rotCmds[0];
+      const rotLast = rotCmds[rotCmds.length - 1];
+      return {
+        type: 'ProjectedPathValue' as const,
+        commands: rotCmds,
+        startPoint: rotFirst ? { ...rotFirst.start } : { ...obj.startPoint },
+        endPoint: rotLast ? { ...rotLast.end } : { ...obj.endPoint },
+      };
+    }
+
     case 'rotateAtVertexIndex': {
       if (expr.args.length !== 2) throw new Error('rotateAtVertexIndex() expects 2 arguments (index, angle)');
       const rIdx = evaluateExpression(expr.args[0], scope);
@@ -1534,31 +1495,7 @@ function evaluateAnnotatedPathTransforms(
       if (!Number.isInteger(rIdx)) throw new Error('rotateAtVertexIndex() index must be an integer');
       if (isBlock) {
         const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
-        if (rotated.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
-        }
-        const rOriginX = rotated[0].start.x;
-        const rOriginY = rotated[0].start.y;
-        const rNormalized = rotated.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - rOriginX, y: cmd.start.y - rOriginY },
-          end: { x: cmd.end.x - rOriginX, y: cmd.end.y - rOriginY },
-        }));
-        const rLast = rNormalized[rNormalized.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: rNormalized,
-          records: recordsFromCommands(rNormalized),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: rLast.end.x, y: rLast.end.y },
-        };
+        return buildPathBlockFromCommands(rotated);
       }
       const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
       const rStart = rotated.length > 0 ? rotated[0].start : obj.startPoint;
@@ -1617,59 +1554,9 @@ function evaluateAnnotatedPathTransforms(
       if (spStart < 0 || spStart > 1) throw new Error('subPath() startT must be between 0 and 1');
       if (spEnd < 0 || spEnd > 1) throw new Error('subPath() endT must be between 0 and 1');
       const subResult = subPathCommands(obj.commands, spStart, spEnd);
-      if (isBlock) {
-        if (subResult.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
-        }
-        const spOriginX = subResult[0].start.x;
-        const spOriginY = subResult[0].start.y;
-        const spNormalized = subResult.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
-          end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
-        }));
-        const spLast = spNormalized[spNormalized.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: spNormalized,
-          records: recordsFromCommands(spNormalized),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: spLast.end.x, y: spLast.end.y },
-        };
-      }
-      // Return PathBlockValue (normalized to 0,0) so result is drawable
-      if (subResult.length === 0) {
-        return {
-          type: 'PathBlockValue' as const,
-          commands: [],
-          records: [],
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: 0, y: 0 },
-        };
-      }
-      const spOriginX = subResult[0].start.x;
-      const spOriginY = subResult[0].start.y;
-      const spNormalized = subResult.map((cmd) => ({
-        command: cmd.command,
-        args: [...cmd.args],
-        start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
-        end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
-      }));
-      const spLast = spNormalized[spNormalized.length - 1];
-      return {
-        type: 'PathBlockValue' as const,
-        commands: spNormalized,
-        records: recordsFromCommands(spNormalized),
-        startPoint: { x: 0, y: 0 },
-        endPoint: { x: spLast.end.x, y: spLast.end.y },
-      };
+      // Blocks and projected paths both return a PathBlockValue (normalized
+      // to 0,0) so the result is drawable.
+      return buildPathBlockFromCommands(subResult);
     }
 
     case 'chamfer': {
@@ -1821,12 +1708,16 @@ function buildAnnotatedResult(
   if (isBlock) {
     const originX = cmds[0].start.x;
     const originY = cmds[0].start.y;
-    const normalized = cmds.map((cmd) => ({
-      command: cmd.command,
-      args: [...cmd.args],
-      start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
-      end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
-    }));
+    const normalized = cmds.map((cmd) => {
+      const meta = derivedMeta(cmd.meta);
+      return {
+        command: cmd.command,
+        args: [...cmd.args],
+        start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
+        end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
+        ...(meta !== undefined ? { meta } : {}),
+      };
+    });
     const last = normalized[normalized.length - 1];
     return {
       type: 'PathBlockValue' as const,
@@ -1866,8 +1757,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       // Emit relative commands (naturally work from cursor position),
       // tracking in the same walk when a context is live.
       const emittedPath = scope.evalState
-        ? serializeRelativeAndTrack(obj.commands, scope.evalState.pathContext, { format: annotatedFmt }).d
-        : commandsToRelativeD(obj.commands, { format: annotatedFmt });
+        ? serializeRelativeAndTrack(obj.commands, scope.evalState.pathContext, { format: annotatedFmt, bridgeOriginGap: true }).d
+        : commandsToRelativeD(obj.commands, { format: annotatedFmt, bridgeOriginGap: true });
       if (scope.evalState) {
         updateCtxVariable(scope);
       }
@@ -1897,9 +1788,10 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       const emittedPath = scope.evalState
         ? serializeRelativeAndTrack(obj.commands, scope.evalState.pathContext, {
             format: annotatedFmt,
+            bridgeOriginGap: true,
             moveTo: { x: dtX, y: dtY },
           }).d
-        : `M ${annotatedFmt(dtX)} ${annotatedFmt(dtY)} ${commandsToRelativeD(obj.commands, { format: annotatedFmt })}`;
+        : `M ${annotatedFmt(dtX)} ${annotatedFmt(dtY)} ${commandsToRelativeD(obj.commands, { format: annotatedFmt, bridgeOriginGap: true })}`;
       if (scope.evalState) {
         updateCtxVariable(scope);
       }
@@ -1929,6 +1821,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           args: [...cmd.args],
           start: { x: cmd.start.x + x, y: cmd.start.y + y },
           end: { x: cmd.end.x + x, y: cmd.end.y + y },
+          ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
         })),
         startPoint: { x: obj.startPoint.x + x, y: obj.startPoint.y + y },
         endPoint: { x: obj.endPoint.x + x, y: obj.endPoint.y + y },

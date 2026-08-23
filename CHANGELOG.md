@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-23 (PathBlock.rotate() + labels survive derived paths)
+
+### Added
+
+#### Core
+
+- **`rotate(angle, origin?)` on PathBlock and ProjectedPath** — rotates the path around `origin` (a `Point`, defaulting to the block origin `(0, 0)` / the projected start point), frame-preserving like `scale()`: the result is not re-based, so pieces spin in place with no pivot compensation. Accepts plain radians or Angle values. Kernel extracted as `rotateAboutPointCommands`; `rotateAtVertexCommands` is now a two-line wrapper over it (byte-identical output, pinned by existing tests), and sub-epsilon residue is snapped so right-angle rotations emit clean numbers. Declared in `pathogen-api.ts`, so completions, hover, and signature help flow to all three surfaces.
+- **Segment and endpoint labels survive derived paths** — `as segment(...)` / `as endpoint(...)` names now carry through `reverse()`, `offset()`, `mirror()`, `scale()`, `rotate()`, `rotateAtVertexIndex()`, `subPath()`, the corner-shaping family, boolean operations (labels from both operands coexist), and `cut()` (pieces keep the subject's labels). Reversal moves endpoint labels to the correct vertex, including ring-reversed subpaths inside boolean results; a label on a zero-length closing `z` re-attaches to the close vertex through every operation. Pending `with fillet(...)`-style corner ops are consumed by the block they were written in and never re-apply on a derived path (byte-equality guarded by tests). Excluded by design: `variableOffset`/`compoundVariableOffset` (full resample, no correspondence), labels on `m` commands through draw-command-rebuilding ops, and the cutter's own labels.
+- **`cut()` seams are auto-labeled `'cut'`** — every healed knife edge in every piece answers `segmentAll('cut')`, so seam decoration (dashed fold lines, glue tabs) is a query away; a user's own `'cut'` label merges into the same group, matching label-group semantics.
+
+#### Documentation
+
+- `docs/path-blocks.md`: `rotate(angle, origin?)` section with a cut-shard example (pieces spun in place), plus ProjectedPath pivot notes and cut/boolean label bullets.
+- `docs/segment-labels.md`: "Labels Survive Derived Paths" section — the operation family, the seam contract, exclusions, and caveats (open-path reversal end vertex, `m`-command labels, corner-op consumption).
+
 ## [0.8.0] - 2026-08-22 (Cutting Paths blog post, CLI named-font resolution, series spotlight)
 
 ### Added

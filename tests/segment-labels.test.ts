@@ -370,3 +370,116 @@ describe('z-chamfer label preservation and group pairing (review regressions)', 
     expect(logLine).toContain('50 20');
   });
 });
+
+describe('labels survive derived paths', () => {
+  // Byte-equality guard: labels must never change emitted geometry,
+  // including through every derived-path operation that now carries them.
+  const LABELED_SRC = [
+    'let src = @{',
+    "  h 40 as segment('top'), endpoint('ne')",
+    '  v 40',
+    "  h -40 as segment('bottom')",
+    '  z',
+    '};',
+  ].join('\n');
+  const PLAIN_SRC = ['let src = @{', '  h 40', '  v 40', '  h -40', '  z', '};'].join('\n');
+
+  const UNARY_OPS: [string, string][] = [
+    ['reverse', 'src.reverse()'],
+    ['offset', 'src.offset(4)'],
+    ['mirror', 'src.mirror(0.25pi)'],
+    ['scale', 'src.scale(2, 1.5)'],
+    ['rotate', 'src.rotate(0.3)'],
+    ['rotateAtVertexIndex', 'src.rotateAtVertexIndex(1, 0.3)'],
+    ['subPath', 'src.subPath(0.2, 0.9)'],
+    ['fillet', 'src.fillet(4)'],
+    ['chamfer', 'src.chamfer(4)'],
+    ['ellipticalFillet', 'src.ellipticalFillet(6, 3)'],
+  ];
+
+  for (const [name, expr] of UNARY_OPS) {
+    it(`${name}: labeled and unlabeled inputs emit identical geometry`, () => {
+      const labeled = compile(`${LABELED_SRC}\nlet d = ${expr};\nd.drawTo(10, 10);`);
+      const plain = compile(`${PLAIN_SRC}\nlet d = ${expr};\nd.drawTo(10, 10);`);
+      expect(labeled.layers[0].data).toBe(plain.layers[0].data);
+    });
+  }
+
+  it('scale() preserves segment and endpoint labels', () => {
+    const result = compile(
+      `${LABELED_SRC}\nlet s = src.scale(2, 2);\nlet lid = s.segment('top');\nlid.drawTo(0, 0);`,
+    );
+    expect(result.layers[0].data).toBe('M 0 0 l 80 0');
+    const pt = compile(`${LABELED_SRC}\nlet s = src.scale(2, 2);\nlet e = s.point('ne');\nM e.x e.y\nh 1`);
+    expect(pt.layers[0].data).toBe('M 80 0 h 1');
+  });
+
+  it('rotate() preserves labels through the new transform', () => {
+    // 'ne' at (40,0) rotated +90° about the origin lands at (0,40).
+    const result = compile(`${LABELED_SRC}\nlet r = src.rotate(0.5pi);\nlet e = r.point('ne');\nlog(e.x, e.y);\nM 0 0`);
+    expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(0, 5);
+    expect(Number(result.logs[0].parts[1].value)).toBeCloseTo(40, 5);
+  });
+
+  it('mirror() on a ProjectedPath answers label queries in absolute coordinates', () => {
+    const result = compile(
+      `${LABELED_SRC}\nlet proj = src.project(100, 100);\nlet m = proj.mirror(0.5pi);\nlet e = m.point('ne');\nM e.x e.y\nh 1`,
+    );
+    // 'ne' projected to (140,100), mirrored across the vertical through (100,100) → (60,100).
+    expect(result.layers[0].data).toBe('M 60 100 h 1');
+  });
+
+  it('reverse() shifts endpoint labels to their vertex (open path)', () => {
+    // 'a' names (10,0); reversed geometry is M 0 0 v -10 h -10, where that
+    // vertex sits at (0,-10).
+    const result = compile(
+      "let p = @{\n  h 10 as endpoint('a')\n  v 10\n};\nlet r = p.reverse();\nlet e = r.point('a');\nM e.x e.y\nh 1",
+    );
+    expect(result.layers[0].data).toBe('M 0 -10 h 1');
+  });
+
+  it('reverse() keeps segment labels on their (reversed) commands', () => {
+    const result = compile(
+      "let p = @{\n  h 10 as segment('lid')\n  v 10\n};\nlet r = p.reverse();\nlet lid = r.segment('lid');\nlid.drawTo(0, 0);",
+    );
+    // The lid edge reversed is the final h -10 of M 0 0 v -10 h -10.
+    expect(result.layers[0].data).toBe('M 0 0 h -10');
+  });
+
+  it('reverse() on a closed path lands endpoint labels via the ring wraparound', () => {
+    // 'sw' names (0,20); reversed closed geometry is l 0 20 h 20 v -20 h -20 z,
+    // where (0,20) is the end of the leading l.
+    const result = compile(
+      "let p = @{\n  h 20\n  v 20\n  h -20 as endpoint('sw')\n  z\n};\nlet r = p.reverse();\nlet e = r.point('sw');\nM e.x e.y\nh 1",
+    );
+    expect(result.layers[0].data).toBe('M 0 20 h 1');
+  });
+
+  it('reverse() on an open path drops the final vertex endpoint label (documented)', () => {
+    // 'end' names the open path's last vertex, which becomes the reversed
+    // start point — no command end can carry it.
+    const result = compile(
+      "let p = @{\n  h 10 as endpoint('mid')\n  v 10 as endpoint('end')\n};\nlet r = p.reverse();\nlet all = r.pointAll('end');\nlog(all.length);\nM 0 0",
+    );
+    expect(String(result.logs[0].parts[0].value)).toBe('0');
+  });
+
+  it('subPath(1, 0) carries labels through the reversed range', () => {
+    const labeled = compile(`${LABELED_SRC}\nlet d = src.subPath(1, 0);\nlet runs = d.segmentAll('top');\nlog(runs.length);\nM 0 0`);
+    expect(String(labeled.logs[0].parts[0].value)).toBe('1');
+  });
+
+  it('fillet() method results still answer segment queries', () => {
+    const result = compile(
+      `${LABELED_SRC}\nlet f = src.fillet(4);\nlet runs = f.segmentAll('top');\nlog(runs.length);\nM 0 0`,
+    );
+    expect(String(result.logs[0].parts[0].value)).toBe('1');
+  });
+
+  it('offset() carries source labels onto offset images', () => {
+    const result = compile(
+      `${LABELED_SRC}\nlet o = src.offset(4);\nlet runs = o.segmentAll('top');\nlog(runs.length);\nM 0 0`,
+    );
+    expect(String(result.logs[0].parts[0].value)).toBe('1');
+  });
+});

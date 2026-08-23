@@ -435,6 +435,44 @@ for (i in 0..5) {
 }
 ```
 
+### `rotate(angle, origin?)` → PathBlock / ProjectedPath
+
+Rotates the path by `angle` around `origin` — a [`Point`](#syntax-points), defaulting to the block origin `(0, 0)` when omitted. The angle accepts plain radians or Angle values (`0.5pi`, `45deg`).
+
+```
+let arm = @{
+  h 50
+  v 10
+};
+let quarter = arm.rotate(0.5pi);          // about the block origin
+let spun = arm.rotate(45deg, Point(25, 5));  // about the arm's center
+```
+
+Unlike `rotateAtVertexIndex`, the result is **not** re-based: the geometry rotates about the pivot inside the block's own coordinate frame and stays where it is. A piece that carries placement — a [`cut()`](#path-blocks-cutting-paths) shard, for example — keeps that placement, so rotating it in place needs no compensation:
+
+```
+let plate = @{
+  h 60
+  v 40
+  h -60
+  z
+};
+let knife = @{
+  m 30 -10
+  l 0 60
+};
+let pieces = plate.cut(knife);
+for ([p, i] in pieces) {
+  let pb = p.boundingBox();
+  let c = Point(calc(pb.x + pb.width / 2), calc(pb.y + pb.height / 2));
+  let spunPiece = p.rotate(0.1, c);
+  M 20 20
+  spunPiece.draw();
+}
+```
+
+`rotate(a)` with no origin is equivalent to `rotateAtVertexIndex(0, a)` when the path starts at the origin. Rotation preserves path length and curve types; arc commands have their rotation parameter adjusted. Segment and endpoint labels survive (see [Labels Survive Derived Paths](#segment-labels-labels-survive-derived-paths)).
+
 ### `scale(sx, sy)` → PathBlock / ProjectedPath
 
 Scales the path from its start point. `sx` scales x-coordinates, `sy` scales y-coordinates.
@@ -515,7 +553,7 @@ let rev = proj.reverse();
 log(rev.startPoint);         // Point(110, 20) — starts at original end
 ```
 
-For `mirror()` on a ProjectedPath, the mirror line passes through the projection's start point. For `rotateAtVertexIndex()`, the rotation center is the absolute vertex position.
+For `mirror()` on a ProjectedPath, the mirror line passes through the projection's start point. For `rotateAtVertexIndex()`, the rotation center is the absolute vertex position. For `rotate()`, the `origin` is an absolute point; when omitted, the pivot defaults to the projection's start point.
 
 ```
 let p = @{ h 50 };
@@ -761,6 +799,7 @@ let exclusive = a.project(50, 50).xor(b.project(70, 50));
 - Multi-component results produce multiple subpaths (`M...z M...z`).
 - All curve types (lines, cubics, quadratics, arcs) are preserved through the operation.
 - Results are always returned as PathBlock values (normalized to `(0, 0)` origin).
+- Segment and endpoint labels from **both** operands survive into the result (see [Labels Survive Derived Paths](#segment-labels-labels-survive-derived-paths)).
 
 ## Cutting Paths
 
@@ -899,7 +938,7 @@ for ([piece, i] in slices) {
 - The `cutter` argument can be a PathBlock or ProjectedPath; so can the receiver. Pieces always come back as PathBlock values, even from a ProjectedPath receiver.
 - Pieces keep their original placement inside the subject (like the set operations, results are normalized to a `(0, 0)` origin). Drawing every piece at one position reassembles the shape.
 - Piece order is deterministic but unspecified — style pieces by iterating, not by assuming which index is which.
-- Labels don't survive: pieces (like the results of the set operations) are plain geometry, so `as segment(...)` / `as endpoint(...)` names from the original path can't be queried on them.
+- Labels survive: pieces keep the subject's `as segment(...)` / `as endpoint(...)` names on their surviving boundary fragments, and every healed seam edge carries the automatic segment label `cut` (query the seams with `segmentAll('cut')`). The cutter's own labels do not propagate. See [Labels Survive Derived Paths](#segment-labels-labels-survive-derived-paths).
 
 **Tolerances and fidelity**
 

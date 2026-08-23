@@ -8,6 +8,7 @@
  */
 
 import type { Point } from './context';
+import type { PathCommandMeta } from './types';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
@@ -16,6 +17,7 @@ interface TransformCmd {
   args: number[];
   start: Point;
   end: Point;
+  meta?: PathCommandMeta; // labels — carried verbatim; endVertex shifted on reversal
 }
 
 interface ArcCenter {
@@ -1731,6 +1733,24 @@ function splitPathAtIntersections(
 }
 
 function splitCmdRange(cmd: TransformCmd, tStart: number, tEnd: number): TransformCmd {
+  const out = splitCmdRangeGeom(cmd, tStart, tEnd);
+  // Labels: a fragment keeps its source segment label; the endpoint label
+  // only applies when the fragment retains the command's true end.
+  if (cmd.meta !== undefined) {
+    const keepEnd = tEnd >= 1 - PARAMETRIC_EPSILON;
+    const segLabel = cmd.meta.segmentLabel;
+    const ev = keepEnd ? cmd.meta.endVertex : undefined;
+    if (segLabel !== undefined || ev !== undefined) {
+      out.meta = {
+        ...(segLabel !== undefined ? { segmentLabel: segLabel } : {}),
+        ...(ev !== undefined ? { endVertex: { ...ev } } : {}),
+      };
+    }
+  }
+  return out;
+}
+
+function splitCmdRangeGeom(cmd: TransformCmd, tStart: number, tEnd: number): TransformCmd {
   if (tStart <= PARAMETRIC_EPSILON && tEnd >= 1 - PARAMETRIC_EPSILON) {
     return { command: cmd.command, args: [...cmd.args], start: { ...cmd.start }, end: { ...cmd.end } };
   }
@@ -2286,6 +2306,35 @@ function snapEpsilon(v: number): number {
 }
 
 function reverseCmd(cmd: TransformCmd): TransformCmd {
+  const out = reverseCmdGeom(cmd);
+  // Meta copied verbatim; list-level reversers apply the endVertex shift.
+  if (cmd.meta !== undefined) out.meta = cmd.meta;
+  return out;
+}
+
+/** After reversing a CLOSED ring's command list (each command already
+ *  reversed), shift endpoint labels one command toward the source start —
+ *  an endVertex names its command's END, which reversal turns into the
+ *  start of the neighbor. Ring vertices are cyclic, so the index wraps. */
+function shiftRingEndVertices(reversed: TransformCmd[], forward: TransformCmd[]): void {
+  const n = forward.length;
+  if (n === 0) return;
+  for (let j = 0; j < reversed.length; j++) {
+    const segLabel = reversed[j].meta?.segmentLabel;
+    const srcIdx = (((n - 2 - j) % n) + n) % n;
+    const ev = forward[srcIdx]?.meta?.endVertex;
+    if (segLabel !== undefined || ev !== undefined) {
+      reversed[j].meta = {
+        ...(segLabel !== undefined ? { segmentLabel: segLabel } : {}),
+        ...(ev !== undefined ? { endVertex: { ...ev } } : {}),
+      };
+    } else if (reversed[j].meta !== undefined) {
+      delete reversed[j].meta;
+    }
+  }
+}
+
+function reverseCmdGeom(cmd: TransformCmd): TransformCmd {
   const u = cmd.command.toLowerCase();
   const s = cmd.end, e = cmd.start;
 
@@ -2464,10 +2513,12 @@ function buildRings(
   // For difference-B: reverse each ring and each segment
   if (reverseB) {
     for (let r = 0; r < rings.length; r++) {
+      const forwardCmds = rings[r].map(entry => entry.cmd);
       rings[r] = rings[r].reverse().map(entry => ({
         ...entry,
         cmd: reverseCmd(entry.cmd),
       }));
+      shiftRingEndVertices(rings[r].map(entry => entry.cmd), forwardCmds);
     }
   }
 
@@ -3101,7 +3152,26 @@ function extractDrawCmds(cmds: TransformCmd[]): TransformCmd[] {
           args: [cdx, cdy],
           start: { ...cmd.start },
           end: { ...cmd.end },
+          ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
         });
+      } else if (cmd.meta?.endVertex?.label !== undefined && result.length > 0) {
+        // A zero-length z vanishes from the draw soup, but its endpoint label
+        // names the close vertex — the same point as the previous draw
+        // command's end. Reattach it there (copy-on-write: the input command
+        // objects are shared with the source block). A label already on that
+        // vertex wins; it can hold only one.
+        const prev = result[result.length - 1];
+        const coincides =
+          Math.abs(prev.end.x - cmd.end.x) < 1e-6 && Math.abs(prev.end.y - cmd.end.y) < 1e-6;
+        if (coincides && prev.meta?.endVertex?.label === undefined) {
+          result[result.length - 1] = {
+            ...prev,
+            meta: {
+              ...prev.meta,
+              endVertex: { ...prev.meta?.endVertex, label: cmd.meta.endVertex.label },
+            },
+          };
+        }
       }
       continue;
     }
@@ -3807,9 +3877,12 @@ function reverseSingleSubpath(cmds: TransformCmd[]): TransformCmd[] {
   });
 
   // Reverse each draw command in reverse order
+  const reversedDraws: TransformCmd[] = [];
   for (let i = drawCmds.length - 1; i >= 0; i--) {
-    reversed.push(reverseCmd(drawCmds[i]));
+    reversedDraws.push(reverseCmd(drawCmds[i]));
   }
+  shiftRingEndVertices(reversedDraws, drawCmds);
+  reversed.push(...reversedDraws);
 
   // Close
   reversed.push({
@@ -3883,6 +3956,13 @@ function cutNodeMergeDist(bboxDiag: number): number {
   return Math.max(1e-9, Math.min(0.5, bboxDiag * 2.5e-3));
 }
 
+/** Stamp a cutter fragment as a healed seam: fresh meta, segmentLabel 'cut'.
+ *  Overrides any cutter-authored labels — the cutter's own labels do not
+ *  propagate into pieces (documented). */
+function stampCutSeam(cmds: TransformCmd[]): TransformCmd[] {
+  return cmds.map((cmd) => ({ ...cmd, meta: { segmentLabel: 'cut' } }));
+}
+
 function cutDebug(msg: string): void {
   if (typeof process !== 'undefined' && process.env?.DEBUG_BOOLEAN_OPS === '1') {
     // eslint-disable-next-line no-console
@@ -3923,12 +4003,12 @@ function adjustArgsForEnd(cmd: TransformCmd, newEnd: Point): number[] {
 
 function rebaseCmdStart(cmd: TransformCmd, newStart: Point): TransformCmd {
   if (ptEq(cmd.start, newStart)) return cmd;
-  return { command: cmd.command, args: adjustArgsForStart(cmd, newStart), start: { ...newStart }, end: { ...cmd.end } };
+  return { command: cmd.command, args: adjustArgsForStart(cmd, newStart), start: { ...newStart }, end: { ...cmd.end }, ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}) };
 }
 
 function rebaseCmdEnd(cmd: TransformCmd, newEnd: Point): TransformCmd {
   if (ptEq(cmd.end, newEnd)) return cmd;
-  return { command: cmd.command, args: adjustArgsForEnd(cmd, newEnd), start: { ...cmd.start }, end: { ...newEnd } };
+  return { command: cmd.command, args: adjustArgsForEnd(cmd, newEnd), start: { ...cmd.start }, end: { ...newEnd }, ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}) };
 }
 
 /** Signed area of a closed ring of draw commands. Curve-sampled (see
@@ -3979,6 +4059,7 @@ function interiorSampleOfRing(cmds: TransformCmd[]): Point | null {
 function reverseRing(cmds: TransformCmd[]): TransformCmd[] {
   const out: TransformCmd[] = [];
   for (let i = cmds.length - 1; i >= 0; i--) out.push(reverseCmd(cmds[i]));
+  shiftRingEndVertices(out, cmds);
   return out;
 }
 
@@ -4344,6 +4425,7 @@ function traceCutFaces(halfEdges: CutHalfEdge[], table: CutNodeTable, warnings?:
             args: [curStart.x - prevEnd.x, curStart.y - prevEnd.y],
             start: { ...prevEnd },
             end: { ...curStart },
+            meta: { segmentLabel: 'cut' },
           });
         }
       }
@@ -4687,8 +4769,10 @@ function cutClosedRings(
   }
   for (const e of snappedCutter) {
     const fwd = halfEdges.length;
-    halfEdges.push({ cmds: e.cmds, fromNode: e.fromNode, toNode: e.toNode, twin: fwd + 1, visited: false });
-    halfEdges.push({ cmds: reverseRing(e.cmds), fromNode: e.toNode, toNode: e.fromNode, twin: fwd, visited: false });
+    // Every healed seam edge carries segment('cut') — in both adjacent pieces.
+    const seamCmds = stampCutSeam(e.cmds);
+    halfEdges.push({ cmds: seamCmds, fromNode: e.fromNode, toNode: e.toNode, twin: fwd + 1, visited: false });
+    halfEdges.push({ cmds: reverseRing(seamCmds), fromNode: e.toNode, toNode: e.fromNode, twin: fwd, visited: false });
   }
 
   const faces = halfEdges.length > 0 ? traceCutFaces(halfEdges, table, warnings) : [];
@@ -4711,10 +4795,12 @@ function cutClosedRings(
   for (const face of faces) addRing(face);
   for (const cycle of subjCycles) addRing(cycle);
   for (const cookie of cookies) {
-    // A cookie loop both stamps out a piece and punches a hole in its host.
-    const area = ringSignedArea(cookie);
-    const positive = area > 0 ? cookie : reverseRing(cookie);
-    const negative = area > 0 ? reverseRing(cookie) : cookie;
+    // A cookie loop both stamps out a piece and punches a hole in its host —
+    // its boundary is a healed seam in both, so both copies carry 'cut'.
+    const stamped = stampCutSeam(cookie);
+    const area = ringSignedArea(stamped);
+    const positive = area > 0 ? stamped : reverseRing(stamped);
+    const negative = area > 0 ? reverseRing(stamped) : stamped;
     addRing(positive);
     addRing(negative);
   }

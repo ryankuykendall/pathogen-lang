@@ -137,6 +137,21 @@ function normalizeMeta(meta: PathCommandMeta | undefined): PathCommandMeta | und
   return { ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}), ...(endVertex ? { endVertex } : {}) };
 }
 
+/**
+ * Meta for a DERIVED path (transform/boolean/cut result): labels carry, but
+ * pending corner-op suffixes are consumed by the source block and must not
+ * re-apply at the derived block's emit-time finalization — carrying them
+ * would change the geometry of existing programs.
+ */
+export function derivedMeta(meta: PathCommandMeta | undefined): PathCommandMeta | undefined {
+  if (!meta) return undefined;
+  const endVertexLabel = meta.endVertex?.label;
+  return normalizeMeta({
+    ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}),
+    ...(endVertexLabel !== undefined ? { endVertex: { label: endVertexLabel } } : {}),
+  });
+}
+
 /** Shallow-clone commands with cloned meta so finalization never mutates the authored store. */
 function cloneForFinalize(commands: PathBlockCommand[]): PathBlockCommand[] {
   return commands.map((c) => ({

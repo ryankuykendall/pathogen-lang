@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { compile, compileAnnotated, parse } from '../src';
-import { compilePath } from './helpers';
+import { compilePath, parseSVGPath } from './helpers';
 
 describe('Path Blocks', () => {
   describe('parser', () => {
@@ -1312,6 +1312,100 @@ describe('Path Blocks', () => {
 
       it('throws error with non-number argument', () => {
         expect(() => compile('let p = @{ h 50 }; p.mirror("abc");')).toThrow(/must be a number/);
+      });
+    });
+
+    describe('rotate()', () => {
+      it('rotates about the block origin by default and preserves the frame', () => {
+        const result = compile(`
+          let p = @{ h 50 v 50 };
+          let r = p.rotate(0.5pi);
+          log(r.vertices[0].x, r.vertices[0].y, r.endPoint.x, r.endPoint.y);
+        `);
+        // (0,0),(50,0),(50,50) about (0,0) by +90°: (0,0),(0,50),(-50,50).
+        // Frame-preserving: vertex 0 stays at the origin, no re-base needed.
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(0, 5);
+        expect(Number(result.logs[0].parts[1].value)).toBeCloseTo(0, 5);
+        expect(Number(result.logs[0].parts[2].value)).toBeCloseTo(-50, 5);
+        expect(Number(result.logs[0].parts[3].value)).toBeCloseTo(50, 5);
+      });
+
+      it('rotate(a) matches rotateAtVertexIndex(0, a) for origin-starting paths', () => {
+        const a = compilePath(`
+          let p = @{ h 50 v 50 };
+          p.rotate(0.5pi).drawTo(10, 10);
+        `);
+        const b = compilePath(`
+          let p = @{ h 50 v 50 };
+          p.rotateAtVertexIndex(0, 0.5pi).drawTo(10, 10);
+        `);
+        expect(a).toBe(b);
+      });
+
+      it('rotates about an explicit Point pivot without re-basing', () => {
+        const result = compile(`
+          let p = @{ h 50 v 50 };
+          let r = p.rotate(0.5pi, Point(25, 25));
+          log(r.vertices[0].x, r.vertices[0].y, r.vertices[2].x, r.vertices[2].y);
+        `);
+        // About (25,25) by +90°: (0,0)→(50,0); (50,50)→(0,50).
+        // Frame preserved: vertex 0 lands at (50,0), NOT re-based to origin.
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(50, 5);
+        expect(Number(result.logs[0].parts[1].value)).toBeCloseTo(0, 5);
+        expect(Number(result.logs[0].parts[2].value)).toBeCloseTo(0, 5);
+        expect(Number(result.logs[0].parts[3].value)).toBeCloseTo(50, 5);
+      });
+
+      it('adjusts the arc rotation parameter', () => {
+        const result = compilePath(`
+          let p = @{ a 20 10 0 0 1 40 0 };
+          p.rotate(0.5pi).drawTo(0, 0);
+        `);
+        // The ellipse's x-axis rotation gains 90 degrees.
+        const parsed = parseSVGPath(result);
+        const arc = parsed.find(c => c.command.toLowerCase() === 'a')!;
+        expect(arc.args[2]).toBeCloseTo(90, 5);
+      });
+
+      it('ProjectedPath: default pivot is the projection start point', () => {
+        const result = compile(`
+          let p = @{ h 50 };
+          let r = p.project(100, 100).rotate(0.5pi);
+          log(r.endPoint.x, r.endPoint.y, r.startPoint.x, r.startPoint.y);
+        `);
+        // (150,100) about (100,100) by +90° → (100,150); start stays put.
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(100, 5);
+        expect(Number(result.logs[0].parts[1].value)).toBeCloseTo(150, 5);
+        expect(Number(result.logs[0].parts[2].value)).toBeCloseTo(100, 5);
+        expect(Number(result.logs[0].parts[3].value)).toBeCloseTo(100, 5);
+      });
+
+      it('ProjectedPath: explicit absolute pivot', () => {
+        const result = compile(`
+          let p = @{ h 50 };
+          let r = p.project(100, 100).rotate(0.5pi, Point(150, 100));
+          log(r.startPoint.x, r.startPoint.y, r.endPoint.x, r.endPoint.y);
+        `);
+        // Pivot at the projected end: start (100,100) → (150,50); end fixed.
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(150, 5);
+        expect(Number(result.logs[0].parts[1].value)).toBeCloseTo(50, 5);
+        expect(Number(result.logs[0].parts[2].value)).toBeCloseTo(150, 5);
+        expect(Number(result.logs[0].parts[3].value)).toBeCloseTo(100, 5);
+      });
+
+      it('accepts Angle values', () => {
+        const deg = compile(`
+          let p = @{ h 50 v 50 };
+          let r = p.rotate(90deg);
+          log(r.endPoint.x, r.endPoint.y);
+        `);
+        expect(Number(deg.logs[0].parts[0].value)).toBeCloseTo(-50, 5);
+        expect(Number(deg.logs[0].parts[1].value)).toBeCloseTo(50, 5);
+      });
+
+      it('validates arguments', () => {
+        expect(() => compile('let p = @{ h 10 };\nlet r = p.rotate();')).toThrow(/expects 1-2 arguments/);
+        expect(() => compile('let p = @{ h 10 };\nlet r = p.rotate(1, 5);')).toThrow(/origin must be a Point/);
       });
     });
 

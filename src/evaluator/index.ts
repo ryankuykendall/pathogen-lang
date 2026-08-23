@@ -56,6 +56,7 @@ import {
   offsetCommands,
   reverseCommands,
   rotateAtVertexCommands,
+  rotateAboutPointCommands,
   scaleCommands,
   subPathCommands,
 } from './path-transforms';
@@ -262,6 +263,7 @@ import {
   parsePathStringAt,
   parsePathStringToCommands,
   storeToPathData,
+  derivedMeta,
 } from './segments';
 import { serializeRelativeAndTrack } from './path-data';
 import { tryResolveCSSFunctionArgs as sharedTryResolveCSSFunctionArgs } from './css-function-resolve';
@@ -988,12 +990,16 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
   }
   const originX = origin ? origin.x : cmds[0].start.x;
   const originY = origin ? origin.y : cmds[0].start.y;
-  const normalized = cmds.map((cmd) => ({
-    command: cmd.command,
-    args: [...cmd.args],
-    start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
-    end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
-  }));
+  const normalized = cmds.map((cmd) => {
+    const meta = derivedMeta(cmd.meta);
+    return {
+      command: cmd.command,
+      args: [...cmd.args],
+      start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
+      end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
+      ...(meta !== undefined ? { meta } : {}),
+    };
+  });
   const last = normalized[normalized.length - 1];
   return {
     type: 'PathBlockValue' as const,
@@ -2618,32 +2624,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       case 'reverse': {
         if (expr.args.length !== 0) throw mError('reverse() expects 0 arguments');
         const reversed = reverseCommands(obj.commands);
-        // Normalize to (0,0) origin for PathBlockValue
-        if (reversed.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
-        }
-        const originX = reversed[0].start.x;
-        const originY = reversed[0].start.y;
-        const normalizedCmds = reversed.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - originX, y: cmd.start.y - originY },
-          end: { x: cmd.end.x - originX, y: cmd.end.y - originY },
-        }));
-        const lastCmd = normalizedCmds[normalizedCmds.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: normalizedCmds,
-          records: recordsFromCommands(normalizedCmds),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
-        };
+        return buildPathBlockFromCommands(reversed);
       }
 
       case 'boundingBox': {
@@ -2665,32 +2646,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const dist = evaluateExpression(expr.args[0], scope);
         if (typeof dist !== 'number') throw mError('offset() argument must be a number');
         const offsetResult = offsetCommands(obj.commands, dist);
-        // Normalize to (0,0) origin for PathBlockValue
-        if (offsetResult.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
-        }
-        const oOriginX = offsetResult[0].start.x;
-        const oOriginY = offsetResult[0].start.y;
-        const oNormalized = offsetResult.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - oOriginX, y: cmd.start.y - oOriginY },
-          end: { x: cmd.end.x - oOriginX, y: cmd.end.y - oOriginY },
-        }));
-        const oLast = oNormalized[oNormalized.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: oNormalized,
-          records: recordsFromCommands(oNormalized),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: oLast.end.x, y: oLast.end.y },
-        };
+        return buildPathBlockFromCommands(offsetResult);
       }
 
       case 'variableOffset': {
@@ -2815,31 +2771,24 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const mAngle = toNumber(evaluateExpression(expr.args[0], scope));
         if (mAngle === undefined) throw mError('mirror() argument must be a number');
         const mirrored = mirrorCommands(obj.commands, mAngle, { x: 0, y: 0 });
-        if (mirrored.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
+        return buildPathBlockFromCommands(mirrored);
+      }
+
+      case 'rotate': {
+        if (expr.args.length < 1 || expr.args.length > 2) throw mError('rotate() expects 1-2 arguments (angle) or (angle, origin)');
+        const rotAngle = toNumber(evaluateExpression(expr.args[0], scope));
+        if (rotAngle === undefined) throw mError('rotate() angle must be a number');
+        let rotPivot = { x: 0, y: 0 };
+        if (expr.args.length === 2) {
+          const rotOrigin = evaluateExpression(expr.args[1], scope);
+          if (!isPointValue(rotOrigin)) throw mError('rotate() origin must be a Point');
+          rotPivot = { x: rotOrigin.x, y: rotOrigin.y };
         }
-        const mOriginX = mirrored[0].start.x;
-        const mOriginY = mirrored[0].start.y;
-        const mNormalized = mirrored.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - mOriginX, y: cmd.start.y - mOriginY },
-          end: { x: cmd.end.x - mOriginX, y: cmd.end.y - mOriginY },
-        }));
-        const mLast = mNormalized[mNormalized.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: mNormalized,
-          records: recordsFromCommands(mNormalized),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: mLast.end.x, y: mLast.end.y },
-        };
+        // Frame-preserving: rotate about the pivot in block-local coordinates
+        // and keep the geometry where it lands (no re-base) — a cut piece
+        // rotated in place keeps its placement inside the subject.
+        const rotCmds = rotateAboutPointCommands(obj.commands, rotAngle, rotPivot);
+        return buildPathBlockFromCommands(rotCmds, { x: 0, y: 0 });
       }
 
       case 'rotateAtVertexIndex': {
@@ -2850,31 +2799,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (rAngle === undefined) throw mError('rotateAtVertexIndex() angle must be a number');
         if (!Number.isInteger(rIdx)) throw mError('rotateAtVertexIndex() index must be an integer');
         const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
-        if (rotated.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
-        }
-        const rOriginX = rotated[0].start.x;
-        const rOriginY = rotated[0].start.y;
-        const rNormalized = rotated.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - rOriginX, y: cmd.start.y - rOriginY },
-          end: { x: cmd.end.x - rOriginX, y: cmd.end.y - rOriginY },
-        }));
-        const rLast = rNormalized[rNormalized.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: rNormalized,
-          records: recordsFromCommands(rNormalized),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: rLast.end.x, y: rLast.end.y },
-        };
+        return buildPathBlockFromCommands(rotated);
       }
 
       case 'scale': {
@@ -2912,32 +2837,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (spStart < 0 || spStart > 1) throw mError('subPath() startT must be between 0 and 1');
         if (spEnd < 0 || spEnd > 1) throw mError('subPath() endT must be between 0 and 1');
         const subResult = subPathCommands(obj.commands, spStart, spEnd);
-        if (subResult.length === 0) {
-          return {
-            type: 'PathBlockValue' as const,
-            commands: [],
-            records: [],
-            startPoint: { x: 0, y: 0 },
-            endPoint: { x: 0, y: 0 },
-          };
-        }
-        // Normalize to (0,0) origin for PathBlockValue
-        const spOriginX = subResult[0].start.x;
-        const spOriginY = subResult[0].start.y;
-        const spNormalized = subResult.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x - spOriginX, y: cmd.start.y - spOriginY },
-          end: { x: cmd.end.x - spOriginX, y: cmd.end.y - spOriginY },
-        }));
-        const spLast = spNormalized[spNormalized.length - 1];
-        return {
-          type: 'PathBlockValue' as const,
-          commands: spNormalized,
-          records: recordsFromCommands(spNormalized),
-          startPoint: { x: 0, y: 0 },
-          endPoint: { x: spLast.end.x, y: spLast.end.y },
-        };
+        return buildPathBlockFromCommands(subResult);
       }
 
       case 'chamfer': {
@@ -3396,6 +3296,27 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           commands: mirrored,
           startPoint: { x: mStart.x, y: mStart.y },
           endPoint: { x: mEnd.x, y: mEnd.y },
+        };
+      }
+
+      case 'rotate': {
+        if (expr.args.length < 1 || expr.args.length > 2) throw mError('rotate() expects 1-2 arguments (angle) or (angle, origin)');
+        const rotAngle = toNumber(evaluateExpression(expr.args[0], scope));
+        if (rotAngle === undefined) throw mError('rotate() angle must be a number');
+        let rotPivot = { x: obj.startPoint.x, y: obj.startPoint.y };
+        if (expr.args.length === 2) {
+          const rotOrigin = evaluateExpression(expr.args[1], scope);
+          if (!isPointValue(rotOrigin)) throw mError('rotate() origin must be a Point');
+          rotPivot = { x: rotOrigin.x, y: rotOrigin.y };
+        }
+        const rotCmds = rotateAboutPointCommands(obj.commands, rotAngle, rotPivot);
+        const rotFirst = rotCmds[0];
+        const rotLast = rotCmds[rotCmds.length - 1];
+        return {
+          type: 'ProjectedPathValue' as const,
+          commands: rotCmds,
+          startPoint: rotFirst ? { ...rotFirst.start } : { ...obj.startPoint },
+          endPoint: rotLast ? { ...rotLast.end } : { ...obj.endPoint },
         };
       }
 
