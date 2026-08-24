@@ -3695,19 +3695,14 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
 /**
  * Evaluate a TextBlockExpression in annotated mode — minimal state, silent skip for forbidden constructs
  */
-function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): TextBlockValue {
-  // Create a child scope with _insideTextBlock flag
-  const blockScope = createScope(scope);
-  const blockEvalState = {
-    ...(scope.evalState || { pathContext: createPathContext() }),
-    _insideTextBlock: true,
-  };
-  blockScope.evalState = blockEvalState as EvaluationState;
-
-  const elements: TextBlockElement[] = [];
-  const blockStyles: Record<string, string> = {};
-
-  for (const stmt of expr.body) {
+/**
+ * Walk text-block statements recursively so TextStatements inside if/for
+ * bodies reach the elements accumulator — parity with the main
+ * evaluator's evaluateTextBlockBody (fixes the annotated-only text-if
+ * drop, friction log #10).
+ */
+function evaluateTextBlockStatements(stmts: Statement[], blockScope: Scope, elements: TextBlockElement[]): void {
+  for (const stmt of stmts) {
     // Silently skip forbidden constructs (annotated mode pattern)
     if (stmt.type === 'LayerDefinition' || stmt.type === 'LayerApplyBlock' || stmt.type === 'PathCommand' || stmt.type === 'ViewBoxDefinition') {
       continue;
@@ -3738,9 +3733,80 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
       continue;
     }
 
-    // Other statements (let, for, if, expression) for control flow
+    if (stmt.type === 'IfStatement') {
+      const cond = evaluateExpression(stmt.condition, blockScope);
+      const truthValue = typeof cond === 'number' ? cond !== 0 : (isBooleanValue(cond) ? cond.value !== 0 : cond !== null);
+      if (truthValue) {
+        evaluateTextBlockStatements(stmt.consequent, blockScope, elements);
+      } else if (stmt.alternate) {
+        evaluateTextBlockStatements(stmt.alternate, blockScope, elements);
+      }
+      continue;
+    }
+
+    if (stmt.type === 'ForLoop') {
+      const start = toNumber(evaluateExpression(stmt.start, blockScope));
+      const end = toNumber(evaluateExpression(stmt.end, blockScope));
+      if (start === undefined || end === undefined) throw new Error('for loop range must be numeric');
+      if (!Number.isFinite(start) || !Number.isFinite(end)) throw new Error('for loop range must be finite');
+      const ascending = start <= end;
+      const iterations = ascending ? end - start + 1 : start - end + 1;
+      if (iterations > MAX_ITERATIONS) {
+        throw new Error(`for loop would run ${iterations} iterations (max ${MAX_ITERATIONS})`);
+      }
+      const step = ascending ? 1 : -1;
+      for (let i = start; ascending ? i <= end : i >= end; i += step) {
+        const loopScope = createScope(blockScope);
+        loopScope.evalState = blockScope.evalState;
+        setVariable(loopScope, stmt.variable, i);
+        evaluateTextBlockStatements(stmt.body, loopScope, elements);
+        if (pendingFlow) {
+          const flow = pendingFlow;
+          pendingFlow = null;
+          if (flow === 'break') break;
+        }
+      }
+      continue;
+    }
+
+    if (stmt.type === 'ForEachLoop') {
+      const iterVal = evaluateExpression(stmt.iterable, blockScope);
+      if (typeof iterVal !== 'object' || iterVal === null || !('type' in iterVal) || iterVal.type !== 'ArrayValue') {
+        throw new Error('for-each requires an array');
+      }
+      for (let idx = 0; idx < iterVal.elements.length; idx++) {
+        const loopScope = createScope(blockScope);
+        loopScope.evalState = blockScope.evalState;
+        setVariable(loopScope, stmt.variable, iterVal.elements[idx]);
+        if (stmt.indexVariable) setVariable(loopScope, stmt.indexVariable, idx);
+        evaluateTextBlockStatements(stmt.body, loopScope, elements);
+        if (pendingFlow) {
+          const flow = pendingFlow;
+          pendingFlow = null;
+          if (flow === 'break') break;
+        }
+      }
+      continue;
+    }
+
+    // Other statements (let, assignment, expression) for control flow
     evaluateStatementPlain(stmt, blockScope);
   }
+}
+
+function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): TextBlockValue {
+  // Create a child scope with _insideTextBlock flag
+  const blockScope = createScope(scope);
+  const blockEvalState = {
+    ...(scope.evalState || { pathContext: createPathContext() }),
+    _insideTextBlock: true,
+  };
+  blockScope.evalState = blockEvalState as EvaluationState;
+
+  const elements: TextBlockElement[] = [];
+  const blockStyles: Record<string, string> = {};
+
+  evaluateTextBlockStatements(expr.body, blockScope, elements);
 
   return {
     type: 'TextBlockValue',
@@ -4991,11 +5057,22 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
   const fn = lookupVariable(scope, call.name);
 
   if (typeof fn === 'function') {
-    return callStdlibPreservingAngles(
+    const result = callStdlibPreservingAngles(
       call.name,
       fn as (...ns: number[]) => unknown,
       call.args.map((arg) => evaluateExpression(arg, scope)),
     ) as Value;
+    // Parity with the main evaluator (index.ts): a stdlib PathSegment's
+    // commands are tracked into the live path context — without this,
+    // @{ circle(...) } blocks came back EMPTY in annotated mode
+    // (friction log #16).
+    if (typeof result === 'object' && result !== null && 'type' in result) {
+      const typed = result as { type: string; value?: string };
+      if (typed.type === 'PathSegment' && typed.value && scope.evalState) {
+        parseAndTrackPathString(typed.value, scope);
+      }
+    }
+    return result;
   }
 
   if (typeof fn === 'object' && fn !== null && 'type' in fn && fn.type === 'UserFunction') {

@@ -1400,3 +1400,64 @@ l 5 0`;
     expect(flat).toContain(main);
   });
 });
+
+describe('annotated divergence fixes (feedback loop item C)', () => {
+  it('text statements inside if-inside-for survive in annotated text blocks (#10)', () => {
+    const src = `let tb = &{
+  for (i in 0..2) {
+    if (i > 0) {
+      text(calc(i * 10), 0)\`n\${i}\`;
+    }
+  }
+};
+M calc(tb.elementCount * 10) 0`;
+    const main = compile(src);
+    expect(main.layers[0].data).toBe('M 20 0');
+    const annotated = compileAnnotated(src);
+    expect(annotated).toContain('M 20 0');
+  });
+
+  it('text statements inside a bare if survive in annotated text blocks (#10)', () => {
+    const src = `let show = 1;
+let tb = &{
+  if (show > 0) {
+    text(10, 0)\`hello\`;
+  }
+};
+M calc(tb.elementCount * 10) 0`;
+    const main = compile(src);
+    expect(main.layers[0].data).toBe('M 10 0');
+    const annotated = compileAnnotated(src);
+    expect(annotated).toContain('M 10 0');
+  });
+
+  it('stdlib-call blocks carry their commands in annotated mode (#16)', () => {
+    const src = `let disc = @{
+  circle(0, 0, 30);
+};
+disc.drawTo(50, 50);`;
+    const round3 = (s: string) => s.replace(/-?\d+\.\d+/g, (m) => Number(m).toFixed(3));
+    const main = round3(compile(src).layers[0].data);
+    expect(main.length).toBeGreaterThan('M 50 50'.length + 2);
+    const flat = round3(
+      compileAnnotated(src)
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('//'))
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .join(' '),
+    );
+    expect(flat).toContain(main);
+  });
+
+  it('stdlib-call blocks answer queries in annotated mode too (#16)', () => {
+    const src = `let plate = @{
+  rect(0, 0, 60, 40);
+};
+let pieces = plate.union(plate);
+M 0 0`;
+    // boolean ops need non-empty closed blocks — empty annotated blocks
+    // used to throw "first path is empty" here
+    expect(() => compileAnnotated(src)).not.toThrow();
+  });
+});
