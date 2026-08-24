@@ -5674,46 +5674,46 @@ let bodice = @{
   h -84 as segment('hem');
   z as segment('front')
 };
-let ox = 120;
-let oy = 48;
+let originX = 120;
+let originY = 48;
 
 panel.apply {
-  bodice.drawTo(ox, oy);
+  bodice.drawTo(originX, originY);
 }
 
 // One query per name; the layer's color does the explaining.
-let placed = bodice.project(ox, oy);
+let placed = bodice.project(originX, originY);
 fn strokeRun(run) {
   run.drawTo(run.startPoint.x, run.startPoint.y);
 }
 neckRun.apply {
-  for (r in placed.segmentAll('neck')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('neck')) {
+    strokeRun(run);
   }
 }
 shoulderRun.apply {
-  for (r in placed.segmentAll('shoulder')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('shoulder')) {
+    strokeRun(run);
   }
 }
 armholeRun.apply {
-  for (r in placed.segmentAll('armhole')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('armhole')) {
+    strokeRun(run);
   }
 }
 sideRun.apply {
-  for (r in placed.segmentAll('side')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('side')) {
+    strokeRun(run);
   }
 }
 hemRun.apply {
-  for (r in placed.segmentAll('hem')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('hem')) {
+    strokeRun(run);
   }
 }
 frontRun.apply {
-  for (r in placed.segmentAll('front')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('front')) {
+    strokeRun(run);
   }
 }
 
@@ -5809,40 +5809,40 @@ let yokeKnife = @{
   c 40 6 70 2 110 6
 };
 let pieces = bodice.cut(yokeKnife);
-let ox = 130;
+let originX = 130;
 
-for (p in pieces) {
+for (piece in pieces) {
   // Even the layout is label-driven: the neckline-keeper slides up,
   // the other piece slides down.
-  let isYoke = calc(p.segmentAll('neck').length &gt; 0 ? 1 : 0);
-  let oy = calc(isYoke == 1 ? 52 : 74);
+  let isYoke = calc(piece.segmentAll('neck').length &gt; 0 ? 1 : 0);
+  let originY = calc(isYoke == 1 ? 52 : 74);
   panel.apply {
-    M ox oy p.draw()
+    M originX originY piece.draw()
   }
-  let placed = p.project(ox, oy);
+  let placed = piece.project(originX, originY);
   // Who am I? The labels answer.
   let name = 'the body - it kept the hem';
   if (placed.segmentAll('neck').length &gt; 0) {
     name = 'the yoke - it kept the neckline';
   }
   neckRun.apply {
-    for (r in placed.segmentAll('neck')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('neck')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
   hemRun.apply {
-    for (r in placed.segmentAll('hem')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('hem')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
-  let pb = placed.boundingBox();
-  let ly = calc(pb.y + pb.height / 2);
+  let placedBounds = placed.boundingBox();
+  let labelY = calc(placedBounds.y + placedBounds.height / 2);
   leaders.apply {
-    M calc(pb.x + pb.width + 5) ly
-    L 262 ly
+    M calc(placedBounds.x + placedBounds.width + 5) labelY
+    L 262 labelY
   }
   captions.apply {
-    text(268, calc(ly + 3))\`\${name}\`;
+    text(268, calc(labelY + 3))\`\${name}\`;
   }
 }
 </code>
@@ -5928,13 +5928,13 @@ let yokeKnife = @{
 };
 let pieces = bodice.cut(yokeKnife);
 
-for (p in pieces) {
-  let placedProbe = p.project(0, 0);
+for (piece in pieces) {
+  let placedProbe = piece.project(0, 0);
   // Only the body piece gets the allowance treatment here.
   if (placedProbe.segmentAll('hem').length &gt; 0) {
-    let placed = p.project(150, 28);
+    let placed = piece.project(150, 28);
     panel.apply {
-      M 150 28 p.draw()
+      M 150 28 piece.draw()
     }
     // The cutting line: the same outline, pushed out by the allowance.
     let allow = placed.offset(7);
@@ -5943,8 +5943,8 @@ for (p in pieces) {
     }
     // Labels survive offset: the allowance still knows its side seam.
     sideRun.apply {
-      for (r in allow.segmentAll('side')) {
-        r.drawTo(r.startPoint.x, r.startPoint.y);
+      for (run in allow.segmentAll('side')) {
+        run.drawTo(run.startPoint.x, run.startPoint.y);
       }
     }
   }
@@ -6020,27 +6020,27 @@ let yokeKnife = @{
   c 40 6 70 2 110 6
 };
 let pieces = bodice.cut(yokeKnife);
-let ox = 150;
+let originX = 150;
 
 // One tick crossing the seam at normalized fraction u.
-fn tick(seam, u) {
-  let e0 = seam.get(0);
-  let e1 = seam.get(1);
+fn tick(seam, fraction) {
+  let seamStart = seam.get(0);
+  let seamEnd = seam.get(1);
   // Normalize: walk the seam left-to-right no matter how it runs.
-  let t = calc(e0.x &gt; e1.x ? 1 - u : u);
-  let s = seam.get(t);
-  let n = seam.normal(t);
-  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
-  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+  let t = calc(seamStart.x &gt; seamEnd.x ? 1 - fraction : fraction);
+  let tickPoint = seam.get(t);
+  let tickNormal = seam.normal(t);
+  M calc(tickPoint.x - cos(tickNormal.angle) * 5) calc(tickPoint.y - sin(tickNormal.angle) * 5)
+  L calc(tickPoint.x + cos(tickNormal.angle) * 5) calc(tickPoint.y + sin(tickNormal.angle) * 5)
 }
 
-for (p in pieces) {
+for (piece in pieces) {
   // Label-driven layout, as in the yoke split.
-  let oy = calc(p.segmentAll('neck').length &gt; 0 ? 48 : 78);
+  let originY = calc(piece.segmentAll('neck').length &gt; 0 ? 48 : 78);
   panel.apply {
-    M ox oy p.draw()
+    M originX originY piece.draw()
   }
-  let placed = p.project(ox, oy);
+  let placed = piece.project(originX, originY);
   notches.apply {
     for (seam in placed.segmentAll('cut')) {
       tick(seam, 0.3);
@@ -6139,29 +6139,29 @@ let yokeKnife = @{
 };
 let pieces = bodice.cut(yokeKnife);
 
-fn tick(seam, u) {
-  let e0 = seam.get(0);
-  let e1 = seam.get(1);
-  let t = calc(e0.x &gt; e1.x ? 1 - u : u);
-  let s = seam.get(t);
-  let n = seam.normal(t);
-  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
-  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+fn tick(seam, fraction) {
+  let seamStart = seam.get(0);
+  let seamEnd = seam.get(1);
+  let t = calc(seamStart.x &gt; seamEnd.x ? 1 - fraction : fraction);
+  let tickPoint = seam.get(t);
+  let tickNormal = seam.normal(t);
+  M calc(tickPoint.x - cos(tickNormal.angle) * 5) calc(tickPoint.y - sin(tickNormal.angle) * 5)
+  L calc(tickPoint.x + cos(tickNormal.angle) * 5) calc(tickPoint.y + sin(tickNormal.angle) * 5)
 }
 
-for (p in pieces) {
+for (piece in pieces) {
   // Lay pieces out by bounding box: yoke on the left, body on the right,
   // tops aligned — no knowledge of piece order required.
-  let bb = p.boundingBox();
+  let bounds = piece.boundingBox();
   // Identity comes from the labels, never from coordinates: whoever
   // kept the neckline is the yoke.
-  let isYoke = calc(p.segmentAll('neck').length &gt; 0 ? 1 : 0);
-  let tx = calc(isYoke == 1 ? 90 : 270);
-  let px = calc(tx - bb.x);
-  let py = calc(64 - bb.y);
-  let placed = p.project(px, py);
+  let isYoke = calc(piece.segmentAll('neck').length &gt; 0 ? 1 : 0);
+  let targetX = calc(isYoke == 1 ? 90 : 270);
+  let placeX = calc(targetX - bounds.x);
+  let placeY = calc(64 - bounds.y);
+  let placed = piece.project(placeX, placeY);
   panel.apply {
-    M px py p.draw()
+    M placeX placeY piece.draw()
   }
   // Allowance on the body panel (see the post for the yoke caveat).
   if (isYoke == 0) {
@@ -6178,22 +6178,22 @@ for (p in pieces) {
     }
   }
   // Grainline: a double-headed vertical arrow at the piece's center.
-  let pb = placed.boundingBox();
-  let gx = calc(pb.x + pb.width / 2);
-  let gy = calc(pb.y + pb.height / 2);
-  let gl = calc(max(16, pb.height * 0.28));
+  let placedBounds = placed.boundingBox();
+  let grainX = calc(placedBounds.x + placedBounds.width / 2);
+  let grainY = calc(placedBounds.y + placedBounds.height / 2);
+  let grainHalf = calc(max(16, placedBounds.height * 0.28));
   grain.apply {
-    M gx calc(gy - gl)
-    L gx calc(gy + gl)
-    M calc(gx - 4) calc(gy - gl + 6)
-    L gx calc(gy - gl)
-    L calc(gx + 4) calc(gy - gl + 6)
-    M calc(gx - 4) calc(gy + gl - 6)
-    L gx calc(gy + gl)
-    L calc(gx + 4) calc(gy + gl - 6)
+    M grainX calc(grainY - grainHalf)
+    L grainX calc(grainY + grainHalf)
+    M calc(grainX - 4) calc(grainY - grainHalf + 6)
+    L grainX calc(grainY - grainHalf)
+    L calc(grainX + 4) calc(grainY - grainHalf + 6)
+    M calc(grainX - 4) calc(grainY + grainHalf - 6)
+    L grainX calc(grainY + grainHalf)
+    L calc(grainX + 4) calc(grainY + grainHalf - 6)
   }
   names.apply {
-    text(calc(pb.x + pb.width / 2), calc(pb.y + pb.height + 24))\`\${isYoke == 1 ? 'YOKE - cut 1 on fold' : 'BODY - cut 1 on fold'}\`;
+    text(calc(placedBounds.x + placedBounds.width / 2), calc(placedBounds.y + placedBounds.height + 24))\`\${isYoke == 1 ? 'YOKE - cut 1 on fold' : 'BODY - cut 1 on fold'}\`;
   }
 }
 
@@ -6342,14 +6342,14 @@ knifeLayer.apply {
   knife.drawTo(30, 45);
 }
 
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; 80 ? -26 : 26);
-  let px = calc(255 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; 80 ? -26 : 26);
+  let placeX = calc(255 + side);
   pieceLayer.apply {
-    M px 45 p.draw()
+    M placeX 45 piece.draw()
   }
-  let placed = p.project(px, 45);
+  let placed = piece.project(placeX, 45);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -6437,14 +6437,14 @@ knifeLayer.apply {
   nubKnife.drawTo(50, 50);
 }
 
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; 60 ? -22 : 22);
-  let px = calc(290 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; 60 ? -22 : 22);
+  let placeX = calc(290 + side);
   pieceLayer.apply {
-    M px 50 p.draw()
+    M placeX 50 piece.draw()
   }
-  let placed = p.project(px, 50);
+  let placed = piece.project(placeX, 50);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -6528,36 +6528,36 @@ let knives = @{
   c 60 18 118 -18 228 6
 };
 let pieces = plate.cut(knives);
-let ox = 141;
-let oy = 40;
+let originX = 141;
+let originY = 40;
 
 let plateBB = plate.boundingBox();
-let pcx = calc(plateBB.x + plateBB.width / 2);
-let pcy = calc(plateBB.y + plateBB.height / 2);
-for (p in pieces) {
+let plateCenterX = calc(plateBB.x + plateBB.width / 2);
+let plateCenterY = calc(plateBB.y + plateBB.height / 2);
+for (piece in pieces) {
   // Small drift along the ray to each piece's bounding-box center so
   // every edge shows.
-  let bb = p.boundingBox();
-  let dx = calc(bb.x + bb.width / 2 - pcx);
-  let dy = calc(bb.y + bb.height / 2 - pcy);
+  let bounds = piece.boundingBox();
+  let dx = calc(bounds.x + bounds.width / 2 - plateCenterX);
+  let dy = calc(bounds.y + bounds.height / 2 - plateCenterY);
   let len = calc(sqrt(dx * dx + dy * dy) + 0.001);
-  let px = calc(ox + dx / len * 10);
-  let py = calc(oy + dy / len * 10);
-  let placed = p.project(px, py);
+  let placeX = calc(originX + dx / len * 10);
+  let placeY = calc(originY + dy / len * 10);
+  let placed = piece.project(placeX, placeY);
   // The classification: did this piece keep any of the rim?
   if (placed.segmentAll('rim').length &gt; 0) {
     framePieces.apply {
-      M px py p.draw()
+      M placeX placeY piece.draw()
     }
     // Show the inherited label riding on the piece: stroke its rim.
     rimRuns.apply {
-      for (r in placed.segmentAll('rim')) {
-        r.drawTo(r.startPoint.x, r.startPoint.y);
+      for (run in placed.segmentAll('rim')) {
+        run.drawTo(run.startPoint.x, run.startPoint.y);
       }
     }
   } else {
     middlePieces.apply {
-      M px py p.draw()
+      M placeX placeY piece.draw()
     }
   }
 }
@@ -6633,14 +6633,14 @@ let knife = @{
 let pieces = plate.cut(knife);
 let gap = 64;
 
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; 92 ? 0 - gap / 2 : gap / 2);
-  let px = calc(240 - 85 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; 92 ? 0 - gap / 2 : gap / 2);
+  let placeX = calc(240 - 85 + side);
   pieceLayer.apply {
-    M px 40 p.draw()
+    M placeX 40 piece.draw()
   }
-  let placed = p.project(px, 40);
+  let placed = piece.project(placeX, 40);
   markLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       for (op in seam.partition(3)) {
@@ -6764,39 +6764,39 @@ let knives = @{
   c 60 18 118 -18 228 6
 };
 let pieces = plate.cut(knives);
-let ox = 42;
-let oy = 52;
+let originX = 42;
+let originY = 52;
 
 let plateBB = plate.boundingBox();
-let pcx = calc(plateBB.x + plateBB.width / 2);
-let pcy = calc(plateBB.y + plateBB.height / 2);
-for ([p, i] in pieces) {
-  let bb = p.boundingBox();
-  let cx = calc(bb.x + bb.width / 2);
-  let cy = calc(bb.y + bb.height / 2);
+let plateCenterX = calc(plateBB.x + plateBB.width / 2);
+let plateCenterY = calc(plateBB.y + plateBB.height / 2);
+for ([piece, i] in pieces) {
+  let bounds = piece.boundingBox();
+  let pieceCenterX = calc(bounds.x + bounds.width / 2);
+  let pieceCenterY = calc(bounds.y + bounds.height / 2);
   // The piece that kept no rim is the missing one — skip it.
-  if (p.segmentAll('rim').length &gt; 0) {
+  if (piece.segmentAll('rim').length &gt; 0) {
     // Spin in place around the piece's own bounding-box center:
     // frame-preserving, so no pivot bookkeeping — then drift outward
     // with a hashed shove.
-    let spun = p.rotate(hashRange(i, -0.22, 0.22), Point(cx, cy));
-    let dx = calc((cx - pcx) / pcx * 26 + hashRange(i, -8, 8, 7));
-    let dy = calc((cy - pcy) / pcy * 26 + hashRange(i, -8, 8, 13));
-    let px = calc(ox + dx);
-    let py = calc(oy + dy);
+    let spun = piece.rotate(hashRange(i, -0.22, 0.22), Point(pieceCenterX, pieceCenterY));
+    let dx = calc((pieceCenterX - plateCenterX) / plateCenterX * 26 + hashRange(i, -8, 8, 7));
+    let dy = calc((pieceCenterY - plateCenterY) / plateCenterY * 26 + hashRange(i, -8, 8, 13));
+    let placeX = calc(originX + dx);
+    let placeY = calc(originY + dy);
     if (calc(i % 3) == 0) {
       shard0.apply {
-        M px py spun.draw()
+        M placeX placeY spun.draw()
       }
     }
     if (calc(i % 3) == 1) {
       shard1.apply {
-        M px py spun.draw()
+        M placeX placeY spun.draw()
       }
     }
     if (calc(i % 3) == 2) {
       shard2.apply {
-        M px py spun.draw()
+        M placeX placeY spun.draw()
       }
     }
   }
@@ -6810,8 +6810,8 @@ lid.apply {
       112,
       8);
 }
-for ([p, i] in pieces) {
-  let mini = p.scale(0.44, 0.44);
+for ([piece, i] in pieces) {
+  let mini = piece.scale(0.44, 0.44);
   if (calc(i % 3) == 0) {
     lid0.apply {
       M 361 43 mini.draw()
@@ -6980,23 +6980,23 @@ let pieces = plate.cut(knife);
 
 // Left: pieces drawn at one shared position — the plate reassembles.
 pieceLayer.apply {
-  for (p in pieces) {
-    M 50 70 p.draw()
+  for (piece in pieces) {
+    M 50 70 piece.draw()
   }
 }
 
 // Right: same pieces nudged apart, and each one is asked for its own
 // healed seam — two amber curves, one per piece.
-let kx = 88;
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; kx ? -9 : 9);
-  let px = calc(290 + side);
+let knifeX = 88;
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; knifeX ? -9 : 9);
+  let placeX = calc(290 + side);
   pieceLayer.apply {
-    M px 70 p.draw()
+    M placeX 70 piece.draw()
   }
   // The projected form answers queries in absolute coordinates.
-  let placed = p.project(px, 70);
+  let placed = piece.project(placeX, 70);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -7091,32 +7091,32 @@ let creases = @{
   l 0 126
 };
 let panels = card.cut(creases);
-let ox = 96;
-let oy = 48;
+let originX = 96;
+let originY = 48;
 
 panelLayer.apply {
-  for (p in panels) {
-    M ox oy p.draw()
+  for (piece in panels) {
+    M originX originY piece.draw()
   }
 }
 
 // The original outline is the cut line: scissors follow the solid path.
 cutLayer.apply {
-  card.drawTo(ox, oy);
+  card.drawTo(originX, originY);
 }
 
 // Every seam the cut healed is a fold line: the dashed style comes from
 // the layer, so the whole group is decorated in one pass. Each interior
 // fold is shared by two panels — stroke it once by letting every panel
 // own only the seams on its right-hand side.
-for (p in panels) {
-  let placed = p.project(ox, oy);
-  let bb = placed.boundingBox();
-  let cx = calc(bb.x + bb.width / 2);
+for (piece in panels) {
+  let placed = piece.project(originX, originY);
+  let bounds = placed.boundingBox();
+  let panelCenterX = calc(bounds.x + bounds.width / 2);
   foldLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       let mid = seam.get(0.5);
-      if (mid.x &gt; cx) {
+      if (mid.x &gt; panelCenterX) {
         seam.drawTo(seam.startPoint.x, seam.startPoint.y);
       }
     }
@@ -7194,37 +7194,37 @@ let pieces = plate.cut(knife);
 // Pull the two pieces apart so the tabs have room to show.
 let plateBB = plate.boundingBox();
 let plateCx = calc(plateBB.x + plateBB.width / 2);
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; plateCx ? -34 : 34);
-  let px = calc(165 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; plateCx ? -34 : 34);
+  let placeX = calc(165 + side);
   pieceLayer.apply {
-    M px 55 p.draw()
+    M placeX 55 piece.draw()
   }
   // Tabs go on the left piece only.
   if (side &lt; 0) {
-    let placed = p.project(px, 55);
-    let bb2 = placed.boundingBox();
-    let cx = calc(bb2.x + bb2.width / 2);
-    let cy = calc(bb2.y + bb2.height / 2);
+    let placed = piece.project(placeX, 55);
+    let placedBounds = placed.boundingBox();
+    let pieceCenterX = calc(placedBounds.x + placedBounds.width / 2);
+    let pieceCenterY = calc(placedBounds.y + placedBounds.height / 2);
     tabLayer.apply {
       for (seam in placed.segmentAll('cut')) {
         // Walk the seam in sevenths; every other interval grows a tab.
         for (k in 0..2) {
           let t0 = calc((k * 2 + 1) / 7);
           let t1 = calc((k * 2 + 2) / 7);
-          let a = seam.get(t0);
-          let b = seam.get(t1);
-          let n = seam.normal(calc((t0 + t1) / 2));
+          let tabStart = seam.get(t0);
+          let tabEnd = seam.get(t1);
+          let seamNormal = seam.normal(calc((t0 + t1) / 2));
           // Point the tab away from the piece's own center.
-          let toCenter = calc(cos(n.angle) * (cx - n.point.x) + sin(n.angle) * (cy - n.point.y));
-          let na = calc(toCenter &gt; 0 ? n.angle + PI() : n.angle);
-          let ta = calc(na + PI() / 2);
-          // Trapezoid: seam edge a→b, outer edge tapered inward by 4.
-          M calc(a.x) calc(a.y)
-          L calc(a.x + cos(na) * 13 + cos(ta) * 4) calc(a.y + sin(na) * 13 + sin(ta) * 4)
-          L calc(b.x + cos(na) * 13 - cos(ta) * 4) calc(b.y + sin(na) * 13 - sin(ta) * 4)
-          L calc(b.x) calc(b.y)
+          let toCenter = calc(cos(seamNormal.angle) * (pieceCenterX - seamNormal.point.x) + sin(seamNormal.angle) * (pieceCenterY - seamNormal.point.y));
+          let outwardAngle = calc(toCenter &gt; 0 ? seamNormal.angle + PI() : seamNormal.angle);
+          let edgeAngle = calc(outwardAngle + PI() / 2);
+          // Trapezoid: seam edge tabStart→tabEnd, outer edge tapered inward by 4.
+          M calc(tabStart.x) calc(tabStart.y)
+          L calc(tabStart.x + cos(outwardAngle) * 13 + cos(edgeAngle) * 4) calc(tabStart.y + sin(outwardAngle) * 13 + sin(edgeAngle) * 4)
+          L calc(tabEnd.x + cos(outwardAngle) * 13 - cos(edgeAngle) * 4) calc(tabEnd.y + sin(outwardAngle) * 13 - sin(edgeAngle) * 4)
+          L calc(tabEnd.x) calc(tabEnd.y)
         }
       }
     }
@@ -7313,15 +7313,15 @@ let knife = @{
 };
 let pieces = house.cut(knife);
 
-for (p in pieces) {
+for (piece in pieces) {
   // The labels place the pieces too: the roof piece slides up, the
   // other slides down — no coordinate checks anywhere.
-  let roofRuns = p.segmentAll('roof');
-  let oy = calc(roofRuns.length &gt; 0 ? 66 : 90);
+  let roofRuns = piece.segmentAll('roof');
+  let originY = calc(roofRuns.length &gt; 0 ? 66 : 90);
   pieceLayer.apply {
-    M 120 oy p.draw()
+    M 120 originY piece.draw()
   }
-  let placed = p.project(120, oy);
+  let placed = piece.project(120, originY);
   let baseRuns = placed.segmentAll('base');
   roofRuns = placed.segmentAll('roof');
   roofLayer.apply {
@@ -7336,13 +7336,13 @@ for (p in pieces) {
   }
   // Each piece reports which of the plate's names it still owns,
   // color-keyed to the strokes.
-  let pb = placed.boundingBox();
-  let ly = calc(pb.y + pb.height / 2 + 3);
+  let placedBounds = placed.boundingBox();
+  let labelY = calc(placedBounds.y + placedBounds.height / 2 + 3);
   roofCount.apply {
-    text(310, ly)\`roof \${roofRuns.length}\`;
+    text(310, labelY)\`roof \${roofRuns.length}\`;
   }
   baseCount.apply {
-    text(378, ly)\`base \${baseRuns.length}\`;
+    text(378, labelY)\`base \${baseRuns.length}\`;
   }
 }
 </code>
@@ -7414,29 +7414,29 @@ let knives = @{
   l 180 12
 };
 let pieces = plate.cut(knives);
-let ox = 165;
-let oy = 70;
+let originX = 165;
+let originY = 70;
 
 ghost.apply {
-  plate.drawTo(ox, oy);
+  plate.drawTo(originX, originY);
 }
 
 // Drift each piece along the ray from the plate's bounding-box center
 // to its own.
 let plateBB = plate.boundingBox();
-let pcx = calc(plateBB.x + plateBB.width / 2);
-let pcy = calc(plateBB.y + plateBB.height / 2);
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let dx = calc(bb.x + bb.width / 2 - pcx);
-  let dy = calc(bb.y + bb.height / 2 - pcy);
+let plateCenterX = calc(plateBB.x + plateBB.width / 2);
+let plateCenterY = calc(plateBB.y + plateBB.height / 2);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let dx = calc(bounds.x + bounds.width / 2 - plateCenterX);
+  let dy = calc(bounds.y + bounds.height / 2 - plateCenterY);
   let len = calc(sqrt(dx * dx + dy * dy));
-  let px = calc(ox + dx / len * 34);
-  let py = calc(oy + dy / len * 34);
+  let placeX = calc(originX + dx / len * 34);
+  let placeY = calc(originY + dy / len * 34);
   pieceLayer.apply {
-    M px py p.draw()
+    M placeX placeY piece.draw()
   }
-  let placed = p.project(px, py);
+  let placed = piece.project(placeX, placeY);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -7533,79 +7533,79 @@ let plate = @{
 };
 
 // Three straight knives through the center, 60 degrees apart.
-let kr = 78;
-let c60 = cos(calc(PI() / 3));
-let s60 = sin(calc(PI() / 3));
+let knifeReach = 78;
+let cos60 = cos(calc(PI() / 3));
+let sin60 = sin(calc(PI() / 3));
 let knives = @{
-  m calc(0 - kr) 0
-  l calc(kr * 2) 0
-  m calc(0 - kr * c60 - kr) calc(0 - kr * s60)
-  l calc(kr * 2 * c60) calc(kr * 2 * s60)
-  m 0 calc(0 - kr * 2 * s60)
-  l calc(0 - kr * 2 * c60) calc(kr * 2 * s60)
+  m calc(0 - knifeReach) 0
+  l calc(knifeReach * 2) 0
+  m calc(0 - knifeReach * cos60 - knifeReach) calc(0 - knifeReach * sin60)
+  l calc(knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
+  m 0 calc(0 - knifeReach * 2 * sin60)
+  l calc(0 - knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
 };
 let wedges = plate.cut(knives);
-let ox = 240;
-let oy = 158;
+let originX = 240;
+let originY = 158;
 
 ghost.apply {
-  plate.drawTo(ox, oy);
+  plate.drawTo(originX, originY);
 }
 
-for (w in wedges) {
+for (wedge in wedges) {
   // Drift outward along the ray to the wedge's bounding-box center.
-  let bb = w.boundingBox();
-  let dx = calc(bb.x + bb.width / 2);
-  let dy = calc(bb.y + bb.height / 2);
+  let bounds = wedge.boundingBox();
+  let dx = calc(bounds.x + bounds.width / 2);
+  let dy = calc(bounds.y + bounds.height / 2);
   let len = calc(sqrt(dx * dx + dy * dy));
-  let px = calc(ox + dx / len * 44);
-  let py = calc(oy + dy / len * 44);
+  let placeX = calc(originX + dx / len * 44);
+  let placeY = calc(originY + dy / len * 44);
   wedgeLayer.apply {
-    M px py w.draw()
+    M placeX placeY wedge.draw()
   }
-  let placed = w.project(px, py);
-  let pb = placed.boundingBox();
-  let wcx = calc(pb.x + pb.width / 2);
-  let wcy = calc(pb.y + pb.height / 2);
+  let placed = wedge.project(placeX, placeY);
+  let placedBounds = placed.boundingBox();
+  let wedgeCenterX = calc(placedBounds.x + placedBounds.width / 2);
+  let wedgeCenterY = calc(placedBounds.y + placedBounds.height / 2);
   // A wedge's two radial edges are adjacent and share the 'cut' label,
   // so they come back MERGED into one V-shaped run — walk its halves.
   for (seam in placed.segmentAll('cut')) {
-    for (h in 0..1) {
-      let t0 = calc(h * 0.5);
-      let t1 = calc(h * 0.5 + 0.5);
-      let m0 = seam.get(calc(t0 + 0.25));
+    for (halfIdx in 0..1) {
+      let t0 = calc(halfIdx * 0.5);
+      let t1 = calc(halfIdx * 0.5 + 0.5);
+      let halfMid = seam.get(calc(t0 + 0.25));
       // Which side of the centroid ray does this half sit on?
-      let cross = calc((wcx - px) * (m0.y - py) - (wcy - py) * (m0.x - px));
+      let cross = calc((wedgeCenterX - placeX) * (halfMid.y - placeY) - (wedgeCenterY - placeY) * (halfMid.x - placeX));
       if (cross &gt; 0) {
         // Clockwise edge: glue tab, pointing away from the wedge.
-        let a = seam.get(calc(t0 + 0.06));
-        let b = seam.get(calc(t1 - 0.06));
-        let n = seam.normal(calc(t0 + 0.25));
-        let toCenter = calc(cos(n.angle) * (wcx - m0.x) + sin(n.angle) * (wcy - m0.y));
-        let na = calc(toCenter &gt; 0 ? n.angle + PI() : n.angle);
-        let ta = calc(na + PI() / 2);
+        let tabStart = seam.get(calc(t0 + 0.06));
+        let tabEnd = seam.get(calc(t1 - 0.06));
+        let seamNormal = seam.normal(calc(t0 + 0.25));
+        let toCenter = calc(cos(seamNormal.angle) * (wedgeCenterX - halfMid.x) + sin(seamNormal.angle) * (wedgeCenterY - halfMid.y));
+        let outwardAngle = calc(toCenter &gt; 0 ? seamNormal.angle + PI() : seamNormal.angle);
+        let edgeAngle = calc(outwardAngle + PI() / 2);
         tabLayer.apply {
-          M calc(a.x) calc(a.y)
-          L calc(a.x + cos(na) * 10 + cos(ta) * 4) calc(a.y + sin(na) * 10 + sin(ta) * 4)
-          L calc(b.x + cos(na) * 10 - cos(ta) * 4) calc(b.y + sin(na) * 10 - sin(ta) * 4)
-          L calc(b.x) calc(b.y)
+          M calc(tabStart.x) calc(tabStart.y)
+          L calc(tabStart.x + cos(outwardAngle) * 10 + cos(edgeAngle) * 4) calc(tabStart.y + sin(outwardAngle) * 10 + sin(edgeAngle) * 4)
+          L calc(tabEnd.x + cos(outwardAngle) * 10 - cos(edgeAngle) * 4) calc(tabEnd.y + sin(outwardAngle) * 10 - sin(edgeAngle) * 4)
+          L calc(tabEnd.x) calc(tabEnd.y)
         }
       } else {
         // Counter-clockwise edge: fold line for the neighbor's tab.
         let half = seam.subPath(t0, t1);
-        let s0 = seam.get(t0);
+        let halfStart = seam.get(t0);
         foldLayer.apply {
-          half.drawTo(s0.x, s0.y);
+          half.drawTo(halfStart.x, halfStart.y);
         }
       }
     }
   }
   // Number by angle around the ring, not by loop order — cut() makes
   // no promise about the order pieces come back in.
-  let ang = calc(atan2(dy, dx) + PI());
-  let num = calc(floor(ang / (PI() / 3)) + 1);
+  let ringAngle = calc(atan2(dy, dx) + PI());
+  let num = calc(floor(ringAngle / (PI() / 3)) + 1);
   numbers.apply {
-    text(wcx, calc(wcy + 3))\`\${num}\`;
+    text(wedgeCenterX, calc(wedgeCenterY + 3))\`\${num}\`;
   }
 }
 
@@ -7725,27 +7725,27 @@ let disc = @{
   circle(0, 0, 88);
 };
 // Four straight knives through the center, 45 degrees apart.
-let kr = 104;
-let c45 = cos(calc(PI() / 4));
+let knifeReach = 104;
+let cos45 = cos(calc(PI() / 4));
 let knives = @{
-  m calc(0 - kr) 0
-  l calc(kr * 2) 0
-  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
-  l calc(kr * 2 * c45) calc(kr * 2 * c45)
-  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
-  l 0 calc(kr * 2)
-  m calc(kr * c45) calc(0 - kr - kr * c45)
-  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - knifeReach) 0
+  l calc(knifeReach * 2) 0
+  m calc(0 - knifeReach - knifeReach * cos45) calc(0 - knifeReach * cos45)
+  l calc(knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
+  m calc(0 - knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l 0 calc(knifeReach * 2)
+  m calc(knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l calc(0 - knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
 };
 let wedges = disc.cut(knives);
-let ox = 240;
-let oy = 122;
+let originX = 240;
+let originY = 122;
 
-for (w in wedges) {
+for (wedge in wedges) {
   panes.apply {
-    M ox oy w.draw()
+    M originX originY wedge.draw()
   }
-  let placed = w.project(ox, oy);
+  let placed = wedge.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -7830,13 +7830,13 @@ let knives = @{
   l 0 170
 };
 
-fn cameWindow(disc, cx, cy) {
+fn cameWindow(disc, centerX, centerY) {
   let pieces = disc.cut(knives);
-  for (p in pieces) {
+  for (piece in pieces) {
     panes.apply {
-      M cx cy p.draw()
+      M centerX centerY piece.draw()
     }
-    let placed = p.project(cx, cy);
+    let placed = piece.project(centerX, centerY);
     // One decoration loop, both windows: stroke the 'cut' group wide.
     leading.apply {
       for (seam in placed.segmentAll('cut')) {
@@ -7919,44 +7919,44 @@ scene.append(glass0,
 let disc = @{
   circle(0, 0, 88);
 };
-let kr = 104;
-let c45 = cos(calc(PI() / 4));
+let knifeReach = 104;
+let cos45 = cos(calc(PI() / 4));
 let knives = @{
-  m calc(0 - kr) 0
-  l calc(kr * 2) 0
-  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
-  l calc(kr * 2 * c45) calc(kr * 2 * c45)
-  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
-  l 0 calc(kr * 2)
-  m calc(kr * c45) calc(0 - kr - kr * c45)
-  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - knifeReach) 0
+  l calc(knifeReach * 2) 0
+  m calc(0 - knifeReach - knifeReach * cos45) calc(0 - knifeReach * cos45)
+  l calc(knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
+  m calc(0 - knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l 0 calc(knifeReach * 2)
+  m calc(knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l calc(0 - knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
 };
 let wedges = disc.cut(knives);
-let ox = 240;
-let oy = 122;
+let originX = 240;
+let originY = 122;
 
 for ([w, i] in wedges) {
   if (calc(i % 4) == 0) {
     glass0.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
   if (calc(i % 4) == 1) {
     glass1.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
   if (calc(i % 4) == 2) {
     glass2.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
   if (calc(i % 4) == 3) {
     glass3.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
-  let placed = w.project(ox, oy);
+  let placed = w.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -8055,20 +8055,20 @@ for (half in halves) {
   // Open the cut along the diagonal: a ±10 nudge perpendicular to it.
   // draw() keeps each half's own placement, so the nudge is all the
   // move there is.
-  let bb = half.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; 240 ? -10 : 10);
+  let bounds = half.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; 240 ? -10 : 10);
   frame.apply {
     M calc(side) calc(0 - side) half.draw()
   }
   let placed = half.project(side, calc(0 - side));
   sillRun.apply {
-    for (r in placed.segmentAll('sill')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('sill')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
   lightRun.apply {
-    for (r in placed.segmentAll('light')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('light')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
 }
@@ -8173,56 +8173,56 @@ let disc = @{
 // Eight spokes from r=36 out past the rim, plus a ring knife that stamps
 // the medallion. The spokes stop short of the ring so the medallion
 // stays whole.
-let c = cos(calc(PI() / 4));
+let cos45 = cos(calc(PI() / 4));
 let knives = @{
   m 36 0
   l 76 0
-  m calc(36 * c - 112) calc(36 * c)
-  l calc(76 * c) calc(76 * c)
-  m calc(0 - 112 * c) calc(36 - 112 * c)
+  m calc(36 * cos45 - 112) calc(36 * cos45)
+  l calc(76 * cos45) calc(76 * cos45)
+  m calc(0 - 112 * cos45) calc(36 - 112 * cos45)
   l 0 76
-  m calc(0 - 36 * c) calc(36 * c - 112)
-  l calc(0 - 76 * c) calc(76 * c)
-  m calc(112 * c - 36) calc(0 - 112 * c)
+  m calc(0 - 36 * cos45) calc(36 * cos45 - 112)
+  l calc(0 - 76 * cos45) calc(76 * cos45)
+  m calc(112 * cos45 - 36) calc(0 - 112 * cos45)
   l -76 0
-  m calc(112 - 36 * c) calc(0 - 36 * c)
-  l calc(0 - 76 * c) calc(0 - 76 * c)
-  m calc(112 * c) calc(112 * c - 36)
+  m calc(112 - 36 * cos45) calc(0 - 36 * cos45)
+  l calc(0 - 76 * cos45) calc(0 - 76 * cos45)
+  m calc(112 * cos45) calc(112 * cos45 - 36)
   l 0 -76
-  m calc(36 * c) calc(112 - 36 * c)
-  l calc(76 * c) calc(0 - 76 * c)
+  m calc(36 * cos45) calc(112 - 36 * cos45)
+  l calc(76 * cos45) calc(0 - 76 * cos45)
   circle(0, 0, 36);
 };
 let panes = disc.cut(knives);
-let ox = 240;
-let oy = 158;
+let originX = 240;
+let originY = 158;
 
 stone.apply {
-  circle(ox, oy, 112);
+  circle(originX, originY, 112);
 }
 
-for ([p, i] in panes) {
-  let placed = p.project(ox, oy);
+for ([piece, i] in panes) {
+  let placed = piece.project(originX, originY);
   // The medallion is the piece that kept none of the rim.
   if (placed.segmentAll('rim').length &gt; 0) {
     if (calc(i % 3) == 0) {
       glass0.apply {
-        M ox oy p.draw()
+        M originX originY piece.draw()
       }
     }
     if (calc(i % 3) == 1) {
       glass1.apply {
-        M ox oy p.draw()
+        M originX originY piece.draw()
       }
     }
     if (calc(i % 3) == 2) {
       glass2.apply {
-        M ox oy p.draw()
+        M originX originY piece.draw()
       }
     }
   } else {
     medallion.apply {
-      M ox oy p.draw()
+      M originX originY piece.draw()
     }
   }
   // Came on every healed seam and on the rim: two groups, one style.

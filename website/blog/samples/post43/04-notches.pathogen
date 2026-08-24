@@ -45,27 +45,27 @@ let yokeKnife = @{
   c 40 6 70 2 110 6
 };
 let pieces = bodice.cut(yokeKnife);
-let ox = 150;
+let originX = 150;
 
 // One tick crossing the seam at normalized fraction u.
-fn tick(seam, u) {
-  let e0 = seam.get(0);
-  let e1 = seam.get(1);
+fn tick(seam, fraction) {
+  let seamStart = seam.get(0);
+  let seamEnd = seam.get(1);
   // Normalize: walk the seam left-to-right no matter how it runs.
-  let t = calc(e0.x > e1.x ? 1 - u : u);
-  let s = seam.get(t);
-  let n = seam.normal(t);
-  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
-  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+  let t = calc(seamStart.x > seamEnd.x ? 1 - fraction : fraction);
+  let tickPoint = seam.get(t);
+  let tickNormal = seam.normal(t);
+  M calc(tickPoint.x - cos(tickNormal.angle) * 5) calc(tickPoint.y - sin(tickNormal.angle) * 5)
+  L calc(tickPoint.x + cos(tickNormal.angle) * 5) calc(tickPoint.y + sin(tickNormal.angle) * 5)
 }
 
-for (p in pieces) {
+for (piece in pieces) {
   // Label-driven layout, as in the yoke split.
-  let oy = calc(p.segmentAll('neck').length > 0 ? 48 : 78);
+  let originY = calc(piece.segmentAll('neck').length > 0 ? 48 : 78);
   panel.apply {
-    M ox oy p.draw()
+    M originX originY piece.draw()
   }
-  let placed = p.project(ox, oy);
+  let placed = piece.project(originX, originY);
   notches.apply {
     for (seam in placed.segmentAll('cut')) {
       tick(seam, 0.3);

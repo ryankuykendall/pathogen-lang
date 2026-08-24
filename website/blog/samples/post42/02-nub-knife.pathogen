@@ -61,14 +61,14 @@ knifeLayer.apply {
   nubKnife.drawTo(50, 50);
 }
 
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 < 60 ? -22 : 22);
-  let px = calc(290 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 < 60 ? -22 : 22);
+  let placeX = calc(290 + side);
   pieceLayer.apply {
-    M px 50 p.draw()
+    M placeX 50 piece.draw()
   }
-  let placed = p.project(px, 50);
+  let placed = piece.project(placeX, 50);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);

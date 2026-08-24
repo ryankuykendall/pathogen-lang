@@ -47,37 +47,37 @@ let pieces = plate.cut(knife);
 // Pull the two pieces apart so the tabs have room to show.
 let plateBB = plate.boundingBox();
 let plateCx = calc(plateBB.x + plateBB.width / 2);
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 < plateCx ? -34 : 34);
-  let px = calc(165 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 < plateCx ? -34 : 34);
+  let placeX = calc(165 + side);
   pieceLayer.apply {
-    M px 55 p.draw()
+    M placeX 55 piece.draw()
   }
   // Tabs go on the left piece only.
   if (side < 0) {
-    let placed = p.project(px, 55);
-    let bb2 = placed.boundingBox();
-    let cx = calc(bb2.x + bb2.width / 2);
-    let cy = calc(bb2.y + bb2.height / 2);
+    let placed = piece.project(placeX, 55);
+    let placedBounds = placed.boundingBox();
+    let pieceCenterX = calc(placedBounds.x + placedBounds.width / 2);
+    let pieceCenterY = calc(placedBounds.y + placedBounds.height / 2);
     tabLayer.apply {
       for (seam in placed.segmentAll('cut')) {
         // Walk the seam in sevenths; every other interval grows a tab.
         for (k in 0..2) {
           let t0 = calc((k * 2 + 1) / 7);
           let t1 = calc((k * 2 + 2) / 7);
-          let a = seam.get(t0);
-          let b = seam.get(t1);
-          let n = seam.normal(calc((t0 + t1) / 2));
+          let tabStart = seam.get(t0);
+          let tabEnd = seam.get(t1);
+          let seamNormal = seam.normal(calc((t0 + t1) / 2));
           // Point the tab away from the piece's own center.
-          let toCenter = calc(cos(n.angle) * (cx - n.point.x) + sin(n.angle) * (cy - n.point.y));
-          let na = calc(toCenter > 0 ? n.angle + PI() : n.angle);
-          let ta = calc(na + PI() / 2);
-          // Trapezoid: seam edge a→b, outer edge tapered inward by 4.
-          M calc(a.x) calc(a.y)
-          L calc(a.x + cos(na) * 13 + cos(ta) * 4) calc(a.y + sin(na) * 13 + sin(ta) * 4)
-          L calc(b.x + cos(na) * 13 - cos(ta) * 4) calc(b.y + sin(na) * 13 - sin(ta) * 4)
-          L calc(b.x) calc(b.y)
+          let toCenter = calc(cos(seamNormal.angle) * (pieceCenterX - seamNormal.point.x) + sin(seamNormal.angle) * (pieceCenterY - seamNormal.point.y));
+          let outwardAngle = calc(toCenter > 0 ? seamNormal.angle + PI() : seamNormal.angle);
+          let edgeAngle = calc(outwardAngle + PI() / 2);
+          // Trapezoid: seam edge tabStart→tabEnd, outer edge tapered inward by 4.
+          M calc(tabStart.x) calc(tabStart.y)
+          L calc(tabStart.x + cos(outwardAngle) * 13 + cos(edgeAngle) * 4) calc(tabStart.y + sin(outwardAngle) * 13 + sin(edgeAngle) * 4)
+          L calc(tabEnd.x + cos(outwardAngle) * 13 - cos(edgeAngle) * 4) calc(tabEnd.y + sin(outwardAngle) * 13 - sin(edgeAngle) * 4)
+          L calc(tabEnd.x) calc(tabEnd.y)
         }
       }
     }

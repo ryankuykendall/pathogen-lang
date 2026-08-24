@@ -52,29 +52,29 @@ let knives = @{
   l 180 12
 };
 let pieces = plate.cut(knives);
-let ox = 165;
-let oy = 70;
+let originX = 165;
+let originY = 70;
 
 ghost.apply {
-  plate.drawTo(ox, oy);
+  plate.drawTo(originX, originY);
 }
 
 // Drift each piece along the ray from the plate's bounding-box center
 // to its own.
 let plateBB = plate.boundingBox();
-let pcx = calc(plateBB.x + plateBB.width / 2);
-let pcy = calc(plateBB.y + plateBB.height / 2);
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let dx = calc(bb.x + bb.width / 2 - pcx);
-  let dy = calc(bb.y + bb.height / 2 - pcy);
+let plateCenterX = calc(plateBB.x + plateBB.width / 2);
+let plateCenterY = calc(plateBB.y + plateBB.height / 2);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let dx = calc(bounds.x + bounds.width / 2 - plateCenterX);
+  let dy = calc(bounds.y + bounds.height / 2 - plateCenterY);
   let len = calc(sqrt(dx * dx + dy * dy));
-  let px = calc(ox + dx / len * 34);
-  let py = calc(oy + dy / len * 34);
+  let placeX = calc(originX + dx / len * 34);
+  let placeY = calc(originY + dy / len * 34);
   pieceLayer.apply {
-    M px py p.draw()
+    M placeX placeY piece.draw()
   }
-  let placed = p.project(px, py);
+  let placed = piece.project(placeX, placeY);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);

@@ -53,23 +53,23 @@ let pieces = plate.cut(knife);
 
 // Left: pieces drawn at one shared position — the plate reassembles.
 pieceLayer.apply {
-  for (p in pieces) {
-    M 50 70 p.draw()
+  for (piece in pieces) {
+    M 50 70 piece.draw()
   }
 }
 
 // Right: same pieces nudged apart, and each one is asked for its own
 // healed seam — two amber curves, one per piece.
-let kx = 88;
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 < kx ? -9 : 9);
-  let px = calc(290 + side);
+let knifeX = 88;
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 < knifeX ? -9 : 9);
+  let placeX = calc(290 + side);
   pieceLayer.apply {
-    M px 70 p.draw()
+    M placeX 70 piece.draw()
   }
   // The projected form answers queries in absolute coordinates.
-  let placed = p.project(px, 70);
+  let placed = piece.project(placeX, 70);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);

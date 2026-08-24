@@ -59,13 +59,13 @@ let knives = @{
   l 0 170
 };
 
-fn cameWindow(disc, cx, cy) {
+fn cameWindow(disc, centerX, centerY) {
   let pieces = disc.cut(knives);
-  for (p in pieces) {
+  for (piece in pieces) {
     panes.apply {
-      M cx cy p.draw()
+      M centerX centerY piece.draw()
     }
-    let placed = p.project(cx, cy);
+    let placed = piece.project(centerX, centerY);
     // One decoration loop, both windows: stroke the 'cut' group wide.
     leading.apply {
       for (seam in placed.segmentAll('cut')) {

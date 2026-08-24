@@ -69,56 +69,56 @@ let disc = @{
 // Eight spokes from r=36 out past the rim, plus a ring knife that stamps
 // the medallion. The spokes stop short of the ring so the medallion
 // stays whole.
-let c = cos(calc(PI() / 4));
+let cos45 = cos(calc(PI() / 4));
 let knives = @{
   m 36 0
   l 76 0
-  m calc(36 * c - 112) calc(36 * c)
-  l calc(76 * c) calc(76 * c)
-  m calc(0 - 112 * c) calc(36 - 112 * c)
+  m calc(36 * cos45 - 112) calc(36 * cos45)
+  l calc(76 * cos45) calc(76 * cos45)
+  m calc(0 - 112 * cos45) calc(36 - 112 * cos45)
   l 0 76
-  m calc(0 - 36 * c) calc(36 * c - 112)
-  l calc(0 - 76 * c) calc(76 * c)
-  m calc(112 * c - 36) calc(0 - 112 * c)
+  m calc(0 - 36 * cos45) calc(36 * cos45 - 112)
+  l calc(0 - 76 * cos45) calc(76 * cos45)
+  m calc(112 * cos45 - 36) calc(0 - 112 * cos45)
   l -76 0
-  m calc(112 - 36 * c) calc(0 - 36 * c)
-  l calc(0 - 76 * c) calc(0 - 76 * c)
-  m calc(112 * c) calc(112 * c - 36)
+  m calc(112 - 36 * cos45) calc(0 - 36 * cos45)
+  l calc(0 - 76 * cos45) calc(0 - 76 * cos45)
+  m calc(112 * cos45) calc(112 * cos45 - 36)
   l 0 -76
-  m calc(36 * c) calc(112 - 36 * c)
-  l calc(76 * c) calc(0 - 76 * c)
+  m calc(36 * cos45) calc(112 - 36 * cos45)
+  l calc(76 * cos45) calc(0 - 76 * cos45)
   circle(0, 0, 36);
 };
 let panes = disc.cut(knives);
-let ox = 240;
-let oy = 158;
+let originX = 240;
+let originY = 158;
 
 stone.apply {
-  circle(ox, oy, 112);
+  circle(originX, originY, 112);
 }
 
-for ([p, i] in panes) {
-  let placed = p.project(ox, oy);
+for ([piece, i] in panes) {
+  let placed = piece.project(originX, originY);
   // The medallion is the piece that kept none of the rim.
   if (placed.segmentAll('rim').length > 0) {
     if (calc(i % 3) == 0) {
       glass0.apply {
-        M ox oy p.draw()
+        M originX originY piece.draw()
       }
     }
     if (calc(i % 3) == 1) {
       glass1.apply {
-        M ox oy p.draw()
+        M originX originY piece.draw()
       }
     }
     if (calc(i % 3) == 2) {
       glass2.apply {
-        M ox oy p.draw()
+        M originX originY piece.draw()
       }
     }
   } else {
     medallion.apply {
-      M ox oy p.draw()
+      M originX originY piece.draw()
     }
   }
   // Came on every healed seam and on the rim: two groups, one style.

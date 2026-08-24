@@ -403,14 +403,14 @@ knifeLayer.apply {
   knife.drawTo(30, 45);
 }
 
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; 80 ? -26 : 26);
-  let px = calc(255 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; 80 ? -26 : 26);
+  let placeX = calc(255 + side);
   pieceLayer.apply {
-    M px 45 p.draw()
+    M placeX 45 piece.draw()
   }
-  let placed = p.project(px, 45);
+  let placed = piece.project(placeX, 45);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -498,14 +498,14 @@ knifeLayer.apply {
   nubKnife.drawTo(50, 50);
 }
 
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; 60 ? -22 : 22);
-  let px = calc(290 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; 60 ? -22 : 22);
+  let placeX = calc(290 + side);
   pieceLayer.apply {
-    M px 50 p.draw()
+    M placeX 50 piece.draw()
   }
-  let placed = p.project(px, 50);
+  let placed = piece.project(placeX, 50);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -589,36 +589,36 @@ let knives = @{
   c 60 18 118 -18 228 6
 };
 let pieces = plate.cut(knives);
-let ox = 141;
-let oy = 40;
+let originX = 141;
+let originY = 40;
 
 let plateBB = plate.boundingBox();
-let pcx = calc(plateBB.x + plateBB.width / 2);
-let pcy = calc(plateBB.y + plateBB.height / 2);
-for (p in pieces) {
+let plateCenterX = calc(plateBB.x + plateBB.width / 2);
+let plateCenterY = calc(plateBB.y + plateBB.height / 2);
+for (piece in pieces) {
   // Small drift along the ray to each piece's bounding-box center so
   // every edge shows.
-  let bb = p.boundingBox();
-  let dx = calc(bb.x + bb.width / 2 - pcx);
-  let dy = calc(bb.y + bb.height / 2 - pcy);
+  let bounds = piece.boundingBox();
+  let dx = calc(bounds.x + bounds.width / 2 - plateCenterX);
+  let dy = calc(bounds.y + bounds.height / 2 - plateCenterY);
   let len = calc(sqrt(dx * dx + dy * dy) + 0.001);
-  let px = calc(ox + dx / len * 10);
-  let py = calc(oy + dy / len * 10);
-  let placed = p.project(px, py);
+  let placeX = calc(originX + dx / len * 10);
+  let placeY = calc(originY + dy / len * 10);
+  let placed = piece.project(placeX, placeY);
   // The classification: did this piece keep any of the rim?
   if (placed.segmentAll('rim').length &gt; 0) {
     framePieces.apply {
-      M px py p.draw()
+      M placeX placeY piece.draw()
     }
     // Show the inherited label riding on the piece: stroke its rim.
     rimRuns.apply {
-      for (r in placed.segmentAll('rim')) {
-        r.drawTo(r.startPoint.x, r.startPoint.y);
+      for (run in placed.segmentAll('rim')) {
+        run.drawTo(run.startPoint.x, run.startPoint.y);
       }
     }
   } else {
     middlePieces.apply {
-      M px py p.draw()
+      M placeX placeY piece.draw()
     }
   }
 }
@@ -694,14 +694,14 @@ let knife = @{
 let pieces = plate.cut(knife);
 let gap = 64;
 
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; 92 ? 0 - gap / 2 : gap / 2);
-  let px = calc(240 - 85 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; 92 ? 0 - gap / 2 : gap / 2);
+  let placeX = calc(240 - 85 + side);
   pieceLayer.apply {
-    M px 40 p.draw()
+    M placeX 40 piece.draw()
   }
-  let placed = p.project(px, 40);
+  let placed = piece.project(placeX, 40);
   markLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       for (op in seam.partition(3)) {
@@ -825,39 +825,39 @@ let knives = @{
   c 60 18 118 -18 228 6
 };
 let pieces = plate.cut(knives);
-let ox = 42;
-let oy = 52;
+let originX = 42;
+let originY = 52;
 
 let plateBB = plate.boundingBox();
-let pcx = calc(plateBB.x + plateBB.width / 2);
-let pcy = calc(plateBB.y + plateBB.height / 2);
-for ([p, i] in pieces) {
-  let bb = p.boundingBox();
-  let cx = calc(bb.x + bb.width / 2);
-  let cy = calc(bb.y + bb.height / 2);
+let plateCenterX = calc(plateBB.x + plateBB.width / 2);
+let plateCenterY = calc(plateBB.y + plateBB.height / 2);
+for ([piece, i] in pieces) {
+  let bounds = piece.boundingBox();
+  let pieceCenterX = calc(bounds.x + bounds.width / 2);
+  let pieceCenterY = calc(bounds.y + bounds.height / 2);
   // The piece that kept no rim is the missing one — skip it.
-  if (p.segmentAll('rim').length &gt; 0) {
+  if (piece.segmentAll('rim').length &gt; 0) {
     // Spin in place around the piece's own bounding-box center:
     // frame-preserving, so no pivot bookkeeping — then drift outward
     // with a hashed shove.
-    let spun = p.rotate(hashRange(i, -0.22, 0.22), Point(cx, cy));
-    let dx = calc((cx - pcx) / pcx * 26 + hashRange(i, -8, 8, 7));
-    let dy = calc((cy - pcy) / pcy * 26 + hashRange(i, -8, 8, 13));
-    let px = calc(ox + dx);
-    let py = calc(oy + dy);
+    let spun = piece.rotate(hashRange(i, -0.22, 0.22), Point(pieceCenterX, pieceCenterY));
+    let dx = calc((pieceCenterX - plateCenterX) / plateCenterX * 26 + hashRange(i, -8, 8, 7));
+    let dy = calc((pieceCenterY - plateCenterY) / plateCenterY * 26 + hashRange(i, -8, 8, 13));
+    let placeX = calc(originX + dx);
+    let placeY = calc(originY + dy);
     if (calc(i % 3) == 0) {
       shard0.apply {
-        M px py spun.draw()
+        M placeX placeY spun.draw()
       }
     }
     if (calc(i % 3) == 1) {
       shard1.apply {
-        M px py spun.draw()
+        M placeX placeY spun.draw()
       }
     }
     if (calc(i % 3) == 2) {
       shard2.apply {
-        M px py spun.draw()
+        M placeX placeY spun.draw()
       }
     }
   }
@@ -871,8 +871,8 @@ lid.apply {
       112,
       8);
 }
-for ([p, i] in pieces) {
-  let mini = p.scale(0.44, 0.44);
+for ([piece, i] in pieces) {
+  let mini = piece.scale(0.44, 0.44);
   if (calc(i % 3) == 0) {
     lid0.apply {
       M 361 43 mini.draw()

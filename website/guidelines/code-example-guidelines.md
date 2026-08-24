@@ -60,6 +60,9 @@ Standards for code examples embedded in blog posts, documentation, and tutorials
 
   not `let knife = @{ m 90 -15 l 0 130 };`. A block containing a single statement (e.g. `@{ circle(0, 0, 40); }`) may stay on one line.
 
+- **Published samples use descriptive variable names.** Code in blog posts and docs is teaching material: `piece`, `seamNormal`, `tabStart` — never `p`, `n`, `a`. Allowed short names: loop indices (`i`, `j`, `k`) in numeric ranges, coordinate members (`.x`/`.y`), and the parametric fraction `t` (a documented API concept). This is doubly important because ten single letters — `m l h v c s q t a z` (and uppercase) — are path commands, and a variable with one of those names breaks in path-argument position with an unhelpful parse error (`let a = ...; M a.x a.y` fails because `a` is the arc command). Descriptive names sidestep the trap and read better.
+- **Run the formatter before publication** — `npm run format:samples -- <dir>`; enforced by validate-samples check #6.
+
 ---
 
 ## 7. Margins and Spacing

@@ -109,46 +109,46 @@ let bodice = @{
   h -84 as segment('hem');
   z as segment('front')
 };
-let ox = 120;
-let oy = 48;
+let originX = 120;
+let originY = 48;
 
 panel.apply {
-  bodice.drawTo(ox, oy);
+  bodice.drawTo(originX, originY);
 }
 
 // One query per name; the layer's color does the explaining.
-let placed = bodice.project(ox, oy);
+let placed = bodice.project(originX, originY);
 fn strokeRun(run) {
   run.drawTo(run.startPoint.x, run.startPoint.y);
 }
 neckRun.apply {
-  for (r in placed.segmentAll('neck')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('neck')) {
+    strokeRun(run);
   }
 }
 shoulderRun.apply {
-  for (r in placed.segmentAll('shoulder')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('shoulder')) {
+    strokeRun(run);
   }
 }
 armholeRun.apply {
-  for (r in placed.segmentAll('armhole')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('armhole')) {
+    strokeRun(run);
   }
 }
 sideRun.apply {
-  for (r in placed.segmentAll('side')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('side')) {
+    strokeRun(run);
   }
 }
 hemRun.apply {
-  for (r in placed.segmentAll('hem')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('hem')) {
+    strokeRun(run);
   }
 }
 frontRun.apply {
-  for (r in placed.segmentAll('front')) {
-    strokeRun(r);
+  for (run in placed.segmentAll('front')) {
+    strokeRun(run);
   }
 }
 

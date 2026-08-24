@@ -69,29 +69,29 @@ let yokeKnife = @{
 };
 let pieces = bodice.cut(yokeKnife);
 
-fn tick(seam, u) {
-  let e0 = seam.get(0);
-  let e1 = seam.get(1);
-  let t = calc(e0.x > e1.x ? 1 - u : u);
-  let s = seam.get(t);
-  let n = seam.normal(t);
-  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
-  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+fn tick(seam, fraction) {
+  let seamStart = seam.get(0);
+  let seamEnd = seam.get(1);
+  let t = calc(seamStart.x > seamEnd.x ? 1 - fraction : fraction);
+  let tickPoint = seam.get(t);
+  let tickNormal = seam.normal(t);
+  M calc(tickPoint.x - cos(tickNormal.angle) * 5) calc(tickPoint.y - sin(tickNormal.angle) * 5)
+  L calc(tickPoint.x + cos(tickNormal.angle) * 5) calc(tickPoint.y + sin(tickNormal.angle) * 5)
 }
 
-for (p in pieces) {
+for (piece in pieces) {
   // Lay pieces out by bounding box: yoke on the left, body on the right,
   // tops aligned — no knowledge of piece order required.
-  let bb = p.boundingBox();
+  let bounds = piece.boundingBox();
   // Identity comes from the labels, never from coordinates: whoever
   // kept the neckline is the yoke.
-  let isYoke = calc(p.segmentAll('neck').length > 0 ? 1 : 0);
-  let tx = calc(isYoke == 1 ? 90 : 270);
-  let px = calc(tx - bb.x);
-  let py = calc(64 - bb.y);
-  let placed = p.project(px, py);
+  let isYoke = calc(piece.segmentAll('neck').length > 0 ? 1 : 0);
+  let targetX = calc(isYoke == 1 ? 90 : 270);
+  let placeX = calc(targetX - bounds.x);
+  let placeY = calc(64 - bounds.y);
+  let placed = piece.project(placeX, placeY);
   panel.apply {
-    M px py p.draw()
+    M placeX placeY piece.draw()
   }
   // Allowance on the body panel (see the post for the yoke caveat).
   if (isYoke == 0) {
@@ -108,22 +108,22 @@ for (p in pieces) {
     }
   }
   // Grainline: a double-headed vertical arrow at the piece's center.
-  let pb = placed.boundingBox();
-  let gx = calc(pb.x + pb.width / 2);
-  let gy = calc(pb.y + pb.height / 2);
-  let gl = calc(max(16, pb.height * 0.28));
+  let placedBounds = placed.boundingBox();
+  let grainX = calc(placedBounds.x + placedBounds.width / 2);
+  let grainY = calc(placedBounds.y + placedBounds.height / 2);
+  let grainHalf = calc(max(16, placedBounds.height * 0.28));
   grain.apply {
-    M gx calc(gy - gl)
-    L gx calc(gy + gl)
-    M calc(gx - 4) calc(gy - gl + 6)
-    L gx calc(gy - gl)
-    L calc(gx + 4) calc(gy - gl + 6)
-    M calc(gx - 4) calc(gy + gl - 6)
-    L gx calc(gy + gl)
-    L calc(gx + 4) calc(gy + gl - 6)
+    M grainX calc(grainY - grainHalf)
+    L grainX calc(grainY + grainHalf)
+    M calc(grainX - 4) calc(grainY - grainHalf + 6)
+    L grainX calc(grainY - grainHalf)
+    L calc(grainX + 4) calc(grainY - grainHalf + 6)
+    M calc(grainX - 4) calc(grainY + grainHalf - 6)
+    L grainX calc(grainY + grainHalf)
+    L calc(grainX + 4) calc(grainY + grainHalf - 6)
   }
   names.apply {
-    text(calc(pb.x + pb.width / 2), calc(pb.y + pb.height + 24))`${isYoke == 1 ? 'YOKE - cut 1 on fold' : 'BODY - cut 1 on fold'}`;
+    text(calc(placedBounds.x + placedBounds.width / 2), calc(placedBounds.y + placedBounds.height + 24))`${isYoke == 1 ? 'YOKE - cut 1 on fold' : 'BODY - cut 1 on fold'}`;
   }
 }
 

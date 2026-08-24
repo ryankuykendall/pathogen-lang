@@ -60,15 +60,15 @@ let knife = @{
 };
 let pieces = house.cut(knife);
 
-for (p in pieces) {
+for (piece in pieces) {
   // The labels place the pieces too: the roof piece slides up, the
   // other slides down — no coordinate checks anywhere.
-  let roofRuns = p.segmentAll('roof');
-  let oy = calc(roofRuns.length > 0 ? 66 : 90);
+  let roofRuns = piece.segmentAll('roof');
+  let originY = calc(roofRuns.length > 0 ? 66 : 90);
   pieceLayer.apply {
-    M 120 oy p.draw()
+    M 120 originY piece.draw()
   }
-  let placed = p.project(120, oy);
+  let placed = piece.project(120, originY);
   let baseRuns = placed.segmentAll('base');
   roofRuns = placed.segmentAll('roof');
   roofLayer.apply {
@@ -83,12 +83,12 @@ for (p in pieces) {
   }
   // Each piece reports which of the plate's names it still owns,
   // color-keyed to the strokes.
-  let pb = placed.boundingBox();
-  let ly = calc(pb.y + pb.height / 2 + 3);
+  let placedBounds = placed.boundingBox();
+  let labelY = calc(placedBounds.y + placedBounds.height / 2 + 3);
   roofCount.apply {
-    text(310, ly)`roof ${roofRuns.length}`;
+    text(310, labelY)`roof ${roofRuns.length}`;
   }
   baseCount.apply {
-    text(378, ly)`base ${baseRuns.length}`;
+    text(378, labelY)`base ${baseRuns.length}`;
   }
 }

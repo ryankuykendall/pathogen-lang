@@ -405,23 +405,23 @@ let pieces = plate.cut(knife);
 
 // Left: pieces drawn at one shared position — the plate reassembles.
 pieceLayer.apply {
-  for (p in pieces) {
-    M 50 70 p.draw()
+  for (piece in pieces) {
+    M 50 70 piece.draw()
   }
 }
 
 // Right: same pieces nudged apart, and each one is asked for its own
 // healed seam — two amber curves, one per piece.
-let kx = 88;
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; kx ? -9 : 9);
-  let px = calc(290 + side);
+let knifeX = 88;
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; knifeX ? -9 : 9);
+  let placeX = calc(290 + side);
   pieceLayer.apply {
-    M px 70 p.draw()
+    M placeX 70 piece.draw()
   }
   // The projected form answers queries in absolute coordinates.
-  let placed = p.project(px, 70);
+  let placed = piece.project(placeX, 70);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -516,32 +516,32 @@ let creases = @{
   l 0 126
 };
 let panels = card.cut(creases);
-let ox = 96;
-let oy = 48;
+let originX = 96;
+let originY = 48;
 
 panelLayer.apply {
-  for (p in panels) {
-    M ox oy p.draw()
+  for (piece in panels) {
+    M originX originY piece.draw()
   }
 }
 
 // The original outline is the cut line: scissors follow the solid path.
 cutLayer.apply {
-  card.drawTo(ox, oy);
+  card.drawTo(originX, originY);
 }
 
 // Every seam the cut healed is a fold line: the dashed style comes from
 // the layer, so the whole group is decorated in one pass. Each interior
 // fold is shared by two panels — stroke it once by letting every panel
 // own only the seams on its right-hand side.
-for (p in panels) {
-  let placed = p.project(ox, oy);
-  let bb = placed.boundingBox();
-  let cx = calc(bb.x + bb.width / 2);
+for (piece in panels) {
+  let placed = piece.project(originX, originY);
+  let bounds = placed.boundingBox();
+  let panelCenterX = calc(bounds.x + bounds.width / 2);
   foldLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       let mid = seam.get(0.5);
-      if (mid.x &gt; cx) {
+      if (mid.x &gt; panelCenterX) {
         seam.drawTo(seam.startPoint.x, seam.startPoint.y);
       }
     }
@@ -619,37 +619,37 @@ let pieces = plate.cut(knife);
 // Pull the two pieces apart so the tabs have room to show.
 let plateBB = plate.boundingBox();
 let plateCx = calc(plateBB.x + plateBB.width / 2);
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; plateCx ? -34 : 34);
-  let px = calc(165 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; plateCx ? -34 : 34);
+  let placeX = calc(165 + side);
   pieceLayer.apply {
-    M px 55 p.draw()
+    M placeX 55 piece.draw()
   }
   // Tabs go on the left piece only.
   if (side &lt; 0) {
-    let placed = p.project(px, 55);
-    let bb2 = placed.boundingBox();
-    let cx = calc(bb2.x + bb2.width / 2);
-    let cy = calc(bb2.y + bb2.height / 2);
+    let placed = piece.project(placeX, 55);
+    let placedBounds = placed.boundingBox();
+    let pieceCenterX = calc(placedBounds.x + placedBounds.width / 2);
+    let pieceCenterY = calc(placedBounds.y + placedBounds.height / 2);
     tabLayer.apply {
       for (seam in placed.segmentAll('cut')) {
         // Walk the seam in sevenths; every other interval grows a tab.
         for (k in 0..2) {
           let t0 = calc((k * 2 + 1) / 7);
           let t1 = calc((k * 2 + 2) / 7);
-          let a = seam.get(t0);
-          let b = seam.get(t1);
-          let n = seam.normal(calc((t0 + t1) / 2));
+          let tabStart = seam.get(t0);
+          let tabEnd = seam.get(t1);
+          let seamNormal = seam.normal(calc((t0 + t1) / 2));
           // Point the tab away from the piece's own center.
-          let toCenter = calc(cos(n.angle) * (cx - n.point.x) + sin(n.angle) * (cy - n.point.y));
-          let na = calc(toCenter &gt; 0 ? n.angle + PI() : n.angle);
-          let ta = calc(na + PI() / 2);
-          // Trapezoid: seam edge a→b, outer edge tapered inward by 4.
-          M calc(a.x) calc(a.y)
-          L calc(a.x + cos(na) * 13 + cos(ta) * 4) calc(a.y + sin(na) * 13 + sin(ta) * 4)
-          L calc(b.x + cos(na) * 13 - cos(ta) * 4) calc(b.y + sin(na) * 13 - sin(ta) * 4)
-          L calc(b.x) calc(b.y)
+          let toCenter = calc(cos(seamNormal.angle) * (pieceCenterX - seamNormal.point.x) + sin(seamNormal.angle) * (pieceCenterY - seamNormal.point.y));
+          let outwardAngle = calc(toCenter &gt; 0 ? seamNormal.angle + PI() : seamNormal.angle);
+          let edgeAngle = calc(outwardAngle + PI() / 2);
+          // Trapezoid: seam edge tabStart→tabEnd, outer edge tapered inward by 4.
+          M calc(tabStart.x) calc(tabStart.y)
+          L calc(tabStart.x + cos(outwardAngle) * 13 + cos(edgeAngle) * 4) calc(tabStart.y + sin(outwardAngle) * 13 + sin(edgeAngle) * 4)
+          L calc(tabEnd.x + cos(outwardAngle) * 13 - cos(edgeAngle) * 4) calc(tabEnd.y + sin(outwardAngle) * 13 - sin(edgeAngle) * 4)
+          L calc(tabEnd.x) calc(tabEnd.y)
         }
       }
     }
@@ -738,15 +738,15 @@ let knife = @{
 };
 let pieces = house.cut(knife);
 
-for (p in pieces) {
+for (piece in pieces) {
   // The labels place the pieces too: the roof piece slides up, the
   // other slides down — no coordinate checks anywhere.
-  let roofRuns = p.segmentAll('roof');
-  let oy = calc(roofRuns.length &gt; 0 ? 66 : 90);
+  let roofRuns = piece.segmentAll('roof');
+  let originY = calc(roofRuns.length &gt; 0 ? 66 : 90);
   pieceLayer.apply {
-    M 120 oy p.draw()
+    M 120 originY piece.draw()
   }
-  let placed = p.project(120, oy);
+  let placed = piece.project(120, originY);
   let baseRuns = placed.segmentAll('base');
   roofRuns = placed.segmentAll('roof');
   roofLayer.apply {
@@ -761,13 +761,13 @@ for (p in pieces) {
   }
   // Each piece reports which of the plate's names it still owns,
   // color-keyed to the strokes.
-  let pb = placed.boundingBox();
-  let ly = calc(pb.y + pb.height / 2 + 3);
+  let placedBounds = placed.boundingBox();
+  let labelY = calc(placedBounds.y + placedBounds.height / 2 + 3);
   roofCount.apply {
-    text(310, ly)`roof ${roofRuns.length}`;
+    text(310, labelY)`roof ${roofRuns.length}`;
   }
   baseCount.apply {
-    text(378, ly)`base ${baseRuns.length}`;
+    text(378, labelY)`base ${baseRuns.length}`;
   }
 }
 </code>
@@ -839,29 +839,29 @@ let knives = @{
   l 180 12
 };
 let pieces = plate.cut(knives);
-let ox = 165;
-let oy = 70;
+let originX = 165;
+let originY = 70;
 
 ghost.apply {
-  plate.drawTo(ox, oy);
+  plate.drawTo(originX, originY);
 }
 
 // Drift each piece along the ray from the plate's bounding-box center
 // to its own.
 let plateBB = plate.boundingBox();
-let pcx = calc(plateBB.x + plateBB.width / 2);
-let pcy = calc(plateBB.y + plateBB.height / 2);
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let dx = calc(bb.x + bb.width / 2 - pcx);
-  let dy = calc(bb.y + bb.height / 2 - pcy);
+let plateCenterX = calc(plateBB.x + plateBB.width / 2);
+let plateCenterY = calc(plateBB.y + plateBB.height / 2);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let dx = calc(bounds.x + bounds.width / 2 - plateCenterX);
+  let dy = calc(bounds.y + bounds.height / 2 - plateCenterY);
   let len = calc(sqrt(dx * dx + dy * dy));
-  let px = calc(ox + dx / len * 34);
-  let py = calc(oy + dy / len * 34);
+  let placeX = calc(originX + dx / len * 34);
+  let placeY = calc(originY + dy / len * 34);
   pieceLayer.apply {
-    M px py p.draw()
+    M placeX placeY piece.draw()
   }
-  let placed = p.project(px, py);
+  let placed = piece.project(placeX, placeY);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -958,79 +958,79 @@ let plate = @{
 };
 
 // Three straight knives through the center, 60 degrees apart.
-let kr = 78;
-let c60 = cos(calc(PI() / 3));
-let s60 = sin(calc(PI() / 3));
+let knifeReach = 78;
+let cos60 = cos(calc(PI() / 3));
+let sin60 = sin(calc(PI() / 3));
 let knives = @{
-  m calc(0 - kr) 0
-  l calc(kr * 2) 0
-  m calc(0 - kr * c60 - kr) calc(0 - kr * s60)
-  l calc(kr * 2 * c60) calc(kr * 2 * s60)
-  m 0 calc(0 - kr * 2 * s60)
-  l calc(0 - kr * 2 * c60) calc(kr * 2 * s60)
+  m calc(0 - knifeReach) 0
+  l calc(knifeReach * 2) 0
+  m calc(0 - knifeReach * cos60 - knifeReach) calc(0 - knifeReach * sin60)
+  l calc(knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
+  m 0 calc(0 - knifeReach * 2 * sin60)
+  l calc(0 - knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
 };
 let wedges = plate.cut(knives);
-let ox = 240;
-let oy = 158;
+let originX = 240;
+let originY = 158;
 
 ghost.apply {
-  plate.drawTo(ox, oy);
+  plate.drawTo(originX, originY);
 }
 
-for (w in wedges) {
+for (wedge in wedges) {
   // Drift outward along the ray to the wedge's bounding-box center.
-  let bb = w.boundingBox();
-  let dx = calc(bb.x + bb.width / 2);
-  let dy = calc(bb.y + bb.height / 2);
+  let bounds = wedge.boundingBox();
+  let dx = calc(bounds.x + bounds.width / 2);
+  let dy = calc(bounds.y + bounds.height / 2);
   let len = calc(sqrt(dx * dx + dy * dy));
-  let px = calc(ox + dx / len * 44);
-  let py = calc(oy + dy / len * 44);
+  let placeX = calc(originX + dx / len * 44);
+  let placeY = calc(originY + dy / len * 44);
   wedgeLayer.apply {
-    M px py w.draw()
+    M placeX placeY wedge.draw()
   }
-  let placed = w.project(px, py);
-  let pb = placed.boundingBox();
-  let wcx = calc(pb.x + pb.width / 2);
-  let wcy = calc(pb.y + pb.height / 2);
+  let placed = wedge.project(placeX, placeY);
+  let placedBounds = placed.boundingBox();
+  let wedgeCenterX = calc(placedBounds.x + placedBounds.width / 2);
+  let wedgeCenterY = calc(placedBounds.y + placedBounds.height / 2);
   // A wedge's two radial edges are adjacent and share the 'cut' label,
   // so they come back MERGED into one V-shaped run — walk its halves.
   for (seam in placed.segmentAll('cut')) {
-    for (h in 0..1) {
-      let t0 = calc(h * 0.5);
-      let t1 = calc(h * 0.5 + 0.5);
-      let m0 = seam.get(calc(t0 + 0.25));
+    for (halfIdx in 0..1) {
+      let t0 = calc(halfIdx * 0.5);
+      let t1 = calc(halfIdx * 0.5 + 0.5);
+      let halfMid = seam.get(calc(t0 + 0.25));
       // Which side of the centroid ray does this half sit on?
-      let cross = calc((wcx - px) * (m0.y - py) - (wcy - py) * (m0.x - px));
+      let cross = calc((wedgeCenterX - placeX) * (halfMid.y - placeY) - (wedgeCenterY - placeY) * (halfMid.x - placeX));
       if (cross &gt; 0) {
         // Clockwise edge: glue tab, pointing away from the wedge.
-        let a = seam.get(calc(t0 + 0.06));
-        let b = seam.get(calc(t1 - 0.06));
-        let n = seam.normal(calc(t0 + 0.25));
-        let toCenter = calc(cos(n.angle) * (wcx - m0.x) + sin(n.angle) * (wcy - m0.y));
-        let na = calc(toCenter &gt; 0 ? n.angle + PI() : n.angle);
-        let ta = calc(na + PI() / 2);
+        let tabStart = seam.get(calc(t0 + 0.06));
+        let tabEnd = seam.get(calc(t1 - 0.06));
+        let seamNormal = seam.normal(calc(t0 + 0.25));
+        let toCenter = calc(cos(seamNormal.angle) * (wedgeCenterX - halfMid.x) + sin(seamNormal.angle) * (wedgeCenterY - halfMid.y));
+        let outwardAngle = calc(toCenter &gt; 0 ? seamNormal.angle + PI() : seamNormal.angle);
+        let edgeAngle = calc(outwardAngle + PI() / 2);
         tabLayer.apply {
-          M calc(a.x) calc(a.y)
-          L calc(a.x + cos(na) * 10 + cos(ta) * 4) calc(a.y + sin(na) * 10 + sin(ta) * 4)
-          L calc(b.x + cos(na) * 10 - cos(ta) * 4) calc(b.y + sin(na) * 10 - sin(ta) * 4)
-          L calc(b.x) calc(b.y)
+          M calc(tabStart.x) calc(tabStart.y)
+          L calc(tabStart.x + cos(outwardAngle) * 10 + cos(edgeAngle) * 4) calc(tabStart.y + sin(outwardAngle) * 10 + sin(edgeAngle) * 4)
+          L calc(tabEnd.x + cos(outwardAngle) * 10 - cos(edgeAngle) * 4) calc(tabEnd.y + sin(outwardAngle) * 10 - sin(edgeAngle) * 4)
+          L calc(tabEnd.x) calc(tabEnd.y)
         }
       } else {
         // Counter-clockwise edge: fold line for the neighbor's tab.
         let half = seam.subPath(t0, t1);
-        let s0 = seam.get(t0);
+        let halfStart = seam.get(t0);
         foldLayer.apply {
-          half.drawTo(s0.x, s0.y);
+          half.drawTo(halfStart.x, halfStart.y);
         }
       }
     }
   }
   // Number by angle around the ring, not by loop order — cut() makes
   // no promise about the order pieces come back in.
-  let ang = calc(atan2(dy, dx) + PI());
-  let num = calc(floor(ang / (PI() / 3)) + 1);
+  let ringAngle = calc(atan2(dy, dx) + PI());
+  let num = calc(floor(ringAngle / (PI() / 3)) + 1);
   numbers.apply {
-    text(wcx, calc(wcy + 3))`${num}`;
+    text(wedgeCenterX, calc(wedgeCenterY + 3))`${num}`;
   }
 }
 

@@ -51,14 +51,14 @@ let knife = @{
 let pieces = plate.cut(knife);
 let gap = 64;
 
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 < 92 ? 0 - gap / 2 : gap / 2);
-  let px = calc(240 - 85 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 < 92 ? 0 - gap / 2 : gap / 2);
+  let placeX = calc(240 - 85 + side);
   pieceLayer.apply {
-    M px 40 p.draw()
+    M placeX 40 piece.draw()
   }
-  let placed = p.project(px, 40);
+  let placed = piece.project(placeX, 40);
   markLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       for (op in seam.partition(3)) {

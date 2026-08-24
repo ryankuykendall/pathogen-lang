@@ -52,44 +52,44 @@ scene.append(glass0,
 let disc = @{
   circle(0, 0, 88);
 };
-let kr = 104;
-let c45 = cos(calc(PI() / 4));
+let knifeReach = 104;
+let cos45 = cos(calc(PI() / 4));
 let knives = @{
-  m calc(0 - kr) 0
-  l calc(kr * 2) 0
-  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
-  l calc(kr * 2 * c45) calc(kr * 2 * c45)
-  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
-  l 0 calc(kr * 2)
-  m calc(kr * c45) calc(0 - kr - kr * c45)
-  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - knifeReach) 0
+  l calc(knifeReach * 2) 0
+  m calc(0 - knifeReach - knifeReach * cos45) calc(0 - knifeReach * cos45)
+  l calc(knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
+  m calc(0 - knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l 0 calc(knifeReach * 2)
+  m calc(knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l calc(0 - knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
 };
 let wedges = disc.cut(knives);
-let ox = 240;
-let oy = 122;
+let originX = 240;
+let originY = 122;
 
 for ([w, i] in wedges) {
   if (calc(i % 4) == 0) {
     glass0.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
   if (calc(i % 4) == 1) {
     glass1.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
   if (calc(i % 4) == 2) {
     glass2.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
   if (calc(i % 4) == 3) {
     glass3.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
-  let placed = w.project(ox, oy);
+  let placed = w.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);

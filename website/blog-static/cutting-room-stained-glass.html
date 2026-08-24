@@ -364,27 +364,27 @@ let disc = @{
   circle(0, 0, 88);
 };
 // Four straight knives through the center, 45 degrees apart.
-let kr = 104;
-let c45 = cos(calc(PI() / 4));
+let knifeReach = 104;
+let cos45 = cos(calc(PI() / 4));
 let knives = @{
-  m calc(0 - kr) 0
-  l calc(kr * 2) 0
-  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
-  l calc(kr * 2 * c45) calc(kr * 2 * c45)
-  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
-  l 0 calc(kr * 2)
-  m calc(kr * c45) calc(0 - kr - kr * c45)
-  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - knifeReach) 0
+  l calc(knifeReach * 2) 0
+  m calc(0 - knifeReach - knifeReach * cos45) calc(0 - knifeReach * cos45)
+  l calc(knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
+  m calc(0 - knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l 0 calc(knifeReach * 2)
+  m calc(knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l calc(0 - knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
 };
 let wedges = disc.cut(knives);
-let ox = 240;
-let oy = 122;
+let originX = 240;
+let originY = 122;
 
-for (w in wedges) {
+for (wedge in wedges) {
   panes.apply {
-    M ox oy w.draw()
+    M originX originY wedge.draw()
   }
-  let placed = w.project(ox, oy);
+  let placed = wedge.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -469,13 +469,13 @@ let knives = @{
   l 0 170
 };
 
-fn cameWindow(disc, cx, cy) {
+fn cameWindow(disc, centerX, centerY) {
   let pieces = disc.cut(knives);
-  for (p in pieces) {
+  for (piece in pieces) {
     panes.apply {
-      M cx cy p.draw()
+      M centerX centerY piece.draw()
     }
-    let placed = p.project(cx, cy);
+    let placed = piece.project(centerX, centerY);
     // One decoration loop, both windows: stroke the 'cut' group wide.
     leading.apply {
       for (seam in placed.segmentAll('cut')) {
@@ -558,44 +558,44 @@ scene.append(glass0,
 let disc = @{
   circle(0, 0, 88);
 };
-let kr = 104;
-let c45 = cos(calc(PI() / 4));
+let knifeReach = 104;
+let cos45 = cos(calc(PI() / 4));
 let knives = @{
-  m calc(0 - kr) 0
-  l calc(kr * 2) 0
-  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
-  l calc(kr * 2 * c45) calc(kr * 2 * c45)
-  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
-  l 0 calc(kr * 2)
-  m calc(kr * c45) calc(0 - kr - kr * c45)
-  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - knifeReach) 0
+  l calc(knifeReach * 2) 0
+  m calc(0 - knifeReach - knifeReach * cos45) calc(0 - knifeReach * cos45)
+  l calc(knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
+  m calc(0 - knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l 0 calc(knifeReach * 2)
+  m calc(knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
+  l calc(0 - knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
 };
 let wedges = disc.cut(knives);
-let ox = 240;
-let oy = 122;
+let originX = 240;
+let originY = 122;
 
 for ([w, i] in wedges) {
   if (calc(i % 4) == 0) {
     glass0.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
   if (calc(i % 4) == 1) {
     glass1.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
   if (calc(i % 4) == 2) {
     glass2.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
   if (calc(i % 4) == 3) {
     glass3.apply {
-      M ox oy w.draw()
+      M originX originY w.draw()
     }
   }
-  let placed = w.project(ox, oy);
+  let placed = w.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
@@ -694,20 +694,20 @@ for (half in halves) {
   // Open the cut along the diagonal: a ±10 nudge perpendicular to it.
   // draw() keeps each half's own placement, so the nudge is all the
   // move there is.
-  let bb = half.boundingBox();
-  let side = calc(bb.x + bb.width / 2 &lt; 240 ? -10 : 10);
+  let bounds = half.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 &lt; 240 ? -10 : 10);
   frame.apply {
     M calc(side) calc(0 - side) half.draw()
   }
   let placed = half.project(side, calc(0 - side));
   sillRun.apply {
-    for (r in placed.segmentAll('sill')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('sill')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
   lightRun.apply {
-    for (r in placed.segmentAll('light')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('light')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
 }
@@ -812,56 +812,56 @@ let disc = @{
 // Eight spokes from r=36 out past the rim, plus a ring knife that stamps
 // the medallion. The spokes stop short of the ring so the medallion
 // stays whole.
-let c = cos(calc(PI() / 4));
+let cos45 = cos(calc(PI() / 4));
 let knives = @{
   m 36 0
   l 76 0
-  m calc(36 * c - 112) calc(36 * c)
-  l calc(76 * c) calc(76 * c)
-  m calc(0 - 112 * c) calc(36 - 112 * c)
+  m calc(36 * cos45 - 112) calc(36 * cos45)
+  l calc(76 * cos45) calc(76 * cos45)
+  m calc(0 - 112 * cos45) calc(36 - 112 * cos45)
   l 0 76
-  m calc(0 - 36 * c) calc(36 * c - 112)
-  l calc(0 - 76 * c) calc(76 * c)
-  m calc(112 * c - 36) calc(0 - 112 * c)
+  m calc(0 - 36 * cos45) calc(36 * cos45 - 112)
+  l calc(0 - 76 * cos45) calc(76 * cos45)
+  m calc(112 * cos45 - 36) calc(0 - 112 * cos45)
   l -76 0
-  m calc(112 - 36 * c) calc(0 - 36 * c)
-  l calc(0 - 76 * c) calc(0 - 76 * c)
-  m calc(112 * c) calc(112 * c - 36)
+  m calc(112 - 36 * cos45) calc(0 - 36 * cos45)
+  l calc(0 - 76 * cos45) calc(0 - 76 * cos45)
+  m calc(112 * cos45) calc(112 * cos45 - 36)
   l 0 -76
-  m calc(36 * c) calc(112 - 36 * c)
-  l calc(76 * c) calc(0 - 76 * c)
+  m calc(36 * cos45) calc(112 - 36 * cos45)
+  l calc(76 * cos45) calc(0 - 76 * cos45)
   circle(0, 0, 36);
 };
 let panes = disc.cut(knives);
-let ox = 240;
-let oy = 158;
+let originX = 240;
+let originY = 158;
 
 stone.apply {
-  circle(ox, oy, 112);
+  circle(originX, originY, 112);
 }
 
-for ([p, i] in panes) {
-  let placed = p.project(ox, oy);
+for ([piece, i] in panes) {
+  let placed = piece.project(originX, originY);
   // The medallion is the piece that kept none of the rim.
   if (placed.segmentAll('rim').length &gt; 0) {
     if (calc(i % 3) == 0) {
       glass0.apply {
-        M ox oy p.draw()
+        M originX originY piece.draw()
       }
     }
     if (calc(i % 3) == 1) {
       glass1.apply {
-        M ox oy p.draw()
+        M originX originY piece.draw()
       }
     }
     if (calc(i % 3) == 2) {
       glass2.apply {
-        M ox oy p.draw()
+        M originX originY piece.draw()
       }
     }
   } else {
     medallion.apply {
-      M ox oy p.draw()
+      M originX originY piece.draw()
     }
   }
   // Came on every healed seam and on the rim: two groups, one style.

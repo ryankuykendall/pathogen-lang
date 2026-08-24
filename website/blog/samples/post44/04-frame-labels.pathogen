@@ -71,20 +71,20 @@ for (half in halves) {
   // Open the cut along the diagonal: a ±10 nudge perpendicular to it.
   // draw() keeps each half's own placement, so the nudge is all the
   // move there is.
-  let bb = half.boundingBox();
-  let side = calc(bb.x + bb.width / 2 < 240 ? -10 : 10);
+  let bounds = half.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 < 240 ? -10 : 10);
   frame.apply {
     M calc(side) calc(0 - side) half.draw()
   }
   let placed = half.project(side, calc(0 - side));
   sillRun.apply {
-    for (r in placed.segmentAll('sill')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('sill')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
   lightRun.apply {
-    for (r in placed.segmentAll('light')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('light')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
 }

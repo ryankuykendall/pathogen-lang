@@ -62,32 +62,32 @@ let creases = @{
   l 0 126
 };
 let panels = card.cut(creases);
-let ox = 96;
-let oy = 48;
+let originX = 96;
+let originY = 48;
 
 panelLayer.apply {
-  for (p in panels) {
-    M ox oy p.draw()
+  for (piece in panels) {
+    M originX originY piece.draw()
   }
 }
 
 // The original outline is the cut line: scissors follow the solid path.
 cutLayer.apply {
-  card.drawTo(ox, oy);
+  card.drawTo(originX, originY);
 }
 
 // Every seam the cut healed is a fold line: the dashed style comes from
 // the layer, so the whole group is decorated in one pass. Each interior
 // fold is shared by two panels — stroke it once by letting every panel
 // own only the seams on its right-hand side.
-for (p in panels) {
-  let placed = p.project(ox, oy);
-  let bb = placed.boundingBox();
-  let cx = calc(bb.x + bb.width / 2);
+for (piece in panels) {
+  let placed = piece.project(originX, originY);
+  let bounds = placed.boundingBox();
+  let panelCenterX = calc(bounds.x + bounds.width / 2);
   foldLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       let mid = seam.get(0.5);
-      if (mid.x > cx) {
+      if (mid.x > panelCenterX) {
         seam.drawTo(seam.startPoint.x, seam.startPoint.y);
       }
     }

@@ -81,39 +81,39 @@ let knives = @{
   c 60 18 118 -18 228 6
 };
 let pieces = plate.cut(knives);
-let ox = 42;
-let oy = 52;
+let originX = 42;
+let originY = 52;
 
 let plateBB = plate.boundingBox();
-let pcx = calc(plateBB.x + plateBB.width / 2);
-let pcy = calc(plateBB.y + plateBB.height / 2);
-for ([p, i] in pieces) {
-  let bb = p.boundingBox();
-  let cx = calc(bb.x + bb.width / 2);
-  let cy = calc(bb.y + bb.height / 2);
+let plateCenterX = calc(plateBB.x + plateBB.width / 2);
+let plateCenterY = calc(plateBB.y + plateBB.height / 2);
+for ([piece, i] in pieces) {
+  let bounds = piece.boundingBox();
+  let pieceCenterX = calc(bounds.x + bounds.width / 2);
+  let pieceCenterY = calc(bounds.y + bounds.height / 2);
   // The piece that kept no rim is the missing one — skip it.
-  if (p.segmentAll('rim').length > 0) {
+  if (piece.segmentAll('rim').length > 0) {
     // Spin in place around the piece's own bounding-box center:
     // frame-preserving, so no pivot bookkeeping — then drift outward
     // with a hashed shove.
-    let spun = p.rotate(hashRange(i, -0.22, 0.22), Point(cx, cy));
-    let dx = calc((cx - pcx) / pcx * 26 + hashRange(i, -8, 8, 7));
-    let dy = calc((cy - pcy) / pcy * 26 + hashRange(i, -8, 8, 13));
-    let px = calc(ox + dx);
-    let py = calc(oy + dy);
+    let spun = piece.rotate(hashRange(i, -0.22, 0.22), Point(pieceCenterX, pieceCenterY));
+    let dx = calc((pieceCenterX - plateCenterX) / plateCenterX * 26 + hashRange(i, -8, 8, 7));
+    let dy = calc((pieceCenterY - plateCenterY) / plateCenterY * 26 + hashRange(i, -8, 8, 13));
+    let placeX = calc(originX + dx);
+    let placeY = calc(originY + dy);
     if (calc(i % 3) == 0) {
       shard0.apply {
-        M px py spun.draw()
+        M placeX placeY spun.draw()
       }
     }
     if (calc(i % 3) == 1) {
       shard1.apply {
-        M px py spun.draw()
+        M placeX placeY spun.draw()
       }
     }
     if (calc(i % 3) == 2) {
       shard2.apply {
-        M px py spun.draw()
+        M placeX placeY spun.draw()
       }
     }
   }
@@ -127,8 +127,8 @@ lid.apply {
       112,
       8);
 }
-for ([p, i] in pieces) {
-  let mini = p.scale(0.44, 0.44);
+for ([piece, i] in pieces) {
+  let mini = piece.scale(0.44, 0.44);
   if (calc(i % 3) == 0) {
     lid0.apply {
       M 361 43 mini.draw()

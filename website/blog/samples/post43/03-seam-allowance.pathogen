@@ -67,13 +67,13 @@ let yokeKnife = @{
 };
 let pieces = bodice.cut(yokeKnife);
 
-for (p in pieces) {
-  let placedProbe = p.project(0, 0);
+for (piece in pieces) {
+  let placedProbe = piece.project(0, 0);
   // Only the body piece gets the allowance treatment here.
   if (placedProbe.segmentAll('hem').length > 0) {
-    let placed = p.project(150, 28);
+    let placed = piece.project(150, 28);
     panel.apply {
-      M 150 28 p.draw()
+      M 150 28 piece.draw()
     }
     // The cutting line: the same outline, pushed out by the allowance.
     let allow = placed.offset(7);
@@ -82,8 +82,8 @@ for (p in pieces) {
     }
     // Labels survive offset: the allowance still knows its side seam.
     sideRun.apply {
-      for (r in allow.segmentAll('side')) {
-        r.drawTo(r.startPoint.x, r.startPoint.y);
+      for (run in allow.segmentAll('side')) {
+        run.drawTo(run.startPoint.x, run.startPoint.y);
       }
     }
   }

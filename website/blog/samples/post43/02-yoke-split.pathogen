@@ -61,39 +61,39 @@ let yokeKnife = @{
   c 40 6 70 2 110 6
 };
 let pieces = bodice.cut(yokeKnife);
-let ox = 130;
+let originX = 130;
 
-for (p in pieces) {
+for (piece in pieces) {
   // Even the layout is label-driven: the neckline-keeper slides up,
   // the other piece slides down.
-  let isYoke = calc(p.segmentAll('neck').length > 0 ? 1 : 0);
-  let oy = calc(isYoke == 1 ? 52 : 74);
+  let isYoke = calc(piece.segmentAll('neck').length > 0 ? 1 : 0);
+  let originY = calc(isYoke == 1 ? 52 : 74);
   panel.apply {
-    M ox oy p.draw()
+    M originX originY piece.draw()
   }
-  let placed = p.project(ox, oy);
+  let placed = piece.project(originX, originY);
   // Who am I? The labels answer.
   let name = 'the body - it kept the hem';
   if (placed.segmentAll('neck').length > 0) {
     name = 'the yoke - it kept the neckline';
   }
   neckRun.apply {
-    for (r in placed.segmentAll('neck')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('neck')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
   hemRun.apply {
-    for (r in placed.segmentAll('hem')) {
-      r.drawTo(r.startPoint.x, r.startPoint.y);
+    for (run in placed.segmentAll('hem')) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
     }
   }
-  let pb = placed.boundingBox();
-  let ly = calc(pb.y + pb.height / 2);
+  let placedBounds = placed.boundingBox();
+  let labelY = calc(placedBounds.y + placedBounds.height / 2);
   leaders.apply {
-    M calc(pb.x + pb.width + 5) ly
-    L 262 ly
+    M calc(placedBounds.x + placedBounds.width + 5) labelY
+    L 262 labelY
   }
   captions.apply {
-    text(268, calc(ly + 3))`${name}`;
+    text(268, calc(labelY + 3))`${name}`;
   }
 }

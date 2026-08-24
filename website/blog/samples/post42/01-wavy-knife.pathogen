@@ -67,14 +67,14 @@ knifeLayer.apply {
   knife.drawTo(30, 45);
 }
 
-for (p in pieces) {
-  let bb = p.boundingBox();
-  let side = calc(bb.x + bb.width / 2 < 80 ? -26 : 26);
-  let px = calc(255 + side);
+for (piece in pieces) {
+  let bounds = piece.boundingBox();
+  let side = calc(bounds.x + bounds.width / 2 < 80 ? -26 : 26);
+  let placeX = calc(255 + side);
   pieceLayer.apply {
-    M px 45 p.draw()
+    M placeX 45 piece.draw()
   }
-  let placed = p.project(px, 45);
+  let placed = piece.project(placeX, 45);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.drawTo(seam.startPoint.x, seam.startPoint.y);
