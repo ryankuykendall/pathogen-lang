@@ -1,0 +1,172 @@
+// viewBox="0 0 480 260"
+//-- The pattern draft speaks its own vocabulary: a half-bodice (cut on
+//-- the fold) with every edge named as it is drawn. Each labeled run is
+//-- stroked in its own color, straight from a segmentAll query.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let neckRun = PathLayer('neck-run') ${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let shoulderRun = PathLayer('shoulder-run') ${
+  stroke: #3b82f6;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let armholeRun = PathLayer('armhole-run') ${
+  stroke: #c084fc;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let sideRun = PathLayer('side-run') ${
+  stroke: #f59e0b;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let hemRun = PathLayer('hem-run') ${
+  stroke: #fb7185;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let frontRun = PathLayer('front-run') ${
+  stroke: #94a3b8;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 6 4;
+};
+let legendNeck = TextLayer('legend-neck') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #2dd4bf;
+};
+let legendShoulder = TextLayer('legend-shoulder') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #3b82f6;
+};
+let legendArmhole = TextLayer('legend-armhole') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #c084fc;
+};
+let legendSide = TextLayer('legend-side') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f59e0b;
+};
+let legendHem = TextLayer('legend-hem') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #fb7185;
+};
+let legendFold = TextLayer('legend-fold') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+};
+scene.append(panel,
+    neckRun,
+    shoulderRun,
+    armholeRun,
+    sideRun,
+    hemRun,
+    frontRun,
+    legendNeck,
+    legendShoulder,
+    legendArmhole,
+    legendSide,
+    legendHem,
+    legendFold);
+
+// Half a bodice front, drafted to the right of the center-front fold.
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z as segment('front')
+};
+let ox = 120;
+let oy = 48;
+
+panel.apply {
+  bodice.drawTo(ox, oy);
+}
+
+// One query per name; the layer's color does the explaining.
+let placed = bodice.project(ox, oy);
+fn strokeRun(run) {
+  run.drawTo(run.startPoint.x, run.startPoint.y);
+}
+neckRun.apply {
+  for (r in placed.segmentAll('neck')) {
+    strokeRun(r);
+  }
+}
+shoulderRun.apply {
+  for (r in placed.segmentAll('shoulder')) {
+    strokeRun(r);
+  }
+}
+armholeRun.apply {
+  for (r in placed.segmentAll('armhole')) {
+    strokeRun(r);
+  }
+}
+sideRun.apply {
+  for (r in placed.segmentAll('side')) {
+    strokeRun(r);
+  }
+}
+hemRun.apply {
+  for (r in placed.segmentAll('hem')) {
+    strokeRun(r);
+  }
+}
+frontRun.apply {
+  for (r in placed.segmentAll('front')) {
+    strokeRun(r);
+  }
+}
+
+legendNeck.apply {
+  text(300, 70)`as segment('neck')`;
+}
+legendShoulder.apply {
+  text(300, 88)`as segment('shoulder')`;
+}
+legendArmhole.apply {
+  text(300, 106)`as segment('armhole')`;
+}
+legendSide.apply {
+  text(300, 124)`as segment('side')`;
+}
+legendHem.apply {
+  text(300, 142)`as segment('hem')`;
+}
+legendFold.apply {
+  text(300, 160)`as segment('front') - on fold`;
+}

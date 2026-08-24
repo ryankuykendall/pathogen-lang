@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 220" width="480" height="220">
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 220 l -480 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <g data-layer-name="scene" id="scene">
+    <path data-layer-name="panels" id="panels" d="M 96 48 m 72 0 l 72 0 l 0 96 l -72 0 l 0 -96 z M 96 48 m 144 0 l 72 0 l 0 96 l -72 0 l 0 -96 z M 96 48 m 216 0 l 72 0 v 96 l -72 0 l 0 -96 z M 96 48 m 72 96 l -72 0 l 0 -96 l 72 0 l 0 96 z" fill="#e7dfd0" stroke="none" stroke-width="2"/>
+    <path data-layer-name="cut-line" id="cut-line" d="M 96 48 h 288 v 96 h -288 z" fill="none" stroke="#ef4444" stroke-width="2"/>
+    <path data-layer-name="fold-lines" id="fold-lines" d="M 240 48 l 0 96 M 312 48 l 0 96 M 168 48 l 0 96" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text data-layer-name="cut-caption" id="cut-caption" x="163" y="175" font-family="monospace" font-size="9" fill="#f87171" text-anchor="middle">solid = cut the outline</text>
+    <text data-layer-name="fold-caption" id="fold-caption" x="320" y="175" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="middle">dashed = fold the seams</text>
+  </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"panels","type":"path","styles":{"fill":"#e7dfd0","stroke":"none"},"isDefault":false},{"name":"cut-line","type":"path","styles":{"stroke":"#ef4444","stroke-width":"2","fill":"none"},"isDefault":false},{"name":"fold-lines","type":"path","styles":{"stroke":"#475569","stroke-width":"1.5","fill":"none","stroke-dasharray":"5 4"},"isDefault":false},{"name":"cut-caption","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#f87171","text-anchor":"middle"},"isDefault":false},{"name":"fold-caption","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":480,"height":220}}]]></script>
+</svg>

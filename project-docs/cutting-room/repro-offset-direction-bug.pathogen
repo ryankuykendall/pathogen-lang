@@ -1,0 +1,24 @@
+define ViewBox(0, 0, 300, 200);
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck')
+  l 22 8
+  c -12 16 -2 30 10 40
+  l 6 96
+  h -84 as segment('hem')
+  z
+};
+let pieces = bodice.cut(@{
+  m -15 30
+  c 40 6 70 2 110 6
+});
+for (p in pieces) {
+  let pl = p.project(60, 40);
+  if (pl.segmentAll('neck').length > 0) {
+    let al = pl.reverse().offset(7);
+    let a0 = al.get(0);
+    al.drawTo(a0.x, a0.y);
+    let bb1 = pl.boundingBox();
+    let bb2 = al.boundingBox();
+    log(bb1.width, bb1.height, bb2.width, bb2.height);
+  }
+}

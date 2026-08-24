@@ -1,0 +1,82 @@
+// viewBox="0 0 480 250"
+//-- The interlocking nub: two cubics bulge the knife into a knob with a
+//-- narrow neck. Cut once and the pieces come apart wearing matching
+//-- seams — one knob, one socket, from the same stroke.
+
+define ViewBox(0, 0, 480, 250);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') ${};
+let knifeLayer = PathLayer('knife') ${
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  fill: none;
+  stroke-dasharray: 2 3;
+};
+let pieceLayer = PathLayer('pieces') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let seamLayer = PathLayer('seams') ${
+  stroke: #f59e0b;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(knifeLayer, pieceLayer, seamLayer, labels);
+
+let plate = @{
+  h 120
+  v 150
+  h -120
+  z
+};
+// A vertical knife with a knob halfway down: approach, then two cubics
+// swing out into a bulb that spreads wider than the 16-unit neck it
+// hangs from, and rejoin the line below.
+let nubKnife = @{
+  m 60 -15
+  l 0 74
+  c 8 -6 16 -3 16 8
+  c 0 11 -8 14 -16 8
+  l 0 90
+};
+let pieces = plate.cut(nubKnife);
+
+knifeLayer.apply {
+  nubKnife.drawTo(50, 50);
+}
+
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let side = calc(bb.x + bb.width / 2 < 60 ? -22 : 22);
+  let px = calc(290 + side);
+  pieceLayer.apply {
+    M px 50 p.draw()
+  }
+  let placed = p.project(px, 50);
+  seamLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(115, 230)`the nub knife`;
+  text(320, 230)`knob meets socket`;
+}

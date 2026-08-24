@@ -1,0 +1,97 @@
+// viewBox="0 0 480 260"
+//-- Labels from both operands coexist: a frame made by difference keeps
+//-- the outer square's 'sill' AND the inner square's 'light' — and after
+//-- a diagonal cut, both halves still answer for both names.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') ${};
+let frame = PathLayer('frame') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let sillRun = PathLayer('sill-run') ${
+  stroke: #f59e0b;
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let lightRun = PathLayer('light-run') ${
+  stroke: #2dd4bf;
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let legendSill = TextLayer('legend-sill') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f59e0b;
+};
+let legendLight = TextLayer('legend-light') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #2dd4bf;
+};
+scene.append(frame,
+    sillRun,
+    lightRun,
+    legendSill,
+    legendLight);
+
+let outer = @{
+  h 170
+  v 150
+  h -170 as segment('sill');
+  z
+};
+let opening = @{
+  h 110
+  v 90 as segment('light');
+  h -110
+  v -90 as segment('light');
+  z
+};
+let ring = outer.project(155, 40).difference(opening.project(185, 70));
+let knife = @{
+  m 150 25
+  l 160 180
+};
+let halves = ring.cut(knife);
+
+for (half in halves) {
+  // Open the cut along the diagonal: a ±10 nudge perpendicular to it.
+  // draw() keeps each half's own placement, so the nudge is all the
+  // move there is.
+  let bb = half.boundingBox();
+  let side = calc(bb.x + bb.width / 2 < 240 ? -10 : 10);
+  frame.apply {
+    M calc(side) calc(0 - side) half.draw()
+  }
+  let placed = half.project(side, calc(0 - side));
+  sillRun.apply {
+    for (r in placed.segmentAll('sill')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+  lightRun.apply {
+    for (r in placed.segmentAll('light')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+}
+
+legendSill.apply {
+  text(352, 110)`'sill' = bottom edge`;
+}
+legendLight.apply {
+  text(352, 128)`'light' = the sides`;
+}

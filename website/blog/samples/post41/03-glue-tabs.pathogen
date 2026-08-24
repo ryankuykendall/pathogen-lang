@@ -1,0 +1,89 @@
+// viewBox="0 0 480 240"
+//-- Glue tabs, generated: the left piece grows trapezoid tabs along its
+//-- healed seam — and only there. get(t) walks the seam, normal(t) points
+//-- the tabs outward, and the original boundary never grows a tab.
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') ${};
+let tabLayer = PathLayer('tabs') ${
+  fill: #cbbfa3;
+  stroke: #ef4444;
+  stroke-width: 1.5;
+};
+let pieceLayer = PathLayer('pieces') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(tabLayer, pieceLayer, labels);
+
+let plate = @{
+  h 150
+  v 110
+  h -150
+  z
+};
+let knife = @{
+  m 92 -15
+  c -26 45 26 75 -10 140
+};
+let pieces = plate.cut(knife);
+
+// Pull the two pieces apart so the tabs have room to show.
+let plateBB = plate.boundingBox();
+let plateCx = calc(plateBB.x + plateBB.width / 2);
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let side = calc(bb.x + bb.width / 2 < plateCx ? -34 : 34);
+  let px = calc(165 + side);
+  pieceLayer.apply {
+    M px 55 p.draw()
+  }
+  // Tabs go on the left piece only.
+  if (side < 0) {
+    let placed = p.project(px, 55);
+    let bb2 = placed.boundingBox();
+    let cx = calc(bb2.x + bb2.width / 2);
+    let cy = calc(bb2.y + bb2.height / 2);
+    tabLayer.apply {
+      for (seam in placed.segmentAll('cut')) {
+        // Walk the seam in sevenths; every other interval grows a tab.
+        for (k in 0..2) {
+          let t0 = calc((k * 2 + 1) / 7);
+          let t1 = calc((k * 2 + 2) / 7);
+          let a = seam.get(t0);
+          let b = seam.get(t1);
+          let n = seam.normal(calc((t0 + t1) / 2));
+          // Point the tab away from the piece's own center.
+          let toCenter = calc(cos(n.angle) * (cx - n.point.x) + sin(n.angle) * (cy - n.point.y));
+          let na = calc(toCenter > 0 ? n.angle + PI() : n.angle);
+          let ta = calc(na + PI() / 2);
+          // Trapezoid: seam edge a→b, outer edge tapered inward by 4.
+          M calc(a.x) calc(a.y)
+          L calc(a.x + cos(na) * 13 + cos(ta) * 4) calc(a.y + sin(na) * 13 + sin(ta) * 4)
+          L calc(b.x + cos(na) * 13 - cos(ta) * 4) calc(b.y + sin(na) * 13 - sin(ta) * 4)
+          L calc(b.x) calc(b.y)
+        }
+      }
+    }
+  }
+}
+
+labels.apply {
+  text(240, 205)`tabs ride the seam — the outer boundary stays clean`;
+}

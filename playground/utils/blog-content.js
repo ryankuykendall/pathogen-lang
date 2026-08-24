@@ -3,6 +3,39 @@
 
 export const blogIndex = [
   {
+    "slug": "cutting-room-stained-glass",
+    "title": "Stained Glass: Seams as Leading, Pieces as Panes",
+    "date": "2026-08-27",
+    "description": "The Cutting Room finale: a rose window where the cut is the artwork — came stroked from the seam group, panes tinted by layer routing, labels from both boolean operands coexisting, and solder dots at every joint.",
+    "series": "The Cutting Room",
+    "seriesPart": 4
+  },
+  {
+    "slug": "cutting-room-garment",
+    "title": "Garment Patterns: Edges with Names Sewn In",
+    "date": "2026-08-26",
+    "description": "Part 3 of The Cutting Room: draft a half-bodice with every edge named, split it at the yoke, and let the labels run the workflow — pieces identify themselves, allowances offset without losing their names, and notches land matched on both halves.",
+    "series": "The Cutting Room",
+    "seriesPart": 3
+  },
+  {
+    "slug": "cutting-room-jigsaw",
+    "title": "Jigsaw: Pieces That Know Their Own Edges",
+    "date": "2026-08-25",
+    "description": "Part 2 of The Cutting Room: the knife is a path, so jigsaw nubs are just cubics — and after the cut, labels classify the pieces, partition marks register twin seams, and rotate() scatters everything without pivot bookkeeping.",
+    "series": "The Cutting Room",
+    "seriesPart": 2
+  },
+  {
+    "slug": "cutting-room-papercraft",
+    "title": "Papercraft: Cut Lines, Fold Lines, and Glue Tabs from One Plate",
+    "date": "2026-08-24",
+    "description": "First in The Cutting Room, a four-project series on cut() + segment labels: fold lines, glue tabs, named pieces, and an exploded view, all queried from the pieces themselves — not bookkept.",
+    "series": "The Cutting Room",
+    "seriesPart": 1,
+    "seriesDescription": "Four projects that put PathBlock.cut() and segment labels to work together — papercraft, a jigsaw, a garment pattern, and a stained-glass window. Each starts from one bare mechanism and climbs to a finished composition."
+  },
+  {
     "slug": "pathblock-cutting",
     "title": "Cutting Paths: Slicing Shapes Apart with cut()",
     "date": "2026-08-22",
@@ -5467,6 +5500,2770 @@ disc.apply {
 </ul>
 <p><a href="./custom-filters-family">Part 2</a> walks through each one with side-by-side parameter sweeps. The ergonomic story stays the same — first-class values, named overrides, presets, introspection, reuse — applied to five more visual languages.</p>
 <p>For the full reference, see <a href="/docs/filters">docs/filters</a>. To experiment in your browser, open the <a href="/pathogen">playground</a>.</p>
+`,
+  'cutting-room-garment': `<p><em>Part 3 of 4 in The Cutting Room — projects that put <code>cut()</code> and
+segment labels to work together.</em></p>
+<blockquote>
+<p><strong>Series: The Cutting Room</strong></p>
+<ol>
+<li><a href="/blog/cutting-room-papercraft">Papercraft</a> — cut lines, fold
+lines, and glue tabs from one plate</li>
+<li><a href="/blog/cutting-room-jigsaw">Jigsaw</a> — wavy knives, piece identity,
+and a scattered puzzle</li>
+<li><strong>Garment patterns</strong> (this post) — named edges, seam allowances,
+and notches</li>
+<li><a href="/blog/cutting-room-stained-glass">Stained glass</a> — tinted panes,
+leading, and a rose window</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> <a href="/blog/pathblock-cutting"><code>PathBlock.cut()</code></a> and
+<a href="/blog/segment-labels-and-suffixes">segment labels</a>, plus part 1&#39;s
+<a href="/blog/cutting-room-papercraft">seam-stroking idiom</a>. Parts 1 and 2
+asked pieces about the <em>automatic</em> <code>cut</code> label; this post is where
+your own names do the heavy lifting.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>A sewing pattern is a shape whose edges have jobs. The hem gets folded
+twice; the side seam gets 7 units of allowance; the armhole gets eased;
+notches tell you which edge meets which. Pattern drafting software is,
+to a first approximation, software for <em>remembering which edge is
+which</em> — and that is precisely what <code>as segment(&#39;name&#39;)</code> does:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> bodice = @{
+  c <span class="hljs-number">16</span> <span class="hljs-number">18</span> <span class="hljs-number">34</span> <span class="hljs-number">20</span> <span class="hljs-number">46</span> <span class="hljs-number">6</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;neck&#x27;</span>)
+  l <span class="hljs-number">22</span> <span class="hljs-number">8</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;shoulder&#x27;</span>)
+  <span class="hljs-comment">// ...armhole, side, hem — Example 1 has the full draft</span>
+};
+</code></pre><p>Name the edges once, at drafting time, and every downstream operation —
+cutting the yoke off, offsetting for allowance — carries the names
+along. The workflow stops being coordinate bookkeeping and becomes a
+series of questions: <em>who kept the neckline? where is the side seam
+now?</em></p>
+<p>One blunt caveat before the pictures: <code>offset()</code> on cut pieces with
+strongly curved edges can currently send a curve&#39;s offset to the wrong
+side (a self-crossing &quot;allowance&quot;). The bodice&#39;s body panel offsets
+cleanly and that is what the examples show; the yoke&#39;s neck curve
+trips the bug, so the final sheet leaves the yoke&#39;s allowance off. A
+fix is tracked — until then, eyeball any allowance you generate on
+curvy cut pieces.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because the alternative is what pattern makers call &quot;walking the
+pattern&quot; — manually re-measuring every edge after every change. When
+the edges answer by name, grading and decorating survive redesigns:
+re-draft the armhole deeper, and the same queries still find the same
+jobs. The identification idiom this post adds to the kit:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> name = <span class="hljs-string">&#x27;body&#x27;</span>;
+<span class="hljs-keyword">if</span> (piece.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;neck&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+  name = <span class="hljs-string">&#x27;yoke&#x27;</span>;    <span class="hljs-comment">// whoever kept the neckline is the yoke</span>
+}
+</code></pre><h2>Example 1 — The draft speaks</h2>
+<p>A half-bodice front, drafted to the right of a center-front fold — the
+<code>z</code> edge, named <code>&#39;front&#39;</code> like the rest, dashed because real patterns
+are cut on the fold, so drafting half is the honest shape. Six edges,
+six names, six colors: each stroke is one <code>segmentAll</code> query answered
+by the block and drawn over the outline.</p>
+<p><mini-workspace code-open caption="Every edge named at drafting time; every color is one segmentAll query.">
+  <code>// viewBox="0 0 480 260"
+//-- The pattern draft speaks its own vocabulary: a half-bodice (cut on
+//-- the fold) with every edge named as it is drawn. Each labeled run is
+//-- stroked in its own color, straight from a segmentAll query.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') \${};
+let panel = PathLayer('panel') \${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let neckRun = PathLayer('neck-run') \${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let shoulderRun = PathLayer('shoulder-run') \${
+  stroke: #3b82f6;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let armholeRun = PathLayer('armhole-run') \${
+  stroke: #c084fc;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let sideRun = PathLayer('side-run') \${
+  stroke: #f59e0b;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let hemRun = PathLayer('hem-run') \${
+  stroke: #fb7185;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let frontRun = PathLayer('front-run') \${
+  stroke: #94a3b8;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 6 4;
+};
+let legendNeck = TextLayer('legend-neck') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #2dd4bf;
+};
+let legendShoulder = TextLayer('legend-shoulder') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #3b82f6;
+};
+let legendArmhole = TextLayer('legend-armhole') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #c084fc;
+};
+let legendSide = TextLayer('legend-side') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f59e0b;
+};
+let legendHem = TextLayer('legend-hem') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #fb7185;
+};
+let legendFold = TextLayer('legend-fold') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+};
+scene.append(panel,
+    neckRun,
+    shoulderRun,
+    armholeRun,
+    sideRun,
+    hemRun,
+    frontRun,
+    legendNeck,
+    legendShoulder,
+    legendArmhole,
+    legendSide,
+    legendHem,
+    legendFold);
+
+// Half a bodice front, drafted to the right of the center-front fold.
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z as segment('front')
+};
+let ox = 120;
+let oy = 48;
+
+panel.apply {
+  bodice.drawTo(ox, oy);
+}
+
+// One query per name; the layer's color does the explaining.
+let placed = bodice.project(ox, oy);
+fn strokeRun(run) {
+  run.drawTo(run.startPoint.x, run.startPoint.y);
+}
+neckRun.apply {
+  for (r in placed.segmentAll('neck')) {
+    strokeRun(r);
+  }
+}
+shoulderRun.apply {
+  for (r in placed.segmentAll('shoulder')) {
+    strokeRun(r);
+  }
+}
+armholeRun.apply {
+  for (r in placed.segmentAll('armhole')) {
+    strokeRun(r);
+  }
+}
+sideRun.apply {
+  for (r in placed.segmentAll('side')) {
+    strokeRun(r);
+  }
+}
+hemRun.apply {
+  for (r in placed.segmentAll('hem')) {
+    strokeRun(r);
+  }
+}
+frontRun.apply {
+  for (r in placed.segmentAll('front')) {
+    strokeRun(r);
+  }
+}
+
+legendNeck.apply {
+  text(300, 70)\`as segment('neck')\`;
+}
+legendShoulder.apply {
+  text(300, 88)\`as segment('shoulder')\`;
+}
+legendArmhole.apply {
+  text(300, 106)\`as segment('armhole')\`;
+}
+legendSide.apply {
+  text(300, 124)\`as segment('side')\`;
+}
+legendHem.apply {
+  text(300, 142)\`as segment('hem')\`;
+}
+legendFold.apply {
+  text(300, 160)\`as segment('front') - on fold\`;
+}
+</code>
+  <img src="/blog/samples/post43/01-labeled-draft.svg" alt="Every edge named at drafting time; every color is one segmentAll query." loading="lazy">
+</mini-workspace></p>
+<p>This is the whole trick of the post, shown before any cutting: the
+draft carries its own vocabulary. Everything after this is asking.</p>
+<h2>Example 2 — The yoke split</h2>
+<p>One curved knife across the chest and the bodice becomes yoke + body.
+Neither piece is found by position, index, or size — each is asked
+what it kept. The neckline stayed with the top piece, so it announces
+itself as the yoke; the hem stayed with the bottom, so it is the body.</p>
+<p><mini-workspace code-open caption="Identity by inheritance: keeping the neckline makes you the yoke.">
+  <code>// viewBox="0 0 480 280"
+//-- Split the bodice at the yoke line and ask each piece who it is:
+//-- keeping the neckline makes you the yoke, keeping the hem makes you
+//-- the body. No coordinates checked, no piece order assumed.
+
+define ViewBox(0, 0, 480, 280);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 280);
+}
+
+let scene = GroupLayer('scene') \${};
+let panel = PathLayer('panel') \${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let neckRun = PathLayer('neck-run') \${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let hemRun = PathLayer('hem-run') \${
+  stroke: #fb7185;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let leaders = PathLayer('leaders') \${
+  stroke: #475569;
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  fill: none;
+};
+let captions = TextLayer('captions') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(panel,
+    neckRun,
+    hemRun,
+    leaders,
+    captions);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+let ox = 130;
+
+for (p in pieces) {
+  // Even the layout is label-driven: the neckline-keeper slides up,
+  // the other piece slides down.
+  let isYoke = calc(p.segmentAll('neck').length &gt; 0 ? 1 : 0);
+  let oy = calc(isYoke == 1 ? 52 : 74);
+  panel.apply {
+    M ox oy p.draw()
+  }
+  let placed = p.project(ox, oy);
+  // Who am I? The labels answer.
+  let name = 'the body - it kept the hem';
+  if (placed.segmentAll('neck').length &gt; 0) {
+    name = 'the yoke - it kept the neckline';
+  }
+  neckRun.apply {
+    for (r in placed.segmentAll('neck')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+  hemRun.apply {
+    for (r in placed.segmentAll('hem')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+  let pb = placed.boundingBox();
+  let ly = calc(pb.y + pb.height / 2);
+  leaders.apply {
+    M calc(pb.x + pb.width + 5) ly
+    L 262 ly
+  }
+  captions.apply {
+    text(268, calc(ly + 3))\`\${name}\`;
+  }
+}
+</code>
+  <img src="/blog/samples/post43/02-yoke-split.svg" alt="Identity by inheritance: keeping the neckline makes you the yoke." loading="lazy">
+</mini-workspace></p>
+<p>The captions are computed, not typed per piece — the same loop handles
+both, and would handle a three-way split unchanged. That is the
+difference between labeling geometry and labeling <em>your assumptions
+about piece order</em>.</p>
+<h2>Example 3 — Seam allowance is an offset</h2>
+<p>The cutting line a seamstress actually scissors along sits 7 units
+outside the stitch line. That is <code>offset(7)</code> on the projected piece:
+the red ring is the offset, the dashed original is the stitch line —
+and because labels survive <code>offset()</code>, the amber stroke finds the side
+seam <em>on the allowance outline</em>, not the original.</p>
+<p><mini-workspace code-open caption="offset(7) makes the cutting line; the side seam still answers by name on it.">
+  <code>// viewBox="0 0 480 230"
+//-- Seam allowance is an offset: push the body piece's outline out by 7
+//-- and you have the cutting line; the original edge, dashed, becomes the
+//-- stitch line. The 'side' label survives the offset and says so.
+
+define ViewBox(0, 0, 480, 230);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 230);
+}
+
+let scene = GroupLayer('scene') \${};
+let panel = PathLayer('panel') \${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+};
+let allowance = PathLayer('allowance') \${
+  stroke: #ef4444;
+  stroke-width: 1.6;
+  fill: none;
+};
+let sideRun = PathLayer('side-run') \${
+  stroke: #f59e0b;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let legendCut = TextLayer('legend-cut') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f87171;
+};
+let legendStitch = TextLayer('legend-stitch') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+};
+let legendSide = TextLayer('legend-side') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f59e0b;
+};
+scene.append(panel,
+    allowance,
+    sideRun,
+    legendCut,
+    legendStitch,
+    legendSide);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+
+for (p in pieces) {
+  let placedProbe = p.project(0, 0);
+  // Only the body piece gets the allowance treatment here.
+  if (placedProbe.segmentAll('hem').length &gt; 0) {
+    let placed = p.project(150, 28);
+    panel.apply {
+      M 150 28 p.draw()
+    }
+    // The cutting line: the same outline, pushed out by the allowance.
+    let allow = placed.offset(7);
+    allowance.apply {
+      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+    }
+    // Labels survive offset: the allowance still knows its side seam.
+    sideRun.apply {
+      for (r in allow.segmentAll('side')) {
+        r.drawTo(r.startPoint.x, r.startPoint.y);
+      }
+    }
+  }
+}
+
+legendCut.apply {
+  text(300, 92)\`solid red = cutting line\`;
+}
+legendStitch.apply {
+  text(300, 110)\`dashed = stitch line\`;
+}
+legendSide.apply {
+  text(300, 128)\`amber = side, post-offset\`;
+}
+</code>
+  <img src="/blog/samples/post43/03-seam-allowance.svg" alt="offset(7) makes the cutting line; the side seam still answers by name on it." loading="lazy">
+</mini-workspace></p>
+<p>Query-after-offset is the point to take away: the allowance is not
+dumb geometry. If the next step were &quot;add extra width only along the
+side seam for grading,&quot; the run you&#39;d need is already addressable.</p>
+<h2>Example 4 — Notches</h2>
+<p>Sewists cut small ticks on both halves of a seam so the halves align
+at the machine. Both pieces get a single notch 30% along the join seam
+and a double notch at 70% — but twin seams can run opposite
+directions, so a naive <code>get(0.3)</code> might land at 30% on one piece and
+70% on the other. The sample normalizes first: compare the seam&#39;s two
+endpoints, and if it runs right-to-left, flip <code>t</code>.</p>
+<p><mini-workspace code-open caption="Normalize the walk direction, then the same fractions land matched ticks on both pieces.">
+  <code>// viewBox="0 0 480 280"
+//-- Notches: a single tick a third of the way along the join seam, a
+//-- double tick two thirds along — on BOTH pieces. Twin seams may run
+//-- opposite directions, so the walk is normalized left-to-right first.
+
+define ViewBox(0, 0, 480, 280);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 280);
+}
+
+let scene = GroupLayer('scene') \${};
+let panel = PathLayer('panel') \${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let notches = PathLayer('notches') \${
+  stroke: #2dd4bf;
+  stroke-width: 2;
+  fill: none;
+};
+let captions = TextLayer('captions') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(panel, notches, captions);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+let ox = 150;
+
+// One tick crossing the seam at normalized fraction u.
+fn tick(seam, u) {
+  let e0 = seam.get(0);
+  let e1 = seam.get(1);
+  // Normalize: walk the seam left-to-right no matter how it runs.
+  let t = calc(e0.x &gt; e1.x ? 1 - u : u);
+  let s = seam.get(t);
+  let n = seam.normal(t);
+  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
+  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+}
+
+for (p in pieces) {
+  // Label-driven layout, as in the yoke split.
+  let oy = calc(p.segmentAll('neck').length &gt; 0 ? 48 : 78);
+  panel.apply {
+    M ox oy p.draw()
+  }
+  let placed = p.project(ox, oy);
+  notches.apply {
+    for (seam in placed.segmentAll('cut')) {
+      tick(seam, 0.3);
+      // The "double at 0.7" is two ticks straddling it.
+      tick(seam, 0.66);
+      tick(seam, 0.74);
+    }
+  }
+}
+
+captions.apply {
+  text(240, 250)\`single notch at 0.3, double at 0.7 - matched on both pieces\`;
+}
+</code>
+  <img src="/blog/samples/post43/04-notches.svg" alt="Normalize the walk direction, then the same fractions land matched ticks on both pieces." loading="lazy">
+</mini-workspace></p>
+<p>Part 2&#39;s registration marks dodged this problem by using <code>partition</code>&#39;s
+symmetric fractions; notches are <em>asymmetric</em> on purpose (that is how
+they encode orientation), so the direction fix stops being optional.</p>
+<h2>Example 5 — The pattern sheet</h2>
+<p>The deliverable: both pieces laid out side by side — placed by
+<code>boundingBox()</code>, tops aligned, no piece order assumed — with stitch
+lines dashed, the body&#39;s cutting line offset in red, notches matched
+across the join seam, a grainline arrow down each piece, and computed
+names. &quot;Cut 1 on fold&quot; is real pattern language, and the fold is the
+<code>z</code> edge from Example 1.</p>
+<p><mini-workspace code-open caption="The finished sheet: layout, allowance, notches, grainlines, and names — all queried, none hand-placed.">
+  <code>// viewBox="0 0 480 240"
+//-- The finished pattern sheet: yoke and body laid out side by side via
+//-- their bounding boxes, each with its cutting line (offset), stitch
+//-- line, join-seam notches, grainline arrow, and name.
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') \${};
+let panel = PathLayer('panel') \${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1.1;
+  stroke-dasharray: 4 3;
+};
+let allowance = PathLayer('allowance') \${
+  stroke: #ef4444;
+  stroke-width: 1.5;
+  fill: none;
+};
+let notches = PathLayer('notches') \${
+  stroke: #2dd4bf;
+  stroke-width: 2;
+  fill: none;
+};
+let grain = PathLayer('grain') \${
+  stroke: #64748b;
+  stroke-width: 1.4;
+  fill: none;
+};
+let names = TextLayer('names') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+let title = TextLayer('title') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+  letter-spacing: 3;
+};
+scene.append(panel,
+    allowance,
+    notches,
+    grain,
+    names,
+    title);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+
+fn tick(seam, u) {
+  let e0 = seam.get(0);
+  let e1 = seam.get(1);
+  let t = calc(e0.x &gt; e1.x ? 1 - u : u);
+  let s = seam.get(t);
+  let n = seam.normal(t);
+  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
+  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+}
+
+for (p in pieces) {
+  // Lay pieces out by bounding box: yoke on the left, body on the right,
+  // tops aligned — no knowledge of piece order required.
+  let bb = p.boundingBox();
+  // Identity comes from the labels, never from coordinates: whoever
+  // kept the neckline is the yoke.
+  let isYoke = calc(p.segmentAll('neck').length &gt; 0 ? 1 : 0);
+  let tx = calc(isYoke == 1 ? 90 : 270);
+  let px = calc(tx - bb.x);
+  let py = calc(64 - bb.y);
+  let placed = p.project(px, py);
+  panel.apply {
+    M px py p.draw()
+  }
+  // Allowance on the body panel (see the post for the yoke caveat).
+  if (isYoke == 0) {
+    let allow = placed.offset(7);
+    allowance.apply {
+      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+    }
+  }
+  notches.apply {
+    for (seam in placed.segmentAll('cut')) {
+      tick(seam, 0.3);
+      tick(seam, 0.66);
+      tick(seam, 0.74);
+    }
+  }
+  // Grainline: a double-headed vertical arrow at the piece's center.
+  let pb = placed.boundingBox();
+  let gx = calc(pb.x + pb.width / 2);
+  let gy = calc(pb.y + pb.height / 2);
+  let gl = calc(max(16, pb.height * 0.28));
+  grain.apply {
+    M gx calc(gy - gl)
+    L gx calc(gy + gl)
+    M calc(gx - 4) calc(gy - gl + 6)
+    L gx calc(gy - gl)
+    L calc(gx + 4) calc(gy - gl + 6)
+    M calc(gx - 4) calc(gy + gl - 6)
+    L gx calc(gy + gl)
+    L calc(gx + 4) calc(gy + gl - 6)
+  }
+  names.apply {
+    text(calc(pb.x + pb.width / 2), calc(pb.y + pb.height + 24))\`\${isYoke == 1 ? 'YOKE - cut 1 on fold' : 'BODY - cut 1 on fold'}\`;
+  }
+}
+
+title.apply {
+  text(240, 32)\`HALF-BODICE PATTERN\`;
+}
+</code>
+  <img src="/blog/samples/post43/05-pattern-sheet.svg" alt="The finished sheet: layout, allowance, notches, grainlines, and names — all queried, none hand-placed." loading="lazy">
+</mini-workspace></p>
+<p>Every annotation on this sheet is derived: move the yoke line, deepen
+the neck, or widen the hem, and the sheet re-annotates itself on the
+next compile. That is the payoff of edges with names sewn in.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/cutting-room-stained-glass">Stained glass</a> — the series
+finale: labels from <em>both</em> operands of a boolean, and seams as the
+artwork itself.</li>
+<li><a href="/blog/cutting-room-papercraft">Papercraft</a> and
+<a href="/blog/cutting-room-jigsaw">Jigsaw</a> — parts 1 and 2, where the seam
+idioms used here were introduced.</li>
+<li>Reference: <a href="/docs#segment-labels-labels-survive-derived-paths">labels survive derived paths</a>
+and <a href="/docs#path-blocks-offsetdistance-pathblock-projectedpath">offset</a> in the docs.</li>
+</ul>
+`,
+  'cutting-room-jigsaw': `<p><em>Part 2 of 4 in The Cutting Room — projects that put <code>cut()</code> and
+segment labels to work together.</em></p>
+<blockquote>
+<p><strong>Series: The Cutting Room</strong></p>
+<ol>
+<li><a href="/blog/cutting-room-papercraft">Papercraft</a> — cut lines, fold
+lines, and glue tabs from one plate</li>
+<li><strong>Jigsaw</strong> (this post) — wavy knives, piece identity, and a
+scattered puzzle</li>
+<li><a href="/blog/cutting-room-garment">Garment patterns</a> — named edges, seam
+allowances, and notches</li>
+<li><a href="/blog/cutting-room-stained-glass">Stained glass</a> — tinted panes,
+leading, and a rose window</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> <a href="/blog/pathblock-cutting"><code>PathBlock.cut()</code></a> and
+<a href="/blog/segment-labels-and-suffixes">segment labels</a>. Part 1&#39;s
+<a href="/blog/cutting-room-papercraft">seam-stroking idiom</a> — project the
+piece, loop <code>segmentAll(&#39;cut&#39;)</code>, draw each seam on itself — is used
+here without re-introduction.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>A jigsaw puzzle is a shape whose <em>cuts are the product</em>. Nobody looks
+at the rectangle; everyone looks at the wiggle. And because a Pathogen
+knife is an ordinary path, the wiggle is yours to author: a cubic
+knife cuts a cubic seam, and the healed edges on both sides are exact
+copies of the arc the knife took through the material.</p>
+<p>This post adds three tools to part 1&#39;s kit:</p>
+<ul>
+<li><strong>Knife design.</strong> Nubs, waves, and hooks are plain <code>c</code> commands in
+the cutter block. Whatever you can draw, you can cut along.</li>
+<li><strong>Classification by label.</strong> Label the plate&#39;s rim before cutting,
+and <code>segmentAll(&#39;rim&#39;).length</code> sorts border pieces from interior
+pieces with no geometry tests.</li>
+<li><strong><code>rotate(angle, origin)</code>.</strong> Frame-preserving rotation spins a piece
+around any pivot — its own center, say — with no re-basing and no
+pivot bookkeeping afterward.</li>
+</ul>
+<h2>Why you&#39;d use it</h2>
+<p>The same reason the puzzle industry uses dies instead of rulers: the
+interesting cut is curved, interlocking, and repeated — miserable to
+construct by intersection math, trivial to draw once as a stroke. Cut
+geometry you author once multiplies across every piece, and the seams
+come back queryable, so the decoration (registration marks, sorting,
+scattering) is a loop, not a spreadsheet. The classification idiom:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">if</span> (piece.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+  <span class="hljs-comment">// this piece kept some of the plate&#x27;s labeled border</span>
+}
+</code></pre><h2>Example 1 — The knife is a path</h2>
+<p>One lazy S-curve, dashed red over a ghost of the plate on the left, and
+the two pieces it makes on the right. The amber strokes are each
+piece&#39;s <code>segmentAll(&#39;cut&#39;)</code> — notice they are the <em>same curve</em> as the
+knife, clipped to the material it actually crossed.</p>
+<p><mini-workspace code-open caption="A cubic knife cuts a cubic seam; the healed edges echo the stroke.">
+  <code>// viewBox="0 0 480 230"
+//-- The knife is a path, so curves cut curves: a lazy S-wave slices the
+//-- plate, the pieces drift apart, and each healed seam — stroked amber —
+//-- is an exact copy of the knife's arc through the material.
+
+define ViewBox(0, 0, 480, 230);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 230);
+}
+
+let scene = GroupLayer('scene') \${};
+let knifeLayer = PathLayer('knife') \${
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  fill: none;
+  stroke-dasharray: 2 3;
+};
+let pieceLayer = PathLayer('pieces') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let seamLayer = PathLayer('seams') \${
+  stroke: #f59e0b;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(knifeLayer, pieceLayer, seamLayer, labels);
+
+let plate = @{
+  h 150
+  v 110
+  h -150
+  z
+};
+let knife = @{
+  m 80 -15
+  c 34 44 -34 82 8 140
+};
+let pieces = plate.cut(knife);
+
+// The knife's full arc over a ghost of the plate — the overshoot on
+// both ends is what makes it a complete cut.
+let ghost = PathLayer('ghost') \${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+scene.append(ghost);
+ghost.apply {
+  plate.drawTo(30, 45);
+}
+knifeLayer.apply {
+  knife.drawTo(30, 45);
+}
+
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let side = calc(bb.x + bb.width / 2 &lt; 80 ? -26 : 26);
+  let px = calc(255 + side);
+  pieceLayer.apply {
+    M px 45 p.draw()
+  }
+  let placed = p.project(px, 45);
+  seamLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(118, 205)\`the knife\`;
+  text(300, 205)\`the pieces — seams echo the knife\`;
+}
+</code>
+  <img src="/blog/samples/post42/01-wavy-knife.svg" alt="A cubic knife cuts a cubic seam; the healed edges echo the stroke." loading="lazy">
+</mini-workspace></p>
+<p>The knife overshoots the plate on both ends — a knife has to fully
+cross material to cut (<a href="/blog/pathblock-cutting">part 5 of the PathBlock
+series</a> covers the rules) — and the seams
+show only the part that drew blood.</p>
+<h2>Example 2 — The interlocking nub</h2>
+<p>The jigsaw signature. Halfway down a straight knife, two cubics bulge
+out into a knob with a narrow neck, then rejoin the line. One cut,
+two pieces: the left one wears the knob, the right one the socket,
+and both seams are the same mushroom silhouette.</p>
+<p><mini-workspace code-open caption="Two cubics make the knob; the cut hands one piece the nub and the other the socket.">
+  <code>// viewBox="0 0 480 250"
+//-- The interlocking nub: two cubics bulge the knife into a knob with a
+//-- narrow neck. Cut once and the pieces come apart wearing matching
+//-- seams — one knob, one socket, from the same stroke.
+
+define ViewBox(0, 0, 480, 250);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') \${};
+let knifeLayer = PathLayer('knife') \${
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  fill: none;
+  stroke-dasharray: 2 3;
+};
+let pieceLayer = PathLayer('pieces') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let seamLayer = PathLayer('seams') \${
+  stroke: #f59e0b;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(knifeLayer, pieceLayer, seamLayer, labels);
+
+let plate = @{
+  h 120
+  v 150
+  h -120
+  z
+};
+// A vertical knife with a knob halfway down: approach, then two cubics
+// swing out into a bulb that spreads wider than the 16-unit neck it
+// hangs from, and rejoin the line below.
+let nubKnife = @{
+  m 60 -15
+  l 0 74
+  c 8 -6 16 -3 16 8
+  c 0 11 -8 14 -16 8
+  l 0 90
+};
+let pieces = plate.cut(nubKnife);
+
+knifeLayer.apply {
+  nubKnife.drawTo(50, 50);
+}
+
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let side = calc(bb.x + bb.width / 2 &lt; 60 ? -22 : 22);
+  let px = calc(290 + side);
+  pieceLayer.apply {
+    M px 50 p.draw()
+  }
+  let placed = p.project(px, 50);
+  seamLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(115, 230)\`the nub knife\`;
+  text(320, 230)\`knob meets socket\`;
+}
+</code>
+  <img src="/blog/samples/post42/02-nub-knife.svg" alt="Two cubics make the knob; the cut hands one piece the nub and the other the socket." loading="lazy">
+</mini-workspace></p>
+<p>There is no special interlock feature here — that is the point. The
+nub is knife authorship, nothing more, which means your puzzle&#39;s edge
+style is a design decision you make in path commands.</p>
+<h2>Example 3 — Which pieces touch the frame?</h2>
+<p>Puzzle solvers sort edge pieces first, and labels let the program do
+the same. The plate names its entire boundary <code>as segment(&#39;rim&#39;)</code>
+before four wavy knives make a 3×3 grid. Afterward, one question per
+piece — <em>did you keep any rim?</em> — splits tray pieces from the one
+interior piece, tinted amber. The teal strokes make the mechanism
+visible: they are each piece&#39;s inherited rim runs, the very label the
+classification asked about.</p>
+<p><mini-workspace code-open caption="Teal is the rim each piece kept — the label does the sorting, and the amber piece kept none.">
+  <code>// viewBox="0 0 480 300"
+//-- Which pieces touch the frame? Label the plate's rim before cutting a
+//-- 3x3 wavy grid, and afterward each piece answers for itself: rim run
+//-- kept = tray piece (paper), rim count zero = the one that falls out.
+
+define ViewBox(0, 0, 480, 300);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') \${};
+let framePieces = PathLayer('frame-pieces') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let middlePieces = PathLayer('middle-pieces') \${
+  fill: #f59e0b;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let rimRuns = PathLayer('rim-runs') \${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(framePieces, middlePieces, rimRuns, labels);
+
+let plate = @{
+  h 198 as segment('rim');
+  v 198 as segment('rim');
+  h -198 as segment('rim');
+  z as segment('rim')
+};
+let knives = @{
+  m 66 -15
+  c 18 60 -18 118 6 228
+  m 60 -228
+  c 18 60 -18 118 6 228
+  m -153 -147
+  c 60 18 118 -18 228 6
+  m -228 60
+  c 60 18 118 -18 228 6
+};
+let pieces = plate.cut(knives);
+let ox = 141;
+let oy = 40;
+
+let plateBB = plate.boundingBox();
+let pcx = calc(plateBB.x + plateBB.width / 2);
+let pcy = calc(plateBB.y + plateBB.height / 2);
+for (p in pieces) {
+  // Small drift along the ray to each piece's bounding-box center so
+  // every edge shows.
+  let bb = p.boundingBox();
+  let dx = calc(bb.x + bb.width / 2 - pcx);
+  let dy = calc(bb.y + bb.height / 2 - pcy);
+  let len = calc(sqrt(dx * dx + dy * dy) + 0.001);
+  let px = calc(ox + dx / len * 10);
+  let py = calc(oy + dy / len * 10);
+  let placed = p.project(px, py);
+  // The classification: did this piece keep any of the rim?
+  if (placed.segmentAll('rim').length &gt; 0) {
+    framePieces.apply {
+      M px py p.draw()
+    }
+    // Show the inherited label riding on the piece: stroke its rim.
+    rimRuns.apply {
+      for (r in placed.segmentAll('rim')) {
+        r.drawTo(r.startPoint.x, r.startPoint.y);
+      }
+    }
+  } else {
+    middlePieces.apply {
+      M px py p.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(240, 282)\`teal = the rim each piece kept - the amber piece kept none\`;
+}
+</code>
+  <img src="/blog/samples/post42/03-frame-or-middle.svg" alt="Teal is the rim each piece kept — the label does the sorting, and the amber piece kept none." loading="lazy">
+</mini-workspace></p>
+<p>Worth noticing: the rim label rides the <em>plate&#39;s</em> edges, so it lands
+on whichever pieces inherit those edges, automatically. Nothing about
+the knives, the piece count, or the piece order is encoded in the
+classification — cut a 5×5 next week and the same <code>if</code> still sorts it.</p>
+<h2>Example 4 — Registration marks</h2>
+<p>Print-shop trick: put matching marks on both sides of a cut so
+alignment is visible. Twin seams are the same curve, and
+<code>partition(n)</code> samples at fixed fractions of arc length — including
+both endpoints — so partitioning <em>each piece&#39;s own seam</em> puts rings at
+identical spots on both copies. The dotted lines just make the pairing
+visible across the gap.</p>
+<p><mini-workspace code-open caption="partition(3) on each twin seam: same fractions, same spots, guaranteed pairs.">
+  <code>// viewBox="0 0 480 240"
+//-- Registration marks: partition each piece's seam at the same fractions
+//-- and the marks pair up across the gap — twin seams are the same curve,
+//-- so the same t lands on the same spot of both copies.
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') \${};
+let matchLines = PathLayer('match-lines') \${
+  stroke: #475569;
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  fill: none;
+};
+let pieceLayer = PathLayer('pieces') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let markLayer = PathLayer('marks') \${
+  fill: none;
+  stroke: #2dd4bf;
+  stroke-width: 1.6;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(matchLines, pieceLayer, markLayer, labels);
+
+let plate = @{
+  h 170
+  v 130
+  h -170
+  z
+};
+let knife = @{
+  m 92 -15
+  c 30 50 -30 90 6 160
+};
+let pieces = plate.cut(knife);
+let gap = 64;
+
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let side = calc(bb.x + bb.width / 2 &lt; 92 ? 0 - gap / 2 : gap / 2);
+  let px = calc(240 - 85 + side);
+  pieceLayer.apply {
+    M px 40 p.draw()
+  }
+  let placed = p.project(px, 40);
+  markLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      for (op in seam.partition(3)) {
+        circle(op.point.x, op.point.y, 3.5);
+      }
+    }
+  }
+  // Dotted match lines bridge the gap from the left piece's marks.
+  if (side &lt; 0) {
+    matchLines.apply {
+      for (seam in placed.segmentAll('cut')) {
+        for (op in seam.partition(3)) {
+          M calc(op.point.x - 2) calc(op.point.y)
+          l calc(gap + 4) 0
+        }
+      }
+    }
+  }
+}
+
+labels.apply {
+  text(240, 215)\`same t, same spot - the rings line up when the gap closes\`;
+}
+</code>
+  <img src="/blog/samples/post42/04-registration-marks.svg" alt="partition(3) on each twin seam: same fractions, same spots, guaranteed pairs." loading="lazy">
+</mini-workspace></p>
+<p>This works even though the two pieces&#39; seams may run in opposite
+directions: <code>partition</code>&#39;s fraction set is symmetric (0, 1/3, 2/3, 1),
+so a reversed twin lands its marks on the same points.</p>
+<h2>Example 5 — The scattered puzzle</h2>
+<p>The finished scene. Nine pieces from the wavy grid; the middle piece —
+found by the rim test, not by index — has gone missing under the sofa.
+The rest spin in place with <code>rotate(angle, center)</code> around their own
+bounding-box centers and drift apart with shoves from
+<a href="/blog/primer-hashrange"><code>hashRange</code></a> — deterministic randomness, so
+the scatter is the same on every compile. The box lid in the
+corner keeps the assembled picture: every piece run through
+<code>scale(0.44, 0.44)</code> and drawn at one shared origin, reassembling the
+plate in miniature because scaled pieces keep their scaled placement.</p>
+<p><mini-workspace code-open caption="rotate() spins each piece about its own center — no pivot bookkeeping — and the lid is the same cut, scaled.">
+  <code>// viewBox="0 0 480 300"
+//-- The finished puzzle: nine wavy-cut pieces spun in place with
+//-- rotate() and scattered — except the middle piece, gone missing. The
+//-- box lid keeps the assembled picture, scale()d straight from the cut.
+
+define ViewBox(0, 0, 480, 300);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') \${};
+let shard0 = PathLayer('shard0') \${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let shard1 = PathLayer('shard1') \${
+  fill: #a78bfa;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let shard2 = PathLayer('shard2') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let lid = PathLayer('lid') \${
+  fill: #1e293b;
+  stroke: #475569;
+  stroke-width: 1;
+};
+let lid0 = PathLayer('lid0') \${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 0.8;
+};
+let lid1 = PathLayer('lid1') \${
+  fill: #a78bfa;
+  stroke: #0f172a;
+  stroke-width: 0.8;
+};
+let lid2 = PathLayer('lid2') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 0.8;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(shard0,
+    shard1,
+    shard2,
+    lid,
+    lid0,
+    lid1,
+    lid2,
+    labels);
+
+let plate = @{
+  h 198 as segment('rim');
+  v 198 as segment('rim');
+  h -198 as segment('rim');
+  z as segment('rim')
+};
+let knives = @{
+  m 66 -15
+  c 18 60 -18 118 6 228
+  m 60 -228
+  c 18 60 -18 118 6 228
+  m -153 -147
+  c 60 18 118 -18 228 6
+  m -228 60
+  c 60 18 118 -18 228 6
+};
+let pieces = plate.cut(knives);
+let ox = 42;
+let oy = 52;
+
+let plateBB = plate.boundingBox();
+let pcx = calc(plateBB.x + plateBB.width / 2);
+let pcy = calc(plateBB.y + plateBB.height / 2);
+for ([p, i] in pieces) {
+  let bb = p.boundingBox();
+  let cx = calc(bb.x + bb.width / 2);
+  let cy = calc(bb.y + bb.height / 2);
+  // The piece that kept no rim is the missing one — skip it.
+  if (p.segmentAll('rim').length &gt; 0) {
+    // Spin in place around the piece's own bounding-box center:
+    // frame-preserving, so no pivot bookkeeping — then drift outward
+    // with a hashed shove.
+    let spun = p.rotate(hashRange(i, -0.22, 0.22), Point(cx, cy));
+    let dx = calc((cx - pcx) / pcx * 26 + hashRange(i, -8, 8, 7));
+    let dy = calc((cy - pcy) / pcy * 26 + hashRange(i, -8, 8, 13));
+    let px = calc(ox + dx);
+    let py = calc(oy + dy);
+    if (calc(i % 3) == 0) {
+      shard0.apply {
+        M px py spun.draw()
+      }
+    }
+    if (calc(i % 3) == 1) {
+      shard1.apply {
+        M px py spun.draw()
+      }
+    }
+    if (calc(i % 3) == 2) {
+      shard2.apply {
+        M px py spun.draw()
+      }
+    }
+  }
+}
+
+// The box lid: the assembled picture, scaled straight from the pieces.
+lid.apply {
+  roundRect(348,
+      30,
+      112,
+      112,
+      8);
+}
+for ([p, i] in pieces) {
+  let mini = p.scale(0.44, 0.44);
+  if (calc(i % 3) == 0) {
+    lid0.apply {
+      M 361 43 mini.draw()
+    }
+  }
+  if (calc(i % 3) == 1) {
+    lid1.apply {
+      M 361 43 mini.draw()
+    }
+  }
+  if (calc(i % 3) == 2) {
+    lid2.apply {
+      M 361 43 mini.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(404, 165)\`the lid\`;
+  text(240, 280)\`eight of nine - the middle piece kept no rim, and it's gone\`;
+}
+</code>
+  <img src="/blog/samples/post42/05-scattered-puzzle.svg" alt="rotate() spins each piece about its own center — no pivot bookkeeping — and the lid is the same cut, scaled." loading="lazy">
+</mini-workspace></p>
+<p>If you saw the <a href="/blog/pathblock-cutting">shattered-glyph
+finale</a> in the cutting post, compare the
+spin: it needed <code>rotateAtVertexIndex</code> plus manual pivot compensation.
+<code>rotate(angle, origin)</code> is frame-preserving — the piece turns around
+the pivot and stays put — so the scatter is two lines per piece.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/cutting-room-garment">Garment patterns</a> — part 3 turns
+label-keeping into a workflow: pieces identified, offset for seam
+allowance, and notched.</li>
+<li><a href="/blog/cutting-room-papercraft">Papercraft</a> — part 1, if you skipped
+it: the seam-stroking idiom every example here leaned on.</li>
+<li><a href="/blog/pathblock-parametric-sampling">PathBlock parametric sampling</a>
+— <code>get</code>, <code>normal</code>, <code>partition</code>, and friends.</li>
+<li>Reference: <a href="/docs#path-blocks-cutting-paths">cutting paths</a> and
+<a href="/docs#path-blocks-rotateangle-origin-pathblock-projectedpath">rotate</a> in the docs.</li>
+</ul>
+`,
+  'cutting-room-papercraft': `<p><em>Part 1 of 4 in The Cutting Room — projects that put <code>cut()</code> and
+segment labels to work together.</em></p>
+<blockquote>
+<p><strong>Series: The Cutting Room</strong></p>
+<ol>
+<li><strong>Papercraft</strong> (this post) — cut lines, fold lines, and glue tabs
+from one plate</li>
+<li><a href="/blog/cutting-room-jigsaw">Jigsaw</a> — wavy knives, piece identity,
+and a scattered puzzle</li>
+<li><a href="/blog/cutting-room-garment">Garment patterns</a> — named edges, seam
+allowances, and notches</li>
+<li><a href="/blog/cutting-room-stained-glass">Stained glass</a> — tinted panes,
+leading, and a rose window</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This series builds on
+<a href="/blog/pathblock-cutting"><code>PathBlock.cut()</code></a> — slicing a shape along
+the strokes of a second PathBlock — and on
+<a href="/blog/segment-labels-and-suffixes">segment labels</a>, the
+<code>as segment(&#39;name&#39;)</code> clause that makes parts of a path queryable.
+Examples 3 and 6 also lean on the
+<a href="/blog/pathblock-parametric-sampling">parametric sampling tools</a>
+(<code>get</code>, <code>normal</code>, <code>subPath</code>). Skim those first if any are new.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>When <code>cut()</code> slices a closed shape apart, every piece comes back healed
+shut — and every healed edge remembers that it used to be a wound. (An
+open subject severs into open fragments instead; the healing is for
+closed material.) Each seam carries the automatic segment label <code>cut</code>,
+so a piece can be asked, after the fact, <em>where was I cut?</em></p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> pieces = plate.<span class="hljs-title function_">cut</span>(knife);
+<span class="hljs-keyword">let</span> placed = pieces[<span class="hljs-number">0</span>].<span class="hljs-title function_">project</span>(<span class="hljs-number">20</span>, <span class="hljs-number">30</span>);
+placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>);   <span class="hljs-comment">// every healed edge, as drawable runs</span>
+</code></pre><p>Two things to know before the pictures, because everything below leans
+on them:</p>
+<ul>
+<li><strong>Query the projected form.</strong> A piece is a PathBlock, and a
+PathBlock answers sub-queries in its own frame — each returned run is
+rebased so its own start is <code>(0, 0)</code>. Call <code>project(x, y)</code> first and
+the same queries answer in canvas coordinates, ready to draw with.</li>
+<li><strong>Adjacent commands with the same label merge into one run.</strong> Ask
+<code>segmentAll</code> for two labeled edges that follow each other and you get
+one queryable run, not two. That is a feature — a fold line that
+turns a corner is still one fold — but it will surprise you exactly
+once, so it gets its own moment in Example 6.</li>
+</ul>
+<p>Your own labels survive the cut too: name an edge <code>as segment(&#39;roof&#39;)</code>
+before cutting and whichever piece keeps that edge still answers for
+the name. That is the other half of this series&#39; toolkit.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Papercraft is the cleanest possible demonstration, because a paper
+template is nothing <em>but</em> annotated cuts: solid lines to scissor,
+dashed lines to fold, tabs to glue. Before seam labels, decorating a
+cut meant re-deriving where the knife went — intersecting lines by
+hand, tracking which piece got which fragment. Now the pieces carry the
+answer. The idiom the whole series leans on:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
+  seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+}
+</code></pre><p><code>startPoint</code> is the seam&#39;s own anchor, so <code>drawTo</code> draws the seam
+right back on top of itself — into whatever layer is active, with
+whatever stroke style that layer carries. Dashed layer, fold lines.
+Amber layer, highlights. The seam is just a path; the meaning comes
+from where you draw it.</p>
+<h2>Example 1 — The first seam</h2>
+<p>One rectangular plate, one S-curved knife, two pieces. On the left, the
+pieces drawn plain, reassembled. On the right, the same two pieces
+nudged apart, after each was asked for its healed seams — stroked in
+amber with the idiom above.</p>
+<p><mini-workspace code-open caption="Left: the cut pieces, reassembled. Right: the pieces apart — each strokes its own segmentAll('cut').">
+  <code>// viewBox="0 0 480 240"
+//-- The bare mechanism: cut a plate in two, then ask each piece where it
+//-- was healed. Left: the pieces, drawn plain. Right: the same pieces with
+//-- every seam the cut created stroked in amber via segmentAll('cut').
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') \${};
+let pieceLayer = PathLayer('pieces') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let seamLayer = PathLayer('seams') \${
+  stroke: #f59e0b;
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let divider = PathLayer('divider') \${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(pieceLayer, seamLayer, divider, labels);
+
+let plate = @{
+  h 140
+  v 100
+  h -140
+  z
+};
+let knife = @{
+  m 88 -15
+  c -30 50 30 80 -12 130
+};
+let pieces = plate.cut(knife);
+
+// Left: pieces drawn at one shared position — the plate reassembles.
+pieceLayer.apply {
+  for (p in pieces) {
+    M 50 70 p.draw()
+  }
+}
+
+// Right: same pieces nudged apart, and each one is asked for its own
+// healed seam — two amber curves, one per piece.
+let kx = 88;
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let side = calc(bb.x + bb.width / 2 &lt; kx ? -9 : 9);
+  let px = calc(290 + side);
+  pieceLayer.apply {
+    M px 70 p.draw()
+  }
+  // The projected form answers queries in absolute coordinates.
+  let placed = p.project(px, 70);
+  seamLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+divider.apply {
+  M 240 30
+  L 240 210
+}
+
+labels.apply {
+  text(120, 200)\`the cut pieces\`;
+  text(345, 200)\`each piece's own segmentAll('cut'), stroked\`;
+}
+</code>
+  <img src="/blog/samples/post41/01-first-seams.svg" alt="Left: the cut pieces, reassembled. Right: the pieces apart — each strokes its own segmentAll('cut')." loading="lazy">
+</mini-workspace></p>
+<p>Note that <em>each piece</em> answers separately: two amber curves, one per
+piece, each the exact edge where that piece was healed. Seams come from
+the piece you ask, which is what makes everything downstream per-piece
+by construction.</p>
+<h2>Example 2 — Cut lines and fold lines</h2>
+<p>The first real template. An accordion card is one plate cut by three
+vertical creases — and the two line styles a papercrafter expects fall
+straight out of the two kinds of edge a cut produces. The plate&#39;s
+original boundary is where scissors go: solid red. The healed seams are
+where folds go: one dashed layer decorates the entire group.</p>
+<p><mini-workspace code-open caption="The outline is the cut line; every healed seam is a fold line.">
+  <code>// viewBox="0 0 480 220"
+//-- A four-panel accordion card as one template: the plate's own boundary
+//-- is the cut line (solid), and every healed seam inside it is a fold
+//-- line (dashed) — one layer style decorates the whole seam group.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') \${};
+let panelLayer = PathLayer('panels') \${
+  fill: #e7dfd0;
+  stroke: none;
+};
+let cutLayer = PathLayer('cut-line') \${
+  stroke: #ef4444;
+  stroke-width: 2;
+  fill: none;
+};
+let foldLayer = PathLayer('fold-lines') \${
+  stroke: #475569;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 5 4;
+};
+let cutCaption = TextLayer('cut-caption') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f87171;
+  text-anchor: middle;
+};
+let foldCaption = TextLayer('fold-caption') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(panelLayer,
+    cutLayer,
+    foldLayer,
+    cutCaption,
+    foldCaption);
+
+let card = @{
+  h 288
+  v 96
+  h -288
+  z
+};
+let creases = @{
+  m 72 -15
+  l 0 126
+  m 72 -126
+  l 0 126
+  m 72 -126
+  l 0 126
+};
+let panels = card.cut(creases);
+let ox = 96;
+let oy = 48;
+
+panelLayer.apply {
+  for (p in panels) {
+    M ox oy p.draw()
+  }
+}
+
+// The original outline is the cut line: scissors follow the solid path.
+cutLayer.apply {
+  card.drawTo(ox, oy);
+}
+
+// Every seam the cut healed is a fold line: the dashed style comes from
+// the layer, so the whole group is decorated in one pass. Each interior
+// fold is shared by two panels — stroke it once by letting every panel
+// own only the seams on its right-hand side.
+for (p in panels) {
+  let placed = p.project(ox, oy);
+  let bb = placed.boundingBox();
+  let cx = calc(bb.x + bb.width / 2);
+  foldLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      let mid = seam.get(0.5);
+      if (mid.x &gt; cx) {
+        seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      }
+    }
+  }
+}
+
+cutCaption.apply {
+  text(163, 175)\`solid = cut the outline\`;
+}
+foldCaption.apply {
+  text(320, 175)\`dashed = fold the seams\`;
+}
+</code>
+  <img src="/blog/samples/post41/02-fold-lines.svg" alt="The outline is the cut line; every healed seam is a fold line." loading="lazy">
+</mini-workspace></p>
+<p>One practical wrinkle worth stealing: each interior fold is shared by
+two panels, so decorating every panel&#39;s every seam would stroke each
+fold twice — and two dashed strokes running opposite directions fill in
+each other&#39;s gaps. The sample lets each panel own only the seams on its
+right-hand side (<code>get(0.5)</code> for the seam&#39;s midpoint, compared against
+the panel&#39;s center), so every fold is drawn exactly once.</p>
+<h2>Example 3 — Glue tabs that grow on seams</h2>
+<p>Tabs are the first payoff that would genuinely hurt to do by hand. The
+seam is a parametric path, so <code>get(t)</code> walks along it and <code>normal(t)</code>
+points straight out of it — which is all a trapezoid tab needs. The
+left piece grows three tabs along its healed edge, every other seventh
+of the way; the outer boundary, which was never cut, stays clean.</p>
+<p><mini-workspace code-open caption="get(t) walks the seam, normal(t) aims the tab; the uncut boundary grows nothing.">
+  <code>// viewBox="0 0 480 240"
+//-- Glue tabs, generated: the left piece grows trapezoid tabs along its
+//-- healed seam — and only there. get(t) walks the seam, normal(t) points
+//-- the tabs outward, and the original boundary never grows a tab.
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') \${};
+let tabLayer = PathLayer('tabs') \${
+  fill: #cbbfa3;
+  stroke: #ef4444;
+  stroke-width: 1.5;
+};
+let pieceLayer = PathLayer('pieces') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(tabLayer, pieceLayer, labels);
+
+let plate = @{
+  h 150
+  v 110
+  h -150
+  z
+};
+let knife = @{
+  m 92 -15
+  c -26 45 26 75 -10 140
+};
+let pieces = plate.cut(knife);
+
+// Pull the two pieces apart so the tabs have room to show.
+let plateBB = plate.boundingBox();
+let plateCx = calc(plateBB.x + plateBB.width / 2);
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let side = calc(bb.x + bb.width / 2 &lt; plateCx ? -34 : 34);
+  let px = calc(165 + side);
+  pieceLayer.apply {
+    M px 55 p.draw()
+  }
+  // Tabs go on the left piece only.
+  if (side &lt; 0) {
+    let placed = p.project(px, 55);
+    let bb2 = placed.boundingBox();
+    let cx = calc(bb2.x + bb2.width / 2);
+    let cy = calc(bb2.y + bb2.height / 2);
+    tabLayer.apply {
+      for (seam in placed.segmentAll('cut')) {
+        // Walk the seam in sevenths; every other interval grows a tab.
+        for (k in 0..2) {
+          let t0 = calc((k * 2 + 1) / 7);
+          let t1 = calc((k * 2 + 2) / 7);
+          let a = seam.get(t0);
+          let b = seam.get(t1);
+          let n = seam.normal(calc((t0 + t1) / 2));
+          // Point the tab away from the piece's own center.
+          let toCenter = calc(cos(n.angle) * (cx - n.point.x) + sin(n.angle) * (cy - n.point.y));
+          let na = calc(toCenter &gt; 0 ? n.angle + PI() : n.angle);
+          let ta = calc(na + PI() / 2);
+          // Trapezoid: seam edge a→b, outer edge tapered inward by 4.
+          M calc(a.x) calc(a.y)
+          L calc(a.x + cos(na) * 13 + cos(ta) * 4) calc(a.y + sin(na) * 13 + sin(ta) * 4)
+          L calc(b.x + cos(na) * 13 - cos(ta) * 4) calc(b.y + sin(na) * 13 - sin(ta) * 4)
+          L calc(b.x) calc(b.y)
+        }
+      }
+    }
+  }
+}
+
+labels.apply {
+  text(240, 205)\`tabs ride the seam — the outer boundary stays clean\`;
+}
+</code>
+  <img src="/blog/samples/post41/03-glue-tabs.svg" alt="get(t) walks the seam, normal(t) aims the tab; the uncut boundary grows nothing." loading="lazy">
+</mini-workspace></p>
+<p>The one judgment call in the sample is direction. <code>normal(t)</code> always
+returns the left-hand normal of the path&#39;s travel — but Example 1
+showed that the two pieces traverse their shared seam in <em>opposite
+directions</em>, so &quot;left of the seam&quot; lands inside one piece and outside
+the other. The sample settles it by comparing the normal against the
+direction to the piece&#39;s own center — if it points inward, flip it by
+adding <code>PI()</code>.</p>
+<h2>Example 4 — Pieces that introduce themselves</h2>
+<p>So far the seams did all the talking. This example is about <em>your</em>
+labels: a house-shaped plate names its roof <code>as segment(&#39;roof&#39;)</code> and
+its floor <code>as segment(&#39;base&#39;)</code>, then a horizontal cut splits it. Each
+piece still answers for the names it kept — the roof piece strokes and
+counts its roof, the base piece its base.</p>
+<p><mini-workspace code-open caption="Labels survive the cut: each piece strokes and counts the names it kept.">
+  <code>// viewBox="0 0 480 215"
+//-- Name the edges before you cut, and the pieces introduce themselves.
+//-- A house-shaped plate labels its roof and base; after a horizontal cut
+//-- each piece still answers for the labels it kept — stroked and counted.
+
+define ViewBox(0, 0, 480, 215);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 215);
+}
+
+let scene = GroupLayer('scene') \${};
+let pieceLayer = PathLayer('pieces') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let roofLayer = PathLayer('roof-runs') \${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let baseLayer = PathLayer('base-runs') \${
+  stroke: #c084fc;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let roofCount = TextLayer('roof-count') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #2dd4bf;
+};
+let baseCount = TextLayer('base-count') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #c084fc;
+};
+scene.append(pieceLayer,
+    roofLayer,
+    baseLayer,
+    roofCount,
+    baseCount);
+
+let house = @{
+  l 70 -50 as segment('roof');
+  l 70 50 as segment('roof');
+  v 90
+  h -140 as segment('base');
+  z
+};
+let knife = @{
+  m -15 30
+  l 170 0
+};
+let pieces = house.cut(knife);
+
+for (p in pieces) {
+  // The labels place the pieces too: the roof piece slides up, the
+  // other slides down — no coordinate checks anywhere.
+  let roofRuns = p.segmentAll('roof');
+  let oy = calc(roofRuns.length &gt; 0 ? 66 : 90);
+  pieceLayer.apply {
+    M 120 oy p.draw()
+  }
+  let placed = p.project(120, oy);
+  let baseRuns = placed.segmentAll('base');
+  roofRuns = placed.segmentAll('roof');
+  roofLayer.apply {
+    for (run in roofRuns) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
+    }
+  }
+  baseLayer.apply {
+    for (run in baseRuns) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
+    }
+  }
+  // Each piece reports which of the plate's names it still owns,
+  // color-keyed to the strokes.
+  let pb = placed.boundingBox();
+  let ly = calc(pb.y + pb.height / 2 + 3);
+  roofCount.apply {
+    text(310, ly)\`roof \${roofRuns.length}\`;
+  }
+  baseCount.apply {
+    text(378, ly)\`base \${baseRuns.length}\`;
+  }
+}
+</code>
+  <img src="/blog/samples/post41/04-named-pieces.svg" alt="Labels survive the cut: each piece strokes and counts the names it kept." loading="lazy">
+</mini-workspace></p>
+<p>The counts are the quiet star. <code>segmentAll(&#39;roof&#39;)</code> on the top piece
+has length 1, on the bottom piece length 0 — which means a program can
+<em>identify</em> pieces by what they kept, with no geometry tests at all.
+The sample practices what it preaches: even the up-or-down placement
+of each piece is decided by the roof query, not by a coordinate check.
+The garment-pattern post (part 3) builds its whole workflow on this.</p>
+<h2>Example 5 — The exploded view</h2>
+<p>Assembly diagrams pull pieces apart along rays from the center, and
+<code>boundingBox()</code> gives every piece its own ray for free. The ghost of
+the uncut plate stays behind, dashed; each drifted piece strokes its
+seams amber, so mating edges face each other across the gaps.</p>
+<p><mini-workspace code-open caption="Pieces drift along rays to their bounding-box centers; amber seam faces amber seam.">
+  <code>// viewBox="0 0 480 260"
+//-- The assembly diagram: four pieces drift away from the plate's center
+//-- along their own centroid rays, the ghost of the uncut plate stays
+//-- behind, and every mating edge glows — that's the seam group again.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') \${};
+let ghost = PathLayer('ghost') \${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+let pieceLayer = PathLayer('pieces') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let seamLayer = PathLayer('seams') \${
+  stroke: #f59e0b;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(ghost, pieceLayer, seamLayer, labels);
+
+let plate = @{
+  h 150
+  v 110
+  h -150
+  z
+};
+let knives = @{
+  m 68 -15
+  c -20 40 20 80 -4 140
+  m -79 -83
+  l 180 12
+};
+let pieces = plate.cut(knives);
+let ox = 165;
+let oy = 70;
+
+ghost.apply {
+  plate.drawTo(ox, oy);
+}
+
+// Drift each piece along the ray from the plate's bounding-box center
+// to its own.
+let plateBB = plate.boundingBox();
+let pcx = calc(plateBB.x + plateBB.width / 2);
+let pcy = calc(plateBB.y + plateBB.height / 2);
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let dx = calc(bb.x + bb.width / 2 - pcx);
+  let dy = calc(bb.y + bb.height / 2 - pcy);
+  let len = calc(sqrt(dx * dx + dy * dy));
+  let px = calc(ox + dx / len * 34);
+  let py = calc(oy + dy / len * 34);
+  pieceLayer.apply {
+    M px py p.draw()
+  }
+  let placed = p.project(px, py);
+  seamLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(240, 235)\`amber edges are the mates — seams face seams\`;
+}
+</code>
+  <img src="/blog/samples/post41/05-exploded-view.svg" alt="Pieces drift along rays to their bounding-box centers; amber seam faces amber seam." loading="lazy">
+</mini-workspace></p>
+<p>Nothing here is new — it is Example 1&#39;s stroke and a square root — but
+this is the moment the toolkit starts reading as a <em>diagram</em> rather
+than a demo: the seams are doing the explanatory work a technical
+illustrator would do with a highlighter.</p>
+<h2>Example 6 — The kit sheet</h2>
+<p>Everything at once: a hexagonal medallion, three straight knives
+through the center, six numbered wedges exploded into a ring around the
+assembled ghost. Each wedge tabs one of its healed edges (red — cut
+around the tab) and fold-dashes the other (glue your neighbor&#39;s tab
+under it), and wears its piece number — derived from its angle around
+the ring, because <code>cut()</code> makes no promise about the order pieces come
+back in.</p>
+<p><mini-workspace code-open caption="The finished kit sheet: tab the red edge, fold the dashed one, rejoin in order.">
+  <code>// viewBox="0 0 480 300"
+//-- The finished kit sheet: a hex medallion cut into six wedges, exploded
+//-- into a ring. Every wedge tabs one healed seam, fold-dashes the other,
+//-- and wears its number — all driven by the same seam and label queries.
+
+define ViewBox(0, 0, 480, 300);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') \${};
+let ghost = PathLayer('ghost') \${
+  stroke: #1e293b;
+  stroke-width: 1;
+  stroke-dasharray: 1 5;
+  fill: none;
+};
+let tabLayer = PathLayer('tabs') \${
+  fill: #cbbfa3;
+  stroke: #ef4444;
+  stroke-width: 1.2;
+};
+let wedgeLayer = PathLayer('wedges') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let foldLayer = PathLayer('folds') \${
+  stroke: #475569;
+  stroke-width: 1.4;
+  fill: none;
+  stroke-dasharray: 4 3;
+};
+let numbers = TextLayer('numbers') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #0f172a;
+  text-anchor: middle;
+};
+let title = TextLayer('title') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+  letter-spacing: 3;
+};
+let caption = TextLayer('caption') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(ghost,
+    tabLayer,
+    wedgeLayer,
+    foldLayer,
+    numbers,
+    title,
+    caption);
+
+let plate = @{
+  polygon(0, 0, 62, 6);
+};
+
+// Three straight knives through the center, 60 degrees apart.
+let kr = 78;
+let c60 = cos(calc(PI() / 3));
+let s60 = sin(calc(PI() / 3));
+let knives = @{
+  m calc(0 - kr) 0
+  l calc(kr * 2) 0
+  m calc(0 - kr * c60 - kr) calc(0 - kr * s60)
+  l calc(kr * 2 * c60) calc(kr * 2 * s60)
+  m 0 calc(0 - kr * 2 * s60)
+  l calc(0 - kr * 2 * c60) calc(kr * 2 * s60)
+};
+let wedges = plate.cut(knives);
+let ox = 240;
+let oy = 158;
+
+ghost.apply {
+  plate.drawTo(ox, oy);
+}
+
+for (w in wedges) {
+  // Drift outward along the ray to the wedge's bounding-box center.
+  let bb = w.boundingBox();
+  let dx = calc(bb.x + bb.width / 2);
+  let dy = calc(bb.y + bb.height / 2);
+  let len = calc(sqrt(dx * dx + dy * dy));
+  let px = calc(ox + dx / len * 44);
+  let py = calc(oy + dy / len * 44);
+  wedgeLayer.apply {
+    M px py w.draw()
+  }
+  let placed = w.project(px, py);
+  let pb = placed.boundingBox();
+  let wcx = calc(pb.x + pb.width / 2);
+  let wcy = calc(pb.y + pb.height / 2);
+  // A wedge's two radial edges are adjacent and share the 'cut' label,
+  // so they come back MERGED into one V-shaped run — walk its halves.
+  for (seam in placed.segmentAll('cut')) {
+    for (h in 0..1) {
+      let t0 = calc(h * 0.5);
+      let t1 = calc(h * 0.5 + 0.5);
+      let m0 = seam.get(calc(t0 + 0.25));
+      // Which side of the centroid ray does this half sit on?
+      let cross = calc((wcx - px) * (m0.y - py) - (wcy - py) * (m0.x - px));
+      if (cross &gt; 0) {
+        // Clockwise edge: glue tab, pointing away from the wedge.
+        let a = seam.get(calc(t0 + 0.06));
+        let b = seam.get(calc(t1 - 0.06));
+        let n = seam.normal(calc(t0 + 0.25));
+        let toCenter = calc(cos(n.angle) * (wcx - m0.x) + sin(n.angle) * (wcy - m0.y));
+        let na = calc(toCenter &gt; 0 ? n.angle + PI() : n.angle);
+        let ta = calc(na + PI() / 2);
+        tabLayer.apply {
+          M calc(a.x) calc(a.y)
+          L calc(a.x + cos(na) * 10 + cos(ta) * 4) calc(a.y + sin(na) * 10 + sin(ta) * 4)
+          L calc(b.x + cos(na) * 10 - cos(ta) * 4) calc(b.y + sin(na) * 10 - sin(ta) * 4)
+          L calc(b.x) calc(b.y)
+        }
+      } else {
+        // Counter-clockwise edge: fold line for the neighbor's tab.
+        let half = seam.subPath(t0, t1);
+        let s0 = seam.get(t0);
+        foldLayer.apply {
+          half.drawTo(s0.x, s0.y);
+        }
+      }
+    }
+  }
+  // Number by angle around the ring, not by loop order — cut() makes
+  // no promise about the order pieces come back in.
+  let ang = calc(atan2(dy, dx) + PI());
+  let num = calc(floor(ang / (PI() / 3)) + 1);
+  numbers.apply {
+    text(wcx, calc(wcy + 3))\`\${num}\`;
+  }
+}
+
+title.apply {
+  text(240, 32)\`HEX MEDALLION KIT\`;
+}
+caption.apply {
+  text(240, 278)\`tab the red edge, fold the dashed one, rejoin in order\`;
+}
+</code>
+  <img src="/blog/samples/post41/06-medallion-kit.svg" alt="The finished kit sheet: tab the red edge, fold the dashed one, rejoin in order." loading="lazy">
+</mini-workspace></p>
+<p>And here is the merge rule from the top of the post, paying rent: a
+wedge&#39;s two radial edges meet at the hexagon&#39;s center, share the <code>cut</code>
+label, and therefore come back as <strong>one</strong> V-shaped run. The sample
+walks that run&#39;s two halves — <code>t</code> in <code>[0, 0.5]</code> and <code>[0.5, 1]</code>, which
+split at the center vertex because <code>t</code> is arc length and the two radial
+edges are equally long — and decides tab-or-fold per half by which side
+of the wedge&#39;s center ray it lies on. If you ever ask for two seams and
+receive one, this is why, and <code>subPath(t0, t1)</code> is the knife that
+re-divides them.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/cutting-room-jigsaw">Jigsaw: pieces that know their own edges</a>
+— part 2 cuts with wavy knives and sorts pieces by the rim label
+they kept.</li>
+<li><a href="/blog/pathblock-cutting">Cutting Paths</a> — the full <code>cut()</code> tour this
+series builds on: cookie cutters, donuts, open subjects.</li>
+<li><a href="/blog/pathblock-parametric-sampling">PathBlock parametric sampling</a>
+— <code>get</code>, <code>normal</code>, and <code>partition</code>, the seam-walking tools used here.</li>
+<li>Reference: <a href="/docs#segment-labels-labels-survive-derived-paths">labels survive derived paths</a>
+and <a href="/docs#path-blocks-cutting-paths">cutting paths</a> in the docs.</li>
+</ul>
+`,
+  'cutting-room-stained-glass': `<p><em>Part 4 of 4 in The Cutting Room — projects that put <code>cut()</code> and
+segment labels to work together.</em></p>
+<blockquote>
+<p><strong>Series: The Cutting Room</strong></p>
+<ol>
+<li><a href="/blog/cutting-room-papercraft">Papercraft</a> — cut lines, fold
+lines, and glue tabs from one plate</li>
+<li><a href="/blog/cutting-room-jigsaw">Jigsaw</a> — wavy knives, piece identity,
+and a scattered puzzle</li>
+<li><a href="/blog/cutting-room-garment">Garment patterns</a> — named edges, seam
+allowances, and notches</li>
+<li><strong>Stained glass</strong> (this post) — tinted panes, leading, and a rose
+window</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> <a href="/blog/pathblock-cutting"><code>PathBlock.cut()</code></a> and
+<a href="/blog/segment-labels-and-suffixes">segment labels</a>. The
+<a href="/blog/pathblock-boolean-operations">boolean operations post</a> helps
+for Example 4, and part 1&#39;s
+<a href="/blog/cutting-room-papercraft">seam-stroking idiom</a> is assumed
+throughout.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>In every project so far, the seams were annotation — fold here, align
+there. Stained glass inverts that: the seams <em>are</em> the picture. Lead
+came is nothing but the network of joints between panes, which means a
+stained-glass window is <code>segmentAll(&#39;cut&#39;)</code>, stroked wide, over pieces
+that have been filled with color. The finale also brings in the last
+label superpower this series has not used yet: <strong>boolean results keep
+the labels of both operands</strong>, so a frame made by <code>difference()</code> still
+answers for the outer shape&#39;s names <em>and</em> the opening&#39;s.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because &quot;decorate every joint&quot; is a one-loop job when joints are
+queryable, and an evening of coordinate surgery when they are not.
+The whole aesthetic rests on the idiom from part 1 — this time as the
+main event rather than the annotation:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
+  <span class="hljs-comment">// stroked wide, this IS the leading</span>
+  seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+}
+</code></pre><h2>Example 1 — Seams as the artwork</h2>
+<p>A glass disc, four straight knives through the center, eight panes.
+The leading between panes is the seam group stroked at width 5 in the
+background color — no leading was drawn as such; it is the cut,
+made visible.</p>
+<p><mini-workspace code-open caption="Eight panes; the came between them is segmentAll('cut') stroked wide.">
+  <code>// viewBox="0 0 480 250"
+//-- Seams as the artwork: a glass disc cut by four radial knives becomes
+//-- eight panes, and stroking every healed seam wide draws the lead came
+//-- between them — the decoration IS the seam group.
+
+define ViewBox(0, 0, 480, 250);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') \${};
+let panes = PathLayer('panes') \${
+  fill: #38bdf8;
+  stroke: none;
+};
+let leading = PathLayer('leading') \${
+  stroke: #0f172a;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(panes, leading, labels);
+
+let disc = @{
+  circle(0, 0, 88);
+};
+// Four straight knives through the center, 45 degrees apart.
+let kr = 104;
+let c45 = cos(calc(PI() / 4));
+let knives = @{
+  m calc(0 - kr) 0
+  l calc(kr * 2) 0
+  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
+  l calc(kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
+  l 0 calc(kr * 2)
+  m calc(kr * c45) calc(0 - kr - kr * c45)
+  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+};
+let wedges = disc.cut(knives);
+let ox = 240;
+let oy = 122;
+
+for (w in wedges) {
+  panes.apply {
+    M ox oy w.draw()
+  }
+  let placed = w.project(ox, oy);
+  leading.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(240, 232)\`eight panes, one loop - the leading is segmentAll('cut'), stroked wide\`;
+}
+</code>
+  <img src="/blog/samples/post44/01-rose-cuts.svg" alt="Eight panes; the came between them is segmentAll('cut') stroked wide." loading="lazy">
+</mini-workspace></p>
+<p>Compare part 1&#39;s Example 1, where the same query produced a thin amber
+highlight. Same seams, same loop — the meaning of a seam is entirely
+in how you draw it.</p>
+<h2>Example 2 — Your own &#39;cut&#39; label joins the came</h2>
+<p><code>cut</code> is not a reserved word — it is an ordinary label the cut applies
+for you, and labels with the same name form one group. So if you name
+the disc&#39;s rim <code>as segment(&#39;cut&#39;)</code> yourself, the one came loop picks
+it up with zero extra code. Left disc: rim labeled <code>&#39;rim&#39;</code>, and the
+glass meets the stone bare. Right disc: rim labeled <code>&#39;cut&#39;</code>, full came.</p>
+<p><mini-workspace code-open caption="Same decoration loop on both windows; only the rim's label name differs.">
+  <code>// viewBox="0 0 480 260"
+//-- Labels form groups, and 'cut' is just a label: name the disc's rim
+//-- as segment('cut') and the one came loop picks it up too. Left: rim
+//-- labeled 'rim', so the loop strokes only the healed seams. Right: rim
+//-- labeled 'cut' — same loop, full came.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') \${};
+let stone = PathLayer('stone') \${
+  fill: #64748b;
+  stroke: none;
+};
+let panes = PathLayer('panes') \${
+  fill: #a78bfa;
+  stroke: none;
+};
+let leading = PathLayer('leading') \${
+  stroke: #0f172a;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(stone, panes, leading, labels);
+
+// A stone surround behind both discs so the dark came reads against it.
+stone.apply {
+  circle(128, 112, 82);
+  circle(352, 112, 82);
+}
+
+// The same disc twice — only the rim's label differs. An as-clause on
+// a stdlib call names everything the call draws, so one label covers
+// the whole circle.
+let discA = @{
+  circle(0, 0, 70) as segment('rim');
+};
+let discB = @{
+  circle(0, 0, 70) as segment('cut');
+};
+let knives = @{
+  m -85 0
+  l 170 0
+  m -85 -85
+  l 0 170
+};
+
+fn cameWindow(disc, cx, cy) {
+  let pieces = disc.cut(knives);
+  for (p in pieces) {
+    panes.apply {
+      M cx cy p.draw()
+    }
+    let placed = p.project(cx, cy);
+    // One decoration loop, both windows: stroke the 'cut' group wide.
+    leading.apply {
+      for (seam in placed.segmentAll('cut')) {
+        seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      }
+    }
+  }
+}
+
+cameWindow(discA, 128, 112);
+cameWindow(discB, 352, 112);
+
+labels.apply {
+  text(128, 226)\`rim labeled 'rim' - bare edge\`;
+  text(352, 226)\`rim labeled 'cut' - it joins the came\`;
+}
+</code>
+  <img src="/blog/samples/post44/02-rim-joins-the-came.svg" alt="Same decoration loop on both windows; only the rim's label name differs." loading="lazy">
+</mini-workspace></p>
+<p>Note the labeling shortcut, too: an <code>as</code> clause on a stdlib call like
+<code>circle()</code> names <em>everything the call draws</em>, so one clause labels the
+whole rim — no need to author the arcs by hand.</p>
+<h2>Example 3 — Tinted panes</h2>
+<p>The picture emerges. Pieces are full PathBlocks, so coloring them is
+layer routing: four glass layers with jewel-tone fills, pieces dealt
+round-robin, came stroked over the top. (The same routing pattern the
+<a href="/blog/pathblock-cutting">cutting post</a> used for its shattered glyph.)</p>
+<p><mini-workspace code-open caption="Four glass layers, pieces routed by index, leading on top.">
+  <code>// viewBox="0 0 480 250"
+//-- The picture emerges: the same eight panes, each routed to one of
+//-- four glass layers — jewel tints round-robin — with the came stroked
+//-- on top. Pieces are full PathBlocks, so styling them is layer routing.
+
+define ViewBox(0, 0, 480, 250);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') \${};
+let glass0 = PathLayer('glass0') \${
+  fill: #38bdf8;
+  stroke: none;
+};
+let glass1 = PathLayer('glass1') \${
+  fill: #a78bfa;
+  stroke: none;
+};
+let glass2 = PathLayer('glass2') \${
+  fill: #2dd4bf;
+  stroke: none;
+};
+let glass3 = PathLayer('glass3') \${
+  fill: #fbbf24;
+  stroke: none;
+};
+let leading = PathLayer('leading') \${
+  stroke: #0f172a;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(glass0,
+    glass1,
+    glass2,
+    glass3,
+    leading,
+    labels);
+
+let disc = @{
+  circle(0, 0, 88);
+};
+let kr = 104;
+let c45 = cos(calc(PI() / 4));
+let knives = @{
+  m calc(0 - kr) 0
+  l calc(kr * 2) 0
+  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
+  l calc(kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
+  l 0 calc(kr * 2)
+  m calc(kr * c45) calc(0 - kr - kr * c45)
+  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+};
+let wedges = disc.cut(knives);
+let ox = 240;
+let oy = 122;
+
+for ([w, i] in wedges) {
+  if (calc(i % 4) == 0) {
+    glass0.apply {
+      M ox oy w.draw()
+    }
+  }
+  if (calc(i % 4) == 1) {
+    glass1.apply {
+      M ox oy w.draw()
+    }
+  }
+  if (calc(i % 4) == 2) {
+    glass2.apply {
+      M ox oy w.draw()
+    }
+  }
+  if (calc(i % 4) == 3) {
+    glass3.apply {
+      M ox oy w.draw()
+    }
+  }
+  let placed = w.project(ox, oy);
+  leading.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(240, 232)\`four glass layers, pieces routed round-robin - came on top\`;
+}
+</code>
+  <img src="/blog/samples/post44/03-tinted-panes.svg" alt="Four glass layers, pieces routed by index, leading on top." loading="lazy">
+</mini-workspace></p>
+<p>Routing by index is the bluntest instrument — part 2 routed by <em>label</em>
+(rim or not), and part 3 by <em>name</em>. Pick the classifier that matches
+the design; the mechanism is the same <code>apply</code> block either way.</p>
+<h2>Example 4 — The frame keeps both names</h2>
+<p>Boolean results carry labels from <strong>both</strong> operands. This window frame
+is <code>outer.difference(opening)</code> — the outer square&#39;s bottom edge brought
+<code>&#39;sill&#39;</code>, the opening&#39;s two side edges brought <code>&#39;light&#39;</code>, and the frame
+answers for both names. Then a diagonal cut splits the frame, and
+<em>each half</em> still answers for whatever it kept: the lower half holds
+most of the sill, the upper half a shorter stretch of it, and each
+keeps one of the opening&#39;s sides.</p>
+<p><mini-workspace code-open caption="difference() merges label sets; cut() distributes them to the halves.">
+  <code>// viewBox="0 0 480 260"
+//-- Labels from both operands coexist: a frame made by difference keeps
+//-- the outer square's 'sill' AND the inner square's 'light' — and after
+//-- a diagonal cut, both halves still answer for both names.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') \${};
+let frame = PathLayer('frame') \${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let sillRun = PathLayer('sill-run') \${
+  stroke: #f59e0b;
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let lightRun = PathLayer('light-run') \${
+  stroke: #2dd4bf;
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let legendSill = TextLayer('legend-sill') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f59e0b;
+};
+let legendLight = TextLayer('legend-light') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #2dd4bf;
+};
+scene.append(frame,
+    sillRun,
+    lightRun,
+    legendSill,
+    legendLight);
+
+let outer = @{
+  h 170
+  v 150
+  h -170 as segment('sill');
+  z
+};
+let opening = @{
+  h 110
+  v 90 as segment('light');
+  h -110
+  v -90 as segment('light');
+  z
+};
+let ring = outer.project(155, 40).difference(opening.project(185, 70));
+let knife = @{
+  m 150 25
+  l 160 180
+};
+let halves = ring.cut(knife);
+
+for (half in halves) {
+  // Open the cut along the diagonal: a ±10 nudge perpendicular to it.
+  // draw() keeps each half's own placement, so the nudge is all the
+  // move there is.
+  let bb = half.boundingBox();
+  let side = calc(bb.x + bb.width / 2 &lt; 240 ? -10 : 10);
+  frame.apply {
+    M calc(side) calc(0 - side) half.draw()
+  }
+  let placed = half.project(side, calc(0 - side));
+  sillRun.apply {
+    for (r in placed.segmentAll('sill')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+  lightRun.apply {
+    for (r in placed.segmentAll('light')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+}
+
+legendSill.apply {
+  text(352, 110)\`'sill' = bottom edge\`;
+}
+legendLight.apply {
+  text(352, 128)\`'light' = the sides\`;
+}
+</code>
+  <img src="/blog/samples/post44/04-frame-labels.svg" alt="difference() merges label sets; cut() distributes them to the halves." loading="lazy">
+</mini-workspace></p>
+<p>This is the compositional guarantee the whole series stands on:
+labels survive <em>chains</em> of operations — draft, subtract, cut — not
+just single steps.</p>
+<h2>Example 5 — The rose window</h2>
+<p>The finale composes everything. One cutter block carries eight spoke
+knives <em>and</em> a closed ring knife — a cookie cutter — so a single
+<code>cut()</code> stamps out the golden center medallion and slices the
+surrounding ring into eight panes. The spokes stop short of the ring,
+leaving the medallion whole. Then:</p>
+<ul>
+<li>the <strong>medallion</strong> is found by classification — it is the piece that
+kept none of the rim label (part 2&#39;s trick, part 3&#39;s workflow);</li>
+<li>the <strong>panes</strong> are tinted by layer routing (Example 3);</li>
+<li>the <strong>came</strong> strokes two label groups — the healed seams and the
+authored rim — in one style;</li>
+<li>the <strong>solder dots</strong> sit at every seam&#39;s <code>startPoint</code> and <code>endPoint</code>,
+where real joints get soldered (on the medallion&#39;s closed boundary
+the two coincide — one dot, drawn twice, harmlessly).</li>
+</ul>
+<p><mini-workspace code-open caption="One cut: cookie-cutter medallion plus eight spoke panes — came, tints, and solder all queried.">
+  <code>// viewBox="0 0 480 320"
+//-- The rose window: a cookie-cutter ring knife stamps out the center
+//-- medallion while eight spokes (stopping short of it) slice the ring
+//-- into panes. Rim labels sort medallion from ring; the came and solder
+//-- dots are all seam queries.
+
+define ViewBox(0, 0, 480, 320);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 320);
+}
+
+let scene = GroupLayer('scene') \${};
+let stone = PathLayer('stone') \${
+  fill: #1e293b;
+  stroke: #334155;
+  stroke-width: 2;
+};
+let glass0 = PathLayer('glass0') \${
+  fill: #38bdf8;
+  stroke: none;
+};
+let glass1 = PathLayer('glass1') \${
+  fill: #a78bfa;
+  stroke: none;
+};
+let glass2 = PathLayer('glass2') \${
+  fill: #2dd4bf;
+  stroke: none;
+};
+let medallion = PathLayer('medallion') \${
+  fill: #fbbf24;
+  stroke: none;
+};
+let leading = PathLayer('leading') \${
+  stroke: #0f172a;
+  stroke-width: 4.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let solder = PathLayer('solder') \${
+  fill: #cbd5e1;
+  stroke: none;
+};
+let title = TextLayer('title') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+  letter-spacing: 3;
+};
+scene.append(stone,
+    glass0,
+    glass1,
+    glass2,
+    medallion,
+    leading,
+    solder,
+    title);
+
+// The glass disc — the as-clause on circle() labels the whole rim.
+let disc = @{
+  circle(0, 0, 92) as segment('rim');
+};
+// Eight spokes from r=36 out past the rim, plus a ring knife that stamps
+// the medallion. The spokes stop short of the ring so the medallion
+// stays whole.
+let c = cos(calc(PI() / 4));
+let knives = @{
+  m 36 0
+  l 76 0
+  m calc(36 * c - 112) calc(36 * c)
+  l calc(76 * c) calc(76 * c)
+  m calc(0 - 112 * c) calc(36 - 112 * c)
+  l 0 76
+  m calc(0 - 36 * c) calc(36 * c - 112)
+  l calc(0 - 76 * c) calc(76 * c)
+  m calc(112 * c - 36) calc(0 - 112 * c)
+  l -76 0
+  m calc(112 - 36 * c) calc(0 - 36 * c)
+  l calc(0 - 76 * c) calc(0 - 76 * c)
+  m calc(112 * c) calc(112 * c - 36)
+  l 0 -76
+  m calc(36 * c) calc(112 - 36 * c)
+  l calc(76 * c) calc(0 - 76 * c)
+  circle(0, 0, 36);
+};
+let panes = disc.cut(knives);
+let ox = 240;
+let oy = 158;
+
+stone.apply {
+  circle(ox, oy, 112);
+}
+
+for ([p, i] in panes) {
+  let placed = p.project(ox, oy);
+  // The medallion is the piece that kept none of the rim.
+  if (placed.segmentAll('rim').length &gt; 0) {
+    if (calc(i % 3) == 0) {
+      glass0.apply {
+        M ox oy p.draw()
+      }
+    }
+    if (calc(i % 3) == 1) {
+      glass1.apply {
+        M ox oy p.draw()
+      }
+    }
+    if (calc(i % 3) == 2) {
+      glass2.apply {
+        M ox oy p.draw()
+      }
+    }
+  } else {
+    medallion.apply {
+      M ox oy p.draw()
+    }
+  }
+  // Came on every healed seam and on the rim: two groups, one style.
+  leading.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+    for (seam in placed.segmentAll('rim')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+  // Solder dots where seams start and end.
+  solder.apply {
+    for (seam in placed.segmentAll('cut')) {
+      circle(seam.startPoint.x, seam.startPoint.y, 2.2);
+      circle(seam.endPoint.x, seam.endPoint.y, 2.2);
+    }
+  }
+}
+
+title.apply {
+  text(240, 34)\`ROSE WINDOW\`;
+}
+</code>
+  <img src="/blog/samples/post44/05-rose-window.svg" alt="One cut: cookie-cutter medallion plus eight spoke panes — came, tints, and solder all queried." loading="lazy">
+</mini-workspace></p>
+<p>Every technique in it was introduced as a bare mechanism somewhere in
+these four posts. That is the shape of the whole series: the seams
+know where they are, the pieces know what they kept, and everything
+else is a loop.</p>
+<h2>Where to go next</h2>
+<ul>
+<li>Start over with <a href="/blog/cutting-room-papercraft">Papercraft</a> if you
+arrived here first — the idioms build in order.</li>
+<li><a href="/blog/pathblock-cutting">Cutting Paths</a> — the full <code>cut()</code> rules:
+cookie cutters, donuts, open subjects, snapping.</li>
+<li><a href="/blog/pathblock-boolean-operations">Boolean operations</a> — union,
+difference, intersection, xor, and now with label carriage.</li>
+<li>Reference: <a href="/docs#segment-labels-labels-survive-derived-paths">labels survive derived paths</a>
+and <a href="/docs#path-blocks-cutting-paths">cutting paths</a> in the docs.</li>
+</ul>
 `,
   'gradient-conic': `<p>CSS has <code>conic-gradient()</code>. SVG does not. This is not an oversight — the SVG spec simply never included angular gradients. If you want a color wheel, a gauge, or a pie chart rendered as an SVG gradient, you are out of luck. You can fake it with dozens of wedge-shaped paths, or you can embed a rasterized image and lose the vector benefits.</p>
 <p>Pathogen takes a different approach. <code>ConicGradient</code> is a first-class gradient type that compiles to a base64-encoded <code>&lt;pattern&gt;</code> element. The rasterization happens at compile time via WebGPU (or Canvas 2D as a fallback), producing a pixel-perfect image embedded directly in the SVG. The author writes gradient code. The viewer sees a standard SVG.</p>
@@ -11263,7 +14060,7 @@ with <a href="/blog/pathblock-introduction">Introduction to PathBlocks</a>. The
 contrast but not required.</p>
 </blockquote>
 <p><a href="/blog/pathblock-boolean-operations">Boolean operations</a> combine two closed shapes into one. <a href="/docs#path-blocks-cutting-paths"><code>cut()</code></a> goes the other direction: it takes a shape apart.</p>
-<p>You draw a second PathBlock whose strokes act as a knife — open lines and curves, as many as you like — and <code>shape.cut(knife)</code> hands back an array of pieces. Each piece is a complete PathBlock, sealed shut along the lines that cut it. And because every piece is a real PathBlock, nearly everything you already know applies: give each piece its own fill, measure it with <code>boundingBox()</code>, offset it, rotate it, cut it again. (The one carve-out: <code>as segment(...)</code> labels from the original path don&#39;t survive — pieces come back as plain geometry.)</p>
+<p>You draw a second PathBlock whose strokes act as a knife — open lines and curves, as many as you like — and <code>shape.cut(knife)</code> hands back an array of pieces. Each piece is a complete PathBlock, sealed shut along the lines that cut it. And because every piece is a real PathBlock, nearly everything you already know applies: give each piece its own fill, measure it with <code>boundingBox()</code>, offset it, rotate it, cut it again. Since this post first ran, labels made the trip too: pieces keep the subject&#39;s <code>as segment(...)</code> names on their surviving edges, and every healed seam answers <code>segmentAll(&#39;cut&#39;)</code> — <a href="/blog/cutting-room-papercraft">The Cutting Room series</a> is four projects built on exactly that.</p>
 <h2>One rectangle, one stroke</h2>
 <p>The barest possible picture: a rectangle, a single straight stroke through it, two pieces.</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{
@@ -11732,10 +14529,10 @@ for ([g, i] in glyphs) {
 <li><strong>Per-piece drift</strong> — each fragment moves a few units outward from its glyph&#39;s center, plus a little hashed jitter.</li>
 <li><strong>Per-piece rotation</strong> — each fragment turns up to ±4° with <a href="/docs#path-blocks-rotateatvertexindexindex-angle-pathblock-projectedpath"><code>rotateAtVertexIndex</code></a>.</li>
 </ol>
-<p>One honest gotcha from building it: like the other transforms, <code>rotateAtVertexIndex</code> normalizes its result to start at the origin — the rotated piece forgets where it lived inside its glyph. The fix is to read the pivot&#39;s position first (<code>p.vertices[0]</code>) and add it back when placing the shard. The sample&#39;s comments show the pattern; the first draft without it rendered the wordmark as very legible confetti.</p>
+<p>One honest gotcha from building it: like the other transforms, <code>rotateAtVertexIndex</code> normalizes its result to start at the origin — the rotated piece forgets where it lived inside its glyph. The fix is to read the pivot&#39;s position first (<code>p.vertices[0]</code>) and add it back when placing the shard. The sample&#39;s comments show the pattern; the first draft without it rendered the wordmark as very legible confetti. (The newer <a href="/docs#path-blocks-rotateangle-origin-pathblock-projectedpath"><code>rotate(angle, origin)</code></a> is frame-preserving and skips this bookkeeping entirely — <a href="/blog/cutting-room-jigsaw">the jigsaw post</a> shows the two-line version.)</p>
 <h2>Where to go next</h2>
 <p>The <a href="/docs#path-blocks-cutting-paths">Cutting Paths documentation</a> has the full behavior contract — tolerances, the degenerate cases, and what happens to mixed open-and-closed subjects. The <a href="/blog/pathblock-boolean-operations">Boolean Operations post</a> covers the combining half of this toolbox: <code>union</code>, <code>difference</code>, <code>intersection</code>, and <code>xor</code>.</p>
-<p>And since every piece is a PathBlock, the rest of the series applies to each one (minus the labels carve-out above): <a href="/blog/pathblock-parametric-sampling">sample along a piece&#39;s edge</a>, <a href="/blog/pathblock-fillets-chamfers">round a piece&#39;s corners</a>, or cut the pieces again.</p>
+<p>And since every piece is a PathBlock, the rest of the series applies to each one: <a href="/blog/pathblock-parametric-sampling">sample along a piece&#39;s edge</a>, <a href="/blog/pathblock-fillets-chamfers">round a piece&#39;s corners</a>, query the <a href="/blog/cutting-room-papercraft">labels it kept and the seams it gained</a>, or cut the pieces again.</p>
 `,
   'pathblock-fillets-chamfers': `<p><em>Part 3 of 5 in our series on PathBlock extensions.</em></p>
 <blockquote>

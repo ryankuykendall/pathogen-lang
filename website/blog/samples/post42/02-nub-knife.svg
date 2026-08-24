@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 250" width="480" height="250">
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 250 l -480 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <g data-layer-name="scene" id="scene">
+    <path data-layer-name="knife" id="knife" d="M 50 50 m 60 -15 l 0 74 c 8 -6 16 -3 16 8 c 0 11 -8 14 -16 8 l 0 90" fill="none" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="2 3"/>
+    <path data-layer-name="pieces" id="pieces" d="M 312 50 m 60 0 l 60 0 v 150 l -60 0 l 0 -75 c 8 6 16 3 16 -8 c 0 -11 -8 -14 -16 -8 l 0 -59 z M 268 50 m 60 150 l -60 0 l 0 -150 l 60 0 l 0 59 c 8 -6 16 -3 16 8 c 0 11 -8 14 -16 8 l 0 75 z" fill="#e7dfd0" stroke="#0f172a" stroke-width="2"/>
+    <path data-layer-name="seams" id="seams" d="M 372 200 l 0 -75 c 8 6 16 3 16 -8 c 0 -11 -8 -14 -16 -8 l 0 -59 M 328 50 l 0 59 c 8 -6 16 -3 16 8 c 0 11 -8 14 -16 8 l 0 75" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round"/>
+    <text data-layer-name="labels" id="labels" x="115" y="230" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="middle">the nub knife</text>
+    <text data-layer-name="labels" x="320" y="230" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="middle">knob meets socket</text>
+  </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"knife","type":"path","styles":{"stroke":"#ef4444","stroke-width":"1.2","fill":"none","stroke-dasharray":"2 3"},"isDefault":false},{"name":"pieces","type":"path","styles":{"fill":"#e7dfd0","stroke":"#0f172a","stroke-width":"2"},"isDefault":false},{"name":"seams","type":"path","styles":{"stroke":"#f59e0b","stroke-width":"2.2","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":480,"height":250}}]]></script>
+</svg>

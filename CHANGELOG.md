@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-23 (The Cutting Room series + sample formatting gate)
+
+### Added
+
+#### Documentation
+
+- **Blog: "The Cutting Room"** — a new four-part project series putting `cut()` and segment labels to work together, in the Stdlib Primers format: **Papercraft** (seam queries, fold lines, generated glue tabs, label-identified pieces, exploded view, hex-medallion kit sheet), **Jigsaw** (knife authorship incl. the interlocking nub, rim-label classification, registration marks, a scattered puzzle spun with pivot-free `rotate()`), **Garment patterns** (a fully labeled half-bodice draft, label-driven yoke/body identification and layout, `offset()` seam allowance, direction-normalized notches, a finished pattern sheet), and **Stained glass** (seams as leading, the label-merge rule, tinted panes, both-operand boolean labels, a rose-window finale stamped by a cookie-cutter + spoke knife in one cut). 21 samples, each compiled with inspector metadata, validated, and BBWP-archived; two 4-persona review rounds with all must/should-fix findings applied. The Cutting Paths post's now-outdated "labels don't survive" claims corrected and its `rotateAtVertexIndex` pivot workaround annotated with a pointer to `rotate(angle, origin)`.
+- Internal: `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md` — a 13-entry friction log of language bugs, footguns, and API gaps surfaced by building the series (including an `offset()` direction bug on cut pieces' curved edges, with preserved repro), feeding a follow-up improvement program.
+
+#### Development
+
+- **Blog sample formatting is now a required, enforced step** — `npm run format:samples` (wraps the language-services formatter; previously an unwired script) must run after the last source edit; `validate-samples.ts` gained check #6 flagging unformatted sources, and the requirement is documented in the blog playbook (step 1.5, checklist, §3.5). All 21 series samples formatted; recompiled SVGs verified byte-identical.
+
 ## [0.8.0] - 2026-08-23 (PathBlock.rotate() + labels survive derived paths)
 
 ### Added

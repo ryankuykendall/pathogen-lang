@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260" width="480" height="260">
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 260 l -480 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <g data-layer-name="scene" id="scene">
+    <path data-layer-name="frame" id="frame" d="M 10 -10 m 163.33333333333334 40 l 161.66666666666666 0 v 150 l -28.333333333333314 0 l -26.66666666666663 -30 l 25 0 l 0 -90 l -105 0 l -26.666666666666657 -30 z M -10 10 m 296.6666666666667 190 l -141.66666666666669 0 l 0 -150 l 8.333333333333343 0 l 26.666666666666657 30 l -5 0 l 0 90 l 85 0 l 26.66666666666663 30 z" fill="#e7dfd0" stroke="#0f172a" stroke-width="1.5"/>
+    <path data-layer-name="sill-run" id="sill-run" d="M 335 180 l -28.333333333333314 0 M 286.6666666666667 200 l -141.66666666666669 0" fill="none" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+    <path data-layer-name="light-run" id="light-run" d="M 305 150 l 0 -90 M 175 80 l 0 90" fill="none" stroke="#2dd4bf" stroke-width="3.5" stroke-linecap="round"/>
+    <text data-layer-name="legend-sill" id="legend-sill" x="352" y="110" font-family="monospace" font-size="9" fill="#f59e0b">'sill' = bottom edge</text>
+    <text data-layer-name="legend-light" id="legend-light" x="352" y="128" font-family="monospace" font-size="9" fill="#2dd4bf">'light' = the sides</text>
+  </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"frame","type":"path","styles":{"fill":"#e7dfd0","stroke":"#0f172a","stroke-width":"1.5"},"isDefault":false},{"name":"sill-run","type":"path","styles":{"stroke":"#f59e0b","stroke-width":"3.5","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"light-run","type":"path","styles":{"stroke":"#2dd4bf","stroke-width":"3.5","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"legend-sill","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#f59e0b"},"isDefault":false},{"name":"legend-light","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#2dd4bf"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":480,"height":260}}]]></script>
+</svg>

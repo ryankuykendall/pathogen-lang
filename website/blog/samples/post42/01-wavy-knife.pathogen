@@ -1,0 +1,88 @@
+// viewBox="0 0 480 230"
+//-- The knife is a path, so curves cut curves: a lazy S-wave slices the
+//-- plate, the pieces drift apart, and each healed seam — stroked amber —
+//-- is an exact copy of the knife's arc through the material.
+
+define ViewBox(0, 0, 480, 230);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 230);
+}
+
+let scene = GroupLayer('scene') ${};
+let knifeLayer = PathLayer('knife') ${
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  fill: none;
+  stroke-dasharray: 2 3;
+};
+let pieceLayer = PathLayer('pieces') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let seamLayer = PathLayer('seams') ${
+  stroke: #f59e0b;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(knifeLayer, pieceLayer, seamLayer, labels);
+
+let plate = @{
+  h 150
+  v 110
+  h -150
+  z
+};
+let knife = @{
+  m 80 -15
+  c 34 44 -34 82 8 140
+};
+let pieces = plate.cut(knife);
+
+// The knife's full arc over a ghost of the plate — the overshoot on
+// both ends is what makes it a complete cut.
+let ghost = PathLayer('ghost') ${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+scene.append(ghost);
+ghost.apply {
+  plate.drawTo(30, 45);
+}
+knifeLayer.apply {
+  knife.drawTo(30, 45);
+}
+
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let side = calc(bb.x + bb.width / 2 < 80 ? -26 : 26);
+  let px = calc(255 + side);
+  pieceLayer.apply {
+    M px 45 p.draw()
+  }
+  let placed = p.project(px, 45);
+  seamLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(118, 205)`the knife`;
+  text(300, 205)`the pieces — seams echo the knife`;
+}

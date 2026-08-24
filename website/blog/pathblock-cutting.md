@@ -24,7 +24,7 @@ seriesPart: 5
 
 [Boolean operations](/blog/pathblock-boolean-operations) combine two closed shapes into one. [`cut()`](/docs#path-blocks-cutting-paths) goes the other direction: it takes a shape apart.
 
-You draw a second PathBlock whose strokes act as a knife — open lines and curves, as many as you like — and `shape.cut(knife)` hands back an array of pieces. Each piece is a complete PathBlock, sealed shut along the lines that cut it. And because every piece is a real PathBlock, nearly everything you already know applies: give each piece its own fill, measure it with `boundingBox()`, offset it, rotate it, cut it again. (The one carve-out: `as segment(...)` labels from the original path don't survive — pieces come back as plain geometry.)
+You draw a second PathBlock whose strokes act as a knife — open lines and curves, as many as you like — and `shape.cut(knife)` hands back an array of pieces. Each piece is a complete PathBlock, sealed shut along the lines that cut it. And because every piece is a real PathBlock, nearly everything you already know applies: give each piece its own fill, measure it with `boundingBox()`, offset it, rotate it, cut it again. Since this post first ran, labels made the trip too: pieces keep the subject's `as segment(...)` names on their surviving edges, and every healed seam answers `segmentAll('cut')` — [The Cutting Room series](/blog/cutting-room-papercraft) is four projects built on exactly that.
 
 ## One rectangle, one stroke
 
@@ -116,10 +116,10 @@ The composition stacks four ideas from this series:
 3. **Per-piece drift** — each fragment moves a few units outward from its glyph's center, plus a little hashed jitter.
 4. **Per-piece rotation** — each fragment turns up to ±4° with [`rotateAtVertexIndex`](/docs#path-blocks-rotateatvertexindexindex-angle-pathblock-projectedpath).
 
-One honest gotcha from building it: like the other transforms, `rotateAtVertexIndex` normalizes its result to start at the origin — the rotated piece forgets where it lived inside its glyph. The fix is to read the pivot's position first (`p.vertices[0]`) and add it back when placing the shard. The sample's comments show the pattern; the first draft without it rendered the wordmark as very legible confetti.
+One honest gotcha from building it: like the other transforms, `rotateAtVertexIndex` normalizes its result to start at the origin — the rotated piece forgets where it lived inside its glyph. The fix is to read the pivot's position first (`p.vertices[0]`) and add it back when placing the shard. The sample's comments show the pattern; the first draft without it rendered the wordmark as very legible confetti. (The newer [`rotate(angle, origin)`](/docs#path-blocks-rotateangle-origin-pathblock-projectedpath) is frame-preserving and skips this bookkeeping entirely — [the jigsaw post](/blog/cutting-room-jigsaw) shows the two-line version.)
 
 ## Where to go next
 
 The [Cutting Paths documentation](/docs#path-blocks-cutting-paths) has the full behavior contract — tolerances, the degenerate cases, and what happens to mixed open-and-closed subjects. The [Boolean Operations post](/blog/pathblock-boolean-operations) covers the combining half of this toolbox: `union`, `difference`, `intersection`, and `xor`.
 
-And since every piece is a PathBlock, the rest of the series applies to each one (minus the labels carve-out above): [sample along a piece's edge](/blog/pathblock-parametric-sampling), [round a piece's corners](/blog/pathblock-fillets-chamfers), or cut the pieces again.
+And since every piece is a PathBlock, the rest of the series applies to each one: [sample along a piece's edge](/blog/pathblock-parametric-sampling), [round a piece's corners](/blog/pathblock-fillets-chamfers), query the [labels it kept and the seams it gained](/blog/cutting-room-papercraft), or cut the pieces again.

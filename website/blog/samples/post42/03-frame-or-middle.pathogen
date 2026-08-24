@@ -1,0 +1,94 @@
+// viewBox="0 0 480 300"
+//-- Which pieces touch the frame? Label the plate's rim before cutting a
+//-- 3x3 wavy grid, and afterward each piece answers for itself: rim run
+//-- kept = tray piece (paper), rim count zero = the one that falls out.
+
+define ViewBox(0, 0, 480, 300);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') ${};
+let framePieces = PathLayer('frame-pieces') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let middlePieces = PathLayer('middle-pieces') ${
+  fill: #f59e0b;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let rimRuns = PathLayer('rim-runs') ${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(framePieces, middlePieces, rimRuns, labels);
+
+let plate = @{
+  h 198 as segment('rim');
+  v 198 as segment('rim');
+  h -198 as segment('rim');
+  z as segment('rim')
+};
+let knives = @{
+  m 66 -15
+  c 18 60 -18 118 6 228
+  m 60 -228
+  c 18 60 -18 118 6 228
+  m -153 -147
+  c 60 18 118 -18 228 6
+  m -228 60
+  c 60 18 118 -18 228 6
+};
+let pieces = plate.cut(knives);
+let ox = 141;
+let oy = 40;
+
+let plateBB = plate.boundingBox();
+let pcx = calc(plateBB.x + plateBB.width / 2);
+let pcy = calc(plateBB.y + plateBB.height / 2);
+for (p in pieces) {
+  // Small drift along the ray to each piece's bounding-box center so
+  // every edge shows.
+  let bb = p.boundingBox();
+  let dx = calc(bb.x + bb.width / 2 - pcx);
+  let dy = calc(bb.y + bb.height / 2 - pcy);
+  let len = calc(sqrt(dx * dx + dy * dy) + 0.001);
+  let px = calc(ox + dx / len * 10);
+  let py = calc(oy + dy / len * 10);
+  let placed = p.project(px, py);
+  // The classification: did this piece keep any of the rim?
+  if (placed.segmentAll('rim').length > 0) {
+    framePieces.apply {
+      M px py p.draw()
+    }
+    // Show the inherited label riding on the piece: stroke its rim.
+    rimRuns.apply {
+      for (r in placed.segmentAll('rim')) {
+        r.drawTo(r.startPoint.x, r.startPoint.y);
+      }
+    }
+  } else {
+    middlePieces.apply {
+      M px py p.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(240, 282)`teal = the rim each piece kept - the amber piece kept none`;
+}

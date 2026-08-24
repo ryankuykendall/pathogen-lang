@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 215" width="480" height="215">
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 215 l -480 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <g data-layer-name="scene" id="scene">
+    <path data-layer-name="pieces" id="pieces" d="M 120 90 m 140 30 l 0 60 h -140 l 0 -60 l 140 0 z M 120 66 m 0 30 l 0 -30 l 70 -50 l 70 50 l 0 30 l -140 0 z" fill="#e7dfd0" stroke="#0f172a" stroke-width="2"/>
+    <path data-layer-name="roof-runs" id="roof-runs" d="M 120 66 l 70 -50 l 70 50" fill="none" stroke="#2dd4bf" stroke-width="3" stroke-linecap="round"/>
+    <path data-layer-name="base-runs" id="base-runs" d="M 260 180 h -140" fill="none" stroke="#c084fc" stroke-width="3" stroke-linecap="round"/>
+    <text data-layer-name="roof-count" id="roof-count" x="310" y="153" font-family="monospace" font-size="9" fill="#2dd4bf">roof 0</text>
+    <text data-layer-name="roof-count" x="310" y="59" font-family="monospace" font-size="9" fill="#2dd4bf">roof 1</text>
+    <text data-layer-name="base-count" id="base-count" x="378" y="153" font-family="monospace" font-size="9" fill="#c084fc">base 1</text>
+    <text data-layer-name="base-count" x="378" y="59" font-family="monospace" font-size="9" fill="#c084fc">base 0</text>
+  </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"pieces","type":"path","styles":{"fill":"#e7dfd0","stroke":"#0f172a","stroke-width":"2"},"isDefault":false},{"name":"roof-runs","type":"path","styles":{"stroke":"#2dd4bf","stroke-width":"3","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"base-runs","type":"path","styles":{"stroke":"#c084fc","stroke-width":"3","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"roof-count","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#2dd4bf"},"isDefault":false},{"name":"base-count","type":"text","styles":{"font-family":"monospace","font-size":"9","fill":"#c084fc"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":480,"height":215}}]]></script>
+</svg>

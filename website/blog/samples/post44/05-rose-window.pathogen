@@ -1,0 +1,144 @@
+// viewBox="0 0 480 320"
+//-- The rose window: a cookie-cutter ring knife stamps out the center
+//-- medallion while eight spokes (stopping short of it) slice the ring
+//-- into panes. Rim labels sort medallion from ring; the came and solder
+//-- dots are all seam queries.
+
+define ViewBox(0, 0, 480, 320);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 320);
+}
+
+let scene = GroupLayer('scene') ${};
+let stone = PathLayer('stone') ${
+  fill: #1e293b;
+  stroke: #334155;
+  stroke-width: 2;
+};
+let glass0 = PathLayer('glass0') ${
+  fill: #38bdf8;
+  stroke: none;
+};
+let glass1 = PathLayer('glass1') ${
+  fill: #a78bfa;
+  stroke: none;
+};
+let glass2 = PathLayer('glass2') ${
+  fill: #2dd4bf;
+  stroke: none;
+};
+let medallion = PathLayer('medallion') ${
+  fill: #fbbf24;
+  stroke: none;
+};
+let leading = PathLayer('leading') ${
+  stroke: #0f172a;
+  stroke-width: 4.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let solder = PathLayer('solder') ${
+  fill: #cbd5e1;
+  stroke: none;
+};
+let title = TextLayer('title') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+  letter-spacing: 3;
+};
+scene.append(stone,
+    glass0,
+    glass1,
+    glass2,
+    medallion,
+    leading,
+    solder,
+    title);
+
+// The glass disc — the as-clause on circle() labels the whole rim.
+let disc = @{
+  circle(0, 0, 92) as segment('rim');
+};
+// Eight spokes from r=36 out past the rim, plus a ring knife that stamps
+// the medallion. The spokes stop short of the ring so the medallion
+// stays whole.
+let c = cos(calc(PI() / 4));
+let knives = @{
+  m 36 0
+  l 76 0
+  m calc(36 * c - 112) calc(36 * c)
+  l calc(76 * c) calc(76 * c)
+  m calc(0 - 112 * c) calc(36 - 112 * c)
+  l 0 76
+  m calc(0 - 36 * c) calc(36 * c - 112)
+  l calc(0 - 76 * c) calc(76 * c)
+  m calc(112 * c - 36) calc(0 - 112 * c)
+  l -76 0
+  m calc(112 - 36 * c) calc(0 - 36 * c)
+  l calc(0 - 76 * c) calc(0 - 76 * c)
+  m calc(112 * c) calc(112 * c - 36)
+  l 0 -76
+  m calc(36 * c) calc(112 - 36 * c)
+  l calc(76 * c) calc(0 - 76 * c)
+  circle(0, 0, 36);
+};
+let panes = disc.cut(knives);
+let ox = 240;
+let oy = 158;
+
+stone.apply {
+  circle(ox, oy, 112);
+}
+
+for ([p, i] in panes) {
+  let placed = p.project(ox, oy);
+  // The medallion is the piece that kept none of the rim.
+  if (placed.segmentAll('rim').length > 0) {
+    if (calc(i % 3) == 0) {
+      glass0.apply {
+        M ox oy p.draw()
+      }
+    }
+    if (calc(i % 3) == 1) {
+      glass1.apply {
+        M ox oy p.draw()
+      }
+    }
+    if (calc(i % 3) == 2) {
+      glass2.apply {
+        M ox oy p.draw()
+      }
+    }
+  } else {
+    medallion.apply {
+      M ox oy p.draw()
+    }
+  }
+  // Came on every healed seam and on the rim: two groups, one style.
+  leading.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+    for (seam in placed.segmentAll('rim')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+  // Solder dots where seams start and end.
+  solder.apply {
+    for (seam in placed.segmentAll('cut')) {
+      circle(seam.startPoint.x, seam.startPoint.y, 2.2);
+      circle(seam.endPoint.x, seam.endPoint.y, 2.2);
+    }
+  }
+}
+
+title.apply {
+  text(240, 34)`ROSE WINDOW`;
+}

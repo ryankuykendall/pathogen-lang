@@ -1,0 +1,81 @@
+// viewBox="0 0 480 280"
+//-- Notches: a single tick a third of the way along the join seam, a
+//-- double tick two thirds along — on BOTH pieces. Twin seams may run
+//-- opposite directions, so the walk is normalized left-to-right first.
+
+define ViewBox(0, 0, 480, 280);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 280);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let notches = PathLayer('notches') ${
+  stroke: #2dd4bf;
+  stroke-width: 2;
+  fill: none;
+};
+let captions = TextLayer('captions') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(panel, notches, captions);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+let ox = 150;
+
+// One tick crossing the seam at normalized fraction u.
+fn tick(seam, u) {
+  let e0 = seam.get(0);
+  let e1 = seam.get(1);
+  // Normalize: walk the seam left-to-right no matter how it runs.
+  let t = calc(e0.x > e1.x ? 1 - u : u);
+  let s = seam.get(t);
+  let n = seam.normal(t);
+  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
+  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+}
+
+for (p in pieces) {
+  // Label-driven layout, as in the yoke split.
+  let oy = calc(p.segmentAll('neck').length > 0 ? 48 : 78);
+  panel.apply {
+    M ox oy p.draw()
+  }
+  let placed = p.project(ox, oy);
+  notches.apply {
+    for (seam in placed.segmentAll('cut')) {
+      tick(seam, 0.3);
+      // The "double at 0.7" is two ticks straddling it.
+      tick(seam, 0.66);
+      tick(seam, 0.74);
+    }
+  }
+}
+
+captions.apply {
+  text(240, 250)`single notch at 0.3, double at 0.7 - matched on both pieces`;
+}

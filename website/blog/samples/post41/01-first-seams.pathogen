@@ -1,0 +1,88 @@
+// viewBox="0 0 480 240"
+//-- The bare mechanism: cut a plate in two, then ask each piece where it
+//-- was healed. Left: the pieces, drawn plain. Right: the same pieces with
+//-- every seam the cut created stroked in amber via segmentAll('cut').
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') ${};
+let pieceLayer = PathLayer('pieces') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let seamLayer = PathLayer('seams') ${
+  stroke: #f59e0b;
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let divider = PathLayer('divider') ${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(pieceLayer, seamLayer, divider, labels);
+
+let plate = @{
+  h 140
+  v 100
+  h -140
+  z
+};
+let knife = @{
+  m 88 -15
+  c -30 50 30 80 -12 130
+};
+let pieces = plate.cut(knife);
+
+// Left: pieces drawn at one shared position — the plate reassembles.
+pieceLayer.apply {
+  for (p in pieces) {
+    M 50 70 p.draw()
+  }
+}
+
+// Right: same pieces nudged apart, and each one is asked for its own
+// healed seam — two amber curves, one per piece.
+let kx = 88;
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let side = calc(bb.x + bb.width / 2 < kx ? -9 : 9);
+  let px = calc(290 + side);
+  pieceLayer.apply {
+    M px 70 p.draw()
+  }
+  // The projected form answers queries in absolute coordinates.
+  let placed = p.project(px, 70);
+  seamLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+divider.apply {
+  M 240 30
+  L 240 210
+}
+
+labels.apply {
+  text(120, 200)`the cut pieces`;
+  text(345, 200)`each piece's own segmentAll('cut'), stroked`;
+}

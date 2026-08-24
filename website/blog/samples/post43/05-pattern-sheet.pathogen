@@ -1,0 +1,132 @@
+// viewBox="0 0 480 240"
+//-- The finished pattern sheet: yoke and body laid out side by side via
+//-- their bounding boxes, each with its cutting line (offset), stitch
+//-- line, join-seam notches, grainline arrow, and name.
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1.1;
+  stroke-dasharray: 4 3;
+};
+let allowance = PathLayer('allowance') ${
+  stroke: #ef4444;
+  stroke-width: 1.5;
+  fill: none;
+};
+let notches = PathLayer('notches') ${
+  stroke: #2dd4bf;
+  stroke-width: 2;
+  fill: none;
+};
+let grain = PathLayer('grain') ${
+  stroke: #64748b;
+  stroke-width: 1.4;
+  fill: none;
+};
+let names = TextLayer('names') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+let title = TextLayer('title') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+  letter-spacing: 3;
+};
+scene.append(panel,
+    allowance,
+    notches,
+    grain,
+    names,
+    title);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+
+fn tick(seam, u) {
+  let e0 = seam.get(0);
+  let e1 = seam.get(1);
+  let t = calc(e0.x > e1.x ? 1 - u : u);
+  let s = seam.get(t);
+  let n = seam.normal(t);
+  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
+  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+}
+
+for (p in pieces) {
+  // Lay pieces out by bounding box: yoke on the left, body on the right,
+  // tops aligned — no knowledge of piece order required.
+  let bb = p.boundingBox();
+  // Identity comes from the labels, never from coordinates: whoever
+  // kept the neckline is the yoke.
+  let isYoke = calc(p.segmentAll('neck').length > 0 ? 1 : 0);
+  let tx = calc(isYoke == 1 ? 90 : 270);
+  let px = calc(tx - bb.x);
+  let py = calc(64 - bb.y);
+  let placed = p.project(px, py);
+  panel.apply {
+    M px py p.draw()
+  }
+  // Allowance on the body panel (see the post for the yoke caveat).
+  if (isYoke == 0) {
+    let allow = placed.offset(7);
+    allowance.apply {
+      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+    }
+  }
+  notches.apply {
+    for (seam in placed.segmentAll('cut')) {
+      tick(seam, 0.3);
+      tick(seam, 0.66);
+      tick(seam, 0.74);
+    }
+  }
+  // Grainline: a double-headed vertical arrow at the piece's center.
+  let pb = placed.boundingBox();
+  let gx = calc(pb.x + pb.width / 2);
+  let gy = calc(pb.y + pb.height / 2);
+  let gl = calc(max(16, pb.height * 0.28));
+  grain.apply {
+    M gx calc(gy - gl)
+    L gx calc(gy + gl)
+    M calc(gx - 4) calc(gy - gl + 6)
+    L gx calc(gy - gl)
+    L calc(gx + 4) calc(gy - gl + 6)
+    M calc(gx - 4) calc(gy + gl - 6)
+    L gx calc(gy + gl)
+    L calc(gx + 4) calc(gy + gl - 6)
+  }
+  names.apply {
+    text(calc(pb.x + pb.width / 2), calc(pb.y + pb.height + 24))`${isYoke == 1 ? 'YOKE - cut 1 on fold' : 'BODY - cut 1 on fold'}`;
+  }
+}
+
+title.apply {
+  text(240, 32)`HALF-BODICE PATTERN`;
+}

@@ -1,0 +1,100 @@
+// viewBox="0 0 480 230"
+//-- Seam allowance is an offset: push the body piece's outline out by 7
+//-- and you have the cutting line; the original edge, dashed, becomes the
+//-- stitch line. The 'side' label survives the offset and says so.
+
+define ViewBox(0, 0, 480, 230);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 230);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+};
+let allowance = PathLayer('allowance') ${
+  stroke: #ef4444;
+  stroke-width: 1.6;
+  fill: none;
+};
+let sideRun = PathLayer('side-run') ${
+  stroke: #f59e0b;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let legendCut = TextLayer('legend-cut') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f87171;
+};
+let legendStitch = TextLayer('legend-stitch') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+};
+let legendSide = TextLayer('legend-side') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f59e0b;
+};
+scene.append(panel,
+    allowance,
+    sideRun,
+    legendCut,
+    legendStitch,
+    legendSide);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+
+for (p in pieces) {
+  let placedProbe = p.project(0, 0);
+  // Only the body piece gets the allowance treatment here.
+  if (placedProbe.segmentAll('hem').length > 0) {
+    let placed = p.project(150, 28);
+    panel.apply {
+      M 150 28 p.draw()
+    }
+    // The cutting line: the same outline, pushed out by the allowance.
+    let allow = placed.offset(7);
+    allowance.apply {
+      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+    }
+    // Labels survive offset: the allowance still knows its side seam.
+    sideRun.apply {
+      for (r in allow.segmentAll('side')) {
+        r.drawTo(r.startPoint.x, r.startPoint.y);
+      }
+    }
+  }
+}
+
+legendCut.apply {
+  text(300, 92)`solid red = cutting line`;
+}
+legendStitch.apply {
+  text(300, 110)`dashed = stitch line`;
+}
+legendSide.apply {
+  text(300, 128)`amber = side, post-offset`;
+}

@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stained Glass: Seams as Leading, Pieces as Panes — Pathogen Studio</title>
+  <meta name="description" content="The Cutting Room finale: a rose window where the cut is the artwork — came stroked from the seam group, panes tinted by layer routing, labels from both boolean operands coexisting, and solder dots at every joint.">
+  <link rel="canonical" href="https://pathogen.studio/blog/cutting-room-stained-glass">
+  <meta property="og:title" content="Stained Glass: Seams as Leading, Pieces as Panes — Pathogen Studio">
+  <meta property="og:description" content="The Cutting Room finale: a rose window where the cut is the artwork — came stroked from the seam group, panes tinted by layer routing, labels from both boolean operands coexisting, and solder dots at every joint.">
+  <meta property="og:url" content="https://pathogen.studio/blog/cutting-room-stained-glass">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Stained Glass: Seams as Leading, Pieces as Panes","description":"The Cutting Room finale: a rose window where the cut is the artwork — came stroked from the seam group, panes tinted by layer routing, labels from both boolean operands coexisting, and solder dots at every joint.","datePublished":"2026-08-27","url":"https://pathogen.studio/blog/cutting-room-stained-glass","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Stained Glass: Seams as Leading, Pieces as Panes</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Stained Glass: Seams as Leading, Pieces as Panes</h1>
+        <p class="post-meta"><time datetime="2026-08-27">August 27, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 4 of 4 in The Cutting Room — projects that put <code>cut()</code> and
+segment labels to work together.</em></p>
+<blockquote>
+<p><strong>Series: The Cutting Room</strong></p>
+<ol>
+<li><a href="/blog/cutting-room-papercraft">Papercraft</a> — cut lines, fold
+lines, and glue tabs from one plate</li>
+<li><a href="/blog/cutting-room-jigsaw">Jigsaw</a> — wavy knives, piece identity,
+and a scattered puzzle</li>
+<li><a href="/blog/cutting-room-garment">Garment patterns</a> — named edges, seam
+allowances, and notches</li>
+<li><strong>Stained glass</strong> (this post) — tinted panes, leading, and a rose
+window</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> <a href="/blog/pathblock-cutting"><code>PathBlock.cut()</code></a> and
+<a href="/blog/segment-labels-and-suffixes">segment labels</a>. The
+<a href="/blog/pathblock-boolean-operations">boolean operations post</a> helps
+for Example 4, and part 1&#39;s
+<a href="/blog/cutting-room-papercraft">seam-stroking idiom</a> is assumed
+throughout.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>In every project so far, the seams were annotation — fold here, align
+there. Stained glass inverts that: the seams <em>are</em> the picture. Lead
+came is nothing but the network of joints between panes, which means a
+stained-glass window is <code>segmentAll(&#39;cut&#39;)</code>, stroked wide, over pieces
+that have been filled with color. The finale also brings in the last
+label superpower this series has not used yet: <strong>boolean results keep
+the labels of both operands</strong>, so a frame made by <code>difference()</code> still
+answers for the outer shape&#39;s names <em>and</em> the opening&#39;s.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because &quot;decorate every joint&quot; is a one-loop job when joints are
+queryable, and an evening of coordinate surgery when they are not.
+The whole aesthetic rests on the idiom from part 1 — this time as the
+main event rather than the annotation:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
+  <span class="hljs-comment">// stroked wide, this IS the leading</span>
+  seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+}
+</code></pre><h2>Example 1 — Seams as the artwork</h2>
+<p>A glass disc, four straight knives through the center, eight panes.
+The leading between panes is the seam group stroked at width 5 in the
+background color — no leading was drawn as such; it is the cut,
+made visible.</p>
+<p><mini-workspace code-open caption="Eight panes; the came between them is segmentAll('cut') stroked wide.">
+  <code>// viewBox="0 0 480 250"
+//-- Seams as the artwork: a glass disc cut by four radial knives becomes
+//-- eight panes, and stroking every healed seam wide draws the lead came
+//-- between them — the decoration IS the seam group.
+
+define ViewBox(0, 0, 480, 250);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') ${};
+let panes = PathLayer('panes') ${
+  fill: #38bdf8;
+  stroke: none;
+};
+let leading = PathLayer('leading') ${
+  stroke: #0f172a;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(panes, leading, labels);
+
+let disc = @{
+  circle(0, 0, 88);
+};
+// Four straight knives through the center, 45 degrees apart.
+let kr = 104;
+let c45 = cos(calc(PI() / 4));
+let knives = @{
+  m calc(0 - kr) 0
+  l calc(kr * 2) 0
+  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
+  l calc(kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
+  l 0 calc(kr * 2)
+  m calc(kr * c45) calc(0 - kr - kr * c45)
+  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+};
+let wedges = disc.cut(knives);
+let ox = 240;
+let oy = 122;
+
+for (w in wedges) {
+  panes.apply {
+    M ox oy w.draw()
+  }
+  let placed = w.project(ox, oy);
+  leading.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(240, 232)`eight panes, one loop - the leading is segmentAll('cut'), stroked wide`;
+}
+</code>
+  <img src="/blog/samples/post44/01-rose-cuts.svg" alt="Eight panes; the came between them is segmentAll('cut') stroked wide." loading="lazy">
+</mini-workspace></p>
+<p>Compare part 1&#39;s Example 1, where the same query produced a thin amber
+highlight. Same seams, same loop — the meaning of a seam is entirely
+in how you draw it.</p>
+<h2>Example 2 — Your own &#39;cut&#39; label joins the came</h2>
+<p><code>cut</code> is not a reserved word — it is an ordinary label the cut applies
+for you, and labels with the same name form one group. So if you name
+the disc&#39;s rim <code>as segment(&#39;cut&#39;)</code> yourself, the one came loop picks
+it up with zero extra code. Left disc: rim labeled <code>&#39;rim&#39;</code>, and the
+glass meets the stone bare. Right disc: rim labeled <code>&#39;cut&#39;</code>, full came.</p>
+<p><mini-workspace code-open caption="Same decoration loop on both windows; only the rim's label name differs.">
+  <code>// viewBox="0 0 480 260"
+//-- Labels form groups, and 'cut' is just a label: name the disc's rim
+//-- as segment('cut') and the one came loop picks it up too. Left: rim
+//-- labeled 'rim', so the loop strokes only the healed seams. Right: rim
+//-- labeled 'cut' — same loop, full came.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') ${};
+let stone = PathLayer('stone') ${
+  fill: #64748b;
+  stroke: none;
+};
+let panes = PathLayer('panes') ${
+  fill: #a78bfa;
+  stroke: none;
+};
+let leading = PathLayer('leading') ${
+  stroke: #0f172a;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(stone, panes, leading, labels);
+
+// A stone surround behind both discs so the dark came reads against it.
+stone.apply {
+  circle(128, 112, 82);
+  circle(352, 112, 82);
+}
+
+// The same disc twice — only the rim's label differs. An as-clause on
+// a stdlib call names everything the call draws, so one label covers
+// the whole circle.
+let discA = @{
+  circle(0, 0, 70) as segment('rim');
+};
+let discB = @{
+  circle(0, 0, 70) as segment('cut');
+};
+let knives = @{
+  m -85 0
+  l 170 0
+  m -85 -85
+  l 0 170
+};
+
+fn cameWindow(disc, cx, cy) {
+  let pieces = disc.cut(knives);
+  for (p in pieces) {
+    panes.apply {
+      M cx cy p.draw()
+    }
+    let placed = p.project(cx, cy);
+    // One decoration loop, both windows: stroke the 'cut' group wide.
+    leading.apply {
+      for (seam in placed.segmentAll('cut')) {
+        seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      }
+    }
+  }
+}
+
+cameWindow(discA, 128, 112);
+cameWindow(discB, 352, 112);
+
+labels.apply {
+  text(128, 226)`rim labeled 'rim' - bare edge`;
+  text(352, 226)`rim labeled 'cut' - it joins the came`;
+}
+</code>
+  <img src="/blog/samples/post44/02-rim-joins-the-came.svg" alt="Same decoration loop on both windows; only the rim's label name differs." loading="lazy">
+</mini-workspace></p>
+<p>Note the labeling shortcut, too: an <code>as</code> clause on a stdlib call like
+<code>circle()</code> names <em>everything the call draws</em>, so one clause labels the
+whole rim — no need to author the arcs by hand.</p>
+<h2>Example 3 — Tinted panes</h2>
+<p>The picture emerges. Pieces are full PathBlocks, so coloring them is
+layer routing: four glass layers with jewel-tone fills, pieces dealt
+round-robin, came stroked over the top. (The same routing pattern the
+<a href="/blog/pathblock-cutting">cutting post</a> used for its shattered glyph.)</p>
+<p><mini-workspace code-open caption="Four glass layers, pieces routed by index, leading on top.">
+  <code>// viewBox="0 0 480 250"
+//-- The picture emerges: the same eight panes, each routed to one of
+//-- four glass layers — jewel tints round-robin — with the came stroked
+//-- on top. Pieces are full PathBlocks, so styling them is layer routing.
+
+define ViewBox(0, 0, 480, 250);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') ${};
+let glass0 = PathLayer('glass0') ${
+  fill: #38bdf8;
+  stroke: none;
+};
+let glass1 = PathLayer('glass1') ${
+  fill: #a78bfa;
+  stroke: none;
+};
+let glass2 = PathLayer('glass2') ${
+  fill: #2dd4bf;
+  stroke: none;
+};
+let glass3 = PathLayer('glass3') ${
+  fill: #fbbf24;
+  stroke: none;
+};
+let leading = PathLayer('leading') ${
+  stroke: #0f172a;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(glass0,
+    glass1,
+    glass2,
+    glass3,
+    leading,
+    labels);
+
+let disc = @{
+  circle(0, 0, 88);
+};
+let kr = 104;
+let c45 = cos(calc(PI() / 4));
+let knives = @{
+  m calc(0 - kr) 0
+  l calc(kr * 2) 0
+  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
+  l calc(kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
+  l 0 calc(kr * 2)
+  m calc(kr * c45) calc(0 - kr - kr * c45)
+  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+};
+let wedges = disc.cut(knives);
+let ox = 240;
+let oy = 122;
+
+for ([w, i] in wedges) {
+  if (calc(i % 4) == 0) {
+    glass0.apply {
+      M ox oy w.draw()
+    }
+  }
+  if (calc(i % 4) == 1) {
+    glass1.apply {
+      M ox oy w.draw()
+    }
+  }
+  if (calc(i % 4) == 2) {
+    glass2.apply {
+      M ox oy w.draw()
+    }
+  }
+  if (calc(i % 4) == 3) {
+    glass3.apply {
+      M ox oy w.draw()
+    }
+  }
+  let placed = w.project(ox, oy);
+  leading.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(240, 232)`four glass layers, pieces routed round-robin - came on top`;
+}
+</code>
+  <img src="/blog/samples/post44/03-tinted-panes.svg" alt="Four glass layers, pieces routed by index, leading on top." loading="lazy">
+</mini-workspace></p>
+<p>Routing by index is the bluntest instrument — part 2 routed by <em>label</em>
+(rim or not), and part 3 by <em>name</em>. Pick the classifier that matches
+the design; the mechanism is the same <code>apply</code> block either way.</p>
+<h2>Example 4 — The frame keeps both names</h2>
+<p>Boolean results carry labels from <strong>both</strong> operands. This window frame
+is <code>outer.difference(opening)</code> — the outer square&#39;s bottom edge brought
+<code>&#39;sill&#39;</code>, the opening&#39;s two side edges brought <code>&#39;light&#39;</code>, and the frame
+answers for both names. Then a diagonal cut splits the frame, and
+<em>each half</em> still answers for whatever it kept: the lower half holds
+most of the sill, the upper half a shorter stretch of it, and each
+keeps one of the opening&#39;s sides.</p>
+<p><mini-workspace code-open caption="difference() merges label sets; cut() distributes them to the halves.">
+  <code>// viewBox="0 0 480 260"
+//-- Labels from both operands coexist: a frame made by difference keeps
+//-- the outer square's 'sill' AND the inner square's 'light' — and after
+//-- a diagonal cut, both halves still answer for both names.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') ${};
+let frame = PathLayer('frame') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let sillRun = PathLayer('sill-run') ${
+  stroke: #f59e0b;
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let lightRun = PathLayer('light-run') ${
+  stroke: #2dd4bf;
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let legendSill = TextLayer('legend-sill') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f59e0b;
+};
+let legendLight = TextLayer('legend-light') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #2dd4bf;
+};
+scene.append(frame,
+    sillRun,
+    lightRun,
+    legendSill,
+    legendLight);
+
+let outer = @{
+  h 170
+  v 150
+  h -170 as segment('sill');
+  z
+};
+let opening = @{
+  h 110
+  v 90 as segment('light');
+  h -110
+  v -90 as segment('light');
+  z
+};
+let ring = outer.project(155, 40).difference(opening.project(185, 70));
+let knife = @{
+  m 150 25
+  l 160 180
+};
+let halves = ring.cut(knife);
+
+for (half in halves) {
+  // Open the cut along the diagonal: a ±10 nudge perpendicular to it.
+  // draw() keeps each half's own placement, so the nudge is all the
+  // move there is.
+  let bb = half.boundingBox();
+  let side = calc(bb.x + bb.width / 2 &lt; 240 ? -10 : 10);
+  frame.apply {
+    M calc(side) calc(0 - side) half.draw()
+  }
+  let placed = half.project(side, calc(0 - side));
+  sillRun.apply {
+    for (r in placed.segmentAll('sill')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+  lightRun.apply {
+    for (r in placed.segmentAll('light')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+}
+
+legendSill.apply {
+  text(352, 110)`'sill' = bottom edge`;
+}
+legendLight.apply {
+  text(352, 128)`'light' = the sides`;
+}
+</code>
+  <img src="/blog/samples/post44/04-frame-labels.svg" alt="difference() merges label sets; cut() distributes them to the halves." loading="lazy">
+</mini-workspace></p>
+<p>This is the compositional guarantee the whole series stands on:
+labels survive <em>chains</em> of operations — draft, subtract, cut — not
+just single steps.</p>
+<h2>Example 5 — The rose window</h2>
+<p>The finale composes everything. One cutter block carries eight spoke
+knives <em>and</em> a closed ring knife — a cookie cutter — so a single
+<code>cut()</code> stamps out the golden center medallion and slices the
+surrounding ring into eight panes. The spokes stop short of the ring,
+leaving the medallion whole. Then:</p>
+<ul>
+<li>the <strong>medallion</strong> is found by classification — it is the piece that
+kept none of the rim label (part 2&#39;s trick, part 3&#39;s workflow);</li>
+<li>the <strong>panes</strong> are tinted by layer routing (Example 3);</li>
+<li>the <strong>came</strong> strokes two label groups — the healed seams and the
+authored rim — in one style;</li>
+<li>the <strong>solder dots</strong> sit at every seam&#39;s <code>startPoint</code> and <code>endPoint</code>,
+where real joints get soldered (on the medallion&#39;s closed boundary
+the two coincide — one dot, drawn twice, harmlessly).</li>
+</ul>
+<p><mini-workspace code-open caption="One cut: cookie-cutter medallion plus eight spoke panes — came, tints, and solder all queried.">
+  <code>// viewBox="0 0 480 320"
+//-- The rose window: a cookie-cutter ring knife stamps out the center
+//-- medallion while eight spokes (stopping short of it) slice the ring
+//-- into panes. Rim labels sort medallion from ring; the came and solder
+//-- dots are all seam queries.
+
+define ViewBox(0, 0, 480, 320);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 320);
+}
+
+let scene = GroupLayer('scene') ${};
+let stone = PathLayer('stone') ${
+  fill: #1e293b;
+  stroke: #334155;
+  stroke-width: 2;
+};
+let glass0 = PathLayer('glass0') ${
+  fill: #38bdf8;
+  stroke: none;
+};
+let glass1 = PathLayer('glass1') ${
+  fill: #a78bfa;
+  stroke: none;
+};
+let glass2 = PathLayer('glass2') ${
+  fill: #2dd4bf;
+  stroke: none;
+};
+let medallion = PathLayer('medallion') ${
+  fill: #fbbf24;
+  stroke: none;
+};
+let leading = PathLayer('leading') ${
+  stroke: #0f172a;
+  stroke-width: 4.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let solder = PathLayer('solder') ${
+  fill: #cbd5e1;
+  stroke: none;
+};
+let title = TextLayer('title') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+  letter-spacing: 3;
+};
+scene.append(stone,
+    glass0,
+    glass1,
+    glass2,
+    medallion,
+    leading,
+    solder,
+    title);
+
+// The glass disc — the as-clause on circle() labels the whole rim.
+let disc = @{
+  circle(0, 0, 92) as segment('rim');
+};
+// Eight spokes from r=36 out past the rim, plus a ring knife that stamps
+// the medallion. The spokes stop short of the ring so the medallion
+// stays whole.
+let c = cos(calc(PI() / 4));
+let knives = @{
+  m 36 0
+  l 76 0
+  m calc(36 * c - 112) calc(36 * c)
+  l calc(76 * c) calc(76 * c)
+  m calc(0 - 112 * c) calc(36 - 112 * c)
+  l 0 76
+  m calc(0 - 36 * c) calc(36 * c - 112)
+  l calc(0 - 76 * c) calc(76 * c)
+  m calc(112 * c - 36) calc(0 - 112 * c)
+  l -76 0
+  m calc(112 - 36 * c) calc(0 - 36 * c)
+  l calc(0 - 76 * c) calc(0 - 76 * c)
+  m calc(112 * c) calc(112 * c - 36)
+  l 0 -76
+  m calc(36 * c) calc(112 - 36 * c)
+  l calc(76 * c) calc(0 - 76 * c)
+  circle(0, 0, 36);
+};
+let panes = disc.cut(knives);
+let ox = 240;
+let oy = 158;
+
+stone.apply {
+  circle(ox, oy, 112);
+}
+
+for ([p, i] in panes) {
+  let placed = p.project(ox, oy);
+  // The medallion is the piece that kept none of the rim.
+  if (placed.segmentAll('rim').length &gt; 0) {
+    if (calc(i % 3) == 0) {
+      glass0.apply {
+        M ox oy p.draw()
+      }
+    }
+    if (calc(i % 3) == 1) {
+      glass1.apply {
+        M ox oy p.draw()
+      }
+    }
+    if (calc(i % 3) == 2) {
+      glass2.apply {
+        M ox oy p.draw()
+      }
+    }
+  } else {
+    medallion.apply {
+      M ox oy p.draw()
+    }
+  }
+  // Came on every healed seam and on the rim: two groups, one style.
+  leading.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+    for (seam in placed.segmentAll('rim')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+  // Solder dots where seams start and end.
+  solder.apply {
+    for (seam in placed.segmentAll('cut')) {
+      circle(seam.startPoint.x, seam.startPoint.y, 2.2);
+      circle(seam.endPoint.x, seam.endPoint.y, 2.2);
+    }
+  }
+}
+
+title.apply {
+  text(240, 34)`ROSE WINDOW`;
+}
+</code>
+  <img src="/blog/samples/post44/05-rose-window.svg" alt="One cut: cookie-cutter medallion plus eight spoke panes — came, tints, and solder all queried." loading="lazy">
+</mini-workspace></p>
+<p>Every technique in it was introduced as a bare mechanism somewhere in
+these four posts. That is the shape of the whole series: the seams
+know where they are, the pieces know what they kept, and everything
+else is a loop.</p>
+<h2>Where to go next</h2>
+<ul>
+<li>Start over with <a href="/blog/cutting-room-papercraft">Papercraft</a> if you
+arrived here first — the idioms build in order.</li>
+<li><a href="/blog/pathblock-cutting">Cutting Paths</a> — the full <code>cut()</code> rules:
+cookie cutters, donuts, open subjects, snapping.</li>
+<li><a href="/blog/pathblock-boolean-operations">Boolean operations</a> — union,
+difference, intersection, xor, and now with label carriage.</li>
+<li>Reference: <a href="/docs#segment-labels-labels-survive-derived-paths">labels survive derived paths</a>
+and <a href="/docs#path-blocks-cutting-paths">cutting paths</a> in the docs.</li>
+</ul>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

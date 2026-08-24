@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import puppeteer from 'puppeteer';
 
+import { StringTextDocument } from '../src/language-services/document';
+import { formatDocument } from '../src/language-services/formatter';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, '..');
 
@@ -288,15 +291,24 @@ program
       const pathogenPath = join(sampleDir, `${name}.pathogen`);
       const previewPath = join(previewDir, `${name}.png`);
 
-      // Read source for GroupLayer check
+      // Read source for GroupLayer and formatting checks
       let sourceHasGroupLayer = false;
       let sourceLayerCount = 0;
+      let needsFormatting = false;
       if (existsSync(pathogenPath)) {
         const source = readFileSync(pathogenPath, 'utf-8');
         sourceHasGroupLayer = /GroupLayer/.test(source);
         // Count distinct named layer definitions
         const layerDefs = source.match(/(?:define\s+)?(?:PathLayer|TextLayer)\s*\(/g);
         sourceLayerCount = layerDefs ? layerDefs.length : 0;
+        // Published samples must be formatter-clean — long one-line style
+        // blocks soft-wrap badly in the mini-workspace code panel.
+        try {
+          const edits = formatDocument(new StringTextDocument(source));
+          needsFormatting = edits.length > 0 && edits[0].newText !== source;
+        } catch {
+          // Unparseable source surfaces as a compile failure elsewhere.
+        }
       }
 
       // Load SVG in Puppeteer
@@ -402,6 +414,14 @@ program
 
       // Run validation checks
       const warnings = runChecks(elements, viewBox, sourceHasGroupLayer, sourceLayerCount);
+
+      // 6. Formatting check — required before review/publication
+      if (needsFormatting) {
+        warnings.push({
+          type: 'formatting',
+          message: `Source is not formatter-clean — run: npm run format:samples -- ${sampleDir}`,
+        });
+      }
 
       // Screenshot (use the img-based HTML for cleaner rendering)
       await page.setContent(html, { waitUntil: 'domcontentloaded' });

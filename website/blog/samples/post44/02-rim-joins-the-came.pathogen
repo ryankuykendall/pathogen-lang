@@ -1,0 +1,84 @@
+// viewBox="0 0 480 260"
+//-- Labels form groups, and 'cut' is just a label: name the disc's rim
+//-- as segment('cut') and the one came loop picks it up too. Left: rim
+//-- labeled 'rim', so the loop strokes only the healed seams. Right: rim
+//-- labeled 'cut' — same loop, full came.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') ${};
+let stone = PathLayer('stone') ${
+  fill: #64748b;
+  stroke: none;
+};
+let panes = PathLayer('panes') ${
+  fill: #a78bfa;
+  stroke: none;
+};
+let leading = PathLayer('leading') ${
+  stroke: #0f172a;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(stone, panes, leading, labels);
+
+// A stone surround behind both discs so the dark came reads against it.
+stone.apply {
+  circle(128, 112, 82);
+  circle(352, 112, 82);
+}
+
+// The same disc twice — only the rim's label differs. An as-clause on
+// a stdlib call names everything the call draws, so one label covers
+// the whole circle.
+let discA = @{
+  circle(0, 0, 70) as segment('rim');
+};
+let discB = @{
+  circle(0, 0, 70) as segment('cut');
+};
+let knives = @{
+  m -85 0
+  l 170 0
+  m -85 -85
+  l 0 170
+};
+
+fn cameWindow(disc, cx, cy) {
+  let pieces = disc.cut(knives);
+  for (p in pieces) {
+    panes.apply {
+      M cx cy p.draw()
+    }
+    let placed = p.project(cx, cy);
+    // One decoration loop, both windows: stroke the 'cut' group wide.
+    leading.apply {
+      for (seam in placed.segmentAll('cut')) {
+        seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      }
+    }
+  }
+}
+
+cameWindow(discA, 128, 112);
+cameWindow(discB, 352, 112);
+
+labels.apply {
+  text(128, 226)`rim labeled 'rim' - bare edge`;
+  text(352, 226)`rim labeled 'cut' - it joins the came`;
+}

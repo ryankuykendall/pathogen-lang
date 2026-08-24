@@ -1,0 +1,102 @@
+// viewBox="0 0 480 220"
+//-- A four-panel accordion card as one template: the plate's own boundary
+//-- is the cut line (solid), and every healed seam inside it is a fold
+//-- line (dashed) — one layer style decorates the whole seam group.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') ${};
+let panelLayer = PathLayer('panels') ${
+  fill: #e7dfd0;
+  stroke: none;
+};
+let cutLayer = PathLayer('cut-line') ${
+  stroke: #ef4444;
+  stroke-width: 2;
+  fill: none;
+};
+let foldLayer = PathLayer('fold-lines') ${
+  stroke: #475569;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 5 4;
+};
+let cutCaption = TextLayer('cut-caption') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f87171;
+  text-anchor: middle;
+};
+let foldCaption = TextLayer('fold-caption') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(panelLayer,
+    cutLayer,
+    foldLayer,
+    cutCaption,
+    foldCaption);
+
+let card = @{
+  h 288
+  v 96
+  h -288
+  z
+};
+let creases = @{
+  m 72 -15
+  l 0 126
+  m 72 -126
+  l 0 126
+  m 72 -126
+  l 0 126
+};
+let panels = card.cut(creases);
+let ox = 96;
+let oy = 48;
+
+panelLayer.apply {
+  for (p in panels) {
+    M ox oy p.draw()
+  }
+}
+
+// The original outline is the cut line: scissors follow the solid path.
+cutLayer.apply {
+  card.drawTo(ox, oy);
+}
+
+// Every seam the cut healed is a fold line: the dashed style comes from
+// the layer, so the whole group is decorated in one pass. Each interior
+// fold is shared by two panels — stroke it once by letting every panel
+// own only the seams on its right-hand side.
+for (p in panels) {
+  let placed = p.project(ox, oy);
+  let bb = placed.boundingBox();
+  let cx = calc(bb.x + bb.width / 2);
+  foldLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      let mid = seam.get(0.5);
+      if (mid.x > cx) {
+        seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      }
+    }
+  }
+}
+
+cutCaption.apply {
+  text(163, 175)`solid = cut the outline`;
+}
+foldCaption.apply {
+  text(320, 175)`dashed = fold the seams`;
+}

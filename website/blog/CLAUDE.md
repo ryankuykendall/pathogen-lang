@@ -52,6 +52,14 @@ Blog posts embed interactive `<mini-workspace>` demos that display Pathogen sour
 #    First line must be a viewBox comment: // viewBox="0 0 W H"
 vim website/blog/samples/post1/my-sample.pathogen
 
+# 1.5. Format the sources (REQUIRED before review/publication).
+#    The mini-workspace code panel soft-wraps long lines badly, so every
+#    published sample must be formatter-clean — one style declaration per
+#    line, canonical wrapping. validate-samples flags unformatted files.
+#    Formatting never changes compiled output; if in doubt, recompile and
+#    diff the SVG (it must be byte-identical).
+npm run format:samples -- website/blog/samples/post1
+
 # 2. Compile every sample under website/blog/samples/ to SVG.
 #    Auto-detects viewBox/width/height from source comments, picks the GPU or
 #    CPU pipeline based on gradient types, and emits the inspector metadata
@@ -115,6 +123,7 @@ The `<mini-workspace>` component auto-detects `@property` declarations with `syn
 ### Checklist for New Samples
 
 - [ ] `.pathogen` file with `// viewBox="0 0 W H"` comment on line 1
+- [ ] Formatter-clean: `npm run format:samples -- website/blog/samples/postN` run after the last source edit (validate-samples warns otherwise)
 - [ ] Compiled via `npm run compile:samples` (NOT a hand-rolled `npx tsx src/cli.ts …`)
 - [ ] Resulting `.svg` contains `<script id="pathogen-metadata">` — confirms the inspector will populate
 - [ ] `<mini-workspace>` tag in blog markdown with `src` pointing to `.pathogen` file
@@ -142,7 +151,10 @@ Author and review a draft blog post that incorporates code examples in mini-work
 
 ### 3.5 Pre-Review Validation
 
-Before agentic review, run the sample validation script on all sample directories:
+Before agentic review, format all sample sources (`npm run format:samples --
+website/blog/samples/postN` — required; recompile afterwards so SVG mtimes
+stay ahead of sources), then run the sample validation script on all sample
+directories:
 
 ```bash
 npx tsx scripts/validate-samples.ts website/blog/samples/postN/
@@ -155,6 +167,7 @@ This uses Puppeteer to load each compiled SVG, extract pixel-accurate `getBoundi
 3. **Text-geometry collisions** — no text overlapping path/shape geometry
 4. **GroupLayer usage** — warns if >3 layers but no GroupLayer organization
 5. **ViewBox consistency** — source comment matches compiled SVG
+6. **Formatting** — source must be formatter-clean (`npm run format:samples`); unformatted sources soft-wrap badly in the mini-workspace code panel
 
 The script also generates **PNG previews** in `postN/previews/` for use during agentic review.
 

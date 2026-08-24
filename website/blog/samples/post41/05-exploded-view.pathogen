@@ -1,0 +1,87 @@
+// viewBox="0 0 480 260"
+//-- The assembly diagram: four pieces drift away from the plate's center
+//-- along their own centroid rays, the ghost of the uncut plate stays
+//-- behind, and every mating edge glows — that's the seam group again.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') ${};
+let ghost = PathLayer('ghost') ${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+let pieceLayer = PathLayer('pieces') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let seamLayer = PathLayer('seams') ${
+  stroke: #f59e0b;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(ghost, pieceLayer, seamLayer, labels);
+
+let plate = @{
+  h 150
+  v 110
+  h -150
+  z
+};
+let knives = @{
+  m 68 -15
+  c -20 40 20 80 -4 140
+  m -79 -83
+  l 180 12
+};
+let pieces = plate.cut(knives);
+let ox = 165;
+let oy = 70;
+
+ghost.apply {
+  plate.drawTo(ox, oy);
+}
+
+// Drift each piece along the ray from the plate's bounding-box center
+// to its own.
+let plateBB = plate.boundingBox();
+let pcx = calc(plateBB.x + plateBB.width / 2);
+let pcy = calc(plateBB.y + plateBB.height / 2);
+for (p in pieces) {
+  let bb = p.boundingBox();
+  let dx = calc(bb.x + bb.width / 2 - pcx);
+  let dy = calc(bb.y + bb.height / 2 - pcy);
+  let len = calc(sqrt(dx * dx + dy * dy));
+  let px = calc(ox + dx / len * 34);
+  let py = calc(oy + dy / len * 34);
+  pieceLayer.apply {
+    M px py p.draw()
+  }
+  let placed = p.project(px, py);
+  seamLayer.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(240, 235)`amber edges are the mates — seams face seams`;
+}

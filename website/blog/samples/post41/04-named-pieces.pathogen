@@ -1,0 +1,94 @@
+// viewBox="0 0 480 215"
+//-- Name the edges before you cut, and the pieces introduce themselves.
+//-- A house-shaped plate labels its roof and base; after a horizontal cut
+//-- each piece still answers for the labels it kept — stroked and counted.
+
+define ViewBox(0, 0, 480, 215);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 215);
+}
+
+let scene = GroupLayer('scene') ${};
+let pieceLayer = PathLayer('pieces') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let roofLayer = PathLayer('roof-runs') ${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let baseLayer = PathLayer('base-runs') ${
+  stroke: #c084fc;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let roofCount = TextLayer('roof-count') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #2dd4bf;
+};
+let baseCount = TextLayer('base-count') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #c084fc;
+};
+scene.append(pieceLayer,
+    roofLayer,
+    baseLayer,
+    roofCount,
+    baseCount);
+
+let house = @{
+  l 70 -50 as segment('roof');
+  l 70 50 as segment('roof');
+  v 90
+  h -140 as segment('base');
+  z
+};
+let knife = @{
+  m -15 30
+  l 170 0
+};
+let pieces = house.cut(knife);
+
+for (p in pieces) {
+  // The labels place the pieces too: the roof piece slides up, the
+  // other slides down — no coordinate checks anywhere.
+  let roofRuns = p.segmentAll('roof');
+  let oy = calc(roofRuns.length > 0 ? 66 : 90);
+  pieceLayer.apply {
+    M 120 oy p.draw()
+  }
+  let placed = p.project(120, oy);
+  let baseRuns = placed.segmentAll('base');
+  roofRuns = placed.segmentAll('roof');
+  roofLayer.apply {
+    for (run in roofRuns) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
+    }
+  }
+  baseLayer.apply {
+    for (run in baseRuns) {
+      run.drawTo(run.startPoint.x, run.startPoint.y);
+    }
+  }
+  // Each piece reports which of the plate's names it still owns,
+  // color-keyed to the strokes.
+  let pb = placed.boundingBox();
+  let ly = calc(pb.y + pb.height / 2 + 3);
+  roofCount.apply {
+    text(310, ly)`roof ${roofRuns.length}`;
+  }
+  baseCount.apply {
+    text(378, ly)`base ${baseRuns.length}`;
+  }
+}

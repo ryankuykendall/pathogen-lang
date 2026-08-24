@@ -1,0 +1,102 @@
+// viewBox="0 0 480 250"
+//-- The picture emerges: the same eight panes, each routed to one of
+//-- four glass layers — jewel tints round-robin — with the came stroked
+//-- on top. Pieces are full PathBlocks, so styling them is layer routing.
+
+define ViewBox(0, 0, 480, 250);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') ${};
+let glass0 = PathLayer('glass0') ${
+  fill: #38bdf8;
+  stroke: none;
+};
+let glass1 = PathLayer('glass1') ${
+  fill: #a78bfa;
+  stroke: none;
+};
+let glass2 = PathLayer('glass2') ${
+  fill: #2dd4bf;
+  stroke: none;
+};
+let glass3 = PathLayer('glass3') ${
+  fill: #fbbf24;
+  stroke: none;
+};
+let leading = PathLayer('leading') ${
+  stroke: #0f172a;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(glass0,
+    glass1,
+    glass2,
+    glass3,
+    leading,
+    labels);
+
+let disc = @{
+  circle(0, 0, 88);
+};
+let kr = 104;
+let c45 = cos(calc(PI() / 4));
+let knives = @{
+  m calc(0 - kr) 0
+  l calc(kr * 2) 0
+  m calc(0 - kr - kr * c45) calc(0 - kr * c45)
+  l calc(kr * 2 * c45) calc(kr * 2 * c45)
+  m calc(0 - kr * c45) calc(0 - kr - kr * c45)
+  l 0 calc(kr * 2)
+  m calc(kr * c45) calc(0 - kr - kr * c45)
+  l calc(0 - kr * 2 * c45) calc(kr * 2 * c45)
+};
+let wedges = disc.cut(knives);
+let ox = 240;
+let oy = 122;
+
+for ([w, i] in wedges) {
+  if (calc(i % 4) == 0) {
+    glass0.apply {
+      M ox oy w.draw()
+    }
+  }
+  if (calc(i % 4) == 1) {
+    glass1.apply {
+      M ox oy w.draw()
+    }
+  }
+  if (calc(i % 4) == 2) {
+    glass2.apply {
+      M ox oy w.draw()
+    }
+  }
+  if (calc(i % 4) == 3) {
+    glass3.apply {
+      M ox oy w.draw()
+    }
+  }
+  let placed = w.project(ox, oy);
+  leading.apply {
+    for (seam in placed.segmentAll('cut')) {
+      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+    }
+  }
+}
+
+labels.apply {
+  text(240, 232)`four glass layers, pieces routed round-robin - came on top`;
+}

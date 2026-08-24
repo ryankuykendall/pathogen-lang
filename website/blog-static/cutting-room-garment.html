@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Garment Patterns: Edges with Names Sewn In — Pathogen Studio</title>
+  <meta name="description" content="Part 3 of The Cutting Room: draft a half-bodice with every edge named, split it at the yoke, and let the labels run the workflow — pieces identify themselves, allowances offset without losing their names, and notches land matched on both halves.">
+  <link rel="canonical" href="https://pathogen.studio/blog/cutting-room-garment">
+  <meta property="og:title" content="Garment Patterns: Edges with Names Sewn In — Pathogen Studio">
+  <meta property="og:description" content="Part 3 of The Cutting Room: draft a half-bodice with every edge named, split it at the yoke, and let the labels run the workflow — pieces identify themselves, allowances offset without losing their names, and notches land matched on both halves.">
+  <meta property="og:url" content="https://pathogen.studio/blog/cutting-room-garment">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Garment Patterns: Edges with Names Sewn In","description":"Part 3 of The Cutting Room: draft a half-bodice with every edge named, split it at the yoke, and let the labels run the workflow — pieces identify themselves, allowances offset without losing their names, and notches land matched on both halves.","datePublished":"2026-08-26","url":"https://pathogen.studio/blog/cutting-room-garment","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Garment Patterns: Edges with Names Sewn In</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Garment Patterns: Edges with Names Sewn In</h1>
+        <p class="post-meta"><time datetime="2026-08-26">August 26, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 3 of 4 in The Cutting Room — projects that put <code>cut()</code> and
+segment labels to work together.</em></p>
+<blockquote>
+<p><strong>Series: The Cutting Room</strong></p>
+<ol>
+<li><a href="/blog/cutting-room-papercraft">Papercraft</a> — cut lines, fold
+lines, and glue tabs from one plate</li>
+<li><a href="/blog/cutting-room-jigsaw">Jigsaw</a> — wavy knives, piece identity,
+and a scattered puzzle</li>
+<li><strong>Garment patterns</strong> (this post) — named edges, seam allowances,
+and notches</li>
+<li><a href="/blog/cutting-room-stained-glass">Stained glass</a> — tinted panes,
+leading, and a rose window</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> <a href="/blog/pathblock-cutting"><code>PathBlock.cut()</code></a> and
+<a href="/blog/segment-labels-and-suffixes">segment labels</a>, plus part 1&#39;s
+<a href="/blog/cutting-room-papercraft">seam-stroking idiom</a>. Parts 1 and 2
+asked pieces about the <em>automatic</em> <code>cut</code> label; this post is where
+your own names do the heavy lifting.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>A sewing pattern is a shape whose edges have jobs. The hem gets folded
+twice; the side seam gets 7 units of allowance; the armhole gets eased;
+notches tell you which edge meets which. Pattern drafting software is,
+to a first approximation, software for <em>remembering which edge is
+which</em> — and that is precisely what <code>as segment(&#39;name&#39;)</code> does:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> bodice = @{
+  c <span class="hljs-number">16</span> <span class="hljs-number">18</span> <span class="hljs-number">34</span> <span class="hljs-number">20</span> <span class="hljs-number">46</span> <span class="hljs-number">6</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;neck&#x27;</span>)
+  l <span class="hljs-number">22</span> <span class="hljs-number">8</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;shoulder&#x27;</span>)
+  <span class="hljs-comment">// ...armhole, side, hem — Example 1 has the full draft</span>
+};
+</code></pre><p>Name the edges once, at drafting time, and every downstream operation —
+cutting the yoke off, offsetting for allowance — carries the names
+along. The workflow stops being coordinate bookkeeping and becomes a
+series of questions: <em>who kept the neckline? where is the side seam
+now?</em></p>
+<p>One blunt caveat before the pictures: <code>offset()</code> on cut pieces with
+strongly curved edges can currently send a curve&#39;s offset to the wrong
+side (a self-crossing &quot;allowance&quot;). The bodice&#39;s body panel offsets
+cleanly and that is what the examples show; the yoke&#39;s neck curve
+trips the bug, so the final sheet leaves the yoke&#39;s allowance off. A
+fix is tracked — until then, eyeball any allowance you generate on
+curvy cut pieces.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because the alternative is what pattern makers call &quot;walking the
+pattern&quot; — manually re-measuring every edge after every change. When
+the edges answer by name, grading and decorating survive redesigns:
+re-draft the armhole deeper, and the same queries still find the same
+jobs. The identification idiom this post adds to the kit:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> name = <span class="hljs-string">&#x27;body&#x27;</span>;
+<span class="hljs-keyword">if</span> (piece.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;neck&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+  name = <span class="hljs-string">&#x27;yoke&#x27;</span>;    <span class="hljs-comment">// whoever kept the neckline is the yoke</span>
+}
+</code></pre><h2>Example 1 — The draft speaks</h2>
+<p>A half-bodice front, drafted to the right of a center-front fold — the
+<code>z</code> edge, named <code>&#39;front&#39;</code> like the rest, dashed because real patterns
+are cut on the fold, so drafting half is the honest shape. Six edges,
+six names, six colors: each stroke is one <code>segmentAll</code> query answered
+by the block and drawn over the outline.</p>
+<p><mini-workspace code-open caption="Every edge named at drafting time; every color is one segmentAll query.">
+  <code>// viewBox="0 0 480 260"
+//-- The pattern draft speaks its own vocabulary: a half-bodice (cut on
+//-- the fold) with every edge named as it is drawn. Each labeled run is
+//-- stroked in its own color, straight from a segmentAll query.
+
+define ViewBox(0, 0, 480, 260);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let neckRun = PathLayer('neck-run') ${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let shoulderRun = PathLayer('shoulder-run') ${
+  stroke: #3b82f6;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let armholeRun = PathLayer('armhole-run') ${
+  stroke: #c084fc;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let sideRun = PathLayer('side-run') ${
+  stroke: #f59e0b;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let hemRun = PathLayer('hem-run') ${
+  stroke: #fb7185;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let frontRun = PathLayer('front-run') ${
+  stroke: #94a3b8;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 6 4;
+};
+let legendNeck = TextLayer('legend-neck') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #2dd4bf;
+};
+let legendShoulder = TextLayer('legend-shoulder') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #3b82f6;
+};
+let legendArmhole = TextLayer('legend-armhole') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #c084fc;
+};
+let legendSide = TextLayer('legend-side') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f59e0b;
+};
+let legendHem = TextLayer('legend-hem') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #fb7185;
+};
+let legendFold = TextLayer('legend-fold') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+};
+scene.append(panel,
+    neckRun,
+    shoulderRun,
+    armholeRun,
+    sideRun,
+    hemRun,
+    frontRun,
+    legendNeck,
+    legendShoulder,
+    legendArmhole,
+    legendSide,
+    legendHem,
+    legendFold);
+
+// Half a bodice front, drafted to the right of the center-front fold.
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z as segment('front')
+};
+let ox = 120;
+let oy = 48;
+
+panel.apply {
+  bodice.drawTo(ox, oy);
+}
+
+// One query per name; the layer's color does the explaining.
+let placed = bodice.project(ox, oy);
+fn strokeRun(run) {
+  run.drawTo(run.startPoint.x, run.startPoint.y);
+}
+neckRun.apply {
+  for (r in placed.segmentAll('neck')) {
+    strokeRun(r);
+  }
+}
+shoulderRun.apply {
+  for (r in placed.segmentAll('shoulder')) {
+    strokeRun(r);
+  }
+}
+armholeRun.apply {
+  for (r in placed.segmentAll('armhole')) {
+    strokeRun(r);
+  }
+}
+sideRun.apply {
+  for (r in placed.segmentAll('side')) {
+    strokeRun(r);
+  }
+}
+hemRun.apply {
+  for (r in placed.segmentAll('hem')) {
+    strokeRun(r);
+  }
+}
+frontRun.apply {
+  for (r in placed.segmentAll('front')) {
+    strokeRun(r);
+  }
+}
+
+legendNeck.apply {
+  text(300, 70)`as segment('neck')`;
+}
+legendShoulder.apply {
+  text(300, 88)`as segment('shoulder')`;
+}
+legendArmhole.apply {
+  text(300, 106)`as segment('armhole')`;
+}
+legendSide.apply {
+  text(300, 124)`as segment('side')`;
+}
+legendHem.apply {
+  text(300, 142)`as segment('hem')`;
+}
+legendFold.apply {
+  text(300, 160)`as segment('front') - on fold`;
+}
+</code>
+  <img src="/blog/samples/post43/01-labeled-draft.svg" alt="Every edge named at drafting time; every color is one segmentAll query." loading="lazy">
+</mini-workspace></p>
+<p>This is the whole trick of the post, shown before any cutting: the
+draft carries its own vocabulary. Everything after this is asking.</p>
+<h2>Example 2 — The yoke split</h2>
+<p>One curved knife across the chest and the bodice becomes yoke + body.
+Neither piece is found by position, index, or size — each is asked
+what it kept. The neckline stayed with the top piece, so it announces
+itself as the yoke; the hem stayed with the bottom, so it is the body.</p>
+<p><mini-workspace code-open caption="Identity by inheritance: keeping the neckline makes you the yoke.">
+  <code>// viewBox="0 0 480 280"
+//-- Split the bodice at the yoke line and ask each piece who it is:
+//-- keeping the neckline makes you the yoke, keeping the hem makes you
+//-- the body. No coordinates checked, no piece order assumed.
+
+define ViewBox(0, 0, 480, 280);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 280);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let neckRun = PathLayer('neck-run') ${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let hemRun = PathLayer('hem-run') ${
+  stroke: #fb7185;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let leaders = PathLayer('leaders') ${
+  stroke: #475569;
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  fill: none;
+};
+let captions = TextLayer('captions') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(panel,
+    neckRun,
+    hemRun,
+    leaders,
+    captions);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+let ox = 130;
+
+for (p in pieces) {
+  // Even the layout is label-driven: the neckline-keeper slides up,
+  // the other piece slides down.
+  let isYoke = calc(p.segmentAll('neck').length &gt; 0 ? 1 : 0);
+  let oy = calc(isYoke == 1 ? 52 : 74);
+  panel.apply {
+    M ox oy p.draw()
+  }
+  let placed = p.project(ox, oy);
+  // Who am I? The labels answer.
+  let name = 'the body - it kept the hem';
+  if (placed.segmentAll('neck').length &gt; 0) {
+    name = 'the yoke - it kept the neckline';
+  }
+  neckRun.apply {
+    for (r in placed.segmentAll('neck')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+  hemRun.apply {
+    for (r in placed.segmentAll('hem')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+  let pb = placed.boundingBox();
+  let ly = calc(pb.y + pb.height / 2);
+  leaders.apply {
+    M calc(pb.x + pb.width + 5) ly
+    L 262 ly
+  }
+  captions.apply {
+    text(268, calc(ly + 3))`${name}`;
+  }
+}
+</code>
+  <img src="/blog/samples/post43/02-yoke-split.svg" alt="Identity by inheritance: keeping the neckline makes you the yoke." loading="lazy">
+</mini-workspace></p>
+<p>The captions are computed, not typed per piece — the same loop handles
+both, and would handle a three-way split unchanged. That is the
+difference between labeling geometry and labeling <em>your assumptions
+about piece order</em>.</p>
+<h2>Example 3 — Seam allowance is an offset</h2>
+<p>The cutting line a seamstress actually scissors along sits 7 units
+outside the stitch line. That is <code>offset(7)</code> on the projected piece:
+the red ring is the offset, the dashed original is the stitch line —
+and because labels survive <code>offset()</code>, the amber stroke finds the side
+seam <em>on the allowance outline</em>, not the original.</p>
+<p><mini-workspace code-open caption="offset(7) makes the cutting line; the side seam still answers by name on it.">
+  <code>// viewBox="0 0 480 230"
+//-- Seam allowance is an offset: push the body piece's outline out by 7
+//-- and you have the cutting line; the original edge, dashed, becomes the
+//-- stitch line. The 'side' label survives the offset and says so.
+
+define ViewBox(0, 0, 480, 230);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 230);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+};
+let allowance = PathLayer('allowance') ${
+  stroke: #ef4444;
+  stroke-width: 1.6;
+  fill: none;
+};
+let sideRun = PathLayer('side-run') ${
+  stroke: #f59e0b;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let legendCut = TextLayer('legend-cut') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f87171;
+};
+let legendStitch = TextLayer('legend-stitch') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+};
+let legendSide = TextLayer('legend-side') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #f59e0b;
+};
+scene.append(panel,
+    allowance,
+    sideRun,
+    legendCut,
+    legendStitch,
+    legendSide);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+
+for (p in pieces) {
+  let placedProbe = p.project(0, 0);
+  // Only the body piece gets the allowance treatment here.
+  if (placedProbe.segmentAll('hem').length &gt; 0) {
+    let placed = p.project(150, 28);
+    panel.apply {
+      M 150 28 p.draw()
+    }
+    // The cutting line: the same outline, pushed out by the allowance.
+    let allow = placed.offset(7);
+    allowance.apply {
+      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+    }
+    // Labels survive offset: the allowance still knows its side seam.
+    sideRun.apply {
+      for (r in allow.segmentAll('side')) {
+        r.drawTo(r.startPoint.x, r.startPoint.y);
+      }
+    }
+  }
+}
+
+legendCut.apply {
+  text(300, 92)`solid red = cutting line`;
+}
+legendStitch.apply {
+  text(300, 110)`dashed = stitch line`;
+}
+legendSide.apply {
+  text(300, 128)`amber = side, post-offset`;
+}
+</code>
+  <img src="/blog/samples/post43/03-seam-allowance.svg" alt="offset(7) makes the cutting line; the side seam still answers by name on it." loading="lazy">
+</mini-workspace></p>
+<p>Query-after-offset is the point to take away: the allowance is not
+dumb geometry. If the next step were &quot;add extra width only along the
+side seam for grading,&quot; the run you&#39;d need is already addressable.</p>
+<h2>Example 4 — Notches</h2>
+<p>Sewists cut small ticks on both halves of a seam so the halves align
+at the machine. Both pieces get a single notch 30% along the join seam
+and a double notch at 70% — but twin seams can run opposite
+directions, so a naive <code>get(0.3)</code> might land at 30% on one piece and
+70% on the other. The sample normalizes first: compare the seam&#39;s two
+endpoints, and if it runs right-to-left, flip <code>t</code>.</p>
+<p><mini-workspace code-open caption="Normalize the walk direction, then the same fractions land matched ticks on both pieces.">
+  <code>// viewBox="0 0 480 280"
+//-- Notches: a single tick a third of the way along the join seam, a
+//-- double tick two thirds along — on BOTH pieces. Twin seams may run
+//-- opposite directions, so the walk is normalized left-to-right first.
+
+define ViewBox(0, 0, 480, 280);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 280);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let notches = PathLayer('notches') ${
+  stroke: #2dd4bf;
+  stroke-width: 2;
+  fill: none;
+};
+let captions = TextLayer('captions') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(panel, notches, captions);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+let ox = 150;
+
+// One tick crossing the seam at normalized fraction u.
+fn tick(seam, u) {
+  let e0 = seam.get(0);
+  let e1 = seam.get(1);
+  // Normalize: walk the seam left-to-right no matter how it runs.
+  let t = calc(e0.x &gt; e1.x ? 1 - u : u);
+  let s = seam.get(t);
+  let n = seam.normal(t);
+  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
+  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+}
+
+for (p in pieces) {
+  // Label-driven layout, as in the yoke split.
+  let oy = calc(p.segmentAll('neck').length &gt; 0 ? 48 : 78);
+  panel.apply {
+    M ox oy p.draw()
+  }
+  let placed = p.project(ox, oy);
+  notches.apply {
+    for (seam in placed.segmentAll('cut')) {
+      tick(seam, 0.3);
+      // The "double at 0.7" is two ticks straddling it.
+      tick(seam, 0.66);
+      tick(seam, 0.74);
+    }
+  }
+}
+
+captions.apply {
+  text(240, 250)`single notch at 0.3, double at 0.7 - matched on both pieces`;
+}
+</code>
+  <img src="/blog/samples/post43/04-notches.svg" alt="Normalize the walk direction, then the same fractions land matched ticks on both pieces." loading="lazy">
+</mini-workspace></p>
+<p>Part 2&#39;s registration marks dodged this problem by using <code>partition</code>&#39;s
+symmetric fractions; notches are <em>asymmetric</em> on purpose (that is how
+they encode orientation), so the direction fix stops being optional.</p>
+<h2>Example 5 — The pattern sheet</h2>
+<p>The deliverable: both pieces laid out side by side — placed by
+<code>boundingBox()</code>, tops aligned, no piece order assumed — with stitch
+lines dashed, the body&#39;s cutting line offset in red, notches matched
+across the join seam, a grainline arrow down each piece, and computed
+names. &quot;Cut 1 on fold&quot; is real pattern language, and the fold is the
+<code>z</code> edge from Example 1.</p>
+<p><mini-workspace code-open caption="The finished sheet: layout, allowance, notches, grainlines, and names — all queried, none hand-placed.">
+  <code>// viewBox="0 0 480 240"
+//-- The finished pattern sheet: yoke and body laid out side by side via
+//-- their bounding boxes, each with its cutting line (offset), stitch
+//-- line, join-seam notches, grainline arrow, and name.
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1.1;
+  stroke-dasharray: 4 3;
+};
+let allowance = PathLayer('allowance') ${
+  stroke: #ef4444;
+  stroke-width: 1.5;
+  fill: none;
+};
+let notches = PathLayer('notches') ${
+  stroke: #2dd4bf;
+  stroke-width: 2;
+  fill: none;
+};
+let grain = PathLayer('grain') ${
+  stroke: #64748b;
+  stroke-width: 1.4;
+  fill: none;
+};
+let names = TextLayer('names') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+let title = TextLayer('title') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+  letter-spacing: 3;
+};
+scene.append(panel,
+    allowance,
+    notches,
+    grain,
+    names,
+    title);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+
+fn tick(seam, u) {
+  let e0 = seam.get(0);
+  let e1 = seam.get(1);
+  let t = calc(e0.x &gt; e1.x ? 1 - u : u);
+  let s = seam.get(t);
+  let n = seam.normal(t);
+  M calc(s.x - cos(n.angle) * 5) calc(s.y - sin(n.angle) * 5)
+  L calc(s.x + cos(n.angle) * 5) calc(s.y + sin(n.angle) * 5)
+}
+
+for (p in pieces) {
+  // Lay pieces out by bounding box: yoke on the left, body on the right,
+  // tops aligned — no knowledge of piece order required.
+  let bb = p.boundingBox();
+  // Identity comes from the labels, never from coordinates: whoever
+  // kept the neckline is the yoke.
+  let isYoke = calc(p.segmentAll('neck').length &gt; 0 ? 1 : 0);
+  let tx = calc(isYoke == 1 ? 90 : 270);
+  let px = calc(tx - bb.x);
+  let py = calc(64 - bb.y);
+  let placed = p.project(px, py);
+  panel.apply {
+    M px py p.draw()
+  }
+  // Allowance on the body panel (see the post for the yoke caveat).
+  if (isYoke == 0) {
+    let allow = placed.offset(7);
+    allowance.apply {
+      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+    }
+  }
+  notches.apply {
+    for (seam in placed.segmentAll('cut')) {
+      tick(seam, 0.3);
+      tick(seam, 0.66);
+      tick(seam, 0.74);
+    }
+  }
+  // Grainline: a double-headed vertical arrow at the piece's center.
+  let pb = placed.boundingBox();
+  let gx = calc(pb.x + pb.width / 2);
+  let gy = calc(pb.y + pb.height / 2);
+  let gl = calc(max(16, pb.height * 0.28));
+  grain.apply {
+    M gx calc(gy - gl)
+    L gx calc(gy + gl)
+    M calc(gx - 4) calc(gy - gl + 6)
+    L gx calc(gy - gl)
+    L calc(gx + 4) calc(gy - gl + 6)
+    M calc(gx - 4) calc(gy + gl - 6)
+    L gx calc(gy + gl)
+    L calc(gx + 4) calc(gy + gl - 6)
+  }
+  names.apply {
+    text(calc(pb.x + pb.width / 2), calc(pb.y + pb.height + 24))`${isYoke == 1 ? 'YOKE - cut 1 on fold' : 'BODY - cut 1 on fold'}`;
+  }
+}
+
+title.apply {
+  text(240, 32)`HALF-BODICE PATTERN`;
+}
+</code>
+  <img src="/blog/samples/post43/05-pattern-sheet.svg" alt="The finished sheet: layout, allowance, notches, grainlines, and names — all queried, none hand-placed." loading="lazy">
+</mini-workspace></p>
+<p>Every annotation on this sheet is derived: move the yoke line, deepen
+the neck, or widen the hem, and the sheet re-annotates itself on the
+next compile. That is the payoff of edges with names sewn in.</p>
+<h2>Where to go next</h2>
+<ul>
+<li><a href="/blog/cutting-room-stained-glass">Stained glass</a> — the series
+finale: labels from <em>both</em> operands of a boolean, and seams as the
+artwork itself.</li>
+<li><a href="/blog/cutting-room-papercraft">Papercraft</a> and
+<a href="/blog/cutting-room-jigsaw">Jigsaw</a> — parts 1 and 2, where the seam
+idioms used here were introduced.</li>
+<li>Reference: <a href="/docs#segment-labels-labels-survive-derived-paths">labels survive derived paths</a>
+and <a href="/docs#path-blocks-offsetdistance-pathblock-projectedpath">offset</a> in the docs.</li>
+</ul>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

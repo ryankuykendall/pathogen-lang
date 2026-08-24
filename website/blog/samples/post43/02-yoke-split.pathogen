@@ -1,0 +1,99 @@
+// viewBox="0 0 480 280"
+//-- Split the bodice at the yoke line and ask each piece who it is:
+//-- keeping the neckline makes you the yoke, keeping the hem makes you
+//-- the body. No coordinates checked, no piece order assumed.
+
+define ViewBox(0, 0, 480, 280);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 280);
+}
+
+let scene = GroupLayer('scene') ${};
+let panel = PathLayer('panel') ${
+  fill: #e7dfd0;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let neckRun = PathLayer('neck-run') ${
+  stroke: #2dd4bf;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let hemRun = PathLayer('hem-run') ${
+  stroke: #fb7185;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let leaders = PathLayer('leaders') ${
+  stroke: #475569;
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  fill: none;
+};
+let captions = TextLayer('captions') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(panel,
+    neckRun,
+    hemRun,
+    leaders,
+    captions);
+
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck');
+  l 22 8 as segment('shoulder');
+  c -12 16 -2 30 10 40 as segment('armhole');
+  l 6 96 as segment('side');
+  h -84 as segment('hem');
+  z
+};
+let yokeKnife = @{
+  m -15 30
+  c 40 6 70 2 110 6
+};
+let pieces = bodice.cut(yokeKnife);
+let ox = 130;
+
+for (p in pieces) {
+  // Even the layout is label-driven: the neckline-keeper slides up,
+  // the other piece slides down.
+  let isYoke = calc(p.segmentAll('neck').length > 0 ? 1 : 0);
+  let oy = calc(isYoke == 1 ? 52 : 74);
+  panel.apply {
+    M ox oy p.draw()
+  }
+  let placed = p.project(ox, oy);
+  // Who am I? The labels answer.
+  let name = 'the body - it kept the hem';
+  if (placed.segmentAll('neck').length > 0) {
+    name = 'the yoke - it kept the neckline';
+  }
+  neckRun.apply {
+    for (r in placed.segmentAll('neck')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+  hemRun.apply {
+    for (r in placed.segmentAll('hem')) {
+      r.drawTo(r.startPoint.x, r.startPoint.y);
+    }
+  }
+  let pb = placed.boundingBox();
+  let ly = calc(pb.y + pb.height / 2);
+  leaders.apply {
+    M calc(pb.x + pb.width + 5) ly
+    L 262 ly
+  }
+  captions.apply {
+    text(268, calc(ly + 3))`${name}`;
+  }
+}

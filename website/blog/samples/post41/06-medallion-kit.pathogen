@@ -1,0 +1,152 @@
+// viewBox="0 0 480 300"
+//-- The finished kit sheet: a hex medallion cut into six wedges, exploded
+//-- into a ring. Every wedge tabs one healed seam, fold-dashes the other,
+//-- and wears its number — all driven by the same seam and label queries.
+
+define ViewBox(0, 0, 480, 300);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') ${};
+let ghost = PathLayer('ghost') ${
+  stroke: #1e293b;
+  stroke-width: 1;
+  stroke-dasharray: 1 5;
+  fill: none;
+};
+let tabLayer = PathLayer('tabs') ${
+  fill: #cbbfa3;
+  stroke: #ef4444;
+  stroke-width: 1.2;
+};
+let wedgeLayer = PathLayer('wedges') ${
+  fill: #e7dfd0;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let foldLayer = PathLayer('folds') ${
+  stroke: #475569;
+  stroke-width: 1.4;
+  fill: none;
+  stroke-dasharray: 4 3;
+};
+let numbers = TextLayer('numbers') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #0f172a;
+  text-anchor: middle;
+};
+let title = TextLayer('title') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+  letter-spacing: 3;
+};
+let caption = TextLayer('caption') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(ghost,
+    tabLayer,
+    wedgeLayer,
+    foldLayer,
+    numbers,
+    title,
+    caption);
+
+let plate = @{
+  polygon(0, 0, 62, 6);
+};
+
+// Three straight knives through the center, 60 degrees apart.
+let kr = 78;
+let c60 = cos(calc(PI() / 3));
+let s60 = sin(calc(PI() / 3));
+let knives = @{
+  m calc(0 - kr) 0
+  l calc(kr * 2) 0
+  m calc(0 - kr * c60 - kr) calc(0 - kr * s60)
+  l calc(kr * 2 * c60) calc(kr * 2 * s60)
+  m 0 calc(0 - kr * 2 * s60)
+  l calc(0 - kr * 2 * c60) calc(kr * 2 * s60)
+};
+let wedges = plate.cut(knives);
+let ox = 240;
+let oy = 158;
+
+ghost.apply {
+  plate.drawTo(ox, oy);
+}
+
+for (w in wedges) {
+  // Drift outward along the ray to the wedge's bounding-box center.
+  let bb = w.boundingBox();
+  let dx = calc(bb.x + bb.width / 2);
+  let dy = calc(bb.y + bb.height / 2);
+  let len = calc(sqrt(dx * dx + dy * dy));
+  let px = calc(ox + dx / len * 44);
+  let py = calc(oy + dy / len * 44);
+  wedgeLayer.apply {
+    M px py w.draw()
+  }
+  let placed = w.project(px, py);
+  let pb = placed.boundingBox();
+  let wcx = calc(pb.x + pb.width / 2);
+  let wcy = calc(pb.y + pb.height / 2);
+  // A wedge's two radial edges are adjacent and share the 'cut' label,
+  // so they come back MERGED into one V-shaped run — walk its halves.
+  for (seam in placed.segmentAll('cut')) {
+    for (h in 0..1) {
+      let t0 = calc(h * 0.5);
+      let t1 = calc(h * 0.5 + 0.5);
+      let m0 = seam.get(calc(t0 + 0.25));
+      // Which side of the centroid ray does this half sit on?
+      let cross = calc((wcx - px) * (m0.y - py) - (wcy - py) * (m0.x - px));
+      if (cross > 0) {
+        // Clockwise edge: glue tab, pointing away from the wedge.
+        let a = seam.get(calc(t0 + 0.06));
+        let b = seam.get(calc(t1 - 0.06));
+        let n = seam.normal(calc(t0 + 0.25));
+        let toCenter = calc(cos(n.angle) * (wcx - m0.x) + sin(n.angle) * (wcy - m0.y));
+        let na = calc(toCenter > 0 ? n.angle + PI() : n.angle);
+        let ta = calc(na + PI() / 2);
+        tabLayer.apply {
+          M calc(a.x) calc(a.y)
+          L calc(a.x + cos(na) * 10 + cos(ta) * 4) calc(a.y + sin(na) * 10 + sin(ta) * 4)
+          L calc(b.x + cos(na) * 10 - cos(ta) * 4) calc(b.y + sin(na) * 10 - sin(ta) * 4)
+          L calc(b.x) calc(b.y)
+        }
+      } else {
+        // Counter-clockwise edge: fold line for the neighbor's tab.
+        let half = seam.subPath(t0, t1);
+        let s0 = seam.get(t0);
+        foldLayer.apply {
+          half.drawTo(s0.x, s0.y);
+        }
+      }
+    }
+  }
+  // Number by angle around the ring, not by loop order — cut() makes
+  // no promise about the order pieces come back in.
+  let ang = calc(atan2(dy, dx) + PI());
+  let num = calc(floor(ang / (PI() / 3)) + 1);
+  numbers.apply {
+    text(wcx, calc(wcy + 3))`${num}`;
+  }
+}
+
+title.apply {
+  text(240, 32)`HEX MEDALLION KIT`;
+}
+caption.apply {
+  text(240, 278)`tab the red edge, fold the dashed one, rejoin in order`;
+}
