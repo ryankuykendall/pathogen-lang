@@ -93,12 +93,10 @@ for (piece in pieces) {
   panel.apply {
     M placeX placeY piece.draw()
   }
-  // Allowance on the body panel (see the post for the yoke caveat).
-  if (isYoke == 0) {
-    let allow = placed.offset(7);
-    allowance.apply {
-      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
-    }
+  // Every piece gets its cutting line — curves and all.
+  let allow = placed.offset(7);
+  allowance.apply {
+    allow.drawTo(allow.startPoint.x, allow.startPoint.y);
   }
   notches.apply {
     for (seam in placed.segmentAll('cut')) {

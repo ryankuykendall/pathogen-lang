@@ -19,7 +19,7 @@ a narrow bug, or deleting our own workaround, not the feature we logged.
 
 | Item | Log entries | Title (post-report scope) | State |
 |------|-------------|---------------------------|-------|
-| A | #11 | offset(): miter spikes baked into curve frames; curve offset not curvature-aware († headline corrected — no direction flip) | summary v2 delivered, awaiting design decision |
+| A | #11 | offset(): miter spikes baked into curve frames; curve offset not curvature-aware († headline corrected — no direction flip) | **LANDED** — offsetCommands rewrite (joins + parallel curves + {join} option), 10 new tests, suite 4818, garment post section + yoke allowance restored |
 | B | #1, #12 | ProjectedPath in-place draw() (strictly additive; drawTo invariant documented) | queued |
 | C | #10 | † text-if drop is ANNOTATED-ONLY (evaluateTextBlockExpression, annotated.ts:3695) — narrow fix + delete post41/04 workaround | queued |
 | D | #2 | pieces.seams() group query (array-method fallthrough, index.ts:5327; twin pairs at boolean-ops.ts:4772) | queued |

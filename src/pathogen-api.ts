@@ -767,8 +767,8 @@ export interface PathogenPathBlock {
   boundingBox(): { x: number; y: number; width: number; height: number };
 
   // Transforms
-  /** offset(distance) — Offset path */
-  offset(distance: number): PathogenPathBlock;
+  /** offset(distance, options?) — Parallel path; options: { join: 'miter' | 'bevel' | 'round' } */
+  offset(distance: number, options?: { join?: string }): PathogenPathBlock;
   /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity; or variableOffset() << worker @blockparams VariableOffsetBuilder, PathBlock @snippet variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
   variableOffset(): PathogenPathBlock;
   /** compoundVariableOffset() {|go, pb| ...} — Trace a two-profile (closeable) offset ribbon; or compoundVariableOffset() << worker @blockparams CompoundVariableOffsetBuilder, PathBlock @snippet compoundVariableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
@@ -1130,8 +1130,8 @@ export interface PathogenProjectedPath {
   reverse(): PathogenProjectedPath;
   /** boundingBox() — Get bounding box */
   boundingBox(): { x: number; y: number; width: number; height: number };
-  /** offset(distance) — Offset path */
-  offset(distance: number): PathogenProjectedPath;
+  /** offset(distance, options?) — Parallel path; options: { join: 'miter' | 'bevel' | 'round' } */
+  offset(distance: number, options?: { join?: string }): PathogenProjectedPath;
   /** mirror(angle) — Mirror path */
   mirror(angle: AngleValue): PathogenProjectedPath;
   /** rotate(angle, origin?) — Rotate about an absolute point (default: the projection start) */

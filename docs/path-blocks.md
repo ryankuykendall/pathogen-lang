@@ -362,9 +362,9 @@ let pts = projA.intersectionPoints(projB);
 log(pts.length);                     // 0
 ```
 
-### `offset(distance)` → PathBlock / ProjectedPath
+### `offset(distance, options?)` → PathBlock / ProjectedPath
 
-Creates a parallel path offset by `distance` units. Positive values offset to the left of the travel direction, negative to the right.
+Creates a parallel path offset by `distance` units. Positive values offset to the left of the travel direction, negative to the right. On pieces produced by [`cut()`](#path-blocks-cutting-paths) and results of boolean operations, winding is canonicalized with material on the left, so a positive distance always grows the piece outward — including through hole boundaries.
 
 ```
 let p = @{ h 60 v 40 };
@@ -372,7 +372,16 @@ let outer = p.offset(5);     // 5 units left of travel
 let inner = p.offset(-5);    // 5 units right of travel
 ```
 
-Offset preserves curve types — cubic Béziers produce offset cubics, arcs produce offset arcs with adjusted radii. Segment joins use miter joins with a limit of 4× the offset distance.
+**Corners.** Where two segments meet, the join is chosen by the corner and the `join` option:
+
+- Gentle corners between two straight segments keep a sharp **miter** (the true corner point), up to a miter length of 2× the offset distance — so rectangular offsets stay rectangles.
+- Sharper corners, and every corner involving a curve, get a **bevel**: each segment is offset with its own normals and a short connecting line bridges the gap. Join geometry is never folded into a curve's own shape — a sharp corner cannot distort the curve next to it.
+- `offset(d, { join: 'round' })` replaces the bevels with circular arcs of radius `|distance|` centered on the original corner — the offset a rolling pen would draw. `{ join: 'bevel' }` forces bevels even at gentle straight corners; the default is `'miter'` (miter where safe, bevel beyond the limit).
+- Join options apply only to **convex** corners — the side the offset opens a gap on. **Concave** corners are always trimmed back to where the two offset sides cross (exactly for straight segments, by curve subdivision for curves), never given an external connector. One current limitation: a concave corner where an *arc* segment meets the join falls back to a connector; and an offset distance large enough to swallow a feature entirely (an inward offset wider than half the shape) can still self-intersect rather than collapsing.
+
+A connector between two segments that carry the same segment label inherits that label, so a labeled edge that turns a corner still answers as one run.
+
+**Curves.** Cubic and quadratic segments are offset as true parallel curves: the curve is subdivided where it bends strongly and each piece is offset via its control polygon, so a deep scoop's offset stays `distance` away along its whole length — at the cost of the output containing more curve segments than the input. Arcs offset by radius adjustment, quadratics are emitted as cubics.
 
 ```
 let curve = @{ c 0 -40 50 -40 50 0 };

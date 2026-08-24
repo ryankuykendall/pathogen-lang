@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-24 (offset() joins + true parallel curves — Cutting Room feedback loop, item A)
+
+### Fixed
+
+#### Core
+
+- **`offset()` no longer distorts curves at sharp corners** — the miter join at a sharp corner (up to 4× the offset distance) was folded into the neighboring curve's coordinate frame, warping the curve body (the Cutting Room garment post's yoke allowance came out spiked and unusable). Joins now live *between* segments: every segment is offset with its own normals, gentle line-line corners keep a true miter (≤2× distance), and everything else gets a bevel connector. The closure corner of closed contours is now joined too (a 60×40 rectangle offset by 5 is finally a symmetric 70×50 rectangle).
+- **Curve offsets are true parallel curves** — cubics/quadratics subdivide adaptively and re-fit via their control polygons (Tiller–Hanson) instead of translating control points, so a deep scoop's offset stays `distance` away along its whole length. Quadratics emit as cubics; arcs keep radius adjustment. Bevel connectors between same-labeled edges inherit the label, so labeled runs stay whole.
+
+### Added
+
+#### Core
+
+- **`offset(distance, { join: 'miter' | 'bevel' | 'round' })`** — optional join control on PathBlock and ProjectedPath; `'round'` inserts arcs centered on the original corner (the rolling-pen offset), making sharp-corner rings grow by exactly 2×distance. Declared in `pathogen-api.ts`, completions regenerated, annotated evaluator at parity. Docs: the join contract in `docs/path-blocks.md`.
+
+#### Documentation
+
+- Garment post: the offset caveat is gone — the yoke wears its seam allowance in the pattern sheet — and the series' first **"What this project taught the language"** section tells the friction-log-to-fix story (the logged "direction flip" turned out to be miter spikes; the diagnosis lesson is part of the post). Part 1 now frames the series as a working friction log.
+
 ## [0.8.0] - 2026-08-23 (The Cutting Room series + sample formatting gate)
 
 ### Added

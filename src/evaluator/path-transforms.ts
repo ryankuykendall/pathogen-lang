@@ -382,12 +382,6 @@ export function computeBoundingBox(commands: TransformCmd[]): { x: number; y: nu
 
 // ---- offset ----
 
-interface OffsetSegment {
-  startOffset: Point; // offset applied to start point
-  endOffset: Point; // offset applied to end point
-  cmd: TransformCmd; // original command
-}
-
 export function unitNormal(dx: number, dy: number): Point {
   const len = Math.sqrt(dx * dx + dy * dy);
   if (len < 1e-12) return { x: 0, y: -1 }; // default upward
@@ -396,7 +390,314 @@ export function unitNormal(dx: number, dy: number): Point {
   return { x: dy / len, y: -dx / len };
 }
 
-export function offsetCommands(commands: TransformCmd[], distance: number): TransformCmd[] {
+export interface OffsetJoinOptions {
+  join?: 'miter' | 'bevel' | 'round';
+}
+
+function offsetPt(p: Point, n: Point, d: number): Point {
+  return { x: p.x + n.x * d, y: p.y + n.y * d };
+}
+
+/** Intersect two parametric lines p + t·d. Returns null when parallel. */
+function lineIntersect(p1: Point, d1: Point, p2: Point, d2: Point): { pt: Point; t1: number; t2: number } | null {
+  const cross = d1.x * d2.y - d1.y * d2.x;
+  if (Math.abs(cross) < 1e-12) return null;
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const t1 = (dx * d2.y - dy * d2.x) / cross;
+  const t2 = (dx * d1.y - dy * d1.x) / cross;
+  return { pt: { x: p1.x + t1 * d1.x, y: p1.y + t1 * d1.y }, t1, t2 };
+}
+
+function evalCubic(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
+  const mt = 1 - t;
+  const a = mt * mt * mt;
+  const b = 3 * mt * mt * t;
+  const c = 3 * mt * t * t;
+  const d = t * t * t;
+  return {
+    x: a * p0.x + b * p1.x + c * p2.x + d * p3.x,
+    y: a * p0.y + b * p1.y + c * p2.y + d * p3.y,
+  };
+}
+
+function cubicTangent(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
+  const mt = 1 - t;
+  let dx = 3 * mt * mt * (p1.x - p0.x) + 6 * mt * t * (p2.x - p1.x) + 3 * t * t * (p3.x - p2.x);
+  let dy = 3 * mt * mt * (p1.y - p0.y) + 6 * mt * t * (p2.y - p1.y) + 3 * t * t * (p3.y - p2.y);
+  if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) {
+    dx = p3.x - p0.x;
+    dy = p3.y - p0.y;
+  }
+  return { x: dx, y: dy };
+}
+
+/** Tiller–Hanson: offset a cubic's control polygon legs and re-intersect. */
+function offsetCubicOnce(p0: Point, p1: Point, p2: Point, p3: Point, d: number): [Point, Point, Point, Point] {
+  const legDir = (a: Point, b: Point, fb1: Point, fb2: Point): Point => {
+    let dx = b.x - a.x;
+    let dy = b.y - a.y;
+    if (Math.abs(dx) < 1e-12 && Math.abs(dy) < 1e-12) {
+      dx = fb2.x - fb1.x;
+      dy = fb2.y - fb1.y;
+    }
+    return { x: dx, y: dy };
+  };
+  const l1 = legDir(p0, p1, p0, p3);
+  const l2 = legDir(p1, p2, p0, p3);
+  const l3 = legDir(p2, p3, p0, p3);
+  const n1 = unitNormal(l1.x, l1.y);
+  const n2 = unitNormal(l2.x, l2.y);
+  const n3 = unitNormal(l3.x, l3.y);
+  const q0 = offsetPt(p0, n1, d);
+  const q3 = offsetPt(p3, n3, d);
+  const hitA = lineIntersect(q0, l1, offsetPt(p1, n2, d), l2);
+  const hitB = lineIntersect(offsetPt(p2, n2, d), l2, q3, l3);
+  const q1 = hitA ? hitA.pt : offsetPt(p1, { x: (n1.x + n2.x) / 2, y: (n1.y + n2.y) / 2 }, d);
+  const q2 = hitB ? hitB.pt : offsetPt(p2, { x: (n2.x + n3.x) / 2, y: (n2.y + n3.y) / 2 }, d);
+  return [q0, q1, q2, q3];
+}
+
+/** Offset one cubic as a true parallel curve, subdividing where it bends
+ *  too strongly for a single Tiller–Hanson pass to stay within tolerance. */
+function offsetCubicAdaptive(cmd: TransformCmd, d: number, depth: number): TransformCmd[] {
+  const p0 = { ...cmd.start };
+  const [cx1, cy1, cx2, cy2] = cmd.args;
+  const p1 = { x: cmd.start.x + cx1, y: cmd.start.y + cy1 };
+  const p2 = { x: cmd.start.x + cx2, y: cmd.start.y + cy2 };
+  const p3 = { ...cmd.end };
+  const [q0, q1, q2, q3] = offsetCubicOnce(p0, p1, p2, p3, d);
+
+  if (depth < 4) {
+    const tol = Math.max(0.08, Math.abs(d) * 0.02);
+    let worst = 0;
+    for (const t of [0.25, 0.5, 0.75]) {
+      const tan = cubicTangent(p0, p1, p2, p3, t);
+      const n = unitNormal(tan.x, tan.y);
+      const target = offsetPt(evalCubic(p0, p1, p2, p3, t), n, d);
+      const got = evalCubic(q0, q1, q2, q3, t);
+      const err = Math.sqrt((got.x - target.x) ** 2 + (got.y - target.y) ** 2);
+      if (err > worst) worst = err;
+    }
+    if (worst > tol) {
+      const [left, right] = splitCommandAtParametricT(cmd, 0.5);
+      return [...offsetCubicAdaptive(left, d, depth + 1), ...offsetCubicAdaptive(right, d, depth + 1)];
+    }
+  }
+
+  return [
+    {
+      command: 'c',
+      args: [q1.x - q0.x, q1.y - q0.y, q2.x - q0.x, q2.y - q0.y, q3.x - q0.x, q3.y - q0.y],
+      start: q0,
+      end: q3,
+    },
+  ];
+}
+
+interface OffsetPiece {
+  cmds: TransformCmd[]; // offset image of one source command
+  srcMeta?: PathCommandMeta;
+  srcStart: Point;
+  srcEnd: Point;
+  srcStartTangent: Point;
+  srcEndTangent: Point;
+  isLine: boolean;
+  emitAsZ: boolean; // re-emit as the ring's closing command
+}
+
+function offsetOneCommand(cmd: TransformCmd, d: number): OffsetPiece | null {
+  const upper = cmd.command.toUpperCase();
+  const base = {
+    srcMeta: cmd.meta,
+    srcStart: { ...cmd.start },
+    srcEnd: { ...cmd.end },
+    srcStartTangent: getStartTangent(cmd),
+    srcEndTangent: getEndTangent(cmd),
+  };
+
+  if (upper === 'L' || upper === 'H' || upper === 'V' || upper === 'Z') {
+    const dx = cmd.end.x - cmd.start.x;
+    const dy = cmd.end.y - cmd.start.y;
+    // Zero-length segments have no direction to offset along — drop them
+    // rather than letting a fallback normal pollute the join math.
+    if (Math.abs(dx) < 1e-10 && Math.abs(dy) < 1e-10) return null;
+    const n = unitNormal(dx, dy);
+    const start = offsetPt(cmd.start, n, d);
+    const end = offsetPt(cmd.end, n, d);
+    return {
+      ...base,
+      cmds: [{ command: 'l', args: [end.x - start.x, end.y - start.y], start, end }],
+      isLine: true,
+      emitAsZ: upper === 'Z',
+    };
+  }
+
+  if (upper === 'C') {
+    return { ...base, cmds: offsetCubicAdaptive(cmd, d, 0), isLine: false, emitAsZ: false };
+  }
+
+  if (upper === 'Q') {
+    // Exact degree elevation to a cubic, then the cubic pipeline.
+    const [qx1, qy1] = cmd.args;
+    const qp = { x: cmd.start.x + qx1, y: cmd.start.y + qy1 };
+    const c1 = { x: cmd.start.x + (2 / 3) * (qp.x - cmd.start.x), y: cmd.start.y + (2 / 3) * (qp.y - cmd.start.y) };
+    const c2 = { x: cmd.end.x + (2 / 3) * (qp.x - cmd.end.x), y: cmd.end.y + (2 / 3) * (qp.y - cmd.end.y) };
+    const asCubic: TransformCmd = {
+      command: 'c',
+      args: [c1.x - cmd.start.x, c1.y - cmd.start.y, c2.x - cmd.start.x, c2.y - cmd.start.y, cmd.end.x - cmd.start.x, cmd.end.y - cmd.start.y],
+      start: { ...cmd.start },
+      end: { ...cmd.end },
+    };
+    return { ...base, cmds: offsetCubicAdaptive(asCubic, d, 0), isLine: false, emitAsZ: false };
+  }
+
+  if (upper === 'A') {
+    const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
+    const phi = (rotation * Math.PI) / 180;
+    const center = arcEndpointToCenter(cmd.start.x, cmd.start.y, rx, ry, phi, largeArcFlag, sweepFlag, cmd.end.x, cmd.end.y);
+    if (center) {
+      const cosPhi = Math.cos(center.phi);
+      const sinPhi = Math.sin(center.phi);
+      const tangentAt = (angle: number): Point => {
+        const dex = -center.rx * Math.sin(angle);
+        const dey = center.ry * Math.cos(angle);
+        let tx = cosPhi * dex - sinPhi * dey;
+        let ty = sinPhi * dex + cosPhi * dey;
+        if (center.deltaAngle < 0) {
+          tx = -tx;
+          ty = -ty;
+        }
+        return { x: tx, y: ty };
+      };
+      const t0 = tangentAt(center.startAngle);
+      const t1 = tangentAt(center.startAngle + center.deltaAngle);
+      const n0 = unitNormal(t0.x, t0.y);
+      const n1 = unitNormal(t1.x, t1.y);
+      const start = offsetPt(cmd.start, n0, d);
+      const end = offsetPt(cmd.end, n1, d);
+      const sign = center.deltaAngle > 0 ? 1 : -1;
+      const newRx = Math.max(0.001, center.rx + sign * d);
+      const newRy = Math.max(0.001, center.ry + sign * d);
+      return {
+        ...base,
+        cmds: [{ command: 'a', args: [newRx, newRy, rotation, largeArcFlag, sweepFlag, end.x - start.x, end.y - start.y], start, end }],
+        isLine: false,
+        emitAsZ: false,
+      };
+    }
+    // Degenerate arc → line
+    const dx = cmd.end.x - cmd.start.x;
+    const dy = cmd.end.y - cmd.start.y;
+    const n = unitNormal(dx, dy);
+    const start = offsetPt(cmd.start, n, d);
+    const end = offsetPt(cmd.end, n, d);
+    return { ...base, cmds: [{ command: 'l', args: [end.x - start.x, end.y - start.y], start, end }], isLine: true, emitAsZ: false };
+  }
+
+  // Unknown drawing command: translate by its chord normal.
+  const dx = cmd.end.x - cmd.start.x;
+  const dy = cmd.end.y - cmd.start.y;
+  const n = unitNormal(dx, dy);
+  const start = offsetPt(cmd.start, n, d);
+  const end = offsetPt(cmd.end, n, d);
+  return {
+    ...base,
+    cmds: [{ command: cmd.command, args: [...cmd.args], start, end }],
+    isLine: false,
+    emitAsZ: false,
+  };
+}
+
+/** Recompute a line command's args after an endpoint adjustment. */
+function refreshLineArgs(cmd: TransformCmd): void {
+  if (cmd.command === 'l') cmd.args = [cmd.end.x - cmd.start.x, cmd.end.y - cmd.start.y];
+}
+
+/** Parametric position on a cubic fragment nearest to a target point. */
+function nearestCubicT(cmd: TransformCmd, target: Point): number {
+  const p0 = cmd.start;
+  const p1 = { x: cmd.start.x + cmd.args[0], y: cmd.start.y + cmd.args[1] };
+  const p2 = { x: cmd.start.x + cmd.args[2], y: cmd.start.y + cmd.args[3] };
+  const p3 = cmd.end;
+  let bestT = 0;
+  let bestD = Infinity;
+  for (let i = 0; i <= 64; i++) {
+    const t = i / 64;
+    const pt = evalCubic(p0, p1, p2, p3, t);
+    const dist = (pt.x - target.x) ** 2 + (pt.y - target.y) ** 2;
+    if (dist < bestD) {
+      bestD = dist;
+      bestT = t;
+    }
+  }
+  return bestT;
+}
+
+/** Trim the tail of a piece's offset commands back to (approximately) the
+ *  given crossing point. Lines trim exactly; cubics split at the nearest
+ *  parameter. Returns false for untrimmable pieces (arcs). */
+function trimPieceTailToward(cmds: TransformCmd[], target: Point): boolean {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const last = cmds[cmds.length - 1];
+    if (last.command === 'l') {
+      last.end = { ...target };
+      refreshLineArgs(last);
+      return true;
+    }
+    if (last.command === 'c') {
+      const t = nearestCubicT(last, target);
+      if (t < 0.03) {
+        if (cmds.length > 1) {
+          cmds.pop(); // crossing lies before this fragment — retry on the previous one
+          continue;
+        }
+        return false;
+      }
+      if (t > 0.97) return true; // endpoint already at the crossing
+      const [head] = splitCommandAtParametricT(last, t);
+      cmds[cmds.length - 1] = head;
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+/** Mirror of trimPieceTailToward for the head of a piece. */
+function trimPieceHeadToward(cmds: TransformCmd[], target: Point): boolean {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const first = cmds[0];
+    if (first.command === 'l') {
+      first.start = { ...target };
+      refreshLineArgs(first);
+      return true;
+    }
+    if (first.command === 'c') {
+      const t = nearestCubicT(first, target);
+      if (t > 0.97) {
+        if (cmds.length > 1) {
+          cmds.shift(); // crossing lies beyond this fragment — retry on the next one
+          continue;
+        }
+        return false;
+      }
+      if (t < 0.03) return true; // start already at the crossing
+      const [, tail] = splitCommandAtParametricT(first, t);
+      cmds[0] = tail;
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+export function offsetCommands(
+  commands: TransformCmd[],
+  distance: number,
+  options: OffsetJoinOptions = {},
+): TransformCmd[] {
+  const join = options.join ?? 'miter';
   if (commands.length === 0 || distance === 0)
     return commands.map((c) => ({
       command: c.command,
@@ -409,366 +710,194 @@ export function offsetCommands(commands: TransformCmd[], distance: number): Tran
   // Step 1: resolve S→C, T→Q
   const resolved = resolveSmooth(commands);
 
-  // Step 2: compute per-segment offsets
-  const segments: OffsetSegment[] = [];
-
+  // Step 2: group into subpaths (a leading M plus its drawing commands).
+  interface Subpath {
+    moveCmd: TransformCmd | null;
+    body: TransformCmd[];
+  }
+  const subpaths: Subpath[] = [];
+  let current: Subpath | null = null;
   for (const cmd of resolved) {
-    const upper = cmd.command.toUpperCase();
-
-    if (upper === 'M') {
-      // Move commands don't draw — pass through (offset applied via join logic)
-      segments.push({
-        startOffset: { x: 0, y: 0 },
-        endOffset: { x: 0, y: 0 },
-        cmd,
-      });
+    if (cmd.command.toUpperCase() === 'M') {
+      current = { moveCmd: cmd, body: [] };
+      subpaths.push(current);
       continue;
     }
-
-    if (upper === 'L' || upper === 'H' || upper === 'V') {
-      const dx = cmd.end.x - cmd.start.x;
-      const dy = cmd.end.y - cmd.start.y;
-      const n = unitNormal(dx, dy);
-      const offset = { x: n.x * distance, y: n.y * distance };
-      segments.push({
-        startOffset: offset,
-        endOffset: offset,
-        cmd,
-      });
-    } else if (upper === 'C') {
-      const [cx1, cy1, cx2, cy2] = cmd.args;
-      const dx = cmd.end.x - cmd.start.x;
-      const dy = cmd.end.y - cmd.start.y;
-      // Normal at t=0: perpendicular to P1-P0 direction
-      let dx0 = cx1;
-      let dy0 = cy1;
-      if (Math.abs(dx0) < 1e-12 && Math.abs(dy0) < 1e-12) {
-        // CP1 coincides with start, use CP2 direction
-        dx0 = cx2;
-        dy0 = cy2;
-        if (Math.abs(dx0) < 1e-12 && Math.abs(dy0) < 1e-12) {
-          dx0 = dx;
-          dy0 = dy;
-        }
-      }
-      const n0 = unitNormal(dx0, dy0);
-      // Normal at t=1: perpendicular to P3-P2 direction
-      let dx1 = dx - cx2;
-      let dy1 = dy - cy2;
-      if (Math.abs(dx1) < 1e-12 && Math.abs(dy1) < 1e-12) {
-        dx1 = dx - cx1;
-        dy1 = dy - cy1;
-        if (Math.abs(dx1) < 1e-12 && Math.abs(dy1) < 1e-12) {
-          dx1 = dx;
-          dy1 = dy;
-        }
-      }
-      const n1 = unitNormal(dx1, dy1);
-      segments.push({
-        startOffset: { x: n0.x * distance, y: n0.y * distance },
-        endOffset: { x: n1.x * distance, y: n1.y * distance },
-        cmd,
-      });
-    } else if (upper === 'Q') {
-      const [qx1, qy1] = cmd.args;
-      const dx = cmd.end.x - cmd.start.x;
-      const dy = cmd.end.y - cmd.start.y;
-      // Normal at t=0: perpendicular to CP-P0
-      let dx0 = qx1;
-      let dy0 = qy1;
-      if (Math.abs(dx0) < 1e-12 && Math.abs(dy0) < 1e-12) {
-        dx0 = dx;
-        dy0 = dy;
-      }
-      const n0 = unitNormal(dx0, dy0);
-      // Normal at t=1: perpendicular to P2-CP
-      let dx1 = dx - qx1;
-      let dy1 = dy - qy1;
-      if (Math.abs(dx1) < 1e-12 && Math.abs(dy1) < 1e-12) {
-        dx1 = dx;
-        dy1 = dy;
-      }
-      const n1 = unitNormal(dx1, dy1);
-      segments.push({
-        startOffset: { x: n0.x * distance, y: n0.y * distance },
-        endOffset: { x: n1.x * distance, y: n1.y * distance },
-        cmd,
-      });
-    } else if (upper === 'A') {
-      const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
-      const phi = (rotation * Math.PI) / 180;
-      const center = arcEndpointToCenter(
-        cmd.start.x,
-        cmd.start.y,
-        rx,
-        ry,
-        phi,
-        largeArcFlag,
-        sweepFlag,
-        cmd.end.x,
-        cmd.end.y,
-      );
-
-      if (center) {
-        // For arcs, compute offset using tangent-derived normals
-        // Arc tangent at start and end can be found from the parametric derivative
-        const cosPhi = Math.cos(center.phi);
-        const sinPhi = Math.sin(center.phi);
-
-        // Tangent at t=0
-        const { startAngle } = center;
-        const dex0 = -center.rx * Math.sin(startAngle);
-        const dey0 = center.ry * Math.cos(startAngle);
-        let tx0 = cosPhi * dex0 - sinPhi * dey0;
-        let ty0 = sinPhi * dex0 + cosPhi * dey0;
-        if (center.deltaAngle < 0) {
-          tx0 = -tx0;
-          ty0 = -ty0;
-        }
-        const n0 = unitNormal(tx0, ty0);
-
-        // Tangent at t=1
-        const endAngle = center.startAngle + center.deltaAngle;
-        const dex1 = -center.rx * Math.sin(endAngle);
-        const dey1 = center.ry * Math.cos(endAngle);
-        let tx1 = cosPhi * dex1 - sinPhi * dey1;
-        let ty1 = sinPhi * dex1 + cosPhi * dey1;
-        if (center.deltaAngle < 0) {
-          tx1 = -tx1;
-          ty1 = -ty1;
-        }
-        const n1 = unitNormal(tx1, ty1);
-
-        const startN = { x: n0.x * distance, y: n0.y * distance };
-        const endN = { x: n1.x * distance, y: n1.y * distance };
-
-        segments.push({
-          startOffset: startN,
-          endOffset: endN,
-          cmd,
-        });
-      } else {
-        // Degenerate arc → treat as line
-        const dx = cmd.end.x - cmd.start.x;
-        const dy = cmd.end.y - cmd.start.y;
-        const n = unitNormal(dx, dy);
-        const offset = { x: n.x * distance, y: n.y * distance };
-        segments.push({
-          startOffset: offset,
-          endOffset: offset,
-          cmd,
-        });
-      }
-    } else if (upper === 'Z') {
-      const dx = cmd.end.x - cmd.start.x;
-      const dy = cmd.end.y - cmd.start.y;
-      if (Math.abs(dx) > 1e-10 || Math.abs(dy) > 1e-10) {
-        const n = unitNormal(dx, dy);
-        const offset = { x: n.x * distance, y: n.y * distance };
-        segments.push({ startOffset: offset, endOffset: offset, cmd });
-      } else {
-        segments.push({ startOffset: { x: 0, y: 0 }, endOffset: { x: 0, y: 0 }, cmd });
-      }
-    } else {
-      // Unknown command: pass through
-      segments.push({
-        startOffset: { x: 0, y: 0 },
-        endOffset: { x: 0, y: 0 },
-        cmd,
-      });
+    if (!current) {
+      current = { moveCmd: null, body: [] };
+      subpaths.push(current);
     }
+    current.body.push(cmd);
+    if (cmd.command.toUpperCase() === 'Z') current = null;
   }
 
-  // Step 3: Apply offsets with miter joins
   const result: TransformCmd[] = [];
 
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
-    const upper = seg.cmd.command.toUpperCase();
-
-    if (upper === 'M') {
-      // For M commands, apply the next drawing segment's start offset if available
-      let offset = { x: 0, y: 0 };
-      if (i + 1 < segments.length) {
-        offset = segments[i + 1].startOffset;
+  for (const sub of subpaths) {
+    if (sub.body.length === 0) {
+      if (sub.moveCmd) {
+        result.push({ command: sub.moveCmd.command, args: [...sub.moveCmd.args], start: { ...sub.moveCmd.start }, end: { ...sub.moveCmd.end }, ...(sub.moveCmd.meta !== undefined ? { meta: sub.moveCmd.meta } : {}) });
       }
-      result.push({
-        command: seg.cmd.command,
-        args: [...seg.cmd.args],
-        start: { x: seg.cmd.start.x + offset.x, y: seg.cmd.start.y + offset.y },
-        end: { x: seg.cmd.end.x + offset.x, y: seg.cmd.end.y + offset.y },
-        ...(seg.cmd.meta !== undefined ? { meta: seg.cmd.meta } : {}),
-      });
       continue;
     }
 
-    // Compute the actual start position for this segment
-    // Use miter join between previous segment's end offset and this segment's start offset
-    let actualStartOffset = seg.startOffset;
-    if (i > 0 && segments[i - 1].cmd.command.toUpperCase() !== 'M') {
-      const prevEndOffset = segments[i - 1].endOffset;
-      actualStartOffset = computeMiterJoin(segments[i - 1].cmd, seg.cmd, prevEndOffset, seg.startOffset, distance);
+    // Offset every drawing command with its own normals.
+    const pieces: OffsetPiece[] = [];
+    let zeroZ: TransformCmd | null = null;
+    for (const cmd of sub.body) {
+      const piece = offsetOneCommand(cmd, distance);
+      if (piece) pieces.push(piece);
+      else if (cmd.command.toUpperCase() === 'Z') zeroZ = cmd; // re-attach after the ring
+      // degenerate zero-length drawing segments are dropped entirely
+    }
+    if (pieces.length === 0) {
+      if (zeroZ) result.push({ ...zeroZ, args: [...zeroZ.args], start: { ...zeroZ.start }, end: { ...zeroZ.end } });
+      continue;
     }
 
-    const newStart = { x: seg.cmd.start.x + actualStartOffset.x, y: seg.cmd.start.y + actualStartOffset.y };
-    const newEnd = { x: seg.cmd.end.x + seg.endOffset.x, y: seg.cmd.end.y + seg.endOffset.y };
+    const last = sub.body[sub.body.length - 1];
+    const closed =
+      last.command.toUpperCase() === 'Z' ||
+      (Math.abs(sub.body[0].start.x - last.end.x) < 1e-9 && Math.abs(sub.body[0].start.y - last.end.y) < 1e-9);
 
-    if (upper === 'L') {
-      result.push({
-        command: 'l',
-        args: [newEnd.x - newStart.x, newEnd.y - newStart.y],
-        start: newStart,
-        end: newEnd,
-      });
-    } else if (upper === 'H') {
-      result.push({
-        command: 'l', // Convert to l since offset may introduce y component
-        args: [newEnd.x - newStart.x, newEnd.y - newStart.y],
-        start: newStart,
-        end: newEnd,
-      });
-    } else if (upper === 'V') {
-      result.push({
-        command: 'l', // Convert to l since offset may introduce x component
-        args: [newEnd.x - newStart.x, newEnd.y - newStart.y],
-        start: newStart,
-        end: newEnd,
-      });
-    } else if (upper === 'C') {
-      const [cx1, cy1, cx2, cy2] = seg.cmd.args;
-      const p2 = { x: seg.cmd.start.x + cx2 + seg.endOffset.x, y: seg.cmd.start.y + cy2 + seg.endOffset.y };
-      // Adjust CP1 relative to actual start (considering miter join)
-      // CP1 keeps the same offset as the start normal for consistency
-      const adjP1 = { x: seg.cmd.start.x + cx1 + actualStartOffset.x, y: seg.cmd.start.y + cy1 + actualStartOffset.y };
-      result.push({
-        command: 'c',
-        args: [
-          adjP1.x - newStart.x,
-          adjP1.y - newStart.y,
-          p2.x - newStart.x,
-          p2.y - newStart.y,
-          newEnd.x - newStart.x,
-          newEnd.y - newStart.y,
-        ],
-        start: newStart,
-        end: newEnd,
-      });
-    } else if (upper === 'Q') {
-      const [qx1, qy1] = seg.cmd.args;
-      // Average the start and end offsets for the control point
-      const avgOffset = {
-        x: (actualStartOffset.x + seg.endOffset.x) / 2,
-        y: (actualStartOffset.y + seg.endOffset.y) / 2,
-      };
-      const cp = { x: seg.cmd.start.x + qx1 + avgOffset.x, y: seg.cmd.start.y + qy1 + avgOffset.y };
-      result.push({
-        command: 'q',
-        args: [cp.x - newStart.x, cp.y - newStart.y, newEnd.x - newStart.x, newEnd.y - newStart.y],
-        start: newStart,
-        end: newEnd,
-      });
-    } else if (upper === 'A') {
-      const [rx, ry, rotation, largeArcFlag, sweepFlag] = seg.cmd.args;
-      const phi = (rotation * Math.PI) / 180;
-      const center = arcEndpointToCenter(
-        seg.cmd.start.x,
-        seg.cmd.start.y,
-        rx,
-        ry,
-        phi,
-        largeArcFlag,
-        sweepFlag,
-        seg.cmd.end.x,
-        seg.cmd.end.y,
-      );
+    // Step 3: join consecutive pieces; for closed rings also join last→first.
+    // Joins either meet at a shared (mitred/trimmed) corner or get a
+    // connector inserted between them — join geometry is NEVER folded
+    // into a curve segment's own shape.
+    const connectors = new Map<number, TransformCmd>(); // insert BEFORE piece at index
+    const junctionCount = closed ? pieces.length : pieces.length - 1;
+    for (let j = 0; j < junctionCount; j++) {
+      const prev = pieces[j];
+      const next = pieces[(j + 1) % pieces.length];
+      const prevLast = prev.cmds[prev.cmds.length - 1];
+      const nextFirst = next.cmds[0];
+      const a = prevLast.end;
+      const b = nextFirst.start;
+      const gap = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+      if (gap < 1e-9) continue; // tangent-continuous — already meeting
 
-      if (center) {
-        const sign = center.deltaAngle > 0 ? 1 : -1;
-        const newRx = Math.max(0.001, center.rx + sign * distance);
-        const newRy = Math.max(0.001, center.ry + sign * distance);
-        result.push({
-          command: 'a',
-          args: [newRx, newRy, rotation, largeArcFlag, sweepFlag, newEnd.x - newStart.x, newEnd.y - newStart.y],
-          start: newStart,
-          end: newEnd,
-        });
-      } else {
-        // Degenerate: treat as line
-        result.push({
-          command: 'l',
-          args: [newEnd.x - newStart.x, newEnd.y - newStart.y],
-          start: newStart,
-          end: newEnd,
-        });
+      const vertex = prev.srcEnd;
+      const hit = lineIntersect(a, prev.srcEndTangent, b, next.srcStartTangent);
+      const bothLines = prev.isLine && next.isLine;
+      if (hit) {
+        const concave = hit.t1 < 1e-9; // trimming back rather than extending
+        if (bothLines) {
+          const miterLen = Math.sqrt((hit.pt.x - vertex.x) ** 2 + (hit.pt.y - vertex.y) ** 2);
+          if (concave || (join === 'miter' && miterLen <= 2 * Math.abs(distance))) {
+            prevLast.end = { ...hit.pt };
+            refreshLineArgs(prevLast);
+            nextFirst.start = { ...hit.pt };
+            refreshLineArgs(nextFirst);
+            continue;
+          }
+        } else if (concave) {
+          // Concave corner with a curve involved: the offset sides cross
+          // BEFORE their endpoints, so an external connector would loop
+          // outside the silhouette. Trim both sides back to (approximately)
+          // the crossing instead, then bridge any residual micro-gap.
+          const prevTrimmed = trimPieceTailToward(prev.cmds, hit.pt);
+          const nextTrimmed = trimPieceHeadToward(next.cmds, hit.pt);
+          if (prevTrimmed && nextTrimmed) {
+            const trimmedEnd = prev.cmds[prev.cmds.length - 1].end;
+            const trimmedStart = next.cmds[0].start;
+            const microGap = Math.sqrt((trimmedStart.x - trimmedEnd.x) ** 2 + (trimmedStart.y - trimmedEnd.y) ** 2);
+            if (microGap > 1e-9) {
+              const microLabel =
+                prev.srcMeta?.segmentLabel !== undefined && prev.srcMeta.segmentLabel === next.srcMeta?.segmentLabel
+                  ? prev.srcMeta.segmentLabel
+                  : undefined;
+              const micro: TransformCmd = {
+                command: 'l',
+                args: [trimmedStart.x - trimmedEnd.x, trimmedStart.y - trimmedEnd.y],
+                start: { ...trimmedEnd },
+                end: { ...trimmedStart },
+              };
+              if (microLabel !== undefined) micro.meta = { segmentLabel: microLabel };
+              connectors.set((j + 1) % pieces.length, micro);
+            }
+            continue;
+          }
+          // Untrimmable pair (arc-involving) — fall through to a connector.
+        }
       }
-    } else if (upper === 'Z') {
+
+      // Connector join: bevel line, or a round arc centered on the vertex.
+      const sharedLabel =
+        prev.srcMeta?.segmentLabel !== undefined && prev.srcMeta.segmentLabel === next.srcMeta?.segmentLabel
+          ? prev.srcMeta.segmentLabel
+          : undefined;
+      let connector: TransformCmd;
+      if (join === 'round') {
+        const crossV = (a.x - vertex.x) * (b.y - vertex.y) - (a.y - vertex.y) * (b.x - vertex.x);
+        connector = {
+          command: 'a',
+          args: [Math.abs(distance), Math.abs(distance), 0, 0, crossV > 0 ? 1 : 0, b.x - a.x, b.y - a.y],
+          start: { ...a },
+          end: { ...b },
+        };
+      } else {
+        connector = { command: 'l', args: [b.x - a.x, b.y - a.y], start: { ...a }, end: { ...b } };
+      }
+      if (sharedLabel !== undefined) connector.meta = { segmentLabel: sharedLabel };
+      connectors.set((j + 1) % pieces.length, connector);
+    }
+
+    // Step 4: emit — leading move (recomputed), pieces with meta, ring close.
+    const ringStart = connectors.has(0) ? connectors.get(0)!.end : pieces[0].cmds[0].start;
+    if (sub.moveCmd) {
+      const mStart = { ...sub.moveCmd.start };
       result.push({
-        command: 'z',
-        args: [],
-        start: newStart,
-        end: newEnd,
-      });
-    } else {
-      result.push({
-        command: seg.cmd.command,
-        args: [...seg.cmd.args],
-        start: newStart,
-        end: newEnd,
+        command: sub.moveCmd.command,
+        args: sub.moveCmd.command === 'M' ? [ringStart.x, ringStart.y] : [ringStart.x - mStart.x, ringStart.y - mStart.y],
+        start: mStart,
+        end: { ...ringStart },
+        ...(sub.moveCmd.meta !== undefined ? { meta: sub.moveCmd.meta } : {}),
       });
     }
-    // 1:1 offset image of the source segment — labels carry straight across.
-    if (seg.cmd.meta !== undefined) result[result.length - 1].meta = seg.cmd.meta;
+    for (let j = 0; j < pieces.length; j++) {
+      if (j > 0 && connectors.has(j)) result.push(connectors.get(j)!);
+      const piece = pieces[j];
+      const isRingCloser = closed && piece.emitAsZ && j === pieces.length - 1 && !connectors.has(0);
+      for (let k = 0; k < piece.cmds.length; k++) {
+        const cmd = piece.cmds[k];
+        const lastOfPiece = k === piece.cmds.length - 1;
+        if (isRingCloser && lastOfPiece) {
+          // The closing edge rejoins the (possibly mitred) ring start.
+          cmd.end = { ...ringStart };
+          result.push({ command: 'z', args: [], start: { ...cmd.start }, end: { ...cmd.end }, ...(piece.srcMeta !== undefined ? { meta: piece.srcMeta } : {}) });
+          continue;
+        }
+        if (piece.srcMeta !== undefined) {
+          if (piece.cmds.length === 1) {
+            cmd.meta = { ...piece.srcMeta, ...(piece.srcMeta.endVertex ? { endVertex: { ...piece.srcMeta.endVertex } } : {}) };
+          } else {
+            // A subdivided curve: the label covers every fragment, the
+            // end-vertex annotation only the final one.
+            const seg = piece.srcMeta.segmentLabel;
+            const ev = lastOfPiece ? piece.srcMeta.endVertex : undefined;
+            if (seg !== undefined || ev !== undefined) {
+              cmd.meta = { ...(seg !== undefined ? { segmentLabel: seg } : {}), ...(ev !== undefined ? { endVertex: { ...ev } } : {}) };
+            }
+          }
+        }
+        result.push(cmd);
+      }
+    }
+    if (closed) {
+      const closerEmitted = result.length > 0 && result[result.length - 1].command === 'z';
+      if (!closerEmitted) {
+        const ringEnd = connectors.has(0) ? connectors.get(0)! : null;
+        if (ringEnd) result.push(ringEnd);
+        const tail = result[result.length - 1];
+        result.push({ command: 'z', args: [], start: { ...tail.end }, end: { ...ringStart }, ...(zeroZ && zeroZ.meta !== undefined ? { meta: zeroZ.meta } : {}) });
+      }
+    } else if (zeroZ) {
+      const tail = result[result.length - 1];
+      result.push({ command: 'z', args: [], start: { ...tail.end }, end: { ...tail.end }, ...(zeroZ.meta !== undefined ? { meta: zeroZ.meta } : {}) });
+    }
   }
 
   return result;
-}
-
-/**
- * Compute miter join offset at the junction between two segments.
- * Returns the offset to apply at the shared vertex.
- */
-function computeMiterJoin(
-  prevCmd: TransformCmd,
-  nextCmd: TransformCmd,
-  prevEndOffset: Point,
-  nextStartOffset: Point,
-  distance: number,
-): Point {
-  // Get tangent directions at the junction
-  const prevDir = getEndTangent(prevCmd);
-  const nextDir = getStartTangent(nextCmd);
-
-  // If tangents are roughly parallel, just average
-  const cross = prevDir.x * nextDir.y - prevDir.y * nextDir.x;
-  if (Math.abs(cross) < 1e-10) {
-    return {
-      x: (prevEndOffset.x + nextStartOffset.x) / 2,
-      y: (prevEndOffset.y + nextStartOffset.y) / 2,
-    };
-  }
-
-  // Compute intersection of the two offset lines
-  // Line 1: prevEnd + prevEndOffset + t * prevDir
-  // Line 2: nextStart + nextStartOffset + s * nextDir
-  // They share the same original point, so:
-  // prevEndOffset + t * prevDir = nextStartOffset + s * nextDir
-  const dx = nextStartOffset.x - prevEndOffset.x;
-  const dy = nextStartOffset.y - prevEndOffset.y;
-  const t = (dx * nextDir.y - dy * nextDir.x) / cross;
-
-  const miterX = prevEndOffset.x + t * prevDir.x;
-  const miterY = prevEndOffset.y + t * prevDir.y;
-
-  // Miter limit check
-  const miterLen = Math.sqrt(miterX * miterX + miterY * miterY);
-  if (miterLen > 4 * Math.abs(distance)) {
-    return {
-      x: (prevEndOffset.x + nextStartOffset.x) / 2,
-      y: (prevEndOffset.y + nextStartOffset.y) / 2,
-    };
-  }
-
-  return { x: miterX, y: miterY };
 }
 
 function getEndTangent(cmd: TransformCmd): Point {

@@ -17,6 +17,7 @@ import {
   filletCommands,
   mirrorCommands,
   offsetCommands,
+  type OffsetJoinOptions,
   reverseCommands,
   rotateAtVertexCommands,
   rotateAboutPointCommands,
@@ -489,6 +490,26 @@ function isPathBlockValue(value: Value): value is PathBlockValue {
 
 function isProjectedPathValue(value: Value): value is ProjectedPathValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedPathValue';
+}
+
+/** Validate offset()'s optional second argument: { join: 'miter' | 'bevel' | 'round' }. */
+function parseOffsetJoinOptions(val: Value): OffsetJoinOptions {
+  if (typeof val !== 'object' || val === null || (val as { type?: string }).type !== 'ObjectValue') {
+    throw new Error("offset() options must be an object, e.g. { join: 'round' }");
+  }
+  const props = (val as { properties: Map<string, Value> }).properties;
+  const options: OffsetJoinOptions = {};
+  for (const key of props.keys()) {
+    if (key !== 'join') throw new Error(`offset() options: unknown key '${key}' (supported: join)`);
+  }
+  const joinVal = props.get('join');
+  if (joinVal !== undefined) {
+    if (joinVal !== 'miter' && joinVal !== 'bevel' && joinVal !== 'round') {
+      throw new Error("offset() join must be 'miter', 'bevel', or 'round'");
+    }
+    options.join = joinVal;
+  }
+  return options;
 }
 
 function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: number; y: number }): PathBlockValue {
@@ -1422,10 +1443,11 @@ function evaluateAnnotatedPathTransforms(
     }
 
     case 'offset': {
-      if (expr.args.length !== 1) throw new Error('offset() expects 1 argument (distance)');
+      if (expr.args.length < 1 || expr.args.length > 2) throw new Error('offset() expects 1-2 arguments (distance, options?)');
       const dist = evaluateExpression(expr.args[0], scope);
       if (typeof dist !== 'number') throw new Error('offset() argument must be a number');
-      const offsetResult = offsetCommands(obj.commands, dist);
+      const offsetOpts = expr.args.length === 2 ? parseOffsetJoinOptions(evaluateExpression(expr.args[1], scope)) : {};
+      const offsetResult = offsetCommands(obj.commands, dist, offsetOpts);
       if (isBlock) {
         return buildPathBlockFromCommands(offsetResult);
       }

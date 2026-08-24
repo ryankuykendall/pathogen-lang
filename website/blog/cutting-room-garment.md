@@ -48,13 +48,11 @@ along. The workflow stops being coordinate bookkeeping and becomes a
 series of questions: *who kept the neckline? where is the side seam
 now?*
 
-One blunt caveat before the pictures: `offset()` on cut pieces with
-strongly curved edges can currently send a curve's offset to the wrong
-side (a self-crossing "allowance"). The bodice's body panel offsets
-cleanly and that is what the examples show; the yoke's neck curve
-trips the bug, so the final sheet leaves the yoke's allowance off. A
-fix is tracked — until then, eyeball any allowance you generate on
-curvy cut pieces.
+(An earlier draft of this post carried a blunt caveat here: offsetting
+the yoke produced a distorted, spiked allowance, and the pattern sheet
+shipped without it. Building this very post got that fixed — the full
+story is at the bottom of the post, under *What this project taught
+the language*.)
 
 ## Why you'd use it
 
@@ -131,16 +129,60 @@ they encode orientation), so the direction fix stops being optional.
 
 The deliverable: both pieces laid out side by side — placed by
 `boundingBox()`, tops aligned, no piece order assumed — with stitch
-lines dashed, the body's cutting line offset in red, notches matched
-across the join seam, a grainline arrow down each piece, and computed
-names. "Cut 1 on fold" is real pattern language, and the fold is the
-`z` edge from Example 1.
+lines dashed, every piece's cutting line offset in red (curves and
+all), notches matched across the join seam, a grainline arrow down
+each piece, and computed names. "Cut 1 on fold" is real pattern
+language, and the fold is the `z` edge from Example 1.
 
 <mini-workspace src="samples/post43/05-pattern-sheet.pathogen" caption="The finished sheet: layout, allowance, notches, grainlines, and names — all queried, none hand-placed." code-open></mini-workspace>
 
 Every annotation on this sheet is derived: move the yoke line, deepen
 the neck, or widen the hem, and the sheet re-annotates itself on the
 next compile. That is the payoff of edges with names sewn in.
+
+## What this project taught the language
+
+The Cutting Room series doubles as a working friction log: building
+each project against the real language surfaced bugs and gaps, and
+this section records what got fixed because of it.
+
+**Seam allowances exposed an offset bug — and got parallel curves
+fixed properly.** The first draft of this post could not put an
+allowance on the yoke: `offset(7)` produced a spiked, distorted ring
+around it, and Example 5 shipped with the yoke bare and a caveat in
+the intro. Tracing it revealed two defects, neither the one we
+guessed. At the sharp corner where the fold line enters the neck
+curve, the *miter join* — the extended corner point — grew to almost
+three times the offset distance and was folded into the neck curve's
+own coordinates, warping the curve body. And curve offsetting merely
+translated control points, so a deep scoop's offset midsection sat at
+the wrong distance even without a bad corner.
+
+The fix restructured how `offset()` builds its result: every segment
+is offset with its own normals, join geometry lives *between*
+segments (a sharp corner now gets a short bevel — or an arc with
+`offset(d, { join: 'round' })` — instead of deforming its neighbor),
+and curves subdivide and re-fit as true parallel curves. The
+[offset docs](/docs#path-blocks-offsetdistance-options-pathblock-projectedpath)
+carry the new join contract. For this post, the payoff is the sheet
+above: both pieces ringed, the neck scoop's allowance a constant
+seven units along its whole length, no caveat required.
+
+```pathogen
+// before: the yoke's allowance came out spiked and distorted —
+// the sheet shipped without it
+let allow = placed.offset(7);      // body panel only, by guard
+
+// after: every piece gets its cutting line, curves and all
+let allow = placed.offset(7);      // any piece — or
+let round = placed.offset(7, { join: 'round' });
+```
+
+A lesson worth keeping from the diagnosis: the bug we *logged* — "the
+offset flips to the wrong side" — was not the bug that existed.
+Direction was always correct; the joins were at fault. Friction logs
+earn their keep, but each entry deserves a fresh trace before it
+becomes a fix.
 
 ## Where to go next
 
@@ -151,4 +193,4 @@ next compile. That is the payoff of edges with names sewn in.
   [Jigsaw](/blog/cutting-room-jigsaw) — parts 1 and 2, where the seam
   idioms used here were introduced.
 - Reference: [labels survive derived paths](/docs#segment-labels-labels-survive-derived-paths)
-  and [offset](/docs#path-blocks-offsetdistance-pathblock-projectedpath) in the docs.
+  and [offset](/docs#path-blocks-offsetdistance-options-pathblock-projectedpath) in the docs.

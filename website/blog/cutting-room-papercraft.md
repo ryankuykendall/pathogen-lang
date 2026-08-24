@@ -61,6 +61,12 @@ Your own labels survive the cut too: name an edge `as segment('roof')`
 before cutting and whichever piece keeps that edge still answers for
 the name. That is the other half of this series' toolkit.
 
+One more thing this series is: a **working friction log**. These
+projects were built against the real language, and where they exposed
+a bug or a missing piece, the fix went back into Pathogen — each post
+that hit something grows a closing section, *What this project taught
+the language*, telling that story.
+
 ## Why you'd use it
 
 Papercraft is the cleanest possible demonstration, because a paper

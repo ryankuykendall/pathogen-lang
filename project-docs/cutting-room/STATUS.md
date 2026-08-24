@@ -85,6 +85,22 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
   0 warnings (except the two documented false-positive sets), BBWPs
   + blog + public re-synced. Final check-links crawl green (42 pages /
   1228 links / 0 broken).
+- 2026-08-24 (feedback loop, Item A LANDED — pending review + commit):
+  offsetCommands rewritten (docs-first, failing-tests-first). Root cause
+  per summary-v2: miter spikes baked into curve frames + non-parallel
+  curve offsetting + broken closure join — NOT the logged direction
+  flip. New: per-segment normals, between-segment joins (miter ≤2d for
+  line-line, bevel default, `offset(d, {join:'round'})` arcs),
+  adaptive Tiller–Hanson parallel curves, label-carrying connectors,
+  closure joins (rect offset finally symmetric). Options threaded
+  through both evaluators; api + completions regenerated; 10 new tests;
+  suite 4818/4818; npm run build green. Series: yoke allowance restored
+  in post43/05, garment caveat → pointer, first "What this project
+  taught the language" section written, part 1 friction-log framing
+  added, docs offset anchor updated (…-options-…) in garment links.
+  New friction entry #14: log()/ln collision on bare numeric calls.
+  Naming sweep (user feedback) landed earlier as 10c2577 + guideline
+  §6 rule + memory.
 - 2026-08-23 (formatting round, user-requested): all 21 samples run
   through `format:samples` (formatDocument) — user screenshot showed
   one-line style blocks soft-wrapping badly in the mini-workspace

@@ -53,7 +53,16 @@ notes the friction hit in a real sample. To be synthesized at project end.
 10. **Pre-existing: text-if inside loop bodies discards output** (known
     bug, loop-control memory) — samples avoid conditional text entirely
     (post41/04 counts instead of conditional captions).
-11. **BUG: `offset()` flips direction on curved edges of cut pieces.**
+11. **RESOLVED (Item A, 2026-08-24).** Headline was wrong — no direction
+    flip existed (see opportunities/A-offset-miter-joins/summary-v2.md).
+    Real defects: miter spikes baked into curve arg frames at sharp
+    corners, non-curvature-aware curve offsetting, and a broken closure
+    join. Fixed by the offsetCommands rewrite: per-segment normals,
+    bevel/miter/round joins between segments (never inside them),
+    adaptive Tiller–Hanson parallel curves, `offset(d, {join})` option.
+    Garment post caveat replaced with the first "What this project
+    taught the language" section. Original entry preserved below.
+    ~~BUG: `offset()` flips direction on curved edges of cut pieces.~~
     Offsetting the yoke piece of the post43 bodice (cut by a curved
     knife) sends the neck-curve segment INWARD while the straight edges
     go outward — a self-crossing "allowance". Reversing first shrinks
@@ -83,3 +92,10 @@ notes the friction hit in a real sample. To be synthesized at project end.
     reassignment inside if-blocks — both used for piece
     self-identification (post43/02, post43/05). Neither appears in
     docs examples today.
+14. **`log()` silently becomes the logarithm for bare numeric call
+    expressions.** `log(sqrt(9))` evaluates to ln(3) = 1.0986 and emits
+    NO log entry — the logging statement and the math function collide,
+    and which one you get depends on the argument's shape. Found while
+    writing Item A's tests (2026-08-24). Workaround: bind to a variable
+    first (`let d2 = calc(...); log(d2);`). Deserves disambiguation or
+    at minimum a documented rule.

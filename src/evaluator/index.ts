@@ -54,6 +54,7 @@ import {
   filletCommands,
   mirrorCommands,
   offsetCommands,
+  type OffsetJoinOptions,
   reverseCommands,
   rotateAtVertexCommands,
   rotateAboutPointCommands,
@@ -978,6 +979,26 @@ function normalizeToRelativeArgs(
 /**
  * Build a PathBlockValue from transform result commands, normalizing to (0,0) origin.
  */
+/** Validate offset()'s optional second argument: { join: 'miter' | 'bevel' | 'round' }. */
+function parseOffsetJoinOptions(val: Value, mkErr: (message: string) => Error): OffsetJoinOptions {
+  if (typeof val !== 'object' || val === null || (val as { type?: string }).type !== 'ObjectValue') {
+    throw mkErr("offset() options must be an object, e.g. { join: 'round' }");
+  }
+  const props = (val as { properties: Map<string, Value> }).properties;
+  const options: OffsetJoinOptions = {};
+  for (const key of props.keys()) {
+    if (key !== 'join') throw mkErr(`offset() options: unknown key '${key}' (supported: join)`);
+  }
+  const joinVal = props.get('join');
+  if (joinVal !== undefined) {
+    if (joinVal !== 'miter' && joinVal !== 'bevel' && joinVal !== 'round') {
+      throw mkErr("offset() join must be 'miter', 'bevel', or 'round'");
+    }
+    options.join = joinVal;
+  }
+  return options;
+}
+
 function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: number; y: number }): PathBlockValue {
   if (cmds.length === 0) {
     return {
@@ -2642,10 +2663,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       }
 
       case 'offset': {
-        if (expr.args.length !== 1) throw mError('offset() expects 1 argument (distance)');
+        if (expr.args.length < 1 || expr.args.length > 2) throw mError('offset() expects 1-2 arguments (distance, options?)');
         const dist = evaluateExpression(expr.args[0], scope);
         if (typeof dist !== 'number') throw mError('offset() argument must be a number');
-        const offsetResult = offsetCommands(obj.commands, dist);
+        const offsetOpts = expr.args.length === 2 ? parseOffsetJoinOptions(evaluateExpression(expr.args[1], scope), mError) : {};
+        const offsetResult = offsetCommands(obj.commands, dist, offsetOpts);
         return buildPathBlockFromCommands(offsetResult);
       }
 
@@ -3270,10 +3292,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       }
 
       case 'offset': {
-        if (expr.args.length !== 1) throw mError('offset() expects 1 argument (distance)');
+        if (expr.args.length < 1 || expr.args.length > 2) throw mError('offset() expects 1-2 arguments (distance, options?)');
         const dist = evaluateExpression(expr.args[0], scope);
         if (typeof dist !== 'number') throw mError('offset() argument must be a number');
-        const offsetResult = offsetCommands(obj.commands, dist);
+        const offsetOpts = expr.args.length === 2 ? parseOffsetJoinOptions(evaluateExpression(expr.args[1], scope), mError) : {};
+        const offsetResult = offsetCommands(obj.commands, dist, offsetOpts);
         const oStart = offsetResult.length > 0 ? offsetResult[0].start : obj.startPoint;
         const oEnd = offsetResult.length > 0 ? offsetResult[offsetResult.length - 1].end : obj.endPoint;
         return {

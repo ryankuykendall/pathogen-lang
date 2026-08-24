@@ -317,13 +317,11 @@ cutting the yoke off, offsetting for allowance — carries the names
 along. The workflow stops being coordinate bookkeeping and becomes a
 series of questions: <em>who kept the neckline? where is the side seam
 now?</em></p>
-<p>One blunt caveat before the pictures: <code>offset()</code> on cut pieces with
-strongly curved edges can currently send a curve&#39;s offset to the wrong
-side (a self-crossing &quot;allowance&quot;). The bodice&#39;s body panel offsets
-cleanly and that is what the examples show; the yoke&#39;s neck curve
-trips the bug, so the final sheet leaves the yoke&#39;s allowance off. A
-fix is tracked — until then, eyeball any allowance you generate on
-curvy cut pieces.</p>
+<p>(An earlier draft of this post carried a blunt caveat here: offsetting
+the yoke produced a distorted, spiked allowance, and the pattern sheet
+shipped without it. Building this very post got that fixed — the full
+story is at the bottom of the post, under <em>What this project taught
+the language</em>.)</p>
 <h2>Why you&#39;d use it</h2>
 <p>Because the alternative is what pattern makers call &quot;walking the
 pattern&quot; — manually re-measuring every edge after every change. When
@@ -841,10 +839,10 @@ they encode orientation), so the direction fix stops being optional.</p>
 <h2>Example 5 — The pattern sheet</h2>
 <p>The deliverable: both pieces laid out side by side — placed by
 <code>boundingBox()</code>, tops aligned, no piece order assumed — with stitch
-lines dashed, the body&#39;s cutting line offset in red, notches matched
-across the join seam, a grainline arrow down each piece, and computed
-names. &quot;Cut 1 on fold&quot; is real pattern language, and the fold is the
-<code>z</code> edge from Example 1.</p>
+lines dashed, every piece&#39;s cutting line offset in red (curves and
+all), notches matched across the join seam, a grainline arrow down
+each piece, and computed names. &quot;Cut 1 on fold&quot; is real pattern
+language, and the fold is the <code>z</code> edge from Example 1.</p>
 <p><mini-workspace code-open caption="The finished sheet: layout, allowance, notches, grainlines, and names — all queried, none hand-placed.">
   <code>// viewBox="0 0 480 240"
 //-- The finished pattern sheet: yoke and body laid out side by side via
@@ -941,12 +939,10 @@ for (piece in pieces) {
   panel.apply {
     M placeX placeY piece.draw()
   }
-  // Allowance on the body panel (see the post for the yoke caveat).
-  if (isYoke == 0) {
-    let allow = placed.offset(7);
-    allowance.apply {
-      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
-    }
+  // Every piece gets its cutting line — curves and all.
+  let allow = placed.offset(7);
+  allowance.apply {
+    allow.drawTo(allow.startPoint.x, allow.startPoint.y);
   }
   notches.apply {
     for (seam in placed.segmentAll('cut')) {
@@ -984,6 +980,42 @@ title.apply {
 <p>Every annotation on this sheet is derived: move the yoke line, deepen
 the neck, or widen the hem, and the sheet re-annotates itself on the
 next compile. That is the payoff of edges with names sewn in.</p>
+<h2>What this project taught the language</h2>
+<p>The Cutting Room series doubles as a working friction log: building
+each project against the real language surfaced bugs and gaps, and
+this section records what got fixed because of it.</p>
+<p><strong>Seam allowances exposed an offset bug — and got parallel curves
+fixed properly.</strong> The first draft of this post could not put an
+allowance on the yoke: <code>offset(7)</code> produced a spiked, distorted ring
+around it, and Example 5 shipped with the yoke bare and a caveat in
+the intro. Tracing it revealed two defects, neither the one we
+guessed. At the sharp corner where the fold line enters the neck
+curve, the <em>miter join</em> — the extended corner point — grew to almost
+three times the offset distance and was folded into the neck curve&#39;s
+own coordinates, warping the curve body. And curve offsetting merely
+translated control points, so a deep scoop&#39;s offset midsection sat at
+the wrong distance even without a bad corner.</p>
+<p>The fix restructured how <code>offset()</code> builds its result: every segment
+is offset with its own normals, join geometry lives <em>between</em>
+segments (a sharp corner now gets a short bevel — or an arc with
+<code>offset(d, { join: &#39;round&#39; })</code> — instead of deforming its neighbor),
+and curves subdivide and re-fit as true parallel curves. The
+<a href="/docs#path-blocks-offsetdistance-options-pathblock-projectedpath">offset docs</a>
+carry the new join contract. For this post, the payoff is the sheet
+above: both pieces ringed, the neck scoop&#39;s allowance a constant
+seven units along its whole length, no caveat required.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: the yoke&#x27;s allowance came out spiked and distorted —</span>
+<span class="hljs-comment">// the sheet shipped without it</span>
+<span class="hljs-keyword">let</span> allow = placed.<span class="hljs-title function_">offset</span>(<span class="hljs-number">7</span>);      <span class="hljs-comment">// body panel only, by guard</span>
+
+<span class="hljs-comment">// after: every piece gets its cutting line, curves and all</span>
+<span class="hljs-keyword">let</span> allow = placed.<span class="hljs-title function_">offset</span>(<span class="hljs-number">7</span>);      <span class="hljs-comment">// any piece — or</span>
+<span class="hljs-keyword">let</span> round = placed.<span class="hljs-title function_">offset</span>(<span class="hljs-number">7</span>, { <span class="hljs-attr">join</span>: <span class="hljs-string">&#x27;round&#x27;</span> });
+</code></pre><p>A lesson worth keeping from the diagnosis: the bug we <em>logged</em> — &quot;the
+offset flips to the wrong side&quot; — was not the bug that existed.
+Direction was always correct; the joins were at fault. Friction logs
+earn their keep, but each entry deserves a fresh trace before it
+becomes a fix.</p>
 <h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-stained-glass">Stained glass</a> — the series
@@ -993,7 +1025,7 @@ artwork itself.</li>
 <a href="/blog/cutting-room-jigsaw">Jigsaw</a> — parts 1 and 2, where the seam
 idioms used here were introduced.</li>
 <li>Reference: <a href="/docs#segment-labels-labels-survive-derived-paths">labels survive derived paths</a>
-and <a href="/docs#path-blocks-offsetdistance-pathblock-projectedpath">offset</a> in the docs.</li>
+and <a href="/docs#path-blocks-offsetdistance-options-pathblock-projectedpath">offset</a> in the docs.</li>
 </ul>
 
       </div>

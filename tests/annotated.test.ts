@@ -1288,3 +1288,57 @@ b.drawTo(0, 0);`);
     });
   }
 });
+
+describe('offset() joins parity (annotated)', () => {
+  it('offset with round joins produces the same geometry as the main evaluator', () => {
+    const src = `let bracket = @{
+  h 40
+  l -30 30
+};
+let ring = bracket.offset(6, { join: 'round' });
+ring.drawTo(50, 50);`;
+    // Annotated output rounds to 4 decimals; normalize both sides to 3.
+    const round3 = (s: string) => s.replace(/-?\d+\.\d+/g, (m) => Number(m).toFixed(3));
+    const main = round3(compile(src).layers[0].data);
+    const annotated = compileAnnotated(src);
+    const flat = round3(
+      annotated
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('//'))
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .join(' '),
+    );
+    expect(flat).toContain(main);
+  });
+});
+
+describe('offset() bevel/miter joins parity (annotated)', () => {
+  for (const joinMode of ['miter', 'bevel']) {
+    it(`offset with ${joinMode} joins matches the main evaluator`, () => {
+      const src = `let bracket = @{
+  h 40
+  l -30 30
+};
+let ring = bracket.offset(6, { join: '${joinMode}' });
+ring.drawTo(50, 50);`;
+      const round3 = (s: string) => s.replace(/-?\d+\.\d+/g, (m) => Number(m).toFixed(3));
+      const main = round3(compile(src).layers[0].data);
+      const flat = round3(
+        compileAnnotated(src)
+          .split('\n')
+          .filter((line) => !line.trim().startsWith('//'))
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0)
+          .join(' '),
+      );
+      expect(flat).toContain(main);
+    });
+  }
+
+  it('rejects bad join values identically in both evaluators', () => {
+    const src = "let p = @{ h 50 v 20 }; p.offset(5, { join: 'fancy' });";
+    expect(() => compile(src)).toThrow(/join/);
+    expect(() => compileAnnotated(src)).toThrow(/join/);
+  });
+});

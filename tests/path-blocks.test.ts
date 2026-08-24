@@ -1209,11 +1209,233 @@ describe('Path Blocks', () => {
       });
 
       it('throws error with 0 arguments', () => {
-        expect(() => compile('let p = @{ h 50 }; p.offset();')).toThrow(/1 argument/);
+        expect(() => compile('let p = @{ h 50 }; p.offset();')).toThrow(/argument/);
       });
 
       it('throws error with non-number argument', () => {
         expect(() => compile('let p = @{ h 50 }; p.offset("abc");')).toThrow(/must be a number/);
+      });
+    });
+
+    describe('offset() joins and curve quality', () => {
+      // The yoke contour from the Cutting Room garment post, authored
+      // directly: a fold line entering a bowed neck curve at a ~48°
+      // corner. The historical defect baked the corner's miter spike
+      // into the neck cubic's frame, over-growing the offset ring.
+      const YOKE = `let yoke = @{
+  l 0 -31.86
+  c 16 18 34 20 46 6
+  l 22 8
+  c -5.38 7.17 -6.34 13.94 -4.68 20.13
+  c -21.27 -0.55 -41 -0.07 -63.32 -2.27
+  z
+};`;
+
+      it('sharp line-to-curve corner: offset ring grows ~2d, no miter spike', () => {
+        const result = compile(`${YOKE}
+let placed = yoke.project(100, 100);
+let ring = placed.offset(7);
+let b1 = placed.boundingBox();
+let b2 = ring.boundingBox();
+log(b2.width - b1.width);
+log(b2.height - b1.height);
+M 0 0`);
+        // Bevels legitimately truncate sharp-corner extremes, so growth
+        // sits a little under 2d — but never spikes past it (the
+        // historical defect grew height by 25.7 for d=7).
+        const growW = Number(result.logs[0].parts[0].value);
+        const growH = Number(result.logs[1].parts[0].value);
+        expect(growW).toBeGreaterThan(11);
+        expect(growW).toBeLessThan(15);
+        expect(growH).toBeGreaterThan(11);
+        expect(growH).toBeLessThan(15);
+      });
+
+      it("with { join: 'round' } the ring grows exactly 2d in both axes", () => {
+        const result = compile(`${YOKE}
+let placed = yoke.project(100, 100);
+let ring = placed.offset(7, { join: 'round' });
+let b1 = placed.boundingBox();
+let b2 = ring.boundingBox();
+log(b2.width - b1.width);
+log(b2.height - b1.height);
+M 0 0`);
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(14, 0);
+        expect(Number(result.logs[1].parts[0].value)).toBeCloseTo(14, 0);
+      });
+
+      it('cut yoke piece: offset allowance grows ~2d in both axes (regression)', () => {
+        const result = compile(`
+let bodice = @{
+  c 16 18 34 20 46 6 as segment('neck')
+  l 22 8
+  c -12 16 -2 30 10 40
+  l 6 96
+  h -84
+  z
+};
+let pieces = bodice.cut(@{
+  m -15 30
+  c 40 6 70 2 110 6
+});
+for (piece in pieces) {
+  let placed = piece.project(60, 40);
+  if (placed.segmentAll('neck').length > 0) {
+    let ring = placed.offset(7);
+    let b1 = placed.boundingBox();
+    let b2 = ring.boundingBox();
+    log(b2.width - b1.width);
+    log(b2.height - b1.height);
+  }
+}
+M 0 0`);
+        const growW = Number(result.logs[0].parts[0].value);
+        const growH = Number(result.logs[1].parts[0].value);
+        expect(growW).toBeGreaterThan(11);
+        expect(growW).toBeLessThan(15);
+        expect(growH).toBeGreaterThan(11);
+        expect(growH).toBeLessThan(15);
+      });
+
+      it('closed rectangle offset is a clean expanded rectangle with miter corners', () => {
+        const result = compile(`
+let p = @{
+  h 60
+  v 40
+  h -60
+  z
+};
+let ring = p.offset(5);
+ring.drawTo(10, 10);`);
+        // A 60x40 rectangle offset outward by 5 is a symmetric 70x50
+        // rectangle — every corner mitred, including the closure corner.
+        expect(result.layers[0].data).toBe('M 10 10 l 70 0 l 0 50 l -70 0 z');
+      });
+
+      it('deep cubic scoop offsets as a true parallel curve (midpoint at distance d)', () => {
+        const result = compile(`
+let curve = @{
+  c 0 -40 50 -40 50 0
+};
+let placed = curve.project(0, 100);
+let par = placed.offset(3);
+let cm = placed.get(0.5);
+let pm = par.get(0.5);
+let gapSq = calc((pm.x - cm.x) * (pm.x - cm.x) + (pm.y - cm.y) * (pm.y - cm.y));
+log(gapSq);
+M 0 0`);
+        // distance² ≈ 9 — the offset midpoint sits d away from the curve's
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(9, 0);
+      });
+
+      it("offset(d, { join: 'round' }) inserts arc connectors at sharp corners", () => {
+        const result = compile(`
+let bracket = @{
+  h 40
+  l -30 30
+};
+let ring = bracket.offset(6, { join: 'round' });
+ring.drawTo(50, 50);`);
+        expect(result.layers[0].data).toMatch(/ a /);
+      });
+
+      it("offset(d, { join: 'bevel' }) forces bevels at right-angle corners", () => {
+        const result = compile(`
+let p = @{
+  h 60
+  v 40
+};
+let ring = p.offset(5, { join: 'bevel' });
+ring.drawTo(10, 10);`);
+        // two offset lines plus one bevel connector
+        const lineCount = (result.layers[0].data.match(/ l /g) || []).length;
+        expect(lineCount).toBeGreaterThanOrEqual(3);
+      });
+
+      it('rejects an unknown join value', () => {
+        expect(() => compile("let p = @{ h 50 v 20 }; p.offset(5, { join: 'fancy' });")).toThrow(/join/);
+      });
+
+      // A straight top edge with a cubic dip cut into it, offset toward
+      // the concave side: the offset sides cross at the two line-curve
+      // junctions, and the ring must be trimmed there — never given an
+      // external connector that loops outside the silhouette.
+      const NOTCH = `let notch = @{
+  h 20
+  c 5 15 15 15 20 0
+  h 20
+  v 30
+  h -60
+  z
+};`;
+
+      for (const joinMode of ['miter', 'bevel', 'round']) {
+        it(`concave line-curve junctions trim cleanly with join: '${joinMode}'`, () => {
+          const result = compile(`${NOTCH}
+let placed = notch.project(100, 100);
+let ring = placed.offset(-5, { join: '${joinMode}' });
+let b1 = placed.boundingBox();
+let b2 = ring.boundingBox();
+log(b2.x - b1.x);
+log(b2.y - b1.y);
+log(b1.width - b2.width);
+M 0 0`);
+          // The inward ring sits strictly inside the original: ~5 in from
+          // every side. An untrimmed junction spikes outside those bounds.
+          expect(Number(result.logs[0].parts[0].value)).toBeGreaterThan(4);
+          expect(Number(result.logs[1].parts[0].value)).toBeGreaterThan(4);
+          expect(Number(result.logs[2].parts[0].value)).toBeGreaterThan(9);
+        });
+      }
+
+      it('a donut (two-subpath) path offsets both rings', () => {
+        const result = compile(`
+let donut = @{
+  circle(0, 0, 40);
+  circle(0, 0, 15);
+};
+let placed = donut.project(100, 100);
+let grown = placed.offset(5);
+let b1 = placed.boundingBox();
+let b2 = grown.boundingBox();
+log(b2.width - b1.width);
+M 0 0`);
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(10, 0);
+      });
+
+      it('zero-length interior segments are dropped, not offset by a fallback normal', () => {
+        const result = compile(`
+let p = @{
+  h 30
+  l 0 0
+  v 20
+};
+let ring = p.offset(5);
+ring.drawTo(10, 10);`);
+        // The degenerate l 0 0 must not survive as a stray segment; the
+        // corner between h and v joins as if it were never there.
+        const withZero = result.layers[0].data;
+        const clean = compile(`
+let p = @{
+  h 30
+  v 20
+};
+let ring = p.offset(5);
+ring.drawTo(10, 10);`).layers[0].data;
+        expect(withZero).toBe(clean);
+      });
+
+      it('a labeled edge that turns a sharp corner stays one queryable run', () => {
+        const result = compile(`
+let p = @{
+  h 40 as segment('edge')
+  l -30 30 as segment('edge')
+};
+let placed = p.project(50, 50);
+let ring = placed.offset(6);
+log(ring.segmentAll('edge').length);
+M 0 0`);
+        expect(Number(result.logs[0].parts[0].value)).toBe(1);
       });
     });
 
