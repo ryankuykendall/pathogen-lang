@@ -1873,8 +1873,29 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     throw mError(`Unknown PathBlock method: ${expr.method}`);
   }
 
-  // ProjectedPathValue methods: drawTo(), get(), tangent(), normal(), partition()
+  // ProjectedPathValue methods: draw(), drawTo(), get(), tangent(), normal(), partition()
   if (isProjectedPathValue(obj)) {
+    if (expr.method === 'draw') {
+      // Parity with the main evaluator: draw the projected path exactly
+      // where it lies, anchored on its first command.
+      if (expr.args.length !== 0) throw new Error('draw() expects 0 arguments');
+      const anchor = obj.commands.length > 0 ? obj.commands[0].start : obj.startPoint;
+      const emittedPath = scope.evalState
+        ? serializeRelativeAndTrack(obj.commands, scope.evalState.pathContext, {
+            format: annotatedFmt,
+            moveTo: { x: anchor.x, y: anchor.y },
+            startCursor: { x: anchor.x, y: anchor.y },
+          }).d
+        : `M ${annotatedFmt(anchor.x)} ${annotatedFmt(anchor.y)} ${commandsToRelativeD(obj.commands, { format: annotatedFmt, startCursor: { x: anchor.x, y: anchor.y } })}`;
+      if (scope.evalState) {
+        updateCtxVariable(scope);
+      }
+      return {
+        type: 'PathWithResult' as const,
+        path: emittedPath,
+        result: obj as unknown as ContextObject,
+      };
+    }
     if (expr.method === 'drawTo') {
       if (expr.args.length !== 2) throw new Error('drawTo() expects 2 arguments (x, y)');
       const dtX = evaluateExpression(expr.args[0], scope);
@@ -1895,8 +1916,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         ? serializeRelativeAndTrack(reProjectedCommands, scope.evalState.pathContext, {
             format: annotatedFmt,
             moveTo: { x: dtX, y: dtY },
+            startCursor: { x: dtX, y: dtY },
           }).d
-        : `M ${annotatedFmt(dtX)} ${annotatedFmt(dtY)} ${commandsToRelativeD(reProjectedCommands, { format: annotatedFmt })}`;
+        : `M ${annotatedFmt(dtX)} ${annotatedFmt(dtY)} ${commandsToRelativeD(reProjectedCommands, { format: annotatedFmt, startCursor: { x: dtX, y: dtY } })}`;
       if (scope.evalState) {
         updateCtxVariable(scope);
       }

@@ -342,13 +342,12 @@ cut meant re-deriving where the knife went — intersecting lines by
 hand, tracking which piece got which fragment. Now the pieces carry the
 answer. The idiom the whole series leans on:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
-  seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+  seam.<span class="hljs-title function_">draw</span>();
 }
-</code></pre><p><code>startPoint</code> is the seam&#39;s own anchor, so <code>drawTo</code> draws the seam
-right back on top of itself — into whatever layer is active, with
-whatever stroke style that layer carries. Dashed layer, fold lines.
-Amber layer, highlights. The seam is just a path; the meaning comes
-from where you draw it.</p>
+</code></pre><p>A projected value knows where it lives, so <code>draw()</code> draws it exactly
+there — into whatever layer is active, with whatever stroke style that
+layer carries. Dashed layer, fold lines. Amber layer, highlights. The
+seam is just a path; the meaning comes from where you draw it.</p>
 <h2>Example 1 — The first seam</h2>
 <p>One rectangular plate, one S-curved knife, two pieces. On the left, the
 pieces drawn plain, reassembled. On the right, the same two pieces
@@ -429,7 +428,7 @@ for (piece in pieces) {
   let placed = piece.project(placeX, 70);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
 }
@@ -547,7 +546,7 @@ for (piece in panels) {
     for (seam in placed.segmentAll('cut')) {
       let mid = seam.get(0.5);
       if (mid.x &gt; panelCenterX) {
-        seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+        seam.draw();
       }
     }
   }
@@ -756,12 +755,12 @@ for (piece in pieces) {
   roofRuns = placed.segmentAll('roof');
   roofLayer.apply {
     for (run in roofRuns) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   baseLayer.apply {
     for (run in baseRuns) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   // Each piece reports which of the plate's names it still owns,
@@ -869,7 +868,7 @@ for (piece in pieces) {
   let placed = piece.project(placeX, placeY);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
 }
@@ -1057,7 +1056,26 @@ edges are equally long — and decides tab-or-fold per half by which side
 of the wedge&#39;s center ray it lies on. If you ever ask for two seams and
 receive one, this is why, and <code>subPath(t0, t1)</code> is the knife that
 re-divides them.</p>
-<h2>Where to go next</h2>
+<h2>What this project taught the language</h2>
+<p>The friction-log promise from the top of the post, kept — what building
+this project changed in Pathogen:</p>
+<p><strong>The seam idiom earned a real <code>draw()</code>.</strong> When this series first
+shipped, the loop above took two lines per seam:
+<code>seam.drawTo(seam.startPoint.x, seam.startPoint.y)</code> — &quot;draw yourself
+where you already are,&quot; said with two property reads and a re-anchor.
+Worse, the same expression applied to a <em>whole cut piece</em> silently drew
+it in the wrong place, because a piece&#39;s projected <code>startPoint</code> is its
+frame origin rather than its first command (the garment post tells that
+part of the story). Projected values now have an in-place
+<a href="/docs#path-blocks-drawing-a-projectedpath-in-place"><code>draw()</code></a>: it
+anchors on the value&#39;s first command by definition, so the footgun is
+unreachable and the idiom is one self-evident line.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before</span>
+seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+
+<span class="hljs-comment">// after</span>
+seam.<span class="hljs-title function_">draw</span>();
+</code></pre><h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-jigsaw">Jigsaw: pieces that know their own edges</a>
 — part 2 cuts with wavy knives and sorts pieces by the rim label

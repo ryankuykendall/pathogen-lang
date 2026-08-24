@@ -1116,6 +1116,8 @@ export interface PathogenProjectedPath {
   readonly endPoint: PathogenPoint;
   /** True when the path has no commands */
   readonly isEmpty: boolean;
+  /** draw() — Draw the path exactly where it lies (anchored on its first command) */
+  draw(): PathogenProjectedPath;
   /** drawTo(x, y) — Re-draw translated to a new origin; returns a ProjectedPath */
   drawTo(x: number, y: number): PathogenProjectedPath;
   /** get(t) — Sample point at t */

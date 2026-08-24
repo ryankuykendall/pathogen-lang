@@ -119,7 +119,7 @@ panel.apply {
 // One query per name; the layer's color does the explaining.
 let placed = bodice.project(originX, originY);
 fn strokeRun(run) {
-  run.drawTo(run.startPoint.x, run.startPoint.y);
+  run.draw();
 }
 neckRun.apply {
   for (run in placed.segmentAll('neck')) {

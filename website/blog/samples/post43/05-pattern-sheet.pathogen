@@ -91,12 +91,12 @@ for (piece in pieces) {
   let placeY = calc(64 - bounds.y);
   let placed = piece.project(placeX, placeY);
   panel.apply {
-    M placeX placeY piece.draw()
+    placed.draw();
   }
   // Every piece gets its cutting line — curves and all.
   let allow = placed.offset(7);
   allowance.apply {
-    allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+    allow.draw();
   }
   notches.apply {
     for (seam in placed.segmentAll('cut')) {

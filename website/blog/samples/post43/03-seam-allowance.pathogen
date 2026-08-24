@@ -73,17 +73,17 @@ for (piece in pieces) {
   if (placedProbe.segmentAll('hem').length > 0) {
     let placed = piece.project(150, 28);
     panel.apply {
-      M 150 28 piece.draw()
+      placed.draw();
     }
     // The cutting line: the same outline, pushed out by the allowance.
     let allow = placed.offset(7);
     allowance.apply {
-      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+      allow.draw();
     }
     // Labels survive offset: the allowance still knows its side seam.
     sideRun.apply {
       for (run in allow.segmentAll('side')) {
-        run.drawTo(run.startPoint.x, run.startPoint.y);
+        run.draw();
       }
     }
   }

@@ -47,8 +47,7 @@ main event rather than the annotation:
 
 ```pathogen
 for (seam in placed.segmentAll('cut')) {
-  // stroked wide, this IS the leading
-  seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+  seam.draw();    // stroked wide, this IS the leading
 }
 ```
 
@@ -131,6 +130,16 @@ Every technique in it was introduced as a bare mechanism somewhere in
 these four posts. That is the shape of the whole series: the seams
 know where they are, the pieces know what they kept, and everything
 else is a loop.
+
+## What this project taught the language
+
+This series doubles as a working friction log (part 1 explains the
+convention). The leading loop above originally read
+`seam.drawTo(seam.startPoint.x, seam.startPoint.y)` — projected values
+have since grown an in-place `draw()`, and every came stroke in this
+post got one line simpler. Part 1's closing section tells the story;
+the garment post's tells its darker sibling (the same expression
+silently misplacing whole cut pieces).
 
 ## Where to go next
 

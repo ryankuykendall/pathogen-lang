@@ -71,7 +71,7 @@ for (piece in pieces) {
   let placed = piece.project(placeX, 50);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
 }

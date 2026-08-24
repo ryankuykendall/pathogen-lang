@@ -124,10 +124,10 @@ for ([piece, i] in panes) {
   // Came on every healed seam and on the rim: two groups, one style.
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
     for (seam in placed.segmentAll('rim')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
   // Solder dots where seams start and end.

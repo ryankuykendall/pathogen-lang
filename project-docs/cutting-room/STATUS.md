@@ -85,6 +85,21 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
   0 warnings (except the two documented false-positive sets), BBWPs
   + blog + public re-synced. Final check-links crawl green (42 pages /
   1228 links / 0 broken).
+- 2026-08-24 (feedback loop, Item B LANDED — pending review + commit):
+  ProjectedPath.draw() (docs-first, failing-tests-first): in-place draw
+  anchored on first command; in-block guard extended; annotated parity;
+  api + completions; drawTo contract documented incl. the footgun. 7 new
+  tests + 2 completion-surface assertions flipped (old "no draw on
+  ProjectedPath" pins). Suite 4833/4833. Series: idiom swept across all
+  21 samples (seam-idiom output byte-identical; 43/03+05 panels
+  converted to placed.draw(), renders verified identical), both idiom
+  fences updated, closing sections in all four posts (papercraft full
+  story, garment footgun chapter, jigsaw + stained-glass pointers).
+  Log #1 resolved, #12 resolved-by-bypass, B2 queued (startPoint audit
+  revival, preserved in B-projected-draw/). User process feedback
+  captured: summaries lead with side-by-side before/after (memory +
+  retrofit); Item H reframed as in-block re-orientation per user
+  diagnosis (H folder seeded).
 - 2026-08-24 (feedback loop, Item A LANDED — pending review + commit):
   offsetCommands rewritten (docs-first, failing-tests-first). Root cause
   per summary-v2: miter spikes baked into curve frames + non-parallel

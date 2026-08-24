@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-24 (ProjectedPath.draw() — Cutting Room feedback loop, item B)
+
+### Added
+
+#### Core
+
+- **Serializer fix (pre-existing `drawTo` bug):** the relative-emission walk never seated its cursor at the emitted anchor, so any projected value with a mid-list `m` — union/difference/intersection/xor results, cut pieces with holes — double-offset every subsequent contour when drawn at a non-zero position (invisible at `drawTo(0, 0)`, which is all the old tests used). `path-data.ts` gained a `startCursor` option, set by the four world-space call sites; regression-tested for boolean results and holed pieces in both evaluators.
+- **`ProjectedPath.draw()`** — draws a projected value exactly where it lies, anchored on its first command; no anchor arguments, no cursor dependence. This collapses the series' central seam-decoration idiom from `seam.drawTo(seam.startPoint.x, seam.startPoint.y)` to `seam.draw()`, and makes the cut-piece placement footgun unreachable (a piece's projected `startPoint` is its frame origin, not its first command, so the old re-anchor silently shifted whole pieces — content review caught annotations 63 units off their pattern piece). Both evaluators at parity; declared in `pathogen-api.ts` with completions regenerated; the `drawTo` anchor contract is now documented in `docs/path-blocks.md` ("Drawing a ProjectedPath in place"). The deeper `startPoint` question (the backlogged 2026-08-01 "first inked point" audit) is queued as feedback-loop item B2.
+
+#### Documentation
+
+- All 21 Cutting Room samples and both idiom fences swept to `seam.draw()`; the two garment pattern panels now draw via `placed.draw()`. Closing "What this project taught the language" sections added to the papercraft (full story), jigsaw, and stained-glass posts, and the garment post gained the footgun chapter. Seam-idiom sample output verified byte-identical; the two panel conversions render identically.
+
 ## [0.8.0] - 2026-08-24 (offset() joins + true parallel curves — Cutting Room feedback loop, item A)
 
 ### Fixed

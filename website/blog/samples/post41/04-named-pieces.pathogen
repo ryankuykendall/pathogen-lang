@@ -73,12 +73,12 @@ for (piece in pieces) {
   roofRuns = placed.segmentAll('roof');
   roofLayer.apply {
     for (run in roofRuns) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   baseLayer.apply {
     for (run in baseRuns) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   // Each piece reports which of the plate's names it still owns,

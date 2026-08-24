@@ -69,7 +69,7 @@ fn cameWindow(disc, centerX, centerY) {
     // One decoration loop, both windows: stroke the 'cut' group wide.
     leading.apply {
       for (seam in placed.segmentAll('cut')) {
-        seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+        seam.draw();
       }
     }
   }

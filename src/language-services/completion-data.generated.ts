@@ -720,6 +720,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'isEmpty', kind: 'property', detail: 'True when the path has no commands', boost: 8 },
     ],
     methods: [
+      { label: 'draw', kind: 'function', detail: 'draw() — Draw the path exactly where it lies (anchored on its first command)', boost: 8, insertText: 'draw()$0', isSnippet: true },
       { label: 'drawTo', kind: 'function', detail: 'drawTo(x, y) — Re-draw translated to a new origin; returns a ProjectedPath', boost: 8, insertText: 'drawTo(${1:x}, ${2:y})$0', isSnippet: true },
       { label: 'get', kind: 'function', detail: 'get(t) — Sample point at t', boost: 8, insertText: 'get(${1:t})$0', isSnippet: true },
       { label: 'tangent', kind: 'function', detail: 'tangent(t) — Tangent angle at t', boost: 8, insertText: 'tangent(${1:t})$0', isSnippet: true },
@@ -1106,7 +1107,7 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'PolarVector': { turn: 'PolarVector', scale: 'PolarVector', mirror: 'PolarVector' },
   'PathLayer': { segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
   'ProjectedText': { translate: 'ProjectedText' },
-  'ProjectedPath': { drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', offset: 'ProjectedPath', mirror: 'ProjectedPath', rotate: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'ProjectedPath', difference: 'ProjectedPath', intersection: 'ProjectedPath', xor: 'ProjectedPath', cut: 'array', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
+  'ProjectedPath': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', offset: 'ProjectedPath', mirror: 'ProjectedPath', rotate: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'ProjectedPath', difference: 'ProjectedPath', intersection: 'ProjectedPath', xor: 'ProjectedPath', cut: 'array', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
   'VertexHandle': { fillet: 'PathBlock', chamfer: 'PathBlock', ellipticalFillet: 'PathBlock' },
   'LinearGradient': { inherit: 'LinearGradient' },
   'RadialGradient': { inherit: 'RadialGradient' },

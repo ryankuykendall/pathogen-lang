@@ -174,6 +174,15 @@ export interface RelativeDOptions {
   bridgeOriginGap?: boolean;
   /** Number formatter; defaults to formatNum (respects --to-fixed). */
   format?: (n: number) => string;
+  /**
+   * Start the walk's cursor at this point instead of (0,0). Required when
+   * the caller's commands are ALREADY WORLD-SPACE (ProjectedPath values):
+   * a mid-list `m` computes its delta from the cursor, and a (0,0) cursor
+   * against world coordinates double-offsets every subsequent subpath
+   * (boolean-op results, cut pieces with holes). Block-local callers must
+   * NOT set this — their commands live in the (0,0)-based block frame.
+   */
+  startCursor?: { x: number; y: number };
 }
 
 export interface SerializeTrackOptions extends RelativeDOptions {
@@ -192,10 +201,10 @@ function walkRelative(
   emit: (letter: string, formattedArgs: string[]) => void,
 ): void {
   const fmt = opts.format ?? formatNum;
-  let cursorX = 0;
-  let cursorY = 0;
-  let subpathStartX = 0;
-  let subpathStartY = 0;
+  let cursorX = opts.startCursor ? opts.startCursor.x : 0;
+  let cursorY = opts.startCursor ? opts.startCursor.y : 0;
+  let subpathStartX = cursorX;
+  let subpathStartY = cursorY;
   if (opts.moveTo) {
     // The emitted M is world-space; the walk's cursor stays BLOCK-LOCAL
     // (command start/end coords are block-local), exactly as when the caller

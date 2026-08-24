@@ -413,7 +413,7 @@ for (piece in pieces) {
   let placed = piece.project(placeX, 45);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
 }
@@ -508,7 +508,7 @@ for (piece in pieces) {
   let placed = piece.project(placeX, 50);
   seamLayer.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
 }
@@ -613,7 +613,7 @@ for (piece in pieces) {
     // Show the inherited label riding on the piece: stroke its rim.
     rimRuns.apply {
       for (run in placed.segmentAll('rim')) {
-        run.drawTo(run.startPoint.x, run.startPoint.y);
+        run.draw();
       }
     }
   } else {
@@ -902,6 +902,13 @@ finale</a> in the cutting post, compare the
 spin: it needed <code>rotateAtVertexIndex</code> plus manual pivot compensation.
 <code>rotate(angle, origin)</code> is frame-preserving — the piece turns around
 the pivot and stays put — so the scatter is two lines per piece.</p>
+<h2>What this project taught the language</h2>
+<p>This series doubles as a working friction log (part 1 explains the
+convention). Since this post first ran, the seam idiom it borrows —
+draw a projected value where it lies — became a real method:
+<code>seam.draw()</code> replaced the two-line
+<code>drawTo(seam.startPoint.x, seam.startPoint.y)</code> re-anchor throughout
+these samples. Part 1&#39;s closing section has the full story.</p>
 <h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-garment">Garment patterns</a> — part 3 turns

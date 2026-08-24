@@ -79,12 +79,12 @@ for (piece in pieces) {
   }
   neckRun.apply {
     for (run in placed.segmentAll('neck')) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   hemRun.apply {
     for (run in placed.segmentAll('hem')) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   let placedBounds = placed.boundingBox();

@@ -1342,3 +1342,61 @@ ring.drawTo(50, 50);`;
     expect(() => compileAnnotated(src)).toThrow(/join/);
   });
 });
+
+describe('ProjectedPath draw() parity (annotated)', () => {
+  it('multi-contour union draw() matches the main evaluator', () => {
+    // NOTE: stdlib-call blocks (@{ circle(...) }) are EMPTY in annotated
+    // mode — a separate pre-existing annotated bug (friction log #16) —
+    // so this parity test builds its contours from raw commands.
+    const src = `let left = @{
+  h 40
+  v 40
+  h -40
+  z
+};
+let right = @{
+  h 40
+  v 40
+  h -40
+  z
+};
+let merged = left.union(right.project(60, 0));
+let placed = merged.project(150, 28);
+placed.draw();`;
+    const round3 = (s: string) => s.replace(/-?\d+\.\d+/g, (m) => Number(m).toFixed(3));
+    const main = round3(compile(src).layers[0].data);
+    const flat = round3(
+      compileAnnotated(src)
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('//'))
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .join(' '),
+    );
+    expect(flat).toContain(main);
+  });
+
+  it('in-place draw matches the main evaluator', () => {
+    // cut() is not supported in annotated mode, so parity is pinned on a
+    // plain projection (where the footgun case cannot arise anyway).
+    const src = `let plate = @{
+  h 140
+  v 100
+  c 10 -20 30 -20 40 -40
+};
+let placed = plate.project(30, 40);
+placed.draw();
+l 5 0`;
+    const round3 = (s: string) => s.replace(/-?\d+\.\d+/g, (m) => Number(m).toFixed(3));
+    const main = round3(compile(src).layers[0].data);
+    const flat = round3(
+      compileAnnotated(src)
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('//'))
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .join(' '),
+    );
+    expect(flat).toContain(main);
+  });
+});

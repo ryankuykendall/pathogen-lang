@@ -79,12 +79,12 @@ for (half in halves) {
   let placed = half.project(side, calc(0 - side));
   sillRun.apply {
     for (run in placed.segmentAll('sill')) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   lightRun.apply {
     for (run in placed.segmentAll('light')) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
 }

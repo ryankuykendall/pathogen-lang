@@ -263,6 +263,191 @@ describe('Path Blocks', () => {
     });
   });
 
+  describe('ProjectedPath draw() — in place', () => {
+    it('a seam run draws itself exactly where it lies (byte-equal to the drawTo anchor idiom)', () => {
+      const base = `
+let plate = @{
+  h 140 as segment('top')
+  v 100
+  h -140
+  z
+};
+let pieces = plate.cut(@{
+  m 70 -15
+  l 0 130
+});
+let placed = pieces[0].project(30, 40);
+for (seam in placed.segmentAll('cut')) {
+  SEAM_DRAW
+}`;
+      const viaDraw = compile(base.replace('SEAM_DRAW', 'seam.draw();')).layers[0].data;
+      const viaAnchor = compile(
+        base.replace('SEAM_DRAW', 'seam.drawTo(seam.startPoint.x, seam.startPoint.y);'),
+      ).layers[0].data;
+      expect(viaDraw).toBe(viaAnchor);
+    });
+
+    it('a whole projected cut piece draws in place (matches the M + block draw form)', () => {
+      const base = `
+let plate = @{
+  h 140 as segment('top')
+  v 100
+  h -140
+  z
+};
+let pieces = plate.cut(@{
+  m 70 -15
+  l 0 130
+});
+DRAW_FORM`;
+      const viaProjected = compile(
+        base.replace(
+          'DRAW_FORM',
+          'let placed = pieces[1].project(30, 40);\nplaced.draw();',
+        ),
+      ).layers[0].data;
+      const viaBlock = compile(
+        base.replace('DRAW_FORM', 'M 30 40\npieces[1].draw();'),
+      ).layers[0].data;
+      // Same geometry: the projected form anchors the first command
+      // directly, the block form bridges from the cursor — normalize by
+      // collapsing the leading "M x y m dx dy" into one absolute M.
+      const collapse = (d: string) => {
+        const m = d.match(/^M (-?[\d.]+) (-?[\d.]+) m (-?[\d.]+) (-?[\d.]+) (.*)$/);
+        if (!m) return d;
+        return `M ${Number(m[1]) + Number(m[3])} ${Number(m[2]) + Number(m[4])} ${m[5]}`;
+      };
+      expect(collapse(viaProjected)).toBe(collapse(viaBlock));
+    });
+
+    it('advances the cursor to the path end (relative commands continue from there)', () => {
+      const result = compile(`
+let shape = @{
+  h 50
+  v 30
+};
+let placed = shape.project(10, 20);
+placed.draw();
+l 5 0`);
+      expect(result.layers[0].data).toBe('M 10 20 h 50 v 30 l 5 0');
+    });
+
+    it('returns the projected value for chaining', () => {
+      const result = compile(`
+let shape = @{
+  h 50
+  v 30
+};
+let placed = shape.project(10, 20);
+let out = placed.draw();
+log(out.endPoint.x);
+log(out.endPoint.y);`);
+      expect(Number(result.logs[0].parts[0].value)).toBe(60);
+      expect(Number(result.logs[1].parts[0].value)).toBe(50);
+    });
+
+    // Multi-contour values carry mid-list `m` commands (boolean results,
+    // holed cut pieces). The serializer walk must seat its cursor at the
+    // emitted anchor or every subsequent subpath double-offsets — the
+    // review-caught regression class. Ground truth is the block form
+    // (M x y + block.draw()), whose local-frame walk was always correct.
+    const collapseLeadingMove = (d: string) => {
+      const m = d.match(/^M (-?[\d.]+) (-?[\d.]+) m (-?[\d.]+) (-?[\d.]+) (.*)$/);
+      const collapsed = m
+        ? `M ${Number(m[1]) + Number(m[3])} ${Number(m[2]) + Number(m[4])} ${m[5]}`
+        : d;
+      // Translated arithmetic rounds differently in the last ulp; compare
+      // at 6 decimals.
+      return collapsed.replace(/-?\d+\.\d+/g, (n) => Number(n).toFixed(6));
+    };
+
+    it('union result (two contours) draws in place at a non-zero position', () => {
+      const base = `
+let a = @{ circle(0, 0, 30); };
+let b = @{ circle(35, 0, 30); };
+let merged = a.union(b);
+DRAW_FORM`;
+      const viaProjected = compile(
+        base.replace('DRAW_FORM', 'let placed = merged.project(150, 28);\nplaced.draw();'),
+      ).layers[0].data;
+      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\nmerged.draw();')).layers[0]
+        .data;
+      expect(collapseLeadingMove(viaProjected)).toBe(collapseLeadingMove(viaBlock));
+    });
+
+    it('difference result with a hole draws in place at a non-zero position', () => {
+      const base = `
+let big = @{ circle(0, 0, 40); };
+let small = @{ circle(0, 0, 15); };
+let donut = big.difference(small);
+DRAW_FORM`;
+      const viaProjected = compile(
+        base.replace('DRAW_FORM', 'let placed = donut.project(150, 28);\nplaced.draw();'),
+      ).layers[0].data;
+      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\ndonut.draw();')).layers[0]
+        .data;
+      expect(collapseLeadingMove(viaProjected)).toBe(collapseLeadingMove(viaBlock));
+    });
+
+    it('a cut piece that carries a hole draws in place at a non-zero position', () => {
+      const base = `
+let plate = @{
+  h 200 as segment('rim')
+  v 200
+  h -200
+  z
+};
+let stamped = plate.cut(@{ circle(100, 100, 30); });
+for (piece in stamped) {
+  if (piece.segmentAll('rim').length > 0) {
+    DRAW_FORM
+  }
+}`;
+      const viaProjected = compile(
+        base.replace('DRAW_FORM', 'let placed = piece.project(150, 28);\nplaced.draw();'),
+      ).layers[0].data;
+      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\npiece.draw();')).layers[0]
+        .data;
+      expect(collapseLeadingMove(viaProjected)).toBe(collapseLeadingMove(viaBlock));
+    });
+
+    it('drawTo at a non-zero target keeps multi-contour geometry rigid (pre-existing bug)', () => {
+      const base = `
+let a = @{ circle(0, 0, 30); };
+let b = @{ circle(35, 0, 30); };
+let merged = a.union(b);
+DRAW_FORM`;
+      const viaDrawTo = compile(
+        base.replace('DRAW_FORM', 'let proj = merged.project(0, 0);\nproj.drawTo(150, 28);'),
+      ).layers[0].data;
+      const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\nmerged.draw();')).layers[0]
+        .data;
+      expect(collapseLeadingMove(viaDrawTo)).toBe(collapseLeadingMove(viaBlock));
+    });
+
+    it('draw() on an empty projection degrades gracefully', () => {
+      const result = compile(`
+let empty = @{ h 10 };
+let sub = empty.subPath(0.5, 0.5);
+let pr = sub.project(10, 20);
+pr.draw();
+l 5 0`);
+      expect(result.layers[0].data).toContain('l 5 0');
+    });
+
+    it('rejects arguments', () => {
+      expect(() =>
+        compile('let p = @{ h 10 }; let pr = p.project(0, 0); pr.draw(5);'),
+      ).toThrow(/0 arguments/);
+    });
+
+    it('is rejected inside a path block, like drawTo', () => {
+      expect(() =>
+        compile('let p = @{ h 10 }; let pr = p.project(0, 0); let q = @{ pr.draw(); };'),
+      ).toThrow(/inside a path block/);
+    });
+  });
+
   describe('drawTo()', () => {
     it('emits M followed by relative commands', () => {
       const result = compilePath(`

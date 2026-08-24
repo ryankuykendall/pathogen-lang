@@ -184,6 +184,28 @@ Direction was always correct; the joins were at fault. Friction logs
 earn their keep, but each entry deserves a fresh trace before it
 becomes a fix.
 
+**The pattern sheet also exposed a placement footgun — and got
+projected values a real `draw()`.** An early draft of Example 5 drew
+each piece with `placed.drawTo(placed.startPoint.x,
+placed.startPoint.y)` — "draw yourself where you are" — and every
+annotation landed 63 units away from its piece. The cause: a cut
+piece's projected `startPoint` is its *frame origin*, not its first
+command, so the innocent-looking re-anchor silently shifted the piece
+by its own local offset (seam runs, where the two coincide, worked
+fine — which is what made it treacherous). Projected values now have
+[`draw()`](/docs#path-blocks-drawing-a-projectedpath-in-place), which
+anchors on the first command by definition; the sheet above uses it,
+and the `drawTo` anchor contract is documented where it can't surprise
+the next person.
+
+```pathogen
+// before: correct for seam runs, silently wrong for cut pieces
+placed.drawTo(placed.startPoint.x, placed.startPoint.y);
+
+// after: correct for both, and says what it means
+placed.draw();
+```
+
 ## Where to go next
 
 - [Stained glass](/blog/cutting-room-stained-glass) — the series

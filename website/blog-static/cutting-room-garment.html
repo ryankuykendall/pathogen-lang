@@ -460,7 +460,7 @@ panel.apply {
 // One query per name; the layer's color does the explaining.
 let placed = bodice.project(originX, originY);
 fn strokeRun(run) {
-  run.drawTo(run.startPoint.x, run.startPoint.y);
+  run.draw();
 }
 neckRun.apply {
   for (run in placed.segmentAll('neck')) {
@@ -603,12 +603,12 @@ for (piece in pieces) {
   }
   neckRun.apply {
     for (run in placed.segmentAll('neck')) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   hemRun.apply {
     for (run in placed.segmentAll('hem')) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   let placedBounds = placed.boundingBox();
@@ -710,17 +710,17 @@ for (piece in pieces) {
   if (placedProbe.segmentAll('hem').length &gt; 0) {
     let placed = piece.project(150, 28);
     panel.apply {
-      M 150 28 piece.draw()
+      placed.draw();
     }
     // The cutting line: the same outline, pushed out by the allowance.
     let allow = placed.offset(7);
     allowance.apply {
-      allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+      allow.draw();
     }
     // Labels survive offset: the allowance still knows its side seam.
     sideRun.apply {
       for (run in allow.segmentAll('side')) {
-        run.drawTo(run.startPoint.x, run.startPoint.y);
+        run.draw();
       }
     }
   }
@@ -937,12 +937,12 @@ for (piece in pieces) {
   let placeY = calc(64 - bounds.y);
   let placed = piece.project(placeX, placeY);
   panel.apply {
-    M placeX placeY piece.draw()
+    placed.draw();
   }
   // Every piece gets its cutting line — curves and all.
   let allow = placed.offset(7);
   allowance.apply {
-    allow.drawTo(allow.startPoint.x, allow.startPoint.y);
+    allow.draw();
   }
   notches.apply {
     for (seam in placed.segmentAll('cut')) {
@@ -1016,7 +1016,24 @@ offset flips to the wrong side&quot; — was not the bug that existed.
 Direction was always correct; the joins were at fault. Friction logs
 earn their keep, but each entry deserves a fresh trace before it
 becomes a fix.</p>
-<h2>Where to go next</h2>
+<p><strong>The pattern sheet also exposed a placement footgun — and got
+projected values a real <code>draw()</code>.</strong> An early draft of Example 5 drew
+each piece with <code>placed.drawTo(placed.startPoint.x, placed.startPoint.y)</code> — &quot;draw yourself where you are&quot; — and every
+annotation landed 63 units away from its piece. The cause: a cut
+piece&#39;s projected <code>startPoint</code> is its <em>frame origin</em>, not its first
+command, so the innocent-looking re-anchor silently shifted the piece
+by its own local offset (seam runs, where the two coincide, worked
+fine — which is what made it treacherous). Projected values now have
+<a href="/docs#path-blocks-drawing-a-projectedpath-in-place"><code>draw()</code></a>, which
+anchors on the first command by definition; the sheet above uses it,
+and the <code>drawTo</code> anchor contract is documented where it can&#39;t surprise
+the next person.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: correct for seam runs, silently wrong for cut pieces</span>
+placed.<span class="hljs-title function_">drawTo</span>(placed.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, placed.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+
+<span class="hljs-comment">// after: correct for both, and says what it means</span>
+placed.<span class="hljs-title function_">draw</span>();
+</code></pre><h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-stained-glass">Stained glass</a> — the series
 finale: labels from <em>both</em> operands of a boolean, and seams as the

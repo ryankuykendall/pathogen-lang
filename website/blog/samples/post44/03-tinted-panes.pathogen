@@ -92,7 +92,7 @@ for ([w, i] in wedges) {
   let placed = w.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
 }

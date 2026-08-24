@@ -88,7 +88,7 @@ for (piece in panels) {
     for (seam in placed.segmentAll('cut')) {
       let mid = seam.get(0.5);
       if (mid.x > panelCenterX) {
-        seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+        seam.draw();
       }
     }
   }

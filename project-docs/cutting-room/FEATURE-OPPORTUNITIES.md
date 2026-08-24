@@ -3,7 +3,7 @@
 Running log, kept as samples are authored (2026-08-23 onward). Each entry
 notes the friction hit in a real sample. To be synthesized at project end.
 
-1. **ProjectedPath has no in-place `draw()`.** Stroking a projected seam
+1. **RESOLVED (Item B, 2026-08-24).** ProjectedPath.draw() shipped — the idiom is one line; see opportunities/B-projected-draw/. Original: **ProjectedPath had no in-place `draw()`.** Stroking a projected seam
    where it lies requires `let s0 = seam.get(0); seam.drawTo(s0.x, s0.y);`
    — a two-line incantation used in every single sample. A `draw()` that
    emits at the path's own absolute coordinates would make the core
@@ -74,7 +74,7 @@ notes the friction hit in a real sample. To be synthesized at project end.
     Post 3's pattern sheet restricts allowance to the body panel and
     states the caveat in prose. Deserves a proper fix in
     offsetCommands' per-command normal orientation.
-12. **FOOTGUN: `startPoint` on a projected PIECE is the frame origin,
+12. **RESOLVED-BY-BYPASS (Item B, 2026-08-24) + B2 QUEUED.** draw() makes the footgun unreachable for in-place drawing; drawTo contract documented in docs/path-blocks.md; truthful "first inked point" startPoint (the backlogged 2026-08-01 audit) queued as item B2. Original: **FOOTGUN: `startPoint` on a projected PIECE is the frame origin,
     not the visible start.** For seam sub-runs from `segmentAll`,
     `x.drawTo(x.startPoint...)` draws in place; for a WHOLE projected
     cut piece (whose block frame origin is (0,0) but whose first
@@ -99,3 +99,23 @@ notes the friction hit in a real sample. To be synthesized at project end.
     writing Item A's tests (2026-08-24). Workaround: bind to a variable
     first (`let d2 = calc(...); log(d2);`). Deserves disambiguation or
     at minimum a documented rule.
+15. **FEATURE REQUEST (user, 2026-08-24): ctx as a declared PathBlock
+    block argument + in-block label querying.** `@{|ctx| ...}` de-magics
+    the block context via the existing lambda-param convention;
+    `ctx.origin` exposes the relative delta home (destructurable) and
+    `ctx.origin.return()` emits `m dx dy` — relative purity preserved by
+    design, explicitly preferred over absolute `M 0 0`; and
+    `ctx.query.point('name')` answers labels authored earlier in the
+    SAME block (block-local coords) for self-referential geometry. Full
+    sketch + interaction spec notes preserved at
+    opportunities/L-ctx-block-argument/intent.md. Deferred as
+    fast-follow Item L; supersedes the block-local-absolute-M half of
+    item H.
+16. **BUG (annotated-only): stdlib-call blocks are empty in --annotated
+    mode.** `let a = @{ circle(0, 0, 30); }; a.drawTo(50, 50);` emits
+    just `M 50 50` under compileAnnotated — the block captures no
+    commands from statement-function calls (circle/rect/polygon/…),
+    while the main evaluator captures them fine. Found writing Item B's
+    annotated multi-contour parity test (2026-08-24). Same family as
+    #10 (annotated text-if drop): annotated block evaluation diverges
+    from main. Fold into Item C's annotated-divergence sweep.

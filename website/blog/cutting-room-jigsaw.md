@@ -139,6 +139,15 @@ spin: it needed `rotateAtVertexIndex` plus manual pivot compensation.
 `rotate(angle, origin)` is frame-preserving — the piece turns around
 the pivot and stays put — so the scatter is two lines per piece.
 
+## What this project taught the language
+
+This series doubles as a working friction log (part 1 explains the
+convention). Since this post first ran, the seam idiom it borrows —
+draw a projected value where it lies — became a real method:
+`seam.draw()` replaced the two-line
+`drawTo(seam.startPoint.x, seam.startPoint.y)` re-anchor throughout
+these samples. Part 1's closing section has the full story.
+
 ## Where to go next
 
 - [Garment patterns](/blog/cutting-room-garment) — part 3 turns

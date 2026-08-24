@@ -67,6 +67,24 @@ let proj = shape.project(0, 0);
 proj.drawTo(100, 100)    // emits: M 100 100 h 50 v 30
 ```
 
+### Drawing a ProjectedPath in place
+
+A ProjectedPath already knows where it lives, so `.draw()` on one draws it exactly there — no anchor arguments, no cursor dependence:
+
+```
+let pieces = plate.cut(knife);
+let placed = pieces[0].project(40, 60);
+placed.draw()                    // the piece, exactly where placed says it is
+
+for (seam in placed.segmentAll('cut')) {
+  seam.draw()                    // each healed seam, stroked on itself
+}
+```
+
+This is the idiom for decorating query results — seams, labeled runs, offsets — where the value's own coordinates *are* the target. The cursor advances to the path's endpoint, and the same ProjectedPath comes back for chaining.
+
+**The `drawTo` anchor contract.** `drawTo(x, y)` places the value's `startPoint` at `(x, y)`. For most projected values — every `segment`/`segmentAll` run, every `offset()` result — `startPoint` coincides with the first command, so `drawTo(p.startPoint.x, p.startPoint.y)` draws in place. But a **cut piece's** projected `startPoint` is its projected *frame origin*, not its first command (pieces keep their subject-local placement inside the frame), so that same expression silently shifts the piece by its local offset. Use `.draw()` for drawing in place — it anchors the first command by definition and is immune to the distinction.
+
 ## Projecting Without Drawing
 
 Use `.project(x, y)` to compute absolute coordinates without emitting commands or moving the cursor:

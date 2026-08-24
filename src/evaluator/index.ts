@@ -3087,16 +3087,41 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     }
   }
 
-  // ProjectedPathValue methods: drawTo(), get(), tangent(), normal(), partition()
+  // ProjectedPathValue methods: draw(), drawTo(), get(), tangent(), normal(), partition()
   if (isProjectedPathValue(obj)) {
-    // Check if we're inside a path block — drawTo not allowed there
+    // Check if we're inside a path block — draw/drawTo not allowed there
     if (scope.evalState && (scope.evalState as EvaluationState & { _insidePathBlock?: boolean })._insidePathBlock) {
-      if (expr.method === 'drawTo') {
+      if (expr.method === 'drawTo' || expr.method === 'draw') {
         throw mError(`Cannot call .${expr.method}() inside a path block`);
       }
     }
 
     switch (expr.method) {
+      case 'draw': {
+        // A projected path knows where it lives: draw it exactly there,
+        // anchored on its FIRST COMMAND (immune to the frame-origin vs
+        // first-command distinction that makes drawTo(startPoint) a
+        // footgun on cut pieces).
+        if (expr.args.length !== 0) throw mError('draw() expects 0 arguments');
+        if (!scope.evalState) throw mError('draw() requires evaluation context');
+        const anchor = obj.commands.length > 0 ? obj.commands[0].start : obj.startPoint;
+        const { d: emittedPath, tracked: emittedCommands } = serializeRelativeAndTrack(
+          obj.commands,
+          scope.evalState.pathContext,
+          // startCursor: commands are world-space — seat the walk's cursor
+          // at the anchor so mid-list `m` subpaths (boolean results, holed
+          // pieces) compute correct deltas.
+          { moveTo: { x: anchor.x, y: anchor.y }, startCursor: { x: anchor.x, y: anchor.y } },
+        );
+        updateCtxVariable(scope);
+        return {
+          type: 'PathWithResult' as const,
+          path: emittedPath,
+          result: obj,
+          commands: emittedCommands,
+        };
+      }
+
       case 'drawTo': {
         if (expr.args.length !== 2) throw mError('drawTo() expects 2 arguments (x, y)');
         if (!scope.evalState) throw mError('drawTo() requires evaluation context');
@@ -3120,7 +3145,8 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const { d: emittedPath, tracked: emittedCommands } = serializeRelativeAndTrack(
           reProjectedCommands,
           scope.evalState.pathContext,
-          { moveTo: { x: dtX, y: dtY } },
+          // startCursor: reprojected commands are world-space — see draw().
+          { moveTo: { x: dtX, y: dtY }, startCursor: { x: dtX, y: dtY } },
         );
         updateCtxVariable(scope);
 

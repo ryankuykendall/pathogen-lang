@@ -1346,8 +1346,8 @@ describe('query-API chains rooted in layer() calls', () => {
     const names = labels2(items);
     expect(names).toContain('get');
     expect(names).toContain('partition');
+    expect(names).toContain('draw'); // in-place draw (feedback loop item B)
     expect(names).not.toContain('project');
-    expect(names).not.toContain('draw');
     // and not the PathLayer set
     expect(names).not.toContain('apply');
   });
@@ -1357,8 +1357,8 @@ describe('query-API chains rooted in layer() calls', () => {
     const names = labels2(items);
     expect(names).toContain('get');
     expect(names).toContain('partition');
+    expect(names).toContain('draw'); // in-place draw (feedback loop item B)
     expect(names).not.toContain('project');
-    expect(names).not.toContain('draw');
   });
 
   it('infers layer query results by kind', async () => {

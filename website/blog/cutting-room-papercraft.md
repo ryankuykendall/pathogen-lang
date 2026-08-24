@@ -78,15 +78,14 @@ answer. The idiom the whole series leans on:
 
 ```pathogen
 for (seam in placed.segmentAll('cut')) {
-  seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+  seam.draw();
 }
 ```
 
-`startPoint` is the seam's own anchor, so `drawTo` draws the seam
-right back on top of itself — into whatever layer is active, with
-whatever stroke style that layer carries. Dashed layer, fold lines.
-Amber layer, highlights. The seam is just a path; the meaning comes
-from where you draw it.
+A projected value knows where it lives, so `draw()` draws it exactly
+there — into whatever layer is active, with whatever stroke style that
+layer carries. Dashed layer, fold lines. Amber layer, highlights. The
+seam is just a path; the meaning comes from where you draw it.
 
 ## Example 1 — The first seam
 
@@ -189,6 +188,31 @@ edges are equally long — and decides tab-or-fold per half by which side
 of the wedge's center ray it lies on. If you ever ask for two seams and
 receive one, this is why, and `subPath(t0, t1)` is the knife that
 re-divides them.
+
+## What this project taught the language
+
+The friction-log promise from the top of the post, kept — what building
+this project changed in Pathogen:
+
+**The seam idiom earned a real `draw()`.** When this series first
+shipped, the loop above took two lines per seam:
+`seam.drawTo(seam.startPoint.x, seam.startPoint.y)` — "draw yourself
+where you already are," said with two property reads and a re-anchor.
+Worse, the same expression applied to a *whole cut piece* silently drew
+it in the wrong place, because a piece's projected `startPoint` is its
+frame origin rather than its first command (the garment post tells that
+part of the story). Projected values now have an in-place
+[`draw()`](/docs#path-blocks-drawing-a-projectedpath-in-place): it
+anchors on the value's first command by definition, so the footgun is
+unreachable and the idiom is one self-evident line.
+
+```pathogen
+// before
+seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+
+// after
+seam.draw();
+```
 
 ## Where to go next
 

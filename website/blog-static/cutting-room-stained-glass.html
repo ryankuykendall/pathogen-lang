@@ -317,8 +317,7 @@ queryable, and an evening of coordinate surgery when they are not.
 The whole aesthetic rests on the idiom from part 1 — this time as the
 main event rather than the annotation:</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
-  <span class="hljs-comment">// stroked wide, this IS the leading</span>
-  seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+  seam.<span class="hljs-title function_">draw</span>();    <span class="hljs-comment">// stroked wide, this IS the leading</span>
 }
 </code></pre><h2>Example 1 — Seams as the artwork</h2>
 <p>A glass disc, four straight knives through the center, eight panes.
@@ -387,7 +386,7 @@ for (wedge in wedges) {
   let placed = wedge.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
 }
@@ -479,7 +478,7 @@ fn cameWindow(disc, centerX, centerY) {
     // One decoration loop, both windows: stroke the 'cut' group wide.
     leading.apply {
       for (seam in placed.segmentAll('cut')) {
-        seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+        seam.draw();
       }
     }
   }
@@ -598,7 +597,7 @@ for ([w, i] in wedges) {
   let placed = w.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
 }
@@ -702,12 +701,12 @@ for (half in halves) {
   let placed = half.project(side, calc(0 - side));
   sillRun.apply {
     for (run in placed.segmentAll('sill')) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
   lightRun.apply {
     for (run in placed.segmentAll('light')) {
-      run.drawTo(run.startPoint.x, run.startPoint.y);
+      run.draw();
     }
   }
 }
@@ -867,10 +866,10 @@ for ([piece, i] in panes) {
   // Came on every healed seam and on the rim: two groups, one style.
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
     for (seam in placed.segmentAll('rim')) {
-      seam.drawTo(seam.startPoint.x, seam.startPoint.y);
+      seam.draw();
     }
   }
   // Solder dots where seams start and end.
@@ -892,6 +891,14 @@ title.apply {
 these four posts. That is the shape of the whole series: the seams
 know where they are, the pieces know what they kept, and everything
 else is a loop.</p>
+<h2>What this project taught the language</h2>
+<p>This series doubles as a working friction log (part 1 explains the
+convention). The leading loop above originally read
+<code>seam.drawTo(seam.startPoint.x, seam.startPoint.y)</code> — projected values
+have since grown an in-place <code>draw()</code>, and every came stroke in this
+post got one line simpler. Part 1&#39;s closing section tells the story;
+the garment post&#39;s tells its darker sibling (the same expression
+silently misplacing whole cut pieces).</p>
 <h2>Where to go next</h2>
 <ul>
 <li>Start over with <a href="/blog/cutting-room-papercraft">Papercraft</a> if you

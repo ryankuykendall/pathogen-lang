@@ -79,7 +79,7 @@ for (piece in pieces) {
     // Show the inherited label riding on the piece: stroke its rim.
     rimRuns.apply {
       for (run in placed.segmentAll('rim')) {
-        run.drawTo(run.startPoint.x, run.startPoint.y);
+        run.draw();
       }
     }
   } else {
