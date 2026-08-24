@@ -852,7 +852,10 @@ for (k in 0..7) {
     l calc(76 * cos(spokeAngle)) calc(76 * sin(spokeAngle))
   });
 }
-let panes = disc.cut(knives);    // eight spokes, one cut
+knives.push(@{
+  circle(0, 0, 36);    // the ring the spokes anchor to
+});
+let panes = disc.cut(knives);    // eight ring panes + the medallion
 ```
 
 ```
