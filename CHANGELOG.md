@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-24 (annotated-mode divergence fixes — Cutting Room feedback loop, item C)
+
+### Fixed
+
+#### Core
+
+- **Annotated mode: text statements inside `if`/`for` bodies no longer vanish from `&{}` text blocks** — the annotated evaluator routed control-flow statements through a walker with no elements accumulator, silently dropping any `text()` they contained (the main evaluator was always correct). Text blocks now walk recursively, mirroring the main evaluator, including for/for-each loop scoping and break/continue.
+- **Annotated mode: stdlib-call path blocks are no longer empty** — `@{ circle(0, 0, 30); }` compiled to zero commands under `--annotated` because stdlib `PathSegment` results were never tracked into the live path context (found while writing item B's parity tests). Annotated stdlib calls now track segment commands exactly as the main evaluator does, so such blocks draw, cut, and boolean correctly in debug mode.
+
+## [0.8.0] - 2026-08-24 (cut() array cutters — Cutting Room feedback loop, item H)
+
+### Added
+
+#### Core
+
+- **`cut()` accepts an array of cutters** — `plate.cut([k1, k2, k3])` cuts along every knife exactly as if their strokes lived in one block, on both PathBlock and ProjectedPath receivers, with mixed block/projected elements allowed. Knives become compositional: build them in a loop (`knives.push(@{...})`) and hand the set to one call — the rose window's eight spokes are now a parameterized `for` loop instead of sixteen lines of chained relative-move arithmetic (the friction-log #6 bug class). Declared in `pathogen-api.ts`, completions regenerated, docs updated with the loop-built-knives contract.
+- The deeper in-block re-orientation need (returning to origin/known points inside `@{}` without pen bookkeeping) is deliberately deferred to the ctx-block-argument design (user-authored, preserved as feedback-loop item L) rather than shipping an interim absolute-`M` that the ctx surface would supersede.
+
+#### Documentation
+
+- Six knife-bearing samples rewritten as loop-built cutter arrays (hex medallion, both 3×3 grids, both radial roses, the rose window's spokes+ring); renders verified identical (float-tail-only diffs from knife ordering). Closing-section entries added to the papercraft, jigsaw, and stained-glass posts telling the knives-stopped-doing-arithmetic story.
+
 ## [0.8.0] - 2026-08-24 (ProjectedPath.draw() — Cutting Room feedback loop, item B)
 
 ### Added

@@ -836,7 +836,24 @@ Where the [set operations](#path-blocks-boolean-operations) combine two closed s
 
 ### `cut(cutter)` → array of PathBlock
 
-Cuts the path along every stroke of `cutter` and returns the pieces:
+Cuts the path along every stroke of `cutter` and returns the pieces. The cutter may be a single PathBlock or ProjectedPath, **or an array of them** — every knife in the array cuts, exactly as if their strokes lived in one block. Arrays make cutters compositional: build knives in a loop and hand the whole set to one `cut()` call.
+
+One conversion caveat: each array element is its own block, so its `m`/`l` deltas resolve relative to **that block's own origin** — not to where the previous knife in the array left off. If you're splitting an existing multi-stroke knife block into an array, recompute each knife's starting move relative to the origin rather than copying a chained delta verbatim; a copied delta compiles fine and cuts in the wrong place.
+
+```
+let disc = @{
+  circle(0, 0, 90);
+};
+let knives = [];
+for (k in 0..7) {
+  let spokeAngle = calc(k * PI() / 4);
+  knives.push(@{
+    m calc(36 * cos(spokeAngle)) calc(36 * sin(spokeAngle))
+    l calc(76 * cos(spokeAngle)) calc(76 * sin(spokeAngle))
+  });
+}
+let panes = disc.cut(knives);    // eight spokes, one cut
+```
 
 ```
 let box = @{

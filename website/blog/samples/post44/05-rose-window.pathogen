@@ -66,29 +66,23 @@ scene.append(stone,
 let disc = @{
   circle(0, 0, 92) as segment('rim');
 };
-// Eight spokes from r=36 out past the rim, plus a ring knife that stamps
-// the medallion. The spokes stop short of the ring so the medallion
-// stays whole.
-let cos45 = cos(calc(PI() / 4));
-let knives = @{
-  m 36 0
-  l 76 0
-  m calc(36 * cos45 - 112) calc(36 * cos45)
-  l calc(76 * cos45) calc(76 * cos45)
-  m calc(0 - 112 * cos45) calc(36 - 112 * cos45)
-  l 0 76
-  m calc(0 - 36 * cos45) calc(36 * cos45 - 112)
-  l calc(0 - 76 * cos45) calc(76 * cos45)
-  m calc(112 * cos45 - 36) calc(0 - 112 * cos45)
-  l -76 0
-  m calc(112 - 36 * cos45) calc(0 - 36 * cos45)
-  l calc(0 - 76 * cos45) calc(0 - 76 * cos45)
-  m calc(112 * cos45) calc(112 * cos45 - 36)
-  l 0 -76
-  m calc(36 * cos45) calc(112 - 36 * cos45)
-  l calc(76 * cos45) calc(0 - 76 * cos45)
+// Eight spokes from r=36 out past the rim — one knife per spoke, built
+// in a loop — plus a ring knife that stamps out the medallion. The
+// whole set goes to cut() as an array; the spokes stop short of the
+// ring so the medallion stays whole.
+let knives = [];
+for (k in 0..7) {
+  let spokeAngle = calc(k * PI() / 4);
+  let dirX = cos(spokeAngle);
+  let dirY = sin(spokeAngle);
+  knives.push(@{
+    m calc(36 * dirX) calc(36 * dirY)
+    l calc(76 * dirX) calc(76 * dirY)
+  });
+}
+knives.push(@{
   circle(0, 0, 36);
-};
+});
 let panes = disc.cut(knives);
 let originX = 240;
 let originY = 158;

@@ -27,7 +27,7 @@ notes the friction hit in a real sample. To be synthesized at project end.
 5. **`pi` is not a bare identifier in calc.** `0.25pi` literals exist but
    inside `calc()` one must call `PI()`. Surprising asymmetry.
    (post41/03.)
-6. **Multi-stroke knife authoring is relative-move arithmetic.** Chaining
+6. **RESOLVED (Item H, 2026-08-24): `cut()` accepts an array of cutters** — knives compose and can be loop-built; the remaining in-block re-orientation need is Item L (ctx block argument, user design). Original: **Multi-stroke knife authoring is relative-move arithmetic.** Chaining
    strokes with `m` deltas between stroke endpoints caused two authoring
    bugs in one session (post41/06 hex knives, post42/03 grid knives).
    Absolute `M` support inside path blocks, or a way to combine several
@@ -50,9 +50,14 @@ notes the friction hit in a real sample. To be synthesized at project end.
    static and layers can't be created/styled per iteration with computed
    fills. Dynamic style values (interpolation in style blocks) or an
    `apply { ... } with style` override would collapse this.
-10. **Pre-existing: text-if inside loop bodies discards output** (known
-    bug, loop-control memory) — samples avoid conditional text entirely
-    (post41/04 counts instead of conditional captions).
+10. **RESOLVED (Item C, 2026-08-24).** Annotated-only bug (main
+    evaluator was always correct): evaluateTextBlockExpression routed
+    if/for statements through a walker with no elements accumulator.
+    Fixed with a recursive text-block walker mirroring the main
+    evaluator. Note: post41/04's counts design was never a workaround
+    for a real main-evaluator bug and stays (reviewers rated it the
+    example's best beat). Original: text-if inside loop bodies
+    discards output — annotated mode only.
 11. **RESOLVED (Item A, 2026-08-24).** Headline was wrong — no direction
     flip existed (see opportunities/A-offset-miter-joins/summary-v2.md).
     Real defects: miter spikes baked into curve arg frames at sharp
@@ -111,8 +116,11 @@ notes the friction hit in a real sample. To be synthesized at project end.
     opportunities/L-ctx-block-argument/intent.md. Deferred as
     fast-follow Item L; supersedes the block-local-absolute-M half of
     item H.
-16. **BUG (annotated-only): stdlib-call blocks are empty in --annotated
-    mode.** `let a = @{ circle(0, 0, 30); }; a.drawTo(50, 50);` emits
+16. **RESOLVED (Item C, 2026-08-24).** Annotated stdlib calls now track
+    PathSegment commands into the live path context (parity with
+    index.ts) — @{ circle(...) } blocks carry their geometry, boolean
+    ops on them work. Original: **stdlib-call blocks are empty in
+    --annotated mode.** `let a = @{ circle(0, 0, 30); }; a.drawTo(50, 50);` emits
     just `M 50 50` under compileAnnotated — the block captures no
     commands from statement-function calls (circle/rect/polygon/…),
     while the main evaluator captures them fine. Found writing Item B's

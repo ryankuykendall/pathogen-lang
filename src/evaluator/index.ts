@@ -976,9 +976,23 @@ function normalizeToRelativeArgs(
   }
 }
 
-/**
- * Build a PathBlockValue from transform result commands, normalizing to (0,0) origin.
- */
+/** Resolve cut()'s cutter argument: one PathBlock/ProjectedPath, or an
+ *  array of them — array knives cut exactly as if their strokes lived in
+ *  one block (chains split on coordinate discontinuity downstream). */
+function resolveCutterCommands(cutterVal: Value, mkErr: (message: string) => Error): PathBlockCommand[] {
+  if (isPathBlockValue(cutterVal) || isProjectedPathValue(cutterVal)) return cutterVal.commands;
+  if (isArrayValue(cutterVal)) {
+    if (cutterVal.elements.length === 0) throw mkErr('cut() cutter array must hold at least one cutter');
+    const all: PathBlockCommand[] = [];
+    for (const el of cutterVal.elements) {
+      if (isPathBlockValue(el) || isProjectedPathValue(el)) all.push(...el.commands);
+      else throw mkErr('cut() cutter array elements must each be a PathBlock or ProjectedPath');
+    }
+    return all;
+  }
+  throw mkErr('cut() argument must be a PathBlock or ProjectedPath (or an array of them)');
+}
+
 /** Validate offset()'s optional second argument: { join: 'miter' | 'bevel' | 'round' }. */
 function parseOffsetJoinOptions(val: Value, mkErr: (message: string) => Error): OffsetJoinOptions {
   if (typeof val !== 'object' || val === null || (val as { type?: string }).type !== 'ObjectValue') {
@@ -2999,16 +3013,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       }
 
       case 'cut': {
-        if (expr.args.length !== 1) throw mError('cut() expects 1 argument (cutter path)');
+        if (expr.args.length !== 1) throw mError('cut() expects 1 argument (cutter path or array of cutters)');
         const cutterVal = evaluateExpression(expr.args[0], scope);
-        let cutterCmds: PathBlockCommand[];
-        if (isPathBlockValue(cutterVal)) {
-          cutterCmds = cutterVal.commands;
-        } else if (isProjectedPathValue(cutterVal)) {
-          cutterCmds = cutterVal.commands;
-        } else {
-          throw mError('cut() argument must be a PathBlock or ProjectedPath');
-        }
+        const cutterCmds: PathBlockCommand[] = resolveCutterCommands(cutterVal, mError);
         const cutWarnings: string[] = [];
         const pieceCmds = pathCut(obj.commands, cutterCmds, cutWarnings);
         for (const w of cutWarnings) {
@@ -3565,16 +3572,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       }
 
       case 'cut': {
-        if (expr.args.length !== 1) throw mError('cut() expects 1 argument (cutter path)');
+        if (expr.args.length !== 1) throw mError('cut() expects 1 argument (cutter path or array of cutters)');
         const cutterVal = evaluateExpression(expr.args[0], scope);
-        let cutterCmds: PathBlockCommand[];
-        if (isPathBlockValue(cutterVal)) {
-          cutterCmds = cutterVal.commands;
-        } else if (isProjectedPathValue(cutterVal)) {
-          cutterCmds = cutterVal.commands;
-        } else {
-          throw mError('cut() argument must be a PathBlock or ProjectedPath');
-        }
+        const cutterCmds: PathBlockCommand[] = resolveCutterCommands(cutterVal, mError);
         const cutWarnings: string[] = [];
         const pieceCmds = pathCut(obj.commands, cutterCmds, cutWarnings);
         for (const w of cutWarnings) {

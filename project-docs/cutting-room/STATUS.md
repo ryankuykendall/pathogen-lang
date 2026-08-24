@@ -85,6 +85,28 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
   0 warnings (except the two documented false-positive sets), BBWPs
   + blog + public re-synced. Final check-links crawl green (42 pages /
   1228 links / 0 broken).
+- 2026-08-24 (feedback loop, Item C LANDED — pending commit after H):
+  Annotated-divergence pair fixed: (#10) recursive text-block walker —
+  text inside if/for bodies reaches the elements accumulator (main was
+  always correct; post41/04's counts design stays, it was never a real
+  workaround); (#16) annotated stdlib calls now track PathSegment
+  commands into the path context (index.ts parity) — stdlib-call
+  blocks draw/cut/boolean under --annotated. 4 parity tests; suite
+  4849/4849 with zero existing annotated tests disturbed. No sample or
+  post changes required. Memory corrected (text-if bug fixed).
+- 2026-08-24 (feedback loop, Item H LANDED — pending review + commit):
+  cut() array cutters (docs-first, failing-tests-first): single
+  resolveCutterCommands helper at both receiver sites; flat concat is
+  safe because chains split on coordinate discontinuity downstream.
+  6 new tests (array==combined byte equality, loop-built spokes+ring,
+  mixed elements, projected receiver, error paths). Six knife samples
+  rewritten as loop-built arrays — SVG diffs float-tail-only (knife
+  ordering), renders verified identical; closing entries in papercraft,
+  jigsaw, stained glass; api+completions; docs anchor
+  path-blocks-cutcutter-array-of-pathblock verified. Suite 4845/4845;
+  build green. Item L (ctx block argument, user design) recorded as
+  fast-follow; block-local absolute M dropped as superseded. Log #6
+  resolved.
 - 2026-08-24 (feedback loop, Item B LANDED — pending review + commit):
   ProjectedPath.draw() (docs-first, failing-tests-first): in-place draw
   anchored on first command; in-block guard extended; annotated parity;

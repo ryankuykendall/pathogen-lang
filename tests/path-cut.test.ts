@@ -579,3 +579,175 @@ describe('endpoint labels on zero-length z through cut()', () => {
     expect(counts[0] + counts[1]).toBe(1);
   });
 });
+
+describe('cut() with an array of cutters', () => {
+  it('an array of knives cuts identically to one combined block', () => {
+    const combined = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let knife = @{
+        m 20 -10
+        l 0 60
+        m 20 -60
+        l 0 60
+      };
+      let pieces = box.cut(knife);
+      log(pieces.length);
+      for (piece in pieces) {
+        piece.drawTo(0, 0);
+      }
+    `);
+    const arrayForm = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let k1 = @{
+        m 20 -10
+        l 0 60
+      };
+      let k2 = @{
+        m 40 -10
+        l 0 60
+      };
+      let pieces = box.cut([k1, k2]);
+      log(pieces.length);
+      for (piece in pieces) {
+        piece.drawTo(0, 0);
+      }
+    `);
+    expect(arrayForm.logs[0]).toBe('3');
+    expect(arrayForm.logs[0]).toBe(combined.logs[0]);
+    expect(arrayForm.path).toBe(combined.path);
+  });
+
+  it('knives built in a loop cut in one call (spokes + ring)', () => {
+    const { logs } = compileWithLogs(`
+      let disc = @{
+        circle(0, 0, 60);
+      };
+      let knives = [];
+      for (k in 0..7) {
+        let spokeAngle = calc(k * PI() / 4);
+        knives.push(@{
+          m calc(25 * cos(spokeAngle)) calc(25 * sin(spokeAngle))
+          l calc(45 * cos(spokeAngle)) calc(45 * sin(spokeAngle))
+        });
+      }
+      knives.push(@{
+        circle(0, 0, 25);
+      });
+      let panes = disc.cut(knives);
+      log(panes.length);
+    `);
+    // eight ring panes + the stamped medallion
+    expect(logs[0]).toBe('9');
+  });
+
+  it('accepts mixed PathBlock and ProjectedPath cutters', () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let k1 = @{
+        m 20 -10
+        l 0 60
+      };
+      let k2 = @{
+        m 0 -10
+        l 0 60
+      };
+      let pieces = box.cut([k1, k2.project(40, 0)]);
+      log(pieces.length);
+    `);
+    expect(logs[0]).toBe('3');
+  });
+
+  it('works on a ProjectedPath receiver too', () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let k1 = @{
+        m 70 40
+        l 0 60
+      };
+      let pieces = box.project(50, 50).cut([k1]);
+      log(pieces.length);
+    `);
+    expect(logs[0]).toBe('2');
+  });
+
+  it('rejects an empty cutter array', () => {
+    expect(() =>
+      compile('let b = @{ h 10 v 10 h -10 z }; b.cut([]);'),
+    ).toThrow(/at least one cutter/);
+  });
+
+  it('rejects arrays holding non-path elements', () => {
+    expect(() =>
+      compile('let b = @{ h 10 v 10 h -10 z }; b.cut([5]);'),
+    ).toThrow(/PathBlock or ProjectedPath/);
+  });
+});
+
+  // (review follow-up) knives that touch end-to-start must behave the
+  // same whether they arrive as an array or as one authored block — the
+  // chain splitter sees only coordinate continuity either way.
+describe('cut() array equivalence for touching knives', () => {
+  it('a knife starting where another ends is equivalent in both forms', () => {
+    const combined = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let knife = @{
+        m 30 -10
+        l 0 30
+        l 20 30
+      };
+      let pieces = box.cut(knife);
+      log(pieces.length);
+      for (piece in pieces) {
+        piece.drawTo(0, 0);
+      }
+    `);
+    const arrayForm = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let k1 = @{
+        m 30 -10
+        l 0 30
+      };
+      let k2 = @{
+        m 30 20
+        l 20 30
+      };
+      let pieces = box.cut([k1, k2]);
+      log(pieces.length);
+      for (piece in pieces) {
+        piece.drawTo(0, 0);
+      }
+    `);
+    expect(arrayForm.logs[0]).toBe(combined.logs[0]);
+    expect(arrayForm.path).toBe(combined.path);
+  });
+});

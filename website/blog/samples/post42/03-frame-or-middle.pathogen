@@ -44,16 +44,20 @@ let plate = @{
   h -198 as segment('rim');
   z as segment('rim')
 };
-let knives = @{
-  m 66 -15
-  c 18 60 -18 118 6 228
-  m 60 -228
-  c 18 60 -18 118 6 228
-  m -153 -147
-  c 60 18 118 -18 228 6
-  m -228 60
-  c 60 18 118 -18 228 6
-};
+// One vertical and one horizontal wavy knife per lane — each knife its
+// own block, no chained-move arithmetic between strokes.
+let knives = [];
+for (k in 0..1) {
+  let lane = calc(66 + k * 66);
+  knives.push(@{
+    m lane -15
+    c 18 60 -18 118 6 228
+  });
+  knives.push(@{
+    m -15 lane
+    c 60 18 118 -18 228 6
+  });
+}
 let pieces = plate.cut(knives);
 let originX = 141;
 let originY = 40;

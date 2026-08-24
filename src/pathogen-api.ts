@@ -813,8 +813,8 @@ export interface PathogenPathBlock {
   intersects(other: PathogenPathBlock): boolean;
   /** intersectionPoints(other) — Get intersection points */
   intersectionPoints(other: PathogenPathBlock): PathogenArray<PathogenPoint>;
-  /** cut(cutter) — Slice along the cutter's open or closed strokes; returns the healed pieces */
-  cut(cutter: PathogenPathBlock): PathogenArray<PathogenPathBlock>;
+  /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces */
+  cut(cutter: PathogenPathBlock | PathogenProjectedPath | (PathogenPathBlock | PathogenProjectedPath)[]): PathogenArray<PathogenPathBlock>;
 
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a PathBlock */
@@ -1164,8 +1164,8 @@ export interface PathogenProjectedPath {
   intersection(other: PathogenPathBlock): PathogenProjectedPath;
   /** xor(other) — Boolean XOR */
   xor(other: PathogenPathBlock): PathogenProjectedPath;
-  /** cut(cutter) — Slice along the cutter's open or closed strokes; returns the healed pieces */
-  cut(cutter: PathogenPathBlock): PathogenArray<PathogenPathBlock>;
+  /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces */
+  cut(cutter: PathogenPathBlock | PathogenProjectedPath | (PathogenPathBlock | PathogenProjectedPath)[]): PathogenArray<PathogenPathBlock>;
 
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords) */

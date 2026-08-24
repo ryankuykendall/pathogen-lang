@@ -109,11 +109,12 @@ just single steps.
 
 ## Example 5 — The rose window
 
-The finale composes everything. One cutter block carries eight spoke
-knives *and* a closed ring knife — a cookie cutter — so a single
-`cut()` stamps out the golden center medallion and slices the
-surrounding ring into eight panes. The spokes stop short of the ring,
-leaving the medallion whole. Then:
+The finale composes everything. The knives are built in a *loop* —
+eight spokes pushed onto an array, plus a closed ring knife (a cookie
+cutter) — and the whole set goes to one `cut([...])` call, which
+stamps out the golden center medallion and slices the surrounding
+ring into eight panes. The spokes stop short of the ring, leaving the
+medallion whole. Then:
 
 - the **medallion** is found by classification — it is the piece that
   kept none of the rim label (part 2's trick, part 3's workflow);
@@ -140,6 +141,33 @@ have since grown an in-place `draw()`, and every came stroke in this
 post got one line simpler. Part 1's closing section tells the story;
 the garment post's tells its darker sibling (the same expression
 silently misplacing whole cut pieces).
+
+**And the rose window's knives became a loop.** The first version of
+Example 5 hand-chained eight spokes in one cutter block — sixteen
+lines of relative-move arithmetic between stroke endpoints, the same
+bookkeeping that caused two authoring bugs elsewhere in the series.
+`cut()` now [accepts an array of
+cutters](/docs#path-blocks-cutcutter-array-of-pathblock), so the
+spokes are pushed onto a list in a `for` loop and handed over in one
+call — knife geometry you can *parameterize*. Change `0..7` to `0..11`
+and the window grows four panes.
+
+```pathogen
+// before: one block, every m computed from the previous stroke's end
+m calc(36 * cos45 - 112) calc(36 * cos45)
+l calc(76 * cos45) calc(76 * cos45)
+// ...six more chained pairs
+
+// after: one knife per spoke, built in a loop
+for (k in 0..7) {
+  let spokeAngle = calc(k * PI() / 4);
+  knives.push(@{
+    m calc(36 * cos(spokeAngle)) calc(36 * sin(spokeAngle))
+    l calc(76 * cos(spokeAngle)) calc(76 * sin(spokeAngle))
+  });
+}
+let panes = disc.cut(knives);
+```
 
 ## Where to go next
 

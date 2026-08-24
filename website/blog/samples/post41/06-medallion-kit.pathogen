@@ -69,16 +69,18 @@ let plate = @{
 
 // Three straight knives through the center, 60 degrees apart.
 let knifeReach = 78;
-let cos60 = cos(calc(PI() / 3));
-let sin60 = sin(calc(PI() / 3));
-let knives = @{
-  m calc(0 - knifeReach) 0
-  l calc(knifeReach * 2) 0
-  m calc(0 - knifeReach * cos60 - knifeReach) calc(0 - knifeReach * sin60)
-  l calc(knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
-  m 0 calc(0 - knifeReach * 2 * sin60)
-  l calc(0 - knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
-};
+// Three straight knives through the center, 60 degrees apart — each its
+// own block, handed to cut() as an array. No chained-move arithmetic.
+let knives = [];
+for (k in 0..2) {
+  let knifeAngle = calc(k * PI() / 3);
+  let dirX = cos(knifeAngle);
+  let dirY = sin(knifeAngle);
+  knives.push(@{
+    m calc(0 - knifeReach * dirX) calc(0 - knifeReach * dirY)
+    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY)
+  });
+}
 let wedges = plate.cut(knives);
 let originX = 240;
 let originY = 158;

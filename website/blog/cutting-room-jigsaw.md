@@ -142,11 +142,14 @@ the pivot and stays put — so the scatter is two lines per piece.
 ## What this project taught the language
 
 This series doubles as a working friction log (part 1 explains the
-convention). Since this post first ran, the seam idiom it borrows —
-draw a projected value where it lies — became a real method:
-`seam.draw()` replaced the two-line
-`drawTo(seam.startPoint.x, seam.startPoint.y)` re-anchor throughout
-these samples. Part 1's closing section has the full story.
+convention). Since this post first ran, two of its idioms improved:
+the seam idiom it borrows — draw a projected value where it lies —
+became a real method (`seam.draw()` replaced the two-line
+`drawTo(seam.startPoint.x, seam.startPoint.y)` re-anchor), and the
+3×3 grid's four wavy knives are now built in a loop and passed to
+`cut([...])` as an array — one knife per lane, no chained-move
+arithmetic between strokes. Part 1's closing section has both
+stories.
 
 ## Where to go next
 

@@ -214,6 +214,15 @@ seam.drawTo(seam.startPoint.x, seam.startPoint.y);
 seam.draw();
 ```
 
+**The medallion's knives stopped doing arithmetic.** Example 6's three
+knives were originally one cutter block whose strokes chained together
+with hand-computed relative moves — and one of those moves shipped
+wrong before review caught it. `cut()` now accepts an
+[array of cutters](/docs#path-blocks-cutcutter-array-of-pathblock), so
+the sample builds one single-stroke knife per angle in a loop and
+hands the set over in a single call. A knife that states only "start
+here, cut this" has no arithmetic to get wrong.
+
 ## Where to go next
 
 - [Jigsaw: pieces that know their own edges](/blog/cutting-room-jigsaw)

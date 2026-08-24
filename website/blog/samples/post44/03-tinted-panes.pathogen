@@ -53,17 +53,18 @@ let disc = @{
   circle(0, 0, 88);
 };
 let knifeReach = 104;
-let cos45 = cos(calc(PI() / 4));
-let knives = @{
-  m calc(0 - knifeReach) 0
-  l calc(knifeReach * 2) 0
-  m calc(0 - knifeReach - knifeReach * cos45) calc(0 - knifeReach * cos45)
-  l calc(knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
-  m calc(0 - knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
-  l 0 calc(knifeReach * 2)
-  m calc(knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
-  l calc(0 - knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
-};
+// Four straight knives through the center, 45 degrees apart — built in
+// a loop and handed to cut() as an array.
+let knives = [];
+for (k in 0..3) {
+  let knifeAngle = calc(k * PI() / 4);
+  let dirX = cos(knifeAngle);
+  let dirY = sin(knifeAngle);
+  knives.push(@{
+    m calc(0 - knifeReach * dirX) calc(0 - knifeReach * dirY)
+    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY)
+  });
+}
 let wedges = disc.cut(knives);
 let originX = 240;
 let originY = 122;

@@ -6566,16 +6566,20 @@ let plate = @{
   h -198 as segment('rim');
   z as segment('rim')
 };
-let knives = @{
-  m 66 -15
-  c 18 60 -18 118 6 228
-  m 60 -228
-  c 18 60 -18 118 6 228
-  m -153 -147
-  c 60 18 118 -18 228 6
-  m -228 60
-  c 60 18 118 -18 228 6
-};
+// One vertical and one horizontal wavy knife per lane — each knife its
+// own block, no chained-move arithmetic between strokes.
+let knives = [];
+for (k in 0..1) {
+  let lane = calc(66 + k * 66);
+  knives.push(@{
+    m lane -15
+    c 18 60 -18 118 6 228
+  });
+  knives.push(@{
+    m -15 lane
+    c 60 18 118 -18 228 6
+  });
+}
 let pieces = plate.cut(knives);
 let originX = 141;
 let originY = 40;
@@ -6802,16 +6806,20 @@ let plate = @{
   h -198 as segment('rim');
   z as segment('rim')
 };
-let knives = @{
-  m 66 -15
-  c 18 60 -18 118 6 228
-  m 60 -228
-  c 18 60 -18 118 6 228
-  m -153 -147
-  c 60 18 118 -18 228 6
-  m -228 60
-  c 60 18 118 -18 228 6
-};
+// One vertical and one horizontal wavy knife per lane — each knife its
+// own block, no chained-move arithmetic between strokes.
+let knives = [];
+for (k in 0..1) {
+  let lane = calc(66 + k * 66);
+  knives.push(@{
+    m lane -15
+    c 18 60 -18 118 6 228
+  });
+  knives.push(@{
+    m -15 lane
+    c 60 18 118 -18 228 6
+  });
+}
 let pieces = plate.cut(knives);
 let originX = 42;
 let originY = 52;
@@ -6892,11 +6900,14 @@ spin: it needed <code>rotateAtVertexIndex</code> plus manual pivot compensation.
 the pivot and stays put — so the scatter is two lines per piece.</p>
 <h2>What this project taught the language</h2>
 <p>This series doubles as a working friction log (part 1 explains the
-convention). Since this post first ran, the seam idiom it borrows —
-draw a projected value where it lies — became a real method:
-<code>seam.draw()</code> replaced the two-line
-<code>drawTo(seam.startPoint.x, seam.startPoint.y)</code> re-anchor throughout
-these samples. Part 1&#39;s closing section has the full story.</p>
+convention). Since this post first ran, two of its idioms improved:
+the seam idiom it borrows — draw a projected value where it lies —
+became a real method (<code>seam.draw()</code> replaced the two-line
+<code>drawTo(seam.startPoint.x, seam.startPoint.y)</code> re-anchor), and the
+3×3 grid&#39;s four wavy knives are now built in a loop and passed to
+<code>cut([...])</code> as an array — one knife per lane, no chained-move
+arithmetic between strokes. Part 1&#39;s closing section has both
+stories.</p>
 <h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-garment">Garment patterns</a> — part 3 turns
@@ -7594,16 +7605,18 @@ let plate = @{
 
 // Three straight knives through the center, 60 degrees apart.
 let knifeReach = 78;
-let cos60 = cos(calc(PI() / 3));
-let sin60 = sin(calc(PI() / 3));
-let knives = @{
-  m calc(0 - knifeReach) 0
-  l calc(knifeReach * 2) 0
-  m calc(0 - knifeReach * cos60 - knifeReach) calc(0 - knifeReach * sin60)
-  l calc(knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
-  m 0 calc(0 - knifeReach * 2 * sin60)
-  l calc(0 - knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
-};
+// Three straight knives through the center, 60 degrees apart — each its
+// own block, handed to cut() as an array. No chained-move arithmetic.
+let knives = [];
+for (k in 0..2) {
+  let knifeAngle = calc(k * PI() / 3);
+  let dirX = cos(knifeAngle);
+  let dirY = sin(knifeAngle);
+  knives.push(@{
+    m calc(0 - knifeReach * dirX) calc(0 - knifeReach * dirY)
+    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY)
+  });
+}
 let wedges = plate.cut(knives);
 let originX = 240;
 let originY = 158;
@@ -7706,7 +7719,15 @@ seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-pro
 
 <span class="hljs-comment">// after</span>
 seam.<span class="hljs-title function_">draw</span>();
-</code></pre><h2>Where to go next</h2>
+</code></pre><p><strong>The medallion&#39;s knives stopped doing arithmetic.</strong> Example 6&#39;s three
+knives were originally one cutter block whose strokes chained together
+with hand-computed relative moves — and one of those moves shipped
+wrong before review caught it. <code>cut()</code> now accepts an
+<a href="/docs#path-blocks-cutcutter-array-of-pathblock">array of cutters</a>, so
+the sample builds one single-stroke knife per angle in a loop and
+hands the set over in a single call. A knife that states only &quot;start
+here, cut this&quot; has no arithmetic to get wrong.</p>
+<h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-jigsaw">Jigsaw: pieces that know their own edges</a>
 — part 2 cuts with wavy knives and sorts pieces by the rim label
@@ -7804,17 +7825,18 @@ let disc = @{
 };
 // Four straight knives through the center, 45 degrees apart.
 let knifeReach = 104;
-let cos45 = cos(calc(PI() / 4));
-let knives = @{
-  m calc(0 - knifeReach) 0
-  l calc(knifeReach * 2) 0
-  m calc(0 - knifeReach - knifeReach * cos45) calc(0 - knifeReach * cos45)
-  l calc(knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
-  m calc(0 - knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
-  l 0 calc(knifeReach * 2)
-  m calc(knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
-  l calc(0 - knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
-};
+// Four straight knives through the center, 45 degrees apart — built in
+// a loop and handed to cut() as an array.
+let knives = [];
+for (k in 0..3) {
+  let knifeAngle = calc(k * PI() / 4);
+  let dirX = cos(knifeAngle);
+  let dirY = sin(knifeAngle);
+  knives.push(@{
+    m calc(0 - knifeReach * dirX) calc(0 - knifeReach * dirY)
+    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY)
+  });
+}
 let wedges = disc.cut(knives);
 let originX = 240;
 let originY = 122;
@@ -7998,17 +8020,18 @@ let disc = @{
   circle(0, 0, 88);
 };
 let knifeReach = 104;
-let cos45 = cos(calc(PI() / 4));
-let knives = @{
-  m calc(0 - knifeReach) 0
-  l calc(knifeReach * 2) 0
-  m calc(0 - knifeReach - knifeReach * cos45) calc(0 - knifeReach * cos45)
-  l calc(knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
-  m calc(0 - knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
-  l 0 calc(knifeReach * 2)
-  m calc(knifeReach * cos45) calc(0 - knifeReach - knifeReach * cos45)
-  l calc(0 - knifeReach * 2 * cos45) calc(knifeReach * 2 * cos45)
-};
+// Four straight knives through the center, 45 degrees apart — built in
+// a loop and handed to cut() as an array.
+let knives = [];
+for (k in 0..3) {
+  let knifeAngle = calc(k * PI() / 4);
+  let dirX = cos(knifeAngle);
+  let dirY = sin(knifeAngle);
+  knives.push(@{
+    m calc(0 - knifeReach * dirX) calc(0 - knifeReach * dirY)
+    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY)
+  });
+}
 let wedges = disc.cut(knives);
 let originX = 240;
 let originY = 122;
@@ -8164,11 +8187,12 @@ legendLight.apply {
 labels survive <em>chains</em> of operations — draft, subtract, cut — not
 just single steps.</p>
 <h2>Example 5 — The rose window</h2>
-<p>The finale composes everything. One cutter block carries eight spoke
-knives <em>and</em> a closed ring knife — a cookie cutter — so a single
-<code>cut()</code> stamps out the golden center medallion and slices the
-surrounding ring into eight panes. The spokes stop short of the ring,
-leaving the medallion whole. Then:</p>
+<p>The finale composes everything. The knives are built in a <em>loop</em> —
+eight spokes pushed onto an array, plus a closed ring knife (a cookie
+cutter) — and the whole set goes to one <code>cut([...])</code> call, which
+stamps out the golden center medallion and slices the surrounding
+ring into eight panes. The spokes stop short of the ring, leaving the
+medallion whole. Then:</p>
 <ul>
 <li>the <strong>medallion</strong> is found by classification — it is the piece that
 kept none of the rim label (part 2&#39;s trick, part 3&#39;s workflow);</li>
@@ -8248,29 +8272,23 @@ scene.append(stone,
 let disc = @{
   circle(0, 0, 92) as segment('rim');
 };
-// Eight spokes from r=36 out past the rim, plus a ring knife that stamps
-// the medallion. The spokes stop short of the ring so the medallion
-// stays whole.
-let cos45 = cos(calc(PI() / 4));
-let knives = @{
-  m 36 0
-  l 76 0
-  m calc(36 * cos45 - 112) calc(36 * cos45)
-  l calc(76 * cos45) calc(76 * cos45)
-  m calc(0 - 112 * cos45) calc(36 - 112 * cos45)
-  l 0 76
-  m calc(0 - 36 * cos45) calc(36 * cos45 - 112)
-  l calc(0 - 76 * cos45) calc(76 * cos45)
-  m calc(112 * cos45 - 36) calc(0 - 112 * cos45)
-  l -76 0
-  m calc(112 - 36 * cos45) calc(0 - 36 * cos45)
-  l calc(0 - 76 * cos45) calc(0 - 76 * cos45)
-  m calc(112 * cos45) calc(112 * cos45 - 36)
-  l 0 -76
-  m calc(36 * cos45) calc(112 - 36 * cos45)
-  l calc(76 * cos45) calc(0 - 76 * cos45)
+// Eight spokes from r=36 out past the rim — one knife per spoke, built
+// in a loop — plus a ring knife that stamps out the medallion. The
+// whole set goes to cut() as an array; the spokes stop short of the
+// ring so the medallion stays whole.
+let knives = [];
+for (k in 0..7) {
+  let spokeAngle = calc(k * PI() / 4);
+  let dirX = cos(spokeAngle);
+  let dirY = sin(spokeAngle);
+  knives.push(@{
+    m calc(36 * dirX) calc(36 * dirY)
+    l calc(76 * dirX) calc(76 * dirY)
+  });
+}
+knives.push(@{
   circle(0, 0, 36);
-};
+});
 let panes = disc.cut(knives);
 let originX = 240;
 let originY = 158;
@@ -8339,7 +8357,30 @@ have since grown an in-place <code>draw()</code>, and every came stroke in this
 post got one line simpler. Part 1&#39;s closing section tells the story;
 the garment post&#39;s tells its darker sibling (the same expression
 silently misplacing whole cut pieces).</p>
-<h2>Where to go next</h2>
+<p><strong>And the rose window&#39;s knives became a loop.</strong> The first version of
+Example 5 hand-chained eight spokes in one cutter block — sixteen
+lines of relative-move arithmetic between stroke endpoints, the same
+bookkeeping that caused two authoring bugs elsewhere in the series.
+<code>cut()</code> now <a href="/docs#path-blocks-cutcutter-array-of-pathblock">accepts an array of
+cutters</a>, so the
+spokes are pushed onto a list in a <code>for</code> loop and handed over in one
+call — knife geometry you can <em>parameterize</em>. Change <code>0..7</code> to <code>0..11</code>
+and the window grows four panes.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: one block, every m computed from the previous stroke&#x27;s end</span>
+m <span class="hljs-title function_">calc</span>(<span class="hljs-number">36</span> * cos45 - <span class="hljs-number">112</span>) <span class="hljs-title function_">calc</span>(<span class="hljs-number">36</span> * cos45)
+l <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</span> * cos45) <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</span> * cos45)
+<span class="hljs-comment">// ...six more chained pairs</span>
+
+<span class="hljs-comment">// after: one knife per spoke, built in a loop</span>
+<span class="hljs-keyword">for</span> (k <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
+  <span class="hljs-keyword">let</span> spokeAngle = <span class="hljs-title function_">calc</span>(k * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">4</span>);
+  knives.<span class="hljs-title function_">push</span>(@{
+    m <span class="hljs-title function_">calc</span>(<span class="hljs-number">36</span> * <span class="hljs-title function_">cos</span>(spokeAngle)) <span class="hljs-title function_">calc</span>(<span class="hljs-number">36</span> * <span class="hljs-title function_">sin</span>(spokeAngle))
+    l <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</span> * <span class="hljs-title function_">cos</span>(spokeAngle)) <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</span> * <span class="hljs-title function_">sin</span>(spokeAngle))
+  });
+}
+<span class="hljs-keyword">let</span> panes = disc.<span class="hljs-title function_">cut</span>(knives);
+</code></pre><h2>Where to go next</h2>
 <ul>
 <li>Start over with <a href="/blog/cutting-room-papercraft">Papercraft</a> if you
 arrived here first — the idioms build in order.</li>

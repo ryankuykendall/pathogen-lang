@@ -963,16 +963,18 @@ let plate = @{
 
 // Three straight knives through the center, 60 degrees apart.
 let knifeReach = 78;
-let cos60 = cos(calc(PI() / 3));
-let sin60 = sin(calc(PI() / 3));
-let knives = @{
-  m calc(0 - knifeReach) 0
-  l calc(knifeReach * 2) 0
-  m calc(0 - knifeReach * cos60 - knifeReach) calc(0 - knifeReach * sin60)
-  l calc(knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
-  m 0 calc(0 - knifeReach * 2 * sin60)
-  l calc(0 - knifeReach * 2 * cos60) calc(knifeReach * 2 * sin60)
-};
+// Three straight knives through the center, 60 degrees apart — each its
+// own block, handed to cut() as an array. No chained-move arithmetic.
+let knives = [];
+for (k in 0..2) {
+  let knifeAngle = calc(k * PI() / 3);
+  let dirX = cos(knifeAngle);
+  let dirY = sin(knifeAngle);
+  knives.push(@{
+    m calc(0 - knifeReach * dirX) calc(0 - knifeReach * dirY)
+    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY)
+  });
+}
 let wedges = plate.cut(knives);
 let originX = 240;
 let originY = 158;
@@ -1075,7 +1077,15 @@ seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-pro
 
 <span class="hljs-comment">// after</span>
 seam.<span class="hljs-title function_">draw</span>();
-</code></pre><h2>Where to go next</h2>
+</code></pre><p><strong>The medallion&#39;s knives stopped doing arithmetic.</strong> Example 6&#39;s three
+knives were originally one cutter block whose strokes chained together
+with hand-computed relative moves — and one of those moves shipped
+wrong before review caught it. <code>cut()</code> now accepts an
+<a href="/docs#path-blocks-cutcutter-array-of-pathblock">array of cutters</a>, so
+the sample builds one single-stroke knife per angle in a loop and
+hands the set over in a single call. A knife that states only &quot;start
+here, cut this&quot; has no arithmetic to get wrong.</p>
+<h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-jigsaw">Jigsaw: pieces that know their own edges</a>
 — part 2 cuts with wavy knives and sorts pieces by the rim label
