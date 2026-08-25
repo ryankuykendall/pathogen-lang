@@ -30,6 +30,20 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
 
 ## Log
 
+- 2026-08-25 (feedback loop, Item G LANDED — pending review + commit):
+  Query pseudo-selectors (docs-first, failing-tests-first; user chose
+  the full family over :each-only in plan mode). parseSegmentQuery /
+  queryLabeledRuns / pseudoRangeError / rejectPseudoOnNonSegmentQuery
+  in segments.ts wrap the untouched findLabeledRuns; three dispatch
+  sites migrated (layer/PathBlock/ProjectedPath) with unknown-label vs
+  nth-range error split; point/vertex queries reject ':' names.
+  Design point found while testing: :each yields DRAWING commands only
+  (a labeled stdlib call includes its leading M — a move-only block
+  carries no geometry). 8 new tests + cut-composition case. Honest
+  framing preserved: no live series consumer (F dissolved the driver);
+  papercraft closing entry tells that story; stained-glass gains the
+  cut.rim:each sentence. Friction #8 resolved. Suite 4926/4926.
+
 - 2026-08-25 (feedback loop, Item F LANDED — pending review + commit):
   Cutter label propagation (docs-first, failing-tests-first). A knife
   edge `as segment('valley')` heals into seams sub-labeled

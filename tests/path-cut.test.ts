@@ -1423,3 +1423,38 @@ describe('bridgeSeamLabel (face-walk bridge label choice)', () => {
     expect(bridgeSeamLabel('cut.valley', undefined)).toBe('cut');
   });
 });
+
+describe('pseudo-selectors compose with the seam namespace', () => {
+  it("'cut:first' selects from merged umbrella runs; 'cut.k0:each' decomposes one knife's seams", () => {
+    const { logs } = compileWithLogs(`
+      let plate = @{
+        polygon(0, 0, 50, 6);
+      };
+      let kA = @{
+        m -60 0
+        l 120 0 as segment('kA');
+      };
+      let kB = @{
+        m calc(-60 * cos(PI() / 3)) calc(-60 * sin(PI() / 3))
+        l calc(120 * cos(PI() / 3)) calc(120 * sin(PI() / 3)) as segment('kB');
+      };
+      let wedges = plate.cut([kA, kB]);
+      for (w in wedges) {
+        if (w.segmentAll('cut.kA').length == 1) {
+          if (w.segmentAll('cut.kB').length == 1) {
+            // Umbrella: one merged V-run; :first selects it whole.
+            log(w.segmentAll('cut:first').length);
+            let vRun = w.segment('cut:first');
+            let edge = w.segment('cut.kA');
+            log(calc(abs(vRun.length - edge.length * 2) < 0.01));
+            // One knife's seam decomposed per command.
+            log(w.segmentAll('cut.kA:each').length);
+          }
+        }
+      }
+    `);
+    expect(logs[0]).toBe('1');
+    expect(logs[1]).toBe('true');
+    expect(logs[2]).toBe('1');
+  });
+});

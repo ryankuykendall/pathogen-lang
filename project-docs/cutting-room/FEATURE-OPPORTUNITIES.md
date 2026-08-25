@@ -54,7 +54,14 @@ notes the friction hit in a real sample. To be synthesized at project end.
    as Item C's parity fixes. Fast-follow candidate: validate label
    names in annotated's PathCommand path even though labels stay
    otherwise ignored there.
-8. **PARTIALLY DELIVERED (via Item F, 2026-08-25) for the cut case:**
+8. **RESOLVED (Item G, 2026-08-25): query pseudo-selectors.**
+   `:each` decomposes runs per drawing command (the general unmerged
+   escape hatch — a labeled circle() hands back its arcs); `:first` /
+   `:last` / `:nth(k)` (0-indexed) select runs from a group. One
+   pseudo per query; segment queries only; composes with the cut
+   namespace after umbrella merging. Cashes the ':' space Item F's
+   validation reserved. Previously: PARTIALLY DELIVERED (via Item F)
+   for the cut case —
    sub-label queries are exact, so differently-named knives' adjacent
    seams come back one edge at a time (`segmentAll('cut.k0')`) while
    the umbrella stays merged — post41/06's V-run `subPath` surgery is

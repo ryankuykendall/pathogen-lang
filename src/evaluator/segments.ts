@@ -293,6 +293,101 @@ export function findLabeledRun(commands: PathBlockCommand[], label: string): Pat
   return runs.length > 0 ? runs[0] : null;
 }
 
+export type SegmentQueryPseudo =
+  | { kind: 'each' }
+  | { kind: 'first' }
+  | { kind: 'last' }
+  | { kind: 'nth'; n: number };
+
+export interface ParsedSegmentQuery {
+  label: string;
+  pseudo?: SegmentQueryPseudo;
+}
+
+const PSEUDO_SET_HINT = "the available pseudo-selectors are ':each', ':first', ':last', and ':nth(k)'";
+
+/**
+ * Parse a segment-query string into a label plus an optional CSS-style
+ * pseudo-selector. Authored labels can never contain ':' (validated at
+ * authoring time), so a ':' in a query is unambiguously a pseudo. One
+ * pseudo per query. Throws on unknown or chained pseudos.
+ */
+export function parseSegmentQuery(raw: string): ParsedSegmentQuery {
+  const colon = raw.indexOf(':');
+  if (colon === -1) return { label: raw };
+  const label = raw.slice(0, colon);
+  const rest = raw.slice(colon + 1);
+  if (rest.includes(':')) {
+    throw new Error(`'${raw}': one pseudo-selector per query — ${PSEUDO_SET_HINT}`);
+  }
+  if (rest === 'each') return { label, pseudo: { kind: 'each' } };
+  if (rest === 'first') return { label, pseudo: { kind: 'first' } };
+  if (rest === 'last') return { label, pseudo: { kind: 'last' } };
+  const nth = rest.match(/^nth\((\d+)\)$/);
+  if (nth) return { label, pseudo: { kind: 'nth', n: Number(nth[1]) } };
+  throw new Error(`unknown pseudo-selector ':${rest}' in '${raw}' — ${PSEUDO_SET_HINT}`);
+}
+
+/**
+ * Resolve a segment query — label matching (findLabeledRuns, umbrella
+ * rules included) followed by the pseudo, which applies AFTER matching
+ * and merging. `labelMatched` distinguishes "no such label" (unknown-
+ * label error with the available list) from "label exists but the
+ * pseudo selected nothing" (nth out of range) at singular call sites.
+ */
+export interface SegmentQueryResult {
+  runs: PathBlockCommand[][];
+  /** Whether the LABEL matched anything, before the pseudo filtered. */
+  labelMatched: boolean;
+  /** Run count after label matching, before the pseudo — for range errors. */
+  matchedCount: number;
+  parsed: ParsedSegmentQuery;
+}
+
+export function queryLabeledRuns(commands: PathBlockCommand[], raw: string): SegmentQueryResult {
+  const parsed = parseSegmentQuery(raw);
+  const matched = findLabeledRuns(commands, parsed.label);
+  const base = { labelMatched: matched.length > 0, matchedCount: matched.length, parsed };
+  if (parsed.pseudo === undefined) return { runs: matched, ...base };
+  switch (parsed.pseudo.kind) {
+    case 'each':
+      // Drawing commands only: a labeled stdlib call includes its leading
+      // move in the run, and a move-only block carries no geometry.
+      return {
+        runs: matched.flatMap((run) => run.filter((c) => c.command.toLowerCase() !== 'm').map((c) => [c])),
+        ...base,
+      };
+    case 'first':
+      return { runs: matched.slice(0, 1), ...base };
+    case 'last':
+      return { runs: matched.slice(-1), ...base };
+    case 'nth': {
+      const n = parsed.pseudo.n;
+      return { runs: n < matched.length ? [matched[n]] : [], ...base };
+    }
+  }
+}
+
+/** Singular-query error when the label matched but the pseudo selected
+ *  nothing — `:nth(k)` out of range, or `:each` on runs with no drawing
+ *  commands (`:first`/`:last` on a matched group can never come up empty). */
+export function pseudoRangeError(raw: string, matchedCount: number, pseudo?: SegmentQueryPseudo): string {
+  const runs = `${matchedCount} run${matchedCount === 1 ? '' : 's'}`;
+  if (pseudo?.kind === 'each') {
+    return `'${raw}' selected nothing — the matched ${runs} contain${matchedCount === 1 ? 's' : ''} no drawing commands`;
+  }
+  return `'${raw}' selected nothing — the group has ${runs} (nth is 0-indexed)`;
+}
+
+/** Guard for point/vertex queries: pseudos have no meaning there. */
+export function rejectPseudoOnNonSegmentQuery(method: string, name: string): void {
+  if (name.includes(':')) {
+    throw new Error(
+      `${method}() does not accept pseudo-selectors ('${name}') — pseudo-selectors apply to segment queries only`,
+    );
+  }
+}
+
 /** Every command whose end vertex carries `as endpoint(label)`, in authoring order. */
 export function findEndpointCommands(commands: PathBlockCommand[], label: string): PathBlockCommand[] {
   return commands.filter((c) => c.meta?.endVertex?.label === label);

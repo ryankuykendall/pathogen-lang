@@ -546,3 +546,156 @@ describe('label-name validation (identifier-shaped, reserved cut namespace)', ()
     expect(result.logs[0].parts.map((x) => x.value).join('')).toContain('1');
   });
 });
+
+describe('query pseudo-selectors (:each, :first, :last, :nth)', () => {
+  // Tooth lengths VARY per iteration (20, 25, 30) so position pseudos
+  // are discriminating: a wrong index or 1-indexed nth picks a run with
+  // a different length and fails.
+  const comb = `
+    let comb = @{
+      for (i in 0..2) {
+        v calc(-20 - i * 5) as segment('tooth');
+        v calc(20 + i * 5);
+        h calc(10 + i);
+      }
+    };
+  `;
+
+  it(':each undoes the merge — a circle() run decomposes into its two arcs', () => {
+    const result = compileWithContext(`
+      let wheel = @{
+        circle(0, 0, 40) as segment('rim');
+      };
+      log(wheel.segmentAll('rim').length);
+      log(wheel.segmentAll('rim:each').length);
+    `);
+    const vals = result.logs.map((e) => e.parts.map((p) => String(p.value)).join(''));
+    expect(vals[0]).toContain('1');
+    expect(vals[1]).toContain('2');
+  });
+
+  it(':each pieces preserve labels and their combined geometry spans the run', () => {
+    const result = compileWithContext(`
+      let wheel = @{
+        circle(0, 0, 40) as segment('rim');
+      };
+      let run = wheel.segment('rim');
+      let arcs = wheel.segmentAll('rim:each');
+      let lenSum = 0;
+      for (arc in arcs) {
+        lenSum = calc(lenSum + arc.length);
+        log(arc.segmentAll('rim').length);
+      }
+      log(calc(abs(lenSum - run.length) < 0.001));
+    `);
+    const vals = result.logs.map((e) => e.parts.map((p) => String(p.value)).join(''));
+    expect(vals[0]).toContain('1');
+    expect(vals[1]).toContain('1');
+    expect(vals[2]).toContain('true');
+  });
+
+  it(':first / :last / :nth(k) select runs from a group (0-indexed)', () => {
+    const result = compileWithContext(`
+      ${comb}
+      let first = comb.segment('tooth:first');
+      let last = comb.segment('tooth:last');
+      let mid = comb.segment('tooth:nth(1)');
+      let bare = comb.segment('tooth');
+      log(calc(abs(first.length - bare.length) < 0.001));
+      log(last.length);
+      log(mid.length);
+      log(comb.segmentAll('tooth:last').length);
+    `);
+    const vals = result.logs.map((e) => e.parts.map((p) => String(p.value)).join(''));
+    expect(vals[0]).toContain('true'); // :first == bare singular
+    expect(Number(vals[1].replace(/[^0-9.]/g, ''))).toBeCloseTo(30, 3); // :last = tooth 2
+    expect(Number(vals[2].replace(/[^0-9.]/g, ''))).toBeCloseTo(25, 3); // :nth(1) 0-indexed = tooth 1
+    expect(vals[3]).toContain('1'); // All form: array of one
+  });
+
+  it(':nth out of range: All form returns [], singular errors with the run count', () => {
+    const ok = compileWithContext(`
+      ${comb}
+      log(comb.segmentAll('tooth:nth(9)').length);
+    `);
+    expect(ok.logs[0].parts.map((p) => String(p.value)).join('')).toContain('0');
+    expect(() => compile(`${comb}\nlet x = comb.segment('tooth:nth(9)');`)).toThrow(/3 runs?/);
+  });
+
+  it('unknown and chained pseudos error listing the available set', () => {
+    expect(() => compile(`${comb}\nlet x = comb.segment('tooth:frist');`)).toThrow(
+      /:each.*:first.*:last.*:nth/s,
+    );
+    expect(() => compile(`${comb}\nlet x = comb.segmentAll('tooth:first:each');`)).toThrow(
+      /one pseudo/i,
+    );
+  });
+
+  it('point/vertex queries reject pseudo syntax, pointing at segment queries', () => {
+    const src = `
+      let p = @{
+        h 10 as endpoint('tip');
+      };
+    `;
+    expect(() => compile(`${src}\nlet a = p.point('tip:first');`)).toThrow(/segment quer/i);
+    expect(() => compile(`${src}\nlet a = p.vertexAll('tip:each');`)).toThrow(/segment quer/i);
+    expect(() => compile(`${src}\nlet a = p.pointAll('tip:each');`)).toThrow(/segment quer/i);
+  });
+
+  it('pseudos work on projected paths and layer queries', () => {
+    const result = compileWithContext(`
+      let comb = @{
+        for (i in 0..2) {
+          v -20 as segment('tooth');
+          v 20;
+          h 10;
+        }
+      };
+      let placed = comb.project(50, 50);
+      log(placed.segmentAll('tooth:each').length);
+      log(placed.segment('tooth:last').startPoint.x);
+      let lay = PathLayer('teeth') \${};
+      layer('teeth').apply {
+        M 10 10
+        h 5 as segment('edge');
+        h 5 as segment('edge');
+      }
+      log(layer('teeth').segmentAll('edge:each').length);
+    `);
+    const vals = result.logs.map((e) => e.parts.map((p) => String(p.value)).join(''));
+    expect(vals[0]).toContain('3');
+    expect(Number(vals[1].replace(/[^0-9.-]/g, ''))).toBeCloseTo(70, 3);
+    expect(vals[2]).toContain('2');
+  });
+});
+
+describe('pseudo guard on the layer query path (review warning 3)', () => {
+  it('layer().point/vertexAll reject pseudo syntax through the layer dispatch', () => {
+    const src = `
+      let lay = PathLayer('shape') \${};
+      layer('shape').apply {
+        M 10 10
+        h 5 as endpoint('tip');
+      }
+    `;
+    expect(() => compile(`${src}\nlet a = layer('shape').point('tip:each');`)).toThrow(
+      /segment quer/i,
+    );
+    expect(() => compile(`${src}\nlet a = layer('shape').vertexAll('tip:last');`)).toThrow(
+      /segment quer/i,
+    );
+  });
+
+  it(":each on a move-only run: All → [], singular error names the drawing-command cause (not nth)", () => {
+    const src = `
+      let p = @{
+        m 5 5 as segment('hop');
+        h 10;
+      };
+    `;
+    const ok = compileWithContext(`${src}\nlog(p.segmentAll('hop:each').length);`);
+    expect(ok.logs[0].parts.map((x) => String(x.value)).join('')).toContain('0');
+    expect(() => compile(`${src}\nlet a = p.segment('hop:each');`)).toThrow(/no drawing commands/);
+    expect(() => compile(`${src}\nlet a = p.segment('hop:each');`)).not.toThrow(/0-indexed/);
+  });
+});

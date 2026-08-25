@@ -76,8 +76,9 @@ extra code, because the umbrella query `segmentAll('cut')` answers the
 whole namespace. Left disc: rim labeled `'rim'`, and the glass meets
 the stone bare. Right disc: rim labeled `'cut.rim'`, full came — and
 still addressable on its own as `segmentAll('cut.rim')` when the rim
-needs its own pass. (See [label names](/docs#segment-labels-label-names)
-for the rules.)
+needs its own pass, or arc by arc as `segmentAll('cut.rim:each')` via
+[query pseudo-selectors](/docs#segment-labels-query-pseudo-selectors).
+(See [label names](/docs#segment-labels-label-names) for the rules.)
 
 <mini-workspace src="samples/post44/02-rim-joins-the-came.pathogen" caption="Same decoration loop on both windows; only the rim's label name differs." code-open></mini-workspace>
 

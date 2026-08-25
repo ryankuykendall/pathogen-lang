@@ -7819,6 +7819,25 @@ foldLayer.<span class="hljs-property">apply</span> {
     }
   }
 }
+</code></pre><p><strong>The query language grew its <code>:</code> half.</strong> When knife names landed (the
+previous entry), the <code>.</code> in <code>cut.mountain</code> was only half of a deliberate
+decision: label names reserve <em>all</em> punctuation, with <code>:</code> explicitly
+held back for CSS-style pseudo-selectors that didn&#39;t exist yet. Now
+they do — <a href="/docs#segment-labels-query-pseudo-selectors"><code>:each</code>, <code>:first</code>, <code>:last</code>, and
+<code>:nth(k)</code></a>. <code>:each</code> is the
+merge rule&#39;s official escape hatch (one block per drawing command — a
+labeled <code>circle()</code> hands back its individual arcs), and the position
+family selects whole runs from a group. Honest accounting: nothing in
+this series <em>needs</em> them anymore — the sub-labels above already
+dissolved the case that demanded an escape hatch — which is exactly why
+they shipped as query syntax rather than yet another method: the
+grammar was already paid for.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: recover an individual edge by fraction guessing</span>
+<span class="hljs-keyword">let</span> firstArc = run.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0.5</span>);
+
+<span class="hljs-comment">// after: ask for it</span>
+<span class="hljs-keyword">let</span> arcs = wheel.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim:each&#x27;</span>);
+<span class="hljs-keyword">let</span> lastTooth = comb.<span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth:last&#x27;</span>);
 </code></pre><h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-jigsaw">Jigsaw: pieces that know their own edges</a>
@@ -7965,8 +7984,9 @@ extra code, because the umbrella query <code>segmentAll(&#39;cut&#39;)</code> an
 whole namespace. Left disc: rim labeled <code>&#39;rim&#39;</code>, and the glass meets
 the stone bare. Right disc: rim labeled <code>&#39;cut.rim&#39;</code>, full came — and
 still addressable on its own as <code>segmentAll(&#39;cut.rim&#39;)</code> when the rim
-needs its own pass. (See <a href="/docs#segment-labels-label-names">label names</a>
-for the rules.)</p>
+needs its own pass, or arc by arc as <code>segmentAll(&#39;cut.rim:each&#39;)</code> via
+<a href="/docs#segment-labels-query-pseudo-selectors">query pseudo-selectors</a>.
+(See <a href="/docs#segment-labels-label-names">label names</a> for the rules.)</p>
 <p><mini-workspace code-open caption="Same decoration loop on both windows; only the rim's label name differs.">
   <code>// viewBox="0 0 480 260"
 //-- The seam group takes volunteers: 'cut.&lt;name&gt;' is the explicit opt-in

@@ -312,6 +312,29 @@ for (seam in panels.seams()) {
 }
 ```
 
+**The query language grew its `:` half.** When knife names landed (the
+previous entry), the `.` in `cut.mountain` was only half of a deliberate
+decision: label names reserve *all* punctuation, with `:` explicitly
+held back for CSS-style pseudo-selectors that didn't exist yet. Now
+they do — [`:each`, `:first`, `:last`, and
+`:nth(k)`](/docs#segment-labels-query-pseudo-selectors). `:each` is the
+merge rule's official escape hatch (one block per drawing command — a
+labeled `circle()` hands back its individual arcs), and the position
+family selects whole runs from a group. Honest accounting: nothing in
+this series *needs* them anymore — the sub-labels above already
+dissolved the case that demanded an escape hatch — which is exactly why
+they shipped as query syntax rather than yet another method: the
+grammar was already paid for.
+
+```pathogen
+// before: recover an individual edge by fraction guessing
+let firstArc = run.subPath(0, 0.5);
+
+// after: ask for it
+let arcs = wheel.segmentAll('rim:each');
+let lastTooth = comb.segment('tooth:last');
+```
+
 ## Where to go next
 
 - [Jigsaw: pieces that know their own edges](/blog/cutting-room-jigsaw)

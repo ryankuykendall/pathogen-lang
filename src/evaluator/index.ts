@@ -257,7 +257,9 @@ import {
   commandsToPathData,
   createPathStore,
   findEndpointCommands,
-  findLabeledRuns,
+  pseudoRangeError,
+  queryLabeledRuns,
+  rejectPseudoOnNonSegmentQuery,
   locateCornerPos,
   recordPath,
   recordsFromCommands,
@@ -498,6 +500,20 @@ function queryLabelError(kind: 'segment' | 'endpoint', name: string, commands: P
   const available = kind === 'segment' ? collectSegmentLabels(commands) : collectEndpointLabels(commands);
   const list = available.length > 0 ? available.map((l) => `'${l}'`).join(', ') : '(none)';
   return `No ${kind} named '${name}' — available: ${list}`;
+}
+
+/** queryLabeledRuns with its parse errors (unknown/chained pseudo)
+ *  rethrown through the call site's line-aware error wrapper. */
+function runSegmentQuery(
+  commands: PathBlockCommand[],
+  raw: string,
+  mError: (msg: string) => Error,
+): import('./segments').SegmentQueryResult {
+  try {
+    return queryLabeledRuns(commands, raw);
+  } catch (e) {
+    throw mError(e instanceof Error ? e.message : String(e));
+  }
 }
 
 export function isTextBlockValue(value: Value): value is TextBlockValue {
@@ -2256,6 +2272,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (name)`);
       const qName = evaluateExpression(expr.args[0], scope);
       if (typeof qName !== 'string') throw mError(`${expr.method}() name must be a string`);
+      if (expr.method !== 'segment' && expr.method !== 'segmentAll') {
+        try { rejectPseudoOnNonSegmentQuery(expr.method, qName); } catch (e) { throw mError((e as Error).message); }
+      }
       const layerState = obj.layer as PathLayerState;
       const authoredFlat = layerState.accum.records.flatMap((r) => r.commands);
       // Snapshot the finalized geometry on demand (non-destructive; the layer's
@@ -2279,12 +2298,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             endPoint: { ...copies[copies.length - 1].end },
           };
         };
-        const runs = findLabeledRuns(cmds, qName);
+        const q = runSegmentQuery(cmds, qName, mError);
         if (expr.method === 'segmentAll') {
-          return { type: 'ArrayValue' as const, elements: runs.map(buildLayerSegment) };
+          return { type: 'ArrayValue' as const, elements: q.runs.map(buildLayerSegment) };
         }
-        if (runs.length === 0) throw mError(queryLabelError('segment', qName, cmds));
-        return buildLayerSegment(runs[0]);
+        if (q.runs.length === 0) {
+          if (q.labelMatched) throw mError(pseudoRangeError(qName, q.matchedCount, q.parsed.pseudo));
+          throw mError(queryLabelError('segment', q.parsed.label, cmds));
+        }
+        return buildLayerSegment(q.runs[0]);
       }
       if (expr.method === 'point' || expr.method === 'pointAll') {
         const matches = findEndpointCommands(authoredFlat, qName);
@@ -2598,12 +2620,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             endPoint: { x: rebased[rebased.length - 1].end.x, y: rebased[rebased.length - 1].end.y },
           };
         };
-        const runs = findLabeledRuns(obj.commands, segName);
+        const q = runSegmentQuery(obj.commands, segName, mError);
         if (expr.method === 'segmentAll') {
-          return { type: 'ArrayValue' as const, elements: runs.map(buildSubBlock) };
+          return { type: 'ArrayValue' as const, elements: q.runs.map(buildSubBlock) };
         }
-        if (runs.length === 0) throw mError(queryLabelError('segment', segName, obj.commands));
-        return buildSubBlock(runs[0]);
+        if (q.runs.length === 0) {
+          if (q.labelMatched) throw mError(pseudoRangeError(segName, q.matchedCount, q.parsed.pseudo));
+          throw mError(queryLabelError('segment', q.parsed.label, obj.commands));
+        }
+        return buildSubBlock(q.runs[0]);
       }
 
       case 'point':
@@ -2611,6 +2636,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (name)`);
         const ptName = evaluateExpression(expr.args[0], scope);
         if (typeof ptName !== 'string') throw mError(`${expr.method}() name must be a string`);
+        try { rejectPseudoOnNonSegmentQuery(expr.method, ptName); } catch (e) { throw mError((e as Error).message); }
         // Prefer the authored store: endpoint labels name the sharp corner the
         // user wrote, even if a corner op later trimmed it.
         const authoredFlat = obj.records.flatMap((r) => r.commands);
@@ -2631,6 +2657,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (name)`);
         const vName = evaluateExpression(expr.args[0], scope);
         if (typeof vName !== 'string') throw mError(`${expr.method}() name must be a string`);
+        try { rejectPseudoOnNonSegmentQuery(expr.method, vName); } catch (e) { throw mError((e as Error).message); }
         const targets = findEndpointCommands(obj.commands, vName);
         // Pair authored positions with finalized targets only when the counts
         // agree — a positional zip across diverging lists would silently hand
@@ -3251,12 +3278,15 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             endPoint: { ...copies[copies.length - 1].end },
           };
         };
-        const runs = findLabeledRuns(obj.commands, segName);
+        const q = runSegmentQuery(obj.commands, segName, mError);
         if (expr.method === 'segmentAll') {
-          return { type: 'ArrayValue' as const, elements: runs.map(buildSubProjected) };
+          return { type: 'ArrayValue' as const, elements: q.runs.map(buildSubProjected) };
         }
-        if (runs.length === 0) throw mError(queryLabelError('segment', segName, obj.commands));
-        return buildSubProjected(runs[0]);
+        if (q.runs.length === 0) {
+          if (q.labelMatched) throw mError(pseudoRangeError(segName, q.matchedCount, q.parsed.pseudo));
+          throw mError(queryLabelError('segment', q.parsed.label, obj.commands));
+        }
+        return buildSubProjected(q.runs[0]);
       }
 
       case 'point':
@@ -3264,6 +3294,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (name)`);
         const ptName = evaluateExpression(expr.args[0], scope);
         if (typeof ptName !== 'string') throw mError(`${expr.method}() name must be a string`);
+        try { rejectPseudoOnNonSegmentQuery(expr.method, ptName); } catch (e) { throw mError((e as Error).message); }
         const matches = findEndpointCommands(obj.commands, ptName);
         if (expr.method === 'pointAll') {
           return {
@@ -3280,6 +3311,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (name)`);
         const vName = evaluateExpression(expr.args[0], scope);
         if (typeof vName !== 'string') throw mError(`${expr.method}() name must be a string`);
+        try { rejectPseudoOnNonSegmentQuery(expr.method, vName); } catch (e) { throw mError((e as Error).message); }
         const targets = findEndpointCommands(obj.commands, vName);
         const buildProjectedHandle = (target: PathBlockCommand): VertexHandleValue => ({
           type: 'VertexHandleValue' as const,
