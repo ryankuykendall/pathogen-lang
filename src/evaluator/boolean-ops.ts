@@ -3960,9 +3960,6 @@ function cutNodeMergeDist(bboxDiag: number): number {
   return Math.max(1e-9, Math.min(0.5, bboxDiag * 2.5e-3));
 }
 
-/** Stamp a cutter fragment as a healed seam: fresh meta, segmentLabel 'cut'.
- *  Overrides any cutter-authored labels — the cutter's own labels do not
- *  propagate into pieces (documented). */
 /** Physical-seam ids: one per cutter fragment / cookie ring, shared by
  *  both twin directions; face-walk bridges get fresh ids of their own.
  *  MODULE-WIDE and never reset — pieces from one cut() are routinely fed
@@ -3970,10 +3967,38 @@ function cutNodeMergeDist(bboxDiag: number): number {
  *  with new ones, silently splicing unrelated seams in pieces.seams(). */
 let nextSeamId = 0;
 
+/** Stamp a cutter fragment as a healed seam. A cutter edge the author
+ *  named `as segment('valley')` heals into seams sub-labeled
+ *  'cut.valley' (already-namespaced 'cut.x' authored labels pass
+ *  through un-prefixed); unlabeled cutter edges stamp plain 'cut'. All
+ *  other cutter meta (endpoint labels included) is dropped. */
+/** Label for a face-walk bridge (the synthetic `l` sealing a
+ *  sub-tolerance gap). A bridge between two fragments of the SAME named
+ *  knife inherits their sub-label, so exact sub-label queries keep
+ *  seeing one contiguous run; any other pairing — different knives,
+ *  unlabeled seams, subject-boundary neighbors — stays plain 'cut', the
+ *  documented bridge label. Exported for tests: the bridge only fires
+ *  on numerically imperfect arrangements (no known deterministic
+ *  repro — zero firings across the full cut suite and every published
+ *  sample), so the choice rule is pinned directly. */
+export function bridgeSeamLabel(
+  prevLabel: string | undefined,
+  nextLabel: string | undefined,
+): string {
+  return prevLabel !== undefined && prevLabel === nextLabel && prevLabel.startsWith('cut.')
+    ? prevLabel
+    : 'cut';
+}
+
 function stampCutSeam(cmds: TransformCmd[], seamId: number): TransformCmd[] {
   // Both twin halves of a physical seam are stamped from ONE call, so
   // they share the id — the pairing pieces.seams() relies on.
-  return cmds.map((cmd) => ({ ...cmd, meta: { segmentLabel: 'cut', seamId } }));
+  return cmds.map((cmd) => {
+    const authored = cmd.meta?.segmentLabel;
+    const segmentLabel =
+      authored === undefined ? 'cut' : authored.startsWith('cut.') ? authored : `cut.${authored}`;
+    return { ...cmd, meta: { segmentLabel, seamId } };
+  });
 }
 
 function cutDebug(msg: string): void {
@@ -4433,12 +4458,16 @@ function traceCutFaces(halfEdges: CutHalfEdge[], table: CutNodeTable, warnings: 
         const prevEnd = face[face.length - 1].end;
         const curStart = he.cmds[0].start;
         if (!ptEq(prevEnd, curStart) && dist(prevEnd, curStart) > 1e-6) {
+          const segmentLabel = bridgeSeamLabel(
+            face[face.length - 1].meta?.segmentLabel,
+            he.cmds[0].meta?.segmentLabel,
+          );
           face.push({
             command: 'l',
             args: [curStart.x - prevEnd.x, curStart.y - prevEnd.y],
             start: { ...prevEnd },
             end: { ...curStart },
-            meta: { segmentLabel: 'cut', seamId: nextSeamId() },
+            meta: { segmentLabel, seamId: nextSeamId() },
           });
         }
       }

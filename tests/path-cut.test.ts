@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../src';
+import { bridgeSeamLabel } from '../src/evaluator/boolean-ops';
 import { compilePath } from './helpers';
 
 /**
@@ -510,10 +511,23 @@ describe('labels through cut()', () => {
     expect(Number(logs[2])).toBeGreaterThanOrEqual(1);
   });
 
-  it("a user's own 'cut' label merges into the seam group", () => {
+  it("authoring bare 'cut' is a compile error pointing at the opt-in", () => {
+    expect(() =>
+      compileWithLogs(`
+        let box = @{
+          h 60 as segment('cut')
+          v 40
+          h -60
+          z
+        };
+      `),
+    ).toThrow(/reserved.*cut\.<name>/s);
+  });
+
+  it("the explicit 'cut.<name>' opt-in joins the user's geometry to the seam group", () => {
     const { logs } = compileWithLogs(`
       let box = @{
-        h 60 as segment('cut')
+        h 60 as segment('cut.top')
         v 40
         h -60
         z
@@ -524,13 +538,18 @@ describe('labels through cut()', () => {
       };
       let pieces = box.cut(knife);
       let total = 0;
+      let topFragments = 0;
       for ([p, i] in pieces) {
         total = calc(total + p.segmentAll('cut').length);
+        topFragments = calc(topFragments + p.segmentAll('cut.top').length);
       }
       log(total);
+      log(topFragments);
     `);
-    // Seams from the knife PLUS the user's labeled top edge fragments.
+    // Seams from the knife PLUS the user's opted-in top edge fragments —
+    // and the fragments stay individually addressable via the sub-label.
     expect(Number(logs[0])).toBeGreaterThanOrEqual(3);
+    expect(Number(logs[1])).toBe(2);
   });
 
   it('labels never change cut geometry (byte guard)', () => {
@@ -1155,5 +1174,252 @@ describe('boolean-result normals face outward (documented guarantee)', () => {
         expect(toCenter).toBeGreaterThan(0); // hole ring: into the hole
       }
     }
+  });
+});
+
+describe('cutter label propagation (cut.<name> sub-labels)', () => {
+  it("a labeled knife stamps its seams 'cut.<name>' on BOTH adjacent pieces", () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let knife = @{
+        m 30 -10
+        l 0 60 as segment('valley');
+      };
+      let pieces = box.cut(knife);
+      for ([p, i] in pieces) {
+        log(p.segmentAll('cut.valley').length);
+        log(p.segmentAll('cut').length);
+      }
+    `);
+    expect(logs.length).toBe(4);
+    // Each piece: exactly one valley seam, and the umbrella sees it too.
+    expect(logs[0]).toBe('1');
+    expect(logs[2]).toBe('1');
+    expect(Number(logs[1])).toBeGreaterThanOrEqual(1);
+    expect(Number(logs[3])).toBeGreaterThanOrEqual(1);
+  });
+
+  it('two differently-named knives in one array cut distinguishable seams', () => {
+    const { logs } = compileWithLogs(`
+      let sheet = @{
+        rect(0, 0, 90, 90);
+      };
+      let mountain = @{
+        m 30 -10
+        l 0 110 as segment('mountain');
+      };
+      let valley = @{
+        m 60 -10
+        l 0 110 as segment('valley');
+      };
+      let pieces = sheet.cut([mountain, valley]);
+      let mountainSeams = 0;
+      let valleySeams = 0;
+      for ([p, i] in pieces) {
+        mountainSeams = calc(mountainSeams + p.segmentAll('cut.mountain').length);
+        valleySeams = calc(valleySeams + p.segmentAll('cut.valley').length);
+      }
+      log(pieces.length);
+      log(mountainSeams);
+      log(valleySeams);
+    `);
+    expect(logs[0]).toBe('3');
+    // Each interior seam answers twice (once per adjacent piece).
+    expect(logs[1]).toBe('2');
+    expect(logs[2]).toBe('2');
+  });
+
+  it('umbrella keeps the merged V-run; sub-label queries unmerge it (friction #8 escape hatch)', () => {
+    const { logs } = compileWithLogs(`
+      let plate = @{
+        polygon(0, 0, 50, 6);
+      };
+      let kA = @{
+        m -60 0
+        l 120 0 as segment('kA');
+      };
+      let kB = @{
+        m calc(-60 * cos(PI() / 3)) calc(-60 * sin(PI() / 3))
+        l calc(120 * cos(PI() / 3)) calc(120 * sin(PI() / 3)) as segment('kB');
+      };
+      let wedges = plate.cut([kA, kB]);
+      // Find a wedge whose two radial edges came from the two DIFFERENT
+      // knives: umbrella returns them merged into one V-run, exact
+      // sub-label queries return one straight edge each.
+      let found = 0;
+      for (w in wedges) {
+        let a = w.segmentAll('cut.kA').length;
+        let b = w.segmentAll('cut.kB').length;
+        if (a == 1) {
+          if (b == 1) {
+            if (found == 0) {
+              found = 1;
+              log(w.segmentAll('cut').length);
+              log(a);
+              log(b);
+            }
+          }
+        }
+      }
+      log(found);
+    `);
+    expect(logs[logs.length - 1]).toBe('1');
+    expect(logs[0]).toBe('1'); // merged V-run under the umbrella
+    expect(logs[1]).toBe('1');
+    expect(logs[2]).toBe('1');
+  });
+
+  it("an unlabeled knife still stamps plain 'cut' — no sub-labels invented", () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let knife = @{
+        m 30 -10
+        l 0 60
+      };
+      let pieces = box.cut(knife);
+      log(pieces[0].segmentAll('cut').length);
+      log(pieces[0].segmentAll('cut.knife').length);
+    `);
+    expect(Number(logs[0])).toBeGreaterThanOrEqual(1);
+    expect(logs[1]).toBe('0');
+  });
+
+  it('a labeled cookie cutter sub-labels the stamped boundary in piece AND hole', () => {
+    const { logs } = compileWithLogs(`
+      let slab = @{
+        rect(0, 0, 100, 100);
+      };
+      let cookie = @{
+        circle(50, 50, 20) as segment('stamp');
+      };
+      let pieces = slab.cut(cookie);
+      let stamped = 0;
+      for ([p, i] in pieces) {
+        stamped = calc(stamped + p.segmentAll('cut.stamp').length);
+      }
+      log(pieces.length);
+      log(stamped);
+    `);
+    expect(logs[0]).toBe('2');
+    expect(Number(logs[1])).toBeGreaterThanOrEqual(2);
+  });
+
+  it("a knife already labeled with the opt-in form 'cut.x' is not double-prefixed", () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let knife = @{
+        m 30 -10
+        l 0 60 as segment('cut.x');
+      };
+      let pieces = box.cut(knife);
+      log(pieces[0].segmentAll('cut.x').length);
+      log(pieces[0].segmentAll('cut.cut.x').length);
+    `);
+    expect(logs[0]).toBe('1');
+    expect(logs[1]).toBe('0');
+  });
+
+  it('seams() results keep the sub-labels', () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let knife = @{
+        m 30 -10
+        l 0 60 as segment('valley');
+      };
+      let pieces = box.cut(knife);
+      let physical = pieces.seams();
+      log(physical.length);
+      log(physical[0].segmentAll('cut.valley').length);
+    `);
+    expect(logs[0]).toBe('1');
+    expect(logs[1]).toBe('1');
+  });
+
+  it('chained cuts: inherited sub-labels survive, new knife adds its own', () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        rect(0, 0, 80, 80);
+      };
+      let first = @{
+        m 40 -10
+        l 0 100 as segment('a');
+      };
+      let second = @{
+        m -10 40
+        l 100 0 as segment('b');
+      };
+      let halves = box.cut(first);
+      let quarters = halves[0].cut(second);
+      let inheritedA = 0;
+      let freshB = 0;
+      for ([q, i] in quarters) {
+        inheritedA = calc(inheritedA + q.segmentAll('cut.a').length);
+        freshB = calc(freshB + q.segmentAll('cut.b').length);
+      }
+      log(quarters.length);
+      log(inheritedA);
+      log(freshB);
+    `);
+    expect(logs[0]).toBe('2');
+    expect(Number(logs[1])).toBeGreaterThanOrEqual(2);
+    expect(logs[2]).toBe('2');
+  });
+
+  it('knife labels never change cut geometry (byte guard)', () => {
+    const mk = (labeled: boolean) => compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let knife = @{
+        m 30 -10
+        l 0 60${labeled ? " as segment('valley')" : ''}
+      };
+      let pieces = box.cut(knife);
+      for ([p, i] in pieces) {
+        M 10 10 p.draw()
+      }
+    `).path;
+    expect(mk(true)).toBe(mk(false));
+  });
+});
+
+describe('bridgeSeamLabel (face-walk bridge label choice)', () => {
+  // The bridge fires only on numerically imperfect arrangements — no
+  // deterministic repro exists (verified: zero firings across this
+  // suite and all published samples) — so the rule is pinned directly.
+  it('inherits the sub-label when both neighbors are the same named knife', () => {
+    expect(bridgeSeamLabel('cut.valley', 'cut.valley')).toBe('cut.valley');
+  });
+  it("stays plain 'cut' between different knives", () => {
+    expect(bridgeSeamLabel('cut.valley', 'cut.mountain')).toBe('cut');
+  });
+  it("stays plain 'cut' beside unlabeled seams, subject labels, or bare ends", () => {
+    expect(bridgeSeamLabel('cut', 'cut')).toBe('cut');
+    expect(bridgeSeamLabel('rim', 'rim')).toBe('cut');
+    expect(bridgeSeamLabel(undefined, 'cut.valley')).toBe('cut');
+    expect(bridgeSeamLabel('cut.valley', undefined)).toBe('cut');
   });
 });

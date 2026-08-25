@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-25 (cutter label propagation — Cutting Room feedback loop, item F)
+
+### Added
+
+#### Core
+
+- **Cutter labels propagate as `cut.<name>` sub-labels** — a knife edge authored `as segment('valley')` heals into seams labeled `cut.valley`, so each knife's seams are addressable on their own (`segmentAll('cut.valley')`) while the umbrella query `segmentAll('cut')` still answers the *whole* seam namespace merged into runs exactly as before. Composes with array cutters: mountain and valley folds, cut in one call, dashed differently. Unlabeled knife edges, cookie boundaries, and bridging segments stay plain `cut`; knife *endpoint* labels do not propagate (cut endpoints land on junction points shared by several pieces). `pieces.seams()` results keep the sub-labels. Because sub-label queries are exact, adjacent seams from differently-named knives come back one edge at a time — the unmerged escape hatch for cut seams (friction log #8, partial).
+- **Label names are validated at authoring time** — `as segment(...)` / `as endpoint(...)` names must be identifier-shaped (letters, digits, `-`, `_`, starting with a letter); all punctuation — `.`, `:`, whitespace included — is a compile error, keeping the space free for the query language (`.` is the namespace delimiter; `:` is deliberately reserved for possible CSS-like pseudo-selectors). Bare `'cut'` is reserved — authoring it previously fused your geometry silently and indistinguishably into the seam group — and `cut.<name>` is the explicit segment-only opt-in that joins the seam namespace on purpose. Computed labels are validated after evaluation, per iteration. Queries stay lenient: any string can be queried. Pinned by a punctuation coverage-matrix test.
+
+#### Documentation
+
+- New **Label names** section in the segment-labels docs (naming rules, the reserved `cut` namespace, the opt-in); the cutting docs' label contract rewritten ("the cutter's own labels do not propagate" → the propagation contract); fold-lines sample (post41/02) rewritten as a real alternating mountain/valley accordion template; medallion kit (post41/06) replaces its merged-V `subPath` surgery with per-knife sub-label queries; stained-glass rim-join sample migrated from the bare-`'cut'` accident to the `cut.rim` opt-in with byte-identical came geometry; closing-section entries in the papercraft and stained-glass posts.
+
 ## [0.8.0] - 2026-08-25 (outward seam normals documented + pinned — Cutting Room feedback loop, item E)
 
 ### Added

@@ -401,18 +401,25 @@ labels.apply {
 <p>Compare part 1&#39;s Example 1, where the same query produced a thin amber
 highlight. Same seams, same loop — the meaning of a seam is entirely
 in how you draw it.</p>
-<h2>Example 2 — Your own &#39;cut&#39; label joins the came</h2>
-<p><code>cut</code> is not a reserved word — it is an ordinary label the cut applies
-for you, and labels with the same name form one group. So if you name
-the disc&#39;s rim <code>as segment(&#39;cut&#39;)</code> yourself, the one came loop picks
-it up with zero extra code. Left disc: rim labeled <code>&#39;rim&#39;</code>, and the
-glass meets the stone bare. Right disc: rim labeled <code>&#39;cut&#39;</code>, full came.</p>
+<h2>Example 2 — Your own geometry joins the came</h2>
+<p>The seam group takes volunteers. <code>cut</code> itself is reserved — the
+language stamps it on healed seams and won&#39;t let you author it, so
+your geometry can never fuse <em>silently</em> into the seams — but
+<code>cut.&lt;name&gt;</code> is the explicit opt-in: a label that says, out loud, &quot;this
+edge belongs with the seams.&quot; Name the disc&#39;s rim
+<code>as segment(&#39;cut.rim&#39;)</code> and the one came loop picks it up with zero
+extra code, because the umbrella query <code>segmentAll(&#39;cut&#39;)</code> answers the
+whole namespace. Left disc: rim labeled <code>&#39;rim&#39;</code>, and the glass meets
+the stone bare. Right disc: rim labeled <code>&#39;cut.rim&#39;</code>, full came — and
+still addressable on its own as <code>segmentAll(&#39;cut.rim&#39;)</code> when the rim
+needs its own pass. (See <a href="/docs#segment-labels-label-names">label names</a>
+for the rules.)</p>
 <p><mini-workspace code-open caption="Same decoration loop on both windows; only the rim's label name differs.">
   <code>// viewBox="0 0 480 260"
-//-- Labels form groups, and 'cut' is just a label: name the disc's rim
-//-- as segment('cut') and the one came loop picks it up too. Left: rim
-//-- labeled 'rim', so the loop strokes only the healed seams. Right: rim
-//-- labeled 'cut' — same loop, full came.
+//-- The seam group takes volunteers: 'cut.&lt;name&gt;' is the explicit opt-in
+//-- that joins your own geometry to the came. Left: rim labeled 'rim' —
+//-- a bare edge the seam loop ignores. Right: rim labeled 'cut.rim' —
+//-- same loop, full came, and the rim stays addressable by name.
 
 define ViewBox(0, 0, 480, 260);
 
@@ -460,7 +467,7 @@ let discA = @{
   circle(0, 0, 70) as segment('rim');
 };
 let discB = @{
-  circle(0, 0, 70) as segment('cut');
+  circle(0, 0, 70) as segment('cut.rim');
 };
 let knives = @{
   m -85 0
@@ -490,7 +497,7 @@ cameWindow(discB, 352, 112);
 
 labels.apply {
   text(128, 226)`rim labeled 'rim' - bare edge`;
-  text(352, 226)`rim labeled 'cut' - it joins the came`;
+  text(352, 226)`rim labeled 'cut.rim' - it joins the came`;
 }
 </code>
   <img src="/blog/samples/post44/02-rim-joins-the-came.svg" alt="Same decoration loop on both windows; only the rim's label name differs." loading="lazy">
@@ -923,7 +930,16 @@ l <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</s
   });
 }
 <span class="hljs-keyword">let</span> panes = disc.<span class="hljs-title function_">cut</span>(knives);
-</code></pre><h2>Where to go next</h2>
+</code></pre><p><strong>And Example 2&#39;s trick became a contract.</strong> The rim-joins-the-came
+demo originally leaned on an accident: <code>cut</code> was an ordinary label, so
+naming your own geometry <code>&#39;cut&#39;</code> happened to merge it with the seams —
+silently, and with no way back out. Working the friction log turned
+the accident into <a href="/docs#segment-labels-label-names">a named rule</a>:
+bare <code>&#39;cut&#39;</code> is now reserved (authoring it is a compile error), and
+<code>cut.&lt;name&gt;</code> is the explicit opt-in the sample now uses. Same render,
+byte for byte — but the rim reads as a decision instead of a
+coincidence, and <code>segmentAll(&#39;cut.rim&#39;)</code> can still address it alone.</p>
+<h2>Where to go next</h2>
 <ul>
 <li>Start over with <a href="/blog/cutting-room-papercraft">Papercraft</a> if you
 arrived here first — the idioms build in order.</li>

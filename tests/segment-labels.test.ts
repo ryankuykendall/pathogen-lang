@@ -483,3 +483,66 @@ describe('labels survive derived paths', () => {
     expect(String(result.logs[0].parts[0].value)).toBe('1');
   });
 });
+
+describe('label-name validation (identifier-shaped, reserved cut namespace)', () => {
+  // Coverage matrix over the whole punctuation class — '.' and ':' are the
+  // delimiters the query language claims today, but the rule reserves ALL
+  // punctuation so future query syntax never collides with authored names.
+  const punctuation = [
+    '.', ':', '/', '\\\\', '*', '+', '?', '!', '@', '#', '$', '%', '^', '&',
+    '(', ')', '[', ']', '{', '}', '|', ',', '~', '<', '>', '=', ' ', '\\t',
+  ];
+  for (const ch of punctuation) {
+    it(`rejects segment label containing ${JSON.stringify(ch)}`, () => {
+      expect(() => compile(`M 0 0\nh 10 as segment('a${ch}b');`)).toThrow(/label name/);
+    });
+  }
+  it('rejects endpoint labels with punctuation too', () => {
+    expect(() => compile("M 0 0\nh 10 as endpoint('a:b');")).toThrow(/label name/);
+    expect(() => compile("M 0 0\nh 10 as endpoint('a.b');")).toThrow(/label name/);
+  });
+  it('rejects labels that do not start with a letter', () => {
+    expect(() => compile("M 0 0\nh 10 as segment('9lives');")).toThrow(/label name/);
+    expect(() => compile("M 0 0\nh 10 as segment('-x');")).toThrow(/label name/);
+    expect(() => compile("M 0 0\nh 10 as segment('_x');")).toThrow(/label name/);
+  });
+  it('accepts identifier-shaped labels', () => {
+    expect(() => compile("M 0 0\nh 10 as segment('A-1_b'), endpoint('x9');")).not.toThrow();
+  });
+  it("reserves bare 'cut' for segment labels, pointing at the opt-in", () => {
+    expect(() => compile("M 0 0\nh 10 as segment('cut');")).toThrow(/reserved.*cut\.<name>/s);
+  });
+  it("endpoint labels are a separate namespace — endpoint('cut') stays legal", () => {
+    expect(() => compile("M 0 0\nh 10 as endpoint('cut');")).not.toThrow();
+  });
+  it("allows the explicit segment opt-in 'cut.<name>'", () => {
+    expect(() => compile("M 0 0\nh 10 as segment('cut.rim');")).not.toThrow();
+  });
+  it("validates the opt-in sub-name ('cut.', 'cut.9x' rejected)", () => {
+    expect(() => compile("M 0 0\nh 10 as segment('cut.');")).toThrow(/label name/);
+    expect(() => compile("M 0 0\nh 10 as segment('cut.9x');")).toThrow(/label name/);
+    expect(() => compile("M 0 0\nh 10 as segment('cut.a.b');")).toThrow(/label name/);
+  });
+  it("dots outside the cut namespace are rejected ('foo.bar')", () => {
+    expect(() => compile("M 0 0\nh 10 as segment('foo.bar');")).toThrow(/label name/);
+  });
+  it('the opt-in is segment-only — endpoint cut.<name> rejected', () => {
+    expect(() => compile("M 0 0\nh 10 as endpoint('cut.rim');")).toThrow(/label name/);
+  });
+  it('validates computed labels after evaluation', () => {
+    expect(() => compile("let bad = 'a:b';\nM 0 0\nh 10 as segment(`${bad}`);")).toThrow(/label name/);
+  });
+  it("umbrella query: authored 'cut.rim' opt-in is returned by segmentAll('cut')", () => {
+    const result = compileWithContext(`
+      let p = @{
+        h 40 as segment('cut.rim');
+        v 40 as segment('side');
+        h -40
+        z
+      };
+      let count = p.segmentAll('cut').length;
+      log(count);
+    `);
+    expect(result.logs[0].parts.map((x) => x.value).join('')).toContain('1');
+  });
+});

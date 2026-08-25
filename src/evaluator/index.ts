@@ -8474,6 +8474,36 @@ function evaluateGridCellBody(
   return { returned: false, value: null };
 }
 
+/** Identifier-shaped label names keep all punctuation — '.', ':', and the
+ *  rest — free for the query language (sub-labels today, possible
+ *  pseudo-selectors later). Applies to the EVALUATED string, so computed
+ *  labels are validated per iteration. Query-side lookups stay lenient. */
+const LABEL_IDENT = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+function validateLabelName(value: string, kind: 'segment' | 'endpoint', line: number | undefined): void {
+  if (kind === 'segment') {
+    if (value === 'cut') {
+      throw new Error(
+        formatError(
+          "segment() label 'cut' is reserved for healed seam edges; use 'cut.<name>' to join the seam group explicitly",
+          line,
+        ),
+      );
+    }
+    // The one legal dotted form: the explicit seam-namespace opt-in.
+    const bare = value.startsWith('cut.') ? value.slice(4) : value;
+    if (LABEL_IDENT.test(bare)) return;
+  } else if (LABEL_IDENT.test(value)) {
+    return;
+  }
+  throw new Error(
+    formatError(
+      `${kind}() label name '${value}' is invalid: names use letters, digits, '-' and '_', starting with a letter${kind === 'segment' ? " (the explicit seam opt-in 'cut.<name>' is the one exception)" : ''} — '.' and ':' are reserved for queries`,
+      line,
+    ),
+  );
+}
+
 /**
  * Evaluate a PathCommand's `with` / `as` clause expressions into plain values.
  * Validates label types and corner-op arity; placement validation happens in
@@ -8515,6 +8545,7 @@ function evaluatePathAnnotations(
     if (typeof value !== 'string' || value.length === 0) {
       throw new Error(formatError(`${label.kind}() label name must be a non-empty string`, line));
     }
+    validateLabelName(value, label.kind, line);
     if (label.kind === 'segment') {
       if (result.segmentLabel !== undefined) {
         throw new Error(formatError('At most one segment() label per as clause', line));

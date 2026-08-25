@@ -7093,15 +7093,19 @@ the piece you ask, which is what makes everything downstream per-piece
 by construction.</p>
 <h2>Example 2 — Cut lines and fold lines</h2>
 <p>The first real template. An accordion card is one plate cut by three
-vertical creases — and the two line styles a papercrafter expects fall
-straight out of the two kinds of edge a cut produces. The plate&#39;s
-original boundary is where scissors go: solid red. The healed seams are
-where folds go: one dashed layer decorates the entire group.</p>
-<p><mini-workspace code-open caption="The outline is the cut line; every healed seam is a fold line.">
+vertical creases — and an accordion&#39;s creases <em>alternate</em>: mountain,
+valley, mountain. That&#39;s three line styles, not two, and the knife
+itself carries the distinction. Name a knife&#39;s edge
+<code>as segment(&#39;mountain&#39;)</code> and the seams it heals come back labeled
+<code>cut.mountain</code> — so the plate&#39;s boundary is where scissors go (solid
+red), and one loop over the seams routes each fold to its dash style by
+asking which knife made it.</p>
+<p><mini-workspace code-open caption="The outline is the cut line; each named knife's seams keep its name — mountain and valley folds dash differently.">
   <code>// viewBox="0 0 480 220"
-//-- A four-panel accordion card as one template: the plate's own boundary
-//-- is the cut line (solid), and every healed seam inside it is a fold
-//-- line (dashed) — one layer style decorates the whole seam group.
+//-- A four-panel accordion card as one template: the plate's boundary is
+//-- the cut line (solid), and the creases alternate mountain / valley —
+//-- each knife is named, so its healed seams carry the fold's name and
+//-- one loop routes every seam to the right dash style.
 
 define ViewBox(0, 0, 480, 220);
 
@@ -7123,7 +7127,13 @@ let cutLayer = PathLayer('cut-line') \${
   stroke-width: 2;
   fill: none;
 };
-let foldLayer = PathLayer('fold-lines') \${
+let mountainLayer = PathLayer('mountain-folds') \${
+  stroke: #94a3b8;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 7 3 1.5 3;
+};
+let valleyLayer = PathLayer('valley-folds') \${
   stroke: #475569;
   stroke-width: 1.5;
   fill: none;
@@ -7135,17 +7145,25 @@ let cutCaption = TextLayer('cut-caption') \${
   fill: #f87171;
   text-anchor: middle;
 };
-let foldCaption = TextLayer('fold-caption') \${
+let mountainCaption = TextLayer('mountain-caption') \${
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
+let valleyCaption = TextLayer('valley-caption') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #64748b;
+  text-anchor: middle;
+};
 scene.append(panelLayer,
     cutLayer,
-    foldLayer,
+    mountainLayer,
+    valleyLayer,
     cutCaption,
-    foldCaption);
+    mountainCaption,
+    valleyCaption);
 
 let card = @{
   h 288
@@ -7153,14 +7171,20 @@ let card = @{
   h -288
   z
 };
-let creases = @{
-  m 72 -15
-  l 0 126
-  m 72 -126
-  l 0 126
-  m 72 -126
-  l 0 126
-};
+// An accordion alternates fold directions — so the creases alternate
+// names. A knife's label rides through the cut: the seams it heals come
+// back labeled cut.mountain / cut.valley.
+let creases = [];
+for (i in 0..2) {
+  let foldName = 'valley';
+  if (i % 2 == 0) {
+    foldName = 'mountain';
+  }
+  creases.push(@{
+    m calc(72 * (i + 1)) -15
+    l 0 126 as segment(foldName);
+  });
+}
 let panels = card.cut(creases);
 let originX = 96;
 let originY = 48;
@@ -7176,23 +7200,32 @@ cutLayer.apply {
   card.drawTo(originX, originY);
 }
 
-// Every seam the cut healed is a fold line — and seams() answers each
-// physical seam exactly once, so the whole group is one dashed pass
-// with no double-draw possible.
-foldLayer.apply {
-  for (seam in panels.seams()) {
-    seam.project(originX, originY).draw();
+// One pass over the physical seams, each routed by the name its knife
+// left on it — no fold is drawn twice, and no geometry bookkeeping
+// decides which crease is which.
+for (seam in panels.seams()) {
+  if (seam.segmentAll('cut.mountain').length &gt; 0) {
+    mountainLayer.apply {
+      seam.project(originX, originY).draw();
+    }
+  } else {
+    valleyLayer.apply {
+      seam.project(originX, originY).draw();
+    }
   }
 }
 
 cutCaption.apply {
-  text(163, 175)\`solid = cut the outline\`;
+  text(96, 175)\`solid = cut\`;
 }
-foldCaption.apply {
-  text(320, 175)\`dashed = fold the seams\`;
+mountainCaption.apply {
+  text(240, 175)\`dash-dot = mountain fold\`;
+}
+valleyCaption.apply {
+  text(388, 175)\`dashed = valley fold\`;
 }
 </code>
-  <img src="/blog/samples/post41/02-fold-lines.svg" alt="The outline is the cut line; every healed seam is a fold line." loading="lazy">
+  <img src="/blog/samples/post41/02-fold-lines.svg" alt="The outline is the cut line; each named knife's seams keep its name — mountain and valley folds dash differently." loading="lazy">
 </mini-workspace></p>
 <p>One thing the sample does <em>not</em> have to do: dedupe. Each interior fold
 is shared by two panels, so asking every panel for its seams would
@@ -7526,7 +7559,8 @@ back in.</p>
   <code>// viewBox="0 0 480 300"
 //-- The finished kit sheet: a hex medallion cut into six wedges, exploded
 //-- into a ring. Every wedge tabs one healed seam, fold-dashes the other,
-//-- and wears its number — all driven by the same seam and label queries.
+//-- and wears its number — the knives are named, so each radial edge is
+//-- queried by the knife that made it.
 
 define ViewBox(0, 0, 480, 300);
 
@@ -7603,7 +7637,7 @@ for (k in 0..2) {
   let dirY = sin(knifeAngle);
   knives.push(@{
     m calc(0 - knifeReach * dirX) calc(0 - knifeReach * dirY)
-    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY)
+    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY) as segment(\`k\${k}\`);
   });
 }
 let wedges = plate.cut(knives);
@@ -7629,22 +7663,21 @@ for (wedge in wedges) {
   let placedBounds = placed.boundingBox();
   let wedgeCenterX = calc(placedBounds.x + placedBounds.width / 2);
   let wedgeCenterY = calc(placedBounds.y + placedBounds.height / 2);
-  // A wedge's two radial edges are adjacent and share the 'cut' label,
-  // so they come back MERGED into one V-shaped run — walk its halves.
-  for (seam in placed.segmentAll('cut')) {
-    for (halfIdx in 0..1) {
-      let t0 = calc(halfIdx * 0.5);
-      let t1 = calc(halfIdx * 0.5 + 0.5);
-      let halfMid = seam.get(calc(t0 + 0.25));
-      // Which side of the centroid ray does this half sit on?
-      let cross = calc((wedgeCenterX - placeX) * (halfMid.y - placeY) - (wedgeCenterY - placeY) * (halfMid.x - placeX));
+  // A wedge's two radial edges came from two DIFFERENT knives, and each
+  // knife left its name on the seams it healed — so exact sub-label
+  // queries hand each edge back on its own, no merged-run surgery.
+  for (k in 0..2) {
+    for (seam in placed.segmentAll(\`cut.k\${k}\`)) {
+      let edgeMid = seam.get(0.5);
+      // Which side of the centroid ray does this edge sit on?
+      let cross = calc((wedgeCenterX - placeX) * (edgeMid.y - placeY) - (wedgeCenterY - placeY) * (edgeMid.x - placeX));
       if (cross &gt; 0) {
         // Clockwise edge: glue tab, pointing away from the wedge.
-        let tabStart = seam.get(calc(t0 + 0.06));
-        let tabEnd = seam.get(calc(t1 - 0.06));
+        let tabStart = seam.get(0.12);
+        let tabEnd = seam.get(0.88);
         // Seam normals point away from the wedge's material — guaranteed
         // by the cut, so the tab needs no direction test.
-        let outwardAngle = seam.normal(calc(t0 + 0.25)).angle;
+        let outwardAngle = seam.normal(0.5).angle;
         let edgeAngle = calc(outwardAngle + PI() / 2);
         tabLayer.apply {
           M calc(tabStart.x) calc(tabStart.y)
@@ -7654,10 +7687,8 @@ for (wedge in wedges) {
         }
       } else {
         // Counter-clockwise edge: fold line for the neighbor's tab.
-        let half = seam.subPath(t0, t1);
-        let halfStart = seam.get(t0);
         foldLayer.apply {
-          half.drawTo(halfStart.x, halfStart.y);
+          seam.draw();
         }
       }
     }
@@ -7680,15 +7711,17 @@ caption.apply {
 </code>
   <img src="/blog/samples/post41/06-medallion-kit.svg" alt="The finished kit sheet: tab the red edge, fold the dashed one, rejoin in order." loading="lazy">
 </mini-workspace></p>
-<p>And here is the merge rule from the top of the post, paying rent: a
-wedge&#39;s two radial edges meet at the hexagon&#39;s center, share the <code>cut</code>
-label, and therefore come back as <strong>one</strong> V-shaped run. The sample
-walks that run&#39;s two halves — <code>t</code> in <code>[0, 0.5]</code> and <code>[0.5, 1]</code>, which
-split at the center vertex because <code>t</code> is arc length and the two radial
-edges are equally long — and decides tab-or-fold per half by which side
-of the wedge&#39;s center ray it lies on. If you ever ask for two seams and
-receive one, this is why, and <code>subPath(t0, t1)</code> is the knife that
-re-divides them.</p>
+<p>And here is the merge rule from the top of the post, paying rent — by
+<em>not</em> applying. A wedge&#39;s two radial edges meet at the hexagon&#39;s
+center, and under the umbrella query <code>segmentAll(&#39;cut&#39;)</code> they come back
+as <strong>one</strong> V-shaped run (adjacent seam commands merge regardless of
+which knife made them). But the knives are named — <code>k0</code>, <code>k1</code>, <code>k2</code> —
+and each wedge&#39;s two edges come from two <em>different</em> knives, so the
+exact queries <code>segmentAll(&#39;cut.k0&#39;)</code>… hand each edge back on its own.
+The sample decides tab-or-fold per edge by which side of the wedge&#39;s
+center ray it lies on. If you ever ask for two seams and receive one,
+the umbrella merge is why — and a named knife, or <code>subPath(t0, t1)</code>,
+is the knife that re-divides them.</p>
 <h2>What this project taught the language</h2>
 <p>The friction-log promise from the top of the post, kept — what building
 this project changed in Pathogen:</p>
@@ -7754,7 +7787,39 @@ wrong before review caught it. <code>cut()</code> now accepts an
 the sample builds one single-stroke knife per angle in a loop and
 hands the set over in a single call. A knife that states only &quot;start
 here, cut this&quot; has no arithmetic to get wrong.</p>
-<h2>Where to go next</h2>
+<p><strong>The knives got names, and the folds got directions.</strong> Example 2
+originally shipped every fold in one dash style with a caveat: all
+seams share one anonymous <code>cut</code> group, so mountain-versus-valley —
+<em>the</em> distinction a real accordion template turns on — was
+inexpressible. Knife labels now
+<a href="/docs#segment-labels-label-names">ride through the cut</a>: an edge
+authored <code>as segment(&#39;mountain&#39;)</code> heals into seams labeled
+<code>cut.mountain</code>, the umbrella <code>segmentAll(&#39;cut&#39;)</code> still answers
+everything, and the sub-label queries answer one knife at a time. The
+accordion now dashes its creases correctly, and the medallion got a
+second payoff: a wedge&#39;s two radial edges come from two <em>different</em>
+knives, so exact sub-label queries return each edge on its own —
+Example 6&#39;s merged-V <code>subPath</code> surgery at guessed fractions is gone.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: every fold identical, and a prose apology</span>
+foldLayer.<span class="hljs-property">apply</span> {
+  <span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> panels.<span class="hljs-title function_">seams</span>()) {
+    seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+  }
+}
+
+<span class="hljs-comment">// after: the knife&#x27;s name decides the dash</span>
+<span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> panels.<span class="hljs-title function_">seams</span>()) {
+  <span class="hljs-keyword">if</span> (seam.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut.mountain&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+    mountainLayer.<span class="hljs-property">apply</span> {
+      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+    }
+  } <span class="hljs-keyword">else</span> {
+    valleyLayer.<span class="hljs-property">apply</span> {
+      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+    }
+  }
+}
+</code></pre><h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-jigsaw">Jigsaw: pieces that know their own edges</a>
 — part 2 cuts with wavy knives and sorts pieces by the rim label
@@ -7889,18 +7954,25 @@ labels.apply {
 <p>Compare part 1&#39;s Example 1, where the same query produced a thin amber
 highlight. Same seams, same loop — the meaning of a seam is entirely
 in how you draw it.</p>
-<h2>Example 2 — Your own &#39;cut&#39; label joins the came</h2>
-<p><code>cut</code> is not a reserved word — it is an ordinary label the cut applies
-for you, and labels with the same name form one group. So if you name
-the disc&#39;s rim <code>as segment(&#39;cut&#39;)</code> yourself, the one came loop picks
-it up with zero extra code. Left disc: rim labeled <code>&#39;rim&#39;</code>, and the
-glass meets the stone bare. Right disc: rim labeled <code>&#39;cut&#39;</code>, full came.</p>
+<h2>Example 2 — Your own geometry joins the came</h2>
+<p>The seam group takes volunteers. <code>cut</code> itself is reserved — the
+language stamps it on healed seams and won&#39;t let you author it, so
+your geometry can never fuse <em>silently</em> into the seams — but
+<code>cut.&lt;name&gt;</code> is the explicit opt-in: a label that says, out loud, &quot;this
+edge belongs with the seams.&quot; Name the disc&#39;s rim
+<code>as segment(&#39;cut.rim&#39;)</code> and the one came loop picks it up with zero
+extra code, because the umbrella query <code>segmentAll(&#39;cut&#39;)</code> answers the
+whole namespace. Left disc: rim labeled <code>&#39;rim&#39;</code>, and the glass meets
+the stone bare. Right disc: rim labeled <code>&#39;cut.rim&#39;</code>, full came — and
+still addressable on its own as <code>segmentAll(&#39;cut.rim&#39;)</code> when the rim
+needs its own pass. (See <a href="/docs#segment-labels-label-names">label names</a>
+for the rules.)</p>
 <p><mini-workspace code-open caption="Same decoration loop on both windows; only the rim's label name differs.">
   <code>// viewBox="0 0 480 260"
-//-- Labels form groups, and 'cut' is just a label: name the disc's rim
-//-- as segment('cut') and the one came loop picks it up too. Left: rim
-//-- labeled 'rim', so the loop strokes only the healed seams. Right: rim
-//-- labeled 'cut' — same loop, full came.
+//-- The seam group takes volunteers: 'cut.&lt;name&gt;' is the explicit opt-in
+//-- that joins your own geometry to the came. Left: rim labeled 'rim' —
+//-- a bare edge the seam loop ignores. Right: rim labeled 'cut.rim' —
+//-- same loop, full came, and the rim stays addressable by name.
 
 define ViewBox(0, 0, 480, 260);
 
@@ -7948,7 +8020,7 @@ let discA = @{
   circle(0, 0, 70) as segment('rim');
 };
 let discB = @{
-  circle(0, 0, 70) as segment('cut');
+  circle(0, 0, 70) as segment('cut.rim');
 };
 let knives = @{
   m -85 0
@@ -7978,7 +8050,7 @@ cameWindow(discB, 352, 112);
 
 labels.apply {
   text(128, 226)\`rim labeled 'rim' - bare edge\`;
-  text(352, 226)\`rim labeled 'cut' - it joins the came\`;
+  text(352, 226)\`rim labeled 'cut.rim' - it joins the came\`;
 }
 </code>
   <img src="/blog/samples/post44/02-rim-joins-the-came.svg" alt="Same decoration loop on both windows; only the rim's label name differs." loading="lazy">
@@ -8411,7 +8483,16 @@ l <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</s
   });
 }
 <span class="hljs-keyword">let</span> panes = disc.<span class="hljs-title function_">cut</span>(knives);
-</code></pre><h2>Where to go next</h2>
+</code></pre><p><strong>And Example 2&#39;s trick became a contract.</strong> The rim-joins-the-came
+demo originally leaned on an accident: <code>cut</code> was an ordinary label, so
+naming your own geometry <code>&#39;cut&#39;</code> happened to merge it with the seams —
+silently, and with no way back out. Working the friction log turned
+the accident into <a href="/docs#segment-labels-label-names">a named rule</a>:
+bare <code>&#39;cut&#39;</code> is now reserved (authoring it is a compile error), and
+<code>cut.&lt;name&gt;</code> is the explicit opt-in the sample now uses. Same render,
+byte for byte — but the rim reads as a decision instead of a
+coincidence, and <code>segmentAll(&#39;cut.rim&#39;)</code> can still address it alone.</p>
+<h2>Where to go next</h2>
 <ul>
 <li>Start over with <a href="/blog/cutting-room-papercraft">Papercraft</a> if you
 arrived here first — the idioms build in order.</li>

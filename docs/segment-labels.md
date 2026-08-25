@@ -80,6 +80,17 @@ Because the `as` clause takes a list, one command can name both its edge and its
 h -60 as segment('base'), endpoint('base-end');
 ```
 
+### Label names
+
+Label names are **identifier-shaped**: letters, digits, `-`, and `_`, starting with a letter. Everything else — including `.`, `:`, and whitespace — is rejected at compile time. The punctuation space is reserved for the query language, so names stay unambiguous as queries grow richer.
+
+Two special forms exist for **segment** labels:
+
+- **`cut` is reserved.** Healed seam edges created by [`cut()`](#path-blocks-cutting-paths) carry the label `cut` automatically; authoring it yourself is a compile error, because your geometry would fuse indistinguishably into the seam group.
+- **`cut.<name>` is the explicit opt-in.** Labeling your own geometry `as segment('cut.rim')` deliberately joins it to the seam namespace: the umbrella query `segmentAll('cut')` picks it up alongside the real seams, and `segmentAll('cut.rim')` still addresses it on its own. This is the only place `.` may appear in an authored label.
+
+Endpoint labels take the plain identifier form only.
+
 ### Group labels and computed labels
 
 Labels don't have to be unique, so the natural way to label loop-generated geometry is to reuse **one name** and query the group with [`segmentAll`](#segment-labels-querying-labels):
@@ -262,7 +273,7 @@ Operations that produce a new PathBlock or ProjectedPath carry your labels with 
 - **Set operations**: `union`, `difference`, `intersection`, `xor` — labels from *both* operands coexist in the result
 - **Cutting**: [`cut()`](#path-blocks-cutting-paths) — pieces keep the subject's labels on their surviving boundary fragments
 
-**Cut seams are labeled for you.** Every healed edge a cut creates — the cutter's strokes where they sealed a piece shut, a cookie cutter's stamped boundary (in both the stamped piece and the hole it left), and any bridging segments — carries the segment label `cut`. That makes the seams queryable like any other group:
+**Cut seams are labeled for you.** Every healed edge a cut creates — the cutter's strokes where they sealed a piece shut, a cookie cutter's stamped boundary (in both the stamped piece and the hole it left), and any bridging segments — carries the segment label `cut`. When the cutter edge itself was named — `as segment('valley')` on the knife — the seams it heals carry the sub-label `cut.valley` instead, so each knife's seams are addressable on their own. That makes the seams queryable like any other group:
 
 ```
 let pieces = shape.cut(knife);
@@ -278,7 +289,7 @@ for ([p, i] in pieces) {
 }
 ```
 
-If you label your own geometry `as segment('cut')`, it merges into the same group — labels form groups by design.
+The umbrella query `segmentAll('cut')` returns **every** seam — plain and sub-labeled alike, adjacent seam commands merged into runs regardless of which knife made them — so seam-agnostic code never has to know the knives' names. A sub-label query like `segmentAll('cut.valley')` is exact: it answers only that knife's seams, as their own runs. And to pull your *own* geometry into the seam group — say a rim that the same came loop should stroke — label it with the explicit opt-in form `as segment('cut.rim')`; bare `'cut'` is reserved (see [Label names](#segment-labels-label-names)).
 
 Note that per-piece seam queries answer each interior seam **twice** — once from each adjacent piece. When you want each physical seam once (fold lines, came), use [`pieces.seams()`](#path-blocks-seams-array-of-pathblock) on the array `cut()` returns.
 
@@ -290,12 +301,13 @@ Note that per-piece seam queries answer each interior seam **twice** — once fr
 - **Corner-op suffixes don't carry.** A pending `with fillet(...)` is consumed by the block it was written in; it never re-applies on a derived path.
 - **Labels on `m` commands survive only point-mapping transforms.** A label on a move command (e.g. `m 10 10 as endpoint('start')`) carries through `mirror()`, `scale()`, `rotate()`, `rotateAtVertexIndex()`, and `offset()`, which map commands one-to-one — but `reverse()`, `subPath()`, the boolean operations, and `cut()` rebuild the path from its drawing commands and drop moves along the way, taking their labels with them. Prefer labeling a drawing command.
 - **Excluded**: `variableOffset` and `compoundVariableOffset` resample the geometry entirely, so there is no correspondence to carry labels through — their results are unlabeled.
-- The cutter's own labels do not propagate into cut pieces; its strokes become the `cut` seams.
+- The cutter's own **segment** labels propagate into the seam namespace: a knife edge `as segment('valley')` heals into seams labeled `cut.valley` (plain `cut` when the knife edge is unlabeled). The cutter's **endpoint** labels do not propagate — cut endpoints land on junction points shared by several pieces, so no single edge owns them.
 
 ## Errors & Notes
 
 - **Shared labels form groups.** Label names do **not** have to be unique: reusing `segment('rib')` across several statements creates a group, and `segmentAll('rib')` returns every member (singular `segment('rib')` returns the first, querySelector-style). The same applies to `endpoint` labels via `pointAll`/`vertexAll`. Segment and endpoint labels are separate namespaces, so `segment('x')` and `endpoint('x')` may coexist (they answer different queries).
 - **`with` needs a previous joint.** A corner suffix rounds the joint between the previous command and this one, so it needs a previous command in the current subpath. `with fillet(...)` on the first command of a block, or on the first command after an `m`/`M` that opens a new subpath, is a compile error — there is no corner to operate on. (This mirrors the "no previous heading" error from `tangentArc`.)
 - **Clause ordering.** `with` must precede `as`, each may appear at most once, and only `as` takes a comma list. `as segment('x') with fillet(5)` (wrong order) and two `with` clauses on one command are both errors.
+- **Label-name validation.** A label that isn't identifier-shaped — punctuation, whitespace, a leading digit — is a compile error naming the rule, as is the reserved bare `'cut'`. The `cut.<name>` opt-in is segment-only; an endpoint label may not use it. Queries stay lenient: any string can be *queried* (unknown names behave as described below) — only authoring is validated.
 - **Unknown labels.** A singular query for a name that was never defined — `pb.segment('nope')` — is an error that lists the labels the path actually has, so a typo tells you what was available. The `All` queries return an **empty array** instead of erroring, matching `querySelectorAll`, so `for (x in pb.segmentAll('maybe'))` is safe without a guard.
 - **Vertex corner ops: PathBlocks for now.** `vertex('name').fillet(...)` and its siblings apply on `PathBlock` and `ProjectedPath` sources. On a **layer** vertex handle they report that corner operations are not supported on layers yet — layer and projected `segment`/`point` queries work fully; only the vertex-handle corner operations are deferred.

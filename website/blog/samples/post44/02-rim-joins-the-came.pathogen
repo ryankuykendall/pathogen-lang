@@ -1,8 +1,8 @@
 // viewBox="0 0 480 260"
-//-- Labels form groups, and 'cut' is just a label: name the disc's rim
-//-- as segment('cut') and the one came loop picks it up too. Left: rim
-//-- labeled 'rim', so the loop strokes only the healed seams. Right: rim
-//-- labeled 'cut' — same loop, full came.
+//-- The seam group takes volunteers: 'cut.<name>' is the explicit opt-in
+//-- that joins your own geometry to the came. Left: rim labeled 'rim' —
+//-- a bare edge the seam loop ignores. Right: rim labeled 'cut.rim' —
+//-- same loop, full came, and the rim stays addressable by name.
 
 define ViewBox(0, 0, 480, 260);
 
@@ -50,7 +50,7 @@ let discA = @{
   circle(0, 0, 70) as segment('rim');
 };
 let discB = @{
-  circle(0, 0, 70) as segment('cut');
+  circle(0, 0, 70) as segment('cut.rim');
 };
 let knives = @{
   m -85 0
@@ -80,5 +80,5 @@ cameWindow(discB, 352, 112);
 
 labels.apply {
   text(128, 226)`rim labeled 'rim' - bare edge`;
-  text(352, 226)`rim labeled 'cut' - it joins the came`;
+  text(352, 226)`rim labeled 'cut.rim' - it joins the came`;
 }

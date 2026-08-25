@@ -815,13 +815,13 @@ export interface PathogenPathBlock {
   intersects(other: PathogenPathBlock): boolean;
   /** intersectionPoints(other) — Get intersection points */
   intersectionPoints(other: PathogenPathBlock): PathogenArray<PathogenPoint>;
-  /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces */
+  /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces. Seams are labeled 'cut' — or 'cut.<name>' when the cutter edge was named as segment('name') */
   cut(cutter: PathogenPathBlock | PathogenProjectedPath | (PathogenPathBlock | PathogenProjectedPath)[]): PathogenArray<PathogenPathBlock>;
 
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a PathBlock */
   segment(name: string): PathogenPathBlock;
-  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array */
+  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array. The umbrella 'cut' matches every seam sub-label; 'cut.<name>' is exact */
   segmentAll(name: string): PathogenArray<PathogenPathBlock>;
   /** point(name) — First labeled point matching name; returns a Point */
   point(name: string): PathogenPoint;
@@ -911,7 +911,7 @@ export interface PathogenPathLayer {
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords) */
   segment(name: string): PathogenProjectedPath;
-  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array */
+  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array. The umbrella 'cut' matches every seam sub-label; 'cut.<name>' is exact */
   segmentAll(name: string): PathogenArray<PathogenProjectedPath>;
   /** point(name) — First labeled point matching name; returns a Point */
   point(name: string): PathogenPoint;
@@ -1166,13 +1166,13 @@ export interface PathogenProjectedPath {
   intersection(other: PathogenPathBlock): PathogenProjectedPath;
   /** xor(other) — Boolean XOR */
   xor(other: PathogenPathBlock): PathogenProjectedPath;
-  /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces */
+  /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces. Seams are labeled 'cut' — or 'cut.<name>' when the cutter edge was named as segment('name') */
   cut(cutter: PathogenPathBlock | PathogenProjectedPath | (PathogenPathBlock | PathogenProjectedPath)[]): PathogenArray<PathogenPathBlock>;
 
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords) */
   segment(name: string): PathogenProjectedPath;
-  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array */
+  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array. The umbrella 'cut' matches every seam sub-label; 'cut.<name>' is exact */
   segmentAll(name: string): PathogenArray<PathogenProjectedPath>;
   /** point(name) — First labeled point matching name; returns a Point */
   point(name: string): PathogenPoint;

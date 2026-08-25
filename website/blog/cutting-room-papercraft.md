@@ -104,12 +104,15 @@ by construction.
 ## Example 2 — Cut lines and fold lines
 
 The first real template. An accordion card is one plate cut by three
-vertical creases — and the two line styles a papercrafter expects fall
-straight out of the two kinds of edge a cut produces. The plate's
-original boundary is where scissors go: solid red. The healed seams are
-where folds go: one dashed layer decorates the entire group.
+vertical creases — and an accordion's creases *alternate*: mountain,
+valley, mountain. That's three line styles, not two, and the knife
+itself carries the distinction. Name a knife's edge
+`as segment('mountain')` and the seams it heals come back labeled
+`cut.mountain` — so the plate's boundary is where scissors go (solid
+red), and one loop over the seams routes each fold to its dash style by
+asking which knife made it.
 
-<mini-workspace src="samples/post41/02-fold-lines.pathogen" caption="The outline is the cut line; every healed seam is a fold line." code-open></mini-workspace>
+<mini-workspace src="samples/post41/02-fold-lines.pathogen" caption="The outline is the cut line; each named knife's seams keep its name — mountain and valley folds dash differently." code-open></mini-workspace>
 
 One thing the sample does *not* have to do: dedupe. Each interior fold
 is shared by two panels, so asking every panel for its seams would
@@ -181,15 +184,17 @@ back in.
 
 <mini-workspace src="samples/post41/06-medallion-kit.pathogen" caption="The finished kit sheet: tab the red edge, fold the dashed one, rejoin in order." code-open></mini-workspace>
 
-And here is the merge rule from the top of the post, paying rent: a
-wedge's two radial edges meet at the hexagon's center, share the `cut`
-label, and therefore come back as **one** V-shaped run. The sample
-walks that run's two halves — `t` in `[0, 0.5]` and `[0.5, 1]`, which
-split at the center vertex because `t` is arc length and the two radial
-edges are equally long — and decides tab-or-fold per half by which side
-of the wedge's center ray it lies on. If you ever ask for two seams and
-receive one, this is why, and `subPath(t0, t1)` is the knife that
-re-divides them.
+And here is the merge rule from the top of the post, paying rent — by
+*not* applying. A wedge's two radial edges meet at the hexagon's
+center, and under the umbrella query `segmentAll('cut')` they come back
+as **one** V-shaped run (adjacent seam commands merge regardless of
+which knife made them). But the knives are named — `k0`, `k1`, `k2` —
+and each wedge's two edges come from two *different* knives, so the
+exact queries `segmentAll('cut.k0')`… hand each edge back on its own.
+The sample decides tab-or-fold per edge by which side of the wedge's
+center ray it lies on. If you ever ask for two seams and receive one,
+the umbrella merge is why — and a named knife, or `subPath(t0, t1)`,
+is the knife that re-divides them.
 
 ## What this project taught the language
 
@@ -270,6 +275,42 @@ wrong before review caught it. `cut()` now accepts an
 the sample builds one single-stroke knife per angle in a loop and
 hands the set over in a single call. A knife that states only "start
 here, cut this" has no arithmetic to get wrong.
+
+**The knives got names, and the folds got directions.** Example 2
+originally shipped every fold in one dash style with a caveat: all
+seams share one anonymous `cut` group, so mountain-versus-valley —
+*the* distinction a real accordion template turns on — was
+inexpressible. Knife labels now
+[ride through the cut](/docs#segment-labels-label-names): an edge
+authored `as segment('mountain')` heals into seams labeled
+`cut.mountain`, the umbrella `segmentAll('cut')` still answers
+everything, and the sub-label queries answer one knife at a time. The
+accordion now dashes its creases correctly, and the medallion got a
+second payoff: a wedge's two radial edges come from two *different*
+knives, so exact sub-label queries return each edge on its own —
+Example 6's merged-V `subPath` surgery at guessed fractions is gone.
+
+```pathogen
+// before: every fold identical, and a prose apology
+foldLayer.apply {
+  for (seam in panels.seams()) {
+    seam.project(originX, originY).draw();
+  }
+}
+
+// after: the knife's name decides the dash
+for (seam in panels.seams()) {
+  if (seam.segmentAll('cut.mountain').length > 0) {
+    mountainLayer.apply {
+      seam.project(originX, originY).draw();
+    }
+  } else {
+    valleyLayer.apply {
+      seam.project(originX, originY).draw();
+    }
+  }
+}
+```
 
 ## Where to go next
 

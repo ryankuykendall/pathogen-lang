@@ -33,17 +33,37 @@ notes the friction hit in a real sample. To be synthesized at project end.
    Absolute `M` support inside path blocks, or a way to combine several
    blocks into one cutter (`PathBlock.merge(...)` / array-of-knives
    `cut([k1, k2, k3])`), would make knives compositional.
-7. **Cutter labels don't propagate (by design), so seams have no
-   per-stroke identity.** Mountain-vs-valley folds (different knives →
-   different dash styles) are inexpressible; all seams share one 'cut'
-   group. An opt-in (e.g. cutter edges labeled `as segment('fold-a')`
-   propagating as `cut:fold-a`, or `cut(knife, {seamLabel: 'valley'})`)
-   would unlock real papercraft templates. (post41/02 prose caveat.)
-8. **Run-merging has no unmerged escape hatch.** Adjacent same-label
-   edges merge into one run; getting individual edges back requires
-   `subPath` surgery at guessed fractions (post41/06 walks V-run halves).
-   A `segmentAll('cut', {merge: false})` or per-command iteration would
-   help advanced decoration.
+7. **RESOLVED (Item F, 2026-08-25): cutter labels propagate as
+   `cut.<name>` sub-labels.** A knife edge `as segment('valley')` heals
+   into seams labeled `cut.valley`; umbrella `segmentAll('cut')` still
+   answers the whole namespace merged, sub-label queries are exact.
+   Shipped with authoring-time label validation (identifier-shaped
+   names; bare 'cut' reserved; `cut.<name>` the explicit opt-in — the
+   `.` delimiter chosen over `:` to keep `:` free for future
+   pseudo-selectors). post41/02 is now a real mountain/valley template.
+   Original: **Cutter labels don't propagate (by design), so seams have
+   no per-stroke identity.** Mountain-vs-valley folds (different knives
+   → different dash styles) are inexpressible; all seams share one
+   'cut' group. (post41/02 prose caveat.)
+7b. **Annotated mode skips label-name validation entirely** (Item F
+   review finding, 2026-08-25). compileAnnotated ignores `as` labels by
+   documented design and has never validated them; Item F's new rules
+   (identifier charset, reserved bare 'cut') widen the divergence:
+   `h 10 as segment('cut')` errors under compile() but compiles
+   silently under --annotated / the playground debug panel. Same class
+   as Item C's parity fixes. Fast-follow candidate: validate label
+   names in annotated's PathCommand path even though labels stay
+   otherwise ignored there.
+8. **PARTIALLY DELIVERED (via Item F, 2026-08-25) for the cut case:**
+   sub-label queries are exact, so differently-named knives' adjacent
+   seams come back one edge at a time (`segmentAll('cut.k0')`) while
+   the umbrella stays merged — post41/06's V-run `subPath` surgery is
+   gone. Still open for authored same-label runs outside the cut
+   namespace. Original: **Run-merging has no unmerged escape hatch.**
+   Adjacent same-label edges merge into one run; getting individual
+   edges back requires `subPath` surgery at guessed fractions
+   (post41/06 walks V-run halves). A `segmentAll('cut', {merge: false})`
+   or per-command iteration would help advanced decoration.
 9. **Per-piece dynamic styling requires N fixed layers + if-chains.**
    Round-robin tinting (post40 shattered-glyph, post42/05) hand-rolls
    `if (i % 3 == 0) shard0.apply {...}` ×3 because layer styles are

@@ -64,13 +64,20 @@ Compare part 1's Example 1, where the same query produced a thin amber
 highlight. Same seams, same loop — the meaning of a seam is entirely
 in how you draw it.
 
-## Example 2 — Your own 'cut' label joins the came
+## Example 2 — Your own geometry joins the came
 
-`cut` is not a reserved word — it is an ordinary label the cut applies
-for you, and labels with the same name form one group. So if you name
-the disc's rim `as segment('cut')` yourself, the one came loop picks
-it up with zero extra code. Left disc: rim labeled `'rim'`, and the
-glass meets the stone bare. Right disc: rim labeled `'cut'`, full came.
+The seam group takes volunteers. `cut` itself is reserved — the
+language stamps it on healed seams and won't let you author it, so
+your geometry can never fuse *silently* into the seams — but
+`cut.<name>` is the explicit opt-in: a label that says, out loud, "this
+edge belongs with the seams." Name the disc's rim
+`as segment('cut.rim')` and the one came loop picks it up with zero
+extra code, because the umbrella query `segmentAll('cut')` answers the
+whole namespace. Left disc: rim labeled `'rim'`, and the glass meets
+the stone bare. Right disc: rim labeled `'cut.rim'`, full came — and
+still addressable on its own as `segmentAll('cut.rim')` when the rim
+needs its own pass. (See [label names](/docs#segment-labels-label-names)
+for the rules.)
 
 <mini-workspace src="samples/post44/02-rim-joins-the-came.pathogen" caption="Same decoration loop on both windows; only the rim's label name differs." code-open></mini-workspace>
 
@@ -173,6 +180,16 @@ for (k in 0..7) {
 }
 let panes = disc.cut(knives);
 ```
+
+**And Example 2's trick became a contract.** The rim-joins-the-came
+demo originally leaned on an accident: `cut` was an ordinary label, so
+naming your own geometry `'cut'` happened to merge it with the seams —
+silently, and with no way back out. Working the friction log turned
+the accident into [a named rule](/docs#segment-labels-label-names):
+bare `'cut'` is now reserved (authoring it is a compile error), and
+`cut.<name>` is the explicit opt-in the sample now uses. Same render,
+byte for byte — but the rim reads as a decision instead of a
+coincidence, and `segmentAll('cut.rim')` can still address it alone.
 
 ## Where to go next
 

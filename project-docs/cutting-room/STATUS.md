@@ -30,6 +30,28 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
 
 ## Log
 
+- 2026-08-25 (feedback loop, Item F LANDED — pending review + commit):
+  Cutter label propagation (docs-first, failing-tests-first). A knife
+  edge `as segment('valley')` heals into seams sub-labeled
+  'cut.valley' (stampCutSeam carries the authored label; already-
+  namespaced 'cut.x' passes through un-prefixed; bridges/cookies/
+  unlabeled edges stay plain 'cut'). Umbrella query 'cut' matches the
+  whole namespace merged (single predicate in findLabeledRuns);
+  sub-label queries exact — the unmerged escape hatch (friction #8
+  partial). NEW label-name validation at the evaluatePathAnnotations
+  choke point: identifier-shaped names only, bare 'cut' reserved with
+  opt-in `cut.<name>` (user decision after sweep found the published
+  rim-join idiom), '.' chosen as delimiter with ':' deliberately kept
+  free for future pseudo-selectors (user design discussion). ~50 new
+  tests incl. punctuation coverage matrix. Docs: label-names section +
+  seam-namespace contract in segment-labels.md + path-blocks.md; api
+  docstrings + completions regenerated. Series: post41/02 rewritten as
+  real mountain/valley accordion (labeled knives, routed dashes);
+  post41/06 merged-V subPath surgery replaced by per-knife queries
+  (float-tail-only diff + degenerate l 0 0 prefixes gone); post44/02
+  migrated to 'cut.rim' opt-in (came geometry byte-identical — the
+  umbrella-compat proof); closing entries in papercraft + stained
+  glass; friction #7 resolved, #8 partial. Suite 4915/4915.
 - 2026-08-23: plan approved; post41 sample authoring begun.
 - 2026-08-23 (cont.): ALL FOUR POSTS DRAFTED + 21 samples compiled,
   validated, BBWP'd (post41: 6, post42: 5, post43: 5, post44: 5).
@@ -85,7 +107,17 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
   0 warnings (except the two documented false-positive sets), BBWPs
   + blog + public re-synced. Final check-links crawl green (42 pages /
   1228 links / 0 broken).
-- 2026-08-25 (feedback loop, Item E LANDED — pending review + commit):
+- 2026-08-25 (Item E COMMITTED 17b09a5 + pushed): review verdict
+  approve-with-followup — claim verified TRUE on both code paths
+  (60/60 + 60/60 empirical isPointInFill), byte-identity confirmed
+  both directions; findings applied pre-commit: 2 boolean-side
+  pinning tests added (union boundary 10/10 outward; difference
+  outer + hole rings, 20 samples classified by radius) closing the
+  zero-coverage gap on the structurally separate boolean winding
+  path, and docs reworded to "each canonicalize" (no shared-
+  subroutine implication). Suite 4866/4866; final check-links green
+  (42 pages / 1236 links / 0 broken).
+- 2026-08-25 (feedback loop, Item E LANDED):
   Outward-seam-normal guarantee documented (normal(t) section: contract
   + hole footnote + hand-authored caveat; cut-section cross-ref) and
   PINNED by 2 tests (curved-cut both pieces 10/10, holed ring 5/5 into

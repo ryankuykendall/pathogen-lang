@@ -265,10 +265,18 @@ export function collectEndpointLabels(commands: PathBlockCommand[]): string[] {
  * runs separated by other commands are distinct group members.
  */
 export function findLabeledRuns(commands: PathBlockCommand[], label: string): PathBlockCommand[][] {
+  // The umbrella query 'cut' matches the whole seam namespace — plain 'cut'
+  // and every 'cut.<name>' sub-label — with adjacent matches merging into one
+  // run regardless of sub-label, preserving pre-namespace behavior. Every
+  // other label (sub-labels included) matches exactly.
+  const matches =
+    label === 'cut'
+      ? (l: string | undefined) => l === 'cut' || (l !== undefined && l.startsWith('cut.'))
+      : (l: string | undefined) => l === label;
   const runs: PathBlockCommand[][] = [];
   let current: PathBlockCommand[] = [];
   for (const c of commands) {
-    if (c.meta?.segmentLabel === label) {
+    if (matches(c.meta?.segmentLabel)) {
       current.push(c);
     } else if (current.length > 0) {
       runs.push(current);

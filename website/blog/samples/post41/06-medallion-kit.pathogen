@@ -1,7 +1,8 @@
 // viewBox="0 0 480 300"
 //-- The finished kit sheet: a hex medallion cut into six wedges, exploded
 //-- into a ring. Every wedge tabs one healed seam, fold-dashes the other,
-//-- and wears its number — all driven by the same seam and label queries.
+//-- and wears its number — the knives are named, so each radial edge is
+//-- queried by the knife that made it.
 
 define ViewBox(0, 0, 480, 300);
 
@@ -78,7 +79,7 @@ for (k in 0..2) {
   let dirY = sin(knifeAngle);
   knives.push(@{
     m calc(0 - knifeReach * dirX) calc(0 - knifeReach * dirY)
-    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY)
+    l calc(knifeReach * 2 * dirX) calc(knifeReach * 2 * dirY) as segment(`k${k}`);
   });
 }
 let wedges = plate.cut(knives);
@@ -104,22 +105,21 @@ for (wedge in wedges) {
   let placedBounds = placed.boundingBox();
   let wedgeCenterX = calc(placedBounds.x + placedBounds.width / 2);
   let wedgeCenterY = calc(placedBounds.y + placedBounds.height / 2);
-  // A wedge's two radial edges are adjacent and share the 'cut' label,
-  // so they come back MERGED into one V-shaped run — walk its halves.
-  for (seam in placed.segmentAll('cut')) {
-    for (halfIdx in 0..1) {
-      let t0 = calc(halfIdx * 0.5);
-      let t1 = calc(halfIdx * 0.5 + 0.5);
-      let halfMid = seam.get(calc(t0 + 0.25));
-      // Which side of the centroid ray does this half sit on?
-      let cross = calc((wedgeCenterX - placeX) * (halfMid.y - placeY) - (wedgeCenterY - placeY) * (halfMid.x - placeX));
+  // A wedge's two radial edges came from two DIFFERENT knives, and each
+  // knife left its name on the seams it healed — so exact sub-label
+  // queries hand each edge back on its own, no merged-run surgery.
+  for (k in 0..2) {
+    for (seam in placed.segmentAll(`cut.k${k}`)) {
+      let edgeMid = seam.get(0.5);
+      // Which side of the centroid ray does this edge sit on?
+      let cross = calc((wedgeCenterX - placeX) * (edgeMid.y - placeY) - (wedgeCenterY - placeY) * (edgeMid.x - placeX));
       if (cross > 0) {
         // Clockwise edge: glue tab, pointing away from the wedge.
-        let tabStart = seam.get(calc(t0 + 0.06));
-        let tabEnd = seam.get(calc(t1 - 0.06));
+        let tabStart = seam.get(0.12);
+        let tabEnd = seam.get(0.88);
         // Seam normals point away from the wedge's material — guaranteed
         // by the cut, so the tab needs no direction test.
-        let outwardAngle = seam.normal(calc(t0 + 0.25)).angle;
+        let outwardAngle = seam.normal(0.5).angle;
         let edgeAngle = calc(outwardAngle + PI() / 2);
         tabLayer.apply {
           M calc(tabStart.x) calc(tabStart.y)
@@ -129,10 +129,8 @@ for (wedge in wedges) {
         }
       } else {
         // Counter-clockwise edge: fold line for the neighbor's tab.
-        let half = seam.subPath(t0, t1);
-        let halfStart = seam.get(t0);
         foldLayer.apply {
-          half.drawTo(halfStart.x, halfStart.y);
+          seam.draw();
         }
       }
     }

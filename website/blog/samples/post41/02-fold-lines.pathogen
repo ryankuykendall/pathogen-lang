@@ -1,7 +1,8 @@
 // viewBox="0 0 480 220"
-//-- A four-panel accordion card as one template: the plate's own boundary
-//-- is the cut line (solid), and every healed seam inside it is a fold
-//-- line (dashed) — one layer style decorates the whole seam group.
+//-- A four-panel accordion card as one template: the plate's boundary is
+//-- the cut line (solid), and the creases alternate mountain / valley —
+//-- each knife is named, so its healed seams carry the fold's name and
+//-- one loop routes every seam to the right dash style.
 
 define ViewBox(0, 0, 480, 220);
 
@@ -23,7 +24,13 @@ let cutLayer = PathLayer('cut-line') ${
   stroke-width: 2;
   fill: none;
 };
-let foldLayer = PathLayer('fold-lines') ${
+let mountainLayer = PathLayer('mountain-folds') ${
+  stroke: #94a3b8;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 7 3 1.5 3;
+};
+let valleyLayer = PathLayer('valley-folds') ${
   stroke: #475569;
   stroke-width: 1.5;
   fill: none;
@@ -35,17 +42,25 @@ let cutCaption = TextLayer('cut-caption') ${
   fill: #f87171;
   text-anchor: middle;
 };
-let foldCaption = TextLayer('fold-caption') ${
+let mountainCaption = TextLayer('mountain-caption') ${
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
+let valleyCaption = TextLayer('valley-caption') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #64748b;
+  text-anchor: middle;
+};
 scene.append(panelLayer,
     cutLayer,
-    foldLayer,
+    mountainLayer,
+    valleyLayer,
     cutCaption,
-    foldCaption);
+    mountainCaption,
+    valleyCaption);
 
 let card = @{
   h 288
@@ -53,14 +68,20 @@ let card = @{
   h -288
   z
 };
-let creases = @{
-  m 72 -15
-  l 0 126
-  m 72 -126
-  l 0 126
-  m 72 -126
-  l 0 126
-};
+// An accordion alternates fold directions — so the creases alternate
+// names. A knife's label rides through the cut: the seams it heals come
+// back labeled cut.mountain / cut.valley.
+let creases = [];
+for (i in 0..2) {
+  let foldName = 'valley';
+  if (i % 2 == 0) {
+    foldName = 'mountain';
+  }
+  creases.push(@{
+    m calc(72 * (i + 1)) -15
+    l 0 126 as segment(foldName);
+  });
+}
 let panels = card.cut(creases);
 let originX = 96;
 let originY = 48;
@@ -76,18 +97,27 @@ cutLayer.apply {
   card.drawTo(originX, originY);
 }
 
-// Every seam the cut healed is a fold line — and seams() answers each
-// physical seam exactly once, so the whole group is one dashed pass
-// with no double-draw possible.
-foldLayer.apply {
-  for (seam in panels.seams()) {
-    seam.project(originX, originY).draw();
+// One pass over the physical seams, each routed by the name its knife
+// left on it — no fold is drawn twice, and no geometry bookkeeping
+// decides which crease is which.
+for (seam in panels.seams()) {
+  if (seam.segmentAll('cut.mountain').length > 0) {
+    mountainLayer.apply {
+      seam.project(originX, originY).draw();
+    }
+  } else {
+    valleyLayer.apply {
+      seam.project(originX, originY).draw();
+    }
   }
 }
 
 cutCaption.apply {
-  text(163, 175)`solid = cut the outline`;
+  text(96, 175)`solid = cut`;
 }
-foldCaption.apply {
-  text(320, 175)`dashed = fold the seams`;
+mountainCaption.apply {
+  text(240, 175)`dash-dot = mountain fold`;
+}
+valleyCaption.apply {
+  text(388, 175)`dashed = valley fold`;
 }
