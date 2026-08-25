@@ -76,21 +76,12 @@ cutLayer.apply {
   card.drawTo(originX, originY);
 }
 
-// Every seam the cut healed is a fold line: the dashed style comes from
-// the layer, so the whole group is decorated in one pass. Each interior
-// fold is shared by two panels — stroke it once by letting every panel
-// own only the seams on its right-hand side.
-for (piece in panels) {
-  let placed = piece.project(originX, originY);
-  let bounds = placed.boundingBox();
-  let panelCenterX = calc(bounds.x + bounds.width / 2);
-  foldLayer.apply {
-    for (seam in placed.segmentAll('cut')) {
-      let mid = seam.get(0.5);
-      if (mid.x > panelCenterX) {
-        seam.draw();
-      }
-    }
+// Every seam the cut healed is a fold line — and seams() answers each
+// physical seam exactly once, so the whole group is one dashed pass
+// with no double-draw possible.
+foldLayer.apply {
+  for (seam in panels.seams()) {
+    seam.project(originX, originY).draw();
   }
 }
 

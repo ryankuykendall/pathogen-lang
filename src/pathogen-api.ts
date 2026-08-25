@@ -690,6 +690,8 @@ export interface PathogenArray<T = Value> {
   reverse(): PathogenArray<T>;
   /** sort() — Sorted copy, ascending; comparator via trailing block or sort() << cmp */
   sort(): PathogenArray<T>;
+  /** seams() — On a cut() result: each physical healed seam exactly once (subject-local placement) */
+  seams(): PathogenArray<PathogenPathBlock>;
 }
 
 /** @type string */

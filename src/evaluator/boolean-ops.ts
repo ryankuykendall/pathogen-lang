@@ -1740,10 +1740,12 @@ function splitCmdRange(cmd: TransformCmd, tStart: number, tEnd: number): Transfo
     const keepEnd = tEnd >= 1 - PARAMETRIC_EPSILON;
     const segLabel = cmd.meta.segmentLabel;
     const ev = keepEnd ? cmd.meta.endVertex : undefined;
-    if (segLabel !== undefined || ev !== undefined) {
+    const seamId = cmd.meta.seamId;
+    if (segLabel !== undefined || ev !== undefined || seamId !== undefined) {
       out.meta = {
         ...(segLabel !== undefined ? { segmentLabel: segLabel } : {}),
         ...(ev !== undefined ? { endVertex: { ...ev } } : {}),
+        ...(seamId !== undefined ? { seamId } : {}),
       };
     }
   }
@@ -2321,12 +2323,14 @@ function shiftRingEndVertices(reversed: TransformCmd[], forward: TransformCmd[])
   if (n === 0) return;
   for (let j = 0; j < reversed.length; j++) {
     const segLabel = reversed[j].meta?.segmentLabel;
+    const seamId = reversed[j].meta?.seamId;
     const srcIdx = (((n - 2 - j) % n) + n) % n;
     const ev = forward[srcIdx]?.meta?.endVertex;
-    if (segLabel !== undefined || ev !== undefined) {
+    if (segLabel !== undefined || ev !== undefined || seamId !== undefined) {
       reversed[j].meta = {
         ...(segLabel !== undefined ? { segmentLabel: segLabel } : {}),
         ...(ev !== undefined ? { endVertex: { ...ev } } : {}),
+        ...(seamId !== undefined ? { seamId } : {}),
       };
     } else if (reversed[j].meta !== undefined) {
       delete reversed[j].meta;
@@ -3959,8 +3963,17 @@ function cutNodeMergeDist(bboxDiag: number): number {
 /** Stamp a cutter fragment as a healed seam: fresh meta, segmentLabel 'cut'.
  *  Overrides any cutter-authored labels — the cutter's own labels do not
  *  propagate into pieces (documented). */
-function stampCutSeam(cmds: TransformCmd[]): TransformCmd[] {
-  return cmds.map((cmd) => ({ ...cmd, meta: { segmentLabel: 'cut' } }));
+/** Physical-seam ids: one per cutter fragment / cookie ring, shared by
+ *  both twin directions; face-walk bridges get fresh ids of their own.
+ *  MODULE-WIDE and never reset — pieces from one cut() are routinely fed
+ *  into another, and per-call counters would collide old inherited ids
+ *  with new ones, silently splicing unrelated seams in pieces.seams(). */
+let nextSeamId = 0;
+
+function stampCutSeam(cmds: TransformCmd[], seamId: number): TransformCmd[] {
+  // Both twin halves of a physical seam are stamped from ONE call, so
+  // they share the id — the pairing pieces.seams() relies on.
+  return cmds.map((cmd) => ({ ...cmd, meta: { segmentLabel: 'cut', seamId } }));
 }
 
 function cutDebug(msg: string): void {
@@ -4352,7 +4365,7 @@ interface CutHalfEdge {
  * every traced face is a material region; the unbounded face and hole
  * interiors are never traced.
  */
-function traceCutFaces(halfEdges: CutHalfEdge[], table: CutNodeTable, warnings?: string[]): TransformCmd[][] {
+function traceCutFaces(halfEdges: CutHalfEdge[], table: CutNodeTable, warnings: string[] | undefined, nextSeamId: () => number): TransformCmd[][] {
   const outsByNode = new Map<number, number[]>();
   for (let i = 0; i < halfEdges.length; i++) {
     const n = cutNodeFind(table, halfEdges[i].fromNode);
@@ -4425,7 +4438,7 @@ function traceCutFaces(halfEdges: CutHalfEdge[], table: CutNodeTable, warnings?:
             args: [curStart.x - prevEnd.x, curStart.y - prevEnd.y],
             start: { ...prevEnd },
             end: { ...curStart },
-            meta: { segmentLabel: 'cut' },
+            meta: { segmentLabel: 'cut', seamId: nextSeamId() },
           });
         }
       }
@@ -4770,12 +4783,12 @@ function cutClosedRings(
   for (const e of snappedCutter) {
     const fwd = halfEdges.length;
     // Every healed seam edge carries segment('cut') — in both adjacent pieces.
-    const seamCmds = stampCutSeam(e.cmds);
+    const seamCmds = stampCutSeam(e.cmds, nextSeamId++);
     halfEdges.push({ cmds: seamCmds, fromNode: e.fromNode, toNode: e.toNode, twin: fwd + 1, visited: false });
     halfEdges.push({ cmds: reverseRing(seamCmds), fromNode: e.toNode, toNode: e.fromNode, twin: fwd, visited: false });
   }
 
-  const faces = halfEdges.length > 0 ? traceCutFaces(halfEdges, table, warnings) : [];
+  const faces = halfEdges.length > 0 ? traceCutFaces(halfEdges, table, warnings, () => nextSeamId++) : [];
 
   // ── Collect rings: traced faces + uncut subject cycles + cookie loops ──
   interface CutRing { cmds: TransformCmd[]; area: number }
@@ -4797,7 +4810,7 @@ function cutClosedRings(
   for (const cookie of cookies) {
     // A cookie loop both stamps out a piece and punches a hole in its host —
     // its boundary is a healed seam in both, so both copies carry 'cut'.
-    const stamped = stampCutSeam(cookie);
+    const stamped = stampCutSeam(cookie, nextSeamId++);
     const area = ringSignedArea(stamped);
     const positive = area > 0 ? stamped : reverseRing(stamped);
     const negative = area > 0 ? reverseRing(stamped) : stamped;

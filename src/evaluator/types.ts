@@ -538,6 +538,10 @@ export interface PathCommandMeta {
     label?: string; // `as endpoint(...)` on the command that creates this vertex
     cornerOp?: RecordedCornerOp; // `with <op>(...)` on the FOLLOWING command (this vertex is the joint)
   };
+  /** Physical-seam identity stamped by cut(): both twin halves of a healed
+   *  seam share one id, powering pieces.seams(). Carried through derived
+   *  ops but only meaningful on fresh cut results. */
+  seamId?: number;
 }
 
 export interface PathBlockCommand {

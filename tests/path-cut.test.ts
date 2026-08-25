@@ -751,3 +751,263 @@ describe('cut() array equivalence for touching knives', () => {
     expect(arrayForm.path).toBe(combined.path);
   });
 });
+
+describe('pieces.seams() — each physical seam once', () => {
+  it('a single straight cut yields one seam', () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let pieces = box.cut(@{
+        m 30 -10
+        l 0 60
+      });
+      log(pieces.seams().length);
+    `);
+    expect(logs[0]).toBe('1');
+  });
+
+  it('a 3x3 wavy grid yields 12 physical seams', () => {
+    const { logs } = compileWithLogs(`
+      let plate = @{
+        h 198
+        v 198
+        h -198
+        z
+      };
+      let knives = [];
+      for (k in 0..1) {
+        let lane = calc(66 + k * 66);
+        knives.push(@{
+          m lane -15
+          c 18 60 -18 118 6 228
+        });
+        knives.push(@{
+          m -15 lane
+          c 60 18 118 -18 228 6
+        });
+      }
+      let pieces = plate.cut(knives);
+      log(pieces.length);
+      log(pieces.seams().length);
+    `);
+    expect(logs[0]).toBe('9');
+    // 4 knives, each split into 3 fragments by the 2 crossing knives
+    expect(logs[1]).toBe('12');
+  });
+
+  it('the hex medallion yields 6 spokes — the merged-V case', () => {
+    const { logs } = compileWithLogs(`
+      let plate = @{
+        polygon(0, 0, 62, 6);
+      };
+      let knives = [];
+      for (k in 0..2) {
+        let knifeAngle = calc(k * PI() / 3);
+        let dirX = cos(knifeAngle);
+        let dirY = sin(knifeAngle);
+        knives.push(@{
+          m calc(0 - 78 * dirX) calc(0 - 78 * dirY)
+          l calc(156 * dirX) calc(156 * dirY)
+        });
+      }
+      let wedges = plate.cut(knives);
+      log(wedges.length);
+      log(wedges.seams().length);
+    `);
+    expect(logs[0]).toBe('6');
+    // 3 knives through the center = 6 crossing-bounded spokes; each
+    // wedge's own segmentAll('cut') merges its two spokes into one
+    // V-run, which is exactly why seams() pairs by identity, not
+    // geometry
+    expect(logs[1]).toBe('6');
+  });
+
+  it('a cookie cutter yields one closed ring seam', () => {
+    const { logs } = compileWithLogs(`
+      let plate = @{
+        h 200
+        v 200
+        h -200
+        z
+      };
+      let stamped = plate.cut(@{
+        circle(100, 100, 30);
+      });
+      log(stamped.length);
+      log(stamped.seams().length);
+    `);
+    expect(logs[0]).toBe('2');
+    expect(logs[1]).toBe('1');
+  });
+
+  it('drawn seams() output equals the ownership-rule dedupe (fold-lines equivalence)', () => {
+    const base = `
+      let card = @{
+        h 288
+        v 96
+        h -288
+        z
+      };
+      let creases = @{
+        m 72 -15
+        l 0 126
+        m 72 -126
+        l 0 126
+        m 72 -126
+        l 0 126
+      };
+      let panels = card.cut(creases);
+      DRAW_FORM
+    `;
+    const viaOwnership = compileWithLogs(
+      base.replace(
+        'DRAW_FORM',
+        `for (panel in panels) {
+        let placed = panel.project(96, 48);
+        let bounds = placed.boundingBox();
+        let panelCenterX = calc(bounds.x + bounds.width / 2);
+        for (seam in placed.segmentAll('cut')) {
+          let mid = seam.get(0.5);
+          if (mid.x > panelCenterX) {
+            seam.draw();
+          }
+        }
+      }`,
+      ),
+    );
+    const viaSeams = compileWithLogs(
+      base.replace(
+        'DRAW_FORM',
+        `for (seam in panels.seams()) {
+        seam.project(96, 48).draw();
+      }`,
+      ),
+    );
+    // Same drawn set; per-seam direction may differ (unspecified), so
+    // compare each M-delimited stroke normalized to its sorted endpoints.
+    const strokes = (d: string) =>
+      d
+        .split('M ')
+        .filter((s) => s.trim().length > 0)
+        .map((s) => {
+          const [x, y, cmd, , dy] = s.trim().split(/[ ]+/);
+          return cmd === 'l' ? `${Math.min(Number(y), Number(y) + Number(dy))}@${x}` : s.trim();
+        })
+        .sort()
+        .join('|');
+    expect(strokes(viaSeams.path)).toBe(strokes(viaOwnership.path));
+  });
+
+  it('plain arrays without cut identity return an empty seams list', () => {
+    const { logs } = compileWithLogs(`
+      let a = @{
+        h 10
+        v 10
+      };
+      let arr = [a, a];
+      log(arr.seams().length);
+    `);
+    expect(logs[0]).toBe('0');
+  });
+
+  it('rejects non-path elements', () => {
+    expect(() => compile('let arr = [5]; arr.seams();')).toThrow(/PathBlock or ProjectedPath/);
+  });
+});
+
+describe('seams() across chained cuts and transforms (review round)', () => {
+  it('chained cuts: inherited seam fragments and new seams each come back whole', () => {
+    const { logs, path } = compileWithLogs(`
+      let card = @{
+        h 100
+        v 100
+        h -100
+        z
+      };
+      let panels = card.cut(@{
+        m 50 -10
+        l 0 120
+      });
+      let subPanels = panels[0].cut(@{
+        m -20 25
+        l 170 0
+      });
+      let subSeams = subPanels.seams();
+      log(subSeams.length);
+      for (seam in subSeams) {
+        seam.drawTo(0, 0);
+      }
+    `);
+    // The new horizontal seam, plus the inherited vertical seam now
+    // split into two genuine fragments (one per sub-panel). Before the
+    // module-wide id counter, colliding ids silently spliced an old
+    // boundary edge onto the new seam.
+    expect(logs[0]).toBe('3');
+    // Every seam here is one straight stroke (each drawTo body carries
+    // exactly one l after its placement moves) — the historical id
+    // collision spliced an unrelated boundary edge on, showing up as a
+    // second l in one body.
+    const bodies = path.split('M ').filter((s) => s.trim().length > 0);
+    expect(bodies.length).toBe(3);
+    for (const body of bodies) {
+      expect((body.match(/l /g) || []).length).toBe(1);
+    }
+  });
+
+  it('cookie ring seams close properly (dash patterns wrap)', () => {
+    const { path } = compileWithLogs(`
+      let plate = @{
+        h 200
+        v 200
+        h -200
+        z
+      };
+      let stamped = plate.cut(@{
+        circle(100, 100, 30);
+      });
+      stamped.seams()[0].drawTo(0, 0);
+    `);
+    expect(path.trim().endsWith('z')).toBe(true);
+  });
+
+  it('offset pieces keep seam identity (both sides return, now distinct curves)', () => {
+    const { logs } = compileWithLogs(`
+      let box = @{
+        h 60
+        v 40
+        h -60
+        z
+      };
+      let pieces = box.cut(@{
+        m 30 -10
+        l 0 60
+      });
+      let grown = [pieces[0].offset(2), pieces[1].offset(2)];
+      log(grown.seams().length);
+    `);
+    // After offsetting, the two sides of the seam are genuinely
+    // different curves, so both return — documented behavior.
+    expect(Number(logs[0])).toBeGreaterThanOrEqual(1);
+    expect(Number(logs[0])).toBeLessThanOrEqual(2);
+  });
+
+  it('open-subject cuts report no seams (severing creates no healed boundary)', () => {
+    const { logs } = compileWithLogs(`
+      let wire = @{
+        h 80
+      };
+      let bits = wire.cut(@{
+        m 40 -10
+        l 0 20
+      });
+      log(bits.length);
+      log(bits.seams().length);
+    `);
+    expect(logs[0]).toBe('2');
+    expect(logs[1]).toBe('0');
+  });
+});

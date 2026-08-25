@@ -111,12 +111,14 @@ where folds go: one dashed layer decorates the entire group.
 
 <mini-workspace src="samples/post41/02-fold-lines.pathogen" caption="The outline is the cut line; every healed seam is a fold line." code-open></mini-workspace>
 
-One practical wrinkle worth stealing: each interior fold is shared by
-two panels, so decorating every panel's every seam would stroke each
-fold twice — and two dashed strokes running opposite directions fill in
-each other's gaps. The sample lets each panel own only the seams on its
-right-hand side (`get(0.5)` for the seam's midpoint, compared against
-the panel's center), so every fold is drawn exactly once.
+One thing the sample does *not* have to do: dedupe. Each interior fold
+is shared by two panels, so asking every panel for its seams would
+stroke each fold twice — and two dashed strokes running opposite
+directions fill in each other's gaps. `panels.seams()`, asked of the
+cut result as a whole, answers with each *physical* seam exactly once,
+so the fold pass is one loop with no ownership bookkeeping. (Per-piece
+`segmentAll('cut')` is still the right query when you want each
+piece's own view of its edges — Example 1 and the tabs to come.)
 
 ## Example 3 — Glue tabs that grow on seams
 
@@ -212,6 +214,30 @@ seam.drawTo(seam.startPoint.x, seam.startPoint.y);
 
 // after
 seam.draw();
+```
+
+**The fold lines lost their cleverest code.** Example 2 originally
+deduped shared folds with an ownership rule — each panel stroked only
+the seams on its right-hand side, a midpoint-versus-center comparison
+that worked and taught nothing. Cut results now answer
+[`pieces.seams()`](/docs#path-blocks-seams-array-of-pathblock): each
+physical seam exactly once, subject-local like the pieces themselves.
+The double-draw bug class (opposite-phase dashes filling each other's
+gaps) is unwritable through it.
+
+```pathogen
+// before: per-panel ownership rule (~10 lines)
+for (seam in placed.segmentAll('cut')) {
+  let mid = seam.get(0.5);
+  if (mid.x > panelCenterX) {
+    seam.draw();
+  }
+}
+
+// after
+for (seam in panels.seams()) {
+  seam.project(originX, originY).draw();
+}
 ```
 
 **The medallion's knives stopped doing arithmetic.** Example 6's three

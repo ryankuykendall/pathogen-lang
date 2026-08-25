@@ -23,7 +23,7 @@ a narrow bug, or deleting our own workaround, not the feature we logged.
 | B | #1, #12 | ProjectedPath in-place draw() (strictly additive; drawTo invariant documented) | **LANDED** — draw() both evaluators, docs contract, 7 new tests, idiom swept across all 21 samples + both fences, closing sections in all four posts |
 | B2 | #12 root | Truthful startPoint = "first inked point" (revive 2026-08-01 backlogged audit, preserved in B-projected-draw/) | queued after H |
 | C | #10, #16 | † annotated-divergence sweep: text-if drop + stdlib-call blocks empty | **LANDED** — recursive text-block walker + PathSegment context tracking, 4 parity tests, no sample changes needed (04's counts design stays) | 
-| D | #2 | pieces.seams() group query (array-method fallthrough, index.ts:5327; twin pairs at boolean-ops.ts:4772) | queued |
+| D | #2 | pieces.seams() group query (seamId twin-stamping) | **LANDED** — array method both evaluators, 4 meta-passthrough fixes, 8 new tests incl. ownership-rule equivalence, fold-lines showcase rewritten |
 | E | #3 | † normal(t) ALREADY material-outward on cut seams (canonical winding) — docs + possibly alias; delete tab flip dance | queued |
 | F | #7 | Cutter label propagation — meta reaches stampCutSeam (boolean-ops.ts:3959) and is discarded at one line; + bridging-l at :4428 | queued |
 | G | #8 | Unmerged-runs escape hatch (findLabeledRuns, segments.ts:260; options arg at 3 query sites) | queued |

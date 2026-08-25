@@ -420,6 +420,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'slice', kind: 'function', detail: 'slice(start, end?) — Get sub-array', boost: 8, insertText: 'slice(${1:start})$0', isSnippet: true },
       { label: 'reverse', kind: 'function', detail: 'reverse() — Reversed copy (non-mutating)', boost: 8, insertText: 'reverse()$0', isSnippet: true },
       { label: 'sort', kind: 'function', detail: 'sort() — Sorted copy, ascending; comparator via trailing block or sort() << cmp', boost: 8, insertText: 'sort()$0', isSnippet: true },
+      { label: 'seams', kind: 'function', detail: 'seams() — On a cut() result: each physical healed seam exactly once (subject-local placement)', boost: 8, insertText: 'seams()$0', isSnippet: true },
     ],
   },
   'string': {
@@ -1099,7 +1100,7 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'ColorInstance': { lighten: 'ColorInstance', darken: 'ColorInstance', saturate: 'ColorInstance', desaturate: 'ColorInstance', alpha: 'ColorInstance', hueShift: 'ColorInstance', complement: 'ColorInstance', mix: 'ColorInstance', flatten: 'ColorInstance', analogous: 'array', triadic: 'array', tetradic: 'array', splitComplementary: 'array' },
   'Grid': { set: 'Grid', getPoint: 'Point', getRow: 'array', getCol: 'array', cells: 'array', fill: 'Grid', map: 'Grid' },
   'Point': { translate: 'Point', rotate: 'Point', lerp: 'Point', midpoint: 'Point', polarTranslate: 'Point' },
-  'array': { map: 'array', filter: 'array', mapSlice: 'array', slice: 'array', reverse: 'array', sort: 'array' },
+  'array': { map: 'array', filter: 'array', mapSlice: 'array', slice: 'array', reverse: 'array', sort: 'array', seams: 'array' },
   'string': { split: 'array', append: 'string', prepend: 'string', slice: 'string' },
   'PathBlock': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'PathBlock', offset: 'PathBlock', variableOffset: 'PathBlock', compoundVariableOffset: 'PathBlock', mirror: 'PathBlock', scale: 'PathBlock', rotate: 'PathBlock', rotateAtVertexIndex: 'PathBlock', subPath: 'PathBlock', project: 'ProjectedPath', chamfer: 'PathBlock', chamferAtVertex: 'PathBlock', fillet: 'PathBlock', filletAtVertex: 'PathBlock', ellipticalFillet: 'PathBlock', ellipticalFilletAtVertex: 'PathBlock', union: 'PathBlock', difference: 'PathBlock', intersection: 'PathBlock', xor: 'PathBlock', intersectionPoints: 'array', cut: 'array', segment: 'PathBlock', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'VertexHandle', vertexAll: 'array' },
   'VariableOffsetBuilder': { stop: 'VariableOffsetBuilder', startTangent: 'VariableOffsetBuilder', endTangent: 'VariableOffsetBuilder' },
@@ -1161,6 +1162,7 @@ export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
 /** Per-type array element types for members typed PathogenArray<X> / X[] (parallel to TYPE_METHOD_RETURNS / TYPE_PROPERTY_TYPES, whose values stay bare 'array') */
 export const TYPE_ELEMENT_TYPES: Record<string, Record<string, string>> = {
   'ColorInstance': { analogous: 'ColorInstance', triadic: 'ColorInstance', tetradic: 'ColorInstance', splitComplementary: 'ColorInstance' },
+  'array': { seams: 'PathBlock' },
   'PathBlock': { vertices: 'Point', contours: 'PathBlock', intersectionPoints: 'Point', cut: 'PathBlock', segmentAll: 'PathBlock', pointAll: 'Point', vertexAll: 'VertexHandle' },
   'PathLayer': { segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'VertexHandle' },
   'ProjectedPath': { vertices: 'Point', cut: 'PathBlock', segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'VertexHandle' },

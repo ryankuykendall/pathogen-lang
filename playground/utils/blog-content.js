@@ -7176,21 +7176,12 @@ cutLayer.apply {
   card.drawTo(originX, originY);
 }
 
-// Every seam the cut healed is a fold line: the dashed style comes from
-// the layer, so the whole group is decorated in one pass. Each interior
-// fold is shared by two panels — stroke it once by letting every panel
-// own only the seams on its right-hand side.
-for (piece in panels) {
-  let placed = piece.project(originX, originY);
-  let bounds = placed.boundingBox();
-  let panelCenterX = calc(bounds.x + bounds.width / 2);
-  foldLayer.apply {
-    for (seam in placed.segmentAll('cut')) {
-      let mid = seam.get(0.5);
-      if (mid.x &gt; panelCenterX) {
-        seam.draw();
-      }
-    }
+// Every seam the cut healed is a fold line — and seams() answers each
+// physical seam exactly once, so the whole group is one dashed pass
+// with no double-draw possible.
+foldLayer.apply {
+  for (seam in panels.seams()) {
+    seam.project(originX, originY).draw();
   }
 }
 
@@ -7203,12 +7194,14 @@ foldCaption.apply {
 </code>
   <img src="/blog/samples/post41/02-fold-lines.svg" alt="The outline is the cut line; every healed seam is a fold line." loading="lazy">
 </mini-workspace></p>
-<p>One practical wrinkle worth stealing: each interior fold is shared by
-two panels, so decorating every panel&#39;s every seam would stroke each
-fold twice — and two dashed strokes running opposite directions fill in
-each other&#39;s gaps. The sample lets each panel own only the seams on its
-right-hand side (<code>get(0.5)</code> for the seam&#39;s midpoint, compared against
-the panel&#39;s center), so every fold is drawn exactly once.</p>
+<p>One thing the sample does <em>not</em> have to do: dedupe. Each interior fold
+is shared by two panels, so asking every panel for its seams would
+stroke each fold twice — and two dashed strokes running opposite
+directions fill in each other&#39;s gaps. <code>panels.seams()</code>, asked of the
+cut result as a whole, answers with each <em>physical</em> seam exactly once,
+so the fold pass is one loop with no ownership bookkeeping. (Per-piece
+<code>segmentAll(&#39;cut&#39;)</code> is still the right query when you want each
+piece&#39;s own view of its edges — Example 1 and the tabs to come.)</p>
 <h2>Example 3 — Glue tabs that grow on seams</h2>
 <p>Tabs are the first payoff that would genuinely hurt to do by hand. The
 seam is a parametric path, so <code>get(t)</code> walks along it and <code>normal(t)</code>
@@ -7719,6 +7712,26 @@ seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-pro
 
 <span class="hljs-comment">// after</span>
 seam.<span class="hljs-title function_">draw</span>();
+</code></pre><p><strong>The fold lines lost their cleverest code.</strong> Example 2 originally
+deduped shared folds with an ownership rule — each panel stroked only
+the seams on its right-hand side, a midpoint-versus-center comparison
+that worked and taught nothing. Cut results now answer
+<a href="/docs#path-blocks-seams-array-of-pathblock"><code>pieces.seams()</code></a>: each
+physical seam exactly once, subject-local like the pieces themselves.
+The double-draw bug class (opposite-phase dashes filling each other&#39;s
+gaps) is unwritable through it.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: per-panel ownership rule (~10 lines)</span>
+<span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
+  <span class="hljs-keyword">let</span> mid = seam.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
+  <span class="hljs-keyword">if</span> (mid.<span class="hljs-property">x</span> &gt; panelCenterX) {
+    seam.<span class="hljs-title function_">draw</span>();
+  }
+}
+
+<span class="hljs-comment">// after</span>
+<span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> panels.<span class="hljs-title function_">seams</span>()) {
+  seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+}
 </code></pre><p><strong>The medallion&#39;s knives stopped doing arithmetic.</strong> Example 6&#39;s three
 knives were originally one cutter block whose strokes chained together
 with hand-computed relative moves — and one of those moves shipped
@@ -8357,6 +8370,10 @@ have since grown an in-place <code>draw()</code>, and every came stroke in this
 post got one line simpler. Part 1&#39;s closing section tells the story;
 the garment post&#39;s tells its darker sibling (the same expression
 silently misplacing whole cut pieces).</p>
+<p>(The came loops in this post keep their per-piece form deliberately —
+each pane declaring its own boundary <em>is</em> the teaching. When you want
+each physical seam once instead — solder budgets, fold lines —
+<code>pieces.seams()</code> now exists; part 1&#39;s closing section shows it.)</p>
 <p><strong>And the rose window&#39;s knives became a loop.</strong> The first version of
 Example 5 hand-chained eight spokes in one cutter block — sixteen
 lines of relative-move arithmetic between stroke endpoints, the same

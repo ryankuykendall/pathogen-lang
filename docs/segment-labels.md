@@ -280,6 +280,8 @@ for ([p, i] in pieces) {
 
 If you label your own geometry `as segment('cut')`, it merges into the same group — labels form groups by design.
 
+Note that per-piece seam queries answer each interior seam **twice** — once from each adjacent piece. When you want each physical seam once (fold lines, came), use [`pieces.seams()`](#path-blocks-seams-array-of-pathblock) on the array `cut()` returns.
+
 **What to know about derived labels:**
 
 - **Runs merge.** Adjacent commands with the same label merge into one queryable run, so two seam edges that meet end-to-end come back from `segmentAll('cut')` as a single run, not two.

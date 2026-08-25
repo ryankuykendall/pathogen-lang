@@ -875,8 +875,13 @@ export function offsetCommands(
             // end-vertex annotation only the final one.
             const seg = piece.srcMeta.segmentLabel;
             const ev = lastOfPiece ? piece.srcMeta.endVertex : undefined;
-            if (seg !== undefined || ev !== undefined) {
-              cmd.meta = { ...(seg !== undefined ? { segmentLabel: seg } : {}), ...(ev !== undefined ? { endVertex: { ...ev } } : {}) };
+            const seamId = piece.srcMeta.seamId;
+            if (seg !== undefined || ev !== undefined || seamId !== undefined) {
+              cmd.meta = {
+                ...(seg !== undefined ? { segmentLabel: seg } : {}),
+                ...(ev !== undefined ? { endVertex: { ...ev } } : {}),
+                ...(seamId !== undefined ? { seamId } : {}),
+              };
             }
           }
         }

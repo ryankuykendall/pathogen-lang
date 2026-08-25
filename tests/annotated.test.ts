@@ -1461,3 +1461,16 @@ M 0 0`;
     expect(() => compileAnnotated(src)).not.toThrow();
   });
 });
+
+describe('seams() parity (annotated)', () => {
+  it('plain arrays return an empty seams list in both evaluators', () => {
+    const src = `let a = @{
+  h 10
+  v 10
+};
+let arr = [a, a];
+M calc(arr.seams().length * 10 + 5) 0`;
+    expect(compile(src).layers[0].data).toBe('M 5 0');
+    expect(compileAnnotated(src)).toContain('M 5 0');
+  });
+});

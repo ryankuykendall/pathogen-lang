@@ -133,8 +133,12 @@ function normalizeMeta(meta: PathCommandMeta | undefined): PathCommandMeta | und
     meta.endVertex && (meta.endVertex.label !== undefined || meta.endVertex.cornerOp !== undefined)
       ? meta.endVertex
       : undefined;
-  if (meta.segmentLabel === undefined && endVertex === undefined) return undefined;
-  return { ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}), ...(endVertex ? { endVertex } : {}) };
+  if (meta.segmentLabel === undefined && endVertex === undefined && meta.seamId === undefined) return undefined;
+  return {
+    ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}),
+    ...(endVertex ? { endVertex } : {}),
+    ...(meta.seamId !== undefined ? { seamId: meta.seamId } : {}),
+  };
 }
 
 /**
@@ -149,6 +153,9 @@ export function derivedMeta(meta: PathCommandMeta | undefined): PathCommandMeta 
   return normalizeMeta({
     ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}),
     ...(endVertexLabel !== undefined ? { endVertex: { label: endVertexLabel } } : {}),
+    // seamId is label-like identity, not a pending geometric op — it
+    // carries (the corner-op strip rationale doesn't apply).
+    ...(meta.seamId !== undefined ? { seamId: meta.seamId } : {}),
   });
 }
 

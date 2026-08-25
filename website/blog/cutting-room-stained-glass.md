@@ -142,6 +142,11 @@ post got one line simpler. Part 1's closing section tells the story;
 the garment post's tells its darker sibling (the same expression
 silently misplacing whole cut pieces).
 
+(The came loops in this post keep their per-piece form deliberately —
+each pane declaring its own boundary *is* the teaching. When you want
+each physical seam once instead — solder budgets, fold lines —
+`pieces.seams()` now exists; part 1's closing section shows it.)
+
 **And the rose window's knives became a loop.** The first version of
 Example 5 hand-chained eight spokes in one cutter block — sixteen
 lines of relative-move arithmetic between stroke endpoints, the same

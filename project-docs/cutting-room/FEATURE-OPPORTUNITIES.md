@@ -8,7 +8,7 @@ notes the friction hit in a real sample. To be synthesized at project end.
    — a two-line incantation used in every single sample. A `draw()` that
    emits at the path's own absolute coordinates would make the core
    seam-decoration idiom one obvious line. (post41/01 onward.)
-2. **Shared seams double-draw.** Every interior cut line exists twice —
+2. **RESOLVED (Item D, 2026-08-24): `pieces.seams()`** — each physical seam once, powered by seamId twin-stamping in cut(); post41/02's ownership rule deleted. Original: **Shared seams double-draw.** Every interior cut line exists twice —
    once per adjacent piece — so naive seam decoration strokes it twice,
    and opposite-direction dashes visibly fill each other's gaps. Samples
    dedupe with ad-hoc ownership rules (midpoint-vs-center compare). A

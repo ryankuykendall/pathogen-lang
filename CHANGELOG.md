@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-24 (pieces.seams() — Cutting Room feedback loop, item D)
+
+### Added
+
+#### Core
+
+- **`pieces.seams()`** — called on the array `cut()` returns, answers each *physical* healed seam exactly once (per-piece queries see every interior seam twice, once per adjacent piece — the double-draw that makes opposite-phase dashed strokes fill each other's gaps). Powered by a `seamId` stamped into command meta at cut time: both twin halves of a seam share one id (cookie rings included; face-walk bridges get their own), so pairing survives the merged-V-run case that defeats geometric matching. Returned seams keep subject-local placement, exactly like the pieces. Four meta-reconstruction sites gained seamId passthroughs (normalizeMeta/derivedMeta, split fragments, ring reversal); both evaluators dispatch the new array method; declared on `PathogenArray` with completions regenerated; docs carry the seams-once contract. 8 new tests including a drawn-output equivalence proof against the old ownership-rule dedupe.
+
+#### Documentation
+
+- Fold-lines sample (post41/02) rewritten to the one-loop `seams()` form — the right-hand-side ownership rule is gone — with a papercraft closing-section entry (before/after) and a deliberate note in the stained-glass post that its came loops stay per-piece for teaching reasons.
+
 ## [0.8.0] - 2026-08-24 (annotated-mode divergence fixes — Cutting Room feedback loop, item C)
 
 ### Fixed

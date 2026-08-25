@@ -85,6 +85,18 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
   0 warnings (except the two documented false-positive sets), BBWPs
   + blog + public re-synced. Final check-links crawl green (42 pages /
   1228 links / 0 broken).
+- 2026-08-24 (feedback loop, Item D LANDED — pending review + commit):
+  pieces.seams() (docs-first, failing-tests-first, planned in plan
+  mode): seamId stamped at cut time (twin halves share one id; cookies
+  one id both windings; bridges fresh ids); passthroughs at the four
+  verified meta-reconstruction sites (normalizeMeta, derivedMeta,
+  split-fragment builder, shiftRingEndVertices); 'seams' array method
+  in both evaluators (first-side-wins ownership); PathogenArray api +
+  completions; docs section + anchor verified. 8 new tests incl. the
+  hex merged-V case and a drawn-output equivalence proof vs the old
+  ownership rule. Suite 4858/4858; build green. Fold-lines sample
+  rewritten (render identical, one fold direction flipped); papercraft
+  closing entry + stained-glass per-piece note. Log #2 resolved.
 - 2026-08-24 (feedback loop, Item C LANDED — pending commit after H):
   Annotated-divergence pair fixed: (#10) recursive text-block walker —
   text inside if/for bodies reaches the elements accumulator (main was

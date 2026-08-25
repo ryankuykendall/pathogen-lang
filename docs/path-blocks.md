@@ -978,6 +978,27 @@ for ([piece, i] in slices) {
 }
 ```
 
+### `seams()` → array of PathBlock
+
+Every interior seam exists twice in the pieces — once in each adjacent piece — so decorating seams per piece draws each one twice (visible with dashed strokes, whose opposite-direction passes fill each other's gaps). `seams()`, called **on the array cut() returns**, answers with each *physical* seam exactly once:
+
+```
+let pieces = card.cut(creases);
+for (seam in pieces.seams()) {
+  foldLayer.apply {
+    seam.project(20, 30).draw();    // each fold drawn once, by contract
+  }
+}
+```
+
+The returned seams are PathBlocks that keep **subject-local placement**, exactly like the pieces themselves — draw them at the same origin you draw the pieces (`M x y` + `seam.draw()`, or `seam.project(x, y).draw()`) and they land on the cuts. Each seam's direction of travel is unspecified (it comes from whichever piece was encountered first). A cookie cutter's ring is one closed seam (it closes with `z`, so dashes wrap); a knife split by a crossing knife counts as one seam per crossing-bounded fragment.
+
+Details worth knowing:
+
+- **Chained cuts compose.** Cut a piece again and its inherited seams stay identified: `subPieces.seams()` returns the new cut's seams plus each surviving fragment of the older seams, every physical stretch exactly once.
+- **Severing an open path creates no healed boundary**, so `seams()` on an open subject's fragments is empty.
+- `seams()` is answered from identity the cut records into the pieces — call it on arrays whose elements came from `cut()`. Hand-built pieces don't carry it, and transformed copies may change how sides pair (after `offset()` the two sides of a seam are genuinely different curves, so both return; corner-shaping ops may drop the identity entirely). When in doubt, query seams() on the cut result itself and transform the *seams*.
+
 ### Cutting behavior
 
 **Arguments and results**

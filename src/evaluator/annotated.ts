@@ -3060,6 +3060,63 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
 
   if (!isArrayValue(obj)) throw mError(`Cannot call method '${expr.method}' on non-array value`);
   switch (expr.method) {
+    case 'seams': {
+      if (expr.args.length !== 0) throw mError('seams() expects 0 arguments');
+      
+      // Collect seamId-carrying stretches per (id, element): within one
+      // element a given id is one contiguous stretch; across elements the
+      // same id is either the seam's TWIN (reversed-identical geometry —
+      // deduped) or, after chained cuts, a genuinely distinct fragment of
+      // an inherited seam (kept as its own entry).
+      const seamStretches = new Map<number, { owner: Value; cmds: PathBlockCommand[] }[]>();
+      for (const el of obj.elements) {
+        if (typeof el !== 'object' || el === null || !('type' in el) || (el.type !== 'PathBlockValue' && el.type !== 'ProjectedPathValue')) {
+          throw mError('seams() elements must each be a PathBlock or ProjectedPath (call it on the array cut() returns)');
+        }
+        for (const cmd of (el as PathBlockValue | ProjectedPathValue).commands) {
+          const seamId = cmd.meta?.seamId;
+          if (seamId === undefined) continue;
+          let stretches = seamStretches.get(seamId);
+          if (!stretches) {
+            stretches = [];
+            seamStretches.set(seamId, stretches);
+          }
+          const last = stretches[stretches.length - 1];
+          if (last && last.owner === el) last.cmds.push(cmd);
+          else stretches.push({ owner: el, cmds: [cmd] });
+        }
+      }
+      const seamClose = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6;
+      const chordSum = (cmds: PathBlockCommand[]) => cmds.reduce((sum, c) => sum + Math.hypot(c.end.x - c.start.x, c.end.y - c.start.y), 0);
+      const isReversedTwin = (a: PathBlockCommand[], b: PathBlockCommand[]) =>
+        a.length === b.length &&
+        seamClose(a[0].start, b[b.length - 1].end) &&
+        seamClose(a[a.length - 1].end, b[0].start) &&
+        Math.abs(chordSum(a) - chordSum(b)) < 1e-6;
+      const seamResults: PathBlockCommand[][] = [];
+      for (const seamId of [...seamStretches.keys()].sort((idA, idB) => idA - idB)) {
+        const accepted: PathBlockCommand[][] = [];
+        for (const stretch of seamStretches.get(seamId)!) {
+          if (accepted.some((have) => isReversedTwin(have, stretch.cmds))) continue;
+          accepted.push(stretch.cmds);
+        }
+        seamResults.push(...accepted);
+      }
+      return {
+        type: 'ArrayValue' as const,
+        elements: seamResults.map((cmds) => {
+          // A closed ring seam (cookie) closes properly so dashes wrap
+          // and joins render at the seam's wrap point.
+          const first = cmds[0];
+          const tail = cmds[cmds.length - 1];
+          const ringClosed = cmds.length > 1 && seamClose(first.start, tail.end) && tail.command.toLowerCase() !== 'z';
+          const withClose = ringClosed
+            ? [...cmds, { command: 'z', args: [], start: { ...tail.end }, end: { ...first.start } }]
+            : cmds;
+          return buildPathBlockFromCommands(withClose, { x: 0, y: 0 });
+        }),
+      };
+    }
     case 'push': {
       if (expr.args.length !== 1) throw mError('push() expects 1 argument');
       if (isArrayLocked(obj)) throw mError(arrayMutationError('call push() on'));
