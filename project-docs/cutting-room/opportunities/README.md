@@ -24,7 +24,7 @@ a narrow bug, or deleting our own workaround, not the feature we logged.
 | B2 | #12 root | Truthful startPoint = "first inked point" (revive 2026-08-01 backlogged audit, preserved in B-projected-draw/) | queued after H |
 | C | #10, #16 | † annotated-divergence sweep: text-if drop + stdlib-call blocks empty | **LANDED** — recursive text-block walker + PathSegment context tracking, 4 parity tests, no sample changes needed (04's counts design stays) | 
 | D | #2 | pieces.seams() group query (seamId twin-stamping) | **LANDED** — array method both evaluators, 4 meta-passthrough fixes, 8 new tests incl. ownership-rule equivalence, fold-lines showcase rewritten |
-| E | #3 | † normal(t) ALREADY material-outward on cut seams (canonical winding) — docs + possibly alias; delete tab flip dance | queued |
+| E | #3 | † normal(t) ALREADY material-outward — guarantee documented + pinned | **LANDED** — docs contract (holes + hand-authored caveats), 2 pinning tests, flip dance deleted from 41/03+06 with byte-identical outputs, alias rejected |
 | F | #7 | Cutter label propagation — meta reaches stampCutSeam (boolean-ops.ts:3959) and is discarded at one line; + bridging-l at :4428 | queued |
 | G | #8 | Unmerged-runs escape hatch (findLabeledRuns, segments.ts:260; options arg at 3 query sites) | queued |
 | H | #6 | cut([k1, k2, ...]) ONLY (block-local absolute M dropped — superseded by L) | **LANDED** — array cutters both receivers, 6 new tests, six knife samples rewritten as loops, closing entries in three posts |

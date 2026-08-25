@@ -626,9 +626,6 @@ for (piece in pieces) {
   // Tabs go on the left piece only.
   if (side &lt; 0) {
     let placed = piece.project(placeX, 55);
-    let placedBounds = placed.boundingBox();
-    let pieceCenterX = calc(placedBounds.x + placedBounds.width / 2);
-    let pieceCenterY = calc(placedBounds.y + placedBounds.height / 2);
     tabLayer.apply {
       for (seam in placed.segmentAll('cut')) {
         // Walk the seam in sevenths; every other interval grows a tab.
@@ -637,10 +634,9 @@ for (piece in pieces) {
           let t1 = calc((k * 2 + 2) / 7);
           let tabStart = seam.get(t0);
           let tabEnd = seam.get(t1);
-          let seamNormal = seam.normal(calc((t0 + t1) / 2));
-          // Point the tab away from the piece's own center.
-          let toCenter = calc(cos(seamNormal.angle) * (pieceCenterX - seamNormal.point.x) + sin(seamNormal.angle) * (pieceCenterY - seamNormal.point.y));
-          let outwardAngle = calc(toCenter &gt; 0 ? seamNormal.angle + PI() : seamNormal.angle);
+          // Seam normals point away from the piece's material —
+          // guaranteed by the cut, so the tab needs no direction test.
+          let outwardAngle = seam.normal(calc((t0 + t1) / 2)).angle;
           let edgeAngle = calc(outwardAngle + PI() / 2);
           // Trapezoid: seam edge tabStart→tabEnd, outer edge tapered inward by 4.
           M calc(tabStart.x) calc(tabStart.y)
@@ -1004,9 +1000,9 @@ for (wedge in wedges) {
         // Clockwise edge: glue tab, pointing away from the wedge.
         let tabStart = seam.get(calc(t0 + 0.06));
         let tabEnd = seam.get(calc(t1 - 0.06));
-        let seamNormal = seam.normal(calc(t0 + 0.25));
-        let toCenter = calc(cos(seamNormal.angle) * (wedgeCenterX - halfMid.x) + sin(seamNormal.angle) * (wedgeCenterY - halfMid.y));
-        let outwardAngle = calc(toCenter &gt; 0 ? seamNormal.angle + PI() : seamNormal.angle);
+        // Seam normals point away from the wedge's material — guaranteed
+        // by the cut, so the tab needs no direction test.
+        let outwardAngle = seam.normal(calc(t0 + 0.25)).angle;
         let edgeAngle = calc(outwardAngle + PI() / 2);
         tabLayer.apply {
           M calc(tabStart.x) calc(tabStart.y)
@@ -1090,6 +1086,24 @@ gaps) is unwritable through it.</p>
 <span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> panels.<span class="hljs-title function_">seams</span>()) {
   seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
 }
+</code></pre><p><strong>The tabs&#39; direction test turned out to be dead code.</strong> Example 3
+settles which way a tab points by comparing the seam normal against
+the piece&#39;s center and flipping when it aims inward — three lines of
+ceremony per tab. Working the friction log revealed the flip never
+fires: <code>cut()</code> canonicalizes every piece&#39;s winding, so seam normals
+point away from the piece&#39;s material <em>by construction</em>. The guarantee
+<a href="/docs#path-blocks-normalt-point-angle">is now documented</a> and pinned
+by tests, and both tab samples dropped the dance — with byte-identical
+output, the strongest proof the code was dead. The purest friction-log
+lesson in the series: the feature existed all along; the fix was a
+sentence, and the sentence was the feature.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: probe, dot product, conditional flip</span>
+<span class="hljs-keyword">let</span> n = seam.<span class="hljs-title function_">normal</span>(tabMid);
+<span class="hljs-keyword">let</span> toCenter = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">cos</span>(n.<span class="hljs-property">angle</span>) * (cx - n.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>) + <span class="hljs-title function_">sin</span>(n.<span class="hljs-property">angle</span>) * (cy - n.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>));
+<span class="hljs-keyword">let</span> outwardAngle = <span class="hljs-title function_">calc</span>(toCenter &gt; <span class="hljs-number">0</span> ? n.<span class="hljs-property">angle</span> + <span class="hljs-title function_">PI</span>() : n.<span class="hljs-property">angle</span>);
+
+<span class="hljs-comment">// after: the normal already faces out of the material</span>
+<span class="hljs-keyword">let</span> outwardAngle = seam.<span class="hljs-title function_">normal</span>(tabMid).<span class="hljs-property">angle</span>;
 </code></pre><p><strong>The medallion&#39;s knives stopped doing arithmetic.</strong> Example 6&#39;s three
 knives were originally one cutter block whose strokes chained together
 with hand-computed relative moves — and one of those moves shipped

@@ -85,6 +85,16 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
   0 warnings (except the two documented false-positive sets), BBWPs
   + blog + public re-synced. Final check-links crawl green (42 pages /
   1228 links / 0 broken).
+- 2026-08-25 (feedback loop, Item E LANDED — pending review + commit):
+  Outward-seam-normal guarantee documented (normal(t) section: contract
+  + hole footnote + hand-authored caveat; cut-section cross-ref) and
+  PINNED by 2 tests (curved-cut both pieces 10/10, holed ring 5/5 into
+  the hole). Flip dance deleted from 41/03+06 — compiled SVGs
+  byte-identical (dead-code proof); 41/03 dropped unused center lets.
+  Fresh session probes pre-verified 34/34 outward before any edit.
+  outwardNormal alias rejected by design. Papercraft closing entry.
+  Suite 4864/4864. Focused review round in flight (docs-claim accuracy
+  incl. the boolean-results claim).
 - 2026-08-24 (feedback loop, Item D LANDED — pending review + commit):
   pieces.seams() (docs-first, failing-tests-first, planned in plan
   mode): seamId stamped at cut time (twin halves share one id; cookies

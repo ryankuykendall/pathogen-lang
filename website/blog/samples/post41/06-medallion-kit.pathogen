@@ -117,9 +117,9 @@ for (wedge in wedges) {
         // Clockwise edge: glue tab, pointing away from the wedge.
         let tabStart = seam.get(calc(t0 + 0.06));
         let tabEnd = seam.get(calc(t1 - 0.06));
-        let seamNormal = seam.normal(calc(t0 + 0.25));
-        let toCenter = calc(cos(seamNormal.angle) * (wedgeCenterX - halfMid.x) + sin(seamNormal.angle) * (wedgeCenterY - halfMid.y));
-        let outwardAngle = calc(toCenter > 0 ? seamNormal.angle + PI() : seamNormal.angle);
+        // Seam normals point away from the wedge's material — guaranteed
+        // by the cut, so the tab needs no direction test.
+        let outwardAngle = seam.normal(calc(t0 + 0.25)).angle;
         let edgeAngle = calc(outwardAngle + PI() / 2);
         tabLayer.apply {
           M calc(tabStart.x) calc(tabStart.y)

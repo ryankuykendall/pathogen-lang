@@ -1011,3 +1011,149 @@ describe('seams() across chained cuts and transforms (review round)', () => {
     expect(logs[1]).toBe('0');
   });
 });
+
+describe('seam normals face outward (documented guarantee)', () => {
+  // cut() canonicalizes winding so material lies on a fixed side of
+  // travel; normal(t) is a fixed rotation of travel — so seam normals
+  // point away from the piece's material by construction. This pins
+  // the documented contract so a future winding change cannot silently
+  // break it.
+  it('both pieces of a curved cut: every sampled seam normal points away from the piece', () => {
+    const { logs } = compileWithLogs(`
+      let plate = @{
+        h 150
+        v 110
+        h -150
+        z
+      };
+      let pieces = plate.cut(@{
+        m 92 -15
+        c -26 45 26 75 -10 140
+      });
+      for (piece in pieces) {
+        let placed = piece.project(20, 20);
+        let bb = placed.boundingBox();
+        let cx = calc(bb.x + bb.width / 2);
+        let cy = calc(bb.y + bb.height / 2);
+        for (seam in placed.segmentAll('cut')) {
+          for (k in 0..4) {
+            let t = calc(k / 4 * 0.9 + 0.05);
+            let n = seam.normal(t);
+            let toCenter = calc(cos(n.angle) * (cx - n.point.x) + sin(n.angle) * (cy - n.point.y));
+            log(toCenter);
+          }
+        }
+      }
+    `);
+    expect(logs.length).toBe(10);
+    for (const value of logs) {
+      expect(Number(value)).toBeLessThan(0);
+    }
+  });
+
+  it("a holed piece's ring seam normals point into the hole (out of the material)", () => {
+    const { logs } = compileWithLogs(`
+      let plate = @{
+        h 200
+        v 200
+        h -200
+        z
+      };
+      let stamped = plate.cut(@{
+        circle(100, 100, 30);
+      });
+      for (piece in stamped) {
+        let placed = piece.project(0, 0);
+        let bb = placed.boundingBox();
+        // The host piece is the big one; its ring seam's outward normal
+        // aims at the hole center (100,100).
+        if (bb.width > 100) {
+          for (seam in placed.segmentAll('cut')) {
+            for (k in 0..4) {
+              let t = calc(k / 4 * 0.9 + 0.05);
+              let n = seam.normal(t);
+              let toHole = calc(cos(n.angle) * (100 - n.point.x) + sin(n.angle) * (100 - n.point.y));
+              log(toHole);
+            }
+          }
+        }
+      }
+    `);
+    expect(logs.length).toBe(5);
+    for (const value of logs) {
+      expect(Number(value)).toBeGreaterThan(0);
+    }
+  });
+});
+
+  // The boolean ops canonicalize winding through a DIFFERENT code path
+  // than cut() (assembleResult / handleNoIntersections vs
+  // canonicalizeRingWindings) — pin the documented guarantee on that
+  // side too, or a regression there would ship silently.
+describe('boolean-result normals face outward (documented guarantee)', () => {
+  it('a union of overlapping squares: sampled boundary normals point away from the shape', () => {
+    const { logs } = compileWithLogs(`
+      let left = @{
+        h 40
+        v 40
+        h -40
+        z
+      };
+      let right = @{
+        h 40
+        v 40
+        h -40
+        z
+      };
+      let merged = left.union(right.project(25, 0));
+      let placed = merged.project(50, 50);
+      let bb = placed.boundingBox();
+      let cx = calc(bb.x + bb.width / 2);
+      let cy = calc(bb.y + bb.height / 2);
+      for (k in 0..9) {
+        let t = calc(k / 9 * 0.9 + 0.05);
+        let n = placed.normal(t);
+        let toCenter = calc(cos(n.angle) * (cx - n.point.x) + sin(n.angle) * (cy - n.point.y));
+        log(toCenter);
+      }
+    `);
+    expect(logs.length).toBe(10);
+    for (const value of logs) {
+      expect(Number(value)).toBeLessThan(0);
+    }
+  });
+
+  it("a difference's hole ring: sampled normals point into the hole", () => {
+    const { logs } = compileWithLogs(`
+      let plate = @{
+        circle(0, 0, 50);
+      };
+      let hole = @{
+        circle(0, 0, 18);
+      };
+      let ring = plate.project(100, 100).difference(hole.project(100, 100));
+      // Walk the whole two-contour boundary and classify samples by
+      // radius: outer-ring samples must aim away from (100,100), hole
+      // samples toward it.
+      for (k in 0..19) {
+        let t = calc(k / 19 * 0.9 + 0.05);
+        let n = ring.normal(t);
+        let dx = calc(n.point.x - 100);
+        let dy = calc(n.point.y - 100);
+        let radius = calc(sqrt(dx * dx + dy * dy));
+        let toCenter = calc(cos(n.angle) * (100 - n.point.x) + sin(n.angle) * (100 - n.point.y));
+        log(radius);
+        log(toCenter);
+      }
+    `);
+    for (let k = 0; k < 20; k++) {
+      const radius = Number(logs[k * 2]);
+      const toCenter = Number(logs[k * 2 + 1]);
+      if (radius > 30) {
+        expect(toCenter).toBeLessThan(0); // outer boundary: outward
+      } else {
+        expect(toCenter).toBeGreaterThan(0); // hole ring: into the hole
+      }
+    }
+  });
+});

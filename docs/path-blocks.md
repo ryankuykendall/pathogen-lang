@@ -230,6 +230,8 @@ log(n.point);                // Point(50, 0)
 log(n.angle);                // ~-1.5708 (pointing up — left-hand normal of rightward path)
 ```
 
+**On cut and boolean results, the normal points away from the piece's material — guaranteed.** [`cut()`](#path-blocks-cutcutter-array-of-pathblock) and the [boolean operations](#path-blocks-boolean-operations) each canonicalize their result's winding so material always lies on the same side of the direction of travel, and the normal is a fixed rotation of that travel — so on any seam or boundary edge of a piece, `normal(t)` faces *out* of the piece: glue tabs, ticks, and offsets aimed along it point away from the material with no direction test needed. Two footnotes: on a **hole's** boundary, "away from the material" points *into* the hole (that is the outside of the material there); and on **hand-authored** paths there is no such guarantee — the normal is simply left-of-travel, and which side is "outside" depends on how you wound the path.
+
 ### `partition(n)` → OrientedPoint[]
 
 Divides the path into `n` equal-length segments, returning `n + 1` oriented points (endpoints inclusive). Each oriented point has `point`, `angle`, and `t` properties.
@@ -995,6 +997,7 @@ The returned seams are PathBlocks that keep **subject-local placement**, exactly
 
 Details worth knowing:
 
+- **Seam normals face outward.** On any piece's seams and boundary edges, [`normal(t)`](#path-blocks-normalt-point-angle) points away from the piece's material — guaranteed by the same winding canonicalization that powers the cut (see the normal(t) docs for the hole footnote).
 - **Chained cuts compose.** Cut a piece again and its inherited seams stay identified: `subPieces.seams()` returns the new cut's seams plus each surviving fragment of the older seams, every physical stretch exactly once.
 - **Severing an open path creates no healed boundary**, so `seams()` on an open subject's fragments is empty.
 - `seams()` is answered from identity the cut records into the pieces — call it on arrays whose elements came from `cut()`. Hand-built pieces don't carry it, and transformed copies may change how sides pair (after `offset()` the two sides of a seam are genuinely different curves, so both return; corner-shaping ops may drop the identity entirely). When in doubt, query seams() on the cut result itself and transform the *seams*.

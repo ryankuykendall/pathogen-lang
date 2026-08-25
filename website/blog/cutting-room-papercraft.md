@@ -240,6 +240,28 @@ for (seam in panels.seams()) {
 }
 ```
 
+**The tabs' direction test turned out to be dead code.** Example 3
+settles which way a tab points by comparing the seam normal against
+the piece's center and flipping when it aims inward — three lines of
+ceremony per tab. Working the friction log revealed the flip never
+fires: `cut()` canonicalizes every piece's winding, so seam normals
+point away from the piece's material *by construction*. The guarantee
+[is now documented](/docs#path-blocks-normalt-point-angle) and pinned
+by tests, and both tab samples dropped the dance — with byte-identical
+output, the strongest proof the code was dead. The purest friction-log
+lesson in the series: the feature existed all along; the fix was a
+sentence, and the sentence was the feature.
+
+```pathogen
+// before: probe, dot product, conditional flip
+let n = seam.normal(tabMid);
+let toCenter = calc(cos(n.angle) * (cx - n.point.x) + sin(n.angle) * (cy - n.point.y));
+let outwardAngle = calc(toCenter > 0 ? n.angle + PI() : n.angle);
+
+// after: the normal already faces out of the material
+let outwardAngle = seam.normal(tabMid).angle;
+```
+
 **The medallion's knives stopped doing arithmetic.** Example 6's three
 knives were originally one cutter block whose strokes chained together
 with hand-computed relative moves — and one of those moves shipped

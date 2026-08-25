@@ -14,7 +14,7 @@ notes the friction hit in a real sample. To be synthesized at project end.
    dedupe with ad-hoc ownership rules (midpoint-vs-center compare). A
    group-level `pieces.seams()` (each physical seam once) would remove a
    whole class of bookkeeping. (post41/02, post41/06.)
-3. **`normal(t)` has no material-side orientation.** Tabs must point away
+3. **RESOLVED (Item E, 2026-08-25).** normal(t) was ALREADY material-outward on cut/boolean pieces (winding canonicalization) — the fix was documenting the guarantee, pinning it with tests, and deleting the dead flip dance from two samples (byte-identical outputs). No new API; an outwardNormal alias was deliberately rejected. Original: **`normal(t)` has no material-side orientation.** Tabs must point away
    from the piece; deciding requires the dot-product-against-centroid
    flip dance. Cut seams KNOW their material side (winding
    canonicalization puts material on the left) — an `outwardNormal(t)` on

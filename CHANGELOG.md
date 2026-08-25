@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-25 (outward seam normals documented + pinned — Cutting Room feedback loop, item E)
+
+### Added
+
+#### Documentation
+
+- **`normal(t)` on cut and boolean results is guaranteed to point away from the piece's material** — this always held (winding canonicalization pins material to a fixed side of travel), but it was undocumented, so the tab samples shipped a dot-product-and-flip direction test that never fired. The guarantee is now stated in the `normal(t)` docs (with the hole footnote — "away from the material" points *into* a hole — and the hand-authored-path caveat), cross-referenced from the cutting section, and **pinned by two tests** so a future winding change cannot silently break it. Both tab samples dropped the flip dance with byte-identical compiled output. No new API: an `outwardNormal()` alias was deliberately rejected — it would imply `normal()` isn't already outward.
+
 ## [0.8.0] - 2026-08-24 (pieces.seams() — Cutting Room feedback loop, item D)
 
 ### Added
