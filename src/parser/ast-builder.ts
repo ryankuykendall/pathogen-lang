@@ -1574,8 +1574,12 @@ function buildExpressionWithPostfix(cursor: TreeCursor, source: string): Express
       }
     } else if (sibName === '[') {
       if (!cursor.nextSibling()) break;
-      const index = buildExpression(cursor, source);
-      cursor.nextSibling(); // skip ']'
+      // The interior may itself be a postfix chain (arr[o.n],
+      // arr[pick()], arr[idx[0]]) spanning siblings; the recursive
+      // build rests ON ']' (its break set), so only skip when it
+      // stopped short of it.
+      const index = buildExpressionWithPostfix(cursor, source);
+      if ((cursor.name as string) !== ']') cursor.nextSibling(); // skip ']'
       expr = {
         type: 'IndexExpression',
         object: expr,
@@ -1637,6 +1641,14 @@ function buildTrailingBlock(cursor: TreeCursor, source: string): { params: strin
 }
 
 function buildPostfixExpression(cursor: TreeCursor, source: string): Expression {
+  // CURRENTLY UNREACHABLE (verified 2026-08-26 via v8 coverage over the
+  // full suite: 0 hits). Its only dispatch — buildExpression's default
+  // case matching 'postfixExpression' — can never fire: the grammar rule
+  // is lowercase (Lezer inlines it), and every isExpressionNode name has
+  // an earlier explicit case. Kept mirroring buildExpressionWithPostfix
+  // (including the postfix-aware '[' interior) so it stays correct if a
+  // grammar change ever surfaces the node; candidate for deletion in a
+  // parser cleanup.
   // A postfix expression is: primaryExpression followed by postfix ops
   // Walk through children building up the expression chain
   cursor.firstChild();
@@ -1683,10 +1695,11 @@ function buildPostfixExpression(cursor: TreeCursor, source: string): Expression 
         } as FunctionCall;
       }
     } else if (name === '[') {
-      // Index access: expr[index]
+      // Index access: expr[index] — postfix-aware interior, same
+      // rationale and ']'-rest handling as buildExpressionWithPostfix.
       if (cursor.nextSibling()) {
-        const index = buildExpression(cursor, source);
-        cursor.nextSibling(); // skip ']'
+        const index = buildExpressionWithPostfix(cursor, source);
+        if ((cursor.name as string) !== ']') cursor.nextSibling(); // skip ']'
         expr = {
           type: 'IndexExpression',
           object: expr,

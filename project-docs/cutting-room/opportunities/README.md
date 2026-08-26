@@ -32,7 +32,7 @@ a narrow bug, or deleting our own workaround, not the feature we logged.
 | L | #6 root, #15 | ctx as declared PathBlock argument (`@{\|ctx\| ...}`): origin deltas + .return() (relative purity), in-block label querying via ctx.query — user design sketch preserved in L-ctx-block-argument/ | fast-follow after current fixes |
 | I | #4, #5 | † shadowing rescue at both error paths (parse() + describeError, two tree shapes) + calc() quick fix + hover fix; pi/deg/rad RESERVED suffix-only (user chose strictness) via setVariable funnel + 6 Identifier sites, shared reserved-names.ts | LANDED (2026-08-25) |
 | J | #9 | † postfix-flattening class: SIX builder sites (layer-apply, for-range ×2, layer-def name, constructor form, ViewBox args) via buildExpressionWithPostfix + RangeOp/.apply cursor traps; if-chains deleted from 3 samples | LANDED (2026-08-26) |
-| K | #13 | Document string ternaries (+ style-value expressions) + if-reassignment | queued |
+| K | #13, #17 | Ternary docs (operators table + section + interpolation/style cross-refs) AND index-bracket postfix interiors (both walkers, 6 tests) | LANDED (2026-08-26) |
 
 Cross-cutting constraint: every new method needs an annotated
 counterpart or an explicit entry in annotated.ts:1836's unsupported

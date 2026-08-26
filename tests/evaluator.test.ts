@@ -5130,3 +5130,50 @@ describe('paren-less variable.apply survives the postfix-aware layer builder (it
     expect(result.layers.find((l) => l.name === 't')?.data).toBe('M 0 0 h 5');
   });
 });
+
+describe('postfix expressions inside index brackets (friction #17)', () => {
+  // The two postfix walkers built [ ... ] interiors with the plain
+  // builder, so an index that was itself a postfix chain flattened.
+  it('member-access index: arr[o.n]', () => {
+    const src = `let arr = [10, 20, 30];\nlet o = { n: 2 };\nM 0 0\nL calc(arr[o.n]) 0`;
+    expect(compile(src).layers[0].data).toBe('M 0 0 L 30 0');
+  });
+  it('call index: arr[pick()]', () => {
+    const src = `let arr = [10, 20, 30];\nfn pick() { return 1; }\nM 0 0\nL calc(arr[pick()]) 0`;
+    expect(compile(src).layers[0].data).toBe('M 0 0 L 20 0');
+  });
+  it('nested-index index: arr[idx[0]]', () => {
+    const src = `let arr = [10, 20, 30];\nlet idx = [2];\nM 0 0\nL calc(arr[idx[0]]) 0`;
+    expect(compile(src).layers[0].data).toBe('M 0 0 L 30 0');
+  });
+  it('chained after the bracket still works: pts[o.n].x', () => {
+    const src = `let pts = [Point(1, 2), Point(3, 4)];\nlet o = { n: 1 };\nM 0 0\nL calc(pts[o.n].x) calc(pts[o.n].y)`;
+    expect(compile(src).layers[0].data).toBe('M 0 0 L 3 4');
+  });
+  it('statement-position index expression: let v = arr[o.n];', () => {
+    const src = `let arr = [10, 20, 30];\nlet o = { n: 1 };\nlet v = arr[o.n];\nM 0 0\nL calc(v) 0`;
+    expect(compile(src).layers[0].data).toBe('M 0 0 L 20 0');
+  });
+  it('compound interiors (the ]-guard skip branch): arr[i - 1] and a ternary index', () => {
+    // Compound nodes (BinaryExpression, TernaryExpression) take the
+    // early-return shortcut and rest ON the node, short of ']' — the
+    // guard's skip branch is load-bearing only here (review finding:
+    // the other six shapes rest ON ']' and never exercise it).
+    const src1 = `let arr = [10, 20, 30];
+let i = 2;
+M 0 0
+L calc(arr[i - 1]) 0`;
+    expect(compile(src1).layers[0].data).toBe('M 0 0 L 20 0');
+    const src2 = `let arr = [10, 20, 30];
+let flag = 1;
+let v = arr[flag == 1 ? 2 : 0];
+M 0 0
+L calc(v) 0`;
+    expect(compile(src2).layers[0].data).toBe('M 0 0 L 30 0');
+  });
+
+  it('plain numeric indexes keep working: arr[1], arr[i]', () => {
+    const src = `let arr = [10, 20, 30];\nlet i = 2;\nM 0 0\nL calc(arr[1]) calc(arr[i])`;
+    expect(compile(src).layers[0].data).toBe('M 0 0 L 20 30');
+  });
+});

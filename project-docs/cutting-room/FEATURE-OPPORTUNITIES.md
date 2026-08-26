@@ -145,7 +145,7 @@ notes the friction hit in a real sample. To be synthesized at project end.
     the first command) consistently, or provide the in-place `draw()`
     from entry #1, which would eliminate the anchor question entirely.
     Same family as entry #1; raises its priority.
-13. **Confirmed working, worth documenting: string ternaries inside
+13. **RESOLVED (Item K, 2026-08-26): documented.** Ternary operator now in the syntax operators table with its own section (value/string/interpolation/style-value forms, all compile-verified) plus the if-reassignment alternative; interpolation and style-value docs cross-updated; garment post closing entry. Original: **Confirmed working, worth documenting: string ternaries inside
     `${}` interpolation** (`${cond ? 'a' : 'b'}`) and string
     reassignment inside if-blocks — both used for piece
     self-identification (post43/02, post43/05). Neither appears in
@@ -180,12 +180,17 @@ notes the friction hit in a real sample. To be synthesized at project end.
     annotated multi-contour parity test (2026-08-24). Same family as
     #10 (annotated text-if drop): annotated block evaluation diverges
     from main. Fold into Item C's annotated-divergence sweep.
-17. **Index-bracket interiors don't support postfix anywhere** (Item J
-   review finding, 2026-08-26; pre-existing, orthogonal to the six
-   J sites). Both postfix walkers build `[...]` contents with plain
+17. **RESOLVED (with Item K, 2026-08-26): both walkers' [ ] interiors are postfix-aware** — calc(arr[o.n]), arr[pick()], arr[idx[0]], and pts[o.n].x chains all work; 6 pinning tests incl. the ']'-rest cursor discipline. Original (Item J review finding; pre-existing, orthogonal to the six J sites). Both postfix walkers build `[...]` contents with plain
    buildExpression, so `calc(arr[o.n])` fails with "Array index must
    be a number". Same fix pattern; separate ticket since it lives
    INSIDE the walkers rather than at their call sites. Also noted from
    the same review: buildForEachLoop solves sibling-spanning postfix
    differently (source-slice + re-parse) — a design worth considering
    if more sibling-scan sites appear.
+18. **Ternary interiors fail inside path-command calc() at parse time**
+   (K/#17 review finding, 2026-08-26; pre-existing).
+   `L calc(arr[flag ? 2 : 0]) 0` errors "Missing ';'" — the PathArgs
+   external tokenizer doesn't consume `?`/`:` in path-argument
+   position, so the calc() never closes. Works fine in let-statement
+   position (the docs' shown forms). Fix would live in
+   path-args-tokenizer.ts's greedy consumption set.

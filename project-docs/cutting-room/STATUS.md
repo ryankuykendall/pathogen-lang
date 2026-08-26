@@ -269,3 +269,17 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
   indexing duplicates, :last near-duplicate) — "anchoring the pseudo
   selector feature set". Audit + decision + verified comprehension
   probes in G-unmerged-runs/use-case-and-duplication-audit.md.
+
+- 2026-08-26 (feedback loop, Items K + #17 LANDED — pending review +
+  commit, run as one small cycle per user): (K/#13) ternaries
+  documented — operators-table row + new "Conditional (Ternary)
+  Expressions" section (value/string/interpolation/style-value forms,
+  every fence compile-verified) + if-reassignment alternative +
+  interpolation and style-value cross-mentions; garment closing entry
+  ("a feature you can only learn from someone else's sample isn't
+  finished"). (#17) both postfix walkers' bracket interiors now build
+  postfix-aware with the ']'-rest discipline (interior chains rest ON
+  ']' — skip only when stopped short); 6 tests: member/call/nested-
+  index interiors, post-bracket chaining, statement position, plain-
+  index regression pin. Suite 4993/4993; anchor
+  syntax-conditional-ternary-expressions verified.

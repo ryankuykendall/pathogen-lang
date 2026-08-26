@@ -984,6 +984,15 @@ next compile. That is the payoff of edges with names sewn in.</p>
 <p>The Cutting Room series doubles as a working friction log: building
 each project against the real language surfaced bugs and gaps, and
 this section records what got fixed because of it.</p>
+<p><strong>The panel labels&#39; idioms made it into the manual.</strong> The pattern
+sheets in Examples 2 and 5 lean on two spellings this post used
+before the docs admitted they existed: string ternaries —
+<code>`${count &gt; 1 ? &#39;pieces&#39; : &#39;piece&#39;}`</code> inside interpolation, and in
+style values — and plain reassignment inside <code>if</code> branches for
+multi-step choices. Both were always real; they are now
+<a href="/docs#syntax-conditional-ternary-expressions">documented</a>, because a
+feature you can only learn by reading someone else&#39;s sample isn&#39;t
+finished.</p>
 <p><strong>Seam allowances exposed an offset bug — and got parallel curves
 fixed properly.</strong> The first draft of this post could not put an
 allowance on the yoke: <code>offset(7)</code> produced a spiked, distorted ring

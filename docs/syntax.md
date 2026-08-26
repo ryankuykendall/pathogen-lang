@@ -62,6 +62,8 @@ Template literals use backticks with `${expression}` interpolation:
 let greeting = `Hello ${name}!`;          // "Hello World!"
 let msg = `Score: ${2 + 3}`;             // "Score: 5"
 let pos = `(${ctx.position.x}, ${ctx.position.y})`;
+let word = `${n > 1 ? 'pieces' : 'piece'}`;   // any expression works,
+                                              // ternaries included
 ```
 
 Template literals are the sole string construction mechanism — the `+` operator stays strictly numeric. String equality works with `==` and `!=`:
@@ -218,8 +220,33 @@ Separately, the compiler still reads the expression *as written* to reject nonse
 | `!` | Logical NOT (unary) |
 | `-` | Negation (unary) |
 | `<<` | Merge (objects, style blocks, path blocks, text blocks) — or [apply a worker function](#syntax-applying-workers) to a callback builtin: `arr.map() << f` |
+| `?:` | Conditional (ternary): `cond ? a : b` — see below |
 
 Operator precedence follows standard mathematical conventions.
+
+### Conditional (Ternary) Expressions
+
+`cond ? a : b` evaluates to `a` when the condition is truthy, `b` otherwise — and the branches can be **any** values, strings included:
+
+```
+let count = 2;
+let label = count > 1 ? 'pieces' : 'piece';
+
+// Works inside template interpolation…
+let caption = `${count} ${count > 1 ? 'pieces' : 'piece'} total`;
+
+// …and inside style-block values:
+let hot = PathLayer('mark') ${ stroke-width: count > 1 ? 4 : 1; };
+```
+
+The alternative to a ternary is plain reassignment — variables are mutable, and reassigning inside an `if` branch is the natural spelling when the choice takes more than one expression:
+
+```
+let tone = 'cool';
+if (temperature > 30) {
+  tone = 'warm';
+}
+```
 
 ## Style Blocks
 
@@ -235,7 +262,7 @@ let styles = ${
 };
 ```
 
-Each property is a `name: value;` declaration. The trailing `;` is required on **every** declaration, including the last one before `}` — a declaration missing its `;` is a compile error. Values are try-evaluated as expressions — if the value parses as a valid expression (like a variable reference, backtick template literal, or `calc()`), its result is used. Otherwise the raw string is kept (e.g., `rgb(...)`, `#hex`). See [Variables and Interpolation in Values](#layers-variables-and-interpolation-in-values) for dynamic values.
+Each property is a `name: value;` declaration. The trailing `;` is required on **every** declaration, including the last one before `}` — a declaration missing its `;` is a compile error. Values are try-evaluated as expressions — if the value parses as a valid expression (like a variable reference, backtick template literal, arithmetic, a [ternary](#syntax-conditional-ternary-expressions), a function call, or `calc()`), its result is used. Otherwise the raw string is kept (e.g., `rgb(...)`, `#hex`). See [Variables and Interpolation in Values](#layers-variables-and-interpolation-in-values) for dynamic values.
 
 ### CSS Function Values
 

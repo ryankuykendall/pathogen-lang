@@ -146,6 +146,16 @@ The Cutting Room series doubles as a working friction log: building
 each project against the real language surfaced bugs and gaps, and
 this section records what got fixed because of it.
 
+**The panel labels' idioms made it into the manual.** The pattern
+sheets in Examples 2 and 5 lean on two spellings this post used
+before the docs admitted they existed: string ternaries —
+`` `${count > 1 ? 'pieces' : 'piece'}` `` inside interpolation, and in
+style values — and plain reassignment inside `if` branches for
+multi-step choices. Both were always real; they are now
+[documented](/docs#syntax-conditional-ternary-expressions), because a
+feature you can only learn by reading someone else's sample isn't
+finished.
+
 **Seam allowances exposed an offset bug — and got parallel curves
 fixed properly.** The first draft of this post could not put an
 allowance on the yoke: `offset(7)` produced a spiked, distorted ring

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-26 (ternary docs + index-interior postfix — Cutting Room feedback loop, item K + #17)
+
+### Fixed
+
+#### Core
+
+- **Index-bracket interiors accept postfix expressions** — `calc(arr[o.n])`, `arr[pick()]`, `arr[idx[0]]`, and chains after the bracket (`pts[o.n].x`) now work; both postfix walkers built `[…]` contents with the non-postfix-aware helper (item J's review found this as the one orthogonal sibling of its eight-site class). Pinned by 6 tests including plain-index regression guards.
+
+### Added
+
+#### Documentation
+
+- **The conditional (ternary) operator is documented** — a `?:` row in the syntax operators table plus a dedicated section covering value selection, string branches, use inside `${}` interpolation and style-block values (all forms compile-verified), and the `if`-reassignment alternative for multi-step choices. The garment post's pattern-sheet idioms — used in published samples before the docs admitted they existed — now have a manual entry, with a closing-section note telling that story.
+
 ## [0.8.0] - 2026-08-26 (postfix expressions in argument positions — Cutting Room feedback loop, item J)
 
 ### Fixed
