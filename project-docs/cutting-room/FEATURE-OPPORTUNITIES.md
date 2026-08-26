@@ -71,7 +71,7 @@ notes the friction hit in a real sample. To be synthesized at project end.
    names in annotated's PathCommand path even though labels stay
    otherwise ignored there.
 8. **RESOLVED (Item G, 2026-08-25): query pseudo-selectors.**
-   `:each` decomposes runs per drawing command (the general unmerged
+   `:atomic` (renamed from :each on 2026-08-26 user review — decomposes compound runs per drawing command) (the general unmerged
    escape hatch — a labeled circle() hands back its arcs); `:first` /
    `:last` / `:nth(k)` (0-indexed) select runs from a group. One
    pseudo per query; segment queries only; composes with the cut

@@ -821,7 +821,7 @@ export interface PathogenPathBlock {
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a PathBlock. Accepts pseudo-selectors (name:last, name:nth(k)) */
   segment(name: string): PathogenPathBlock;
-  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array. The umbrella 'cut' matches every seam sub-label; 'cut.<name>' is exact. Pseudo-selectors: ':each' (per drawing command), ':first'/':last'/':nth(k)' (0-indexed run selection) */
+  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array. The umbrella 'cut' matches every seam sub-label; 'cut.<name>' is exact. Pseudo-selectors: ':atomic' (per drawing command), ':first'/':last'/':nth(k)' (0-indexed run selection) */
   segmentAll(name: string): PathogenArray<PathogenPathBlock>;
   /** point(name) — First labeled point matching name; returns a Point */
   point(name: string): PathogenPoint;
@@ -911,7 +911,7 @@ export interface PathogenPathLayer {
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords). Accepts pseudo-selectors (name:last, name:nth(k)) */
   segment(name: string): PathogenProjectedPath;
-  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array. The umbrella 'cut' matches every seam sub-label; 'cut.<name>' is exact. Pseudo-selectors: ':each' (per drawing command), ':first'/':last'/':nth(k)' (0-indexed run selection) */
+  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array. The umbrella 'cut' matches every seam sub-label; 'cut.<name>' is exact. Pseudo-selectors: ':atomic' (per drawing command), ':first'/':last'/':nth(k)' (0-indexed run selection) */
   segmentAll(name: string): PathogenArray<PathogenProjectedPath>;
   /** point(name) — First labeled point matching name; returns a Point */
   point(name: string): PathogenPoint;
@@ -1172,7 +1172,7 @@ export interface PathogenProjectedPath {
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords). Accepts pseudo-selectors (name:last, name:nth(k)) */
   segment(name: string): PathogenProjectedPath;
-  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array. The umbrella 'cut' matches every seam sub-label; 'cut.<name>' is exact. Pseudo-selectors: ':each' (per drawing command), ':first'/':last'/':nth(k)' (0-indexed run selection) */
+  /** segmentAll(name) — Every labeled sub-path matching name (querySelectorAll-style); returns an array. The umbrella 'cut' matches every seam sub-label; 'cut.<name>' is exact. Pseudo-selectors: ':atomic' (per drawing command), ':first'/':last'/':nth(k)' (0-indexed run selection) */
   segmentAll(name: string): PathogenArray<PathogenProjectedPath>;
   /** point(name) — First labeled point matching name; returns a Point */
   point(name: string): PathogenPoint;

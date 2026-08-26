@@ -1181,8 +1181,8 @@ foldLayer.<span class="hljs-property">apply</span> {
 previous entry), the <code>.</code> in <code>cut.mountain</code> was only half of a deliberate
 decision: label names reserve <em>all</em> punctuation, with <code>:</code> explicitly
 held back for CSS-style pseudo-selectors that didn&#39;t exist yet. Now
-they do — <a href="/docs#segment-labels-query-pseudo-selectors"><code>:each</code>, <code>:first</code>, <code>:last</code>, and
-<code>:nth(k)</code></a>. <code>:each</code> is the
+they do — <a href="/docs#segment-labels-query-pseudo-selectors"><code>:atomic</code>, <code>:first</code>, <code>:last</code>, and
+<code>:nth(k)</code></a>. <code>:atomic</code> is the
 merge rule&#39;s official escape hatch (one block per drawing command — a
 labeled <code>circle()</code> hands back its individual arcs), and the position
 family selects whole runs from a group. Honest accounting: nothing in
@@ -1194,7 +1194,7 @@ grammar was already paid for.</p>
 <span class="hljs-keyword">let</span> firstArc = run.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0.5</span>);
 
 <span class="hljs-comment">// after: ask for it</span>
-<span class="hljs-keyword">let</span> arcs = wheel.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim:each&#x27;</span>);
+<span class="hljs-keyword">let</span> arcs = wheel.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim:atomic&#x27;</span>);
 <span class="hljs-keyword">let</span> lastTooth = comb.<span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth:last&#x27;</span>);
 </code></pre><p><strong>And the traps got fences.</strong> Two footguns this series stepped on
 never bit the published samples only because a style guideline banned

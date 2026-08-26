@@ -294,7 +294,7 @@ export function findLabeledRun(commands: PathBlockCommand[], label: string): Pat
 }
 
 export type SegmentQueryPseudo =
-  | { kind: 'each' }
+  | { kind: 'atomic' }
   | { kind: 'first' }
   | { kind: 'last' }
   | { kind: 'nth'; n: number };
@@ -304,7 +304,7 @@ export interface ParsedSegmentQuery {
   pseudo?: SegmentQueryPseudo;
 }
 
-const PSEUDO_SET_HINT = "the available pseudo-selectors are ':each', ':first', ':last', and ':nth(k)'";
+const PSEUDO_SET_HINT = "the available pseudo-selectors are ':atomic', ':first', ':last', and ':nth(k)'";
 
 /**
  * Parse a segment-query string into a label plus an optional CSS-style
@@ -320,7 +320,7 @@ export function parseSegmentQuery(raw: string): ParsedSegmentQuery {
   if (rest.includes(':')) {
     throw new Error(`'${raw}': one pseudo-selector per query — ${PSEUDO_SET_HINT}`);
   }
-  if (rest === 'each') return { label, pseudo: { kind: 'each' } };
+  if (rest === 'atomic') return { label, pseudo: { kind: 'atomic' } };
   if (rest === 'first') return { label, pseudo: { kind: 'first' } };
   if (rest === 'last') return { label, pseudo: { kind: 'last' } };
   const nth = rest.match(/^nth\((\d+)\)$/);
@@ -350,7 +350,7 @@ export function queryLabeledRuns(commands: PathBlockCommand[], raw: string): Seg
   const base = { labelMatched: matched.length > 0, matchedCount: matched.length, parsed };
   if (parsed.pseudo === undefined) return { runs: matched, ...base };
   switch (parsed.pseudo.kind) {
-    case 'each':
+    case 'atomic':
       // Drawing commands only: a labeled stdlib call includes its leading
       // move in the run, and a move-only block carries no geometry.
       return {
@@ -369,11 +369,11 @@ export function queryLabeledRuns(commands: PathBlockCommand[], raw: string): Seg
 }
 
 /** Singular-query error when the label matched but the pseudo selected
- *  nothing — `:nth(k)` out of range, or `:each` on runs with no drawing
+ *  nothing — `:nth(k)` out of range, or `:atomic` on runs with no drawing
  *  commands (`:first`/`:last` on a matched group can never come up empty). */
 export function pseudoRangeError(raw: string, matchedCount: number, pseudo?: SegmentQueryPseudo): string {
   const runs = `${matchedCount} run${matchedCount === 1 ? '' : 's'}`;
-  if (pseudo?.kind === 'each') {
+  if (pseudo?.kind === 'atomic') {
     return `'${raw}' selected nothing — the matched ${runs} contain${matchedCount === 1 ? 's' : ''} no drawing commands`;
   }
   return `'${raw}' selected nothing — the group has ${runs} (nth is 0-indexed)`;

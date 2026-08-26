@@ -238,3 +238,11 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
   saved as feedback memory. All 21 BBWPs regenerated (code panels show
   formatted source); blog rebuilt + public re-synced. Warning totals
   unchanged (18 intentional + 2 false-positive).
+
+- 2026-08-26 (Item G naming follow-up, user review): `:each` renamed
+  `:atomic` (user suggestion — compound/atomic vocabulary; ":each" was
+  ambiguous since segmentAll already returns each run). Position trio
+  kept deliberately after an array-duplication audit (:first/:nth are
+  indexing duplicates, :last near-duplicate) — "anchoring the pseudo
+  selector feature set". Audit + decision + verified comprehension
+  probes in G-unmerged-runs/use-case-and-duplication-audit.md.

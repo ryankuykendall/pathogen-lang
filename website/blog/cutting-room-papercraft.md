@@ -316,8 +316,8 @@ for (seam in panels.seams()) {
 previous entry), the `.` in `cut.mountain` was only half of a deliberate
 decision: label names reserve *all* punctuation, with `:` explicitly
 held back for CSS-style pseudo-selectors that didn't exist yet. Now
-they do — [`:each`, `:first`, `:last`, and
-`:nth(k)`](/docs#segment-labels-query-pseudo-selectors). `:each` is the
+they do — [`:atomic`, `:first`, `:last`, and
+`:nth(k)`](/docs#segment-labels-query-pseudo-selectors). `:atomic` is the
 merge rule's official escape hatch (one block per drawing command — a
 labeled `circle()` hands back its individual arcs), and the position
 family selects whole runs from a group. Honest accounting: nothing in
@@ -331,7 +331,7 @@ grammar was already paid for.
 let firstArc = run.subPath(0, 0.5);
 
 // after: ask for it
-let arcs = wheel.segmentAll('rim:each');
+let arcs = wheel.segmentAll('rim:atomic');
 let lastTooth = comb.segment('tooth:last');
 ```
 

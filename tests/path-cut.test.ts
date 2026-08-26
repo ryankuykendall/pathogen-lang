@@ -1425,7 +1425,7 @@ describe('bridgeSeamLabel (face-walk bridge label choice)', () => {
 });
 
 describe('pseudo-selectors compose with the seam namespace', () => {
-  it("'cut:first' selects from merged umbrella runs; 'cut.k0:each' decomposes one knife's seams", () => {
+  it("'cut:first' selects from merged umbrella runs; 'cut.k0:atomic' decomposes one knife's seams", () => {
     const { logs } = compileWithLogs(`
       let plate = @{
         polygon(0, 0, 50, 6);
@@ -1448,7 +1448,7 @@ describe('pseudo-selectors compose with the seam namespace', () => {
             let edge = w.segment('cut.kA');
             log(calc(abs(vRun.length - edge.length * 2) < 0.01));
             // One knife's seam decomposed per command.
-            log(w.segmentAll('cut.kA:each').length);
+            log(w.segmentAll('cut.kA:atomic').length);
           }
         }
       }

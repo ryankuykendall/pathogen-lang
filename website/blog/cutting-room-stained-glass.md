@@ -76,7 +76,7 @@ extra code, because the umbrella query `segmentAll('cut')` answers the
 whole namespace. Left disc: rim labeled `'rim'`, and the glass meets
 the stone bare. Right disc: rim labeled `'cut.rim'`, full came — and
 still addressable on its own as `segmentAll('cut.rim')` when the rim
-needs its own pass, or arc by arc as `segmentAll('cut.rim:each')` via
+needs its own pass, or arc by arc as `segmentAll('cut.rim:atomic')` via
 [query pseudo-selectors](/docs#segment-labels-query-pseudo-selectors).
 (See [label names](/docs#segment-labels-label-names) for the rules.)
 

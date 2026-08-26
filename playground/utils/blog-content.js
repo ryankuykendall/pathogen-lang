@@ -7823,8 +7823,8 @@ foldLayer.<span class="hljs-property">apply</span> {
 previous entry), the <code>.</code> in <code>cut.mountain</code> was only half of a deliberate
 decision: label names reserve <em>all</em> punctuation, with <code>:</code> explicitly
 held back for CSS-style pseudo-selectors that didn&#39;t exist yet. Now
-they do — <a href="/docs#segment-labels-query-pseudo-selectors"><code>:each</code>, <code>:first</code>, <code>:last</code>, and
-<code>:nth(k)</code></a>. <code>:each</code> is the
+they do — <a href="/docs#segment-labels-query-pseudo-selectors"><code>:atomic</code>, <code>:first</code>, <code>:last</code>, and
+<code>:nth(k)</code></a>. <code>:atomic</code> is the
 merge rule&#39;s official escape hatch (one block per drawing command — a
 labeled <code>circle()</code> hands back its individual arcs), and the position
 family selects whole runs from a group. Honest accounting: nothing in
@@ -7836,7 +7836,7 @@ grammar was already paid for.</p>
 <span class="hljs-keyword">let</span> firstArc = run.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0.5</span>);
 
 <span class="hljs-comment">// after: ask for it</span>
-<span class="hljs-keyword">let</span> arcs = wheel.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim:each&#x27;</span>);
+<span class="hljs-keyword">let</span> arcs = wheel.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim:atomic&#x27;</span>);
 <span class="hljs-keyword">let</span> lastTooth = comb.<span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth:last&#x27;</span>);
 </code></pre><p><strong>And the traps got fences.</strong> Two footguns this series stepped on
 never bit the published samples only because a style guideline banned
@@ -7996,7 +7996,7 @@ extra code, because the umbrella query <code>segmentAll(&#39;cut&#39;)</code> an
 whole namespace. Left disc: rim labeled <code>&#39;rim&#39;</code>, and the glass meets
 the stone bare. Right disc: rim labeled <code>&#39;cut.rim&#39;</code>, full came — and
 still addressable on its own as <code>segmentAll(&#39;cut.rim&#39;)</code> when the rim
-needs its own pass, or arc by arc as <code>segmentAll(&#39;cut.rim:each&#39;)</code> via
+needs its own pass, or arc by arc as <code>segmentAll(&#39;cut.rim:atomic&#39;)</code> via
 <a href="/docs#segment-labels-query-pseudo-selectors">query pseudo-selectors</a>.
 (See <a href="/docs#segment-labels-label-names">label names</a> for the rules.)</p>
 <p><mini-workspace code-open caption="Same decoration loop on both windows; only the rim's label name differs.">
@@ -18636,27 +18636,27 @@ subtitle.apply {
 
 // ─── Core tokens ──────────────────────────────────────────────
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
-let base     = Color(CSSVar('--demo-color', #e63946));
+let base = Color(CSSVar('--demo-color', #e63946));
 
-let fg_auto  = Color('#0d1638');
-let fg_muted = Color('#0d1638').alpha(0.60);
-let fg_hair  = Color('#0d1638').alpha(0.22);
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
 
 // Auto-contrasting ink against the base color (for hub text)
-let hub_ink       = Color('#0d1638');
-let hub_ink_muted = Color('#0d1638').alpha(0.60);
+let hub_ink = Color('#0d1638');
+let hub_ink_muted = Color('#0d1638').alpha(0.6);
 
 let font = 'sans-serif';
 
 // ─── Derived method fills ────────────────────────────────────
-let m_base       = Color(CSSVar('--demo-color', #e63946));
-let m_lighten    = Color(CSSVar('--demo-color', #e63946)).lighten(0.18);
-let m_darken     = Color(CSSVar('--demo-color', #e63946)).darken(0.18);
-let m_saturate   = Color(CSSVar('--demo-color', #e63946)).saturate(1.5);
+let m_base = Color(CSSVar('--demo-color', #e63946));
+let m_lighten = Color(CSSVar('--demo-color', #e63946)).lighten(0.18);
+let m_darken = Color(CSSVar('--demo-color', #e63946)).darken(0.18);
+let m_saturate = Color(CSSVar('--demo-color', #e63946)).saturate(1.5);
 let m_desaturate = Color(CSSVar('--demo-color', #e63946)).desaturate(0.4);
-let m_hue        = Color(CSSVar('--demo-color', #e63946)).hueShift(90);
+let m_hue = Color(CSSVar('--demo-color', #e63946)).hueShift(90);
 let m_complement = Color(CSSVar('--demo-color', #e63946)).hueShift(180);
-let m_alpha      = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
+let m_alpha = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') \${}
@@ -18665,96 +18665,180 @@ define GroupLayer('hub-group') \${}
 define GroupLayer('labels') \${}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') \${ fill: bg_color; stroke: none; };
-bg.apply { rect(0, 0, 520, 400); }
+let bg = PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 400);
+}
 
 // ─── Eyebrow (top-left) ─────────────────────────────────────
 let eyebrow = TextLayer('eyebrow') \${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
-eyebrow.apply { text(15, 24)\`OKLCH  /  01 — MANIPULATION\` }
+eyebrow.apply {
+  text(15, 24)\`OKLCH  /  01 — MANIPULATION\`;
+}
 layer('diagram').append(layer('bg'), layer('eyebrow'));
 
 // ─── Wheel geometry ─────────────────────────────────────────
 let cx = 260;
 let cy = 210;
-let r_hub   = 40;       // hub radius
-let r_inner = 52;       // inner wedge radius (12px gap from hub)
-let r_outer = 128;      // outer wedge radius
-let r_frame = 140;      // outer frame circle
-let r_ring  = 90;       // dashed reference ring radius
-let r_label = 165;      // label ring radius
+let r_hub = 40;
+// hub radius
+let r_inner = 52;
+// inner wedge radius (12px gap from hub)
+let r_outer = 128;
+// outer wedge radius
+let r_frame = 140;
+// outer frame circle
+let r_ring = 90;
+// dashed reference ring radius
+let r_label = 165;
+// label ring radius
 
-let sector_half_span = 0.2618;  // π/12 = 15°
-let corner_r         = 5.5;
+let sector_half_span = 0.2618;
+// π/12 = 15°
+let corner_r = 5.5;
 
 // ─── Wedges: 8 methods around the clock ─────────────────────
 let methods = [
-  ['BASE',       m_base],
-  ['LIGHTEN',    m_lighten],
-  ['SATURATE',   m_saturate],
-  ['HUE +90°',   m_hue],
-  ['COMPLEMENT', m_complement],
-  ['DESATURATE', m_desaturate],
-  ['DARKEN',     m_darken],
-  ['ALPHA 0.5',  m_alpha],
+  [
+    'BASE',
+    m_base,
+  ],
+  [
+    'LIGHTEN',
+    m_lighten,
+  ],
+  [
+    'SATURATE',
+    m_saturate,
+  ],
+  [
+    'HUE +90°',
+    m_hue,
+  ],
+  [
+    'COMPLEMENT',
+    m_complement,
+  ],
+  [
+    'DESATURATE',
+    m_desaturate,
+  ],
+  [
+    'DARKEN',
+    m_darken,
+  ],
+  [
+    'ALPHA 0.5',
+    m_alpha,
+  ],
 ];
 
 for ([m, i] in methods) {
   // Angle convention: 0 = north, step +π/4 clockwise
   let theta = calc(-1.5708 + i * 0.7854);
   let from_a = calc(theta - sector_half_span);
-  let to_a   = calc(theta + sector_half_span);
+  let to_a = calc(theta + sector_half_span);
 
-  let w = PathLayer(\`w-\${i}\`) \${ fill: m[1]; stroke: none; };
+  let w = PathLayer(\`w-\${i}\`) \${
+    fill: m[1];
+    stroke: none;
+  };
   w.apply {
     M cx cy
-    radialWedge(r_inner, r_outer, from_a, to_a, corner_r);
+    radialWedge(r_inner,
+        r_outer,
+        from_a,
+        to_a,
+        corner_r);
   }
   layer('wheel').append(layer(\`w-\${i}\`));
 }
 
+
 // ─── Outer frame ────────────────────────────────────────────
-let frame = PathLayer('frame') \${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-frame.apply { circle(cx, cy, r_frame); }
+let frame = PathLayer('frame') \${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+frame.apply {
+  circle(cx, cy, r_frame);
+}
 
 // ─── Dashed reference ring at mid-wedge radius ──────────────
 let ring = PathLayer('ring') \${
-  fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 4;
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
 };
-ring.apply { circle(cx, cy, r_ring); }
+ring.apply {
+  circle(cx, cy, r_ring);
+}
 
 // ─── Hub (drawn OVER wedges) ────────────────────────────────
-let hub = PathLayer('hub') \${ fill: base; stroke: fg_hair; stroke-width: 0.5; };
-hub.apply { circle(cx, cy, r_hub); }
+let hub = PathLayer('hub') \${
+  fill: base;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+hub.apply {
+  circle(cx, cy, r_hub);
+}
 
 let hub_title = TextLayer('hub-title') \${
-  font-family: font; font-size: 14; font-weight: 700;
-  letter-spacing: 4; fill: hub_ink; text-anchor: middle;
+  font-family: font;
+  font-size: 14;
+  font-weight: 700;
+  letter-spacing: 4;
+  fill: hub_ink;
+  text-anchor: middle;
 };
-hub_title.apply { text(cx, calc(cy - 2))\`OKLCH\` }
+hub_title.apply {
+  text(cx, calc(cy - 2))\`OKLCH\`;
+}
 
 let hub_sub = TextLayer('hub-sub') \${
-  font-family: font; font-size: 8;
-  letter-spacing: 0.8; fill: hub_ink_muted; text-anchor: middle;
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.8;
+  fill: hub_ink_muted;
+  text-anchor: middle;
 };
-hub_sub.apply { text(cx, calc(cy + 12))\`MANIPULATION\` }
+hub_sub.apply {
+  text(cx, calc(cy + 12))\`MANIPULATION\`;
+}
 
 layer('wheel').append(layer('frame'), layer('ring'));
 layer('hub-group').append(layer('hub'), layer('hub-title'), layer('hub-sub'));
 
 // ─── Labels beyond the frame ────────────────────────────────
 let label = TextLayer('label') \${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 2; fill: fg_auto; text-anchor: middle;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: fg_auto;
+  text-anchor: middle;
 };
 
 for ([m, i] in methods) {
   let theta = calc(-1.5708 + i * 0.7854);
   let lx = calc(cx + r_label * cos(theta));
   let ly = calc(cy + r_label * sin(theta) + 3);
-  label.apply { text(lx, ly)\`\${m[0]}\` }
+  label.apply {
+    text(lx, ly)\`\${m[0]}\`;
+  }
 }
 
 layer('labels').append(layer('label'));
@@ -18793,36 +18877,36 @@ layer('diagram').append(layer('wheel'), layer('hub-group'), layer('labels'));
 
 // ─── Core tokens ──────────────────────────────────────────────
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
-let base     = Color(CSSVar('--harmony-color', #e63946));
+let base = Color(CSSVar('--harmony-color', #e63946));
 
-let fg_auto  = Color('#0d1638');
-let fg_muted = Color('#0d1638').alpha(0.60);
-let fg_hair  = Color('#0d1638').alpha(0.22);
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
 
 let font = 'sans-serif';
 
 // ─── Derived harmony fills ───────────────────────────────────
-let c_base     = Color(CSSVar('--harmony-color', #e63946));
-let c_ana_m30  = Color(CSSVar('--harmony-color', #e63946)).hueShift(-30);
-let c_ana_p30  = Color(CSSVar('--harmony-color', #e63946)).hueShift(30);
+let c_base = Color(CSSVar('--harmony-color', #e63946));
+let c_ana_m30 = Color(CSSVar('--harmony-color', #e63946)).hueShift(-30);
+let c_ana_p30 = Color(CSSVar('--harmony-color', #e63946)).hueShift(30);
 let c_tri_p120 = Color(CSSVar('--harmony-color', #e63946)).hueShift(120);
 let c_tri_m120 = Color(CSSVar('--harmony-color', #e63946)).hueShift(-120);
-let c_tet_p90  = Color(CSSVar('--harmony-color', #e63946)).hueShift(90);
+let c_tet_p90 = Color(CSSVar('--harmony-color', #e63946)).hueShift(90);
 let c_tet_p180 = Color(CSSVar('--harmony-color', #e63946)).hueShift(180);
 let c_tet_p270 = Color(CSSVar('--harmony-color', #e63946)).hueShift(270);
-let c_sc_p150  = Color(CSSVar('--harmony-color', #e63946)).hueShift(150);
-let c_sc_p210  = Color(CSSVar('--harmony-color', #e63946)).hueShift(210);
+let c_sc_p150 = Color(CSSVar('--harmony-color', #e63946)).hueShift(150);
+let c_sc_p210 = Color(CSSVar('--harmony-color', #e63946)).hueShift(210);
 
-let c_l_15  = Color(CSSVar('--harmony-color', #e63946)).darken(0.475);
-let c_l_35  = Color(CSSVar('--harmony-color', #e63946)).darken(0.275);
-let c_l_55  = Color(CSSVar('--harmony-color', #e63946)).darken(0.075);
-let c_l_75  = Color(CSSVar('--harmony-color', #e63946)).lighten(0.125);
-let c_l_95  = Color(CSSVar('--harmony-color', #e63946)).lighten(0.325);
+let c_l_15 = Color(CSSVar('--harmony-color', #e63946)).darken(0.475);
+let c_l_35 = Color(CSSVar('--harmony-color', #e63946)).darken(0.275);
+let c_l_55 = Color(CSSVar('--harmony-color', #e63946)).darken(0.075);
+let c_l_75 = Color(CSSVar('--harmony-color', #e63946)).lighten(0.125);
+let c_l_95 = Color(CSSVar('--harmony-color', #e63946)).lighten(0.325);
 
-let c_i_0   = Color(CSSVar('--harmony-color', #e63946));
-let c_i_25  = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.25);
-let c_i_50  = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.50);
-let c_i_75  = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.75);
+let c_i_0 = Color(CSSVar('--harmony-color', #e63946));
+let c_i_25 = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.25);
+let c_i_50 = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.5);
+let c_i_75 = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.75);
 let c_i_100 = '#457b9d';
 
 // ─── Group layers ───────────────────────────────────────────
@@ -18832,15 +18916,26 @@ define GroupLayer('chords') \${}
 define GroupLayer('strips') \${}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') \${ fill: bg_color; stroke: none; };
-bg.apply { rect(0, 0, 520, 560); }
+let bg = PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 560);
+}
 
 // ─── Masthead ───────────────────────────────────────────────
 let eyebrow = TextLayer('eyebrow') \${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
-eyebrow.apply { text(15, 26)\`OKLCH  /  02 — HARMONIES &amp; PALETTES\` }
+eyebrow.apply {
+  text(15, 26)\`OKLCH  /  02 — HARMONIES &amp; PALETTES\`;
+}
 
 layer('diagram').append(layer('bg'), layer('eyebrow'));
 
@@ -18850,61 +18945,154 @@ let cy = 200;
 let r_inner = 55;
 let r_outer = 135;
 let r_frame = 145;
-let r_vertex = 115;   // chord-overlay dot radius
-let r_hub   = 50;
+let r_vertex = 115;
+// chord-overlay dot radius
+let r_hub = 50;
 
 // ─── 12 hue sectors ─────────────────────────────────────────
 // 12 sectors of 30° each. Each sector fills with a static reference
 // hue. Sector 0 at north, advancing clockwise. We enumerate 12
 // explicit let bindings so each fill is a literal color string.
-let seg_span = 0.5236;  // π/6
+let seg_span = 0.5236;
+// π/6
 
-let w0  = PathLayer('w-0')  \${ fill: 'oklch(0.70 0.16 0)';   stroke: fg_hair; stroke-width: 0.5; };
-let w1  = PathLayer('w-1')  \${ fill: 'oklch(0.70 0.16 30)';  stroke: fg_hair; stroke-width: 0.5; };
-let w2  = PathLayer('w-2')  \${ fill: 'oklch(0.70 0.16 60)';  stroke: fg_hair; stroke-width: 0.5; };
-let w3  = PathLayer('w-3')  \${ fill: 'oklch(0.70 0.16 90)';  stroke: fg_hair; stroke-width: 0.5; };
-let w4  = PathLayer('w-4')  \${ fill: 'oklch(0.70 0.16 120)'; stroke: fg_hair; stroke-width: 0.5; };
-let w5  = PathLayer('w-5')  \${ fill: 'oklch(0.70 0.16 150)'; stroke: fg_hair; stroke-width: 0.5; };
-let w6  = PathLayer('w-6')  \${ fill: 'oklch(0.70 0.16 180)'; stroke: fg_hair; stroke-width: 0.5; };
-let w7  = PathLayer('w-7')  \${ fill: 'oklch(0.70 0.16 210)'; stroke: fg_hair; stroke-width: 0.5; };
-let w8  = PathLayer('w-8')  \${ fill: 'oklch(0.70 0.16 240)'; stroke: fg_hair; stroke-width: 0.5; };
-let w9  = PathLayer('w-9')  \${ fill: 'oklch(0.70 0.16 270)'; stroke: fg_hair; stroke-width: 0.5; };
-let w10 = PathLayer('w-10') \${ fill: 'oklch(0.70 0.16 300)'; stroke: fg_hair; stroke-width: 0.5; };
-let w11 = PathLayer('w-11') \${ fill: 'oklch(0.70 0.16 330)'; stroke: fg_hair; stroke-width: 0.5; };
+let w0 = PathLayer('w-0') \${
+  fill: 'oklch(0.70 0.16 0)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w1 = PathLayer('w-1') \${
+  fill: 'oklch(0.70 0.16 30)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w2 = PathLayer('w-2') \${
+  fill: 'oklch(0.70 0.16 60)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w3 = PathLayer('w-3') \${
+  fill: 'oklch(0.70 0.16 90)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w4 = PathLayer('w-4') \${
+  fill: 'oklch(0.70 0.16 120)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w5 = PathLayer('w-5') \${
+  fill: 'oklch(0.70 0.16 150)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w6 = PathLayer('w-6') \${
+  fill: 'oklch(0.70 0.16 180)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w7 = PathLayer('w-7') \${
+  fill: 'oklch(0.70 0.16 210)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w8 = PathLayer('w-8') \${
+  fill: 'oklch(0.70 0.16 240)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w9 = PathLayer('w-9') \${
+  fill: 'oklch(0.70 0.16 270)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w10 = PathLayer('w-10') \${
+  fill: 'oklch(0.70 0.16 300)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let w11 = PathLayer('w-11') \${
+  fill: 'oklch(0.70 0.16 330)';
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
 
-let wedge_layers = [w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11];
+let wedge_layers = [
+  w0,
+  w1,
+  w2,
+  w3,
+  w4,
+  w5,
+  w6,
+  w7,
+  w8,
+  w9,
+  w10,
+  w11,
+];
 
 for (i in 0..11) {
   let from_a = calc(-1.5708 + i * seg_span - seg_span / 2);
-  let to_a   = calc(-1.5708 + i * seg_span + seg_span / 2);
+  let to_a = calc(-1.5708 + i * seg_span + seg_span / 2);
   let w_name = \`w-\${i}\`;
-  layer(w_name).apply {
+  w_name.apply {
     M cx cy
-    radialWedge(r_inner, r_outer, from_a, to_a, 0);
+    radialWedge(r_inner,
+        r_outer,
+        from_a,
+        to_a,
+        0);
   }
   layer('wheel').append(layer(w_name));
 }
 
 // ─── Frame + hub ─────────────────────────────────────────────
-let frame = PathLayer('frame') \${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-frame.apply { circle(cx, cy, r_frame); }
+let frame = PathLayer('frame') \${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+frame.apply {
+  circle(cx, cy, r_frame);
+}
 
-let hub = PathLayer('hub') \${ fill: bg_color; stroke: fg_hair; stroke-width: 0.5; };
-hub.apply { circle(cx, cy, r_hub); }
+let hub = PathLayer('hub') \${
+  fill: bg_color;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+hub.apply {
+  circle(cx, cy, r_hub);
+}
 
 let hub_title = TextLayer('hub-title') \${
-  font-family: font; font-size: 14; font-weight: 700;
-  letter-spacing: 4; fill: fg_auto; text-anchor: middle;
+  font-family: font;
+  font-size: 14;
+  font-weight: 700;
+  letter-spacing: 4;
+  fill: fg_auto;
+  text-anchor: middle;
 };
-hub_title.apply { text(cx, calc(cy - 2))\`OKLCH\` }
+hub_title.apply {
+  text(cx, calc(cy - 2))\`OKLCH\`;
+}
 
 let hub_sub = TextLayer('hub-sub') \${
-  font-family: font; font-size: 8;
-  letter-spacing: 0.8; fill: fg_muted; text-anchor: middle;
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.8;
+  fill: fg_muted;
+  text-anchor: middle;
 };
-hub_sub.apply { text(cx, calc(cy + 12))\`HARMONY\` }
+hub_sub.apply {
+  text(cx, calc(cy + 12))\`HARMONY\`;
+}
 
-layer('wheel').append(layer('frame'), layer('hub'), layer('hub-title'), layer('hub-sub'));
+layer('wheel').append(layer('frame'),
+    layer('hub'),
+    layer('hub-title'),
+    layer('hub-sub'));
 
 // ─── Chord overlays (assuming base at north, 12 o'clock) ────
 // Each overlay is drawn as path edges between vertex points on
@@ -18913,48 +19101,63 @@ layer('wheel').append(layer('frame'), layer('hub'), layer('hub-title'), layer('h
 
 // Analogous: chord = short line from −30° to +30°
 let ana_chord = PathLayer('ana-chord') \${
-  fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 2;
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
 };
 ana_chord.apply {
-  M calc(cx + r_vertex * cos(-2.0944))  calc(cy + r_vertex * sin(-2.0944))
-  L calc(cx + r_vertex * cos(-1.0472))  calc(cy + r_vertex * sin(-1.0472))
+  M calc(cx + r_vertex * cos(-2.0944)) calc(cy + r_vertex * sin(-2.0944))
+  L calc(cx + r_vertex * cos(-1.0472)) calc(cy + r_vertex * sin(-1.0472))
 }
 
 // Triadic: equilateral triangle, base at north
 let tri_chord = PathLayer('tri-chord') \${
-  fill: none; stroke: fg_auto; stroke-width: 0.7; stroke-dasharray: 5 3;
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 0.7;
+  stroke-dasharray: 5 3;
 };
 tri_chord.apply {
   M cx calc(cy - r_vertex)
-  L calc(cx + r_vertex * cos(0.5236))  calc(cy + r_vertex * sin(0.5236))
-  L calc(cx + r_vertex * cos(2.6180))  calc(cy + r_vertex * sin(2.6180))
+  L calc(cx + r_vertex * cos(0.5236)) calc(cy + r_vertex * sin(0.5236))
+  L calc(cx + r_vertex * cos(2.618)) calc(cy + r_vertex * sin(2.618))
   Z
 }
 
 // Tetradic: square, base at north
 let tet_chord = PathLayer('tet-chord') \${
-  fill: none; stroke: fg_auto; stroke-width: 0.7; stroke-dasharray: 2 2;
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 0.7;
+  stroke-dasharray: 2 2;
 };
 tet_chord.apply {
   M cx calc(cy - r_vertex)
-  L calc(cx + r_vertex)  cy
+  L calc(cx + r_vertex) cy
   L cx calc(cy + r_vertex)
-  L calc(cx - r_vertex)  cy
+  L calc(cx - r_vertex) cy
   Z
 }
 
 // Split-comp: Y from base to +150° and +210° (= −150°)
 let sc_chord = PathLayer('sc-chord') \${
-  fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 1 2;
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 1;
+  stroke-dasharray: 1 2;
 };
 sc_chord.apply {
   M cx calc(cy - r_vertex)
-  L calc(cx + r_vertex * cos(1.0472))  calc(cy + r_vertex * sin(1.0472))
+  L calc(cx + r_vertex * cos(1.0472)) calc(cy + r_vertex * sin(1.0472))
   M cx calc(cy - r_vertex)
-  L calc(cx + r_vertex * cos(2.0944))  calc(cy + r_vertex * sin(2.0944))
+  L calc(cx + r_vertex * cos(2.0944)) calc(cy + r_vertex * sin(2.0944))
 }
 
-layer('chords').append(layer('ana-chord'), layer('tri-chord'), layer('tet-chord'), layer('sc-chord'));
+layer('chords').append(layer('ana-chord'),
+    layer('tri-chord'),
+    layer('tet-chord'),
+    layer('sc-chord'));
 
 // ─── Vertex markers (base-derived live chips at harmony positions) ──
 // Union of all distinct vertex positions from all 4 overlays.
@@ -18963,35 +19166,99 @@ layer('chords').append(layer('ana-chord'), layer('tri-chord'), layer('tet-chord'
 //         0 (tet+90), π/2 (tet+180), π (tet+270),
 //         π/3 (sc+150), 2π/3 (sc+210)
 
-let vertex_base  = PathLayer('v-base')   \${ fill: c_base;      stroke: fg_auto; stroke-width: 1; };
-let vertex_am30  = PathLayer('v-ana-m30')\${ fill: c_ana_m30;   stroke: fg_hair; stroke-width: 0.5; };
-let vertex_ap30  = PathLayer('v-ana-p30')\${ fill: c_ana_p30;   stroke: fg_hair; stroke-width: 0.5; };
-let vertex_tp120 = PathLayer('v-tri-p120')\${ fill: c_tri_p120; stroke: fg_hair; stroke-width: 0.5; };
-let vertex_tm120 = PathLayer('v-tri-m120')\${ fill: c_tri_m120; stroke: fg_hair; stroke-width: 0.5; };
-let vertex_tep90 = PathLayer('v-tet-p90')\${ fill: c_tet_p90;   stroke: fg_hair; stroke-width: 0.5; };
-let vertex_tep180= PathLayer('v-tet-p180')\${ fill: c_tet_p180; stroke: fg_hair; stroke-width: 0.5; };
-let vertex_tep270= PathLayer('v-tet-p270')\${ fill: c_tet_p270; stroke: fg_hair; stroke-width: 0.5; };
-let vertex_scp150= PathLayer('v-sc-p150')\${ fill: c_sc_p150;   stroke: fg_hair; stroke-width: 0.5; };
-let vertex_scp210= PathLayer('v-sc-p210')\${ fill: c_sc_p210;   stroke: fg_hair; stroke-width: 0.5; };
+let vertex_base = PathLayer('v-base') \${
+  fill: c_base;
+  stroke: fg_auto;
+  stroke-width: 1;
+};
+let vertex_am30 = PathLayer('v-ana-m30') \${
+  fill: c_ana_m30;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let vertex_ap30 = PathLayer('v-ana-p30') \${
+  fill: c_ana_p30;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let vertex_tp120 = PathLayer('v-tri-p120') \${
+  fill: c_tri_p120;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let vertex_tm120 = PathLayer('v-tri-m120') \${
+  fill: c_tri_m120;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let vertex_tep90 = PathLayer('v-tet-p90') \${
+  fill: c_tet_p90;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let vertex_tep180 = PathLayer('v-tet-p180') \${
+  fill: c_tet_p180;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let vertex_tep270 = PathLayer('v-tet-p270') \${
+  fill: c_tet_p270;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let vertex_scp150 = PathLayer('v-sc-p150') \${
+  fill: c_sc_p150;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+let vertex_scp210 = PathLayer('v-sc-p210') \${
+  fill: c_sc_p210;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
 
 // Base marker — slightly larger dot (r=5) at north
-vertex_base.apply  { circle(cx, calc(cy - r_vertex), 5); }
-vertex_am30.apply  { circle(calc(cx + r_vertex * cos(-2.0944)), calc(cy + r_vertex * sin(-2.0944)), 3.5); }
-vertex_ap30.apply  { circle(calc(cx + r_vertex * cos(-1.0472)), calc(cy + r_vertex * sin(-1.0472)), 3.5); }
-vertex_tp120.apply { circle(calc(cx + r_vertex * cos(0.5236)),  calc(cy + r_vertex * sin(0.5236)),  3.5); }
-vertex_tm120.apply { circle(calc(cx + r_vertex * cos(2.6180)),  calc(cy + r_vertex * sin(2.6180)),  3.5); }
-vertex_tep90.apply { circle(calc(cx + r_vertex), cy, 3.5); }
-vertex_tep180.apply{ circle(cx, calc(cy + r_vertex), 3.5); }
-vertex_tep270.apply{ circle(calc(cx - r_vertex), cy, 3.5); }
-vertex_scp150.apply{ circle(calc(cx + r_vertex * cos(1.0472)),  calc(cy + r_vertex * sin(1.0472)),  3.5); }
-vertex_scp210.apply{ circle(calc(cx + r_vertex * cos(2.0944)),  calc(cy + r_vertex * sin(2.0944)),  3.5); }
+vertex_base.apply {
+  circle(cx, calc(cy - r_vertex), 5);
+}
+vertex_am30.apply {
+  circle(calc(cx + r_vertex * cos(-2.0944)), calc(cy + r_vertex * sin(-2.0944)), 3.5);
+}
+vertex_ap30.apply {
+  circle(calc(cx + r_vertex * cos(-1.0472)), calc(cy + r_vertex * sin(-1.0472)), 3.5);
+}
+vertex_tp120.apply {
+  circle(calc(cx + r_vertex * cos(0.5236)), calc(cy + r_vertex * sin(0.5236)), 3.5);
+}
+vertex_tm120.apply {
+  circle(calc(cx + r_vertex * cos(2.618)), calc(cy + r_vertex * sin(2.618)), 3.5);
+}
+vertex_tep90.apply {
+  circle(calc(cx + r_vertex), cy, 3.5);
+}
+vertex_tep180.apply {
+  circle(cx, calc(cy + r_vertex), 3.5);
+}
+vertex_tep270.apply {
+  circle(calc(cx - r_vertex), cy, 3.5);
+}
+vertex_scp150.apply {
+  circle(calc(cx + r_vertex * cos(1.0472)), calc(cy + r_vertex * sin(1.0472)), 3.5);
+}
+vertex_scp210.apply {
+  circle(calc(cx + r_vertex * cos(2.0944)), calc(cy + r_vertex * sin(2.0944)), 3.5);
+}
 
-layer('chords').append(
-  layer('v-base'), layer('v-ana-m30'), layer('v-ana-p30'),
-  layer('v-tri-p120'), layer('v-tri-m120'),
-  layer('v-tet-p90'), layer('v-tet-p180'), layer('v-tet-p270'),
-  layer('v-sc-p150'), layer('v-sc-p210')
-);
+layer('chords').append(layer('v-base'),
+    layer('v-ana-m30'),
+    layer('v-ana-p30'),
+    layer('v-tri-p120'),
+    layer('v-tri-m120'),
+    layer('v-tet-p90'),
+    layer('v-tet-p180'),
+    layer('v-tet-p270'),
+    layer('v-sc-p150'),
+    layer('v-sc-p210'));
 
 // ─── Palette strips below the wheel ─────────────────────────
 // Strip 1: lightness ramp at y=365..415
@@ -18999,8 +19266,12 @@ layer('chords').append(
 // 5 chips per strip, full-width.
 
 let strip_label_layer = TextLayer('strip-label') \${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
 
 let chip_w = 94;
@@ -19008,48 +19279,109 @@ let chip_gap = 4;
 let chip_x0 = 15;
 
 // Strip 1: Lightness
-strip_label_layer.apply { text(chip_x0, 365)\`LIGHTNESS  /  L 0.15 → 0.95\` }
-let l_colors = [c_l_15, c_l_35, c_l_55, c_l_75, c_l_95];
+strip_label_layer.apply {
+  text(chip_x0, 365)\`LIGHTNESS  /  L 0.15 → 0.95\`;
+}
+let l_colors = [
+  c_l_15,
+  c_l_35,
+  c_l_55,
+  c_l_75,
+  c_l_95,
+];
 for ([col, i] in l_colors) {
   let cx_i = calc(chip_x0 + i * (chip_w + chip_gap));
-  let sw = PathLayer(\`l-\${i}\`) \${ fill: col; stroke: fg_hair; stroke-width: 0.5; };
-  sw.apply { roundRect(cx_i, 375, chip_w, 42, 5.5); }
+  let sw = PathLayer(\`l-\${i}\`) \${
+    fill: col;
+    stroke: fg_hair;
+    stroke-width: 0.5;
+  };
+  sw.apply {
+    roundRect(cx_i,
+        375,
+        chip_w,
+        42,
+        5.5);
+  }
   layer('strips').append(layer(\`l-\${i}\`));
 }
 
 // Strip 2: Interpolate
-strip_label_layer.apply { text(chip_x0, 445)\`INTERPOLATE  /  BASE → #457b9d\` }
-let i_colors = [c_i_0, c_i_25, c_i_50, c_i_75, c_i_100];
+strip_label_layer.apply {
+  text(chip_x0, 445)\`INTERPOLATE  /  BASE → #457b9d\`;
+}
+let i_colors = [
+  c_i_0,
+  c_i_25,
+  c_i_50,
+  c_i_75,
+  c_i_100,
+];
 for ([col, i] in i_colors) {
   let cx_i = calc(chip_x0 + i * (chip_w + chip_gap));
-  let sw = PathLayer(\`i-\${i}\`) \${ fill: col; stroke: fg_hair; stroke-width: 0.5; };
-  sw.apply { roundRect(cx_i, 455, chip_w, 42, 5.5); }
+  let sw = PathLayer(\`i-\${i}\`) \${
+    fill: col;
+    stroke: fg_hair;
+    stroke-width: 0.5;
+  };
+  sw.apply {
+    roundRect(cx_i,
+        455,
+        chip_w,
+        42,
+        5.5);
+  }
   layer('strips').append(layer(\`i-\${i}\`));
 }
 
 // Strip sub labels — small value markers at bottom of each strip
 let strip_sub_layer = TextLayer('strip-sub') \${
-  font-family: font; font-size: 6;
-  letter-spacing: 0.5; fill: fg_muted; text-anchor: middle;
+  font-family: font;
+  font-size: 6;
+  letter-spacing: 0.5;
+  fill: fg_muted;
+  text-anchor: middle;
 };
-let l_subs = ['0.15', '0.35', '0.55', '0.75', '0.95'];
+let l_subs = [
+  '0.15',
+  '0.35',
+  '0.55',
+  '0.75',
+  '0.95',
+];
 for ([s, i] in l_subs) {
   let cx_i = calc(chip_x0 + i * (chip_w + chip_gap) + chip_w / 2);
-  strip_sub_layer.apply { text(cx_i, 428)\`\${s}\` }
+  strip_sub_layer.apply {
+    text(cx_i, 428)\`\${s}\`;
+  }
 }
-let i_subs = ['0%', '25%', '50%', '75%', '100%'];
+let i_subs = [
+  '0%',
+  '25%',
+  '50%',
+  '75%',
+  '100%',
+];
 for ([s, i] in i_subs) {
   let cx_i = calc(chip_x0 + i * (chip_w + chip_gap) + chip_w / 2);
-  strip_sub_layer.apply { text(cx_i, 508)\`\${s}\` }
+  strip_sub_layer.apply {
+    text(cx_i, 508)\`\${s}\`;
+  }
 }
 
 // ─── Chord legend (bottom) ──────────────────────────────────
 let legend_y = 535;
 let legend = TextLayer('legend') \${
-  font-family: font; font-size: 6; font-weight: 700;
-  letter-spacing: 1.4; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 1.4;
+  fill: fg_muted;
+  text-anchor: start;
 };
-legend.apply { text(15, legend_y)\`CHORDS:  ANA  TRI  TET  SPLIT-COMP  —  VERTICES SHOW LIVE BASE HUES\` }
+legend.apply {
+  text(15, legend_y)\`CHORDS:  ANA  TRI  TET  SPLIT-COMP  —  VERTICES SHOW LIVE BASE HUES\`;
+}
 
 layer('strips').append(layer('strip-label'), layer('strip-sub'), layer('legend'));
 layer('diagram').append(layer('wheel'), layer('chords'), layer('strips'));
@@ -19093,31 +19425,31 @@ layer('diagram').append(layer('wheel'), layer('chords'), layer('strips'));
 // design elements, with masthead below.
 
 // ─── Core tokens ──────────────────────────────────────────────
-let bg_color  = Color(CSSVar('--bg',        #d0d7f0));
-let primary   = Color(CSSVar('--primary',   #e63946));
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let primary = Color(CSSVar('--primary', #e63946));
 let secondary = Color(CSSVar('--secondary', #457b9d));
-let accent    = Color(CSSVar('--accent',    #2a9d8f));
+let accent = Color(CSSVar('--accent', #2a9d8f));
 
-let fg_auto  = Color('#0d1638');
-let fg_muted = Color('#0d1638').alpha(0.60);
-let fg_hair  = Color('#0d1638').alpha(0.22);
-let fg_faint = Color('#0d1638').alpha(0.10);
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let fg_faint = Color('#0d1638').alpha(0.1);
 
 // Auto-contrasting ink against each theme color (for text on actor cards)
-let primary_ink   = Color('#0d1638');
-let primary_ink_m = Color('#0d1638').alpha(0.70);
-let secondary_ink   = Color('#f0e8c8');
-let secondary_ink_m = Color('#f0e8c8').alpha(0.70);
-let accent_ink    = Color('#f0e8c8');
-let accent_ink_m  = Color('#f0e8c8').alpha(0.70);
+let primary_ink = Color('#0d1638');
+let primary_ink_m = Color('#0d1638').alpha(0.7);
+let secondary_ink = Color('#f0e8c8');
+let secondary_ink_m = Color('#f0e8c8').alpha(0.7);
+let accent_ink = Color('#f0e8c8');
+let accent_ink_m = Color('#f0e8c8').alpha(0.7);
 
 // Derived theme colors (shown in the system half + bottom spotlights)
-let primary_lighter  = Color(CSSVar('--primary', #e63946)).lighten(0.15);
-let primary_darker   = Color(CSSVar('--primary', #e63946)).darken(0.15);
-let secondary_muted  = Color(CSSVar('--secondary', #457b9d)).desaturate(0.5);
-let accent_shifted   = Color(CSSVar('--accent', #2a9d8f)).hueShift(60);
-let accent_raw       = Color(CSSVar('--accent', #2a9d8f));
-let primary_raw      = Color(CSSVar('--primary', #e63946));
+let primary_lighter = Color(CSSVar('--primary', #e63946)).lighten(0.15);
+let primary_darker = Color(CSSVar('--primary', #e63946)).darken(0.15);
+let secondary_muted = Color(CSSVar('--secondary', #457b9d)).desaturate(0.5);
+let accent_shifted = Color(CSSVar('--accent', #2a9d8f)).hueShift(60);
+let accent_raw = Color(CSSVar('--accent', #2a9d8f));
+let primary_raw = Color(CSSVar('--primary', #e63946));
 
 let font = 'sans-serif';
 
@@ -19128,59 +19460,95 @@ define GroupLayer('seam') \${}
 define GroupLayer('stage') \${}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') \${ fill: bg_color; stroke: none; };
-bg.apply { rect(0, 0, 520, 640); }
+let bg = PathLayer('bg') \${
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 640);
+}
 
 // ═══════════════════════════════════════════════════════════
 // TOP HALF — THEME SYSTEM (y 0..290)
 // ═══════════════════════════════════════════════════════════
 
 let sys_eyebrow = TextLayer('sys-eyebrow') \${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
-sys_eyebrow.apply { text(15, 26)\`OKLCH  /  03 — THEME SYSTEM\` }
+sys_eyebrow.apply {
+  text(15, 26)\`OKLCH  /  03 — THEME SYSTEM\`;
+}
 
 // ─── Accent linking arcs (central connective tissue) ──────
 // Four Q curves from mid-sides to star tips. Raw --accent, 1.2 stroke.
 let sys_arcs = PathLayer('sys-arcs') \${
-  fill: none; stroke: accent_raw; stroke-width: 1.2; stroke-linecap: round;
+  fill: none;
+  stroke: accent_raw;
+  stroke-width: 1.2;
+  stroke-linecap: round;
 };
 sys_arcs.apply {
-  M 100 160  Q 180 70  260 110
-  M 420 160  Q 340 70  260 110
-  M 100 160  Q 180 250 260 210
-  M 420 160  Q 340 250 260 210
+  M 100 160
+  Q 180 70 260 110
+  M 420 160
+  Q 340 70 260 110
+  M 100 160
+  Q 180 250 260 210
+  M 420 160
+  Q 340 250 260 210
 }
 
 // ─── Dashed fg_auto L=0.55 reference ring ─────────────────
 let sys_ring = PathLayer('sys-ring') \${
-  fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 4;
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
 };
-sys_ring.apply { circle(260, 160, 95); }
+sys_ring.apply {
+  circle(260, 160, 95);
+}
 
 // ─── Accent halo disc behind the star ─────────────────────
 let sys_halo = PathLayer('sys-halo') \${
-  fill: accent_raw; stroke: none; opacity: 0.28;
+  fill: accent_raw;
+  stroke: none;
+  opacity: 0.28;
 };
-sys_halo.apply { circle(260, 160, 38); }
+sys_halo.apply {
+  circle(260, 160, 38);
+}
 
 // ─── Accent tick marks at ring diagonals ──────────────────
 // 4 short strokes pointing outward at ±45° from ring center.
 // Inner point on ring (r=95), outer point on r=107.
 let sys_ticks = PathLayer('sys-ticks') \${
-  fill: none; stroke: accent_raw; stroke-width: 1.5; stroke-linecap: round;
+  fill: none;
+  stroke: accent_raw;
+  stroke-width: 1.5;
+  stroke-linecap: round;
 };
 sys_ticks.apply {
-  M 327.2 92.9   L 335.7 84.4
-  M 327.2 227.1  L 335.7 235.6
-  M 192.8 227.1  L 184.3 235.6
-  M 192.8 92.9   L 184.3 84.4
+  M 327.2 92.9
+  L 335.7 84.4
+  M 327.2 227.1
+  L 335.7 235.6
+  M 192.8 227.1
+  L 184.3 235.6
+  M 192.8 92.9
+  L 184.3 84.4
 }
 
 // ─── 4 orbiting circles (desaturated secondary) on reference ring ──
 let sys_orbit = PathLayer('sys-orbit') \${
-  fill: secondary_muted; stroke: fg_hair; stroke-width: 0.5;
+  fill: secondary_muted;
+  stroke: fg_hair;
+  stroke-width: 0.5;
 };
 sys_orbit.apply {
   circle(260, 65, 11);
@@ -19191,19 +19559,42 @@ sys_orbit.apply {
 
 // ─── Central 5-point star (lightened primary) ──────────────
 let sys_star = PathLayer('sys-star') \${
-  fill: primary_lighter; stroke: primary; stroke-width: 1; opacity: 0.95;
+  fill: primary_lighter;
+  stroke: primary;
+  stroke-width: 1;
+  opacity: 0.95;
 };
-sys_star.apply { star(260, 160, 5, 50, 19); }
+sys_star.apply {
+  star(260,
+      160,
+      5,
+      50,
+      19);
+}
 
 // ─── 3 corner diamonds (hue-shifted accent) ─────────────────
 // Top-left, top-right, bottom-left. Bottom-right hosts the legend.
 let sys_diamonds = PathLayer('sys-diamonds') \${
-  fill: accent_shifted; stroke: fg_hair; stroke-width: 0.5;
+  fill: accent_shifted;
+  stroke: fg_hair;
+  stroke-width: 0.5;
 };
 sys_diamonds.apply {
-  M 45 65   L 60 50  L 75 65   L 60 80  Z
-  M 445 65  L 460 50 L 475 65  L 460 80 Z
-  M 45 255  L 60 240 L 75 255  L 60 270 Z
+  M 45 65
+  L 60 50
+  L 75 65
+  L 60 80
+  Z
+  M 445 65
+  L 460 50
+  L 475 65
+  L 460 80
+  Z
+  M 45 255
+  L 60 240
+  L 75 255
+  L 60 270
+  Z
 }
 
 // ─── Legend card (bottom-right of top half) ────────────────
@@ -19213,66 +19604,138 @@ let legend_w = 140;
 let legend_h = 62;
 
 let legend_bg = PathLayer('legend-bg') \${
-  fill: bg_color; stroke: fg_hair; stroke-width: 0.5;
+  fill: bg_color;
+  stroke: fg_hair;
+  stroke-width: 0.5;
 };
-legend_bg.apply { roundRect(legend_x, legend_y, legend_w, legend_h, 5.5); }
+legend_bg.apply {
+  roundRect(legend_x,
+      legend_y,
+      legend_w,
+      legend_h,
+      5.5);
+}
 
-let legend_sw_layer = PathLayer('legend-sw') \${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
+let legend_sw_layer = PathLayer('legend-sw') \${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
 let legend_name_layer = TextLayer('legend-name') \${
-  font-family: font; font-size: 7; font-weight: 700;
-  letter-spacing: 0.8; fill: fg_auto; text-anchor: start;
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: fg_auto;
+  text-anchor: start;
 };
 let legend_role_layer = TextLayer('legend-role') \${
-  font-family: font; font-size: 7;
-  letter-spacing: 0.5; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 7;
+  letter-spacing: 0.5;
+  fill: fg_muted;
+  text-anchor: start;
 };
 
 // Legend rows
 let legend_items = [
-  [bg_color,  '--bg',        'backdrop'],
-  [primary,   '--primary',   'star'],
-  [secondary, '--secondary', 'orbit'],
-  [accent,    '--accent',    'arcs / halo / ticks'],
+  [
+    bg_color,
+    '--bg',
+    'backdrop',
+  ],
+  [
+    primary,
+    '--primary',
+    'star',
+  ],
+  [
+    secondary,
+    '--secondary',
+    'orbit',
+  ],
+  [
+    accent,
+    '--accent',
+    'arcs / halo / ticks',
+  ],
 ];
 
 for ([item, i] in legend_items) {
   let row_y = calc(legend_y + 10 + i * 12);
   let sw_name = \`legend-sw-\${i}\`;
   let sw = PathLayer(sw_name) \${
-    fill: item[0]; stroke: fg_hair; stroke-width: 0.5;
+    fill: item[0];
+    stroke: fg_hair;
+    stroke-width: 0.5;
   };
-  sw.apply { roundRect(calc(legend_x + 8), calc(row_y - 4), 7, 7, 1.5); }
-  legend_name_layer.apply { text(calc(legend_x + 20), calc(row_y + 1.5))\`\${item[1]}\` }
-  legend_role_layer.apply { text(calc(legend_x + 74), calc(row_y + 1.5))\`\${item[2]}\` }
+  sw.apply {
+    roundRect(calc(legend_x + 8),
+        calc(row_y - 4),
+        7,
+        7,
+        1.5);
+  }
+  legend_name_layer.apply {
+    text(calc(legend_x + 20), calc(row_y + 1.5))\`\${item[1]}\`;
+  }
+  legend_role_layer.apply {
+    text(calc(legend_x + 74), calc(row_y + 1.5))\`\${item[2]}\`;
+  }
 }
 
-layer('sys').append(
-  layer('sys-eyebrow'),
-  layer('sys-arcs'), layer('sys-ring'), layer('sys-halo'), layer('sys-ticks'),
-  layer('sys-orbit'), layer('sys-star'), layer('sys-diamonds'),
-  layer('legend-bg'),
-  layer('legend-sw-0'), layer('legend-sw-1'), layer('legend-sw-2'), layer('legend-sw-3'),
-  layer('legend-name'), layer('legend-role')
-);
+layer('sys').append(layer('sys-eyebrow'),
+    layer('sys-arcs'),
+    layer('sys-ring'),
+    layer('sys-halo'),
+    layer('sys-ticks'),
+    layer('sys-orbit'),
+    layer('sys-star'),
+    layer('sys-diamonds'),
+    layer('legend-bg'),
+    layer('legend-sw-0'),
+    layer('legend-sw-1'),
+    layer('legend-sw-2'),
+    layer('legend-sw-3'),
+    layer('legend-name'),
+    layer('legend-role'));
 
 // ═══════════════════════════════════════════════════════════
 // SEAM — hairline divider + "SYSTEM" / "STAGE" chapter labels
 // ═══════════════════════════════════════════════════════════
 
-let seam_line = PathLayer('seam-line') \${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-seam_line.apply { line(15, 290, 505, 290); }
+let seam_line = PathLayer('seam-line') \${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+seam_line.apply {
+  line(15, 290, 505, 290);
+}
 
 let seam_top_label = TextLayer('seam-top-label') \${
-  font-family: font; font-size: 7; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
-seam_top_label.apply { text(15, 283)\`SYSTEM\` }
+seam_top_label.apply {
+  text(15, 283)\`SYSTEM\`;
+}
 
 let seam_bot_label = TextLayer('seam-bot-label') \${
-  font-family: font; font-size: 7; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: end;
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: end;
 };
-seam_bot_label.apply { text(505, 302)\`STAGE\` }
+seam_bot_label.apply {
+  text(505, 302)\`STAGE\`;
+}
 
 layer('seam').append(layer('seam-line'), layer('seam-top-label'), layer('seam-bot-label'));
 
@@ -19281,81 +19744,170 @@ layer('seam').append(layer('seam-line'), layer('seam-top-label'), layer('seam-bo
 // ═══════════════════════════════════════════════════════════
 
 let stage_eyebrow = TextLayer('stage-eyebrow') \${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
-stage_eyebrow.apply { text(15, 328)\`OKLCH  /  03 — THEME IN USE\` }
+stage_eyebrow.apply {
+  text(15, 328)\`OKLCH  /  03 — THEME IN USE\`;
+}
 
 // ─── Backdrop plate ───────────────────────────────────────
 let stage_backdrop = PathLayer('stage-backdrop') \${
-  fill: fg_faint; stroke: fg_hair; stroke-width: 0.5;
+  fill: fg_faint;
+  stroke: fg_hair;
+  stroke-width: 0.5;
 };
-stage_backdrop.apply { roundRect(15, 350, 490, 200, 5.5); }
+stage_backdrop.apply {
+  roundRect(15,
+      350,
+      490,
+      200,
+      5.5);
+}
 
 // ─── Three actor cards ────────────────────────────────────
 // Width 145, gap 12. Left 30, right 30. Cards at x = 30, 187, 344. y = 366..534 (168 tall).
 
 let actors = [
-  ['01 / PRIMARY',   '--primary',   'dominant · action · focus',   primary,   primary_ink,   primary_ink_m,   30],
-  ['02 / SECONDARY', '--secondary', 'supporting · balance',        secondary, secondary_ink, secondary_ink_m, 187],
-  ['03 / ACCENT',    '--accent',    'highlight · punctuate',       accent,    accent_ink,    accent_ink_m,    344],
+  [
+    '01 / PRIMARY',
+    '--primary',
+    'dominant · action · focus',
+    primary,
+    primary_ink,
+    primary_ink_m,
+    30,
+  ],
+  [
+    '02 / SECONDARY',
+    '--secondary',
+    'supporting · balance',
+    secondary,
+    secondary_ink,
+    secondary_ink_m,
+    187,
+  ],
+  [
+    '03 / ACCENT',
+    '--accent',
+    'highlight · punctuate',
+    accent,
+    accent_ink,
+    accent_ink_m,
+    344,
+  ],
 ];
 
 for ([a, i] in actors) {
   let ax = a[6];
   let actor_name = \`actor-\${i}\`;
-  let actor = PathLayer(actor_name) \${ fill: a[3]; stroke: none; };
-  actor.apply { roundRect(ax, 366, 145, 168, 5.5); }
+  let actor = PathLayer(actor_name) \${
+    fill: a[3];
+    stroke: none;
+  };
+  actor.apply {
+    roundRect(ax,
+        366,
+        145,
+        168,
+        5.5);
+  }
 
   let role_layer = TextLayer(\`actor-role-\${i}\`) \${
-    font-family: font; font-size: 6; font-weight: 700;
-    letter-spacing: 2; fill: a[5]; text-anchor: start;
+    font-family: font;
+    font-size: 6;
+    font-weight: 700;
+    letter-spacing: 2;
+    fill: a[5];
+    text-anchor: start;
   };
-  role_layer.apply { text(calc(ax + 12), 386)\`\${a[0]}\` }
+  role_layer.apply {
+    text(calc(ax + 12), 386)\`\${a[0]}\`;
+  }
 
   let varname_layer = TextLayer(\`actor-name-\${i}\`) \${
-    font-family: font; font-size: 14; font-weight: 700;
-    letter-spacing: 3; fill: a[4]; text-anchor: start;
+    font-family: font;
+    font-size: 14;
+    font-weight: 700;
+    letter-spacing: 3;
+    fill: a[4];
+    text-anchor: start;
   };
-  varname_layer.apply { text(calc(ax + 12), 500)\`\${a[1]}\` }
+  varname_layer.apply {
+    text(calc(ax + 12), 500)\`\${a[1]}\`;
+  }
 
   let desc_layer = TextLayer(\`actor-desc-\${i}\`) \${
-    font-family: font; font-size: 7;
-    letter-spacing: 0.5; fill: a[5]; text-anchor: start;
+    font-family: font;
+    font-size: 7;
+    letter-spacing: 0.5;
+    fill: a[5];
+    text-anchor: start;
   };
-  desc_layer.apply { text(calc(ax + 12), 516)\`\${a[2]}\` }
+  desc_layer.apply {
+    text(calc(ax + 12), 516)\`\${a[2]}\`;
+  }
 }
+
 
 // ─── Spotlight halos (simplified — translucent filled discs) ───
 // Real CSS radial-gradient doesn't translate to SVG fills; use
 // low-opacity discs as approximation of the spotlight effect.
 let spotlight_1 = PathLayer('spotlight-1') \${
-  fill: primary_lighter; stroke: none; opacity: 0.18;
+  fill: primary_lighter;
+  stroke: none;
+  opacity: 0.18;
 };
-spotlight_1.apply { circle(160, 392, 70); }
+spotlight_1.apply {
+  circle(160, 392, 70);
+}
 
 let spotlight_2 = PathLayer('spotlight-2') \${
-  fill: accent_shifted; stroke: none; opacity: 0.18;
+  fill: accent_shifted;
+  stroke: none;
+  opacity: 0.18;
 };
-spotlight_2.apply { circle(370, 430, 70); }
+spotlight_2.apply {
+  circle(370, 430, 70);
+}
 
 // ─── Bottom-left masthead ────────────────────────────────
 let masthead_eyebrow = TextLayer('masthead-eyebrow') \${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
-masthead_eyebrow.apply { text(15, 574)\`THEME  /  03 — REACTIVE\` }
+masthead_eyebrow.apply {
+  text(15, 574)\`THEME  /  03 — REACTIVE\`;
+}
 
 let masthead_title = TextLayer('masthead-title') \${
-  font-family: font; font-size: 38; font-weight: 200;
-  letter-spacing: -1; fill: fg_auto; text-anchor: start;
+  font-family: font;
+  font-size: 38;
+  font-weight: 200;
+  letter-spacing: -1;
+  fill: fg_auto;
+  text-anchor: start;
 };
-masthead_title.apply { text(15, 612)\`Color Theme\` }
+masthead_title.apply {
+  text(15, 612)\`Color Theme\`;
+}
 
 // ─── Bottom-right credits ────────────────────────────────
 let credits = TextLayer('credits') \${
-  font-family: font; font-size: 6; font-weight: 700;
-  letter-spacing: 1.4; fill: fg_muted; text-anchor: end;
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 1.4;
+  fill: fg_muted;
+  text-anchor: end;
 };
 credits.apply {
   text(505, 594)\`4  CSS  VARS\`;
@@ -19363,18 +19915,30 @@ credits.apply {
   text(505, 622)\`∞  THEMES\`;
 }
 
-layer('stage').append(
-  layer('stage-eyebrow'),
-  layer('stage-backdrop'),
-  layer('spotlight-1'), layer('spotlight-2'),
-  layer('actor-0'), layer('actor-role-0'), layer('actor-name-0'), layer('actor-desc-0'),
-  layer('actor-1'), layer('actor-role-1'), layer('actor-name-1'), layer('actor-desc-1'),
-  layer('actor-2'), layer('actor-role-2'), layer('actor-name-2'), layer('actor-desc-2'),
-  layer('masthead-eyebrow'), layer('masthead-title'),
-  layer('credits')
-);
+layer('stage').append(layer('stage-eyebrow'),
+    layer('stage-backdrop'),
+    layer('spotlight-1'),
+    layer('spotlight-2'),
+    layer('actor-0'),
+    layer('actor-role-0'),
+    layer('actor-name-0'),
+    layer('actor-desc-0'),
+    layer('actor-1'),
+    layer('actor-role-1'),
+    layer('actor-name-1'),
+    layer('actor-desc-1'),
+    layer('actor-2'),
+    layer('actor-role-2'),
+    layer('actor-name-2'),
+    layer('actor-desc-2'),
+    layer('masthead-eyebrow'),
+    layer('masthead-title'),
+    layer('credits'));
 
-layer('diagram').append(layer('bg'), layer('sys'), layer('seam'), layer('stage'));
+layer('diagram').append(layer('bg'),
+    layer('sys'),
+    layer('seam'),
+    layer('stage'));
 </code>
   <img src="/blog/samples/post24/theme-combined.svg" alt="Four CSS variables drive one composition twice: the top half shows the theme as a geometric system of relationships; the bottom half shows the same colors as a presentational triptych." loading="lazy">
 </mini-workspace></p>
@@ -19435,26 +19999,26 @@ ld.<span class="hljs-property">interpolation</span> = <span class="hljs-string">
 // radialWedge chips with deeply rounded corners fan across the canvas.
 
 // ─── Core tokens ──────────────────────────────────────────────
-let bg_light   = Color(CSSVar('--bg-light',   #d0d7f0));
-let bg_dark    = Color(CSSVar('--bg-dark',    #12131a));
+let bg_light = Color(CSSVar('--bg-light', #d0d7f0));
+let bg_dark = Color(CSSVar('--bg-dark', #12131a));
 let base_color = Color(CSSVar('--base-color', #e63946));
 
-let ink_on_light   = Color('#0d1638');
-let ink_on_light_m = Color('#0d1638').alpha(0.60);
+let ink_on_light = Color('#0d1638');
+let ink_on_light_m = Color('#0d1638').alpha(0.6);
 let ink_on_light_h = Color('#0d1638').alpha(0.22);
 
-let ink_on_dark    = Color('#f0e8c8');
-let ink_on_dark_m  = Color('#f0e8c8').alpha(0.60);
+let ink_on_dark = Color('#f0e8c8');
+let ink_on_dark_m = Color('#f0e8c8').alpha(0.6);
 
 let font = 'sans-serif';
 
 // ─── Seven method fills ──────────────────────────────────────
-let m_base       = Color(CSSVar('--base-color', #e63946));
-let m_lighten    = Color(CSSVar('--base-color', #e63946)).lighten(0.18);
-let m_darken     = Color(CSSVar('--base-color', #e63946)).darken(0.18);
-let m_saturate   = Color(CSSVar('--base-color', #e63946)).saturate(1.5);
+let m_base = Color(CSSVar('--base-color', #e63946));
+let m_lighten = Color(CSSVar('--base-color', #e63946)).lighten(0.18);
+let m_darken = Color(CSSVar('--base-color', #e63946)).darken(0.18);
+let m_saturate = Color(CSSVar('--base-color', #e63946)).saturate(1.5);
 let m_desaturate = Color(CSSVar('--base-color', #e63946)).desaturate(0.4);
-let m_hue        = Color(CSSVar('--base-color', #e63946)).hueShift(90);
+let m_hue = Color(CSSVar('--base-color', #e63946)).hueShift(90);
 let m_complement = Color(CSSVar('--base-color', #e63946)).hueShift(180);
 
 // Auto-contrasting ink against each method color. Originally these
@@ -19463,12 +20027,12 @@ let m_complement = Color(CSSVar('--base-color', #e63946)).hueShift(180);
 // Pathogen has no autoContrast() method on a derived Color, so each
 // ink is hardcoded to match the canonical dark text against the
 // fallback #e63946 swatches.
-let ink_base       = Color('#0d1638');
-let ink_lighten    = Color('#0d1638');
-let ink_darken     = Color('#f0e8c8');
-let ink_saturate   = Color('#0d1638');
+let ink_base = Color('#0d1638');
+let ink_lighten = Color('#0d1638');
+let ink_darken = Color('#f0e8c8');
+let ink_saturate = Color('#0d1638');
 let ink_desaturate = Color('#0d1638');
-let ink_hue        = Color('#0d1638');
+let ink_hue = Color('#0d1638');
 let ink_complement = Color('#0d1638');
 
 // ─── Group layers ───────────────────────────────────────────
@@ -19482,10 +20046,10 @@ let cy = 260;
 
 // ─── Conic gradient: bg_light at top (north of cx,cy) to bg_dark at bottom ──
 let ld_grad = ConicGradient('light-to-dark-bg', cx, cy) {|g|
-  g.stop(0,    bg_light);
-  g.stop(0.4,  bg_light);
+  g.stop(0   , bg_light);
+  g.stop(0.4 , bg_light);
   g.stop(0.55, bg_dark);
-  g.stop(1,    bg_dark);
+  g.stop(1   , bg_dark);
 };
 ld_grad.from = -50deg;
 ld_grad.to = 50deg;
@@ -19495,38 +20059,90 @@ ld_grad.spread = 'transparent';
 ld_grad.interpolation = 'oklch';
 
 // ─── Canvas fill ───────────────────────────────────────────
-let bg = PathLayer('bg') \${ fill: ld_grad; stroke: none; };
-bg.apply { rect(0, 0, 520, 520); }
+let bg = PathLayer('bg') \${
+  fill: ld_grad;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 520);
+}
 
 // ─── Horizon line (at y = cy = 260, the gradient midpoint axis) ──
 let horizon_line = PathLayer('horizon-line') \${
-  fill: none; stroke: ink_on_light_m; stroke-width: 0.5; stroke-dasharray: 3 4;
+  fill: none;
+  stroke: ink_on_light_m;
+  stroke-width: 0.5;
+  stroke-dasharray: 3 4;
 };
-horizon_line.apply { line(0, 260, 520, 260); }
+horizon_line.apply {
+  line(0, 260, 520, 260);
+}
 
 // ─── Chip parameters ──────────────────────────────────────
-let chip_span = .08pi;
-let corner_r  = 20;
+let chip_span = 0.08pi;
+let corner_r = 20;
 
 let chip_data = [
-  ['chip-1', m_base,       280, 335],
-  ['chip-2', m_lighten,    350, 405],
-  ['chip-3', m_darken,     420, 475],
-  ['chip-4', m_saturate,   490, 545],
-  ['chip-5', m_desaturate, 560, 615],
-  ['chip-6', m_hue,        630, 685],
-  ['chip-7', m_complement, 700, 755],
+  [
+    'chip-1',
+    m_base,
+    280,
+    335,
+  ],
+  [
+    'chip-2',
+    m_lighten,
+    350,
+    405,
+  ],
+  [
+    'chip-3',
+    m_darken,
+    420,
+    475,
+  ],
+  [
+    'chip-4',
+    m_saturate,
+    490,
+    545,
+  ],
+  [
+    'chip-5',
+    m_desaturate,
+    560,
+    615,
+  ],
+  [
+    'chip-6',
+    m_hue,
+    630,
+    685,
+  ],
+  [
+    'chip-7',
+    m_complement,
+    700,
+    755,
+  ],
 ];
 
 for ([c, i] in chip_data) {
   let cname = c[0];
   let cfill = c[1];
-  let cin   = c[2];
-  let cout  = c[3];
-  let chip_layer = PathLayer(cname) \${ fill: cfill; stroke: none; };
+  let cin = c[2];
+  let cout = c[3];
+  let chip_layer = PathLayer(cname) \${
+    fill: cfill;
+    stroke: none;
+  };
   chip_layer.apply {
     M cx cy
-    radialWedge(cin, cout, -chip_span, chip_span, corner_r);
+    radialWedge(cin,
+        cout,
+        -chip_span,
+        chip_span,
+        corner_r);
   }
   layer('chips').append(layer(cname));
 }
@@ -19537,84 +20153,164 @@ for ([c, i] in chip_data) {
 // text alone sits over the chip color.
 
 let pill_data = [
-  [ink_base,       'BASE',       47.5 ],
-  [ink_lighten,    'LIGHTEN',    117.5],
-  [ink_darken,     'DARKEN',     187.5],
-  [ink_saturate,   'SATURATE',   257.5],
-  [ink_desaturate, 'DESAT.',     327.5],
-  [ink_hue,        'HUE +90°',   397.5],
-  [ink_complement, 'COMP.',      467.5],
+  [
+    ink_base,
+    'BASE',
+    47.5,
+  ],
+  [
+    ink_lighten,
+    'LIGHTEN',
+    117.5,
+  ],
+  [
+    ink_darken,
+    'DARKEN',
+    187.5,
+  ],
+  [
+    ink_saturate,
+    'SATURATE',
+    257.5,
+  ],
+  [
+    ink_desaturate,
+    'DESAT.',
+    327.5,
+  ],
+  [
+    ink_hue,
+    'HUE +90°',
+    397.5,
+  ],
+  [
+    ink_complement,
+    'COMP.',
+    467.5,
+  ],
 ];
 
 for ([p, i] in pill_data) {
-  let pink  = p[0];
+  let pink = p[0];
   let ptext = p[1];
-  let pcx   = p[2];
+  let pcx = p[2];
   let txt_name = \`pt-\${i}\`;
   let txt = TextLayer(txt_name) \${
-    font-family: font; font-size: 9; font-weight: 700;
-    letter-spacing: 2; fill: pink; text-anchor: middle;
+    font-family: font;
+    font-size: 9;
+    font-weight: 700;
+    letter-spacing: 2;
+    fill: pink;
+    text-anchor: middle;
   };
-  txt.apply { text(pcx, 264)\`\${ptext}\` }
+  txt.apply {
+    text(pcx, 264)\`\${ptext}\`;
+  }
   layer('labels').append(layer(txt_name));
 }
 
 // ─── Masthead typography ─────────────────────────────────────
 let eyebrow = TextLayer('eyebrow') \${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: ink_on_light_m; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: ink_on_light_m;
+  text-anchor: start;
 };
-eyebrow.apply { text(15, 26)\`OKLCH  /  04 — LIGHT ↔ DARK  ·  CONIC\` }
+eyebrow.apply {
+  text(15, 26)\`OKLCH  /  04 — LIGHT ↔ DARK  ·  CONIC\`;
+}
 
 // "Light" display — top-left, reads against light end of gradient
 let display_light = TextLayer('display-light') \${
-  font-family: font; font-size: 56; font-weight: 200;
-  letter-spacing: -2; fill: ink_on_light; text-anchor: start;
+  font-family: font;
+  font-size: 56;
+  font-weight: 200;
+  letter-spacing: -2;
+  fill: ink_on_light;
+  text-anchor: start;
 };
-display_light.apply { text(15, 82)\`Light\` }
+display_light.apply {
+  text(15, 82)\`Light\`;
+}
 
 // "Dark" display — bottom-right, reads against dark end of gradient
 let display_dark = TextLayer('display-dark') \${
-  font-family: font; font-size: 56; font-weight: 200;
-  letter-spacing: -2; fill: ink_on_dark; text-anchor: end;
+  font-family: font;
+  font-size: 56;
+  font-weight: 200;
+  letter-spacing: -2;
+  fill: ink_on_dark;
+  text-anchor: end;
 };
-display_dark.apply { text(505, 500)\`Dark\` }
+display_dark.apply {
+  text(505, 500)\`Dark\`;
+}
 
 // Horizon label — right side at horizon line
 let horizon_lbl = TextLayer('horizon-lbl') \${
-  font-family: font; font-size: 7; font-weight: 700;
-  letter-spacing: 3; fill: ink_on_light_m; text-anchor: end;
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: ink_on_light_m;
+  text-anchor: end;
 };
-horizon_lbl.apply { text(505, 254)\`· HORIZON ·\` }
+horizon_lbl.apply {
+  text(505, 254)\`· HORIZON ·\`;
+}
 
 // Zone labels — subtle corner markers
 let zone_light = TextLayer('zone-light') \${
-  font-family: font; font-size: 6; font-weight: 700;
-  letter-spacing: 2; fill: ink_on_light_m; text-anchor: end;
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: ink_on_light_m;
+  text-anchor: end;
 };
-zone_light.apply { text(505, 30)\`TOP · −90° · --bg-light\` }
+zone_light.apply {
+  text(505, 30)\`TOP · −90° · --bg-light\`;
+}
 
 let zone_dark = TextLayer('zone-dark') \${
-  font-family: font; font-size: 6; font-weight: 700;
-  letter-spacing: 2; fill: ink_on_dark_m; text-anchor: start;
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: ink_on_dark_m;
+  text-anchor: start;
 };
-zone_dark.apply { text(15, 510)\`BOTTOM · +90° · --bg-dark\` }
+zone_dark.apply {
+  text(15, 510)\`BOTTOM · +90° · --bg-dark\`;
+}
 
 // Credit
 let credit = TextLayer('credit') \${
-  font-family: font; font-size: 7; font-weight: 700;
-  letter-spacing: 2; fill: ink_on_dark_m; text-anchor: start;
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: ink_on_dark_m;
+  text-anchor: start;
 };
-credit.apply { text(15, 492)\`ONE CHIP · FULL GRADIENT · ONE SOURCE\` }
+credit.apply {
+  text(15, 492)\`ONE CHIP · FULL GRADIENT · ONE SOURCE\`;
+}
 
-layer('labels').append(
-  layer('eyebrow'),
-  layer('display-light'), layer('display-dark'),
-  layer('horizon-lbl'), layer('zone-light'), layer('zone-dark'),
-  layer('credit')
-);
+layer('labels').append(layer('eyebrow'),
+    layer('display-light'),
+    layer('display-dark'),
+    layer('horizon-lbl'),
+    layer('zone-light'),
+    layer('zone-dark'),
+    layer('credit'));
 
-layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), layer('labels'));
+layer('diagram').append(layer('bg'),
+    layer('horizon-line'),
+    layer('chips'),
+    layer('labels'));
 </code>
   <img src="/blog/samples/post24/lightdark-conic.svg" alt="A conic gradient anchors the light/dark backdrop; seven radialWedge chips span both plateaus so every manipulation method reads against both bg states at once." loading="lazy">
 </mini-workspace></p>

@@ -194,25 +194,25 @@ A **segment** query can carry one CSS-style pseudo-selector after the name — p
 
 | Query | Returns |
 |---|---|
-| `segmentAll('tooth:each')` | Every matching **drawing command** as its own block — the merge undone (pure moves are skipped; they carry no geometry) |
+| `segmentAll('tooth:atomic')` | Every matching **drawing command** as its own block — the merge undone (pure moves are skipped; they carry no geometry) |
 | `segment('tooth:first')` | The first run of the group (same as the bare singular) |
 | `segment('tooth:last')` | The **last** run of the group |
 | `segment('tooth:nth(2)')` | The run at index 2 — **0-indexed**, matching the language's arrays (CSS counts from 1; Pathogen doesn't) |
 
-`:each` is the escape hatch for the merge rule: a stdlib call like `circle(0, 0, 40) as segment('rim')` labels everything it draws as one run, and `segmentAll('rim:each')` hands back the individual arcs — no `subPath` surgery at guessed fractions. The position pseudos select whole runs from a group; on the `All` form they return an array of at most one element.
+`:atomic` is the escape hatch for the merge rule: a stdlib call like `circle(0, 0, 40) as segment('rim')` labels everything it draws as one run, and `segmentAll('rim:atomic')` hands back the individual arcs — no `subPath` surgery at guessed fractions. The position pseudos select whole runs from a group; on the `All` form they return an array of at most one element.
 
 ```
 let wheel = @{
   circle(0, 0, 40) as segment('rim');
 };
-let arcs = wheel.segmentAll('rim:each');   // [arc1, arc2]
+let arcs = wheel.segmentAll('rim:atomic');   // [arc1, arc2]
 let firstArc = wheel.segment('rim:nth(0)');
 ```
 
 Rules:
 
-- One pseudo per query. The available set is `:each`, `:first`, `:last`, `:nth(k)` — anything else (or a chain) is an error listing the options.
-- Pseudos apply **after** matching and merging, so they compose with the [seam namespace](#segment-labels-label-names): `segmentAll('cut:first')` selects from the merged umbrella runs, `segmentAll('cut.k0:each')` decomposes one knife's seams command by command.
+- One pseudo per query. The available set is `:atomic`, `:first`, `:last`, `:nth(k)` — anything else (or a chain) is an error listing the options.
+- Pseudos apply **after** matching and merging, so they compose with the [seam namespace](#segment-labels-label-names): `segmentAll('cut:first')` selects from the merged umbrella runs, `segmentAll('cut.k0:atomic')` decomposes one knife's seams command by command.
 - Segment queries only — `point`/`pointAll`/`vertex`/`vertexAll` reject names containing `:` with a pointer here (vertices don't merge, so there is nothing for a pseudo to do).
 - An out-of-range `:nth(k)` behaves like an unmatched name: the `All` form returns `[]`, the singular form errors saying how many runs the group has.
 
@@ -337,6 +337,6 @@ Note that per-piece seam queries answer each interior seam **twice** — once fr
 - **`with` needs a previous joint.** A corner suffix rounds the joint between the previous command and this one, so it needs a previous command in the current subpath. `with fillet(...)` on the first command of a block, or on the first command after an `m`/`M` that opens a new subpath, is a compile error — there is no corner to operate on. (This mirrors the "no previous heading" error from `tangentArc`.)
 - **Clause ordering.** `with` must precede `as`, each may appear at most once, and only `as` takes a comma list. `as segment('x') with fillet(5)` (wrong order) and two `with` clauses on one command are both errors.
 - **Label-name validation.** A label that isn't identifier-shaped — punctuation, whitespace, a leading digit — is a compile error naming the rule, as is the reserved bare `'cut'`. The `cut.<name>` opt-in is segment-only; an endpoint label may not use it. Queries stay lenient: any string can be *queried* (unknown names behave as described below) — only authoring is validated.
-- **Pseudo-selector errors.** An unknown pseudo (`'rib:frist'`) or a chained pseudo (`'rib:first:each'`) errors listing the available set (`:each`, `:first`, `:last`, `:nth(k)`). A pseudo on a point/vertex query errors pointing at segment queries. `:nth(k)` out of range errors on the singular form (saying how many runs exist) and returns `[]` on the `All` form.
+- **Pseudo-selector errors.** An unknown pseudo (`'rib:frist'`) or a chained pseudo (`'rib:first:atomic'`) errors listing the available set (`:atomic`, `:first`, `:last`, `:nth(k)`). A pseudo on a point/vertex query errors pointing at segment queries. `:nth(k)` out of range errors on the singular form (saying how many runs exist) and returns `[]` on the `All` form.
 - **Unknown labels.** A singular query for a name that was never defined — `pb.segment('nope')` — is an error that lists the labels the path actually has, so a typo tells you what was available. The `All` queries return an **empty array** instead of erroring, matching `querySelectorAll`, so `for (x in pb.segmentAll('maybe'))` is safe without a guard.
 - **Vertex corner ops: PathBlocks for now.** `vertex('name').fillet(...)` and its siblings apply on `PathBlock` and `ProjectedPath` sources. On a **layer** vertex handle they report that corner operations are not supported on layers yet — layer and projected `segment`/`point` queries work fully; only the vertex-handle corner operations are deferred.
