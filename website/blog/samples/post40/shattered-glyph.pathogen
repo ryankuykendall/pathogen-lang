@@ -7,17 +7,37 @@ define ViewBox(0, 0, 960, 170);
 
 @font "Baumans";
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 960, 170); }
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 960, 170);
+}
 
 let wordmark = GroupLayer('wordmark') ${};
-let shard0 = PathLayer('shard0') ${ fill: #3b82f6; stroke: #0f172a; stroke-width: 1.5; };
-let shard1 = PathLayer('shard1') ${ fill: #a78bfa; stroke: #0f172a; stroke-width: 1.5; };
-let shard2 = PathLayer('shard2') ${ fill: #f59e0b; stroke: #0f172a; stroke-width: 1.5; };
+let shard0 = PathLayer('shard0') ${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let shard1 = PathLayer('shard1') ${
+  fill: #a78bfa;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let shard2 = PathLayer('shard2') ${
+  fill: #f59e0b;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
 wordmark.append(shard0, shard1, shard2);
 
-let styles = ${ font-family: Baumans; font-size: 120; };
-let glyphs = PathBlock.fromGlyph("pathogen.studio", styles);
+let styles = ${
+  font-family: Baumans;
+  font-size: 120;
+};
+let glyphs = PathBlock.fromGlyph('pathogen.studio', styles);
 
 let x = 50;
 let baseline = 106;
@@ -58,25 +78,12 @@ for ([g, i] in glyphs) {
     let sx = calc(x + pivot.x + dx);
     let sy = calc(baseline + pivot.y + dy);
 
-    if (calc(n % 3) == 0) {
-      shard0.apply {
-        M sx sy
-        rp.draw();
-      }
-    }
-    if (calc(n % 3) == 1) {
-      shard1.apply {
-        M sx sy
-        rp.draw();
-      }
-    }
-    if (calc(n % 3) == 2) {
-      shard2.apply {
-        M sx sy
-        rp.draw();
-      }
+    // Round-robin tint by computed layer name — no if-chain needed.
+    layer(`shard${n % 3}`).apply {
+      M sx sy rp.draw()
     }
   }
+
 
   x = calc(x + g.advanceWidth);
 }

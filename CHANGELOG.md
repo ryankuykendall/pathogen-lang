@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-26 (postfix expressions in argument positions — Cutting Room feedback loop, item J)
+
+### Fixed
+
+#### Core
+
+- **Postfix expressions (member access, indexing, function calls) now work in six argument positions that silently flattened them** — `layer(names[i]).apply`, `for (i in 0..arr.length)` (the everyday headline: loop bounds needed a hoisted `let n = arr.length;`), the same ranges inside text blocks, `PathLayer(names[i])` in both the `define` and constructor-expression forms, and `define ViewBox(0, 0, sheet.w, …)`. One mechanism: postfix chains sit at sibling level in the parse tree, and these builders scanned siblings with the non-postfix-aware helper — `layer(o.n)` even errored `Undefined variable: n` because the trailing property *overwrote* the target. Parser-level fix, so both evaluators and all three surfaces inherit it. Round-robin layer routing is now data-driven — `layer(shards[calc(i % 3)]).apply { … }` — and the `i % 3` if-chains are gone from the three published samples that used them (renders byte-identical or float-tail-only). Pinned by a 13-case forms×sites matrix plus regression guards for the two cursor traps the tests caught (a start bound resting on `..` silently defaulted the end bound to 0; paren-less `variable.apply { }` swallowing `.apply`).
+
 ## [0.8.0] - 2026-08-25 (reserved unit suffixes + shadowing diagnostics — Cutting Room feedback loop, item I)
 
 ### Added

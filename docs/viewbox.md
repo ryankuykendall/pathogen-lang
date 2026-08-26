@@ -19,7 +19,7 @@ Renders to `<svg viewBox="0 0 200 200" width="200" height="200">…</svg>`.
 
 ## Arguments
 
-Arguments are expressions and may use variables, `calc()`, or any other expression form:
+Arguments are expressions and may use variables, `calc()`, member accesses (`sheet.w`), array indexes (`sizes[0]`), function calls, or any other expression form:
 
 ```
 let W = 400;

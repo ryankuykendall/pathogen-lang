@@ -1305,7 +1305,7 @@ for (i in 0..10) {
 }
 ```
 
-The range `0..10` includes both endpoints (0 through 10, giving 11 iterations).
+The range `0..10` includes both endpoints (0 through 10, giving 11 iterations). Both bounds are ordinary expressions — variables, member accesses, indexes, and function calls all work without a `calc()` wrapper: `for (i in 1..points.length)`, `for (i in first[0]..limits.max)`. (Remember ranges are inclusive: to visit array indexes, prefer `for (p in points)` or `for ([p, i] in points)` over computing bounds.)
 
 ### Descending Ranges
 

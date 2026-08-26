@@ -5011,3 +5011,122 @@ describe('loop control: continue and break', () => {
     expect(result.logs[0].parts[0].value).toBe('2');
   });
 });
+
+describe('postfix expressions in sibling-scanned argument positions (item J)', () => {
+  // One mechanism, five AST-builder sites: postfix chains (member,
+  // index, call) live at SIBLING level in the CST, and builders that
+  // scanned siblings with plain buildExpression flattened them.
+  // Coverage matrix: argument forms × sites.
+  const prelude = `
+    let names = ['shard-0', 'shard-1'];
+    let o = { n: 'shard-0', count: 2, w: 90 };
+    fn pick(i) { return names[i]; }
+    let a = PathLayer('shard-0') \${ fill: none; };
+    let b = PathLayer('shard-1') \${ fill: none; };
+  `;
+  const layerData = (source: string, layerName: string): string => {
+    const result = compile(source);
+    return result.layers.find((l) => l.name === layerName)?.data ?? '';
+  };
+
+  describe('layer(...).apply target', () => {
+    it('array index', () => {
+      expect(layerData(`${prelude}\nlayer(names[1]).apply {\n  M 0 0\n  h 5\n}`, 'shard-1')).toBe('M 0 0 h 5');
+    });
+    it('member access', () => {
+      expect(layerData(`${prelude}\nlayer(o.n).apply {\n  M 0 0\n  h 5\n}`, 'shard-0')).toBe('M 0 0 h 5');
+    });
+    it('function call', () => {
+      expect(layerData(`${prelude}\nlayer(pick(1)).apply {\n  M 0 0\n  h 5\n}`, 'shard-1')).toBe('M 0 0 h 5');
+    });
+    it('chained index-of-member', () => {
+      const src = `${prelude}\nlet cfg = { list: names };\nlayer(cfg.list[0]).apply {\n  M 0 0\n  h 5\n}`;
+      expect(layerData(src, 'shard-0')).toBe('M 0 0 h 5');
+    });
+    it('layer VALUE from an array element routes too', () => {
+      const src = `${prelude}\nlet lays = [a, b];\nlayer(lays[1]).apply {\n  M 0 0\n  h 5\n}`;
+      expect(layerData(src, 'shard-1')).toBe('M 0 0 h 5');
+    });
+  });
+
+  describe('for-range bounds', () => {
+    it('member access in the end bound', () => {
+      const { layers } = compile(`let arr = [1, 2, 3];\nM 0 0\nfor (i in 1..arr.length) {\n  h 5\n}`);
+      expect(layers[0].data).toBe('M 0 0 h 5 h 5 h 5');
+    });
+    it('member access in the START bound (RangeOp .. must not read as member .)', () => {
+      // End 5 makes ascending (2..5 = 4 iterations) distinguishable
+      // from a silently-defaulted end of 0 (descending 2..0 = 3) — an
+      // equal-count coincidence masked exactly this bug once.
+      const { layers } = compile(`let o = { min: 2 };\nM 0 0\nfor (i in o.min..5) {\n  L calc(i * 10) 0\n}`);
+      expect(layers[0].data).toBe('M 0 0 L 20 0 L 30 0 L 40 0 L 50 0');
+    });
+    it('index + call bounds', () => {
+      const src = `let bounds = [1, 2];\nfn top() { return 3; }\nM 0 0\nfor (i in bounds[0]..top()) {\n  h 5\n}`;
+      expect(compile(src).layers[0].data).toBe('M 0 0 h 5 h 5 h 5');
+    });
+    it('text-body for-range twin: member bound inside a text block', () => {
+      // 3-element array + content assertions: a silently-defaulted end
+      // bound (1..0 descending) would give n1/n0, not n1/n2/n3 — a
+      // 2-element count assertion passed that bug by coincidence once
+      // (review finding).
+      const src = `let arr = [10, 20, 30];\nlet tl = TextLayer('t') \${ font-size: 10; };\nlet t = &{\n  for (i in 1..arr.length) {\n    text(calc(i * 10), 10)\`n\${i}\`;\n  }\n};\nlayer('t').apply {\n  t.drawTo(0, 0);\n}`;
+      const result = compile(src);
+      const texts = result.layers.flatMap((l) => l.textElements ?? []);
+      expect(texts.map((t) => t.children.map((c) => ('text' in c ? c.text : '')).join(''))).toEqual(['n1', 'n2', 'n3']);
+      expect(texts.map((t) => t.x)).toEqual([10, 20, 30]);
+    });
+  });
+
+  describe('layer-definition names', () => {
+    it('PathLayer(indexed name)', () => {
+      const src = `let names = ['dyn-a'];\nlet lay = PathLayer(names[0]) \${ fill: none; };\nlayer('dyn-a').apply {\n  M 0 0\n  h 5\n}`;
+      const result = compile(src);
+      expect(result.layers.find((l) => l.name === 'dyn-a')?.data).toBe('M 0 0 h 5');
+    });
+    it('TextLayer(member name)', () => {
+      const src = `let o = { n: 'dyn-t' };\nlet lay = TextLayer(o.n) \${ font-size: 10; };\nlayer('dyn-t').apply {\n  text(5, 5)\`hi\`;\n}`;
+      const result = compile(src);
+      const tl = result.layers.find((l) => l.name === 'dyn-t');
+      expect(tl?.textElements?.map((t) => t.children.map((c) => ('text' in c ? c.text : '')).join(''))).toEqual(['hi']);
+    });
+
+    it('define-form PathLayer(indexed name) — distinct builder from the constructor form', () => {
+      const src = `let names = ['dyn-d'];\ndefine PathLayer(names[0]) \${ fill: none; };\nlayer('dyn-d').apply {\n  M 0 0\n  h 5\n}`;
+      const result = compile(src);
+      expect(result.layers.find((l) => l.name === 'dyn-d')?.data).toBe('M 0 0 h 5');
+    });
+  });
+
+  describe('same-class review findings (pre-existing, fixed with item J)', () => {
+    it('define-form style expression with member access: define PathLayer(name) cfg.style;', () => {
+      const src = `let cfg = { style: \${ stroke-width: 7; } };\ndefine PathLayer('sx') cfg.style;\nlayer('sx').apply {\n  M 0 0\n  h 5\n}`;
+      const result = compile(src);
+      const lay = result.layers.find((l) => l.name === 'sx');
+      expect(lay?.data).toBe('M 0 0 h 5');
+      expect(lay?.styles['stroke-width']).toBe('7');
+    });
+
+    it('layer(cfg.name) as a VALUE expression (not the .apply block form)', () => {
+      const src = `let a = PathLayer('v0') \${ fill: none; };\nlet cfg = { name: 'v0' };\nlet ref = layer(cfg.name);\nref.apply {\n  M 0 0\n  h 5\n}`;
+      const result = compile(src);
+      expect(result.layers.find((l) => l.name === 'v0')?.data).toBe('M 0 0 h 5');
+    });
+  });
+
+  describe('define ViewBox args', () => {
+    it('member + index args reach the viewBox', () => {
+      const src = `let o = { w: 90 };\nlet hs = [45];\ndefine ViewBox(0, 0, o.w, hs[0]);\nM 0 0\nh 5`;
+      const result = compile(src);
+      expect(result.viewBox).toEqual({ originX: 0, originY: 0, width: 90, height: 45 });
+    });
+  });
+});
+
+describe('paren-less variable.apply survives the postfix-aware layer builder (item J regression guard)', () => {
+  it('myLayer.apply { } routes correctly (the walker must unwrap .apply, not eat it)', () => {
+    const src = `let myLayer = PathLayer('t') \${ fill: none; };\nmyLayer.apply {\n  M 0 0\n  h 5\n}`;
+    const result = compile(src);
+    expect(result.layers.find((l) => l.name === 't')?.data).toBe('M 0 0 h 5');
+  });
+});

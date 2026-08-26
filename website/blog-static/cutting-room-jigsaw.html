@@ -811,6 +811,11 @@ scene.append(shard0,
     lid1,
     lid2,
     labels);
+let shardLayers = [
+  shard0,
+  shard1,
+  shard2,
+];
 
 let plate = @{
   h 198 as segment('rim');
@@ -853,20 +858,10 @@ for ([piece, i] in pieces) {
     let dy = calc((pieceCenterY - plateCenterY) / plateCenterY * 26 + hashRange(i, -8, 8, 13));
     let placeX = calc(originX + dx);
     let placeY = calc(originY + dy);
-    if (calc(i % 3) == 0) {
-      shard0.apply {
-        M placeX placeY spun.draw()
-      }
-    }
-    if (calc(i % 3) == 1) {
-      shard1.apply {
-        M placeX placeY spun.draw()
-      }
-    }
-    if (calc(i % 3) == 2) {
-      shard2.apply {
-        M placeX placeY spun.draw()
-      }
+    // Round-robin tint: layers are values, so index straight into a
+    // list of them — no if-chain, no name arithmetic.
+    layer(shardLayers[calc(i % 3)]).apply {
+      M placeX placeY spun.draw()
     }
   }
 }
@@ -920,6 +915,29 @@ became a real method (<code>seam.draw()</code> replaced the two-line
 <code>cut([...])</code> as an array — one knife per lane, no chained-move
 arithmetic between strokes. Part 1&#39;s closing section has both
 stories.</p>
+<p><strong>And the scattered puzzle&#39;s tints lost their if-chain.</strong> Example 5
+originally dealt pieces to its three shard layers with
+<code>if (calc(i % 3) == 0) { shard0.apply { … } }</code> ×3 — because
+<a href="/docs#layers-dynamic-layer-names"><code>layer(...)</code> routing</a> choked on any
+argument with a postfix (an array index, a member access, a function
+call). The cause turned out to be a whole class: six AST-builder
+sites scanned expression siblings without walking postfix chains, so
+<code>for (i in 0..arr.length)</code>, <code>PathLayer(names[i])</code>, and
+<code>define ViewBox(0, 0, sheet.w, …)</code> were all broken the same way. One
+fix later, layers are routable as data:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: one if per tint</span>
+<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">0</span>) { shard0.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
+<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">1</span>) { shard1.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
+<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">2</span>) { shard2.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
+
+<span class="hljs-comment">// after: layers are values — index into a list of them</span>
+<span class="hljs-keyword">let</span> shardLayers = [shard0, shard1, shard2];
+<span class="hljs-title function_">layer</span>(shardLayers[<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>)]).<span class="hljs-property">apply</span> {
+  M placeX placeY spun.<span class="hljs-title function_">draw</span>()
+}
+</code></pre><p>(The computed-name spelling <code>layer(`shard${i % 3}`)</code> always worked
+and is what the shattered-glyph and tinted-panes samples now use — the
+if-chains there were simply never revisited.)</p>
 <h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-garment">Garment patterns</a> — part 3 turns

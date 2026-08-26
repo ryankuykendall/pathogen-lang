@@ -87,12 +87,22 @@ notes the friction hit in a real sample. To be synthesized at project end.
    edges back requires `subPath` surgery at guessed fractions
    (post41/06 walks V-run halves). A `segmentAll('cut', {merge: false})`
    or per-command iteration would help advanced decoration.
-9. **Per-piece dynamic styling requires N fixed layers + if-chains.**
-   Round-robin tinting (post40 shattered-glyph, post42/05) hand-rolls
-   `if (i % 3 == 0) shard0.apply {...}` ×3 because layer styles are
-   static and layers can't be created/styled per iteration with computed
-   fills. Dynamic style values (interpolation in style blocks) or an
-   `apply { ... } with style` override would collapse this.
+9. **RESOLVED (Item J, 2026-08-26) as a parser-class fix.** Styling
+   was already dynamic (report: exprs/ternaries/fn calls in style
+   values, define-in-loop, template routing); the real bug was SIX
+   AST-builder sites flattening postfix expressions at sibling level:
+   layer(...) apply targets, for-range bounds (`0..arr.length` —
+   the everyday headline), the text-body range twin,
+   PathLayer/TextLayer definition names, the constructor-expression
+   form, and define ViewBox args. One helper swap
+   (buildExpressionWithPostfix) + two cursor-discipline traps (RangeOp
+   rest; `.apply` swallow in the paren-less form). If-chains deleted
+   from post40, post42/05 (array-of-layers showcase), and post44/03.
+   Original: **Per-piece dynamic styling requires N fixed layers +
+   if-chains.** Round-robin tinting (post40 shattered-glyph, post42/05)
+   hand-rolls `if (i % 3 == 0) shard0.apply {...}` ×3 because layer
+   styles are static and layers can't be created/styled per iteration
+   with computed fills.
 10. **RESOLVED (Item C, 2026-08-24).** Annotated-only bug (main
     evaluator was always correct): evaluateTextBlockExpression routed
     if/for statements through a walker with no elements accumulator.
@@ -170,3 +180,12 @@ notes the friction hit in a real sample. To be synthesized at project end.
     annotated multi-contour parity test (2026-08-24). Same family as
     #10 (annotated text-if drop): annotated block evaluation diverges
     from main. Fold into Item C's annotated-divergence sweep.
+17. **Index-bracket interiors don't support postfix anywhere** (Item J
+   review finding, 2026-08-26; pre-existing, orthogonal to the six
+   J sites). Both postfix walkers build `[...]` contents with plain
+   buildExpression, so `calc(arr[o.n])` fails with "Array index must
+   be a number". Same fix pattern; separate ticket since it lives
+   INSIDE the walkers rather than at their call sites. Also noted from
+   the same review: buildForEachLoop solves sibling-spanning postfix
+   differently (source-slice + re-parse) — a design worth considering
+   if more sibling-scan sites appear.

@@ -141,7 +141,7 @@ Available context properties:
 
 ## Dynamic Layer Names
 
-Layer names can be expressions, including variables:
+Layer names can be **any expression** — a variable, a template literal, an array element, a member access, or a function call — both where a layer is defined and where `layer(...)` routes to it:
 
 ```
 let target = 'overlay'
@@ -149,6 +149,18 @@ define PathLayer(target) ${ stroke: blue; }
 
 layer(target).apply {
   M 0 0 L 100 100
+}
+```
+
+Expression names make routing data-driven. Round-robin styling, for example, needs no `if`-chain — compute the name, or index into a list of layer values:
+
+```
+let shards = [shard0, shard1, shard2];   // layer values from PathLayer(...)
+for ([piece, i] in pieces) {
+  layer(`shard${i % 3}`).apply {          // by computed name…
+    piece.draw();
+  }
+  // …or equivalently: layer(shards[calc(i % 3)]).apply { ... }
 }
 ```
 

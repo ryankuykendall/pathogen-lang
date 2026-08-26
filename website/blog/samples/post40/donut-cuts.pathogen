@@ -4,26 +4,61 @@ define ViewBox(0, 0, 520, 250);
 // Right: the knife misses the hole — a lens comes off, and the hole rides
 // along inside the big remaining piece.
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 520, 250); }
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 520, 250);
+}
 
 let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
-let knifeLayer = PathLayer('knife') ${ stroke: #ef4444; stroke-width: 1.2; fill: none; };
-let divider = PathLayer('divider') ${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
-let labels = TextLayer('labels') ${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
-let knifeLabel = TextLayer('knife-label') ${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
-scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+let pieceLayer = PathLayer('pieces') ${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let knifeLayer = PathLayer('knife') ${
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  fill: none;
+};
+let divider = PathLayer('divider') ${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+let knifeLabel = TextLayer('knife-label') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #ef4444;
+  text-anchor: middle;
+};
+scene.append(pieceLayer,
+    knifeLayer,
+    divider,
+    labels,
+    knifeLabel);
 
-let big = @{ circle(0, 0, 70); };
-let small = @{ circle(0, 0, 30); };
+let big = @{
+  circle(0, 0, 70);
+};
+let small = @{
+  circle(0, 0, 30);
+};
 
 fn drawSplit(pieces, centerX) {
   for ([p, i] in pieces) {
     let pb = p.boundingBox();
     let side = calc(pb.x + pb.width / 2 < centerX ? -8 : 8);
-    M calc(side) 0
-    p.draw();
+    M calc(side) 0 p.draw()
   }
 }
 
@@ -61,9 +96,9 @@ divider.apply {
 }
 
 labels.apply {
-  text(130, 232)`crosses the hole — two C-shapes`
-  text(390, 232)`misses the hole — the hole rides along`
+  text(130, 232)`crosses the hole — two C-shapes`;
+  text(390, 232)`misses the hole — the hole rides along`;
 }
 knifeLabel.apply {
-  text(130, 26)`knife`
+  text(130, 26)`knife`;
 }

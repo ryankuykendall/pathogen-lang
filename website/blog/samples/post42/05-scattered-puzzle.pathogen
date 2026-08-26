@@ -63,6 +63,11 @@ scene.append(shard0,
     lid1,
     lid2,
     labels);
+let shardLayers = [
+  shard0,
+  shard1,
+  shard2,
+];
 
 let plate = @{
   h 198 as segment('rim');
@@ -105,20 +110,10 @@ for ([piece, i] in pieces) {
     let dy = calc((pieceCenterY - plateCenterY) / plateCenterY * 26 + hashRange(i, -8, 8, 13));
     let placeX = calc(originX + dx);
     let placeY = calc(originY + dy);
-    if (calc(i % 3) == 0) {
-      shard0.apply {
-        M placeX placeY spun.draw()
-      }
-    }
-    if (calc(i % 3) == 1) {
-      shard1.apply {
-        M placeX placeY spun.draw()
-      }
-    }
-    if (calc(i % 3) == 2) {
-      shard2.apply {
-        M placeX placeY spun.draw()
-      }
+    // Round-robin tint: layers are values, so index straight into a
+    // list of them — no if-chain, no name arithmetic.
+    layer(shardLayers[calc(i % 3)]).apply {
+      M placeX placeY spun.draw()
     }
   }
 }

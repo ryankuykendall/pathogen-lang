@@ -538,10 +538,15 @@ function buildForLoop(cursor: TreeCursor, source: string): ForLoop {
     } else if (cursor.name === 'RangeOp') {
       phase = 2;
     } else if (phase === 0 && isExpressionNode(cursor.name)) {
-      start = buildExpression(cursor, source);
-      phase = 1;
+      // Postfix chains (arr.length, bounds[0], top()) sit at sibling
+      // level; the postfix-aware builder consumes them and leaves the
+      // cursor on the first UNCONSUMED token — which for a start bound
+      // is RangeOp itself. Check before the loop advances past it, or
+      // phase 2 never arrives and the end bound silently defaults.
+      start = buildExpressionWithPostfix(cursor, source);
+      phase = (cursor.name as string) === 'RangeOp' ? 2 : 1;
     } else if (phase === 2 && isExpressionNode(cursor.name)) {
-      end = buildExpression(cursor, source);
+      end = buildExpressionWithPostfix(cursor, source);
     } else if (cursor.name === 'Block') {
       body = buildLoopBody(cursor, source);
     }
@@ -1077,10 +1082,13 @@ function buildLayerDefinition(cursor: TreeCursor, source: string): LayerDefiniti
       layerType = text(cursor, source) as 'PathLayer' | 'TextLayer' | 'GroupLayer';
       foundLayerType = true;
     } else if (foundLayerType && !foundName && isExpressionNode(cursor.name)) {
-      name = buildExpression(cursor, source);
+      // Postfix-aware: PathLayer(names[i]) / TextLayer(o.n).
+      name = buildExpressionWithPostfix(cursor, source);
       foundName = true;
     } else if (foundName && isExpressionNode(cursor.name)) {
-      styleExpr = buildExpression(cursor, source);
+      // Postfix-aware too (review finding): define PathLayer('x')
+      // cfg.style; flattened the same way the name did.
+      styleExpr = buildExpressionWithPostfix(cursor, source);
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -1095,7 +1103,8 @@ function buildViewBoxDefinition(cursor: TreeCursor, source: string): ViewBoxDefi
   cursor.firstChild();
   do {
     if (isExpressionNode(cursor.name)) {
-      args.push(buildExpression(cursor, source));
+      // Postfix-aware: ViewBox(0, 0, sheet.w, sizes[0]).
+      args.push(buildExpressionWithPostfix(cursor, source));
     }
   } while (cursor.nextSibling());
   cursor.parent();
@@ -1121,7 +1130,22 @@ function buildLayerApplyBlock(cursor: TreeCursor, source: string): LayerApplyBlo
   do {
     if (cursor.name === 'apply') foundApply = true;
     else if (!foundApply && isExpressionNode(cursor.name) && cursor.name !== 'layer') {
-      layerName = buildExpression(cursor, source);
+      // Postfix-aware: layer(names[i]) / layer(o.n) / layer(pick(i)).
+      // Plain buildExpression grabbed the base and the trailing postfix
+      // fragments then OVERWROTE the target (layer(o.n) errored
+      // "Undefined variable: n").
+      layerName = buildExpressionWithPostfix(cursor, source);
+      // In the paren-less `variable.apply { }` form the walker swallows
+      // `.apply` as a member access — unwrap it and mark apply found.
+      if (layerName.type === 'MemberExpression' && (layerName as MemberExpression).property === 'apply') {
+        layerName = (layerName as MemberExpression).object;
+        foundApply = true;
+      }
+      // The walker rests on the first unconsumed token — which here can
+      // be the Block itself; grab it before the loop advances past it.
+      if ((cursor.name as string) === 'Block') {
+        body = atLoopBoundary(() => buildBlock(cursor, source));
+      }
     } else if (cursor.name === 'Block') {
       body = atLoopBoundary(() => buildBlock(cursor, source));
     }
@@ -1254,10 +1278,12 @@ function buildTextForLoop(cursor: TreeCursor, source: string): ForLoop {
     } else if (cursor.name === 'RangeOp') {
       phase = 2;
     } else if (phase === 0 && isExpressionNode(cursor.name) && cursor.name !== 'for' && cursor.name !== 'in') {
-      start = buildExpression(cursor, source);
-      phase = 1;
+      // Postfix-aware for the same reason as buildForStatement — and the
+      // same RangeOp cursor-rest check (see there).
+      start = buildExpressionWithPostfix(cursor, source);
+      phase = (cursor.name as string) === 'RangeOp' ? 2 : 1;
     } else if (phase === 2 && isExpressionNode(cursor.name)) {
-      end = buildExpression(cursor, source);
+      end = buildExpressionWithPostfix(cursor, source);
     } else if (cursor.name === '{') {
       // Collect text body items (a loop body — break/continue become valid)
       loopDepth++;
@@ -2305,8 +2331,12 @@ function buildLayerConstructor(cursor: TreeCursor, source: string): LayerConstru
     } else if (cursor.name === ')') {
       inParens = false;
     } else if (inParens && !foundName && isExpressionNode(cursor.name)) {
-      name = buildExpression(cursor, source);
+      // Postfix-aware: PathLayer(names[i]) constructor form. The walker
+      // may rest ON the ')' — resync inParens so the style block isn't
+      // mistaken for in-paren content.
+      name = buildExpressionWithPostfix(cursor, source);
       foundName = true;
+      if ((cursor.name as string) === ')') inParens = false;
     } else if (!inParens && cursor.name === 'StyleBlockLiteral') {
       styleExpr = buildStyleBlockLiteral(cursor, source);
     }
@@ -2325,7 +2355,12 @@ function buildLayerCallExpression(cursor: TreeCursor, source: string): FunctionC
     if (cursor.name === '(') inParens = true;
     else if (cursor.name === ')') inParens = false;
     else if (inParens && isExpressionNode(cursor.name)) {
-      args.push(buildExpression(cursor, source));
+      // Postfix-aware: layer(cfg.name) as a VALUE expression (review
+      // finding — same flatten class as the six item J sites; plain
+      // buildExpression split cfg.name into two args). Resync inParens
+      // when the walker rests ON ')'.
+      args.push(buildExpressionWithPostfix(cursor, source));
+      if ((cursor.name as string) === ')') inParens = false;
     }
   } while (cursor.nextSibling());
   cursor.parent();

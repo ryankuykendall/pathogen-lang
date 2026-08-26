@@ -30,6 +30,29 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
 
 ## Log
 
+- 2026-08-26 (feedback loop, Item J LANDED — pending review + commit):
+  Postfix-flattening class fixed (docs-first, failing-tests-first;
+  user approved all-five + array-showcase + post40-in-sweep). The
+  class grew to SIX sites during implementation: layer-apply target,
+  buildForStatement range bounds, text-body range twin, layer-def
+  name, LayerConstructor expression form (found by the failing
+  matrix), ViewBox args — all one swap to buildExpressionWithPostfix.
+  TWO cursor-discipline traps found by tests: (a) the walker rests ON
+  RangeOp after a start bound → phase 2 never fired → end silently
+  defaulted to 0 (and a first-draft test PASSED coincidentally via
+  descending 2..0 = 3 iterations — fixture made count-distinguishing);
+  (b) paren-less `variable.apply {}` — walker swallowed `.apply` as
+  member access AND rested on Block (18 suite regressions caught it;
+  unwrap + immediate Block grab; dedicated regression pin added).
+  13-test coverage matrix (forms × sites). Docs: layers.md dynamic-
+  names section expanded (round-robin example), syntax.md range-bounds
+  note (with inclusive-range array-index warning), viewbox.md arg
+  forms. Samples: if-chains deleted from post42/05 (array-of-layers
+  showcase, byte-identical), post44/03 (template form,
+  byte-identical), post40 shattered-glyph (template form, float-tail-
+  only diff, render verified); jigsaw closing entry. Friction #9
+  resolved. Suite 4984/4984.
+
 - 2026-08-25 (feedback loop, Item I LANDED — pending review + commit):
   Reserved suffixes + shadowing diagnostics (docs-first,
   failing-tests-first, planned with G in plan mode). (#5) pi/deg/rad

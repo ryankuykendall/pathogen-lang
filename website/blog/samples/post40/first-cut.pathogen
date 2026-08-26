@@ -3,16 +3,48 @@ define ViewBox(0, 0, 480, 240);
 // Left: the pieces drawn at the same position — the shape reassembles.
 // Right: the same pieces pushed apart to show the cut.
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 480, 240); }
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
 
 let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
-let knifeLayer = PathLayer('knife') ${ stroke: #ef4444; stroke-width: 1.5; fill: none; };
-let divider = PathLayer('divider') ${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
-let labels = TextLayer('labels') ${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
-let knifeLabel = TextLayer('knife-label') ${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
-scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+let pieceLayer = PathLayer('pieces') ${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let knifeLayer = PathLayer('knife') ${
+  stroke: #ef4444;
+  stroke-width: 1.5;
+  fill: none;
+};
+let divider = PathLayer('divider') ${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+let knifeLabel = TextLayer('knife-label') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #ef4444;
+  text-anchor: middle;
+};
+scene.append(pieceLayer,
+    knifeLayer,
+    divider,
+    labels,
+    knifeLabel);
 
 let box = @{
   h 140
@@ -30,15 +62,13 @@ let kx = 90;
 pieceLayer.apply {
   // Reassembled: every piece at one position.
   for ([p, i] in pieces) {
-    M 50 70
-    p.draw();
+    M 50 70 p.draw()
   }
   // Exploded: each piece nudged away from the cut line.
   for ([p, i] in pieces) {
     let bb = p.boundingBox();
     let side = calc(bb.x + bb.width / 2 < kx ? -9 : 9);
-    M calc(280 + side) 70
-    p.draw();
+    M calc(280 + side) 70 p.draw()
   }
 }
 
@@ -52,9 +82,9 @@ divider.apply {
 }
 
 labels.apply {
-  text(120, 200)`drawn at one position — reassembles`
-  text(355, 200)`nudged apart — 2 pieces`
+  text(120, 200)`drawn at one position — reassembles`;
+  text(355, 200)`nudged apart — 2 pieces`;
 }
 knifeLabel.apply {
-  text(140, 45)`knife`
+  text(140, 45)`knife`;
 }

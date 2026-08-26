@@ -6,19 +6,55 @@ define ViewBox(0, 0, 620, 290);
 
 @font "Playfair Display" 700;
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 620, 290); }
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 620, 290);
+}
 
 let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
-let knifeLayer = PathLayer('knife') ${ stroke: #ef4444; stroke-width: 1.2; fill: none; };
-let divider = PathLayer('divider') ${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
-let labels = TextLayer('labels') ${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
-let knifeLabel = TextLayer('knife-label') ${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
-scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+let pieceLayer = PathLayer('pieces') ${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let knifeLayer = PathLayer('knife') ${
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  fill: none;
+};
+let divider = PathLayer('divider') ${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+let knifeLabel = TextLayer('knife-label') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #ef4444;
+  text-anchor: middle;
+};
+scene.append(pieceLayer,
+    knifeLayer,
+    divider,
+    labels,
+    knifeLabel);
 
-let styles = ${ font-family: "Playfair Display"; font-weight: 700; font-size: 200; };
-let glyphs = PathBlock.fromGlyph("O", styles);
+let styles = ${
+  font-family: "Playfair Display";
+  font-weight: 700;
+  font-size: 200;
+};
+let glyphs = PathBlock.fromGlyph('O', styles);
 let o = glyphs[0];
 
 // Knife in glyph-local coordinates: two strokes converging to the right.
@@ -42,8 +78,7 @@ fn drawExploded(pieces, ox, oy) {
     let px = calc(pb.x + pb.width / 2 - cx);
     let py = calc(pb.y + pb.height / 2 - cy);
     let len = calc(sqrt(px * px + py * py) + 0.001);
-    M calc(ox + px / len * 14) calc(oy + py / len * 14)
-    p.draw();
+    M calc(ox + px / len * 14) calc(oy + py / len * 14) p.draw()
   }
 }
 
@@ -66,9 +101,9 @@ divider.apply {
 }
 
 labels.apply {
-  text(150, 262)`4 pieces`
-  text(465, 262)`2 pieces — strokes end in the counter`
+  text(150, 262)`4 pieces`;
+  text(465, 262)`2 pieces — strokes end in the counter`;
 }
 knifeLabel.apply {
-  text(48, 82)`knife`
+  text(48, 82)`knife`;
 }

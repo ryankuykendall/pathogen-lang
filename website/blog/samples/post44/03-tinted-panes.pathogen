@@ -70,25 +70,9 @@ let originX = 240;
 let originY = 122;
 
 for ([w, i] in wedges) {
-  if (calc(i % 4) == 0) {
-    glass0.apply {
-      M originX originY w.draw()
-    }
-  }
-  if (calc(i % 4) == 1) {
-    glass1.apply {
-      M originX originY w.draw()
-    }
-  }
-  if (calc(i % 4) == 2) {
-    glass2.apply {
-      M originX originY w.draw()
-    }
-  }
-  if (calc(i % 4) == 3) {
-    glass3.apply {
-      M originX originY w.draw()
-    }
+  // Deal the jewel tones round-robin by computed layer name.
+  layer(`glass${i % 4}`).apply {
+    M originX originY w.draw()
   }
   let placed = w.project(originX, originY);
   leading.apply {

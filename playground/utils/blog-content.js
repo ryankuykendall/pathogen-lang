@@ -6799,6 +6799,11 @@ scene.append(shard0,
     lid1,
     lid2,
     labels);
+let shardLayers = [
+  shard0,
+  shard1,
+  shard2,
+];
 
 let plate = @{
   h 198 as segment('rim');
@@ -6841,20 +6846,10 @@ for ([piece, i] in pieces) {
     let dy = calc((pieceCenterY - plateCenterY) / plateCenterY * 26 + hashRange(i, -8, 8, 13));
     let placeX = calc(originX + dx);
     let placeY = calc(originY + dy);
-    if (calc(i % 3) == 0) {
-      shard0.apply {
-        M placeX placeY spun.draw()
-      }
-    }
-    if (calc(i % 3) == 1) {
-      shard1.apply {
-        M placeX placeY spun.draw()
-      }
-    }
-    if (calc(i % 3) == 2) {
-      shard2.apply {
-        M placeX placeY spun.draw()
-      }
+    // Round-robin tint: layers are values, so index straight into a
+    // list of them — no if-chain, no name arithmetic.
+    layer(shardLayers[calc(i % 3)]).apply {
+      M placeX placeY spun.draw()
     }
   }
 }
@@ -6908,6 +6903,29 @@ became a real method (<code>seam.draw()</code> replaced the two-line
 <code>cut([...])</code> as an array — one knife per lane, no chained-move
 arithmetic between strokes. Part 1&#39;s closing section has both
 stories.</p>
+<p><strong>And the scattered puzzle&#39;s tints lost their if-chain.</strong> Example 5
+originally dealt pieces to its three shard layers with
+<code>if (calc(i % 3) == 0) { shard0.apply { … } }</code> ×3 — because
+<a href="/docs#layers-dynamic-layer-names"><code>layer(...)</code> routing</a> choked on any
+argument with a postfix (an array index, a member access, a function
+call). The cause turned out to be a whole class: six AST-builder
+sites scanned expression siblings without walking postfix chains, so
+<code>for (i in 0..arr.length)</code>, <code>PathLayer(names[i])</code>, and
+<code>define ViewBox(0, 0, sheet.w, …)</code> were all broken the same way. One
+fix later, layers are routable as data:</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: one if per tint</span>
+<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">0</span>) { shard0.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
+<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">1</span>) { shard1.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
+<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">2</span>) { shard2.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
+
+<span class="hljs-comment">// after: layers are values — index into a list of them</span>
+<span class="hljs-keyword">let</span> shardLayers = [shard0, shard1, shard2];
+<span class="hljs-title function_">layer</span>(shardLayers[<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>)]).<span class="hljs-property">apply</span> {
+  M placeX placeY spun.<span class="hljs-title function_">draw</span>()
+}
+</code></pre><p>(The computed-name spelling <code>layer(\`shard\${i % 3}\`)</code> always worked
+and is what the shattered-glyph and tinted-panes samples now use — the
+if-chains there were simply never revisited.)</p>
 <h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-garment">Garment patterns</a> — part 3 turns
@@ -8168,25 +8186,9 @@ let originX = 240;
 let originY = 122;
 
 for ([w, i] in wedges) {
-  if (calc(i % 4) == 0) {
-    glass0.apply {
-      M originX originY w.draw()
-    }
-  }
-  if (calc(i % 4) == 1) {
-    glass1.apply {
-      M originX originY w.draw()
-    }
-  }
-  if (calc(i % 4) == 2) {
-    glass2.apply {
-      M originX originY w.draw()
-    }
-  }
-  if (calc(i % 4) == 3) {
-    glass3.apply {
-      M originX originY w.draw()
-    }
+  // Deal the jewel tones round-robin by computed layer name.
+  layer(\`glass\${i % 4}\`).apply {
+    M originX originY w.draw()
   }
   let placed = w.project(originX, originY);
   leading.apply {
@@ -14353,16 +14355,48 @@ contrast but not required.</p>
 // Left: the pieces drawn at the same position — the shape reassembles.
 // Right: the same pieces pushed apart to show the cut.
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 480, 240); }
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
 
 let scene = GroupLayer('scene') \${};
-let pieceLayer = PathLayer('pieces') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
-let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 1.5; fill: none; };
-let divider = PathLayer('divider') \${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
-let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
-let knifeLabel = TextLayer('knife-label') \${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
-scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+let pieceLayer = PathLayer('pieces') \${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let knifeLayer = PathLayer('knife') \${
+  stroke: #ef4444;
+  stroke-width: 1.5;
+  fill: none;
+};
+let divider = PathLayer('divider') \${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+let knifeLabel = TextLayer('knife-label') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #ef4444;
+  text-anchor: middle;
+};
+scene.append(pieceLayer,
+    knifeLayer,
+    divider,
+    labels,
+    knifeLabel);
 
 let box = @{
   h 140
@@ -14380,15 +14414,13 @@ let kx = 90;
 pieceLayer.apply {
   // Reassembled: every piece at one position.
   for ([p, i] in pieces) {
-    M 50 70
-    p.draw();
+    M 50 70 p.draw()
   }
   // Exploded: each piece nudged away from the cut line.
   for ([p, i] in pieces) {
     let bb = p.boundingBox();
     let side = calc(bb.x + bb.width / 2 &lt; kx ? -9 : 9);
-    M calc(280 + side) 70
-    p.draw();
+    M calc(280 + side) 70 p.draw()
   }
 }
 
@@ -14402,11 +14434,11 @@ divider.apply {
 }
 
 labels.apply {
-  text(120, 200)\`drawn at one position — reassembles\`
-  text(355, 200)\`nudged apart — 2 pieces\`
+  text(120, 200)\`drawn at one position — reassembles\`;
+  text(355, 200)\`nudged apart — 2 pieces\`;
 }
 knifeLabel.apply {
-  text(140, 45)\`knife\`
+  text(140, 45)\`knife\`;
 }
 </code>
   <img src="/blog/samples/post40/first-cut.svg" alt="One cut, two pieces. Left: drawn at the same position, the shape reassembles. Right: each piece nudged away from the cut line." loading="lazy">
@@ -14422,19 +14454,55 @@ knifeLabel.apply {
 
 @font "Playfair Display" 700;
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 620, 290); }
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 620, 290);
+}
 
 let scene = GroupLayer('scene') \${};
-let pieceLayer = PathLayer('pieces') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
-let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 1.2; fill: none; };
-let divider = PathLayer('divider') \${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
-let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
-let knifeLabel = TextLayer('knife-label') \${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
-scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+let pieceLayer = PathLayer('pieces') \${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let knifeLayer = PathLayer('knife') \${
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  fill: none;
+};
+let divider = PathLayer('divider') \${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+let knifeLabel = TextLayer('knife-label') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #ef4444;
+  text-anchor: middle;
+};
+scene.append(pieceLayer,
+    knifeLayer,
+    divider,
+    labels,
+    knifeLabel);
 
-let styles = \${ font-family: "Playfair Display"; font-weight: 700; font-size: 200; };
-let glyphs = PathBlock.fromGlyph("O", styles);
+let styles = \${
+  font-family: "Playfair Display";
+  font-weight: 700;
+  font-size: 200;
+};
+let glyphs = PathBlock.fromGlyph('O', styles);
 let o = glyphs[0];
 
 // Knife in glyph-local coordinates: two strokes converging to the right.
@@ -14458,8 +14526,7 @@ fn drawExploded(pieces, ox, oy) {
     let px = calc(pb.x + pb.width / 2 - cx);
     let py = calc(pb.y + pb.height / 2 - cy);
     let len = calc(sqrt(px * px + py * py) + 0.001);
-    M calc(ox + px / len * 14) calc(oy + py / len * 14)
-    p.draw();
+    M calc(ox + px / len * 14) calc(oy + py / len * 14) p.draw()
   }
 }
 
@@ -14482,11 +14549,11 @@ divider.apply {
 }
 
 labels.apply {
-  text(150, 262)\`4 pieces\`
-  text(465, 262)\`2 pieces — strokes end in the counter\`
+  text(150, 262)\`4 pieces\`;
+  text(465, 262)\`2 pieces — strokes end in the counter\`;
 }
 knifeLabel.apply {
-  text(48, 82)\`knife\`
+  text(48, 82)\`knife\`;
 }
 </code>
   <img src="/blog/samples/post40/o-cut-two-ways.svg" alt="The same two-stroke knife at two positions: four pieces, then two." loading="lazy">
@@ -14513,26 +14580,61 @@ knifeLabel.apply {
 // Right: the knife misses the hole — a lens comes off, and the hole rides
 // along inside the big remaining piece.
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 520, 250); }
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 520, 250);
+}
 
 let scene = GroupLayer('scene') \${};
-let pieceLayer = PathLayer('pieces') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
-let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 1.2; fill: none; };
-let divider = PathLayer('divider') \${ stroke: #334155; stroke-width: 1; stroke-dasharray: 4 4; fill: none; };
-let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
-let knifeLabel = TextLayer('knife-label') \${ font-family: monospace; font-size: 9; fill: #ef4444; text-anchor: middle; };
-scene.append(pieceLayer, knifeLayer, divider, labels, knifeLabel);
+let pieceLayer = PathLayer('pieces') \${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let knifeLayer = PathLayer('knife') \${
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  fill: none;
+};
+let divider = PathLayer('divider') \${
+  stroke: #334155;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+let knifeLabel = TextLayer('knife-label') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #ef4444;
+  text-anchor: middle;
+};
+scene.append(pieceLayer,
+    knifeLayer,
+    divider,
+    labels,
+    knifeLabel);
 
-let big = @{ circle(0, 0, 70); };
-let small = @{ circle(0, 0, 30); };
+let big = @{
+  circle(0, 0, 70);
+};
+let small = @{
+  circle(0, 0, 30);
+};
 
 fn drawSplit(pieces, centerX) {
   for ([p, i] in pieces) {
     let pb = p.boundingBox();
     let side = calc(pb.x + pb.width / 2 &lt; centerX ? -8 : 8);
-    M calc(side) 0
-    p.draw();
+    M calc(side) 0 p.draw()
   }
 }
 
@@ -14570,11 +14672,11 @@ divider.apply {
 }
 
 labels.apply {
-  text(130, 232)\`crosses the hole — two C-shapes\`
-  text(390, 232)\`misses the hole — the hole rides along\`
+  text(130, 232)\`crosses the hole — two C-shapes\`;
+  text(390, 232)\`misses the hole — the hole rides along\`;
 }
 knifeLabel.apply {
-  text(130, 26)\`knife\`
+  text(130, 26)\`knife\`;
 }
 </code>
   <img src="/blog/samples/post40/donut-cuts.svg" alt="Left: the knife crosses the hole — two C-shapes. Right: the knife misses it — the hole rides along in the larger piece." loading="lazy">
@@ -14590,18 +14692,48 @@ knifeLabel.apply {
 // A closed cutter loop is a cookie cutter: it stamps the region inside it
 // out of the shape. The stamped disk lifts away; the plate keeps the hole.
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 480, 240); }
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
 
 let scene = GroupLayer('scene') \${};
-let plateLayer = PathLayer('plate') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
-let cookieLayer = PathLayer('cookie') \${ fill: #f59e0b; stroke: #0f172a; stroke-width: 2; };
-let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 1.2; fill: none; };
-let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
+let plateLayer = PathLayer('plate') \${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let cookieLayer = PathLayer('cookie') \${
+  fill: #f59e0b;
+  stroke: #0f172a;
+  stroke-width: 2;
+};
+let knifeLayer = PathLayer('knife') \${
+  stroke: #ef4444;
+  stroke-width: 1.2;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
 scene.append(plateLayer, cookieLayer, knifeLayer, labels);
 
-let plate = @{ roundRect(0, 0, 220, 150, 18); };
-let stamp = @{ circle(0, 0, 42); };
+let plate = @{
+  roundRect(0,
+      0,
+      220,
+      150,
+      18);
+};
+let stamp = @{
+  circle(0, 0, 42);
+};
 
 let pieces = plate.cut(stamp.project(140, 60));
 
@@ -14609,15 +14741,13 @@ for ([p, i] in pieces) {
   if (p.subPathCount == 1) {
     // The stamped-out disk: lift it up and away.
     cookieLayer.apply {
-      M 200 10
-      p.draw();
+      M 200 10 p.draw()
     }
   }
   if (p.subPathCount == 2) {
     // The plate, now carrying the hole.
     plateLayer.apply {
-      M 60 60
-      p.draw();
+      M 60 60 p.draw()
     }
   }
 }
@@ -14628,8 +14758,8 @@ knifeLayer.apply {
 }
 
 labels.apply {
-  text(170, 48)\`subPathCount == 2 — the plate keeps the hole\`
-  text(370, 130)\`subPathCount == 1 — the disk\`
+  text(170, 48)\`subPathCount == 2 — the plate keeps the hole\`;
+  text(370, 130)\`subPathCount == 1 — the disk\`;
 }
 </code>
   <img src="/blog/samples/post40/cookie-cutter.svg" alt="A closed loop stamps a disk out of the plate; the plate keeps the hole." loading="lazy">
@@ -14643,14 +14773,39 @@ labels.apply {
 // no healing, since there's no interior to close. Nine vertical strokes
 // turn one long wave into alternating-color dashes.
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 480, 170); }
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 170);
+}
 
 let scene = GroupLayer('scene') \${};
-let warm = PathLayer('warm') \${ stroke: #f59e0b; stroke-width: 5; fill: none; stroke-linecap: round; };
-let cool = PathLayer('cool') \${ stroke: #3b82f6; stroke-width: 5; fill: none; stroke-linecap: round; };
-let knifeLayer = PathLayer('knife') \${ stroke: #ef4444; stroke-width: 0.75; fill: none; opacity: 0.55; };
-let labels = TextLayer('labels') \${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
+let warm = PathLayer('warm') \${
+  stroke: #f59e0b;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let cool = PathLayer('cool') \${
+  stroke: #3b82f6;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let knifeLayer = PathLayer('knife') \${
+  stroke: #ef4444;
+  stroke-width: 0.75;
+  fill: none;
+  opacity: 0.55;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
 scene.append(warm, cool, knifeLayer, labels);
 
 let wave = @{
@@ -14682,14 +14837,12 @@ let parts = wave.cut(knives);
 for ([p, i] in parts) {
   if (calc(i % 2) == 0) {
     warm.apply {
-      M 40 82
-      p.draw();
+      M 40 82 p.draw()
     }
   }
   if (calc(i % 2) == 1) {
     cool.apply {
-      M 40 82
-      p.draw();
+      M 40 82 p.draw()
     }
   }
 }
@@ -14699,7 +14852,7 @@ knifeLayer.apply {
 }
 
 labels.apply {
-  text(240, 152)\`9 knives -&gt; 10 fragments\`
+  text(240, 152)\`9 knives -&gt; 10 fragments\`;
 }
 </code>
   <img src="/blog/samples/post40/open-path-dashes.svg" alt="Nine vertical strokes turn one wave into alternating-color dashes." loading="lazy">
@@ -14717,17 +14870,37 @@ labels.apply {
 
 @font "Baumans";
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 960, 170); }
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 960, 170);
+}
 
 let wordmark = GroupLayer('wordmark') \${};
-let shard0 = PathLayer('shard0') \${ fill: #3b82f6; stroke: #0f172a; stroke-width: 1.5; };
-let shard1 = PathLayer('shard1') \${ fill: #a78bfa; stroke: #0f172a; stroke-width: 1.5; };
-let shard2 = PathLayer('shard2') \${ fill: #f59e0b; stroke: #0f172a; stroke-width: 1.5; };
+let shard0 = PathLayer('shard0') \${
+  fill: #3b82f6;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let shard1 = PathLayer('shard1') \${
+  fill: #a78bfa;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
+let shard2 = PathLayer('shard2') \${
+  fill: #f59e0b;
+  stroke: #0f172a;
+  stroke-width: 1.5;
+};
 wordmark.append(shard0, shard1, shard2);
 
-let styles = \${ font-family: Baumans; font-size: 120; };
-let glyphs = PathBlock.fromGlyph("pathogen.studio", styles);
+let styles = \${
+  font-family: Baumans;
+  font-size: 120;
+};
+let glyphs = PathBlock.fromGlyph('pathogen.studio', styles);
 
 let x = 50;
 let baseline = 106;
@@ -14768,25 +14941,12 @@ for ([g, i] in glyphs) {
     let sx = calc(x + pivot.x + dx);
     let sy = calc(baseline + pivot.y + dy);
 
-    if (calc(n % 3) == 0) {
-      shard0.apply {
-        M sx sy
-        rp.draw();
-      }
-    }
-    if (calc(n % 3) == 1) {
-      shard1.apply {
-        M sx sy
-        rp.draw();
-      }
-    }
-    if (calc(n % 3) == 2) {
-      shard2.apply {
-        M sx sy
-        rp.draw();
-      }
+    // Round-robin tint by computed layer name — no if-chain needed.
+    layer(\`shard\${n % 3}\`).apply {
+      M sx sy rp.draw()
     }
   }
+
 
   x = calc(x + g.advanceWidth);
 }

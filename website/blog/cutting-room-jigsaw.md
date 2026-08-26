@@ -151,6 +151,34 @@ became a real method (`seam.draw()` replaced the two-line
 arithmetic between strokes. Part 1's closing section has both
 stories.
 
+**And the scattered puzzle's tints lost their if-chain.** Example 5
+originally dealt pieces to its three shard layers with
+`if (calc(i % 3) == 0) { shard0.apply { … } }` ×3 — because
+[`layer(...)` routing](/docs#layers-dynamic-layer-names) choked on any
+argument with a postfix (an array index, a member access, a function
+call). The cause turned out to be a whole class: six AST-builder
+sites scanned expression siblings without walking postfix chains, so
+`for (i in 0..arr.length)`, `PathLayer(names[i])`, and
+`define ViewBox(0, 0, sheet.w, …)` were all broken the same way. One
+fix later, layers are routable as data:
+
+```pathogen
+// before: one if per tint
+if (calc(i % 3) == 0) { shard0.apply { M placeX placeY spun.draw() } }
+if (calc(i % 3) == 1) { shard1.apply { M placeX placeY spun.draw() } }
+if (calc(i % 3) == 2) { shard2.apply { M placeX placeY spun.draw() } }
+
+// after: layers are values — index into a list of them
+let shardLayers = [shard0, shard1, shard2];
+layer(shardLayers[calc(i % 3)]).apply {
+  M placeX placeY spun.draw()
+}
+```
+
+(The computed-name spelling `` layer(`shard${i % 3}`) `` always worked
+and is what the shattered-glyph and tinted-panes samples now use — the
+if-chains there were simply never revisited.)
+
 ## Where to go next
 
 - [Garment patterns](/blog/cutting-room-garment) — part 3 turns

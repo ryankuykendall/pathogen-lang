@@ -3,14 +3,39 @@ define ViewBox(0, 0, 480, 170);
 // no healing, since there's no interior to close. Nine vertical strokes
 // turn one long wave into alternating-color dashes.
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
-layer('bg').apply { rect(0, 0, 480, 170); }
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 170);
+}
 
 let scene = GroupLayer('scene') ${};
-let warm = PathLayer('warm') ${ stroke: #f59e0b; stroke-width: 5; fill: none; stroke-linecap: round; };
-let cool = PathLayer('cool') ${ stroke: #3b82f6; stroke-width: 5; fill: none; stroke-linecap: round; };
-let knifeLayer = PathLayer('knife') ${ stroke: #ef4444; stroke-width: 0.75; fill: none; opacity: 0.55; };
-let labels = TextLayer('labels') ${ font-family: monospace; font-size: 9; fill: #94a3b8; text-anchor: middle; };
+let warm = PathLayer('warm') ${
+  stroke: #f59e0b;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let cool = PathLayer('cool') ${
+  stroke: #3b82f6;
+  stroke-width: 5;
+  fill: none;
+  stroke-linecap: round;
+};
+let knifeLayer = PathLayer('knife') ${
+  stroke: #ef4444;
+  stroke-width: 0.75;
+  fill: none;
+  opacity: 0.55;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 9;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
 scene.append(warm, cool, knifeLayer, labels);
 
 let wave = @{
@@ -42,14 +67,12 @@ let parts = wave.cut(knives);
 for ([p, i] in parts) {
   if (calc(i % 2) == 0) {
     warm.apply {
-      M 40 82
-      p.draw();
+      M 40 82 p.draw()
     }
   }
   if (calc(i % 2) == 1) {
     cool.apply {
-      M 40 82
-      p.draw();
+      M 40 82 p.draw()
     }
   }
 }
@@ -59,5 +82,5 @@ knifeLayer.apply {
 }
 
 labels.apply {
-  text(240, 152)`9 knives -> 10 fragments`
+  text(240, 152)`9 knives -> 10 fragments`;
 }
