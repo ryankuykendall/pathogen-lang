@@ -30,7 +30,7 @@ a narrow bug, or deleting our own workaround, not the feature we logged.
 | H | #6 | cut([k1, k2, ...]) ONLY (block-local absolute M dropped — superseded by L) | **LANDED** — array cutters both receivers, 6 new tests, six knife samples rewritten as loops, closing entries in three posts |
 | F2 | #7b | Annotated-mode label-name validation parity — compileAnnotated silently accepts labels main mode rejects (bare 'cut', punctuation); Item C class | fast-follow (review finding) |
 | L | #6 root, #15 | ctx as declared PathBlock argument (`@{\|ctx\| ...}`): origin deltas + .return() (relative purity), in-block label querying via ctx.query — user design sketch preserved in L-ctx-block-argument/ | fast-follow after current fixes |
-| I | #4, #5 | † member path args ALREADY work (single-letter command shadowing is the trap → better diagnostic via describeError); pi is a literal suffix → constant binding or quick-fix | queued |
+| I | #4, #5 | † shadowing rescue at both error paths (parse() + describeError, two tree shapes) + calc() quick fix + hover fix; pi/deg/rad RESERVED suffix-only (user chose strictness) via setVariable funnel + 6 Identifier sites, shared reserved-names.ts | LANDED (2026-08-25) |
 | J | #9 | † dynamic styling MOSTLY works (exprs, ternaries, fn calls in style values; dynamic define in loops; layer(\`tpl\`) routing) — real bug: postfix exprs in layer(...) flattened by ast-builder :1114 (fix: buildExpressionWithPostfix); delete round-robin if-chains | queued |
 | K | #13 | Document string ternaries (+ style-value expressions) + if-reassignment | queued |
 

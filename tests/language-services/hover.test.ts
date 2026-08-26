@@ -579,3 +579,40 @@ M 0 0`;
     }
   });
 });
+
+describe('single-letter variable vs path-command hover', () => {
+  it('hovering the m in `let m = 25;` shows the variable, not the move command', () => {
+    const doc = new StringTextDocument('let m = 25;\nM 10 10\nh calc(m)');
+    const hover = getHoverInfo(doc, { line: 0, character: 4 });
+    expect(hover).not.toBeNull();
+    expect(hover!.contents).not.toContain('Move to');
+  });
+
+  it('hovering a reference inside calc() shows the variable too', () => {
+    const doc = new StringTextDocument('let m = 25;\nM 10 10\nh calc(m)');
+    const hover = getHoverInfo(doc, { line: 2, character: 7 });
+    expect(hover).not.toBeNull();
+    expect(hover!.contents).not.toContain('Move to');
+  });
+
+  it('nested parens inside calc() still hover as the variable (review-probe regression)', () => {
+    const doc = new StringTextDocument('let m = 2;\nM 10 10\nh calc(sin(m))');
+    const hover = getHoverInfo(doc, { line: 2, character: 11 });
+    expect(hover).not.toBeNull();
+    expect(hover!.contents).not.toContain('Move to');
+  });
+
+  it('a command letter after a CLOSED calc() keeps command hover', () => {
+    const doc = new StringTextDocument('let m = 2;\nM 10 10\nh calc(1)\nm 5 5');
+    const hover = getHoverInfo(doc, { line: 3, character: 0 });
+    expect(hover!.contents).toContain('Move to');
+  });
+
+  it('legitimate command letters keep command hover even with a same-named variable in scope', () => {
+    const doc = new StringTextDocument('let m = 25;\nM 10 10\nm 5 5');
+    const upper = getHoverInfo(doc, { line: 1, character: 0 });
+    expect(upper!.contents).toContain('Move to');
+    const lower = getHoverInfo(doc, { line: 2, character: 0 });
+    expect(lower!.contents).toContain('Move to');
+  });
+});

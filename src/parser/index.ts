@@ -70,6 +70,74 @@ export function detectMissingSemicolon(
   };
 }
 
+const PATH_COMMAND_LETTER_SET = new Set('MLHVCSQTAZmlhvcsqtaz'.split(''));
+
+/**
+ * Detect the command-letter shadowing trap: `let m = 25; ... L m 40`.
+ * The path-args tokenizer must treat a bare single letter as a command,
+ * so recovery inserts a zero-width error where the arguments should be
+ * and honestly reparses `m 40` as a new PathCommand — the generic
+ * "Missing ';'" it produces points at punctuation nowhere near the
+ * mistake. Tree position alone cannot identify the case (the reparse is
+ * legitimate); the discriminator is the following command's letter ALSO
+ * being a declared variable (a single-letter VariableName node anywhere
+ * in the tree — path arguments produce no VariableName nodes, so the
+ * reparse can never self-trigger). Shared by parse() (CLI errors) and
+ * getDiagnostics' describeError (editor squiggles), which otherwise
+ * have independent error paths.
+ */
+export function describeCommandShadowing(
+  input: string,
+  errorNode: import('@lezer/common').SyntaxNode,
+): { message: string; offset: number } | null {
+  if (errorNode.from !== errorNode.to) return null;
+  const parent = errorNode.parent;
+  if (!parent || parent.name !== 'PathCommand') return null;
+  const prevName = errorNode.prevSibling?.name;
+  if (prevName !== 'PathCommandLetter' && prevName !== 'PathArgs') return null;
+  if (errorNode.nextSibling) return null;
+
+  const isDeclared = (letter: string): boolean => {
+    let root: import('@lezer/common').SyntaxNode = errorNode;
+    while (root.parent) root = root.parent;
+    const cur = root.cursor();
+    do {
+      if (cur.type.name === 'VariableName' && cur.to - cur.from === 1 && input.slice(cur.from, cur.to) === letter) {
+        return true;
+      }
+    } while (cur.next());
+    return false;
+  };
+  const rescue = (letterNode: import('@lezer/common').SyntaxNode): { message: string; offset: number } | null => {
+    const letter = input.slice(letterNode.from, letterNode.to);
+    if (letter.length !== 1 || !PATH_COMMAND_LETTER_SET.has(letter)) return null;
+    if (!isDeclared(letter)) return null;
+    return {
+      message: `'${letter}' is a path command here, so it cannot be used as a bare variable in path arguments — write calc(${letter}), or rename the variable`,
+      offset: letterNode.from,
+    };
+  };
+
+  // Shape 1 (`L m 40`): the letter opens the FOLLOWING PathCommand —
+  // recovery ended the current command's args early and reparsed the
+  // variable as a new command.
+  const following = parent.nextSibling;
+  if (following?.name === 'PathCommand') {
+    const letterNode = following.firstChild;
+    if (letterNode?.name === 'PathCommandLetter') {
+      const hit = rescue(letterNode);
+      if (hit) return hit;
+    }
+  }
+  // Shape 2 (`L 5 V`): the variable itself was consumed as the command
+  // that now misses its arguments — the offender is the error's OWN
+  // command letter.
+  if (prevName === 'PathCommandLetter' && errorNode.prevSibling) {
+    return rescue(errorNode.prevSibling);
+  }
+  return null;
+}
+
 /**
  * Parse using the Lezer parser. Returns the Lezer tree + AST.
  * Used by the playground for syntax highlighting.
@@ -94,6 +162,13 @@ export function parse(input: string): Program {
   if (hasErrors) {
     // Lezer-native error messages
     const errOffset = errCur.from;
+    const shadow = describeCommandShadowing(input, errCur.node);
+    if (shadow) {
+      const shadowLines = input.slice(0, shadow.offset).split('\n');
+      throw new Error(
+        `Parse error at line ${shadowLines.length}, column ${shadowLines[shadowLines.length - 1].length + 1}: ${shadow.message}`,
+      );
+    }
     const semiResult = detectMissingSemicolon(input, errOffset);
     if (semiResult) {
       throw new Error(`Parse error at line ${semiResult.line}, column ${semiResult.column}: ${semiResult.message}`);

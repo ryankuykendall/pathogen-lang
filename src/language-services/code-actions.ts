@@ -50,9 +50,40 @@ export function getCodeActions(document: TextDocument, _range: Range, diagnostic
       const fixes = undefinedVariableFixes(document, diag, undefMatch[1]);
       actions.push(...fixes);
     }
+
+    // Command-letter shadowing — wrap the variable in calc()
+    const shadowMatch = diag.message.match(/^'(\w)' is a path command here/);
+    if (shadowMatch) {
+      const fix = wrapInCalcFix(document, diag, shadowMatch[1]);
+      if (fix) actions.push(fix);
+    }
   }
 
   return actions;
+}
+
+/**
+ * The shadowing diagnostic's range starts exactly at the offending
+ * letter (the detector points there), so the edit replaces that single
+ * character with `calc(X)`.
+ */
+function wrapInCalcFix(document: TextDocument, diag: Diagnostic, letter: string): CodeAction | null {
+  const { line, character } = diag.range.start;
+  const lineText = document.getText().split('\n')[line] ?? '';
+  if (lineText[character] !== letter) return null;
+  return {
+    title: `Wrap in calc(): calc(${letter})`,
+    kind: 'quickfix',
+    diagnostics: [diag],
+    edit: {
+      changes: [
+        {
+          range: { start: { line, character }, end: { line, character: character + 1 } },
+          newText: `calc(${letter})`,
+        },
+      ],
+    },
+  };
 }
 
 /**

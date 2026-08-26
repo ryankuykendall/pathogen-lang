@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-25 (reserved unit suffixes + shadowing diagnostics — Cutting Room feedback loop, item I)
+
+### Added
+
+#### Core
+
+- **`pi`, `deg`, and `rad` are reserved words** — they exist only as angle unit suffixes (`0.5pi`, `90deg`, `1.5rad`). Binding one (`let pi = …`, loop variables, destructuring, `fn deg(…)`, function/lambda parameters) is a compile error in **both** evaluators (enforced at the single binding funnel each evaluator has, via one shared module — the rule cannot drift between `compile()` and `--annotated`). Referencing one standalone (`calc(pi)`) errors with the three spellings that do exist: the suffix, `PI()`, and the `deg(x)`/`rad(x)` converters — replacing both the unhelpful `Undefined variable: pi` and the silent footgun where `let f = deg;` stored an uncallable raw function. Call position, suffix position, and the Angle members `.pi`/`.deg`/`.rad` are untouched. Pinned by a 36-case binding-form coverage matrix.
+
+#### Language services
+
+- **The command-letter shadowing trap gets a real diagnostic.** `let m = 25;` then `L m 40` used to fail with `Missing ';'` pointed at punctuation nowhere near the mistake (the bare letter reads as a path command and recovery reparses it as one). Both error paths — the CLI's `parse()` and the editor's diagnostics — now detect the two tree shapes this takes (variable-as-next-command `L m 40`, and variable-consumed-as-command `L 5 V`) and say what happened: `'m' is a path command here, so it cannot be used as a bare variable in path arguments — write calc(m), or rename the variable`, positioned at the letter itself. Fires only when the letter is actually a declared variable, so genuine typos keep the generic message. The playground/VS Code quick fix offers a one-click `calc()` wrap (replacing the previously *wrong* add-semicolon fix), and hovering a single-letter variable at its declaration or inside `calc()` now shows the variable instead of the path-command reference.
+
 ## [0.8.0] - 2026-08-25 (query pseudo-selectors — Cutting Room feedback loop, item G)
 
 ### Added

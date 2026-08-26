@@ -783,3 +783,62 @@ describe('break and continue placement errors', () => {
     ).toThrow(/'break' is only valid inside a for loop/);
   });
 });
+
+describe('reserved unit-suffix names: pi, deg, rad (binding coverage matrix)', () => {
+  const NAMES = ['pi', 'deg', 'rad'];
+  // Every binding form the language has, one template per form.
+  const BINDING_FORMS: Array<[string, (n: string) => string]> = [
+    ['let declaration', (n) => `let ${n} = 1;`],
+    ['let destructuring', (n) => `let p = Point(1, 2);\nlet [${n}, other] = [1, 2];`],
+    ['for range variable', (n) => `for (${n} in 0..2) { M 0 0 }`],
+    ['for-in variable', (n) => `for (${n} in [1, 2]) { M 0 0 }`],
+    ['for-in pair variable', (n) => `for ([${n}, i] in [1, 2]) { M 0 0 }`],
+    ['for-in index variable', (n) => `for ([x, ${n}] in [1, 2]) { M 0 0 }`],
+    ['fn name', (n) => `fn ${n}(len) { h calc(len) }`],
+    ['fn parameter', (n) => `fn f(${n}) { h 1 }\nM 0 0\nf(1);`],
+    ['lambda parameter', (n) => `let arr = [1];\nlet out = arr.map() << {|${n}| return 1; };`],
+  ];
+  for (const name of NAMES) {
+    for (const [form, tpl] of BINDING_FORMS) {
+      it(`rejects '${name}' as a ${form}`, () => {
+        expect(() => compile(tpl(name))).toThrow(/reserved.*unit suffix/s);
+      });
+    }
+  }
+
+  it('rejects the names in annotated mode too (no F2-style divergence)', async () => {
+    const { compileAnnotated } = await import('../src');
+    for (const name of NAMES) {
+      expect(() => compileAnnotated(`let ${name} = 1;`)).toThrow(/reserved.*unit suffix/s);
+      expect(() => compileAnnotated(`for (${name} in 0..2) { M 0 0 }`)).toThrow(/reserved.*unit suffix/s);
+      expect(() => compileAnnotated(`fn ${name}(len) { h calc(len) }`)).toThrow(/reserved.*unit suffix/s);
+    }
+  });
+
+  it('standalone reference errors name the suffix rule, per name', () => {
+    expect(() => compile('M 0 0\nL calc(pi) 40')).toThrow(/unit suffix.*0\.5pi.*PI\(\)/s);
+    expect(() => compile('M 0 0\nL calc(deg) 40')).toThrow(/unit suffix.*90deg.*deg\(/s);
+    expect(() => compile('M 0 0\nL calc(rad) 40')).toThrow(/unit suffix.*rad.*rad\(/s);
+    expect(() => compile('let x = deg;')).toThrow(/unit suffix/);
+  });
+
+  it('standalone reference in bare path-argument position errors too', () => {
+    expect(() => compile('M 0 0\nh deg')).toThrow(/unit suffix/);
+  });
+
+  it('annotated mode rejects standalone references identically', async () => {
+    const { compileAnnotated } = await import('../src');
+    expect(() => compileAnnotated('M 0 0\nL calc(pi) 40')).toThrow(/unit suffix/);
+    expect(() => compileAnnotated('let x = deg;')).toThrow(/unit suffix/);
+  });
+
+  it('call position and suffix position stay legal', () => {
+    const result = compile('let a = deg(PI());\nlet b = rad(180);\nlet c = 90deg;\nM 0 0\nL calc(a) calc(b)');
+    expect(result.layers[0].data).toBe('M 0 0 L 180 3.141592653589793');
+  });
+
+  it('Angle member properties .pi/.deg/.rad stay legal (member position, not identifiers)', () => {
+    const result = compile('let a = 90deg;\nM 0 0\nL calc(a.pi * 100) calc(a.deg)');
+    expect(result.layers[0].data).toBe('M 0 0 L 50 90');
+  });
+});

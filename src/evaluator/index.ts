@@ -1,6 +1,7 @@
 import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
 const expressionParser = { parse: (input: string) => { const v = expressionParserFn(input); return { status: v !== null, value: v }; } };
 import { contextAwareFunctions, stdlib } from '../stdlib';
+import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
 import { CALLBACK_METHODS } from '../callback-methods';
 import { arrayMutationError, isArrayLocked, lockArray, unlockArray } from './iteration-lock';
 import {
@@ -867,6 +868,12 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
 }
 
 function setVariable(scope: Scope, name: string, value: Value): void {
+  // The single funnel for every binding form (let, for, fn names,
+  // fn/lambda params, destructuring, builtin callback params) — the
+  // one-line reservation check covers them all.
+  if (RESERVED_UNIT_NAMES.has(name)) {
+    throw new Error(reservedNameBindingError(name));
+  }
   scope.variables.set(name, value);
 }
 
@@ -1515,6 +1522,11 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       return boolVal(expr.value);
 
     case 'Identifier':
+      // Reserved suffix names error here (references), NOT in
+      // lookupVariable — which also resolves call targets (deg(x)).
+      if (RESERVED_UNIT_NAMES.has(expr.name)) {
+        throw new Error(formatError(reservedNameReferenceError(expr.name), getLine(expr), getCol(expr)));
+      }
       return lookupVariable(scope, expr.name, getLine(expr), getCol(expr));
 
     case 'LambdaExpression':
@@ -7713,6 +7725,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       return arg.value ? '1' : '0';
 
     case 'Identifier': {
+      if (RESERVED_UNIT_NAMES.has(arg.name)) {
+        throw new Error(formatError(reservedNameReferenceError(arg.name), getLine(arg), getCol(arg)));
+      }
       const value = lookupVariable(scope, arg.name, getLine(arg), getCol(arg));
       if (value === null) {
         throw new Error('Cannot use null as a path argument');
@@ -7822,6 +7837,9 @@ function getNumericArgs(args: PathArg[], scope: Scope): number[] {
     } else if (arg.type === 'BooleanLiteral') {
       numericArgs.push(arg.value ? 1 : 0);
     } else if (arg.type === 'Identifier') {
+      if (RESERVED_UNIT_NAMES.has(arg.name)) {
+        throw new Error(reservedNameReferenceError(arg.name));
+      }
       const value = lookupVariable(scope, arg.name);
       const n = toNumber(value);
       if (n !== undefined) {

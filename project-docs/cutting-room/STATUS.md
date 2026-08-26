@@ -30,6 +30,26 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
 
 ## Log
 
+- 2026-08-25 (feedback loop, Item I LANDED — pending review + commit):
+  Reserved suffixes + shadowing diagnostics (docs-first,
+  failing-tests-first, planned with G in plan mode). (#5) pi/deg/rad
+  reserved: binding blocked at the setVariable funnel in BOTH
+  evaluators (shared src/evaluator/reserved-names.ts — cannot drift);
+  standalone reference errors at the 6 Identifier sites (NOT
+  lookupVariable — deg(x)/rad(x) calls untouched); 36-case binding
+  matrix + reference/annotated/legal-position pins incl. Angle members
+  .pi/.deg/.rad. Own test templates hit the #4 trap (`h a` — a is the
+  arc letter), proving the point. (#4) shadowing rescue: shared
+  describeCommandShadowing in parser/index.ts wired into parse() (CLI)
+  and describeError (editor); TWO tree shapes (following-command
+  `L m 40`, own-command `L 5 V` — second found by the uppercase test);
+  fires only when the letter is a declared VariableName (tree walk, no
+  analyzeScopes plumbing); wrap-in-calc() quick fix replaces the
+  previously WRONG add-semicolon fix; hover shows the variable at
+  declaration sites and inside calc() (opaque PathArgs needed a paren
+  scan), command hover pinned for real commands. syntax.md variables
+  note corrected (single letters CAN be declared; bare path-arg
+  position is the restriction). Suite 4969/4969.
 - 2026-08-25 (feedback loop, Item G LANDED — pending review + commit):
   Query pseudo-selectors (docs-first, failing-tests-first; user chose
   the full family over :each-only in plan mode). parseSegmentQuery /

@@ -3,6 +3,7 @@ import { contextAwareFunctions, stdlib } from '../stdlib';
 import { CALLBACK_METHODS } from '../callback-methods';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import { CHAR_CLASS_PREDICATES, isWhitespaceChar } from './char-class';
+import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
 import { DEFS_CONSTRUCTORS } from './constructor-registry';
 import { contextToObject, createPathContext, setLastTangent, updateContextForCommand } from './context';
 import { estimateTextBoundingBox } from './font-metrics';
@@ -688,6 +689,11 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
 }
 
 function setVariable(scope: Scope, name: string, value: Value): void {
+  // Single binding funnel — reservation parity with the main evaluator
+  // (both import the same reserved-names module, so this cannot drift).
+  if (RESERVED_UNIT_NAMES.has(name)) {
+    throw new Error(reservedNameBindingError(name));
+  }
   scope.variables.set(name, value);
 }
 
@@ -729,6 +735,9 @@ function getNumericArgs(args: PathArg[], scope: Scope): number[] {
     if (arg.type === 'NumberLiteral') {
       numericArgs.push(convertUnitSuffix(arg.value, arg.unit));
     } else if (arg.type === 'Identifier') {
+      if (RESERVED_UNIT_NAMES.has(arg.name)) {
+        throw new Error(reservedNameReferenceError(arg.name));
+      }
       const value = toNumber(lookupVariable(scope, arg.name));
       if (value !== undefined) {
         numericArgs.push(value);
@@ -3394,6 +3403,10 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
     case 'Identifier': {
       const idLoc = (expr as { loc?: { line: number; column: number } }).loc;
+      // References only — call targets keep resolving deg(x)/rad(x).
+      if (RESERVED_UNIT_NAMES.has(expr.name)) {
+        throw new Error(formatError(reservedNameReferenceError(expr.name), idLoc?.line, idLoc?.column));
+      }
       return lookupVariable(scope, expr.name, idLoc?.line, idLoc?.column);
     }
 
@@ -5205,6 +5218,9 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
 
     case 'Identifier': {
       const argLoc = (arg as { loc?: { line: number; column: number } }).loc;
+      if (RESERVED_UNIT_NAMES.has(arg.name)) {
+        throw new Error(formatError(reservedNameReferenceError(arg.name), argLoc?.line, argLoc?.column));
+      }
       const value = lookupVariable(scope, arg.name, argLoc?.line, argLoc?.column);
       if (value === null) throw new Error('Cannot use null as a path argument');
       {

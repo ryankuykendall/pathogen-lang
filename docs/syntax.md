@@ -43,7 +43,10 @@ let y = 75;
 M x y L 100 100
 ```
 
-**Note**: Single letters that are path commands (M, L, C, etc.) cannot be used as variable names.
+**Two naming rules:**
+
+- **`pi`, `deg`, and `rad` are reserved.** They are [angle unit suffixes](#syntax-angle-units), and only that: `let pi = …`, `fn deg(…) { }`, or using one as a loop or function parameter is a compile error, and referencing one standalone (`calc(pi)`) errors with a pointer at the forms that do exist — the suffix (`0.5pi`, `90deg`, `1.5rad`) and the standard-library calls (`PI()`, [`deg(x)` / `rad(x)`](#stdlib-angle-conversion)), which remain untouched.
+- **Single letters that are path commands** (`m l h v c s q t a z`, either case) *can* be declared, but cannot be referenced bare in path-argument position — there they always read as commands. `let m = 25; L m 40` is a compile error naming this rule; `L calc(m) 40` works. Prefer longer names.
 
 ## Strings and Template Literals
 
@@ -1200,6 +1203,8 @@ Numbers can have angle unit suffixes:
 | `45deg` | Degrees |
 | `1.5rad` | Radians |
 | `0.25pi` | Multiplied by π (i.e. `0.25 * π`) |
+
+The three suffix names are **reserved words**: they exist only as suffixes, so `pi`, `deg`, and `rad` cannot be declared as variables or referenced standalone (see [Variables](#syntax-variables)). The spellings that exist: `0.5pi` (an Angle), `PI()` (the number π), `deg(x)`/`rad(x)` (the unit converters).
 
 An angle-suffixed literal produces an **Angle value** — radians on the inside, with the written unit remembered for display. **An angle is an angle wherever it flows**: it survives variables, arrays, function parameters, return values, and [angle-preserving standard-library functions](#stdlib-angle-preserving-functions) like `clamp`, `lerp`, and `randomRange`. In angle-accepting positions — path arguments, trig and polar functions, comparisons, loop bounds, `calc()` arithmetic, rotation and orient properties, gradient `from`/`to`, filter angles — an Angle reads as its radians value, so `sin(45deg)` and `sin(rad(45))` are identical. Slots that want a plain count or dimension still reject an Angle: `Grid(90deg, 4)` errors with *"must be a positive integer"*. The one place radians are **not** the reading is the degree-based color API — see [Angle Display](#syntax-angle-display) below.
 

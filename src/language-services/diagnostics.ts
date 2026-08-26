@@ -1,4 +1,4 @@
-import { parse, detectMissingSemicolon } from '../parser';
+import { parse, detectMissingSemicolon, describeCommandShadowing } from '../parser';
 import { evaluate } from '../evaluator';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 
@@ -225,6 +225,16 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
       return "Expected '}' to close the block — {|params| statements }";
     }
     return `Unexpected '${errText}' in block body`;
+  }
+
+  // ── Command-letter shadowing in path arguments ──
+  // `let m = 25; L m 40` — the bare single letter reads as a command,
+  // recovery reparses it as one, and the generic message points at
+  // punctuation. The shared detector (also used by parse() for CLI
+  // errors) fires only when the letter is a declared variable.
+  if (parentName === 'PathCommand' && !errText) {
+    const shadow = describeCommandShadowing(source, errorNode);
+    if (shadow) return shadow.message;
   }
 
   // ── Missing semicolon patterns ──

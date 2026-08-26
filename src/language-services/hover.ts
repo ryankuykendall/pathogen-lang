@@ -3,6 +3,7 @@ import { regexNameResolver, resolveMemberAccess } from './member-resolution';
 import { analyzeScopes } from './scope-analysis';
 import { inferBlockParamType, inferLoopVarType, inferType } from './type-inference';
 import { findDeclaration, inferDeclType, inferExprElementType } from './type-inference-ast';
+import { lezerParser } from '../parser';
 
 import type { TextDocument } from './document';
 import type { Declaration, ScopeInfo } from './scope-analysis';
@@ -97,9 +98,39 @@ export function getHoverInfo(document: TextDocument, position: Position): HoverI
     return { contents: KEYWORD_HOVER[word.text], range: word.range };
   }
 
-  // 2. Check if it's a path command (single letter at statement level)
+  // 2. Check if it's a path command (single letter at statement level).
+  // A single letter can also be a VARIABLE (`let m = 25;`): at a
+  // declaration or expression site the tree says VariableName/Identifier
+  // — fall through so the scope-based hover answers with the variable.
+  // In path-argument position the reparse honestly yields a command
+  // node, and command hover is the right answer there (the shadowing
+  // diagnostic tells the rest of that story).
   if (PATH_COMMAND_HOVER[word.text] && word.text.length === 1) {
-    return { contents: PATH_COMMAND_HOVER[word.text], range: word.range };
+    const node = lezerParser.parse(source).resolveInner(word.startOffset, 1);
+    const isVariableSite = node.name === 'VariableName' || node.name === 'Identifier';
+    // calc() contents live inside the opaque PathArgs token, so the tree
+    // can't see them — a paren scan answers "is this letter an argument
+    // of calc()?" instead.
+    const insideCalc = (() => {
+      let depth = 0;
+      for (let i = word.startOffset - 1; i >= 0; i--) {
+        const ch = source[i];
+        if (ch === ')') depth++;
+        else if (ch === '(') {
+          if (depth > 0) {
+            depth--;
+          } else if (/calc\s*$/.test(source.slice(Math.max(0, i - 8), i))) {
+            return true;
+          }
+          // An unmatched non-calc '(' (e.g. sin() around the letter) —
+          // keep walking out; calc() may still enclose it.
+        }
+      }
+      return false;
+    })();
+    if (!isVariableSite && !insideCalc) {
+      return { contents: PATH_COMMAND_HOVER[word.text], range: word.range };
+    }
   }
 
   // Scope analysis is lazily computed once — keyword/stdlib/color hovers

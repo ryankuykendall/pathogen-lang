@@ -326,3 +326,34 @@ describe('getDiagnostics', () => {
     });
   });
 });
+
+describe('command-letter shadowing rescue (single-letter variable in path args)', () => {
+  it('declared single letter used bare in path args gets the specific message at the letter', () => {
+    const doc = new StringTextDocument('let m = 25;\nM 10 10\nL m 40');
+    const diags = getDiagnostics(doc);
+    expect(diags.length).toBeGreaterThanOrEqual(1);
+    expect(diags[0].message).toContain("'m' is a path command here");
+    expect(diags[0].message).toContain('calc(m)');
+    expect(diags[0].range.start.line).toBe(2);
+    expect(diags[0].range.start.character).toBe(2);
+  });
+
+  it('the same shape with NO matching declaration keeps the generic message', () => {
+    const doc = new StringTextDocument('M 10 10\nL q 40');
+    const diags = getDiagnostics(doc);
+    expect(diags.length).toBeGreaterThanOrEqual(1);
+    expect(diags[0].message).toContain("Missing ';'");
+  });
+
+  it('calc-wrapped use of the declared letter produces no diagnostics', () => {
+    const doc = new StringTextDocument('let m = 25;\nM 10 10\nL calc(m) 40');
+    expect(getDiagnostics(doc)).toEqual([]);
+  });
+
+  it('uppercase letters get the rescue too', () => {
+    const doc = new StringTextDocument('let V = 9;\nM 10 10\nL 5 V');
+    const diags = getDiagnostics(doc);
+    expect(diags.length).toBeGreaterThanOrEqual(1);
+    expect(diags[0].message).toContain("'V' is a path command here");
+  });
+});

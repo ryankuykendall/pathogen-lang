@@ -7838,7 +7838,19 @@ grammar was already paid for.</p>
 <span class="hljs-comment">// after: ask for it</span>
 <span class="hljs-keyword">let</span> arcs = wheel.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim:each&#x27;</span>);
 <span class="hljs-keyword">let</span> lastTooth = comb.<span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth:last&#x27;</span>);
-</code></pre><h2>Where to go next</h2>
+</code></pre><p><strong>And the traps got fences.</strong> Two footguns this series stepped on
+never bit the published samples only because a style guideline banned
+the ammunition. Both are now language rules instead of etiquette.
+Single-letter variables that shadow path commands (<code>let m = 25;</code> then
+<code>L m 40</code>) used to fail with a <code>Missing &#39;;&#39;</code> pointed at punctuation
+nowhere near the mistake; the compiler and the editor now say what
+actually happened — <code>&#39;m&#39; is a path command here — write calc(m), or rename the variable</code> — with a one-click calc() wrap in the playground.
+And the angle-suffix names <code>pi</code>, <code>deg</code>, and <code>rad</code> are now
+<a href="/docs#syntax-variables">reserved words</a>: suffix only, never a
+variable, so <code>calc(pi)</code> explains itself instead of reporting an
+undefined variable two spellings away from three working ones
+(<code>0.5pi</code>, <code>PI()</code>, <code>deg(x)</code>).</p>
+<h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-jigsaw">Jigsaw: pieces that know their own edges</a>
 — part 2 cuts with wavy knives and sorts pieces by the rim label

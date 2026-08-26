@@ -20,13 +20,29 @@ notes the friction hit in a real sample. To be synthesized at project end.
    canonicalization puts material on the left) — an `outwardNormal(t)` on
    seam runs, or a documented orientation guarantee, would delete the
    trickiest lines in the tab samples. (post41/03, post41/06.)
-4. **Member expressions need `calc()` in path args.** `M a.x a.y` is a
-   parse error; `M calc(a.x) calc(a.y)` works. Allowing bare member
-   access in path-argument position would match user expectation.
-   (post41/03.)
-5. **`pi` is not a bare identifier in calc.** `0.25pi` literals exist but
-   inside `calc()` one must call `PI()`. Surprising asymmetry.
-   (post41/03.)
+4. **RESOLVED (Item I, 2026-08-25) as a diagnostics fix.** The
+   implementation-site report had shown member path args already work;
+   the real trap in this entry's class was single-letter variables
+   shadowing path commands (`let m = 25; L m 40` → "Missing ';'"
+   pointed at punctuation). Now: a specific message ("'m' is a path
+   command here — write calc(m), or rename the variable") at BOTH
+   error paths (parse()/CLI + describeError/editor; two tree shapes:
+   following-command `L m 40` and own-command `L 5 V`), a
+   wrap-in-calc() quick fix, and hover on a single-letter variable's
+   declaration or calc() reference showing the variable, not the
+   command. Original: **Member expressions need `calc()` in path
+   args.** `M a.x a.y` is a parse error; `M calc(a.x) calc(a.y)`
+   works. (post41/03.)
+5. **RESOLVED (Item I, 2026-08-25): `pi`, `deg`, `rad` are reserved
+   words** — suffix-only (user decision: strictness over binding pi as
+   a constant). Binding any of them (let/for/fn/params/destructuring,
+   both evaluators via the setVariable funnel — no F2-style
+   divergence) and standalone reference both error with pointers at
+   the three working spellings (0.5pi / PI() / deg(x)). Call position,
+   suffix position, and Angle members .pi/.deg/.rad untouched.
+   Original: **`pi` is not a bare identifier in calc.** `0.25pi`
+   literals exist but inside `calc()` one must call `PI()`. Surprising
+   asymmetry. (post41/03.)
 6. **RESOLVED (Item H, 2026-08-24): `cut()` accepts an array of cutters** — knives compose and can be loop-built; the remaining in-block re-orientation need is Item L (ctx block argument, user design). Original: **Multi-stroke knife authoring is relative-move arithmetic.** Chaining
    strokes with `m` deltas between stroke endpoints caused two authoring
    bugs in one session (post41/06 hex knives, post42/03 grid knives).

@@ -335,6 +335,20 @@ let arcs = wheel.segmentAll('rim:each');
 let lastTooth = comb.segment('tooth:last');
 ```
 
+**And the traps got fences.** Two footguns this series stepped on
+never bit the published samples only because a style guideline banned
+the ammunition. Both are now language rules instead of etiquette.
+Single-letter variables that shadow path commands (`let m = 25;` then
+`L m 40`) used to fail with a `Missing ';'` pointed at punctuation
+nowhere near the mistake; the compiler and the editor now say what
+actually happened — `'m' is a path command here — write calc(m), or
+rename the variable` — with a one-click calc() wrap in the playground.
+And the angle-suffix names `pi`, `deg`, and `rad` are now
+[reserved words](/docs#syntax-variables): suffix only, never a
+variable, so `calc(pi)` explains itself instead of reporting an
+undefined variable two spellings away from three working ones
+(`0.5pi`, `PI()`, `deg(x)`).
+
 ## Where to go next
 
 - [Jigsaw: pieces that know their own edges](/blog/cutting-room-jigsaw)

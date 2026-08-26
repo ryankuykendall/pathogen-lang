@@ -73,3 +73,18 @@ describe('getCodeActions', () => {
     });
   });
 });
+
+describe('command-letter shadowing quick fix', () => {
+  it('offers Wrap in calc() and no longer offers the wrong add-semicolon fix', () => {
+    const doc = new StringTextDocument('let m = 25;\nM 10 10\nL m 40');
+    const diags = getDiagnostics(doc);
+    const actions = getCodeActions(doc, diags[0].range, diags);
+    const wrap = actions.find((a) => a.title.includes('calc(m)'));
+    expect(wrap).toBeDefined();
+    expect(actions.find((a) => a.title.includes("';'"))).toBeUndefined();
+    const edit = wrap!.edit!.changes[0];
+    expect(edit.newText).toBe('calc(m)');
+    expect(edit.range.start).toEqual({ line: 2, character: 2 });
+    expect(edit.range.end).toEqual({ line: 2, character: 3 });
+  });
+});
