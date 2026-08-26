@@ -11,29 +11,50 @@ define ViewBox(0, 0, 960, 720);
 
 let bg_color = Color(CSSVar('--bg', #f4efe6));
 
-let fg_auto   = Color('#0d1638');
+let fg_auto = Color('#0d1638');
 let fg_strong = Color('#0d1638');
-let fg_muted  = Color('#0d1638').alpha(0.60);
-let fg_hair   = Color('#0d1638').alpha(0.25);
-let fg_faint  = Color('#0d1638').alpha(0.12);
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.25);
+let fg_faint = Color('#0d1638').alpha(0.12);
 
-let red    = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
-let amber  = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
-let green  = Color(CSSVar('--anchor-3', oklch(0.55 0.16 140)));
-let teal   = Color(CSSVar('--anchor-4', oklch(0.55 0.16 200)));
-let blue   = Color(CSSVar('--anchor-5', oklch(0.55 0.16 260)));
+let red = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
+let amber = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
+let green = Color(CSSVar('--anchor-3', oklch(0.55 0.16 140)));
+let teal = Color(CSSVar('--anchor-4', oklch(0.55 0.16 200)));
+let blue = Color(CSSVar('--anchor-5', oklch(0.55 0.16 260)));
 let purple = Color(CSSVar('--anchor-6', oklch(0.55 0.16 320)));
 
-let anchors = [red, amber, green, teal, blue, purple];
-let anchor_names = ['Red', 'Amber', 'Green', 'Teal', 'Blue', 'Purple'];
+let anchors = [
+  red,
+  amber,
+  green,
+  teal,
+  blue,
+  purple,
+];
+let anchor_names = [
+  'Red',
+  'Amber',
+  'Green',
+  'Teal',
+  'Blue',
+  'Purple',
+];
 
-let ramp_red    = Color.palette(red, 9);
-let ramp_amber  = Color.palette(amber, 9);
-let ramp_green  = Color.palette(green, 9);
-let ramp_teal   = Color.palette(teal, 9);
-let ramp_blue   = Color.palette(blue, 9);
+let ramp_red = Color.palette(red, 9);
+let ramp_amber = Color.palette(amber, 9);
+let ramp_green = Color.palette(green, 9);
+let ramp_teal = Color.palette(teal, 9);
+let ramp_blue = Color.palette(blue, 9);
 let ramp_purple = Color.palette(purple, 9);
-let ramps = [ramp_red, ramp_amber, ramp_green, ramp_teal, ramp_blue, ramp_purple];
+let ramps = [
+  ramp_red,
+  ramp_amber,
+  ramp_green,
+  ramp_teal,
+  ramp_blue,
+  ramp_purple,
+];
 
 // ─────────────────────────────────────────────────────────────────
 // Root & groups
@@ -46,8 +67,13 @@ define GroupLayer('marginalia') ${}
 define GroupLayer('frieze') ${}
 
 // Paper background
-let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
-bg.apply { rect(0, 0, 960, 720); }
+let bg = PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 960, 720);
+}
 layer('diagram').append(layer('bg'));
 
 // ─────────────────────────────────────────────────────────────────
@@ -62,7 +88,9 @@ let folio = TextLayer('folio') ${
   fill: fg_muted;
   text-anchor: end;
 };
-folio.apply { text(930, 44)`— a schematic / №&#8239;01` }
+folio.apply {
+  text(930, 44)`— a schematic / №&#8239;01`;
+}
 
 let display_title = TextLayer('display-title') ${
   font-family: serif;
@@ -72,7 +100,9 @@ let display_title = TextLayer('display-title') ${
   fill: fg_auto;
   text-anchor: start;
 };
-display_title.apply { text(34, 102)`OKLCH` }
+display_title.apply {
+  text(34, 102)`OKLCH`;
+}
 
 let display_sub = TextLayer('display-sub') ${
   font-family: serif;
@@ -81,7 +111,9 @@ let display_sub = TextLayer('display-sub') ${
   fill: fg_muted;
   text-anchor: start;
 };
-display_sub.apply { text(34, 146)`the Color Calendar` }
+display_sub.apply {
+  text(34, 146)`the Color Calendar`;
+}
 
 let dek = TextLayer('dek') ${
   font-family: serif;
@@ -90,19 +122,25 @@ let dek = TextLayer('dek') ${
   fill: fg_muted;
   text-anchor: start;
 };
-dek.apply { text(34, 162)`Six anchor hues, normalized, lifted, and expanded into nine-stop ramps.` }
+dek.apply {
+  text(34, 162)`Six anchor hues, normalized, lifted, and expanded into nine-stop ramps.`;
+}
 
 // Hairline rule under masthead
-let hair_rule_top = PathLayer('hair-rule-top') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-hair_rule_top.apply { rect(30, 170, 900, 0.5); }
+let hair_rule_top = PathLayer('hair-rule-top') ${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+hair_rule_top.apply {
+  rect(30, 170, 900, 0.5);
+}
 
-layer('masthead').append(
-  layer('folio'),
-  layer('display-title'),
-  layer('display-sub'),
-  layer('dek'),
-  layer('hair-rule-top')
-);
+layer('masthead').append(layer('folio'),
+    layer('display-title'),
+    layer('display-sub'),
+    layer('dek'),
+    layer('hair-rule-top'));
 layer('diagram').append(layer('masthead'));
 
 // ─────────────────────────────────────────────────────────────────
@@ -113,7 +151,8 @@ layer('diagram').append(layer('masthead'));
 let col_start_x = 40;
 let col_w = 85;
 let col_gap = 13;
-let col_total = 575;   // 6*85 + 5*13
+let col_total = 575;
+// 6*85 + 5*13
 let row_start_y = 204;
 let row_h = 42;
 let row_gap = 2;
@@ -128,7 +167,9 @@ let col_header = TextLayer('col-header') ${
 };
 for ([name, i] in anchor_names) {
   let cx = calc(col_start_x + i * (col_w + col_gap) + col_w / 2);
-  col_header.apply { text(cx, 194)`${name}` }
+  col_header.apply {
+    text(cx, 194)`${name}`;
+  }
 }
 layer('grid').append(layer('col-header'));
 
@@ -140,11 +181,23 @@ let row_l_label = TextLayer('row-l-label') ${
   fill: fg_muted;
   text-anchor: start;
 };
-let L_values = ['0.95', '0.85', '0.75', '0.65', '0.55', '0.45', '0.35', '0.25', '0.15'];
+let L_values = [
+  '0.95',
+  '0.85',
+  '0.75',
+  '0.65',
+  '0.55',
+  '0.45',
+  '0.35',
+  '0.25',
+  '0.15',
+];
 let grid_right_x = calc(col_start_x + col_total);
 for ([lv, ri] in L_values) {
   let cy = calc(row_start_y + ri * (row_h + row_gap) + row_h / 2 + 3);
-  row_l_label.apply { text(calc(grid_right_x + 10), cy)`L ${lv}` }
+  row_l_label.apply {
+    text(calc(grid_right_x + 10), cy)`L ${lv}`;
+  }
 }
 layer('grid').append(layer('row-l-label'));
 
@@ -157,8 +210,13 @@ for ([r, ci] in ramps) {
     let c = r[palette_idx];
     let cell_y = calc(row_start_y + ri * (row_h + row_gap));
     let cell_name = `c_${ci}_${ri}`;
-    let cell = PathLayer(cell_name) ${ fill: c; stroke: none; };
-    cell.apply { rect(cell_x, cell_y, col_w, row_h); }
+    let cell = PathLayer(cell_name) ${
+      fill: c;
+      stroke: none;
+    };
+    cell.apply {
+      rect(cell_x, cell_y, col_w, row_h);
+    }
     layer('grid').append(layer(cell_name));
   }
 }
@@ -170,19 +228,35 @@ layer('diagram').append(layer('grid'));
 // Chapter 03 (L=0.75) aligns with row 2; Chapter 02 (L=0.55) aligns with row 4.
 // ─────────────────────────────────────────────────────────────────
 
-let row2_center_y = calc(row_start_y + 2 * (row_h + row_gap) + row_h / 2);  // L=0.75
-let row4_center_y = calc(row_start_y + 4 * (row_h + row_gap) + row_h / 2);  // L=0.55
+let row2_center_y = calc(row_start_y + 2 * (row_h + row_gap) + row_h / 2);
+// L=0.75
+let row4_center_y = calc(row_start_y + 4 * (row_h + row_gap) + row_h / 2);
+// L=0.55
 
 // Thin horizontal rules that cross the grid and extend into the margin.
 // They travel through the gap between rows, rendered as thin dark hairlines.
-let row2_gap_y = calc(row_start_y + 2 * (row_h + row_gap) + row_h);  // gap below row 2
-let row4_gap_y = calc(row_start_y + 4 * (row_h + row_gap) + row_h);  // gap below row 4
+let row2_gap_y = calc(row_start_y + 2 * (row_h + row_gap) + row_h);
+// gap below row 2
+let row4_gap_y = calc(row_start_y + 4 * (row_h + row_gap) + row_h);
+// gap below row 4
 
-let crossbar_03 = PathLayer('crossbar-03') ${ fill: none; stroke: fg_auto; stroke-width: 0.8; };
-crossbar_03.apply { rect(30, row2_gap_y, 900, 0.8); }
+let crossbar_03 = PathLayer('crossbar-03') ${
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 0.8;
+};
+crossbar_03.apply {
+  rect(30, row2_gap_y, 900, 0.8);
+}
 
-let crossbar_02 = PathLayer('crossbar-02') ${ fill: none; stroke: fg_auto; stroke-width: 0.8; };
-crossbar_02.apply { rect(30, row4_gap_y, 900, 0.8); }
+let crossbar_02 = PathLayer('crossbar-02') ${
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 0.8;
+};
+crossbar_02.apply {
+  rect(30, row4_gap_y, 900, 0.8);
+}
 
 // Oversized chapter numerals floating beside the crossbars, right-aligned.
 // Baseline roughly centered on the row just ABOVE the crossbar.
@@ -210,21 +284,31 @@ let chapter_subline = TextLayer('chapter-subline') ${
 
 // The chapter column sits at the far right, above/at each crossbar's row.
 // Positioning: numeral anchor hangs just above the crossbar line.
-chapter_numeral.apply { text(700, calc(row2_gap_y - 8))`03` }
-chapter_bylabel.apply { text(770, calc(row2_gap_y - 28))`Lift luminance` }
-chapter_subline.apply { text(770, calc(row2_gap_y - 14))`ramp[6] pins L = 0.75` }
+chapter_numeral.apply {
+  text(700, calc(row2_gap_y - 8))`03`;
+}
+chapter_bylabel.apply {
+  text(770, calc(row2_gap_y - 28))`Lift luminance`;
+}
+chapter_subline.apply {
+  text(770, calc(row2_gap_y - 14))`ramp[6] pins L = 0.75`;
+}
 
-chapter_numeral.apply { text(700, calc(row4_gap_y - 8))`02` }
-chapter_bylabel.apply { text(770, calc(row4_gap_y - 28))`Normalize luminance` }
-chapter_subline.apply { text(770, calc(row4_gap_y - 14))`ramp[4] pins L = 0.55` }
+chapter_numeral.apply {
+  text(700, calc(row4_gap_y - 8))`02`;
+}
+chapter_bylabel.apply {
+  text(770, calc(row4_gap_y - 28))`Normalize luminance`;
+}
+chapter_subline.apply {
+  text(770, calc(row4_gap_y - 14))`ramp[4] pins L = 0.55`;
+}
 
-layer('marginalia').append(
-  layer('crossbar-03'),
-  layer('crossbar-02'),
-  layer('chapter-numeral'),
-  layer('chapter-bylabel'),
-  layer('chapter-subline')
-);
+layer('marginalia').append(layer('crossbar-03'),
+    layer('crossbar-02'),
+    layer('chapter-numeral'),
+    layer('chapter-bylabel'),
+    layer('chapter-subline'));
 layer('diagram').append(layer('marginalia'));
 
 // ─────────────────────────────────────────────────────────────────
@@ -233,8 +317,14 @@ layer('diagram').append(layer('marginalia'));
 
 let frieze_y = 618;
 
-let frieze_rule = PathLayer('frieze-rule') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-frieze_rule.apply { rect(30, frieze_y, 900, 0.5); }
+let frieze_rule = PathLayer('frieze-rule') ${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+frieze_rule.apply {
+  rect(30, frieze_y, 900, 0.5);
+}
 
 let frieze_num = TextLayer('frieze-num') ${
   font-family: serif;
@@ -243,7 +333,9 @@ let frieze_num = TextLayer('frieze-num') ${
   fill: fg_auto;
   text-anchor: start;
 };
-frieze_num.apply { text(34, calc(frieze_y + 42))`07` }
+frieze_num.apply {
+  text(34, calc(frieze_y + 42))`07`;
+}
 
 let frieze_label = TextLayer('frieze-label') ${
   font-family: serif;
@@ -252,7 +344,9 @@ let frieze_label = TextLayer('frieze-label') ${
   fill: fg_auto;
   text-anchor: start;
 };
-frieze_label.apply { text(34, calc(frieze_y + 62))`Contrasts` }
+frieze_label.apply {
+  text(34, calc(frieze_y + 62))`Contrasts`;
+}
 
 let frieze_note = TextLayer('frieze-note') ${
   font-family: serif;
@@ -260,7 +354,9 @@ let frieze_note = TextLayer('frieze-note') ${
   fill: fg_muted;
   text-anchor: start;
 };
-frieze_note.apply { text(34, calc(frieze_y + 76))`stated as targets` }
+frieze_note.apply {
+  text(34, calc(frieze_y + 76))`stated as targets`;
+}
 
 // Three pairs in the frieze, right-aligned across the band
 let pair_start_x = 200;
@@ -275,10 +371,26 @@ let pa2 = ramp_blue[0];
 let pa3 = ramp_purple[1];
 let pb2 = ramp_blue[7];
 let pb3 = ramp_purple[7];
-let pair_a_fill = [pa1, pa2, pa3];
-let pair_b_fill = [#ffffff, pb2, pb3];
-let pair_labels = ['green[2]  ·  white', 'blue[0]  ·  blue[7]', 'purple[1]  ·  purple[7]'];
-let pair_targets = ['target · AA large', 'target · AAA large', 'target · AAA large'];
+let pair_a_fill = [
+  pa1,
+  pa2,
+  pa3,
+];
+let pair_b_fill = [
+  #ffffff,
+  pb2,
+  pb3,
+];
+let pair_labels = [
+  'green[2]  ·  white',
+  'blue[0]  ·  blue[7]',
+  'purple[1]  ·  purple[7]',
+];
+let pair_targets = [
+  'target · AA large',
+  'target · AAA large',
+  'target · AAA large',
+];
 
 let pair_label_layer = TextLayer('pair-label') ${
   font-family: serif;
@@ -294,26 +406,45 @@ let pair_target_layer = TextLayer('pair-target') ${
   text-anchor: start;
 };
 
-for ([pa, pi] in pair_a_fill) {
-  let px = calc(pair_start_x + pi * (pair_col_w + pair_col_gap));
-  let ta_name = `pa_${pi}`;
-  let tb_name = `pb_${pi}`;
-  let tile_a = PathLayer(ta_name) ${ fill: pa; stroke: none; };
-  tile_a.apply { rect(px, calc(frieze_y + 30), tile_sz, tile_sz); }
-  let tile_b = PathLayer(tb_name) ${ fill: pair_b_fill[pi]; stroke: fg_hair; stroke-width: 0.5; };
-  tile_b.apply { rect(calc(px + tile_sz + 4), calc(frieze_y + 30), tile_sz, tile_sz); }
+for ([pa, panelIdx] in pair_a_fill) {
+  let px = calc(pair_start_x + panelIdx * (pair_col_w + pair_col_gap));
+  let ta_name = `pa_${panelIdx}`;
+  let tb_name = `pb_${panelIdx}`;
+  let tile_a = PathLayer(ta_name) ${
+    fill: pa;
+    stroke: none;
+  };
+  tile_a.apply {
+    rect(px,
+        calc(frieze_y + 30),
+        tile_sz,
+        tile_sz);
+  }
+  let tile_b = PathLayer(tb_name) ${
+    fill: pair_b_fill[panelIdx];
+    stroke: fg_hair;
+    stroke-width: 0.5;
+  };
+  tile_b.apply {
+    rect(calc(px + tile_sz + 4),
+        calc(frieze_y + 30),
+        tile_sz,
+        tile_sz);
+  }
   let label_x = calc(px + 2 * tile_sz + 14);
-  pair_label_layer.apply { text(label_x, calc(frieze_y + 54))`${pair_labels[pi]}` }
-  pair_target_layer.apply { text(label_x, calc(frieze_y + 68))`${pair_targets[pi]}` }
+  pair_label_layer.apply {
+    text(label_x, calc(frieze_y + 54))`${pair_labels[panelIdx]}`;
+  }
+  pair_target_layer.apply {
+    text(label_x, calc(frieze_y + 68))`${pair_targets[panelIdx]}`;
+  }
   layer('frieze').append(layer(ta_name), layer(tb_name));
 }
 
-layer('frieze').append(
-  layer('frieze-rule'),
-  layer('frieze-num'),
-  layer('frieze-label'),
-  layer('frieze-note'),
-  layer('pair-label'),
-  layer('pair-target')
-);
+layer('frieze').append(layer('frieze-rule'),
+    layer('frieze-num'),
+    layer('frieze-label'),
+    layer('frieze-note'),
+    layer('pair-label'),
+    layer('pair-target'));
 layer('diagram').append(layer('frieze'));

@@ -7,27 +7,27 @@ define ViewBox(0, 0, 520, 400);
 
 // ─── Core tokens ──────────────────────────────────────────────
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
-let base     = Color(CSSVar('--demo-color', #e63946));
+let base = Color(CSSVar('--demo-color', #e63946));
 
-let fg_auto  = Color('#0d1638');
-let fg_muted = Color('#0d1638').alpha(0.60);
-let fg_hair  = Color('#0d1638').alpha(0.22);
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
 
 // Auto-contrasting ink against the base color (for hub text)
-let hub_ink       = Color('#0d1638');
-let hub_ink_muted = Color('#0d1638').alpha(0.60);
+let hub_ink = Color('#0d1638');
+let hub_ink_muted = Color('#0d1638').alpha(0.6);
 
 let font = 'sans-serif';
 
 // ─── Derived method fills ────────────────────────────────────
-let m_base       = Color(CSSVar('--demo-color', #e63946));
-let m_lighten    = Color(CSSVar('--demo-color', #e63946)).lighten(0.18);
-let m_darken     = Color(CSSVar('--demo-color', #e63946)).darken(0.18);
-let m_saturate   = Color(CSSVar('--demo-color', #e63946)).saturate(1.5);
+let m_base = Color(CSSVar('--demo-color', #e63946));
+let m_lighten = Color(CSSVar('--demo-color', #e63946)).lighten(0.18);
+let m_darken = Color(CSSVar('--demo-color', #e63946)).darken(0.18);
+let m_saturate = Color(CSSVar('--demo-color', #e63946)).saturate(1.5);
 let m_desaturate = Color(CSSVar('--demo-color', #e63946)).desaturate(0.4);
-let m_hue        = Color(CSSVar('--demo-color', #e63946)).hueShift(90);
+let m_hue = Color(CSSVar('--demo-color', #e63946)).hueShift(90);
 let m_complement = Color(CSSVar('--demo-color', #e63946)).hueShift(180);
-let m_alpha      = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
+let m_alpha = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') ${}
@@ -36,96 +36,180 @@ define GroupLayer('hub-group') ${}
 define GroupLayer('labels') ${}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
-bg.apply { rect(0, 0, 520, 400); }
+let bg = PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 400);
+}
 
 // ─── Eyebrow (top-left) ─────────────────────────────────────
 let eyebrow = TextLayer('eyebrow') ${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
-eyebrow.apply { text(15, 24)`OKLCH  /  01 — MANIPULATION` }
+eyebrow.apply {
+  text(15, 24)`OKLCH  /  01 — MANIPULATION`;
+}
 layer('diagram').append(layer('bg'), layer('eyebrow'));
 
 // ─── Wheel geometry ─────────────────────────────────────────
 let cx = 260;
 let cy = 210;
-let r_hub   = 40;       // hub radius
-let r_inner = 52;       // inner wedge radius (12px gap from hub)
-let r_outer = 128;      // outer wedge radius
-let r_frame = 140;      // outer frame circle
-let r_ring  = 90;       // dashed reference ring radius
-let r_label = 165;      // label ring radius
+let r_hub = 40;
+// hub radius
+let r_inner = 52;
+// inner wedge radius (12px gap from hub)
+let r_outer = 128;
+// outer wedge radius
+let r_frame = 140;
+// outer frame circle
+let r_ring = 90;
+// dashed reference ring radius
+let r_label = 165;
+// label ring radius
 
-let sector_half_span = 0.2618;  // π/12 = 15°
-let corner_r         = 5.5;
+let sector_half_span = 0.2618;
+// π/12 = 15°
+let corner_r = 5.5;
 
 // ─── Wedges: 8 methods around the clock ─────────────────────
 let methods = [
-  ['BASE',       m_base],
-  ['LIGHTEN',    m_lighten],
-  ['SATURATE',   m_saturate],
-  ['HUE +90°',   m_hue],
-  ['COMPLEMENT', m_complement],
-  ['DESATURATE', m_desaturate],
-  ['DARKEN',     m_darken],
-  ['ALPHA 0.5',  m_alpha],
+  [
+    'BASE',
+    m_base,
+  ],
+  [
+    'LIGHTEN',
+    m_lighten,
+  ],
+  [
+    'SATURATE',
+    m_saturate,
+  ],
+  [
+    'HUE +90°',
+    m_hue,
+  ],
+  [
+    'COMPLEMENT',
+    m_complement,
+  ],
+  [
+    'DESATURATE',
+    m_desaturate,
+  ],
+  [
+    'DARKEN',
+    m_darken,
+  ],
+  [
+    'ALPHA 0.5',
+    m_alpha,
+  ],
 ];
 
 for ([m, i] in methods) {
   // Angle convention: 0 = north, step +π/4 clockwise
   let theta = calc(-1.5708 + i * 0.7854);
   let from_a = calc(theta - sector_half_span);
-  let to_a   = calc(theta + sector_half_span);
+  let to_a = calc(theta + sector_half_span);
 
-  let w = PathLayer(`w-${i}`) ${ fill: m[1]; stroke: none; };
+  let w = PathLayer(`w-${i}`) ${
+    fill: m[1];
+    stroke: none;
+  };
   w.apply {
     M cx cy
-    radialWedge(r_inner, r_outer, from_a, to_a, corner_r);
+    radialWedge(r_inner,
+        r_outer,
+        from_a,
+        to_a,
+        corner_r);
   }
   layer('wheel').append(layer(`w-${i}`));
 }
 
+
 // ─── Outer frame ────────────────────────────────────────────
-let frame = PathLayer('frame') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-frame.apply { circle(cx, cy, r_frame); }
+let frame = PathLayer('frame') ${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+frame.apply {
+  circle(cx, cy, r_frame);
+}
 
 // ─── Dashed reference ring at mid-wedge radius ──────────────
 let ring = PathLayer('ring') ${
-  fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 4;
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
 };
-ring.apply { circle(cx, cy, r_ring); }
+ring.apply {
+  circle(cx, cy, r_ring);
+}
 
 // ─── Hub (drawn OVER wedges) ────────────────────────────────
-let hub = PathLayer('hub') ${ fill: base; stroke: fg_hair; stroke-width: 0.5; };
-hub.apply { circle(cx, cy, r_hub); }
+let hub = PathLayer('hub') ${
+  fill: base;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+hub.apply {
+  circle(cx, cy, r_hub);
+}
 
 let hub_title = TextLayer('hub-title') ${
-  font-family: font; font-size: 14; font-weight: 700;
-  letter-spacing: 4; fill: hub_ink; text-anchor: middle;
+  font-family: font;
+  font-size: 14;
+  font-weight: 700;
+  letter-spacing: 4;
+  fill: hub_ink;
+  text-anchor: middle;
 };
-hub_title.apply { text(cx, calc(cy - 2))`OKLCH` }
+hub_title.apply {
+  text(cx, calc(cy - 2))`OKLCH`;
+}
 
 let hub_sub = TextLayer('hub-sub') ${
-  font-family: font; font-size: 8;
-  letter-spacing: 0.8; fill: hub_ink_muted; text-anchor: middle;
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.8;
+  fill: hub_ink_muted;
+  text-anchor: middle;
 };
-hub_sub.apply { text(cx, calc(cy + 12))`MANIPULATION` }
+hub_sub.apply {
+  text(cx, calc(cy + 12))`MANIPULATION`;
+}
 
 layer('wheel').append(layer('frame'), layer('ring'));
 layer('hub-group').append(layer('hub'), layer('hub-title'), layer('hub-sub'));
 
 // ─── Labels beyond the frame ────────────────────────────────
 let label = TextLayer('label') ${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 2; fill: fg_auto; text-anchor: middle;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: fg_auto;
+  text-anchor: middle;
 };
 
 for ([m, i] in methods) {
   let theta = calc(-1.5708 + i * 0.7854);
   let lx = calc(cx + r_label * cos(theta));
   let ly = calc(cy + r_label * sin(theta) + 3);
-  label.apply { text(lx, ly)`${m[0]}` }
+  label.apply {
+    text(lx, ly)`${m[0]}`;
+  }
 }
 
 layer('labels').append(layer('label'));

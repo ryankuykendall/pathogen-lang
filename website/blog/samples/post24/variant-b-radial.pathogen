@@ -11,29 +11,57 @@ define ViewBox(0, 0, 960, 720);
 
 let bg_color = Color(CSSVar('--bg', #0b0e1a));
 
-let fg_auto  = Color('#f0e8c8');
-let fg_muted = Color('#f0e8c8').alpha(0.60);
-let fg_hair  = Color('#f0e8c8').alpha(0.22);
-let fg_faint = Color('#f0e8c8').alpha(0.10);
+let fg_auto = Color('#f0e8c8');
+let fg_muted = Color('#f0e8c8').alpha(0.6);
+let fg_hair = Color('#f0e8c8').alpha(0.22);
+let fg_faint = Color('#f0e8c8').alpha(0.1);
 
-let red    = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
-let amber  = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
-let green  = Color(CSSVar('--anchor-3', oklch(0.55 0.16 140)));
-let teal   = Color(CSSVar('--anchor-4', oklch(0.55 0.16 200)));
-let blue   = Color(CSSVar('--anchor-5', oklch(0.55 0.16 260)));
+let red = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
+let amber = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
+let green = Color(CSSVar('--anchor-3', oklch(0.55 0.16 140)));
+let teal = Color(CSSVar('--anchor-4', oklch(0.55 0.16 200)));
+let blue = Color(CSSVar('--anchor-5', oklch(0.55 0.16 260)));
 let purple = Color(CSSVar('--anchor-6', oklch(0.55 0.16 320)));
 
-let anchors = [red, amber, green, teal, blue, purple];
-let anchor_names = ['RED', 'AMBER', 'GREEN', 'TEAL', 'BLUE', 'PURPLE'];
-let anchor_hues  = ['27°', '80°', '140°', '200°', '260°', '320°'];
+let anchors = [
+  red,
+  amber,
+  green,
+  teal,
+  blue,
+  purple,
+];
+let anchor_names = [
+  'RED',
+  'AMBER',
+  'GREEN',
+  'TEAL',
+  'BLUE',
+  'PURPLE',
+];
+let anchor_hues = [
+  '27°',
+  '80°',
+  '140°',
+  '200°',
+  '260°',
+  '320°',
+];
 
-let ramp_red    = Color.palette(red, 9);
-let ramp_amber  = Color.palette(amber, 9);
-let ramp_green  = Color.palette(green, 9);
-let ramp_teal   = Color.palette(teal, 9);
-let ramp_blue   = Color.palette(blue, 9);
+let ramp_red = Color.palette(red, 9);
+let ramp_amber = Color.palette(amber, 9);
+let ramp_green = Color.palette(green, 9);
+let ramp_teal = Color.palette(teal, 9);
+let ramp_blue = Color.palette(blue, 9);
 let ramp_purple = Color.palette(purple, 9);
-let ramps = [ramp_red, ramp_amber, ramp_green, ramp_teal, ramp_blue, ramp_purple];
+let ramps = [
+  ramp_red,
+  ramp_amber,
+  ramp_green,
+  ramp_teal,
+  ramp_blue,
+  ramp_purple,
+];
 
 // ─────────────────────────────────────────────────────────────────
 // Root & groups
@@ -45,8 +73,13 @@ define GroupLayer('masthead') ${}
 define GroupLayer('legend') ${}
 define GroupLayer('test-bench') ${}
 
-let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
-bg.apply { rect(0, 0, 960, 720); }
+let bg = PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 960, 720);
+}
 layer('diagram').append(layer('bg'));
 
 // ─────────────────────────────────────────────────────────────────
@@ -55,42 +88,82 @@ layer('diagram').append(layer('bg'));
 
 let cx = 480;
 let cy = 360;
-let r_hub = 78;         // center hub radius
-let r_first = 112;      // first stop position
-let r_step = 20;        // spacing between stops
+let r_hub = 78;
+// center hub radius
+let r_first = 112;
+// first stop position
+let r_step = 20;
+// spacing between stops
 // stops at r = r_first + j * r_step, j = 0..8
 // ramp[0] at r=112 (dark), ramp[8] at r=272 (light)
 // ramp[4] (L=0.55) at r=192
 // ramp[6] (L=0.75) at r=232
 
 // Faint outline ring at outermost + innermost
-let outer_frame = PathLayer('outer-frame') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-outer_frame.apply { circle(cx, cy, 285); }
+let outer_frame = PathLayer('outer-frame') ${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+outer_frame.apply {
+  circle(cx, cy, 285);
+}
 
-let inner_frame = PathLayer('inner-frame') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-inner_frame.apply { circle(cx, cy, r_hub); }
+let inner_frame = PathLayer('inner-frame') ${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+inner_frame.apply {
+  circle(cx, cy, r_hub);
+}
 
 // Dashed reference rings for the two L-normalization thresholds
-let ring_055 = PathLayer('ring-055') ${ fill: none; stroke: fg_auto; stroke-width: 0.8; stroke-dasharray: 2 3; };
-ring_055.apply { circle(cx, cy, 192); }
+let ring_055 = PathLayer('ring-055') ${
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  stroke-dasharray: 2 3;
+};
+ring_055.apply {
+  circle(cx, cy, 192);
+}
 
-let ring_075 = PathLayer('ring-075') ${ fill: none; stroke: fg_auto; stroke-width: 0.8; stroke-dasharray: 2 3; };
-ring_075.apply { circle(cx, cy, 232); }
+let ring_075 = PathLayer('ring-075') ${
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  stroke-dasharray: 2 3;
+};
+ring_075.apply {
+  circle(cx, cy, 232);
+}
 
-layer('celestial').append(layer('outer-frame'), layer('inner-frame'), layer('ring-055'), layer('ring-075'));
+layer('celestial').append(layer('outer-frame'),
+    layer('inner-frame'),
+    layer('ring-055'),
+    layer('ring-075'));
 
 // ─────────────────────────────────────────────────────────────────
 // Spoke lines from hub to rim (faint guides)
 // ─────────────────────────────────────────────────────────────────
 
-let spokes = PathLayer('spokes') ${ fill: none; stroke: fg_faint; stroke-width: 0.5; };
+let spokes = PathLayer('spokes') ${
+  fill: none;
+  stroke: fg_faint;
+  stroke-width: 0.5;
+};
 for (i in 0..5) {
-  let theta = calc(-1.5708 + i * 1.0472);  // -π/2 + i * π/3
+  let theta = calc(-1.5708 + i * 1.0472);
+  // -π/2 + i * π/3
   let x_in = calc(cx + r_hub * cos(theta));
   let y_in = calc(cy + r_hub * sin(theta));
   let x_out = calc(cx + 285 * cos(theta));
   let y_out = calc(cy + 285 * sin(theta));
-  spokes.apply { M x_in y_in L x_out y_out }
+  spokes.apply {
+    M x_in y_in
+    L x_out y_out
+  }
 }
 
 layer('celestial').append(layer('spokes'));
@@ -109,8 +182,13 @@ for ([r, ai] in ramps) {
     let sy = calc(cy + stop_r * sin(theta));
     let c = r[j];
     let dot_name = `d_${ai}_${j}`;
-    let dot = PathLayer(dot_name) ${ fill: c; stroke: none; };
-    dot.apply { circle(sx, sy, dot_r); }
+    let dot = PathLayer(dot_name) ${
+      fill: c;
+      stroke: none;
+    };
+    dot.apply {
+      circle(sx, sy, dot_r);
+    }
     layer('celestial').append(layer(dot_name));
   }
 }
@@ -140,8 +218,12 @@ for ([name, ai] in anchor_names) {
   let label_r = 310;
   let lx = calc(cx + label_r * cos(theta));
   let ly = calc(cy + label_r * sin(theta));
-  anchor_name_layer.apply { text(lx, ly)`${name}` }
-  anchor_hue_layer.apply { text(lx, calc(ly + 12))`${anchor_hues[ai]}` }
+  anchor_name_layer.apply {
+    text(lx, ly)`${name}`;
+  }
+  anchor_hue_layer.apply {
+    text(lx, calc(ly + 12))`${anchor_hues[ai]}`;
+  }
 }
 
 layer('celestial').append(layer('anchor-name'), layer('anchor-hue'));
@@ -151,8 +233,14 @@ layer('diagram').append(layer('celestial'));
 // Central hub — title + small key
 // ─────────────────────────────────────────────────────────────────
 
-let hub_fill = PathLayer('hub-fill') ${ fill: bg_color; stroke: fg_hair; stroke-width: 0.5; };
-hub_fill.apply { circle(cx, cy, r_hub); }
+let hub_fill = PathLayer('hub-fill') ${
+  fill: bg_color;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+hub_fill.apply {
+  circle(cx, cy, r_hub);
+}
 
 let hub_title = TextLayer('hub-title') ${
   font-family: sans-serif;
@@ -162,7 +250,9 @@ let hub_title = TextLayer('hub-title') ${
   fill: fg_auto;
   text-anchor: middle;
 };
-hub_title.apply { text(cx, calc(cy - 6))`OKLCH` }
+hub_title.apply {
+  text(cx, calc(cy - 6))`OKLCH`;
+}
 
 let hub_sub = TextLayer('hub-sub') ${
   font-family: sans-serif;
@@ -171,7 +261,9 @@ let hub_sub = TextLayer('hub-sub') ${
   fill: fg_muted;
   text-anchor: middle;
 };
-hub_sub.apply { text(cx, calc(cy + 10))`HUE CONSERVATORY` }
+hub_sub.apply {
+  text(cx, calc(cy + 10))`HUE CONSERVATORY`;
+}
 
 let hub_label_055 = TextLayer('hub-055') ${
   font-family: sans-serif;
@@ -180,16 +272,24 @@ let hub_label_055 = TextLayer('hub-055') ${
   fill: fg_muted;
   text-anchor: middle;
 };
-hub_label_055.apply { text(cx, calc(cy + 24))`L 0.55  /  L 0.75` }
+hub_label_055.apply {
+  text(cx, calc(cy + 24))`L 0.55  /  L 0.75`;
+}
 
-layer('masthead').append(layer('hub-fill'), layer('hub-title'), layer('hub-sub'), layer('hub-055'));
+layer('masthead').append(layer('hub-fill'),
+    layer('hub-title'),
+    layer('hub-sub'),
+    layer('hub-055'));
 layer('diagram').append(layer('masthead'));
 
 // ─────────────────────────────────────────────────────────────────
 // Ring annotations — floating labels on the reference rings
 // ─────────────────────────────────────────────────────────────────
 
-let ring_ann_bg = PathLayer('ring-ann-bg') ${ fill: bg_color; stroke: none; };
+let ring_ann_bg = PathLayer('ring-ann-bg') ${
+  fill: bg_color;
+  stroke: none;
+};
 let ring_label = TextLayer('ring-label') ${
   font-family: sans-serif;
   font-size: 8;
@@ -199,18 +299,34 @@ let ring_label = TextLayer('ring-label') ${
 };
 
 // L=0.55 label placed at 45° (between anchor 1 and anchor 2) on that ring
-let theta_ann_1 = -1.0472;   // ~-60° (between red at -90° and amber at -30°)
+let theta_ann_1 = -1.0472;
+// ~-60° (between red at -90° and amber at -30°)
 let ann1_x = calc(cx + 192 * cos(theta_ann_1));
 let ann1_y = calc(cy + 192 * sin(theta_ann_1));
-ring_ann_bg.apply { rect(calc(ann1_x - 26), calc(ann1_y - 7), 52, 14); }
-ring_label.apply { text(ann1_x, calc(ann1_y + 3))`L  0.55` }
+ring_ann_bg.apply {
+  rect(calc(ann1_x - 26),
+      calc(ann1_y - 7),
+      52,
+      14);
+}
+ring_label.apply {
+  text(ann1_x, calc(ann1_y + 3))`L  0.55`;
+}
 
 // L=0.75 label at 45° between anchor 4 and anchor 5 on that ring
-let theta_ann_2 = 2.0944;    // ~120°
+let theta_ann_2 = 2.0944;
+// ~120°
 let ann2_x = calc(cx + 232 * cos(theta_ann_2));
 let ann2_y = calc(cy + 232 * sin(theta_ann_2));
-ring_ann_bg.apply { rect(calc(ann2_x - 26), calc(ann2_y - 7), 52, 14); }
-ring_label.apply { text(ann2_x, calc(ann2_y + 3))`L  0.75` }
+ring_ann_bg.apply {
+  rect(calc(ann2_x - 26),
+      calc(ann2_y - 7),
+      52,
+      14);
+}
+ring_label.apply {
+  text(ann2_x, calc(ann2_y + 3))`L  0.75`;
+}
 
 layer('celestial').append(layer('ring-ann-bg'), layer('ring-label'));
 
@@ -226,7 +342,9 @@ let eyebrow = TextLayer('eyebrow') ${
   fill: fg_muted;
   text-anchor: start;
 };
-eyebrow.apply { text(34, 42)`CHART № 02  /  SIX-HUE SERIES` }
+eyebrow.apply {
+  text(34, 42)`CHART № 02  /  SIX-HUE SERIES`;
+}
 
 let masthead_title = TextLayer('masthead-title') ${
   font-family: sans-serif;
@@ -236,7 +354,9 @@ let masthead_title = TextLayer('masthead-title') ${
   fill: fg_auto;
   text-anchor: start;
 };
-masthead_title.apply { text(34, 82)`Hue Conservatory` }
+masthead_title.apply {
+  text(34, 82)`Hue Conservatory`;
+}
 
 let masthead_sub = TextLayer('masthead-sub') ${
   font-family: sans-serif;
@@ -245,7 +365,9 @@ let masthead_sub = TextLayer('masthead-sub') ${
   fill: fg_muted;
   text-anchor: start;
 };
-masthead_sub.apply { text(34, 102)`A radial atlas of six anchors, their L-thresholds, and nine-stop ramps.` }
+masthead_sub.apply {
+  text(34, 102)`A radial atlas of six anchors, their L-thresholds, and nine-stop ramps.`;
+}
 
 layer('masthead').append(layer('eyebrow'), layer('masthead-title'), layer('masthead-sub'));
 
@@ -264,7 +386,9 @@ let key_title = TextLayer('key-title') ${
   fill: fg_muted;
   text-anchor: start;
 };
-key_title.apply { text(key_x, key_y)`KEY` }
+key_title.apply {
+  text(key_x, key_y)`KEY`;
+}
 
 let key_line_1 = TextLayer('key-line-1') ${
   font-family: sans-serif;
@@ -278,8 +402,12 @@ let key_line_2 = TextLayer('key-line-2') ${
   fill: fg_auto;
   text-anchor: start;
 };
-key_line_1.apply { text(key_x, calc(key_y + 18))`— — — reference ring` }
-key_line_2.apply { text(key_x, calc(key_y + 33))`°   hue label (deg.)` }
+key_line_1.apply {
+  text(key_x, calc(key_y + 18))`— — — reference ring`;
+}
+key_line_2.apply {
+  text(key_x, calc(key_y + 33))`°   hue label (deg.)`;
+}
 
 // Stop-growth legend: small row showing that dot size grows with j
 let legend_bar_x = key_x;
@@ -290,16 +418,27 @@ let legend_label = TextLayer('legend-label') ${
   fill: fg_auto;
   text-anchor: start;
 };
-legend_label.apply { text(legend_bar_x, legend_bar_y)`stop j:  dark → light` }
+legend_label.apply {
+  text(legend_bar_x, legend_bar_y)`stop j:  dark → light`;
+}
 
-let legend_dot_layer = PathLayer('legend-dots') ${ fill: fg_muted; stroke: none; };
+let legend_dot_layer = PathLayer('legend-dots') ${
+  fill: fg_muted;
+  stroke: none;
+};
 for (j in 0..8) {
   let lx = calc(legend_bar_x + 10 + j * 16);
   let dot_r = calc(3 + j * 0.5);
-  legend_dot_layer.apply { circle(lx, calc(legend_bar_y + 16), dot_r); }
+  legend_dot_layer.apply {
+    circle(lx, calc(legend_bar_y + 16), dot_r);
+  }
 }
 
-layer('legend').append(layer('key-title'), layer('key-line-1'), layer('key-line-2'), layer('legend-label'), layer('legend-dots'));
+layer('legend').append(layer('key-title'),
+    layer('key-line-1'),
+    layer('key-line-2'),
+    layer('legend-label'),
+    layer('legend-dots'));
 layer('diagram').append(layer('legend'));
 
 // ─────────────────────────────────────────────────────────────────
@@ -315,7 +454,9 @@ let bench_label = TextLayer('bench-label') ${
   fill: fg_muted;
   text-anchor: start;
 };
-bench_label.apply { text(34, calc(bench_y + 8))`CONTRAST BENCH  /  STATED AS TARGETS` }
+bench_label.apply {
+  text(34, calc(bench_y + 8))`CONTRAST BENCH  /  STATED AS TARGETS`;
+}
 
 // Pre-bind palette picks (evaluator bug with array literals of index exprs)
 let bp1 = ramp_green[2];
@@ -327,10 +468,26 @@ let bp5 = ramp_purple[7];
 let card_start_x = 300;
 let card_w = 200;
 let card_gap = 12;
-let card_a_fills = [bp1, bp2, bp3];
-let card_b_fills = [#ffffff, bp4, bp5];
-let card_labels = ['GREEN[2] · WHITE', 'BLUE[0] · BLUE[7]', 'PURPLE[1] · PURPLE[7]'];
-let card_targets = ['AA large', 'AAA large', 'AAA large'];
+let card_a_fills = [
+  bp1,
+  bp2,
+  bp3,
+];
+let card_b_fills = [
+  #ffffff,
+  bp4,
+  bp5,
+];
+let card_labels = [
+  'GREEN[2] · WHITE',
+  'BLUE[0] · BLUE[7]',
+  'PURPLE[1] · PURPLE[7]',
+];
+let card_targets = [
+  'AA large',
+  'AAA large',
+  'AAA large',
+];
 
 let card_name_layer = TextLayer('card-name') ${
   font-family: sans-serif;
@@ -352,13 +509,34 @@ for ([a, ki] in card_a_fills) {
   let px = calc(card_start_x + ki * (card_w + card_gap));
   let kn_a = `ba_${ki}`;
   let kn_b = `bb_${ki}`;
-  let swatch_a = PathLayer(kn_a) ${ fill: a; stroke: none; };
-  swatch_a.apply { rect(px, calc(bench_y + 2), 22, 22); }
-  let swatch_b = PathLayer(kn_b) ${ fill: card_b_fills[ki]; stroke: fg_hair; stroke-width: 0.5; };
-  swatch_b.apply { rect(calc(px + 24), calc(bench_y + 2), 22, 22); }
+  let swatch_a = PathLayer(kn_a) ${
+    fill: a;
+    stroke: none;
+  };
+  swatch_a.apply {
+    rect(px,
+        calc(bench_y + 2),
+        22,
+        22);
+  }
+  let swatch_b = PathLayer(kn_b) ${
+    fill: card_b_fills[ki];
+    stroke: fg_hair;
+    stroke-width: 0.5;
+  };
+  swatch_b.apply {
+    rect(calc(px + 24),
+        calc(bench_y + 2),
+        22,
+        22);
+  }
   let tx = calc(px + 52);
-  card_name_layer.apply { text(tx, calc(bench_y + 12))`${card_labels[ki]}` }
-  card_target_layer.apply { text(tx, calc(bench_y + 22))`target · ${card_targets[ki]}` }
+  card_name_layer.apply {
+    text(tx, calc(bench_y + 12))`${card_labels[ki]}`;
+  }
+  card_target_layer.apply {
+    text(tx, calc(bench_y + 22))`target · ${card_targets[ki]}`;
+  }
   layer('test-bench').append(layer(kn_a), layer(kn_b));
 }
 

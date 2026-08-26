@@ -12,29 +12,57 @@ define ViewBox(0, 0, 960, 720);
 
 let bg_color = Color(CSSVar('--bg', #fbfaf5));
 
-let fg_auto  = Color('#0d1638');
-let fg_muted = Color('#0d1638').alpha(0.60);
-let fg_rule  = Color('#0d1638').alpha(0.35);
-let fg_grid  = Color('#0d1638').alpha(0.10);
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_rule = Color('#0d1638').alpha(0.35);
+let fg_grid = Color('#0d1638').alpha(0.1);
 
-let red    = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
-let amber  = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
-let green  = Color(CSSVar('--anchor-3', oklch(0.55 0.16 140)));
-let teal   = Color(CSSVar('--anchor-4', oklch(0.55 0.16 200)));
-let blue   = Color(CSSVar('--anchor-5', oklch(0.55 0.16 260)));
+let red = Color(CSSVar('--anchor-1', oklch(0.55 0.16 27)));
+let amber = Color(CSSVar('--anchor-2', oklch(0.55 0.16 80)));
+let green = Color(CSSVar('--anchor-3', oklch(0.55 0.16 140)));
+let teal = Color(CSSVar('--anchor-4', oklch(0.55 0.16 200)));
+let blue = Color(CSSVar('--anchor-5', oklch(0.55 0.16 260)));
 let purple = Color(CSSVar('--anchor-6', oklch(0.55 0.16 320)));
 
-let anchors = [red, amber, green, teal, blue, purple];
-let anchor_names = ['RED', 'AMBER', 'GREEN', 'TEAL', 'BLUE', 'PURPLE'];
-let anchor_hues  = ['27', '80', '140', '200', '260', '320'];
+let anchors = [
+  red,
+  amber,
+  green,
+  teal,
+  blue,
+  purple,
+];
+let anchor_names = [
+  'RED',
+  'AMBER',
+  'GREEN',
+  'TEAL',
+  'BLUE',
+  'PURPLE',
+];
+let anchor_hues = [
+  '27',
+  '80',
+  '140',
+  '200',
+  '260',
+  '320',
+];
 
-let ramp_red    = Color.palette(red, 9);
-let ramp_amber  = Color.palette(amber, 9);
-let ramp_green  = Color.palette(green, 9);
-let ramp_teal   = Color.palette(teal, 9);
-let ramp_blue   = Color.palette(blue, 9);
+let ramp_red = Color.palette(red, 9);
+let ramp_amber = Color.palette(amber, 9);
+let ramp_green = Color.palette(green, 9);
+let ramp_teal = Color.palette(teal, 9);
+let ramp_blue = Color.palette(blue, 9);
 let ramp_purple = Color.palette(purple, 9);
-let ramps = [ramp_red, ramp_amber, ramp_green, ramp_teal, ramp_blue, ramp_purple];
+let ramps = [
+  ramp_red,
+  ramp_amber,
+  ramp_green,
+  ramp_teal,
+  ramp_blue,
+  ramp_purple,
+];
 
 // ─────────────────────────────────────────────────────────────────
 // Root & groups
@@ -50,22 +78,37 @@ define GroupLayer('section-05') ${}
 define GroupLayer('section-07') ${}
 define GroupLayer('titleblock') ${}
 
-let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
-bg.apply { rect(0, 0, 960, 720); }
+let bg = PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 960, 720);
+}
 layer('diagram').append(layer('bg'));
 
 // ─────────────────────────────────────────────────────────────────
 // Hairline engineering grid (every 40px)
 // ─────────────────────────────────────────────────────────────────
 
-let grid_lines = PathLayer('grid-lines') ${ fill: none; stroke: fg_grid; stroke-width: 0.4; };
+let grid_lines = PathLayer('grid-lines') ${
+  fill: none;
+  stroke: fg_grid;
+  stroke-width: 0.4;
+};
 for (i in 1..23) {
   let gx = calc(i * 40);
-  grid_lines.apply { M gx 0 L gx 720 }
+  grid_lines.apply {
+    M gx 0
+    L gx 720
+  }
 }
 for (j in 1..17) {
   let gy = calc(j * 40);
-  grid_lines.apply { M 0 gy L 960 gy }
+  grid_lines.apply {
+    M 0 gy
+    L 960 gy
+  }
 }
 layer('grid-bg').append(layer('grid-lines'));
 layer('diagram').append(layer('grid-bg'));
@@ -96,7 +139,9 @@ let eyebrow = TextLayer('eyebrow') ${
   fill: fg_muted;
   text-anchor: start;
 };
-eyebrow.apply { text(30, 36)`SPEC № 024  //  OKLCH PALETTE  //  REV 01` }
+eyebrow.apply {
+  text(30, 36)`SPEC № 024  //  OKLCH PALETTE  //  REV 01`;
+}
 
 let mast_title = TextLayer('mast-title') ${
   font-family: 'monospace';
@@ -106,7 +151,9 @@ let mast_title = TextLayer('mast-title') ${
   fill: fg_auto;
   text-anchor: start;
 };
-mast_title.apply { text(30, 64)`PALETTE.SPEC` }
+mast_title.apply {
+  text(30, 64)`PALETTE.SPEC`;
+}
 
 let mast_sub = TextLayer('mast-sub') ${
   font-family: 'monospace';
@@ -114,7 +161,9 @@ let mast_sub = TextLayer('mast-sub') ${
   fill: fg_muted;
   text-anchor: start;
 };
-mast_sub.apply { text(30, 78)`specimens = 6  /  stops = 9  /  system = oklch` }
+mast_sub.apply {
+  text(30, 78)`specimens = 6  /  stops = 9  /  system = oklch`;
+}
 
 // Top-right ruler callout
 let eyebrow_r = TextLayer('eyebrow-r') ${
@@ -124,7 +173,9 @@ let eyebrow_r = TextLayer('eyebrow-r') ${
   fill: fg_muted;
   text-anchor: end;
 };
-eyebrow_r.apply { text(930, 36)`UNIT = PX  /  GRID = 40` }
+eyebrow_r.apply {
+  text(930, 36)`UNIT = PX  /  GRID = 40`;
+}
 
 let eyebrow_r2 = TextLayer('eyebrow-r2') ${
   font-family: 'monospace';
@@ -133,16 +184,27 @@ let eyebrow_r2 = TextLayer('eyebrow-r2') ${
   fill: fg_muted;
   text-anchor: end;
 };
-eyebrow_r2.apply { text(930, 78)`SHEET A / 960 × 720` }
+eyebrow_r2.apply {
+  text(930, 78)`SHEET A / 960 × 720`;
+}
 
 // Thick rule under masthead
-let mast_rule = PathLayer('mast-rule') ${ fill: none; stroke: fg_auto; stroke-width: 1.2; };
-mast_rule.apply { M 30 94 L 930 94 }
+let mast_rule = PathLayer('mast-rule') ${
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 1.2;
+};
+mast_rule.apply {
+  M 30 94
+  L 930 94
+}
 
-layer('masthead').append(
-  layer('eyebrow'), layer('mast-title'), layer('mast-sub'),
-  layer('eyebrow-r'), layer('eyebrow-r2'), layer('mast-rule')
-);
+layer('masthead').append(layer('eyebrow'),
+    layer('mast-title'),
+    layer('mast-sub'),
+    layer('eyebrow-r'),
+    layer('eyebrow-r2'),
+    layer('mast-rule'));
 layer('diagram').append(layer('masthead'));
 
 // ─────────────────────────────────────────────────────────────────
@@ -159,7 +221,9 @@ let col_gap = 24;
 // ─────────────────────────────────────────────────────────────────
 
 let section_01_y = 118;
-section_header.apply { text(30, section_01_y)`[ 01 · ANCHORS ]` }
+section_header.apply {
+  text(30, section_01_y)`[ 01 · ANCHORS ]`;
+}
 
 let specimen_y = calc(section_01_y + 14);
 let specimen_h = 60;
@@ -182,40 +246,77 @@ let anchor_name_lay = TextLayer('anchor-name-lay') ${
 for ([c, ai] in anchors) {
   let sx = calc(col_start + ai * (col_w + col_gap));
   let tile_name = `sp_${ai}`;
-  let tile = PathLayer(tile_name) ${ fill: c; stroke: fg_auto; stroke-width: 0.5; };
-  tile.apply { rect(sx, specimen_y, col_w, specimen_h); }
+  let tile = PathLayer(tile_name) ${
+    fill: c;
+    stroke: fg_auto;
+    stroke-width: 0.5;
+  };
+  tile.apply {
+    rect(sx, specimen_y, col_w, specimen_h);
+  }
 
   // Crosshair tick at top-left corner — architectural marker
   let ch_name = `ch_${ai}`;
-  let ch = PathLayer(ch_name) ${ fill: none; stroke: fg_auto; stroke-width: 0.5; };
+  let ch = PathLayer(ch_name) ${
+    fill: none;
+    stroke: fg_auto;
+    stroke-width: 0.5;
+  };
   ch.apply {
-    M calc(sx - 4) specimen_y L calc(sx + 4) specimen_y
-    M sx calc(specimen_y - 4) L sx calc(specimen_y + 4)
+    M calc(sx - 4) specimen_y
+    L calc(sx + 4) specimen_y
+    M sx calc(specimen_y - 4)
+    L sx calc(specimen_y + 4)
   }
   layer('section-01').append(layer(tile_name), layer(ch_name));
 }
+
 
 // Anchor names + OKLCH coordinates below each tile
 for ([name, ai] in anchor_names) {
   let sx = calc(col_start + ai * (col_w + col_gap));
   let nyx = calc(specimen_y + specimen_h + 14);
-  anchor_name_lay.apply { text(sx, nyx)`${name}` }
-  coord_label.apply { text(sx, calc(nyx + 12))`L  0.55` }
-  coord_label.apply { text(sx, calc(nyx + 22))`C  0.16` }
-  coord_label.apply { text(sx, calc(nyx + 32))`H  ${anchor_hues[ai]}°` }
+  anchor_name_lay.apply {
+    text(sx, nyx)`${name}`;
+  }
+  coord_label.apply {
+    text(sx, calc(nyx + 12))`L  0.55`;
+  }
+  coord_label.apply {
+    text(sx, calc(nyx + 22))`C  0.16`;
+  }
+  coord_label.apply {
+    text(sx, calc(nyx + 32))`H  ${anchor_hues[ai]}°`;
+  }
 }
 
 // Dimension line below specimens showing hue progression
 let dim_y = calc(specimen_y + specimen_h + 54);
-let dim_line = PathLayer('dim-line') ${ fill: none; stroke: fg_rule; stroke-width: 0.5; };
-dim_line.apply { M 60 dim_y L 900 dim_y }
+let dim_line = PathLayer('dim-line') ${
+  fill: none;
+  stroke: fg_rule;
+  stroke-width: 0.5;
+};
+dim_line.apply {
+  M 60 dim_y
+  L 900 dim_y
+}
 for (ai in 0..5) {
   let sx = calc(col_start + ai * (col_w + col_gap) + col_w / 2);
-  dim_line.apply { M sx calc(dim_y - 3) L sx calc(dim_y + 3) }
+  dim_line.apply {
+    M sx calc(dim_y - 3)
+    L sx calc(dim_y + 3)
+  }
 }
 // End ticks
-dim_line.apply { M 60 calc(dim_y - 5) L 60 calc(dim_y + 5) }
-dim_line.apply { M 900 calc(dim_y - 5) L 900 calc(dim_y + 5) }
+dim_line.apply {
+  M 60 calc(dim_y - 5)
+  L 60 calc(dim_y + 5)
+}
+dim_line.apply {
+  M 900 calc(dim_y - 5)
+  L 900 calc(dim_y + 5)
+}
 
 let dim_label = TextLayer('dim-label') ${
   font-family: 'monospace';
@@ -224,9 +325,15 @@ let dim_label = TextLayer('dim-label') ${
   fill: fg_muted;
   text-anchor: middle;
 };
-dim_label.apply { text(480, calc(dim_y + 14))`— H AXIS  /  Δ ≈ 58.67°  /  6 SPECIMENS —` }
+dim_label.apply {
+  text(480, calc(dim_y + 14))`— H AXIS  /  Δ ≈ 58.67°  /  6 SPECIMENS —`;
+}
 
-layer('section-01').append(layer('anchor-name-lay'), layer('coord-label'), layer('dim-line'), layer('dim-label'), layer('section-header'));
+layer('section-01').append(layer('anchor-name-lay'),
+    layer('coord-label'),
+    layer('dim-line'),
+    layer('dim-label'),
+    layer('section-header'));
 layer('diagram').append(layer('section-01'));
 
 // ─────────────────────────────────────────────────────────────────
@@ -241,7 +348,9 @@ let s2_header = TextLayer('s2-header') ${
   fill: fg_auto;
   text-anchor: start;
 };
-s2_header.apply { text(30, 286)`[ 02 · L=0.55 ]` }
+s2_header.apply {
+  text(30, 286)`[ 02 · L=0.55 ]`;
+}
 
 let s2_meta = TextLayer('s2-meta') ${
   font-family: 'monospace';
@@ -249,7 +358,9 @@ let s2_meta = TextLayer('s2-meta') ${
   fill: fg_muted;
   text-anchor: start;
 };
-s2_meta.apply { text(30, 300)`ramp[4]` }
+s2_meta.apply {
+  text(30, 300)`ramp[4]`;
+}
 
 let tile_small_h = 32;
 
@@ -257,8 +368,14 @@ for ([r, ai] in ramps) {
   let sx = calc(col_start + ai * (col_w + col_gap));
   let c = r[4];
   let tn = `n_${ai}`;
-  let tile = PathLayer(tn) ${ fill: c; stroke: fg_auto; stroke-width: 0.5; };
-  tile.apply { rect(sx, 290, col_w, tile_small_h); }
+  let tile = PathLayer(tn) ${
+    fill: c;
+    stroke: fg_auto;
+    stroke-width: 0.5;
+  };
+  tile.apply {
+    rect(sx, 290, col_w, tile_small_h);
+  }
   layer('section-02').append(layer(tn));
 }
 
@@ -277,7 +394,9 @@ let s3_header = TextLayer('s3-header') ${
   fill: fg_auto;
   text-anchor: start;
 };
-s3_header.apply { text(30, 358)`[ 03 · L=0.75 ]` }
+s3_header.apply {
+  text(30, 358)`[ 03 · L=0.75 ]`;
+}
 
 let s3_meta = TextLayer('s3-meta') ${
   font-family: 'monospace';
@@ -285,14 +404,22 @@ let s3_meta = TextLayer('s3-meta') ${
   fill: fg_muted;
   text-anchor: start;
 };
-s3_meta.apply { text(30, 372)`ramp[6]` }
+s3_meta.apply {
+  text(30, 372)`ramp[6]`;
+}
 
 for ([r, ai] in ramps) {
   let sx = calc(col_start + ai * (col_w + col_gap));
   let c = r[6];
   let tn = `l_${ai}`;
-  let tile = PathLayer(tn) ${ fill: c; stroke: fg_auto; stroke-width: 0.5; };
-  tile.apply { rect(sx, 362, col_w, tile_small_h); }
+  let tile = PathLayer(tn) ${
+    fill: c;
+    stroke: fg_auto;
+    stroke-width: 0.5;
+  };
+  tile.apply {
+    rect(sx, 362, col_w, tile_small_h);
+  }
   layer('section-03').append(layer(tn));
 }
 
@@ -311,7 +438,9 @@ let s5_header = TextLayer('s5-header') ${
   fill: fg_auto;
   text-anchor: start;
 };
-s5_header.apply { text(30, 420)`[ 05 · BUILD RAMPS ]` }
+s5_header.apply {
+  text(30, 420)`[ 05 · BUILD RAMPS ]`;
+}
 
 let s5_meta = TextLayer('s5-meta') ${
   font-family: 'monospace';
@@ -319,7 +448,9 @@ let s5_meta = TextLayer('s5-meta') ${
   fill: fg_muted;
   text-anchor: start;
 };
-s5_meta.apply { text(30, 434)`Color.palette(anchor, 9)` }
+s5_meta.apply {
+  text(30, 434)`Color.palette(anchor, 9)`;
+}
 
 // New grid: 6 rows × 9 cols
 let g_start_x = 140;
@@ -329,7 +460,17 @@ let g_cell_gap = 2;
 let g_row_h = 22;
 let g_row_gap = 2;
 
-let stop_numbers = ['j=0', 'j=1', 'j=2', 'j=3', 'j=4', 'j=5', 'j=6', 'j=7', 'j=8'];
+let stop_numbers = [
+  'j=0',
+  'j=1',
+  'j=2',
+  'j=3',
+  'j=4',
+  'j=5',
+  'j=6',
+  'j=7',
+  'j=8',
+];
 let g_col_label = TextLayer('g-col-label') ${
   font-family: 'monospace';
   font-size: 7;
@@ -338,7 +479,9 @@ let g_col_label = TextLayer('g-col-label') ${
 };
 for ([sn, si] in stop_numbers) {
   let cx = calc(g_start_x + si * (g_cell_w + g_cell_gap) + g_cell_w / 2);
-  g_col_label.apply { text(cx, calc(g_start_y - 6))`${sn}` }
+  g_col_label.apply {
+    text(cx, calc(g_start_y - 6))`${sn}`;
+  }
 }
 
 let g_row_label = TextLayer('g-row-label') ${
@@ -351,35 +494,53 @@ let g_row_label = TextLayer('g-row-label') ${
 for ([r, ri] in ramps) {
   let row_y = calc(g_start_y + ri * (g_row_h + g_row_gap));
   let rn = anchor_names[ri];
-  g_row_label.apply { text(130, calc(row_y + g_row_h / 2 + 3))`${rn}` }
+  g_row_label.apply {
+    text(130, calc(row_y + g_row_h / 2 + 3))`${rn}`;
+  }
 
   for ([c, ci] in r) {
     let cell_x = calc(g_start_x + ci * (g_cell_w + g_cell_gap));
     let cell_name = `g_${ri}_${ci}`;
-    let cell = PathLayer(cell_name) ${ fill: c; stroke: none; };
-    cell.apply { rect(cell_x, row_y, g_cell_w, g_row_h); }
+    let cell = PathLayer(cell_name) ${
+      fill: c;
+      stroke: none;
+    };
+    cell.apply {
+      rect(cell_x, row_y, g_cell_w, g_row_h);
+    }
     layer('section-05').append(layer(cell_name));
   }
 }
 
+
 // Highlight ramp[4] and ramp[6] columns with vertical brackets
-let g_bracket = PathLayer('g-bracket') ${ fill: none; stroke: fg_auto; stroke-width: 0.8; };
+let g_bracket = PathLayer('g-bracket') ${
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 0.8;
+};
 let b4_x = calc(g_start_x + 4 * (g_cell_w + g_cell_gap) - 2);
 let b4_right = calc(g_start_x + 4 * (g_cell_w + g_cell_gap) + g_cell_w + 2);
 let b4_top = calc(g_start_y - 2);
 let b4_bot = calc(g_start_y + 6 * (g_row_h + g_row_gap) + g_row_h + 2);
 g_bracket.apply {
-  M b4_x calc(b4_top - 14) L b4_x b4_top
-  M b4_x calc(b4_top - 14) L b4_right calc(b4_top - 14)
-  M b4_right calc(b4_top - 14) L b4_right b4_top
+  M b4_x calc(b4_top - 14)
+  L b4_x b4_top
+  M b4_x calc(b4_top - 14)
+  L b4_right calc(b4_top - 14)
+  M b4_right calc(b4_top - 14)
+  L b4_right b4_top
 }
 
 let b6_x = calc(g_start_x + 6 * (g_cell_w + g_cell_gap) - 2);
 let b6_right = calc(g_start_x + 6 * (g_cell_w + g_cell_gap) + g_cell_w + 2);
 g_bracket.apply {
-  M b6_x calc(b4_top - 14) L b6_x b4_top
-  M b6_x calc(b4_top - 14) L b6_right calc(b4_top - 14)
-  M b6_right calc(b4_top - 14) L b6_right b4_top
+  M b6_x calc(b4_top - 14)
+  L b6_x b4_top
+  M b6_x calc(b4_top - 14)
+  L b6_right calc(b4_top - 14)
+  M b6_right calc(b4_top - 14)
+  L b6_right b4_top
 }
 
 let g_bracket_label = TextLayer('g-bracket-label') ${
@@ -392,14 +553,19 @@ let g_bracket_label = TextLayer('g-bracket-label') ${
 };
 let b4_mid = calc((b4_x + b4_right) / 2);
 let b6_mid = calc((b6_x + b6_right) / 2);
-g_bracket_label.apply { text(b4_mid, calc(b4_top - 20))`02` }
-g_bracket_label.apply { text(b6_mid, calc(b4_top - 20))`03` }
+g_bracket_label.apply {
+  text(b4_mid, calc(b4_top - 20))`02`;
+}
+g_bracket_label.apply {
+  text(b6_mid, calc(b4_top - 20))`03`;
+}
 
-layer('section-05').append(
-  layer('s5-header'), layer('s5-meta'),
-  layer('g-col-label'), layer('g-row-label'),
-  layer('g-bracket'), layer('g-bracket-label')
-);
+layer('section-05').append(layer('s5-header'),
+    layer('s5-meta'),
+    layer('g-col-label'),
+    layer('g-row-label'),
+    layer('g-bracket'),
+    layer('g-bracket-label'));
 layer('diagram').append(layer('section-05'));
 
 // ─────────────────────────────────────────────────────────────────
@@ -414,7 +580,9 @@ let s7_header = TextLayer('s7-header') ${
   fill: fg_auto;
   text-anchor: start;
 };
-s7_header.apply { text(30, 638)`[ 07 · CONTRAST ASSERTIONS ]` }
+s7_header.apply {
+  text(30, 638)`[ 07 · CONTRAST ASSERTIONS ]`;
+}
 
 let s7_meta = TextLayer('s7-meta') ${
   font-family: 'monospace';
@@ -422,8 +590,12 @@ let s7_meta = TextLayer('s7-meta') ${
   fill: fg_muted;
   text-anchor: start;
 };
-s7_meta.apply { text(30, 652)`targets only // verdicts` }
-s7_meta.apply { text(30, 662)`from live CSSVar values` }
+s7_meta.apply {
+  text(30, 652)`targets only // verdicts`;
+}
+s7_meta.apply {
+  text(30, 662)`from live CSSVar values`;
+}
 
 let cp1 = ramp_green[2];
 let cp2 = ramp_blue[0];
@@ -431,10 +603,26 @@ let cp3 = ramp_purple[1];
 let cp4 = ramp_blue[7];
 let cp5 = ramp_purple[7];
 
-let pair_fills_a = [cp1, cp2, cp3];
-let pair_fills_b = [#ffffff, cp4, cp5];
-let pair_labels = ['green[2] · white', 'blue[0] · blue[7]', 'purple[1] · purple[7]'];
-let pair_targets = ['AA large', 'AAA large', 'AAA large'];
+let pair_fills_a = [
+  cp1,
+  cp2,
+  cp3,
+];
+let pair_fills_b = [
+  #ffffff,
+  cp4,
+  cp5,
+];
+let pair_labels = [
+  'green[2] · white',
+  'blue[0] · blue[7]',
+  'purple[1] · purple[7]',
+];
+let pair_targets = [
+  'AA large',
+  'AAA large',
+  'AAA large',
+];
 
 let pair_x_start = 240;
 let pair_w = 210;
@@ -455,20 +643,42 @@ let pair_target_lay = TextLayer('pair-target-lay') ${
   text-anchor: start;
 };
 
-for ([pa, pi] in pair_fills_a) {
-  let px = calc(pair_x_start + pi * (pair_w + pair_gap));
-  let tna = `pa_${pi}`;
-  let tnb = `pb_${pi}`;
-  let tile_a = PathLayer(tna) ${ fill: pa; stroke: fg_auto; stroke-width: 0.5; };
-  tile_a.apply { rect(px, 634, 30, 30); }
-  let tile_b = PathLayer(tnb) ${ fill: pair_fills_b[pi]; stroke: fg_auto; stroke-width: 0.5; };
-  tile_b.apply { rect(calc(px + 32), 634, 30, 30); }
-  pair_name_lay.apply { text(calc(px + 72), 648)`${pair_labels[pi]}` }
-  pair_target_lay.apply { text(calc(px + 72), 662)`→ ${pair_targets[pi]}` }
+for ([pa, panelIdx] in pair_fills_a) {
+  let px = calc(pair_x_start + panelIdx * (pair_w + pair_gap));
+  let tna = `pa_${panelIdx}`;
+  let tnb = `pb_${panelIdx}`;
+  let tile_a = PathLayer(tna) ${
+    fill: pa;
+    stroke: fg_auto;
+    stroke-width: 0.5;
+  };
+  tile_a.apply {
+    rect(px, 634, 30, 30);
+  }
+  let tile_b = PathLayer(tnb) ${
+    fill: pair_fills_b[panelIdx];
+    stroke: fg_auto;
+    stroke-width: 0.5;
+  };
+  tile_b.apply {
+    rect(calc(px + 32),
+        634,
+        30,
+        30);
+  }
+  pair_name_lay.apply {
+    text(calc(px + 72), 648)`${pair_labels[panelIdx]}`;
+  }
+  pair_target_lay.apply {
+    text(calc(px + 72), 662)`→ ${pair_targets[panelIdx]}`;
+  }
   layer('section-07').append(layer(tna), layer(tnb));
 }
 
-layer('section-07').append(layer('s7-header'), layer('s7-meta'), layer('pair-name-lay'), layer('pair-target-lay'));
+layer('section-07').append(layer('s7-header'),
+    layer('s7-meta'),
+    layer('pair-name-lay'),
+    layer('pair-target-lay'));
 layer('diagram').append(layer('section-07'));
 
 // ─────────────────────────────────────────────────────────────────
@@ -480,11 +690,17 @@ let tb_y = 676;
 let tb_w = 200;
 let tb_h = 24;
 
-let tb_frame = PathLayer('tb-frame') ${ fill: none; stroke: fg_auto; stroke-width: 0.8; };
+let tb_frame = PathLayer('tb-frame') ${
+  fill: none;
+  stroke: fg_auto;
+  stroke-width: 0.8;
+};
 tb_frame.apply {
   rect(tb_x, tb_y, tb_w, tb_h);
-  M calc(tb_x + 70) tb_y L calc(tb_x + 70) calc(tb_y + tb_h)
-  M calc(tb_x + 140) tb_y L calc(tb_x + 140) calc(tb_y + tb_h)
+  M calc(tb_x + 70) tb_y
+  L calc(tb_x + 70) calc(tb_y + tb_h)
+  M calc(tb_x + 140) tb_y
+  L calc(tb_x + 140) calc(tb_y + tb_h)
 }
 
 let tb_t1 = TextLayer('tb-t1') ${
@@ -503,12 +719,24 @@ let tb_t2 = TextLayer('tb-t2') ${
   text-anchor: middle;
 };
 
-tb_t1.apply { text(calc(tb_x + 35), calc(tb_y + 9))`SPEC` }
-tb_t2.apply { text(calc(tb_x + 35), calc(tb_y + 20))`024` }
-tb_t1.apply { text(calc(tb_x + 105), calc(tb_y + 9))`REV` }
-tb_t2.apply { text(calc(tb_x + 105), calc(tb_y + 20))`01` }
-tb_t1.apply { text(calc(tb_x + 170), calc(tb_y + 9))`DATE` }
-tb_t2.apply { text(calc(tb_x + 170), calc(tb_y + 20))`2026-04-14` }
+tb_t1.apply {
+  text(calc(tb_x + 35), calc(tb_y + 9))`SPEC`;
+}
+tb_t2.apply {
+  text(calc(tb_x + 35), calc(tb_y + 20))`024`;
+}
+tb_t1.apply {
+  text(calc(tb_x + 105), calc(tb_y + 9))`REV`;
+}
+tb_t2.apply {
+  text(calc(tb_x + 105), calc(tb_y + 20))`01`;
+}
+tb_t1.apply {
+  text(calc(tb_x + 170), calc(tb_y + 9))`DATE`;
+}
+tb_t2.apply {
+  text(calc(tb_x + 170), calc(tb_y + 20))`2026-04-14`;
+}
 
 layer('titleblock').append(layer('tb-frame'), layer('tb-t1'), layer('tb-t2'));
 layer('diagram').append(layer('titleblock'));

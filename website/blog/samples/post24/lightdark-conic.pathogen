@@ -6,26 +6,26 @@ define ViewBox(0, 0, 520, 520);
 // radialWedge chips with deeply rounded corners fan across the canvas.
 
 // ─── Core tokens ──────────────────────────────────────────────
-let bg_light   = Color(CSSVar('--bg-light',   #d0d7f0));
-let bg_dark    = Color(CSSVar('--bg-dark',    #12131a));
+let bg_light = Color(CSSVar('--bg-light', #d0d7f0));
+let bg_dark = Color(CSSVar('--bg-dark', #12131a));
 let base_color = Color(CSSVar('--base-color', #e63946));
 
-let ink_on_light   = Color('#0d1638');
-let ink_on_light_m = Color('#0d1638').alpha(0.60);
+let ink_on_light = Color('#0d1638');
+let ink_on_light_m = Color('#0d1638').alpha(0.6);
 let ink_on_light_h = Color('#0d1638').alpha(0.22);
 
-let ink_on_dark    = Color('#f0e8c8');
-let ink_on_dark_m  = Color('#f0e8c8').alpha(0.60);
+let ink_on_dark = Color('#f0e8c8');
+let ink_on_dark_m = Color('#f0e8c8').alpha(0.6);
 
 let font = 'sans-serif';
 
 // ─── Seven method fills ──────────────────────────────────────
-let m_base       = Color(CSSVar('--base-color', #e63946));
-let m_lighten    = Color(CSSVar('--base-color', #e63946)).lighten(0.18);
-let m_darken     = Color(CSSVar('--base-color', #e63946)).darken(0.18);
-let m_saturate   = Color(CSSVar('--base-color', #e63946)).saturate(1.5);
+let m_base = Color(CSSVar('--base-color', #e63946));
+let m_lighten = Color(CSSVar('--base-color', #e63946)).lighten(0.18);
+let m_darken = Color(CSSVar('--base-color', #e63946)).darken(0.18);
+let m_saturate = Color(CSSVar('--base-color', #e63946)).saturate(1.5);
 let m_desaturate = Color(CSSVar('--base-color', #e63946)).desaturate(0.4);
-let m_hue        = Color(CSSVar('--base-color', #e63946)).hueShift(90);
+let m_hue = Color(CSSVar('--base-color', #e63946)).hueShift(90);
 let m_complement = Color(CSSVar('--base-color', #e63946)).hueShift(180);
 
 // Auto-contrasting ink against each method color. Originally these
@@ -34,12 +34,12 @@ let m_complement = Color(CSSVar('--base-color', #e63946)).hueShift(180);
 // Pathogen has no autoContrast() method on a derived Color, so each
 // ink is hardcoded to match the canonical dark text against the
 // fallback #e63946 swatches.
-let ink_base       = Color('#0d1638');
-let ink_lighten    = Color('#0d1638');
-let ink_darken     = Color('#f0e8c8');
-let ink_saturate   = Color('#0d1638');
+let ink_base = Color('#0d1638');
+let ink_lighten = Color('#0d1638');
+let ink_darken = Color('#f0e8c8');
+let ink_saturate = Color('#0d1638');
 let ink_desaturate = Color('#0d1638');
-let ink_hue        = Color('#0d1638');
+let ink_hue = Color('#0d1638');
 let ink_complement = Color('#0d1638');
 
 // ─── Group layers ───────────────────────────────────────────
@@ -53,10 +53,10 @@ let cy = 260;
 
 // ─── Conic gradient: bg_light at top (north of cx,cy) to bg_dark at bottom ──
 let ld_grad = ConicGradient('light-to-dark-bg', cx, cy) {|g|
-  g.stop(0,    bg_light);
-  g.stop(0.4,  bg_light);
+  g.stop(0   , bg_light);
+  g.stop(0.4 , bg_light);
   g.stop(0.55, bg_dark);
-  g.stop(1,    bg_dark);
+  g.stop(1   , bg_dark);
 };
 ld_grad.from = -50deg;
 ld_grad.to = 50deg;
@@ -66,38 +66,90 @@ ld_grad.spread = 'transparent';
 ld_grad.interpolation = 'oklch';
 
 // ─── Canvas fill ───────────────────────────────────────────
-let bg = PathLayer('bg') ${ fill: ld_grad; stroke: none; };
-bg.apply { rect(0, 0, 520, 520); }
+let bg = PathLayer('bg') ${
+  fill: ld_grad;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 520);
+}
 
 // ─── Horizon line (at y = cy = 260, the gradient midpoint axis) ──
 let horizon_line = PathLayer('horizon-line') ${
-  fill: none; stroke: ink_on_light_m; stroke-width: 0.5; stroke-dasharray: 3 4;
+  fill: none;
+  stroke: ink_on_light_m;
+  stroke-width: 0.5;
+  stroke-dasharray: 3 4;
 };
-horizon_line.apply { line(0, 260, 520, 260); }
+horizon_line.apply {
+  line(0, 260, 520, 260);
+}
 
 // ─── Chip parameters ──────────────────────────────────────
-let chip_span = .08pi;
-let corner_r  = 20;
+let chip_span = 0.08pi;
+let corner_r = 20;
 
 let chip_data = [
-  ['chip-1', m_base,       280, 335],
-  ['chip-2', m_lighten,    350, 405],
-  ['chip-3', m_darken,     420, 475],
-  ['chip-4', m_saturate,   490, 545],
-  ['chip-5', m_desaturate, 560, 615],
-  ['chip-6', m_hue,        630, 685],
-  ['chip-7', m_complement, 700, 755],
+  [
+    'chip-1',
+    m_base,
+    280,
+    335,
+  ],
+  [
+    'chip-2',
+    m_lighten,
+    350,
+    405,
+  ],
+  [
+    'chip-3',
+    m_darken,
+    420,
+    475,
+  ],
+  [
+    'chip-4',
+    m_saturate,
+    490,
+    545,
+  ],
+  [
+    'chip-5',
+    m_desaturate,
+    560,
+    615,
+  ],
+  [
+    'chip-6',
+    m_hue,
+    630,
+    685,
+  ],
+  [
+    'chip-7',
+    m_complement,
+    700,
+    755,
+  ],
 ];
 
 for ([c, i] in chip_data) {
   let cname = c[0];
   let cfill = c[1];
-  let cin   = c[2];
-  let cout  = c[3];
-  let chip_layer = PathLayer(cname) ${ fill: cfill; stroke: none; };
+  let cin = c[2];
+  let cout = c[3];
+  let chip_layer = PathLayer(cname) ${
+    fill: cfill;
+    stroke: none;
+  };
   chip_layer.apply {
     M cx cy
-    radialWedge(cin, cout, -chip_span, chip_span, corner_r);
+    radialWedge(cin,
+        cout,
+        -chip_span,
+        chip_span,
+        corner_r);
   }
   layer('chips').append(layer(cname));
 }
@@ -108,81 +160,161 @@ for ([c, i] in chip_data) {
 // text alone sits over the chip color.
 
 let pill_data = [
-  [ink_base,       'BASE',       47.5 ],
-  [ink_lighten,    'LIGHTEN',    117.5],
-  [ink_darken,     'DARKEN',     187.5],
-  [ink_saturate,   'SATURATE',   257.5],
-  [ink_desaturate, 'DESAT.',     327.5],
-  [ink_hue,        'HUE +90°',   397.5],
-  [ink_complement, 'COMP.',      467.5],
+  [
+    ink_base,
+    'BASE',
+    47.5,
+  ],
+  [
+    ink_lighten,
+    'LIGHTEN',
+    117.5,
+  ],
+  [
+    ink_darken,
+    'DARKEN',
+    187.5,
+  ],
+  [
+    ink_saturate,
+    'SATURATE',
+    257.5,
+  ],
+  [
+    ink_desaturate,
+    'DESAT.',
+    327.5,
+  ],
+  [
+    ink_hue,
+    'HUE +90°',
+    397.5,
+  ],
+  [
+    ink_complement,
+    'COMP.',
+    467.5,
+  ],
 ];
 
 for ([p, i] in pill_data) {
-  let pink  = p[0];
+  let pink = p[0];
   let ptext = p[1];
-  let pcx   = p[2];
+  let pcx = p[2];
   let txt_name = `pt-${i}`;
   let txt = TextLayer(txt_name) ${
-    font-family: font; font-size: 9; font-weight: 700;
-    letter-spacing: 2; fill: pink; text-anchor: middle;
+    font-family: font;
+    font-size: 9;
+    font-weight: 700;
+    letter-spacing: 2;
+    fill: pink;
+    text-anchor: middle;
   };
-  txt.apply { text(pcx, 264)`${ptext}` }
+  txt.apply {
+    text(pcx, 264)`${ptext}`;
+  }
   layer('labels').append(layer(txt_name));
 }
 
 // ─── Masthead typography ─────────────────────────────────────
 let eyebrow = TextLayer('eyebrow') ${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: ink_on_light_m; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: ink_on_light_m;
+  text-anchor: start;
 };
-eyebrow.apply { text(15, 26)`OKLCH  /  04 — LIGHT ↔ DARK  ·  CONIC` }
+eyebrow.apply {
+  text(15, 26)`OKLCH  /  04 — LIGHT ↔ DARK  ·  CONIC`;
+}
 
 // "Light" display — top-left, reads against light end of gradient
 let display_light = TextLayer('display-light') ${
-  font-family: font; font-size: 56; font-weight: 200;
-  letter-spacing: -2; fill: ink_on_light; text-anchor: start;
+  font-family: font;
+  font-size: 56;
+  font-weight: 200;
+  letter-spacing: -2;
+  fill: ink_on_light;
+  text-anchor: start;
 };
-display_light.apply { text(15, 82)`Light` }
+display_light.apply {
+  text(15, 82)`Light`;
+}
 
 // "Dark" display — bottom-right, reads against dark end of gradient
 let display_dark = TextLayer('display-dark') ${
-  font-family: font; font-size: 56; font-weight: 200;
-  letter-spacing: -2; fill: ink_on_dark; text-anchor: end;
+  font-family: font;
+  font-size: 56;
+  font-weight: 200;
+  letter-spacing: -2;
+  fill: ink_on_dark;
+  text-anchor: end;
 };
-display_dark.apply { text(505, 500)`Dark` }
+display_dark.apply {
+  text(505, 500)`Dark`;
+}
 
 // Horizon label — right side at horizon line
 let horizon_lbl = TextLayer('horizon-lbl') ${
-  font-family: font; font-size: 7; font-weight: 700;
-  letter-spacing: 3; fill: ink_on_light_m; text-anchor: end;
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: ink_on_light_m;
+  text-anchor: end;
 };
-horizon_lbl.apply { text(505, 254)`· HORIZON ·` }
+horizon_lbl.apply {
+  text(505, 254)`· HORIZON ·`;
+}
 
 // Zone labels — subtle corner markers
 let zone_light = TextLayer('zone-light') ${
-  font-family: font; font-size: 6; font-weight: 700;
-  letter-spacing: 2; fill: ink_on_light_m; text-anchor: end;
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: ink_on_light_m;
+  text-anchor: end;
 };
-zone_light.apply { text(505, 30)`TOP · −90° · --bg-light` }
+zone_light.apply {
+  text(505, 30)`TOP · −90° · --bg-light`;
+}
 
 let zone_dark = TextLayer('zone-dark') ${
-  font-family: font; font-size: 6; font-weight: 700;
-  letter-spacing: 2; fill: ink_on_dark_m; text-anchor: start;
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: ink_on_dark_m;
+  text-anchor: start;
 };
-zone_dark.apply { text(15, 510)`BOTTOM · +90° · --bg-dark` }
+zone_dark.apply {
+  text(15, 510)`BOTTOM · +90° · --bg-dark`;
+}
 
 // Credit
 let credit = TextLayer('credit') ${
-  font-family: font; font-size: 7; font-weight: 700;
-  letter-spacing: 2; fill: ink_on_dark_m; text-anchor: start;
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: ink_on_dark_m;
+  text-anchor: start;
 };
-credit.apply { text(15, 492)`ONE CHIP · FULL GRADIENT · ONE SOURCE` }
+credit.apply {
+  text(15, 492)`ONE CHIP · FULL GRADIENT · ONE SOURCE`;
+}
 
-layer('labels').append(
-  layer('eyebrow'),
-  layer('display-light'), layer('display-dark'),
-  layer('horizon-lbl'), layer('zone-light'), layer('zone-dark'),
-  layer('credit')
-);
+layer('labels').append(layer('eyebrow'),
+    layer('display-light'),
+    layer('display-dark'),
+    layer('horizon-lbl'),
+    layer('zone-light'),
+    layer('zone-dark'),
+    layer('credit'));
 
-layer('diagram').append(layer('bg'), layer('horizon-line'), layer('chips'), layer('labels'));
+layer('diagram').append(layer('bg'),
+    layer('horizon-line'),
+    layer('chips'),
+    layer('labels'));

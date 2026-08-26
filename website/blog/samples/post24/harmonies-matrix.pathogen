@@ -7,41 +7,41 @@ define ViewBox(0, 0, 520, 540);
 
 // ─── Core tokens ──────────────────────────────────────────────
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
-let base     = Color(CSSVar('--harmony-color', #e63946));
+let base = Color(CSSVar('--harmony-color', #e63946));
 
-let fg_auto  = Color('#0d1638');
-let fg_muted = Color('#0d1638').alpha(0.60);
-let fg_hair  = Color('#0d1638').alpha(0.22);
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
 
 let font = 'sans-serif';
 
 // ─── Derived harmony fills (CSS relative color) ──────────────
-let c_base       = Color(CSSVar('--harmony-color', #e63946));
+let c_base = Color(CSSVar('--harmony-color', #e63946));
 
-let c_ana_m30    = Color(CSSVar('--harmony-color', #e63946)).hueShift(-30);
-let c_ana_p30    = Color(CSSVar('--harmony-color', #e63946)).hueShift(30);
+let c_ana_m30 = Color(CSSVar('--harmony-color', #e63946)).hueShift(-30);
+let c_ana_p30 = Color(CSSVar('--harmony-color', #e63946)).hueShift(30);
 
-let c_tri_p120   = Color(CSSVar('--harmony-color', #e63946)).hueShift(120);
-let c_tri_m120   = Color(CSSVar('--harmony-color', #e63946)).hueShift(-120);
+let c_tri_p120 = Color(CSSVar('--harmony-color', #e63946)).hueShift(120);
+let c_tri_m120 = Color(CSSVar('--harmony-color', #e63946)).hueShift(-120);
 
-let c_tet_p90    = Color(CSSVar('--harmony-color', #e63946)).hueShift(90);
-let c_tet_p180   = Color(CSSVar('--harmony-color', #e63946)).hueShift(180);
-let c_tet_p270   = Color(CSSVar('--harmony-color', #e63946)).hueShift(270);
+let c_tet_p90 = Color(CSSVar('--harmony-color', #e63946)).hueShift(90);
+let c_tet_p180 = Color(CSSVar('--harmony-color', #e63946)).hueShift(180);
+let c_tet_p270 = Color(CSSVar('--harmony-color', #e63946)).hueShift(270);
 
-let c_sc_p150    = Color(CSSVar('--harmony-color', #e63946)).hueShift(150);
-let c_sc_p210    = Color(CSSVar('--harmony-color', #e63946)).hueShift(210);
+let c_sc_p150 = Color(CSSVar('--harmony-color', #e63946)).hueShift(150);
+let c_sc_p210 = Color(CSSVar('--harmony-color', #e63946)).hueShift(210);
 
-let c_l_15       = Color(CSSVar('--harmony-color', #e63946)).darken(0.475);
-let c_l_35       = Color(CSSVar('--harmony-color', #e63946)).darken(0.275);
-let c_l_55       = Color(CSSVar('--harmony-color', #e63946)).darken(0.075);
-let c_l_75       = Color(CSSVar('--harmony-color', #e63946)).lighten(0.125);
-let c_l_95       = Color(CSSVar('--harmony-color', #e63946)).lighten(0.325);
+let c_l_15 = Color(CSSVar('--harmony-color', #e63946)).darken(0.475);
+let c_l_35 = Color(CSSVar('--harmony-color', #e63946)).darken(0.275);
+let c_l_55 = Color(CSSVar('--harmony-color', #e63946)).darken(0.075);
+let c_l_75 = Color(CSSVar('--harmony-color', #e63946)).lighten(0.125);
+let c_l_95 = Color(CSSVar('--harmony-color', #e63946)).lighten(0.325);
 
-let c_i_0        = Color(CSSVar('--harmony-color', #e63946));
-let c_i_25       = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.25);
-let c_i_50       = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.50);
-let c_i_75       = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.75);
-let c_i_100      = '#457b9d';
+let c_i_0 = Color(CSSVar('--harmony-color', #e63946));
+let c_i_25 = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.25);
+let c_i_50 = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.5);
+let c_i_75 = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.75);
+let c_i_100 = '#457b9d';
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') ${}
@@ -49,21 +49,37 @@ define GroupLayer('masthead') ${}
 define GroupLayer('matrix') ${}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
-bg.apply { rect(0, 0, 520, 540); }
+let bg = PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 540);
+}
 
 // ─── Masthead ───────────────────────────────────────────────
 let eyebrow = TextLayer('eyebrow') ${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
-eyebrow.apply { text(16, 26)`OKLCH  /  02 — HARMONIES & PALETTES` }
+eyebrow.apply {
+  text(16, 26)`OKLCH  /  02 — HARMONIES & PALETTES`;
+}
 
 let subtitle = TextLayer('subtitle') ${
-  font-family: font; font-size: 10; font-style: italic;
-  fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 10;
+  font-style: italic;
+  fill: fg_muted;
+  text-anchor: start;
 };
-subtitle.apply { text(16, 50)`A single base color — four harmonies and two palettes.` }
+subtitle.apply {
+  text(16, 50)`A single base color — four harmonies and two palettes.`;
+}
 
 layer('masthead').append(layer('eyebrow'), layer('subtitle'));
 layer('diagram').append(layer('bg'), layer('masthead'));
@@ -75,29 +91,158 @@ layer('diagram').append(layer('bg'), layer('masthead'));
 let y0 = 72;
 let row_h = 76;
 let label_x = 16;
-let col_x = [123, 201, 279, 357, 435];
+let col_x = [
+  123,
+  201,
+  279,
+  357,
+  435,
+];
 let sw_w = 70;
 let sw_h = 42;
 
 // ─── Row styles ─────────────────────────────────────────────
 let row_label_layer = TextLayer('row-label') ${
-  font-family: font; font-size: 10; font-weight: 700;
-  letter-spacing: 2; fill: fg_auto; text-anchor: start;
+  font-family: font;
+  font-size: 10;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: fg_auto;
+  text-anchor: start;
 };
 let col_sub_layer = TextLayer('col-sub') ${
-  font-family: font; font-size: 6;
-  letter-spacing: 0.5; fill: fg_muted; text-anchor: middle;
+  font-family: font;
+  font-size: 6;
+  letter-spacing: 0.5;
+  fill: fg_muted;
+  text-anchor: middle;
 };
 
 // ─── Row data ──────────────────────────────────────────────
 // Each row: [label, [[fill, sub], [fill, sub], ...]]
 let rows = [
-  ['ANALOGOUS',   [[c_ana_m30, 'h − 30°'], [c_base, 'base'], [c_ana_p30, 'h + 30°']]],
-  ['TRIADIC',     [[c_base, 'base'], [c_tri_p120, 'h + 120°'], [c_tri_m120, 'h − 120°']]],
-  ['TETRADIC',    [[c_base, 'base'], [c_tet_p90, 'h + 90°'], [c_tet_p180, 'h + 180°'], [c_tet_p270, 'h + 270°']]],
-  ['SPLIT-COMP',  [[c_base, 'base'], [c_sc_p150, 'h + 150°'], [c_sc_p210, 'h + 210°']]],
-  ['LIGHTNESS',   [[c_l_15, 'l 0.15'], [c_l_35, 'l 0.35'], [c_l_55, 'l 0.55'], [c_l_75, 'l 0.75'], [c_l_95, 'l 0.95']]],
-  ['INTERPOLATE', [[c_i_0, '0%'], [c_i_25, '25%'], [c_i_50, '50%'], [c_i_75, '75%'], [c_i_100, '100%']]],
+  [
+    'ANALOGOUS',
+    [
+      [
+        c_ana_m30,
+        'h − 30°',
+      ],
+      [
+        c_base,
+        'base',
+      ],
+      [
+        c_ana_p30,
+        'h + 30°',
+      ],
+    ],
+  ],
+  [
+    'TRIADIC',
+    [
+      [
+        c_base,
+        'base',
+      ],
+      [
+        c_tri_p120,
+        'h + 120°',
+      ],
+      [
+        c_tri_m120,
+        'h − 120°',
+      ],
+    ],
+  ],
+  [
+    'TETRADIC',
+    [
+      [
+        c_base,
+        'base',
+      ],
+      [
+        c_tet_p90,
+        'h + 90°',
+      ],
+      [
+        c_tet_p180,
+        'h + 180°',
+      ],
+      [
+        c_tet_p270,
+        'h + 270°',
+      ],
+    ],
+  ],
+  [
+    'SPLIT-COMP',
+    [
+      [
+        c_base,
+        'base',
+      ],
+      [
+        c_sc_p150,
+        'h + 150°',
+      ],
+      [
+        c_sc_p210,
+        'h + 210°',
+      ],
+    ],
+  ],
+  [
+    'LIGHTNESS',
+    [
+      [
+        c_l_15,
+        'l 0.15',
+      ],
+      [
+        c_l_35,
+        'l 0.35',
+      ],
+      [
+        c_l_55,
+        'l 0.55',
+      ],
+      [
+        c_l_75,
+        'l 0.75',
+      ],
+      [
+        c_l_95,
+        'l 0.95',
+      ],
+    ],
+  ],
+  [
+    'INTERPOLATE',
+    [
+      [
+        c_i_0,
+        '0%',
+      ],
+      [
+        c_i_25,
+        '25%',
+      ],
+      [
+        c_i_50,
+        '50%',
+      ],
+      [
+        c_i_75,
+        '75%',
+      ],
+      [
+        c_i_100,
+        '100%',
+      ],
+    ],
+  ],
 ];
 
 for ([row, ri] in rows) {
@@ -106,23 +251,47 @@ for ([row, ri] in rows) {
   let y_sub = calc(y_top + 64);
 
   // Row label
-  row_label_layer.apply { text(label_x, y_mid)`${row[0]}` }
+  row_label_layer.apply {
+    text(label_x, y_mid)`${row[0]}`;
+  }
 
   // Swatches
   let cells = row[1];
   for ([cell, ci] in cells) {
     let x = col_x[ci];
-    let sw = PathLayer(`sw-${ri}-${ci}`) ${ fill: cell[0]; stroke: fg_hair; stroke-width: 0.5; };
-    sw.apply { roundRect(x, calc(y_top + 8), sw_w, sw_h, 5.5); }
+    let sw = PathLayer(`sw-${ri}-${ci}`) ${
+      fill: cell[0];
+      stroke: fg_hair;
+      stroke-width: 0.5;
+    };
+    sw.apply {
+      roundRect(x,
+          calc(y_top + 8),
+          sw_w,
+          sw_h,
+          5.5);
+    }
     layer('matrix').append(layer(`sw-${ri}-${ci}`));
 
-    col_sub_layer.apply { text(calc(x + sw_w / 2), y_sub)`${cell[1]}` }
+    col_sub_layer.apply {
+      text(calc(x + sw_w / 2), y_sub)`${cell[1]}`;
+    }
   }
 }
 
+
 // Divider between harmony rows (0..3) and palette rows (4..5)
-let divider = PathLayer('divider') ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-divider.apply { line(15, calc(y0 + 4 * row_h - 4), 505, calc(y0 + 4 * row_h - 4)); }
+let divider = PathLayer('divider') ${
+  fill: none;
+  stroke: fg_hair;
+  stroke-width: 0.5;
+};
+divider.apply {
+  line(15,
+      calc(y0 + 4 * row_h - 4),
+      505,
+      calc(y0 + 4 * row_h - 4));
+}
 
 layer('matrix').append(layer('row-label'), layer('col-sub'), layer('divider'));
 layer('diagram').append(layer('matrix'));

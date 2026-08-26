@@ -6,23 +6,23 @@ define ViewBox(0, 0, 520, 320);
 
 // ─── Core tokens ──────────────────────────────────────────────
 let bg_color = Color(CSSVar('--bg', #d0d7f0));
-let base     = Color(CSSVar('--demo-color', #e63946));
+let base = Color(CSSVar('--demo-color', #e63946));
 
-let fg_auto  = Color('#0d1638');
-let fg_muted = Color('#0d1638').alpha(0.60);
-let fg_hair  = Color('#0d1638').alpha(0.22);
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
 
 let font = 'sans-serif';
 
 // ─── Derived method fills ────────────────────────────────────
-let m_base       = Color(CSSVar('--demo-color', #e63946));
-let m_lighten    = Color(CSSVar('--demo-color', #e63946)).lighten(0.18);
-let m_darken     = Color(CSSVar('--demo-color', #e63946)).darken(0.18);
-let m_saturate   = Color(CSSVar('--demo-color', #e63946)).saturate(1.5);
+let m_base = Color(CSSVar('--demo-color', #e63946));
+let m_lighten = Color(CSSVar('--demo-color', #e63946)).lighten(0.18);
+let m_darken = Color(CSSVar('--demo-color', #e63946)).darken(0.18);
+let m_saturate = Color(CSSVar('--demo-color', #e63946)).saturate(1.5);
 let m_desaturate = Color(CSSVar('--demo-color', #e63946)).desaturate(0.4);
-let m_hue        = Color(CSSVar('--demo-color', #e63946)).hueShift(90);
+let m_hue = Color(CSSVar('--demo-color', #e63946)).hueShift(90);
 let m_complement = Color(CSSVar('--demo-color', #e63946)).hueShift(180);
-let m_alpha      = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
+let m_alpha = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
 
 // ─── Group layers ───────────────────────────────────────────
 define GroupLayer('diagram') ${}
@@ -30,58 +30,119 @@ define GroupLayer('masthead') ${}
 define GroupLayer('rows') ${}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
-bg.apply { rect(0, 0, 520, 320); }
+let bg = PathLayer('bg') ${
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 520, 320);
+}
 layer('diagram').append(layer('bg'));
 
 // ─── Masthead ───────────────────────────────────────────────
 let eyebrow = TextLayer('eyebrow') ${
-  font-family: font; font-size: 8; font-weight: 700;
-  letter-spacing: 3; fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
 };
-eyebrow.apply { text(15, 26)`OKLCH  /  01 — MANIPULATION` }
+eyebrow.apply {
+  text(15, 26)`OKLCH  /  01 — MANIPULATION`;
+}
 
 let title = TextLayer('title') ${
-  font-family: font; font-size: 38; font-weight: 200;
-  letter-spacing: -1; fill: fg_auto; text-anchor: start;
+  font-family: font;
+  font-size: 38;
+  font-weight: 200;
+  letter-spacing: -1;
+  fill: fg_auto;
+  text-anchor: start;
 };
-title.apply { text(15, 66)`Color Methods` }
+title.apply {
+  text(15, 66)`Color Methods`;
+}
 
 let subtitle = TextLayer('subtitle') ${
-  font-family: font; font-size: 10; font-style: italic;
-  fill: fg_muted; text-anchor: start;
+  font-family: font;
+  font-size: 10;
+  font-style: italic;
+  fill: fg_muted;
+  text-anchor: start;
 };
-subtitle.apply { text(15, 88)`Eight derivations of a single base, in perceptual space.` }
+subtitle.apply {
+  text(15, 88)`Eight derivations of a single base, in perceptual space.`;
+}
 
 layer('masthead').append(layer('eyebrow'), layer('title'), layer('subtitle'));
 layer('diagram').append(layer('masthead'));
 
 // ─── Row data ───────────────────────────────────────────────
 let methods = [
-  ['BASE',       m_base,       'oklch(l c h)'],
-  ['LIGHTEN',    m_lighten,    'oklch(l + 0.18, c, h)'],
-  ['DARKEN',     m_darken,     'oklch(l − 0.18, c, h)'],
-  ['SATURATE',   m_saturate,   'oklch(l, c × 1.5, h)'],
-  ['DESATURATE', m_desaturate, 'oklch(l, c × 0.4, h)'],
-  ['HUE +90°',   m_hue,        'oklch(l, c, h + 90)'],
-  ['COMPLEMENT', m_complement, 'oklch(l, c, h + 180)'],
-  ['ALPHA 0.5',  m_alpha,      'oklch(l, c, h / 0.5)'],
+  [
+    'BASE',
+    m_base,
+    'oklch(l c h)',
+  ],
+  [
+    'LIGHTEN',
+    m_lighten,
+    'oklch(l + 0.18, c, h)',
+  ],
+  [
+    'DARKEN',
+    m_darken,
+    'oklch(l − 0.18, c, h)',
+  ],
+  [
+    'SATURATE',
+    m_saturate,
+    'oklch(l, c × 1.5, h)',
+  ],
+  [
+    'DESATURATE',
+    m_desaturate,
+    'oklch(l, c × 0.4, h)',
+  ],
+  [
+    'HUE +90°',
+    m_hue,
+    'oklch(l, c, h + 90)',
+  ],
+  [
+    'COMPLEMENT',
+    m_complement,
+    'oklch(l, c, h + 180)',
+  ],
+  [
+    'ALPHA 0.5',
+    m_alpha,
+    'oklch(l, c, h / 0.5)',
+  ],
 ];
 
 // ─── Row styles ─────────────────────────────────────────────
 let row_name_layer = TextLayer('row-name') ${
-  font-family: font; font-size: 10; font-weight: 700;
-  letter-spacing: 2; fill: fg_auto; text-anchor: start;
+  font-family: font;
+  font-size: 10;
+  font-weight: 700;
+  letter-spacing: 2;
+  fill: fg_auto;
+  text-anchor: start;
 };
 let row_value_layer = TextLayer('row-value') ${
-  font-family: font; font-size: 8;
-  letter-spacing: 0.5; fill: fg_muted; text-anchor: end;
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_muted;
+  text-anchor: end;
 };
 
 // ─── Row geometry ───────────────────────────────────────────
 // Rows start at y=100, each 24px tall, 8 rows → rows end at y=292.
 let row_h = 24;
-let y0    = 100;
+let y0 = 100;
 
 for ([m, i] in methods) {
   let y_top = calc(y0 + i * row_h);
@@ -89,23 +150,44 @@ for ([m, i] in methods) {
   let y_bot = calc(y_top + row_h);
 
   // Pill swatch — left
-  let sw = PathLayer(`sw-${i}`) ${ fill: m[1]; stroke: fg_hair; stroke-width: 0.5; };
-  sw.apply { roundRect(23, calc(y_top + 8), 20, 10, 3); }
+  let sw = PathLayer(`sw-${i}`) ${
+    fill: m[1];
+    stroke: fg_hair;
+    stroke-width: 0.5;
+  };
+  sw.apply {
+    roundRect(23,
+        calc(y_top + 8),
+        20,
+        10,
+        3);
+  }
   layer('rows').append(layer(`sw-${i}`));
 
   // Method name
-  row_name_layer.apply { text(55, y_mid)`${m[0]}` }
+  row_name_layer.apply {
+    text(55, y_mid)`${m[0]}`;
+  }
 
   // Formula — right-aligned
-  row_value_layer.apply { text(505, y_mid)`${m[2]}` }
+  row_value_layer.apply {
+    text(505, y_mid)`${m[2]}`;
+  }
 
   // Divider below row (except last)
   if (i < 7) {
-    let divider = PathLayer(`div-${i}`) ${ fill: none; stroke: fg_hair; stroke-width: 0.5; };
-    divider.apply { line(15, y_bot, 505, y_bot); }
+    let divider = PathLayer(`div-${i}`) ${
+      fill: none;
+      stroke: fg_hair;
+      stroke-width: 0.5;
+    };
+    divider.apply {
+      line(15, y_bot, 505, y_bot);
+    }
     layer('rows').append(layer(`div-${i}`));
   }
 }
+
 
 layer('rows').append(layer('row-name'), layer('row-value'));
 layer('diagram').append(layer('rows'));

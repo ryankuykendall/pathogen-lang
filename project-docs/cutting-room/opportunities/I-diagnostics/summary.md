@@ -93,3 +93,17 @@ Scope note: #4's fix lives entirely in language-services (diagnostics,
 hover sweep) — no evaluator change. #5 option 1 touches both
 evaluators (constant lookup) + completions/hover + docs (stdlib or
 syntax page).
+
+## Post-commit addendum (2026-08-26): the sweep that missed
+
+The reviewer (delivering its report after three machine-sleep
+interruptions, post-commit) caught a real regression the pre-commit
+sweep missed: three committed post24 samples bound `pi` as a for-in
+DESTRUCTURING INDEX (`for ([p, pi] in ...)`) — a binding form the
+original sweep pattern (`let pi` / `fn pi(` / param lists) did not
+cover. Lesson recorded: a reserved-word sweep must enumerate the same
+binding-form space as the test coverage matrix (all 9 forms), not the
+two obvious ones. Fixed by renaming to panelIdx across the three
+files; all 14 post24 samples recompiled byte-identical (the rename
+and the formatter pass are provably cosmetic); corrected
+all-binding-forms sweep now returns clean across samples/docs/blog.
