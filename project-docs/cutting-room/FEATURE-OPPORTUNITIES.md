@@ -61,8 +61,7 @@ notes the friction hit in a real sample. To be synthesized at project end.
    no per-stroke identity.** Mountain-vs-valley folds (different knives
    → different dash styles) are inexpressible; all seams share one
    'cut' group. (post41/02 prose caveat.)
-7b. **Annotated mode skips label-name validation entirely** (Item F
-   review finding, 2026-08-25). compileAnnotated ignores `as` labels by
+7b. **RESOLVED (F2, 2026-08-26): annotated validates label names identically** — shared labelNameError core in segments.ts; both PathCommand sites validate type/charset/reserved-cut/at-most-one while labels stay emit-neutral; 9 parity tests. Original (Item F review finding, 2026-08-25). compileAnnotated ignores `as` labels by
    documented design and has never validated them; Item F's new rules
    (identifier charset, reserved bare 'cut') widen the divergence:
    `h 10 as segment('cut')` errors under compile() but compiles
@@ -187,10 +186,22 @@ notes the friction hit in a real sample. To be synthesized at project end.
    the same review: buildForEachLoop solves sibling-spanning postfix
    differently (source-slice + re-parse) — a design worth considering
    if more sibling-scan sites appear.
-18. **Ternary interiors fail inside path-command calc() at parse time**
-   (K/#17 review finding, 2026-08-26; pre-existing).
+18. **RESOLVED (2026-08-26): the PathArgs tokenizer consumes ? : < > = ! & | inside calc() parens** — ternaries and comparisons now work in path-argument position; top-level punctuation still breaks (bare ternary in path args stays an error). 6 tests (parse + eval). Original (K/#17 review finding; pre-existing).
    `L calc(arr[flag ? 2 : 0]) 0` errors "Missing ';'" — the PathArgs
    external tokenizer doesn't consume `?`/`:` in path-argument
    position, so the calc() never closes. Works fine in let-statement
    position (the docs' shown forms). Fix would live in
    path-args-tokenizer.ts's greedy consumption set.
+19. **Annotated-parity pair deferred from B2** (audit findings,
+   user-decided to log rather than ride along, 2026-08-26):
+   (a) annotated draw/drawTo omit bridgeOriginGap unlike main;
+   (b) annotated boolean ops rebase results to origin while main keeps
+   world coordinates. Both are the Item C / F2 divergence class;
+   anchors in B-projected-draw/backlogged-startpoint-audit (§adjacent
+   bugs 2-3; line numbers are 2026-08-01 era).
+20. **Malformed calc() in path args error-message quality**
+   (F2/B2/#18 review note, 2026-08-27; pre-existing): an unclosed
+   calc paren falls through ast-builder's regex extractParenContent
+   to "Undefined variable: calc". Also pre-existing: template
+   literals inside calc() parens are unsupported at the tokenizer
+   level. Both orthogonal to the #18 charset change.

@@ -206,9 +206,11 @@ shipped, the loop above took two lines per seam:
 `seam.drawTo(seam.startPoint.x, seam.startPoint.y)` — "draw yourself
 where you already are," said with two property reads and a re-anchor.
 Worse, the same expression applied to a *whole cut piece* silently drew
-it in the wrong place, because a piece's projected `startPoint` is its
-frame origin rather than its first command (the garment post tells that
-part of the story). Projected values now have an in-place
+it in the wrong place, because a piece's projected `startPoint` was, at
+the time, its frame origin rather than its first command (the garment
+post tells that part of the story — including the epilogue where
+`startPoint` itself was later made truthful). Projected values now have
+an in-place
 [`draw()`](/docs#path-blocks-drawing-a-projectedpath-in-place): it
 anchors on the value's first command by definition, so the footgun is
 unreachable and the idiom is one self-evident line.

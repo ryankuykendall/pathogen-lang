@@ -239,6 +239,8 @@ let caption = `${count} ${count > 1 ? 'pieces' : 'piece'} total`;
 let hot = PathLayer('mark') ${ stroke-width: count > 1 ? 4 : 1; };
 ```
 
+Ternaries also work inside a path argument's `calc()` — `L calc(count > 1 ? 40 : 10) 0`.
+
 The alternative to a ternary is plain reassignment — variables are mutable, and reassigning inside an `if` branch is the natural spelling when the choice takes more than one expression:
 
 ```

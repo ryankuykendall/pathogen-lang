@@ -83,7 +83,9 @@ for (seam in placed.segmentAll('cut')) {
 
 This is the idiom for decorating query results — seams, labeled runs, offsets — where the value's own coordinates *are* the target. The cursor advances to the path's endpoint, and the same ProjectedPath comes back for chaining.
 
-**The `drawTo` anchor contract.** `drawTo(x, y)` places the value's `startPoint` at `(x, y)`. For most projected values — every `segment`/`segmentAll` run, every `offset()` result — `startPoint` coincides with the first command, so `drawTo(p.startPoint.x, p.startPoint.y)` draws in place. But a **cut piece's** projected `startPoint` is its projected *frame origin*, not its first command (pieces keep their subject-local placement inside the frame), so that same expression silently shifts the piece by its local offset. Use `.draw()` for drawing in place — it anchors the first command by definition and is immune to the distinction.
+**The `drawTo` anchor contract.** `drawTo(x, y)` places the value's `startPoint` — the **first inked point** — at `(x, y)`. There used to be a footgun here: a cut piece's `startPoint` reported the *frame origin* rather than where the piece's ink actually starts, so `drawTo(p.startPoint.x, p.startPoint.y)` silently shifted whole pieces. `startPoint` is now truthful for every value (`get(0)` always agrees with it), so `drawTo` anchors the ink at the target for pieces and seams alike. `.draw()` remains the one-word spelling for drawing a projected value in place.
+
+One distinction worth knowing: `proj.drawTo(x, y)` puts the *ink* at `(x, y)`; `M x y` followed by `block.draw()` seats the *pen* there and lets a leading `m` in the block offset from it. For blocks with no leading move the two agree exactly.
 
 ## Projecting Without Drawing
 
@@ -107,7 +109,7 @@ let proj = shape.project(10, 10);
 | `vertices` | `Point[]` | Unique start/end points of each command segment |
 | `subPathCount` | `number` | Number of subpaths (separated by `m` commands) |
 | `subPathCommands` | `object[]` | Structured command list (see below) |
-| `startPoint` | `Point` | Always `Point(0, 0)` |
+| `startPoint` | `Point` | The **first inked point** — where drawing begins. `Point(0, 0)` for blocks that start drawing immediately; a block that opens with `m` moves reports where the ink actually lands, so `get(0)` always agrees with `startPoint` |
 | `endPoint` | `Point` | Final cursor position (relative to origin) |
 | `isEmpty` | `boolean` | `true` when the block contains no path commands — e.g. a space glyph from `fromGlyph`, or `subPath(t, t)` |
 

@@ -595,7 +595,7 @@ export interface PathBlockValue {
   type: 'PathBlockValue';
   commands: PathBlockCommand[]; // structured command list (finalized geometry)
   records: PathRecord[]; // statement-granularity authored store (raw fragments + commands)
-  startPoint: Point; // origin (always 0,0 unless path begins with m)
+  startPoint: Point; // FIRST INKED POINT: last leading-m's end, else commands[0].start — (0,0) for on-origin blocks (B2; the day-one m-exception, finally implemented)
   endPoint: Point; // final cursor position (relative)
 }
 

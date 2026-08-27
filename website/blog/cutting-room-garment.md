@@ -216,6 +216,16 @@ placed.drawTo(placed.startPoint.x, placed.startPoint.y);
 placed.draw();
 ```
 
+*Epilogue:* the footgun itself is now gone at the root. `startPoint`
+had been hardcoded to the frame origin since the language's first
+commit — the original spec comment even described the correct
+behavior, unimplemented. It now reports the **first inked point** on
+every value, `get(0)` always agrees with it, and
+[`drawTo`](/docs#path-blocks-drawing-a-projectedpath-in-place) anchors
+the ink at its target — so even the "before" line above, the one that
+misplaced this pattern sheet, draws correctly today. `draw()` remains
+the idiomatic spelling.
+
 ## Where to go next
 
 - [Stained glass](/blog/cutting-room-stained-glass) — the series

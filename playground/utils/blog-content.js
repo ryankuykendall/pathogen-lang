@@ -6264,7 +6264,16 @@ placed.<span class="hljs-title function_">drawTo</span>(placed.<span class="hljs
 
 <span class="hljs-comment">// after: correct for both, and says what it means</span>
 placed.<span class="hljs-title function_">draw</span>();
-</code></pre><h2>Where to go next</h2>
+</code></pre><p><em>Epilogue:</em> the footgun itself is now gone at the root. <code>startPoint</code>
+had been hardcoded to the frame origin since the language&#39;s first
+commit — the original spec comment even described the correct
+behavior, unimplemented. It now reports the <strong>first inked point</strong> on
+every value, <code>get(0)</code> always agrees with it, and
+<a href="/docs#path-blocks-drawing-a-projectedpath-in-place"><code>drawTo</code></a> anchors
+the ink at its target — so even the &quot;before&quot; line above, the one that
+misplaced this pattern sheet, draws correctly today. <code>draw()</code> remains
+the idiomatic spelling.</p>
+<h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-stained-glass">Stained glass</a> — the series
 finale: labels from <em>both</em> operands of a boolean, and seams as the
@@ -7757,9 +7766,11 @@ shipped, the loop above took two lines per seam:
 <code>seam.drawTo(seam.startPoint.x, seam.startPoint.y)</code> — &quot;draw yourself
 where you already are,&quot; said with two property reads and a re-anchor.
 Worse, the same expression applied to a <em>whole cut piece</em> silently drew
-it in the wrong place, because a piece&#39;s projected <code>startPoint</code> is its
-frame origin rather than its first command (the garment post tells that
-part of the story). Projected values now have an in-place
+it in the wrong place, because a piece&#39;s projected <code>startPoint</code> was, at
+the time, its frame origin rather than its first command (the garment
+post tells that part of the story — including the epilogue where
+<code>startPoint</code> itself was later made truthful). Projected values now have
+an in-place
 <a href="/docs#path-blocks-drawing-a-projectedpath-in-place"><code>draw()</code></a>: it
 anchors on the value&#39;s first command by definition, so the footgun is
 unreachable and the idiom is one self-evident line.</p>

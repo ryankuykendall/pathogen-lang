@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-27 (truthful startPoint + annotated label parity + ternary path args — Cutting Room feedback loop, F2/B2/#18)
+
+### Fixed
+
+#### Core
+
+- **`startPoint` reports the first inked point** — it had been hardcoded `Point(0, 0)` at every construction site since the language's first commit, while the day-one type comment specified an `m`-exception that was never implemented. The rule now: the last leading move's end, else the first command's own start — so `.contours[i].startPoint` reports each contour's real in-block position, `@{ m 10 15 … }` reports `(10, 15)`, and `get(0)` always agrees with `startPoint`. **Deliberate contract change** (one coherent rule): `drawTo(x, y)` now anchors the *ink* at the target — the garment post's piece-misplacement footgun fixed at the root (`placed.drawTo(placed.startPoint.x, …)` draws in place for every value now); `M x y` + `draw()` still seats the *pen* and lets a leading `m` offset. Emitted output changes only for off-origin blocks — exactly the cases that were wrong. Also fixed en route: an `endPoint` copy-paste in both evaluators' empty-commands ProjectedPath builders.
+- **Annotated mode validates label names identically to `compile()`** — the F2 parity gap: `as segment('cut')` and punctuation labels compiled silently under `--annotated` while the main evaluator rejected them. The validation core is now shared (one module, both evaluators), labels stay emit-neutral in debug output, and 9 parity tests pin every rejection form.
+- **Ternaries and comparisons work inside a path argument's `calc()`** — `L calc(arr[flag ? 2 : 0]) 0` was a parse error because the path-args tokenizer stopped at `?`/`:`/comparison characters even inside parens. It now consumes them at paren depth; top-level path-arg punctuation still errors as before.
+
 ## [0.8.0] - 2026-08-26 (ternary docs + index-interior postfix — Cutting Room feedback loop, item K + #17)
 
 ### Fixed

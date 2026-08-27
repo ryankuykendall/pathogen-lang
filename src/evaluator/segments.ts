@@ -293,6 +293,48 @@ export function findLabeledRun(commands: PathBlockCommand[], label: string): Pat
   return runs.length > 0 ? runs[0] : null;
 }
 
+/** Identifier-shaped label names keep all punctuation free for the
+ *  query language. Pure core shared by BOTH evaluators (F2 parity —
+ *  annotated must reject the same names compile() rejects); the
+ *  callers wrap with their own line formatting. Returns the error
+ *  message, or null when the name is valid. */
+const LABEL_IDENT = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+/** B2: startPoint = FIRST INKED POINT — the last leading move's end
+ *  (a leading run of m/M positions the pen; the last one is where ink
+ *  lands), else the first command's own start. Null for empty command
+ *  lists (callers keep their existing default). This is the only
+ *  definition that matches the serializer's pen-landing math and makes
+ *  `get(0) == startPoint` true; the day-one type comment specified the
+ *  m-exception but it was never implemented (hardcoded {0,0} instead). */
+export function firstInkedPointOf(cmds: PathBlockCommand[]): { x: number; y: number } | null {
+  if (cmds.length === 0) return null;
+  let lastLeadingMove: PathBlockCommand | null = null;
+  for (const c of cmds) {
+    if (c.command === 'm' || c.command === 'M') {
+      lastLeadingMove = c;
+    } else {
+      break;
+    }
+  }
+  const p = lastLeadingMove ? lastLeadingMove.end : cmds[0].start;
+  return { x: p.x, y: p.y };
+}
+
+export function labelNameError(value: string, kind: 'segment' | 'endpoint'): string | null {
+  if (kind === 'segment') {
+    if (value === 'cut') {
+      return "segment() label 'cut' is reserved for healed seam edges; use 'cut.<name>' to join the seam group explicitly";
+    }
+    // The one legal dotted form: the explicit seam-namespace opt-in.
+    const bare = value.startsWith('cut.') ? value.slice(4) : value;
+    if (LABEL_IDENT.test(bare)) return null;
+  } else if (LABEL_IDENT.test(value)) {
+    return null;
+  }
+  return `${kind}() label name '${value}' is invalid: names use letters, digits, '-' and '_', starting with a letter${kind === 'segment' ? " (the explicit seam opt-in 'cut.<name>' is the one exception)" : ''} — '.' and ':' are reserved for queries`;
+}
+
 export type SegmentQueryPseudo =
   | { kind: 'atomic' }
   | { kind: 'first' }

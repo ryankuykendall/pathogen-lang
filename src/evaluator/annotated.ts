@@ -26,7 +26,7 @@ import {
   subPathCommands,
 } from './path-transforms';
 import { partitionPath, samplePathAtFraction } from './sampling';
-import { recordsFromCommands, derivedMeta } from './segments';
+import { recordsFromCommands, derivedMeta, labelNameError, firstInkedPointOf } from './segments';
 import {
   commandsToRelativeD,
   parsePathStringToCommands,
@@ -540,7 +540,7 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
     type: 'PathBlockValue' as const,
     commands: normalized,
     records: recordsFromCommands(normalized),
-    startPoint: { x: 0, y: 0 },
+    startPoint: firstInkedPointOf(normalized) ?? { x: 0, y: 0 },
     endPoint: { x: last.end.x, y: last.end.y },
   };
 }
@@ -686,6 +686,34 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
     return stdlib[name as keyof typeof stdlib] as unknown as Value;
   }
   throw new Error(formatError(`Undefined variable: ${name}`, line, column));
+}
+
+/** F2 parity: validate `as` label NAMES exactly as the main evaluator
+ *  does (type, charset/reserved rules via the shared labelNameError,
+ *  at-most-one per kind) while keeping labels otherwise ignored in
+ *  annotated output. */
+function validateAnnotationLabelNames(
+  labels: Array<{ kind: 'segment' | 'endpoint'; name: Expression }> | undefined,
+  scope: Scope,
+): void {
+  if (!labels) return;
+  let seenSegment = false;
+  let seenEndpoint = false;
+  for (const label of labels) {
+    const value = evaluateExpression(label.name, scope);
+    if (typeof value !== 'string' || value.length === 0) {
+      throw new Error(`${label.kind}() label name must be a non-empty string`);
+    }
+    const err = labelNameError(value, label.kind);
+    if (err) throw new Error(err);
+    if (label.kind === 'segment') {
+      if (seenSegment) throw new Error('At most one segment() label per as clause');
+      seenSegment = true;
+    } else {
+      if (seenEndpoint) throw new Error('At most one endpoint() label per as clause');
+      seenEndpoint = true;
+    }
+  }
 }
 
 function setVariable(scope: Scope, name: string, value: Value): void {
@@ -1460,7 +1488,7 @@ function evaluateAnnotatedPathTransforms(
       if (isBlock) {
         return buildPathBlockFromCommands(offsetResult);
       }
-      const oStart = offsetResult.length > 0 ? offsetResult[0].start : obj.startPoint;
+      const oStart = firstInkedPointOf(offsetResult) ?? obj.startPoint;
       const oEnd = offsetResult.length > 0 ? offsetResult[offsetResult.length - 1].end : obj.endPoint;
       return {
         type: 'ProjectedPathValue' as const,
@@ -1479,7 +1507,7 @@ function evaluateAnnotatedPathTransforms(
         return buildPathBlockFromCommands(mirrored);
       }
       const mirrored = mirrorCommands(obj.commands, mAngle, obj.startPoint);
-      const mStart = mirrored.length > 0 ? mirrored[0].start : obj.startPoint;
+      const mStart = firstInkedPointOf(mirrored) ?? obj.startPoint;
       const mEnd = mirrored.length > 0 ? mirrored[mirrored.length - 1].end : obj.endPoint;
       return {
         type: 'ProjectedPathValue' as const,
@@ -1507,12 +1535,11 @@ function evaluateAnnotatedPathTransforms(
       if (isBlock) {
         return buildPathBlockFromCommands(rotCmds, { x: 0, y: 0 });
       }
-      const rotFirst = rotCmds[0];
       const rotLast = rotCmds[rotCmds.length - 1];
       return {
         type: 'ProjectedPathValue' as const,
         commands: rotCmds,
-        startPoint: rotFirst ? { ...rotFirst.start } : { ...obj.startPoint },
+        startPoint: firstInkedPointOf(rotCmds) ?? { ...obj.startPoint },
         endPoint: rotLast ? { ...rotLast.end } : { ...obj.endPoint },
       };
     }
@@ -1529,7 +1556,7 @@ function evaluateAnnotatedPathTransforms(
         return buildPathBlockFromCommands(rotated);
       }
       const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
-      const rStart = rotated.length > 0 ? rotated[0].start : obj.startPoint;
+      const rStart = firstInkedPointOf(rotated) ?? obj.startPoint;
       const rEnd = rotated.length > 0 ? rotated[rotated.length - 1].end : obj.endPoint;
       return {
         type: 'ProjectedPathValue' as const,
@@ -1561,12 +1588,12 @@ function evaluateAnnotatedPathTransforms(
           type: 'PathBlockValue' as const,
           commands: scaled,
           records: recordsFromCommands(scaled),
-          startPoint: { x: 0, y: 0 },
+          startPoint: firstInkedPointOf(scaled) ?? { x: 0, y: 0 },
           endPoint: { x: sLast.end.x, y: sLast.end.y },
         };
       }
       const scaled = scaleCommands(obj.commands, sSx, sSy, obj.startPoint);
-      const sStart = scaled.length > 0 ? scaled[0].start : obj.startPoint;
+      const sStart = firstInkedPointOf(scaled) ?? obj.startPoint;
       const sEnd = scaled.length > 0 ? scaled[scaled.length - 1].end : obj.endPoint;
       return {
         type: 'ProjectedPathValue' as const,
@@ -1733,7 +1760,8 @@ function buildAnnotatedResult(
       type: 'ProjectedPathValue' as const,
       commands: [],
       startPoint: { ...original.startPoint },
-      endPoint: { ...original.startPoint },
+      // B2 audit ride-along: was a copy-paste of startPoint.
+      endPoint: { ...original.endPoint },
     };
   }
   if (isBlock) {
@@ -1754,11 +1782,12 @@ function buildAnnotatedResult(
       type: 'PathBlockValue' as const,
       commands: normalized,
       records: recordsFromCommands(normalized),
-      startPoint: { x: 0, y: 0 },
+      startPoint: firstInkedPointOf(normalized) ?? { x: 0, y: 0 },
       endPoint: { x: last.end.x, y: last.end.y },
     };
   }
-  const start = cmds[0].start;
+  // B2: leading-m chains carry stale starts; the inked point is truthful.
+  const start = firstInkedPointOf(cmds) ?? cmds[0].start;
   const end = cmds[cmds.length - 1].end;
   return {
     type: 'ProjectedPathValue' as const,
@@ -3503,7 +3532,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
             type: 'PathBlockValue' as const,
             commands: concatCmds,
             records: recordsFromCommands(concatCmds),
-            startPoint: { x: 0, y: 0 },
+            startPoint: firstInkedPointOf(concatCmds) ?? { x: 0, y: 0 },
             endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
           };
         }
@@ -3757,7 +3786,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     type: 'PathBlockValue',
     commands,
     records: recordsFromCommands(commands),
-    startPoint: { x: 0, y: 0 },
+    startPoint: firstInkedPointOf(commands) ?? { x: 0, y: 0 },
     endPoint: { x: blockContext.position.x, y: blockContext.position.y },
   };
 }
@@ -5624,6 +5653,10 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
           'with clauses are not supported in --annotated debug mode yet; compile normally (they work in the CLI, playground, and VS Code preview).',
         );
       }
+      // Labels stay emit-neutral in annotated mode, but their NAMES are
+      // validated identically to compile() (F2 parity — a rejected
+      // label must not appear to "work" in the debug view).
+      validateAnnotationLabelNames(stmt.annotations?.labels, scope);
       // Method call statements: evaluate for side effects, emit path if PathWithResult
       if (stmt.command === '' && stmt.args.length === 1 && stmt.args[0].type === 'MethodCallExpression') {
         const methodResult = evaluateMethodCall(stmt.args[0], scope);
@@ -6069,6 +6102,10 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
           'with clauses are not supported in --annotated debug mode yet; compile normally (they work in the CLI, playground, and VS Code preview).',
         );
       }
+      // Labels stay emit-neutral in annotated mode, but their NAMES are
+      // validated identically to compile() (F2 parity — a rejected
+      // label must not appear to "work" in the debug view).
+      validateAnnotationLabelNames(stmt.annotations?.labels, scope);
       // Method call statements: evaluate for side effects, emit path if PathWithResult
       if (stmt.command === '' && stmt.args.length === 1 && stmt.args[0].type === 'MethodCallExpression') {
         const methodExpr = stmt.args[0];

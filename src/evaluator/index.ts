@@ -258,6 +258,8 @@ import {
   commandsToPathData,
   createPathStore,
   findEndpointCommands,
+  labelNameError,
+  firstInkedPointOf,
   pseudoRangeError,
   queryLabeledRuns,
   rejectPseudoOnNonSegmentQuery,
@@ -1063,7 +1065,7 @@ function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: numb
     type: 'PathBlockValue' as const,
     commands: normalized,
     records: recordsFromCommands(normalized),
-    startPoint: { x: 0, y: 0 },
+    startPoint: firstInkedPointOf(normalized) ?? { x: 0, y: 0 },
     endPoint: { x: last.end.x, y: last.end.y },
   };
 }
@@ -1077,10 +1079,12 @@ function buildProjectedPathFromCommands(cmds: PathBlockCommand[], original: Proj
       type: 'ProjectedPathValue' as const,
       commands: [],
       startPoint: { ...original.startPoint },
-      endPoint: { ...original.startPoint },
+      // B2 audit ride-along: was a copy-paste of startPoint.
+      endPoint: { ...original.endPoint },
     };
   }
-  const start = cmds[0].start;
+  // B2: leading-m chains carry stale starts; the inked point is truthful.
+  const start = firstInkedPointOf(cmds) ?? cmds[0].start;
   const end = cmds[cmds.length - 1].end;
   return {
     type: 'ProjectedPathValue' as const,
@@ -1623,7 +1627,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
             type: 'PathBlockValue' as const,
             commands: concatCmds,
             records: recordsFromCommands(concatCmds),
-            startPoint: { x: 0, y: 0 },
+            startPoint: firstInkedPointOf(concatCmds) ?? { x: 0, y: 0 },
             endPoint: { x: lastCmd.end.x, y: lastCmd.end.y },
           };
         }
@@ -1962,7 +1966,8 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
     type: 'PathBlockValue',
     commands: finalized.commands,
     records: accum.records.filter((r) => r.raw.length > 0),
-    startPoint: { x: 0, y: 0 },
+    // B2: a literal with a leading m run starts where the ink lands.
+    startPoint: firstInkedPointOf(finalized.commands) ?? { x: 0, y: 0 },
     endPoint: { x: blockContext.position.x, y: blockContext.position.y },
   };
 }
@@ -2306,7 +2311,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           return {
             type: 'ProjectedPathValue' as const,
             commands: copies,
-            startPoint: { ...copies[0].start },
+            startPoint: firstInkedPointOf(copies) ?? { ...copies[0].start },
             endPoint: { ...copies[copies.length - 1].end },
           };
         };
@@ -2628,7 +2633,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             type: 'PathBlockValue' as const,
             commands: rebased,
             records: recordsFromCommands(rebased),
-            startPoint: { x: 0, y: 0 },
+            startPoint: firstInkedPointOf(rebased) ?? { x: 0, y: 0 },
             endPoint: { x: rebased[rebased.length - 1].end.x, y: rebased[rebased.length - 1].end.y },
           };
         };
@@ -2770,7 +2775,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           type: 'PathBlockValue' as const,
           commands: voCmds,
           records: recordsFromCommands(voCmds),
-          startPoint: { x: 0, y: 0 },
+          startPoint: firstInkedPointOf(voCmds) ?? { x: 0, y: 0 },
           endPoint: { x: voLast.end.x, y: voLast.end.y },
         };
         // The translation normalizeToOrigin subtracted, in spine coordinates.
@@ -2833,7 +2838,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           type: 'PathBlockValue' as const,
           commands: cvCmds,
           records: recordsFromCommands(cvCmds),
-          startPoint: { x: 0, y: 0 },
+          startPoint: firstInkedPointOf(cvCmds) ?? { x: 0, y: 0 },
           endPoint: { x: cvLast.end.x, y: cvLast.end.y },
         };
         // The translation normalizeToOrigin subtracted, in spine coordinates.
@@ -2898,7 +2903,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           type: 'PathBlockValue' as const,
           commands: scaled,
           records: recordsFromCommands(scaled),
-          startPoint: { x: 0, y: 0 },
+          startPoint: firstInkedPointOf(scaled) ?? { x: 0, y: 0 },
           endPoint: { x: sLast.end.x, y: sLast.end.y },
         };
       }
@@ -3286,7 +3291,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           return {
             type: 'ProjectedPathValue' as const,
             commands: copies,
-            startPoint: { ...copies[0].start },
+            startPoint: firstInkedPointOf(copies) ?? { ...copies[0].start },
             endPoint: { ...copies[copies.length - 1].end },
           };
         };
@@ -3374,7 +3379,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (typeof dist !== 'number') throw mError('offset() argument must be a number');
         const offsetOpts = expr.args.length === 2 ? parseOffsetJoinOptions(evaluateExpression(expr.args[1], scope), mError) : {};
         const offsetResult = offsetCommands(obj.commands, dist, offsetOpts);
-        const oStart = offsetResult.length > 0 ? offsetResult[0].start : obj.startPoint;
+        const oStart = firstInkedPointOf(offsetResult) ?? obj.startPoint;
         const oEnd = offsetResult.length > 0 ? offsetResult[offsetResult.length - 1].end : obj.endPoint;
         return {
           type: 'ProjectedPathValue' as const,
@@ -3389,7 +3394,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const mAngle = toNumber(evaluateExpression(expr.args[0], scope));
         if (mAngle === undefined) throw mError('mirror() argument must be a number');
         const mirrored = mirrorCommands(obj.commands, mAngle, obj.startPoint);
-        const mStart = mirrored.length > 0 ? mirrored[0].start : obj.startPoint;
+        const mStart = firstInkedPointOf(mirrored) ?? obj.startPoint;
         const mEnd = mirrored.length > 0 ? mirrored[mirrored.length - 1].end : obj.endPoint;
         return {
           type: 'ProjectedPathValue' as const,
@@ -3410,12 +3415,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           rotPivot = { x: rotOrigin.x, y: rotOrigin.y };
         }
         const rotCmds = rotateAboutPointCommands(obj.commands, rotAngle, rotPivot);
-        const rotFirst = rotCmds[0];
         const rotLast = rotCmds[rotCmds.length - 1];
         return {
           type: 'ProjectedPathValue' as const,
           commands: rotCmds,
-          startPoint: rotFirst ? { ...rotFirst.start } : { ...obj.startPoint },
+          startPoint: firstInkedPointOf(rotCmds) ?? { ...obj.startPoint },
           endPoint: rotLast ? { ...rotLast.end } : { ...obj.endPoint },
         };
       }
@@ -3428,7 +3432,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (rAngle === undefined) throw mError('rotateAtVertexIndex() angle must be a number');
         if (!Number.isInteger(rIdx)) throw mError('rotateAtVertexIndex() index must be an integer');
         const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
-        const rStart = rotated.length > 0 ? rotated[0].start : obj.startPoint;
+        const rStart = firstInkedPointOf(rotated) ?? obj.startPoint;
         const rEnd = rotated.length > 0 ? rotated[rotated.length - 1].end : obj.endPoint;
         return {
           type: 'ProjectedPathValue' as const,
@@ -3445,7 +3449,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (typeof sSx !== 'number') throw mError('scale() sx must be a number');
         if (typeof sSy !== 'number') throw mError('scale() sy must be a number');
         const scaled = scaleCommands(obj.commands, sSx, sSy, obj.startPoint);
-        const sStart = scaled.length > 0 ? scaled[0].start : obj.startPoint;
+        const sStart = firstInkedPointOf(scaled) ?? obj.startPoint;
         const sEnd = scaled.length > 0 ? scaled[scaled.length - 1].end : obj.endPoint;
         return {
           type: 'ProjectedPathValue' as const,
@@ -3487,7 +3491,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           type: 'PathBlockValue' as const,
           commands: spNormalized,
           records: recordsFromCommands(spNormalized),
-          startPoint: { x: 0, y: 0 },
+          startPoint: firstInkedPointOf(spNormalized) ?? { x: 0, y: 0 },
           endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
       }
@@ -8524,34 +8528,12 @@ function evaluateGridCellBody(
   return { returned: false, value: null };
 }
 
-/** Identifier-shaped label names keep all punctuation — '.', ':', and the
- *  rest — free for the query language (sub-labels today, possible
- *  pseudo-selectors later). Applies to the EVALUATED string, so computed
- *  labels are validated per iteration. Query-side lookups stay lenient. */
-const LABEL_IDENT = /^[A-Za-z][A-Za-z0-9_-]*$/;
-
+/** Applies to the EVALUATED string, so computed labels are validated per
+ *  iteration. Pure rule lives in segments.ts (labelNameError) so the
+ *  annotated evaluator enforces the identical contract (F2 parity). */
 function validateLabelName(value: string, kind: 'segment' | 'endpoint', line: number | undefined): void {
-  if (kind === 'segment') {
-    if (value === 'cut') {
-      throw new Error(
-        formatError(
-          "segment() label 'cut' is reserved for healed seam edges; use 'cut.<name>' to join the seam group explicitly",
-          line,
-        ),
-      );
-    }
-    // The one legal dotted form: the explicit seam-namespace opt-in.
-    const bare = value.startsWith('cut.') ? value.slice(4) : value;
-    if (LABEL_IDENT.test(bare)) return;
-  } else if (LABEL_IDENT.test(value)) {
-    return;
-  }
-  throw new Error(
-    formatError(
-      `${kind}() label name '${value}' is invalid: names use letters, digits, '-' and '_', starting with a letter${kind === 'segment' ? " (the explicit seam opt-in 'cut.<name>' is the one exception)" : ''} — '.' and ':' are reserved for queries`,
-      line,
-    ),
-  );
+  const err = labelNameError(value, kind);
+  if (err) throw new Error(formatError(err, line));
 }
 
 /**

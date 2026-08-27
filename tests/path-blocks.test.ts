@@ -95,7 +95,7 @@ describe('Path Blocks', () => {
       expect(result.logs[0].parts[0].value).toBe('50');
     });
 
-    it('startPoint is always (0, 0)', () => {
+    it('startPoint of an on-origin block is (0, 0)', () => {
       const result = compile('let p = @{ v 20 h 30 }; log(p.startPoint);');
       expect(result.logs[0].parts[0].value).toBe('Point(0, 0)');
     });
@@ -411,7 +411,12 @@ for (piece in stamped) {
       expect(collapseLeadingMove(viaProjected)).toBe(collapseLeadingMove(viaBlock));
     });
 
-    it('drawTo at a non-zero target keeps multi-contour geometry rigid (pre-existing bug)', () => {
+    it('drawTo places the INKED start at the target and keeps multi-contour geometry rigid (B2)', () => {
+      // B2 changed this contract deliberately: drawTo(x, y) anchors the
+      // first inked point AT (x, y) — the garment-footgun fix — while
+      // `M x y` + draw() seats the pen and lets a leading m offset from
+      // it. The two forms now agree everywhere except that anchor, so
+      // rigidity is pinned by comparing everything after the first move.
       const base = `
 let a = @{ circle(0, 0, 30); };
 let b = @{ circle(35, 0, 30); };
@@ -422,7 +427,21 @@ DRAW_FORM`;
       ).layers[0].data;
       const viaBlock = compile(base.replace('DRAW_FORM', 'M 150 28\nmerged.draw();')).layers[0]
         .data;
-      expect(collapseLeadingMove(viaDrawTo)).toBe(collapseLeadingMove(viaBlock));
+      expect(viaDrawTo.startsWith('M 150 28 ')).toBe(true); // ink AT the target
+      // Strip the anchor M plus any residual leading-move run (drawTo
+      // serializes the consumed leading m as `m 0 0`); the drawing
+      // commands after it must match — rigidity, with float tolerance
+      // (the two serializations differ by 1 ulp on one coordinate).
+      const afterAnchor = (d: string) => d.replace(/^M [\d.e-]+ [\d.e-]+ (m [\d.e-]+ [\d.e-]+ )*/, '');
+      const a = parseSVGPath(afterAnchor(viaDrawTo));
+      const b = parseSVGPath(afterAnchor(viaBlock));
+      expect(a.length).toBe(b.length);
+      for (let i = 0; i < a.length; i++) {
+        expect(a[i].command).toBe(b[i].command);
+        for (let j = 0; j < a[i].args.length; j++) {
+          expect(a[i].args[j]).toBeCloseTo(b[i].args[j], 6);
+        }
+      }
     });
 
     it('draw() on an empty projection degrades gracefully', () => {
@@ -1161,7 +1180,7 @@ l 5 0`);
         expect(result.logs[0].parts[0].value).toBe(result.logs[0].parts[1].value);
       });
 
-      it('startPoint of reversed PathBlock is always (0, 0)', () => {
+      it('startPoint of reversed PathBlock is (0, 0) — reverse self-rebases', () => {
         const result = compile(`
           let p = @{ h 50 v 30 };
           let r = p.reverse();
@@ -1657,7 +1676,7 @@ M 0 0`);
         expect(mirLen).toBeCloseTo(origLen, 5);
       });
 
-      it('startPoint always (0,0) for PathBlockValue', () => {
+      it('startPoint (0,0) for the self-rebased PathBlockValue result', () => {
         const result = compile(`
           let p = @{ h 50 v 30 };
           let m = p.mirror(calc(90 * 3.14159265358979 / 180));
@@ -1875,7 +1894,7 @@ M 0 0`);
         expect(Number(result.logs[0].parts[0].value)).toBeGreaterThan(0);
       });
 
-      it('startPoint always (0,0) for PathBlockValue', () => {
+      it('startPoint (0,0) for the self-rebased PathBlockValue result', () => {
         const result = compile(`
           let p = @{ h 50 v 50 };
           let r = p.rotateAtVertexIndex(1, calc(90 * 3.14159265358979 / 180));
@@ -1975,7 +1994,7 @@ M 0 0`);
         expect(scaledLen).toBeCloseTo(origLen * 2, 5);
       });
 
-      it('startPoint always (0,0) for PathBlockValue', () => {
+      it('startPoint (0,0) for the self-rebased PathBlockValue result', () => {
         const result = compile(`
           let p = @{ h 50 v 30 };
           let s = p.scale(2, 3);
@@ -2106,7 +2125,7 @@ M 0 0`);
         expect(path).toContain('v 30');
       });
 
-      it('startPoint always (0,0)', () => {
+      it('startPoint (0,0) for the self-rebased result', () => {
         const result = compile(`
           let a = @{ h 50 };
           let b = @{ v 30 };
@@ -3429,5 +3448,144 @@ M 0 0`);
         `)).toThrow(/intersectionPoints\(\) expects 1 argument/);
       });
     });
+  });
+});
+
+describe('truthful startPoint = first inked point (B2)', () => {
+  // startPoint was hardcoded (0,0) at every construction site while
+  // commands could keep off-origin coordinates — the day-one comment
+  // specified an m-exception that was never implemented. The rule now:
+  // last leading-m's end, else the first command's start.
+  it('@{} literal with a leading m reports the inked start', () => {
+    const result = compile('let p = @{ m 10 15 h 30 }; log(p.startPoint);');
+    expect(result.logs[0].parts[0].value).toBe('Point(10, 15)');
+  });
+  it('chained leading moves: the LAST m wins', () => {
+    const result = compile('let p = @{ m 4 4 m 6 6 h 30 }; log(p.startPoint);');
+    expect(result.logs[0].parts[0].value).toBe('Point(10, 10)');
+  });
+  it('no leading move: stays (0,0) for on-origin blocks', () => {
+    const result = compile('let p = @{ v 20 h 30 }; log(p.startPoint);');
+    expect(result.logs[0].parts[0].value).toBe('Point(0, 0)');
+  });
+  it('.contours[i] reports each contour\'s in-block position (the reported bug)', () => {
+    // Second contour starts at (20, 5) inside the block; its leading m
+    // used to carry a STALE start and startPoint was hardcoded (0,0).
+    const result = compile(`
+      let twoRings = @{
+        h 10
+        v 10
+        h -10
+        z
+        m 20 5
+        h 4
+        v 4
+        h -4
+        z
+      };
+      let ring = twoRings.contours;
+      log(ring.length);
+      let inner = ring[1];
+      let sp = inner.startPoint;
+      let g0 = inner.get(0);
+      log(sp);
+      log(calc(abs(sp.x - g0.x) < 0.001 && abs(sp.y - g0.y) < 0.001));
+    `);
+    const vals = result.logs.map((e) => e.parts.map((p) => String(p.value)).join(''));
+    expect(vals[0]).toBe('2');
+    expect(vals[1]).toBe('Point(20, 5)');
+    expect(vals[2]).toBe('true'); // get(0) == startPoint
+  });
+  it('drawTo on an off-origin projected piece anchors the first inked point (the garment footgun)', () => {
+    // A piece whose first command starts away from its frame origin:
+    // drawTo(x, y) must place the INK at (x, y), not the frame corner.
+    const { layers } = compile(`
+      let box = @{ h 60 v 40 h -60 z };
+      let knife = @{ m 30 -10 l 0 60 };
+      let pieces = box.cut(knife);
+      for ([p, i] in pieces) {
+        let placed = p.project(0, 0);
+        let sp = placed.startPoint;
+        let g0 = placed.get(0);
+        log(calc(abs(sp.x - g0.x) < 0.001 && abs(sp.y - g0.y) < 0.001));
+      }
+    `);
+    const result = compile(`
+      let box = @{ h 60 v 40 h -60 z };
+      let knife = @{ m 30 -10 l 0 60 };
+      let pieces = box.cut(knife);
+      log(pieces[0].startPoint);
+      log(pieces[1].startPoint);
+    `);
+    // The two halves of the box start their rings at different inked
+    // points — at least one is off-origin, and neither is a hardcoded lie.
+    const vals = result.logs.map((e) => e.parts.map((p) => String(p.value)).join(''));
+    expect(vals.some((v) => v !== 'Point(0, 0)')).toBe(true);
+  });
+});
+
+describe('truthful startPoint survives the transform-method family (review-critical)', () => {
+  // The first B2 sweep patched every PathBlockValue construction but
+  // missed the ProjectedPathValue transform branches and both segment
+  // builders — reintroducing the footgun for chained transforms. The
+  // invariant pinned here: startPoint == get(0), through every chain.
+  const proj = `let p = @{ m 10 15 h 30 };\nlet proj = p.project(0, 0);\n`;
+  const invariant = (expr: string) => `
+      ${proj}let v = ${expr};
+      let sp = v.startPoint;
+      let g0 = v.get(0);
+      log(calc(abs(sp.x - g0.x) < 0.001 && abs(sp.y - g0.y) < 0.001));
+    `;
+  for (const [name, expr] of [
+    ['mirror', 'proj.mirror(0)'],
+    ['offset', 'proj.offset(2)'],
+    ['rotate', 'proj.rotate(1.5707963)'],
+    ['rotateAtVertexIndex', 'proj.rotateAtVertexIndex(0, 1.5707963)'],
+    ['scale', 'proj.scale(2, 2)'],
+  ] as const) {
+    it(`${name}() on a leading-move projected value keeps startPoint == get(0)`, () => {
+      const result = compile(invariant(expr));
+      expect(result.logs[0].parts.map((p) => String(p.value)).join('')).toBe('true');
+    });
+  }
+
+  it('layer segment queries report the inked start, not the pre-call cursor', () => {
+    const result = compile(`
+      define default PathLayer('main') \${}
+      M 10 10
+      circle(50, 50, 20) as segment('c1');
+      let seg = layer('main').segment('c1');
+      log(seg.startPoint);
+      let g0 = seg.get(0);
+      log(calc(abs(seg.startPoint.x - g0.x) < 0.001 && abs(seg.startPoint.y - g0.y) < 0.001));
+    `);
+    const vals = result.logs.map((e) => e.parts.map((p) => String(p.value)).join(''));
+    expect(vals[0]).toBe('Point(30, 50)');
+    expect(vals[1]).toBe('true');
+  });
+
+  it('projected segment queries keep the invariant too', () => {
+    const result = compile(`
+      let p = @{
+        h 20
+        circle(50, 5, 10) as segment('ring');
+      };
+      let placed = p.project(100, 100);
+      let seg = placed.segment('ring');
+      let g0 = seg.get(0);
+      log(calc(abs(seg.startPoint.x - g0.x) < 0.001 && abs(seg.startPoint.y - g0.y) < 0.001));
+    `);
+    expect(result.logs[0].parts.map((p) => String(p.value)).join('')).toBe('true');
+  });
+
+  it('drawTo after a layer-segment query anchors the ink at the target', () => {
+    const { layers } = compile(`
+      define default PathLayer('main') \${}
+      M 10 10
+      circle(50, 50, 20) as segment('c1');
+      let seg = layer('main').segment('c1');
+      seg.drawTo(100, 100);
+    `);
+    expect(layers[0].data).toContain('M 100 100');
   });
 });

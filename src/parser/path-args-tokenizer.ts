@@ -187,9 +187,18 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       break;
     }
 
-    // Comparison/equality/logical operators — stop
-    if (ch === 60 || ch === 62 || ch === 61 || ch === 33 || ch === 38 || ch === 124) {
-      break; // < > = ! & |
+    // Comparison/equality/logical/ternary operators: expression content
+    // inside calc(...) parens, statement-level punctuation outside them
+    // (a bare ternary in path-arg position stays an error).
+    if (ch === 60 || ch === 62 || ch === 61 || ch === 33 || ch === 38 || ch === 124 || ch === 63 || ch === 58) {
+      // < > = ! & | ? :
+      if (depth > 0) {
+        input.advance();
+        consumed++;
+        lastNonWS = consumed;
+        continue;
+      }
+      break;
     }
 
     // Anything else — stop

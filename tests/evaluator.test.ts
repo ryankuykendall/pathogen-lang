@@ -5177,3 +5177,14 @@ L calc(v) 0`;
     expect(compile(src).layers[0].data).toBe('M 0 0 L 20 30');
   });
 });
+
+describe('ternary inside path-arg calc() evaluates (friction #18)', () => {
+  it('L calc(arr[flag ? 2 : 0]) draws the selected element', () => {
+    const src = `let arr = [10, 20, 30];\nlet flag = 1;\nM 0 0\nL calc(arr[flag ? 2 : 0]) calc(arr[0 ? 2 : 0])`;
+    expect(compile(src).layers[0].data).toBe('M 0 0 L 30 10');
+  });
+  it('comparison-driven ternary in a path arg', () => {
+    const src = `let a = 1;\nlet b = 2;\nM 0 0\nL calc(a > b ? 10 : 20) 0`;
+    expect(compile(src).layers[0].data).toBe('M 0 0 L 20 0');
+  });
+});

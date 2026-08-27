@@ -699,3 +699,34 @@ describe('pseudo guard on the layer query path (review warning 3)', () => {
     expect(() => compile(`${src}\nlet a = p.segment('hop:atomic');`)).not.toThrow(/0-indexed/);
   });
 });
+
+describe('annotated-mode label-name validation parity (F2)', () => {
+  // compileAnnotated ignores labels for OUTPUT (emit-neutral by design)
+  // but must reject the same invalid NAMES compile() rejects — a user
+  // debugging a rejected label must not see it "work" in --annotated.
+  const forms: Array<[string, string, RegExp]> = [
+    ["bare 'cut'", "M 0 0\nh 10 as segment('cut')", /reserved.*cut\.<name>/s],
+    ['punctuation', "M 0 0\nh 10 as segment('a:b')", /label name/],
+    ['leading digit', "M 0 0\nh 10 as segment('9x')", /label name/],
+    ['endpoint punctuation', "M 0 0\nh 10 as endpoint('a.b')", /label name/],
+    ['endpoint cut-opt-in (segment-only)', "M 0 0\nh 10 as endpoint('cut.rim')", /label name/],
+    ['non-string', 'M 0 0\nh 10 as segment(5)', /non-empty string/],
+    ['computed invalid', "let bad = 'a:b';\nM 0 0\nh 10 as segment(`${bad}`)", /label name/],
+  ];
+  for (const [name, src, rx] of forms) {
+    it(`annotated rejects ${name} like compile() does`, async () => {
+      const { compileAnnotated } = await import('../src/index');
+      expect(() => compileAnnotated(src)).toThrow(rx);
+    });
+  }
+  it('annotated still accepts valid labels emit-neutrally', async () => {
+    const { compileAnnotated } = await import('../src/index');
+    expect(() => compileAnnotated("M 0 0\nh 10 as segment('lid'), endpoint('tip')")).not.toThrow();
+    expect(() => compileAnnotated("M 0 0\nh 10 as segment('cut.rim')")).not.toThrow();
+    expect(() => compileAnnotated("M 0 0\nh 10 as endpoint('cut')")).not.toThrow();
+  });
+  it('annotated rejects duplicate-kind labels in one as clause', async () => {
+    const { compileAnnotated } = await import('../src/index');
+    expect(() => compileAnnotated("M 0 0\nh 10 as segment('a'), segment('b')")).toThrow(/At most one segment/);
+  });
+});

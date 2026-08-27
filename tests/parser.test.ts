@@ -1954,3 +1954,22 @@ describe('break and continue statements', () => {
     expect(loop.body[0].loc?.line).toBe(2);
   });
 });
+
+describe('ternary and comparison operators inside path-arg calc() (friction #18)', () => {
+  // The PathArgs external tokenizer broke on ? : < > = ! & | even
+  // inside calc(...) parens, so a ternary in path-argument position
+  // was a parse error while the same expression worked in a let.
+  it('ternary inside calc() in path-argument position', () => {
+    const src = `let arr = [10, 20, 30];\nlet flag = 1;\nM 0 0\nL calc(arr[flag ? 2 : 0]) 0`;
+    expect(() => parse(src)).not.toThrow();
+  });
+  it('comparison + ternary inside calc()', () => {
+    expect(() => parse('let a = 1;\nlet b = 2;\nM 0 0\nL calc(a > b ? 10 : 20) 0')).not.toThrow();
+  });
+  it('logical operators inside calc()', () => {
+    expect(() => parse('let a = 1;\nM 0 0\nL calc(a == 1 && a != 2 ? 5 : 6) 0')).not.toThrow();
+  });
+  it('bare ? at top level of path args still errors', () => {
+    expect(() => parse('M 0 0\nL 1 ? 2 : 3')).toThrow();
+  });
+});

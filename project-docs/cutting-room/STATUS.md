@@ -30,6 +30,30 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
 
 ## Log
 
+- 2026-08-26/27 (feedback loop, F2 + B2 + #18 LANDED — one combined
+  cycle per user; L deferred until the revised blog posts are
+  completed and pushed): (#18) PathArgs tokenizer consumes
+  ? : < > = ! & | inside calc() parens — ternaries/comparisons work in
+  path-argument position; top-level still breaks; 6 tests + docs line.
+  (F2) label-name validation parity — pure labelNameError core moved
+  to segments.ts (shared), annotated validates at both PathCommand
+  sites (type/charset/reserved-cut/at-most-one) while labels stay
+  emit-neutral; 9 parity tests. (B2) truthful startPoint = first
+  inked point (user chose ONE COHERENT RULE): firstInkedPointOf in
+  segments.ts; applied at both funnels (buildPathBlockFromCommands /
+  buildProjectedPathFromCommands), @{} literals, and all
+  recordsFromCommands construction sites in BOTH evaluators (identity
+  for self-rebasing results); endPoint copy-paste ride-along fixed
+  both evaluators; annotated bugs 2-3 logged as friction #19 (user
+  decision). CONTRACT CHANGE, documented: drawTo(x,y) anchors the
+  INKED start at the target (the garment footgun fixed at the root —
+  its old misplacing line now draws correctly); `M x y` + draw() still
+  seats the pen. Docs: property table, drawTo contract rewrite +
+  pen-vs-ink distinction, types.ts day-one comment; 5 new B2 tests,
+  1 contract-pin updated (rigidity now float-tolerant, anchor pinned),
+  6 stale "always (0,0)" test names corrected; garment epilogue +
+  papercraft entry updated. Suite 5022/5022. REVIEW-CRITICAL fix applied pre-commit: the first sweep missed the ProjectedPathValue transform family (offset/mirror/rotate/rotateAtVertexIndex/scale) and BOTH segment builders — 12 sites, reviewer-reproduced broken invariant (layer segment startPoint = pre-call cursor; chained transforms all broken); fixed with the same helper + 8 regression tests (invariant startPoint==get(0) through every chain); 43-sample zero-drift re-verified.
+
 - 2026-08-26 (feedback loop, Item J LANDED — pending review + commit):
   Postfix-flattening class fixed (docs-first, failing-tests-first;
   user approved all-five + array-showcase + post40-in-sweep). The
