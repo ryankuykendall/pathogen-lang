@@ -302,7 +302,7 @@ asked pieces about the <em>automatic</em> <code>cut</code> label; this post is w
 your own names do the heavy lifting.</p>
 </blockquote>
 <h2>What it does</h2>
-<p>A sewing pattern is a shape whose edges have jobs. The hem gets folded
+<p>A sewing pattern is a drawing whose edges have jobs. The hem gets folded
 twice; the side seam gets 7 units of allowance; the armhole gets eased;
 notches tell you which edge meets which. Pattern drafting software is,
 to a first approximation, software for <em>remembering which edge is
@@ -314,7 +314,7 @@ which</em> — and that is precisely what <code>as segment(&#39;name&#39;)</code
 };
 </code></pre><p>Name the edges once, at drafting time, and every downstream operation —
 cutting the yoke off, offsetting for allowance — carries the names
-along. The workflow stops being coordinate bookkeeping and becomes a
+along. The workflow stops being a ledger of coordinates and becomes a
 series of questions: <em>who kept the neckline? where is the side seam
 now?</em></p>
 <p>(An earlier draft of this post carried a blunt caveat here: offsetting
@@ -981,9 +981,9 @@ title.apply {
 the neck, or widen the hem, and the sheet re-annotates itself on the
 next compile. That is the payoff of edges with names sewn in.</p>
 <h2>What this project taught the language</h2>
-<p>The Cutting Room series doubles as a working friction log: building
-each project against the real language surfaced bugs and gaps, and
-this section records what got fixed because of it.</p>
+<p>This series doubles as a working friction log (part 1 explains the
+convention) — this section records what building the pattern sheets
+got fixed.</p>
 <p><strong>The panel labels&#39; idioms made it into the manual.</strong> The pattern
 sheets in Examples 2 and 5 lean on two spellings this post used
 before the docs admitted they existed: string ternaries —
@@ -1006,7 +1006,8 @@ translated control points, so a deep scoop&#39;s offset midsection sat at
 the wrong distance even without a bad corner.</p>
 <p>The fix restructured how <code>offset()</code> builds its result: every segment
 is offset with its own normals, join geometry lives <em>between</em>
-segments (a sharp corner now gets a short bevel — or an arc with
+segments (a sharp corner now gets a bevel — a short straight edge
+across the tip — or an arc with
 <code>offset(d, { join: &#39;round&#39; })</code> — instead of deforming its neighbor),
 and curves subdivide and re-fit as true parallel curves. The
 <a href="/docs#path-blocks-offsetdistance-options-pathblock-projectedpath">offset docs</a>
@@ -1025,7 +1026,7 @@ offset flips to the wrong side&quot; — was not the bug that existed.
 Direction was always correct; the joins were at fault. Friction logs
 earn their keep, but each entry deserves a fresh trace before it
 becomes a fix.</p>
-<p><strong>The pattern sheet also exposed a placement footgun — and got
+<p><strong>The pattern sheet also exposed a placement trap — and got
 projected values a real <code>draw()</code>.</strong> An early draft of Example 5 drew
 each piece with <code>placed.drawTo(placed.startPoint.x, placed.startPoint.y)</code> — &quot;draw yourself where you are&quot; — and every
 annotation landed 63 units away from its piece. The cause: a cut
@@ -1042,7 +1043,7 @@ placed.<span class="hljs-title function_">drawTo</span>(placed.<span class="hljs
 
 <span class="hljs-comment">// after: correct for both, and says what it means</span>
 placed.<span class="hljs-title function_">draw</span>();
-</code></pre><p><em>Epilogue:</em> the footgun itself is now gone at the root. <code>startPoint</code>
+</code></pre><p><em>Epilogue:</em> the trap itself is now gone at the root. <code>startPoint</code>
 had been hardcoded to the frame origin since the language&#39;s first
 commit — the original spec comment even described the correct
 behavior, unimplemented. It now reports the <strong>first inked point</strong> on

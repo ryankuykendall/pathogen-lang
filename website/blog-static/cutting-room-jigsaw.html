@@ -316,7 +316,7 @@ and <code>segmentAll(&#39;rim&#39;).length</code> sorts border pieces from inter
 pieces with no geometry tests.</li>
 <li><strong><code>rotate(angle, origin)</code>.</strong> Frame-preserving rotation spins a piece
 around any pivot — its own center, say — with no re-basing and no
-pivot bookkeeping afterward.</li>
+pivot compensation afterward.</li>
 </ul>
 <h2>Why you&#39;d use it</h2>
 <p>The same reason the puzzle industry uses dies instead of rulers: the
@@ -851,7 +851,7 @@ for ([piece, i] in pieces) {
   // The piece that kept no rim is the missing one — skip it.
   if (piece.segmentAll('rim').length &gt; 0) {
     // Spin in place around the piece's own bounding-box center:
-    // frame-preserving, so no pivot bookkeeping — then drift outward
+    // frame-preserving, so no pivot compensation — then drift outward
     // with a hashed shove.
     let spun = piece.rotate(hashRange(i, -0.22, 0.22), Point(pieceCenterX, pieceCenterY));
     let dx = calc((pieceCenterX - plateCenterX) / plateCenterX * 26 + hashRange(i, -8, 8, 7));
@@ -876,20 +876,10 @@ lid.apply {
 }
 for ([piece, i] in pieces) {
   let mini = piece.scale(0.44, 0.44);
-  if (calc(i % 3) == 0) {
-    lid0.apply {
-      M 361 43 mini.draw()
-    }
-  }
-  if (calc(i % 3) == 1) {
-    lid1.apply {
-      M 361 43 mini.draw()
-    }
-  }
-  if (calc(i % 3) == 2) {
-    lid2.apply {
-      M 361 43 mini.draw()
-    }
+  // Same routed round-robin as the scatter above — no if-chain here
+  // either.
+  layer(`lid${i % 3}`).apply {
+    M 361 43 mini.draw()
   }
 }
 
@@ -915,7 +905,7 @@ became a real method (<code>seam.draw()</code> replaced the two-line
 <code>cut([...])</code> as an array — one knife per lane, no chained-move
 arithmetic between strokes. Part 1&#39;s closing section has both
 stories.</p>
-<p><strong>And the scattered puzzle&#39;s tints lost their if-chain.</strong> Example 5
+<p><strong>The scattered puzzle&#39;s tints lost their if-chain.</strong> Example 5
 originally dealt pieces to its three shard layers with
 <code>if (calc(i % 3) == 0) { shard0.apply { … } }</code> ×3 — because
 <a href="/docs#layers-dynamic-layer-names"><code>layer(...)</code> routing</a> choked on any
@@ -936,8 +926,8 @@ fix later, layers are routable as data:</p>
   M placeX placeY spun.<span class="hljs-title function_">draw</span>()
 }
 </code></pre><p>(The computed-name spelling <code>layer(`shard${i % 3}`)</code> always worked
-and is what the shattered-glyph and tinted-panes samples now use — the
-if-chains there were simply never revisited.)</p>
+— it is what the shattered-glyph and tinted-panes samples use, and the
+rose-window finale and this post&#39;s own lid mosaic route the same way.)</p>
 <h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-garment">Garment patterns</a> — part 3 turns

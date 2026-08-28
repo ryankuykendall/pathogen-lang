@@ -28,7 +28,7 @@ segment labels to work together.*
 
 ## What it does
 
-A sewing pattern is a shape whose edges have jobs. The hem gets folded
+A sewing pattern is a drawing whose edges have jobs. The hem gets folded
 twice; the side seam gets 7 units of allowance; the armhole gets eased;
 notches tell you which edge meets which. Pattern drafting software is,
 to a first approximation, software for *remembering which edge is
@@ -44,7 +44,7 @@ let bodice = @{
 
 Name the edges once, at drafting time, and every downstream operation —
 cutting the yoke off, offsetting for allowance — carries the names
-along. The workflow stops being coordinate bookkeeping and becomes a
+along. The workflow stops being a ledger of coordinates and becomes a
 series of questions: *who kept the neckline? where is the side seam
 now?*
 
@@ -142,9 +142,9 @@ next compile. That is the payoff of edges with names sewn in.
 
 ## What this project taught the language
 
-The Cutting Room series doubles as a working friction log: building
-each project against the real language surfaced bugs and gaps, and
-this section records what got fixed because of it.
+This series doubles as a working friction log (part 1 explains the
+convention) — this section records what building the pattern sheets
+got fixed.
 
 **The panel labels' idioms made it into the manual.** The pattern
 sheets in Examples 2 and 5 lean on two spellings this post used
@@ -170,7 +170,8 @@ the wrong distance even without a bad corner.
 
 The fix restructured how `offset()` builds its result: every segment
 is offset with its own normals, join geometry lives *between*
-segments (a sharp corner now gets a short bevel — or an arc with
+segments (a sharp corner now gets a bevel — a short straight edge
+across the tip — or an arc with
 `offset(d, { join: 'round' })` — instead of deforming its neighbor),
 and curves subdivide and re-fit as true parallel curves. The
 [offset docs](/docs#path-blocks-offsetdistance-options-pathblock-projectedpath)
@@ -194,7 +195,7 @@ Direction was always correct; the joins were at fault. Friction logs
 earn their keep, but each entry deserves a fresh trace before it
 becomes a fix.
 
-**The pattern sheet also exposed a placement footgun — and got
+**The pattern sheet also exposed a placement trap — and got
 projected values a real `draw()`.** An early draft of Example 5 drew
 each piece with `placed.drawTo(placed.startPoint.x,
 placed.startPoint.y)` — "draw yourself where you are" — and every
@@ -216,7 +217,7 @@ placed.drawTo(placed.startPoint.x, placed.startPoint.y);
 placed.draw();
 ```
 
-*Epilogue:* the footgun itself is now gone at the root. `startPoint`
+*Epilogue:* the trap itself is now gone at the root. `startPoint`
 had been hardcoded to the frame origin since the language's first
 commit — the original spec comment even described the correct
 behavior, unimplemented. It now reports the **first inked point** on

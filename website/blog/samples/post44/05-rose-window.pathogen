@@ -62,9 +62,11 @@ scene.append(stone,
     solder,
     title);
 
-// The glass disc — the as-clause on circle() labels the whole rim.
+// The glass disc — the as-clause on circle() labels the whole rim,
+// and the cut.rim opt-in joins it to the seam group (Example 2's
+// trick), so ONE came loop strokes seams and rim together.
 let disc = @{
-  circle(0, 0, 92) as segment('rim');
+  circle(0, 0, 92) as segment('cut.rim');
 };
 // Eight spokes from r=36 out past the rim — one knife per spoke, built
 // in a loop — plus a ring knife that stamps out the medallion. The
@@ -94,33 +96,20 @@ stone.apply {
 for ([piece, i] in panes) {
   let placed = piece.project(originX, originY);
   // The medallion is the piece that kept none of the rim.
-  if (placed.segmentAll('rim').length > 0) {
-    if (calc(i % 3) == 0) {
-      glass0.apply {
-        M originX originY piece.draw()
-      }
-    }
-    if (calc(i % 3) == 1) {
-      glass1.apply {
-        M originX originY piece.draw()
-      }
-    }
-    if (calc(i % 3) == 2) {
-      glass2.apply {
-        M originX originY piece.draw()
-      }
+  if (placed.segmentAll('cut.rim').length > 0) {
+    // Deal the three glass tones round-robin by computed layer name —
+    // the fourth jewel tone, amber, is reserved for the medallion.
+    layer(`glass${i % 3}`).apply {
+      M originX originY piece.draw()
     }
   } else {
     medallion.apply {
       M originX originY piece.draw()
     }
   }
-  // Came on every healed seam and on the rim: two groups, one style.
+  // Came on every seam AND the opted-in rim — one umbrella query.
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.draw();
-    }
-    for (seam in placed.segmentAll('rim')) {
       seam.draw();
     }
   }

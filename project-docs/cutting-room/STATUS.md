@@ -307,3 +307,32 @@ until user review. Cross-cutting fix: pathblock-cutting.md:27/:125 stale
   index interiors, post-bracket chaining, statement position, plain-
   index regression pin. Suite 4993/4993; anchor
   syntax-conditional-ternary-expressions verified.
+
+- 2026-08-28 (post-loop agentic review round — 4-persona, user-
+  requested after the 'footgun' critique): footgun swept series-wide
+  first (4 uses → trap/hazard/plain description; docs instance too;
+  saved as memory with the broader tic-class findings). Review
+  verdict: good shape, two blockers. ALL MUST-FIX applied: (1) if-
+  chain remediation FINISHED — 42/05 lid loop + 44/05 finale routed
+  (finale also adopts cut.rim, dropping its second came loop — amber
+  deliberately reserved for the medallion, noted in prose), jigsaw
+  antecedent + stained-glass bullets updated to match; (2) papercraft
+  closing restructured 7→6 entries — the duplicated seams() waypoint
+  merged into one "Example 2 grew up twice" entry, ordered by example;
+  (3) merge-rule contradiction resolved (setup no longer over-
+  promises; Ex6 body names :atomic, retires subPath spelling);
+  (4) fold-legend mis-association fixed (valley caption now under the
+  valley crease) + mountain-fold and ghost contrast raised.
+  SHOULD-FIX applied: cut.<name> two-directions symmetry note in part
+  4 Ex2; [w,i]→[wedge,i]; dup comment removed; tic pass ("And"
+  openers ×3, earning metaphor ×3→1, bookkeeping ×8→2, sentence-frame
+  dupe varied, winding + bevel jargon translated, framing aligned);
+  caption dashes standardized. CONSIDER applied: 19 (hazard-fixed
+  hedge in part 4 closing). Deliberately skipped (polish/pre-existing,
+  consistent with prior rounds): 14-18 visual redesigns, 20 (44/02
+  two-stroke knife), 22 lattice feel, 23 grayscale legend; em-dash
+  density addressed where clustered only (retroactive stripping of
+  correct single asides would harm the prose — recorded in memory as
+  a write-time guideline). All changed samples recompiled + validated
+  (18 intentional warnings only), 6 BBWPs refreshed, blog rebuilt +
+  synced.

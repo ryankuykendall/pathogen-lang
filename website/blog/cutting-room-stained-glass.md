@@ -80,6 +80,13 @@ needs its own pass, or arc by arc as `segmentAll('cut.rim:atomic')` via
 [query pseudo-selectors](/docs#segment-labels-query-pseudo-selectors).
 (See [label names](/docs#segment-labels-label-names) for the rules.)
 
+Note the symmetry with part 1, which approached the same namespace from
+the other side: there you labeled the *knife* and the `cut.` prefix
+appeared automatically on the seams it healed — sub-labels to
+*distinguish* seams from each other. Here you write `cut.` yourself on
+your *own* geometry — an opt-in to *join* them. Two directions, one
+namespace, one umbrella query.
+
 <mini-workspace src="samples/post44/02-rim-joins-the-came.pathogen" caption="Same decoration loop on both windows; only the rim's label name differs." code-open></mini-workspace>
 
 Note the labeling shortcut, too: an `as` clause on a stdlib call like
@@ -126,9 +133,12 @@ medallion whole. Then:
 
 - the **medallion** is found by classification — it is the piece that
   kept none of the rim label (part 2's trick, part 3's workflow);
-- the **panes** are tinted by layer routing (Example 3);
-- the **came** strokes two label groups — the healed seams and the
-  authored rim — in one style;
+- the **panes** are tinted by layer routing (Example 3's deal, spelled
+  `` layer(`glass${i % 3}`) `` — amber sits out of the rotation because
+  it belongs to the medallion);
+- the **came** strokes seams and rim in one loop — the rim opted into
+  the seam group with `cut.rim` (Example 2's trick), so the umbrella
+  query covers both;
 - the **solder dots** sit at every seam's `startPoint` and `endPoint`,
   where real joints get soldered (on the medallion's closed boundary
   the two coincide — one dot, drawn twice, harmlessly).
@@ -147,18 +157,19 @@ convention). The leading loop above originally read
 `seam.drawTo(seam.startPoint.x, seam.startPoint.y)` — projected values
 have since grown an in-place `draw()`, and every came stroke in this
 post got one line simpler. Part 1's closing section tells the story;
-the garment post's tells its darker sibling (the same expression
-silently misplacing whole cut pieces).
+the garment post's tells its darker sibling — the same expression once
+silently misplaced whole cut pieces — along with the epilogue where
+that hazard was fixed at the root.
 
 (The came loops in this post keep their per-piece form deliberately —
 each pane declaring its own boundary *is* the teaching. When you want
 each physical seam once instead — solder budgets, fold lines —
 `pieces.seams()` now exists; part 1's closing section shows it.)
 
-**And the rose window's knives became a loop.** The first version of
+**The rose window's knives became a loop.** The first version of
 Example 5 hand-chained eight spokes in one cutter block — sixteen
 lines of relative-move arithmetic between stroke endpoints, the same
-bookkeeping that caused two authoring bugs elsewhere in the series.
+pattern that caused two authoring bugs elsewhere in the series.
 `cut()` now [accepts an array of
 cutters](/docs#path-blocks-cutcutter-array-of-pathblock), so the
 spokes are pushed onto a list in a `for` loop and handed over in one
@@ -182,7 +193,7 @@ for (k in 0..7) {
 let panes = disc.cut(knives);
 ```
 
-**And Example 2's trick became a contract.** The rim-joins-the-came
+**Example 2's trick became a contract.** The rim-joins-the-came
 demo originally leaned on an accident: `cut` was an ordinary label, so
 naming your own geometry `'cut'` happened to merge it with the seams —
 silently, and with no way back out. Working the friction log turned

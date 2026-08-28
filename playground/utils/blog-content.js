@@ -5524,7 +5524,7 @@ asked pieces about the <em>automatic</em> <code>cut</code> label; this post is w
 your own names do the heavy lifting.</p>
 </blockquote>
 <h2>What it does</h2>
-<p>A sewing pattern is a shape whose edges have jobs. The hem gets folded
+<p>A sewing pattern is a drawing whose edges have jobs. The hem gets folded
 twice; the side seam gets 7 units of allowance; the armhole gets eased;
 notches tell you which edge meets which. Pattern drafting software is,
 to a first approximation, software for <em>remembering which edge is
@@ -5536,7 +5536,7 @@ which</em> — and that is precisely what <code>as segment(&#39;name&#39;)</code
 };
 </code></pre><p>Name the edges once, at drafting time, and every downstream operation —
 cutting the yoke off, offsetting for allowance — carries the names
-along. The workflow stops being coordinate bookkeeping and becomes a
+along. The workflow stops being a ledger of coordinates and becomes a
 series of questions: <em>who kept the neckline? where is the side seam
 now?</em></p>
 <p>(An earlier draft of this post carried a blunt caveat here: offsetting
@@ -6203,9 +6203,9 @@ title.apply {
 the neck, or widen the hem, and the sheet re-annotates itself on the
 next compile. That is the payoff of edges with names sewn in.</p>
 <h2>What this project taught the language</h2>
-<p>The Cutting Room series doubles as a working friction log: building
-each project against the real language surfaced bugs and gaps, and
-this section records what got fixed because of it.</p>
+<p>This series doubles as a working friction log (part 1 explains the
+convention) — this section records what building the pattern sheets
+got fixed.</p>
 <p><strong>The panel labels&#39; idioms made it into the manual.</strong> The pattern
 sheets in Examples 2 and 5 lean on two spellings this post used
 before the docs admitted they existed: string ternaries —
@@ -6228,7 +6228,8 @@ translated control points, so a deep scoop&#39;s offset midsection sat at
 the wrong distance even without a bad corner.</p>
 <p>The fix restructured how <code>offset()</code> builds its result: every segment
 is offset with its own normals, join geometry lives <em>between</em>
-segments (a sharp corner now gets a short bevel — or an arc with
+segments (a sharp corner now gets a bevel — a short straight edge
+across the tip — or an arc with
 <code>offset(d, { join: &#39;round&#39; })</code> — instead of deforming its neighbor),
 and curves subdivide and re-fit as true parallel curves. The
 <a href="/docs#path-blocks-offsetdistance-options-pathblock-projectedpath">offset docs</a>
@@ -6247,7 +6248,7 @@ offset flips to the wrong side&quot; — was not the bug that existed.
 Direction was always correct; the joins were at fault. Friction logs
 earn their keep, but each entry deserves a fresh trace before it
 becomes a fix.</p>
-<p><strong>The pattern sheet also exposed a placement footgun — and got
+<p><strong>The pattern sheet also exposed a placement trap — and got
 projected values a real <code>draw()</code>.</strong> An early draft of Example 5 drew
 each piece with <code>placed.drawTo(placed.startPoint.x, placed.startPoint.y)</code> — &quot;draw yourself where you are&quot; — and every
 annotation landed 63 units away from its piece. The cause: a cut
@@ -6264,7 +6265,7 @@ placed.<span class="hljs-title function_">drawTo</span>(placed.<span class="hljs
 
 <span class="hljs-comment">// after: correct for both, and says what it means</span>
 placed.<span class="hljs-title function_">draw</span>();
-</code></pre><p><em>Epilogue:</em> the footgun itself is now gone at the root. <code>startPoint</code>
+</code></pre><p><em>Epilogue:</em> the trap itself is now gone at the root. <code>startPoint</code>
 had been hardcoded to the frame origin since the language&#39;s first
 commit — the original spec comment even described the correct
 behavior, unimplemented. It now reports the <strong>first inked point</strong> on
@@ -6322,7 +6323,7 @@ and <code>segmentAll(&#39;rim&#39;).length</code> sorts border pieces from inter
 pieces with no geometry tests.</li>
 <li><strong><code>rotate(angle, origin)</code>.</strong> Frame-preserving rotation spins a piece
 around any pivot — its own center, say — with no re-basing and no
-pivot bookkeeping afterward.</li>
+pivot compensation afterward.</li>
 </ul>
 <h2>Why you&#39;d use it</h2>
 <p>The same reason the puzzle industry uses dies instead of rulers: the
@@ -6857,7 +6858,7 @@ for ([piece, i] in pieces) {
   // The piece that kept no rim is the missing one — skip it.
   if (piece.segmentAll('rim').length &gt; 0) {
     // Spin in place around the piece's own bounding-box center:
-    // frame-preserving, so no pivot bookkeeping — then drift outward
+    // frame-preserving, so no pivot compensation — then drift outward
     // with a hashed shove.
     let spun = piece.rotate(hashRange(i, -0.22, 0.22), Point(pieceCenterX, pieceCenterY));
     let dx = calc((pieceCenterX - plateCenterX) / plateCenterX * 26 + hashRange(i, -8, 8, 7));
@@ -6882,20 +6883,10 @@ lid.apply {
 }
 for ([piece, i] in pieces) {
   let mini = piece.scale(0.44, 0.44);
-  if (calc(i % 3) == 0) {
-    lid0.apply {
-      M 361 43 mini.draw()
-    }
-  }
-  if (calc(i % 3) == 1) {
-    lid1.apply {
-      M 361 43 mini.draw()
-    }
-  }
-  if (calc(i % 3) == 2) {
-    lid2.apply {
-      M 361 43 mini.draw()
-    }
+  // Same routed round-robin as the scatter above — no if-chain here
+  // either.
+  layer(\`lid\${i % 3}\`).apply {
+    M 361 43 mini.draw()
   }
 }
 
@@ -6921,7 +6912,7 @@ became a real method (<code>seam.draw()</code> replaced the two-line
 <code>cut([...])</code> as an array — one knife per lane, no chained-move
 arithmetic between strokes. Part 1&#39;s closing section has both
 stories.</p>
-<p><strong>And the scattered puzzle&#39;s tints lost their if-chain.</strong> Example 5
+<p><strong>The scattered puzzle&#39;s tints lost their if-chain.</strong> Example 5
 originally dealt pieces to its three shard layers with
 <code>if (calc(i % 3) == 0) { shard0.apply { … } }</code> ×3 — because
 <a href="/docs#layers-dynamic-layer-names"><code>layer(...)</code> routing</a> choked on any
@@ -6942,8 +6933,8 @@ fix later, layers are routable as data:</p>
   M placeX placeY spun.<span class="hljs-title function_">draw</span>()
 }
 </code></pre><p>(The computed-name spelling <code>layer(\`shard\${i % 3}\`)</code> always worked
-and is what the shattered-glyph and tinted-panes samples now use — the
-if-chains there were simply never revisited.)</p>
+— it is what the shattered-glyph and tinted-panes samples use, and the
+rose-window finale and this post&#39;s own lid mosaic route the same way.)</p>
 <h2>Where to go next</h2>
 <ul>
 <li><a href="/blog/cutting-room-garment">Garment patterns</a> — part 3 turns
@@ -7001,8 +6992,9 @@ the same queries answer in canvas coordinates, ready to draw with.</li>
 <li><strong>Adjacent commands with the same label merge into one run.</strong> Ask
 <code>segmentAll</code> for two labeled edges that follow each other and you get
 one queryable run, not two. That is a feature — a fold line that
-turns a corner is still one fold — but it will surprise you exactly
-once, so it gets its own moment in Example 6.</li>
+turns a corner is still one fold — and when you <em>do</em> want the pieces
+back individually, the language has answers: Example 6 shows the rule
+and the way around it.</li>
 </ul>
 <p>Your own labels survive the cut too: name an edge <code>as segment(&#39;roof&#39;)</code>
 before cutting and whichever piece keeps that edge still answers for
@@ -7164,7 +7156,7 @@ let cutLayer = PathLayer('cut-line') \${
   fill: none;
 };
 let mountainLayer = PathLayer('mountain-folds') \${
-  stroke: #94a3b8;
+  stroke: #334155;
   stroke-width: 1.5;
   fill: none;
   stroke-dasharray: 7 3 1.5 3;
@@ -7190,7 +7182,7 @@ let mountainCaption = TextLayer('mountain-caption') \${
 let valleyCaption = TextLayer('valley-caption') \${
   font-family: monospace;
   font-size: 9;
-  fill: #64748b;
+  fill: #94a3b8;
   text-anchor: middle;
 };
 scene.append(panelLayer,
@@ -7251,14 +7243,16 @@ for (seam in panels.seams()) {
   }
 }
 
+// Captions sit under what they name: the valley crease is at x=240,
+// the right mountain crease at x=312 (nearest the right caption).
 cutCaption.apply {
   text(96, 175)\`solid = cut\`;
 }
-mountainCaption.apply {
-  text(240, 175)\`dash-dot = mountain fold\`;
-}
 valleyCaption.apply {
-  text(388, 175)\`dashed = valley fold\`;
+  text(240, 175)\`dashed = valley fold\`;
+}
+mountainCaption.apply {
+  text(388, 175)\`dash-dot = mountain fold\`;
 }
 </code>
   <img src="/blog/samples/post41/02-fold-lines.svg" alt="The outline is the cut line; each named knife's seams keep its name — mountain and valley folds dash differently." loading="lazy">
@@ -7268,7 +7262,7 @@ is shared by two panels, so asking every panel for its seams would
 stroke each fold twice — and two dashed strokes running opposite
 directions fill in each other&#39;s gaps. <code>panels.seams()</code>, asked of the
 cut result as a whole, answers with each <em>physical</em> seam exactly once,
-so the fold pass is one loop with no ownership bookkeeping. (Per-piece
+so the fold pass is one loop with no ownership rules. (Per-piece
 <code>segmentAll(&#39;cut&#39;)</code> is still the right query when you want each
 piece&#39;s own view of its edges — Example 1 and the tabs to come.)</p>
 <h2>Example 3 — Glue tabs that grow on seams</h2>
@@ -7361,7 +7355,7 @@ for (piece in pieces) {
 }
 
 labels.apply {
-  text(240, 205)\`tabs ride the seam — the outer boundary stays clean\`;
+  text(240, 205)\`tabs ride the seam - the outer boundary stays clean\`;
 }
 </code>
   <img src="/blog/samples/post41/03-glue-tabs.svg" alt="get(t) walks the seam, normal(t) aims the tab; the uncut boundary grows nothing." loading="lazy">
@@ -7610,9 +7604,9 @@ layer('bg').apply {
 
 let scene = GroupLayer('scene') \${};
 let ghost = PathLayer('ghost') \${
-  stroke: #1e293b;
+  stroke: #334155;
   stroke-width: 1;
-  stroke-dasharray: 1 5;
+  stroke-dasharray: 3 4;
   fill: none;
 };
 let tabLayer = PathLayer('tabs') \${
@@ -7662,10 +7656,9 @@ let plate = @{
   polygon(0, 0, 62, 6);
 };
 
-// Three straight knives through the center, 60 degrees apart.
 let knifeReach = 78;
 // Three straight knives through the center, 60 degrees apart — each its
-// own block, handed to cut() as an array. No chained-move arithmetic.
+// own block, handed to cut() as an array, and each named for its seams.
 let knives = [];
 for (k in 0..2) {
   let knifeAngle = calc(k * PI() / 3);
@@ -7747,21 +7740,23 @@ caption.apply {
 </code>
   <img src="/blog/samples/post41/06-medallion-kit.svg" alt="The finished kit sheet: tab the red edge, fold the dashed one, rejoin in order." loading="lazy">
 </mini-workspace></p>
-<p>And here is the merge rule from the top of the post, paying rent — by
-<em>not</em> applying. A wedge&#39;s two radial edges meet at the hexagon&#39;s
-center, and under the umbrella query <code>segmentAll(&#39;cut&#39;)</code> they come back
-as <strong>one</strong> V-shaped run (adjacent seam commands merge regardless of
-which knife made them). But the knives are named — <code>k0</code>, <code>k1</code>, <code>k2</code> —
-and each wedge&#39;s two edges come from two <em>different</em> knives, so the
-exact queries <code>segmentAll(&#39;cut.k0&#39;)</code>… hand each edge back on its own.
-The sample decides tab-or-fold per edge by which side of the wedge&#39;s
+<p>And here is the merge rule from the top of the post, doing real
+work. A wedge&#39;s two radial edges meet at the hexagon&#39;s center, and
+under the umbrella query <code>segmentAll(&#39;cut&#39;)</code> they come back as <strong>one</strong>
+V-shaped run (adjacent seam commands merge regardless of which knife
+made them). But the knives are named — <code>k0</code>, <code>k1</code>, <code>k2</code> — and each
+wedge&#39;s two edges come from two <em>different</em> knives, so the exact
+queries <code>segmentAll(&#39;cut.k0&#39;)</code>… hand each edge back on its own. The
+sample decides tab-or-fold per edge by which side of the wedge&#39;s
 center ray it lies on. If you ever ask for two seams and receive one,
-the umbrella merge is why — and a named knife, or <code>subPath(t0, t1)</code>,
-is the knife that re-divides them.</p>
+the umbrella merge is why — and a named knife (or, for a run one label
+covers, the
+<a href="/docs#segment-labels-query-pseudo-selectors"><code>:atomic</code> pseudo-selector</a>)
+re-divides it.</p>
 <h2>What this project taught the language</h2>
 <p>The friction-log promise from the top of the post, kept — what building
 this project changed in Pathogen:</p>
-<p><strong>The seam idiom earned a real <code>draw()</code>.</strong> When this series first
+<p><strong>The seam idiom became a real <code>draw()</code>.</strong> When this series first
 shipped, the loop above took two lines per seam:
 <code>seam.drawTo(seam.startPoint.x, seam.startPoint.y)</code> — &quot;draw yourself
 where you already are,&quot; said with two property reads and a re-anchor.
@@ -7772,22 +7767,31 @@ post tells that part of the story — including the epilogue where
 <code>startPoint</code> itself was later made truthful). Projected values now have
 an in-place
 <a href="/docs#path-blocks-drawing-a-projectedpath-in-place"><code>draw()</code></a>: it
-anchors on the value&#39;s first command by definition, so the footgun is
-unreachable and the idiom is one self-evident line.</p>
+anchors on the value&#39;s first command by definition, so the misplacement
+cannot be written at all and the idiom is one self-evident line.</p>
 <pre><code class="hljs language-pathogen"><span class="hljs-comment">// before</span>
 seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
 
 <span class="hljs-comment">// after</span>
 seam.<span class="hljs-title function_">draw</span>();
-</code></pre><p><strong>The fold lines lost their cleverest code.</strong> Example 2 originally
-deduped shared folds with an ownership rule — each panel stroked only
-the seams on its right-hand side, a midpoint-versus-center comparison
-that worked and taught nothing. Cut results now answer
+</code></pre><p><strong>Example 2 grew up twice.</strong> The fold lines you see above are the
+result of two rounds of the loop. First, dedup: the original sample
+kept shared folds from double-drawing with an ownership rule — each
+panel stroked only the seams on its right-hand side, a
+midpoint-versus-center comparison that worked and taught nothing. Cut
+results now answer
 <a href="/docs#path-blocks-seams-array-of-pathblock"><code>pieces.seams()</code></a>: each
-physical seam exactly once, subject-local like the pieces themselves.
-The double-draw bug class (opposite-phase dashes filling each other&#39;s
-gaps) is unwritable through it.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: per-panel ownership rule (~10 lines)</span>
+physical seam exactly once, subject-local like the pieces themselves,
+so the double-draw bug class (opposite-phase dashes filling each
+other&#39;s gaps) is unwritable. Second, direction: even deduped, every
+fold shipped in one dash style, because all seams shared one anonymous
+<code>cut</code> group and mountain-versus-valley — <em>the</em> distinction a real
+accordion template turns on — was inexpressible. Knife labels now
+<a href="/docs#segment-labels-label-names">ride through the cut</a>: an edge
+authored <code>as segment(&#39;mountain&#39;)</code> heals into seams labeled
+<code>cut.mountain</code>, the umbrella <code>segmentAll(&#39;cut&#39;)</code> still answers
+everything, and sub-label queries answer one knife at a time.</p>
+<pre><code class="hljs language-pathogen"><span class="hljs-comment">// original: per-panel ownership rule (~10 lines)</span>
 <span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
   <span class="hljs-keyword">let</span> mid = seam.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
   <span class="hljs-keyword">if</span> (mid.<span class="hljs-property">x</span> &gt; panelCenterX) {
@@ -7795,16 +7799,29 @@ gaps) is unwritable through it.</p>
   }
 }
 
-<span class="hljs-comment">// after</span>
+<span class="hljs-comment">// today: each physical seam once, routed by the knife that made it</span>
 <span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> panels.<span class="hljs-title function_">seams</span>()) {
-  seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+  <span class="hljs-keyword">if</span> (seam.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut.mountain&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+    mountainLayer.<span class="hljs-property">apply</span> {
+      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+    }
+  } <span class="hljs-keyword">else</span> {
+    valleyLayer.<span class="hljs-property">apply</span> {
+      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+    }
+  }
 }
-</code></pre><p><strong>The tabs&#39; direction test turned out to be dead code.</strong> Example 3
-settles which way a tab points by comparing the seam normal against
-the piece&#39;s center and flipping when it aims inward — three lines of
-ceremony per tab. Working the friction log revealed the flip never
-fires: <code>cut()</code> canonicalizes every piece&#39;s winding, so seam normals
-point away from the piece&#39;s material <em>by construction</em>. The guarantee
+</code></pre><p>The knife names paid off a second time in Example 6: a wedge&#39;s two
+radial edges come from two <em>different</em> knives, so exact sub-label
+queries return each edge on its own, and the merged-V <code>subPath</code>
+surgery at guessed fractions is gone.</p>
+<p><strong>The tabs&#39; direction test turned out to be dead code.</strong> Example 3
+settles which way a tab points by reading the seam normal — and the
+original sample compared it against the piece&#39;s center, flipping when
+it aimed inward: three lines of ceremony per tab. Working the friction
+log revealed the flip never fires. A cut always orients each piece&#39;s
+outline the same way around its material, so a seam normal points out
+of the piece <em>by construction</em>. The guarantee
 <a href="/docs#path-blocks-normalt-point-angle">is now documented</a> and pinned
 by tests, and both tab samples dropped the dance — with byte-identical
 output, the strongest proof the code was dead. The purest friction-log
@@ -7825,43 +7842,11 @@ wrong before review caught it. <code>cut()</code> now accepts an
 the sample builds one single-stroke knife per angle in a loop and
 hands the set over in a single call. A knife that states only &quot;start
 here, cut this&quot; has no arithmetic to get wrong.</p>
-<p><strong>The knives got names, and the folds got directions.</strong> Example 2
-originally shipped every fold in one dash style with a caveat: all
-seams share one anonymous <code>cut</code> group, so mountain-versus-valley —
-<em>the</em> distinction a real accordion template turns on — was
-inexpressible. Knife labels now
-<a href="/docs#segment-labels-label-names">ride through the cut</a>: an edge
-authored <code>as segment(&#39;mountain&#39;)</code> heals into seams labeled
-<code>cut.mountain</code>, the umbrella <code>segmentAll(&#39;cut&#39;)</code> still answers
-everything, and the sub-label queries answer one knife at a time. The
-accordion now dashes its creases correctly, and the medallion got a
-second payoff: a wedge&#39;s two radial edges come from two <em>different</em>
-knives, so exact sub-label queries return each edge on its own —
-Example 6&#39;s merged-V <code>subPath</code> surgery at guessed fractions is gone.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: every fold identical, and a prose apology</span>
-foldLayer.<span class="hljs-property">apply</span> {
-  <span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> panels.<span class="hljs-title function_">seams</span>()) {
-    seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
-  }
-}
-
-<span class="hljs-comment">// after: the knife&#x27;s name decides the dash</span>
-<span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> panels.<span class="hljs-title function_">seams</span>()) {
-  <span class="hljs-keyword">if</span> (seam.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut.mountain&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
-    mountainLayer.<span class="hljs-property">apply</span> {
-      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
-    }
-  } <span class="hljs-keyword">else</span> {
-    valleyLayer.<span class="hljs-property">apply</span> {
-      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
-    }
-  }
-}
-</code></pre><p><strong>The query language grew its <code>:</code> half.</strong> When knife names landed (the
-previous entry), the <code>.</code> in <code>cut.mountain</code> was only half of a deliberate
-decision: label names reserve <em>all</em> punctuation, with <code>:</code> explicitly
-held back for CSS-style pseudo-selectors that didn&#39;t exist yet. Now
-they do — <a href="/docs#segment-labels-query-pseudo-selectors"><code>:atomic</code>, <code>:first</code>, <code>:last</code>, and
+<p><strong>The query language grew its <code>:</code> half.</strong> When knife names landed
+(Example 2&#39;s second act, above), the <code>.</code> in <code>cut.mountain</code> was only
+half of a deliberate decision: label names reserve <em>all</em> punctuation,
+with <code>:</code> explicitly held back for CSS-style pseudo-selectors that
+didn&#39;t exist yet. Now they do — <a href="/docs#segment-labels-query-pseudo-selectors"><code>:atomic</code>, <code>:first</code>, <code>:last</code>, and
 <code>:nth(k)</code></a>. <code>:atomic</code> is the
 merge rule&#39;s official escape hatch (one block per drawing command — a
 labeled <code>circle()</code> hands back its individual arcs), and the position
@@ -7876,13 +7861,13 @@ grammar was already paid for.</p>
 <span class="hljs-comment">// after: ask for it</span>
 <span class="hljs-keyword">let</span> arcs = wheel.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim:atomic&#x27;</span>);
 <span class="hljs-keyword">let</span> lastTooth = comb.<span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth:last&#x27;</span>);
-</code></pre><p><strong>And the traps got fences.</strong> Two footguns this series stepped on
+</code></pre><p><strong>The traps got fences.</strong> Two hazards this series stepped on
 never bit the published samples only because a style guideline banned
 the ammunition. Both are now language rules instead of etiquette.
 Single-letter variables that shadow path commands (<code>let m = 25;</code> then
 <code>L m 40</code>) used to fail with a <code>Missing &#39;;&#39;</code> pointed at punctuation
 nowhere near the mistake; the compiler and the editor now say what
-actually happened — <code>&#39;m&#39; is a path command here — write calc(m), or rename the variable</code> — with a one-click calc() wrap in the playground.
+actually happened (<code>&#39;m&#39; is a path command here — write calc(m), or rename the variable</code>), with a one-click calc() wrap in the playground.
 And the angle-suffix names <code>pi</code>, <code>deg</code>, and <code>rad</code> are now
 <a href="/docs#syntax-variables">reserved words</a>: suffix only, never a
 variable, so <code>calc(pi)</code> explains itself instead of reporting an
@@ -8037,6 +8022,12 @@ still addressable on its own as <code>segmentAll(&#39;cut.rim&#39;)</code> when 
 needs its own pass, or arc by arc as <code>segmentAll(&#39;cut.rim:atomic&#39;)</code> via
 <a href="/docs#segment-labels-query-pseudo-selectors">query pseudo-selectors</a>.
 (See <a href="/docs#segment-labels-label-names">label names</a> for the rules.)</p>
+<p>Note the symmetry with part 1, which approached the same namespace from
+the other side: there you labeled the <em>knife</em> and the <code>cut.</code> prefix
+appeared automatically on the seams it healed — sub-labels to
+<em>distinguish</em> seams from each other. Here you write <code>cut.</code> yourself on
+your <em>own</em> geometry — an opt-in to <em>join</em> them. Two directions, one
+namespace, one umbrella query.</p>
 <p><mini-workspace code-open caption="Same decoration loop on both windows; only the rim's label name differs.">
   <code>// viewBox="0 0 480 260"
 //-- The seam group takes volunteers: 'cut.&lt;name&gt;' is the explicit opt-in
@@ -8205,12 +8196,12 @@ let wedges = disc.cut(knives);
 let originX = 240;
 let originY = 122;
 
-for ([w, i] in wedges) {
+for ([wedge, i] in wedges) {
   // Deal the jewel tones round-robin by computed layer name.
   layer(\`glass\${i % 4}\`).apply {
-    M originX originY w.draw()
+    M originX originY wedge.draw()
   }
-  let placed = w.project(originX, originY);
+  let placed = wedge.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.draw();
@@ -8349,9 +8340,12 @@ medallion whole. Then:</p>
 <ul>
 <li>the <strong>medallion</strong> is found by classification — it is the piece that
 kept none of the rim label (part 2&#39;s trick, part 3&#39;s workflow);</li>
-<li>the <strong>panes</strong> are tinted by layer routing (Example 3);</li>
-<li>the <strong>came</strong> strokes two label groups — the healed seams and the
-authored rim — in one style;</li>
+<li>the <strong>panes</strong> are tinted by layer routing (Example 3&#39;s deal, spelled
+<code>layer(\`glass\${i % 3}\`)</code> — amber sits out of the rotation because
+it belongs to the medallion);</li>
+<li>the <strong>came</strong> strokes seams and rim in one loop — the rim opted into
+the seam group with <code>cut.rim</code> (Example 2&#39;s trick), so the umbrella
+query covers both;</li>
 <li>the <strong>solder dots</strong> sit at every seam&#39;s <code>startPoint</code> and <code>endPoint</code>,
 where real joints get soldered (on the medallion&#39;s closed boundary
 the two coincide — one dot, drawn twice, harmlessly).</li>
@@ -8421,9 +8415,11 @@ scene.append(stone,
     solder,
     title);
 
-// The glass disc — the as-clause on circle() labels the whole rim.
+// The glass disc — the as-clause on circle() labels the whole rim,
+// and the cut.rim opt-in joins it to the seam group (Example 2's
+// trick), so ONE came loop strokes seams and rim together.
 let disc = @{
-  circle(0, 0, 92) as segment('rim');
+  circle(0, 0, 92) as segment('cut.rim');
 };
 // Eight spokes from r=36 out past the rim — one knife per spoke, built
 // in a loop — plus a ring knife that stamps out the medallion. The
@@ -8453,33 +8449,20 @@ stone.apply {
 for ([piece, i] in panes) {
   let placed = piece.project(originX, originY);
   // The medallion is the piece that kept none of the rim.
-  if (placed.segmentAll('rim').length &gt; 0) {
-    if (calc(i % 3) == 0) {
-      glass0.apply {
-        M originX originY piece.draw()
-      }
-    }
-    if (calc(i % 3) == 1) {
-      glass1.apply {
-        M originX originY piece.draw()
-      }
-    }
-    if (calc(i % 3) == 2) {
-      glass2.apply {
-        M originX originY piece.draw()
-      }
+  if (placed.segmentAll('cut.rim').length &gt; 0) {
+    // Deal the three glass tones round-robin by computed layer name —
+    // the fourth jewel tone, amber, is reserved for the medallion.
+    layer(\`glass\${i % 3}\`).apply {
+      M originX originY piece.draw()
     }
   } else {
     medallion.apply {
       M originX originY piece.draw()
     }
   }
-  // Came on every healed seam and on the rim: two groups, one style.
+  // Came on every seam AND the opted-in rim — one umbrella query.
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.draw();
-    }
-    for (seam in placed.segmentAll('rim')) {
       seam.draw();
     }
   }
@@ -8508,16 +8491,17 @@ convention). The leading loop above originally read
 <code>seam.drawTo(seam.startPoint.x, seam.startPoint.y)</code> — projected values
 have since grown an in-place <code>draw()</code>, and every came stroke in this
 post got one line simpler. Part 1&#39;s closing section tells the story;
-the garment post&#39;s tells its darker sibling (the same expression
-silently misplacing whole cut pieces).</p>
+the garment post&#39;s tells its darker sibling — the same expression once
+silently misplaced whole cut pieces — along with the epilogue where
+that hazard was fixed at the root.</p>
 <p>(The came loops in this post keep their per-piece form deliberately —
 each pane declaring its own boundary <em>is</em> the teaching. When you want
 each physical seam once instead — solder budgets, fold lines —
 <code>pieces.seams()</code> now exists; part 1&#39;s closing section shows it.)</p>
-<p><strong>And the rose window&#39;s knives became a loop.</strong> The first version of
+<p><strong>The rose window&#39;s knives became a loop.</strong> The first version of
 Example 5 hand-chained eight spokes in one cutter block — sixteen
 lines of relative-move arithmetic between stroke endpoints, the same
-bookkeeping that caused two authoring bugs elsewhere in the series.
+pattern that caused two authoring bugs elsewhere in the series.
 <code>cut()</code> now <a href="/docs#path-blocks-cutcutter-array-of-pathblock">accepts an array of
 cutters</a>, so the
 spokes are pushed onto a list in a <code>for</code> loop and handed over in one
@@ -8537,7 +8521,7 @@ l <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</s
   });
 }
 <span class="hljs-keyword">let</span> panes = disc.<span class="hljs-title function_">cut</span>(knives);
-</code></pre><p><strong>And Example 2&#39;s trick became a contract.</strong> The rim-joins-the-came
+</code></pre><p><strong>Example 2&#39;s trick became a contract.</strong> The rim-joins-the-came
 demo originally leaned on an accident: <code>cut</code> was an ordinary label, so
 naming your own geometry <code>&#39;cut&#39;</code> happened to merge it with the seams —
 silently, and with no way back out. Working the friction log turned

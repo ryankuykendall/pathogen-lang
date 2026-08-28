@@ -43,7 +43,7 @@ This post adds three tools to part 1's kit:
   pieces with no geometry tests.
 - **`rotate(angle, origin)`.** Frame-preserving rotation spins a piece
   around any pivot — its own center, say — with no re-basing and no
-  pivot bookkeeping afterward.
+  pivot compensation afterward.
 
 ## Why you'd use it
 
@@ -151,7 +151,7 @@ became a real method (`seam.draw()` replaced the two-line
 arithmetic between strokes. Part 1's closing section has both
 stories.
 
-**And the scattered puzzle's tints lost their if-chain.** Example 5
+**The scattered puzzle's tints lost their if-chain.** Example 5
 originally dealt pieces to its three shard layers with
 `if (calc(i % 3) == 0) { shard0.apply { … } }` ×3 — because
 [`layer(...)` routing](/docs#layers-dynamic-layer-names) choked on any
@@ -176,8 +176,8 @@ layer(shardLayers[calc(i % 3)]).apply {
 ```
 
 (The computed-name spelling `` layer(`shard${i % 3}`) `` always worked
-and is what the shattered-glyph and tinted-panes samples now use — the
-if-chains there were simply never revisited.)
+— it is what the shattered-glyph and tinted-panes samples use, and the
+rose-window finale and this post's own lid mosaic route the same way.)
 
 ## Where to go next
 

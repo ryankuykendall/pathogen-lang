@@ -415,6 +415,12 @@ still addressable on its own as <code>segmentAll(&#39;cut.rim&#39;)</code> when 
 needs its own pass, or arc by arc as <code>segmentAll(&#39;cut.rim:atomic&#39;)</code> via
 <a href="/docs#segment-labels-query-pseudo-selectors">query pseudo-selectors</a>.
 (See <a href="/docs#segment-labels-label-names">label names</a> for the rules.)</p>
+<p>Note the symmetry with part 1, which approached the same namespace from
+the other side: there you labeled the <em>knife</em> and the <code>cut.</code> prefix
+appeared automatically on the seams it healed — sub-labels to
+<em>distinguish</em> seams from each other. Here you write <code>cut.</code> yourself on
+your <em>own</em> geometry — an opt-in to <em>join</em> them. Two directions, one
+namespace, one umbrella query.</p>
 <p><mini-workspace code-open caption="Same decoration loop on both windows; only the rim's label name differs.">
   <code>// viewBox="0 0 480 260"
 //-- The seam group takes volunteers: 'cut.&lt;name&gt;' is the explicit opt-in
@@ -583,12 +589,12 @@ let wedges = disc.cut(knives);
 let originX = 240;
 let originY = 122;
 
-for ([w, i] in wedges) {
+for ([wedge, i] in wedges) {
   // Deal the jewel tones round-robin by computed layer name.
   layer(`glass${i % 4}`).apply {
-    M originX originY w.draw()
+    M originX originY wedge.draw()
   }
-  let placed = w.project(originX, originY);
+  let placed = wedge.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.draw();
@@ -727,9 +733,12 @@ medallion whole. Then:</p>
 <ul>
 <li>the <strong>medallion</strong> is found by classification — it is the piece that
 kept none of the rim label (part 2&#39;s trick, part 3&#39;s workflow);</li>
-<li>the <strong>panes</strong> are tinted by layer routing (Example 3);</li>
-<li>the <strong>came</strong> strokes two label groups — the healed seams and the
-authored rim — in one style;</li>
+<li>the <strong>panes</strong> are tinted by layer routing (Example 3&#39;s deal, spelled
+<code>layer(`glass${i % 3}`)</code> — amber sits out of the rotation because
+it belongs to the medallion);</li>
+<li>the <strong>came</strong> strokes seams and rim in one loop — the rim opted into
+the seam group with <code>cut.rim</code> (Example 2&#39;s trick), so the umbrella
+query covers both;</li>
 <li>the <strong>solder dots</strong> sit at every seam&#39;s <code>startPoint</code> and <code>endPoint</code>,
 where real joints get soldered (on the medallion&#39;s closed boundary
 the two coincide — one dot, drawn twice, harmlessly).</li>
@@ -799,9 +808,11 @@ scene.append(stone,
     solder,
     title);
 
-// The glass disc — the as-clause on circle() labels the whole rim.
+// The glass disc — the as-clause on circle() labels the whole rim,
+// and the cut.rim opt-in joins it to the seam group (Example 2's
+// trick), so ONE came loop strokes seams and rim together.
 let disc = @{
-  circle(0, 0, 92) as segment('rim');
+  circle(0, 0, 92) as segment('cut.rim');
 };
 // Eight spokes from r=36 out past the rim — one knife per spoke, built
 // in a loop — plus a ring knife that stamps out the medallion. The
@@ -831,33 +842,20 @@ stone.apply {
 for ([piece, i] in panes) {
   let placed = piece.project(originX, originY);
   // The medallion is the piece that kept none of the rim.
-  if (placed.segmentAll('rim').length &gt; 0) {
-    if (calc(i % 3) == 0) {
-      glass0.apply {
-        M originX originY piece.draw()
-      }
-    }
-    if (calc(i % 3) == 1) {
-      glass1.apply {
-        M originX originY piece.draw()
-      }
-    }
-    if (calc(i % 3) == 2) {
-      glass2.apply {
-        M originX originY piece.draw()
-      }
+  if (placed.segmentAll('cut.rim').length &gt; 0) {
+    // Deal the three glass tones round-robin by computed layer name —
+    // the fourth jewel tone, amber, is reserved for the medallion.
+    layer(`glass${i % 3}`).apply {
+      M originX originY piece.draw()
     }
   } else {
     medallion.apply {
       M originX originY piece.draw()
     }
   }
-  // Came on every healed seam and on the rim: two groups, one style.
+  // Came on every seam AND the opted-in rim — one umbrella query.
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
-      seam.draw();
-    }
-    for (seam in placed.segmentAll('rim')) {
       seam.draw();
     }
   }
@@ -886,16 +884,17 @@ convention). The leading loop above originally read
 <code>seam.drawTo(seam.startPoint.x, seam.startPoint.y)</code> — projected values
 have since grown an in-place <code>draw()</code>, and every came stroke in this
 post got one line simpler. Part 1&#39;s closing section tells the story;
-the garment post&#39;s tells its darker sibling (the same expression
-silently misplacing whole cut pieces).</p>
+the garment post&#39;s tells its darker sibling — the same expression once
+silently misplaced whole cut pieces — along with the epilogue where
+that hazard was fixed at the root.</p>
 <p>(The came loops in this post keep their per-piece form deliberately —
 each pane declaring its own boundary <em>is</em> the teaching. When you want
 each physical seam once instead — solder budgets, fold lines —
 <code>pieces.seams()</code> now exists; part 1&#39;s closing section shows it.)</p>
-<p><strong>And the rose window&#39;s knives became a loop.</strong> The first version of
+<p><strong>The rose window&#39;s knives became a loop.</strong> The first version of
 Example 5 hand-chained eight spokes in one cutter block — sixteen
 lines of relative-move arithmetic between stroke endpoints, the same
-bookkeeping that caused two authoring bugs elsewhere in the series.
+pattern that caused two authoring bugs elsewhere in the series.
 <code>cut()</code> now <a href="/docs#path-blocks-cutcutter-array-of-pathblock">accepts an array of
 cutters</a>, so the
 spokes are pushed onto a list in a <code>for</code> loop and handed over in one
@@ -915,7 +914,7 @@ l <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</s
   });
 }
 <span class="hljs-keyword">let</span> panes = disc.<span class="hljs-title function_">cut</span>(knives);
-</code></pre><p><strong>And Example 2&#39;s trick became a contract.</strong> The rim-joins-the-came
+</code></pre><p><strong>Example 2&#39;s trick became a contract.</strong> The rim-joins-the-came
 demo originally leaned on an accident: <code>cut</code> was an ordinary label, so
 naming your own geometry <code>&#39;cut&#39;</code> happened to merge it with the seams —
 silently, and with no way back out. Working the friction log turned

@@ -69,12 +69,12 @@ let wedges = disc.cut(knives);
 let originX = 240;
 let originY = 122;
 
-for ([w, i] in wedges) {
+for ([wedge, i] in wedges) {
   // Deal the jewel tones round-robin by computed layer name.
   layer(`glass${i % 4}`).apply {
-    M originX originY w.draw()
+    M originX originY wedge.draw()
   }
-  let placed = w.project(originX, originY);
+  let placed = wedge.project(originX, originY);
   leading.apply {
     for (seam in placed.segmentAll('cut')) {
       seam.draw();

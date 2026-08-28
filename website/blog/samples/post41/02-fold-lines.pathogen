@@ -25,7 +25,7 @@ let cutLayer = PathLayer('cut-line') ${
   fill: none;
 };
 let mountainLayer = PathLayer('mountain-folds') ${
-  stroke: #94a3b8;
+  stroke: #334155;
   stroke-width: 1.5;
   fill: none;
   stroke-dasharray: 7 3 1.5 3;
@@ -51,7 +51,7 @@ let mountainCaption = TextLayer('mountain-caption') ${
 let valleyCaption = TextLayer('valley-caption') ${
   font-family: monospace;
   font-size: 9;
-  fill: #64748b;
+  fill: #94a3b8;
   text-anchor: middle;
 };
 scene.append(panelLayer,
@@ -112,12 +112,14 @@ for (seam in panels.seams()) {
   }
 }
 
+// Captions sit under what they name: the valley crease is at x=240,
+// the right mountain crease at x=312 (nearest the right caption).
 cutCaption.apply {
   text(96, 175)`solid = cut`;
 }
-mountainCaption.apply {
-  text(240, 175)`dash-dot = mountain fold`;
-}
 valleyCaption.apply {
-  text(388, 175)`dashed = valley fold`;
+  text(240, 175)`dashed = valley fold`;
+}
+mountainCaption.apply {
+  text(388, 175)`dash-dot = mountain fold`;
 }

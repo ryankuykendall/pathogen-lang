@@ -83,7 +83,7 @@ for (seam in placed.segmentAll('cut')) {
 
 This is the idiom for decorating query results — seams, labeled runs, offsets — where the value's own coordinates *are* the target. The cursor advances to the path's endpoint, and the same ProjectedPath comes back for chaining.
 
-**The `drawTo` anchor contract.** `drawTo(x, y)` places the value's `startPoint` — the **first inked point** — at `(x, y)`. There used to be a footgun here: a cut piece's `startPoint` reported the *frame origin* rather than where the piece's ink actually starts, so `drawTo(p.startPoint.x, p.startPoint.y)` silently shifted whole pieces. `startPoint` is now truthful for every value (`get(0)` always agrees with it), so `drawTo` anchors the ink at the target for pieces and seams alike. `.draw()` remains the one-word spelling for drawing a projected value in place.
+**The `drawTo` anchor contract.** `drawTo(x, y)` places the value's `startPoint` — the **first inked point** — at `(x, y)`. There used to be a trap here: a cut piece's `startPoint` reported the *frame origin* rather than where the piece's ink actually starts, so `drawTo(p.startPoint.x, p.startPoint.y)` silently shifted whole pieces. `startPoint` is now truthful for every value (`get(0)` always agrees with it), so `drawTo` anchors the ink at the target for pieces and seams alike. `.draw()` remains the one-word spelling for drawing a projected value in place.
 
 One distinction worth knowing: `proj.drawTo(x, y)` puts the *ink* at `(x, y)`; `M x y` followed by `block.draw()` seats the *pen* there and lets a leading `m` in the block offset from it. For blocks with no leading move the two agree exactly.
 

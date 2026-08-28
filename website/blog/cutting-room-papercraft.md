@@ -54,8 +54,9 @@ on them:
 - **Adjacent commands with the same label merge into one run.** Ask
   `segmentAll` for two labeled edges that follow each other and you get
   one queryable run, not two. That is a feature — a fold line that
-  turns a corner is still one fold — but it will surprise you exactly
-  once, so it gets its own moment in Example 6.
+  turns a corner is still one fold — and when you *do* want the pieces
+  back individually, the language has answers: Example 6 shows the rule
+  and the way around it.
 
 Your own labels survive the cut too: name an edge `as segment('roof')`
 before cutting and whichever piece keeps that edge still answers for
@@ -119,7 +120,7 @@ is shared by two panels, so asking every panel for its seams would
 stroke each fold twice — and two dashed strokes running opposite
 directions fill in each other's gaps. `panels.seams()`, asked of the
 cut result as a whole, answers with each *physical* seam exactly once,
-so the fold pass is one loop with no ownership bookkeeping. (Per-piece
+so the fold pass is one loop with no ownership rules. (Per-piece
 `segmentAll('cut')` is still the right query when you want each
 piece's own view of its edges — Example 1 and the tabs to come.)
 
@@ -184,24 +185,26 @@ back in.
 
 <mini-workspace src="samples/post41/06-medallion-kit.pathogen" caption="The finished kit sheet: tab the red edge, fold the dashed one, rejoin in order." code-open></mini-workspace>
 
-And here is the merge rule from the top of the post, paying rent — by
-*not* applying. A wedge's two radial edges meet at the hexagon's
-center, and under the umbrella query `segmentAll('cut')` they come back
-as **one** V-shaped run (adjacent seam commands merge regardless of
-which knife made them). But the knives are named — `k0`, `k1`, `k2` —
-and each wedge's two edges come from two *different* knives, so the
-exact queries `segmentAll('cut.k0')`… hand each edge back on its own.
-The sample decides tab-or-fold per edge by which side of the wedge's
+And here is the merge rule from the top of the post, doing real
+work. A wedge's two radial edges meet at the hexagon's center, and
+under the umbrella query `segmentAll('cut')` they come back as **one**
+V-shaped run (adjacent seam commands merge regardless of which knife
+made them). But the knives are named — `k0`, `k1`, `k2` — and each
+wedge's two edges come from two *different* knives, so the exact
+queries `segmentAll('cut.k0')`… hand each edge back on its own. The
+sample decides tab-or-fold per edge by which side of the wedge's
 center ray it lies on. If you ever ask for two seams and receive one,
-the umbrella merge is why — and a named knife, or `subPath(t0, t1)`,
-is the knife that re-divides them.
+the umbrella merge is why — and a named knife (or, for a run one label
+covers, the
+[`:atomic` pseudo-selector](/docs#segment-labels-query-pseudo-selectors))
+re-divides it.
 
 ## What this project taught the language
 
 The friction-log promise from the top of the post, kept — what building
 this project changed in Pathogen:
 
-**The seam idiom earned a real `draw()`.** When this series first
+**The seam idiom became a real `draw()`.** When this series first
 shipped, the loop above took two lines per seam:
 `seam.drawTo(seam.startPoint.x, seam.startPoint.y)` — "draw yourself
 where you already are," said with two property reads and a re-anchor.
@@ -212,8 +215,8 @@ post tells that part of the story — including the epilogue where
 `startPoint` itself was later made truthful). Projected values now have
 an in-place
 [`draw()`](/docs#path-blocks-drawing-a-projectedpath-in-place): it
-anchors on the value's first command by definition, so the footgun is
-unreachable and the idiom is one self-evident line.
+anchors on the value's first command by definition, so the misplacement
+cannot be written at all and the idiom is one self-evident line.
 
 ```pathogen
 // before
@@ -223,17 +226,26 @@ seam.drawTo(seam.startPoint.x, seam.startPoint.y);
 seam.draw();
 ```
 
-**The fold lines lost their cleverest code.** Example 2 originally
-deduped shared folds with an ownership rule — each panel stroked only
-the seams on its right-hand side, a midpoint-versus-center comparison
-that worked and taught nothing. Cut results now answer
+**Example 2 grew up twice.** The fold lines you see above are the
+result of two rounds of the loop. First, dedup: the original sample
+kept shared folds from double-drawing with an ownership rule — each
+panel stroked only the seams on its right-hand side, a
+midpoint-versus-center comparison that worked and taught nothing. Cut
+results now answer
 [`pieces.seams()`](/docs#path-blocks-seams-array-of-pathblock): each
-physical seam exactly once, subject-local like the pieces themselves.
-The double-draw bug class (opposite-phase dashes filling each other's
-gaps) is unwritable through it.
+physical seam exactly once, subject-local like the pieces themselves,
+so the double-draw bug class (opposite-phase dashes filling each
+other's gaps) is unwritable. Second, direction: even deduped, every
+fold shipped in one dash style, because all seams shared one anonymous
+`cut` group and mountain-versus-valley — *the* distinction a real
+accordion template turns on — was inexpressible. Knife labels now
+[ride through the cut](/docs#segment-labels-label-names): an edge
+authored `as segment('mountain')` heals into seams labeled
+`cut.mountain`, the umbrella `segmentAll('cut')` still answers
+everything, and sub-label queries answer one knife at a time.
 
 ```pathogen
-// before: per-panel ownership rule (~10 lines)
+// original: per-panel ownership rule (~10 lines)
 for (seam in placed.segmentAll('cut')) {
   let mid = seam.get(0.5);
   if (mid.x > panelCenterX) {
@@ -241,18 +253,32 @@ for (seam in placed.segmentAll('cut')) {
   }
 }
 
-// after
+// today: each physical seam once, routed by the knife that made it
 for (seam in panels.seams()) {
-  seam.project(originX, originY).draw();
+  if (seam.segmentAll('cut.mountain').length > 0) {
+    mountainLayer.apply {
+      seam.project(originX, originY).draw();
+    }
+  } else {
+    valleyLayer.apply {
+      seam.project(originX, originY).draw();
+    }
+  }
 }
 ```
 
+The knife names paid off a second time in Example 6: a wedge's two
+radial edges come from two *different* knives, so exact sub-label
+queries return each edge on its own, and the merged-V `subPath`
+surgery at guessed fractions is gone.
+
 **The tabs' direction test turned out to be dead code.** Example 3
-settles which way a tab points by comparing the seam normal against
-the piece's center and flipping when it aims inward — three lines of
-ceremony per tab. Working the friction log revealed the flip never
-fires: `cut()` canonicalizes every piece's winding, so seam normals
-point away from the piece's material *by construction*. The guarantee
+settles which way a tab points by reading the seam normal — and the
+original sample compared it against the piece's center, flipping when
+it aimed inward: three lines of ceremony per tab. Working the friction
+log revealed the flip never fires. A cut always orients each piece's
+outline the same way around its material, so a seam normal points out
+of the piece *by construction*. The guarantee
 [is now documented](/docs#path-blocks-normalt-point-angle) and pinned
 by tests, and both tab samples dropped the dance — with byte-identical
 output, the strongest proof the code was dead. The purest friction-log
@@ -278,47 +304,11 @@ the sample builds one single-stroke knife per angle in a loop and
 hands the set over in a single call. A knife that states only "start
 here, cut this" has no arithmetic to get wrong.
 
-**The knives got names, and the folds got directions.** Example 2
-originally shipped every fold in one dash style with a caveat: all
-seams share one anonymous `cut` group, so mountain-versus-valley —
-*the* distinction a real accordion template turns on — was
-inexpressible. Knife labels now
-[ride through the cut](/docs#segment-labels-label-names): an edge
-authored `as segment('mountain')` heals into seams labeled
-`cut.mountain`, the umbrella `segmentAll('cut')` still answers
-everything, and the sub-label queries answer one knife at a time. The
-accordion now dashes its creases correctly, and the medallion got a
-second payoff: a wedge's two radial edges come from two *different*
-knives, so exact sub-label queries return each edge on its own —
-Example 6's merged-V `subPath` surgery at guessed fractions is gone.
-
-```pathogen
-// before: every fold identical, and a prose apology
-foldLayer.apply {
-  for (seam in panels.seams()) {
-    seam.project(originX, originY).draw();
-  }
-}
-
-// after: the knife's name decides the dash
-for (seam in panels.seams()) {
-  if (seam.segmentAll('cut.mountain').length > 0) {
-    mountainLayer.apply {
-      seam.project(originX, originY).draw();
-    }
-  } else {
-    valleyLayer.apply {
-      seam.project(originX, originY).draw();
-    }
-  }
-}
-```
-
-**The query language grew its `:` half.** When knife names landed (the
-previous entry), the `.` in `cut.mountain` was only half of a deliberate
-decision: label names reserve *all* punctuation, with `:` explicitly
-held back for CSS-style pseudo-selectors that didn't exist yet. Now
-they do — [`:atomic`, `:first`, `:last`, and
+**The query language grew its `:` half.** When knife names landed
+(Example 2's second act, above), the `.` in `cut.mountain` was only
+half of a deliberate decision: label names reserve *all* punctuation,
+with `:` explicitly held back for CSS-style pseudo-selectors that
+didn't exist yet. Now they do — [`:atomic`, `:first`, `:last`, and
 `:nth(k)`](/docs#segment-labels-query-pseudo-selectors). `:atomic` is the
 merge rule's official escape hatch (one block per drawing command — a
 labeled `circle()` hands back its individual arcs), and the position
@@ -337,14 +327,14 @@ let arcs = wheel.segmentAll('rim:atomic');
 let lastTooth = comb.segment('tooth:last');
 ```
 
-**And the traps got fences.** Two footguns this series stepped on
+**The traps got fences.** Two hazards this series stepped on
 never bit the published samples only because a style guideline banned
 the ammunition. Both are now language rules instead of etiquette.
 Single-letter variables that shadow path commands (`let m = 25;` then
 `L m 40`) used to fail with a `Missing ';'` pointed at punctuation
 nowhere near the mistake; the compiler and the editor now say what
-actually happened — `'m' is a path command here — write calc(m), or
-rename the variable` — with a one-click calc() wrap in the playground.
+actually happened (`'m' is a path command here — write calc(m), or
+rename the variable`), with a one-click calc() wrap in the playground.
 And the angle-suffix names `pi`, `deg`, and `rad` are now
 [reserved words](/docs#syntax-variables): suffix only, never a
 variable, so `calc(pi)` explains itself instead of reporting an

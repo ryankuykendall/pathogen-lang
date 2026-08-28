@@ -81,5 +81,5 @@ for (piece in pieces) {
 }
 
 labels.apply {
-  text(240, 205)`tabs ride the seam — the outer boundary stays clean`;
+  text(240, 205)`tabs ride the seam - the outer boundary stays clean`;
 }

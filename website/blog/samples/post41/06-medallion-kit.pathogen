@@ -16,9 +16,9 @@ layer('bg').apply {
 
 let scene = GroupLayer('scene') ${};
 let ghost = PathLayer('ghost') ${
-  stroke: #1e293b;
+  stroke: #334155;
   stroke-width: 1;
-  stroke-dasharray: 1 5;
+  stroke-dasharray: 3 4;
   fill: none;
 };
 let tabLayer = PathLayer('tabs') ${
@@ -68,10 +68,9 @@ let plate = @{
   polygon(0, 0, 62, 6);
 };
 
-// Three straight knives through the center, 60 degrees apart.
 let knifeReach = 78;
 // Three straight knives through the center, 60 degrees apart — each its
-// own block, handed to cut() as an array. No chained-move arithmetic.
+// own block, handed to cut() as an array, and each named for its seams.
 let knives = [];
 for (k in 0..2) {
   let knifeAngle = calc(k * PI() / 3);
