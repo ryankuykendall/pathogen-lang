@@ -1,7 +1,55 @@
 # Workspace Fullscreen Chrome + Wide-Screen Editor Caps
 
 **Date:** 2026-08-31
-**Status:** Implemented, verified end-to-end
+**Status:** Shipped (`ff05504`); follow-up: fullscreen compilation-status chip
+
+## Follow-up: compilation-status chip in fullscreen (2026-08-31)
+
+Clicking Refresh in fullscreen gave no feedback — the "Compiling…" chip lives
+in the breadcrumb, which fullscreen covers. Added the chip to fullscreen mode,
+top-center:
+
+- **Shared helper `utils/compilation-status.ts`** — `compilationStatusView()`
+  (status→text/class map) + `compilationStatusStyles()` (chip look + pulse
+  keyframes), following the `fullscreen-toggle.ts` pattern. Consumed by
+  `app-breadcrumb` (no behavior change), `svg-preview-pane` (the feature), and
+  `playground-header` (storybook-only — killing a drifted fork that was
+  **missing the `rendering` state**; that bug is fixed as a side effect).
+- **Pane wiring**: chip span placed after `#preview-container`; display gated
+  on `:host(.fullscreen)` (breadcrumb owns normal mode); targeted
+  `compilationStatus` subscription (`_applyCompilationStatus()`, no re-render,
+  so the pulse never resets mid-animation).
+- **Stale-badge coexistence**: `#stale-badge` also sits top-center and shows
+  exactly when the chip says "Error"; `#preview-container.stale ~
+  #compilation-status` drops the chip below the badge (verified 10px clear).
+- **Dark-theme legibility fix in the shared helper**: the error chip used
+  `--error-color` (#ef4444) on dark `--error-bg` (0.6-alpha red) — red-on-red,
+  illegible (screenshot-confirmed). Switched to `--error-text` (#fcd5d5 dark /
+  #dc2626 light), the token pair designed for `--error-bg`. This also repairs
+  the breadcrumb's dark-mode error chip, which had the same bug.
+- Verify script now 30 checks: chip visible+centered on fullscreen refresh
+  ("Compiling…"/"Ready" observed), hides on the completed→idle timeout, never
+  displays in normal mode, "Error" below the stale badge with no overlap.
+  Screenshots: `chip-ready-light.png`, `chip-error-dark.png`.
+- Test-authoring gotcha: `position: absolute` **blockifies** `inline-block`,
+  so a visible chip computes `display: block` — don't assert `inline-block`.
+
+### Chip review round (code-reviewer: approve with minor follow-ups — all taken)
+
+- playground-header's `.save-status` aligned to the canonical borderless chip
+  metrics (its bordered 0.6875rem style visibly mismatched the shared chip).
+- Storybook "Stale (compile error)" story now also sets
+  `compilationStatus: 'error'` (+ passthrough in render), making the
+  chip-below-stale-badge overlap case reachable at /storybook/svg-preview-pane.
+- `tests/compilation-status.test.ts`: 8 table-driven cases pinning the shared
+  status→text/class map (three consumers, one contract).
+- Helper now uses `var(--radius-sm)` / `var(--transition-base)` per the
+  no-hardcoded-values convention; stale-offset comment documents that 2rem is
+  a clearance allowance over the badge's ~1.6rem rendered height.
+- Reviewer independently confirmed: `--error-text` pairing, specificity of the
+  fullscreen display gate, sibling-selector structure, status-map parity with
+  the old breadcrumb switch, and that the un-unsubscribed store subscriptions
+  are pre-existing debt in this file, not new.
 
 ## What shipped
 

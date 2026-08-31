@@ -88,6 +88,14 @@ try {
   check('normal mode: refresh hidden', !vis.refresh);
   check('normal mode: inspector visible', vis.inspector);
 
+  // Normal mode: the status chip never displays regardless of compile status
+  // (breadcrumb owns it there) — display is gated on :host(.fullscreen).
+  const chipNormal = await paneEval(page, (pane) => {
+    const el = pane.shadowRoot.querySelector('#compilation-status');
+    return el ? getComputedStyle(el).display : 'missing';
+  });
+  check('normal mode: status chip hidden', chipNormal === 'none', chipNormal);
+
   // Enter fullscreen.
   await paneEval(page, (pane) => pane.shadowRoot.querySelector('#fullscreen-toggle').click());
   await sleep(400);
@@ -127,6 +135,32 @@ try {
     changed = after !== before;
   }
   check('refresh regenerates output', changed);
+
+  // Status chip: a second refresh should surface the top-center chip (some of
+  // compiling/rendering/"Ready"; "Ready" persists 1500ms so it's catchable),
+  // then it hides again on the completed→idle timeout.
+  await paneEval(page, (pane) => pane.shadowRoot.querySelector('#refresh-btn').click());
+  const seen = new Set();
+  let chipCenter = null;
+  for (let i = 0; i < 40; i++) {
+    const s = await paneEval(page, (pane) => {
+      const el = pane.shadowRoot.querySelector('#compilation-status');
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return cs.display !== 'none' && el.textContent
+        ? { text: el.textContent, mid: Math.round(r.x + r.width / 2), vw: window.innerWidth }
+        : null;
+    });
+    if (s) { seen.add(s.text); chipCenter = s; }
+    await sleep(50);
+  }
+  check('fullscreen refresh shows status chip', seen.size > 0, [...seen].join(', '));
+  check('chip centered top', chipCenter !== null && Math.abs(chipCenter.mid - chipCenter.vw / 2) < 10,
+    chipCenter ? `mid ${chipCenter.mid} vs ${Math.round(chipCenter.vw / 2)}` : 'never visible');
+  await sleep(2000);
+  const chipAfter = await paneEval(page, (pane) =>
+    getComputedStyle(pane.shadowRoot.querySelector('#compilation-status')).display);
+  check('chip hides after completed→idle timeout', chipAfter === 'none', chipAfter);
 
   // Export opens the modal above the fullscreen pane.
   await paneEval(page, (pane) => pane.shadowRoot.querySelector('#export-btn').click());
@@ -205,6 +239,33 @@ try {
   });
   check('static fullscreen: export visible', fs2.export);
   check('static fullscreen: refresh hidden', !fs2.refresh);
+  await page.close();
+
+  // ---------- 2b. Error program: chip "Error" + stale badge coexistence ----------
+  page = await setupPage(browser, { width: 1600, height: 1000 });
+  await page.goto(urlFor('let x = 5\ncircle(100, 100, 50);'), { waitUntil: 'networkidle2', timeout: 60000 });
+  await sleep(3000); // let the failing compile settle (error state is sticky)
+  await paneEval(page, (pane) => pane.shadowRoot.querySelector('#fullscreen-toggle').click());
+  await sleep(400);
+  const err = await paneEval(page, (pane) => {
+    const chip = pane.shadowRoot.querySelector('#compilation-status');
+    const badge = pane.shadowRoot.querySelector('#stale-badge');
+    const cs = getComputedStyle(chip);
+    const bs = getComputedStyle(badge);
+    const c = chip.getBoundingClientRect();
+    const b = badge.getBoundingClientRect();
+    const badgeShown = bs.display !== 'none';
+    const overlap = badgeShown && c.bottom > b.top && c.top < b.bottom && c.right > b.left && c.left < b.right;
+    return { text: chip.textContent, shown: cs.display !== 'none', badgeShown, overlap,
+      chipTop: Math.round(c.top), badgeBottom: Math.round(b.bottom) };
+  });
+  check('error program: chip shows "Error" in fullscreen', err.shown && err.text === 'Error', JSON.stringify(err));
+  if (err.badgeShown) {
+    check('error chip does not overlap stale badge', !err.overlap,
+      `chip top ${err.chipTop} vs badge bottom ${err.badgeBottom}`);
+  } else {
+    console.log('NOTE  stale badge not shown for this error state; overlap check skipped');
+  }
   await page.close();
 
   // ---------- 3. Editor width caps ----------

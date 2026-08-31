@@ -24,6 +24,7 @@ import { store } from '../state/store.js';
 import { navigateTo, parseWorkspaceSlugId } from '../utils/router.js';
 import { copyURL } from '../utils/url-state.js';
 import { usesRandomValues } from '../utils/uses-random.js';
+import { compilationStatusStyles, compilationStatusView } from '../utils/compilation-status.js';
 import { materialIcon } from '../utils/material-icons.js';
 import { formatBytes } from '../utils/format-bytes.js';
 import styles from './app-breadcrumb.css';
@@ -229,29 +230,8 @@ class AppBreadcrumb extends HTMLElement {
   }
 
   getCompilationStatusHtml(): string {
-    const status = store.get('compilationStatus') as string | null;
-
-    let statusClass: string = status || 'idle';
-    let statusText = '';
-
-    switch (status) {
-      case 'compiling':
-        statusText = 'Compiling...';
-        break;
-      case 'rendering':
-        statusText = 'Rendering...';
-        break;
-      case 'completed':
-        statusText = 'Ready';
-        break;
-      case 'error':
-        statusText = 'Error';
-        break;
-      default:
-        statusClass = 'hidden';
-    }
-
-    return `<span id="compilation-status" class="compilation-status ${statusClass}">${statusText}</span>`;
+    const { text, className } = compilationStatusView(store.get('compilationStatus') as string | null);
+    return `<span id="compilation-status" class="compilation-status ${className}">${text}</span>`;
   }
 
   getOverflowMenuHtml(): string {
@@ -367,7 +347,7 @@ class AppBreadcrumb extends HTMLElement {
         : '';
 
     this.shadowRoot!.innerHTML = `
-      <style>${styles}</style>
+      <style>${styles}${compilationStatusStyles()}</style>
 
       <div class="breadcrumb-bar">
         <nav class="breadcrumb" aria-label="Breadcrumb">

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-31 (fullscreen compilation-status chip)
+
+### Added
+
+#### Playground
+
+- **Compilation-status chip in fullscreen** — the workspace preview's fullscreen mode now shows the pulsing Compiling…/Rendering…/Ready/Error chip top-center, so a fullscreen Refresh gives the same feedback as the breadcrumb bar (which fullscreen covers). Fullscreen-only, driven by a targeted `compilationStatus` subscription (no re-render, so the pulse never resets mid-cycle). When a compile error puts the "Stale preview" badge at top-center, the chip drops below it instead of overlapping. The chip's map + styling moved to a shared `utils/compilation-status.ts` helper consumed by the breadcrumb, the preview pane, and the storybook header — which fixes the storybook header's long-standing missing "Rendering…" state, a drifted hand copy.
+
+### Fixed
+
+#### Playground
+
+- **Dark-theme Error chip was red-on-red** — the chip (breadcrumb included) colored its Error state with `--error-color` (#ef4444) on dark mode's 0.6-alpha red `--error-bg`, making the text illegible. It now uses `--error-text`, the token pair designed for that background, in both themes.
+
+### Development
+
+- `tests/compilation-status.test.ts`: table-driven pin of the shared status→text/class map (three consumers, one contract). Storybook's "Stale (compile error)" story now also sets `compilationStatus: 'error'` so the chip-below-stale-badge case is reachable in isolation; verification harness extended to 30 checks (chip visibility/centering/timeout, normal-mode suppression, badge-overlap regression).
+
 ## [0.8.0] - 2026-08-31 (fullscreen preview chrome + wide-screen editor caps)
 
 ### Added

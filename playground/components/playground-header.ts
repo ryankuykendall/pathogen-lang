@@ -4,6 +4,7 @@ import { workspaceApi } from '../services/api.js';
 import { store } from '../state/store.js';
 import { buildWorkspaceSlugId, navigateTo } from '../utils/router.js';
 import { copyURL } from '../utils/url-state.js';
+import { compilationStatusStyles, compilationStatusView } from '../utils/compilation-status.js';
 
 export class PlaygroundHeader extends HTMLElement {
   private _unsubscribe: (() => void) | null = null;
@@ -111,32 +112,17 @@ export class PlaygroundHeader extends HTMLElement {
     if (!statusEl) return;
 
     const status = store.get('compilationStatus') as string;
+    const { text, className } = compilationStatusView(status);
+    statusEl.textContent = text;
+    statusEl.className = `compilation-status ${className}`;
 
-    statusEl.className = `compilation-status ${status}`;
-
-    switch (status) {
-      case 'compiling':
-        statusEl.textContent = 'Compiling...';
-        statusEl.classList.remove('hidden');
-        break;
-      case 'completed':
-        statusEl.textContent = 'Ready';
-        statusEl.classList.remove('hidden');
-        // Auto-hide after a brief moment
-        setTimeout(() => {
-          if (store.get('compilationStatus') === 'completed') {
-            statusEl.classList.add('hidden');
-          }
-        }, 1500);
-        break;
-      case 'error':
-        statusEl.textContent = 'Error';
-        statusEl.classList.remove('hidden');
-        break;
-      case 'idle':
-      default:
-        statusEl.textContent = '';
-        statusEl.classList.add('hidden');
+    if (status === 'completed') {
+      // Auto-hide after a brief moment
+      setTimeout(() => {
+        if (store.get('compilationStatus') === 'completed') {
+          statusEl.classList.add('hidden');
+        }
+      }, 1500);
     }
   }
 
@@ -209,14 +195,15 @@ export class PlaygroundHeader extends HTMLElement {
           gap: 0.5rem;
         }
 
+        /* Matches the shared .compilation-status chip metrics (borderless)
+           so the two adjacent chips render at the same size. */
         .save-status {
-          font-size: 0.6875rem;
+          font-size: 0.75rem;
           font-family: var(--font-mono, 'Inconsolata', monospace);
-          font-weight: 600;
-          padding: 0.25rem 0.5rem;
+          font-weight: 500;
+          padding: 4px 8px;
           border-radius: var(--radius-sm, 4px);
           transition: all var(--transition-base, 0.15s ease);
-          border: 1px solid transparent;
         }
 
         .save-status.hidden {
@@ -226,65 +213,28 @@ export class PlaygroundHeader extends HTMLElement {
         .save-status.modified {
           background: var(--warning-bg, #fffbeb);
           color: var(--warning-color, #f59e0b);
-          border-color: var(--warning-border, #fde68a);
         }
 
         .save-status.saving {
           background: var(--info-bg, #eff6ff);
           color: var(--info-color, #3b82f6);
-          border-color: var(--info-border, #bfdbfe);
         }
 
         .save-status.saved {
           background: var(--success-bg, #ecfdf5);
           color: var(--success-color, #10b981);
-          border-color: var(--success-border, #a7f3d0);
         }
 
         .save-status.error {
           background: var(--error-bg, #fef2f2);
           color: var(--error-color, #ef4444);
-          border-color: var(--error-border, #fecaca);
           cursor: help;
         }
 
-        .compilation-status {
-          font-size: 0.6875rem;
-          font-family: var(--font-mono, 'Inconsolata', monospace);
-          font-weight: 600;
-          padding: 0.25rem 0.5rem;
-          border-radius: var(--radius-sm, 4px);
-          transition: all var(--transition-base, 0.15s ease);
-          border: 1px solid transparent;
-        }
-
-        .compilation-status.hidden {
-          display: none;
-        }
-
-        .compilation-status.compiling {
-          background: var(--info-bg, #eff6ff);
-          color: var(--info-color, #3b82f6);
-          border-color: var(--info-border, #bfdbfe);
-          animation: pulse 1s infinite;
-        }
-
-        .compilation-status.completed {
-          background: var(--success-bg, #ecfdf5);
-          color: var(--success-color, #10b981);
-          border-color: var(--success-border, #a7f3d0);
-        }
-
-        .compilation-status.error {
-          background: var(--error-bg, #fef2f2);
-          color: var(--error-color, #ef4444);
-          border-color: var(--error-border, #fecaca);
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
+        /* Chip look comes from the shared helper (utils/compilation-status.ts),
+           interpolated below — this component previously carried a drifted copy
+           that was missing the 'rendering' state entirely. */
+        ${compilationStatusStyles()}
 
         .secondary-btn {
           padding: 0.375rem 0.75rem;

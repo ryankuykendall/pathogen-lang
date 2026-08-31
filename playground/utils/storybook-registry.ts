@@ -108,8 +108,15 @@ layer('hex').apply { circle(60, 100, 40) }`,
         props: { pathData: '' },
       },
       {
+        // compilationStatus: 'error' also lights the fullscreen status chip —
+        // enter fullscreen to see it drop below the stale badge (the
+        // #preview-container.stale ~ #compilation-status overlap case).
         name: 'Stale (compile error)',
-        props: { pathData: 'M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100', stale: true },
+        props: {
+          pathData: 'M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100',
+          stale: true,
+          compilationStatus: 'error',
+        },
       },
       {
         // Enter fullscreen (expand button next to the navigator) to see the
@@ -139,6 +146,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
           height: (props.height as number) || 200,
           pathData: (props.pathData as string) || '',
           calledStdlibFunctions: props.usesRandom ? ['randomRange'] : [],
+          compilationStatus: (props.compilationStatus as string) || 'idle',
         });
 
         const preview = document.createElement('svg-preview-pane');

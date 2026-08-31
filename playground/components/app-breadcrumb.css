@@ -227,8 +227,10 @@
 }
 
 /* ---------- Save & compilation status ---------- */
-.save-status,
-.compilation-status {
+/* The compilation-status chip's rules come from the shared
+   compilationStatusStyles() helper (utils/compilation-status.ts),
+   interpolated into the shadow <style> alongside this file. */
+.save-status {
   font-size: 0.75rem;
   font-family: var(--font-mono, 'Inconsolata', monospace);
   font-weight: 500;
@@ -237,8 +239,7 @@
   transition: all 0.2s ease;
 }
 
-.save-status.hidden,
-.compilation-status.hidden {
+.save-status.hidden {
   display: none;
 }
 
@@ -261,33 +262,6 @@
   background: var(--error-bg, #f8d7da);
   color: var(--error-color, #721c24);
   cursor: help;
-}
-
-.compilation-status.compiling {
-  background: var(--info-bg, #cce5ff);
-  color: var(--info-color, #004085);
-  animation: pulse 1s infinite;
-}
-
-.compilation-status.rendering {
-  background: var(--warning-bg, #fff3cd);
-  color: var(--warning-color, #856404);
-  animation: pulse 0.5s infinite;
-}
-
-.compilation-status.completed {
-  background: var(--success-bg, #d4edda);
-  color: var(--success-color, #155724);
-}
-
-.compilation-status.error {
-  background: var(--error-bg, #f8d7da);
-  color: var(--error-color, #721c24);
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
 }
 
 /* ---------- Overflow menu ---------- */

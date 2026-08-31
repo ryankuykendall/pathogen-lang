@@ -16,6 +16,7 @@ import { decorateConicGradientsWithCanvasFallback } from '../utils/decorate-coni
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
 import { bootstrapPreviewIframe } from '../utils/preview-iframe.js';
 import { usesRandomValues } from '../utils/uses-random.js';
+import { compilationStatusStyles, compilationStatusView } from '../utils/compilation-status.js';
 import type { FontBinaryEntry } from '../services/font-loader.js';
 import { fontBinariesToCss } from '../services/font-loader.js';
 import { perfSpan } from '../utils/perf-marks.js';
@@ -201,6 +202,7 @@ export class SvgPreviewPane extends HTMLElement {
     // (workspace switches), so the classes can't rely on the subscriptions alone.
     this._applyUsesRandom();
     this._applyInspectorOpen();
+    this._applyCompilationStatus();
   }
 
   disconnectedCallback(): void {
@@ -386,6 +388,10 @@ export class SvgPreviewPane extends HTMLElement {
     // Gates the fullscreen refresh button (:host(.fullscreen.uses-random)).
     store.subscribe('calledStdlibFunctions', () => {
       this._applyUsesRandom();
+    });
+    // Drives the fullscreen status chip (breadcrumb owns it in normal mode).
+    store.subscribe('compilationStatus', () => {
+      this._applyCompilationStatus();
     });
     store.subscribe('layerVisibility', () => {
       this.applyLayerVisibility();
@@ -1085,6 +1091,14 @@ export class SvgPreviewPane extends HTMLElement {
     this.classList.toggle('uses-random', usesRandomValues(calledStdlib));
   }
 
+  private _applyCompilationStatus(): void {
+    const el = this.shadowRoot!.querySelector('#compilation-status') as HTMLElement | null;
+    if (!el) return;
+    const { text, className } = compilationStatusView(store.get('compilationStatus') as string | null);
+    el.textContent = text;
+    el.className = `compilation-status ${className}`;
+  }
+
   private _applyInspectorOpen(): void {
     const open = store.get('inspectorOpen') as boolean;
     const btn = this.shadowRoot!.querySelector('#inspector-open-btn') as HTMLElement | null;
@@ -1352,6 +1366,33 @@ export class SvgPreviewPane extends HTMLElement {
         }
 
         ${fullscreenStyles(120, 1)}
+        ${compilationStatusStyles()}
+
+        /* Fullscreen-only status chip, top-center (breadcrumb owns normal
+           mode). Sized/colored by compilationStatusStyles(); positioned here. */
+        #compilation-status {
+          display: none;
+          position: absolute;
+          top: 1rem;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 15;
+          pointer-events: none;
+          white-space: nowrap;
+        }
+
+        :host(.fullscreen) #compilation-status:not(.hidden) {
+          display: inline-block;
+        }
+
+        /* When the stale badge occupies top-center (compile errors leave a
+           stale preview), drop the chip below it instead of overlapping.
+           2rem is a clearance allowance >= the badge's rendered height
+           (~1.6rem: 0.75rem text + 0.3rem*2 padding + 1px borders) — revisit
+           if #stale-badge's type or padding grows. */
+        #preview-container.stale ~ #compilation-status {
+          top: calc(0.75rem + 2rem + 0.5rem);
+        }
       </style>
 
       <div id="zoom-navigator">
@@ -1384,6 +1425,8 @@ export class SvgPreviewPane extends HTMLElement {
           <div class="loading-spinner"></div>
         </div>
       </div>
+
+      <span id="compilation-status" class="compilation-status hidden"></span>
     `;
   }
 }
