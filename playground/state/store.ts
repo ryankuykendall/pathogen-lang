@@ -146,7 +146,7 @@ export const store = createStore({
   compilationStatus: 'idle', // 'idle', 'compiling', 'rendering', 'completed', 'error'
   compilationError: null,
   compilationId: 0, // Tracks current compilation for staleness detection
-  calledStdlibFunctions: [], // Stdlib function names invoked during last compilation
+  calledStdlibFunctions: [] as string[], // Stdlib function names invoked during last compilation
 
   // SVG dimensions — derived from `define ViewBox(...)` in the latest
   // compile result. Not user-editable; the source declares the canvas.

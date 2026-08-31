@@ -11,6 +11,14 @@
   flex-direction: column;
 }
 
+/* While the preview pane is fullscreen (position: fixed, z-index 9999) the
+   modal must outrank it — and the inspector overlay's 10000 — to be usable
+   from the pane's fullscreen export button. Class set by workspace-view's
+   updateInspectorOverlay(). */
+:host(.fullscreen-overlay) {
+  z-index: 10001;
+}
+
 /* Backdrop */
 .backdrop {
   position: fixed;

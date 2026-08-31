@@ -23,6 +23,7 @@ import {
 import { store } from '../state/store.js';
 import { navigateTo, parseWorkspaceSlugId } from '../utils/router.js';
 import { copyURL } from '../utils/url-state.js';
+import { usesRandomValues } from '../utils/uses-random.js';
 import { materialIcon } from '../utils/material-icons.js';
 import { formatBytes } from '../utils/format-bytes.js';
 import styles from './app-breadcrumb.css';
@@ -350,7 +351,7 @@ class AppBreadcrumb extends HTMLElement {
     const consoleOpen = store.get('consoleOpen') as boolean;
 
     const calledStdlib = (store.get('calledStdlibFunctions') || []) as string[];
-    const usesRandom = calledStdlib.includes('random') || calledStdlib.includes('randomRange');
+    const usesRandom = usesRandomValues(calledStdlib);
 
     this.classList.toggle('hidden', !config.showBreadcrumb);
 

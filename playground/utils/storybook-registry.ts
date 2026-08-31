@@ -111,6 +111,13 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'Stale (compile error)',
         props: { pathData: 'M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100', stale: true },
       },
+      {
+        // Enter fullscreen (expand button next to the navigator) to see the
+        // export + refresh chrome; refresh appears because usesRandom seeds
+        // calledStdlibFunctions with 'randomRange'.
+        name: 'Random program (fullscreen chrome)',
+        props: { pathData: 'M 100 10 L 40 198 L 190 78 L 10 78 L 160 198 Z', usesRandom: true },
+      },
     ],
     controls: [
       {
@@ -122,6 +129,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
       { name: 'width', type: 'number', label: 'Width', default: 200, min: 50, max: 1000 },
       { name: 'height', type: 'number', label: 'Height', default: 200, min: 50, max: 1000 },
       { name: 'stale', type: 'boolean', label: 'Stale (compile error)', default: false },
+      { name: 'usesRandom', type: 'boolean', label: 'Uses random (fullscreen refresh)', default: false },
     ],
     render: (container, props, controls) => {
       // Need to import store for svg-preview-pane
@@ -130,6 +138,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
           width: (props.width as number) || 200,
           height: (props.height as number) || 200,
           pathData: (props.pathData as string) || '',
+          calledStdlibFunctions: props.usesRandom ? ['randomRange'] : [],
         });
 
         const preview = document.createElement('svg-preview-pane');
@@ -155,6 +164,9 @@ layer('hex').apply { circle(60, 100, 40) }`,
         });
         controls.on('height', (value) => {
           store.set('height', value);
+        });
+        controls.on('usesRandom', (value) => {
+          store.set('calledStdlibFunctions', value ? ['randomRange'] : []);
         });
       });
     },

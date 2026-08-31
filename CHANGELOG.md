@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-31 (fullscreen preview chrome + wide-screen editor caps)
+
+### Added
+
+#### Playground
+
+- **Refresh and export in fullscreen** — the workspace preview's fullscreen mode now carries its own icon-only Refresh and Export buttons, stacked beneath the inspector toggle in a new top-right chrome column. Fullscreen (`position: fixed`, z-index 9999) covers the breadcrumb bar, so programs using `random`/`randomRange` previously forced a round-trip out of fullscreen just to regenerate. Refresh appears only for programs that call `random`/`randomRange` (shared `usesRandomValues()` predicate in `utils/uses-random.ts`, now also used by the breadcrumb); Export is always available in fullscreen and opens the export modal *above* the fullscreen pane (`fullscreen-overlay` z-index 10001, toggled alongside the inspector's overlay class). ESC closes the modal first, a second ESC exits fullscreen. When the inspector overlay is open in fullscreen, the chrome column shifts clear of its 280px panel instead of being painted underneath it (caught by agentic review; regression-checked). Storybook gains a "Random program (fullscreen chrome)" story + `usesRandom` control so the states are reachable in isolation.
+- **Wide-screen editor width caps** — on displays wider than a 16" MacBook Pro the code editor no longer takes 50% of the window: `code-editor-pane` caps at 80ch from 1800px, 100ch from 2400px, and 120ch from 3000px, handing the reclaimed width to the preview. The caps set the mono font on the same rule so `ch` measures Inconsolata at the editor's `--editor-font-size` (14px, now a single custom property shared with `.cm-editor`); below 1800px the 50/50 split is unchanged, as is the ≤800px stacked layout. Verified 561/701/841px at 1920/2560/3200 viewports, with completion-list fonts stable across the breakpoint.
+
+### Development
+
+- Fullscreen-chrome verification harness (`project-docs/workspace-fullscreen-chrome/`): 24-check puppeteer script covering fullscreen button states, refresh regeneration, modal stacking, ESC ordering, inspector-occlusion regression, and editor widths per viewport; plus breadcrumb/storybook spot-checks, light/dark screenshots, and STATUS.md.
+- `calledStdlibFunctions` store default is now typed `string[]` (was inferred `never[]`, which rejected typed writes).
+- Cutting Room post-loop agentic review: blog post restructure, remediation, and tic sweep, with a disposition record for the review's findings (2026-08-28).
+- Domain survey Stage 1: 50 domain one-pagers with profiles and feature synthesis in `project-docs/domain-survey/` (2026-08-31).
+
 ## [0.8.0] - 2026-08-27 (truthful startPoint + annotated label parity + ternary path args — Cutting Room feedback loop, F2/B2/#18)
 
 ### Fixed

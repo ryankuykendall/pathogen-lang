@@ -15,6 +15,7 @@ import { store } from '../state/store.js';
 import { decorateConicGradientsWithCanvasFallback } from '../utils/decorate-conic-gradients.js';
 import { attachFullscreenBehavior, fullscreenButtonHTML, fullscreenStyles } from '../utils/fullscreen-toggle.js';
 import { bootstrapPreviewIframe } from '../utils/preview-iframe.js';
+import { usesRandomValues } from '../utils/uses-random.js';
 import type { FontBinaryEntry } from '../services/font-loader.js';
 import { fontBinariesToCss } from '../services/font-loader.js';
 import { perfSpan } from '../utils/perf-marks.js';
@@ -32,6 +33,10 @@ declare const window: Window & {
 };
 
 const LAYERS_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
+
+const REFRESH_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+
+const DOWNLOAD_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 
 const DEFAULT_STROKE = '#000000';
 const DEFAULT_STROKE_WIDTH = 2;
@@ -192,6 +197,10 @@ export class SvgPreviewPane extends HTMLElement {
     this.setupEventListeners();
     this.subscribeToStore();
     this._cleanupFullscreen = attachFullscreenBehavior(this, this.shadowRoot!);
+    // The pane can (re)mount after a compile has already populated the store
+    // (workspace switches), so the classes can't rely on the subscriptions alone.
+    this._applyUsesRandom();
+    this._applyInspectorOpen();
   }
 
   disconnectedCallback(): void {
@@ -372,8 +381,11 @@ export class SvgPreviewPane extends HTMLElement {
       this._refreshZoomChrome(store.get('zoomLevel') as number);
     });
     store.subscribe('inspectorOpen', () => {
-      const btn = this.shadowRoot!.querySelector('#inspector-open-btn') as HTMLElement | null;
-      if (btn) btn.style.display = (store.get('inspectorOpen') as boolean) ? 'none' : '';
+      this._applyInspectorOpen();
+    });
+    // Gates the fullscreen refresh button (:host(.fullscreen.uses-random)).
+    store.subscribe('calledStdlibFunctions', () => {
+      this._applyUsesRandom();
     });
     store.subscribe('layerVisibility', () => {
       this.applyLayerVisibility();
@@ -1057,6 +1069,30 @@ export class SvgPreviewPane extends HTMLElement {
     this.shadowRoot!.querySelector('#inspector-open-btn')?.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('toggle-inspector', { bubbles: true, composed: true }));
     });
+
+    // Fullscreen-only chrome: export + refresh. Both dispatch the same events
+    // the breadcrumb buttons do; workspace-view's document listeners handle them.
+    this.shadowRoot!.querySelector('#export-btn')?.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('open-export', { bubbles: true, composed: true }));
+    });
+    this.shadowRoot!.querySelector('#refresh-btn')?.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('refresh-preview', { bubbles: true, composed: true }));
+    });
+  }
+
+  private _applyUsesRandom(): void {
+    const calledStdlib = (store.get('calledStdlibFunctions') || []) as string[];
+    this.classList.toggle('uses-random', usesRandomValues(calledStdlib));
+  }
+
+  private _applyInspectorOpen(): void {
+    const open = store.get('inspectorOpen') as boolean;
+    const btn = this.shadowRoot!.querySelector('#inspector-open-btn') as HTMLElement | null;
+    if (btn) btn.style.display = open ? 'none' : '';
+    // In fullscreen the inspector becomes a fixed 280px right-edge overlay at
+    // z-index 10000 (inspector-panel.css .fullscreen-overlay) which would cover
+    // #chrome-right; the .inspector-open class shifts the column clear of it.
+    this.classList.toggle('inspector-open', open);
   }
 
   render(): void {
@@ -1242,10 +1278,31 @@ export class SvgPreviewPane extends HTMLElement {
           to { transform: rotate(360deg); }
         }
 
-        #inspector-open-btn {
+        /* Top-right chrome column — positions the stack once so buttons can
+           show/hide (inspector hides while the inspector is open; export and
+           refresh appear only in fullscreen) without leaving gaps. */
+        #chrome-right {
           position: absolute;
           top: 1rem;
           right: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          z-index: 10;
+          transition: right 0.3s ease;
+        }
+
+        /* In fullscreen the open inspector is a fixed 280px right-edge overlay
+           at z-index 10000 (inspector-panel.css .fullscreen-overlay), which
+           outranks the pane (9999) and would cover the column — shift it clear.
+           The transition matches the overlay's 0.3s slide-in. */
+        :host(.fullscreen.inspector-open) #chrome-right {
+          right: calc(280px + 1rem);
+        }
+
+        #inspector-open-btn,
+        #export-btn,
+        #refresh-btn {
           width: 32px;
           height: 32px;
           padding: 0;
@@ -1257,19 +1314,41 @@ export class SvgPreviewPane extends HTMLElement {
           color: var(--text-secondary, #64748b);
           cursor: pointer;
           box-shadow: var(--shadow-md);
-          z-index: 10;
           transition: all var(--transition-base, 0.15s ease);
         }
 
-        #inspector-open-btn:hover {
-          border-color: var(--accent-color, #10b981);
-          color: var(--accent-color, #10b981);
-          background: var(--accent-subtle, rgba(16, 185, 129, 0.1));
+        /* Fallback literals mirror theme.css light values (see zoom-pill.ts:51
+           re: the old chrome's stale #10b981 green fallbacks). */
+        #inspector-open-btn:hover,
+        #export-btn:hover,
+        #refresh-btn:hover {
+          border-color: var(--accent-color, #c0518e);
+          color: var(--accent-color, #c0518e);
+          background: var(--accent-subtle, rgba(192, 81, 142, 0.1));
         }
 
-        #inspector-open-btn svg {
+        #inspector-open-btn svg,
+        #export-btn svg,
+        #refresh-btn svg {
           width: 16px;
           height: 16px;
+        }
+
+        /* Export/Refresh exist only in fullscreen — the breadcrumb bar provides
+           them in normal mode but sits under the fullscreen pane (z-index 9999).
+           Refresh additionally requires a program that calls random/randomRange
+           (.uses-random, toggled from the calledStdlibFunctions subscription). */
+        #export-btn,
+        #refresh-btn {
+          display: none;
+        }
+
+        :host(.fullscreen) #export-btn {
+          display: grid;
+        }
+
+        :host(.fullscreen.uses-random) #refresh-btn {
+          display: grid;
         }
 
         ${fullscreenStyles(120, 1)}
@@ -1287,7 +1366,11 @@ export class SvgPreviewPane extends HTMLElement {
 
       ${fullscreenButtonHTML()}
 
-      <button id="inspector-open-btn" title="Toggle inspector">${LAYERS_ICON}</button>
+      <div id="chrome-right">
+        <button id="inspector-open-btn" title="Toggle inspector">${LAYERS_ICON}</button>
+        <button id="export-btn" title="Export as SVG, PNG, or PDF">${DOWNLOAD_ICON}</button>
+        <button id="refresh-btn" title="Generate new random values">${REFRESH_ICON}</button>
+      </div>
 
       <pathogen-zoom-pill></pathogen-zoom-pill>
 

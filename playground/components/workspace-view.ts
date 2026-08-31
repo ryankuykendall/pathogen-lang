@@ -893,6 +893,9 @@ export class WorkspaceView extends HTMLElement {
 
   private updateInspectorOverlay(): void {
     this.inspectorPanel.classList.toggle('fullscreen-overlay', this._isPreviewFullscreen);
+    // The export modal (z-index --z-modal, 300) must also outrank the
+    // fullscreen preview pane (9999) so the pane's export button can open it.
+    this.exportModal.classList.toggle('fullscreen-overlay', this._isPreviewFullscreen);
   }
 
   cleanupEventListeners(): void {

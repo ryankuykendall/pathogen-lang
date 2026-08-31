@@ -1,4 +1,7 @@
 :host {
+  /* Single source for the editor's font size — the wide-screen ch caps below
+     must measure at the same size .cm-editor renders at. */
+  --editor-font-size: 14px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -16,6 +19,34 @@
   }
 }
 
+/* Wide-desktop caps: past a 16" MacBook Pro (1728px logical) the 50/50 split
+   wastes preview space, so the editor stops growing at 80ch, stepping up on
+   larger desktop displays. max-width (not a fixed basis) so the pane still
+   shrinks when the annotated/console panes open. The ch unit must resolve
+   against the editor's actual metrics (Inconsolata 14px, ~7px advance), not
+   the inherited sans font — hence the font declaration on the same rule.
+   Nothing visible inherits it: the pane's only child is #editor-container
+   and all its text sets its own font. */
+@media (min-width: 1800px) {
+  :host {
+    max-width: 80ch;
+    font-family: var(--font-mono, 'Inconsolata', monospace);
+    font-size: var(--editor-font-size);
+  }
+}
+
+@media (min-width: 2400px) {
+  :host {
+    max-width: 100ch;
+  }
+}
+
+@media (min-width: 3000px) {
+  :host {
+    max-width: 120ch;
+  }
+}
+
 #editor-container {
   flex: 1;
   overflow: auto;
@@ -24,7 +55,7 @@
 /* CodeMirror base styles */
 #editor-container .cm-editor {
   height: 100%;
-  font-size: 14px;
+  font-size: var(--editor-font-size);
 }
 
 #editor-container .cm-editor .cm-scroller {
