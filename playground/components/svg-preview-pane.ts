@@ -1328,7 +1328,6 @@ export class SvgPreviewPane extends HTMLElement {
           color: var(--text-secondary, #64748b);
           cursor: pointer;
           box-shadow: var(--shadow-md);
-          transition: all var(--transition-base, 0.15s ease);
         }
 
         /* Opaque hover fill: 0.9 accent tint composited over the solid base.

@@ -28,7 +28,6 @@ export function fullscreenStyles(navWidth: number, offset: number): string {
       cursor: pointer;
       box-shadow: var(--shadow-md);
       z-index: 10;
-      transition: all var(--transition-base, 0.15s ease);
     }
 
     /* Opaque hover fill: 0.9 accent tint over the solid base — the old

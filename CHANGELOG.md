@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0] - 2026-08-31 (opaque hover fills for canvas chrome)
 
+### Changed
+
+#### Playground
+
+- **Canvas-chrome buttons respond instantly on hover** — removed the `transition: all 0.15s` from the preview chrome buttons (inspector/export/refresh, fullscreen toggle, mini-preview inspector); the cross-fade made hover feedback feel laggy.
+
 ### Fixed
 
 #### Playground

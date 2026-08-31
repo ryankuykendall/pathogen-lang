@@ -718,7 +718,6 @@ export class MiniPreview extends HTMLElement {
           cursor: pointer;
           box-shadow: var(--shadow-md);
           z-index: 10;
-          transition: all var(--transition-base, 0.15s ease);
         }
 
         :host(.fullscreen) #inspector-open-btn {
