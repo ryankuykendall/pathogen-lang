@@ -22,4 +22,14 @@ try {
   console.log(`${r.fs && r.exp && r.ref ? 'PASS' : 'FAIL'}  prod fullscreen chrome (export + refresh visible) — ${JSON.stringify(r)}`);
   const wEditor = await page.evaluate(() => Math.round(document.querySelector('app-shell')?.shadowRoot?.querySelector('workspace-view')?.shadowRoot?.querySelector('code-editor-pane')?.getBoundingClientRect().width ?? 0));
   console.log(`editor width @1920 (fullscreen active, informational): ${wEditor}px`);
+
+  // Status chip: click fullscreen refresh, catch the chip mid-cycle.
+  await page.evaluate(`${PANE}.shadowRoot.querySelector('#refresh-btn').click()`);
+  const seen = new Set();
+  for (let i = 0; i < 40; i++) {
+    const s = await page.evaluate(`(() => { const el = ${PANE}.shadowRoot.querySelector('#compilation-status'); return el && getComputedStyle(el).display !== 'none' && el.textContent ? el.textContent : null; })()`);
+    if (s) seen.add(s);
+    await sleep(50);
+  }
+  console.log(`${seen.size > 0 ? 'PASS' : 'FAIL'}  prod fullscreen status chip — ${[...seen].join(', ') || 'never visible'}`);
 } finally { await browser.close(); }
