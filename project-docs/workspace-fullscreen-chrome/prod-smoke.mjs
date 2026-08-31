@@ -23,6 +23,26 @@ try {
   const wEditor = await page.evaluate(() => Math.round(document.querySelector('app-shell')?.shadowRoot?.querySelector('workspace-view')?.shadowRoot?.querySelector('code-editor-pane')?.getBoundingClientRect().width ?? 0));
   console.log(`editor width @1920 (fullscreen active, informational): ${wEditor}px`);
 
+  // Hover fill: opaque 0.9 composite in both themes (color-mix serializes
+  // as color(srgb …) in Chrome).
+  const hoverCheck = async (label, want) => {
+    const r = await page.evaluate(`(() => { const b = ${PANE}.shadowRoot.querySelector('#export-btn').getBoundingClientRect(); return { x: b.x + b.width/2, y: b.y + b.height/2 }; })()`);
+    await page.mouse.move(r.x, r.y);
+    await sleep(300);
+    const bg = await page.evaluate(`getComputedStyle(${PANE}.shadowRoot.querySelector('#export-btn')).backgroundColor`);
+    const m = bg.match(/^color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)\)$/);
+    const ok = m && want.every((w, i) => Math.abs(+m[i + 1] * 255 - w) < 2);
+    console.log(`${ok ? 'PASS' : 'FAIL'}  prod hover fill ${label} — ${bg}`);
+    await page.mouse.move(10, 500);
+    await sleep(200);
+  };
+  await hoverCheck('light', [198, 98, 153]);
+  await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  await sleep(300);
+  await hoverCheck('dark', [225, 165, 103]);
+  await page.emulateMediaFeatures([]);
+  await sleep(300);
+
   // Status chip: click fullscreen refresh, catch the chip mid-cycle.
   await page.evaluate(`${PANE}.shadowRoot.querySelector('#refresh-btn').click()`);
   const seen = new Set();
