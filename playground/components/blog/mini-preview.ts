@@ -725,12 +725,17 @@ export class MiniPreview extends HTMLElement {
           display: grid;
         }
 
-        /* Fallback literals mirror theme.css light values — the old chrome
-           carried stale #10b981 green fallbacks; see zoom-pill.ts:51. */
+        /* Opaque hover fill: 0.9 accent tint over the solid base — the old
+           --accent-subtle wash replaced the base and went ghost-transparent
+           over artwork. Matches the workspace chrome buttons; see the
+           hover-colors .mw prototype in website/bbwp/. */
         #inspector-open-btn:hover {
-          border-color: var(--accent-color, #c0518e);
-          color: var(--accent-color, #c0518e);
-          background: var(--accent-subtle, rgba(192, 81, 142, 0.1));
+          border-color: var(--accent-hover, #b04680);
+          color: var(--accent-contrast, #1c1722);
+          /* Plain background = no-color-mix() fallback (dark base fill equals
+             --accent-contrast, which would hide the icon). */
+          background: var(--accent-color, #c0518e);
+          background: color-mix(in srgb, var(--accent-color, #c0518e) 90%, var(--bg-elevated, #ffffff));
         }
 
         #inspector-open-btn svg {

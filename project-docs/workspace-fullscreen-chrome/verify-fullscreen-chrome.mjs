@@ -116,10 +116,29 @@ try {
     && fs1.inspectorBox.y < fs1.exportBox.y && fs1.exportBox.y < fs1.refreshBox.y;
   check('buttons stacked under inspector', stacked, JSON.stringify([fs1.inspectorBox, fs1.exportBox, fs1.refreshBox]));
 
-  // Screenshots: light + dark fullscreen chrome.
+  // Screenshots: light + dark fullscreen chrome. While dark is emulated,
+  // assert the dark hover composite too (the light one is asserted below) —
+  // dark is where a color-mix() fallback failure would hide the icon, since
+  // dark --bg-elevated equals --accent-contrast.
   await page.screenshot({ path: join(OUT_DIR, 'fullscreen-chrome-light.png') });
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
   await sleep(300);
+  const darkRect = await paneEval(page, (pane) => {
+    const r = pane.shadowRoot.querySelector('#export-btn').getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  await page.mouse.move(darkRect.x, darkRect.y);
+  await sleep(300);
+  const darkHov = await paneEval(page, (pane) => {
+    const cs = getComputedStyle(pane.shadowRoot.querySelector('#export-btn'));
+    return { bg: cs.backgroundColor, color: cs.color };
+  });
+  const darkBg = darkHov.bg.match(/^color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)\)$/);
+  const darkOk = darkBg && Math.abs(+darkBg[1] * 255 - 225) < 2 && Math.abs(+darkBg[2] * 255 - 165) < 2
+    && Math.abs(+darkBg[3] * 255 - 103) < 2 && darkHov.color === 'rgb(26, 20, 36)';
+  check('dark hover fill opaque + contrast ink', Boolean(darkOk), `bg ${darkHov.bg}, icon ${darkHov.color}`);
+  await page.mouse.move(10, 500);
+  await sleep(200);
   await page.screenshot({ path: join(OUT_DIR, 'fullscreen-chrome-dark.png') });
   await page.emulateMediaFeatures([]);
 
@@ -135,6 +154,36 @@ try {
     changed = after !== before;
   }
   check('refresh regenerates output', changed);
+
+  // Hover fill regression: hovered chrome buttons must be fully opaque
+  // (the old --accent-subtle wash was 0.10/0.15 alpha over artwork) with the
+  // contrast-flipped icon ink. Real mouse hover; pane is fixed fullscreen so
+  // rect coords == viewport coords.
+  const exportRect = await paneEval(page, (pane) => {
+    const r = pane.shadowRoot.querySelector('#export-btn').getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  await page.mouse.move(exportRect.x, exportRect.y);
+  await sleep(300);
+  const hov = await paneEval(page, (pane) => {
+    const cs = getComputedStyle(pane.shadowRoot.querySelector('#export-btn'));
+    return { bg: cs.backgroundColor, color: cs.color };
+  });
+  // color-mix() computes to `color(srgb r g b [/ a])` in Chrome; rgb() elsewhere.
+  const parseBg = (s) => {
+    let m = s.match(/^color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)(?: \/ ([\d.]+))?\)$/);
+    if (m) return { rgb: [+m[1] * 255, +m[2] * 255, +m[3] * 255], a: m[4] === undefined ? 1 : +m[4] };
+    m = s.match(/^rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)$/);
+    if (m) return { rgb: [+m[1], +m[2], +m[3]], a: m[4] === undefined ? 1 : +m[4] };
+    return null;
+  };
+  const bg = parseBg(hov.bg);
+  const near = (v, want) => Math.abs(v - want) < 2;
+  check('hover fill is opaque (0.9 tint composite)',
+    bg !== null && bg.a === 1 && near(bg.rgb[0], 198) && near(bg.rgb[1], 98) && near(bg.rgb[2], 153),
+    `bg ${hov.bg}, icon ${hov.color}`);
+  check('hover icon uses --accent-contrast ink', hov.color === 'rgb(28, 23, 34)', hov.color);
+  await page.mouse.move(10, 500); // un-hover
 
   // Status chip: a second refresh should surface the top-center chip (some of
   // compiling/rendering/"Ready"; "Ready" persists 1500ms so it's catchable),

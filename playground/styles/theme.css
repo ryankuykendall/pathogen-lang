@@ -31,6 +31,10 @@
   --accent-hover: #b04680;
   --accent-subtle: rgba(192, 81, 142, 0.10);
   --accent-text: #fffaf2;
+  /* Highest-contrast ink on accent-filled surfaces (icons/UI glyphs).
+     Unlike --accent-text (brand text, warm white in light theme), this
+     maximizes legibility: 4.7:1 on the light accent, 8.4:1 on dark. */
+  --accent-contrast: #1c1722;
   --accent-from: #e16a8f;
   --accent-to: #a83d80;
 
@@ -148,6 +152,9 @@
   --accent-hover: #ffc585;
   --accent-subtle: rgba(247, 181, 110, 0.15);
   --accent-text: #1a1424;
+  /* Intentionally equals --accent-text here: dark accents are light, so the
+     brand ink and the max-contrast ink converge on the dark surface color. */
+  --accent-contrast: #1a1424;
   --accent-from: #ffd194;
   --accent-to: #e89254;
 
@@ -234,6 +241,7 @@
     --accent-hover: #ffc585;
     --accent-subtle: rgba(247, 181, 110, 0.15);
     --accent-text: #1a1424;
+    --accent-contrast: #1a1424;
     --accent-from: #ffd194;
     --accent-to: #e89254;
 

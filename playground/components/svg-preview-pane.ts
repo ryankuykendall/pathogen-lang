@@ -1331,14 +1331,24 @@ export class SvgPreviewPane extends HTMLElement {
           transition: all var(--transition-base, 0.15s ease);
         }
 
-        /* Fallback literals mirror theme.css light values (see zoom-pill.ts:51
-           re: the old chrome's stale #10b981 green fallbacks). */
+        /* Opaque hover fill: 0.9 accent tint composited over the solid base.
+           The old --accent-subtle wash REPLACED the base at 0.10/0.15 alpha,
+           so hovered buttons went ghost-transparent over artwork. Icon flips
+           to --accent-contrast for legibility on the fill (light 4.7:1, dark
+           8.4:1); see the hover-colors .mw prototype in website/bbwp/.
+           Fallback literals mirror theme.css light values. (Older chrome in
+           this file still carries stale #10b981 green fallbacks — spinner,
+           navigator viewport; see zoom-pill.ts:51.) The plain background
+           line is the no-color-mix() fallback: without it, dark theme would
+           keep the base fill, which equals --accent-contrast — invisible
+           icon on hover. */
         #inspector-open-btn:hover,
         #export-btn:hover,
         #refresh-btn:hover {
-          border-color: var(--accent-color, #c0518e);
-          color: var(--accent-color, #c0518e);
-          background: var(--accent-subtle, rgba(192, 81, 142, 0.1));
+          border-color: var(--accent-hover, #b04680);
+          color: var(--accent-contrast, #1c1722);
+          background: var(--accent-color, #c0518e);
+          background: color-mix(in srgb, var(--accent-color, #c0518e) 90%, var(--bg-elevated, #ffffff));
         }
 
         #inspector-open-btn svg,

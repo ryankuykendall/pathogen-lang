@@ -31,12 +31,17 @@ export function fullscreenStyles(navWidth: number, offset: number): string {
       transition: all var(--transition-base, 0.15s ease);
     }
 
-    /* Fallback literals mirror theme.css light values — the old chrome
-       carried stale #10b981 green fallbacks; see zoom-pill.ts:51. */
+    /* Opaque hover fill: 0.9 accent tint over the solid base — the old
+       --accent-subtle wash replaced the base at 0.10/0.15 alpha and let
+       artwork bleed through. Matches the preview pane's chrome buttons;
+       see the hover-colors .mw prototype in website/bbwp/. */
     #fullscreen-toggle:hover {
-      border-color: var(--accent-color, #c0518e);
-      color: var(--accent-color, #c0518e);
-      background: var(--accent-subtle, rgba(192, 81, 142, 0.1));
+      border-color: var(--accent-hover, #b04680);
+      color: var(--accent-contrast, #1c1722);
+      /* Plain background = no-color-mix() fallback (dark base fill equals
+         --accent-contrast, which would hide the icon). */
+      background: var(--accent-color, #c0518e);
+      background: color-mix(in srgb, var(--accent-color, #c0518e) 90%, var(--bg-elevated, #ffffff));
     }
 
     #fullscreen-toggle svg {

@@ -92,6 +92,31 @@ top-center:
   detail-source-mount, old svg-preview-pane getters, workspace-view debug
   paths) — none in the new code.
 
+## Follow-up: opaque hover fills for canvas chrome (2026-08-31)
+
+User report: hovered chrome buttons (inspector/export/refresh) went nearly
+transparent over artwork — the hover rule REPLACED the solid `--bg-elevated`
+base with `--accent-subtle` (0.10 light / 0.15 dark alpha). Prototyped color
+options in `website/bbwp/2026-08-31-13:47:05--workspace-fullscreen-chrome--
+hover-colors.mw.html` (mw artifact; tint 0.8/0.9/1.0 over the solid base,
+live WCAG ratios, both themes); user approved the 0.9 recommendation.
+
+- New hover recipe (svg-preview-pane chrome buttons, fullscreen-toggle.ts,
+  and blog mini-preview's inspector button — same bug class, found by sweep):
+  `background: color-mix(in srgb, var(--accent-color) 90%, var(--bg-elevated))`
+  (fully opaque), `color: var(--accent-contrast)`, `border-color:
+  var(--accent-hover)`.
+- New theme token `--accent-contrast` (#1c1722 light / #1a1424 dark): the
+  highest-contrast ink on accent fills — distinct from `--accent-text`, which
+  is warm-white in light theme (~3.7:1 vs the recommended 4.71:1).
+  Ratios: light 4.71:1, dark 8.35:1 on the 0.9 composite.
+- `.detail-hero-fullscreen` already composited opaquely (untouched); the two
+  `fill: var(--accent-subtle)` uses are navigator overlays, not buttons.
+- Verify harness now 32 checks: real-mouse hover asserts the computed fill is
+  opaque rgb(198, 98, 153) (Chrome serializes color-mix as `color(srgb …)` —
+  parse both forms) and the icon ink is --accent-contrast. Screenshots:
+  `hover-fix-light.png`, `hover-fix-dark.png`.
+
 ## Agentic review round (code-reviewer)
 
 - **Critical (fixed):** in fullscreen with the inspector open, the inspector's

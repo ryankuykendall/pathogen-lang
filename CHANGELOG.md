@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-31 (opaque hover fills for canvas chrome)
+
+### Fixed
+
+#### Playground
+
+- **Hovered canvas-chrome buttons went ghost-transparent over artwork** — the hover rule on the preview chrome (inspector/export/refresh, the fullscreen toggle, and the blog mini-preview's inspector button) replaced the solid `--bg-elevated` base with `--accent-subtle` (0.10 light / 0.15 dark alpha), so the button all but vanished over busy canvases. Hover now composites a 0.9 accent tint over the solid base (`color-mix(in srgb, var(--accent-color) 90%, var(--bg-elevated))` — fully opaque) with the icon flipped to the new `--accent-contrast` ink (4.71:1 light, 8.35:1 dark on the fill) and an `--accent-hover` border. Color options were prototyped as a bbwp mockup (`workspace-fullscreen-chrome--hover-colors.mw.html`) with live WCAG ratios before the pick.
+
+### Added
+
+#### Playground
+
+- **`--accent-contrast` theme token** — the highest-contrast ink for icons/UI glyphs on accent-filled surfaces (`#1c1722` light / `#1a1424` dark), distinct from `--accent-text`, whose light-theme warm-white is tuned for brand CTAs rather than maximum legibility.
+
+### Development
+
+- Verification harness extended to 32 checks: a real-mouse hover asserts the computed fill is the opaque 0.9 composite and the icon uses `--accent-contrast` (Chrome serializes `color-mix` results as `color(srgb …)` — the check parses both forms). Hover screenshots in `project-docs/workspace-fullscreen-chrome/`.
+
 ## [0.8.0] - 2026-08-31 (fullscreen compilation-status chip)
 
 ### Added
