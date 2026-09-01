@@ -2,6 +2,7 @@
 
 import type { CSSPropertyDeclaration, GradientOutput, LayerOutput } from '../types/compiler.js';
 import { detectFormat, formatToColorspace } from '../utils/color.js';
+import { perfSpan } from '../utils/perf-marks.js';
 import styles from './cssvar-panel.css';
 import './shared/pathogen-color-input.js';
 
@@ -87,6 +88,10 @@ export class CssvarPanel extends HTMLElement {
   }
 
   updateList(): void {
+    perfSpan('inspector-cssvar-update', () => this._updateListImpl());
+  }
+
+  private _updateListImpl(): void {
     const layers = this._layers;
     const list = this.shadowRoot!.querySelector('.var-list') as HTMLElement | null;
     if (!list) return;

@@ -209,11 +209,13 @@ layer('hex').apply { circle(60, 100, 40) }`,
         store.set('layers', props.layers || []);
         store.set('layerVisibility', {});
 
-        const panel = document.createElement('layers-panel');
+        const panel = document.createElement('layers-panel') as HTMLElement & { layers: unknown[] };
         // Override auto-hide for storybook display
         panel.style.display = 'block';
         panel.style.position = 'relative';
         container.appendChild(panel);
+        // Panels are prop-driven (they do not subscribe to the store)
+        panel.layers = (props.layers ?? []) as unknown[];
       });
     },
   },
@@ -270,10 +272,12 @@ layer('hex').apply { circle(60, 100, 40) }`,
       import('../state/store.js').then(({ store }) => {
         store.set('layers', props.layers || []);
 
-        const panel = document.createElement('palette-panel');
+        const panel = document.createElement('palette-panel') as HTMLElement & { layers: unknown[] };
         panel.style.display = 'block';
         panel.style.position = 'relative';
         container.appendChild(panel);
+        // Panels are prop-driven (they do not subscribe to the store)
+        panel.layers = (props.layers ?? []) as unknown[];
       });
     },
   },

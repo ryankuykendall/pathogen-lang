@@ -92,6 +92,7 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0rem 0.5rem;
+  /* Height must match ROW_H in layers-panel.ts (virtual-list geometry) */
   height: 28px;
   box-sizing: border-box;
 }

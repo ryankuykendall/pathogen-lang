@@ -1,0 +1,168 @@
+source: generated wide (20000 one-circle layers, 268 chars) → /Users/ryan/claude-code-projects/svg-path-extended/project-docs/editor-perf/generated-wide.pathogen
+inspector: closed
+workspace ready — first compile/render done
+
+━━━ pathogen:* span summary per phase ━━━
+
+  Phase 1: fast typing (60ms/key, 30 keys)  [3092ms window]
+    compile-roundtrip        n=  1  total=   319ms  mean=  319.3ms  max=  319.3ms
+    getbbox-reflow-loop      n=  1  total=    50ms  mean=   50.1ms  max=   50.1ms
+    layer-build-mount        n=  1  total=    38ms  mean=   37.7ms  max=   37.7ms
+    navigator-rebuild        n=  1  total=    32ms  mean=   32.4ms  max=   32.4ms
+    export-size              n=  1  total=    27ms  mean=   27.4ms  max=   27.4ms
+    analyze-scopes           n= 31  total=     9ms  mean=    0.3ms  max=    0.9ms
+    store-updates            n=  1  total=     4ms  mean=    4.1ms  max=    4.1ms
+    notify:compilationStatus n=  8  total=     2ms  mean=    0.2ms  max=    0.7ms
+    signature-help           n= 31  total=     0ms  mean=    0.0ms  max=    0.2ms
+    defs-build-mount         n=  1  total=     0ms  mean=    0.1ms  max=    0.1ms
+    notify:calledStdlibFunctions n=  2  total=     0ms  mean=    0.1ms  max=    0.1ms
+    navigator-viewport       n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:masks             n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:clipPaths         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:gradients         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:cssProperties     n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+  Phase 2: slow typing (180ms/key, 23 keys)  [5701ms window]
+    compile-roundtrip        n= 23  total= 33079ms  mean= 1438.2ms  max= 2552.2ms
+    analyze-scopes           n= 23  total=     4ms  mean=    0.2ms  max=    0.5ms
+    notify:compilationStatus n=  2  total=     0ms  mean=    0.2ms  max=    0.4ms
+    signature-help           n= 23  total=     0ms  mean=    0.0ms  max=    0.1ms
+
+  Phase 3: arrow-key cursor movement (40 presses)  [3528ms window]
+    getbbox-reflow-loop      n=  1  total=    53ms  mean=   52.9ms  max=   52.9ms
+    layer-build-mount        n=  1  total=    33ms  mean=   32.7ms  max=   32.7ms
+    navigator-rebuild        n=  1  total=    32ms  mean=   32.3ms  max=   32.3ms
+    export-size              n=  1  total=    26ms  mean=   25.5ms  max=   25.5ms
+    store-updates            n=  1  total=     3ms  mean=    2.9ms  max=    2.9ms
+    notify:compilationStatus n=  6  total=     2ms  mean=    0.3ms  max=    1.1ms
+    signature-help           n= 40  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:calledStdlibFunctions n=  2  total=     0ms  mean=    0.1ms  max=    0.2ms
+    defs-build-mount         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    navigator-viewport       n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:masks             n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:clipPaths         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:gradients         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:cssProperties     n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+  Phase 4: entering eval-error state (24 keys)  [3016ms window]
+    get-diagnostics          n=  1  total=   373ms  mean=  373.0ms  max=  373.0ms
+    compile-roundtrip        n=  1  total=   298ms  mean=  297.7ms  max=  297.7ms
+    analyze-scopes           n= 25  total=     7ms  mean=    0.3ms  max=    0.5ms
+    notify:compilationStatus n=  4  total=     1ms  mean=    0.2ms  max=    0.6ms
+    signature-help           n= 26  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+  Phase 5: typing in error state (180ms/key, 23 keys)  [5701ms window]
+    compile-roundtrip        n= 20  total= 21091ms  mean= 1054.6ms  max= 1914.1ms
+    analyze-scopes           n= 24  total=     3ms  mean=    0.1ms  max=    0.3ms
+    notify:compilationStatus n=  6  total=     2ms  mean=    0.3ms  max=    0.8ms
+    get-diagnostics          n=  1  total=     1ms  mean=    0.6ms  max=    0.6ms
+    signature-help           n= 24  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.1ms  max=    0.1ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+━━━ console timing / observer log (chronological) ━━━
+  +   272ms  [perf] instrumentation enabled (localStorage.pathogenPerf / ?perf=1)
+  +   346ms  [perf] long task: 88ms @ 232
+  +   412ms  [perf] analyze-scopes: 1.0ms
+  +   757ms  [perf] compile-roundtrip: 462.2ms
+  +   758ms  Compile time: 462.40ms
+  +   807ms  [perf] layer-build-mount: 48.4ms
+  +   865ms  [perf] getbbox-reflow-loop: 57.2ms
+  +   917ms  [perf] navigator-rebuild: 35.0ms
+  +   917ms  Render time: 106.10ms
+  +   925ms  [perf] store-updates: 7.0ms
+  +  1009ms  [perf] long task: 180ms @ 731
+  +  1009ms  [perf] long task: 74ms @ 911
+  +  1046ms  [perf] export-size: 27.2ms
+  +  1047ms  [perf] notify:exportSvgBytes: 1.1ms
+  +  1073ms  [perf] slow input event: keydown duration=72ms inputDelay=0ms
+  +  1073ms  [perf] slow input event: keydown duration=64ms inputDelay=0ms
+  +  1073ms  [perf] slow input event: keyup duration=64ms inputDelay=30ms
+  +  1189ms  [perf] export-size: 35.1ms
+  +  1906ms  [perf] slow input event: keyup duration=56ms inputDelay=5ms
+  +  1906ms  [perf] slow input event: keydown duration=56ms inputDelay=0ms
+  +  1906ms  [perf] slow input event: keypress duration=56ms inputDelay=0ms
+  +  1906ms  [perf] slow input event: beforeinput duration=56ms inputDelay=0ms
+  +  1906ms  [perf] slow input event: input duration=56ms inputDelay=0ms
+  +  4153ms  [perf] compile-roundtrip: 319.3ms
+  +  4153ms  Compile time: 319.40ms
+  +  4196ms  [perf] layer-build-mount: 37.7ms
+  +  4247ms  [perf] getbbox-reflow-loop: 50.1ms
+  +  4293ms  [perf] navigator-rebuild: 32.4ms
+  +  4293ms  Render time: 93.40ms
+  +  4297ms  [perf] store-updates: 4.1ms
+  +  4377ms  [perf] long task: 156ms @ 4127
+  +  4377ms  [perf] long task: 79ms @ 4284
+  +  4407ms  [perf] export-size: 27.4ms
+  +  5402ms  [perf] compile-roundtrip: 298.7ms
+  +  5692ms  [perf] compile-roundtrip: 409.8ms
+  +  5983ms  [perf] compile-roundtrip: 515.2ms
+  +  6263ms  [perf] compile-roundtrip: 615.0ms
+  +  6549ms  [perf] compile-roundtrip: 718.4ms
+  +  6843ms  [perf] compile-roundtrip: 829.9ms
+  +  7127ms  [perf] compile-roundtrip: 931.9ms
+  +  7412ms  [perf] compile-roundtrip: 1034.5ms
+  +  7700ms  [perf] compile-roundtrip: 1140.9ms
+  +  7978ms  [perf] compile-roundtrip: 1235.6ms
+  +  8270ms  [perf] compile-roundtrip: 1344.6ms
+  +  8550ms  [perf] compile-roundtrip: 1443.1ms
+  +  8841ms  [perf] compile-roundtrip: 1551.3ms
+  +  9122ms  [perf] compile-roundtrip: 1649.5ms
+  +  9402ms  [perf] compile-roundtrip: 1747.9ms
+  +  9684ms  [perf] compile-roundtrip: 1845.6ms
+  +  9974ms  [perf] compile-roundtrip: 1954.1ms
+  + 10257ms  [perf] compile-roundtrip: 2053.7ms
+  + 10539ms  [perf] compile-roundtrip: 2152.9ms
+  + 10723ms  [perf] slow input event: keyup duration=80ms inputDelay=1ms
+  + 10818ms  [perf] compile-roundtrip: 2251.1ms
+  + 10848ms  [perf] slow input event: keyup duration=80ms inputDelay=1ms
+  + 10973ms  [perf] slow input event: keyup duration=80ms inputDelay=1ms
+  + 11100ms  [perf] compile-roundtrip: 2350.6ms
+  + 11100ms  [perf] slow input event: keyup duration=80ms inputDelay=1ms
+  + 11384ms  [perf] compile-roundtrip: 2452.5ms
+  + 11473ms  [perf] slow input event: keyup duration=80ms inputDelay=1ms
+  + 11598ms  [perf] slow input event: keyup duration=80ms inputDelay=1ms
+  + 11674ms  [perf] compile-roundtrip: 2552.2ms
+  + 11674ms  Compile time: 2552.30ms
+  + 11712ms  [perf] layer-build-mount: 32.7ms
+  + 11765ms  [perf] getbbox-reflow-loop: 52.9ms
+  + 11812ms  [perf] navigator-rebuild: 32.3ms
+  + 11812ms  Render time: 90.40ms
+  + 11815ms  [perf] store-updates: 2.9ms
+  + 11906ms  [perf] long task: 150ms @ 11651
+  + 11934ms  [perf] export-size: 25.5ms
+  + 11939ms  [perf] slow input event: keyup duration=296ms inputDelay=1ms
+  + 11939ms  [perf] slow input event: keydown duration=240ms inputDelay=141ms
+  + 11940ms  [perf] slow input event: keyup duration=56ms inputDelay=43ms
+  + 13325ms  [perf] notify:compilationStatus: 1.1ms
+  + 16079ms  [perf] compile-roundtrip: 297.7ms
+  + 16452ms  [perf] get-diagnostics: 373.0ms
+  + 16457ms  [perf] long task: 375ms @ 16064
+  + 17361ms  [perf] compile-roundtrip: 8.6ms
+  + 17837ms  [perf] compile-roundtrip: 301.6ms
+  + 18121ms  [perf] compile-roundtrip: 405.8ms
+  + 18385ms  [perf] compile-roundtrip: 487.8ms
+  + 18663ms  [perf] compile-roundtrip: 582.7ms
+  + 18932ms  [perf] compile-roundtrip: 668.9ms
+  + 19198ms  [perf] compile-roundtrip: 752.9ms
+  + 19466ms  [perf] compile-roundtrip: 838.4ms
+  + 19733ms  [perf] compile-roundtrip: 922.5ms
+  + 20011ms  [perf] compile-roundtrip: 1018.4ms
+  + 20289ms  [perf] compile-roundtrip: 1115.1ms
+  + 20558ms  [perf] compile-roundtrip: 1202.6ms
+  + 20828ms  [perf] compile-roundtrip: 1290.2ms
+  + 21096ms  [perf] compile-roundtrip: 1374.9ms
+  + 21365ms  [perf] compile-roundtrip: 1461.3ms
+  + 21642ms  [perf] compile-roundtrip: 1555.6ms
+  + 21908ms  [perf] compile-roundtrip: 1638.8ms
+  + 22186ms  [perf] compile-roundtrip: 1733.9ms
+  + 22452ms  [perf] compile-roundtrip: 1817.4ms
+  + 22731ms  [perf] compile-roundtrip: 1914.1ms
+
+final: preview paths=20003, error=Line 12:1 — Unexpected '/'

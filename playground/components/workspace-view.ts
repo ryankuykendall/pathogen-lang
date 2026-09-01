@@ -26,6 +26,7 @@ import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
+import { collectLayerNames, pruneVisibility } from '../utils/layer-visibility.js';
 import { installPerfObservers, perfSpan, perfSpanAsync } from '../utils/perf-marks.js';
 import { computeDefaultExportSvgBytes } from '../utils/svg-export-size.js';
 import { ensureChromeFontRules, getChromeFontRulesIfReady } from '../utils/export-fonts.js';
@@ -90,6 +91,7 @@ export class WorkspaceView extends HTMLElement {
   private _dismissedFontWarnings = '';
 
   private _inspectorDataUnsubscribe: (() => void) | null = null;
+  private _inspectorOpenUnsubscribe: (() => void) | null = null;
 
   private _inspectorSyncScheduled = false;
 
@@ -293,9 +295,10 @@ export class WorkspaceView extends HTMLElement {
     return this.shadowRoot!.querySelector('docs-panel') as any;
   }
 
-  get inspectorPanel(): HTMLElement & { setData: (data: Record<string, unknown>) => void } {
+  get inspectorPanel(): HTMLElement & { setData: (data: Record<string, unknown>) => void; open: boolean } {
     return this.shadowRoot!.querySelector('inspector-panel') as HTMLElement & {
       setData: (data: Record<string, unknown>) => void;
+      open: boolean;
     };
   }
 
@@ -845,25 +848,40 @@ export class WorkspaceView extends HTMLElement {
     // cluster in updatePreview() notifies most of these keys back-to-back;
     // coalesce to a single setData per microtask so the inspector re-renders
     // once per compile instead of once per changed key.
-    this._inspectorDataUnsubscribe = store.subscribe(
-      ['layers', 'masks', 'clipPaths', 'gradients', 'cssProperties', 'layerVisibility', 'defsVisibility'],
-      () => {
-        if (this._inspectorSyncScheduled) return;
-        this._inspectorSyncScheduled = true;
-        queueMicrotask(() => {
-          this._inspectorSyncScheduled = false;
-          this.inspectorPanel?.setData({
-            layers: store.get('layers') as any[],
-            masks: store.get('masks') as any[],
-            clipPaths: store.get('clipPaths') as any[],
-            gradients: store.get('gradients') as any[],
-            cssProperties: store.get('cssProperties') as any[],
-            layerVisibility: store.get('layerVisibility') as Record<string, boolean>,
-            defsVisibility: store.get('defsVisibility') as Record<string, boolean>,
+    // __PATHOGEN_NO_INSPECTOR__ is the perf-audit kill switch (A/B lever for
+    // scripts/perf-typing-audit.ts): perf spans can't see the style/layout
+    // cost of a huge inspector DOM, so the honest measurement is long-task
+    // deltas with this subscription on vs off.
+    if (!(window as unknown as { __PATHOGEN_NO_INSPECTOR__?: boolean }).__PATHOGEN_NO_INSPECTOR__) {
+      this._inspectorDataUnsubscribe = store.subscribe(
+        ['layers', 'masks', 'clipPaths', 'gradients', 'cssProperties', 'layerVisibility', 'defsVisibility'],
+        () => {
+          if (this._inspectorSyncScheduled) return;
+          this._inspectorSyncScheduled = true;
+          queueMicrotask(() => {
+            this._inspectorSyncScheduled = false;
+            this.inspectorPanel?.setData({
+              layers: store.get('layers') as any[],
+              masks: store.get('masks') as any[],
+              clipPaths: store.get('clipPaths') as any[],
+              gradients: store.get('gradients') as any[],
+              cssProperties: store.get('cssProperties') as any[],
+              layerVisibility: store.get('layerVisibility') as Record<string, boolean>,
+              defsVisibility: store.get('defsVisibility') as Record<string, boolean>,
+            });
           });
-        });
-      },
-    );
+        },
+      );
+
+      // Gate the panel's rendering on the open flag: while closed it defers
+      // setData (a closed inspector used to pay a full row build per compile
+      // for zero visible pixels) and renders the latest data on open.
+      this._inspectorOpenUnsubscribe = store.subscribe(['inspectorOpen'], () => {
+        const panel = this.inspectorPanel;
+        if (panel) panel.open = store.get('inspectorOpen') as boolean;
+      });
+      this.inspectorPanel.open = store.get('inspectorOpen') as boolean;
+    }
 
     // Non-compile changes that move the exported bytes: background recolors
     // the snapshot's #preview-bg; visibility toggles set inline display:none
@@ -926,6 +944,7 @@ export class WorkspaceView extends HTMLElement {
     if (this._multiTabUnsubscribe) this._multiTabUnsubscribe();
     if (this._fontWarningsUnsubscribe) this._fontWarningsUnsubscribe();
     if (this._inspectorDataUnsubscribe) this._inspectorDataUnsubscribe();
+    if (this._inspectorOpenUnsubscribe) this._inspectorOpenUnsubscribe();
     if (this._sizeTriggerUnsubscribe) this._sizeTriggerUnsubscribe();
     if (this._sizeIdleId != null) {
       if (this._sizeUsesTimeout) clearTimeout(this._sizeIdleId);
@@ -1145,16 +1164,13 @@ export class WorkspaceView extends HTMLElement {
         store.set('filters', result.filters || []);
         store.set('cssProperties', result.cssProperties || []);
 
-        // Clean up stale visibility entries
+        // Clean up stale visibility entries. pruneVisibility returns the
+        // same reference when nothing is stale, so the store's identity
+        // guard skips the notify (and the inspector's differential cache
+        // isn't defeated by a fresh object every compile). Group children
+        // count as live names — pruning them reset their eye state.
         const currentVisibility = store.get('layerVisibility') as Record<string, boolean>;
-        const currentLayerNames = new Set(resultLayers.map((l: any) => l.name));
-        const cleaned: Record<string, boolean> = {};
-        for (const [name, visible] of Object.entries(currentVisibility)) {
-          if (currentLayerNames.has(name)) {
-            cleaned[name] = visible;
-          }
-        }
-        store.set('layerVisibility', cleaned);
+        store.set('layerVisibility', pruneVisibility(currentVisibility, collectLayerNames(resultLayers)));
 
         store.update({
           compilationStatus: 'completed',

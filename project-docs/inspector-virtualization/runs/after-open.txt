@@ -1,0 +1,180 @@
+source: generated wide (20000 one-circle layers, 268 chars) → /Users/ryan/claude-code-projects/svg-path-extended/project-docs/editor-perf/generated-wide.pathogen
+inspector: open
+workspace ready — first compile/render done
+
+inspector opened
+
+━━━ pathogen:* span summary per phase ━━━
+
+  Phase 1: fast typing (60ms/key, 30 keys)  [3097ms window]
+    compile-roundtrip        n=  1  total=   324ms  mean=  323.7ms  max=  323.7ms
+    getbbox-reflow-loop      n=  1  total=    51ms  mean=   50.5ms  max=   50.5ms
+    inspector-layers-update  n=  1  total=    44ms  mean=   43.6ms  max=   43.6ms
+    layer-build-mount        n=  1  total=    36ms  mean=   36.1ms  max=   36.1ms
+    navigator-rebuild        n=  1  total=    33ms  mean=   33.0ms  max=   33.0ms
+    export-size              n=  1  total=    28ms  mean=   27.6ms  max=   27.6ms
+    analyze-scopes           n= 31  total=    10ms  mean=    0.3ms  max=    0.8ms
+    inspector-palette-update n=  1  total=     8ms  mean=    8.1ms  max=    8.1ms
+    store-updates            n=  1  total=     3ms  mean=    3.2ms  max=    3.2ms
+    inspector-cssvar-update  n=  1  total=     3ms  mean=    3.1ms  max=    3.1ms
+    notify:compilationStatus n=  6  total=     2ms  mean=    0.3ms  max=    1.3ms
+    signature-help           n= 31  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:calledStdlibFunctions n=  2  total=     0ms  mean=    0.1ms  max=    0.2ms
+    defs-build-mount         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    navigator-viewport       n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:masks             n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:clipPaths         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:gradients         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:cssProperties     n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+  Phase 2: slow typing (180ms/key, 23 keys)  [5703ms window]
+    compile-roundtrip        n= 23  total= 32968ms  mean= 1433.4ms  max= 2530.9ms
+    analyze-scopes           n= 23  total=     4ms  mean=    0.2ms  max=    0.5ms
+    notify:compilationStatus n=  2  total=     1ms  mean=    0.4ms  max=    0.8ms
+    signature-help           n= 23  total=     0ms  mean=    0.0ms  max=    0.1ms
+
+  Phase 3: arrow-key cursor movement (40 presses)  [3597ms window]
+    getbbox-reflow-loop      n=  1  total=    53ms  mean=   53.0ms  max=   53.0ms
+    inspector-layers-update  n=  1  total=    43ms  mean=   42.8ms  max=   42.8ms
+    navigator-rebuild        n=  1  total=    35ms  mean=   34.8ms  max=   34.8ms
+    layer-build-mount        n=  1  total=    30ms  mean=   30.4ms  max=   30.4ms
+    export-size              n=  1  total=    26ms  mean=   26.0ms  max=   26.0ms
+    inspector-palette-update n=  1  total=     9ms  mean=    9.1ms  max=    9.1ms
+    inspector-cssvar-update  n=  1  total=     6ms  mean=    6.0ms  max=    6.0ms
+    store-updates            n=  1  total=     3ms  mean=    2.7ms  max=    2.7ms
+    notify:compilationStatus n=  6  total=     2ms  mean=    0.3ms  max=    1.0ms
+    signature-help           n= 40  total=     1ms  mean=    0.0ms  max=    0.2ms
+    notify:calledStdlibFunctions n=  2  total=     0ms  mean=    0.1ms  max=    0.1ms
+    defs-build-mount         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    navigator-viewport       n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:masks             n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:clipPaths         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:gradients         n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:cssProperties     n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+  Phase 4: entering eval-error state (24 keys)  [3019ms window]
+    get-diagnostics          n=  1  total=   366ms  mean=  366.4ms  max=  366.4ms
+    compile-roundtrip        n=  1  total=   296ms  mean=  296.1ms  max=  296.1ms
+    analyze-scopes           n= 25  total=     7ms  mean=    0.3ms  max=    0.7ms
+    notify:compilationStatus n=  4  total=     1ms  mean=    0.3ms  max=    0.6ms
+    inspector-layers-update  n=  1  total=     0ms  mean=    0.2ms  max=    0.2ms
+    signature-help           n= 26  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    inspector-palette-update n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    inspector-cssvar-update  n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+  Phase 5: typing in error state (180ms/key, 23 keys)  [5708ms window]
+    compile-roundtrip        n= 20  total= 20963ms  mean= 1048.2ms  max= 1901.3ms
+    analyze-scopes           n= 24  total=     4ms  mean=    0.2ms  max=    0.5ms
+    notify:compilationStatus n=  6  total=     2ms  mean=    0.3ms  max=    0.9ms
+    get-diagnostics          n=  1  total=     1ms  mean=    0.6ms  max=    0.6ms
+    signature-help           n= 24  total=     0ms  mean=    0.0ms  max=    0.1ms
+    notify:fontWarnings      n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    notify:layers            n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    inspector-layers-update  n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    inspector-palette-update n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+    inspector-cssvar-update  n=  1  total=     0ms  mean=    0.0ms  max=    0.0ms
+
+━━━ console timing / observer log (chronological) ━━━
+  +   559ms  [perf] instrumentation enabled (localStorage.pathogenPerf / ?perf=1)
+  +   633ms  [perf] long task: 88ms @ 519
+  +   995ms  [perf] analyze-scopes: 1.0ms
+  +  1021ms  [perf] compile-roundtrip: 438.4ms
+  +  1021ms  Compile time: 438.50ms
+  +  1070ms  [perf] layer-build-mount: 47.6ms
+  +  1127ms  [perf] getbbox-reflow-loop: 56.8ms
+  +  1179ms  [perf] navigator-rebuild: 34.8ms
+  +  1179ms  Render time: 104.90ms
+  +  1187ms  [perf] store-updates: 6.5ms
+  +  1270ms  [perf] long task: 178ms @ 994
+  +  1270ms  [perf] long task: 81ms @ 1173
+  +  1283ms  [perf] inspector-layers-update: 8.9ms
+  +  1294ms  [perf] inspector-palette-update: 10.7ms
+  +  1299ms  [perf] inspector-cssvar-update: 5.0ms
+  +  1652ms  [perf] export-size: 28.0ms
+  +  1653ms  [perf] notify:exportSvgBytes: 1.2ms
+  +  1769ms  [perf] export-size: 29.8ms
+  +  2691ms  [perf] notify:compilationStatus: 1.1ms
+  +  3672ms  [perf] slow input event: keydown duration=56ms inputDelay=1ms
+  +  3680ms  [perf] slow input event: keyup duration=56ms inputDelay=6ms
+  +  5613ms  [perf] notify:compilationStatus: 1.3ms
+  +  5936ms  [perf] compile-roundtrip: 323.7ms
+  +  5936ms  Compile time: 323.80ms
+  +  5978ms  [perf] layer-build-mount: 36.1ms
+  +  6029ms  [perf] getbbox-reflow-loop: 50.5ms
+  +  6076ms  [perf] navigator-rebuild: 33.0ms
+  +  6076ms  Render time: 92.30ms
+  +  6079ms  [perf] store-updates: 3.2ms
+  +  6123ms  [perf] inspector-layers-update: 43.6ms
+  +  6131ms  [perf] inspector-palette-update: 8.1ms
+  +  6135ms  [perf] inspector-cssvar-update: 3.1ms
+  +  6178ms  [perf] long task: 209ms @ 5911
+  +  6216ms  [perf] export-size: 27.6ms
+  +  7206ms  [perf] compile-roundtrip: 322.6ms
+  +  7491ms  [perf] compile-roundtrip: 427.9ms
+  +  7772ms  [perf] compile-roundtrip: 525.5ms
+  +  8051ms  [perf] compile-roundtrip: 623.6ms
+  +  8332ms  [perf] compile-roundtrip: 722.9ms
+  +  8622ms  [perf] compile-roundtrip: 830.7ms
+  +  8906ms  [perf] compile-roundtrip: 931.7ms
+  +  9187ms  [perf] compile-roundtrip: 1030.1ms
+  +  9466ms  [perf] compile-roundtrip: 1126.7ms
+  +  9747ms  [perf] compile-roundtrip: 1224.7ms
+  + 10039ms  [perf] compile-roundtrip: 1334.3ms
+  + 10325ms  [perf] compile-roundtrip: 1436.3ms
+  + 10620ms  [perf] compile-roundtrip: 1548.5ms
+  + 10899ms  [perf] compile-roundtrip: 1646.7ms
+  + 11181ms  [perf] compile-roundtrip: 1747.6ms
+  + 11458ms  [perf] compile-roundtrip: 1839.0ms
+  + 11744ms  [perf] compile-roundtrip: 1942.7ms
+  + 12024ms  [perf] compile-roundtrip: 2040.0ms
+  + 12303ms  [perf] compile-roundtrip: 2136.3ms
+  + 12505ms  [perf] slow input event: keyup duration=80ms inputDelay=1ms
+  + 12583ms  [perf] compile-roundtrip: 2234.2ms
+  + 12862ms  [perf] compile-roundtrip: 2329.6ms
+  + 13150ms  [perf] compile-roundtrip: 2435.8ms
+  + 13430ms  [perf] compile-roundtrip: 2530.9ms
+  + 13430ms  Compile time: 2531.00ms
+  + 13465ms  [perf] layer-build-mount: 30.4ms
+  + 13519ms  [perf] getbbox-reflow-loop: 53.0ms
+  + 13567ms  [perf] navigator-rebuild: 34.8ms
+  + 13567ms  Render time: 88.40ms
+  + 13570ms  [perf] store-updates: 2.7ms
+  + 13613ms  [perf] inspector-layers-update: 42.8ms
+  + 13622ms  [perf] inspector-palette-update: 9.1ms
+  + 13628ms  [perf] inspector-cssvar-update: 6.0ms
+  + 13687ms  [perf] long task: 208ms @ 13405
+  + 13715ms  [perf] export-size: 26.0ms
+  + 13721ms  [perf] slow input event: keydown duration=304ms inputDelay=204ms
+  + 13721ms  [perf] slow input event: keyup duration=56ms inputDelay=46ms
+  + 15072ms  [perf] notify:compilationStatus: 1.0ms
+  + 17931ms  [perf] compile-roundtrip: 296.1ms
+  + 18297ms  [perf] get-diagnostics: 366.4ms
+  + 18302ms  [perf] long task: 368ms @ 17916
+  + 19221ms  [perf] compile-roundtrip: 3.5ms
+  + 19690ms  [perf] compile-roundtrip: 291.1ms
+  + 19965ms  [perf] compile-roundtrip: 385.5ms
+  + 20243ms  [perf] compile-roundtrip: 481.6ms
+  + 20524ms  [perf] compile-roundtrip: 580.8ms
+  + 20788ms  [perf] compile-roundtrip: 662.1ms
+  + 21057ms  [perf] compile-roundtrip: 748.7ms
+  + 21326ms  [perf] compile-roundtrip: 835.8ms
+  + 21595ms  [perf] compile-roundtrip: 922.5ms
+  + 21872ms  [perf] compile-roundtrip: 1016.4ms
+  + 22148ms  [perf] compile-roundtrip: 1110.0ms
+  + 22418ms  [perf] compile-roundtrip: 1197.0ms
+  + 22685ms  [perf] compile-roundtrip: 1280.8ms
+  + 22951ms  [perf] compile-roundtrip: 1365.9ms
+  + 23218ms  [perf] compile-roundtrip: 1450.5ms
+  + 23496ms  [perf] compile-roundtrip: 1545.7ms
+  + 23773ms  [perf] compile-roundtrip: 1641.3ms
+  + 24040ms  [perf] compile-roundtrip: 1726.9ms
+  + 24312ms  [perf] compile-roundtrip: 1815.6ms
+  + 24580ms  [perf] compile-roundtrip: 1901.3ms
+
+final: preview paths=20003, error=Line 12:1 — Unexpected '/'

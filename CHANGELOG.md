@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-31 (inspector virtualization for 20k-layer projects)
+
+### Fixed
+
+#### Playground
+
+- **Inspector no longer stalls the editor on layer-heavy projects** — at 20,000 layers the inspector rebuilt ~80,000 rows (layers list + per-layer fill/stroke palette rows) via full `innerHTML` teardown on every compile, costing ~1.3–1.8 s of main-thread long tasks per keystroke pause — even while the panel was closed, since "closed" only clipped it. Now: a closed inspector does zero work (`setData` defers latest-wins and renders on open), and an open one windows both the layers and palette lists to the ~40 visible rows via a new shared `utils/virtual-list.ts` (fixed-row-height prefix sums + binary search, driven by the shared `.inspector` scroller with a self-scroll fallback for standalone panels). Measured after: ~43 ms of JS per compile open, ~0 closed. Event delegation, HTML escaping, and group collapse behavior are unchanged.
+- **Eye toggles were two full inspector rebuilds** — visibility never changes the row set, so layer/defs visibility changes now diff by value and patch the flipped rows' eye button in place (O(1)); the store echo is a no-op.
+- **A fresh `layerVisibility` object every compile defeated the inspector's differential cache** — `pruneVisibility` returns the same reference when no entries are stale, so unchanged visibility skips the notify entirely. Live names now include group children, whose hidden state used to reset on every recompile.
+- **Layers inside groups never got their mask/clip-path sub-rows** — def refs are resolved during the recursive walk instead of a top-level-only map.
+- **Per-row gradient/mask/clip scans hoisted** — `gradients.find()` and `masks.some()`/`clipPaths.some()` per row became per-update Maps (first match wins on duplicate ids, matching SVG's `url(#id)` resolution); palette color/var/gradient resolution now runs only for windowed rows.
+- **Collapsing one inspector section left its sibling's scroll window stale** — panels dispatch `inspector-section-resize` on section/group collapse and the inspector re-windows every virtualized panel.
+- **Storybook layers/palette stories rendered empty** — they set store keys the prop-driven panels never read; they now assign `panel.layers` directly.
+
+### Development
+
+- Perf instrumentation for the inspector: `perfSpan` wrapping all three panels' `updateList`, plus `perf-typing-audit.ts` knobs — `--wide-layers <n>` (cheap one-circle layers for row stress), `--inspector <closed|open>`, and `--kill-inspector` (`__PATHOGEN_NO_INSPECTOR__` A/B baseline, since spans can't see huge-DOM layout cost). Before/after runs and the design write-up in `project-docs/inspector-virtualization/`.
+- New tests: `playground-virtual-list.test.ts` (pure window math) and `playground-inspector-virtualization.test.ts` (windowing bounds, scroll re-slice, delegated clicks on windowed rows, open-gate semantics, visibility diff-patches, prune identity contract, sibling re-window). Real-browser E2E: `scripts/debug-inspector-virtualization.ts`.
+- Recorded a harness gotcha: this machine's puppeteer Chrome never runs the rendering loop (no rAF ticks or scroll-event dispatch, even headful), so rAF/scroll-driven behavior must be verified by direct invocation.
+
 ## [0.8.0] - 2026-08-31 (opaque hover fills for canvas chrome)
 
 ### Changed

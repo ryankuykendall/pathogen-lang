@@ -25,6 +25,15 @@ export class InspectorPanel extends HTMLElement {
   // (and therefore re-rendering) fields whose identity hasn't changed.
   private _last: InspectorData = {};
 
+  // While closed, setData is deferred: fields merge latest-wins into _pending
+  // and are forwarded on open. Defaults to open so consumers that lazy-mount
+  // the panel only when visible (mini-workspace, detail-hero-mount) need no
+  // wiring; the workspace keeps the panel permanently mounted and drives
+  // this from the store's inspectorOpen flag.
+  private _open = true;
+
+  private _pending: InspectorData | null = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -47,7 +56,38 @@ export class InspectorPanel extends HTMLElement {
     return this.shadowRoot!.querySelector('cssvar-panel') as CssvarPanel;
   }
 
+  get open(): boolean {
+    return this._open;
+  }
+
+  set open(value: boolean) {
+    const becameOpen = value && !this._open;
+    this._open = value;
+    if (!becameOpen) return;
+    if (this._pending) {
+      const pending = this._pending;
+      this._pending = null;
+      this.setData(pending);
+    }
+    // The window may have been computed against a zero-height (closed)
+    // scroller; re-window once layout has settled after the open transition.
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        this.layersPanel?.refreshVirtual();
+        this.palettePanel?.refreshVirtual();
+      });
+    }
+  }
+
   setData(data: InspectorData): void {
+    if (!this._open) {
+      // Defer while closed. _last is deliberately left untouched so the
+      // differential check on open compares against what the children
+      // actually hold, not against data they never received.
+      this._pending = { ...this._pending, ...data };
+      return;
+    }
+
     const lp = this.layersPanel;
     const pp = this.palettePanel;
     const cp = this.cssvarPanel;
@@ -82,6 +122,14 @@ export class InspectorPanel extends HTMLElement {
     this.shadowRoot!.querySelector('.close-btn')?.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('toggle-inspector', { bubbles: true, composed: true }));
     });
+
+    // A section/group collapse in one panel shifts the offsets of everything
+    // below it within the shared scroller; re-window every virtualized panel
+    // so their listTop measurements don't go stale.
+    this.shadowRoot!.addEventListener('inspector-section-resize', () => {
+      this.layersPanel?.refreshVirtual();
+      this.palettePanel?.refreshVirtual();
+    });
   }
 
   render(): void {
@@ -101,6 +149,10 @@ export class InspectorPanel extends HTMLElement {
         <cssvar-panel embedded></cssvar-panel>
       </div>
     `;
+    // The embedded panels are windowed against the shared shell scroller.
+    const scroller = this.shadowRoot!.querySelector('.inspector') as HTMLElement;
+    this.layersPanel.scrollHost = scroller;
+    this.palettePanel.scrollHost = scroller;
   }
 }
 

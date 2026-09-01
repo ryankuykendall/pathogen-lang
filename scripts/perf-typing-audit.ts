@@ -35,6 +35,15 @@ program
   .option('--loops <n>', 'Generated program: loop iterations per layer', '350')
   .option('--pad-lines <n>', 'Generated program: comment padding lines (parse weight)', '250')
   .option('--type-delay <ms>', 'Keystroke delay for the slow-typing burst', '180')
+  .option(
+    '--wide-layers <n>',
+    'Generated program: n cheap one-circle layers with stroke+fill (inspector row stress; overrides --layers shape)',
+  )
+  .option('--inspector <state>', 'Inspector panel state during the run: closed | open', 'closed')
+  .option(
+    '--kill-inspector',
+    'Disable the inspector store subscription entirely (__PATHOGEN_NO_INSPECTOR__ A/B baseline)',
+  )
   .parse();
 
 const opts = program.opts<{
@@ -44,6 +53,9 @@ const opts = program.opts<{
   loops: string;
   padLines: string;
   typeDelay: string;
+  wideLayers?: string;
+  inspector: string;
+  killInspector?: boolean;
 }>();
 
 function encodeState(code: string): string {
@@ -76,6 +88,27 @@ function generateHeavyProgram(layers: number, loops: number, padLines: number): 
   }
   parts.push('');
   return parts.join('\n');
+}
+
+/**
+ * Wide program for inspector-row stress: many cheap layers (one circle each)
+ * with both stroke and fill so the palette panel gets two color rows per
+ * layer — ~4 inspector rows per layer across the panels, negligible per-layer
+ * compile weight so 20k layers stays iterable.
+ */
+function generateWideLayerProgram(layers: number): string {
+  return [
+    'define ViewBox(0, 0, 2000, 2000);',
+    '',
+    `for (i in 0..${layers}) {`,
+    // eslint-disable-next-line no-template-curly-in-string -- Pathogen interpolation, not a JS template
+    '  let wideLayer = PathLayer(`wide${i}`) << ${ stroke: oklch(0.6 0.12 200); stroke-width: 0.5; fill: oklch(0.9 0.05 80); };',
+    '  wideLayer.apply {',
+    '    circle(40 + (i % 140) * 14, 40 + floor(i / 140) * 14, 5);',
+    '  }',
+    '}',
+    '',
+  ].join('\n');
 }
 
 interface SpanEntry {
@@ -168,6 +201,14 @@ async function main(): Promise<void> {
   if (opts.file) {
     source = readFileSync(opts.file, 'utf-8');
     console.log(`source: ${opts.file} (${source.length} chars)`);
+  } else if (opts.wideLayers) {
+    const wide = parseInt(opts.wideLayers, 10);
+    source = generateWideLayerProgram(wide);
+    const outDir = join(ROOT, 'project-docs', 'editor-perf');
+    mkdirSync(outDir, { recursive: true });
+    const savedTo = join(outDir, 'generated-wide.pathogen');
+    writeFileSync(savedTo, source);
+    console.log(`source: generated wide (${wide} one-circle layers, ${source.length} chars) → ${savedTo}`);
   } else {
     source = generateHeavyProgram(layers, loops, padLines);
     const outDir = join(ROOT, 'project-docs', 'editor-perf');
@@ -196,15 +237,19 @@ async function main(): Promise<void> {
       }
     });
 
-    await page.evaluateOnNewDocument(() => {
+    console.log(`inspector: ${opts.inspector}${opts.killInspector ? ' (subscription kill switch ON)' : ''}`);
+    await page.evaluateOnNewDocument((killInspector: boolean) => {
       (window as unknown as { __name?: <T>(fn: T) => T }).__name = <T>(fn: T): T => fn;
+      if (killInspector) {
+        (window as unknown as { __PATHOGEN_NO_INSPECTOR__?: boolean }).__PATHOGEN_NO_INSPECTOR__ = true;
+      }
       try {
         localStorage.setItem('pathogen-lang:userId', 'e2e-perf-typing-audit');
         localStorage.setItem('pathogenPerf', '1');
       } catch {
         /* ignore */
       }
-    });
+    }, opts.killInspector === true);
 
     const url = `${opts.pagesUrl}/workspace/scratch?state=${encodeState(source)}`;
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 }).catch(() => {
@@ -230,6 +275,16 @@ async function main(): Promise<void> {
       return;
     }
     console.log('workspace ready — first compile/render done\n');
+
+    if (opts.inspector === 'open') {
+      // workspace-view listens for this on document; opening before the
+      // typing phases makes every debounced compile pay the visible-inspector
+      // render path.
+      // eslint-disable-next-line n/no-unsupported-features/node-builtins -- browser context, not Node
+      await page.evaluate(() => document.dispatchEvent(new CustomEvent('toggle-inspector')));
+      await new Promise((r) => setTimeout(r, 1500));
+      console.log('inspector opened\n');
+    }
 
     // Focus the editor programmatically (a coordinate click can be swallowed
     // by long tasks / overlays), then jump the cursor to the document end so
