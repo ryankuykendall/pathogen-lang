@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-01 (stroke geometry + the Broken Lines series)
+
+### Added
+
+#### Core
+
+- **Stroke geometry: `dash()`, `outline()`, and `startAt()` on PathBlock/ProjectedPath** — stroke *styling* concepts turned into real, queryable geometry. `dash(styles)` partitions a path into tagged `{path, kind, t0, t1}` pieces from `stroke-dasharray`/`stroke-dashoffset` (SVG odd-count doubling, negative-offset wrapping, per-subpath pattern restart; `%` entries resolve against the path's own length rather than SVG's viewport diagonal). `outline(styles)` is stroke-to-path: a **closed**, boolean-ready outline built from both-sided offsetting plus `butt`/`round`/`square` caps, with `stroke-miterlimit` honored (new in the join machinery; `offset()` keeps its historical cap of 2) and near-zero spines becoming cap-shaped dots. `startAt(t)` re-anchors a path at an arc-length fraction — seamless rotation on closed paths, two runs with a jump on open ones; percent literals read naturally and wrap. Pieces and outlines keep subject-local placement (the `cut()` origin convention), so drawing everything at one anchor reassembles the source.
+- **`dash-seam: merge`** — heals the seam-crossing dash on closed paths into one piece (its `t1 > 1` signals the wrap); default `split` unchanged.
+- **`outline-overlap: union`** — opt-in self-union that dissolves outline self-intersections and merges touching caps into one clean boundary; default `raw` unchanged.
+- **Expression-bodied lambdas** — `{|piece| piece.kind == 'dash'}` is sugar for a single implicit `return` (grammar `TrailingBlock` admits a trailing bare expression; the formatter round-trips each form as written). From the Broken Lines friction log.
+- Completions for the new methods and style properties, a typed `DashPiece` member set, and enumerated `dash-seam`/`outline-overlap` values.
+
+#### Documentation
+
+- **The Broken Lines blog series** (five parts, `series: "Broken Lines"`): a stroke-geometry overview, three craft applications — sashiko/hitomezashi running stitches, leather stitch holes with matched seams and a card-wallet punch template, stencil bridges as dash gaps with a laser-ready trail marker — and a closing post publishing the series' working friction log (seven entries; four fixed before publication, three deferred with diagnoses). Every post went through the 4-persona agentic review with syntheses preserved in `project-docs/broken-lines/reviews/`.
+- `docs/path-blocks.md` gains the Stroke Geometry reference section; `docs/syntax.md`'s Lambdas and worker-application sections cover the new sugar and the `<<` rules.
+
+### Changed
+
+#### Core
+
+- **An inline lambda literal directly after `<<` is now a compile error** — `<<` applies a worker defined elsewhere (a lambda variable or named `fn`); the inline spelling is the trailing block (`arr.filter {|x| ...}`). The error message names that form. User design ruling, friction log #6.
+- **Style blocks preserve bare percent literals for `stroke-dasharray`/`stroke-dashoffset` only** — `dash()` resolves `%` against path length itself; every other property keeps the historical bake-to-fraction behavior (`fill-opacity: 50%` still emits `0.5`), with regression tests locking both.
+
+#### Development
+
+- **The legacy `// viewBox="..."` line-1 sample comment convention is dropped** — `define ViewBox(...)` is the single source of truth. Stripped from all 88 samples that carried it (compiled SVGs verified unchanged); the authoring docs and checklists now prescribe the define only.
+
+### Fixed
+
+#### Core
+
+- **`difference()` with a holed subtrahend no longer displaces the hole** — the boolean engine's subpath splitter only recognized boundaries at an explicit `z`, so a ring closed by coincident endpoints (what `circle()` emits) got glued to the hole-ring after it and the subtraction's contour reversal scrambled the pair. An `m` after drawing commands now starts a new subpath; `cut()`'s private workaround for the same limitation is now redundant. Friction log #4.
+
+#### Playground
+
+- **Pathogen code is highlighted by the real parser on every blog surface** — fenced blocks were highlighted as JavaScript (splitting `stroke-width` into two colors) and the mini-workspace loaded `@codemirror/lang-javascript` (coloring dashed vs undashed property names differently). Fences now render via `highlightPathogen()` walking the editor parser (structured style-block tokens; new `pr` property-name class wired through `theme.css`, the print palette with its drift guard, and the github-theme CSS on blog/docs pages), and the mini-workspace wraps `PathogenLang.editorParser` with a `/dist/highlight.global.js` fallback. PDF-export legends color style-block properties as a side effect. Friction log #7.
+
+### Development
+
+- Broken Lines ran as a full Cutting-Room-style cycle: live friction log (`project-docs/broken-lines/FRICTION-LOG.md`), in-cycle fixes, per-post agentic reviews, and a published wrap-up. Deferred with diagnoses: bare `${var}` whole-value style interpolation (StyleContent tokenizer), a contextual diagnostic for stdlib shapes after `M`, and offset-parameterized dashing (the leather wallet's motivating gap).
+- Stroke-geometry visual demo (`project-docs/stroke-geometry/`), 66 feature tests plus lambda/boolean/highlighting regression suites; full suite at 5,139 tests.
+
 ## [0.8.0] - 2026-08-31 (inspector virtualization follow-ups)
 
 ### Fixed
