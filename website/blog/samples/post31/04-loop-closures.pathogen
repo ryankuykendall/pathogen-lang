@@ -1,4 +1,3 @@
-// viewBox="0 0 400 560"
 //-- Closures dissolve the baked-constants problem. A lambda {|t| ...}
 //-- captures the scope where it is WRITTEN, so a parameterized envelope can
 //-- be built inline, wherever its parameters live. Compare with

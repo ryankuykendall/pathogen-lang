@@ -1,4 +1,3 @@
-// viewBox="0 0 400 560"
 //-- Generalize the SHAPE, not the knobs: the wrapper takes envelope
 //-- functions (t) -> signed offset and samples one per profile at each stop.
 //-- Functions are first-class values in Pathogen -- pass them by name, call

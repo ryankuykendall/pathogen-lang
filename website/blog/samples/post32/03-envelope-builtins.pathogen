@@ -1,4 +1,3 @@
-// viewBox="0 0 400 320"
 //-- The envelope vocabulary, built in. Part 2 defined win/tentEnv/
 //-- smoothEnv/cosEnv by hand; each shape is now one stdlib call. Three
 //-- curves, three idioms:

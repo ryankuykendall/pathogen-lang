@@ -1,4 +1,3 @@
-// viewBox="0 0 400 200"
 //-- Three ways to get from 0 to 1 across the window 0.3..0.7: a hard step
 //-- (cliff), a straight lerp-style ramp, and smoothstep -- the S-curve
 //-- that leaves the floor flat and arrives at the ceiling flat.

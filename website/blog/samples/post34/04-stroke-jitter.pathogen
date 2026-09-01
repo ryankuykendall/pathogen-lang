@@ -1,4 +1,3 @@
-// viewBox="0 0 400 170"
 //-- The house idiom: 1 + hash11(i) * 0.25 is a +/-25% wobble factor you
 //-- multiply onto anything. Top ribbon: a smooth width profile. Bottom:
 //-- the same profile times the wobble -- the edge gets tooth.

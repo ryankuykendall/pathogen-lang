@@ -1,4 +1,3 @@
-// viewBox="0 0 400 160"
 //-- End windows on a stroke. Top: constant width -- the ribbon ends in
 //-- chopped-off vertical edges. Bottom: the same width times
 //-- smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t), which eases the

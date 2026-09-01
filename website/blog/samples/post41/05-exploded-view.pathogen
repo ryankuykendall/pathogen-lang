@@ -1,4 +1,3 @@
-// viewBox="0 0 480 260"
 //-- The assembly diagram: four pieces drift away from the plate's center
 //-- along their own centroid rays, the ghost of the uncut plate stays
 //-- behind, and every mating edge glows — that's the seam group again.

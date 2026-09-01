@@ -1,4 +1,3 @@
-// viewBox="0 0 480 240"
 //-- The bare mechanism: cut a plate in two, then ask each piece where it
 //-- was healed. Left: the pieces, drawn plain. Right: the same pieces with
 //-- every seam the cut created stroked in amber via segmentAll('cut').

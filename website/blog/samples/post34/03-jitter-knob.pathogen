@@ -1,4 +1,3 @@
-// viewBox="0 0 400 132"
 //-- The same 10 x 6 dot grid three times. The only difference is j -- the
 //-- jitter amplitude multiplying hash11: 0 (rigid), 2 (relaxed), 5
 //-- (scattered). One number is the entire design decision.

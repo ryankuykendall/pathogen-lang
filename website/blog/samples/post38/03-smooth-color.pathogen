@@ -1,4 +1,3 @@
-// viewBox="0 0 400 180"
 //-- Same randomness source, sampled two ways. Top: each bar's lightness
 //-- is hash01(i) -- neighbors are strangers, it reads as static. Bottom:
 //-- lightness is noise(i * 0.15) -- neighbors agree, it reads as light

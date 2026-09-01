@@ -1,4 +1,3 @@
-// viewBox="0 0 400 150"
 //-- Two rulers. The top one is machine-perfect. The bottom one nudges every
 //-- tick's position, lean, and length by a hashed amount -- it reads as
 //-- drawn by a person, and redraws identically forever.

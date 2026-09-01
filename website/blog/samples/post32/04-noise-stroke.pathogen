@@ -1,4 +1,3 @@
-// viewBox="0 0 400 250"
 //-- From jitter to texture. hash01 gives every stop its own independent
 //-- value; noise() drives the width with a CONTINUOUS wobble instead, so
 //-- adjacent stops agree and the edge undulates organically. One knob

@@ -49,7 +49,9 @@ Blog posts embed interactive `<mini-workspace>` demos that display Pathogen sour
 
 ```bash
 # 1. Create sample source file
-#    First line must be a viewBox comment: // viewBox="0 0 W H"
+#    Dimensions come from the `define ViewBox(0, 0, W, H);` statement —
+#    do NOT add the legacy `// viewBox="..."` line-1 comment (dropped
+#    convention; the define is the single source of truth)
 vim website/blog/samples/post1/my-sample.pathogen
 
 # 1.5. Format the sources (REQUIRED before review/publication).
@@ -61,7 +63,8 @@ vim website/blog/samples/post1/my-sample.pathogen
 npm run format:samples -- website/blog/samples/post1
 
 # 2. Compile every sample under website/blog/samples/ to SVG.
-#    Auto-detects viewBox/width/height from source comments, picks the GPU or
+#    Auto-detects viewBox/width/height from the define ViewBox statement
+#    (legacy comment forms still recognized for old samples), picks the GPU or
 #    CPU pipeline based on gradient types, and emits the inspector metadata
 #    block the mini-workspace inspector needs (Layers / Palette / CSS Vars).
 #    Incremental by default; pass --force to rebuild every SVG, or
@@ -122,7 +125,7 @@ The `<mini-workspace>` component auto-detects `@property` declarations with `syn
 
 ### Checklist for New Samples
 
-- [ ] `.pathogen` file with `// viewBox="0 0 W H"` comment on line 1
+- [ ] `.pathogen` file with a `define ViewBox(0, 0, W, H);` statement (no legacy `// viewBox="..."` comment — that convention is dropped)
 - [ ] Formatter-clean: `npm run format:samples -- website/blog/samples/postN` run after the last source edit (validate-samples warns otherwise)
 - [ ] Compiled via `npm run compile:samples` (NOT a hand-rolled `npx tsx src/cli.ts …`)
 - [ ] Resulting `.svg` contains `<script id="pathogen-metadata">` — confirms the inspector will populate
@@ -166,7 +169,7 @@ This uses Puppeteer to load each compiled SVG, extract pixel-accurate `getBoundi
 2. **Text-text collisions** — no overlapping text elements
 3. **Text-geometry collisions** — no text overlapping path/shape geometry
 4. **GroupLayer usage** — warns if >3 layers but no GroupLayer organization
-5. **ViewBox consistency** — source comment matches compiled SVG
+5. **ViewBox consistency** — the source's `define ViewBox(...)` matches the compiled SVG
 6. **Formatting** — source must be formatter-clean (`npm run format:samples`); unformatted sources soft-wrap badly in the mini-workspace code panel
 
 The script also generates **PNG previews** in `postN/previews/` for use during agentic review.

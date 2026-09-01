@@ -1,4 +1,3 @@
-// viewBox="0 0 480 240"
 //-- Registration marks: partition each piece's seam at the same fractions
 //-- and the marks pair up across the gap — twin seams are the same curve,
 //-- so the same t lands on the same spot of both copies.

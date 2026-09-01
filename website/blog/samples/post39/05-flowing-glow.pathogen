@@ -1,4 +1,3 @@
-// viewBox="0 78 400 103"
 //-- The series finale: bump-shaped widths (part 5) textured by ONE
 //-- noise2 field. t runs along the stroke; layer * 0.3 runs across the
 //-- layers. Because the field is continuous in both directions,

@@ -1,4 +1,3 @@
-// viewBox="0 0 480 300"
 //-- The finished puzzle: nine wavy-cut pieces spun in place with
 //-- rotate() and scattered — except the middle piece, gone missing. The
 //-- box lid keeps the assembled picture, scale()d straight from the cut.

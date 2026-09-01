@@ -1,4 +1,3 @@
-// viewBox="0 0 480 280"
 //-- Split the bodice at the yoke line and ask each piece who it is:
 //-- keeping the neckline makes you the yoke, keeping the hem makes you
 //-- the body. No coordinates checked, no piece order assumed.

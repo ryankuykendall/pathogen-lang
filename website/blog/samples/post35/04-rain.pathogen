@@ -1,4 +1,3 @@
-// viewBox="0 0 400 200"
 //-- Eighty slanted rain streaks. Position and length are ranged picks;
 //-- each streak also lands in one of three depth buckets --
 //-- floor(hashRange(i, 0, 3, 2)) picks 0, 1, or 2 -- and the bucket sets

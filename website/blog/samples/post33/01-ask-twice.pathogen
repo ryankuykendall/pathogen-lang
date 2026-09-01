@@ -1,4 +1,3 @@
-// viewBox="0 0 400 210"
 //-- Three rows of 48 dots. Rows one and two ask hash01 the same questions
 //-- from two separate loops -- identical answers, identical rows. Row three
 //-- asks randomRange, which re-rolls on every compile.

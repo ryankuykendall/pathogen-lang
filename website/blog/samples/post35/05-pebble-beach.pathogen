@@ -1,4 +1,3 @@
-// viewBox="0 88 400 152"
 //-- Four overlapping rows of pebbles, back to front. Every knob is a
 //-- named range: width, squash, and gray-warmth per pebble, with nearer
 //-- rows drawing from bigger ranges. Tuning the beach means tuning

@@ -1,4 +1,3 @@
-// viewBox="0 0 400 240"
 //-- A 14 x 8 grid of tiles. Every tile's lightness comes from one hashed
 //-- stream and its hue from another -- the grid reads as a woven textile
 //-- swatch, and it's the same swatch on every compile.

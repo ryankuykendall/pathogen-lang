@@ -1,4 +1,3 @@
-// viewBox="0 60 400 140"
 //-- The glow, rebuilt on closures -- deterministic this time. Without
 //-- closures this program threads TEN parameters through a helper
 //-- (pathBlock, steps, base1, bulges1, base2, bulges2, jitterAmount, salt,

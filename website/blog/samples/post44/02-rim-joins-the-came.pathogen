@@ -1,4 +1,3 @@
-// viewBox="0 0 480 260"
 //-- The seam group takes volunteers: 'cut.<name>' is the explicit opt-in
 //-- that joins your own geometry to the came. Left: rim labeled 'rim' —
 //-- a bare edge the seam loop ignores. Right: rim labeled 'cut.rim' —

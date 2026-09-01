@@ -1,4 +1,3 @@
-// viewBox="0 60 400 140"
 //-- A layered "glow" stroke: sixteen compoundVariableOffset passes, widths
 //-- driven by randomRange scaled by the layer index. Wide soft layers paint
 //-- first, a narrow bright core lands last. Organic -- and unrepeatable:

@@ -1,4 +1,3 @@
-// viewBox="0 128 400 132"
 //-- Ninety grass blades and a dozen seed heads, every property -- position,
 //-- height, lean, color -- drawn from its own hashed stream. A finished
 //-- little landscape that regenerates identically on every compile: change

@@ -1,4 +1,3 @@
-// viewBox="0 0 400 220"
 //-- One index, three decks: x from the default deck, y from deck 1, size
 //-- from deck 2. 140 stars land convincingly at random -- and land in
 //-- exactly the same places on every compile.

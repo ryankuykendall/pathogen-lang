@@ -1,4 +1,3 @@
-// viewBox="0 0 400 210"
 //-- A night skyline where the ranges read like a spec: buildings between
 //-- 35 and 125 tall, between 10 and 22 wide. Tighten either range and the
 //-- whole city changes character -- without touching the structure.

@@ -1,4 +1,3 @@
-// viewBox="0 0 400 190"
 //-- The relationship in one picture: dots mark hash01(k) at every whole
 //-- number 0..8; the curve is noise(x) sampled finely across the same
 //-- span. The curve threads EXACTLY through every dot -- and flattens as

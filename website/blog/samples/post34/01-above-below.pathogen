@@ -1,4 +1,3 @@
-// viewBox="0 0 400 190"
 //-- 48 dots straddling an axis: hash11(i) answers between -1 and 1, so
 //-- roughly half land above the line and half below, at hashed heights.
 

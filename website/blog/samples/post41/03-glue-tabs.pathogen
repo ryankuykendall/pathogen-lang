@@ -1,4 +1,3 @@
-// viewBox="0 0 480 240"
 //-- Glue tabs, generated: the left piece grows trapezoid tabs along its
 //-- healed seam — and only there. get(t) walks the seam, normal(t) points
 //-- the tabs outward, and the original boundary never grows a tab.

@@ -1,4 +1,3 @@
-// viewBox="0 0 400 130"
 //-- Everything so far, on one ribbon: noise drives the width for organic
 //-- undulation, and a smoothstep end-window eases both tips to a point.
 //-- Width = (2 + noise(t*6) * 13) * smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t).

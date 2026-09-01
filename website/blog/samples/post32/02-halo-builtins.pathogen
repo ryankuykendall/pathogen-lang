@@ -1,4 +1,3 @@
-// viewBox="0 60 400 140"
 //-- Part 2's deterministic glow, third build, shortest yet. The two helper
 //-- fns are gone: bump() replaces fn bulge (term-for-term -- same raised
 //-- cosine), and hash11() replaces fn hash01 plus the *2-1 remap. The

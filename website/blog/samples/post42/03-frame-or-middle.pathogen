@@ -1,4 +1,3 @@
-// viewBox="0 0 480 300"
 //-- Which pieces touch the frame? Label the plate's rim before cutting a
 //-- 3x3 wavy grid, and afterward each piece answers for itself: rim run
 //-- kept = tray piece (paper), rim count zero = the one that falls out.

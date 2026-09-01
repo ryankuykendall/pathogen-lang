@@ -1,4 +1,3 @@
-// viewBox="0 60 400 140"
 //-- Twelve compound-offset layers on one curved spine, every width a sum
 //-- of bump terms scaled by the layer index, hue shifted per layer. No
 //-- jitter, no noise -- bump algebra alone carries the whole glow.

@@ -1,4 +1,3 @@
-// viewBox="0 60 400 140"
 //-- A field of texture. Sample 02 jittered each layer independently --
 //-- hash11(i, haloIndex) gives layer 7 no idea what layer 8 is doing.
 //-- Here the texture is a 2D noise FIELD: t runs along the stroke,

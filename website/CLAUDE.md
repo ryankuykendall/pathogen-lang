@@ -40,7 +40,7 @@ Use the `/bbwp` Claude skill or run the script directly:
 npm run compile:bbwp -- <pathogen-file> [options]
 ```
 
-The script auto-detects viewBox/width/height from source comments, derives roadmap/feature names from the file path, renders the SVG, wraps it in HTML, saves to `website/bbwp/`, and updates the index.
+The script auto-detects viewBox/width/height from the `define ViewBox(...)` statement (legacy comment forms still recognized for old samples), derives roadmap/feature names from the file path, renders the SVG, wraps it in HTML, saves to `website/bbwp/`, and updates the index.
 
 ### File Naming Convention
 

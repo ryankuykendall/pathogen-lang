@@ -1,4 +1,3 @@
-// viewBox="0 0 400 160"
 //-- The migration in one picture. Top row: dot sizes from
 //-- randomRange(1.5, 5) -- they reshuffle on every compile. Bottom row:
 //-- hashRange(i, 1.5, 5) -- same call shape with an index in front, and

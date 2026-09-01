@@ -1,4 +1,3 @@
-// viewBox="0 0 900 1200"
 @font "../../../../fonts/Baumans/Baumans-Regular.ttf";
 define ViewBox(0, 0, 900, 1200);
 

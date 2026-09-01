@@ -1,4 +1,3 @@
-// viewBox="0 0 480 230"
 //-- Seam allowance is an offset: push the body piece's outline out by 7
 //-- and you have the cutting line; the original edge, dashed, becomes the
 //-- stitch line. The 'side' label survives the offset and says so.

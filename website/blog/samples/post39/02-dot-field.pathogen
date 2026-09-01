@@ -1,4 +1,3 @@
-// viewBox="0 0 400 220"
 //-- A 30 x 17 dot grid where each dot's radius samples the field at its
 //-- own position: 0.6 + 3 * noise2(col * 0.12, row * 0.12). Sizes swell
 //-- in blobs, like rain intensity across pavement.

@@ -1,4 +1,3 @@
-// viewBox="0 0 400 220"
 //-- Two shaded grids, same size, same palette. Left: each cell's shade is
 //-- hash01 of its index -- TV static. Right: noise2 of its (col, row)
 //-- position scaled down -- cloudy patches. Neighboring cells agree in

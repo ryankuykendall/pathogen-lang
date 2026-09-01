@@ -1,4 +1,3 @@
-// viewBox="0 0 480 250"
 //-- The picture emerges: the same eight panes, each routed to one of
 //-- four glass layers — jewel tints round-robin — with the came stroked
 //-- on top. Pieces are full PathBlocks, so styling them is layer routing.

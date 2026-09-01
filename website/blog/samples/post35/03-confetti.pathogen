@@ -1,4 +1,3 @@
-// viewBox="0 0 400 190"
 //-- Four ranges as a spec sheet: where (x, y), how big (r), what color
 //-- (hue). Each property reads its own seed; each range line is a design
 //-- decision you can tighten or loosen independently.

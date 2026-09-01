@@ -1,4 +1,3 @@
-// viewBox="0 0 400 260"
 //-- Five concentric "pencil" rings, each drawn twice like overlapping
 //-- pencil passes. Every vertex radius wobbles by a few percent, with the
 //-- ring number and pass number as seeds -- so every pass wobbles its own

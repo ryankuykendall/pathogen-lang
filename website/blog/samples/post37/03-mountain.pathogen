@@ -1,4 +1,3 @@
-// viewBox="0 0 400 210"
 //-- Sums of hills make arbitrary skylines. One filled silhouette whose
 //-- height is three amplitude-times-bump terms: a tall mid peak, a low
 //-- wide shoulder, and a small right summit.

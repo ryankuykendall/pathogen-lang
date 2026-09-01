@@ -1,4 +1,3 @@
-// viewBox="0 0 480 280"
 //-- Notches: a single tick a third of the way along the join seam, a
 //-- double tick two thirds along — on BOTH pieces. Twin seams may run
 //-- opposite directions, so the walk is normalized left-to-right first.
