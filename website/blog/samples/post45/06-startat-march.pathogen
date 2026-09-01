@@ -1,0 +1,82 @@
+//-- startAt(t) re-anchors a closed path's start point, and the dash
+//-- pattern starts wherever the path does — so sliding the start slides
+//-- every dash. Three phases of the same ring.
+
+define ViewBox(0, 0, 480, 210);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 210);
+}
+
+let scene = GroupLayer('scene') ${};
+let startDots = PathLayer('start-dots') ${
+  fill: #f59e0b;
+  stroke: none;
+};
+let rings = PathLayer('rings') ${
+  stroke: #94a3b850;
+  stroke-width: 1;
+  fill: none;
+};
+let marchers = PathLayer('marchers') ${
+  stroke: #38bdf8;
+  stroke-width: 5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(rings, marchers, startDots, labels);
+
+let ring = @{
+  circle(0, 0, 52);
+};
+
+let phases = [
+  0%,
+  4%,
+  8%,
+];
+let phaseLabels = [
+  '0%',
+  '4%',
+  '8%',
+];
+let anchors = [
+  95,
+  240,
+  385,
+];
+
+for ([phase, columnIndex] in phases) {
+  let anchorX = anchors[columnIndex];
+  rings.apply {
+    M anchorX 92 ring.draw()
+  }
+  let anchored = ring.startAt(phase);
+  let pieces = anchored.dash(${
+    stroke-dasharray: 24 17;
+  });
+  for (piece in pieces) {
+    if (piece.kind == 'dash') {
+      marchers.apply {
+        M anchorX 92 piece.path.draw()
+      }
+    }
+  }
+  // The amber dot marks where the re-anchored path now begins.
+  startDots.apply {
+    circle(calc(anchorX + anchored.startPoint.x), calc(92 + anchored.startPoint.y), 4);
+  }
+  labels.apply {
+    text(anchorX, 185)`startAt(${phaseLabels[columnIndex]})`;
+  }
+}

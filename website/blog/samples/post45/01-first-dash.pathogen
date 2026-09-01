@@ -1,0 +1,57 @@
+//-- One wave, one dasharray. dash() hands the pattern back as real
+//-- geometry: every piece is a path — dashes drawn solid, gaps ghosted.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') ${};
+let gaps = PathLayer('gaps') ${
+  stroke: #94a3b840;
+  stroke-width: 1.5;
+  fill: none;
+};
+let dashes = PathLayer('dashes') ${
+  stroke: #38bdf8;
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(gaps, dashes, labels);
+
+let wave = @{
+  c 40 -70 80 -70 120 0
+  c 40 70 80 70 120 0
+  c 40 -70 80 -70 120 0
+};
+
+let pieces = wave.dash(${
+  stroke-dasharray: 26 14;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'dash') {
+    dashes.apply {
+      M 60 120 piece.path.draw()
+    }
+  } else {
+    gaps.apply {
+      M 60 120 piece.path.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(60, 36)`dashes drawn solid, gaps ghosted — same wave, ${pieces.length} pieces`;
+}

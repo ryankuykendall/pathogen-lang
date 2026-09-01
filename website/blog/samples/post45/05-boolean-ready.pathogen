@@ -1,0 +1,80 @@
+//-- Outlines are closed paths, so booleans just work. Left: fat dashes
+//-- subtracted from a plate — slots. Right: two crossing strokes with
+//-- outline-overlap: union — one clean boundary instead of two contours.
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') ${};
+let plateLayer = PathLayer('plate') ${
+  fill: #38bdf830;
+  stroke: #38bdf8;
+  stroke-width: 1.5;
+};
+let crossLayer = PathLayer('cross') ${
+  fill: #f59e0b30;
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(plateLayer, crossLayer, labels);
+
+// Left: dash a track, outline each dash, subtract them all from a plate.
+let plate = @{
+  h 190
+  v 120
+  h -190
+  z
+};
+let track = @{
+  m 25 60
+  h 140
+};
+let slotPieces = track.dash(${
+  stroke-dasharray: 26 26;
+});
+let plaque = plate;
+for (piece in slotPieces) {
+  if (piece.kind == 'dash') {
+    let slot = piece.path.outline(${
+      stroke-width: 16;
+      stroke-linecap: round;
+    });
+    plaque = plaque.difference(slot);
+  }
+}
+plateLayer.apply {
+  M 30 55 plaque.draw()
+}
+
+// Right: crossing strokes, self-unioned into one outline.
+let crossing = @{
+  h 110
+  m -55 -45
+  v 90
+};
+let welded = crossing.outline(${
+  stroke-width: 26;
+  stroke-linecap: round;
+  outline-overlap: union;
+});
+crossLayer.apply {
+  M 305 115 welded.draw()
+}
+
+labels.apply {
+  text(125, 210)`plate.difference(slot)`;
+  text(360, 210)`outline-overlap: union`;
+}

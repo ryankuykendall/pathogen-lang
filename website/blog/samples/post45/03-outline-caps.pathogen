@@ -1,0 +1,76 @@
+//-- outline() turns a stroked line into the CLOSED path of the stroked
+//-- region — Illustrator's "Outline Stroke" as a language method. Same
+//-- curve three times: butt, round, square caps; centerline ghosted.
+
+define ViewBox(0, 0, 480, 190);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 190);
+}
+
+let scene = GroupLayer('scene') ${};
+let solids = PathLayer('solids') ${
+  fill: #f59e0b;
+  stroke: none;
+};
+let spines = PathLayer('spines') ${
+  stroke: #0f172a;
+  stroke-width: 1;
+  fill: none;
+};
+let capRule = PathLayer('cap-rule') ${
+  stroke: #94a3b880;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(solids, spines, capRule, labels);
+
+let stem = @{
+  c 0 -70 90 -70 90 0
+};
+
+let capNames = [
+  'butt',
+  'round',
+  'square',
+];
+let anchors = [
+  65,
+  200,
+  335,
+];
+
+for ([capName, columnIndex] in capNames) {
+  let anchorX = anchors[columnIndex];
+  let solid = stem.outline(${
+    stroke-width: 22;
+    stroke-linecap: `${capName}`;
+  });
+  solids.apply {
+    M anchorX 125 solid.draw()
+  }
+  spines.apply {
+    M anchorX 125 stem.draw()
+  }
+  labels.apply {
+    text(calc(anchorX + 45), 165)`${capName}`;
+  }
+}
+
+// Where the butt caps stop: round and square reach past this line by
+// half the stroke width.
+capRule.apply {
+  M 50 125
+  h 380
+}

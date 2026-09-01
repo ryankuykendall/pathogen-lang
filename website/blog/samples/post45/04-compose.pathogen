@@ -1,0 +1,61 @@
+//-- The methods compose: partition with dash(), thicken each piece with
+//-- its own outline() — the width rides the piece's t0, so the dashes
+//-- swell along the wave. No renderer can style a stroke this way.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') ${};
+let gaps = PathLayer('gaps') ${
+  stroke: #94a3b840;
+  stroke-width: 1.5;
+  fill: none;
+};
+let swellingDashes = PathLayer('swelling-dashes') ${
+  fill: #f59e0b;
+  stroke: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(gaps, swellingDashes, labels);
+
+let wave = @{
+  c 40 -65 80 -65 120 0
+  c 40 65 80 65 120 0
+  c 40 -65 80 -65 120 0
+};
+
+let pieces = wave.dash(${
+  stroke-dasharray: 24 22;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'gap') {
+    gaps.apply {
+      M 60 120 piece.path.draw()
+    }
+  } else {
+    let swollen = piece.path.outline(${
+      stroke-width: calc(3 + piece.t0 * 16);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    });
+    swellingDashes.apply {
+      M 60 120 swollen.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(60, 34)`stroke-width: calc(3 + piece.t0 * 16) — one width per piece`;
+}

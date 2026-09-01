@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 240" width="480" height="240">
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 240 l -480 0 z" fill="#0f172a" stroke="none" stroke-width="2"/>
+  <g data-layer-name="scene" id="scene">
+    <path data-layer-name="plate" id="plate" d="M 30 55 h 190 v 120 h -190 z m 25 52 a 8 8 0 0 0 0 16 l 26 0 a 8 8 0 0 0 0 -16 l -26 0 z m 52 0 a 8 8 0 0 0 0 16 l 26 0 a 8 8 0 0 0 0 -16 l -26 0 z m 52 0 a 8 8 0 0 0 0 16 l 26 0 a 8 8 0 0 0 0 -16 l -26 0 z" fill="#38bdf830" stroke="#38bdf8" stroke-width="1.5"/>
+    <path data-layer-name="cross" id="cross" d="M 305 115 m 68 -13 l 42 0 a 13 13 0 0 1 0 26 l -42 0 l 0 31.999999999999993 a 13 13 0 0 1 -26 0 l 0 -32 l -42 0 a 13 13 0 0 1 0 -26 l 42 0 l 0 -31.999999999999993 a 13 13 0 0 1 26 0 l 0 32 z" fill="#f59e0b30" stroke="#f59e0b" stroke-width="1.5"/>
+    <text data-layer-name="labels" id="labels" x="125" y="210" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="middle">plate.difference(slot)</text>
+    <text data-layer-name="labels" x="360" y="210" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="middle">outline-overlap: union</text>
+  </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"#0f172a","stroke":"none"},"isDefault":false},{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"plate","type":"path","styles":{"fill":"#38bdf830","stroke":"#38bdf8","stroke-width":"1.5"},"isDefault":false},{"name":"cross","type":"path","styles":{"fill":"#f59e0b30","stroke":"#f59e0b","stroke-width":"1.5"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":480,"height":240}}]]></script>
+</svg>
