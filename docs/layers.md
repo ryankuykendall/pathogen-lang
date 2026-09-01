@@ -548,7 +548,7 @@ let textStyles = ${
 };
 ```
 
-A backtick template (`` font-size: `${size * 2}`; ``) is the equivalent long form — same evaluation, same splicing. Double-quoted strings are always literal — they never interpolate. `font-family: "family";` is the literal family name `family`, not the variable; use a bare identifier or `${...}` for dynamic values. (Inside a bare `${...}` interpolation, at most one nested level of `{ }` braces is supported; inside a backtick template used as a style value, the interpolation supports none — another reason the bare form is the default here.)
+A backtick template (`` font-size: `${size * 2}`; ``) is the equivalent long form — same evaluation, same splicing. Editor intelligence follows you inside: completions (variables, members, stdlib), hover, and signature help all work within `${...}`. Double-quoted strings are always literal — they never interpolate. `font-family: "family";` is the literal family name `family`, not the variable; use a bare identifier or `${...}` for dynamic values. (Inside a bare `${...}` interpolation, at most one nested level of `{ }` braces is supported; inside a backtick template used as a style value, the interpolation supports none — another reason the bare form is the default here.)
 
 #### Dynamic Function Arguments
 

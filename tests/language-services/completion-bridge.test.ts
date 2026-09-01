@@ -195,3 +195,31 @@ describe('toCmSnippetTemplate (VS Code → CodeMirror field syntax)', () => {
     expect(toCmSnippetTemplate('style = ${2|Grain,Paper,Speckle|};$0')).toBe('style = ${2:Grain};${}');
   });
 });
+
+describe('style-value interpolation contexts', () => {
+  it('member completion inside a bare interp replaces from after the dot', async () => {
+    const { makeSharedCompletionSource } = await import('../../playground/utils/cm-completion-bridge');
+    const source = makeSharedCompletionSource();
+    const doc = 'let p = Point(10, 20);\nlet s = ${ stroke: ${p.di';
+    const result = await source(makeContext(doc));
+    expect(result).not.toBeNull();
+    // Replacement starts after the dot: only "di" is replaced.
+    expect(result!.from).toBe(doc.length - 2);
+    const labels = result!.options.map((o: { label: string }) => o.label);
+    expect(labels).toContain('distanceTo');
+  });
+
+  it('a bare ${ with nothing typed does not auto-open (explicit-only by design)', async () => {
+    const { makeSharedCompletionSource } = await import('../../playground/utils/cm-completion-bridge');
+    const source = makeSharedCompletionSource();
+    const doc = 'let cutoff = 4;\nlet s = ${ stroke-width: ${';
+    // Non-explicit (typing) context: zero-length match bails.
+    const typing = await source(makeContext(doc));
+    expect(typing).toBeNull();
+    // Explicit (Ctrl-Space) context: completions arrive.
+    const explicit = await source(makeContext(doc, true));
+    expect(explicit).not.toBeNull();
+    const labels = explicit!.options.map((o: { label: string }) => o.label);
+    expect(labels).toContain('cutoff');
+  });
+});

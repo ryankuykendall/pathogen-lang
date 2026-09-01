@@ -96,13 +96,18 @@ export function parseExpressionAtOffset(
   // Parsimmon-parsed expressions had line 1, col 1 as the start.
   // Lezer-parsed expressions (via wrapping) have line 1, col 9 (after `let _ = `).
   // We need to adjust to the original source position.
-  adjustLocs(expr, lineOffset, colOffset, 8);
+  adjustLocs(expr, lineOffset, colOffset, 8, new Set());
   return expr;
 }
 
-function adjustLocs(node: any, lineOffset: number, colOffset: number, wrapOffset: number): void {
+function adjustLocs(node: any, lineOffset: number, colOffset: number, wrapOffset: number, seen: Set<object>): void {
   if (!node || typeof node !== 'object') return;
-  if (node.loc) {
+  // Some builders share ONE loc object between a node and its child (e.g. a
+  // MemberExpression and its object head). Track adjusted loc objects so a
+  // shared one is shifted exactly once — double-shifting doubled the line
+  // offset for member-head references inside style-value interpolations.
+  if (node.loc && !seen.has(node.loc)) {
+    seen.add(node.loc);
     if (node.loc.line === 1) {
       node.loc.line += lineOffset;
       // Column: subtract the `let _ = ` prefix (8 chars), add the source offset
@@ -116,9 +121,9 @@ function adjustLocs(node: any, lineOffset: number, colOffset: number, wrapOffset
     if (key === 'loc' || key === 'type') continue;
     const val = node[key];
     if (Array.isArray(val)) {
-      for (const item of val) adjustLocs(item, lineOffset, colOffset, wrapOffset);
+      for (const item of val) adjustLocs(item, lineOffset, colOffset, wrapOffset, seen);
     } else if (val && typeof val === 'object' && val.type) {
-      adjustLocs(val, lineOffset, colOffset, wrapOffset);
+      adjustLocs(val, lineOffset, colOffset, wrapOffset, seen);
     }
   }
 }

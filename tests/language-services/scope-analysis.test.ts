@@ -335,3 +335,19 @@ describe('analyzeScopes', () => {
     });
   });
 });
+
+describe('references inside style-value interpolations', () => {
+  it('member-head references land on the correct line (adjustLocs shared-loc regression)', () => {
+    // A shared loc object between MemberExpression and its head used to be
+    // line-shifted twice, doubling the line for refs inside interps.
+    const source = 'let p = Point(1, 2);\n\n\n\nlet s = ${ stroke-width: ${p.x}; };';
+    const info = analyzeScopes(new StringTextDocument(source));
+    const pRefs = info.references.filter((r) => r.name === 'p');
+    expect(pRefs.length).toBeGreaterThan(0);
+    for (const ref of pRefs) {
+      expect(ref.range.start.line).toBeLessThanOrEqual(4);
+    }
+    const interpRef = pRefs.find((r) => r.range.start.line === 4);
+    expect(interpRef, 'the interp reference should sit on line 4').toBeDefined();
+  });
+});

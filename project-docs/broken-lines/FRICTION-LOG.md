@@ -29,7 +29,13 @@ post (part 5) at project end.
    values still allow no nested braces (table-size limit) — the bare form
    allows one level and is the more capable spelling. Follow-up logged:
    full expression completions INSIDE a bare interp (this cycle only
-   suppresses the wrong style completions there).
+   suppresses the wrong style completions there). **Follow-up RESOLVED
+   (2026-09-01, same day):** interps now get ordinary expression
+   completions (variables, member chains, stdlib) in both editors; the
+   fix also repaired member completion inside ordinary-code template
+   interps (never worked) and a shared-loc double-shift in
+   lezer-expression's adjustLocs that broke rename for member heads
+   inside interps.
 
    Original: **Interpolating a variable as a whole style value is a parse error in
    bare `${var}` form.** Writing `stroke-linecap: ${capName};` inside an

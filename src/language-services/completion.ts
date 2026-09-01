@@ -58,6 +58,15 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // string is misclassified as a style block and we'd surface CSS property
   // completions where they don't belong.
   if (isInsideBacktickString(textBefore)) {
+    // Member access resolves inside `${...}` interpolations the same way it
+    // does anywhere else — the resolver works on the raw textBefore slice.
+    const templateMember = resolveMemberAccess(textBefore, source, resolveName);
+    if (templateMember) {
+      return filterByPrefix(
+        [...templateMember.members.properties, ...templateMember.members.methods].map(toCompletionItem),
+        templateMember.memberPrefix,
+      );
+    }
     const items: CompletionItem[] = [toCompletionItem(INTERPOLATION_SNIPPET)];
     items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
     items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
@@ -137,6 +146,12 @@ export function getCompletions(document: TextDocument, position: Position): Comp
     if (isAtStatementStart(before)) {
       return DECLARATION_SNIPPETS.map(toCompletionItem);
     }
+    // Inside a style VALUE, `$` starts an interpolation, not a nested style
+    // block — offer the ${expr} snippet (same label, different template).
+    const blankedBefore = blankBalancedInterps(before);
+    if (isInsideStyleBlock(blankedBefore) && !isStylePropertyNameContext(blankedBefore)) {
+      return [toCompletionItem(INTERPOLATION_SNIPPET)];
+    }
     if (isInExpressionPosition(before)) {
       return [toCompletionItem(STYLE_BLOCK_SNIPPET)];
     }
@@ -151,8 +166,32 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // For the value position, we fall through to the general completion
   // logic below so the user gets scope-aware variable completions
   // (e.g. `Color` variables in scope), then append style value keywords.
-  if (isInsideStyleBlock(textBefore)) {
-    if (isStylePropertyNameContext(textBefore)) {
+  // Inside an UNCLOSED bare `${...}` interpolation in a style value:
+  // ordinary expression territory. Member access first (the resolver works
+  // on the raw textBefore slice — same as hover), then stdlib + enums +
+  // in-scope declarations. Never CSS property/value items here.
+  if (isInsideOpenInterp(textBefore)) {
+    const interpMember = resolveMemberAccess(textBefore, source, resolveName);
+    if (interpMember) {
+      return filterByPrefix(
+        [...interpMember.members.properties, ...interpMember.members.methods].map(toCompletionItem),
+        interpMember.memberPrefix,
+      );
+    }
+    const items: CompletionItem[] = [];
+    items.push(...STDLIB_COMPLETIONS.map(toCompletionItem));
+    items.push(...ENUM_COMPLETIONS.map(toCompletionItem));
+    items.push(...collectScopeDeclarations(document, position));
+    const interpPrefix = /[a-zA-Z_]\w*$/.exec(textBefore)?.[0] ?? '';
+    return filterByPrefix(items, interpPrefix);
+  }
+
+  // Balanced interps earlier in the block are expression islands — blank
+  // them so the style-context scanners below don't mistake their braces
+  // for block/entry boundaries.
+  const styleScanText = blankBalancedInterps(textBefore);
+  if (isInsideStyleBlock(styleScanText)) {
+    if (isStylePropertyNameContext(styleScanText)) {
       // Property names are hyphenated (`stroke-width`) — match the typed
       // prefix with a hyphen-aware pattern so filtering narrows correctly.
       const propPrefix = /[-\w]*$/.exec(textBefore)?.[0] ?? '';
@@ -188,7 +227,9 @@ export function getCompletions(document: TextDocument, position: Position): Comp
 
   // Collect all completions
   const items: CompletionItem[] = [];
-  const insideStyleValue = isInsideStyleBlock(textBefore) && !isStylePropertyNameContext(textBefore);
+  const insideStyleValue =
+    isInsideStyleBlock(blankBalancedInterps(textBefore)) &&
+    !isStylePropertyNameContext(blankBalancedInterps(textBefore));
   let styleValueProp: string | null = null;
 
   if (insideStyleValue) {

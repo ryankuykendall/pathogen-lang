@@ -1318,7 +1318,6 @@ describe('getCompletions', () => {
     });
 
     it('still offers user variables in value position (well-formed block)', () => {
-      // Note: scope analysis needs a parseable document — variables are not
       // collected while the style block is still unterminated (pre-existing
       // limitation, independent of value suggestions).
       const source = 'let accent = oklch(0.7 0.1 250);\nlet s = ${ stroke:  };';
@@ -1599,5 +1598,69 @@ describe('bare ${} interpolation in style values (context detection)', () => {
   it('value-keyword runs still work after a balanced interp declaration', () => {
     const src = 'let w = 2;\nlet s = ${ stroke-width: ${w}; stroke-linecap: rou';
     expect(getStyleValueKeywordRun(src, src.length)).toBe('rou');
+  });
+});
+
+describe('expression completions inside style-value interpolations', () => {
+  it('bare interp offers in-scope variables', () => {
+    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = ${ stroke-width: ${cu'));
+    expect(names).toContain('cutoff');
+    expect(names).not.toContain('stroke-width');
+  });
+
+  it('bare interp resolves member chains', () => {
+    const names = labels(completeAtEnd('let p = Point(10, 20);\nlet s = ${ stroke: ${p.di'));
+    expect(names).toContain('distanceTo');
+    expect(names).not.toContain('Direction');
+  });
+
+  it('bare interp resolves PathBlock methods', () => {
+    const names = labels(completeAtEnd('let shape = @{\n  M 0 0\n  L 100 0\n};\nlet s = ${ stroke-width: ${shape.cham'));
+    expect(names).toContain('chamfer');
+    expect(names).toContain('chamferAtVertex');
+  });
+
+  it('bare interp offers stdlib inside nested calls', () => {
+    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = ${ stroke-width: ${calc(cu'));
+    expect(names).toContain('cutoff');
+    expect(names).toContain('cubic');
+  });
+
+  it('a second interp in the same declaration behaves identically', () => {
+    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = ${ stroke-dasharray: ${cutoff} ${cu'));
+    expect(names).toContain('cutoff');
+    expect(names).not.toContain('stroke-dasharray');
+  });
+
+  it('regression: NO style property names at a bare interp opener', () => {
+    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = ${ stroke-width: ${'));
+    expect(names).not.toContain('stroke');
+    expect(names).not.toContain('stroke-width');
+    expect(names).toContain('cutoff');
+  });
+
+  it('backtick interp in ORDINARY code resolves member chains', () => {
+    const names = labels(completeAtEnd('let p = Point(10, 20);\nlet m = `${p.di'));
+    expect(names).toContain('distanceTo');
+    expect(names).not.toContain('Direction');
+  });
+
+  it('backtick interp in a style value resolves member chains', () => {
+    const names = labels(completeAtEnd('let p = Point(10, 20);\nlet s = ${ stroke: `${p.di'));
+    expect(names).toContain('distanceTo');
+  });
+
+  it('property-name context resumes after a balanced interp', () => {
+    const names = labels(completeAtEnd('let w = 2;\nlet s = ${ stroke-width: ${w}; st'));
+    expect(names).toContain('stroke-linecap');
+    expect(names).toContain('stroke-dasharray');
+  });
+
+  it('typing $ in a style VALUE offers the interpolation snippet, not the style-block snippet', () => {
+    const items = completeAtEnd('let s = ${ stroke: $');
+    const snip = items.find((i) => i.label === '${...}');
+    expect(snip).toBeDefined();
+    expect(snip!.insertText).toContain('expr');
+    expect(snip!.insertText).not.toContain('\n');
   });
 });
