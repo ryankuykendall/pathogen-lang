@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-01 (expression completions inside interpolations)
+
+### Fixed
+
+#### Core
+
+- **Completions inside `${...}` interpolations are real expression completions** — in-scope variables, member chains (`${p.di` → `distanceTo`), and stdlib — in the playground and VS Code alike. Bare style-value interps had been *misrouted* (the context scanner mistook the interp's `${` for the style-block opener and offered CSS property names inside an expression), and backtick interps everywhere — ordinary code included — returned before member resolution ever ran. Property-name context now correctly resumes after a balanced interp, and typing `$` in a style value offers the `${expr}` interpolation snippet rather than the nested style-block one. (The Broken Lines follow-up, resolved same-day.)
+- **Member-head references inside style-value interps no longer double their line numbers** — `adjustLocs` shifted a loc object shared between a `MemberExpression` and its head twice; rename and find-references inside interps now land on the right line.
+
+### Development
+
+- Ten completion tests calling `getCompletions` directly (the prior interp describe only covered the exported context helpers — exactly why the misroute shipped unnoticed), bridge tests for the member replacement range and the intentional explicit-only popup at a bare `${`, and an `adjustLocs` scope-analysis regression. Full suite at 5,172 tests.
+
 ## [0.8.0] - 2026-09-01 (bare ${} interpolation in style values)
 
 ### Added
