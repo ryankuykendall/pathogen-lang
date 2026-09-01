@@ -37,14 +37,17 @@ export function splitTopLevel(value: string): string[] {
 const FN_NAME_RE = /^[A-Za-z0-9_-]+/;
 
 /**
- * Find backtick template spans in a raw style value and replace each with
- * `evalTemplate(span)` (the span INCLUDES its backticks, so it parses as a
- * Pathogen template-literal expression). Returns the spliced string, or null
- * when the value contains no complete template span. Scanning mirrors
- * parseStyleDeclarations in the AST builder: single/double quotes hide
- * backticks, and inside a span `${ }` interpolation nesting and backslash
- * escapes are tracked so the closing backtick is found correctly.
- * `evalTemplate` may throw; the error propagates to the caller.
+ * Find interpolation spans in a raw style value and replace each with its
+ * evaluated text. Two span kinds:
+ *   - backtick templates — passed to `evalTemplate` verbatim (the span
+ *     includes its backticks, so it parses as a template-literal expression)
+ *   - bare `${...}` interpolations — wrapped in backticks and passed to the
+ *     SAME callback, so both forms share one evaluation path
+ * Returns the spliced string, or null when the value contains no complete
+ * span. Scanning mirrors parseStyleDeclarations in the AST builder:
+ * single/double quotes hide both span kinds, and inside a span `${ }`
+ * nesting and backslash escapes are tracked so the closer is found
+ * correctly. `evalTemplate` may throw; the error propagates to the caller.
  */
 export function spliceTemplateFragments(
   raw: string,
@@ -111,6 +114,35 @@ export function spliceTemplateFragments(
       if (!closed) return null; // unterminated — leave for the strict parser/validator to report
       found = true;
       out += evalTemplate(raw.slice(start, i));
+      continue;
+    }
+    if (ch === '$' && raw[i + 1] === '{') {
+      // Bare `${...}` span: find the matching close (quotes hidden, brace
+      // nesting tracked), then evaluate it AS a template by wrapping the
+      // whole span in backticks — identical semantics, one code path.
+      const start = i;
+      i += 2;
+      let braceDepth = 1;
+      let innerQuote = '';
+      while (i < raw.length && braceDepth > 0) {
+        const c = raw[i];
+        if (innerQuote) {
+          if (c === innerQuote) innerQuote = '';
+          i++;
+          continue;
+        }
+        if (c === '"' || c === "'") {
+          innerQuote = c;
+          i++;
+          continue;
+        }
+        if (c === '{') braceDepth++;
+        else if (c === '}') braceDepth--;
+        i++;
+      }
+      if (braceDepth > 0) return null; // unterminated — validator reports
+      found = true;
+      out += evalTemplate('`' + raw.slice(start, i) + '`');
       continue;
     }
     out += ch;

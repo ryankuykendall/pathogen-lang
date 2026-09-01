@@ -534,44 +534,47 @@ let dynamic = ${
 
 ### Variables and Interpolation in Values
 
-This is the same expression evaluation from the previous section applied to variables: a bare identifier is just an expression that resolves to its value, and a backtick template is an expression that interpolates with `${...}`:
+This is the same expression evaluation from the previous section applied to variables: a bare identifier is just an expression that resolves to its value, and `${...}` interpolates an expression anywhere in a value — whole values, tokens in a list, or fused to surrounding text:
 
 ```
 let family = "Noto Sans";
 let size = 16;
+let cell = 12;
 
 let textStyles = ${
-  font-family: family;              // resolves to "Noto Sans"
-  font-size: `${size * 2}`;         // interpolates to "32"
+  font-family: family;               // resolves to "Noto Sans"
+  font-size: ${size * 2};            // interpolates to "32"
+  stroke-dasharray: ${cell} ${cell}; // one interpolation per list token
 };
 ```
 
-Double-quoted strings are always literal — they never interpolate. `font-family: "family";` is the literal family name `family`, not the variable; use a bare identifier or backticks for dynamic values. (Inside a `${...}` interpolation, at most one nested level of `{ }` braces is supported.)
+A backtick template (`` font-size: `${size * 2}`; ``) is the equivalent long form — same evaluation, same splicing. Double-quoted strings are always literal — they never interpolate. `font-family: "family";` is the literal family name `family`, not the variable; use a bare identifier or `${...}` for dynamic values. (Inside a bare `${...}` interpolation, at most one nested level of `{ }` braces is supported; inside a backtick template used as a style value, the interpolation supports none — another reason the bare form is the default here.)
 
 #### Dynamic Function Arguments
 
-A template doesn't have to span the whole value — a backtick fragment can sit anywhere inside it, including function arguments. Each fragment evaluates and splices into the surrounding text before the value is checked:
+An interpolation doesn't have to span the whole value — a `${...}` fragment can sit anywhere inside it, including function arguments and fused to a unit. Each fragment evaluates and splices into the surrounding text before the value is checked:
 
 ```
 let amount = randomRange(1.1, 2.2);
 
 define PathLayer('soft') ${
   fill: hotpink;
-  filter: blur(`${amount}`px);   // splices to e.g. "blur(1.63px)"
+  filter: blur(${amount}px);   // splices to e.g. "blur(1.63px)"
 };
 layer('soft').apply { circle(100, 100, 60); }
 ```
 
-These four forms are all available, and all produce `blur(1.5px) brightness(1.4)` for `softness = 1.5`, `level = 1.4`:
+These forms are all available, and all produce `blur(1.5px) brightness(1.4)` for `softness = 1.5`, `level = 1.4`:
 
 | Form | Example | Use when |
 |------|---------|----------|
-| Fragment, unit outside | `` blur(`${softness}`px) `` | Most cases — the unit stays visible as CSS |
+| Interpolation, unit outside | `blur(${softness}px)` | Most cases — the unit stays visible as CSS |
+| Backtick fragment | `` blur(`${softness}`px) `` | Equivalent long form of the row above |
 | Fragment, unit inside | `` blur(`${softness}px`) `` | The unit itself is computed |
 | Whole-value template | `` `blur(${softness}px)` `` | The whole value is one interpolated string |
 | Bare identifier | `brightness(level)` | The argument is a **unitless** number — a length or angle here is a compile error |
 
-The quoting rule above still applies to fragments: a backtick inside a double- or single-quoted string is literal text, not a splice point.
+The quoting rule above still applies to interpolations and fragments: a `${` or backtick inside a double- or single-quoted string is literal text, not a splice point.
 
 A bare identifier works as a function argument when the variable holds a number — the compiler substitutes the value, as it already does for Color and `CSSVar()` references:
 

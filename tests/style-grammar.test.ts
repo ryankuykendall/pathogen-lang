@@ -46,6 +46,7 @@ function innerDeclarations(source: string): Array<{ name: string; nameFrom: numb
         .concat(node.getChildren('ColorLiteral'))
         .concat(node.getChildren('StringLiteral'))
         .concat(node.getChildren('Template'))
+        .concat(node.getChildren('Interp'))
         .concat(node.getChildren('Member'))
         .concat(node.getChildren('Call'))
         .concat(node.getChildren('Identifier'));
@@ -87,6 +88,18 @@ describe('inner style grammar', () => {
       {
         label: 'template value with interpolation',
         source: 'let s = ${ font-family: `${family}`; fill: red; };',
+      },
+      {
+        label: 'bare whole-value interpolation',
+        source: 'let s = ${ stroke-linecap: ${v}; fill: red; };',
+      },
+      {
+        label: 'bare interpolation list',
+        source: 'let s = ${ stroke-dasharray: ${cell} ${cell}; };',
+      },
+      {
+        label: 'bare interpolation in function args',
+        source: 'let s = ${ filter: blur(${x}px); };',
       },
       {
         label: 'quoted strings containing ; and }',
@@ -167,6 +180,8 @@ describe('inner style grammar', () => {
     // motivated keeping StyleContent opaque in the outer grammar.
     const programs = [
       'let s = ${ fill: red; };',
+      "let v = 'round';\nlet s = ${ stroke-linecap: ${v}; };\nlet t = `a ${v} b`;",
+      'let cell = 12;\nlet s = ${ stroke-dasharray: ${cell} ${cell}; };',
       'let s = ${ filter: drop-shadow(4px 4px 4px #c00); };\nlet t = `a ${s} b`;',
       'let msg = `value: ${calc(1 + 2)}`;\nlet s = ${ font-family: `${msg}`; };',
       "define PathLayer('a') ${ stroke: #667a; stroke-width: 0.5; }\nlayer('a').apply { M 0 0 }",

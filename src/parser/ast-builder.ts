@@ -2107,17 +2107,22 @@ function buildObjectLiteral(cursor: TreeCursor, source: string): ObjectLiteral {
 }
 
 function buildStyleBlockLiteral(cursor: TreeCursor, source: string): StyleBlockLiteral {
+  // The interior tokenizes as interleaved StyleContent / StyleInterp runs
+  // (a bare `${...}` in a value is its own token — see the grammar's
+  // StyleInterp). Reconstruct the full interior span and hand it to
+  // parseStyleDeclarations, whose value scanner is interp-aware.
   cursor.firstChild();
-  let raw = '';
   let contentFrom = -1;
+  let contentTo = -1;
   do {
-    if (cursor.name === 'StyleContent') {
-      raw = text(cursor, source);
+    if (cursor.name === 'StyleBody') {
       contentFrom = cursor.from;
+      contentTo = cursor.to;
     }
   } while (cursor.nextSibling());
   cursor.parent();
 
+  const raw = contentFrom >= 0 && contentTo > contentFrom ? source.slice(contentFrom, contentTo) : '';
   const parsed = raw ? parseStyleDeclarations(raw, contentFrom, source) : { properties: [] };
   const node: StyleBlockLiteral = { type: 'StyleBlockLiteral', properties: parsed.properties };
   if (parsed.incomplete) node.incomplete = parsed.incomplete;
@@ -2209,11 +2214,25 @@ function parseStyleDeclarations(
     let quote = '';
     let inTemplate = false;
     let interpDepth = 0;
+    let bareInterp = 0;
     let terminated = false;
     while (i < len) {
       const ch = raw[i];
       if (quote) {
         if (ch === quote) quote = '';
+        i++;
+        continue;
+      }
+      if (bareInterp > 0) {
+        // Inside a bare `${...}` interpolation: `;`, newlines, and `//` are
+        // expression content — mirrors the template-interp machinery below.
+        if (ch === '"' || ch === "'") {
+          quote = ch;
+          i++;
+          continue;
+        }
+        if (ch === '{') bareInterp++;
+        else if (ch === '}') bareInterp--;
         i++;
         continue;
       }
@@ -2253,6 +2272,13 @@ function parseStyleDeclarations(
         i++;
         continue;
       }
+      if (ch === '$' && raw[i + 1] === '{') {
+        // Bare `${...}` interpolation opening at value top level (or inside
+        // parens — the state machine above doesn't care about depth).
+        bareInterp = 1;
+        i += 2;
+        continue;
+      }
       if (ch === '(' || ch === '[') depth++;
       else if (ch === ')' || ch === ']') {
         if (depth > 0) depth--;
@@ -2278,7 +2304,11 @@ function parseStyleDeclarations(
       // expected — rather than at any trailing whitespace/newline consumed.
       return incompleteAt(
         baseOffset + valueStart + rawValue.trimEnd().length,
-        inTemplate ? `Unterminated template literal in style value` : `Missing ';'`,
+        inTemplate
+          ? `Unterminated template literal in style value`
+          : bareInterp > 0
+            ? 'Unterminated ${...} interpolation in style value'
+            : `Missing ';'`,
       );
     }
     i++; // consume ';'

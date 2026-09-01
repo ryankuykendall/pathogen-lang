@@ -1380,7 +1380,7 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     // The whole-value template case never reaches here (it parses above);
     // the spliced result stays untrusted and is validated below.
     let didSplice = false;
-    if (resolvedValue === prop.value && prop.value.includes('`')) {
+    if (resolvedValue === prop.value && (prop.value.includes('`') || prop.value.includes('${'))) {
       try {
         const spliced = spliceTemplateFragments(prop.value, (templateSource) => {
           const parsed = expressionParser.parse(templateSource);

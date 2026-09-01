@@ -624,7 +624,7 @@ let art = PathLayer('art') ${ fill: hotpink; };
 layer('art').apply { circle(100, 100, 60); }
 
 let shimmer = GroupLayer('shimmer') ${
-  filter: brightness(level) blur(`${softness}`px);
+  filter: brightness(level) blur(${softness}px);
 };
 shimmer.append(art);
 ```

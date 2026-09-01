@@ -284,7 +284,7 @@ Filter chains are also space-separated: `filter: blur(2px) brightness(1.2);` —
 
 Functions whose CSS grammar genuinely uses commas keep them, exactly as in CSS: `rgba(0, 0, 0, 0.5)`, `color-mix(in oklch, red, blue)`, `translate(10px, 20px)`, `cubic-bezier(0.4, 0, 0.2, 1)`, `polygon(0 0, 100% 0, 50% 100%)`, and `font-family` fallback lists.
 
-Pathogen variables still work anywhere inside a CSS function value — `drop-shadow(4px 4px 4px shadowColor)` resolves `shadowColor` to its CSS color at compile time, and a numeric variable substitutes as a bare number (`brightness(level)` → `brightness(1.4)`). Substitution is not unit-aware, and the compiler checks the result — arguments that need a unit want a template fragment instead: `` blur(`${softness}`px) ``. See [Argument Units](#syntax-argument-units) below and [Variables and Interpolation in Values](#layers-variables-and-interpolation-in-values).
+Pathogen variables still work anywhere inside a CSS function value — `drop-shadow(4px 4px 4px shadowColor)` resolves `shadowColor` to its CSS color at compile time, and a numeric variable substitutes as a bare number (`brightness(level)` → `brightness(1.4)`). Substitution is not unit-aware, and the compiler checks the result — arguments that need a unit want a template fragment instead: `` blur(${softness}px) ``. See [Argument Units](#syntax-argument-units) below and [Variables and Interpolation in Values](#layers-variables-and-interpolation-in-values).
 
 #### Argument Units
 
@@ -312,7 +312,7 @@ transform: scale(0.5);        // ✓
 
 let softness = 4;
 filter: blur(softness);       // ✗ substituted values are checked the same way
-filter: blur(`${softness}`px); // ✓
+filter: blur(${softness}px); // ✓
 ```
 
 **Zero is always allowed bare** — `blur(0)` and `polygon(0 0, 100% 0, 50% 100%)` are valid CSS and pass unchanged.

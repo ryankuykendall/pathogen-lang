@@ -28,6 +28,7 @@ value {
   ColorLiteral |
   StringLiteral |
   Template |
+  Interp |
   Member |
   Call |
   Identifier |
@@ -54,6 +55,7 @@ Member { (Call | Identifier) (!member "." (Call | Identifier))+ }
     ColorLiteral |
     StringLiteral |
     Template |
+    Interp |
     ArgMember |
     ArgCall |
     ArgIdentifier |
@@ -90,8 +92,11 @@ Member { (Call | Identifier) (!member "." (Call | Identifier))+ }
   // mirroring the outer styleContentTemplate token. `;` and newlines are
   // content inside a template.
   Template { "`" tchar* "`" }
-  tchar { ![`\\$] | "\\" _ | interp | "$" }
-  interp { "${" (![{}] | "{" ![{}]* "}")* "}" }
+  tchar { ![`\\$] | "\\" _ | Interp | "$" }
+  // Bare `${...}` interpolation — a value alternative in its own right
+  // (mirrors the outer grammar's StyleInterp token), and still absorbed
+  // whole inside Template via tchar.
+  Interp { "${" (![{}] | "{" ![{}]* "}")* "}" }
 
   "(" ")" "," ";" ":" "/" "."
 

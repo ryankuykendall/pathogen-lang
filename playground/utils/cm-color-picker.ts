@@ -434,7 +434,12 @@ function addStyleBlockColors(
   out: ColorRange[],
   isResolvedRef: (from: number, to: number) => boolean = () => false,
 ): void {
-  const block = docText.slice(from, to);
+  // Blank out balanced bare `${...}` interpolations (one nesting level)
+  // before matching: their braces would otherwise truncate values and
+  // re-anchor the regex mid-interpolation. The blanks keep offsets stable.
+  const block = docText
+    .slice(from, to)
+    .replace(/\$\{(?:[^{}]|\{[^{}]*\})*\}/g, (span) => ' '.repeat(span.length));
   const declRegex = /([\w-]+)\s*:\s*([^;}\n]+)/g;
   let m: RegExpExecArray | null;
   while ((m = declRegex.exec(block)) !== null) {

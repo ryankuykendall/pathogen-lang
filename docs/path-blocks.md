@@ -1277,7 +1277,7 @@ let family = "Inter";
 @font family;
 
 let styles = ${
-  font-family: `${family}`;
+  font-family: ${family};
   font-size: 48;
 };
 ```

@@ -520,7 +520,9 @@ export function validateCSSValue(
       // spliced (e.g. unterminated) — point at the interpolation docs.
       const templateHint = rawValue.includes('`')
         ? ` The value contains a backtick template that could not be evaluated — check it is complete, or wrap the entire value in backticks (filter: \`blur(\${x}px)\`;).`
-        : '';
+        : rawValue.includes('${')
+          ? ' The value contains a ${...} interpolation that could not be evaluated — check it is complete.'
+          : '';
       throw new Error(
         `Style value for "${propertyName}" contains a disallowed token (${JSON.stringify(token)} in ${JSON.stringify(rawValue)}). ` +
         `Allowed: numbers with units, hex colors, keywords, color/transform functions, and Pathogen CSSVar()/gradient refs. ` +

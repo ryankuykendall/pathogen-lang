@@ -291,6 +291,63 @@ const STYLE_VALUE_KEYWORDS: CompletionEntry[] = [
 
 // --- Helpers ---
 
+/**
+ * Blank out balanced bare `${...}` interpolation spans that occur AFTER the
+ * last style-block opener, so the backward context scanners below don't
+ * mistake an interp's braces for block/entry boundaries. An UNCLOSED
+ * trailing `${` is left in place — callers treat that as expression
+ * context and suppress style completions.
+ */
+function blankBalancedInterps(textBefore: string): string {
+  const opener = textBefore.lastIndexOf('${');
+  if (opener < 0) return textBefore;
+  let out = '';
+  let i = 0;
+  while (i < textBefore.length) {
+    if (textBefore[i] === '$' && textBefore[i + 1] === '{' && i !== opener) {
+      // Potential interp start (never the style-block opener itself when it
+      // is the LAST `${` — that one is handled by the scanners). Find a
+      // balanced close on one nesting level.
+      let j = i + 2;
+      let depth = 1;
+      while (j < textBefore.length && depth > 0) {
+        if (textBefore[j] === '{') depth++;
+        else if (textBefore[j] === '}') depth--;
+        j++;
+      }
+      if (depth === 0) {
+        out += ' '.repeat(j - i);
+        i = j;
+        continue;
+      }
+    }
+    out += textBefore[i];
+    i++;
+  }
+  return out;
+}
+
+/** True when the text ends inside an UNCLOSED bare `${...}` interpolation
+ *  in style-value position (an interp opener after the block opener, after
+ *  a `:`, with no closing `}` yet). */
+function isInsideOpenInterp(textBefore: string): boolean {
+  const blanked = blankBalancedInterps(textBefore);
+  const lastOpen = blanked.lastIndexOf('${');
+  if (lastOpen < 0) return false;
+  // The style-block opener itself doesn't count — an interp opener must
+  // have a `:` between the block opener and it, with no `;`/`}` after.
+  const between = blanked.slice(lastOpen + 2);
+  if (between.includes('}')) return false;
+  const before = blanked.slice(0, lastOpen);
+  const blockOpen = before.lastIndexOf('${');
+  if (blockOpen < 0) return false;
+  const decl = before.slice(blockOpen + 2);
+  const lastColon = Math.max(decl.lastIndexOf(':'));
+  if (lastColon < 0) return false;
+  const afterColon = decl.slice(lastColon + 1);
+  return !afterColon.includes(';');
+}
+
 function isInsideStyleBlock(textBefore: string): boolean {
   // Find the last ${ and check if there's a matching } after it
   let depth = 0;
@@ -332,7 +389,9 @@ function isStylePropertyNameContext(textBefore: string): boolean {
  * makes accepting `stroke-width` after typing `stroke-w` double the prefix.
  */
 export function isStylePropertyNamePosition(source: string, offset: number): boolean {
-  const textBefore = source.slice(0, offset);
+  const raw = source.slice(0, offset);
+  if (isInsideOpenInterp(raw)) return false; // inside `${...` — expression context
+  const textBefore = blankBalancedInterps(raw);
   return (
     !isInsideBacktickString(textBefore) && isInsideStyleBlock(textBefore) && isStylePropertyNameContext(textBefore)
   );
@@ -348,8 +407,10 @@ export function isStylePropertyNamePosition(source: string, offset: number): boo
  * hyphens, mirroring isStylePropertyNamePosition for property names.
  */
 export function getStyleValueKeywordRun(source: string, offset: number): string | null {
-  const textBefore = source.slice(0, offset);
-  if (isInsideBacktickString(textBefore)) return null;
+  const raw = source.slice(0, offset);
+  if (isInsideBacktickString(raw)) return null;
+  if (isInsideOpenInterp(raw)) return null; // inside `${...` — expression context
+  const textBefore = blankBalancedInterps(raw);
   if (!isInsideStyleBlock(textBefore) || isStylePropertyNameContext(textBefore)) return null;
   const m = /:\s*([-a-zA-Z]*)$/.exec(textBefore);
   return m ? m[1] : null;

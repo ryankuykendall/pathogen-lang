@@ -473,7 +473,10 @@ function collectStyleBlockReferences(expr: StyleBlockLiteral, scope: Scope, col:
 
     styleParser.parse(wrapped).iterate({
       enter: (n) => {
-        if (n.name === 'Template') {
+        if (n.name === 'Template' || n.name === 'Interp') {
+          // Bare `${...}` value interpolations carry references exactly like
+          // template interps — the regex in collectTemplateInterpRefs
+          // matches `${...}` spans in either wrapper.
           collectTemplateInterpRefs(wrapped.slice(n.from, n.to), baseOffset + n.from, scope, col);
           return false;
         }

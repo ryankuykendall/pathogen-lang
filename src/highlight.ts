@@ -94,7 +94,9 @@ const NODE_CLASS: Record<string, string> = {
   NumberUnit: 'num',
   StringLiteral: 'str',
   Template: 'str',
+  Interp: 'str',
   StyleContent: 'str',
+  StyleInterp: 'str',
 };
 
 // Anonymous-token text fallback: Lezer emits anonymous tokens (those

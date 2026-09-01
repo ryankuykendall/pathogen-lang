@@ -20,6 +20,7 @@ export const styleHighlighting = styleTags({
   ColorLiteral: t.color,
   StringLiteral: t.string,
   Template: t.special(t.string),
+  Interp: t.special(t.string),
   Identifier: t.special(t.variableName),
   'Call/Identifier': t.function(t.variableName),
   LineComment: t.lineComment,

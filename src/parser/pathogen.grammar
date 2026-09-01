@@ -326,8 +326,15 @@ ObjectProperty {
 }
 
 StyleBlockLiteral {
-  styleBlockOpen StyleContent? "}"
+  styleBlockOpen StyleBody "}"
 }
+
+// A named node spanning the whole interior (its children are the
+// interleaved StyleContent / StyleInterp tokens) so the editor can DIRECT-
+// mount the inner style grammar over one contiguous range — overlay mounts
+// are invisible to plain tree iteration, which the fence renderer, color
+// chips, and the parity tests all rely on.
+StyleBody { (StyleContent | StyleInterp)* }
 
 PathBlockExpression {
   pathBlockOpen statement* "}"
@@ -435,11 +442,13 @@ VariableName { Identifier }
   fontDirectiveKw { "@" "font" }
 
   // Style-block content: everything up to the first `}` that is not inside
-  // a `//` comment, a quoted string, a backtick template, or a template's
-  // `${...}` interpolation (one nested brace level supported inside an
-  // interpolation — matching the AST builder's value scanner). This lets
-  // template values like `font-family: `${family}`;` and quoted values
-  // containing `}` survive to parseStyleDeclarations intact.
+  // a `//` comment, a quoted string, a backtick template, or a `${...}`
+  // interpolation — bare in a value (one nested brace level, matching the
+  // inner style grammar's `interp`) or inside a template (no nesting; see
+  // styleContentInterp below). This lets interpolated values like
+  // `stroke-width: ${w * 2};`, template values like `font-family:
+  // `${family}`;`, and quoted values containing `}` survive to
+  // parseStyleDeclarations intact.
   // Quote characters are BOTH ordinary content and possible string starts;
   // the DFA's longest-accepting-match rule sorts out the extent: a string
   // terminated on the same line (`content: "}";`) carries the token across
@@ -456,10 +465,25 @@ VariableName { Identifier }
     "\"" ![\"\n]* "\"" |
     "'" ![\'\n}]* "'"
   }
+  // Zero nested braces here: adding nesting to the TEMPLATE-internal interp
+  // overflows the 16-bit tokenizer tables (the template arm lives inside the
+  // big StyleContent DFA). The bare StyleInterp token below DOES support one
+  // nested level — inside style values, the bare form is the more capable
+  // spelling.
   styleContentInterp { "$" "{" ![{}]* "}" }
+  // Bare `${...}` interpolation in a style VALUE — a sibling token of
+  // StyleContent (adding it as an alternative INSIDE the StyleContent DFA
+  // overflows the generator's 16-bit tokenizer tables against the
+  // quote-superposition states). One nested brace level, matching the
+  // inner style grammar's `interp` and the AST builder's value scanner.
+  StyleInterp { "$" "{" (![{}] | "{" ![{}]* "}")* "}" }
   styleContentTemplate { "`" (![\`\\$] | "\\" _ | "$" ![\{] | styleContentInterp)* "`" }
+  // `$` is consumable only when NOT followed by `{` (the paired alternative
+  // consumes `$` plus one safe char) so the DFA STOPS before a bare `${…}`
+  // and hands it to the sibling StyleInterp token. Known edge: an unquoted
+  // lone `$` immediately before `}`/backtick no longer tokenizes — quote it.
   StyleContent {
-    (![}\`] | styleContentString | styleContentTemplate)+
+    (![}\`$] | "$" ![{}\`$] | styleContentString | styleContentTemplate)+
   }
 
   @precedence { "...", RangeOp, "." }
@@ -471,6 +495,7 @@ VariableName { Identifier }
   @precedence { styleBlockOpen, templateInterpStart }
   @precedence { Number, "." }
   @precedence { BooleanLiteral, NullLiteral, LayerType, CSSColorLiteral, Identifier }
+  @precedence { StyleInterp, StyleContent }
   @precedence { StyleContent, templateContent, LineComment, whitespace }
   @precedence { templateStart, templateContent, templateEnd }
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { StringTextDocument } from '../../src/language-services/document';
-import { getCompletions, getStyleValueKeywordRun } from '../../src/language-services/completion';
+import { getCompletions, getStyleValueKeywordRun, isStylePropertyNamePosition } from '../../src/language-services/completion';
 import type { CompletionItem } from '../../src/language-services/completion';
 
 function complete(source: string, line: number, character: number): CompletionItem[] {
@@ -1580,5 +1580,24 @@ describe('style property/value coverage matrix', () => {
     const m = items.find((i) => i.label === 'm');
     expect(m).toBeDefined();
     expect(m!.detail).toBe('Mask — renders as url(#id)');
+  });
+});
+
+describe('bare ${} interpolation in style values (context detection)', () => {
+  it('an unclosed ${ in value position suppresses style completions', () => {
+    const src = 'let cu = 4;\nlet s = ${ stroke-width: ${cu';
+    expect(isStylePropertyNamePosition(src, src.length)).toBe(false);
+    expect(getStyleValueKeywordRun(src, src.length)).toBe(null);
+  });
+
+  it('a balanced interp is transparent to property-name context', () => {
+    // After `${w};` the next declaration starts — property-name position.
+    const src = 'let w = 2;\nlet s = ${ stroke-width: ${w}; st';
+    expect(isStylePropertyNamePosition(src, src.length)).toBe(true);
+  });
+
+  it('value-keyword runs still work after a balanced interp declaration', () => {
+    const src = 'let w = 2;\nlet s = ${ stroke-width: ${w}; stroke-linecap: rou';
+    expect(getStyleValueKeywordRun(src, src.length)).toBe('rou');
   });
 });

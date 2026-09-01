@@ -52,6 +52,7 @@ export const pathogenHighlighting = styleTags({
 
   // Style block content
   StyleContent: t.special(t.string),
+  StyleInterp: t.special(t.string),
 
   // Comments
   Comment: t.lineComment,

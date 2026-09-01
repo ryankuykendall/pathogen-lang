@@ -18,9 +18,18 @@ import { parser as styleParser } from './style.generated';
  * is incrementally cached by parseMixed.
  */
 export const editorParser = lezerParser.configure({
-  wrap: parseMixed((node) =>
-    node.name === 'StyleContent' ? { parser: styleParser } : null,
-  ),
+  wrap: parseMixed((node) => {
+    // The interior of a style block is one StyleBody node whose children
+    // are interleaved StyleContent / StyleInterp tokens (a bare `${...}`
+    // value interpolation is its own outer token). DIRECT-mounting the
+    // inner grammar over StyleBody keeps declarations that straddle an
+    // interpolation whole in the inner tree (the inner grammar's Interp
+    // token understands `${...}`), and direct mounts stay visible to plain
+    // tree iteration — the fence renderer, color chips, and the parity
+    // tests all walk the tree that way.
+    if (node.name !== 'StyleBody' || node.to <= node.from) return null;
+    return { parser: styleParser };
+  }),
 });
 
 /** The standalone inner style-declaration parser (exposed for tests/tools). */
