@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 250" width="480" height="250">
+
+  <path data-layer-name="table" id="table" d="M 0 0 l 480 0 l 0 250 l -480 0 z" fill="#1c1917" stroke="none" stroke-width="2"/>
+  <g data-layer-name="scene" id="scene">
+    <path data-layer-name="mylar" id="mylar" d="M 42 42 m 10 0 l 150 0 q 10 0 10 10 l 0 150 q 0 10 -10 10 l -150 0 q -10 0 -10 -10 l 0 -150 q 0 -10 10 -10 z m 19 85 a 56 56 0 1 0 112 0 a 56 56 0 1 0 -112 0 z M 42 42 m 53 85 a 32 32 0 1 1 64 0 a 32 32 0 1 1 -64 0 M 272 42 m 10 0 l 150 0 q 10 0 10 10 l 0 150 q 0 10 -10 10 l -150 0 q -10 0 -10 -10 l 0 -150 q 0 -10 10 -10 z m 19 85 a 56 56 0 1 0 112 0 a 56 56 0 1 0 -112 0 z" fill="#d9e2ec" stroke="#94a3b8" stroke-width="1"/>
+    <path data-layer-name="fallen" id="fallen" d="M 294 76 m 53 85 a 32 32 0 1 1 64 0 a 32 32 0 1 1 -64 0" fill="#8298ad" stroke="#64748b" stroke-width="1"/>
+    <path data-layer-name="drift-marks" id="drift-marks" d="M 272 42 m 53 85 a 32 32 0 1 1 64 0 a 32 32 0 1 1 -64 0 M 379 129 l 22 34" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <path data-layer-name="leaders" id="leaders" d="M 127 36 v 50" fill="none" stroke="#94a3b8" stroke-width="1"/>
+    <text data-layer-name="labels" id="labels" x="127" y="28" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="middle">island (the counter)</text>
+    <text data-layer-name="labels" x="127" y="232" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="middle">as designed</text>
+    <text data-layer-name="labels" x="357" y="232" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="middle">as cut — the island falls</text>
+  </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"table","type":"path","styles":{"fill":"#1c1917","stroke":"none"},"isDefault":false},{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"mylar","type":"path","styles":{"fill":"#d9e2ec","stroke":"#94a3b8","stroke-width":"1"},"isDefault":false},{"name":"fallen","type":"path","styles":{"fill":"#8298ad","stroke":"#64748b","stroke-width":"1"},"isDefault":false},{"name":"drift-marks","type":"path","styles":{"stroke":"#f59e0b","stroke-width":"1.5","stroke-dasharray":"4 3","fill":"none"},"isDefault":false},{"name":"leaders","type":"path","styles":{"stroke":"#94a3b8","stroke-width":"1","fill":"none"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":480,"height":250}}]]></script>
+</svg>

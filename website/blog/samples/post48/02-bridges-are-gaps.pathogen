@@ -1,0 +1,106 @@
+//-- The fix: don't cut the whole ring. Dash its centerline — the
+//-- dashes become cut segments, the gaps become bridges — and the
+//-- island is held. dash-seam: merge keeps the wrap-around segment
+//-- whole, so the counts are honest.
+
+define ViewBox(0, 0, 480, 256);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 256);
+}
+
+let scene = GroupLayer('scene') ${};
+let mylar = PathLayer('mylar') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let centerlineGhost = PathLayer('centerline-ghost') ${
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leaders = PathLayer('leaders') ${
+  stroke: #94a3b8;
+  stroke-width: 1;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar, centerlineGhost, leaders, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      190,
+      190,
+      10);
+};
+
+// The ring to cut, described by its CENTERLINE and a band width.
+let centerline = @{
+  circle(95, 95, 48);
+};
+let bandWidth = 24;
+let bridgeWidth = 13;
+let bridgeCount = 4;
+
+// Shift back half a segment so the bridges land on the diagonals, off
+// the cardinals. That drops the path's own seam mid-cut — dash-seam:
+// merge stitches the two halves back into one honest segment.
+let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
+let pieces = centerline.dash(${
+  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
+
+let stencil = sheet;
+for (segment in cutSegments) {
+  let aperture = segment.path.outline(${
+    stroke-width: `${bandWidth}`;
+    stroke-linecap: butt;
+  });
+  stencil = stencil.difference(aperture);
+}
+
+mylar.apply {
+  M 145 26 stencil.draw()
+}
+centerlineGhost.apply {
+  M 145 26 centerline.draw()
+}
+
+// Leader-line annotations in the side canvas: the three parameters a
+// stencil maker argues about, pointed at the geometry they control.
+leaders.apply {
+  M 358 96
+  l -81 -7
+  M 358 134
+  l -56 -11
+  M 358 176
+  l -74 -28
+}
+labels.apply {
+  text(240, 238)`${cutSegments.length} cut segments, ${pieces.length - cutSegments.length} bridges — island held`;
+}
+let sideLabels = TextLayer('side-labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(sideLabels);
+sideLabels.apply {
+  text(364, 100)`bridgeWidth 13`;
+  text(364, 138)`bandWidth 24`;
+  text(364, 180)`centerline`;
+}

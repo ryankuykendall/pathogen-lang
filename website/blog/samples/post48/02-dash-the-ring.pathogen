@@ -1,0 +1,80 @@
+//-- Before anything is cut: dash the ring's centerline and LOOK at the
+//-- pieces. The dashes are what the blade will follow; the gaps are the
+//-- bridges — decided here, as lengths, before any geometry moves.
+
+define ViewBox(0, 0, 480, 256);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+table.apply {
+  rect(0, 0, 480, 256);
+}
+
+let scene = GroupLayer('scene') ${};
+let sheetLayer = PathLayer('sheet') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let cutMarks = PathLayer('cut-marks') ${
+  stroke: #334155;
+  stroke-width: 4;
+  stroke-linecap: butt;
+  fill: none;
+};
+let bridgeMarks = PathLayer('bridge-marks') ${
+  stroke: #22c55e;
+  stroke-width: 6;
+  stroke-linecap: butt;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(sheetLayer, cutMarks, bridgeMarks, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      190,
+      190,
+      10);
+};
+sheetLayer.apply {
+  M 145 26 sheet.draw()
+}
+
+let centerline = @{
+  circle(95, 95, 48);
+};
+let bridgeWidth = 13;
+let bridgeCount = 4;
+let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
+
+// Shift back half a segment so the bridges land on the diagonals.
+let pieces = centerline.dash(${
+  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'dash') {
+    cutMarks.apply {
+      M 145 26 piece.path.draw()
+    }
+  } else {
+    bridgeMarks.apply {
+      M 145 26 piece.path.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(240, 238)`dark: to be cut — green: the bridges, never cut at all`;
+}

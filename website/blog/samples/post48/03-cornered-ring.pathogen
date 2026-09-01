@@ -1,0 +1,76 @@
+//-- The mechanic doesn't care about the shape. A rounded-square band:
+//-- dash the centerline, outline each cut with the band width — the
+//-- round joins follow the corners — and place bridges where the
+//-- pattern says.
+
+define ViewBox(0, 0, 480, 250);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') ${};
+let mylar = PathLayer('mylar') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      250,
+      180,
+      10);
+};
+let centerline = @{
+  roundRect(45,
+      40,
+      160,
+      100,
+      26);
+};
+let bandWidth = 20;
+let bridgeWidth = 12;
+let bridgeCount = 6;
+
+let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
+// Shift back half a segment: bridges off the corners.
+let pieces = centerline.dash(${
+  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+
+let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
+let stencil = sheet;
+for (segment in cutSegments) {
+  // stroke-linejoin is inert here: the roundRect centerline is already
+  // tangent-continuous, so there is no corner for a join to act on —
+  // the band's rounded corners are concentric OFFSETS of the fillets.
+  let aperture = segment.path.outline(${
+    stroke-width: `${bandWidth}`;
+    stroke-linecap: butt;
+    stroke-linejoin: round;
+  });
+  stencil = stencil.difference(aperture);
+}
+
+mylar.apply {
+  M 115 28 stencil.draw()
+}
+
+labels.apply {
+  text(240, 232)`same recipe, cornered loop — the band offsets the fillets`;
+}

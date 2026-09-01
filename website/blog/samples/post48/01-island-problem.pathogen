@@ -1,0 +1,97 @@
+//-- The stencil problem in one picture: cut a ring and the middle is
+//-- an island — connected to nothing. Left: the design. Right: what
+//-- gravity does to it.
+
+define ViewBox(0, 0, 480, 250);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') ${};
+let mylar = PathLayer('mylar') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let fallen = PathLayer('fallen') ${
+  fill: #8298ad;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let driftMarks = PathLayer('drift-marks') ${
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+let leaders = PathLayer('leaders') ${
+  stroke: #94a3b8;
+  stroke-width: 1;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar,
+    fallen,
+    driftMarks,
+    leaders,
+    labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      170,
+      170,
+      10);
+};
+let ringOuter = @{
+  circle(85, 85, 56);
+};
+let ringInner = @{
+  circle(85, 85, 32);
+};
+// The cut sheet is the same in both panels: the outer circle removed.
+// What differs is only where the counter — a separate piece of mylar,
+// attached to nothing — ends up.
+let holed = sheet.difference(ringOuter);
+
+// Left: as designed — the counter sits in place (for now).
+mylar.apply {
+  M 42 42 holed.draw()
+}
+mylar.apply {
+  M 42 42 ringInner.draw()
+}
+
+// Right: gravity. The dashed ring marks where the island used to sit;
+// the short line traces its fall.
+mylar.apply {
+  M 272 42 holed.draw()
+}
+fallen.apply {
+  M 294 76 ringInner.draw()
+}
+driftMarks.apply {
+  M 272 42 ringInner.draw()
+  M 379 129
+  l 22 34
+}
+
+leaders.apply {
+  M 127 36
+  v 50
+}
+labels.apply {
+  text(127, 28)`island (the counter)`;
+  text(127, 232)`as designed`;
+  text(357, 232)`as cut — the island falls`;
+}
