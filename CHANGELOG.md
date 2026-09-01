@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-01 (bare ${} interpolation in style values)
+
+### Added
+
+#### Core
+
+- **Bare `${expr}` interpolation in style-block values** — the language's universal interpolation marker now works where it was a parse-killing trap: whole values (`stroke-linecap: ${capName};`), list tokens (`stroke-dasharray: ${cell} ${cell};`), and inside function arguments fused to units (`filter: blur(${softness}px);`). Semantics are exactly the backtick form's — evaluate, splice, untrusted, same CSS-value validation — via one shared splice path; backtick templates remain equivalent, and `${` inside quoted strings stays literal. This resolves the Broken Lines friction log's #1 in the dedicated session part 5 promised; the closing post's bench item is now its third "Fixed" section, with the diagnosis told in full.
+- Grammar shape: a `StyleInterp` sibling token plus a `StyleBody` wrapper node — the interp cannot live inside the `StyleContent` DFA (16-bit tokenizer-table overflow against the quote-superposition states), and the wrapper keeps the editor's inner style grammar direct-mountable over one contiguous range so every tree walker (fence renderer, color chips, parity tests) keeps working. Both historical dead ends (external tokens; LR-structuring the block) remain untouched. Bonus fix: single-quoted values containing `${}` now parse. Known asymmetry: a *template's* interpolation inside a style value still allows no nested braces (table-size limit) — the bare form allows one level.
+- Editor/services support: an `Interp` value node in the inner style grammar (highlighted like templates in the playground, blog fences, and PDF legends), scope-analysis references inside bare interps (rename/find-references/semantic tokens), completion context detection that treats balanced interps as transparent and suppresses style completions inside an unclosed `${`, a color-chip fallback that no longer truncates at an interp's brace, and a VS Code TextMate pattern so the interp's `}` doesn't end the style-block scope.
+
+#### Documentation
+
+- `docs/layers.md` teaches the bare form as the default interpolation story (backticks documented as the equivalent long form); `docs/syntax.md`, `docs/filters.md`, and `docs/path-blocks.md` examples swept; all Broken Lines samples and published fences use the bare form; part 5 revised (five of seven log entries now fixed, two deferred).
+
+### Development
+
+- Parity corpus and outer-tree invariance suites extended with bare-interp programs; 12-test interpolation suite; completion-context and chip regression tests. Full suite at 5,159 tests. Follow-up logged: full expression completions inside a bare interp (suppress-only shipped).
+
 ## [0.8.0] - 2026-09-01 (stroke geometry + the Broken Lines series)
 
 ### Added
