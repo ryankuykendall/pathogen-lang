@@ -1,0 +1,88 @@
+//-- The finished artifact: a mend-patch template at real stitch pitch.
+//-- One cell = 6 mm; print at 200% and the grid is true to the iron.
+
+define ViewBox(0, 0, 480, 320);
+
+let denim = PathLayer('denim') ${
+  fill: #27466b;
+  stroke: none;
+};
+denim.apply {
+  rect(0, 0, 480, 320);
+}
+
+let scene = GroupLayer('scene') ${};
+let patch = PathLayer('patch') ${
+  fill: #16304f;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let thread = PathLayer('thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(patch, thread, labels);
+
+let cell = 12;
+let cols = 23;
+let rows = 15;
+let panelX = 96;
+let panelY = 66;
+let inset = 12;
+
+patch.apply {
+  roundRect(calc(panelX - inset),
+      calc(panelY - inset),
+      calc(cols * cell + inset * 2),
+      calc(rows * cell + inset * 2),
+      10);
+}
+
+let rowSeam = @{
+  h calc(cols * cell)
+};
+let colSeam = @{
+  v calc(rows * cell)
+};
+
+fn sew(seam, anchorX, anchorY, bit) {
+  let stitches = seam.dash(${
+    stroke-dasharray: `${cell}` `${cell}`;
+    stroke-dashoffset: calc(bit * cell);
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+
+for (rowIndex in 0..rows) {
+  let bit = round(hash01(rowIndex, 3));
+  sew(rowSeam,
+      panelX,
+      calc(panelY + rowIndex * cell),
+      bit);
+}
+
+for (colIndex in 0..cols) {
+  let bit = round(hash01(colIndex, 5));
+  sew(colSeam,
+      calc(panelX + colIndex * cell),
+      panelY,
+      bit);
+}
+
+labels.apply {
+  text(84, 34)`hitomezashi mend patch — 1 cell = 6 mm stitch pitch`;
+  text(84, 296)`rows seeded hash01(row, 3), columns hash01(col, 5)`;
+}

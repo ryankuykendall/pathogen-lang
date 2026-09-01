@@ -1,0 +1,74 @@
+//-- Full hitomezashi: horizontal rows and vertical columns of the same
+//-- stitch, each line phase-shifted by its own bit. The blocks and
+//-- steps are emergent — nobody drew them.
+
+define ViewBox(0, 0, 480, 300);
+
+let fabric = PathLayer('fabric') ${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') ${};
+let thread = PathLayer('thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(thread, labels);
+
+let cell = 12;
+let cols = 30;
+let rows = 16;
+let originX = 60;
+let originY = 62;
+
+let rowSeam = @{
+  h calc(cols * cell)
+};
+let colSeam = @{
+  v calc(rows * cell)
+};
+
+fn sew(seam, anchorX, anchorY, bit) {
+  let stitches = seam.dash(${
+    stroke-dasharray: `${cell}` `${cell}`;
+    stroke-dashoffset: calc(bit * cell);
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+
+for (rowIndex in 0..rows) {
+  let bit = round(hash01(rowIndex, 7));
+  sew(rowSeam,
+      originX,
+      calc(originY + rowIndex * cell),
+      bit);
+}
+
+for (colIndex in 0..cols) {
+  let bit = round(hash01(colIndex, 11));
+  sew(colSeam,
+      calc(originX + colIndex * cell),
+      originY,
+      bit);
+}
+
+labels.apply {
+  text(60, 36)`one bit per line — the pattern is emergent`;
+}

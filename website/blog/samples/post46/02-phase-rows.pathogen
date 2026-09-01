@@ -1,0 +1,61 @@
+//-- Hitomezashi's whole secret: every row is the same stitch pattern,
+//-- shifted — or not — by half a cycle. One bit per row.
+
+define ViewBox(0, 0, 480, 210);
+
+let fabric = PathLayer('fabric') ${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 210);
+}
+
+let scene = GroupLayer('scene') ${};
+let thread = PathLayer('thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(thread, labels);
+
+let seam = @{
+  h 336
+};
+
+let rowBits = [
+  0,
+  1,
+  0,
+  0,
+  1,
+  1,
+];
+
+for ([bit, rowIndex] in rowBits) {
+  let rowY = calc(52 + rowIndex * 22);
+  let stitches = seam.dash(${
+    stroke-dasharray: 16 16;
+    stroke-dashoffset: calc(bit * 16);
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M 96 rowY stitch.path.draw()
+      }
+    }
+  }
+  labels.apply {
+    text(56, calc(rowY + 3))`bit ${bit}`;
+  }
+}
+
+labels.apply {
+  text(96, 30)`stroke-dashoffset: bit * 16 — half a cycle, or nothing`;
+}

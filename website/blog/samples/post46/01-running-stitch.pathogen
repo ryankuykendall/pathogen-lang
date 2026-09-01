@@ -1,0 +1,60 @@
+//-- A running stitch IS a dash pattern: thread on top of the fabric
+//-- (the dashes), thread passing underneath (the gaps). dash() gives
+//-- both sides of the cloth.
+
+define ViewBox(0, 0, 480, 170);
+
+let fabric = PathLayer('fabric') ${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 170);
+}
+
+let scene = GroupLayer('scene') ${};
+let underside = PathLayer('underside') ${
+  stroke: #64748b;
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+};
+let topThread = PathLayer('top-thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(underside, topThread, labels);
+
+// 371 = 17 full cycles + one last stitch: the seam starts AND ends on a
+// stitch, the way a stitcher plans it.
+let seam = @{
+  h 371
+};
+
+let stitches = seam.dash(${
+  stroke-dasharray: 14 7;
+});
+
+for (stitch in stitches) {
+  if (stitch.kind == 'dash') {
+    topThread.apply {
+      M 55 70 stitch.path.draw()
+    }
+  } else {
+    underside.apply {
+      M 55 112 stitch.path.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(55, 44)`front — thread on top: the dashes`;
+  text(55, 140)`reverse — the inverse pattern: the gaps`;
+}

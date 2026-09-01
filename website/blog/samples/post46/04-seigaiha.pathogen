@@ -1,0 +1,64 @@
+//-- Stitches follow curves as readily as grids: dash() measures along
+//-- arc length. Staggered fans of stitched arcs — the seigaiha wave.
+
+define ViewBox(0, 0, 480, 260);
+
+let fabric = PathLayer('fabric') ${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') ${};
+let thread = PathLayer('thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(thread, labels);
+
+fn stitchArc(radius, anchorX, anchorY) {
+  let arcSpan = @{
+    m calc(0 - radius) 0
+    a radius radius 0 0 1 calc(radius * 2) 0
+  };
+  let stitches = arcSpan.dash(${
+    stroke-dasharray: 7 4;
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+
+let radii = [
+  42,
+  30,
+  18,
+];
+
+for (rowIndex in 0..3) {
+  let fanY = calc(84 + rowIndex * 42);
+  let stagger = calc(rowIndex % 2 * 42);
+  for (fanIndex in 0..3) {
+    let fanX = calc(94 + stagger + fanIndex * 84);
+    for (radius in radii) {
+      stitchArc(radius, fanX, fanY);
+    }
+  }
+}
+
+labels.apply {
+  text(94, 30)`same dash(), measured along the curve`;
+}
