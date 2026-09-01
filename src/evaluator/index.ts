@@ -63,6 +63,14 @@ import {
   subPathCommands,
 } from './path-transforms';
 import { pathCut, pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
+import {
+  dashCommands,
+  outlineCommands,
+  parseDashStyles,
+  parseOutlineStyles,
+  rotateStartCommands,
+  totalDrawnLength,
+} from './stroke-geometry';
 import { calculatePathLength, partitionPath, samplePathAtFraction } from './sampling';
 import {
   buildSimpleVariableOffset,
@@ -1292,6 +1300,21 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
           resolvedValue = parseResult.value.raw;
           properties[prop.name] = resolvedValue;
           continue;
+        }
+        // For the dash-pattern properties ONLY, a bare percent literal
+        // (50%, -50%) keeps its authored text: dash() resolves % against
+        // path length itself, so baking it to a fraction (50% → 0.5) would
+        // erase the unit. Every other property keeps the historical
+        // behavior (percent evaluates to a plain fraction).
+        if (prop.name === 'stroke-dasharray' || prop.name === 'stroke-dashoffset') {
+          const pctNode =
+            parseResult.value.type === 'UnaryExpression' && parseResult.value.operator === '-'
+              ? parseResult.value.argument
+              : parseResult.value;
+          if (pctNode.type === 'NumberLiteral' && pctNode.unit === '%') {
+            properties[prop.name] = prop.value.trim();
+            continue;
+          }
         }
         const evaluated = evaluateExpression(parseResult.value, scope);
         if (typeof evaluated === 'number') {
@@ -2920,6 +2943,59 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         return buildPathBlockFromCommands(subResult);
       }
 
+      case 'dash': {
+        if (expr.args.length !== 1) throw mError('dash() expects 1 argument (styles)');
+        const dashStylesVal = evaluateExpression(expr.args[0], scope);
+        if (!isStyleBlock(dashStylesVal)) throw mError('dash() argument must be a style block');
+        let dashPieces;
+        try {
+          const parsed = parseDashStyles(dashStylesVal.properties, totalDrawnLength(obj.commands));
+          dashPieces = dashCommands(obj.commands, parsed.dashes, parsed.offset, parsed.mergeSeam);
+        } catch (e) {
+          throw mError((e as Error).message);
+        }
+        return {
+          type: 'ArrayValue' as const,
+          elements: dashPieces.map((p) => ({
+            type: 'ObjectValue' as const,
+            properties: new Map<string, Value>([
+              // Origin (0,0) keeps each piece's subject-local placement, so
+              // drawing every piece at one position reassembles the source.
+              ['path', buildPathBlockFromCommands(p.commands, { x: 0, y: 0 })],
+              ['kind', p.kind],
+              ['t0', p.t0],
+              ['t1', p.t1],
+            ]),
+          })),
+        };
+      }
+
+      case 'outline': {
+        if (expr.args.length !== 1) throw mError('outline() expects 1 argument (styles)');
+        const outlineStylesVal = evaluateExpression(expr.args[0], scope);
+        if (!isStyleBlock(outlineStylesVal)) throw mError('outline() argument must be a style block');
+        let outlined;
+        try {
+          outlined = outlineCommands(obj.commands, parseOutlineStyles(outlineStylesVal.properties));
+        } catch (e) {
+          throw mError((e as Error).message);
+        }
+        return buildPathBlockFromCommands(outlined, { x: 0, y: 0 });
+      }
+
+      case 'startAt': {
+        if (expr.args.length !== 1) throw mError('startAt() expects 1 argument (t)');
+        const startAtT = evaluateExpression(expr.args[0], scope);
+        if (typeof startAtT !== 'number') throw mError('startAt() argument must be a number (arc-length fraction)');
+        let rotatedCmds;
+        try {
+          rotatedCmds = rotateStartCommands(obj.commands, startAtT);
+        } catch (e) {
+          throw mError((e as Error).message);
+        }
+        return buildPathBlockFromCommands(rotatedCmds, { x: 0, y: 0 });
+      }
+
       case 'chamfer': {
         if (expr.args.length < 1 || expr.args.length > 2) throw mError('chamfer() expects 1-2 arguments (distance) or (d1, d2)');
         const cd1 = evaluateExpression(expr.args[0], scope);
@@ -3494,6 +3570,59 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           startPoint: firstInkedPointOf(spNormalized) ?? { x: 0, y: 0 },
           endPoint: { x: spLast.end.x, y: spLast.end.y },
         };
+      }
+
+      case 'dash': {
+        if (expr.args.length !== 1) throw mError('dash() expects 1 argument (styles)');
+        const dashStylesVal = evaluateExpression(expr.args[0], scope);
+        if (!isStyleBlock(dashStylesVal)) throw mError('dash() argument must be a style block');
+        let dashPieces;
+        try {
+          const parsed = parseDashStyles(dashStylesVal.properties, totalDrawnLength(obj.commands));
+          dashPieces = dashCommands(obj.commands, parsed.dashes, parsed.offset, parsed.mergeSeam);
+        } catch (e) {
+          throw mError((e as Error).message);
+        }
+        // Receiver-preserving (the segmentAll pattern): pieces stay projected,
+        // in absolute coordinates.
+        return {
+          type: 'ArrayValue' as const,
+          elements: dashPieces.map((p) => ({
+            type: 'ObjectValue' as const,
+            properties: new Map<string, Value>([
+              ['path', buildProjectedPathFromCommands(p.commands, obj)],
+              ['kind', p.kind],
+              ['t0', p.t0],
+              ['t1', p.t1],
+            ]),
+          })),
+        };
+      }
+
+      case 'outline': {
+        if (expr.args.length !== 1) throw mError('outline() expects 1 argument (styles)');
+        const outlineStylesVal = evaluateExpression(expr.args[0], scope);
+        if (!isStyleBlock(outlineStylesVal)) throw mError('outline() argument must be a style block');
+        let outlined;
+        try {
+          outlined = outlineCommands(obj.commands, parseOutlineStyles(outlineStylesVal.properties));
+        } catch (e) {
+          throw mError((e as Error).message);
+        }
+        return buildProjectedPathFromCommands(outlined, obj);
+      }
+
+      case 'startAt': {
+        if (expr.args.length !== 1) throw mError('startAt() expects 1 argument (t)');
+        const startAtT = evaluateExpression(expr.args[0], scope);
+        if (typeof startAtT !== 'number') throw mError('startAt() argument must be a number (arc-length fraction)');
+        let rotatedCmds;
+        try {
+          rotatedCmds = rotateStartCommands(obj.commands, startAtT);
+        } catch (e) {
+          throw mError((e as Error).message);
+        }
+        return buildProjectedPathFromCommands(rotatedCmds, obj);
       }
 
       case 'chamfer': {

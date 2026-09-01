@@ -81,6 +81,8 @@ const STYLE_PROPERTY_ENTRIES: CompletionEntry[] = [
   { label: 'mask', kind: 'property', detail: 'Mask — Mask variable or url(#id)', boost: 8 },
   { label: 'clip-path', kind: 'property', detail: 'Clip path — ClipPath variable, url(#id), or basic shape', boost: 8 },
   { label: 'stroke-dashoffset', kind: 'property', detail: 'Dash pattern offset', boost: 8 },
+  { label: 'dash-seam', kind: 'property', detail: 'dash() only — merge or split the seam-crossing dash on closed paths', boost: 5 },
+  { label: 'outline-overlap', kind: 'property', detail: 'outline() only — union self-overlaps into one clean boundary, or keep raw', boost: 5 },
   { label: 'color', kind: 'property', detail: 'Color — source for currentColor', boost: 6 },
   { label: 'mix-blend-mode', kind: 'property', detail: 'Blend mode with backdrop', boost: 6 },
   { label: 'paint-order', kind: 'property', detail: 'Paint order of fill, stroke, markers', boost: 6 },
@@ -147,6 +149,14 @@ export const STYLE_PROPERTY_VALUES: Record<string, CompletionEntry[]> = {
     styleValue('butt', 'Flat edge at the endpoint'),
     styleValue('round', 'Semicircular cap'),
     styleValue('square', 'Square cap extending half the stroke width'),
+  ],
+  'dash-seam': [
+    styleValue('split', 'Trailing and leading dash stay separate pieces (default)'),
+    styleValue('merge', 'Join the seam-crossing dash into one piece on closed paths'),
+  ],
+  'outline-overlap': [
+    styleValue('raw', 'Keep raw contours, overlaps and all (default)'),
+    styleValue('union', 'Self-union the outline into one clean boundary'),
   ],
   'stroke-linejoin': [
     styleValue('miter', 'Sharp corner'),

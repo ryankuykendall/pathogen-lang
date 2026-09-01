@@ -392,6 +392,10 @@ export function unitNormal(dx: number, dy: number): Point {
 
 export interface OffsetJoinOptions {
   join?: 'miter' | 'bevel' | 'round';
+  /** Miter-length limit as a multiple of the offset distance; joins spiking
+   *  past it fall back to a bevel. Default 2 (the historical offset() cap);
+   *  stroke outlining passes the SVG default of 4 or the user's value. */
+  miterLimit?: number;
 }
 
 function offsetPt(p: Point, n: Point, d: number): Point {
@@ -698,6 +702,7 @@ export function offsetCommands(
   options: OffsetJoinOptions = {},
 ): TransformCmd[] {
   const join = options.join ?? 'miter';
+  const miterLimit = options.miterLimit ?? 2;
   if (commands.length === 0 || distance === 0)
     return commands.map((c) => ({
       command: c.command,
@@ -783,7 +788,7 @@ export function offsetCommands(
         const concave = hit.t1 < 1e-9; // trimming back rather than extending
         if (bothLines) {
           const miterLen = Math.sqrt((hit.pt.x - vertex.x) ** 2 + (hit.pt.y - vertex.y) ** 2);
-          if (concave || (join === 'miter' && miterLen <= 2 * Math.abs(distance))) {
+          if (concave || (join === 'miter' && miterLen <= miterLimit * Math.abs(distance))) {
             prevLast.end = { ...hit.pt };
             refreshLineArgs(prevLast);
             nextFirst.start = { ...hit.pt };

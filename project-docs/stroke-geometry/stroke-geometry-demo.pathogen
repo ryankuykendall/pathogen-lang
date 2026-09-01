@@ -1,0 +1,151 @@
+define ViewBox(0, 0, 440, 340);
+// Stroke geometry demo — dash(), outline(), startAt()
+// Four panels: dash partitioning, fat outlined dashes, boolean slots, startAt slide
+
+// --- Background ---
+
+let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+bg.apply { rect(0, 0, 440, 340); }
+
+// ═══════════════════════════════════════
+// Panel 1 (top-left): dash() partitioning
+// ═══════════════════════════════════════
+
+let wave = @{
+  c 15 -35 30 -35 45 0;
+  c 15 35 30 35 45 0;
+  c 15 -35 30 -35 45 0;
+};
+
+let p1_spine = PathLayer('p1-spine') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  fill: none;
+};
+p1_spine.apply {
+  M 30 90
+  wave.draw();
+}
+
+let p1_dashes = PathLayer('p1-dashes') ${
+  stroke: Color('#3b82f6');
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+};
+p1_dashes.apply {
+  let wavePieces = wave.dash(${ stroke-dasharray: 14 9; });
+  for (piece in wavePieces) {
+    if (piece.kind == 'dash') {
+      M 30 90
+      piece.path.draw();
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+// Panel 2 (top-right): outline() fat dashes
+// ═══════════════════════════════════════
+
+let p2_solids = PathLayer('p2-solids') ${
+  fill: Color('#f59e0b');
+  stroke: none;
+};
+p2_solids.apply {
+  let fatPieces = wave.dash(${ stroke-dasharray: 16 12; });
+  for (piece in fatPieces) {
+    if (piece.kind == 'dash') {
+      let solid = piece.path.outline(${
+        stroke-width: calc(3 + piece.t0 * 14);
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      });
+      M 255 90
+      solid.draw();
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+// Panel 3 (bottom-left): fat dashes as boolean cutters
+// ═══════════════════════════════════════
+
+let p3_plate = PathLayer('p3-plate') ${
+  fill: Color('#3b82f630');
+  stroke: Color('#3b82f6');
+  stroke-width: 1.5;
+};
+p3_plate.apply {
+  let plate = @{ h 170 v 90 h -170 z };
+  let track = @{ m 20 45 h 130 };
+  let slotPieces = track.dash(${ stroke-dasharray: 22 14; });
+  let plaque = plate;
+  for (piece in slotPieces) {
+    if (piece.kind == 'dash') {
+      let slot = piece.path.outline(${
+        stroke-width: 16;
+        stroke-linecap: round;
+      });
+      plaque = plaque.difference(slot);
+    }
+  }
+  M 25 200
+  plaque.draw();
+}
+
+// ═══════════════════════════════════════
+// Panel 4 (bottom-right): startAt() slides a dash pattern
+// ═══════════════════════════════════════
+
+let ring = @{
+  h 60; v 60; h -60; z;
+};
+
+let p4_back = PathLayer('p4-back') ${
+  stroke: Color('#94a3b840');
+  stroke-width: 1;
+  fill: none;
+};
+p4_back.apply {
+  M 280 190
+  ring.draw();
+  M 360 190
+  ring.startAt(12.5%).draw();
+}
+
+let p4_a = PathLayer('p4-a') ${
+  stroke: Color('#22c55e');
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+};
+p4_a.apply {
+  let plainPieces = ring.dash(${ stroke-dasharray: 20 10; });
+  for (piece in plainPieces) {
+    if (piece.kind == 'dash') {
+      M 280 190
+      piece.path.draw();
+    }
+  }
+  let slidPieces = ring.startAt(12.5%).dash(${ stroke-dasharray: 20 10; });
+  for (piece in slidPieces) {
+    if (piece.kind == 'dash') {
+      M 360 190
+      piece.path.draw();
+    }
+  }
+}
+
+// --- Labels ---
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 11;
+  fill: Color('#94a3b8');
+};
+labels.apply {
+  text(30, 30)`dash() — centerline pieces`
+  text(255, 30)`outline() — widths per piece`
+  text(25, 175)`outline() + difference()`
+  text(280, 175)`startAt() slides the pattern`
+}

@@ -2,6 +2,14 @@
 import { contextAwareFunctions, stdlib } from '../stdlib';
 import { CALLBACK_METHODS } from '../callback-methods';
 import { pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
+import {
+  dashCommands,
+  outlineCommands,
+  parseDashStyles,
+  parseOutlineStyles,
+  rotateStartCommands,
+  totalDrawnLength,
+} from './stroke-geometry';
 import { CHAR_CLASS_PREDICATES, isWhitespaceChar } from './char-class';
 import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
 import { DEFS_CONSTRUCTORS } from './constructor-registry';
@@ -1218,6 +1226,19 @@ function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): Style
     try {
       const parseResult = expressionParser.parse(prop.value);
       if (parseResult.status && parseResult.value) {
+        // Dash-pattern properties only: keep a bare percent literal's
+        // authored text so dash() can resolve % against path length
+        // (see the index.ts twin).
+        if (prop.name === 'stroke-dasharray' || prop.name === 'stroke-dashoffset') {
+          const pctNode =
+            parseResult.value.type === 'UnaryExpression' && parseResult.value.operator === '-'
+              ? parseResult.value.argument
+              : parseResult.value;
+          if (pctNode.type === 'NumberLiteral' && pctNode.unit === '%') {
+            properties[prop.name] = prop.value.trim();
+            continue;
+          }
+        }
         const evaluated = evaluateExpression(parseResult.value, scope);
         if (typeof evaluated === 'number') {
           resolvedValue = String(evaluated);
@@ -1617,6 +1638,46 @@ function evaluateAnnotatedPathTransforms(
       return buildPathBlockFromCommands(subResult);
     }
 
+    case 'dash': {
+      if (expr.args.length !== 1) throw new Error('dash() expects 1 argument (styles)');
+      const dashStylesVal = evaluateExpression(expr.args[0], scope);
+      if (!isStyleBlock(dashStylesVal)) throw new Error('dash() argument must be a style block');
+      const parsed = parseDashStyles(dashStylesVal.properties, totalDrawnLength(obj.commands));
+      const dashPieces = dashCommands(obj.commands, parsed.dashes, parsed.offset, parsed.mergeSeam);
+      // Origin (0,0) keeps each piece's subject-local placement (the cut()
+      // convention); ProjectedPath receivers stay projected (segmentAll pattern).
+      return {
+        type: 'ArrayValue' as const,
+        elements: dashPieces.map((p) => ({
+          type: 'ObjectValue' as const,
+          properties: new Map<string, Value>([
+            ['path', isBlock ? buildPathBlockFromCommands(p.commands, { x: 0, y: 0 }) : projectedFromDerived(p.commands, obj)],
+            ['kind', p.kind],
+            ['t0', p.t0],
+            ['t1', p.t1],
+          ]),
+        })),
+      };
+    }
+
+    case 'outline': {
+      if (expr.args.length !== 1) throw new Error('outline() expects 1 argument (styles)');
+      const outlineStylesVal = evaluateExpression(expr.args[0], scope);
+      if (!isStyleBlock(outlineStylesVal)) throw new Error('outline() argument must be a style block');
+      const outlined = outlineCommands(obj.commands, parseOutlineStyles(outlineStylesVal.properties));
+      if (isBlock) return buildPathBlockFromCommands(outlined, { x: 0, y: 0 });
+      return projectedFromDerived(outlined, obj);
+    }
+
+    case 'startAt': {
+      if (expr.args.length !== 1) throw new Error('startAt() expects 1 argument (t)');
+      const startAtT = evaluateExpression(expr.args[0], scope);
+      if (typeof startAtT !== 'number') throw new Error('startAt() argument must be a number (arc-length fraction)');
+      const rotatedCmds = rotateStartCommands(obj.commands, startAtT);
+      if (isBlock) return buildPathBlockFromCommands(rotatedCmds, { x: 0, y: 0 });
+      return projectedFromDerived(rotatedCmds, obj);
+    }
+
     case 'chamfer': {
       if (expr.args.length < 1 || expr.args.length > 2) throw new Error('chamfer() expects 1-2 arguments');
       const cd1 = evaluateExpression(expr.args[0], scope);
@@ -1741,6 +1802,32 @@ function evaluateAnnotatedPathTransforms(
 /**
  * Build PathBlockValue or ProjectedPathValue from transform result commands.
  */
+/**
+ * Build a ProjectedPathValue from derived commands, keeping absolute
+ * coordinates (the index.ts buildProjectedPathFromCommands twin).
+ */
+function projectedFromDerived(
+  cmds: PathBlockCommand[],
+  original: PathBlockValue | ProjectedPathValue,
+): ProjectedPathValue {
+  if (cmds.length === 0) {
+    return {
+      type: 'ProjectedPathValue' as const,
+      commands: [],
+      startPoint: { ...original.startPoint },
+      endPoint: { ...original.endPoint },
+    };
+  }
+  const start = firstInkedPointOf(cmds) ?? cmds[0].start;
+  const end = cmds[cmds.length - 1].end;
+  return {
+    type: 'ProjectedPathValue' as const,
+    commands: cmds,
+    startPoint: { x: start.x, y: start.y },
+    endPoint: { x: end.x, y: end.y },
+  };
+}
+
 function buildAnnotatedResult(
   cmds: PathBlockCommand[],
   isBlock: boolean,

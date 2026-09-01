@@ -1032,6 +1032,176 @@ Details worth knowing:
 - A subject mixing closed and open subpaths returns both kinds of pieces: healed closed pieces for the closed contours, open fragments for the open ones.
 - In rare degenerate cases — a fragment that can't be traced cleanly, or a sliver thinner than the geometric tolerance — `cut()` drops the fragment and emits a `[warn]` entry in the log output rather than failing.
 
+## Stroke Geometry
+
+Stroke geometry turns styling concepts — dashes, stroke widths, caps, joins — into real, queryable path geometry. Instead of asking the renderer to *paint* a dashed or fat stroke, these methods hand you the underlying paths themselves: dash pieces you can style individually, closed outlines you can fill and combine with boolean operations, and re-anchored loops that start wherever you choose.
+
+### `dash(styles)` → array of `{ path, kind, t0, t1 }`
+
+Partitions a path into its dash and gap pieces, using the same properties you would write in CSS. The argument is a style block; `stroke-dasharray` is required, `stroke-dashoffset` is optional.
+
+```
+let wave = @{
+  c 20 -30 40 -30 60 0;
+  c 20 30 40 30 60 0;
+};
+let pieces = wave.dash(${
+  stroke-dasharray: 12 6;
+});
+M 20 100
+for (piece in pieces) {
+  if (piece.kind == 'dash') {
+    piece.path.draw();
+  }
+}
+```
+
+Each entry in the returned array is an object:
+
+- `path` — the piece's geometry, unclosed, as a PathBlock (or a ProjectedPath when called on a ProjectedPath). Pieces keep their original placement inside the source (normalized to a `(0, 0)` origin, like [`cut()`](#path-blocks-cutting-behavior)): drawing every piece at one position reassembles the original path exactly.
+- `kind` — `'dash'` for inked spans, `'gap'` for the spaces between them. Pieces alternate in path order, so the array reconstructs the whole path with nothing missing.
+- `t0`, `t1` — where the piece lives along the path, as arc-length fractions between 0 and 1. Useful for fading, scaling, or coloring pieces by position.
+
+**Dash array values.** Plain numbers are arc lengths in user units, exactly as in SVG. An odd number of entries repeats the list doubled (`12 6 3` behaves as `12 6 3 12 6 3`), also as in SVG. Percentages are supported with one deliberate difference: `25%` means *a quarter of this path's total length* — not SVG's viewport-diagonal percentage, which has no useful meaning inside a path-space partition:
+
+```
+let ring = @{
+  a 50 50 0 1 1 0.1 0;
+  z;
+};
+let quarters = ring.dash(${
+  stroke-dasharray: 20% 5%;
+});
+```
+
+Negative entries are an error. If every entry is zero, the whole path comes back as a single `'dash'` piece — the same "render as solid" behavior SVG falls back to.
+
+**Dash offset.** `stroke-dashoffset` advances the pattern's starting position, wrapping around the pattern length; negative offsets are allowed, as in CSS:
+
+```
+let ticks = line.dash(${
+  stroke-dasharray: 2 10;
+  stroke-dashoffset: 6;
+});
+```
+
+**Merging across a closed path's seam.** On a closed path the pattern starts at the seam, so a pattern that ends mid-dash leaves a trailing piece and a leading piece that a renderer would draw as one joined stroke. By default they come back as two pieces (`dash-seam: split`). Set the Pathogen-specific property `dash-seam: merge` to get them as one continuous piece instead:
+
+```
+let loop = @{
+  h 80; v 80; h -80; z;
+};
+let joined = loop.dash(${
+  stroke-dasharray: 25 15;
+  dash-seam: merge;
+});
+```
+
+The merged piece sits at the end of its subpath's run, starts before the seam and continues past it — so its `t1` is `t0` plus the piece's length as a fraction, which can exceed `1`. A `t1` above the wrap point is the signal that a piece crosses the seam.
+
+**Behavior notes:**
+
+- The dash pattern restarts at the beginning of each subpath, matching SVG rendering. A multi-subpath source returns all pieces in path order, subpath by subpath.
+- Style values are live expressions, so a space-separated pair that reads as arithmetic — `stroke-dasharray: 10 -5` — evaluates to `5` before `dash()` ever sees it. Use commas (`stroke-dasharray: 10, -5` — which is then correctly rejected as negative) for any list whose tokens could parse as math.
+- Only `stroke-dasharray`, `stroke-dashoffset`, and `dash-seam` are read. Passing `stroke-width`, `stroke-linecap`, or other stroke properties is an error — dash pieces are centerlines; to give them thickness, pass those properties to [`outline()`](#path-blocks-outlinestyles-pathblock) on each piece.
+
+### `outline(styles)` → PathBlock
+
+Converts a stroked path into the **closed** path that outlines it — the same operation as "Outline Stroke" in Illustrator or "Stroke to Path" in Inkscape. The result is real filled geometry: it can be filled with gradients, sampled, and — because it is closed — used directly in [boolean operations](#path-blocks-boolean-operations).
+
+```
+let stem = @{
+  c 0 -40 50 -40 50 0;
+};
+let solid = stem.outline(${
+  stroke-width: 12;
+  stroke-linecap: round;
+});
+M 30 80
+solid.draw();
+```
+
+The argument is a style block; `stroke-width` is required and must be positive. Optional properties mirror CSS stroke styling:
+
+- `stroke-linecap` — `butt` (default), `round`, or `square`
+- `stroke-linejoin` — `miter` (default), `round`, or `bevel`
+- `stroke-miterlimit` — a number (default `4`, as in SVG); when a miter join would spike past the limit it falls back to a bevel, exactly as a renderer would
+
+The outline keeps the source's placement (normalized to a `(0, 0)` origin): drawn at the same position as the original path, the outline straddles the original centerline. An open path becomes a single closed contour — one side, an end cap, the other side back, a start cap. A closed path becomes two concentric contours (outer and inner edges of the stroke) that fill as a band.
+
+Composing with `dash()` is the intended workflow — partition first, then thicken exactly the pieces you want, with any width per piece:
+
+```
+let pieces = wave.dash(${
+  stroke-dasharray: 18 9;
+});
+M 20 100
+for (piece in pieces) {
+  if (piece.kind == 'dash') {
+    let fat = piece.path.outline(${
+      stroke-width: calc(4 + 10 * piece.t0);
+      stroke-linecap: round;
+    });
+    fat.draw();
+  }
+}
+```
+
+And because outlines are closed, fat dashes participate in boolean operations:
+
+```
+let plate = @{
+  h 120; v 80; h -120; z;
+};
+let slot = pieces[2].path.outline(${
+  stroke-width: 10;
+});
+let plaque = plate.difference(slot);
+```
+
+**Behavior notes:**
+
+- A very tight curve or sharp interior corner can make a wide outline overlap itself. The overlap fills correctly under the default nonzero fill rule. To clean the geometry itself, set the Pathogen-specific property `outline-overlap: union` in the style block — the outline is unioned with itself, dissolving self-intersections and merging overlapping caps into one clean boundary (`fat.union(fat)` is the equivalent manual form). The default (`outline-overlap: raw`) keeps the raw contours.
+- A near-zero-length dash piece (`stroke-dasharray: 0.01 20`) outlines to a dot with `stroke-linecap: round` and a small square with `square`; with `butt` it produces no visible area, matching SVG.
+
+### `startAt(t)` → PathBlock / ProjectedPath
+
+Returns the same path re-anchored to start at arc-length fraction `t`. Percent literals read naturally: `startAt(22.5%)` is `startAt(0.225)`. Values outside `0..1` wrap around the path.
+
+On a **closed** path the result is seamless — the same loop, traversed from a new starting point, with the old seam healed:
+
+```
+let star = @{
+  polygon(5, 40);
+};
+let rotated = star.startAt(40%);
+```
+
+This matters wherever the start point is load-bearing: where a dash pattern begins, where `subPath(0, t)` measures from, which corner `startAt(0)`-anchored effects treat as first.
+
+On an **open** path the geometry cannot be re-joined, so the result has two runs: the path from `t` to the original end, then a jump back to the original start covering the remainder — every piece stays in its original placement:
+
+```
+let arc = @{
+  c 0 -60 100 -60 100 0;
+};
+let shifted = arc.startAt(0.25);
+// draws t=0.25..1 first, then jumps back and draws t=0..0.25
+```
+
+Combine with `dash()` to slide a dash pattern around a closed loop without touching the offset math:
+
+```
+let marching = ring.startAt(phase).dash(${
+  stroke-dasharray: 6 6;
+});
+```
+
+**Behavior notes:**
+
+- Multi-subpath sources are an error — rotation is only well-defined along one continuous run. Split compound paths first (e.g. with `segmentAll()` or `cut()`).
+- `startAt(0)` returns an equivalent path; values outside `0..1` wrap, so `startAt(1.25)` equals `startAt(0.25)`.
+
 ## Font Integration
 
 Font integration lets you convert text characters into PathBlock values — turning each glyph into vector paths you can draw, transform, sample, and combine with boolean operations.

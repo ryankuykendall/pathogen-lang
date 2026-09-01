@@ -550,6 +550,18 @@ export interface PathogenViewBox {
   readonly height: number;
 }
 
+/** @type DashPiece */
+export interface PathogenDashPiece {
+  /** The piece's geometry, in subject-local placement (PathBlock from a PathBlock receiver, ProjectedPath from a ProjectedPath) */
+  readonly path: PathogenPathBlock;
+  /** 'dash' for inked spans, 'gap' for the spaces between them */
+  readonly kind: string;
+  /** Where the piece starts along the path (arc-length fraction, 0..1) */
+  readonly t0: number;
+  /** Where the piece ends along the path (arc-length fraction, 0..1) */
+  readonly t1: number;
+}
+
 /** @type BoundingBox */
 export interface PathogenBoundingBox {
   /** X position */
@@ -785,6 +797,12 @@ export interface PathogenPathBlock {
   rotateAtVertexIndex(index: number, angle: AngleValue): PathogenPathBlock;
   /** subPath(startT, endT) — Extract sub-path */
   subPath(startT: number, endT: number): PathogenPathBlock;
+  /** dash(styles) — Partition into dash/gap centerline pieces per stroke-dasharray (+ optional stroke-dashoffset); returns [{ path, kind: 'dash' | 'gap', t0, t1 }] in path order */
+  dash(styles: Value): PathogenArray<PathogenDashPiece>;
+  /** outline(styles) — Closed stroke outline (stroke-to-path, boolean-ready); styles: stroke-width (required), stroke-linecap, stroke-linejoin, stroke-miterlimit */
+  outline(styles: Value): PathogenPathBlock;
+  /** startAt(t) — Re-anchor to start at arc-length fraction t (0..1 or percent, wraps); seamless on closed paths, two runs on open ones */
+  startAt(t: number): PathogenPathBlock;
   /** project(x, y) — Project to absolute position without drawing; returns a ProjectedPath */
   project(x: number, y: number): PathogenProjectedPath;
 
@@ -1146,6 +1164,12 @@ export interface PathogenProjectedPath {
   scale(sx: number, sy?: number): PathogenProjectedPath;
   /** subPath(startT, endT) — Extract sub-path */
   subPath(startT: number, endT: number): PathogenProjectedPath;
+  /** dash(styles) — Partition into dash/gap centerline pieces per stroke-dasharray (+ optional stroke-dashoffset); returns [{ path, kind: 'dash' | 'gap', t0, t1 }] in path order (pieces stay projected) */
+  dash(styles: Value): PathogenArray<PathogenDashPiece>;
+  /** outline(styles) — Closed stroke outline (stroke-to-path, boolean-ready) in absolute coordinates; styles: stroke-width (required), stroke-linecap, stroke-linejoin, stroke-miterlimit */
+  outline(styles: Value): PathogenProjectedPath;
+  /** startAt(t) — Re-anchor to start at arc-length fraction t (0..1 or percent, wraps); seamless on closed paths, two runs on open ones */
+  startAt(t: number): PathogenProjectedPath;
   /** chamfer(distance) — Chamfer all corners */
   chamfer(distance: number): PathogenProjectedPath;
   /** chamferAtVertex(index, distance) — Chamfer at vertex */
