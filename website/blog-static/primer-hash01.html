@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -334,8 +345,7 @@ missing endpoint never matters visually.</li>
 same 48 questions from two <em>separate</em> loops. The third row asks
 <code>randomRange(0, 1)</code> instead.</p>
 <p><mini-workspace code-open caption="Three rows of 48 dots: two separate hash01 loops (blue), one randomRange loop (red).">
-  <code>// viewBox="0 0 400 210"
-//-- Three rows of 48 dots. Rows one and two ask hash01 the same questions
+  <code>//-- Three rows of 48 dots. Rows one and two ask hash01 the same questions
 //-- from two separate loops -- identical answers, identical rows. Row three
 //-- asks randomRange, which re-rolls on every compile.
 
@@ -389,8 +399,7 @@ the whole lesson.)</p>
 deck 1, the size deck 2 — three independent random-looking properties from
 one loop counter.</p>
 <p><mini-workspace code-open caption="140 stars from one loop: x from seed 0, y from seed 1, radius from seed 2. Three independent streams, one index — and the same sky on every compile.">
-  <code>// viewBox="0 0 400 220"
-//-- One index, three decks: x from the default deck, y from deck 1, size
+  <code>//-- One index, three decks: x from the default deck, y from deck 1, size
 //-- from deck 2. 140 stars land convincingly at random -- and land in
 //-- exactly the same places on every compile.
 
@@ -421,8 +430,7 @@ independent properties out as you have seeds.</strong></p>
 sits exactly on its grid cell, but its lightness comes from one stream and
 its hue from another — a woven-textile effect from two lines of code.</p>
 <p><mini-workspace code-open caption="Structure from the grid, variation from two hashed streams: lightness on one deck, hue on another. row * 14 + col gives every cell its own integer label.">
-  <code>// viewBox="0 0 400 240"
-//-- A 14 x 8 grid of tiles. Every tile's lightness comes from one hashed
+  <code>//-- A 14 x 8 grid of tiles. Every tile's lightness comes from one hashed
 //-- stream and its hue from another -- the grid reads as a woven textile
 //-- swatch, and it's the same swatch on every compile.
 
@@ -453,8 +461,7 @@ thing.</p>
 human. The bottom ruler jitters each tick&#39;s x-position, lean, and length
 by small hashed amounts.</p>
 <p><mini-workspace code-open caption="Same ruler twice: machine-perfect above, three small hashed nudges below. The lean line's * 2 - 1 remap — 'either direction' instead of 'one way' — is the next post's whole reason to exist.">
-  <code>// viewBox="0 0 400 150"
-//-- Two rulers. The top one is machine-perfect. The bottom one nudges every
+  <code>//-- Two rulers. The top one is machine-perfect. The bottom one nudges every
 //-- tick's position, lean, and length by a hashed amount -- it reads as
 //-- drawn by a person, and redraws identically forever.
 
@@ -492,8 +499,7 @@ It&#39;s such a common move that it has its own function:
 position, height, lean, and color each drawn from its own seeded stream,
 composed into a finished little landscape.</p>
 <p><mini-workspace code-open caption="Ninety grass blades and a dozen seed heads — position, height, lean, and color each on its own seeded stream.">
-  <code>// viewBox="0 128 400 132"
-//-- Ninety grass blades and a dozen seed heads, every property -- position,
+  <code>//-- Ninety grass blades and a dozen seed heads, every property -- position,
 //-- height, lean, color -- drawn from its own hashed stream. A finished
 //-- little landscape that regenerates identically on every compile: change
 //-- any one seed constant and the whole meadow re-lands in a new (but

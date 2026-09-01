@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -297,8 +308,8 @@ shaped, textured — and still reusable?</p>
 a function of position</strong>. Climbing that ladder is what this post is about, and
 near the top it required growing the language itself. Pathogen now has lambda
 expressions:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> f = {|a, b| <span class="hljs-keyword">return</span> a + b; };
-<span class="hljs-keyword">let</span> three = <span class="hljs-title function_">f</span>(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">f</span> = {|<span class="id">a</span>, <span class="id">b</span>| <span class="kw">return</span> <span class="id">a</span> + <span class="id">b</span>; };
+<span class="kw">let</span> <span class="id">three</span> = <span class="id">f</span>(<span class="num">1</span>, <span class="num">2</span>);
 </code></pre><p>The same <code>{|...|}</code> block syntax you already know from <code>map</code> and the gradient
 builders, promoted to a first-class value — with true lexical capture. Here&#39;s
 the stroke that earns it.</p>
@@ -308,8 +319,7 @@ loop an index from 16 down to 1, and give each layer stop widths scaled by the
 index — wide soft passes first, a narrow bright core last. Drive the widths
 with <code>randomRange</code> and the result is pleasingly organic:</p>
 <p><mini-workspace code-open caption="Sixteen stacked compoundVariableOffset layers, widths driven by randomRange scaled by the layer index. Fuzzy, organic — and unrepeatable.">
-  <code>// viewBox="0 60 400 140"
-//-- A layered "glow" stroke: sixteen compoundVariableOffset passes, widths
+  <code>//-- A layered "glow" stroke: sixteen compoundVariableOffset passes, widths
 //-- driven by randomRange scaled by the layer index. Wide soft layers paint
 //-- first, a narrow bright core lands last. Organic -- and unrepeatable:
 //-- every compile rolls new widths.
@@ -361,17 +371,16 @@ isn&#39;t a number. It&#39;s a <strong>shape</strong>.</p>
 spine. The first envelope worth designing is a <strong>bulge</strong>: a chosen spot where
 the stroke swells, entered and left smoothly. A raised cosine does it in four
 lines:</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">bulge</span>(<span class="hljs-params">t, center, spread</span>) {
-  <span class="hljs-keyword">let</span> d = <span class="hljs-title function_">clamp</span>(<span class="hljs-title function_">abs</span>(t - center) / spread, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);
-  <span class="hljs-keyword">return</span> <span class="hljs-number">0.5</span> * (<span class="hljs-number">1</span> + <span class="hljs-title function_">cos</span>(<span class="hljs-title function_">mpi</span>(d)));
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">bulge</span>(<span class="id">t</span>, <span class="id">center</span>, <span class="id">spread</span>) {
+  <span class="kw">let</span> <span class="id">d</span> = <span class="id">clamp</span>(<span class="id">abs</span>(<span class="id">t</span> - <span class="id">center</span>) / <span class="id">spread</span>, <span class="num">0</span>, <span class="num">1</span>);
+  <span class="kw">return</span> <span class="num">0.5</span> * (<span class="num">1</span> + <span class="id">cos</span>(<span class="id">mpi</span>(<span class="id">d</span>)));
 }
 </code></pre><p><code>d</code> is normalized distance from the bulge center; <code>0.5·(1 + cos(πd))</code> is
 easeInOutSine wearing its trig clothes. The property that matters: its
 derivative is zero at <em>both</em> ends, so the swell leaves the base width and
 rejoins it without a visible crease.</p>
 <p><mini-workspace code-open caption="Three candidate envelopes plotted above the stroke the winner produces. On a straight spine, the stroke's silhouette is its envelope — the dashed guide connects the plot's peak to the widest point. Smoothstep (drawn dashed) hides inside the cosine: the two differ by at most 1% of the peak height.">
-  <code>// viewBox="0 0 400 320"
-//-- SEE the easing: three candidate bulge envelopes plotted as graphs, with
+  <code>//-- SEE the easing: three candidate bulge envelopes plotted as graphs, with
 //-- the stroke the raised cosine produces rendered on a STRAIGHT spine below.
 //-- On a straight spine the silhouette of the stroke IS its envelope; the
 //-- dashed vertical guide ties the plot's peak to the stroke's widest point.
@@ -527,8 +536,7 @@ scene.append(axis, peakGuide, tentLayer, cosLayer, smoothLayer, strokeLayer,
 it through the parameter. So the general stroke-maker takes its envelopes <em>as
 functions</em> — one per profile — and samples them at each stop:</p>
 <p><mini-workspace code-open caption="One wrapper, four envelope pairs passed by name: constant, taper, bulge, wave. The wrapper neither knows nor cares what shape arrives.">
-  <code>// viewBox="0 0 400 560"
-//-- Generalize the SHAPE, not the knobs: the wrapper takes envelope
+  <code>//-- Generalize the SHAPE, not the knobs: the wrapper takes envelope
 //-- functions (t) -&gt; signed offset and samples one per profile at each stop.
 //-- Functions are first-class values in Pathogen -- pass them by name, call
 //-- them through the parameter.
@@ -622,14 +630,14 @@ lists that grow a slot for every knob.</p>
 <p>The missing piece is a function literal that <em>remembers</em>. A block literal in
 expression position is now a <strong>lambda</strong>: a function value that captures the
 scope where it was written.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> scale = <span class="hljs-number">3</span>;
-<span class="hljs-keyword">let</span> times = {|x| <span class="hljs-keyword">return</span> <span class="hljs-title function_">calc</span>(x * scale); };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">scale</span> = <span class="num">3</span>;
+<span class="kw">let</span> <span class="id">times</span> = {|<span class="id">x</span>| <span class="kw">return</span> <span class="kw">calc</span>(<span class="id">x</span> * <span class="id">scale</span>); };
 
-fn <span class="hljs-title function_">caller</span>(<span class="hljs-params"></span>) {
-  <span class="hljs-keyword">let</span> scale = <span class="hljs-number">100</span>;    <span class="hljs-comment">// does NOT affect the lambda</span>
-  <span class="hljs-keyword">return</span> <span class="hljs-title function_">times</span>(<span class="hljs-number">2</span>);
+<span class="kw">fn</span> <span class="id">caller</span>() {
+  <span class="kw">let</span> <span class="id">scale</span> = <span class="num">100</span>;    <span class="cm">// does NOT affect the lambda</span>
+  <span class="kw">return</span> <span class="id">times</span>(<span class="num">2</span>);
 }
-<span class="hljs-keyword">let</span> six = <span class="hljs-title function_">caller</span>();   <span class="hljs-comment">// 6 — lexical capture, not the caller&#x27;s scale</span>
+<span class="kw">let</span> <span class="id">six</span> = <span class="id">caller</span>();   <span class="cm">// 6 — lexical capture, not the caller's scale</span>
 </code></pre><p>Three design decisions worth spelling out:</p>
 <ul>
 <li><strong>Lambdas are lexical; named <code>fn</code>s stay dynamic.</strong> Changing <code>fn</code> scoping
@@ -660,8 +668,7 @@ named taper functions with two inline lambda literals. Then the payoff: three
 bulge strokes from one loop, each iteration&#39;s lambdas closing over that
 iteration&#39;s <code>center</code> and <code>peak</code>:</p>
 <p><mini-workspace code-open caption="Row 1: inline lambdas replace four named taper fns. Rows 2-4: each loop iteration builds envelope lambdas capturing that iteration's center and peak — the bulge marches along the spine.">
-  <code>// viewBox="0 0 400 560"
-//-- Closures dissolve the baked-constants problem. A lambda {|t| ...}
+  <code>//-- Closures dissolve the baked-constants problem. A lambda {|t| ...}
 //-- captures the scope where it is WRITTEN, so a parameterized envelope can
 //-- be built inline, wherever its parameters live. Compare with
 //-- 03-named-envelopes.pathogen: same wrapper, but the envelopes no longer
@@ -748,8 +755,7 @@ closures, that&#39;s three lambdas per layer — <code>width1</code>, <code>widt
 capturing the layer index — plus a builder lambda <code>mk</code>, applied with
 <code>spine.compoundVariableOffset() &lt;&lt; mk</code>:</p>
 <p><mini-workspace code-open caption="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda applied with << onto compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical.">
-  <code>// viewBox="0 60 400 140"
-//-- The glow, rebuilt on closures -- deterministic this time. Without
+  <code>//-- The glow, rebuilt on closures -- deterministic this time. Without
 //-- closures this program threads TEN parameters through a helper
 //-- (pathBlock, steps, base1, bulges1, base2, bulges2, jitterAmount, salt,
 //-- continuity, cap). Here each layer builds lambdas that CAPTURE the layer

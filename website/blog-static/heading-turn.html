@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -281,27 +292,27 @@ code.hljs {
       <div class="blog-content">
         <p>Pathogen&#39;s tangent-dependent functions — <a href="/docs#stdlib-tangent-functions"><code>tangentLine</code></a> and <a href="/docs#stdlib-tangent-functions"><code>tangentArc</code></a> — continue drawing in the direction established by the previous command. But what if there <em>is</em> no previous command? After an <code>M</code> (moveTo), the pen has a position but no heading. Calling <code>tangentArc</code> right after <code>M</code> would fail because there&#39;s no direction to continue from.</p>
 <p>The old workaround was a dummy segment:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
-h <span class="hljs-number">0.01</span>            <span class="hljs-comment">// invisible line to set heading rightward</span>
-<span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg)
+<pre><code class="hljs language-pathogen">M 50 100
+h 0.01            <span class="cm">// invisible line to set heading rightward</span>
+<span class="id">tangentArc</span>(<span class="num">20</span>, <span class="num">90deg</span>)
 </code></pre><p>This sets the heading, but the 0.01px offset accumulates. When you close a path with <code>z</code>, it draws a line back to <code>(50.01, 100)</code> instead of <code>(50, 100)</code> — a tiny but visible artifact.</p>
 <h2>heading(angle)</h2>
 <p><a href="/docs#stdlib-heading-control"><code>heading(angle)</code></a> sets the tangent direction without emitting any command or moving the cursor. No offset, no artifact:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
-<span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)           <span class="hljs-comment">// set heading rightward — nothing drawn</span>
-<span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg) <span class="hljs-comment">// works immediately</span>
+<pre><code class="hljs language-pathogen">M 50 100
+<span class="id">heading</span>(<span class="num">0</span>)           <span class="cm">// set heading rightward — nothing drawn</span>
+<span class="id">tangentArc</span>(<span class="num">20</span>, <span class="num">90deg</span>) <span class="cm">// works immediately</span>
 </code></pre><p>Angles follow SVG&#39;s coordinate conventions: 0 is rightward, positive angles rotate clockwise (downward in SVG&#39;s y-down coordinate system). Use the <code>deg</code> suffix for degrees.</p>
 <h2>turn(delta)</h2>
 <p><a href="/docs#stdlib-heading-control"><code>turn(delta)</code></a> rotates the current heading by a relative amount. It requires an existing heading — either from <code>heading()</code> or from a prior drawing command:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
-<span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)          <span class="hljs-comment">// start rightward</span>
-<span class="hljs-title function_">turn</span>(90deg)         <span class="hljs-comment">// now downward</span>
-<span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">30</span>)     <span class="hljs-comment">// draws 30px down</span>
+<pre><code class="hljs language-pathogen">M 50 100
+<span class="id">heading</span>(<span class="num">0</span>)          <span class="cm">// start rightward</span>
+<span class="id">turn</span>(<span class="num">90deg</span>)         <span class="cm">// now downward</span>
+<span class="id">tangentLine</span>(<span class="num">30</span>)     <span class="cm">// draws 30px down</span>
 </code></pre><p>Negative deltas turn counter-clockwise. Multiple <code>turn()</code> calls accumulate:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
-<span class="hljs-title function_">turn</span>(45deg)         <span class="hljs-comment">// 45°</span>
-<span class="hljs-title function_">turn</span>(45deg)         <span class="hljs-comment">// 90°</span>
-<span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">20</span>)     <span class="hljs-comment">// draws at 90°</span>
+<pre><code class="hljs language-pathogen"><span class="id">heading</span>(<span class="num">0</span>)
+<span class="id">turn</span>(<span class="num">45deg</span>)         <span class="cm">// 45°</span>
+<span class="id">turn</span>(<span class="num">45deg</span>)         <span class="cm">// 90°</span>
+<span class="id">tangentLine</span>(<span class="num">20</span>)     <span class="cm">// draws at 90°</span>
 </code></pre><h2>Shapes Without Dummy Segments</h2>
 <p>The demo below shows four shapes built entirely with <code>heading</code>, <code>turn</code>, <code>tangentLine</code>, and <code>tangentArc</code> — no dummy segments needed. Each shape includes the code used to construct it.</p>
 <p><mini-workspace code-open caption="heading() and turn() — C-shape, S-curve, zigzag, and spiral">
@@ -433,22 +444,22 @@ for ([shape, idx] in shapes) {
 </mini-workspace></p>
 <h2>Building Regular Polygons</h2>
 <p><code>heading</code>, <code>turn</code>, and <code>tangentLine</code> are all you need to draw any regular polygon. Set an initial heading at half the exterior angle (this orients the first edge so the polygon sits upright), then loop: draw a side with <code>tangentLine</code>, turn by the exterior angle. Replace <code>tangentLine</code> with <code>tangentArc</code> on the turns and the corners become rounded:</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">sharpPoly</span>(<span class="hljs-params">sides, sideLen</span>) {
-  <span class="hljs-keyword">let</span> ext = <span class="hljs-title function_">calc</span>(<span class="hljs-number">360</span> / sides);
-  <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(ext / <span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span>.<span class="hljs-property">sides</span>) {
-    <span class="hljs-title function_">tangentLine</span>(sideLen)
-    <span class="hljs-title function_">turn</span>(<span class="hljs-title function_">calc</span>(ext * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">sharpPoly</span>(<span class="id">sides</span>, <span class="id">sideLen</span>) {
+  <span class="kw">let</span> <span class="id">ext</span> = <span class="kw">calc</span>(<span class="num">360</span> / <span class="id">sides</span>);
+  <span class="id">heading</span>(<span class="kw">calc</span>(<span class="id">ext</span> / <span class="num">2</span> * <span class="id">PI</span>() / <span class="num">180</span>))
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="id">sides</span>) {
+    <span class="id">tangentLine</span>(<span class="id">sideLen</span>)
+    <span class="id">turn</span>(<span class="kw">calc</span>(<span class="id">ext</span> * <span class="id">PI</span>() / <span class="num">180</span>))
   }
 }
 
-fn <span class="hljs-title function_">roundedPoly</span>(<span class="hljs-params">sides, sideLen, r</span>) {
-  <span class="hljs-keyword">let</span> ext = <span class="hljs-title function_">calc</span>(<span class="hljs-number">360</span> / sides);
-  <span class="hljs-keyword">let</span> straight = <span class="hljs-title function_">calc</span>(sideLen - <span class="hljs-number">2</span> * r * <span class="hljs-title function_">tan</span>(ext / <span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>));
-  <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(ext / <span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span>.<span class="hljs-property">sides</span>) {
-    <span class="hljs-title function_">tangentLine</span>(straight)
-    <span class="hljs-title function_">tangentArc</span>(r, <span class="hljs-title function_">calc</span>(ext * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
+<span class="kw">fn</span> <span class="id">roundedPoly</span>(<span class="id">sides</span>, <span class="id">sideLen</span>, <span class="id">r</span>) {
+  <span class="kw">let</span> <span class="id">ext</span> = <span class="kw">calc</span>(<span class="num">360</span> / <span class="id">sides</span>);
+  <span class="kw">let</span> <span class="id">straight</span> = <span class="kw">calc</span>(<span class="id">sideLen</span> - <span class="num">2</span> * <span class="id">r</span> * <span class="id">tan</span>(<span class="id">ext</span> / <span class="num">2</span> * <span class="id">PI</span>() / <span class="num">180</span>));
+  <span class="id">heading</span>(<span class="kw">calc</span>(<span class="id">ext</span> / <span class="num">2</span> * <span class="id">PI</span>() / <span class="num">180</span>))
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="id">sides</span>) {
+    <span class="id">tangentLine</span>(<span class="id">straight</span>)
+    <span class="id">tangentArc</span>(<span class="id">r</span>, <span class="kw">calc</span>(<span class="id">ext</span> * <span class="id">PI</span>() / <span class="num">180</span>))
   }
 }
 </code></pre><p>The showcase below draws triangles through decagons — eight polygons in each row, sharp and rounded. One function, one loop, any number of sides.</p>
@@ -592,27 +603,27 @@ layer('caption').apply {
 </mini-workspace></p>
 <h2>Clean PathBlock Closure</h2>
 <p><code>heading()</code> is especially valuable inside <a href="/blog/pathblock-introduction">path blocks</a>. The <code>z</code> command draws a line back to the subpath start — and with <code>h 0.01</code>, that start is offset by 0.01px. With <code>heading()</code>, the start is exact:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// With h 0.01 — z closes to (0.01, 0), leaving a gap</span>
-<span class="hljs-keyword">let</span> old = @{
-  h <span class="hljs-number">0.01</span>
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 270deg)
+<pre><code class="hljs language-pathogen"><span class="cm">// With h 0.01 — z closes to (0.01, 0), leaving a gap</span>
+<span class="kw">let</span> <span class="id">old</span> = @{
+  h 0.01
+  <span class="id">tangentArc</span>(<span class="num">20</span>, <span class="num">270deg</span>)
   z
 };
 
-<span class="hljs-comment">// With heading — z closes cleanly to (0, 0)</span>
-<span class="hljs-keyword">let</span> clean = @{
-  <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 270deg)
+<span class="cm">// With heading — z closes cleanly to (0, 0)</span>
+<span class="kw">let</span> <span class="id">clean</span> = @{
+  <span class="id">heading</span>(<span class="num">0</span>)
+  <span class="id">tangentArc</span>(<span class="num">20</span>, <span class="num">270deg</span>)
   z
 };
 </code></pre><h2>Reading the Current Heading</h2>
 <p>The current heading is available via <code>ctx.heading</code> — a read-only property that returns the tangent angle in radians, or <code>undefined</code> after an <code>M</code> (since moves don&#39;t establish direction):</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">0</span> <span class="hljs-number">0</span>  L <span class="hljs-number">50</span> <span class="hljs-number">0</span>
-<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// 0 (rightward)</span>
-<span class="hljs-title function_">heading</span>(90deg)
-<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// 1.5708 (π/2, downward)</span>
-M <span class="hljs-number">200</span> <span class="hljs-number">200</span>
-<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// undefined (M clears heading)</span>
+<pre><code class="hljs language-pathogen">M 0 0  L 50 0
+<span class="id">log</span>(<span class="id">ctx</span>.<span class="id">heading</span>)   <span class="cm">// 0 (rightward)</span>
+<span class="id">heading</span>(<span class="num">90deg</span>)
+<span class="id">log</span>(<span class="id">ctx</span>.<span class="id">heading</span>)   <span class="cm">// 1.5708 (π/2, downward)</span>
+M 200 200
+<span class="id">log</span>(<span class="id">ctx</span>.<span class="id">heading</span>)   <span class="cm">// undefined (M clears heading)</span>
 </code></pre><p>Any drawing command that establishes a direction — <code>L</code>, <code>H</code>, <code>V</code>, <code>C</code>, <code>S</code>, <code>Q</code>, <code>T</code>, <code>A</code>, <code>Z</code>, and stdlib path functions — sets the heading automatically. <code>heading()</code> and <code>turn()</code> let you set it explicitly when no drawing command has run yet.</p>
 <p>Together, these two functions eliminate the dummy-segment workaround, enable clean <code>z</code> closure in path blocks, and unlock procedural shape construction — from simple arcs to regular polygons with any number of sides. They pair naturally with <code>tangentLine</code> and <code>tangentArc</code> to build complex shapes from simple, composable operations.</p>
 <p>For more on tangent-dependent functions, see the <a href="/docs#stdlib-tangent-functions">stdlib reference</a>. For path blocks, see the <a href="/blog/pathblock-introduction">PathBlock introduction</a>. For multi-segment smooth curves that benefit from <code>heading()</code>, see the <a href="/blog/chained-bezier-splines">chained Bézier splines post</a>.</p>

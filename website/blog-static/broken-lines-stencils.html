@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stencils: Bridges Are Just Gaps — Pathogen Studio</title>
+  <meta name="description" content="Fourth in Broken Lines: a stencil's islands fall out unless bridges hold them — and a bridge is a gap in a dashed centerline, outlined to the band width and cut with difference().">
+  <link rel="canonical" href="https://pathogen.studio/blog/broken-lines-stencils">
+  <meta property="og:title" content="Stencils: Bridges Are Just Gaps — Pathogen Studio">
+  <meta property="og:description" content="Fourth in Broken Lines: a stencil's islands fall out unless bridges hold them — and a bridge is a gap in a dashed centerline, outlined to the band width and cut with difference().">
+  <meta property="og:url" content="https://pathogen.studio/blog/broken-lines-stencils">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Stencils: Bridges Are Just Gaps","description":"Fourth in Broken Lines: a stencil's islands fall out unless bridges hold them — and a bridge is a gap in a dashed centerline, outlined to the band width and cut with difference().","datePublished":"2026-09-04","url":"https://pathogen.studio/blog/broken-lines-stencils","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Stencils: Bridges Are Just Gaps</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Stencils: Bridges Are Just Gaps</h1>
+        <p class="post-meta"><time datetime="2026-09-04">September 4, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 4 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><a href="/blog/broken-lines-stroke-geometry">Stroke geometry</a> — dashes,
+outlines, and start points as real paths</li>
+<li><a href="/blog/broken-lines-sashiko">Sashiko</a> — running stitches from
+binary sequences</li>
+<li><a href="/blog/broken-lines-leathercraft">Leathercraft</a> — stitch holes
+that can&#39;t disagree</li>
+<li><strong>Stencils</strong> (this post) — bridges are just gaps</li>
+<li><a href="/blog/broken-lines-what-it-taught">What Broken Lines taught the language</a>
+— the friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> Part 1&#39;s
+<a href="/blog/broken-lines-stroke-geometry"><code>dash()</code> and <code>outline()</code></a>, and
+the <a href="/docs#path-blocks-boolean-operations">boolean operations</a> —
+every aperture here is a <code>difference()</code>. The seam-merge behavior uses
+<a href="/docs#path-blocks-dashstyles-array-of-path-kind-t0-t1"><code>dash-seam</code></a>
+from the stroke-geometry docs.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>A stencil is a sheet with shapes cut out — and one hard constraint:
+every piece of the sheet must stay <em>connected</em>. Cut a ring and the
+circle in the middle — stencil makers call it an island, typographers
+call it a counter — is attached to nothing. It falls out on the workbench, and your &quot;O&quot; sprays as a
+dot. The fix, as old as stenciling: <strong>bridges</strong>, small tabs of sheet
+left uncut across the ring.</p>
+<p>Today bridge placement is a manual chore — draw the shape, hand-draw
+tabs across it, cut, discover the counter on the floor, iterate. But
+look at what a bridged ring actually is: a centerline, cut <em>most</em> of
+the way around, with a few deliberate interruptions. Cut segments and
+interruptions. Dashes and gaps. The whole problem is a dash array.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because the recipe is three steps and it parameterizes everything a
+stencil maker argues about — band width, bridge width, bridge count,
+and (through the dash offset) where the bridges land — while
+guaranteeing the geometry stays cuttable:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">cutLength</span> = <span class="kw">calc</span>(<span class="id">centerline</span>.<span class="id">length</span> / <span class="id">bridgeCount</span> - <span class="id">bridgeWidth</span>);
+<span class="kw">let</span> <span class="id">pieces</span> = <span class="id">centerline</span>.<span class="id">dash</span>(${
+  <span class="pr">stroke-dasharray</span>: <span class="str">`${cutLength}`</span> <span class="str">`${bridgeWidth}`</span>;
+  <span class="pr">dash-seam</span>: <span class="id">merge</span>;
+});
+<span class="kw">for</span> (<span class="id">segment</span> <span class="kw">in</span> <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>}) {
+  <span class="id">stencil</span> = <span class="id">stencil</span>.<span class="id">difference</span>(<span class="id">segment</span>.<span class="id">path</span>.<span class="id">outline</span>(${
+    <span class="pr">stroke-width</span>: <span class="str">`${bandWidth}`</span>;
+  }));
+}
+</code></pre><p>Dash the centerline, <code>outline()</code> each dash to the band width,
+<code>difference()</code> each one from the sheet. The gaps were never cut — they
+<em>are</em> the bridges. Everything below is cut from mylar — the tough
+polyester film most stencils are cut from — but the sheet material
+never enters the math.</p>
+<h2>Example 1 — The island problem</h2>
+<p>The failure mode first, per house rules. Left: the design — a clean
+ring, counter in place. Right: the same cut on the bench — the counter
+is attached to nothing, and gravity is undefeated.</p>
+<p><mini-workspace code-open caption="An unbridged ring. The middle is an island; islands fall.">
+  <code>//-- The stencil problem in one picture: cut a ring and the middle is
+//-- an island — connected to nothing. Left: the design. Right: what
+//-- gravity does to it.
+
+define ViewBox(0, 0, 480, 250);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') ${};
+let mylar = PathLayer('mylar') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let fallen = PathLayer('fallen') ${
+  fill: #8298ad;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let driftMarks = PathLayer('drift-marks') ${
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+let leaders = PathLayer('leaders') ${
+  stroke: #94a3b8;
+  stroke-width: 1;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar,
+    fallen,
+    driftMarks,
+    leaders,
+    labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      170,
+      170,
+      10);
+};
+let ringOuter = @{
+  circle(85, 85, 56);
+};
+let ringInner = @{
+  circle(85, 85, 32);
+};
+// The cut sheet is the same in both panels: the outer circle removed.
+// What differs is only where the counter — a separate piece of mylar,
+// attached to nothing — ends up.
+let holed = sheet.difference(ringOuter);
+
+// Left: as designed — the counter sits in place (for now).
+mylar.apply {
+  M 42 42 holed.draw()
+}
+mylar.apply {
+  M 42 42 ringInner.draw()
+}
+
+// Right: gravity. The dashed ring marks where the island used to sit;
+// the short line traces its fall.
+mylar.apply {
+  M 272 42 holed.draw()
+}
+fallen.apply {
+  M 294 76 ringInner.draw()
+}
+driftMarks.apply {
+  M 272 42 ringInner.draw()
+  M 379 129
+  l 22 34
+}
+
+leaders.apply {
+  M 127 36
+  v 50
+}
+labels.apply {
+  text(127, 28)`island (the counter)`;
+  text(127, 232)`as designed`;
+  text(357, 232)`as cut — the island falls`;
+}
+</code>
+  <img src="/blog/samples/post48/01-island-problem.svg" alt="An unbridged ring. The middle is an island; islands fall." loading="lazy">
+</mini-workspace></p>
+<h2>Example 2 — Dash the centerline first</h2>
+<p>Before anything is cut, dash the ring&#39;s centerline and just <em>look</em> at
+the pieces — part 1&#39;s vocabulary, on a loop. The dark arcs are what
+the blade will follow; the short green arcs are the bridges, and they
+exist as geometry before any cutting happens. Bridge placement is the
+dash offset: <code>stroke-dashoffset</code> shifts the pattern <em>within</em> the
+path (part 1&#39;s <code>startAt()</code> moved the path&#39;s start instead — same
+effect, different knob), and here a half-segment shift parks the four
+bridges on the diagonals instead of the cardinals.</p>
+<p><mini-workspace code-open caption="The plan before the cut: dark will be cut, green never will.">
+  <code>//-- Before anything is cut: dash the ring's centerline and LOOK at the
+//-- pieces. The dashes are what the blade will follow; the gaps are the
+//-- bridges — decided here, as lengths, before any geometry moves.
+
+define ViewBox(0, 0, 480, 256);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+table.apply {
+  rect(0, 0, 480, 256);
+}
+
+let scene = GroupLayer('scene') ${};
+let sheetLayer = PathLayer('sheet') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let cutMarks = PathLayer('cut-marks') ${
+  stroke: #334155;
+  stroke-width: 4;
+  stroke-linecap: butt;
+  fill: none;
+};
+let bridgeMarks = PathLayer('bridge-marks') ${
+  stroke: #22c55e;
+  stroke-width: 6;
+  stroke-linecap: butt;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(sheetLayer, cutMarks, bridgeMarks, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      190,
+      190,
+      10);
+};
+sheetLayer.apply {
+  M 145 26 sheet.draw()
+}
+
+let centerline = @{
+  circle(95, 95, 48);
+};
+let bridgeWidth = 13;
+let bridgeCount = 4;
+let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
+
+// Shift back half a segment so the bridges land on the diagonals.
+let pieces = centerline.dash(${
+  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'dash') {
+    cutMarks.apply {
+      M 145 26 piece.path.draw()
+    }
+  } else {
+    bridgeMarks.apply {
+      M 145 26 piece.path.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(240, 238)`dark: to be cut — green: the bridges, never cut at all`;
+}
+</code>
+  <img src="/blog/samples/post48/02-dash-the-ring.svg" alt="The plan before the cut: dark will be cut, green never will." loading="lazy">
+</mini-workspace></p>
+<p>That shift has one consequence worth understanding. A closed path has
+a seam — the point where it starts and ends, and where the dash
+pattern begins. Shift the pattern half a segment and the seam lands
+<em>mid-cut</em>, which would hand back two half-segments; <code>dash-seam: merge</code>
+stitches them back into one, so the counts below stay honest.</p>
+<h2>Example 2b — Outline and subtract</h2>
+<p>Now the cut. Each dash is outlined to the band width with <code>butt</code> caps
+— flat bridge shoulders, the way a blade would leave them — and
+subtracted from the sheet. The leader lines mark the three parameters.</p>
+<p><mini-workspace code-open caption="Four dashes cut, four gaps kept. The island is held by what you didn't cut.">
+  <code>//-- The fix: don't cut the whole ring. Dash its centerline — the
+//-- dashes become cut segments, the gaps become bridges — and the
+//-- island is held. dash-seam: merge keeps the wrap-around segment
+//-- whole, so the counts are honest.
+
+define ViewBox(0, 0, 480, 256);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 256);
+}
+
+let scene = GroupLayer('scene') ${};
+let mylar = PathLayer('mylar') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let centerlineGhost = PathLayer('centerline-ghost') ${
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leaders = PathLayer('leaders') ${
+  stroke: #94a3b8;
+  stroke-width: 1;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar, centerlineGhost, leaders, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      190,
+      190,
+      10);
+};
+
+// The ring to cut, described by its CENTERLINE and a band width.
+let centerline = @{
+  circle(95, 95, 48);
+};
+let bandWidth = 24;
+let bridgeWidth = 13;
+let bridgeCount = 4;
+
+// Shift back half a segment so the bridges land on the diagonals, off
+// the cardinals. That drops the path's own seam mid-cut — dash-seam:
+// merge stitches the two halves back into one honest segment.
+let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
+let pieces = centerline.dash(${
+  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
+
+let stencil = sheet;
+for (segment in cutSegments) {
+  let aperture = segment.path.outline(${
+    stroke-width: `${bandWidth}`;
+    stroke-linecap: butt;
+  });
+  stencil = stencil.difference(aperture);
+}
+
+mylar.apply {
+  M 145 26 stencil.draw()
+}
+centerlineGhost.apply {
+  M 145 26 centerline.draw()
+}
+
+// Leader-line annotations in the side canvas: the three parameters a
+// stencil maker argues about, pointed at the geometry they control.
+leaders.apply {
+  M 358 96
+  l -81 -7
+  M 358 134
+  l -56 -11
+  M 358 176
+  l -74 -28
+}
+labels.apply {
+  text(240, 238)`${cutSegments.length} cut segments, ${pieces.length - cutSegments.length} bridges — island held`;
+}
+let sideLabels = TextLayer('side-labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(sideLabels);
+sideLabels.apply {
+  text(364, 100)`bridgeWidth 13`;
+  text(364, 138)`bandWidth 24`;
+  text(364, 180)`centerline`;
+}
+</code>
+  <img src="/blog/samples/post48/02-bridges-are-gaps.svg" alt="Four dashes cut, four gaps kept. The island is held by what you didn't cut." loading="lazy">
+</mini-workspace></p>
+<h2>Example 3 — Any loop will do</h2>
+<p>Nothing in the recipe mentions a circle. A rounded-rectangle band gets
+the same treatment — and its rounded band corners come from a nice
+piece of geometry: the centerline&#39;s fillets are already curves, so
+<code>outline()</code> simply <em>offsets</em> them, concentrically — inner radius 16,
+outer 36 around a radius-26 fillet. (The <code>stroke-linejoin</code> in the
+sample is honest-to-goodness inert here: a tangent-continuous
+centerline has no corner for a join to act on. It would matter on a
+sharp-cornered <code>rect()</code> centerline.) The bridges land wherever the
+offset puts them — drive the offset to move them. Swap the
+centerline, keep the recipe.</p>
+<p><mini-workspace code-open caption="Six segments around a filleted loop — the band offsets the fillets.">
+  <code>//-- The mechanic doesn't care about the shape. A rounded-square band:
+//-- dash the centerline, outline each cut with the band width — the
+//-- round joins follow the corners — and place bridges where the
+//-- pattern says.
+
+define ViewBox(0, 0, 480, 250);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') ${};
+let mylar = PathLayer('mylar') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      250,
+      180,
+      10);
+};
+let centerline = @{
+  roundRect(45,
+      40,
+      160,
+      100,
+      26);
+};
+let bandWidth = 20;
+let bridgeWidth = 12;
+let bridgeCount = 6;
+
+let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
+// Shift back half a segment: bridges off the corners.
+let pieces = centerline.dash(${
+  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+
+let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
+let stencil = sheet;
+for (segment in cutSegments) {
+  // stroke-linejoin is inert here: the roundRect centerline is already
+  // tangent-continuous, so there is no corner for a join to act on —
+  // the band's rounded corners are concentric OFFSETS of the fillets.
+  let aperture = segment.path.outline(${
+    stroke-width: `${bandWidth}`;
+    stroke-linecap: butt;
+    stroke-linejoin: round;
+  });
+  stencil = stencil.difference(aperture);
+}
+
+mylar.apply {
+  M 115 28 stencil.draw()
+}
+
+labels.apply {
+  text(240, 232)`same recipe, cornered loop — the band offsets the fillets`;
+}
+</code>
+  <img src="/blog/samples/post48/03-cornered-ring.svg" alt="Six segments around a filleted loop — the band offsets the fillets." loading="lazy">
+</mini-workspace></p>
+<p>Two practical floors before you scale this: <code>cutLength</code> goes negative
+— a compile error, since negative dash entries are rejected — as soon
+as <code>bridgeWidth × bridgeCount</code> reaches the centerline&#39;s length, so a
+small ring caps how many bridges it can carry. And these are user
+units; real bridges have a <em>material</em> minimum width (too narrow tears
+during cutting or lifts under spray), which no geometry can supply.</p>
+<h2>Example 4 — The trail marker</h2>
+<p>The finished artifact: a spray-ready sheet. The bridged ring from
+Example 2, a solid arrow aperture (no island — no bridge needed), and
+corner registration crosses derived from the sheet&#39;s dimensions. This
+is the file you&#39;d hand a laser — with one practitioner detail already
+encoded: the crosses live on their own <em>layer</em>, because a cutter has
+to be told which lines are cuts and which are reference. Send the
+sheet layer to the blade; the registration layer is for aligning
+pass two.</p>
+<p><mini-workspace code-open caption="One sheet: bridged ring, solid arrow, registration marks on their own layer.">
+  <code>//-- The finished artifact: a spray-ready trail-marker stencil. Bridged
+//-- ring, solid arrow aperture, corner registration marks — one sheet.
+
+define ViewBox(0, 0, 480, 300);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') ${};
+let mylar = PathLayer('mylar') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let registration = PathLayer('registration') ${
+  stroke: #64748b;
+  stroke-width: 1.5;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar, registration, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      340,
+      220,
+      12);
+};
+
+// Bridged ring, as before.
+let ringCenter = @{
+  circle(105, 110, 62);
+};
+let bandWidth = 26;
+let bridgeWidth = 14;
+let cutLength = calc(ringCenter.length / 4 - bridgeWidth);
+// Shift back half a segment: bridges off the cardinals.
+let ringPieces = ringCenter.dash(${
+  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+
+// Solid arrow aperture — no island, no bridge needed.
+let arrow = @{
+  m 200 96
+  h 70
+  v -22
+  l 52 36
+  l -52 36
+  v -22
+  h -70
+  z
+};
+
+let cutSegments = ringPieces.filter() {|piece| piece.kind == 'dash'};
+let stencil = sheet.difference(arrow);
+for (segment in cutSegments) {
+  let aperture = segment.path.outline(${
+    stroke-width: `${bandWidth}`;
+    stroke-linecap: butt;
+  });
+  stencil = stencil.difference(aperture);
+}
+
+mylar.apply {
+  M 70 34 stencil.draw()
+}
+
+// Corner registration marks on their own layer — a cutter needs to be
+// told which lines are cuts and which are reference, and the layer is
+// how you tell it. Placed from the sheet's own dimensions.
+let sheetW = 340;
+let sheetH = 220;
+let sheetX = 70;
+let sheetY = 34;
+let markInset = 14;
+fn crosshair(centerX, centerY) {
+  registration.apply {
+    M calc(centerX - 6) centerY
+    h 12
+    M centerX calc(centerY - 6)
+    v 12
+  }
+}
+crosshair(calc(sheetX + markInset), calc(sheetY + markInset));
+crosshair(calc(sheetX + sheetW - markInset), calc(sheetY + markInset));
+crosshair(calc(sheetX + markInset), calc(sheetY + sheetH - markInset));
+crosshair(calc(sheetX + sheetW - markInset), calc(sheetY + sheetH - markInset));
+
+labels.apply {
+  text(240, 282)`trail marker — bridged ring, solid arrow, registration crosses`;
+}
+</code>
+  <img src="/blog/samples/post48/04-trail-marker.svg" alt="One sheet: bridged ring, solid arrow, registration marks on their own layer." loading="lazy">
+</mini-workspace></p>
+<h2>Where to go next</h2>
+<p>Three crafts, one toolkit — the full surface is in the
+<a href="/docs#path-blocks-stroke-geometry">stroke geometry reference</a>, and
+the stitching posts this one leans against are
+<a href="/blog/broken-lines-sashiko">sashiko</a> and
+<a href="/blog/broken-lines-leathercraft">leathercraft</a>. And there&#39;s a stack
+of notes about everywhere the language pushed back while these posts
+were being written: the
+<a href="/blog/broken-lines-what-it-taught">closing post</a> opens the friction
+log — what hurt, what got fixed, and what the fixes look like.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -310,9 +321,9 @@ shut — and every healed edge remembers that it used to be a wound. (An
 open subject severs into open fragments instead; the healing is for
 closed material.) Each seam carries the automatic segment label <code>cut</code>,
 so a piece can be asked, after the fact, <em>where was I cut?</em></p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> pieces = plate.<span class="hljs-title function_">cut</span>(knife);
-<span class="hljs-keyword">let</span> placed = pieces[<span class="hljs-number">0</span>].<span class="hljs-title function_">project</span>(<span class="hljs-number">20</span>, <span class="hljs-number">30</span>);
-placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>);   <span class="hljs-comment">// every healed edge, as drawable runs</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">pieces</span> = <span class="id">plate</span>.<span class="id">cut</span>(<span class="id">knife</span>);
+<span class="kw">let</span> <span class="id">placed</span> = <span class="id">pieces</span>[<span class="num">0</span>].<span class="id">project</span>(<span class="num">20</span>, <span class="num">30</span>);
+<span class="id">placed</span>.<span class="id">segmentAll</span>(<span class="str">'cut'</span>);   <span class="cm">// every healed edge, as drawable runs</span>
 </code></pre><p>Two things to know before the pictures, because everything below leans
 on them:</p>
 <ul>
@@ -342,8 +353,8 @@ dashed lines to fold, tabs to glue. Before seam labels, decorating a
 cut meant re-deriving where the knife went — intersecting lines by
 hand, tracking which piece got which fragment. Now the pieces carry the
 answer. The idiom the whole series leans on:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
-  seam.<span class="hljs-title function_">draw</span>();
+<pre><code class="hljs language-pathogen"><span class="kw">for</span> (<span class="id">seam</span> <span class="kw">in</span> <span class="id">placed</span>.<span class="id">segmentAll</span>(<span class="str">'cut'</span>)) {
+  <span class="id">seam</span>.<span class="id">draw</span>();
 }
 </code></pre><p>A projected value knows where it lives, so <code>draw()</code> draws it exactly
 there — into whatever layer is active, with whatever stroke style that
@@ -355,8 +366,7 @@ pieces drawn plain, reassembled. On the right, the same two pieces
 nudged apart, after each was asked for its healed seams — stroked in
 amber with the idiom above.</p>
 <p><mini-workspace code-open caption="Left: the cut pieces, reassembled. Right: the pieces apart — each strokes its own segmentAll('cut').">
-  <code>// viewBox="0 0 480 240"
-//-- The bare mechanism: cut a plate in two, then ask each piece where it
+  <code>//-- The bare mechanism: cut a plate in two, then ask each piece where it
 //-- was healed. Left: the pieces, drawn plain. Right: the same pieces with
 //-- every seam the cut created stroked in amber via segmentAll('cut').
 
@@ -460,8 +470,7 @@ itself carries the distinction. Name a knife&#39;s edge
 red), and one loop over the seams routes each fold to its dash style by
 asking which knife made it.</p>
 <p><mini-workspace code-open caption="The outline is the cut line; each named knife's seams keep its name — mountain and valley folds dash differently.">
-  <code>// viewBox="0 0 480 220"
-//-- A four-panel accordion card as one template: the plate's boundary is
+  <code>//-- A four-panel accordion card as one template: the plate's boundary is
 //-- the cut line (solid), and the creases alternate mountain / valley —
 //-- each knife is named, so its healed seams carry the fold's name and
 //-- one loop routes every seam to the right dash style.
@@ -603,8 +612,7 @@ points straight out of it — which is all a trapezoid tab needs. The
 left piece grows three tabs along its healed edge, every other seventh
 of the way; the outer boundary, which was never cut, stays clean.</p>
 <p><mini-workspace code-open caption="get(t) walks the seam, normal(t) aims the tab; the uncut boundary grows nothing.">
-  <code>// viewBox="0 0 480 240"
-//-- Glue tabs, generated: the left piece grows trapezoid tabs along its
+  <code>//-- Glue tabs, generated: the left piece grows trapezoid tabs along its
 //-- healed seam — and only there. get(t) walks the seam, normal(t) points
 //-- the tabs outward, and the original boundary never grows a tab.
 
@@ -705,8 +713,7 @@ its floor <code>as segment(&#39;base&#39;)</code>, then a horizontal cut splits 
 piece still answers for the names it kept — the roof piece strokes and
 counts its roof, the base piece its base.</p>
 <p><mini-workspace code-open caption="Labels survive the cut: each piece strokes and counts the names it kept.">
-  <code>// viewBox="0 0 480 215"
-//-- Name the edges before you cut, and the pieces introduce themselves.
+  <code>//-- Name the edges before you cut, and the pieces introduce themselves.
 //-- A house-shaped plate labels its roof and base; after a horizontal cut
 //-- each piece still answers for the labels it kept — stroked and counted.
 
@@ -814,8 +821,7 @@ The garment-pattern post (part 3) builds its whole workflow on this.</p>
 the uncut plate stays behind, dashed; each drifted piece strokes its
 seams amber, so mating edges face each other across the gaps.</p>
 <p><mini-workspace code-open caption="Pieces drift along rays to their bounding-box centers; amber seam faces amber seam.">
-  <code>// viewBox="0 0 480 260"
-//-- The assembly diagram: four pieces drift away from the plate's center
+  <code>//-- The assembly diagram: four pieces drift away from the plate's center
 //-- along their own centroid rays, the ghost of the uncut plate stays
 //-- behind, and every mating edge glows — that's the seam group again.
 
@@ -917,8 +923,7 @@ under it), and wears its piece number — derived from its angle around
 the ring, because <code>cut()</code> makes no promise about the order pieces come
 back in.</p>
 <p><mini-workspace code-open caption="The finished kit sheet: tab the red edge, fold the dashed one, rejoin in order.">
-  <code>// viewBox="0 0 480 300"
-//-- The finished kit sheet: a hex medallion cut into six wedges, exploded
+  <code>//-- The finished kit sheet: a hex medallion cut into six wedges, exploded
 //-- into a ring. Every wedge tabs one healed seam, fold-dashes the other,
 //-- and wears its number — the knives are named, so each radial edge is
 //-- queried by the knife that made it.
@@ -1100,11 +1105,11 @@ an in-place
 <a href="/docs#path-blocks-drawing-a-projectedpath-in-place"><code>draw()</code></a>: it
 anchors on the value&#39;s first command by definition, so the misplacement
 cannot be written at all and the idiom is one self-evident line.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before</span>
-seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+<pre><code class="hljs language-pathogen"><span class="cm">// before</span>
+<span class="id">seam</span>.<span class="id">drawTo</span>(<span class="id">seam</span>.<span class="id">startPoint</span>.<span class="id">x</span>, <span class="id">seam</span>.<span class="id">startPoint</span>.<span class="id">y</span>);
 
-<span class="hljs-comment">// after</span>
-seam.<span class="hljs-title function_">draw</span>();
+<span class="cm">// after</span>
+<span class="id">seam</span>.<span class="id">draw</span>();
 </code></pre><p><strong>Example 2 grew up twice.</strong> The fold lines you see above are the
 result of two rounds of the loop. First, dedup: the original sample
 kept shared folds from double-drawing with an ownership rule — each
@@ -1122,23 +1127,23 @@ accordion template turns on — was inexpressible. Knife labels now
 authored <code>as segment(&#39;mountain&#39;)</code> heals into seams labeled
 <code>cut.mountain</code>, the umbrella <code>segmentAll(&#39;cut&#39;)</code> still answers
 everything, and sub-label queries answer one knife at a time.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// original: per-panel ownership rule (~10 lines)</span>
-<span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
-  <span class="hljs-keyword">let</span> mid = seam.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
-  <span class="hljs-keyword">if</span> (mid.<span class="hljs-property">x</span> &gt; panelCenterX) {
-    seam.<span class="hljs-title function_">draw</span>();
+<pre><code class="hljs language-pathogen"><span class="cm">// original: per-panel ownership rule (~10 lines)</span>
+<span class="kw">for</span> (<span class="id">seam</span> <span class="kw">in</span> <span class="id">placed</span>.<span class="id">segmentAll</span>(<span class="str">'cut'</span>)) {
+  <span class="kw">let</span> <span class="id">mid</span> = <span class="id">seam</span>.<span class="id">get</span>(<span class="num">0.5</span>);
+  <span class="kw">if</span> (<span class="id">mid</span>.<span class="id">x</span> &gt; <span class="id">panelCenterX</span>) {
+    <span class="id">seam</span>.<span class="id">draw</span>();
   }
 }
 
-<span class="hljs-comment">// today: each physical seam once, routed by the knife that made it</span>
-<span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> panels.<span class="hljs-title function_">seams</span>()) {
-  <span class="hljs-keyword">if</span> (seam.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut.mountain&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
-    mountainLayer.<span class="hljs-property">apply</span> {
-      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+<span class="cm">// today: each physical seam once, routed by the knife that made it</span>
+<span class="kw">for</span> (<span class="id">seam</span> <span class="kw">in</span> <span class="id">panels</span>.<span class="id">seams</span>()) {
+  <span class="kw">if</span> (<span class="id">seam</span>.<span class="id">segmentAll</span>(<span class="str">'cut.mountain'</span>).<span class="id">length</span> &gt; <span class="num">0</span>) {
+    <span class="id">mountainLayer</span>.<span class="kw">apply</span> {
+      <span class="id">seam</span>.<span class="id">project</span>(<span class="id">originX</span>, <span class="id">originY</span>).<span class="id">draw</span>();
     }
-  } <span class="hljs-keyword">else</span> {
-    valleyLayer.<span class="hljs-property">apply</span> {
-      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+  } <span class="kw">else</span> {
+    <span class="id">valleyLayer</span>.<span class="kw">apply</span> {
+      <span class="id">seam</span>.<span class="id">project</span>(<span class="id">originX</span>, <span class="id">originY</span>).<span class="id">draw</span>();
     }
   }
 }
@@ -1158,13 +1163,13 @@ by tests, and both tab samples dropped the dance — with byte-identical
 output, the strongest proof the code was dead. The purest friction-log
 lesson in the series: the feature existed all along; the fix was a
 sentence, and the sentence was the feature.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: probe, dot product, conditional flip</span>
-<span class="hljs-keyword">let</span> n = seam.<span class="hljs-title function_">normal</span>(tabMid);
-<span class="hljs-keyword">let</span> toCenter = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">cos</span>(n.<span class="hljs-property">angle</span>) * (cx - n.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>) + <span class="hljs-title function_">sin</span>(n.<span class="hljs-property">angle</span>) * (cy - n.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>));
-<span class="hljs-keyword">let</span> outwardAngle = <span class="hljs-title function_">calc</span>(toCenter &gt; <span class="hljs-number">0</span> ? n.<span class="hljs-property">angle</span> + <span class="hljs-title function_">PI</span>() : n.<span class="hljs-property">angle</span>);
+<pre><code class="hljs language-pathogen"><span class="cm">// before: probe, dot product, conditional flip</span>
+<span class="kw">let</span> <span class="id">n</span> = <span class="id">seam</span>.<span class="id">normal</span>(<span class="id">tabMid</span>);
+<span class="kw">let</span> <span class="id">toCenter</span> = <span class="kw">calc</span>(<span class="id">cos</span>(<span class="id">n</span>.<span class="id">angle</span>) * (<span class="id">cx</span> - <span class="id">n</span>.<span class="id">point</span>.<span class="id">x</span>) + <span class="id">sin</span>(<span class="id">n</span>.<span class="id">angle</span>) * (<span class="id">cy</span> - <span class="id">n</span>.<span class="id">point</span>.<span class="id">y</span>));
+<span class="kw">let</span> <span class="id">outwardAngle</span> = <span class="kw">calc</span>(<span class="id">toCenter</span> &gt; <span class="num">0</span> ? <span class="id">n</span>.<span class="id">angle</span> + <span class="id">PI</span>() : <span class="id">n</span>.<span class="id">angle</span>);
 
-<span class="hljs-comment">// after: the normal already faces out of the material</span>
-<span class="hljs-keyword">let</span> outwardAngle = seam.<span class="hljs-title function_">normal</span>(tabMid).<span class="hljs-property">angle</span>;
+<span class="cm">// after: the normal already faces out of the material</span>
+<span class="kw">let</span> <span class="id">outwardAngle</span> = <span class="id">seam</span>.<span class="id">normal</span>(<span class="id">tabMid</span>).<span class="id">angle</span>;
 </code></pre><p><strong>The medallion&#39;s knives stopped doing arithmetic.</strong> Example 6&#39;s three
 knives were originally one cutter block whose strokes chained together
 with hand-computed relative moves — and one of those moves shipped
@@ -1186,12 +1191,12 @@ this series <em>needs</em> them anymore — the sub-labels above already
 dissolved the case that demanded an escape hatch — which is exactly why
 they shipped as query syntax rather than yet another method: the
 grammar was already paid for.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: recover an individual edge by fraction guessing</span>
-<span class="hljs-keyword">let</span> firstArc = run.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0.5</span>);
+<pre><code class="hljs language-pathogen"><span class="cm">// before: recover an individual edge by fraction guessing</span>
+<span class="kw">let</span> <span class="id">firstArc</span> = <span class="id">run</span>.<span class="id">subPath</span>(<span class="num">0</span>, <span class="num">0.5</span>);
 
-<span class="hljs-comment">// after: ask for it</span>
-<span class="hljs-keyword">let</span> arcs = wheel.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim:atomic&#x27;</span>);
-<span class="hljs-keyword">let</span> lastTooth = comb.<span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth:last&#x27;</span>);
+<span class="cm">// after: ask for it</span>
+<span class="kw">let</span> <span class="id">arcs</span> = <span class="id">wheel</span>.<span class="id">segmentAll</span>(<span class="str">'rim:atomic'</span>);
+<span class="kw">let</span> <span class="id">lastTooth</span> = <span class="id">comb</span>.<span class="id">segment</span>(<span class="str">'tooth:last'</span>);
 </code></pre><p><strong>The traps got fences.</strong> Two hazards this series stepped on
 never bit the published samples only because a style guideline banned
 the ammunition. Both are now language rules instead of etiquette.

@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -283,21 +294,21 @@ code.hljs {
 <p>What if the color stops were not positions, but shapes? What if a gradient followed the contour of a path — radiating outward from an organic curve instead of a straight line? This is what <code>TopoGradient</code> does. It takes closed paths at specified elevations and uses signed distance fields to blend between them, producing topographic map-like gradients where the color follows the shape of the terrain.</p>
 <h2>Contours as Color Stops</h2>
 <p>A <code>TopoGradient</code> replaces the linear stop list with a set of contour definitions. Each contour is a closed path placed at an elevation between 0 and 1. The <code>baseColor</code> fills elevation 0 (the &quot;sea level&quot;), and contours define higher-elevation regions with their own colors.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> outer = @{
-  m <span class="hljs-number">0</span> <span class="hljs-number">0</span>
-  c <span class="hljs-number">120</span> -<span class="hljs-number">50</span> <span class="hljs-number">260</span> <span class="hljs-number">30</span> <span class="hljs-number">280</span> <span class="hljs-number">120</span>
-  c -<span class="hljs-number">20</span> <span class="hljs-number">120</span> -<span class="hljs-number">260</span> <span class="hljs-number">130</span> -<span class="hljs-number">280</span> -<span class="hljs-number">120</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">outer</span> = @{
+  m 0 0
+  c 120 -50 260 30 280 120
+  c -20 120 -260 130 -280 -120
   z
 };
 
-<span class="hljs-keyword">let</span> topo = <span class="hljs-title class_">TopoGradient</span>(<span class="hljs-string">&#x27;terrain&#x27;</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) {|g|
-  g.<span class="hljs-title function_">contour</span>(outer.<span class="hljs-title function_">project</span>(<span class="hljs-number">60</span>, <span class="hljs-number">60</span>), <span class="hljs-number">0.25</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9e79f&#x27;</span>))
-  g.<span class="hljs-title function_">contour</span>(mid.<span class="hljs-title function_">project</span>(<span class="hljs-number">90</span>, <span class="hljs-number">90</span>),   <span class="hljs-number">0.5</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#27ae60&#x27;</span>))
-  g.<span class="hljs-title function_">contour</span>(peak.<span class="hljs-title function_">project</span>(<span class="hljs-number">180</span>, <span class="hljs-number">170</span>), <span class="hljs-number">0.8</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#6e2c00&#x27;</span>))
+<span class="kw">let</span> <span class="id">topo</span> = <span class="id">TopoGradient</span>(<span class="str">'terrain'</span>, <span class="num">400</span>, <span class="num">400</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">outer</span>.<span class="id">project</span>(<span class="num">60</span>, <span class="num">60</span>), <span class="num">0.25</span>, <span class="id">Color</span>(<span class="str">'#f9e79f'</span>))
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">mid</span>.<span class="id">project</span>(<span class="num">90</span>, <span class="num">90</span>),   <span class="num">0.5</span>,  <span class="id">Color</span>(<span class="str">'#27ae60'</span>))
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">peak</span>.<span class="id">project</span>(<span class="num">180</span>, <span class="num">170</span>), <span class="num">0.8</span>, <span class="id">Color</span>(<span class="str">'#6e2c00'</span>))
 };
-topo.<span class="hljs-property">baseColor</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1a5276&#x27;</span>);
-topo.<span class="hljs-property">easing</span> = <span class="hljs-string">&#x27;smoothstep&#x27;</span>;
-topo.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">topo</span>.<span class="id">baseColor</span> = <span class="id">Color</span>(<span class="str">'#1a5276'</span>);
+<span class="id">topo</span>.<span class="id">easing</span> = <span class="str">'smoothstep'</span>;
+<span class="id">topo</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>Contour paths are defined as path variables using the <code>@{ ... }</code> syntax and positioned using <code>.project(x, y)</code>. The <code>.contour()</code> method takes three arguments: a projected path, an elevation scalar, and a <code>Color</code>. The path must be closed (ending with <code>z</code>).</p>
 <p>The elevation value determines where this contour sits in the gradient&#39;s range. At elevation 0.0, the <code>baseColor</code> applies. At 0.25, the first contour&#39;s color takes over. Between contours, the renderer interpolates based on the signed distance from each contour boundary.</p>
 <p><mini-workspace code-open caption="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths">
@@ -373,14 +384,14 @@ scene.append(bg, labels, title);
 </mini-workspace></p>
 <h2>Multiple Peaks</h2>
 <p>Contours do not need to be nested. Two separate closed paths at the same elevation create independent features — like two islands in an ocean. The distance field solver treats each contour independently, producing smooth gradients around each shape that merge naturally in the shared base region.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> topo = <span class="hljs-title class_">TopoGradient</span>(<span class="hljs-string">&#x27;twins&#x27;</span>, <span class="hljs-number">500</span>, <span class="hljs-number">350</span>) {|g|
-  <span class="hljs-comment">// Left peak — warm tones</span>
-  g.<span class="hljs-title function_">contour</span>(island.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">60</span>),  <span class="hljs-number">0.3</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9e79f&#x27;</span>))
-  g.<span class="hljs-title function_">contour</span>(summit.<span class="hljs-title function_">project</span>(<span class="hljs-number">130</span>, <span class="hljs-number">120</span>), <span class="hljs-number">0.7</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e74c3c&#x27;</span>))
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">topo</span> = <span class="id">TopoGradient</span>(<span class="str">'twins'</span>, <span class="num">500</span>, <span class="num">350</span>) {|<span class="id">g</span>|
+  <span class="cm">// Left peak — warm tones</span>
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">island</span>.<span class="id">project</span>(<span class="num">30</span>, <span class="num">60</span>),  <span class="num">0.3</span>, <span class="id">Color</span>(<span class="str">'#f9e79f'</span>))
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">summit</span>.<span class="id">project</span>(<span class="num">130</span>, <span class="num">120</span>), <span class="num">0.7</span>, <span class="id">Color</span>(<span class="str">'#e74c3c'</span>))
 
-  <span class="hljs-comment">// Right peak — cool tones</span>
-  g.<span class="hljs-title function_">contour</span>(island.<span class="hljs-title function_">project</span>(<span class="hljs-number">260</span>, <span class="hljs-number">80</span>),  <span class="hljs-number">0.3</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#aed9e0&#x27;</span>))
-  g.<span class="hljs-title function_">contour</span>(summit.<span class="hljs-title function_">project</span>(<span class="hljs-number">360</span>, <span class="hljs-number">140</span>), <span class="hljs-number">0.7</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#5e60ce&#x27;</span>))
+  <span class="cm">// Right peak — cool tones</span>
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">island</span>.<span class="id">project</span>(<span class="num">260</span>, <span class="num">80</span>),  <span class="num">0.3</span>, <span class="id">Color</span>(<span class="str">'#aed9e0'</span>))
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">summit</span>.<span class="id">project</span>(<span class="num">360</span>, <span class="num">140</span>), <span class="num">0.7</span>, <span class="id">Color</span>(<span class="str">'#5e60ce'</span>))
 };
 </code></pre><p>The twin peaks below use the same base shape (an organic blob) projected to two different positions. Each peak has its own color palette — warm tones on the left, cool on the right — but shares the same dark ocean base color.</p>
 <p><mini-workspace caption="Two independent peaks at the same elevation — warm and cool palettes">
@@ -457,8 +468,8 @@ scene.append(bg, labels, title);
 <h3>Laplace Solver</h3>
 <p>The Laplace method treats contour elevations as boundary conditions and solves Laplace&#39;s equation using Jacobi iteration. The result is a smooth potential field — like temperature distribution on a surface where each contour is held at a fixed value.</p>
 <p>Where the distance method produces sharp, contour-following bands, the Laplace solver produces organic, flowing transitions that smooth out geometric details. It also handles concave shapes and intersecting contours more naturally.</p>
-<pre><code class="hljs language-pathogen">topo.<span class="hljs-property">method</span> = <span class="hljs-string">&#x27;laplace&#x27;</span>;
-topo.<span class="hljs-property">iterations</span> = <span class="hljs-number">300</span>;
+<pre><code class="hljs language-pathogen"><span class="id">topo</span>.<span class="id">method</span> = <span class="str">'laplace'</span>;
+<span class="id">topo</span>.<span class="id">iterations</span> = <span class="num">300</span>;
 </code></pre><p>The <code>iterations</code> property controls convergence (default 200, max 2000). Higher values produce smoother results at the cost of render time. For most cases, 200-400 iterations are sufficient.</p>
 <p><mini-workspace code-open caption="Same three contours — distance (concentric) vs Laplace (smooth potential field)">
   <code>define ViewBox(0, 0, 500, 300);

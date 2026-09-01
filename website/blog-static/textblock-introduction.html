@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -294,10 +305,10 @@ code.hljs {
 <p>TextBlock solves this by making text a measurable, positionable value — the same compose-then-place pattern that <a href="/blog/pathblock-introduction">PathBlock</a> brought to shapes. You compose text at relative coordinates, measure its bounding box before placing it, project it into position using polar coordinates and semantic anchors, and check for collisions against other labels and geometry. The result is label placement that adapts automatically when anything changes.</p>
 <h2>What Is a TextBlock?</h2>
 <p>A TextBlock is a composition of text elements at relative coordinates. You create one with the <code>&amp;{ }</code> sigil — the text counterpart to PathBlock&#39;s <code>@{ }</code> — and the elements inside are positioned relative to an implicit <code>(0, 0)</code> origin. Like a PathBlock, the TextBlock doesn&#39;t draw anything on its own. It&#39;s a value: a template holding text content and relative positions, waiting to be styled, measured, and placed. See the full <a href="/docs#text-block-syntax">TextBlock syntax</a> documentation for details.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Server Node`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`Status: online`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">48</span>)<span class="hljs-string">`Latency: 12ms`</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Server Node`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">30</span>)`Status: online`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">48</span>)`Latency: 12ms`
 };
 </code></pre><p>Each <code>text(x, y)</code> statement positions a text element relative to the block&#39;s origin. The backtick-delimited content follows the coordinate pair. You can have as many <code>text()</code> statements as you need — a single-line label, a multi-line card, a table of values.</p>
 <p>The anatomy diagram below shows how this works in practice. A three-line TextBlock is defined once, then drawn at two different positions using <code>.drawTo()</code>. The green crosshairs mark each placement&#39;s origin. The dashed amber rectangles show the bounding box — measured once from the TextBlock value, valid at both locations. The arrow connecting the placements reinforces the key idea: one definition, many positions.</p>
@@ -524,11 +535,11 @@ legend_group.append(leg_o, leg_b, leg);
 </mini-workspace></p>
 <p>The coordinate model mirrors SVG&#39;s <code>&lt;text&gt;</code> element: <code>y</code> is the baseline position, so <code>text(0, 14)</code> places the first baseline 14 units below the origin. This means the text&#39;s visible pixels extend <em>above</em> that y coordinate, not below it.</p>
 <p>TextBlocks also support <a href="/docs#text-block-syntax">control flow</a> — <code>let</code>, <code>for</code>, and <code>if</code> work inside the block just as they do elsewhere in Pathogen:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> items = [<span class="hljs-string">&quot;CPU: 42%&quot;</span>, <span class="hljs-string">&quot;MEM: 1.2G&quot;</span>, <span class="hljs-string">&quot;NET: 88Mb/s&quot;</span>];
-<span class="hljs-keyword">let</span> card = &amp;{
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Dashboard`</span>
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.2</span>) {
-    <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-title function_">calc</span>(<span class="hljs-number">30</span> + i * <span class="hljs-number">14</span>))<span class="hljs-string">`<span class="hljs-subst">${items[i]}</span>`</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">items</span> = [<span class="str">"CPU: 42%"</span>, <span class="str">"MEM: 1.2G"</span>, <span class="str">"NET: 88Mb/s"</span>];
+<span class="kw">let</span> <span class="id">card</span> = &amp;{
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Dashboard`
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">2</span>) {
+    <span class="kw">text</span>(<span class="num">0</span>, <span class="kw">calc</span>(<span class="num">30</span> + <span class="id">i</span> * <span class="num">14</span>))`${<span class="id">items</span>[<span class="id">i</span>]}`
   }
 };
 </code></pre><p>Notice the parallel with PathBlock: <code>@{ h 40 v 20 h -40 z }</code> captures relative path commands, while <code>&amp;{ text(0, 14)\</code>Hello` }` captures relative text elements. Both are inert values until you project or draw them. Both carry metadata (bounds, element count) you can query before committing to a position.</p>
@@ -540,29 +551,29 @@ legend_group.append(leg_o, leg_b, leg);
 <li><strong><code>.polarProject(cx, cy, angle, distance, anchor)</code></strong> — project along a polar vector with anchor alignment. We&#39;ll cover this in detail below.</li>
 </ul>
 <p>TextBlocks emit to TextLayers, which are the text counterpart to PathLayers. You define one with <code>define TextLayer(&#39;name&#39;) ${ styles }</code> and activate it with <code>layer(&#39;name&#39;).apply { ... }</code>:</p>
-<pre><code class="hljs language-pathogen">define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>; <span class="hljs-attr">fill</span>: #<span class="hljs-number">333</span>; }
+<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${ <span class="pr">font-size</span>: <span class="num">12</span>; <span class="pr">fill</span>: <span class="str">#333</span>; }
 
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
-  label.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">100</span>);
+<span class="kw">layer</span>(<span class="str">'labels'</span>).<span class="kw">apply</span> {
+  <span class="id">label</span>.<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>);
 }
 </code></pre><p>This layer model keeps text and path geometry in separate SVG elements, which matters for rendering order, styling, and accessibility.</p>
 <h2>Style Merge with &lt;&lt;</h2>
 <p>A TextBlock starts unstyled — it has no font-size, no font-family, no fill color. The <code>&lt;&lt;</code> operator merges a <a href="/docs#text-block-style-merging">style block</a> into the TextBlock, producing a new styled TextBlock with block-level styles that apply to all elements unless overridden at the element level:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> info = &amp;{
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Node Status`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">30</span>)<span class="hljs-string">`CPU: 42%`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">44</span>)<span class="hljs-string">`MEM: 1.2G`</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">info</span> = &amp;{
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Node Status`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">30</span>)`CPU: 42%`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">44</span>)`MEM: 1.2G`
 };
 
-<span class="hljs-keyword">let</span> styled = info &lt;&lt; ${ font-<span class="hljs-attr">family</span>: monospace; font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>; };
+<span class="kw">let</span> <span class="id">styled</span> = <span class="id">info</span> &lt;&lt; ${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 </code></pre><p>The power here is that <code>info</code> remains unstyled. You can merge different styles into the same TextBlock to produce different presentations — and the bounding box adapts to each one:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> mono_sm = ${ font-<span class="hljs-attr">family</span>: monospace; font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; };
-<span class="hljs-keyword">let</span> mono_lg = ${ font-<span class="hljs-attr">family</span>: monospace; font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
-<span class="hljs-keyword">let</span> sans    = ${ font-<span class="hljs-attr">family</span>: sans-serif; font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">mono_sm</span> = ${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">10</span>; };
+<span class="kw">let</span> <span class="id">mono_lg</span> = ${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">14</span>; };
+<span class="kw">let</span> <span class="id">sans</span>    = ${ <span class="pr">font-family</span>: <span class="id">sans-serif</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 
-<span class="hljs-keyword">let</span> bb1 = (info &lt;&lt; mono_sm).<span class="hljs-title function_">boundingBox</span>();  <span class="hljs-comment">// compact</span>
-<span class="hljs-keyword">let</span> bb2 = (info &lt;&lt; mono_lg).<span class="hljs-title function_">boundingBox</span>();  <span class="hljs-comment">// wider, taller</span>
-<span class="hljs-keyword">let</span> bb3 = (info &lt;&lt; sans).<span class="hljs-title function_">boundingBox</span>();     <span class="hljs-comment">// different widths</span>
+<span class="kw">let</span> <span class="id">bb1</span> = (<span class="id">info</span> &lt;&lt; <span class="id">mono_sm</span>).<span class="id">boundingBox</span>();  <span class="cm">// compact</span>
+<span class="kw">let</span> <span class="id">bb2</span> = (<span class="id">info</span> &lt;&lt; <span class="id">mono_lg</span>).<span class="id">boundingBox</span>();  <span class="cm">// wider, taller</span>
+<span class="kw">let</span> <span class="id">bb3</span> = (<span class="id">info</span> &lt;&lt; <span class="id">sans</span>).<span class="id">boundingBox</span>();     <span class="cm">// different widths</span>
 </code></pre><p>This separation of content from presentation is what makes TextBlock composable. Define the text structure once, apply different styles for different contexts, measure for layout, then place. The <code>&lt;&lt;</code> operator does not mutate the original — it returns a new value with the styles merged in, leaving the original available for reuse.</p>
 <p>The demo below shows the same three-line TextBlock rendered with three different style blocks. The dashed outlines are the bounding boxes — each one reflects the actual measured dimensions for that style variant.</p>
 <p><mini-workspace caption="One TextBlock, three styles — bounding box adapts to each font configuration">
@@ -749,10 +760,10 @@ dims.apply {
 <p>The dimension annotations at the bottom of each variant confirm what the code reports: same content, different measurements. A monospace 10px version is compact; monospace 14px is proportionally larger; sans-serif 12px has different character widths entirely. The <code>&lt;&lt;</code> operator and <code>.boundingBox()</code> handle all of this transparently.</p>
 <h2>Measuring Before You Place</h2>
 <p>The central insight of TextBlock is that you can measure text <em>before</em> deciding where to put it. The <a href="/docs#text-block-methods"><code>.boundingBox()</code></a> method returns an object with <code>x</code>, <code>y</code>, <code>width</code>, and <code>height</code> — the estimated bounding rectangle of all text elements in the block. Using the <code>&lt;&lt;</code> operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Hello World`</span> } &lt;&lt; ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
-<span class="hljs-keyword">let</span> bb = label.<span class="hljs-title function_">boundingBox</span>();
-<span class="hljs-title function_">log</span>(bb.<span class="hljs-property">width</span>);   <span class="hljs-comment">// estimated pixel width</span>
-<span class="hljs-title function_">log</span>(bb.<span class="hljs-property">height</span>);  <span class="hljs-comment">// fontSize * 1.2 (line height)</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Hello World` } &lt;&lt; ${ <span class="pr">font-size</span>: <span class="num">14</span>; };
+<span class="kw">let</span> <span class="id">bb</span> = <span class="id">label</span>.<span class="id">boundingBox</span>();
+<span class="id">log</span>(<span class="id">bb</span>.<span class="id">width</span>);   <span class="cm">// estimated pixel width</span>
+<span class="id">log</span>(<span class="id">bb</span>.<span class="id">height</span>);  <span class="cm">// fontSize * 1.2 (line height)</span>
 </code></pre><p>This measurement drives layout decisions. Need to center a label above a shape? Subtract half the width. Need to check whether two labels overlap? Compare their bounding boxes. Need to draw a background rectangle behind text? Use the bbox dimensions directly. Need to verify that a label fits inside a container? Compare bbox width to the container&#39;s width.</p>
 <p>The measurement works on both TextBlockValues (relative coordinates) and ProjectedTextValues (absolute coordinates). On a TextBlockValue, the bbox is relative to the origin — just like measuring a PathBlock&#39;s <code>.bounds</code> before drawing. On a ProjectedTextValue, the bbox reflects the absolute position.</p>
 <p>TextBlock computes these estimates using built-in <a href="/docs#text-block-font-metrics">character width tables</a> that cover three font categories:</p>
@@ -936,10 +947,10 @@ subtitle.apply { text(30, 44)`.boundingBox() returns { x, y, width, height }` }
 <h2>Polar Projection with BBoxAnchor</h2>
 <p>Placing labels around a shape — node diagrams, compass roses, radial charts — is one of the most common annotation patterns in technical SVGs. The naive approach is to compute <code>x</code> and <code>y</code> offsets by hand, adjusting for text width and height at each position. A label to the right of a circle needs <code>x = centerX + radius + gap</code>; a label above needs <code>y = centerY - radius - textHeight</code>. Each direction requires different math, and every label with different content needs a different width offset. This is tedious, error-prone, and breaks the moment the text content or font size changes.</p>
 <p><a href="/docs#text-block-polar-projection"><code>.polarProject()</code></a> replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Node A`</span> } &lt;&lt; ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Node A` } &lt;&lt; ${ <span class="pr">font-size</span>: <span class="num">14</span>; };
 
-<span class="hljs-comment">// Place 80px from center at 45 degrees, anchored at center-left</span>
-<span class="hljs-keyword">let</span> placed = label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>, 45deg, <span class="hljs-number">80</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>);
+<span class="cm">// Place 80px from center at 45 degrees, anchored at center-left</span>
+<span class="kw">let</span> <span class="id">placed</span> = <span class="id">label</span>.<span class="id">polarProject</span>(<span class="num">100</span>, <span class="num">100</span>, <span class="num">45deg</span>, <span class="num">80</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>);
 </code></pre><p>The first two arguments are the center point (the thing you&#39;re labeling). The angle and distance describe <em>where</em> the label goes in polar coordinates. The fifth argument — the <a href="/docs#text-block-bboxanchor-enum">BBoxAnchor</a> — is the key innovation: it specifies which point of the text&#39;s bounding box lands on the target location.</p>
 <p>The nine anchor positions form a grid over the bounding box:</p>
 <pre><code class="hljs">BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
@@ -1131,51 +1142,51 @@ code_group.append(code, kw);
   <img src="/blog/samples/post11/polar-compass.svg" alt="Polar projection — 8 labels around a hexagon with directional BBoxAnchor alignment" loading="lazy">
 </mini-workspace></p>
 <p>The code for each label is minimal — a one-line TextBlock, a <code>polarProject()</code> call, and a <code>draw()</code>. The loop at the center of the demo iterates through names and anchors in parallel:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
-  <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">0.7854</span> - <span class="hljs-number">1.5708</span>);
-  <span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">11</span>)<span class="hljs-string">`<span class="hljs-subst">${names[i]}</span>`</span> } &lt;&lt; label_styles;
-  <span class="hljs-keyword">let</span> proj = label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, angle, <span class="hljs-number">160</span>, anchors[i]);
-  proj.<span class="hljs-title function_">draw</span>();
+<pre><code class="hljs language-pathogen"><span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">7</span>) {
+  <span class="kw">let</span> <span class="id">angle</span> = <span class="kw">calc</span>(<span class="id">i</span> * <span class="num">0.7854</span> - <span class="num">1.5708</span>);
+  <span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">11</span>)`${<span class="id">names</span>[<span class="id">i</span>]}` } &lt;&lt; <span class="id">label_styles</span>;
+  <span class="kw">let</span> <span class="id">proj</span> = <span class="id">label</span>.<span class="id">polarProject</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="id">angle</span>, <span class="num">160</span>, <span class="id">anchors</span>[<span class="id">i</span>]);
+  <span class="id">proj</span>.<span class="id">draw</span>();
 }
 </code></pre><p>No magic offsets. No per-label width calculations. Change the label text, the font size, or the radius, and the layout adapts. The <code>polarProject()</code> method handles the trigonometry internally — computing <code>cos(angle) * distance</code> and <code>sin(angle) * distance</code> for the target point, then shifting the text so the specified anchor point lands exactly there.</p>
 <p>This matters because label placement around shapes is combinatorial. A hexagon with 6 vertex labels, 6 edge labels, and a center label requires 13 placements. Doing those with manual offsets means 26 magic numbers (x and y for each). With <code>polarProject()</code>, it&#39;s 13 calls with angles, one shared radius, and the appropriate anchors. When you add a seventh vertex to the polygon, the labels redistribute automatically.</p>
 <h2>Collision Avoidance</h2>
 <p>Placing labels one at a time works until two of them end up on top of each other. Scatter plots, node graphs, and dense diagrams inevitably produce clusters where data points are close together and naive placement causes overlaps. A label that&#39;s perfectly clear in one dataset collides with its neighbor when the data changes. This is the label placement problem — well-studied in cartography and information visualization — and TextBlock brings a pragmatic solution directly into the language.</p>
 <p>TextBlock&#39;s <a href="/docs#text-block-intersection-detection"><code>.intersects()</code></a> method detects collisions using axis-aligned bounding box (AABB) overlap testing.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label1 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`First`</span> } &lt;&lt; styles).<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>);
-<span class="hljs-keyword">let</span> label2 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Second`</span> } &lt;&lt; styles).<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label1</span> = (&amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`First` } &lt;&lt; <span class="id">styles</span>).<span class="id">project</span>(<span class="num">50</span>, <span class="num">50</span>);
+<span class="kw">let</span> <span class="id">label2</span> = (&amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Second` } &lt;&lt; <span class="id">styles</span>).<span class="id">project</span>(<span class="num">55</span>, <span class="num">55</span>);
 
-<span class="hljs-keyword">if</span> (label1.<span class="hljs-title function_">intersects</span>(label2)) {
-  <span class="hljs-comment">// Labels overlap — try a different position</span>
+<span class="kw">if</span> (<span class="id">label1</span>.<span class="id">intersects</span>(<span class="id">label2</span>)) {
+  <span class="cm">// Labels overlap — try a different position</span>
 }
 </code></pre><p><code>.intersects()</code> accepts a ProjectedTextValue (for text-vs-text checks), a ProjectedPathValue (for text-vs-shape checks), or a plain object with <code>{x, y, width, height}</code> (for text-vs-rectangle checks). The test is fast — it&#39;s a simple AABB comparison — which makes it practical to run in a loop over multiple candidate positions.</p>
 <p>The simplest collision check is a single-direction attempt: project the label in your preferred direction and test whether it overlaps anything already placed:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> candidate = label.<span class="hljs-title function_">polarProject</span>(
-  pt.<span class="hljs-property">x</span>, pt.<span class="hljs-property">y</span>, <span class="hljs-number">0</span>, dist, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">candidate</span> = <span class="id">label</span>.<span class="id">polarProject</span>(
+  <span class="id">pt</span>.<span class="id">x</span>, <span class="id">pt</span>.<span class="id">y</span>, <span class="num">0</span>, <span class="id">dist</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>
 );
-<span class="hljs-comment">// (dot-position checks omitted — see full sample)</span>
-<span class="hljs-keyword">if</span> (!candidate.<span class="hljs-title function_">intersects</span>(prevLabel)) {
-  candidate.<span class="hljs-title function_">draw</span>();
+<span class="cm">// (dot-position checks omitted — see full sample)</span>
+<span class="kw">if</span> (!<span class="id">candidate</span>.<span class="id">intersects</span>(<span class="id">prevLabel</span>)) {
+  <span class="id">candidate</span>.<span class="id">draw</span>();
 }
 </code></pre><p>When a single direction isn&#39;t enough, expand to an 8-angle search that tries each compass direction in order and picks the first collision-free position:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> try_anchors = [
-  <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">BottomLeft</span>,
-  <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Bottom</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">BottomRight</span>,
-  <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Right</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">TopRight</span>,
-  <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Top</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">TopLeft</span>,
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">try_anchors</span> = [
+  <span class="id">BBoxAnchor</span>.<span class="id">Left</span>, <span class="id">BBoxAnchor</span>.<span class="id">BottomLeft</span>,
+  <span class="id">BBoxAnchor</span>.<span class="id">Bottom</span>, <span class="id">BBoxAnchor</span>.<span class="id">BottomRight</span>,
+  <span class="id">BBoxAnchor</span>.<span class="id">Right</span>, <span class="id">BBoxAnchor</span>.<span class="id">TopRight</span>,
+  <span class="id">BBoxAnchor</span>.<span class="id">Top</span>, <span class="id">BBoxAnchor</span>.<span class="id">TopLeft</span>,
 ];
 
-<span class="hljs-keyword">for</span> (ai <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
-  <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(ai * <span class="hljs-number">0.7854</span>);
-  <span class="hljs-keyword">let</span> candidate = label.<span class="hljs-title function_">polarProject</span>(
-    pt.<span class="hljs-property">x</span>, pt.<span class="hljs-property">y</span>, angle, dist, try_anchors[ai]
+<span class="kw">for</span> (<span class="id">ai</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">7</span>) {
+  <span class="kw">let</span> <span class="id">angle</span> = <span class="kw">calc</span>(<span class="id">ai</span> * <span class="num">0.7854</span>);
+  <span class="kw">let</span> <span class="id">candidate</span> = <span class="id">label</span>.<span class="id">polarProject</span>(
+    <span class="id">pt</span>.<span class="id">x</span>, <span class="id">pt</span>.<span class="id">y</span>, <span class="id">angle</span>, <span class="id">dist</span>, <span class="id">try_anchors</span>[<span class="id">ai</span>]
   );
-  <span class="hljs-comment">// (dot-position checks omitted — see full sample)</span>
-  <span class="hljs-keyword">let</span> ok = <span class="hljs-literal">true</span>;
-  <span class="hljs-keyword">for</span> (prev <span class="hljs-keyword">in</span> placed) {
-    <span class="hljs-keyword">if</span> (candidate.<span class="hljs-title function_">intersects</span>(prev)) { ok = <span class="hljs-literal">false</span>; }
+  <span class="cm">// (dot-position checks omitted — see full sample)</span>
+  <span class="kw">let</span> <span class="id">ok</span> = <span class="num">true</span>;
+  <span class="kw">for</span> (<span class="id">prev</span> <span class="kw">in</span> <span class="id">placed</span>) {
+    <span class="kw">if</span> (<span class="id">candidate</span>.<span class="id">intersects</span>(<span class="id">prev</span>)) { <span class="id">ok</span> = <span class="num">false</span>; }
   }
-  <span class="hljs-keyword">if</span> (ok) { best = candidate; found = <span class="hljs-literal">true</span>; }
+  <span class="kw">if</span> (<span class="id">ok</span>) { <span class="id">best</span> = <span class="id">candidate</span>; <span class="id">found</span> = <span class="num">true</span>; }
 }
 </code></pre><p>Each angle is paired with an anchor that faces back toward the center point. This means the label always radiates outward, regardless of which direction it ends up. The search stops at the first collision-free candidate, so labels near the top of the list get their preferred direction (right, then bottom-left, then bottom, and so on).</p>
 <p>The demo below shows the full pattern in action: a scatter of 8 data points, labeled in two ways. The left panel uses naive fixed-offset placement — every label is shifted right of its point by 8 pixels. Three clusters produce visible collisions, highlighted with red dashed boxes. The right panel uses the 8-angle search above. Study the demo source to see how the complete loop integrates with the data point geometry checks.</p>
@@ -1526,17 +1537,17 @@ leg.apply {
 <p>The <code>.intersects()</code> check also works against path geometry and plain rectangles, not just other TextBlocks. This means you can verify that labels don&#39;t overlap shapes, borders, axis lines, or any other element in the diagram. The collision-avoidance demo checks against both previously placed labels <em>and</em> the data point circles themselves, ensuring labels don&#39;t obscure the data they annotate.</p>
 <h2>Magic Numbers vs Semantic Anchors</h2>
 <p>To see why <code>polarProject()</code> matters, compare the two approaches side by side. The left panel places four cardinal labels around a hexagon using manual offset arithmetic:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// Manual: compute x from center minus half text width</span>
-<span class="hljs-title function_">text</span>(<span class="hljs-number">133</span>, <span class="hljs-number">138</span>)<span class="hljs-string">`Top`</span>     <span class="hljs-comment">// 150 - 17 = 133 (how wide is &quot;Top&quot;?)</span>
-<span class="hljs-title function_">text</span>(<span class="hljs-number">218</span>, <span class="hljs-number">213</span>)<span class="hljs-string">`Right`</span>   <span class="hljs-comment">// 210 + 8 = 218 (what&#x27;s the gap?)</span>
-<span class="hljs-title function_">text</span>(<span class="hljs-number">124</span>, <span class="hljs-number">290</span>)<span class="hljs-string">`Bottom`</span>  <span class="hljs-comment">// 150 - 26 = 124 (different width!)</span>
-<span class="hljs-title function_">text</span>(<span class="hljs-number">57</span>, <span class="hljs-number">213</span>)<span class="hljs-string">`Left`</span>     <span class="hljs-comment">// 90 - 38 = 52 (why 38?)</span>
+<pre><code class="hljs language-pathogen"><span class="cm">// Manual: compute x from center minus half text width</span>
+<span class="kw">text</span>(<span class="num">133</span>, <span class="num">138</span>)`Top`     <span class="cm">// 150 - 17 = 133 (how wide is "Top"?)</span>
+<span class="kw">text</span>(<span class="num">218</span>, <span class="num">213</span>)`Right`   <span class="cm">// 210 + 8 = 218 (what's the gap?)</span>
+<span class="kw">text</span>(<span class="num">124</span>, <span class="num">290</span>)`Bottom`  <span class="cm">// 150 - 26 = 124 (different width!)</span>
+<span class="kw">text</span>(<span class="num">57</span>, <span class="num">213</span>)`Left`     <span class="cm">// 90 - 38 = 52 (why 38?)</span>
 </code></pre><p>Every position is a magic number derived from the text content, the font metrics, and the shape geometry. Change the text from &quot;Top&quot; to &quot;North&quot; and the offset is wrong. Change the font size and every number needs recalculation.</p>
 <p>The right panel uses <code>polarProject()</code>:</p>
-<pre><code class="hljs language-pathogen">top_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, -<span class="hljs-variable constant_">PI</span>/<span class="hljs-number">2</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Bottom</span>)
-right_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, <span class="hljs-number">0</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>)
-bottom_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, <span class="hljs-variable constant_">PI</span>/<span class="hljs-number">2</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Top</span>)
-left_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, <span class="hljs-variable constant_">PI</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Right</span>)
+<pre><code class="hljs language-pathogen"><span class="id">top_label</span>.<span class="id">polarProject</span>(<span class="num">450</span>, <span class="num">210</span>, -<span class="id">PI</span>/<span class="num">2</span>, <span class="num">75</span>, <span class="id">BBoxAnchor</span>.<span class="id">Bottom</span>)
+<span class="id">right_label</span>.<span class="id">polarProject</span>(<span class="num">450</span>, <span class="num">210</span>, <span class="num">0</span>, <span class="num">75</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>)
+<span class="id">bottom_label</span>.<span class="id">polarProject</span>(<span class="num">450</span>, <span class="num">210</span>, <span class="id">PI</span>/<span class="num">2</span>, <span class="num">75</span>, <span class="id">BBoxAnchor</span>.<span class="id">Top</span>)
+<span class="id">left_label</span>.<span class="id">polarProject</span>(<span class="num">450</span>, <span class="num">210</span>, <span class="id">PI</span>, <span class="num">75</span>, <span class="id">BBoxAnchor</span>.<span class="id">Right</span>)
 </code></pre><p>Four calls, four directions, one radius. The text content doesn&#39;t appear in the positioning logic at all — it&#39;s fully decoupled. The demo below makes the contrast visual: red annotations on the left expose the fragile arithmetic; green annotations on the right show the semantic anchor names.</p>
 <p><mini-workspace caption="Manual offset math (fragile) vs polarProject with BBoxAnchor (adaptive)">
   <code>define ViewBox(0, 0, 600, 400);
@@ -1780,25 +1791,25 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 <p>The manual approach isn&#39;t just more work — it&#39;s more <em>fragile</em> work. Every time the diagram&#39;s parameters change (and in parametric SVGs, that&#39;s the whole point), the magic numbers need manual recalculation. <code>polarProject()</code> makes the positioning logic parameter-free with respect to text content.</p>
 <h2>Putting It Together</h2>
 <p>TextBlock follows the same lifecycle as PathBlock: <strong>compose, measure, position, draw</strong>. Here&#39;s the complete pipeline in one snippet:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// 1. Compose — relative coordinates, no styles yet</span>
-<span class="hljs-keyword">let</span> label = &amp;{
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">`Temperature`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">28</span>)<span class="hljs-string">`23.4 C`</span>
+<pre><code class="hljs language-pathogen"><span class="cm">// 1. Compose — relative coordinates, no styles yet</span>
+<span class="kw">let</span> <span class="id">label</span> = &amp;{
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Temperature`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">28</span>)`23.4 C`
 };
 
-<span class="hljs-comment">// 2. Style — merge font and color properties</span>
-<span class="hljs-keyword">let</span> styled = label &lt;&lt; ${ font-<span class="hljs-attr">family</span>: monospace; font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>; };
+<span class="cm">// 2. Style — merge font and color properties</span>
+<span class="kw">let</span> <span class="id">styled</span> = <span class="id">label</span> &lt;&lt; ${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 
-<span class="hljs-comment">// 3. Measure — get bounding box before placing</span>
-<span class="hljs-keyword">let</span> bb = styled.<span class="hljs-title function_">boundingBox</span>();
+<span class="cm">// 3. Measure — get bounding box before placing</span>
+<span class="kw">let</span> <span class="id">bb</span> = <span class="id">styled</span>.<span class="id">boundingBox</span>();
 
-<span class="hljs-comment">// 4. Position — project with collision awareness</span>
-<span class="hljs-keyword">let</span> placed = styled.<span class="hljs-title function_">polarProject</span>(cx, cy, angle, radius, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>);
+<span class="cm">// 4. Position — project with collision awareness</span>
+<span class="kw">let</span> <span class="id">placed</span> = <span class="id">styled</span>.<span class="id">polarProject</span>(<span class="id">cx</span>, <span class="id">cy</span>, <span class="id">angle</span>, <span class="id">radius</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>);
 
-<span class="hljs-comment">// 5. Verify — check for overlaps</span>
-<span class="hljs-keyword">if</span> (!placed.<span class="hljs-title function_">intersects</span>(otherLabel)) {
-  <span class="hljs-comment">// 6. Draw — emit to the active TextLayer</span>
-  placed.<span class="hljs-title function_">draw</span>();
+<span class="cm">// 5. Verify — check for overlaps</span>
+<span class="kw">if</span> (!<span class="id">placed</span>.<span class="id">intersects</span>(<span class="id">otherLabel</span>)) {
+  <span class="cm">// 6. Draw — emit to the active TextLayer</span>
+  <span class="id">placed</span>.<span class="id">draw</span>();
 }
 </code></pre><p>Each step is a pure value transformation until <code>.draw()</code>. You can inspect, branch on, and iterate over the intermediate results. This pipeline means text is no longer an afterthought bolted onto a diagram. It&#39;s a first-class participant in the layout — queryable, testable, and automatically adaptive. Labels can respond to the geometry they annotate instead of being hard-coded beside it.</p>
 <p>The TextBlock API surface is small by design — a handful of methods that compose cleanly. For a deeper look at each one, see the <a href="/docs#text-block-syntax">TextBlock documentation</a>, which covers all <a href="/docs#text-block-methods">methods</a>, <a href="/docs#text-block-properties">properties</a>, <a href="/docs#text-block-style-merging">style merging</a>, <a href="/docs#text-block-bboxanchor-enum">BBoxAnchor</a>, <a href="/docs#text-block-font-metrics">font metrics</a>, <a href="/docs#text-block-polar-projection">polar projection</a>, and <a href="/docs#text-block-intersection-detection">intersection detection</a>.</p>

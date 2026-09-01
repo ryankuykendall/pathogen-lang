@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sashiko: Running Stitches from Binary Sequences — Pathogen Studio</title>
+  <meta name="description" content="Second in Broken Lines: a running stitch is a dash pattern, hitomezashi is one bit of dash offset per line, and a 138 × 90 mm mend-patch template falls out of a nested loop.">
+  <link rel="canonical" href="https://pathogen.studio/blog/broken-lines-sashiko">
+  <meta property="og:title" content="Sashiko: Running Stitches from Binary Sequences — Pathogen Studio">
+  <meta property="og:description" content="Second in Broken Lines: a running stitch is a dash pattern, hitomezashi is one bit of dash offset per line, and a 138 × 90 mm mend-patch template falls out of a nested loop.">
+  <meta property="og:url" content="https://pathogen.studio/blog/broken-lines-sashiko">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Sashiko: Running Stitches from Binary Sequences","description":"Second in Broken Lines: a running stitch is a dash pattern, hitomezashi is one bit of dash offset per line, and a 138 × 90 mm mend-patch template falls out of a nested loop.","datePublished":"2026-09-02","url":"https://pathogen.studio/blog/broken-lines-sashiko","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Sashiko: Running Stitches from Binary Sequences</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Sashiko: Running Stitches from Binary Sequences</h1>
+        <p class="post-meta"><time datetime="2026-09-02">September 2, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 2 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><a href="/blog/broken-lines-stroke-geometry">Stroke geometry</a> — dashes,
+outlines, and start points as real paths</li>
+<li><strong>Sashiko</strong> (this post) — running stitches from binary sequences</li>
+<li><a href="/blog/broken-lines-leathercraft">Leathercraft</a> — stitch holes
+that can&#39;t disagree</li>
+<li><a href="/blog/broken-lines-stencils">Stencils</a> — bridges are just gaps</li>
+<li><a href="/blog/broken-lines-what-it-taught">What Broken Lines taught the language</a>
+— the friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> Part 1&#39;s
+<a href="/blog/broken-lines-stroke-geometry"><code>dash()</code></a> — partitioning a path
+into dash and gap pieces — is the whole toolkit here. The weave and
+patch examples also use <a href="/docs#stdlib-hash-noise"><code>hash01</code></a>, the
+deterministic hash that turns an index into a repeatable 0-to-1
+value.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>Sashiko is Japanese running-stitch embroidery: even stitches, even
+spaces, white thread on indigo cloth. It began as mending — rural
+workwear reinforced stitch by stitch until reinforcement became a
+decorative tradition of its own — which is why this post ends with a
+patch. Look at one stitched line the
+way a needle does and it is <em>exactly</em> a dash pattern — thread on top
+of the fabric where the dashes are, thread passing underneath where
+the gaps are. <code>dash()</code> isn&#39;t simulating the craft; the craft and the
+method describe the same thing.</p>
+<p>(And if you&#39;ll never hold a needle: what follows is also just a
+deterministic, seedable, tileable pattern generator with a
+two-integer control surface — the craft is the story, not a
+requirement.)</p>
+<p>That identity means one honest caveat up front: everything on this
+page is template generation — where the stitches <em>should</em> go — not
+stitching. Sashiko&#39;s soul is the hand process. What Pathogen offers is
+the part stitchers already do on paper: gridding, counting, and
+transferring, at exact pitch.</p>
+<h2>Why you&#39;d use it</h2>
+<p>The pattern family this post builds, <strong>hitomezashi</strong>, is a small
+miracle of emergence. Every horizontal line carries the same stitch
+pattern; every vertical line does too. The only decision, per line, is
+a single bit: start on a stitch, or start on a space. Crosses, steps,
+and interlocking blocks appear where the bits interact — nobody draws
+them. It&#39;s a known math-art crossover, and it lives one
+<code>stroke-dashoffset</code> away from part 1.</p>
+<h2>Example 1 — Both sides of the cloth</h2>
+<p>One seam, one dash array, shown from both sides of the cloth: the
+front is the dashes, and the reverse is the <em>inverse</em> pattern — the
+same thread surfacing where the front has gaps. Same array, one <code>if</code>
+on <code>kind</code>. One craft detail worth copying: the seam length is chosen
+so the run starts <em>and</em> ends on a stitch — stitchers plan a seam to
+come out even, and here that&#39;s one number.</p>
+<p><mini-workspace code-open caption="A running stitch is a dash pattern: 14 on top, 7 underneath.">
+  <code>//-- A running stitch IS a dash pattern: thread on top of the fabric
+//-- (the dashes), thread passing underneath (the gaps). dash() gives
+//-- both sides of the cloth.
+
+define ViewBox(0, 0, 480, 170);
+
+let fabric = PathLayer('fabric') ${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 170);
+}
+
+let scene = GroupLayer('scene') ${};
+let underside = PathLayer('underside') ${
+  stroke: #64748b;
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+};
+let topThread = PathLayer('top-thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(underside, topThread, labels);
+
+// 371 = 17 full cycles + one last stitch: the seam starts AND ends on a
+// stitch, the way a stitcher plans it.
+let seam = @{
+  h 371
+};
+
+let stitches = seam.dash(${
+  stroke-dasharray: 14 7;
+});
+
+for (stitch in stitches) {
+  if (stitch.kind == 'dash') {
+    topThread.apply {
+      M 55 70 stitch.path.draw()
+    }
+  } else {
+    underside.apply {
+      M 55 112 stitch.path.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(55, 44)`front — thread on top: the dashes`;
+  text(55, 140)`reverse — the inverse pattern: the gaps`;
+}
+</code>
+  <img src="/blog/samples/post46/01-running-stitch.svg" alt="A running stitch is a dash pattern: 14 on top, 7 underneath." loading="lazy">
+</mini-workspace></p>
+<h2>Example 2 — One bit per row</h2>
+<p>Example 1&#39;s 14-on, 7-under is the classic sashiko proportion — the
+stitch on top runs longer than the thread beneath. Hitomezashi is the
+special case where stitch and space are <em>equal</em>, and that equality is
+exactly what lets a half-cycle shift make neighboring rows interlock.
+Which is hitomezashi&#39;s entire control surface: shift a row&#39;s pattern
+by half a cycle, or don&#39;t. Six rows, six bits, <code>stroke-dashoffset: calc(bit * 16)</code>.
+Where neighboring rows disagree, the stitches interlock.</p>
+<p><mini-workspace code-open caption="The same seam six times — the only difference is one bit of dash offset.">
+  <code>//-- Hitomezashi's whole secret: every row is the same stitch pattern,
+//-- shifted — or not — by half a cycle. One bit per row.
+
+define ViewBox(0, 0, 480, 210);
+
+let fabric = PathLayer('fabric') ${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 210);
+}
+
+let scene = GroupLayer('scene') ${};
+let thread = PathLayer('thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(thread, labels);
+
+let seam = @{
+  h 336
+};
+
+let rowBits = [
+  0,
+  1,
+  0,
+  0,
+  1,
+  1,
+];
+
+for ([bit, rowIndex] in rowBits) {
+  let rowY = calc(52 + rowIndex * 22);
+  let stitches = seam.dash(${
+    stroke-dasharray: 16 16;
+    stroke-dashoffset: calc(bit * 16);
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M 96 rowY stitch.path.draw()
+      }
+    }
+  }
+  labels.apply {
+    text(56, calc(rowY + 3))`bit ${bit}`;
+  }
+}
+
+labels.apply {
+  text(96, 30)`stroke-dashoffset: bit * 16 — half a cycle, or nothing`;
+}
+</code>
+  <img src="/blog/samples/post46/02-phase-rows.svg" alt="The same seam six times — the only difference is one bit of dash offset." loading="lazy">
+</mini-workspace></p>
+<h2>Example 3 — The full weave</h2>
+<p>Now both directions: sixteen rows and thirty columns, each line&#39;s bit
+drawn from <code>hash01</code>. <code>round(hash01(rowIndex, 7))</code> is a repeatable
+coin flip — a lookup, not a roll: the same index and seed produce the
+same bit, every compile. Rows and columns draw from two <em>different</em>
+seeds because the streams must be independent — a single seed would
+hand row <em>i</em> and column <em>i</em> the same bit and print a diagonal
+symmetry into the cloth. The stitch length equals the grid cell, so
+horizontal and vertical stitches meet at corners — and the crosses,
+steps, and boxes are all emergent.</p>
+<p><mini-workspace code-open caption="hash01 decides each line's phase; the geometry decides everything else.">
+  <code>//-- Full hitomezashi: horizontal rows and vertical columns of the same
+//-- stitch, each line phase-shifted by its own bit. The blocks and
+//-- steps are emergent — nobody drew them.
+
+define ViewBox(0, 0, 480, 300);
+
+let fabric = PathLayer('fabric') ${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') ${};
+let thread = PathLayer('thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(thread, labels);
+
+let cell = 12;
+let cols = 30;
+let rows = 16;
+let originX = 60;
+let originY = 62;
+
+let rowSeam = @{
+  h calc(cols * cell)
+};
+let colSeam = @{
+  v calc(rows * cell)
+};
+
+fn sew(seam, anchorX, anchorY, bit) {
+  let stitches = seam.dash(${
+    stroke-dasharray: `${cell}` `${cell}`;
+    stroke-dashoffset: calc(bit * cell);
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+
+for (rowIndex in 0..rows) {
+  let bit = round(hash01(rowIndex, 7));
+  sew(rowSeam,
+      originX,
+      calc(originY + rowIndex * cell),
+      bit);
+}
+
+for (colIndex in 0..cols) {
+  let bit = round(hash01(colIndex, 11));
+  sew(colSeam,
+      calc(originX + colIndex * cell),
+      originY,
+      bit);
+}
+
+labels.apply {
+  text(60, 36)`one bit per line — the pattern is emergent`;
+}
+</code>
+  <img src="/blog/samples/post46/03-hitomezashi.svg" alt="hash01 decides each line's phase; the geometry decides everything else." loading="lazy">
+</mini-workspace></p>
+<p>The <code>sew</code> helper is the post&#39;s whole engine — dash the seam, keep the
+dashes, place them at the line&#39;s anchor:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">sew</span>(<span class="id">seam</span>, <span class="id">anchorX</span>, <span class="id">anchorY</span>, <span class="id">bit</span>) {
+  <span class="kw">let</span> <span class="id">stitches</span> = <span class="id">seam</span>.<span class="id">dash</span>(${
+    <span class="pr">stroke-dasharray</span>: <span class="str">`${cell}`</span> <span class="str">`${cell}`</span>;
+    <span class="pr">stroke-dashoffset</span>: <span class="id">calc</span>(<span class="id">bit</span> * <span class="id">cell</span>);
+  });
+  <span class="kw">for</span> (<span class="id">stitch</span> <span class="kw">in</span> <span class="id">stitches</span>) {
+    <span class="kw">if</span> (<span class="id">stitch</span>.<span class="id">kind</span> == <span class="str">'dash'</span>) {
+      <span class="id">thread</span>.<span class="kw">apply</span> {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+</code></pre><p>The style block reads the cell size from a variable, so pitch is one
+knob.</p>
+<h2>Example 4 — Stitches on curves</h2>
+<p>Nothing about a running stitch requires a grid. <code>dash()</code> measures
+distance along the curve itself, not the straight line across it, so
+stitches follow curves at even pitch for free —
+here, staggered fans of stitched arcs make the classic seigaiha wave.</p>
+<p><mini-workspace code-open caption="Three arcs per fan, dashed at 7-and-4; the stagger makes the wave.">
+  <code>//-- Stitches follow curves as readily as grids: dash() measures along
+//-- arc length. Staggered fans of stitched arcs — the seigaiha wave.
+
+define ViewBox(0, 0, 480, 260);
+
+let fabric = PathLayer('fabric') ${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') ${};
+let thread = PathLayer('thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(thread, labels);
+
+fn stitchArc(radius, anchorX, anchorY) {
+  let arcSpan = @{
+    m calc(0 - radius) 0
+    a radius radius 0 0 1 calc(radius * 2) 0
+  };
+  let stitches = arcSpan.dash(${
+    stroke-dasharray: 7 4;
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+
+let radii = [
+  42,
+  30,
+  18,
+];
+
+for (rowIndex in 0..3) {
+  let fanY = calc(84 + rowIndex * 42);
+  let stagger = calc(rowIndex % 2 * 42);
+  for (fanIndex in 0..3) {
+    let fanX = calc(94 + stagger + fanIndex * 84);
+    for (radius in radii) {
+      stitchArc(radius, fanX, fanY);
+    }
+  }
+}
+
+labels.apply {
+  text(94, 30)`same dash(), measured along the curve`;
+}
+</code>
+  <img src="/blog/samples/post46/04-seigaiha.svg" alt="Three arcs per fan, dashed at 7-and-4; the stagger makes the wave." loading="lazy">
+</mini-workspace></p>
+<h2>Example 5 — The mend patch</h2>
+<p>The finished artifact: a patch template at real pitch — one cell is
+6&nbsp;mm, a common sashiko stitch length — with the seeds recorded on
+the template itself, so any print of it carries its own provenance.
+The stitched field is <strong>138 × 90 mm</strong> (5.4 × 3.5 in) — a jeans-knee
+size — and the patch outline adds a 6 mm margin around it. Print it
+scaled so the stitched field measures 138 mm across — measure, don&#39;t
+trust a percentage — then transfer and stitch.</p>
+<p><mini-workspace code-open caption="A reproducible patch — open it in the playground and change either seed for a different fabric of blocks.">
+  <code>//-- The finished artifact: a mend-patch template at real stitch pitch.
+//-- One cell = 6 mm; print at 200% and the grid is true to the iron.
+
+define ViewBox(0, 0, 480, 320);
+
+let denim = PathLayer('denim') ${
+  fill: #27466b;
+  stroke: none;
+};
+denim.apply {
+  rect(0, 0, 480, 320);
+}
+
+let scene = GroupLayer('scene') ${};
+let patch = PathLayer('patch') ${
+  fill: #16304f;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let thread = PathLayer('thread') ${
+  stroke: #f1f5f9;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(patch, thread, labels);
+
+let cell = 12;
+let cols = 23;
+let rows = 15;
+let panelX = 96;
+let panelY = 66;
+let inset = 12;
+
+patch.apply {
+  roundRect(calc(panelX - inset),
+      calc(panelY - inset),
+      calc(cols * cell + inset * 2),
+      calc(rows * cell + inset * 2),
+      10);
+}
+
+let rowSeam = @{
+  h calc(cols * cell)
+};
+let colSeam = @{
+  v calc(rows * cell)
+};
+
+fn sew(seam, anchorX, anchorY, bit) {
+  let stitches = seam.dash(${
+    stroke-dasharray: `${cell}` `${cell}`;
+    stroke-dashoffset: calc(bit * cell);
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+
+for (rowIndex in 0..rows) {
+  let bit = round(hash01(rowIndex, 3));
+  sew(rowSeam,
+      panelX,
+      calc(panelY + rowIndex * cell),
+      bit);
+}
+
+for (colIndex in 0..cols) {
+  let bit = round(hash01(colIndex, 5));
+  sew(colSeam,
+      calc(panelX + colIndex * cell),
+      panelY,
+      bit);
+}
+
+labels.apply {
+  text(84, 34)`hitomezashi mend patch — 1 cell = 6 mm stitch pitch`;
+  text(84, 296)`rows seeded hash01(row, 3), columns hash01(col, 5)`;
+}
+</code>
+  <img src="/blog/samples/post46/05-mend-patch.svg" alt="A reproducible patch — open it in the playground and change either seed for a different fabric of blocks." loading="lazy">
+</mini-workspace></p>
+<h2>Where to go next</h2>
+<p>Everything here was one method — the
+<a href="/docs#path-blocks-dashstyles-array-of-path-kind-t0-t1"><code>dash()</code> reference</a>
+covers the rest of its surface. The stitches here were centerlines —
+ink where thread goes. The
+<a href="/blog/broken-lines-leathercraft">next post</a> moves to leather, where a
+stitch is a <em>hole</em>: the dashes get shorter, <code>outline()</code> turns them
+into punchable dots, and two mating seams have to agree hole-for-hole.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

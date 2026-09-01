@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -295,18 +306,18 @@ code.hljs {
 <p>All four operations take two closed paths and return a new PathBlock. Both operands must be closed (end with <code>z</code> or have coincident start/end points).</p>
 <h3>Union</h3>
 <p><a href="/docs#path-blocks-unionother-pathblock"><code>.union(other)</code></a> combines two paths into their outer boundary — everything covered by either shape:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> a = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
-<span class="hljs-keyword">let</span> b = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
-<span class="hljs-keyword">let</span> combined = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>).<span class="hljs-title function_">union</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">a</span> = @{ h 50 v 50 h -50 z };
+<span class="kw">let</span> <span class="id">b</span> = @{ h 50 v 50 h -50 z };
+<span class="kw">let</span> <span class="id">combined</span> = <span class="id">a</span>.<span class="id">project</span>(<span class="num">30</span>, <span class="num">30</span>).<span class="id">union</span>(<span class="id">b</span>.<span class="id">project</span>(<span class="num">55</span>, <span class="num">55</span>));
 </code></pre><h3>Difference</h3>
 <p><a href="/docs#path-blocks-differenceother-pathblock"><code>.difference(other)</code></a> subtracts the second shape from the first — everything in <code>a</code> that is not in <code>b</code>:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> result = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">30</span>).<span class="hljs-title function_">difference</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">55</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">result</span> = <span class="id">a</span>.<span class="id">project</span>(<span class="num">200</span>, <span class="num">30</span>).<span class="id">difference</span>(<span class="id">b</span>.<span class="id">project</span>(<span class="num">225</span>, <span class="num">55</span>));
 </code></pre><h3>Intersection</h3>
 <p><a href="/docs#path-blocks-intersectionother-pathblock"><code>.intersection(other)</code></a> returns only the overlapping region — everything in both shapes:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> overlap = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">intersection</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">235</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">overlap</span> = <span class="id">a</span>.<span class="id">project</span>(<span class="num">30</span>, <span class="num">210</span>).<span class="id">intersection</span>(<span class="id">b</span>.<span class="id">project</span>(<span class="num">55</span>, <span class="num">235</span>));
 </code></pre><h3>XOR</h3>
 <p><a href="/docs#path-blocks-xorother-pathblock"><code>.xor(other)</code></a> returns the symmetric difference — everything in either shape but not both:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> exclusive = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">xor</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">235</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">exclusive</span> = <span class="id">a</span>.<span class="id">project</span>(<span class="num">200</span>, <span class="num">210</span>).<span class="id">xor</span>(<span class="id">b</span>.<span class="id">project</span>(<span class="num">225</span>, <span class="num">235</span>));
 </code></pre><p><mini-workspace code-open caption="Four boolean operations on overlapping squares — union, difference, intersection, xor">
   <code>define ViewBox(0, 0, 580, 480);
 // Boolean operations — union, difference, intersection, xor
@@ -671,18 +682,18 @@ subtitle.apply {
 </ul>
 <h2>Using with <code>.project()</code></h2>
 <p>Boolean operations need absolute coordinates to compute intersections. Use <a href="/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> to position shapes before combining them:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> circle = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>) };
-<span class="hljs-keyword">let</span> a = circle.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>);
-<span class="hljs-keyword">let</span> b = circle.<span class="hljs-title function_">project</span>(<span class="hljs-number">70</span>, <span class="hljs-number">50</span>);
-<span class="hljs-keyword">let</span> result = a.<span class="hljs-title function_">union</span>(b);
-result.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">circle</span> = @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">30</span>) };
+<span class="kw">let</span> <span class="id">a</span> = <span class="id">circle</span>.<span class="id">project</span>(<span class="num">50</span>, <span class="num">50</span>);
+<span class="kw">let</span> <span class="id">b</span> = <span class="id">circle</span>.<span class="id">project</span>(<span class="num">70</span>, <span class="num">50</span>);
+<span class="kw">let</span> <span class="id">result</span> = <span class="id">a</span>.<span class="id">union</span>(<span class="id">b</span>);
+<span class="id">result</span>.<span class="id">drawTo</span>(<span class="num">0</span>, <span class="num">0</span>)
 </code></pre><p>The result is a PathBlock at <code>(0, 0)</code> origin. Use <code>.drawTo(x, y)</code> to place it anywhere.</p>
 <h2>Chaining with Transforms</h2>
 <p>Since boolean operations return PathBlocks, you can chain them with <a href="/docs#path-blocks-fillets">fillets</a>, <a href="/docs#path-blocks-chamfers">chamfers</a>, <a href="/docs#path-blocks-parametric-sampling">parametric sampling</a>, or even more boolean operations:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sq = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
-<span class="hljs-keyword">let</span> combined = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-<span class="hljs-keyword">let</span> rounded = combined.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">5</span>);
-rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sq</span> = @{ h 50 v 50 h -50 z };
+<span class="kw">let</span> <span class="id">combined</span> = <span class="id">sq</span>.<span class="id">project</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">union</span>(<span class="id">sq</span>.<span class="id">project</span>(<span class="num">25</span>, <span class="num">25</span>));
+<span class="kw">let</span> <span class="id">rounded</span> = <span class="id">combined</span>.<span class="id">fillet</span>(<span class="num">5</span>);
+<span class="id">rounded</span>.<span class="id">drawTo</span>(<span class="num">10</span>, <span class="num">10</span>)
 </code></pre><p>This creates a union of two overlapping squares, then rounds all the corners with a 5px fillet. The composability is the whole point — each operation produces a value that feeds into the next.</p>
 <p>The pipeline below shows the three stages: overlapping input squares, the union result, and the union with an 8px fillet applied. Each step returns a PathBlock that feeds into the next.</p>
 <p><mini-workspace caption="Chaining pipeline — overlapping squares → union → union + fillet(8)">
@@ -913,11 +924,11 @@ subtitle.apply {
 </mini-workspace></p>
 <h2>Standard Library Shapes</h2>
 <p>Pathogen&#39;s <a href="/docs#stdlib-path-functions">standard library</a> provides PathBlock-returning functions for common shapes — <code>circle()</code>, <code>rect()</code>, <code>polygon()</code>, <code>star()</code>, and more. These work directly with boolean operations:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> plate = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">80</span>, <span class="hljs-number">80</span>) };
-<span class="hljs-keyword">let</span> hole = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">10</span>) };
-<span class="hljs-keyword">let</span> d1 = plate.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-<span class="hljs-keyword">let</span> drilled = d1.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>));
-drilled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">plate</span> = @{ <span class="id">rect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">80</span>, <span class="num">80</span>) };
+<span class="kw">let</span> <span class="id">hole</span> = @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">10</span>) };
+<span class="kw">let</span> <span class="id">d1</span> = <span class="id">plate</span>.<span class="id">project</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">difference</span>(<span class="id">hole</span>.<span class="id">project</span>(<span class="num">25</span>, <span class="num">25</span>));
+<span class="kw">let</span> <span class="id">drilled</span> = <span class="id">d1</span>.<span class="id">project</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">difference</span>(<span class="id">hole</span>.<span class="id">project</span>(<span class="num">55</span>, <span class="num">55</span>));
+<span class="id">drilled</span>.<span class="id">drawTo</span>(<span class="num">0</span>, <span class="num">0</span>)
 </code></pre><p>The demo below shows two practical examples: a plate with four drilled holes (chained <code>.difference()</code> calls), and a badge shape created by unioning a star with a circle.</p>
 <p><mini-workspace code-open caption="Standard library shapes — drilled plate and star-circle badge">
   <code>define ViewBox(0, 0, 400, 200);
@@ -1005,13 +1016,13 @@ badge_desc.apply {
 </mini-workspace></p>
 <h2>Putting It All Together</h2>
 <p>This series covered four layers of PathBlock capability — and since every operation returns a PathBlock, they compose freely. Here&#39;s the full pipeline in one expression: define shapes, combine them with a boolean operation, round the result with a fillet, then sample points along the filleted outline:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sq = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">60</span> h -<span class="hljs-number">60</span> z };
-<span class="hljs-keyword">let</span> combined = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>));
-<span class="hljs-keyword">let</span> rounded = combined.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>);
-<span class="hljs-keyword">let</span> pts = rounded.<span class="hljs-title function_">partition</span>(<span class="hljs-number">24</span>);
-rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>)
-<span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
-  @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">2</span>) }.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">10</span> + p.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">10</span> + p.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>))
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sq</span> = @{ h 60 v 60 h -60 z };
+<span class="kw">let</span> <span class="id">combined</span> = <span class="id">sq</span>.<span class="id">project</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">union</span>(<span class="id">sq</span>.<span class="id">project</span>(<span class="num">30</span>, <span class="num">30</span>));
+<span class="kw">let</span> <span class="id">rounded</span> = <span class="id">combined</span>.<span class="id">fillet</span>(<span class="num">8</span>);
+<span class="kw">let</span> <span class="id">pts</span> = <span class="id">rounded</span>.<span class="id">partition</span>(<span class="num">24</span>);
+<span class="id">rounded</span>.<span class="id">drawTo</span>(<span class="num">10</span>, <span class="num">10</span>)
+<span class="kw">for</span> (<span class="id">p</span> <span class="kw">in</span> <span class="id">pts</span>) {
+  @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">2</span>) }.<span class="id">drawTo</span>(<span class="kw">calc</span>(<span class="num">10</span> + <span class="id">p</span>.<span class="id">point</span>.<span class="id">x</span>), <span class="kw">calc</span>(<span class="num">10</span> + <span class="id">p</span>.<span class="id">point</span>.<span class="id">y</span>))
 }
 </code></pre><p>Define once (<a href="/blog/pathblock-introduction">PathBlocks</a>), query geometry (<a href="/blog/pathblock-parametric-sampling">parametric sampling</a>), transform corners (<a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a>), combine shapes (<a href="/blog/pathblock-boolean-operations">boolean operations</a>) — all in a single composable pipeline. The full API reference is in the <a href="/docs#path-blocks-syntax">PathBlocks documentation</a>.</p>
 <p>Try it yourself in the <a href="/">Pathogen playground</a> — paste any example from this series and experiment.</p>

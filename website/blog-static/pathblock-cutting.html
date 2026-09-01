@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -301,18 +312,18 @@ contrast but not required.</p>
 <p>You draw a second PathBlock whose strokes act as a knife — open lines and curves, as many as you like — and <code>shape.cut(knife)</code> hands back an array of pieces. Each piece is a complete PathBlock, sealed shut along the lines that cut it. And because every piece is a real PathBlock, nearly everything you already know applies: give each piece its own fill, measure it with <code>boundingBox()</code>, offset it, rotate it, cut it again. Since this post first ran, labels made the trip too: pieces keep the subject&#39;s <code>as segment(...)</code> names on their surviving edges, and every healed seam answers <code>segmentAll(&#39;cut&#39;)</code> — <a href="/blog/cutting-room-papercraft">The Cutting Room series</a> is four projects built on exactly that.</p>
 <h2>One rectangle, one stroke</h2>
 <p>The barest possible picture: a rectangle, a single straight stroke through it, two pieces.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{
-  h <span class="hljs-number">140</span>
-  v <span class="hljs-number">100</span>
-  h -<span class="hljs-number">140</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{
+  h 140
+  v 100
+  h -140
   z
 };
-<span class="hljs-keyword">let</span> knife = @{
-  m <span class="hljs-number">90</span> -<span class="hljs-number">15</span>
-  l <span class="hljs-number">0</span> <span class="hljs-number">130</span>
+<span class="kw">let</span> <span class="id">knife</span> = @{
+  m 90 -15
+  l 0 130
 };
-<span class="hljs-keyword">let</span> pieces = box.<span class="hljs-title function_">cut</span>(knife);
-<span class="hljs-title function_">log</span>(pieces.<span class="hljs-property">length</span>);    <span class="hljs-comment">// 2</span>
+<span class="kw">let</span> <span class="id">pieces</span> = <span class="id">box</span>.<span class="id">cut</span>(<span class="id">knife</span>);
+<span class="id">log</span>(<span class="id">pieces</span>.<span class="id">length</span>);    <span class="cm">// 2</span>
 </code></pre><p>Two things to notice before anything fancier. First, the knife overshoots the box on both ends — a stroke cuts wherever it <em>fully crosses</em> the shape, so the safe habit is to draw strokes a little longer than they need to be. Second, the pieces come back exactly where they were: drawing them all at the same position reassembles the rectangle, and nudging each one apart produces an exploded view. That&#39;s the left and right halves of this demo — same pieces, two ways of placing them:</p>
 <p><mini-workspace code-open caption="One cut, two pieces. Left: drawn at the same position, the shape reassembles. Right: each piece nudged away from the cut line.">
   <code>define ViewBox(0, 0, 480, 240);
@@ -648,9 +659,9 @@ knifeLabel.apply {
 </mini-workspace></p>
 <h2>Cookie cutters</h2>
 <p>Every stroke so far has been open. A <em>closed</em> stroke — a loop — acts as a cookie cutter: it stamps the region inside it out of the shape. You get the stamped piece and the shape it left behind, which now carries a hole.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> plate = @{ <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">220</span>, <span class="hljs-number">150</span>, <span class="hljs-number">18</span>); };
-<span class="hljs-keyword">let</span> stamp = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">42</span>); };
-<span class="hljs-keyword">let</span> pieces = plate.<span class="hljs-title function_">cut</span>(stamp.<span class="hljs-title function_">project</span>(<span class="hljs-number">140</span>, <span class="hljs-number">60</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">plate</span> = @{ <span class="id">roundRect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">220</span>, <span class="num">150</span>, <span class="num">18</span>); };
+<span class="kw">let</span> <span class="id">stamp</span> = @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">42</span>); };
+<span class="kw">let</span> <span class="id">pieces</span> = <span class="id">plate</span>.<span class="id">cut</span>(<span class="id">stamp</span>.<span class="id">project</span>(<span class="num">140</span>, <span class="num">60</span>));
 </code></pre><p>Since piece order is unspecified, this demo tells the pieces apart by structure instead: the stamped disk has one subpath (<code>subPathCount == 1</code>), the plate-with-a-hole has two. That&#39;s usually the most robust way to route pieces to different treatments.</p>
 <p><mini-workspace code-open caption="A closed loop stamps a disk out of the plate; the plate keeps the hole.">
   <code>define ViewBox(0, 0, 480, 240);

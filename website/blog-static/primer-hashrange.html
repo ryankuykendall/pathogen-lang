@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -324,8 +335,7 @@ from <a href="/blog/primer-hash01"><code>hash01</code></a> — this post won&#39
 <p>Both rows size 40 dots from the same 1.5-to-5 range. The top row asks
 <code>randomRange</code>; the bottom asks <code>hashRange</code> with the loop index in front.</p>
 <p><mini-workspace code-open caption="Forty dots sized from the same 1.5–5 range: randomRange above, hashRange(i, ...) below.">
-  <code>// viewBox="0 0 400 160"
-//-- The migration in one picture. Top row: dot sizes from
+  <code>//-- The migration in one picture. Top row: dot sizes from
 //-- randomRange(1.5, 5) -- they reshuffle on every compile. Bottom row:
 //-- hashRange(i, 1.5, 5) -- same call shape with an index in front, and
 //-- the sizes are a fixture.
@@ -369,8 +379,7 @@ contrast is the lesson.)</p>
 <code>hashRange(i, 35, 125)</code>, width from <code>hashRange(i, 10, 22, 1)</code>, and a
 subtle facade shade from a third stream.</p>
 <p><mini-workspace code-open caption="The two range calls ARE the spec: heights 35–125, widths 10–22. Edit the height line to (i, 50, 90) and the same code draws a suburb.">
-  <code>// viewBox="0 0 400 210"
-//-- A night skyline where the ranges read like a spec: buildings between
+  <code>//-- A night skyline where the ranges read like a spec: buildings between
 //-- 35 and 125 tall, between 10 and 22 wide. Tighten either range and the
 //-- whole city changes character -- without touching the structure.
 
@@ -405,8 +414,7 @@ idea: structure stays, character is in the numbers.</p>
 <p>Four properties, four ranges, four seeds — a complete scatter system in
 four lines: position (x, y), size, and hue.</p>
 <p><mini-workspace code-open caption="Four lines, four independent streams: x, y, radius, hue. Each range line is a design decision you can tighten or loosen without touching the others.">
-  <code>// viewBox="0 0 400 190"
-//-- Four ranges as a spec sheet: where (x, y), how big (r), what color
+  <code>//-- Four ranges as a spec sheet: where (x, y), how big (r), what color
 //-- (hue). Each property reads its own seed; each range line is a design
 //-- decision you can tighten or loosen independently.
 
@@ -437,8 +445,7 @@ makes the four lines read as a spec sheet.</p>
 computes <code>floor(hashRange(i, 0, 3, 2))</code> — an even three-way pick — and the
 bucket routes it to a near, middle, or far layer with matching opacity.</p>
 <p><mini-workspace code-open caption="floor(hashRange(i, 0, 3, 2)) buckets every streak into exactly {0, 1, 2} with equal shares — the half-open range earning its keep. One population, three depth styles.">
-  <code>// viewBox="0 0 400 200"
-//-- Eighty slanted rain streaks. Position and length are ranged picks;
+  <code>//-- Eighty slanted rain streaks. Position and length are ranged picks;
 //-- each streak also lands in one of three depth buckets --
 //-- floor(hashRange(i, 0, 3, 2)) picks 0, 1, or 2 -- and the bucket sets
 //-- the opacity, so the rain reads as near, middle, and far.
@@ -485,8 +492,7 @@ population, several styles.&quot;</p>
 front; each pebble&#39;s width, squash, position, and warmth come from named
 ranges, and nearer rows draw from bigger width ranges.</p>
 <p><mini-workspace code-open caption="Four overlapping rows, back to front — width, squash, position, and warmth all named ranges, with nearer rows drawing from bigger ones.">
-  <code>// viewBox="0 88 400 152"
-//-- Four overlapping rows of pebbles, back to front. Every knob is a
+  <code>//-- Four overlapping rows of pebbles, back to front. Every knob is a
 //-- named range: width, squash, and gray-warmth per pebble, with nearer
 //-- rows drawing from bigger ranges. Tuning the beach means tuning
 //-- ranges -- narrow one row's width range and the rows behind stay put.

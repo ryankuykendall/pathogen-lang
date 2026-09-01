@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -296,9 +307,9 @@ code.hljs {
 <p>That&#39;s what font integration provides. The <code>@font</code> directive loads a font file, and <code>PathBlock.fromGlyph()</code> converts each character into a PathBlock with the glyph&#39;s full vector outline. From there, everything in the <a href="/blog/pathblock-introduction">PathBlock series</a> applies: <a href="/docs#path-blocks-drawing-a-path-block">drawing and positioning</a>, <a href="/blog/pathblock-parametric-sampling">parametric sampling</a>, <a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a>, <a href="/blog/pathblock-boolean-operations">boolean operations</a>, and all the transforms.</p>
 <h2>Loading Fonts with @font</h2>
 <p>Before you can extract glyphs, Pathogen needs access to the font&#39;s vector data. The <a href="/docs#path-blocks-font-directive"><code>@font</code> directive</a> declares a font at the top level of your program:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
-@font <span class="hljs-string">&quot;Roboto Mono&quot;</span> <span class="hljs-number">700</span>;
-@font <span class="hljs-string">&quot;./fonts/CustomFont.ttf&quot;</span>;
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
+@font <span class="str">"Roboto Mono"</span> <span class="num">700</span>;
+@font <span class="str">"./fonts/CustomFont.ttf"</span>;
 </code></pre><p>The directive takes a font source (family name or file path) and an optional numeric weight (100-900, default 400). How the font is actually loaded depends on the environment:</p>
 <ul>
 <li><strong>CLI</strong>: Loads from local file paths relative to the source file, or searches system font directories (<code>/Library/Fonts</code>, <code>/System/Library/Fonts</code>, <code>~/Library/Fonts</code> on macOS, with equivalent paths on Linux and Windows).</li>
@@ -311,40 +322,40 @@ code.hljs {
 </blockquote>
 <h2>Extracting Glyphs with PathBlock.fromGlyph()</h2>
 <p><a href="/docs#path-blocks-pathblockfromglyphtext-styles"><code>PathBlock.fromGlyph(text, styles)</code></a> is the core conversion function. It takes a text string and a style block, and returns an array of PathBlock values — one per character:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
 
-<span class="hljs-keyword">let</span> styles = ${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;Hello&quot;</span>, styles);
+<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"Hello"</span>, <span class="id">styles</span>);
 
-<span class="hljs-title function_">log</span>(glyphs.<span class="hljs-property">length</span>);    <span class="hljs-comment">// 5 — one PathBlock per character</span>
+<span class="id">log</span>(<span class="id">glyphs</span>.<span class="id">length</span>);    <span class="cm">// 5 — one PathBlock per character</span>
 </code></pre><p>The style block must include <code>font-family</code> (matching a loaded <code>@font</code> declaration). <code>font-size</code> defaults to 16 and <code>font-weight</code> defaults to 400 if omitted. The function walks each character in the text string, looks up the glyph in the loaded font, extracts its outline as cubic Bezier curves and line segments, scales to the requested font size, and wraps the result as a PathBlock with relative commands starting at <code>(0, 0)</code>.</p>
 <p>Each glyph PathBlock is a full PathBlock value with all the standard properties and methods. You can call <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, <code>.get()</code>, <code>.tangent()</code>, <code>.boundingBox()</code>, <code>.scale()</code>, <code>.fillet()</code>, <code>.union()</code> — everything from the <a href="/docs#path-blocks-syntax">PathBlock documentation</a>. The glyph is geometry now, not text.</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
 
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;A&quot;</span>, ${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">72</span>; });
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"A"</span>, ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">72</span>; });
 
-<span class="hljs-comment">// Draw the glyph</span>
-glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">100</span>)
+<span class="cm">// Draw the glyph</span>
+<span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>)
 
-<span class="hljs-comment">// Query its geometry</span>
-<span class="hljs-title function_">log</span>(glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">length</span>);           <span class="hljs-comment">// total outline arc-length</span>
-<span class="hljs-title function_">log</span>(glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">boundingBox</span>());    <span class="hljs-comment">// { x, y, width, height }</span>
-<span class="hljs-title function_">log</span>(glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">vertices</span>.<span class="hljs-property">length</span>);  <span class="hljs-comment">// number of junction points</span>
+<span class="cm">// Query its geometry</span>
+<span class="id">log</span>(<span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">length</span>);           <span class="cm">// total outline arc-length</span>
+<span class="id">log</span>(<span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">boundingBox</span>());    <span class="cm">// { x, y, width, height }</span>
+<span class="id">log</span>(<span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">vertices</span>.<span class="id">length</span>);  <span class="cm">// number of junction points</span>
 </code></pre><p><code>fromGlyph()</code> always returns an array — one PathBlock per character — even for single characters. That&#39;s why we index with <code>glyphs[0]</code> above.</p>
 <p>Space characters are handled correctly: they return an empty PathBlock (no path commands, zero length) but still carry a non-zero <code>.advanceWidth</code> for layout purposes. This means a loop over <code>PathBlock.fromGlyph(&quot;Hello World&quot;, styles)</code> will naturally insert a gap between &quot;Hello&quot; and &quot;World&quot; without special-casing.</p>
 <p>If something goes wrong, the <a href="/docs#path-blocks-error-cases">error messages</a> are specific. Wrong argument count, missing <code>font-family</code>, no <code>@font</code> loaded, font not found in the registry — each condition has its own message telling you exactly what to fix.</p>
 <h2>Manual Text Layout with advanceWidth</h2>
 <p>Drawing glyph PathBlocks is straightforward, but you need to position them correctly. In a font, each glyph has an <em>advance width</em> — the horizontal distance the cursor should move after drawing that glyph before drawing the next one. This is how proportional fonts work: a narrow &quot;i&quot; advances less than a wide &quot;M&quot;.</p>
 <p>Every glyph PathBlock from <code>fromGlyph()</code> carries an <a href="/docs#path-blocks-advancewidth"><code>.advanceWidth</code></a> property. To lay out a word, accumulate advance widths in a loop:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Bebas Neue&quot;</span>;
-<span class="hljs-keyword">let</span> styles = ${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">BebasNeue</span>-<span class="hljs-title class_">Regular</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">64</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;PATHOGEN&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Bebas Neue"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">BebasNeue-Regular</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"PATHOGEN"</span>, <span class="id">styles</span>);
 
-<span class="hljs-keyword">let</span> cursor_x = <span class="hljs-number">60</span>;
-<span class="hljs-keyword">let</span> baseline_y = <span class="hljs-number">140</span>;
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  g.<span class="hljs-title function_">drawTo</span>(cursor_x, baseline_y)
-  cursor_x = <span class="hljs-title function_">calc</span>(cursor_x + g.<span class="hljs-property">advanceWidth</span>);
+<span class="kw">let</span> <span class="id">cursor_x</span> = <span class="num">60</span>;
+<span class="kw">let</span> <span class="id">baseline_y</span> = <span class="num">140</span>;
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="id">g</span>.<span class="id">drawTo</span>(<span class="id">cursor_x</span>, <span class="id">baseline_y</span>)
+  <span class="id">cursor_x</span> = <span class="kw">calc</span>(<span class="id">cursor_x</span> + <span class="id">g</span>.<span class="id">advanceWidth</span>);
 }
 </code></pre><p>This is the text layout engine&#39;s job, and now it&#39;s yours. The advance width accumulation produces the same letter spacing that a browser would use for the same font at the same size — because the values come directly from the font file via opentype.js.</p>
 <p>The difference between proportional and monospace fonts shows up clearly here. A proportional font like Bebas Neue produces variable spacing: the &quot;P&quot; might advance 22px while the &quot;I&quot; advances 8px. A monospace font like Inconsolata advances every character by the same amount. The demo below renders the same word in both fonts, with dashed tick marks showing each character&#39;s advance-width boundary.</p>
@@ -505,45 +516,45 @@ code_group.append(code, kw);
 <h2>Contour Decomposition</h2>
 <p>Most glyphs are made of multiple contours. The letter &quot;O&quot; has an outer ring and an inner hole — two closed paths. The letter &quot;i&quot; has a body and a dot — also two. Some glyphs are more complex: &quot;B&quot; has an outer shape plus two enclosed holes.</p>
 <p>The <a href="/docs#path-blocks-contours"><code>.contours</code></a> property splits a glyph PathBlock into its constituent contours, returning an array of PathBlock values — one per contour:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
-<span class="hljs-keyword">let</span> styles = ${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;O&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"O"</span>, <span class="id">styles</span>);
 
-<span class="hljs-keyword">let</span> contours = glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">contours</span>;
-<span class="hljs-title function_">log</span>(contours.<span class="hljs-property">length</span>);    <span class="hljs-comment">// 2 — outer ring + inner hole</span>
+<span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
+<span class="id">log</span>(<span class="id">contours</span>.<span class="id">length</span>);    <span class="cm">// 2 — outer ring + inner hole</span>
 </code></pre><p>Each contour is a closed PathBlock with all standard properties and methods. You can draw them individually, apply different styles, transform them independently, or use them in boolean operations. Here&#39;s what iterating over contours looks like:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
-<span class="hljs-keyword">let</span> styles = ${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;B&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"B"</span>, <span class="id">styles</span>);
 
-<span class="hljs-keyword">let</span> contours = glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">contours</span>;
-<span class="hljs-comment">// contours[0] = outer shape</span>
-<span class="hljs-comment">// contours[1] = upper hole</span>
-<span class="hljs-comment">// contours[2] = lower hole</span>
+<span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
+<span class="cm">// contours[0] = outer shape</span>
+<span class="cm">// contours[1] = upper hole</span>
+<span class="cm">// contours[2] = lower hole</span>
 
-<span class="hljs-comment">// Draw each contour with different styling</span>
-<span class="hljs-keyword">for</span> (c <span class="hljs-keyword">in</span> contours) {
-  c.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">100</span>)
+<span class="cm">// Draw each contour with different styling</span>
+<span class="kw">for</span> (<span class="id">c</span> <span class="kw">in</span> <span class="id">contours</span>) {
+  c.drawTo(50, 100)
 }
 </code></pre><p>The number of contours per glyph varies by character and font design. Simple glyphs like &quot;n&quot; or &quot;c&quot; typically have a single contour. Letters with enclosed spaces — &quot;o&quot;, &quot;e&quot;, &quot;d&quot;, &quot;g&quot; — usually have two. Letters with multiple enclosed regions — &quot;B&quot;, &quot;8&quot; — can have three or more. Punctuation follows the same logic: &quot;!&quot; has two contours (the body stroke and the dot below), while &quot;-&quot; has just one.</p>
 <p>To draw each contour with a different fill, iterate over the array and assign colors from a palette:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
-<span class="hljs-keyword">let</span> styles = ${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">56</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;B&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">56</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"B"</span>, <span class="id">styles</span>);
 
-<span class="hljs-keyword">let</span> colors = [<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>)];
-<span class="hljs-keyword">let</span> fills  = [<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f630&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e30&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b30&#x27;</span>)];
+<span class="kw">let</span> <span class="id">colors</span> = [<span class="id">Color</span>(<span class="str">'#3b82f6'</span>), <span class="id">Color</span>(<span class="str">'#22c55e'</span>), <span class="id">Color</span>(<span class="str">'#f59e0b'</span>)];
+<span class="kw">let</span> <span class="id">fills</span>  = [<span class="id">Color</span>(<span class="str">'#3b82f630'</span>), <span class="id">Color</span>(<span class="str">'#22c55e30'</span>), <span class="id">Color</span>(<span class="str">'#f59e0b30'</span>)];
 
-<span class="hljs-keyword">let</span> contours = glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">contours</span>;
-<span class="hljs-keyword">let</span> ci = <span class="hljs-number">0</span>;
-<span class="hljs-keyword">for</span> (c <span class="hljs-keyword">in</span> contours) {
-  <span class="hljs-keyword">let</span> layer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;c&#x27;</span> + ci) ${
-    <span class="hljs-attr">fill</span>: fills[ci];
-    <span class="hljs-attr">stroke</span>: colors[ci];
-    stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+<span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
+<span class="kw">let</span> <span class="id">ci</span> = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="id">c</span> <span class="kw">in</span> <span class="id">contours</span>) {
+  <span class="kw">let</span> <span class="kw">layer</span> = <span class="tp">PathLayer</span>(<span class="str">'c'</span> + <span class="id">ci</span>) ${
+    <span class="pr">fill</span>: <span class="id">fills</span>[<span class="id">ci</span>];
+    <span class="pr">stroke</span>: <span class="id">colors</span>[<span class="id">ci</span>];
+    <span class="pr">stroke-width</span>: <span class="num">1.5</span>;
   };
-  layer.<span class="hljs-property">apply</span> { c.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">100</span>) }
-  ci = <span class="hljs-title function_">calc</span>(ci + <span class="hljs-number">1</span>);
+  <span class="kw">layer</span>.<span class="kw">apply</span> { <span class="id">c</span>.<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>) }
+  <span class="id">ci</span> = <span class="kw">calc</span>(<span class="id">ci</span> + <span class="num">1</span>);
 }
 </code></pre><p>The demo below decomposes &quot;Bingo!&quot; into its contours. Count them: B has 3 (outer shape + 2 holes), i has 2 (body + dot), n has 1 (solid body), g has 2 (body + descender loop), o has 2 (outer + inner), and ! has 2 (body + dot). That&#39;s 12 contours across 6 characters, each drawn in its own color. Each contour is colored from a 12-color palette cycling through blue, green, amber, red, purple, pink, cyan, lime, orange, indigo, teal, and fuchsia.</p>
 <p><mini-workspace caption="Contour decomposition — 12 contours across 6 characters of 'Bingo!'">
@@ -867,35 +878,35 @@ layer('divider').apply { M 345 20 v 370 }
 <p>The interesting part is combining transforms with the advance-width layout loop. Instead of just placing each glyph at the cursor position, you apply a per-character transformation first:</p>
 <h3>Wave Effect</h3>
 <p>Offset each character vertically using a sine function:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> idx = <span class="hljs-number">0</span>;
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  <span class="hljs-keyword">let</span> y_offset = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(idx * <span class="hljs-number">0.8</span>) * <span class="hljs-number">15</span>);
-  g.<span class="hljs-title function_">drawTo</span>(cursor_x, <span class="hljs-title function_">calc</span>(baseline + y_offset))
-  cursor_x = <span class="hljs-title function_">calc</span>(cursor_x + g.<span class="hljs-property">advanceWidth</span>);
-  idx = <span class="hljs-title function_">calc</span>(idx + <span class="hljs-number">1</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">idx</span> = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="kw">let</span> <span class="id">y_offset</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">idx</span> * <span class="num">0.8</span>) * <span class="num">15</span>);
+  <span class="id">g</span>.<span class="id">drawTo</span>(<span class="id">cursor_x</span>, <span class="kw">calc</span>(<span class="id">baseline</span> + <span class="id">y_offset</span>))
+  <span class="id">cursor_x</span> = <span class="kw">calc</span>(<span class="id">cursor_x</span> + <span class="id">g</span>.<span class="id">advanceWidth</span>);
+  <span class="id">idx</span> = <span class="kw">calc</span>(<span class="id">idx</span> + <span class="num">1</span>);
 }
 </code></pre><p>Each character sits at a different vertical position along the sine curve, creating a wave pattern. The advance widths still control horizontal spacing — only the y-coordinate changes.</p>
 <h3>Scale Cascade</h3>
 <p>Increase the scale of each successive character:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> idx = <span class="hljs-number">0</span>;
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  <span class="hljs-keyword">let</span> s = <span class="hljs-title function_">calc</span>(<span class="hljs-number">0.5</span> + idx * <span class="hljs-number">0.25</span>);
-  <span class="hljs-keyword">let</span> scaled = g.<span class="hljs-title function_">scale</span>(s, s);
-  scaled.<span class="hljs-title function_">drawTo</span>(cursor_x, baseline)
-  cursor_x = <span class="hljs-title function_">calc</span>(cursor_x + g.<span class="hljs-property">advanceWidth</span> * s);
-  idx = <span class="hljs-title function_">calc</span>(idx + <span class="hljs-number">1</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">idx</span> = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="kw">let</span> <span class="id">s</span> = <span class="kw">calc</span>(<span class="num">0.5</span> + <span class="id">idx</span> * <span class="num">0.25</span>);
+  <span class="kw">let</span> <span class="id">scaled</span> = <span class="id">g</span>.<span class="id">scale</span>(<span class="id">s</span>, <span class="id">s</span>);
+  <span class="id">scaled</span>.<span class="id">drawTo</span>(<span class="id">cursor_x</span>, <span class="id">baseline</span>)
+  <span class="id">cursor_x</span> = <span class="kw">calc</span>(<span class="id">cursor_x</span> + <span class="id">g</span>.<span class="id">advanceWidth</span> * <span class="id">s</span>);
+  <span class="id">idx</span> = <span class="kw">calc</span>(<span class="id">idx</span> + <span class="num">1</span>);
 }
 </code></pre><p>Notice that both the glyph <em>and</em> its advance width are scaled by the same factor. This keeps the spacing proportional to the size. The first character is half-size, the second is 75%, and so on.</p>
 <h3>Circular Arc Text</h3>
 <p>The key geometric relationship is <code>angle = arc_length / radius</code> — dividing a character&#39;s advance width by the arc radius converts linear distance to angular offset in radians. This lets you place characters along a circular path using trigonometry:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  <span class="hljs-keyword">let</span> char_mid = <span class="hljs-title function_">calc</span>(arc_cursor + g.<span class="hljs-property">advanceWidth</span> / <span class="hljs-number">2</span>);
-  <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(arc_start + char_mid / arc_r);
-  <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(arc_cx + <span class="hljs-title function_">cos</span>(angle) * arc_r);
-  <span class="hljs-keyword">let</span> cy = <span class="hljs-title function_">calc</span>(arc_cy + <span class="hljs-title function_">sin</span>(angle) * arc_r);
-  <span class="hljs-keyword">let</span> rotated = g.<span class="hljs-title function_">rotateAtVertexIndex</span>(<span class="hljs-number">0</span>, <span class="hljs-title function_">calc</span>(angle + <span class="hljs-number">0.</span>5pi));
-  rotated.<span class="hljs-title function_">drawTo</span>(cx, cy)
-  arc_cursor = <span class="hljs-title function_">calc</span>(arc_cursor + g.<span class="hljs-property">advanceWidth</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="kw">let</span> <span class="id">char_mid</span> = <span class="kw">calc</span>(<span class="id">arc_cursor</span> + <span class="id">g</span>.<span class="id">advanceWidth</span> / <span class="num">2</span>);
+  <span class="kw">let</span> <span class="id">angle</span> = <span class="kw">calc</span>(<span class="id">arc_start</span> + <span class="id">char_mid</span> / <span class="id">arc_r</span>);
+  <span class="kw">let</span> <span class="id">cx</span> = <span class="kw">calc</span>(<span class="id">arc_cx</span> + <span class="id">cos</span>(<span class="id">angle</span>) * <span class="id">arc_r</span>);
+  <span class="kw">let</span> <span class="id">cy</span> = <span class="kw">calc</span>(<span class="id">arc_cy</span> + <span class="id">sin</span>(<span class="id">angle</span>) * <span class="id">arc_r</span>);
+  <span class="kw">let</span> <span class="id">rotated</span> = <span class="id">g</span>.<span class="id">rotateAtVertexIndex</span>(<span class="num">0</span>, <span class="kw">calc</span>(<span class="id">angle</span> + <span class="num">0.5pi</span>));
+  <span class="id">rotated</span>.<span class="id">drawTo</span>(<span class="id">cx</span>, <span class="id">cy</span>)
+  <span class="id">arc_cursor</span> = <span class="kw">calc</span>(<span class="id">arc_cursor</span> + <span class="id">g</span>.<span class="id">advanceWidth</span>);
 }
 </code></pre><p>Each glyph is rotated to follow the arc&#39;s tangent direction using <code>.rotateAtVertexIndex(0, angle)</code>, then placed at the corresponding position on the circle. The <code>0.5pi</code> uses Pathogen&#39;s numeric suffix notation — a shorthand for π/2 (a quarter turn) — which converts the radial angle to the tangent direction. The advance widths are converted to angular offsets by dividing by the arc radius.</p>
 <p><mini-workspace caption="Three per-character transform effects — wave, grow, and circular arc text">
@@ -1151,24 +1162,24 @@ layer('title').apply { text(30, 205)`Per-Character Transforms` }
 <p>One of the most visually striking uses of glyph extraction is punching text out of geometry. The conceptual pipeline has three stages: extract the glyph paths, combine them into a single outline, then subtract that outline from a background shape.</p>
 <h3>Punching Text from Geometry</h3>
 <p>The approach uses <a href="/docs#path-blocks-unionother-pathblock"><code>.union()</code></a> and <a href="/docs#path-blocks-differenceother-pathblock"><code>.difference()</code></a> from the <a href="/blog/pathblock-boolean-operations">boolean operations post</a>. First, extract and lay out the glyphs, then union them into a single outline and subtract from a plate:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Bebas Neue&quot;</span>;
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;CUTTING&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Bebas Neue"</span>;
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"CUTTING"</span>, <span class="id">styles</span>);
 
-<span class="hljs-comment">// Project each glyph at its layout position (advance-width loop)</span>
-<span class="hljs-keyword">let</span> tracking = <span class="hljs-number">0.8</span>;
-<span class="hljs-keyword">let</span> cursor = <span class="hljs-number">0</span>;
-<span class="hljs-keyword">let</span> projected = [];
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  projected.<span class="hljs-title function_">push</span>(g.<span class="hljs-title function_">project</span>(cursor, <span class="hljs-number">0</span>));
-  cursor = <span class="hljs-title function_">calc</span>(cursor + g.<span class="hljs-property">advanceWidth</span> * tracking);
+<span class="cm">// Project each glyph at its layout position (advance-width loop)</span>
+<span class="kw">let</span> <span class="id">tracking</span> = <span class="num">0.8</span>;
+<span class="kw">let</span> <span class="id">cursor</span> = <span class="num">0</span>;
+<span class="kw">let</span> <span class="id">projected</span> = [];
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="id">projected</span>.<span class="id">push</span>(<span class="id">g</span>.<span class="id">project</span>(<span class="id">cursor</span>, <span class="num">0</span>));
+  <span class="id">cursor</span> = <span class="kw">calc</span>(<span class="id">cursor</span> + <span class="id">g</span>.<span class="id">advanceWidth</span> * <span class="id">tracking</span>);
 }
 
-<span class="hljs-comment">// Union into a single path, then punch from a rectangle</span>
-<span class="hljs-keyword">let</span> combined = projected[<span class="hljs-number">0</span>];
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">1.</span><span class="hljs-number">.6</span>) {  <span class="hljs-comment">// remaining 6 of 7 glyphs</span>
-  combined = combined.<span class="hljs-title function_">union</span>(projected[i]);
+<span class="cm">// Union into a single path, then punch from a rectangle</span>
+<span class="kw">let</span> <span class="id">combined</span> = <span class="id">projected</span>[<span class="num">0</span>];
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">6</span>) {  <span class="cm">// remaining 6 of 7 glyphs</span>
+  <span class="id">combined</span> = <span class="id">combined</span>.<span class="id">union</span>(<span class="id">projected</span>[<span class="id">i</span>]);
 }
-<span class="hljs-keyword">let</span> cutout = plate.<span class="hljs-title function_">project</span>(px, py).<span class="hljs-title function_">difference</span>(combined);
+<span class="kw">let</span> <span class="id">cutout</span> = <span class="id">plate</span>.<span class="id">project</span>(<span class="id">px</span>, <span class="id">py</span>).<span class="id">difference</span>(<span class="id">combined</span>);
 </code></pre><p>The chaining works because every boolean operation returns a PathBlock, so the result of <code>.union()</code> feeds directly into the next <code>.union()</code> or <code>.difference()</code> — for any number of glyphs. Because boolean operations <a href="/blog/pathblock-boolean-operations">preserve curve types</a>, the glyph outlines stay smooth at any zoom level.</p>
 <p>The demo below shows the full pipeline in five panels: individual glyph outlines, a <code>.union()</code> arrow, the combined path, a <code>.difference()</code> arrow, and the final cutout. Stage 1 lays out each of the seven glyphs as a separate colored outline. Stage 2 unions all seven into a single solid path. Stage 3 punches the united text out of a green rectangle using <code>.difference()</code>.</p>
 <p><mini-workspace caption="Text cutout pipeline — 7 glyph outlines → .union() chain → .difference() from a rectangle">
@@ -1573,19 +1584,19 @@ layer('insight').apply {
 <p>This doesn&#39;t mean <code>&lt;text&gt;</code> is wrong for all cases — TextBlock with estimation tables works well for most label placement, especially with <code>.intersects()</code> collision avoidance where a few percent of width variation doesn&#39;t matter. But when you need pixel-level precision — logo construction, stencil output, precise baseline alignment — <code>fromGlyph()</code> eliminates the measurement-rendering mismatch entirely.</p>
 <h2>Putting It Together</h2>
 <p>Here&#39;s the full pipeline from font declaration to rendered output — the workflow that ties together everything in this post:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// 1. Load the font</span>
-@font <span class="hljs-string">&quot;Inter&quot;</span>;
-<span class="hljs-keyword">let</span> styles = ${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">64</span>; };
+<pre><code class="hljs language-pathogen"><span class="cm">// 1. Load the font</span>
+@font <span class="str">"Inter"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
 
-<span class="hljs-comment">// 2. Extract glyphs</span>
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;HELLO&quot;</span>, styles);
+<span class="cm">// 2. Extract glyphs</span>
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"HELLO"</span>, <span class="id">styles</span>);
 
-<span class="hljs-comment">// 3. Lay out with advance widths</span>
-<span class="hljs-keyword">let</span> cursor_x = <span class="hljs-number">50</span>;
-<span class="hljs-keyword">let</span> baseline_y = <span class="hljs-number">120</span>;
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  g.<span class="hljs-title function_">drawTo</span>(cursor_x, baseline_y)
-  cursor_x = <span class="hljs-title function_">calc</span>(cursor_x + g.<span class="hljs-property">advanceWidth</span>);
+<span class="cm">// 3. Lay out with advance widths</span>
+<span class="kw">let</span> <span class="id">cursor_x</span> = <span class="num">50</span>;
+<span class="kw">let</span> <span class="id">baseline_y</span> = <span class="num">120</span>;
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="id">g</span>.<span class="id">drawTo</span>(<span class="id">cursor_x</span>, <span class="id">baseline_y</span>)
+  <span class="id">cursor_x</span> = <span class="kw">calc</span>(<span class="id">cursor_x</span> + <span class="id">g</span>.<span class="id">advanceWidth</span>);
 }
 </code></pre><p>That&#39;s three steps: <code>@font</code> declares the font, <code>fromGlyph()</code> converts text to geometry, and an advance-width loop handles layout. From there, every PathBlock operation is available — transforms, sampling, fillets, boolean operations, contour decomposition. The glyph is geometry now, and geometry composes.</p>
 <h2>What&#39;s Next</h2>

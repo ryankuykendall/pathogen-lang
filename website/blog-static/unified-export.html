@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -315,8 +326,7 @@ code.hljs {
 <h2>Try it</h2>
 <p>The piece in the screenshots is below — open the source, riff on the rings, then take it to the Export dialog and watch the legend set its own title.</p>
 <p><mini-workspace code-open caption="Meridian Bloom — six rings of petals and a Baumans title, drawn as glyph outlines.">
-  <code>// viewBox="0 0 900 1200"
-@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+  <code>@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
 define ViewBox(0, 0, 900, 1200);
 
 define default PathLayer('background') ${

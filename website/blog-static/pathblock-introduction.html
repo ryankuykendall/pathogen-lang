@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -293,15 +304,15 @@ code.hljs {
 <p>If you build parametric SVGs, icon systems, or generative art, you&#39;ve felt the friction: repeating the same shapes at different positions means copy-pasting <code>&lt;path&gt;</code> elements, tweaking <code>d</code> attributes, adjusting coordinates. PathBlocks solve this by capturing relative path commands as first-class values that you can draw, position, transform, and compose.</p>
 <h2>What Is a PathBlock?</h2>
 <p>A PathBlock is a reusable fragment of SVG path commands. You define one with the <code>@{ ... }</code> syntax, and the commands inside are stored as relative offsets from an implicit <code>(0, 0)</code> origin. The block doesn&#39;t draw anything on its own — it&#39;s a template waiting to be placed.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> arrow = @{
-  h <span class="hljs-number">40</span>
-  l -<span class="hljs-number">10</span> -<span class="hljs-number">8</span>
-  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
-  h -<span class="hljs-number">30</span>
-  v <span class="hljs-number">6</span>
-  h <span class="hljs-number">30</span>
-  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
-  l <span class="hljs-number">10</span> -<span class="hljs-number">8</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">arrow</span> = @{
+  h 40
+  l -10 -8
+  l 0 5
+  h -30
+  v 6
+  h 30
+  l 0 5
+  l 10 -8
 };
 </code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
 <p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
@@ -581,12 +592,12 @@ leg.apply {
 <p>There are two ways to draw a PathBlock: the manual approach and the convenience method.</p>
 <h3>Manual: <code>M</code> + <code>.draw()</code></h3>
 <p>Position the cursor with an <code>M</code> command, then call <code>.draw()</code> to emit the relative commands:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">60</span> <span class="hljs-number">70</span>
-arrow.<span class="hljs-title function_">draw</span>()
+<pre><code class="hljs language-pathogen">M 60 70
+arrow.draw()
 </code></pre><p>This is flexible — you control the cursor — but it&#39;s two statements for one shape. See <a href="/docs#path-blocks-drawing-a-path-block">Drawing a Path Block</a> in the documentation.</p>
 <h3>Convenience: <code>.drawTo(x, y)</code></h3>
 <p>The <code>drawTo()</code> method combines positioning and drawing in a single call:</p>
-<pre><code class="hljs language-pathogen">arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">60</span>, <span class="hljs-number">70</span>)
+<pre><code class="hljs language-pathogen"><span class="id">arrow</span>.<span class="id">drawTo</span>(<span class="num">60</span>, <span class="num">70</span>)
 </code></pre><p>It emits <code>M 60 70</code> followed by the PathBlock&#39;s commands, and returns a <code>ProjectedPath</code> value you can use for further operations (sampling, transforms, boolean ops). This is the preferred approach for most use cases.</p>
 <p>The demo below shows both approaches — manual on top, <code>drawTo</code> on the bottom. Same shapes, same positions, less ceremony with <code>drawTo</code>.</p>
 <p><mini-workspace code-open caption="Manual M+draw() vs drawTo() — same result, less code">
@@ -638,11 +649,11 @@ drawto.apply {
 </mini-workspace></p>
 <h2>Reuse and Repetition</h2>
 <p>The real power of PathBlocks shows when you draw the same shape many times. Combine <code>drawTo()</code> with <a href="/docs#syntax-for-loops">control flow</a> to generate patterns:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> dot = @{ a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">6</span> <span class="hljs-number">0</span>  a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> -<span class="hljs-number">6</span> <span class="hljs-number">0</span> };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">dot</span> = @{ a 3 3 0 1 1 6 0  a 3 3 0 1 1 -6 0 };
 
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.5</span>) {
-  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.5</span>) {
-    dot.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + i * <span class="hljs-number">15</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + j * <span class="hljs-number">15</span>))
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">5</span>) {
+  <span class="kw">for</span> (<span class="id">j</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">5</span>) {
+    <span class="id">dot</span>.<span class="id">drawTo</span>(<span class="kw">calc</span>(<span class="num">20</span> + <span class="id">i</span> * <span class="num">15</span>), <span class="kw">calc</span>(<span class="num">20</span> + <span class="id">j</span> * <span class="num">15</span>))
   }
 }
 </code></pre><p>PathBlocks are <a href="/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
@@ -874,15 +885,15 @@ arrows.apply {
 <h2>Projection</h2>
 <p>Drawing places a shape into the SVG output. But sometimes you need to work with a positioned shape <em>without</em> drawing it — for example, to query its geometry or use it in a boolean operation. That&#39;s what <a href="/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> is for.</p>
 <p><code>.project()</code> returns a <code>ProjectedPath</code> — the same commands, but offset to absolute coordinates at <code>(x, y)</code>. The PathBlock itself stays unchanged; the ProjectedPath is a positioned view of it:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
-<span class="hljs-keyword">let</span> proj = box.<span class="hljs-title function_">project</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>);
-<span class="hljs-title function_">log</span>(proj.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>));  <span class="hljs-comment">// Point at midpoint of positioned path</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 50 v 50 h -50 z };
+<span class="kw">let</span> <span class="id">proj</span> = <span class="id">box</span>.<span class="id">project</span>(<span class="num">100</span>, <span class="num">100</span>);
+<span class="id">log</span>(<span class="id">proj</span>.<span class="id">get</span>(<span class="num">0.5</span>));  <span class="cm">// Point at midpoint of positioned path</span>
 </code></pre><p>Think of it as &quot;place the shape here, but don&#39;t draw it yet.&quot; ProjectedPaths support all the same operations as PathBlocks — sampling, fillets, chamfers, booleans — but in absolute coordinates. You&#39;ll see <code>.project()</code> used heavily in the rest of this series whenever shapes need to interact with each other spatially.</p>
 <h2>Standard Library Shapes</h2>
 <p>Pathogen&#39;s <a href="/docs#stdlib-path-functions">standard library</a> provides ready-made PathBlocks for common shapes:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>) };
-<span class="hljs-keyword">let</span> r = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">60</span>, <span class="hljs-number">40</span>) };
-<span class="hljs-keyword">let</span> s = @{ <span class="hljs-title function_">star</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">25</span>, <span class="hljs-number">12</span>, <span class="hljs-number">5</span>) };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">c</span> = @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">30</span>) };
+<span class="kw">let</span> <span class="id">r</span> = @{ <span class="id">rect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">60</span>, <span class="num">40</span>) };
+<span class="kw">let</span> <span class="id">s</span> = @{ <span class="id">star</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">25</span>, <span class="num">12</span>, <span class="num">5</span>) };
 </code></pre><p>These return PathBlocks, so all the same methods — <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, transforms — work on them.</p>
 <p><mini-workspace caption="Standard library shapes — circle, rect, star, polygon, and roundRect">
   <code>define ViewBox(0, 0, 600, 260);

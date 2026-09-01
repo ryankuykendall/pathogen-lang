@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -287,7 +298,7 @@ code.hljs {
 <h2>The Annular Sector</h2>
 <p>The fundamental shape in a radial bar chart is the <strong>annular sector</strong> — a ring segment defined by an inner radius, outer radius, and two angles. In Pathogen, the new <code>radialWedge()</code> stdlib function generates this shape with a single call:</p>
 <pre><code class="hljs language-pathogen">M cx cy
-<span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
+<span class="id">radialWedge</span>(<span class="id">innerR</span>, <span class="id">outerR</span>, <span class="id">fromAngle</span>, <span class="id">toAngle</span>, <span class="id">cornerR</span>)
 </code></pre><p>The center is wherever the cursor is positioned (via <code>M cx cy</code>). The function emits only relative commands (<code>m</code>, <code>a</code>, <code>l</code>, <code>z</code>) — no absolute <code>M</code> — so it composes naturally inside <a href="/blog/pathblock-introduction">PathBlocks</a>. Angles are in radians (use the <code>deg</code> suffix for degrees — e.g., <code>90deg</code>, <code>-45deg</code>), with <code>fromAngle</code> / <code>toAngle</code> following the same convention as <a href="/blog/gradient-conic">conic gradients</a>. The <code>cornerR</code> parameter controls the rounding at all four arc-line junctions.</p>
 <p><mini-workspace code-open caption="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations">
   <code>define ViewBox(0, 0, 560, 400);
@@ -555,19 +566,19 @@ accentLabels.apply {
 <p>The ghost shape shows <code>cornerR = 0</code> (sharp edges). The solid shape uses <code>cornerR = 6</code>, which rounds all four corners where radial lines meet circular arcs.</p>
 <h3>Why a stdlib function?</h3>
 <p>We initially built annular sectors using a <a href="/blog/pathblock-introduction">PathBlock</a> with <a href="/blog/heading-turn"><code>heading</code></a>, <code>tangentArc</code>, <code>turn</code>, and <code>tangentLine</code>:</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">makeWedge</span>(<span class="hljs-params">innerR, outerR, sweep, startAngle, cornerR</span>) {
-  <span class="hljs-keyword">let</span> w = @{
-    <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(startAngle + 90deg))
-    <span class="hljs-title function_">tangentArc</span>(innerR, sweep)
-    <span class="hljs-title function_">turn</span>(-90deg)
-    <span class="hljs-title function_">tangentLine</span>(<span class="hljs-title function_">calc</span>(outerR - innerR))
-    <span class="hljs-title function_">turn</span>(-90deg)
-    <span class="hljs-title function_">tangentArc</span>(outerR, <span class="hljs-title function_">calc</span>(-<span class="hljs-number">1</span> * sweep))
-    <span class="hljs-title function_">turn</span>(-90deg)
-    <span class="hljs-title function_">tangentLine</span>(<span class="hljs-title function_">calc</span>(outerR - innerR))
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">makeWedge</span>(<span class="id">innerR</span>, <span class="id">outerR</span>, <span class="id">sweep</span>, <span class="id">startAngle</span>, <span class="id">cornerR</span>) {
+  <span class="kw">let</span> <span class="id">w</span> = @{
+    <span class="id">heading</span>(<span class="kw">calc</span>(<span class="id">startAngle</span> + <span class="num">90deg</span>))
+    <span class="id">tangentArc</span>(<span class="id">innerR</span>, <span class="id">sweep</span>)
+    <span class="id">turn</span>(-<span class="num">90deg</span>)
+    <span class="id">tangentLine</span>(<span class="kw">calc</span>(<span class="id">outerR</span> - <span class="id">innerR</span>))
+    <span class="id">turn</span>(-<span class="num">90deg</span>)
+    <span class="id">tangentArc</span>(<span class="id">outerR</span>, <span class="kw">calc</span>(-<span class="num">1</span> * <span class="id">sweep</span>))
+    <span class="id">turn</span>(-<span class="num">90deg</span>)
+    <span class="id">tangentLine</span>(<span class="kw">calc</span>(<span class="id">outerR</span> - <span class="id">innerR</span>))
     z
   };
-  <span class="hljs-keyword">return</span> w.<span class="hljs-title function_">fillet</span>(cornerR);
+  <span class="kw">return</span> <span class="id">w</span>.<span class="id">fillet</span>(<span class="id">cornerR</span>);
 }
 </code></pre><p>This approach taught us the <a href="/blog/heading-turn">heading/turn</a> system well, but it hit real problems at chart scale:</p>
 <ol>
@@ -578,9 +589,9 @@ accentLabels.apply {
 <p>These challenges led us to create <code>radialWedge()</code> as a native stdlib function — the same design philosophy as <code>roundRect()</code>: encapsulate edge-case geometry so users get correct output without solving it themselves.</p>
 <h2>Drawing Radial Bars</h2>
 <p>A radial bar maps a data value to the outer radius of an annular sector. The inner radius stays constant (forming the center hole), and the bar&#39;s length — its radial extent — encodes the value:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> outerR = <span class="hljs-title function_">calc</span>(innerR + (maxR - innerR) * d.<span class="hljs-property">all</span> / maxVal);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">outerR</span> = <span class="kw">calc</span>(<span class="id">innerR</span> + (<span class="id">maxR</span> - <span class="id">innerR</span>) * <span class="id">d</span>.<span class="id">all</span> / <span class="id">maxVal</span>);
 M cx cy
-<span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
+<span class="id">radialWedge</span>(<span class="id">innerR</span>, <span class="id">outerR</span>, <span class="id">fromAngle</span>, <span class="id">toAngle</span>, <span class="id">cornerR</span>)
 </code></pre><p>To compare two datasets (all games vs top 100), the Observable chart overlays a narrower dark bar on top of each wider red bar. The dark bar uses 50% of the angular width, centered within the slice:</p>
 <p><mini-workspace code-open caption="Two overlaid bars — red (all BGG games, 15.6%) with dark overlay (top 100, 7.6%)">
   <code>define ViewBox(0, 0, 520, 400);
@@ -920,10 +931,10 @@ g.append(bg, grid, center, barsAll, barsTop, swAll, swTop, legLabels, title);
 <li><strong>Vertically centered</strong> so the text midline — not baseline — aligns with the bar&#39;s angular center</li>
 </ul>
 <p>Doing this manually requires separate TextLayers for left and right hemispheres, manual <code>cos</code>/<code>sin</code> positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new <code>.radialProject()</code> method on <a href="/blog/textblock-introduction">TextBlock</a> handles all of this in one call:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">`<span class="hljs-subst">${d.name}</span>`</span> } &lt;&lt; ${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; };
-catLabels.<span class="hljs-property">apply</span> {
-  label.<span class="hljs-title function_">radialProject</span>(cx, cy, midAngle, labelR,
-    <span class="hljs-string">&#x27;start&#x27;</span>, <span class="hljs-number">1</span>, <span class="hljs-title class_">VerticalAnchor</span>.<span class="hljs-property">Midline</span>).<span class="hljs-title function_">draw</span>()
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">0</span>)`${<span class="id">d</span>.<span class="id">name</span>}` } &lt;&lt; ${ <span class="pr">font-size</span>: <span class="num">11</span>; };
+<span class="id">catLabels</span>.<span class="kw">apply</span> {
+  <span class="id">label</span>.<span class="id">radialProject</span>(<span class="id">cx</span>, <span class="id">cy</span>, <span class="id">midAngle</span>, <span class="id">labelR</span>,
+    <span class="str">'start'</span>, <span class="num">1</span>, <span class="id">VerticalAnchor</span>.<span class="id">Midline</span>).<span class="id">draw</span>()
 }
 </code></pre><p>The seven arguments:</p>
 <ol>

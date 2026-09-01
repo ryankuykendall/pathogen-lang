@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -325,8 +336,8 @@ construct by intersection math, trivial to draw once as a stroke. Cut
 geometry you author once multiplies across every piece, and the seams
 come back queryable, so the decoration (registration marks, sorting,
 scattering) is a loop, not a spreadsheet. The classification idiom:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">if</span> (piece.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
-  <span class="hljs-comment">// this piece kept some of the plate&#x27;s labeled border</span>
+<pre><code class="hljs language-pathogen"><span class="kw">if</span> (<span class="id">piece</span>.<span class="id">segmentAll</span>(<span class="str">'rim'</span>).<span class="id">length</span> &gt; <span class="num">0</span>) {
+  <span class="cm">// this piece kept some of the plate's labeled border</span>
 }
 </code></pre><h2>Example 1 — The knife is a path</h2>
 <p>One lazy S-curve, dashed red over a ghost of the plate on the left, and
@@ -334,8 +345,7 @@ the two pieces it makes on the right. The amber strokes are each
 piece&#39;s <code>segmentAll(&#39;cut&#39;)</code> — notice they are the <em>same curve</em> as the
 knife, clipped to the material it actually crossed.</p>
 <p><mini-workspace code-open caption="A cubic knife cuts a cubic seam; the healed edges echo the stroke.">
-  <code>// viewBox="0 0 480 230"
-//-- The knife is a path, so curves cut curves: a lazy S-wave slices the
+  <code>//-- The knife is a path, so curves cut curves: a lazy S-wave slices the
 //-- plate, the pieces drift apart, and each healed seam — stroked amber —
 //-- is an exact copy of the knife's arc through the material.
 
@@ -435,8 +445,7 @@ out into a knob with a narrow neck, then rejoin the line. One cut,
 two pieces: the left one wears the knob, the right one the socket,
 and both seams are the same mushroom silhouette.</p>
 <p><mini-workspace code-open caption="Two cubics make the knob; the cut hands one piece the nub and the other the socket.">
-  <code>// viewBox="0 0 480 250"
-//-- The interlocking nub: two cubics bulge the knife into a knob with a
+  <code>//-- The interlocking nub: two cubics bulge the knife into a knob with a
 //-- narrow neck. Cut once and the pieces come apart wearing matching
 //-- seams — one knob, one socket, from the same stroke.
 
@@ -532,8 +541,7 @@ interior piece, tinted amber. The teal strokes make the mechanism
 visible: they are each piece&#39;s inherited rim runs, the very label the
 classification asked about.</p>
 <p><mini-workspace code-open caption="Teal is the rim each piece kept — the label does the sorting, and the amber piece kept none.">
-  <code>// viewBox="0 0 480 300"
-//-- Which pieces touch the frame? Label the plate's rim before cutting a
+  <code>//-- Which pieces touch the frame? Label the plate's rim before cutting a
 //-- 3x3 wavy grid, and afterward each piece answers for itself: rim run
 //-- kept = tray piece (paper), rim count zero = the one that falls out.
 
@@ -645,8 +653,7 @@ both endpoints — so partitioning <em>each piece&#39;s own seam</em> puts rings
 identical spots on both copies. The dotted lines just make the pairing
 visible across the gap.</p>
 <p><mini-workspace code-open caption="partition(3) on each twin seam: same fractions, same spots, guaranteed pairs.">
-  <code>// viewBox="0 0 480 240"
-//-- Registration marks: partition each piece's seam at the same fractions
+  <code>//-- Registration marks: partition each piece's seam at the same fractions
 //-- and the marks pair up across the gap — twin seams are the same curve,
 //-- so the same t lands on the same spot of both copies.
 
@@ -746,8 +753,7 @@ corner keeps the assembled picture: every piece run through
 <code>scale(0.44, 0.44)</code> and drawn at one shared origin, reassembling the
 plate in miniature because scaled pieces keep their scaled placement.</p>
 <p><mini-workspace code-open caption="rotate() spins each piece about its own center — no pivot bookkeeping — and the lid is the same cut, scaled.">
-  <code>// viewBox="0 0 480 300"
-//-- The finished puzzle: nine wavy-cut pieces spun in place with
+  <code>//-- The finished puzzle: nine wavy-cut pieces spun in place with
 //-- rotate() and scattered — except the middle piece, gone missing. The
 //-- box lid keeps the assembled picture, scale()d straight from the cut.
 
@@ -915,15 +921,15 @@ sites scanned expression siblings without walking postfix chains, so
 <code>for (i in 0..arr.length)</code>, <code>PathLayer(names[i])</code>, and
 <code>define ViewBox(0, 0, sheet.w, …)</code> were all broken the same way. One
 fix later, layers are routable as data:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: one if per tint</span>
-<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">0</span>) { shard0.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
-<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">1</span>) { shard1.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
-<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">2</span>) { shard2.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
+<pre><code class="hljs language-pathogen"><span class="cm">// before: one if per tint</span>
+<span class="kw">if</span> (<span class="kw">calc</span>(<span class="id">i</span> % <span class="num">3</span>) == <span class="num">0</span>) { <span class="id">shard0</span>.<span class="kw">apply</span> { M placeX placeY spun.draw() } }
+<span class="kw">if</span> (<span class="kw">calc</span>(<span class="id">i</span> % <span class="num">3</span>) == <span class="num">1</span>) { <span class="id">shard1</span>.<span class="kw">apply</span> { M placeX placeY spun.draw() } }
+<span class="kw">if</span> (<span class="kw">calc</span>(<span class="id">i</span> % <span class="num">3</span>) == <span class="num">2</span>) { <span class="id">shard2</span>.<span class="kw">apply</span> { M placeX placeY spun.draw() } }
 
-<span class="hljs-comment">// after: layers are values — index into a list of them</span>
-<span class="hljs-keyword">let</span> shardLayers = [shard0, shard1, shard2];
-<span class="hljs-title function_">layer</span>(shardLayers[<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>)]).<span class="hljs-property">apply</span> {
-  M placeX placeY spun.<span class="hljs-title function_">draw</span>()
+<span class="cm">// after: layers are values — index into a list of them</span>
+<span class="kw">let</span> <span class="id">shardLayers</span> = [<span class="id">shard0</span>, <span class="id">shard1</span>, <span class="id">shard2</span>];
+<span class="kw">layer</span>(<span class="id">shardLayers</span>[<span class="kw">calc</span>(<span class="id">i</span> % <span class="num">3</span>)]).<span class="kw">apply</span> {
+  M placeX placeY spun.draw()
 }
 </code></pre><p>(The computed-name spelling <code>layer(`shard${i % 3}`)</code> always worked
 — it is what the shattered-glyph and tinted-panes samples use, and the

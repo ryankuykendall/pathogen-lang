@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -400,24 +411,24 @@ g.append(bg, trail, dots, labels, formula);
 <p>The diagram above shows the first 8 iterations from seed point <code>(0.1, 0.1)</code> with parameters <code>a = -1.4, b = 1.6, c = 1.0, d = 0.7</code>. The points jump unpredictably — that&#39;s the chaos — but they stay bounded roughly within <code>[-3, 3]</code> on both axes. Draw enough points and the attractor&#39;s structure emerges.</p>
 <h2>First Implementation: A Sparse Point Cloud</h2>
 <p>Let&#39;s start with just 100 iterations. The core pattern is a <code>for</code> loop that computes each new point from the previous one:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> a = -<span class="hljs-number">1.4</span>;
-<span class="hljs-keyword">let</span> b = <span class="hljs-number">1.6</span>;
-<span class="hljs-keyword">let</span> c = <span class="hljs-number">1.0</span>;
-<span class="hljs-keyword">let</span> d = <span class="hljs-number">0.7</span>;
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">a</span> = -<span class="num">1.4</span>;
+<span class="kw">let</span> <span class="id">b</span> = <span class="num">1.6</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="num">1.0</span>;
+<span class="kw">let</span> <span class="id">d</span> = <span class="num">0.7</span>;
 
-<span class="hljs-keyword">let</span> scale = <span class="hljs-number">80</span>;
-<span class="hljs-keyword">let</span> cx = <span class="hljs-number">200</span>;
-<span class="hljs-keyword">let</span> cy = <span class="hljs-number">170</span>;
+<span class="kw">let</span> <span class="id">scale</span> = <span class="num">80</span>;
+<span class="kw">let</span> <span class="id">cx</span> = <span class="num">200</span>;
+<span class="kw">let</span> <span class="id">cy</span> = <span class="num">170</span>;
 
-<span class="hljs-keyword">let</span> x = <span class="hljs-number">0.1</span>;
-<span class="hljs-keyword">let</span> y = <span class="hljs-number">0.1</span>;
+<span class="kw">let</span> <span class="id">x</span> = <span class="num">0.1</span>;
+<span class="kw">let</span> <span class="id">y</span> = <span class="num">0.1</span>;
 
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.99</span>) {
-  <span class="hljs-keyword">let</span> nx = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x));
-  <span class="hljs-keyword">let</span> ny = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y));
-  <span class="hljs-title function_">circle</span>(<span class="hljs-title function_">calc</span>(cx + nx * scale), <span class="hljs-title function_">calc</span>(cy + ny * scale), <span class="hljs-number">3</span>);
-  x = nx;
-  y = ny;
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">99</span>) {
+  <span class="kw">let</span> <span class="id">nx</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">a</span> * <span class="id">y</span>) + <span class="id">c</span> * <span class="id">cos</span>(<span class="id">a</span> * <span class="id">x</span>));
+  <span class="kw">let</span> <span class="id">ny</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">b</span> * <span class="id">x</span>) + <span class="id">d</span> * <span class="id">cos</span>(<span class="id">b</span> * <span class="id">y</span>));
+  <span class="id">circle</span>(<span class="kw">calc</span>(<span class="id">cx</span> + <span class="id">nx</span> * <span class="id">scale</span>), <span class="kw">calc</span>(<span class="id">cy</span> + <span class="id">ny</span> * <span class="id">scale</span>), <span class="num">3</span>);
+  <span class="id">x</span> = <span class="id">nx</span>;
+  <span class="id">y</span> = <span class="id">ny</span>;
 }
 </code></pre><p>A few things to notice:</p>
 <p><strong>Temporary variables are essential.</strong> Both <code>nx</code> and <code>ny</code> depend on the <em>current</em> <code>x</code> and <code>y</code>. If you updated <code>x</code> before computing <code>ny</code>, you&#39;d be mixing old and new values — a classic pitfall in iterative algorithms. The pattern <code>let nx = ...; let ny = ...; x = nx; y = ny;</code> keeps both computations reading from the same state.</p>
@@ -459,23 +470,23 @@ for (i in 0..99) {
 <h2>Scaling Up: 10,000 Points</h2>
 <p>Pathogen&#39;s <code>for</code> loop supports up to 32,000 iterations per loop (a safety limit to prevent runaway programs). For our first full render, 10,000 points is plenty to reveal the attractor&#39;s structure.</p>
 <p>But first, an optimization. Each <code>circle()</code> call generates two SVG arc commands — for 10,000 circles, that&#39;s 30,000 path commands and roughly 800KB of SVG data. Instead, we can render each point as a zero-length line segment: <code>M x y l 0 0</code>. With <code>stroke-linecap: round</code> set on the layer, SVG renders this as a circular dot. Two commands per point instead of three, cutting the SVG output nearly in half.</p>
-<pre><code class="hljs language-pathogen">define <span class="hljs-keyword">default</span> <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;attractor&#x27;</span>) ${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.55</span> <span class="hljs-number">0.18</span> <span class="hljs-number">260</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.0</span>;
-  stroke-<span class="hljs-attr">linecap</span>: round;
-  <span class="hljs-attr">fill</span>: none;
+<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="kw">default</span> <span class="tp">PathLayer</span>(<span class="str">'attractor'</span>) ${
+  <span class="pr">stroke</span>: <span class="id">oklch</span>(<span class="num">0.55</span> <span class="num">0.18</span> <span class="num">260</span>);
+  <span class="pr">stroke-width</span>: <span class="num">1.0</span>;
+  <span class="pr">stroke-linecap</span>: <span class="id">round</span>;
+  <span class="pr">fill</span>: <span class="id">none</span>;
 }
 
-<span class="hljs-comment">// Seed point — iteration 0</span>
-M <span class="hljs-title function_">calc</span>(cx + x * scale) <span class="hljs-title function_">calc</span>(cy + y * scale)
+<span class="cm">// Seed point — iteration 0</span>
+M calc(cx + x * scale) calc(cy + y * scale)
 
-<span class="hljs-comment">// Iterations 1–9,999</span>
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">1.</span><span class="hljs-number">.9999</span>) {
-  <span class="hljs-keyword">let</span> nx = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x));
-  <span class="hljs-keyword">let</span> ny = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y));
-  x = nx;
-  y = ny;
-  M <span class="hljs-title function_">calc</span>(cx + nx * scale) <span class="hljs-title function_">calc</span>(cy + ny * scale) l <span class="hljs-number">0</span> <span class="hljs-number">0</span>
+<span class="cm">// Iterations 1–9,999</span>
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">9999</span>) {
+  <span class="kw">let</span> <span class="id">nx</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">a</span> * <span class="id">y</span>) + <span class="id">c</span> * <span class="id">cos</span>(<span class="id">a</span> * <span class="id">x</span>));
+  <span class="kw">let</span> <span class="id">ny</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">b</span> * <span class="id">x</span>) + <span class="id">d</span> * <span class="id">cos</span>(<span class="id">b</span> * <span class="id">y</span>));
+  <span class="id">x</span> = <span class="id">nx</span>;
+  <span class="id">y</span> = <span class="id">ny</span>;
+  M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
 }
 </code></pre><p>The initial <code>M</code> command plots the seed point before the loop, so the loop starts at <code>1</code> rather than <code>0</code> — together they produce exactly 10,000 points (the per-loop iteration limit). The <code>M x y l 0 0</code> idiom is a well-known SVG trick for point rendering, but it&#39;s admittedly non-obvious. A dedicated <code>dot(x, y)</code> function would communicate intent more clearly — we&#39;ll return to this idea later.</p>
 <p><mini-workspace code-open caption="10,000 iterations — the full Clifford attractor emerges">
@@ -519,25 +530,25 @@ for (i in 1..9999) {
 <h2>Color Mapping with Layers</h2>
 <p>A single-color attractor is striking, but color can reveal the attractor&#39;s temporal structure — how the trajectory evolves over time. In many attractor renderers, each point&#39;s color is determined by its iteration index or by the local density of visits. Pathogen&#39;s layer system gives us a clean way to approximate this.</p>
 <p>The idea: split 10,000 iterations into 5 chunks of 2,000 each. Each chunk renders to a different layer with a different color from a palette. Early iterations (exploring the attractor&#39;s outline) get one color; later iterations (filling in the dense interior) get another.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> baseStyles = ${
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">linecap</span>: round;
-  <span class="hljs-attr">fill</span>: none;
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">baseStyles</span> = ${
+  <span class="pr">stroke-width</span>: <span class="num">1</span>;
+  <span class="pr">stroke-linecap</span>: <span class="id">round</span>;
+  <span class="pr">fill</span>: <span class="id">none</span>;
 };
-<span class="hljs-keyword">let</span> colors = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e40af&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f97316&#x27;</span>), <span class="hljs-number">5</span>);
-<span class="hljs-keyword">let</span> layers = colors.<span class="hljs-property">map</span> {|c, i|
-  <span class="hljs-keyword">return</span> <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">`color-<span class="hljs-subst">${i}</span>`</span>) ${ <span class="hljs-attr">stroke</span>: c; } &lt;&lt; baseStyles;
+<span class="kw">let</span> <span class="id">colors</span> = <span class="id">Color</span>.<span class="id">palette</span>(<span class="id">Color</span>(<span class="str">'#1e40af'</span>), <span class="id">Color</span>(<span class="str">'#f97316'</span>), <span class="num">5</span>);
+<span class="kw">let</span> <span class="id">layers</span> = <span class="id">colors</span>.<span class="id">map</span> {|<span class="id">c</span>, <span class="id">i</span>|
+  <span class="kw">return</span> <span class="tp">PathLayer</span>(`color-${<span class="id">i</span>}`) ${ <span class="pr">stroke</span>: <span class="id">c</span>; } &lt;&lt; <span class="id">baseStyles</span>;
 };
 </code></pre><p><code>Color.palette()</code> generates 5 evenly interpolated colors between blue and orange. <code>.map</code> iterates over them, creating a <code>PathLayer</code> for each — the <code>&lt;&lt;</code> operator merges the per-layer stroke color with the shared base styles. No repetition, and the layer count is driven by the palette size.</p>
 <p>The nested loop handles iteration and color dispatch:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> ([colorLayer, chunk] <span class="hljs-keyword">in</span> layers) {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.1999</span>) {
-    <span class="hljs-keyword">let</span> nx = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x));
-    <span class="hljs-keyword">let</span> ny = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y));
-    x = nx;
-    y = ny;
-    colorLayer.<span class="hljs-property">apply</span> {
-      M <span class="hljs-title function_">calc</span>(cx + nx * scale) <span class="hljs-title function_">calc</span>(cy + ny * scale) l <span class="hljs-number">0</span> <span class="hljs-number">0</span>
+<pre><code class="hljs language-pathogen"><span class="kw">for</span> ([<span class="id">colorLayer</span>, <span class="id">chunk</span>] <span class="kw">in</span> <span class="id">layers</span>) {
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">1999</span>) {
+    <span class="kw">let</span> <span class="id">nx</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">a</span> * <span class="id">y</span>) + <span class="id">c</span> * <span class="id">cos</span>(<span class="id">a</span> * <span class="id">x</span>));
+    <span class="kw">let</span> <span class="id">ny</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">b</span> * <span class="id">x</span>) + <span class="id">d</span> * <span class="id">cos</span>(<span class="id">b</span> * <span class="id">y</span>));
+    <span class="id">x</span> = <span class="id">nx</span>;
+    <span class="id">y</span> = <span class="id">ny</span>;
+    <span class="id">colorLayer</span>.<span class="kw">apply</span> {
+      M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
     }
   }
 }
@@ -681,10 +692,10 @@ g.append(p1, p2, p3, names, params);
 </mini-workspace></p>
 <p>The <strong>Classic</strong> set produces overlapping leaf forms with clearly defined filaments. The <strong>Swirl</strong> set creates an angular, dispersed figure with sharper trajectories. The <strong>Organic</strong> set forms a denser, moon-like structure where the trajectories pack tightly together. All three emerge from the same two equations — only the four parameters differ.</p>
 <p>The implementation extracts the Clifford step into a reusable function:</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">cliffordStep</span>(<span class="hljs-params">x, y, a, b, c, d</span>) {
-  <span class="hljs-keyword">return</span> {
-    <span class="hljs-attr">x</span>: <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x)),
-    <span class="hljs-attr">y</span>: <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y))
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">cliffordStep</span>(<span class="id">x</span>, <span class="id">y</span>, <span class="id">a</span>, <span class="id">b</span>, <span class="id">c</span>, <span class="id">d</span>) {
+  <span class="kw">return</span> {
+    <span class="id">x</span>: <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">a</span> * <span class="id">y</span>) + <span class="id">c</span> * <span class="id">cos</span>(<span class="id">a</span> * <span class="id">x</span>)),
+    <span class="id">y</span>: <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">b</span> * <span class="id">x</span>) + <span class="id">d</span> * <span class="id">cos</span>(<span class="id">b</span> * <span class="id">y</span>))
   };
 }
 </code></pre><p>The function returns an object with <code>x</code> and <code>y</code> properties, which the caller destructures. This pattern — packaging both return values in an object — avoids the temporary-variable dance when the computation is factored out of the loop.</p>

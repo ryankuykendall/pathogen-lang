@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -309,7 +320,7 @@ up. Baseline wobble, tilt, breathing room, hand-drawn looseness — they&#39;re
 all symmetric drifts around a deliberate center, and <code>[−1, 1)</code> is their
 natural shape.</p>
 <p>The idiom to memorize (it&#39;s all over this blog):</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> wobble = <span class="hljs-number">1</span> + <span class="hljs-title function_">hash11</span>(i, layerIndex) * <span class="hljs-number">0.2</span>;
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">wobble</span> = <span class="num">1</span> + <span class="id">hash11</span>(<span class="id">i</span>, <span class="id">layerIndex</span>) * <span class="num">0.2</span>;
 </code></pre><p>That&#39;s &quot;a ±20% factor, per index, per layer&quot; — multiply it onto a width, a
 radius, a spacing, anything. The <code>0.2</code> is the amplitude dial; the seed
 keeps each layer&#39;s wobble independent.</p>
@@ -318,8 +329,7 @@ keeps each layer&#39;s wobble independent.</p>
 from a center axis. About half land above, half below, at unrelated
 heights.</p>
 <p><mini-workspace code-open caption="48 dots at hash11(i) · 43 from the center axis — ticks mark −1, 0, and +1.">
-  <code>// viewBox="0 0 400 190"
-//-- 48 dots straddling an axis: hash11(i) answers between -1 and 1, so
+  <code>//-- 48 dots straddling an axis: hash11(i) answers between -1 and 1, so
 //-- roughly half land above the line and half below, at hashed heights.
 
 define ViewBox(0, 0, 400, 190);
@@ -358,8 +368,7 @@ maps directly onto &quot;which side of the line.&quot;</p>
 the bottom row drops each baseline by <code>hash11(i) * 5</code> and leans each bar
 by <code>hash11(i, 1) * 4</code>.</p>
 <p><mini-workspace code-open caption="The same 26 bars twice: machine-set above, baseline-and-lean jittered below.">
-  <code>// viewBox="0 0 400 170"
-//-- Two rows of "type": equal-width bars standing on a baseline. The top
+  <code>//-- Two rows of "type": equal-width bars standing on a baseline. The top
 //-- row is machine-set. The bottom row nudges each bar's baseline up or
 //-- down and leans it left or right -- instantly warmer, and repeatable.
 
@@ -393,8 +402,7 @@ with <code>hash01</code> you&#39;d get a row that only ever sagged one way.</p>
 with every dot offset by <code>(hash11(idx) * j, hash11(idx, 1) * j)</code> — and
 <code>j</code> set to 0, 2, and 5.</p>
 <p><mini-workspace code-open caption="One 10×6 grid, three amplitudes: j = 0, 2, 5.">
-  <code>// viewBox="0 0 400 132"
-//-- The same 10 x 6 dot grid three times. The only difference is j -- the
+  <code>//-- The same 10 x 6 dot grid three times. The only difference is j -- the
 //-- jitter amplitude multiplying hash11: 0 (rigid), 2 (relaxed), 5
 //-- (scattered). One number is the entire design decision.
 
@@ -450,8 +458,7 @@ between stops,&quot; and <code>Cap.tapered</code> closes the ends to points. Ful
 the <a href="/docs#variable-offset-variable-offset">variable-offset docs</a>; here,
 all that matters is <em>the width at each stop is a number you compute</em>.</p>
 <p><mini-workspace code-open caption="One smooth width profile, twice: clean above, times 1 + hash11(i) · 0.25 below. The profile is the design; the wobble factor is the texture — and each is tunable without touching the other.">
-  <code>// viewBox="0 0 400 170"
-//-- The house idiom: 1 + hash11(i) * 0.25 is a +/-25% wobble factor you
+  <code>//-- The house idiom: 1 + hash11(i) * 0.25 is a +/-25% wobble factor you
 //-- multiply onto anything. Top ribbon: a smooth width profile. Bottom:
 //-- the same profile times the wobble -- the edge gets tooth.
 
@@ -492,8 +499,7 @@ overlapping pencil passes. Every ring is a 64-sided polygon whose vertex
 radius wobbles by ±7%, with the ring-and-pass number as the seed — so
 every pass wobbles its own way.</p>
 <p><mini-workspace code-open caption="Two passes per ring at 65% opacity: where they agree the line darkens, where they disagree it feathers — a pencil, from one signed wobble and disciplined seeds.">
-  <code>// viewBox="0 0 400 260"
-//-- Five concentric "pencil" rings, each drawn twice like overlapping
+  <code>//-- Five concentric "pencil" rings, each drawn twice like overlapping
 //-- pencil passes. Every vertex radius wobbles by a few percent, with the
 //-- ring number and pass number as seeds -- so every pass wobbles its own
 //-- way, and the whole sketch is repeatable.

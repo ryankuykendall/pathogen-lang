@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What Broken Lines Taught the Language — Pathogen Studio</title>
+  <meta name="description" content="Closing Broken Lines: the friction log. Building sashiko, leather, and stencil artifacts against the real language filled the log — four entries became fixes that shipped before publication, and the rest are on the bench with their diagnoses attached.">
+  <link rel="canonical" href="https://pathogen.studio/blog/broken-lines-what-it-taught">
+  <meta property="og:title" content="What Broken Lines Taught the Language — Pathogen Studio">
+  <meta property="og:description" content="Closing Broken Lines: the friction log. Building sashiko, leather, and stencil artifacts against the real language filled the log — four entries became fixes that shipped before publication, and the rest are on the bench with their diagnoses attached.">
+  <meta property="og:url" content="https://pathogen.studio/blog/broken-lines-what-it-taught">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"What Broken Lines Taught the Language","description":"Closing Broken Lines: the friction log. Building sashiko, leather, and stencil artifacts against the real language filled the log — four entries became fixes that shipped before publication, and the rest are on the bench with their diagnoses attached.","datePublished":"2026-09-05","url":"https://pathogen.studio/blog/broken-lines-what-it-taught","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">What Broken Lines Taught the Language</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>What Broken Lines Taught the Language</h1>
+        <p class="post-meta"><time datetime="2026-09-05">September 5, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 5 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><a href="/blog/broken-lines-stroke-geometry">Stroke geometry</a> — dashes,
+outlines, and start points as real paths</li>
+<li><a href="/blog/broken-lines-sashiko">Sashiko</a> — running stitches from
+binary sequences</li>
+<li><a href="/blog/broken-lines-leathercraft">Leathercraft</a> — stitch holes
+that can&#39;t disagree</li>
+<li><a href="/blog/broken-lines-stencils">Stencils</a> — bridges are just gaps</li>
+<li><strong>What Broken Lines taught the language</strong> (this post) — the
+friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes the toolkit from
+<a href="/blog/broken-lines-stroke-geometry">part 1</a> — <code>dash()</code> pieces and
+their <code>kind</code>, <code>outline()</code>, and applying a worker with <code>&lt;&lt;</code> — plus
+the <a href="/docs#path-blocks-boolean-operations">boolean operations</a>
+(<code>union</code>, <code>difference</code>). It reports on the four posts before it; you
+don&#39;t need to have read them all, but the samples it references live
+there.</p>
+</blockquote>
+<p>Part 1 promised that this series was a working friction log: real
+artifacts, built against the real language, with every stumble written
+down as it happened. This post opens the log. Five entries went in
+while parts 1 through 4 were being written, and two more arrived when
+the finished series was reviewed. Four became fixes that shipped
+before publication — the leather and stencil samples you already read
+use the first. The rest are on the bench, each with its
+diagnosis attached, because an honestly-described open problem is
+worth more than a quietly absorbed workaround.</p>
+<h2>Fixed: the ceremony in every filter</h2>
+<p>The single most repeated line of code in this series is a filter:
+keep the dashes, drop the gaps. The first time it was written, it
+didn&#39;t parse:</p>
+<pre><code class="hljs language-pathogen"><span class="cm">// before the fix — Parse error … Missing ';'</span>
+<span class="kw">let</span> <span class="id">inked</span> = <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>};
+</code></pre><p>The language required a full statement body — <code>return</code>, semicolon,
+braces earning their keep — for what is always a one-expression
+predicate:</p>
+<pre><code class="hljs language-pathogen"><span class="cm">// the form that worked, pre-fix</span>
+<span class="kw">let</span> <span class="id">inked</span> = <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="kw">return</span> <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>; };
+</code></pre><p>The parse error was the deciding vote: it said <em>missing semicolon</em>
+and nothing about what was actually missing. So the sugar shipped.
+Today, a lambda whose whole body is one expression returns it, no
+ceremony — the first fence above is now valid code:</p>
+<pre><code class="hljs language-pathogen"><span class="cm">// today — three shapes of the same sugar:</span>
+<span class="kw">let</span> <span class="id">inked</span> = <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>};  <span class="cm">// an inline predicate</span>
+<span class="kw">let</span> <span class="id">doubler</span> = {|<span class="id">v</span>| <span class="kw">calc</span>(<span class="id">v</span> * <span class="num">2</span>)};                           <span class="cm">// a reusable worker</span>
+<span class="kw">let</span> <span class="id">five</span> = {|| <span class="num">5</span>};                                         <span class="cm">// a zero-parameter constant</span>
+</code></pre><p>The bare expression is an implicit <code>return</code> — the two earlier forms
+stay equivalent — and the formatter round-trips each form as written.
+The <a href="/blog/broken-lines-leathercraft">leather</a> and
+<a href="/blog/broken-lines-stencils">stencil</a> samples were upgraded in place;
+what you read is the sugar. Details in the
+<a href="/docs#syntax-lambdas">lambda documentation</a>.</p>
+<p>A companion ruling landed when the series was reviewed, and it&#39;s the
+sixth and final log entry: writing a lambda <em>literal</em> directly after
+<code>&lt;&lt;</code> — <code>filter() &lt;&lt; {|piece| ...}</code> — is now a compile error. <code>&lt;&lt;</code>
+exists to apply a worker defined elsewhere, reusable across callback
+builtins; the inline spelling <em>is</em> the trailing block. Two ways to
+say the same thing is how cruft accumulates, so the language now has
+exactly one of each:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">inked</span> = <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>};  <span class="cm">// inline: trailing block</span>
+<span class="kw">let</span> <span class="id">isDash</span> = {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>};
+<span class="kw">let</span> <span class="id">alsoInked</span> = <span class="id">pieces</span>.<span class="id">filter</span>() &lt;&lt; <span class="id">isDash</span>;                 <span class="cm">// reusable: &lt;&lt; a name</span>
+</code></pre><h2>Fixed: the drifting hole</h2>
+<p>The stencil post&#39;s island demo tried a perfectly reasonable
+construction — subtract an annulus (a ring with a hole) from a sheet
+— and got back a ring whose counter had <em>drifted</em>, sitting off-center
+like a badly registered print. The workaround made the published
+sample better anyway (drawing the counter as its own piece is truer to
+the physical situation), but the log entry stayed, and the diagnosis
+turned out to be old plumbing. The
+<a href="/docs#path-blocks-boolean-operations">boolean engine&#39;s</a> subpath
+splitter only recognized a subpath boundary at an explicit <code>z</code>. A ring
+that closes by ending exactly where it started — which is what
+<code>circle()</code> emits — got glued to the hole-ring after it, and the step
+that implements subtraction by running the subtracted shape&#39;s outline
+backwards then scrambled the pair.</p>
+<p>The fix teaches the splitter what SVG always meant: a move after
+drawing commands starts a new subpath, <code>z</code> or no <code>z</code>. One function,
+one regression test, and the construction that started it all now
+renders exactly as designed — the dashed marker reconstructs where the
+counter used to land:</p>
+<p><mini-workspace code-open caption="A holed subtrahend (the shape being subtracted), post-fix: ring and island in place. Dashed: the pre-fix drift, reconstructed.">
+  <code>//-- The friction-log fix, rendered: subtracting a shape that has a hole
+//-- (an annulus) now keeps both its ring and its island exactly in
+//-- place. Before the fix, the inner contour drifted.
+
+define ViewBox(0, 0, 480, 220);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') ${};
+let sheetLayer = PathLayer('sheet') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let driftGhost = PathLayer('drift-ghost') ${
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(sheetLayer, driftGhost, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      160,
+      160,
+      10);
+};
+let outer = @{
+  circle(80, 80, 52);
+};
+let inner = @{
+  circle(80, 80, 28);
+};
+
+// A shape WITH a hole, used as the subtrahend.
+let annulus = outer.difference(inner);
+let stamped = sheet.difference(annulus);
+
+sheetLayer.apply {
+  M 70 22 stamped.draw()
+}
+sheetLayer.apply {
+  M 310 22 annulus.draw()
+}
+
+// Where the island landed BEFORE the fix — a reconstruction, dashed.
+let driftMarker = @{
+  circle(66, 66, 28);
+};
+driftGhost.apply {
+  M 70 22 driftMarker.draw()
+}
+
+labels.apply {
+  text(150, 202)`sheet.difference(annulus)`;
+  text(390, 202)`the annulus itself`;
+}
+</code>
+  <img src="/blog/samples/post49/01-holed-subtrahend.svg" alt="A holed subtrahend (the shape being subtracted), post-fix: ring and island in place. Dashed: the pre-fix drift, reconstructed." loading="lazy">
+</mini-workspace></p>
+<p>A pleasant footnote: <code>cut()</code> had privately worked around this exact
+limitation with its own local subpath splitting. The fix makes the
+general machinery honest, and the workaround is now just redundancy.</p>
+<h2>On the bench, with diagnoses</h2>
+<p><strong>Whole-value interpolation in style blocks.</strong> Interpolating a
+variable as a complete style value is a parse error today; wrapping
+the interpolation in a backtick template works:</p>
+<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: ${<span class="pr">capName</span>};      <span class="cm">// parse error today</span>
+<span class="id">stroke</span>-<span class="id">linecap</span>: `${<span class="id">capName</span>}`;    <span class="cm">// the form that works</span>
+</code></pre><p>A list built from variables needs one fragment per token, which is
+worse. The diagnosis points into the style-content tokenizer, a
+famously delicate corner of the grammar, so it&#39;s deferred to a
+session of its own rather than rushed here.</p>
+<p><strong>Stdlib shapes after <code>M</code>.</strong> A shape function can&#39;t follow a move on
+the same line — and would mislead even if it could, because stdlib
+shapes position themselves through their arguments and ignore the
+current position:</p>
+<pre><code class="hljs language-pathogen">M 85 52 <span class="id">roundRect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">320</span>, <span class="num">220</span>, <span class="num">14</span>)     <span class="cm">// parse error today</span>
+<span class="id">roundRect</span>(<span class="num">85</span>, <span class="num">52</span>, <span class="num">320</span>, <span class="num">220</span>, <span class="num">14</span>);          <span class="cm">// the working idiom: fold the anchor in</span>
+</code></pre><p>Method-call draws (<code>M x y piece.path.draw()</code>) work inline, which makes
+the inconsistency feel arbitrary. The planned fix is a contextual
+diagnostic that says the true rule out loud.</p>
+<p><strong>Dashing an inset line by the edge it came from.</strong> The leather
+post&#39;s deepest want. Stitch lines run <em>inside</em> the edge, but
+<code>offset()</code> changes a curve&#39;s length, so dashing two inset lines
+separately can disagree on hole counts — the exact error the craft
+forbids:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">flapHoles</span> = <span class="id">seamEdge</span>.<span class="id">offset</span>(<span class="num">3</span>).<span class="id">dash</span>(<span class="id">holePattern</span>);   <span class="cm">// 17 holes…</span>
+<span class="kw">let</span> <span class="id">bodyHoles</span> = <span class="id">seamEdge</span>.<span class="id">offset</span>(-<span class="num">3</span>).<span class="id">dash</span>(<span class="id">holePattern</span>);  <span class="cm">// …or maybe 18</span>
+</code></pre><p>What the domain wants is an offset-aware dash: partition the shared
+edge once, then carry each piece to the inset line at the matching
+position along the curve. That&#39;s a real feature, not a fix, and it&#39;s
+now on the roadmap ledger with the wallet as its motivating artifact.</p>
+<h2>The tally</h2>
+<p>Seven entries — five while writing, two more when the finished series
+was reviewed: four fixed and shipped before publication, three
+diagnosed and deferred with their next steps written down. (The
+seventh was the review pass catching the blog&#39;s own tooling
+red-handed: Pathogen code was being syntax-highlighted <em>as
+JavaScript</em>, splitting <code>stroke-width</code> into two colors — every code
+panel you&#39;ve read renders through the real parser now.) A sixth rough edge — the
+comma-vs-arithmetic dash-array rule — came into the series already
+known and carries a
+<a href="/docs#path-blocks-dashstyles-array-of-path-kind-t0-t1">documentation note</a>
+instead of a log entry; <a href="/blog/broken-lines-stroke-geometry">part 1</a>
+states it up front. That ratio is the point of working this way.
+Feature planning imagines what users need; an artifact <em>demands</em> it,
+in order, with a failing sample as the spec.
+<a href="/blog/cutting-room-papercraft">The Cutting Room</a> established the
+tradition, folding its report into each post&#39;s closing section;
+Broken Lines gave the log a post of its own. The next series will
+start its log on entry one.</p>
+<h2>Where to go next</h2>
+<p>The toolkit these five posts exercised is documented in the
+<a href="/docs#path-blocks-stroke-geometry">stroke geometry reference</a>, and
+the sugar this series earned is in the
+<a href="/docs#syntax-lambdas">lambda docs</a>. The best way to add to the next
+log is the way every entry here was made: build something real in the
+<a href="/workspace/scratch">playground</a>, and when the language pushes back,
+write it down. That&#39;s the entry.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

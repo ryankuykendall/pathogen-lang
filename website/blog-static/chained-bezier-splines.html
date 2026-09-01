@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -286,11 +297,11 @@ C 115.8 144.9  120 54.5  180 50
 C 233.1 45.9  255 137.5  320 140
 C 367.6 141.7  410.9 72.6  470 70
 </code></pre><p>In practice, getting those control points right means calculating sines and cosines, enforcing collinearity constraints, and adjusting handles by trial and error. Pathogen&#39;s new <a href="/docs#stdlib-cubicsplinepoints">spline functions</a> replace all of that with a declarative description of what you actually care about — waypoints, tangent angles, and handle lengths:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">cubicSpline</span>([
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">angle</span>: -20deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span> },
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">180</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">50</span>,  <span class="hljs-attr">angle</span>: 15deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">320</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">140</span>, <span class="hljs-attr">angle</span>: -30deg, <span class="hljs-attr">entry</span>: <span class="hljs-number">65</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">455</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">65</span>,  <span class="hljs-attr">angle</span>: 10deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">60</span> }
+<pre><code class="hljs language-pathogen"><span class="id">cubicSpline</span>([
+  { <span class="id">x</span>: <span class="num">50</span>, <span class="id">y</span>: <span class="num">150</span>, <span class="id">angle</span>: -<span class="num">20deg</span>, <span class="id">exit</span>: <span class="num">70</span> },
+  { <span class="id">x</span>: <span class="num">180</span>, <span class="id">y</span>: <span class="num">50</span>,  <span class="id">angle</span>: <span class="num">15deg</span>,  <span class="id">entry</span>: <span class="num">60</span>, <span class="id">exit</span>: <span class="num">55</span> },
+  { <span class="id">x</span>: <span class="num">320</span>, <span class="id">y</span>: <span class="num">140</span>, <span class="id">angle</span>: -<span class="num">30deg</span>, <span class="id">entry</span>: <span class="num">65</span>, <span class="id">exit</span>: <span class="num">55</span> },
+  { <span class="id">x</span>: <span class="num">455</span>, <span class="id">y</span>: <span class="num">65</span>,  <span class="id">angle</span>: <span class="num">10deg</span>,  <span class="id">entry</span>: <span class="num">60</span> }
 ])
 </code></pre><p>Four waypoints, guaranteed smooth, and the intent is readable. The compiler handles all control point placement — you describe where the curve should go and how it should enter and leave each waypoint.</p>
 <p>Whether you&#39;re building animation paths, smooth data visualization curves, decorative borders, or logo outlines, chained Bézier splines turn what was tedious manual calculation into a declarative, readable specification.</p>
@@ -680,14 +691,14 @@ layer('loop').apply {
 <td>Final waypoint</td>
 </tr>
 </tbody></table>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">quadSpline</span>(
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">140</span>, <span class="hljs-attr">angle</span>: -30deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">65</span> },   <span class="hljs-comment">// start: explicit angle</span>
+<pre><code class="hljs language-pathogen"><span class="id">quadSpline</span>(
+  { <span class="id">x</span>: <span class="num">50</span>, <span class="id">y</span>: <span class="num">140</span>, <span class="id">angle</span>: -<span class="num">30deg</span>, <span class="id">exit</span>: <span class="num">65</span> },   <span class="cm">// start: explicit angle</span>
   [
-    { <span class="hljs-attr">x</span>: <span class="hljs-number">170</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">50</span>,  <span class="hljs-attr">exit</span>: <span class="hljs-number">60</span> },                <span class="hljs-comment">// intermediates: angle derived</span>
-    { <span class="hljs-attr">x</span>: <span class="hljs-number">300</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
-    { <span class="hljs-attr">x</span>: <span class="hljs-number">420</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">45</span>,  <span class="hljs-attr">exit</span>: <span class="hljs-number">50</span> }
+    { <span class="id">x</span>: <span class="num">170</span>, <span class="id">y</span>: <span class="num">50</span>,  <span class="id">exit</span>: <span class="num">60</span> },                <span class="cm">// intermediates: angle derived</span>
+    { <span class="id">x</span>: <span class="num">300</span>, <span class="id">y</span>: <span class="num">150</span>, <span class="id">exit</span>: <span class="num">55</span> },
+    { <span class="id">x</span>: <span class="num">420</span>, <span class="id">y</span>: <span class="num">45</span>,  <span class="id">exit</span>: <span class="num">50</span> }
   ],
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">500</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">120</span> }                              <span class="hljs-comment">// end: no angle needed</span>
+  { <span class="id">x</span>: <span class="num">500</span>, <span class="id">y</span>: <span class="num">120</span> }                              <span class="cm">// end: no angle needed</span>
 )
 </code></pre><p><mini-workspace code-open caption="quadSpline anatomy — cyan arrows show derived direction, orange shows tangent extension">
   <code>define ViewBox(0, 0, 540, 350);
@@ -918,10 +929,10 @@ layer('zigzag').apply {
 <td>Final waypoint with time fraction</td>
 </tr>
 </tbody></table>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">clippedQuadSpline</span>(
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">angle</span>: -40deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">80</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.5</span> },
-  [{ <span class="hljs-attr">x</span>: <span class="hljs-number">180</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">30</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.5</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.5</span> }],
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">310</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.5</span> }
+<pre><code class="hljs language-pathogen"><span class="id">clippedQuadSpline</span>(
+  { <span class="id">x</span>: <span class="num">50</span>, <span class="id">y</span>: <span class="num">150</span>, <span class="id">angle</span>: -<span class="num">40deg</span>, <span class="id">exit</span>: <span class="num">80</span>, <span class="id">exitTime</span>: <span class="num">0.5</span> },
+  [{ <span class="id">x</span>: <span class="num">180</span>, <span class="id">y</span>: <span class="num">30</span>, <span class="id">exit</span>: <span class="num">70</span>, <span class="id">exitTime</span>: <span class="num">0.5</span>, <span class="id">entryTime</span>: <span class="num">0.5</span> }],
+  { <span class="id">x</span>: <span class="num">310</span>, <span class="id">y</span>: <span class="num">150</span>, <span class="id">entryTime</span>: <span class="num">0.5</span> }
 )
 </code></pre><p>The time values range from 0 to 1:</p>
 <ul>

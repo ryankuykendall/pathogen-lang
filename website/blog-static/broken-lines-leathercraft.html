@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leathercraft: Stitch Holes That Can't Disagree — Pathogen Studio</title>
+  <meta name="description" content="Third in Broken Lines: a punch hole is a near-zero dash outlined round, negative dash offsets center the run, and two mating seams derive their holes from one shared edge — so the counts match by construction.">
+  <link rel="canonical" href="https://pathogen.studio/blog/broken-lines-leathercraft">
+  <meta property="og:title" content="Leathercraft: Stitch Holes That Can't Disagree — Pathogen Studio">
+  <meta property="og:description" content="Third in Broken Lines: a punch hole is a near-zero dash outlined round, negative dash offsets center the run, and two mating seams derive their holes from one shared edge — so the counts match by construction.">
+  <meta property="og:url" content="https://pathogen.studio/blog/broken-lines-leathercraft">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Leathercraft: Stitch Holes That Can't Disagree","description":"Third in Broken Lines: a punch hole is a near-zero dash outlined round, negative dash offsets center the run, and two mating seams derive their holes from one shared edge — so the counts match by construction.","datePublished":"2026-09-03","url":"https://pathogen.studio/blog/broken-lines-leathercraft","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Leathercraft: Stitch Holes That Can't Disagree</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Leathercraft: Stitch Holes That Can't Disagree</h1>
+        <p class="post-meta"><time datetime="2026-09-03">September 3, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 3 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><a href="/blog/broken-lines-stroke-geometry">Stroke geometry</a> — dashes,
+outlines, and start points as real paths</li>
+<li><a href="/blog/broken-lines-sashiko">Sashiko</a> — running stitches from
+binary sequences</li>
+<li><strong>Leathercraft</strong> (this post) — stitch holes that can&#39;t disagree</li>
+<li><a href="/blog/broken-lines-stencils">Stencils</a> — bridges are just gaps</li>
+<li><a href="/blog/broken-lines-what-it-taught">What Broken Lines taught the language</a>
+— the friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> Part 1&#39;s
+<a href="/blog/broken-lines-stroke-geometry"><code>dash()</code> and <code>outline()</code></a>. The
+samples also use
+<a href="/docs#syntax-lambdas">expression-bodied lambdas</a>
+(<code>{|prick| prick.kind == &#39;dash&#39;}</code>),
+<a href="/docs#path-blocks-fillets"><code>fillet()</code></a> to round the stitch line&#39;s
+corners, <a href="/docs#path-blocks-boolean-operations"><code>difference()</code></a> to
+punch the holes for real, and
+<a href="/docs#path-blocks-concatenation"><code>&lt;&lt;</code> concatenation</a> with
+<code>.reverse()</code> to build two pieces around one shared edge.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>Saddle-stitched leather is sewn through pre-punched holes at fixed
+pitch — 3 to 4&nbsp;mm irons, hole after hole down every seam. Saddle
+stitch means two needles working the <em>same hole</em> from opposite sides,
+which is why everything below cares so much about where the holes go.
+In dash terms a hole is a dash of nearly zero length, followed by a
+pitch-sized gap. <code>stroke-dasharray: 0.01 16</code> puts a dash every 16
+units; <code>outline()</code> with round caps turns each one into a dot of
+exactly the punch&#39;s diameter. Walk a pricking iron down a seam and
+the marks it leaves <em>are</em> the dash array. (Whether your iron marks
+for an awl or a stitching chisel punches clean through, the template
+is the same row of points.)</p>
+<p>One craft rule dominates everything else, and it&#39;s worth stating
+before any picture: <strong>two pieces that share a seam must carry the same
+hole count at the same spacing.</strong> A wallet whose flap has 17 holes and
+whose body has 18 does not assemble. Designers re-count after every
+resize. This post&#39;s answer is structural: derive the holes from the
+one shared edge, and the two rows <em>cannot</em> disagree, because they are
+the same row.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because hole layout is the mechanical, error-prone step between a
+shape and a template — the part designers do today with Illustrator&#39;s
+Blend tool and a hand-typed step count, or by duplicating a dot and
+eyeballing the run. Pitch, margins, corner behavior, and mating-seam
+agreement are all arithmetic along a path, which is exactly what
+<code>dash()</code> measures. Resize the piece and the holes re-derive; nothing
+is re-counted by hand.</p>
+<h2>Example 1 — The prick line</h2>
+<p>One seam. The dash array&#39;s first entry is <code>0.01</code> — a dash so short
+it&#39;s a point — and the second is the pitch. Outline each one with
+round caps at the punch diameter and the seam becomes a row of holes.</p>
+<p><mini-workspace code-open caption="stroke-dasharray: 0.01 16 — a hole every 16 units, outlined to diameter 5.">
+  <code>//-- A leather stitch line is a row of punched holes at fixed pitch.
+//-- In dash terms: a near-zero dash, a pitch-sized gap — then outline()
+//-- each dash round and every "stitch" becomes a punchable dot.
+
+define ViewBox(0, 0, 480, 170);
+
+let leather = PathLayer('leather') ${
+  fill: #7c5335;
+  stroke: none;
+};
+layer('leather').apply {
+  rect(0, 0, 480, 170);
+}
+
+let scene = GroupLayer('scene') ${};
+let seamGhost = PathLayer('seam-ghost') ${
+  stroke: #00000040;
+  stroke-width: 1;
+  fill: none;
+};
+let holes = PathLayer('holes') ${
+  fill: #f8fafc;
+  stroke: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #f1e9dd;
+};
+scene.append(seamGhost, holes, labels);
+
+let seam = @{
+  h 340
+};
+
+seamGhost.apply {
+  M 70 92 seam.draw()
+}
+
+let pricks = seam.dash(${
+  stroke-dasharray: 0.01 16;
+});
+
+let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+for (prick in seamHoles) {
+  let dot = prick.path.outline(${
+    stroke-width: 5;
+    stroke-linecap: round;
+  });
+  holes.apply {
+    M 70 92 dot.draw()
+  }
+}
+
+labels.apply {
+  text(70, 44)`stroke-dasharray: 0.01 16 — the dash is the prick`;
+  text(70, 136)`outline(round, width 5) turns each prick into a hole`;
+}
+</code>
+  <img src="/blog/samples/post47/01-holes-are-dashes.svg" alt="stroke-dasharray: 0.01 16 — a hole every 16 units, outlined to diameter 5." loading="lazy">
+</mini-workspace></p>
+<h2>Example 2 — Centering the run</h2>
+<p>The naive row starts with a hole exactly on the corner and dumps the
+leftover length at the far end — every leatherworker&#39;s first-template
+mistake. The fix is one negative dash offset: shift the pattern back
+by half the remainder, and the margins agree at both ends.</p>
+<p><mini-workspace code-open caption="Top: offset 0 — margins 0 and 10. Bottom: centered — 5 and 5.">
+  <code>//-- Punching from a corner leaves a half-space at the far end. A
+//-- negative stroke-dashoffset centers the run: the leftover length,
+//-- split evenly between both ends.
+
+define ViewBox(0, 0, 480, 200);
+
+let leather = PathLayer('leather') ${
+  fill: #7c5335;
+  stroke: none;
+};
+layer('leather').apply {
+  rect(0, 0, 480, 200);
+}
+
+let scene = GroupLayer('scene') ${};
+let seamGhost = PathLayer('seam-ghost') ${
+  stroke: #00000040;
+  stroke-width: 1;
+  fill: none;
+};
+let holes = PathLayer('holes') ${
+  fill: #f8fafc;
+  stroke: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #f1e9dd;
+};
+scene.append(seamGhost, holes, labels);
+
+let seam = @{
+  h 340
+};
+let pitch = 22;
+
+fn punchRow(anchorY, offsetValue) {
+  seamGhost.apply {
+    M 70 anchorY seam.draw()
+  }
+  // Bare variables in a style value need backtick interpolation — a
+  // logged language limitation (see the series' friction log).
+  let pricks = seam.dash(${
+    stroke-dasharray: 0.01 `${pitch}`;
+    stroke-dashoffset: `${offsetValue}`;
+  });
+  let rowHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+  for (prick in rowHoles) {
+    let dot = prick.path.outline(${
+      stroke-width: 5;
+      stroke-linecap: round;
+    });
+    holes.apply {
+      M 70 anchorY dot.draw()
+    }
+  }
+}
+
+// Naive: first hole lands exactly on the corner.
+punchRow(78, 0);
+
+// Centered: split the leftover between both ends.
+let leftover = calc(seam.length % pitch);
+punchRow(140, calc(0 - leftover / 2));
+
+labels.apply {
+  text(70, 46)`offset 0 — a hole ON the corner, a long remainder at the end`;
+  text(70, 176)`offset -(length % pitch) / 2 — margins agree at both ends`;
+  text(30, 82)`0`;
+  text(424, 82)`10`;
+  text(30, 144)`5`;
+  text(424, 144)`5`;
+}
+</code>
+  <img src="/blog/samples/post47/02-centered-holes.svg" alt="Top: offset 0 — margins 0 and 10. Bottom: centered — 5 and 5." loading="lazy">
+</mini-workspace></p>
+<p>One gotcha the centering trick hides: it guarantees <em>equal</em> end
+margins, not <em>adequate</em> ones. When the leftover is tiny, &quot;centered&quot;
+puts a hole a hair from the corner — where leather tears out. The
+craft fix is to give up one hole and split a whole extra pitch across
+the ends: <code>endMargin = (leftover + pitch) / 2</code>. The next two examples
+do exactly that.</p>
+<h2>Example 3 — One edge, two pieces</h2>
+<p>The heart of the post. A flap and a body share one seam — the same
+sagging curve is the flap&#39;s bottom edge and the body&#39;s top edge, built
+by <a href="/docs#path-blocks-concatenation">concatenating</a> the shared
+<code>seamEdge</code> into both outlines. (<code>&lt;&lt;</code> reads as <em>feed the left thing
+the right thing</em> in both of its jobs here: gluing path pieces
+together, and handing <code>filter()</code> its predicate. And note <code>.length</code> on
+a path is arc length, while <code>.length</code> on the holes array is a count —
+same word, two rulers.) The holes are derived <em>once</em>, from that edge,
+and drawn onto both pieces — one array, drawn twice. They could not
+differ if you tried.</p>
+<p><mini-workspace code-open caption="Exploded view: both hole rows are the same pieces, placed twice.">
+  <code>//-- The saddle-stitch rule: two mating pieces must carry the SAME hole
+//-- count at the SAME spacing. Derive the holes from the one shared
+//-- seam edge and the counts cannot disagree.
+
+define ViewBox(0, 0, 480, 330);
+
+let bench = PathLayer('bench') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('bench').apply {
+  rect(0, 0, 480, 330);
+}
+
+let scene = GroupLayer('scene') ${};
+let pieces = PathLayer('pieces') ${
+  fill: #7c5335;
+  stroke: #3f2a17;
+  stroke-width: 1.5;
+};
+let holes = PathLayer('holes') ${
+  fill: #f8fafc;
+  stroke: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #d6c9b8;
+};
+scene.append(pieces, holes, labels);
+
+// ONE shared seam edge — a gentle sag, one width to change.
+let seamWidth = 320;
+let seamEdge = @{
+  c 60 22 260 22 seamWidth 0
+};
+
+// The flap's bottom edge and the body's top edge are the same curve.
+let flap = @{
+  m 0 -64
+  h seamWidth
+  v 64
+} &lt;&lt; seamEdge.reverse() &lt;&lt; @{
+  z
+};
+let body = seamEdge &lt;&lt; @{
+  v 92
+  h calc(0 - seamWidth)
+  z
+};
+
+pieces.apply {
+  M 80 112 flap.draw()
+  M 80 206 body.draw()
+}
+
+// Holes derived ONCE, from the shared edge — then drawn on both pieces.
+// Equal end margins aren't automatically ADEQUATE ones: when the
+// leftover is small, give up a hole and split a whole extra pitch, so
+// no hole lands on a corner. (Bare variables in style values need
+// backtick interpolation — a logged language limitation.)
+let pitch = 20;
+let leftover = calc(seamEdge.length % pitch);
+let endMargin = calc((leftover + pitch) / 2);
+let pricks = seamEdge.dash(${
+  stroke-dasharray: 0.01 `${pitch}`;
+  stroke-dashoffset: calc(0 - endMargin);
+});
+let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+
+for (prick in seamHoles) {
+  let dot = prick.path.outline(${
+    stroke-width: 4.5;
+    stroke-linecap: round;
+  });
+  holes.apply {
+    M 80 112 dot.draw()
+    M 80 206 dot.draw()
+  }
+}
+
+labels.apply {
+  text(80, 28)`${seamHoles.length} + ${seamHoles.length} holes — one array, drawn twice`;
+  text(20, 96)`flap`;
+  text(20, 250)`body`;
+}
+</code>
+  <img src="/blog/samples/post47/03-matched-seams.svg" alt="Exploded view: both hole rows are the same pieces, placed twice." loading="lazy">
+</mini-workspace></p>
+<p>This mirrors real practice, and honestly: irons are usually walked a
+few millimeters <em>inside</em> the edge, through both glued layers at once —
+one marked line, both pieces. Deriving a separate inset line per piece
+with <code>offset()</code> would reintroduce the disagreement, because offsetting
+changes a curve&#39;s length. Mark one line; punch through both. That gap
+— dashing an inset line by the edge it came from — is this series&#39;
+deepest feature request, and it went straight into
+<a href="/blog/broken-lines-what-it-taught">the friction log</a> with this
+wallet as its motivating artifact.</p>
+<h2>Example 4 — The wallet template</h2>
+<p>The finished artifact, at an honest scale: 4 units to the
+millimetre, a panel big enough for a real ISO card, a 4&nbsp;mm iron.
+The pocket&#39;s stitch line is a <code>fillet()</code>-rounded U <em>derived</em> from
+three named dimensions — resize the pocket and every hole re-derives
+— with the safe end margin from Example 2&#39;s gotcha. Then, because
+outlined holes are closed paths, every hole is subtracted from the
+pocket with <code>difference()</code>. Until now the holes were painted white so
+you could see them; here they&#39;re absent material — the darker panel
+beneath shows through each one.</p>
+<p><mini-workspace code-open caption="A punch-ready pocket: derived stitch line, safe margins, really cut.">
+  <code>//-- The finished artifact: a card-wallet punch template at 4 units per
+//-- millimetre — the panel really holds an ISO card. The stitch line is
+//-- derived from three named dimensions, so resizing the pocket
+//-- re-derives every hole.
+
+define ViewBox(0, 0, 480, 320);
+
+let bench = PathLayer('bench') ${
+  fill: #1c1917;
+  stroke: none;
+};
+bench.apply {
+  rect(0, 0, 480, 320);
+}
+
+let scene = GroupLayer('scene') ${};
+let backPanel = PathLayer('back-panel') ${
+  fill: #2e2018;
+  stroke: #3f2a17;
+  stroke-width: 1.5;
+};
+let pocket = PathLayer('pocket') ${
+  fill: #7c5335;
+  stroke: #3f2a17;
+  stroke-width: 1.5;
+};
+let guides = PathLayer('guides') ${
+  stroke: #00000035;
+  stroke-width: 1;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #d6c9b8;
+};
+scene.append(backPanel, pocket, guides, labels);
+
+// 4 units = 1 mm. Panel 360 x 236 = 90 x 59 mm — an ISO card
+// (85.6 x 54 mm) fits with margin. Every other number derives.
+let anchorX = 60;
+let anchorY = 36;
+let panelW = 360;
+let panelH = 236;
+let pocketH = 148;
+let seamInset = 12;
+let pitch = 16;
+// 4 mm — a standard iron
+
+backPanel.apply {
+  roundRect(anchorX,
+      anchorY,
+      panelW,
+      panelH,
+      16);
+}
+
+// The pocket covers the lower part; its stitch line is a filleted U
+// derived from the same three dimensions.
+let pocketY = calc(panelH - pocketH);
+let pocketShape = @{
+  roundRect(0,
+      calc(panelH - pocketH),
+      panelW,
+      pocketH,
+      16);
+};
+let stitchLine = @{
+  m seamInset calc(panelH - pocketH + 8)
+  v calc(pocketH - 8 - seamInset)
+  h calc(panelW - seamInset * 2)
+  v calc(0 - (pocketH - 8 - seamInset))
+};
+let seamU = stitchLine.fillet(8);
+
+// Center the run with a guaranteed edge margin: equal is not enough —
+// give up one hole and split a whole extra pitch across the ends.
+let leftover = calc(seamU.length % pitch);
+let endMargin = calc((leftover + pitch) / 2);
+// Bare variables in a style value need backtick interpolation — a
+// logged language limitation (see the series' friction log).
+let pricks = seamU.dash(${
+  stroke-dasharray: 0.01 `${pitch}`;
+  stroke-dashoffset: calc(0 - endMargin);
+});
+let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+
+let punched = pocketShape;
+for (prick in seamHoles) {
+  let hole = prick.path.outline(${
+    stroke-width: 4.5;
+    stroke-linecap: round;
+  });
+  punched = punched.difference(hole);
+}
+
+pocket.apply {
+  M anchorX anchorY punched.draw()
+}
+guides.apply {
+  M anchorX anchorY seamU.draw()
+}
+
+labels.apply {
+  text(60, 24)`card wallet — pocket punch template, 4 mm pitch (4 units = 1 mm)`;
+  text(60, 300)`holes are difference()d out — the darker panel shows through`;
+}
+</code>
+  <img src="/blog/samples/post47/04-card-wallet.svg" alt="A punch-ready pocket: derived stitch line, safe margins, really cut." loading="lazy">
+</mini-workspace></p>
+<h2>Where to go next</h2>
+<p>The stroke-geometry surface this post leaned on is documented in
+<a href="/docs#path-blocks-stroke-geometry">the reference</a>. Holes are material
+<em>removed</em> along a line. The
+<a href="/blog/broken-lines-stencils">next post</a> inverts the trick: stencils
+survive because of the material you <em>keep</em> — bridges — and a bridge is
+nothing but a gap, placed on purpose, in a stroke that&#39;s about to be
+cut out.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

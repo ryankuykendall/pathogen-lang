@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -307,10 +318,10 @@ twice; the side seam gets 7 units of allowance; the armhole gets eased;
 notches tell you which edge meets which. Pattern drafting software is,
 to a first approximation, software for <em>remembering which edge is
 which</em> — and that is precisely what <code>as segment(&#39;name&#39;)</code> does:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> bodice = @{
-  c <span class="hljs-number">16</span> <span class="hljs-number">18</span> <span class="hljs-number">34</span> <span class="hljs-number">20</span> <span class="hljs-number">46</span> <span class="hljs-number">6</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;neck&#x27;</span>)
-  l <span class="hljs-number">22</span> <span class="hljs-number">8</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;shoulder&#x27;</span>)
-  <span class="hljs-comment">// ...armhole, side, hem — Example 1 has the full draft</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">bodice</span> = @{
+  c 16 18 34 20 46 6 as <span class="id">segment</span>(<span class="str">'neck'</span>)
+  l 22 8 as <span class="id">segment</span>(<span class="str">'shoulder'</span>)
+  <span class="cm">// ...armhole, side, hem — Example 1 has the full draft</span>
 };
 </code></pre><p>Name the edges once, at drafting time, and every downstream operation —
 cutting the yoke off, offsetting for allowance — carries the names
@@ -328,9 +339,9 @@ pattern&quot; — manually re-measuring every edge after every change. When
 the edges answer by name, grading and decorating survive redesigns:
 re-draft the armhole deeper, and the same queries still find the same
 jobs. The identification idiom this post adds to the kit:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> name = <span class="hljs-string">&#x27;body&#x27;</span>;
-<span class="hljs-keyword">if</span> (piece.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;neck&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
-  name = <span class="hljs-string">&#x27;yoke&#x27;</span>;    <span class="hljs-comment">// whoever kept the neckline is the yoke</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">name</span> = <span class="str">'body'</span>;
+<span class="kw">if</span> (<span class="id">piece</span>.<span class="id">segmentAll</span>(<span class="str">'neck'</span>).<span class="id">length</span> &gt; <span class="num">0</span>) {
+  <span class="id">name</span> = <span class="str">'yoke'</span>;    <span class="cm">// whoever kept the neckline is the yoke</span>
 }
 </code></pre><h2>Example 1 — The draft speaks</h2>
 <p>A half-bodice front, drafted to the right of a center-front fold — the
@@ -339,8 +350,7 @@ are cut on the fold, so drafting half is the honest shape. Six edges,
 six names, six colors: each stroke is one <code>segmentAll</code> query answered
 by the block and drawn over the outline.</p>
 <p><mini-workspace code-open caption="Every edge named at drafting time; every color is one segmentAll query.">
-  <code>// viewBox="0 0 480 260"
-//-- The pattern draft speaks its own vocabulary: a half-bodice (cut on
+  <code>//-- The pattern draft speaks its own vocabulary: a half-bodice (cut on
 //-- the fold) with every edge named as it is drawn. Each labeled run is
 //-- stroked in its own color, straight from a segmentAll query.
 
@@ -522,8 +532,7 @@ Neither piece is found by position, index, or size — each is asked
 what it kept. The neckline stayed with the top piece, so it announces
 itself as the yoke; the hem stayed with the bottom, so it is the body.</p>
 <p><mini-workspace code-open caption="Identity by inheritance: keeping the neckline makes you the yoke.">
-  <code>// viewBox="0 0 480 280"
-//-- Split the bodice at the yoke line and ask each piece who it is:
+  <code>//-- Split the bodice at the yoke line and ask each piece who it is:
 //-- keeping the neckline makes you the yoke, keeping the hem makes you
 //-- the body. No coordinates checked, no piece order assumed.
 
@@ -635,8 +644,7 @@ the red ring is the offset, the dashed original is the stitch line —
 and because labels survive <code>offset()</code>, the amber stroke finds the side
 seam <em>on the allowance outline</em>, not the original.</p>
 <p><mini-workspace code-open caption="offset(7) makes the cutting line; the side seam still answers by name on it.">
-  <code>// viewBox="0 0 480 230"
-//-- Seam allowance is an offset: push the body piece's outline out by 7
+  <code>//-- Seam allowance is an offset: push the body piece's outline out by 7
 //-- and you have the cutting line; the original edge, dashed, becomes the
 //-- stitch line. The 'side' label survives the offset and says so.
 
@@ -749,8 +757,7 @@ directions, so a naive <code>get(0.3)</code> might land at 30% on one piece and
 70% on the other. The sample normalizes first: compare the seam&#39;s two
 endpoints, and if it runs right-to-left, flip <code>t</code>.</p>
 <p><mini-workspace code-open caption="Normalize the walk direction, then the same fractions land matched ticks on both pieces.">
-  <code>// viewBox="0 0 480 280"
-//-- Notches: a single tick a third of the way along the join seam, a
+  <code>//-- Notches: a single tick a third of the way along the join seam, a
 //-- double tick two thirds along — on BOTH pieces. Twin seams may run
 //-- opposite directions, so the walk is normalized left-to-right first.
 
@@ -844,8 +851,7 @@ all), notches matched across the join seam, a grainline arrow down
 each piece, and computed names. &quot;Cut 1 on fold&quot; is real pattern
 language, and the fold is the <code>z</code> edge from Example 1.</p>
 <p><mini-workspace code-open caption="The finished sheet: layout, allowance, notches, grainlines, and names — all queried, none hand-placed.">
-  <code>// viewBox="0 0 480 240"
-//-- The finished pattern sheet: yoke and body laid out side by side via
+  <code>//-- The finished pattern sheet: yoke and body laid out side by side via
 //-- their bounding boxes, each with its cutting line (offset), stitch
 //-- line, join-seam notches, grainline arrow, and name.
 
@@ -1014,13 +1020,13 @@ and curves subdivide and re-fit as true parallel curves. The
 carry the new join contract. For this post, the payoff is the sheet
 above: both pieces ringed, the neck scoop&#39;s allowance a constant
 seven units along its whole length, no caveat required.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: the yoke&#x27;s allowance came out spiked and distorted —</span>
-<span class="hljs-comment">// the sheet shipped without it</span>
-<span class="hljs-keyword">let</span> allow = placed.<span class="hljs-title function_">offset</span>(<span class="hljs-number">7</span>);      <span class="hljs-comment">// body panel only, by guard</span>
+<pre><code class="hljs language-pathogen"><span class="cm">// before: the yoke's allowance came out spiked and distorted —</span>
+<span class="cm">// the sheet shipped without it</span>
+<span class="kw">let</span> <span class="id">allow</span> = <span class="id">placed</span>.<span class="id">offset</span>(<span class="num">7</span>);      <span class="cm">// body panel only, by guard</span>
 
-<span class="hljs-comment">// after: every piece gets its cutting line, curves and all</span>
-<span class="hljs-keyword">let</span> allow = placed.<span class="hljs-title function_">offset</span>(<span class="hljs-number">7</span>);      <span class="hljs-comment">// any piece — or</span>
-<span class="hljs-keyword">let</span> round = placed.<span class="hljs-title function_">offset</span>(<span class="hljs-number">7</span>, { <span class="hljs-attr">join</span>: <span class="hljs-string">&#x27;round&#x27;</span> });
+<span class="cm">// after: every piece gets its cutting line, curves and all</span>
+<span class="kw">let</span> <span class="id">allow</span> = <span class="id">placed</span>.<span class="id">offset</span>(<span class="num">7</span>);      <span class="cm">// any piece — or</span>
+<span class="kw">let</span> <span class="id">round</span> = <span class="id">placed</span>.<span class="id">offset</span>(<span class="num">7</span>, { <span class="id">join</span>: <span class="str">'round'</span> });
 </code></pre><p>A lesson worth keeping from the diagnosis: the bug we <em>logged</em> — &quot;the
 offset flips to the wrong side&quot; — was not the bug that existed.
 Direction was always correct; the joins were at fault. Friction logs
@@ -1038,11 +1044,11 @@ fine — which is what made it treacherous). Projected values now have
 anchors on the first command by definition; the sheet above uses it,
 and the <code>drawTo</code> anchor contract is documented where it can&#39;t surprise
 the next person.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: correct for seam runs, silently wrong for cut pieces</span>
-placed.<span class="hljs-title function_">drawTo</span>(placed.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, placed.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+<pre><code class="hljs language-pathogen"><span class="cm">// before: correct for seam runs, silently wrong for cut pieces</span>
+<span class="id">placed</span>.<span class="id">drawTo</span>(<span class="id">placed</span>.<span class="id">startPoint</span>.<span class="id">x</span>, <span class="id">placed</span>.<span class="id">startPoint</span>.<span class="id">y</span>);
 
-<span class="hljs-comment">// after: correct for both, and says what it means</span>
-placed.<span class="hljs-title function_">draw</span>();
+<span class="cm">// after: correct for both, and says what it means</span>
+<span class="id">placed</span>.<span class="id">draw</span>();
 </code></pre><p><em>Epilogue:</em> the trap itself is now gone at the root. <code>startPoint</code>
 had been hardcoded to the frame origin since the language&#39;s first
 commit — the original spec comment even described the correct

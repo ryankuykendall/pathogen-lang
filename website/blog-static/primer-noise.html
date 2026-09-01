@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -323,8 +334,7 @@ distance under your control.</p>
 numbers 0 through 8; the curve is <code>noise(x)</code> sampled 160 times across the
 same span.</p>
 <p><mini-workspace code-open caption="The curve doesn't approximate the dots — it passes exactly through every one, because at whole numbers noise IS hash01. And it arrives flat at every pin, courtesy of the smoothstep glide.">
-  <code>// viewBox="0 0 400 190"
-//-- The relationship in one picture: dots mark hash01(k) at every whole
+  <code>//-- The relationship in one picture: dots mark hash01(k) at every whole
 //-- number 0..8; the curve is noise(x) sampled finely across the same
 //-- span. The curve threads EXACTLY through every dot -- and flattens as
 //-- it touches each one.
@@ -382,8 +392,7 @@ facts are the entire function.</p>
 <p>Three wandering lines, one seed, three input scales: <code>t*3</code>, <code>t*6</code>,
 <code>t*12</code>.</p>
 <p><mini-workspace code-open caption="Slow swells, undulation, chatter — the whole personality range is multiplication on the input. (The slow line also LOOKS lower-amplitude: crossing only three pins, it rarely reaches the range extremes.)">
-  <code>// viewBox="0 0 400 230"
-//-- One knob controls the character: the input scale. noise(t * 3) passes
+  <code>//-- One knob controls the character: the input scale. noise(t * 3) passes
 //-- 3 pins while t crosses 0..1 -- slow swells. noise(t * 6) undulates.
 //-- noise(t * 12) chatters. Same function, same seed, different speed
 //-- past the pins.
@@ -433,8 +442,7 @@ frequency at work, not a different amplitude setting.)</p>
 <p>The same randomness source, sampled two ways. Both rows color 60 bars by
 lightness; the top asks <code>hash01(i)</code>, the bottom asks <code>noise(i * 0.15)</code>.</p>
 <p><mini-workspace code-open caption="Sixty bars colored by lightness, twice: hash01(i) above, noise(i · 0.15) below.">
-  <code>// viewBox="0 0 400 180"
-//-- Same randomness source, sampled two ways. Top: each bar's lightness
+  <code>//-- Same randomness source, sampled two ways. Top: each bar's lightness
 //-- is hash01(i) -- neighbors are strangers, it reads as static. Bottom:
 //-- lightness is noise(i * 0.15) -- neighbors agree, it reads as light
 //-- moving across a surface.
@@ -481,8 +489,7 @@ organic undulation — times the <a href="/blog/primer-smoothstep"><code>smooths
 end-window <code>smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t)</code>, which eases
 both tips to a point.</p>
 <p><mini-workspace code-open caption="From the inside out: noise(t·6) is the texture, 2 + keeps a minimum body, · 13 sets the amplitude, and the end-window lets the ribbon enter and exit cleanly. Adjacent stops cooperate — that's texture, not jitter.">
-  <code>// viewBox="0 0 400 130"
-//-- Everything so far, on one ribbon: noise drives the width for organic
+  <code>//-- Everything so far, on one ribbon: noise drives the width for organic
 //-- undulation, and a smoothstep end-window eases both tips to a point.
 //-- Width = (2 + noise(t*6) * 13) * smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t).
 
@@ -533,8 +540,7 @@ to front — each its own seeded stream, with nearer ridges darker, with
 bigger swings and finer detail. The front ridge stacks <strong>two</strong> streams: a
 slow, tall one for shape plus a fast, quiet one for detail.</p>
 <p><mini-workspace code-open caption="Four seeded ridgelines, back to front — the front one stacks a slow, tall stream with a fast, quiet one.">
-  <code>// viewBox="0 0 400 250"
-//-- Four mountain ridgelines, back to front. Each ridge is one seeded
+  <code>//-- Four mountain ridgelines, back to front. Each ridge is one seeded
 //-- noise stream; nearer ridges are darker, taller, and busier. The front
 //-- ridge stacks two streams -- a slow tall one plus a fast quiet one --
 //-- for detail on top of shape.

@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -296,20 +307,20 @@ code.hljs {
 <p>This is a critical distinction. A cubic Bézier with uneven control point spacing has a non-uniform speed along its raw parameter. Arc-length parameterization normalizes this so that equal increments of <code>t</code> correspond to equal distances along the curve.</p>
 <h2>Querying Points</h2>
 <p>The simplest query is <a href="/docs#path-blocks-gett-point"><code>.get(t)</code></a>, which returns the <code>Point</code> at arc-length fraction <code>t</code>:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
-<span class="hljs-keyword">let</span> mid = curve.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
-<span class="hljs-title function_">log</span>(mid);  <span class="hljs-comment">// Point near the apex of the curve</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">curve</span> = @{ c 0 -100 200 -100 200 0 };
+<span class="kw">let</span> <span class="id">mid</span> = <span class="id">curve</span>.<span class="id">get</span>(<span class="num">0.5</span>);
+<span class="id">log</span>(<span class="id">mid</span>);  <span class="cm">// Point near the apex of the curve</span>
 </code></pre><p>This works on both PathBlocks (relative coordinates from origin) and ProjectedPaths (absolute coordinates). See <a href="/docs#path-blocks-sampling-on-projectedpath">Sampling on ProjectedPath</a> for the coordinate behavior.</p>
 <h2>Tangents and Normals</h2>
 <p><a href="/docs#path-blocks-tangentt-point-angle"><code>.tangent(t)</code></a> returns both a point and the direction of travel at that point:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
-<span class="hljs-keyword">let</span> tan = curve.<span class="hljs-title function_">tangent</span>(<span class="hljs-number">0.0</span>);
-<span class="hljs-title function_">log</span>(tan.<span class="hljs-property">point</span>);   <span class="hljs-comment">// Point(0, 0) — start of curve</span>
-<span class="hljs-title function_">log</span>(tan.<span class="hljs-property">angle</span>);   <span class="hljs-comment">// angle in radians — direction of travel</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">curve</span> = @{ c 0 -100 200 -100 200 0 };
+<span class="kw">let</span> <span class="id">tan</span> = <span class="id">curve</span>.<span class="id">tangent</span>(<span class="num">0.0</span>);
+<span class="id">log</span>(<span class="id">tan</span>.<span class="id">point</span>);   <span class="cm">// Point(0, 0) — start of curve</span>
+<span class="id">log</span>(<span class="id">tan</span>.<span class="id">angle</span>);   <span class="cm">// angle in radians — direction of travel</span>
 </code></pre><p><a href="/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> n = curve.<span class="hljs-title function_">normal</span>(<span class="hljs-number">0.5</span>);
-<span class="hljs-comment">// n.angle is tangent angle - π/2</span>
-<span class="hljs-comment">// Use with cos/sin to offset perpendicular to the curve</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">n</span> = <span class="id">curve</span>.<span class="id">normal</span>(<span class="num">0.5</span>);
+<span class="cm">// n.angle is tangent angle - π/2</span>
+<span class="cm">// Use with cos/sin to offset perpendicular to the curve</span>
 </code></pre><p>The anatomy diagram below visualizes all three queries at <code>t = 0.4</code> on a cubic Bézier. The red dot is <code>.get(0.4)</code>, the green arrow is <code>.tangent(0.4)</code>, and the yellow arrow is <code>.normal(0.4)</code> — the left-hand perpendicular.</p>
 <p><mini-workspace caption="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4">
   <code>define ViewBox(0, 0, 560, 360);
@@ -559,12 +570,12 @@ subtitle.apply {
 </mini-workspace></p>
 <h2>Sampling Multiple Points</h2>
 <p>You can sample any number of points by calling <code>.get(t)</code> at specific values. Here&#39;s a curve with four markers at the quarter marks:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">80</span> <span class="hljs-number">200</span> -<span class="hljs-number">80</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
-curve.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">60</span>)
-<span class="hljs-keyword">let</span> proj = curve.<span class="hljs-title function_">project</span>(<span class="hljs-number">20</span>, <span class="hljs-number">60</span>);
-<span class="hljs-keyword">for</span> (t <span class="hljs-keyword">in</span> [<span class="hljs-number">0.25</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.75</span>]) {
-  <span class="hljs-keyword">let</span> p = proj.<span class="hljs-title function_">get</span>(t);
-  @{ a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">6</span> <span class="hljs-number">0</span>  a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> -<span class="hljs-number">6</span> <span class="hljs-number">0</span> }.<span class="hljs-title function_">drawTo</span>(p.<span class="hljs-property">x</span> - <span class="hljs-number">3</span>, p.<span class="hljs-property">y</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">curve</span> = @{ c 0 -80 200 -80 200 0 };
+<span class="id">curve</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">60</span>)
+<span class="kw">let</span> <span class="id">proj</span> = <span class="id">curve</span>.<span class="id">project</span>(<span class="num">20</span>, <span class="num">60</span>);
+<span class="kw">for</span> (<span class="id">t</span> <span class="kw">in</span> [<span class="num">0.25</span>, <span class="num">0.5</span>, <span class="num">0.75</span>]) {
+  <span class="kw">let</span> <span class="id">p</span> = <span class="id">proj</span>.<span class="id">get</span>(<span class="id">t</span>);
+  @{ a 3 3 0 1 1 6 0  a 3 3 0 1 1 -6 0 }.<span class="id">drawTo</span>(<span class="id">p</span>.<span class="id">x</span> - <span class="num">3</span>, <span class="id">p</span>.<span class="id">y</span>)
 }
 </code></pre><p>This works but is manual — you pick the t-values yourself. For evenly-spaced distributions, <code>partition()</code> automates this pattern.</p>
 <h2>Sampling Points Along a Curve</h2>
@@ -629,9 +640,9 @@ tangents.apply {
 <p>The red dots use <a href="/docs#path-blocks-partitionn-orientedpoint"><code>partition(8)</code></a> to divide the curve into 8 equal segments. Each partition point includes <code>.point</code>, <code>.angle</code>, and <code>.t</code> properties. The green tangent lines use <code>tangent(t)</code> at each eighth to show the direction of travel.</p>
 <h2>Even Distribution with <code>partition(n)</code></h2>
 <p><a href="/docs#path-blocks-partitionn-orientedpoint"><code>partition(n)</code></a> is the workhorse for distributing elements along a path. It returns <code>n + 1</code> oriented points (both endpoints included), evenly spaced by arc length:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> path = @{ h <span class="hljs-number">100</span> };
-<span class="hljs-keyword">let</span> pts = path.<span class="hljs-title function_">partition</span>(<span class="hljs-number">4</span>);
-<span class="hljs-comment">// 5 points at t = 0, 0.25, 0.5, 0.75, 1.0</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">path</span> = @{ h 100 };
+<span class="kw">let</span> <span class="id">pts</span> = <span class="id">path</span>.<span class="id">partition</span>(<span class="num">4</span>);
+<span class="cm">// 5 points at t = 0, 0.25, 0.5, 0.75, 1.0</span>
 </code></pre><p>Each oriented point has three properties:</p>
 <table>
 <thead>

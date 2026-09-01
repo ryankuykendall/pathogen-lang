@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -296,18 +307,18 @@ code.hljs {
 <p>A <a href="/docs#path-blocks-chamfers">chamfer</a> replaces a corner vertex with a straight line. The incoming and outgoing edges are trimmed by a distance, and a line segment connects the two trim points. The result is a beveled corner.</p>
 <h3>Symmetric Chamfer</h3>
 <p>The simplest form trims equal amounts from both edges at every corner:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
-<span class="hljs-keyword">let</span> beveled = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">10</span>);
-beveled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 70 v 70 h -70 z };
+<span class="kw">let</span> <span class="id">beveled</span> = <span class="id">box</span>.<span class="id">chamfer</span>(<span class="num">10</span>);
+<span class="id">beveled</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>Asymmetric Chamfer</h3>
 <p>Pass two distances to trim different amounts on the incoming and outgoing edges — <a href="/docs#path-blocks-chamferd1-d2-pathblock-projectedpath"><code>chamfer(d1, d2)</code></a>:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> asym = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">5</span>, <span class="hljs-number">25</span>);
-asym.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">asym</span> = <span class="id">box</span>.<span class="id">chamfer</span>(<span class="num">5</span>, <span class="num">25</span>);
+<span class="id">asym</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>Per-Vertex Chamfer</h3>
 <p><a href="/docs#path-blocks-chamferatvertexindex-distance-pathblock-projectedpath"><code>chamferAtVertex(index, distance)</code></a> targets a single corner. The index comes from the PathBlock&#39;s <code>.vertices</code> array:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
-<span class="hljs-comment">// vertices: (0,0), (70,0), (70,70), (0,70)</span>
-<span class="hljs-keyword">let</span> oneCorner = box.<span class="hljs-title function_">chamferAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">15</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 70 v 70 h -70 z };
+<span class="cm">// vertices: (0,0), (70,0), (70,70), (0,70)</span>
+<span class="kw">let</span> <span class="id">oneCorner</span> = <span class="id">box</span>.<span class="id">chamferAtVertex</span>(<span class="num">1</span>, <span class="num">15</span>);
 </code></pre><p>You can chain <code>chamferAtVertex</code> calls to selectively bevel specific corners with different distances.</p>
 <p>The anatomy diagram below shows the geometric construction: the red dot is the original vertex, green dots are the trim points at distance <code>d</code> along each edge, and the blue line connects them. The yellow dimension arrows show <code>d1</code> (incoming) and <code>d2</code> (outgoing) trim distances.</p>
 <p><mini-workspace caption="Chamfer anatomy — geometric construction at a right-angle corner">
@@ -708,13 +719,13 @@ subtitle.apply {
 <p><strong>Important:</strong> Fillets currently work at <strong>line-line junctions only</strong>. At curve junctions (where a curve meets a line, or two curves meet), the fillet is skipped and a warning is logged. This covers the vast majority of practical cases — rectangles, polygons, stars, and polylines are all line-line. See the <a href="/docs#path-blocks-fillets">documentation</a> for details.</p>
 <h3>All Corners</h3>
 <p><a href="/docs#path-blocks-filletradius-pathblock-projectedpath"><code>fillet(radius)</code></a> rounds every corner:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
-<span class="hljs-keyword">let</span> rounded = box.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">10</span>);
-rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 70 v 70 h -70 z };
+<span class="kw">let</span> <span class="id">rounded</span> = <span class="id">box</span>.<span class="id">fillet</span>(<span class="num">10</span>);
+<span class="id">rounded</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>Per-Vertex</h3>
 <p><a href="/docs#path-blocks-filletatvertexindex-radius-pathblock-projectedpath"><code>filletAtVertex(index, radius)</code></a> rounds a single corner:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> oneRound = box.<span class="hljs-title function_">filletAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">20</span>);
-oneRound.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">oneRound</span> = <span class="id">box</span>.<span class="id">filletAtVertex</span>(<span class="num">1</span>, <span class="num">20</span>);
+<span class="id">oneRound</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><p>The fillet anatomy diagram shows how a circular arc is constructed at a 90° corner. The arc center (at distance <code>r</code> from both edges) and the trim formula <code>trim = r / tan(halfAngle)</code> are labeled. For a right angle, <code>trim = r</code>.</p>
 <p><mini-workspace caption="Fillet anatomy — arc center, trim points, and radius at a 90° corner">
   <code>define ViewBox(0, 0, 480, 340);
@@ -987,13 +998,13 @@ subtitle.apply {
 <p><a href="/docs#path-blocks-elliptical-fillets">Elliptical fillets</a> replace corners with elliptical arcs instead of circular ones. If you&#39;ve used CSS <code>border-radius</code> with two values (e.g., <code>border-radius: 15px / 8px</code>), you&#39;ve already seen elliptical fillets in action — they produce the same asymmetric corner rounding. This gives you control over the corner shape&#39;s aspect ratio, useful for UI components, pill shapes, and organic forms where a circular arc is too uniform.</p>
 <h3>Basic Elliptical</h3>
 <p><a href="/docs#path-blocks-ellipticalfilletrx-ry-pathblock-projectedpath"><code>ellipticalFillet(rx, ry)</code></a> uses two radii:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
-<span class="hljs-keyword">let</span> eFilleted = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">15</span>, <span class="hljs-number">8</span>);
-eFilleted.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 70 v 70 h -70 z };
+<span class="kw">let</span> <span class="id">eFilleted</span> = <span class="id">box</span>.<span class="id">ellipticalFillet</span>(<span class="num">15</span>, <span class="num">8</span>);
+<span class="id">eFilleted</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>With Rotation</h3>
 <p><a href="/docs#path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath"><code>ellipticalFillet(rx, ry, rotation)</code></a> adds an ellipse rotation in radians:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> rotated = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">15</span>, <span class="hljs-number">8</span>, <span class="hljs-number">0.3</span>);
-rotated.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">rotated</span> = <span class="id">box</span>.<span class="id">ellipticalFillet</span>(<span class="num">15</span>, <span class="num">8</span>, <span class="num">0.3</span>);
+<span class="id">rotated</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>Per-Vertex Variants</h3>
 <p><a href="/docs#path-blocks-ellipticalfilletatvertexindex-rx-ry-pathblock-projectedpath"><code>ellipticalFilletAtVertex</code></a> targets individual corners, with an optional rotation parameter.</p>
 <h3>Adapting to Corner Angles</h3>
@@ -1313,11 +1324,11 @@ subtitle.apply {
 </ul>
 <h2>Chaining with Other Operations</h2>
 <p>Because chamfers and fillets return PathBlocks, you can chain them with any other PathBlock method — <a href="/docs#path-blocks-drawing-a-path-block"><code>.draw()</code></a>, <a href="/docs#path-blocks-drawing-a-path-block"><code>.drawTo()</code></a>, <a href="/docs#path-blocks-projecting-without-drawing"><code>.project()</code></a>, <a href="/docs#path-blocks-parametric-sampling">parametric sampling</a>, or <a href="/docs#path-blocks-boolean-operations">boolean operations</a>:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
-<span class="hljs-keyword">let</span> rounded = box.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>);
-<span class="hljs-keyword">let</span> pts = rounded.<span class="hljs-title function_">partition</span>(<span class="hljs-number">20</span>);
-<span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
-  <span class="hljs-comment">// Place dots along the rounded rectangle</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 60 v 40 h -60 z };
+<span class="kw">let</span> <span class="id">rounded</span> = <span class="id">box</span>.<span class="id">fillet</span>(<span class="num">8</span>);
+<span class="kw">let</span> <span class="id">pts</span> = <span class="id">rounded</span>.<span class="id">partition</span>(<span class="num">20</span>);
+<span class="kw">for</span> (<span class="id">p</span> <span class="kw">in</span> <span class="id">pts</span>) {
+  <span class="cm">// Place dots along the rounded rectangle</span>
 }
 </code></pre><h2>What&#39;s Next</h2>
 <p>The final post in this series covers <a href="/blog/pathblock-boolean-operations">boolean operations</a> — combining two closed paths using union, difference, intersection, and xor. Since everything returns a PathBlock, you&#39;ll see how these operations compose with the fillets and chamfers covered here.</p>

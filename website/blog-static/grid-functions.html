@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -282,7 +293,7 @@ code.hljs {
         <p>Grid patterns show up everywhere — engineering overlays, graph paper, game boards, architectural plans, generative art backgrounds. Building one from scratch means nested loops, coordinate math, and careful edge deduplication for triangles and hexagons. Pathogen&#39;s three new grid functions collapse all of that into a single call.</p>
 <p><code>squareGrid</code>, <code>triangleGrid</code>, and <code>hexagonGrid</code> each generate complete path geometry within a bounding rectangle. A <a href="/docs#stdlib-grid-functions"><code>GridPatternType</code></a> enum selects the visual style — <strong>Shape</strong>, <strong>Dot</strong>, <strong>Intersection</strong>, or <strong>Partial</strong> — and all three return <code>PathSegment</code> values, so they compose with <a href="/docs#layers-defining-layers">layers</a>, transforms, and clip paths just like <code>circle()</code> or <code>polygon()</code>.</p>
 <h2>Square Grids</h2>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">squareGrid</span>(type, x, y, width, height, cellSize)
+<pre><code class="hljs language-pathogen"><span class="id">squareGrid</span>(<span class="id">type</span>, <span class="id">x</span>, <span class="id">y</span>, <span class="id">width</span>, <span class="id">height</span>, <span class="id">cellSize</span>)
 </code></pre><table>
 <thead>
 <tr>
@@ -372,7 +383,7 @@ labels.apply {
   <img src="/blog/samples/post15/square-grid-patterns.svg" alt="squareGrid — four pattern types with reactive colors" loading="lazy">
 </mini-workspace></p>
 <h2>Triangle Grids</h2>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">triangleGrid</span>(type, x, y, width, height, cellSize)
+<pre><code class="hljs language-pathogen"><span class="id">triangleGrid</span>(<span class="id">type</span>, <span class="id">x</span>, <span class="id">y</span>, <span class="id">width</span>, <span class="id">height</span>, <span class="id">cellSize</span>)
 </code></pre><p>Same parameters as <code>squareGrid</code>, but <code>cellSize</code> is the triangle <strong>height</strong> (altitude of the equilateral triangle). The side length is derived: <code>side = 2 × cellSize / √3</code>. Triangles alternate between point-up and point-down orientations, with odd rows offset by half a side length to form a seamless tessellation.</p>
 <p>The intersection marks on triangle grids are edge-aligned — six arms at 60° intervals (three bidirectional lines), matching the grid&#39;s natural symmetry where six edges meet at each interior vertex.</p>
 <p><mini-workspace code-open caption="triangleGrid — equilateral triangle tessellation in four pattern types">
@@ -439,7 +450,7 @@ labels.apply {
   <img src="/blog/samples/post15/triangle-grid-patterns.svg" alt="triangleGrid — equilateral triangle tessellation in four pattern types" loading="lazy">
 </mini-workspace></p>
 <h2>Hexagon Grids</h2>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">hexagonGrid</span>(type, x, y, width, height, cellSize, orientation?)
+<pre><code class="hljs language-pathogen"><span class="id">hexagonGrid</span>(<span class="id">type</span>, <span class="id">x</span>, <span class="id">y</span>, <span class="id">width</span>, <span class="id">height</span>, <span class="id">cellSize</span>, <span class="id">orientation</span>?)
 </code></pre><p>The hexagon function adds a seventh parameter: <code>orientation</code>. It accepts the <code>HexagonOrientation</code> enum — <code>.Edge</code> for flat-top hexagons (an edge faces up) or <code>.Vertex</code> for pointy-top (a vertex faces up). When omitted, it defaults to <code>.Edge</code>.</p>
 <table>
 <thead>

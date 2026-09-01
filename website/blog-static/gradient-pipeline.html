@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -424,11 +435,11 @@ scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, detail
 </ol>
 <h2>GroupLayer</h2>
 <p>The demos in this series use <code>GroupLayer</code> extensively for scene composition. <code>GroupLayer</code> maps to SVG&#39;s <code>&lt;g&gt;</code> element — it groups child layers into a logical unit that can be positioned, styled, and nested.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> card = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;card-1&#x27;</span>) ${
-  translate-<span class="hljs-attr">x</span>: <span class="hljs-number">20</span>;
-  translate-<span class="hljs-attr">y</span>: <span class="hljs-number">25</span>;
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">card</span> = <span class="tp">GroupLayer</span>(<span class="str">'card-1'</span>) ${
+  <span class="pr">translate-x</span>: <span class="num">20</span>;
+  <span class="pr">translate-y</span>: <span class="num">25</span>;
 };
-card.<span class="hljs-title function_">append</span>(fill_layer, label_layer, tag_layer)
+<span class="id">card</span>.<span class="id">append</span>(<span class="id">fill_layer</span>, <span class="id">label_layer</span>, <span class="id">tag_layer</span>)
 </code></pre><p>The <code>translate-x</code>, <code>translate-y</code>, <code>rotate</code>, and <code>scale</code> convenience properties in the style block compile to a <code>transform</code> attribute on the <code>&lt;g&gt;</code> element. This is simpler than writing raw <code>transform: translate(20, 25)</code> and composes correctly when multiple transforms are needed (the order is always translate, rotate, scale).</p>
 <p>The <code>.append()</code> method adds child layers to the group. Children render in append order. When a layer is appended to a new group, it is automatically removed from any previous group — no duplicate references.</p>
 <p><mini-workspace code-open caption="Three cards positioned with GroupLayer translate — mixing native and GPU gradients">

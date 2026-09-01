@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -327,8 +338,7 @@ strokes that shimmer independently and one glow that flows.</p>
 16×16 grid from the same palette; the left asks <code>hash01</code> of each cell&#39;s
 index, the right asks <code>noise2</code> of each cell&#39;s position.</p>
 <p><mini-workspace code-open caption="One palette, two samplers: hash01 of the cell index (left) versus noise2 of the cell position (right).">
-  <code>// viewBox="0 0 400 220"
-//-- Two shaded grids, same size, same palette. Left: each cell's shade is
+  <code>//-- Two shaded grids, same size, same palette. Left: each cell's shade is
 //-- hash01 of its index -- TV static. Right: noise2 of its (col, row)
 //-- position scaled down -- cloudy patches. Neighboring cells agree in
 //-- BOTH directions.
@@ -387,8 +397,7 @@ grid gets large.)</p>
 <p>Sampling the field at each element&#39;s own position. A 30×17 dot grid where
 each radius is <code>0.6 + 3 * noise2(col * 0.12, row * 0.12)</code>.</p>
 <p><mini-workspace code-open caption="Sizes swell in blobs like rain intensity across pavement. The · 0.12 on both coordinates is the frequency knob in 2D — smaller factors, bigger weather systems.">
-  <code>// viewBox="0 0 400 220"
-//-- A 30 x 17 dot grid where each dot's radius samples the field at its
+  <code>//-- A 30 x 17 dot grid where each dot's radius samples the field at its
 //-- own position: 0.6 + 3 * noise2(col * 0.12, row * 0.12). Sizes swell
 //-- in blobs, like rain intensity across pavement.
 
@@ -428,8 +437,7 @@ existence. Left: line <code>j</code> samples <code>noise2(t*4, j*0.3)</code> —
 reads as a flowing sheet. Right: the same twelve lines with independent
 1D streams — they ignore each other.</p>
 <p><mini-workspace code-open caption="Twelve lines twice: rows of one noise2 field (left) versus independent noise seeds (right).">
-  <code>// viewBox="0 0 400 230"
-//-- The layer-index trick. Left stack: line j samples noise2(t*4, j*0.3)
+  <code>//-- The layer-index trick. Left stack: line j samples noise2(t*4, j*0.3)
 //-- -- rows of ONE field, so neighboring lines rise and fall together and
 //-- the stack reads as a flowing sheet. Right stack: each line gets its
 //-- own independent 1D stream -- the lines ignore each other.
@@ -488,8 +496,7 @@ grid moves horizontally by field 0 and vertically by field 1 —
 <code>(noise2(x, y) - 0.5) * 14</code> each way (the <code>- 0.5</code> recenters [0,1) into a
 signed push, the same remap trick from <a href="/blog/primer-hash11"><code>hash11</code></a>).</p>
 <p><mini-workspace code-open caption="Two smooth fields make a push direction — neighboring vertices get nearly the same push, so the rules bend instead of scattering. The doorway to flow fields, fabric, and water.">
-  <code>// viewBox="0 0 400 230"
-//-- Displacement: two fields make a push direction. Every vertex of a
+  <code>//-- Displacement: two fields make a push direction. Every vertex of a
 //-- ruled grid moves by ((noise2(x,y) - 0.5) * 14, (noise2(x,y,1) - 0.5) * 14)
 //-- -- the default field pushes horizontally, the seed-1 field vertically.
 //-- The low frequency (0.14) keeps neighboring vertices agreeing, so the
@@ -543,8 +550,7 @@ profile is <a href="/blog/primer-bump"><code>bump</code></a> algebra, each multi
 texture factor <code>1 + (noise2(t*6, k*0.3) - 0.5) * 0.9</code> — with <code>t</code> running
 along the stroke and layer index <code>k</code> running <em>across</em> the field.</p>
 <p><mini-workspace code-open caption="One noise2 field textures all twelve layers: t along the stroke, k · 0.3 across the stack.">
-  <code>// viewBox="0 78 400 103"
-//-- The series finale: bump-shaped widths (part 5) textured by ONE
+  <code>//-- The series finale: bump-shaped widths (part 5) textured by ONE
 //-- noise2 field. t runs along the stroke; layer * 0.3 runs across the
 //-- layers. Because the field is continuous in both directions,
 //-- neighboring layers sample neighboring rows -- and the whole glow

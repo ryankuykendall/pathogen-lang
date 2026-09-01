@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -331,8 +342,7 @@ between its random pins.</p>
 <p>Three ways from 0 to 1 across the same window. The dashed line is a hard
 step. The thin line is a straight ramp. The bold line is <code>smoothstep</code>.</p>
 <p><mini-workspace code-open caption="Three routes across the 0.3–0.7 window: hard step (dashed), straight ramp (thin), smoothstep (bold).">
-  <code>// viewBox="0 0 400 200"
-//-- Three ways to get from 0 to 1 across the window 0.3..0.7: a hard step
+  <code>//-- Three ways to get from 0 to 1 across the window 0.3..0.7: a hard step
 //-- (cliff), a straight lerp-style ramp, and smoothstep -- the S-curve
 //-- that leaves the floor flat and arrives at the ceiling flat.
 
@@ -407,8 +417,7 @@ corner-free by construction.</p>
 half. Bottom row: the markers are <strong>reversed</strong> — <code>smoothstep(1.0, 0.6, t)</code>
 — so the fade runs the other way.</p>
 <p><mini-workspace code-open caption="Forward markers fade in; reversed markers fade out — no 1 − s arithmetic, just swap the edges and the ramp runs downhill.">
-  <code>// viewBox="0 0 400 170"
-//-- Applying the dimmer spatially. Top row: dot size fades IN across the
+  <code>//-- Applying the dimmer spatially. Top row: dot size fades IN across the
 //-- left half via smoothstep(0.1, 0.5, t). Bottom row: swap the markers --
 //-- smoothstep(1.0, 0.6, t) -- and the ramp runs downhill, fading OUT
 //-- toward the right.
@@ -453,8 +462,7 @@ arithmetic, just swap the edges and the ramp runs downhill.</p>
 <code>smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)</code> — drives both the
 plot (top) and the bar heights (bottom).</p>
 <p><mini-workspace code-open caption="Uphill times downhill: rise, hold at a genuinely flat 1.0 (the dashed line), fall. The plot and the bars share one win lambda — the picture and the application are the same function.">
-  <code>// viewBox="0 0 400 250"
-//-- The plateau idiom: an uphill ramp TIMES a downhill ramp makes a
+  <code>//-- The plateau idiom: an uphill ramp TIMES a downhill ramp makes a
 //-- flat-topped window -- rise, hold, fall. The plot (top) and the bar
 //-- heights (bottom) share the exact same lambda.
 
@@ -530,8 +538,7 @@ ribbon machinery — <code>compoundVariableOffset</code>, <code>vo.stop</code>, 
 is glossed in <a href="/blog/primer-hash11">part 2</a>; the only part that matters
 here is that each stop&#39;s width is a number we compute.)</p>
 <p><mini-workspace code-open caption="The same 9-unit width, without and with the smoothstep end-window.">
-  <code>// viewBox="0 0 400 160"
-//-- End windows on a stroke. Top: constant width -- the ribbon ends in
+  <code>//-- End windows on a stroke. Top: constant width -- the ribbon ends in
 //-- chopped-off vertical edges. Bottom: the same width times
 //-- smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t), which eases the
 //-- width to zero at both tips.
@@ -600,8 +607,7 @@ position — and use it to blend lightness, hue, and chroma from &quot;sky
 values&quot; to &quot;sea values.&quot; The sun&#39;s halo rings shrink by a reversed
 smoothstep of ring index.</p>
 <p><mini-workspace code-open caption="Sixty strips, one eased mix factor m blending every color channel from sky to sea in sync. Every soft edge in this scene is the same three-argument call wearing different numbers.">
-  <code>// viewBox="0 0 400 230"
-//-- A dusk seascape with no gradients: sixty horizontal strips, each
+  <code>//-- A dusk seascape with no gradients: sixty horizontal strips, each
 //-- strip's color MIXED between a sky color and a sea color by one
 //-- smoothstep of its vertical position. The soft horizon line is the
 //-- S-curve; the sun's halo rings shrink by a reversed smoothstep.

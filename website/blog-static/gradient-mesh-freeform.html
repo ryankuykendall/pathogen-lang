@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -283,13 +294,13 @@ code.hljs {
 <p>Pathogen brings it back, along with a second model that was never even proposed: freeform gradients where color points are placed at arbitrary positions and blended using inverse-distance weighting. Both types are GPU-rendered at compile time, producing base64-encoded <code>&lt;pattern&gt;</code> elements identical to conic gradients.</p>
 <h2>MeshGradient: The Grid Model</h2>
 <p>A <code>MeshGradient</code> defines a rectangular grid of control points, each with an assigned color. Between the points, colors are interpolated bilinearly — smoothly blending across rows and columns. The constructor takes an ID, pixel dimensions, and the grid size:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> mesh = <span class="hljs-title class_">MeshGradient</span>(<span class="hljs-string">&#x27;corners&#x27;</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>, <span class="hljs-number">2</span>, <span class="hljs-number">2</span>) {|g|
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>);
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">1</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>);
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">mesh</span> = <span class="id">MeshGradient</span>(<span class="str">'corners'</span>, <span class="num">400</span>, <span class="num">400</span>, <span class="num">2</span>, <span class="num">2</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#e63946'</span>);
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">0</span>, <span class="num">1</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#f4a261'</span>);
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">1</span>, <span class="num">0</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#264653'</span>);
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">1</span>, <span class="num">1</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#2a9d8f'</span>);
 };
-mesh.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">mesh</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>A 2x2 grid is the simplest case — four corners, each a different color, with smooth blending across the surface. The result looks like what you might get from a CSS four-corner gradient, except it is rendered as a high-resolution image embedded in SVG.</p>
 <p><mini-workspace code-open caption="2x2 mesh — four corner colors with bilinear OKLCH interpolation">
   <code>define ViewBox(0, 0, 400, 400);
@@ -351,12 +362,12 @@ scene.append(bg, patch, labels, title);
 <h2>Working with the Grid</h2>
 <p>Larger grids give more control. A 3x3 grid has 9 control points, allowing you to define a center color distinct from the edges. The <code>getPoint(row, col)</code> method returns a point object whose <code>.color</code> property you set.</p>
 <p>Beyond color assignment, mesh points support <code>.translate(dx, dy)</code> to shift their position away from the uniform grid. This breaks the regularity, creating organic warps and distortions. The bilinear interpolation follows the deformed grid, producing gradient shapes that would be impossible with uniform blending.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> deformed = <span class="hljs-title class_">MeshGradient</span>(<span class="hljs-string">&#x27;deformed&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">280</span>, <span class="hljs-number">3</span>, <span class="hljs-number">3</span>) {|g|
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>);
-  <span class="hljs-comment">// ... assign all 9 colors ...</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">deformed</span> = <span class="id">MeshGradient</span>(<span class="str">'deformed'</span>, <span class="num">200</span>, <span class="num">280</span>, <span class="num">3</span>, <span class="num">3</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#7c3aed'</span>);
+  <span class="cm">// ... assign all 9 colors ...</span>
 
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>).<span class="hljs-title function_">translate</span>(<span class="hljs-number">40</span>, -<span class="hljs-number">30</span>);  <span class="hljs-comment">// shift center</span>
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>).<span class="hljs-title function_">translate</span>(<span class="hljs-number">0</span>, <span class="hljs-number">20</span>);    <span class="hljs-comment">// warp top edge</span>
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">1</span>, <span class="num">1</span>).<span class="id">translate</span>(<span class="num">40</span>, -<span class="num">30</span>);  <span class="cm">// shift center</span>
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">0</span>, <span class="num">1</span>).<span class="id">translate</span>(<span class="num">0</span>, <span class="num">20</span>);    <span class="cm">// warp top edge</span>
 };
 </code></pre><p><mini-workspace caption="Uniform grid vs deformed grid — same colors, different point positions">
   <code>define ViewBox(0, 0, 500, 400);
@@ -465,16 +476,16 @@ scene.append(bg, left_group, right_group, labels, desc, title);
 <p>The <code>getRow(n)</code> method returns all points in a row, useful for applying consistent colors across a horizontal band. For more complex scenes, higher-resolution grids (4x4, 5x5) with translated points can simulate terrain, fabric folds, or atmospheric effects. The <code>mesh-landscape</code> sample demonstrates a 4x3 grid producing a stylized landscape.</p>
 <h2>FreeformGradient: The Scatter Model</h2>
 <p>Where <code>MeshGradient</code> constrains colors to a grid, <code>FreeformGradient</code> places them anywhere. You specify color points at arbitrary pixel coordinates, and the renderer blends them using inverse-distance weighting (IDW). Each pixel&#39;s color is a weighted average of all points, with closer points contributing more.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> nebula = <span class="hljs-title class_">FreeformGradient</span>(<span class="hljs-string">&#x27;nebula&#x27;</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) {|g|
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">60</span>,  <span class="hljs-number">70</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">340</span>, <span class="hljs-number">60</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#9b5de5&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">80</span>,  <span class="hljs-number">340</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">330</span>, <span class="hljs-number">320</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f72585&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">200</span>, <span class="hljs-number">80</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#4cc9f0&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">nebula</span> = <span class="id">FreeformGradient</span>(<span class="str">'nebula'</span>, <span class="num">400</span>, <span class="num">400</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">60</span>,  <span class="num">70</span>,  <span class="id">Color</span>(<span class="str">'#e63946'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">340</span>, <span class="num">60</span>,  <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">200</span>, <span class="num">200</span>, <span class="id">Color</span>(<span class="str">'#9b5de5'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">80</span>,  <span class="num">340</span>, <span class="id">Color</span>(<span class="str">'#2a9d8f'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">330</span>, <span class="num">320</span>, <span class="id">Color</span>(<span class="str">'#f72585'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">200</span>, <span class="num">80</span>,  <span class="id">Color</span>(<span class="str">'#4cc9f0'</span>));
 };
-nebula.<span class="hljs-property">falloff</span> = <span class="hljs-number">2.0</span>;
-nebula.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">nebula</span>.<span class="id">falloff</span> = <span class="num">2.0</span>;
+<span class="id">nebula</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>The <code>g.point(x, y, color)</code> method places a color source at absolute coordinates. Six points with OKLCH interpolation produce a smooth nebula-like color field. The small dots in the demo below mark where each color point is placed.</p>
 <p><mini-workspace code-open caption="Six color points blended with inverse-distance weighting">
   <code>define ViewBox(0, 0, 400, 400);

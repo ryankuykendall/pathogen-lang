@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -283,16 +294,16 @@ code.hljs {
 <p>Pathogen takes a different approach. <code>ConicGradient</code> is a first-class gradient type that compiles to a base64-encoded <code>&lt;pattern&gt;</code> element. The rasterization happens at compile time via WebGPU (or Canvas 2D as a fallback), producing a pixel-perfect image embedded directly in the SVG. The author writes gradient code. The viewer sees a standard SVG.</p>
 <h2>The Color Wheel</h2>
 <p>The simplest conic gradient is a full 360-degree sweep. <code>ConicGradient</code> takes an ID and a center point in absolute coordinates (not <code>objectBoundingBox</code> — conic gradients are rasterized at a fixed resolution, so pixel coordinates make more sense).</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> wheel = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;wheel&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.17</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9c74f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#43aa8b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.50</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#277da1&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.67</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#5e60ce&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.83</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#9b5de5&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">wheel</span> = <span class="id">ConicGradient</span>(<span class="str">'wheel'</span>, <span class="num">200</span>, <span class="num">200</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#e63946'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.17</span>, <span class="id">Color</span>(<span class="str">'#f9c74f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.33</span>, <span class="id">Color</span>(<span class="str">'#43aa8b'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.50</span>, <span class="id">Color</span>(<span class="str">'#277da1'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.67</span>, <span class="id">Color</span>(<span class="str">'#5e60ce'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.83</span>, <span class="id">Color</span>(<span class="str">'#9b5de5'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#e63946'</span>));
 };
-wheel.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">wheel</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>Stops at 0 and 1 should match to avoid a hard seam at the join. With OKLCH interpolation enabled, the transitions stay vibrant across the entire hue wheel — no desaturated dead zones between complementary colors.</p>
 <p>The color wheel below uses <code>innerRadius</code> to create a donut effect and <code>.inherit()</code> to create a smaller inner disc with a different fill mode. One gradient definition, two visual treatments.</p>
 <p><mini-workspace code-open caption="Full 360-degree sweep with innerRadius donut and OKLCH interpolation">
@@ -364,15 +375,15 @@ scene.append(bg, ring, disc, frame, inner_frame, title);
 </mini-workspace></p>
 <h2>Partial Sweeps</h2>
 <p>Not every conic gradient needs to go all the way around. The <code>from</code> and <code>to</code> properties define the angular range of the sweep, in degrees. A gauge that covers 270 degrees (from 135 to 405) leaves a gap at the bottom — a natural fit for speedometers, progress rings, and dial indicators.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> gauge = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;speed&#x27;</span>, <span class="hljs-number">120</span>, <span class="hljs-number">150</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#43aa8b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9c74f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">gauge</span> = <span class="id">ConicGradient</span>(<span class="str">'speed'</span>, <span class="num">120</span>, <span class="num">150</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,   <span class="id">Color</span>(<span class="str">'#43aa8b'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.5</span>, <span class="id">Color</span>(<span class="str">'#f9c74f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,   <span class="id">Color</span>(<span class="str">'#e63946'</span>));
 };
-gauge.<span class="hljs-property">from</span> = 135deg;
-gauge.<span class="hljs-property">to</span> = 405deg;
-gauge.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">38</span>;
-gauge.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;center&#x27;</span>;
+<span class="id">gauge</span>.<span class="id">from</span> = <span class="num">135deg</span>;
+<span class="id">gauge</span>.<span class="id">to</span> = <span class="num">405deg</span>;
+<span class="id">gauge</span>.<span class="id">innerRadius</span> = <span class="num">38</span>;
+<span class="id">gauge</span>.<span class="id">innerFill</span> = <span class="str">'center'</span>;
 </code></pre><p>The <code>from</code> and <code>to</code> values use degree syntax. Values above 360 are valid — <code>405deg</code> is equivalent to <code>45deg</code> but makes the intent clear: a 270-degree arc that wraps past the top. The dashboard below shows three gauges with different angular ranges and inner radii.</p>
 <p><mini-workspace code-open caption="Three gauges using partial sweeps — 270-degree and 180-degree arcs">
   <code>define ViewBox(0, 0, 660, 340);
@@ -612,13 +623,13 @@ scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_val
 </mini-workspace></p>
 <h2>Direction: CW and CCW</h2>
 <p>By default, conic gradients sweep clockwise. Setting <code>.direction = &#39;ccw&#39;</code> reverses the sweep direction. The color stops stay in the same order, but the angular progression runs counter-clockwise. This is useful when mirroring UI elements or creating paired visual effects.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> grad = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;grad&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e07a5f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f2cc8f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3d85c6&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">grad</span> = <span class="id">ConicGradient</span>(<span class="str">'grad'</span>, <span class="num">200</span>, <span class="num">200</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#e07a5f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.33</span>, <span class="id">Color</span>(<span class="str">'#f2cc8f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.66</span>, <span class="id">Color</span>(<span class="str">'#3d85c6'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#264653'</span>));
 };
-grad.<span class="hljs-property">direction</span> = <span class="hljs-string">&#x27;ccw&#x27;</span>;
+<span class="id">grad</span>.<span class="id">direction</span> = <span class="str">'ccw'</span>;
 </code></pre><p><mini-workspace caption="Same four stops — clockwise vs counter-clockwise">
   <code>define ViewBox(0, 0, 500, 300);
 // Direction Comparison — CW vs CCW
@@ -722,12 +733,12 @@ scene.append(bg, left, right, labels, note);
 <li><strong>center</strong>: The first color stop extends inward, filling the center with a solid disc.</li>
 <li><strong>Color(...)</strong>: A custom color fills the center.</li>
 </ul>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> grad = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;grad&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">grad</span> = <span class="id">ConicGradient</span>(<span class="str">'grad'</span>, <span class="num">200</span>, <span class="num">200</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>, <span class="id">Color</span>(<span class="str">'#7c3aed'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>, <span class="id">Color</span>(<span class="str">'#7c3aed'</span>));
 };
-grad.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">35</span>;
-grad.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent-blend&#x27;</span>;
+<span class="id">grad</span>.<span class="id">innerRadius</span> = <span class="num">35</span>;
+<span class="id">grad</span>.<span class="id">innerFill</span> = <span class="str">'transparent-blend'</span>;
 </code></pre><p><mini-workspace code-open caption="Four innerFill modes: transparent, transparent-blend, center, and custom color">
   <code>define ViewBox(0, 0, 520, 530);
 // Inner Radius &amp; Fill Modes — 2×2 Grid

@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -516,13 +527,13 @@ consumerSubs.apply {
 <p>Rather than manually maintaining lists of stdlib functions and their signatures, we use <code>ts-morph</code> to extract completion data from TypeScript interface declarations in <code>src/pathogen-api.ts</code>. A generation script produces <code>completion-data.generated.ts</code> with every function signature, type member set, and enum value. When the language API changes, we regenerate with <code>npm run generate:completions</code> — no manual synchronization, and a CI check catches drift.</p>
 <h3>Type flow analysis</h3>
 <p>Completions work through variable assignments, callback parameters, and loop destructuring:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> data = [{ <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">160</span>, <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;alpha&quot;</span> }];
-<span class="hljs-keyword">for</span> ([d, i] <span class="hljs-keyword">in</span> data) {
-  d.  <span class="hljs-comment">// completions: x, y, name</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">data</span> = [{ <span class="id">x</span>: <span class="num">60</span>, <span class="id">y</span>: <span class="num">160</span>, <span class="id">name</span>: <span class="str">"alpha"</span> }];
+<span class="kw">for</span> ([<span class="id">d</span>, <span class="id">i</span>] <span class="kw">in</span> <span class="id">data</span>) {
+  <span class="id">d</span>.  <span class="cm">// completions: x, y, name</span>
 }
 
-data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></span>) {|item|
-  item.  <span class="hljs-comment">// completions: x, y, name</span>
+<span class="id">data</span>.<span class="id">map</span>() {|<span class="id">item</span>|
+  <span class="id">item</span>.  <span class="cm">// completions: x, y, name</span>
 };
 </code></pre><p>The engine traces the array element type through <code>for</code> loops and <code>.map()</code> callbacks, then extracts property names from the first object literal in the array initializer.</p>
 <h2>The preview panel</h2>
@@ -545,13 +556,13 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 <h2>Formatting with opinions</h2>
 <p>The formatter follows a style guide developed through a 25-question questionnaire where we reformatted real Pathogen code snippets and documented the reasoning. The core philosophy: <strong>expand for readability</strong>.</p>
 <p>Here&#39;s what formatting does to a typical style block:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// Before</span>
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+<pre><code class="hljs language-pathogen"><span class="cm">// Before</span>
+<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) ${ <span class="pr">fill</span>: <span class="str">#0f172a</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
 
-<span class="hljs-comment">// After formatting</span>
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) ${
-  <span class="hljs-attr">fill</span>: #0f172a;
-  <span class="hljs-attr">stroke</span>: none;
+<span class="cm">// After formatting</span>
+<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) ${
+  <span class="pr">fill</span>: <span class="str">#0f172a</span>;
+  <span class="pr">stroke</span>: <span class="id">none</span>;
 };
 </code></pre><p>Arrays, objects, style blocks, enums, <a href="/blog/pathblock-introduction">path blocks</a>, and text blocks are always multi-line. One item per line. Trailing commas everywhere.</p>
 <p>Key formatter features:</p>

@@ -3,6 +3,47 @@
 
 export const blogIndex = [
   {
+    "slug": "broken-lines-what-it-taught",
+    "title": "What Broken Lines Taught the Language",
+    "date": "2026-09-05",
+    "description": "Closing Broken Lines: the friction log. Building sashiko, leather, and stencil artifacts against the real language filled the log — four entries became fixes that shipped before publication, and the rest are on the bench with their diagnoses attached.",
+    "series": "Broken Lines",
+    "seriesPart": 5
+  },
+  {
+    "slug": "broken-lines-stencils",
+    "title": "Stencils: Bridges Are Just Gaps",
+    "date": "2026-09-04",
+    "description": "Fourth in Broken Lines: a stencil's islands fall out unless bridges hold them — and a bridge is a gap in a dashed centerline, outlined to the band width and cut with difference().",
+    "series": "Broken Lines",
+    "seriesPart": 4
+  },
+  {
+    "slug": "broken-lines-leathercraft",
+    "title": "Leathercraft: Stitch Holes That Can't Disagree",
+    "date": "2026-09-03",
+    "description": "Third in Broken Lines: a punch hole is a near-zero dash outlined round, negative dash offsets center the run, and two mating seams derive their holes from one shared edge — so the counts match by construction.",
+    "series": "Broken Lines",
+    "seriesPart": 3
+  },
+  {
+    "slug": "broken-lines-sashiko",
+    "title": "Sashiko: Running Stitches from Binary Sequences",
+    "date": "2026-09-02",
+    "description": "Second in Broken Lines: a running stitch is a dash pattern, hitomezashi is one bit of dash offset per line, and a 138 × 90 mm mend-patch template falls out of a nested loop.",
+    "series": "Broken Lines",
+    "seriesPart": 2
+  },
+  {
+    "slug": "broken-lines-stroke-geometry",
+    "title": "Stroke Geometry: Dashes, Outlines, and Start Points as Real Paths",
+    "date": "2026-09-01",
+    "description": "First in Broken Lines, a five-part series on stroke geometry: dash() partitions a path into its dash and gap pieces, outline() turns a stroked line into a closed, fillable shape, and startAt() decides where a closed path begins.",
+    "series": "Broken Lines",
+    "seriesPart": 1,
+    "seriesDescription": "Five posts on stroke geometry — dash(), outline(), and startAt() — from bare mechanism to three crafts built on interrupted lines: sashiko stitching, leather stitch holes, and stencil bridges. Written as a working friction log; the closing post reports what building these taught the language."
+  },
+  {
     "slug": "cutting-room-stained-glass",
     "title": "Stained Glass: Seams as Leading, Pieces as Panes",
     "date": "2026-08-27",
@@ -286,6 +327,2347 @@ export const blogIndex = [
 ];
 
 export const posts = {
+  'broken-lines-leathercraft': `<p><em>Part 3 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><a href="/blog/broken-lines-stroke-geometry">Stroke geometry</a> — dashes,
+outlines, and start points as real paths</li>
+<li><a href="/blog/broken-lines-sashiko">Sashiko</a> — running stitches from
+binary sequences</li>
+<li><strong>Leathercraft</strong> (this post) — stitch holes that can&#39;t disagree</li>
+<li><a href="/blog/broken-lines-stencils">Stencils</a> — bridges are just gaps</li>
+<li><a href="/blog/broken-lines-what-it-taught">What Broken Lines taught the language</a>
+— the friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> Part 1&#39;s
+<a href="/blog/broken-lines-stroke-geometry"><code>dash()</code> and <code>outline()</code></a>. The
+samples also use
+<a href="/docs#syntax-lambdas">expression-bodied lambdas</a>
+(<code>{|prick| prick.kind == &#39;dash&#39;}</code>),
+<a href="/docs#path-blocks-fillets"><code>fillet()</code></a> to round the stitch line&#39;s
+corners, <a href="/docs#path-blocks-boolean-operations"><code>difference()</code></a> to
+punch the holes for real, and
+<a href="/docs#path-blocks-concatenation"><code>&lt;&lt;</code> concatenation</a> with
+<code>.reverse()</code> to build two pieces around one shared edge.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>Saddle-stitched leather is sewn through pre-punched holes at fixed
+pitch — 3 to 4&nbsp;mm irons, hole after hole down every seam. Saddle
+stitch means two needles working the <em>same hole</em> from opposite sides,
+which is why everything below cares so much about where the holes go.
+In dash terms a hole is a dash of nearly zero length, followed by a
+pitch-sized gap. <code>stroke-dasharray: 0.01 16</code> puts a dash every 16
+units; <code>outline()</code> with round caps turns each one into a dot of
+exactly the punch&#39;s diameter. Walk a pricking iron down a seam and
+the marks it leaves <em>are</em> the dash array. (Whether your iron marks
+for an awl or a stitching chisel punches clean through, the template
+is the same row of points.)</p>
+<p>One craft rule dominates everything else, and it&#39;s worth stating
+before any picture: <strong>two pieces that share a seam must carry the same
+hole count at the same spacing.</strong> A wallet whose flap has 17 holes and
+whose body has 18 does not assemble. Designers re-count after every
+resize. This post&#39;s answer is structural: derive the holes from the
+one shared edge, and the two rows <em>cannot</em> disagree, because they are
+the same row.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because hole layout is the mechanical, error-prone step between a
+shape and a template — the part designers do today with Illustrator&#39;s
+Blend tool and a hand-typed step count, or by duplicating a dot and
+eyeballing the run. Pitch, margins, corner behavior, and mating-seam
+agreement are all arithmetic along a path, which is exactly what
+<code>dash()</code> measures. Resize the piece and the holes re-derive; nothing
+is re-counted by hand.</p>
+<h2>Example 1 — The prick line</h2>
+<p>One seam. The dash array&#39;s first entry is <code>0.01</code> — a dash so short
+it&#39;s a point — and the second is the pitch. Outline each one with
+round caps at the punch diameter and the seam becomes a row of holes.</p>
+<p><mini-workspace code-open caption="stroke-dasharray: 0.01 16 — a hole every 16 units, outlined to diameter 5.">
+  <code>//-- A leather stitch line is a row of punched holes at fixed pitch.
+//-- In dash terms: a near-zero dash, a pitch-sized gap — then outline()
+//-- each dash round and every "stitch" becomes a punchable dot.
+
+define ViewBox(0, 0, 480, 170);
+
+let leather = PathLayer('leather') \${
+  fill: #7c5335;
+  stroke: none;
+};
+layer('leather').apply {
+  rect(0, 0, 480, 170);
+}
+
+let scene = GroupLayer('scene') \${};
+let seamGhost = PathLayer('seam-ghost') \${
+  stroke: #00000040;
+  stroke-width: 1;
+  fill: none;
+};
+let holes = PathLayer('holes') \${
+  fill: #f8fafc;
+  stroke: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #f1e9dd;
+};
+scene.append(seamGhost, holes, labels);
+
+let seam = @{
+  h 340
+};
+
+seamGhost.apply {
+  M 70 92 seam.draw()
+}
+
+let pricks = seam.dash(\${
+  stroke-dasharray: 0.01 16;
+});
+
+let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+for (prick in seamHoles) {
+  let dot = prick.path.outline(\${
+    stroke-width: 5;
+    stroke-linecap: round;
+  });
+  holes.apply {
+    M 70 92 dot.draw()
+  }
+}
+
+labels.apply {
+  text(70, 44)\`stroke-dasharray: 0.01 16 — the dash is the prick\`;
+  text(70, 136)\`outline(round, width 5) turns each prick into a hole\`;
+}
+</code>
+  <img src="/blog/samples/post47/01-holes-are-dashes.svg" alt="stroke-dasharray: 0.01 16 — a hole every 16 units, outlined to diameter 5." loading="lazy">
+</mini-workspace></p>
+<h2>Example 2 — Centering the run</h2>
+<p>The naive row starts with a hole exactly on the corner and dumps the
+leftover length at the far end — every leatherworker&#39;s first-template
+mistake. The fix is one negative dash offset: shift the pattern back
+by half the remainder, and the margins agree at both ends.</p>
+<p><mini-workspace code-open caption="Top: offset 0 — margins 0 and 10. Bottom: centered — 5 and 5.">
+  <code>//-- Punching from a corner leaves a half-space at the far end. A
+//-- negative stroke-dashoffset centers the run: the leftover length,
+//-- split evenly between both ends.
+
+define ViewBox(0, 0, 480, 200);
+
+let leather = PathLayer('leather') \${
+  fill: #7c5335;
+  stroke: none;
+};
+layer('leather').apply {
+  rect(0, 0, 480, 200);
+}
+
+let scene = GroupLayer('scene') \${};
+let seamGhost = PathLayer('seam-ghost') \${
+  stroke: #00000040;
+  stroke-width: 1;
+  fill: none;
+};
+let holes = PathLayer('holes') \${
+  fill: #f8fafc;
+  stroke: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #f1e9dd;
+};
+scene.append(seamGhost, holes, labels);
+
+let seam = @{
+  h 340
+};
+let pitch = 22;
+
+fn punchRow(anchorY, offsetValue) {
+  seamGhost.apply {
+    M 70 anchorY seam.draw()
+  }
+  // Bare variables in a style value need backtick interpolation — a
+  // logged language limitation (see the series' friction log).
+  let pricks = seam.dash(\${
+    stroke-dasharray: 0.01 \`\${pitch}\`;
+    stroke-dashoffset: \`\${offsetValue}\`;
+  });
+  let rowHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+  for (prick in rowHoles) {
+    let dot = prick.path.outline(\${
+      stroke-width: 5;
+      stroke-linecap: round;
+    });
+    holes.apply {
+      M 70 anchorY dot.draw()
+    }
+  }
+}
+
+// Naive: first hole lands exactly on the corner.
+punchRow(78, 0);
+
+// Centered: split the leftover between both ends.
+let leftover = calc(seam.length % pitch);
+punchRow(140, calc(0 - leftover / 2));
+
+labels.apply {
+  text(70, 46)\`offset 0 — a hole ON the corner, a long remainder at the end\`;
+  text(70, 176)\`offset -(length % pitch) / 2 — margins agree at both ends\`;
+  text(30, 82)\`0\`;
+  text(424, 82)\`10\`;
+  text(30, 144)\`5\`;
+  text(424, 144)\`5\`;
+}
+</code>
+  <img src="/blog/samples/post47/02-centered-holes.svg" alt="Top: offset 0 — margins 0 and 10. Bottom: centered — 5 and 5." loading="lazy">
+</mini-workspace></p>
+<p>One gotcha the centering trick hides: it guarantees <em>equal</em> end
+margins, not <em>adequate</em> ones. When the leftover is tiny, &quot;centered&quot;
+puts a hole a hair from the corner — where leather tears out. The
+craft fix is to give up one hole and split a whole extra pitch across
+the ends: <code>endMargin = (leftover + pitch) / 2</code>. The next two examples
+do exactly that.</p>
+<h2>Example 3 — One edge, two pieces</h2>
+<p>The heart of the post. A flap and a body share one seam — the same
+sagging curve is the flap&#39;s bottom edge and the body&#39;s top edge, built
+by <a href="/docs#path-blocks-concatenation">concatenating</a> the shared
+<code>seamEdge</code> into both outlines. (<code>&lt;&lt;</code> reads as <em>feed the left thing
+the right thing</em> in both of its jobs here: gluing path pieces
+together, and handing <code>filter()</code> its predicate. And note <code>.length</code> on
+a path is arc length, while <code>.length</code> on the holes array is a count —
+same word, two rulers.) The holes are derived <em>once</em>, from that edge,
+and drawn onto both pieces — one array, drawn twice. They could not
+differ if you tried.</p>
+<p><mini-workspace code-open caption="Exploded view: both hole rows are the same pieces, placed twice.">
+  <code>//-- The saddle-stitch rule: two mating pieces must carry the SAME hole
+//-- count at the SAME spacing. Derive the holes from the one shared
+//-- seam edge and the counts cannot disagree.
+
+define ViewBox(0, 0, 480, 330);
+
+let bench = PathLayer('bench') \${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('bench').apply {
+  rect(0, 0, 480, 330);
+}
+
+let scene = GroupLayer('scene') \${};
+let pieces = PathLayer('pieces') \${
+  fill: #7c5335;
+  stroke: #3f2a17;
+  stroke-width: 1.5;
+};
+let holes = PathLayer('holes') \${
+  fill: #f8fafc;
+  stroke: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #d6c9b8;
+};
+scene.append(pieces, holes, labels);
+
+// ONE shared seam edge — a gentle sag, one width to change.
+let seamWidth = 320;
+let seamEdge = @{
+  c 60 22 260 22 seamWidth 0
+};
+
+// The flap's bottom edge and the body's top edge are the same curve.
+let flap = @{
+  m 0 -64
+  h seamWidth
+  v 64
+} &lt;&lt; seamEdge.reverse() &lt;&lt; @{
+  z
+};
+let body = seamEdge &lt;&lt; @{
+  v 92
+  h calc(0 - seamWidth)
+  z
+};
+
+pieces.apply {
+  M 80 112 flap.draw()
+  M 80 206 body.draw()
+}
+
+// Holes derived ONCE, from the shared edge — then drawn on both pieces.
+// Equal end margins aren't automatically ADEQUATE ones: when the
+// leftover is small, give up a hole and split a whole extra pitch, so
+// no hole lands on a corner. (Bare variables in style values need
+// backtick interpolation — a logged language limitation.)
+let pitch = 20;
+let leftover = calc(seamEdge.length % pitch);
+let endMargin = calc((leftover + pitch) / 2);
+let pricks = seamEdge.dash(\${
+  stroke-dasharray: 0.01 \`\${pitch}\`;
+  stroke-dashoffset: calc(0 - endMargin);
+});
+let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+
+for (prick in seamHoles) {
+  let dot = prick.path.outline(\${
+    stroke-width: 4.5;
+    stroke-linecap: round;
+  });
+  holes.apply {
+    M 80 112 dot.draw()
+    M 80 206 dot.draw()
+  }
+}
+
+labels.apply {
+  text(80, 28)\`\${seamHoles.length} + \${seamHoles.length} holes — one array, drawn twice\`;
+  text(20, 96)\`flap\`;
+  text(20, 250)\`body\`;
+}
+</code>
+  <img src="/blog/samples/post47/03-matched-seams.svg" alt="Exploded view: both hole rows are the same pieces, placed twice." loading="lazy">
+</mini-workspace></p>
+<p>This mirrors real practice, and honestly: irons are usually walked a
+few millimeters <em>inside</em> the edge, through both glued layers at once —
+one marked line, both pieces. Deriving a separate inset line per piece
+with <code>offset()</code> would reintroduce the disagreement, because offsetting
+changes a curve&#39;s length. Mark one line; punch through both. That gap
+— dashing an inset line by the edge it came from — is this series&#39;
+deepest feature request, and it went straight into
+<a href="/blog/broken-lines-what-it-taught">the friction log</a> with this
+wallet as its motivating artifact.</p>
+<h2>Example 4 — The wallet template</h2>
+<p>The finished artifact, at an honest scale: 4 units to the
+millimetre, a panel big enough for a real ISO card, a 4&nbsp;mm iron.
+The pocket&#39;s stitch line is a <code>fillet()</code>-rounded U <em>derived</em> from
+three named dimensions — resize the pocket and every hole re-derives
+— with the safe end margin from Example 2&#39;s gotcha. Then, because
+outlined holes are closed paths, every hole is subtracted from the
+pocket with <code>difference()</code>. Until now the holes were painted white so
+you could see them; here they&#39;re absent material — the darker panel
+beneath shows through each one.</p>
+<p><mini-workspace code-open caption="A punch-ready pocket: derived stitch line, safe margins, really cut.">
+  <code>//-- The finished artifact: a card-wallet punch template at 4 units per
+//-- millimetre — the panel really holds an ISO card. The stitch line is
+//-- derived from three named dimensions, so resizing the pocket
+//-- re-derives every hole.
+
+define ViewBox(0, 0, 480, 320);
+
+let bench = PathLayer('bench') \${
+  fill: #1c1917;
+  stroke: none;
+};
+bench.apply {
+  rect(0, 0, 480, 320);
+}
+
+let scene = GroupLayer('scene') \${};
+let backPanel = PathLayer('back-panel') \${
+  fill: #2e2018;
+  stroke: #3f2a17;
+  stroke-width: 1.5;
+};
+let pocket = PathLayer('pocket') \${
+  fill: #7c5335;
+  stroke: #3f2a17;
+  stroke-width: 1.5;
+};
+let guides = PathLayer('guides') \${
+  stroke: #00000035;
+  stroke-width: 1;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #d6c9b8;
+};
+scene.append(backPanel, pocket, guides, labels);
+
+// 4 units = 1 mm. Panel 360 x 236 = 90 x 59 mm — an ISO card
+// (85.6 x 54 mm) fits with margin. Every other number derives.
+let anchorX = 60;
+let anchorY = 36;
+let panelW = 360;
+let panelH = 236;
+let pocketH = 148;
+let seamInset = 12;
+let pitch = 16;
+// 4 mm — a standard iron
+
+backPanel.apply {
+  roundRect(anchorX,
+      anchorY,
+      panelW,
+      panelH,
+      16);
+}
+
+// The pocket covers the lower part; its stitch line is a filleted U
+// derived from the same three dimensions.
+let pocketY = calc(panelH - pocketH);
+let pocketShape = @{
+  roundRect(0,
+      calc(panelH - pocketH),
+      panelW,
+      pocketH,
+      16);
+};
+let stitchLine = @{
+  m seamInset calc(panelH - pocketH + 8)
+  v calc(pocketH - 8 - seamInset)
+  h calc(panelW - seamInset * 2)
+  v calc(0 - (pocketH - 8 - seamInset))
+};
+let seamU = stitchLine.fillet(8);
+
+// Center the run with a guaranteed edge margin: equal is not enough —
+// give up one hole and split a whole extra pitch across the ends.
+let leftover = calc(seamU.length % pitch);
+let endMargin = calc((leftover + pitch) / 2);
+// Bare variables in a style value need backtick interpolation — a
+// logged language limitation (see the series' friction log).
+let pricks = seamU.dash(\${
+  stroke-dasharray: 0.01 \`\${pitch}\`;
+  stroke-dashoffset: calc(0 - endMargin);
+});
+let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+
+let punched = pocketShape;
+for (prick in seamHoles) {
+  let hole = prick.path.outline(\${
+    stroke-width: 4.5;
+    stroke-linecap: round;
+  });
+  punched = punched.difference(hole);
+}
+
+pocket.apply {
+  M anchorX anchorY punched.draw()
+}
+guides.apply {
+  M anchorX anchorY seamU.draw()
+}
+
+labels.apply {
+  text(60, 24)\`card wallet — pocket punch template, 4 mm pitch (4 units = 1 mm)\`;
+  text(60, 300)\`holes are difference()d out — the darker panel shows through\`;
+}
+</code>
+  <img src="/blog/samples/post47/04-card-wallet.svg" alt="A punch-ready pocket: derived stitch line, safe margins, really cut." loading="lazy">
+</mini-workspace></p>
+<h2>Where to go next</h2>
+<p>The stroke-geometry surface this post leaned on is documented in
+<a href="/docs#path-blocks-stroke-geometry">the reference</a>. Holes are material
+<em>removed</em> along a line. The
+<a href="/blog/broken-lines-stencils">next post</a> inverts the trick: stencils
+survive because of the material you <em>keep</em> — bridges — and a bridge is
+nothing but a gap, placed on purpose, in a stroke that&#39;s about to be
+cut out.</p>
+`,
+  'broken-lines-sashiko': `<p><em>Part 2 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><a href="/blog/broken-lines-stroke-geometry">Stroke geometry</a> — dashes,
+outlines, and start points as real paths</li>
+<li><strong>Sashiko</strong> (this post) — running stitches from binary sequences</li>
+<li><a href="/blog/broken-lines-leathercraft">Leathercraft</a> — stitch holes
+that can&#39;t disagree</li>
+<li><a href="/blog/broken-lines-stencils">Stencils</a> — bridges are just gaps</li>
+<li><a href="/blog/broken-lines-what-it-taught">What Broken Lines taught the language</a>
+— the friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> Part 1&#39;s
+<a href="/blog/broken-lines-stroke-geometry"><code>dash()</code></a> — partitioning a path
+into dash and gap pieces — is the whole toolkit here. The weave and
+patch examples also use <a href="/docs#stdlib-hash-noise"><code>hash01</code></a>, the
+deterministic hash that turns an index into a repeatable 0-to-1
+value.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>Sashiko is Japanese running-stitch embroidery: even stitches, even
+spaces, white thread on indigo cloth. It began as mending — rural
+workwear reinforced stitch by stitch until reinforcement became a
+decorative tradition of its own — which is why this post ends with a
+patch. Look at one stitched line the
+way a needle does and it is <em>exactly</em> a dash pattern — thread on top
+of the fabric where the dashes are, thread passing underneath where
+the gaps are. <code>dash()</code> isn&#39;t simulating the craft; the craft and the
+method describe the same thing.</p>
+<p>(And if you&#39;ll never hold a needle: what follows is also just a
+deterministic, seedable, tileable pattern generator with a
+two-integer control surface — the craft is the story, not a
+requirement.)</p>
+<p>That identity means one honest caveat up front: everything on this
+page is template generation — where the stitches <em>should</em> go — not
+stitching. Sashiko&#39;s soul is the hand process. What Pathogen offers is
+the part stitchers already do on paper: gridding, counting, and
+transferring, at exact pitch.</p>
+<h2>Why you&#39;d use it</h2>
+<p>The pattern family this post builds, <strong>hitomezashi</strong>, is a small
+miracle of emergence. Every horizontal line carries the same stitch
+pattern; every vertical line does too. The only decision, per line, is
+a single bit: start on a stitch, or start on a space. Crosses, steps,
+and interlocking blocks appear where the bits interact — nobody draws
+them. It&#39;s a known math-art crossover, and it lives one
+<code>stroke-dashoffset</code> away from part 1.</p>
+<h2>Example 1 — Both sides of the cloth</h2>
+<p>One seam, one dash array, shown from both sides of the cloth: the
+front is the dashes, and the reverse is the <em>inverse</em> pattern — the
+same thread surfacing where the front has gaps. Same array, one <code>if</code>
+on <code>kind</code>. One craft detail worth copying: the seam length is chosen
+so the run starts <em>and</em> ends on a stitch — stitchers plan a seam to
+come out even, and here that&#39;s one number.</p>
+<p><mini-workspace code-open caption="A running stitch is a dash pattern: 14 on top, 7 underneath.">
+  <code>//-- A running stitch IS a dash pattern: thread on top of the fabric
+//-- (the dashes), thread passing underneath (the gaps). dash() gives
+//-- both sides of the cloth.
+
+define ViewBox(0, 0, 480, 170);
+
+let fabric = PathLayer('fabric') \${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 170);
+}
+
+let scene = GroupLayer('scene') \${};
+let underside = PathLayer('underside') \${
+  stroke: #64748b;
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+};
+let topThread = PathLayer('top-thread') \${
+  stroke: #f1f5f9;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(underside, topThread, labels);
+
+// 371 = 17 full cycles + one last stitch: the seam starts AND ends on a
+// stitch, the way a stitcher plans it.
+let seam = @{
+  h 371
+};
+
+let stitches = seam.dash(\${
+  stroke-dasharray: 14 7;
+});
+
+for (stitch in stitches) {
+  if (stitch.kind == 'dash') {
+    topThread.apply {
+      M 55 70 stitch.path.draw()
+    }
+  } else {
+    underside.apply {
+      M 55 112 stitch.path.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(55, 44)\`front — thread on top: the dashes\`;
+  text(55, 140)\`reverse — the inverse pattern: the gaps\`;
+}
+</code>
+  <img src="/blog/samples/post46/01-running-stitch.svg" alt="A running stitch is a dash pattern: 14 on top, 7 underneath." loading="lazy">
+</mini-workspace></p>
+<h2>Example 2 — One bit per row</h2>
+<p>Example 1&#39;s 14-on, 7-under is the classic sashiko proportion — the
+stitch on top runs longer than the thread beneath. Hitomezashi is the
+special case where stitch and space are <em>equal</em>, and that equality is
+exactly what lets a half-cycle shift make neighboring rows interlock.
+Which is hitomezashi&#39;s entire control surface: shift a row&#39;s pattern
+by half a cycle, or don&#39;t. Six rows, six bits, <code>stroke-dashoffset: calc(bit * 16)</code>.
+Where neighboring rows disagree, the stitches interlock.</p>
+<p><mini-workspace code-open caption="The same seam six times — the only difference is one bit of dash offset.">
+  <code>//-- Hitomezashi's whole secret: every row is the same stitch pattern,
+//-- shifted — or not — by half a cycle. One bit per row.
+
+define ViewBox(0, 0, 480, 210);
+
+let fabric = PathLayer('fabric') \${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 210);
+}
+
+let scene = GroupLayer('scene') \${};
+let thread = PathLayer('thread') \${
+  stroke: #f1f5f9;
+  stroke-width: 3;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(thread, labels);
+
+let seam = @{
+  h 336
+};
+
+let rowBits = [
+  0,
+  1,
+  0,
+  0,
+  1,
+  1,
+];
+
+for ([bit, rowIndex] in rowBits) {
+  let rowY = calc(52 + rowIndex * 22);
+  let stitches = seam.dash(\${
+    stroke-dasharray: 16 16;
+    stroke-dashoffset: calc(bit * 16);
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M 96 rowY stitch.path.draw()
+      }
+    }
+  }
+  labels.apply {
+    text(56, calc(rowY + 3))\`bit \${bit}\`;
+  }
+}
+
+labels.apply {
+  text(96, 30)\`stroke-dashoffset: bit * 16 — half a cycle, or nothing\`;
+}
+</code>
+  <img src="/blog/samples/post46/02-phase-rows.svg" alt="The same seam six times — the only difference is one bit of dash offset." loading="lazy">
+</mini-workspace></p>
+<h2>Example 3 — The full weave</h2>
+<p>Now both directions: sixteen rows and thirty columns, each line&#39;s bit
+drawn from <code>hash01</code>. <code>round(hash01(rowIndex, 7))</code> is a repeatable
+coin flip — a lookup, not a roll: the same index and seed produce the
+same bit, every compile. Rows and columns draw from two <em>different</em>
+seeds because the streams must be independent — a single seed would
+hand row <em>i</em> and column <em>i</em> the same bit and print a diagonal
+symmetry into the cloth. The stitch length equals the grid cell, so
+horizontal and vertical stitches meet at corners — and the crosses,
+steps, and boxes are all emergent.</p>
+<p><mini-workspace code-open caption="hash01 decides each line's phase; the geometry decides everything else.">
+  <code>//-- Full hitomezashi: horizontal rows and vertical columns of the same
+//-- stitch, each line phase-shifted by its own bit. The blocks and
+//-- steps are emergent — nobody drew them.
+
+define ViewBox(0, 0, 480, 300);
+
+let fabric = PathLayer('fabric') \${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') \${};
+let thread = PathLayer('thread') \${
+  stroke: #f1f5f9;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(thread, labels);
+
+let cell = 12;
+let cols = 30;
+let rows = 16;
+let originX = 60;
+let originY = 62;
+
+let rowSeam = @{
+  h calc(cols * cell)
+};
+let colSeam = @{
+  v calc(rows * cell)
+};
+
+fn sew(seam, anchorX, anchorY, bit) {
+  let stitches = seam.dash(\${
+    stroke-dasharray: \`\${cell}\` \`\${cell}\`;
+    stroke-dashoffset: calc(bit * cell);
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+
+for (rowIndex in 0..rows) {
+  let bit = round(hash01(rowIndex, 7));
+  sew(rowSeam,
+      originX,
+      calc(originY + rowIndex * cell),
+      bit);
+}
+
+for (colIndex in 0..cols) {
+  let bit = round(hash01(colIndex, 11));
+  sew(colSeam,
+      calc(originX + colIndex * cell),
+      originY,
+      bit);
+}
+
+labels.apply {
+  text(60, 36)\`one bit per line — the pattern is emergent\`;
+}
+</code>
+  <img src="/blog/samples/post46/03-hitomezashi.svg" alt="hash01 decides each line's phase; the geometry decides everything else." loading="lazy">
+</mini-workspace></p>
+<p>The <code>sew</code> helper is the post&#39;s whole engine — dash the seam, keep the
+dashes, place them at the line&#39;s anchor:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">sew</span>(<span class="id">seam</span>, <span class="id">anchorX</span>, <span class="id">anchorY</span>, <span class="id">bit</span>) {
+  <span class="kw">let</span> <span class="id">stitches</span> = <span class="id">seam</span>.<span class="id">dash</span>(\${
+    <span class="pr">stroke-dasharray</span>: <span class="str">\`\${cell}\`</span> <span class="str">\`\${cell}\`</span>;
+    <span class="pr">stroke-dashoffset</span>: <span class="id">calc</span>(<span class="id">bit</span> * <span class="id">cell</span>);
+  });
+  <span class="kw">for</span> (<span class="id">stitch</span> <span class="kw">in</span> <span class="id">stitches</span>) {
+    <span class="kw">if</span> (<span class="id">stitch</span>.<span class="id">kind</span> == <span class="str">'dash'</span>) {
+      <span class="id">thread</span>.<span class="kw">apply</span> {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+</code></pre><p>The style block reads the cell size from a variable, so pitch is one
+knob.</p>
+<h2>Example 4 — Stitches on curves</h2>
+<p>Nothing about a running stitch requires a grid. <code>dash()</code> measures
+distance along the curve itself, not the straight line across it, so
+stitches follow curves at even pitch for free —
+here, staggered fans of stitched arcs make the classic seigaiha wave.</p>
+<p><mini-workspace code-open caption="Three arcs per fan, dashed at 7-and-4; the stagger makes the wave.">
+  <code>//-- Stitches follow curves as readily as grids: dash() measures along
+//-- arc length. Staggered fans of stitched arcs — the seigaiha wave.
+
+define ViewBox(0, 0, 480, 260);
+
+let fabric = PathLayer('fabric') \${
+  fill: #1e3a5f;
+  stroke: none;
+};
+fabric.apply {
+  rect(0, 0, 480, 260);
+}
+
+let scene = GroupLayer('scene') \${};
+let thread = PathLayer('thread') \${
+  stroke: #f1f5f9;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(thread, labels);
+
+fn stitchArc(radius, anchorX, anchorY) {
+  let arcSpan = @{
+    m calc(0 - radius) 0
+    a radius radius 0 0 1 calc(radius * 2) 0
+  };
+  let stitches = arcSpan.dash(\${
+    stroke-dasharray: 7 4;
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+
+let radii = [
+  42,
+  30,
+  18,
+];
+
+for (rowIndex in 0..3) {
+  let fanY = calc(84 + rowIndex * 42);
+  let stagger = calc(rowIndex % 2 * 42);
+  for (fanIndex in 0..3) {
+    let fanX = calc(94 + stagger + fanIndex * 84);
+    for (radius in radii) {
+      stitchArc(radius, fanX, fanY);
+    }
+  }
+}
+
+labels.apply {
+  text(94, 30)\`same dash(), measured along the curve\`;
+}
+</code>
+  <img src="/blog/samples/post46/04-seigaiha.svg" alt="Three arcs per fan, dashed at 7-and-4; the stagger makes the wave." loading="lazy">
+</mini-workspace></p>
+<h2>Example 5 — The mend patch</h2>
+<p>The finished artifact: a patch template at real pitch — one cell is
+6&nbsp;mm, a common sashiko stitch length — with the seeds recorded on
+the template itself, so any print of it carries its own provenance.
+The stitched field is <strong>138 × 90 mm</strong> (5.4 × 3.5 in) — a jeans-knee
+size — and the patch outline adds a 6 mm margin around it. Print it
+scaled so the stitched field measures 138 mm across — measure, don&#39;t
+trust a percentage — then transfer and stitch.</p>
+<p><mini-workspace code-open caption="A reproducible patch — open it in the playground and change either seed for a different fabric of blocks.">
+  <code>//-- The finished artifact: a mend-patch template at real stitch pitch.
+//-- One cell = 6 mm; print at 200% and the grid is true to the iron.
+
+define ViewBox(0, 0, 480, 320);
+
+let denim = PathLayer('denim') \${
+  fill: #27466b;
+  stroke: none;
+};
+denim.apply {
+  rect(0, 0, 480, 320);
+}
+
+let scene = GroupLayer('scene') \${};
+let patch = PathLayer('patch') \${
+  fill: #16304f;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let thread = PathLayer('thread') \${
+  stroke: #f1f5f9;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #cbd5e1;
+};
+scene.append(patch, thread, labels);
+
+let cell = 12;
+let cols = 23;
+let rows = 15;
+let panelX = 96;
+let panelY = 66;
+let inset = 12;
+
+patch.apply {
+  roundRect(calc(panelX - inset),
+      calc(panelY - inset),
+      calc(cols * cell + inset * 2),
+      calc(rows * cell + inset * 2),
+      10);
+}
+
+let rowSeam = @{
+  h calc(cols * cell)
+};
+let colSeam = @{
+  v calc(rows * cell)
+};
+
+fn sew(seam, anchorX, anchorY, bit) {
+  let stitches = seam.dash(\${
+    stroke-dasharray: \`\${cell}\` \`\${cell}\`;
+    stroke-dashoffset: calc(bit * cell);
+  });
+  for (stitch in stitches) {
+    if (stitch.kind == 'dash') {
+      thread.apply {
+        M anchorX anchorY stitch.path.draw()
+      }
+    }
+  }
+}
+
+for (rowIndex in 0..rows) {
+  let bit = round(hash01(rowIndex, 3));
+  sew(rowSeam,
+      panelX,
+      calc(panelY + rowIndex * cell),
+      bit);
+}
+
+for (colIndex in 0..cols) {
+  let bit = round(hash01(colIndex, 5));
+  sew(colSeam,
+      calc(panelX + colIndex * cell),
+      panelY,
+      bit);
+}
+
+labels.apply {
+  text(84, 34)\`hitomezashi mend patch — 1 cell = 6 mm stitch pitch\`;
+  text(84, 296)\`rows seeded hash01(row, 3), columns hash01(col, 5)\`;
+}
+</code>
+  <img src="/blog/samples/post46/05-mend-patch.svg" alt="A reproducible patch — open it in the playground and change either seed for a different fabric of blocks." loading="lazy">
+</mini-workspace></p>
+<h2>Where to go next</h2>
+<p>Everything here was one method — the
+<a href="/docs#path-blocks-dashstyles-array-of-path-kind-t0-t1"><code>dash()</code> reference</a>
+covers the rest of its surface. The stitches here were centerlines —
+ink where thread goes. The
+<a href="/blog/broken-lines-leathercraft">next post</a> moves to leather, where a
+stitch is a <em>hole</em>: the dashes get shorter, <code>outline()</code> turns them
+into punchable dots, and two mating seams have to agree hole-for-hole.</p>
+`,
+  'broken-lines-stencils': `<p><em>Part 4 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><a href="/blog/broken-lines-stroke-geometry">Stroke geometry</a> — dashes,
+outlines, and start points as real paths</li>
+<li><a href="/blog/broken-lines-sashiko">Sashiko</a> — running stitches from
+binary sequences</li>
+<li><a href="/blog/broken-lines-leathercraft">Leathercraft</a> — stitch holes
+that can&#39;t disagree</li>
+<li><strong>Stencils</strong> (this post) — bridges are just gaps</li>
+<li><a href="/blog/broken-lines-what-it-taught">What Broken Lines taught the language</a>
+— the friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> Part 1&#39;s
+<a href="/blog/broken-lines-stroke-geometry"><code>dash()</code> and <code>outline()</code></a>, and
+the <a href="/docs#path-blocks-boolean-operations">boolean operations</a> —
+every aperture here is a <code>difference()</code>. The seam-merge behavior uses
+<a href="/docs#path-blocks-dashstyles-array-of-path-kind-t0-t1"><code>dash-seam</code></a>
+from the stroke-geometry docs.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>A stencil is a sheet with shapes cut out — and one hard constraint:
+every piece of the sheet must stay <em>connected</em>. Cut a ring and the
+circle in the middle — stencil makers call it an island, typographers
+call it a counter — is attached to nothing. It falls out on the workbench, and your &quot;O&quot; sprays as a
+dot. The fix, as old as stenciling: <strong>bridges</strong>, small tabs of sheet
+left uncut across the ring.</p>
+<p>Today bridge placement is a manual chore — draw the shape, hand-draw
+tabs across it, cut, discover the counter on the floor, iterate. But
+look at what a bridged ring actually is: a centerline, cut <em>most</em> of
+the way around, with a few deliberate interruptions. Cut segments and
+interruptions. Dashes and gaps. The whole problem is a dash array.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because the recipe is three steps and it parameterizes everything a
+stencil maker argues about — band width, bridge width, bridge count,
+and (through the dash offset) where the bridges land — while
+guaranteeing the geometry stays cuttable:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">cutLength</span> = <span class="kw">calc</span>(<span class="id">centerline</span>.<span class="id">length</span> / <span class="id">bridgeCount</span> - <span class="id">bridgeWidth</span>);
+<span class="kw">let</span> <span class="id">pieces</span> = <span class="id">centerline</span>.<span class="id">dash</span>(\${
+  <span class="pr">stroke-dasharray</span>: <span class="str">\`\${cutLength}\`</span> <span class="str">\`\${bridgeWidth}\`</span>;
+  <span class="pr">dash-seam</span>: <span class="id">merge</span>;
+});
+<span class="kw">for</span> (<span class="id">segment</span> <span class="kw">in</span> <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>}) {
+  <span class="id">stencil</span> = <span class="id">stencil</span>.<span class="id">difference</span>(<span class="id">segment</span>.<span class="id">path</span>.<span class="id">outline</span>(\${
+    <span class="pr">stroke-width</span>: <span class="str">\`\${bandWidth}\`</span>;
+  }));
+}
+</code></pre><p>Dash the centerline, <code>outline()</code> each dash to the band width,
+<code>difference()</code> each one from the sheet. The gaps were never cut — they
+<em>are</em> the bridges. Everything below is cut from mylar — the tough
+polyester film most stencils are cut from — but the sheet material
+never enters the math.</p>
+<h2>Example 1 — The island problem</h2>
+<p>The failure mode first, per house rules. Left: the design — a clean
+ring, counter in place. Right: the same cut on the bench — the counter
+is attached to nothing, and gravity is undefeated.</p>
+<p><mini-workspace code-open caption="An unbridged ring. The middle is an island; islands fall.">
+  <code>//-- The stencil problem in one picture: cut a ring and the middle is
+//-- an island — connected to nothing. Left: the design. Right: what
+//-- gravity does to it.
+
+define ViewBox(0, 0, 480, 250);
+
+let table = PathLayer('table') \${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') \${};
+let mylar = PathLayer('mylar') \${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let fallen = PathLayer('fallen') \${
+  fill: #8298ad;
+  stroke: #64748b;
+  stroke-width: 1;
+};
+let driftMarks = PathLayer('drift-marks') \${
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+let leaders = PathLayer('leaders') \${
+  stroke: #94a3b8;
+  stroke-width: 1;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar,
+    fallen,
+    driftMarks,
+    leaders,
+    labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      170,
+      170,
+      10);
+};
+let ringOuter = @{
+  circle(85, 85, 56);
+};
+let ringInner = @{
+  circle(85, 85, 32);
+};
+// The cut sheet is the same in both panels: the outer circle removed.
+// What differs is only where the counter — a separate piece of mylar,
+// attached to nothing — ends up.
+let holed = sheet.difference(ringOuter);
+
+// Left: as designed — the counter sits in place (for now).
+mylar.apply {
+  M 42 42 holed.draw()
+}
+mylar.apply {
+  M 42 42 ringInner.draw()
+}
+
+// Right: gravity. The dashed ring marks where the island used to sit;
+// the short line traces its fall.
+mylar.apply {
+  M 272 42 holed.draw()
+}
+fallen.apply {
+  M 294 76 ringInner.draw()
+}
+driftMarks.apply {
+  M 272 42 ringInner.draw()
+  M 379 129
+  l 22 34
+}
+
+leaders.apply {
+  M 127 36
+  v 50
+}
+labels.apply {
+  text(127, 28)\`island (the counter)\`;
+  text(127, 232)\`as designed\`;
+  text(357, 232)\`as cut — the island falls\`;
+}
+</code>
+  <img src="/blog/samples/post48/01-island-problem.svg" alt="An unbridged ring. The middle is an island; islands fall." loading="lazy">
+</mini-workspace></p>
+<h2>Example 2 — Dash the centerline first</h2>
+<p>Before anything is cut, dash the ring&#39;s centerline and just <em>look</em> at
+the pieces — part 1&#39;s vocabulary, on a loop. The dark arcs are what
+the blade will follow; the short green arcs are the bridges, and they
+exist as geometry before any cutting happens. Bridge placement is the
+dash offset: <code>stroke-dashoffset</code> shifts the pattern <em>within</em> the
+path (part 1&#39;s <code>startAt()</code> moved the path&#39;s start instead — same
+effect, different knob), and here a half-segment shift parks the four
+bridges on the diagonals instead of the cardinals.</p>
+<p><mini-workspace code-open caption="The plan before the cut: dark will be cut, green never will.">
+  <code>//-- Before anything is cut: dash the ring's centerline and LOOK at the
+//-- pieces. The dashes are what the blade will follow; the gaps are the
+//-- bridges — decided here, as lengths, before any geometry moves.
+
+define ViewBox(0, 0, 480, 256);
+
+let table = PathLayer('table') \${
+  fill: #1c1917;
+  stroke: none;
+};
+table.apply {
+  rect(0, 0, 480, 256);
+}
+
+let scene = GroupLayer('scene') \${};
+let sheetLayer = PathLayer('sheet') \${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let cutMarks = PathLayer('cut-marks') \${
+  stroke: #334155;
+  stroke-width: 4;
+  stroke-linecap: butt;
+  fill: none;
+};
+let bridgeMarks = PathLayer('bridge-marks') \${
+  stroke: #22c55e;
+  stroke-width: 6;
+  stroke-linecap: butt;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(sheetLayer, cutMarks, bridgeMarks, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      190,
+      190,
+      10);
+};
+sheetLayer.apply {
+  M 145 26 sheet.draw()
+}
+
+let centerline = @{
+  circle(95, 95, 48);
+};
+let bridgeWidth = 13;
+let bridgeCount = 4;
+let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
+
+// Shift back half a segment so the bridges land on the diagonals.
+let pieces = centerline.dash(\${
+  stroke-dasharray: \`\${cutLength}\` \`\${bridgeWidth}\`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'dash') {
+    cutMarks.apply {
+      M 145 26 piece.path.draw()
+    }
+  } else {
+    bridgeMarks.apply {
+      M 145 26 piece.path.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(240, 238)\`dark: to be cut — green: the bridges, never cut at all\`;
+}
+</code>
+  <img src="/blog/samples/post48/02-dash-the-ring.svg" alt="The plan before the cut: dark will be cut, green never will." loading="lazy">
+</mini-workspace></p>
+<p>That shift has one consequence worth understanding. A closed path has
+a seam — the point where it starts and ends, and where the dash
+pattern begins. Shift the pattern half a segment and the seam lands
+<em>mid-cut</em>, which would hand back two half-segments; <code>dash-seam: merge</code>
+stitches them back into one, so the counts below stay honest.</p>
+<h2>Example 2b — Outline and subtract</h2>
+<p>Now the cut. Each dash is outlined to the band width with <code>butt</code> caps
+— flat bridge shoulders, the way a blade would leave them — and
+subtracted from the sheet. The leader lines mark the three parameters.</p>
+<p><mini-workspace code-open caption="Four dashes cut, four gaps kept. The island is held by what you didn't cut.">
+  <code>//-- The fix: don't cut the whole ring. Dash its centerline — the
+//-- dashes become cut segments, the gaps become bridges — and the
+//-- island is held. dash-seam: merge keeps the wrap-around segment
+//-- whole, so the counts are honest.
+
+define ViewBox(0, 0, 480, 256);
+
+let table = PathLayer('table') \${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 256);
+}
+
+let scene = GroupLayer('scene') \${};
+let mylar = PathLayer('mylar') \${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let centerlineGhost = PathLayer('centerline-ghost') \${
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leaders = PathLayer('leaders') \${
+  stroke: #94a3b8;
+  stroke-width: 1;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar, centerlineGhost, leaders, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      190,
+      190,
+      10);
+};
+
+// The ring to cut, described by its CENTERLINE and a band width.
+let centerline = @{
+  circle(95, 95, 48);
+};
+let bandWidth = 24;
+let bridgeWidth = 13;
+let bridgeCount = 4;
+
+// Shift back half a segment so the bridges land on the diagonals, off
+// the cardinals. That drops the path's own seam mid-cut — dash-seam:
+// merge stitches the two halves back into one honest segment.
+let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
+let pieces = centerline.dash(\${
+  stroke-dasharray: \`\${cutLength}\` \`\${bridgeWidth}\`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
+
+let stencil = sheet;
+for (segment in cutSegments) {
+  let aperture = segment.path.outline(\${
+    stroke-width: \`\${bandWidth}\`;
+    stroke-linecap: butt;
+  });
+  stencil = stencil.difference(aperture);
+}
+
+mylar.apply {
+  M 145 26 stencil.draw()
+}
+centerlineGhost.apply {
+  M 145 26 centerline.draw()
+}
+
+// Leader-line annotations in the side canvas: the three parameters a
+// stencil maker argues about, pointed at the geometry they control.
+leaders.apply {
+  M 358 96
+  l -81 -7
+  M 358 134
+  l -56 -11
+  M 358 176
+  l -74 -28
+}
+labels.apply {
+  text(240, 238)\`\${cutSegments.length} cut segments, \${pieces.length - cutSegments.length} bridges — island held\`;
+}
+let sideLabels = TextLayer('side-labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(sideLabels);
+sideLabels.apply {
+  text(364, 100)\`bridgeWidth 13\`;
+  text(364, 138)\`bandWidth 24\`;
+  text(364, 180)\`centerline\`;
+}
+</code>
+  <img src="/blog/samples/post48/02-bridges-are-gaps.svg" alt="Four dashes cut, four gaps kept. The island is held by what you didn't cut." loading="lazy">
+</mini-workspace></p>
+<h2>Example 3 — Any loop will do</h2>
+<p>Nothing in the recipe mentions a circle. A rounded-rectangle band gets
+the same treatment — and its rounded band corners come from a nice
+piece of geometry: the centerline&#39;s fillets are already curves, so
+<code>outline()</code> simply <em>offsets</em> them, concentrically — inner radius 16,
+outer 36 around a radius-26 fillet. (The <code>stroke-linejoin</code> in the
+sample is honest-to-goodness inert here: a tangent-continuous
+centerline has no corner for a join to act on. It would matter on a
+sharp-cornered <code>rect()</code> centerline.) The bridges land wherever the
+offset puts them — drive the offset to move them. Swap the
+centerline, keep the recipe.</p>
+<p><mini-workspace code-open caption="Six segments around a filleted loop — the band offsets the fillets.">
+  <code>//-- The mechanic doesn't care about the shape. A rounded-square band:
+//-- dash the centerline, outline each cut with the band width — the
+//-- round joins follow the corners — and place bridges where the
+//-- pattern says.
+
+define ViewBox(0, 0, 480, 250);
+
+let table = PathLayer('table') \${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 250);
+}
+
+let scene = GroupLayer('scene') \${};
+let mylar = PathLayer('mylar') \${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      250,
+      180,
+      10);
+};
+let centerline = @{
+  roundRect(45,
+      40,
+      160,
+      100,
+      26);
+};
+let bandWidth = 20;
+let bridgeWidth = 12;
+let bridgeCount = 6;
+
+let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
+// Shift back half a segment: bridges off the corners.
+let pieces = centerline.dash(\${
+  stroke-dasharray: \`\${cutLength}\` \`\${bridgeWidth}\`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+
+let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
+let stencil = sheet;
+for (segment in cutSegments) {
+  // stroke-linejoin is inert here: the roundRect centerline is already
+  // tangent-continuous, so there is no corner for a join to act on —
+  // the band's rounded corners are concentric OFFSETS of the fillets.
+  let aperture = segment.path.outline(\${
+    stroke-width: \`\${bandWidth}\`;
+    stroke-linecap: butt;
+    stroke-linejoin: round;
+  });
+  stencil = stencil.difference(aperture);
+}
+
+mylar.apply {
+  M 115 28 stencil.draw()
+}
+
+labels.apply {
+  text(240, 232)\`same recipe, cornered loop — the band offsets the fillets\`;
+}
+</code>
+  <img src="/blog/samples/post48/03-cornered-ring.svg" alt="Six segments around a filleted loop — the band offsets the fillets." loading="lazy">
+</mini-workspace></p>
+<p>Two practical floors before you scale this: <code>cutLength</code> goes negative
+— a compile error, since negative dash entries are rejected — as soon
+as <code>bridgeWidth × bridgeCount</code> reaches the centerline&#39;s length, so a
+small ring caps how many bridges it can carry. And these are user
+units; real bridges have a <em>material</em> minimum width (too narrow tears
+during cutting or lifts under spray), which no geometry can supply.</p>
+<h2>Example 4 — The trail marker</h2>
+<p>The finished artifact: a spray-ready sheet. The bridged ring from
+Example 2, a solid arrow aperture (no island — no bridge needed), and
+corner registration crosses derived from the sheet&#39;s dimensions. This
+is the file you&#39;d hand a laser — with one practitioner detail already
+encoded: the crosses live on their own <em>layer</em>, because a cutter has
+to be told which lines are cuts and which are reference. Send the
+sheet layer to the blade; the registration layer is for aligning
+pass two.</p>
+<p><mini-workspace code-open caption="One sheet: bridged ring, solid arrow, registration marks on their own layer.">
+  <code>//-- The finished artifact: a spray-ready trail-marker stencil. Bridged
+//-- ring, solid arrow aperture, corner registration marks — one sheet.
+
+define ViewBox(0, 0, 480, 300);
+
+let table = PathLayer('table') \${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 300);
+}
+
+let scene = GroupLayer('scene') \${};
+let mylar = PathLayer('mylar') \${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let registration = PathLayer('registration') \${
+  stroke: #64748b;
+  stroke-width: 1.5;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(mylar, registration, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      340,
+      220,
+      12);
+};
+
+// Bridged ring, as before.
+let ringCenter = @{
+  circle(105, 110, 62);
+};
+let bandWidth = 26;
+let bridgeWidth = 14;
+let cutLength = calc(ringCenter.length / 4 - bridgeWidth);
+// Shift back half a segment: bridges off the cardinals.
+let ringPieces = ringCenter.dash(\${
+  stroke-dasharray: \`\${cutLength}\` \`\${bridgeWidth}\`;
+  stroke-dashoffset: calc(0 - cutLength / 2);
+  dash-seam: merge;
+});
+
+// Solid arrow aperture — no island, no bridge needed.
+let arrow = @{
+  m 200 96
+  h 70
+  v -22
+  l 52 36
+  l -52 36
+  v -22
+  h -70
+  z
+};
+
+let cutSegments = ringPieces.filter() {|piece| piece.kind == 'dash'};
+let stencil = sheet.difference(arrow);
+for (segment in cutSegments) {
+  let aperture = segment.path.outline(\${
+    stroke-width: \`\${bandWidth}\`;
+    stroke-linecap: butt;
+  });
+  stencil = stencil.difference(aperture);
+}
+
+mylar.apply {
+  M 70 34 stencil.draw()
+}
+
+// Corner registration marks on their own layer — a cutter needs to be
+// told which lines are cuts and which are reference, and the layer is
+// how you tell it. Placed from the sheet's own dimensions.
+let sheetW = 340;
+let sheetH = 220;
+let sheetX = 70;
+let sheetY = 34;
+let markInset = 14;
+fn crosshair(centerX, centerY) {
+  registration.apply {
+    M calc(centerX - 6) centerY
+    h 12
+    M centerX calc(centerY - 6)
+    v 12
+  }
+}
+crosshair(calc(sheetX + markInset), calc(sheetY + markInset));
+crosshair(calc(sheetX + sheetW - markInset), calc(sheetY + markInset));
+crosshair(calc(sheetX + markInset), calc(sheetY + sheetH - markInset));
+crosshair(calc(sheetX + sheetW - markInset), calc(sheetY + sheetH - markInset));
+
+labels.apply {
+  text(240, 282)\`trail marker — bridged ring, solid arrow, registration crosses\`;
+}
+</code>
+  <img src="/blog/samples/post48/04-trail-marker.svg" alt="One sheet: bridged ring, solid arrow, registration marks on their own layer." loading="lazy">
+</mini-workspace></p>
+<h2>Where to go next</h2>
+<p>Three crafts, one toolkit — the full surface is in the
+<a href="/docs#path-blocks-stroke-geometry">stroke geometry reference</a>, and
+the stitching posts this one leans against are
+<a href="/blog/broken-lines-sashiko">sashiko</a> and
+<a href="/blog/broken-lines-leathercraft">leathercraft</a>. And there&#39;s a stack
+of notes about everywhere the language pushed back while these posts
+were being written: the
+<a href="/blog/broken-lines-what-it-taught">closing post</a> opens the friction
+log — what hurt, what got fixed, and what the fixes look like.</p>
+`,
+  'broken-lines-stroke-geometry': `<p><em>Part 1 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><strong>Stroke geometry</strong> (this post) — dashes, outlines, and start
+points as real paths</li>
+<li><a href="/blog/broken-lines-sashiko">Sashiko</a> — running stitches from
+binary sequences</li>
+<li><a href="/blog/broken-lines-leathercraft">Leathercraft</a> — stitch holes
+that can&#39;t disagree</li>
+<li><a href="/blog/broken-lines-stencils">Stencils</a> — bridges are just gaps</li>
+<li><a href="/blog/broken-lines-what-it-taught">What Broken Lines taught the language</a>
+— the friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This series builds on
+<a href="/blog/pathblock-introduction">PathBlocks</a> — reusable path values you
+draw at a position — and touches the
+<a href="/docs#path-blocks-boolean-operations">boolean operations</a>
+(<code>union</code>, <code>difference</code>) in a few places. Skim those first if either
+is new.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>When a renderer draws a dashed stroke, the dashes exist only as paint:
+you can see them, but you can&#39;t ask for them. Three PathBlock methods
+turn that paint back into geometry.</p>
+<p><a href="/docs#path-blocks-dashstyles-array-of-path-kind-t0-t1"><code>dash(styles)</code></a>
+partitions a path using the same properties CSS uses, and hands back
+every piece — the inked dashes <em>and</em> the spaces between them — as real
+paths:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">pieces</span> = <span class="id">wave</span>.<span class="id">dash</span>(\${
+  <span class="pr">stroke-dasharray</span>: <span class="num">26</span> <span class="num">14</span>;
+});
+<span class="cm">// [{ path, kind: 'dash' | 'gap', t0, t1 }, ...]</span>
+</code></pre><p><a href="/docs#path-blocks-outlinestyles-pathblock"><code>outline(styles)</code></a> converts
+a stroked line into the <strong>closed</strong> path that outlines it — the same
+operation as &quot;Outline Stroke&quot; in Illustrator or &quot;Stroke to Path&quot; in
+Inkscape. Closed means fillable, and fillable means it works in boolean
+operations.</p>
+<p><a href="/docs#path-blocks-startatt-pathblock-projectedpath"><code>startAt(t)</code></a>
+re-anchors a path to begin at any fraction of its length — and since a
+dash pattern starts wherever its path does, moving the start moves
+every dash. On a closed path that&#39;s a seamless rotation; on an open
+path the ends can&#39;t be rejoined, so the result is two runs — <code>t</code> to
+the end, then a jump back for the remainder.</p>
+<p>Four things to know before the pictures, because everything below
+leans on them:</p>
+<ul>
+<li><strong>Pieces keep their place.</strong> Every piece from <code>dash()</code> — and every
+outline — remembers exactly where it sat in the source path. Draw
+them all at one position and they reassemble the original. There is
+no coordinate bookkeeping in any example on this page.</li>
+<li><strong>The methods compose.</strong> <code>dash()</code> gives centerline pieces — the bare
+line a stroke would be painted along, with no width of its own, which
+is why <code>dash()</code> rejects <code>stroke-width</code> outright. <code>outline()</code> is what
+gives a piece width, end caps, and corner treatment — <em>per piece</em>,
+which is the one thing a renderer&#39;s stroke can never do.</li>
+<li><strong>Caps extend the geometry.</strong> With <code>round</code> or <code>square</code> caps,
+<code>outline()</code> extends a piece by half the stroke width at <em>each</em> end
+(<code>butt</code> adds nothing). Outlined dash pieces stay separate shapes only
+while the <strong>gap is wider than the stroke</strong> — narrower than that, and
+neighboring pieces fuse.</li>
+<li><strong>Style values are live expressions.</strong> <code>stroke-width: calc(3 + piece.t0 * 16)</code>
+computes per piece. The flip side: a space-separated pair that reads
+as arithmetic (<code>stroke-dasharray: 10 -5</code>) is evaluated as math before
+<code>dash()</code> sees it — use commas in any list whose tokens could parse
+that way.</li>
+</ul>
+<p>One more thing this series is: a <strong>working friction log</strong>, in
+<a href="/blog/cutting-room-papercraft">the Cutting Room</a> tradition. These
+posts were built against the real language, and every place the work
+exposed a gap, a bug, or a rough edge went into a log. Some of those
+entries became fixes that shipped before the series ended; the rest
+are on the bench with their diagnoses attached —
+<a href="/blog/broken-lines-what-it-taught">part 5</a> tells that story.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because a surprising number of real crafts are made of interrupted
+lines. A sashiko pattern is running stitches — dashes. Leather seams
+are rows of punched holes — very short dashes, outlined round. A
+stencil survives because of its bridges — which are gaps, placed on
+purpose. Each of those needs the pieces as <em>objects</em> — to place, to
+thicken, to punch, to cut — not as paint. That&#39;s the series. This post
+is the toolkit.</p>
+<h2>Example 1 — The first partition</h2>
+<p>One wave, one dash array. The pieces come back alternating in path
+order — dashes drawn solid here, gaps ghosted thin, both from the same
+loop over the same array.</p>
+<p><mini-workspace code-open caption="wave.dash() — drawn by kind.">
+  <code>//-- One wave, one dasharray. dash() hands the pattern back as real
+//-- geometry: every piece is a path — dashes drawn solid, gaps ghosted.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') \${};
+let gaps = PathLayer('gaps') \${
+  stroke: #94a3b840;
+  stroke-width: 1.5;
+  fill: none;
+};
+let dashes = PathLayer('dashes') \${
+  stroke: #38bdf8;
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(gaps, dashes, labels);
+
+let wave = @{
+  c 40 -70 80 -70 120 0
+  c 40 70 80 70 120 0
+  c 40 -70 80 -70 120 0
+};
+
+let pieces = wave.dash(\${
+  stroke-dasharray: 26 14;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'dash') {
+    dashes.apply {
+      M 60 120 piece.path.draw()
+    }
+  } else {
+    gaps.apply {
+      M 60 120 piece.path.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(60, 36)\`dashes drawn solid, gaps ghosted — same wave, \${pieces.length} pieces\`;
+}
+</code>
+  <img src="/blog/samples/post45/01-first-dash.svg" alt="wave.dash() — drawn by kind." loading="lazy">
+</mini-workspace></p>
+<p>Every piece is a PathBlock. Anything a path can do — sample it, bound
+it, transform it — a dash can do.</p>
+<h2>Example 2 — Position rides with the piece</h2>
+<p>Each piece carries <code>t0</code> and <code>t1</code>, its start and end as fractions of
+the path&#39;s length. Filtering on them needs no geometry at all: here
+the first half of the wave goes blue, the rest amber.</p>
+<p><mini-workspace code-open caption="Routing on piece.t0 — no coordinate math.">
+  <code>//-- Every piece carries its position: t0 and t1 are arc-length fractions.
+//-- Here the first half of the wave's dashes go blue, the second half
+//-- amber — a filter on t0, no coordinate math.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') \${};
+let gaps = PathLayer('gaps') \${
+  stroke: #94a3b840;
+  stroke-width: 1.5;
+  fill: none;
+};
+let earlyDashes = PathLayer('early-dashes') \${
+  stroke: #38bdf8;
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+};
+let lateDashes = PathLayer('late-dashes') \${
+  stroke: #f59e0b;
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(gaps, earlyDashes, lateDashes, labels);
+
+let wave = @{
+  c 40 -70 80 -70 120 0
+  c 40 70 80 70 120 0
+  c 40 -70 80 -70 120 0
+};
+
+let pieces = wave.dash(\${
+  stroke-dasharray: 22 12;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'gap') {
+    gaps.apply {
+      M 60 120 piece.path.draw()
+    }
+  } else {
+    if (piece.t0 &lt; 0.5) {
+      earlyDashes.apply {
+        M 60 120 piece.path.draw()
+      }
+    } else {
+      lateDashes.apply {
+        M 60 120 piece.path.draw()
+      }
+    }
+  }
+}
+
+labels.apply {
+  text(60, 36)\`t0 &lt; 0.5 in blue, the rest in amber — position rides with the piece\`;
+}
+</code>
+  <img src="/blog/samples/post45/02-kinds-and-t.svg" alt="Routing on piece.t0 — no coordinate math." loading="lazy">
+</mini-workspace></p>
+<h2>Example 3 — outline() makes strokes into shapes</h2>
+<p>The same curve outlined three times at width 22, with the three CSS
+cap styles. The thin dark line is the original centerline: the outline
+straddles it exactly, because outlines keep their place too. The
+dashed rule marks where the centerline ends — <code>butt</code> stops flush on
+it; <code>round</code> and <code>square</code> reach half the stroke width past it. That
+extension is the cap rule from the list above, drawn to scale.</p>
+<p><mini-workspace code-open caption="stem.outline(\${ stroke-width: 22; stroke-linecap: ... }) — butt, round, square.">
+  <code>//-- outline() turns a stroked line into the CLOSED path of the stroked
+//-- region — Illustrator's "Outline Stroke" as a language method. Same
+//-- curve three times: butt, round, square caps; centerline ghosted.
+
+define ViewBox(0, 0, 480, 190);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 190);
+}
+
+let scene = GroupLayer('scene') \${};
+let solids = PathLayer('solids') \${
+  fill: #f59e0b;
+  stroke: none;
+};
+let spines = PathLayer('spines') \${
+  stroke: #0f172a;
+  stroke-width: 1;
+  fill: none;
+};
+let capRule = PathLayer('cap-rule') \${
+  stroke: #94a3b880;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(solids, spines, capRule, labels);
+
+let stem = @{
+  c 0 -70 90 -70 90 0
+};
+
+let capNames = [
+  'butt',
+  'round',
+  'square',
+];
+let anchors = [
+  65,
+  200,
+  335,
+];
+
+for ([capName, columnIndex] in capNames) {
+  let anchorX = anchors[columnIndex];
+  let solid = stem.outline(\${
+    stroke-width: 22;
+    stroke-linecap: \`\${capName}\`;
+  });
+  solids.apply {
+    M anchorX 125 solid.draw()
+  }
+  spines.apply {
+    M anchorX 125 stem.draw()
+  }
+  labels.apply {
+    text(calc(anchorX + 45), 165)\`\${capName}\`;
+  }
+}
+
+// Where the butt caps stop: round and square reach past this line by
+// half the stroke width.
+capRule.apply {
+  M 50 125
+  h 380
+}
+</code>
+  <img src="/blog/samples/post45/03-outline-caps.svg" alt="stem.outline(\${ stroke-width: 22; stroke-linecap: ... }) — butt, round, square." loading="lazy">
+</mini-workspace></p>
+<p>These are closed, filled paths — not strokes. The amber is <code>fill</code>.</p>
+<h2>Example 4 — Compose: a width per piece</h2>
+<p>Partition first, then thicken each dash with its own <code>outline()</code> call.
+The width is an expression over the piece&#39;s own <code>t0</code>, so the dashes
+swell along the wave. A renderer&#39;s <code>stroke-width</code> applies to the whole
+path; this applies per piece, because each piece is its own path.</p>
+<p><mini-workspace code-open caption="piece.path.outline() with a computed width, per piece.">
+  <code>//-- The methods compose: partition with dash(), thicken each piece with
+//-- its own outline() — the width rides the piece's t0, so the dashes
+//-- swell along the wave. No renderer can style a stroke this way.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') \${};
+let gaps = PathLayer('gaps') \${
+  stroke: #94a3b840;
+  stroke-width: 1.5;
+  fill: none;
+};
+let swellingDashes = PathLayer('swelling-dashes') \${
+  fill: #f59e0b;
+  stroke: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(gaps, swellingDashes, labels);
+
+let wave = @{
+  c 40 -65 80 -65 120 0
+  c 40 65 80 65 120 0
+  c 40 -65 80 -65 120 0
+};
+
+let pieces = wave.dash(\${
+  stroke-dasharray: 24 22;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'gap') {
+    gaps.apply {
+      M 60 120 piece.path.draw()
+    }
+  } else {
+    let swollen = piece.path.outline(\${
+      stroke-width: calc(3 + piece.t0 * 16);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    });
+    swellingDashes.apply {
+      M 60 120 swollen.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(60, 34)\`stroke-width: calc(3 + piece.t0 * 16) — one width per piece\`;
+}
+</code>
+  <img src="/blog/samples/post45/04-compose.svg" alt="piece.path.outline() with a computed width, per piece." loading="lazy">
+</mini-workspace></p>
+<h2>Example 5 — Closed means boolean-ready</h2>
+<p>Because outlines are closed, they participate in boolean operations
+directly. Left: each fat dash subtracted from a plate —
+<code>plate.difference(slot)</code> — leaving three discrete pill-shaped slots
+(the gap is wider than the stroke; the cap rule again). Right: two
+crossing strokes outlined with <code>outline-overlap: union</code>. With the
+default <code>raw</code>, the same cross would fill correctly but keep an
+interior seam where the two contours overlap; <code>union</code> dissolves it
+into one clean boundary — which matters the moment this shape becomes
+a cutting path or a boolean operand.</p>
+<p><mini-workspace code-open caption="Left: dashes as cutters. Right: crossing strokes welded into one outline.">
+  <code>//-- Outlines are closed paths, so booleans just work. Left: fat dashes
+//-- subtracted from a plate — slots. Right: two crossing strokes with
+//-- outline-overlap: union — one clean boundary instead of two contours.
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') \${};
+let plateLayer = PathLayer('plate') \${
+  fill: #38bdf830;
+  stroke: #38bdf8;
+  stroke-width: 1.5;
+};
+let crossLayer = PathLayer('cross') \${
+  fill: #f59e0b30;
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(plateLayer, crossLayer, labels);
+
+// Left: dash a track, outline each dash, subtract them all from a plate.
+let plate = @{
+  h 190
+  v 120
+  h -190
+  z
+};
+let track = @{
+  m 25 60
+  h 140
+};
+let slotPieces = track.dash(\${
+  stroke-dasharray: 26 26;
+});
+let plaque = plate;
+for (piece in slotPieces) {
+  if (piece.kind == 'dash') {
+    let slot = piece.path.outline(\${
+      stroke-width: 16;
+      stroke-linecap: round;
+    });
+    plaque = plaque.difference(slot);
+  }
+}
+plateLayer.apply {
+  M 30 55 plaque.draw()
+}
+
+// Right: crossing strokes, self-unioned into one outline.
+let crossing = @{
+  h 110
+  m -55 -45
+  v 90
+};
+let welded = crossing.outline(\${
+  stroke-width: 26;
+  stroke-linecap: round;
+  outline-overlap: union;
+});
+crossLayer.apply {
+  M 305 115 welded.draw()
+}
+
+labels.apply {
+  text(125, 210)\`plate.difference(slot)\`;
+  text(360, 210)\`outline-overlap: union\`;
+}
+</code>
+  <img src="/blog/samples/post45/05-boolean-ready.svg" alt="Left: dashes as cutters. Right: crossing strokes welded into one outline." loading="lazy">
+</mini-workspace></p>
+<h2>Example 6 — startAt() slides the pattern</h2>
+<p>A dash pattern begins at its path&#39;s start point. <code>startAt(t)</code>
+re-anchors a closed path to begin at fraction <code>t</code> — seamlessly, the
+old seam healed — so chaining <code>startAt(phase).dash(...)</code> marches the
+whole pattern around the ring. The amber dot on each ring is the
+re-anchored start point, read straight off <code>startPoint</code>. Percent
+literals read naturally: <code>startAt(8%)</code> is <code>startAt(0.08)</code>, and the
+phases here are <code>0%</code>, <code>4%</code>, <code>8%</code>.</p>
+<p><mini-workspace code-open caption="Same ring, same dasharray, three phases — the pattern walks.">
+  <code>//-- startAt(t) re-anchors a closed path's start point, and the dash
+//-- pattern starts wherever the path does — so sliding the start slides
+//-- every dash. Three phases of the same ring.
+
+define ViewBox(0, 0, 480, 210);
+
+let bg = PathLayer('bg') \${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 210);
+}
+
+let scene = GroupLayer('scene') \${};
+let startDots = PathLayer('start-dots') \${
+  fill: #f59e0b;
+  stroke: none;
+};
+let rings = PathLayer('rings') \${
+  stroke: #94a3b850;
+  stroke-width: 1;
+  fill: none;
+};
+let marchers = PathLayer('marchers') \${
+  stroke: #38bdf8;
+  stroke-width: 5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(rings, marchers, startDots, labels);
+
+let ring = @{
+  circle(0, 0, 52);
+};
+
+let phases = [
+  0%,
+  4%,
+  8%,
+];
+let phaseLabels = [
+  '0%',
+  '4%',
+  '8%',
+];
+let anchors = [
+  95,
+  240,
+  385,
+];
+
+for ([phase, columnIndex] in phases) {
+  let anchorX = anchors[columnIndex];
+  rings.apply {
+    M anchorX 92 ring.draw()
+  }
+  let anchored = ring.startAt(phase);
+  let pieces = anchored.dash(\${
+    stroke-dasharray: 24 17;
+  });
+  for (piece in pieces) {
+    if (piece.kind == 'dash') {
+      marchers.apply {
+        M anchorX 92 piece.path.draw()
+      }
+    }
+  }
+  // The amber dot marks where the re-anchored path now begins.
+  startDots.apply {
+    circle(calc(anchorX + anchored.startPoint.x), calc(92 + anchored.startPoint.y), 4);
+  }
+  labels.apply {
+    text(anchorX, 185)\`startAt(\${phaseLabels[columnIndex]})\`;
+  }
+}
+</code>
+  <img src="/blog/samples/post45/06-startat-march.svg" alt="Same ring, same dasharray, three phases — the pattern walks." loading="lazy">
+</mini-workspace></p>
+<h2>Where to go next</h2>
+<p>The next three posts each take one craft built on interrupted lines
+and build a real artifact with this toolkit:
+<a href="/blog/broken-lines-sashiko">sashiko stitch patterns</a>, where the dash
+<em>is</em> the craft; <a href="/blog/broken-lines-leathercraft">leather stitch holes</a>,
+where matched seams must agree hole-for-hole; and
+<a href="/blog/broken-lines-stencils">stencil bridges</a>, where the gaps are the
+engineering. The full reference for everything here lives in the
+<a href="/docs#path-blocks-stroke-geometry">Stroke Geometry documentation</a> —
+including pieces this post skipped: <code>stroke-dashoffset</code>,
+<code>dash-seam: merge</code> for closed-path seams, and percentage dash entries,
+which in Pathogen mean a fraction of <em>this path&#39;s</em> length rather than
+SVG&#39;s viewport diagonal.</p>
+`,
+  'broken-lines-what-it-taught': `<p><em>Part 5 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><a href="/blog/broken-lines-stroke-geometry">Stroke geometry</a> — dashes,
+outlines, and start points as real paths</li>
+<li><a href="/blog/broken-lines-sashiko">Sashiko</a> — running stitches from
+binary sequences</li>
+<li><a href="/blog/broken-lines-leathercraft">Leathercraft</a> — stitch holes
+that can&#39;t disagree</li>
+<li><a href="/blog/broken-lines-stencils">Stencils</a> — bridges are just gaps</li>
+<li><strong>What Broken Lines taught the language</strong> (this post) — the
+friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes the toolkit from
+<a href="/blog/broken-lines-stroke-geometry">part 1</a> — <code>dash()</code> pieces and
+their <code>kind</code>, <code>outline()</code>, and applying a worker with <code>&lt;&lt;</code> — plus
+the <a href="/docs#path-blocks-boolean-operations">boolean operations</a>
+(<code>union</code>, <code>difference</code>). It reports on the four posts before it; you
+don&#39;t need to have read them all, but the samples it references live
+there.</p>
+</blockquote>
+<p>Part 1 promised that this series was a working friction log: real
+artifacts, built against the real language, with every stumble written
+down as it happened. This post opens the log. Five entries went in
+while parts 1 through 4 were being written, and two more arrived when
+the finished series was reviewed. Four became fixes that shipped
+before publication — the leather and stencil samples you already read
+use the first. The rest are on the bench, each with its
+diagnosis attached, because an honestly-described open problem is
+worth more than a quietly absorbed workaround.</p>
+<h2>Fixed: the ceremony in every filter</h2>
+<p>The single most repeated line of code in this series is a filter:
+keep the dashes, drop the gaps. The first time it was written, it
+didn&#39;t parse:</p>
+<pre><code class="hljs language-pathogen"><span class="cm">// before the fix — Parse error … Missing ';'</span>
+<span class="kw">let</span> <span class="id">inked</span> = <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>};
+</code></pre><p>The language required a full statement body — <code>return</code>, semicolon,
+braces earning their keep — for what is always a one-expression
+predicate:</p>
+<pre><code class="hljs language-pathogen"><span class="cm">// the form that worked, pre-fix</span>
+<span class="kw">let</span> <span class="id">inked</span> = <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="kw">return</span> <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>; };
+</code></pre><p>The parse error was the deciding vote: it said <em>missing semicolon</em>
+and nothing about what was actually missing. So the sugar shipped.
+Today, a lambda whose whole body is one expression returns it, no
+ceremony — the first fence above is now valid code:</p>
+<pre><code class="hljs language-pathogen"><span class="cm">// today — three shapes of the same sugar:</span>
+<span class="kw">let</span> <span class="id">inked</span> = <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>};  <span class="cm">// an inline predicate</span>
+<span class="kw">let</span> <span class="id">doubler</span> = {|<span class="id">v</span>| <span class="kw">calc</span>(<span class="id">v</span> * <span class="num">2</span>)};                           <span class="cm">// a reusable worker</span>
+<span class="kw">let</span> <span class="id">five</span> = {|| <span class="num">5</span>};                                         <span class="cm">// a zero-parameter constant</span>
+</code></pre><p>The bare expression is an implicit <code>return</code> — the two earlier forms
+stay equivalent — and the formatter round-trips each form as written.
+The <a href="/blog/broken-lines-leathercraft">leather</a> and
+<a href="/blog/broken-lines-stencils">stencil</a> samples were upgraded in place;
+what you read is the sugar. Details in the
+<a href="/docs#syntax-lambdas">lambda documentation</a>.</p>
+<p>A companion ruling landed when the series was reviewed, and it&#39;s the
+sixth and final log entry: writing a lambda <em>literal</em> directly after
+<code>&lt;&lt;</code> — <code>filter() &lt;&lt; {|piece| ...}</code> — is now a compile error. <code>&lt;&lt;</code>
+exists to apply a worker defined elsewhere, reusable across callback
+builtins; the inline spelling <em>is</em> the trailing block. Two ways to
+say the same thing is how cruft accumulates, so the language now has
+exactly one of each:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">inked</span> = <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>};  <span class="cm">// inline: trailing block</span>
+<span class="kw">let</span> <span class="id">isDash</span> = {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>};
+<span class="kw">let</span> <span class="id">alsoInked</span> = <span class="id">pieces</span>.<span class="id">filter</span>() &lt;&lt; <span class="id">isDash</span>;                 <span class="cm">// reusable: &lt;&lt; a name</span>
+</code></pre><h2>Fixed: the drifting hole</h2>
+<p>The stencil post&#39;s island demo tried a perfectly reasonable
+construction — subtract an annulus (a ring with a hole) from a sheet
+— and got back a ring whose counter had <em>drifted</em>, sitting off-center
+like a badly registered print. The workaround made the published
+sample better anyway (drawing the counter as its own piece is truer to
+the physical situation), but the log entry stayed, and the diagnosis
+turned out to be old plumbing. The
+<a href="/docs#path-blocks-boolean-operations">boolean engine&#39;s</a> subpath
+splitter only recognized a subpath boundary at an explicit <code>z</code>. A ring
+that closes by ending exactly where it started — which is what
+<code>circle()</code> emits — got glued to the hole-ring after it, and the step
+that implements subtraction by running the subtracted shape&#39;s outline
+backwards then scrambled the pair.</p>
+<p>The fix teaches the splitter what SVG always meant: a move after
+drawing commands starts a new subpath, <code>z</code> or no <code>z</code>. One function,
+one regression test, and the construction that started it all now
+renders exactly as designed — the dashed marker reconstructs where the
+counter used to land:</p>
+<p><mini-workspace code-open caption="A holed subtrahend (the shape being subtracted), post-fix: ring and island in place. Dashed: the pre-fix drift, reconstructed.">
+  <code>//-- The friction-log fix, rendered: subtracting a shape that has a hole
+//-- (an annulus) now keeps both its ring and its island exactly in
+//-- place. Before the fix, the inner contour drifted.
+
+define ViewBox(0, 0, 480, 220);
+
+let table = PathLayer('table') \${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') \${};
+let sheetLayer = PathLayer('sheet') \${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let driftGhost = PathLayer('drift-ghost') \${
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(sheetLayer, driftGhost, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      160,
+      160,
+      10);
+};
+let outer = @{
+  circle(80, 80, 52);
+};
+let inner = @{
+  circle(80, 80, 28);
+};
+
+// A shape WITH a hole, used as the subtrahend.
+let annulus = outer.difference(inner);
+let stamped = sheet.difference(annulus);
+
+sheetLayer.apply {
+  M 70 22 stamped.draw()
+}
+sheetLayer.apply {
+  M 310 22 annulus.draw()
+}
+
+// Where the island landed BEFORE the fix — a reconstruction, dashed.
+let driftMarker = @{
+  circle(66, 66, 28);
+};
+driftGhost.apply {
+  M 70 22 driftMarker.draw()
+}
+
+labels.apply {
+  text(150, 202)\`sheet.difference(annulus)\`;
+  text(390, 202)\`the annulus itself\`;
+}
+</code>
+  <img src="/blog/samples/post49/01-holed-subtrahend.svg" alt="A holed subtrahend (the shape being subtracted), post-fix: ring and island in place. Dashed: the pre-fix drift, reconstructed." loading="lazy">
+</mini-workspace></p>
+<p>A pleasant footnote: <code>cut()</code> had privately worked around this exact
+limitation with its own local subpath splitting. The fix makes the
+general machinery honest, and the workaround is now just redundancy.</p>
+<h2>On the bench, with diagnoses</h2>
+<p><strong>Whole-value interpolation in style blocks.</strong> Interpolating a
+variable as a complete style value is a parse error today; wrapping
+the interpolation in a backtick template works:</p>
+<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: \${<span class="pr">capName</span>};      <span class="cm">// parse error today</span>
+<span class="id">stroke</span>-<span class="id">linecap</span>: \`\${<span class="id">capName</span>}\`;    <span class="cm">// the form that works</span>
+</code></pre><p>A list built from variables needs one fragment per token, which is
+worse. The diagnosis points into the style-content tokenizer, a
+famously delicate corner of the grammar, so it&#39;s deferred to a
+session of its own rather than rushed here.</p>
+<p><strong>Stdlib shapes after <code>M</code>.</strong> A shape function can&#39;t follow a move on
+the same line — and would mislead even if it could, because stdlib
+shapes position themselves through their arguments and ignore the
+current position:</p>
+<pre><code class="hljs language-pathogen">M 85 52 <span class="id">roundRect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">320</span>, <span class="num">220</span>, <span class="num">14</span>)     <span class="cm">// parse error today</span>
+<span class="id">roundRect</span>(<span class="num">85</span>, <span class="num">52</span>, <span class="num">320</span>, <span class="num">220</span>, <span class="num">14</span>);          <span class="cm">// the working idiom: fold the anchor in</span>
+</code></pre><p>Method-call draws (<code>M x y piece.path.draw()</code>) work inline, which makes
+the inconsistency feel arbitrary. The planned fix is a contextual
+diagnostic that says the true rule out loud.</p>
+<p><strong>Dashing an inset line by the edge it came from.</strong> The leather
+post&#39;s deepest want. Stitch lines run <em>inside</em> the edge, but
+<code>offset()</code> changes a curve&#39;s length, so dashing two inset lines
+separately can disagree on hole counts — the exact error the craft
+forbids:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">flapHoles</span> = <span class="id">seamEdge</span>.<span class="id">offset</span>(<span class="num">3</span>).<span class="id">dash</span>(<span class="id">holePattern</span>);   <span class="cm">// 17 holes…</span>
+<span class="kw">let</span> <span class="id">bodyHoles</span> = <span class="id">seamEdge</span>.<span class="id">offset</span>(-<span class="num">3</span>).<span class="id">dash</span>(<span class="id">holePattern</span>);  <span class="cm">// …or maybe 18</span>
+</code></pre><p>What the domain wants is an offset-aware dash: partition the shared
+edge once, then carry each piece to the inset line at the matching
+position along the curve. That&#39;s a real feature, not a fix, and it&#39;s
+now on the roadmap ledger with the wallet as its motivating artifact.</p>
+<h2>The tally</h2>
+<p>Seven entries — five while writing, two more when the finished series
+was reviewed: four fixed and shipped before publication, three
+diagnosed and deferred with their next steps written down. (The
+seventh was the review pass catching the blog&#39;s own tooling
+red-handed: Pathogen code was being syntax-highlighted <em>as
+JavaScript</em>, splitting <code>stroke-width</code> into two colors — every code
+panel you&#39;ve read renders through the real parser now.) A sixth rough edge — the
+comma-vs-arithmetic dash-array rule — came into the series already
+known and carries a
+<a href="/docs#path-blocks-dashstyles-array-of-path-kind-t0-t1">documentation note</a>
+instead of a log entry; <a href="/blog/broken-lines-stroke-geometry">part 1</a>
+states it up front. That ratio is the point of working this way.
+Feature planning imagines what users need; an artifact <em>demands</em> it,
+in order, with a failing sample as the spec.
+<a href="/blog/cutting-room-papercraft">The Cutting Room</a> established the
+tradition, folding its report into each post&#39;s closing section;
+Broken Lines gave the log a post of its own. The next series will
+start its log on entry one.</p>
+<h2>Where to go next</h2>
+<p>The toolkit these five posts exercised is documented in the
+<a href="/docs#path-blocks-stroke-geometry">stroke geometry reference</a>, and
+the sugar this series earned is in the
+<a href="/docs#syntax-lambdas">lambda docs</a>. The best way to add to the next
+log is the way every entry here was made: build something real in the
+<a href="/workspace/scratch">playground</a>, and when the language pushes back,
+write it down. That&#39;s the entry.</p>
+`,
   'chained-bezier-splines': `<p>Drawing a single cubic Bézier in SVG is straightforward: <code>C x1 y1 x2 y2 x y</code>. Drawing a <em>chain</em> of them that flows smoothly from one segment to the next is not. Each join point needs its incoming and outgoing control points to be collinear — lined up on the same tangent line — or the curve develops a visible kink. Get one control point wrong and the whole shape looks broken.</p>
 <p>Here&#39;s the kind of thing you&#39;d write by hand for a three-segment smooth curve — six control point coordinates per segment, each carefully calculated to maintain tangent continuity at the joins:</p>
 <pre><code class="hljs">M 50 150
@@ -293,11 +2675,11 @@ C 115.8 144.9  120 54.5  180 50
 C 233.1 45.9  255 137.5  320 140
 C 367.6 141.7  410.9 72.6  470 70
 </code></pre><p>In practice, getting those control points right means calculating sines and cosines, enforcing collinearity constraints, and adjusting handles by trial and error. Pathogen&#39;s new <a href="/docs#stdlib-cubicsplinepoints">spline functions</a> replace all of that with a declarative description of what you actually care about — waypoints, tangent angles, and handle lengths:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">cubicSpline</span>([
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">angle</span>: -20deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span> },
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">180</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">50</span>,  <span class="hljs-attr">angle</span>: 15deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">320</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">140</span>, <span class="hljs-attr">angle</span>: -30deg, <span class="hljs-attr">entry</span>: <span class="hljs-number">65</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">455</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">65</span>,  <span class="hljs-attr">angle</span>: 10deg,  <span class="hljs-attr">entry</span>: <span class="hljs-number">60</span> }
+<pre><code class="hljs language-pathogen"><span class="id">cubicSpline</span>([
+  { <span class="id">x</span>: <span class="num">50</span>, <span class="id">y</span>: <span class="num">150</span>, <span class="id">angle</span>: -<span class="num">20deg</span>, <span class="id">exit</span>: <span class="num">70</span> },
+  { <span class="id">x</span>: <span class="num">180</span>, <span class="id">y</span>: <span class="num">50</span>,  <span class="id">angle</span>: <span class="num">15deg</span>,  <span class="id">entry</span>: <span class="num">60</span>, <span class="id">exit</span>: <span class="num">55</span> },
+  { <span class="id">x</span>: <span class="num">320</span>, <span class="id">y</span>: <span class="num">140</span>, <span class="id">angle</span>: -<span class="num">30deg</span>, <span class="id">entry</span>: <span class="num">65</span>, <span class="id">exit</span>: <span class="num">55</span> },
+  { <span class="id">x</span>: <span class="num">455</span>, <span class="id">y</span>: <span class="num">65</span>,  <span class="id">angle</span>: <span class="num">10deg</span>,  <span class="id">entry</span>: <span class="num">60</span> }
 ])
 </code></pre><p>Four waypoints, guaranteed smooth, and the intent is readable. The compiler handles all control point placement — you describe where the curve should go and how it should enter and leave each waypoint.</p>
 <p>Whether you&#39;re building animation paths, smooth data visualization curves, decorative borders, or logo outlines, chained Bézier splines turn what was tedious manual calculation into a declarative, readable specification.</p>
@@ -687,14 +3069,14 @@ layer('loop').apply {
 <td>Final waypoint</td>
 </tr>
 </tbody></table>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">quadSpline</span>(
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">140</span>, <span class="hljs-attr">angle</span>: -30deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">65</span> },   <span class="hljs-comment">// start: explicit angle</span>
+<pre><code class="hljs language-pathogen"><span class="id">quadSpline</span>(
+  { <span class="id">x</span>: <span class="num">50</span>, <span class="id">y</span>: <span class="num">140</span>, <span class="id">angle</span>: -<span class="num">30deg</span>, <span class="id">exit</span>: <span class="num">65</span> },   <span class="cm">// start: explicit angle</span>
   [
-    { <span class="hljs-attr">x</span>: <span class="hljs-number">170</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">50</span>,  <span class="hljs-attr">exit</span>: <span class="hljs-number">60</span> },                <span class="hljs-comment">// intermediates: angle derived</span>
-    { <span class="hljs-attr">x</span>: <span class="hljs-number">300</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">55</span> },
-    { <span class="hljs-attr">x</span>: <span class="hljs-number">420</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">45</span>,  <span class="hljs-attr">exit</span>: <span class="hljs-number">50</span> }
+    { <span class="id">x</span>: <span class="num">170</span>, <span class="id">y</span>: <span class="num">50</span>,  <span class="id">exit</span>: <span class="num">60</span> },                <span class="cm">// intermediates: angle derived</span>
+    { <span class="id">x</span>: <span class="num">300</span>, <span class="id">y</span>: <span class="num">150</span>, <span class="id">exit</span>: <span class="num">55</span> },
+    { <span class="id">x</span>: <span class="num">420</span>, <span class="id">y</span>: <span class="num">45</span>,  <span class="id">exit</span>: <span class="num">50</span> }
   ],
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">500</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">120</span> }                              <span class="hljs-comment">// end: no angle needed</span>
+  { <span class="id">x</span>: <span class="num">500</span>, <span class="id">y</span>: <span class="num">120</span> }                              <span class="cm">// end: no angle needed</span>
 )
 </code></pre><p><mini-workspace code-open caption="quadSpline anatomy — cyan arrows show derived direction, orange shows tangent extension">
   <code>define ViewBox(0, 0, 540, 350);
@@ -925,10 +3307,10 @@ layer('zigzag').apply {
 <td>Final waypoint with time fraction</td>
 </tr>
 </tbody></table>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">clippedQuadSpline</span>(
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">angle</span>: -40deg, <span class="hljs-attr">exit</span>: <span class="hljs-number">80</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.5</span> },
-  [{ <span class="hljs-attr">x</span>: <span class="hljs-number">180</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">30</span>, <span class="hljs-attr">exit</span>: <span class="hljs-number">70</span>, <span class="hljs-attr">exitTime</span>: <span class="hljs-number">0.5</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.5</span> }],
-  { <span class="hljs-attr">x</span>: <span class="hljs-number">310</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">150</span>, <span class="hljs-attr">entryTime</span>: <span class="hljs-number">0.5</span> }
+<pre><code class="hljs language-pathogen"><span class="id">clippedQuadSpline</span>(
+  { <span class="id">x</span>: <span class="num">50</span>, <span class="id">y</span>: <span class="num">150</span>, <span class="id">angle</span>: -<span class="num">40deg</span>, <span class="id">exit</span>: <span class="num">80</span>, <span class="id">exitTime</span>: <span class="num">0.5</span> },
+  [{ <span class="id">x</span>: <span class="num">180</span>, <span class="id">y</span>: <span class="num">30</span>, <span class="id">exit</span>: <span class="num">70</span>, <span class="id">exitTime</span>: <span class="num">0.5</span>, <span class="id">entryTime</span>: <span class="num">0.5</span> }],
+  { <span class="id">x</span>: <span class="num">310</span>, <span class="id">y</span>: <span class="num">150</span>, <span class="id">entryTime</span>: <span class="num">0.5</span> }
 )
 </code></pre><p>The time values range from 0 to 1:</p>
 <ul>
@@ -1280,24 +3662,24 @@ g.append(bg, trail, dots, labels, formula);
 <p>The diagram above shows the first 8 iterations from seed point <code>(0.1, 0.1)</code> with parameters <code>a = -1.4, b = 1.6, c = 1.0, d = 0.7</code>. The points jump unpredictably — that&#39;s the chaos — but they stay bounded roughly within <code>[-3, 3]</code> on both axes. Draw enough points and the attractor&#39;s structure emerges.</p>
 <h2>First Implementation: A Sparse Point Cloud</h2>
 <p>Let&#39;s start with just 100 iterations. The core pattern is a <code>for</code> loop that computes each new point from the previous one:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> a = -<span class="hljs-number">1.4</span>;
-<span class="hljs-keyword">let</span> b = <span class="hljs-number">1.6</span>;
-<span class="hljs-keyword">let</span> c = <span class="hljs-number">1.0</span>;
-<span class="hljs-keyword">let</span> d = <span class="hljs-number">0.7</span>;
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">a</span> = -<span class="num">1.4</span>;
+<span class="kw">let</span> <span class="id">b</span> = <span class="num">1.6</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="num">1.0</span>;
+<span class="kw">let</span> <span class="id">d</span> = <span class="num">0.7</span>;
 
-<span class="hljs-keyword">let</span> scale = <span class="hljs-number">80</span>;
-<span class="hljs-keyword">let</span> cx = <span class="hljs-number">200</span>;
-<span class="hljs-keyword">let</span> cy = <span class="hljs-number">170</span>;
+<span class="kw">let</span> <span class="id">scale</span> = <span class="num">80</span>;
+<span class="kw">let</span> <span class="id">cx</span> = <span class="num">200</span>;
+<span class="kw">let</span> <span class="id">cy</span> = <span class="num">170</span>;
 
-<span class="hljs-keyword">let</span> x = <span class="hljs-number">0.1</span>;
-<span class="hljs-keyword">let</span> y = <span class="hljs-number">0.1</span>;
+<span class="kw">let</span> <span class="id">x</span> = <span class="num">0.1</span>;
+<span class="kw">let</span> <span class="id">y</span> = <span class="num">0.1</span>;
 
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.99</span>) {
-  <span class="hljs-keyword">let</span> nx = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x));
-  <span class="hljs-keyword">let</span> ny = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y));
-  <span class="hljs-title function_">circle</span>(<span class="hljs-title function_">calc</span>(cx + nx * scale), <span class="hljs-title function_">calc</span>(cy + ny * scale), <span class="hljs-number">3</span>);
-  x = nx;
-  y = ny;
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">99</span>) {
+  <span class="kw">let</span> <span class="id">nx</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">a</span> * <span class="id">y</span>) + <span class="id">c</span> * <span class="id">cos</span>(<span class="id">a</span> * <span class="id">x</span>));
+  <span class="kw">let</span> <span class="id">ny</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">b</span> * <span class="id">x</span>) + <span class="id">d</span> * <span class="id">cos</span>(<span class="id">b</span> * <span class="id">y</span>));
+  <span class="id">circle</span>(<span class="kw">calc</span>(<span class="id">cx</span> + <span class="id">nx</span> * <span class="id">scale</span>), <span class="kw">calc</span>(<span class="id">cy</span> + <span class="id">ny</span> * <span class="id">scale</span>), <span class="num">3</span>);
+  <span class="id">x</span> = <span class="id">nx</span>;
+  <span class="id">y</span> = <span class="id">ny</span>;
 }
 </code></pre><p>A few things to notice:</p>
 <p><strong>Temporary variables are essential.</strong> Both <code>nx</code> and <code>ny</code> depend on the <em>current</em> <code>x</code> and <code>y</code>. If you updated <code>x</code> before computing <code>ny</code>, you&#39;d be mixing old and new values — a classic pitfall in iterative algorithms. The pattern <code>let nx = ...; let ny = ...; x = nx; y = ny;</code> keeps both computations reading from the same state.</p>
@@ -1339,23 +3721,23 @@ for (i in 0..99) {
 <h2>Scaling Up: 10,000 Points</h2>
 <p>Pathogen&#39;s <code>for</code> loop supports up to 32,000 iterations per loop (a safety limit to prevent runaway programs). For our first full render, 10,000 points is plenty to reveal the attractor&#39;s structure.</p>
 <p>But first, an optimization. Each <code>circle()</code> call generates two SVG arc commands — for 10,000 circles, that&#39;s 30,000 path commands and roughly 800KB of SVG data. Instead, we can render each point as a zero-length line segment: <code>M x y l 0 0</code>. With <code>stroke-linecap: round</code> set on the layer, SVG renders this as a circular dot. Two commands per point instead of three, cutting the SVG output nearly in half.</p>
-<pre><code class="hljs language-pathogen">define <span class="hljs-keyword">default</span> <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;attractor&#x27;</span>) \${
-  <span class="hljs-attr">stroke</span>: <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.55</span> <span class="hljs-number">0.18</span> <span class="hljs-number">260</span>);
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.0</span>;
-  stroke-<span class="hljs-attr">linecap</span>: round;
-  <span class="hljs-attr">fill</span>: none;
+<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="kw">default</span> <span class="tp">PathLayer</span>(<span class="str">'attractor'</span>) \${
+  <span class="pr">stroke</span>: <span class="id">oklch</span>(<span class="num">0.55</span> <span class="num">0.18</span> <span class="num">260</span>);
+  <span class="pr">stroke-width</span>: <span class="num">1.0</span>;
+  <span class="pr">stroke-linecap</span>: <span class="id">round</span>;
+  <span class="pr">fill</span>: <span class="id">none</span>;
 }
 
-<span class="hljs-comment">// Seed point — iteration 0</span>
-M <span class="hljs-title function_">calc</span>(cx + x * scale) <span class="hljs-title function_">calc</span>(cy + y * scale)
+<span class="cm">// Seed point — iteration 0</span>
+M calc(cx + x * scale) calc(cy + y * scale)
 
-<span class="hljs-comment">// Iterations 1–9,999</span>
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">1.</span><span class="hljs-number">.9999</span>) {
-  <span class="hljs-keyword">let</span> nx = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x));
-  <span class="hljs-keyword">let</span> ny = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y));
-  x = nx;
-  y = ny;
-  M <span class="hljs-title function_">calc</span>(cx + nx * scale) <span class="hljs-title function_">calc</span>(cy + ny * scale) l <span class="hljs-number">0</span> <span class="hljs-number">0</span>
+<span class="cm">// Iterations 1–9,999</span>
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">9999</span>) {
+  <span class="kw">let</span> <span class="id">nx</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">a</span> * <span class="id">y</span>) + <span class="id">c</span> * <span class="id">cos</span>(<span class="id">a</span> * <span class="id">x</span>));
+  <span class="kw">let</span> <span class="id">ny</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">b</span> * <span class="id">x</span>) + <span class="id">d</span> * <span class="id">cos</span>(<span class="id">b</span> * <span class="id">y</span>));
+  <span class="id">x</span> = <span class="id">nx</span>;
+  <span class="id">y</span> = <span class="id">ny</span>;
+  M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
 }
 </code></pre><p>The initial <code>M</code> command plots the seed point before the loop, so the loop starts at <code>1</code> rather than <code>0</code> — together they produce exactly 10,000 points (the per-loop iteration limit). The <code>M x y l 0 0</code> idiom is a well-known SVG trick for point rendering, but it&#39;s admittedly non-obvious. A dedicated <code>dot(x, y)</code> function would communicate intent more clearly — we&#39;ll return to this idea later.</p>
 <p><mini-workspace code-open caption="10,000 iterations — the full Clifford attractor emerges">
@@ -1399,25 +3781,25 @@ for (i in 1..9999) {
 <h2>Color Mapping with Layers</h2>
 <p>A single-color attractor is striking, but color can reveal the attractor&#39;s temporal structure — how the trajectory evolves over time. In many attractor renderers, each point&#39;s color is determined by its iteration index or by the local density of visits. Pathogen&#39;s layer system gives us a clean way to approximate this.</p>
 <p>The idea: split 10,000 iterations into 5 chunks of 2,000 each. Each chunk renders to a different layer with a different color from a palette. Early iterations (exploring the attractor&#39;s outline) get one color; later iterations (filling in the dense interior) get another.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> baseStyles = \${
-  stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1</span>;
-  stroke-<span class="hljs-attr">linecap</span>: round;
-  <span class="hljs-attr">fill</span>: none;
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">baseStyles</span> = \${
+  <span class="pr">stroke-width</span>: <span class="num">1</span>;
+  <span class="pr">stroke-linecap</span>: <span class="id">round</span>;
+  <span class="pr">fill</span>: <span class="id">none</span>;
 };
-<span class="hljs-keyword">let</span> colors = <span class="hljs-title class_">Color</span>.<span class="hljs-title function_">palette</span>(<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1e40af&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f97316&#x27;</span>), <span class="hljs-number">5</span>);
-<span class="hljs-keyword">let</span> layers = colors.<span class="hljs-property">map</span> {|c, i|
-  <span class="hljs-keyword">return</span> <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">\`color-<span class="hljs-subst">\${i}</span>\`</span>) \${ <span class="hljs-attr">stroke</span>: c; } &lt;&lt; baseStyles;
+<span class="kw">let</span> <span class="id">colors</span> = <span class="id">Color</span>.<span class="id">palette</span>(<span class="id">Color</span>(<span class="str">'#1e40af'</span>), <span class="id">Color</span>(<span class="str">'#f97316'</span>), <span class="num">5</span>);
+<span class="kw">let</span> <span class="id">layers</span> = <span class="id">colors</span>.<span class="id">map</span> {|<span class="id">c</span>, <span class="id">i</span>|
+  <span class="kw">return</span> <span class="tp">PathLayer</span>(\`color-\${<span class="id">i</span>}\`) \${ <span class="pr">stroke</span>: <span class="id">c</span>; } &lt;&lt; <span class="id">baseStyles</span>;
 };
 </code></pre><p><code>Color.palette()</code> generates 5 evenly interpolated colors between blue and orange. <code>.map</code> iterates over them, creating a <code>PathLayer</code> for each — the <code>&lt;&lt;</code> operator merges the per-layer stroke color with the shared base styles. No repetition, and the layer count is driven by the palette size.</p>
 <p>The nested loop handles iteration and color dispatch:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> ([colorLayer, chunk] <span class="hljs-keyword">in</span> layers) {
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.1999</span>) {
-    <span class="hljs-keyword">let</span> nx = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x));
-    <span class="hljs-keyword">let</span> ny = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y));
-    x = nx;
-    y = ny;
-    colorLayer.<span class="hljs-property">apply</span> {
-      M <span class="hljs-title function_">calc</span>(cx + nx * scale) <span class="hljs-title function_">calc</span>(cy + ny * scale) l <span class="hljs-number">0</span> <span class="hljs-number">0</span>
+<pre><code class="hljs language-pathogen"><span class="kw">for</span> ([<span class="id">colorLayer</span>, <span class="id">chunk</span>] <span class="kw">in</span> <span class="id">layers</span>) {
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">1999</span>) {
+    <span class="kw">let</span> <span class="id">nx</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">a</span> * <span class="id">y</span>) + <span class="id">c</span> * <span class="id">cos</span>(<span class="id">a</span> * <span class="id">x</span>));
+    <span class="kw">let</span> <span class="id">ny</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">b</span> * <span class="id">x</span>) + <span class="id">d</span> * <span class="id">cos</span>(<span class="id">b</span> * <span class="id">y</span>));
+    <span class="id">x</span> = <span class="id">nx</span>;
+    <span class="id">y</span> = <span class="id">ny</span>;
+    <span class="id">colorLayer</span>.<span class="kw">apply</span> {
+      M calc(cx + nx * scale) calc(cy + ny * scale) l 0 0
     }
   }
 }
@@ -1561,10 +3943,10 @@ g.append(p1, p2, p3, names, params);
 </mini-workspace></p>
 <p>The <strong>Classic</strong> set produces overlapping leaf forms with clearly defined filaments. The <strong>Swirl</strong> set creates an angular, dispersed figure with sharper trajectories. The <strong>Organic</strong> set forms a denser, moon-like structure where the trajectories pack tightly together. All three emerge from the same two equations — only the four parameters differ.</p>
 <p>The implementation extracts the Clifford step into a reusable function:</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">cliffordStep</span>(<span class="hljs-params">x, y, a, b, c, d</span>) {
-  <span class="hljs-keyword">return</span> {
-    <span class="hljs-attr">x</span>: <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(a * y) + c * <span class="hljs-title function_">cos</span>(a * x)),
-    <span class="hljs-attr">y</span>: <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(b * x) + d * <span class="hljs-title function_">cos</span>(b * y))
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">cliffordStep</span>(<span class="id">x</span>, <span class="id">y</span>, <span class="id">a</span>, <span class="id">b</span>, <span class="id">c</span>, <span class="id">d</span>) {
+  <span class="kw">return</span> {
+    <span class="id">x</span>: <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">a</span> * <span class="id">y</span>) + <span class="id">c</span> * <span class="id">cos</span>(<span class="id">a</span> * <span class="id">x</span>)),
+    <span class="id">y</span>: <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">b</span> * <span class="id">x</span>) + <span class="id">d</span> * <span class="id">cos</span>(<span class="id">b</span> * <span class="id">y</span>))
   };
 }
 </code></pre><p>The function returns an object with <code>x</code> and <code>y</code> properties, which the caller destructures. This pattern — packaging both return values in an object — avoids the temporary-variable dance when the computation is factored out of the loop.</p>
@@ -1978,13 +4360,13 @@ equals.apply {
 <p>The left panel shows the old way: wrap a string in <code>Color()</code>, call methods with decimal arguments. The right panel shows the new way: bare hex literal, percent suffix. Both produce the same three swatches. The <code>Color()</code> wrapper still works — it now accepts bare hex values as a pass-through — but you no longer need it for hex colors.</p>
 <h2>Hex Literals</h2>
 <p>Hex color codes are first-class expressions anywhere a value is expected:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = #cc0000;            <span class="hljs-comment">// 6-digit hex</span>
-<span class="hljs-keyword">let</span> c = #f00;               <span class="hljs-comment">// 3-digit shorthand</span>
-<span class="hljs-keyword">let</span> c = #cc000080;          <span class="hljs-comment">// 8-digit with alpha</span>
-<span class="hljs-keyword">let</span> c = #f008;              <span class="hljs-comment">// 4-digit with alpha</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">c</span> = <span class="str">#cc0000</span>;            <span class="cm">// 6-digit hex</span>
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">#f00</span>;               <span class="cm">// 3-digit shorthand</span>
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">#cc000080</span>;          <span class="cm">// 8-digit with alpha</span>
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">#f008</span>;              <span class="cm">// 4-digit with alpha</span>
 </code></pre><p>Wrap in parentheses for method chaining:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> lighter = (#cc0000).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
-<span class="hljs-keyword">let</span> shifted = (#0066ff).<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">lighter</span> = (<span class="str">#cc0000</span>).<span class="id">lighten</span>(<span class="num">20%</span>);
+<span class="kw">let</span> <span class="id">shifted</span> = (<span class="str">#0066ff</span>).<span class="id">hueShift</span>(<span class="num">60</span>);
 </code></pre><p>From a single hex literal you can build full color palettes — lighten, darken, shift hue, adjust saturation, set alpha. The demo below starts from <code>#0066ff</code> and derives an entire palette using method chaining and the percent suffix:</p>
 <p><mini-workspace code-open caption="Lightness, hue, and saturation ramps derived from a single hex literal">
   <code>define ViewBox(0, 0, 520, 320);
@@ -2178,17 +4560,17 @@ base_line.apply {
 </mini-workspace></p>
 <h2>CSS Color Function Literals</h2>
 <p>All major CSS color functions work as bare expressions. You can paste any CSS color value directly into Pathogen code and it will just work — <code>%</code> and <code>/</code> inside function arguments are treated as literal characters, not operators:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">0</span>, <span class="hljs-number">100</span>%, <span class="hljs-number">50</span>%);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.6</span> <span class="hljs-number">0.15</span> <span class="hljs-number">30</span>);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.6</span> <span class="hljs-number">0.15</span> <span class="hljs-number">30</span> / <span class="hljs-number">0.5</span>);  <span class="hljs-comment">// slash alpha</span>
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hwb</span>(<span class="hljs-number">0</span> <span class="hljs-number">0</span>% <span class="hljs-number">0</span>%);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">lab</span>(<span class="hljs-number">50</span> <span class="hljs-number">40</span> <span class="hljs-number">59.5</span>);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">lch</span>(<span class="hljs-number">50</span> <span class="hljs-number">64</span> <span class="hljs-number">30</span>);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklab</span>(<span class="hljs-number">0.6</span> -<span class="hljs-number">0.1</span> <span class="hljs-number">0.15</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">c</span> = <span class="str">rgb(255, 0, 0)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">hsl(0, 100%, 50%)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">oklch(0.6 0.15 30)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">oklch(0.6 0.15 30 / 0.5)</span>;  <span class="cm">// slash alpha</span>
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">hwb(0 0% 0%)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">lab(50 40 59.5)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">lch(50 64 30)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">oklab(0.6 -0.1 0.15)</span>;
 </code></pre><p>Method chaining works directly — no wrapper needed:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> lighter = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
-<span class="hljs-keyword">let</span> muted = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">210</span>, <span class="hljs-number">80</span>%, <span class="hljs-number">50</span>%).<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">50</span>%);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">lighter</span> = <span class="str">rgb(255, 0, 0)</span>.<span class="id">lighten</span>(<span class="num">20%</span>);
+<span class="kw">let</span> <span class="id">muted</span> = <span class="str">hsl(210, 80%, 50%)</span>.<span class="id">desaturate</span>(<span class="num">50%</span>);
 </code></pre><p>The demo below expresses the same red in seven different color spaces. Every format converts to <a href="/docs#stdlib-color">OKLCH</a> internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:</p>
 <p><mini-workspace code-open caption="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally">
   <code>define ViewBox(0, 0, 560, 340);
@@ -2321,11 +4703,11 @@ arrow_line.apply {
 </blockquote>
 <h2>The Percent Suffix</h2>
 <p>The <code>%</code> suffix converts a number to its decimal form: <code>20%</code> becomes <code>0.2</code>, <code>50%</code> becomes <code>0.5</code>. This reads naturally with color methods — &quot;lighten by 20%&quot; instead of &quot;lighten by 0.2&quot;:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = #e63946;
-<span class="hljs-keyword">let</span> tint  = c.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);      <span class="hljs-comment">// 20% → 0.2</span>
-<span class="hljs-keyword">let</span> shade = c.<span class="hljs-title function_">darken</span>(<span class="hljs-number">15</span>%);       <span class="hljs-comment">// 15% → 0.15</span>
-<span class="hljs-keyword">let</span> faded = c.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">50</span>%);        <span class="hljs-comment">// 50% → 0.5</span>
-<span class="hljs-keyword">let</span> muted = c.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">40</span>%);   <span class="hljs-comment">// 40% → 0.4</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">c</span> = <span class="str">#e63946</span>;
+<span class="kw">let</span> <span class="id">tint</span>  = <span class="id">c</span>.<span class="id">lighten</span>(<span class="num">20%</span>);      <span class="cm">// 20% → 0.2</span>
+<span class="kw">let</span> <span class="id">shade</span> = <span class="id">c</span>.<span class="id">darken</span>(<span class="num">15%</span>);       <span class="cm">// 15% → 0.15</span>
+<span class="kw">let</span> <span class="id">faded</span> = <span class="id">c</span>.<span class="id">alpha</span>(<span class="num">50%</span>);        <span class="cm">// 50% → 0.5</span>
+<span class="kw">let</span> <span class="id">muted</span> = <span class="id">c</span>.<span class="id">desaturate</span>(<span class="num">40%</span>);   <span class="cm">// 40% → 0.4</span>
 </code></pre><p>The percent suffix isn&#39;t limited to color methods — it works anywhere a number is expected. <code>50%</code> is <code>0.5</code> whether it&#39;s a color alpha, a mix ratio, or a variable assignment.</p>
 <p><strong>Disambiguation:</strong> <code>20%</code> (no space) is a percent literal. <code>20 % 5</code> (with spaces) is the <a href="/docs#syntax-percent-suffix">modulus operator</a>. Existing code that uses modulus with spaces continues to work unchanged.</p>
 <p><mini-workspace code-open caption="Tint, shade, and alpha scales using the percent suffix">
@@ -2510,10 +4892,10 @@ base_ind.apply {
 </mini-workspace></p>
 <h2>Reactive Colors</h2>
 <p>Color literals compose naturally with Pathogen&#39;s <a href="/blog/reactive-color-svg">CSSVar-backed reactive colors</a>. Use a bare hex as the fallback value in <code>Color(CSSVar(...))</code> to create colors that update at runtime when the CSS custom property changes:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, #0066ff));
-<span class="hljs-keyword">let</span> light = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
-<span class="hljs-keyword">let</span> comp = base.<span class="hljs-title function_">complement</span>();
-<span class="hljs-keyword">let</span> triad = base.<span class="hljs-title function_">triadic</span>();
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">base</span> = <span class="id">Color</span>(<span class="id">CSSVar</span>(<span class="str">'--base-color'</span>, <span class="str">#0066ff</span>));
+<span class="kw">let</span> <span class="id">light</span> = <span class="id">base</span>.<span class="id">lighten</span>(<span class="num">20%</span>);
+<span class="kw">let</span> <span class="id">comp</span> = <span class="id">base</span>.<span class="id">complement</span>();
+<span class="kw">let</span> <span class="id">triad</span> = <span class="id">base</span>.<span class="id">triadic</span>();
 </code></pre><p>Change <code>--base-color</code> and every derived value recalculates — lighten, complement, triadic harmony, everything. The compiler emits <code>@property</code> declarations so the browser knows these are interpolatable <code>&lt;color&gt;</code> values.</p>
 <p>The first demo below shows a full reactive palette — lightness ramp, color transformations, and triadic harmony, all driven by a single CSS variable. Use the color picker to change <code>--base-color</code> and watch every swatch update:</p>
 <p><mini-workspace code-open caption="Reactive palette — change --base-color to update all swatches">
@@ -5529,10 +7911,10 @@ twice; the side seam gets 7 units of allowance; the armhole gets eased;
 notches tell you which edge meets which. Pattern drafting software is,
 to a first approximation, software for <em>remembering which edge is
 which</em> — and that is precisely what <code>as segment(&#39;name&#39;)</code> does:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> bodice = @{
-  c <span class="hljs-number">16</span> <span class="hljs-number">18</span> <span class="hljs-number">34</span> <span class="hljs-number">20</span> <span class="hljs-number">46</span> <span class="hljs-number">6</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;neck&#x27;</span>)
-  l <span class="hljs-number">22</span> <span class="hljs-number">8</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;shoulder&#x27;</span>)
-  <span class="hljs-comment">// ...armhole, side, hem — Example 1 has the full draft</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">bodice</span> = @{
+  c 16 18 34 20 46 6 as <span class="id">segment</span>(<span class="str">'neck'</span>)
+  l 22 8 as <span class="id">segment</span>(<span class="str">'shoulder'</span>)
+  <span class="cm">// ...armhole, side, hem — Example 1 has the full draft</span>
 };
 </code></pre><p>Name the edges once, at drafting time, and every downstream operation —
 cutting the yoke off, offsetting for allowance — carries the names
@@ -5550,9 +7932,9 @@ pattern&quot; — manually re-measuring every edge after every change. When
 the edges answer by name, grading and decorating survive redesigns:
 re-draft the armhole deeper, and the same queries still find the same
 jobs. The identification idiom this post adds to the kit:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> name = <span class="hljs-string">&#x27;body&#x27;</span>;
-<span class="hljs-keyword">if</span> (piece.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;neck&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
-  name = <span class="hljs-string">&#x27;yoke&#x27;</span>;    <span class="hljs-comment">// whoever kept the neckline is the yoke</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">name</span> = <span class="str">'body'</span>;
+<span class="kw">if</span> (<span class="id">piece</span>.<span class="id">segmentAll</span>(<span class="str">'neck'</span>).<span class="id">length</span> &gt; <span class="num">0</span>) {
+  <span class="id">name</span> = <span class="str">'yoke'</span>;    <span class="cm">// whoever kept the neckline is the yoke</span>
 }
 </code></pre><h2>Example 1 — The draft speaks</h2>
 <p>A half-bodice front, drafted to the right of a center-front fold — the
@@ -5561,8 +7943,7 @@ are cut on the fold, so drafting half is the honest shape. Six edges,
 six names, six colors: each stroke is one <code>segmentAll</code> query answered
 by the block and drawn over the outline.</p>
 <p><mini-workspace code-open caption="Every edge named at drafting time; every color is one segmentAll query.">
-  <code>// viewBox="0 0 480 260"
-//-- The pattern draft speaks its own vocabulary: a half-bodice (cut on
+  <code>//-- The pattern draft speaks its own vocabulary: a half-bodice (cut on
 //-- the fold) with every edge named as it is drawn. Each labeled run is
 //-- stroked in its own color, straight from a segmentAll query.
 
@@ -5744,8 +8125,7 @@ Neither piece is found by position, index, or size — each is asked
 what it kept. The neckline stayed with the top piece, so it announces
 itself as the yoke; the hem stayed with the bottom, so it is the body.</p>
 <p><mini-workspace code-open caption="Identity by inheritance: keeping the neckline makes you the yoke.">
-  <code>// viewBox="0 0 480 280"
-//-- Split the bodice at the yoke line and ask each piece who it is:
+  <code>//-- Split the bodice at the yoke line and ask each piece who it is:
 //-- keeping the neckline makes you the yoke, keeping the hem makes you
 //-- the body. No coordinates checked, no piece order assumed.
 
@@ -5857,8 +8237,7 @@ the red ring is the offset, the dashed original is the stitch line —
 and because labels survive <code>offset()</code>, the amber stroke finds the side
 seam <em>on the allowance outline</em>, not the original.</p>
 <p><mini-workspace code-open caption="offset(7) makes the cutting line; the side seam still answers by name on it.">
-  <code>// viewBox="0 0 480 230"
-//-- Seam allowance is an offset: push the body piece's outline out by 7
+  <code>//-- Seam allowance is an offset: push the body piece's outline out by 7
 //-- and you have the cutting line; the original edge, dashed, becomes the
 //-- stitch line. The 'side' label survives the offset and says so.
 
@@ -5971,8 +8350,7 @@ directions, so a naive <code>get(0.3)</code> might land at 30% on one piece and
 70% on the other. The sample normalizes first: compare the seam&#39;s two
 endpoints, and if it runs right-to-left, flip <code>t</code>.</p>
 <p><mini-workspace code-open caption="Normalize the walk direction, then the same fractions land matched ticks on both pieces.">
-  <code>// viewBox="0 0 480 280"
-//-- Notches: a single tick a third of the way along the join seam, a
+  <code>//-- Notches: a single tick a third of the way along the join seam, a
 //-- double tick two thirds along — on BOTH pieces. Twin seams may run
 //-- opposite directions, so the walk is normalized left-to-right first.
 
@@ -6066,8 +8444,7 @@ all), notches matched across the join seam, a grainline arrow down
 each piece, and computed names. &quot;Cut 1 on fold&quot; is real pattern
 language, and the fold is the <code>z</code> edge from Example 1.</p>
 <p><mini-workspace code-open caption="The finished sheet: layout, allowance, notches, grainlines, and names — all queried, none hand-placed.">
-  <code>// viewBox="0 0 480 240"
-//-- The finished pattern sheet: yoke and body laid out side by side via
+  <code>//-- The finished pattern sheet: yoke and body laid out side by side via
 //-- their bounding boxes, each with its cutting line (offset), stitch
 //-- line, join-seam notches, grainline arrow, and name.
 
@@ -6236,13 +8613,13 @@ and curves subdivide and re-fit as true parallel curves. The
 carry the new join contract. For this post, the payoff is the sheet
 above: both pieces ringed, the neck scoop&#39;s allowance a constant
 seven units along its whole length, no caveat required.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: the yoke&#x27;s allowance came out spiked and distorted —</span>
-<span class="hljs-comment">// the sheet shipped without it</span>
-<span class="hljs-keyword">let</span> allow = placed.<span class="hljs-title function_">offset</span>(<span class="hljs-number">7</span>);      <span class="hljs-comment">// body panel only, by guard</span>
+<pre><code class="hljs language-pathogen"><span class="cm">// before: the yoke's allowance came out spiked and distorted —</span>
+<span class="cm">// the sheet shipped without it</span>
+<span class="kw">let</span> <span class="id">allow</span> = <span class="id">placed</span>.<span class="id">offset</span>(<span class="num">7</span>);      <span class="cm">// body panel only, by guard</span>
 
-<span class="hljs-comment">// after: every piece gets its cutting line, curves and all</span>
-<span class="hljs-keyword">let</span> allow = placed.<span class="hljs-title function_">offset</span>(<span class="hljs-number">7</span>);      <span class="hljs-comment">// any piece — or</span>
-<span class="hljs-keyword">let</span> round = placed.<span class="hljs-title function_">offset</span>(<span class="hljs-number">7</span>, { <span class="hljs-attr">join</span>: <span class="hljs-string">&#x27;round&#x27;</span> });
+<span class="cm">// after: every piece gets its cutting line, curves and all</span>
+<span class="kw">let</span> <span class="id">allow</span> = <span class="id">placed</span>.<span class="id">offset</span>(<span class="num">7</span>);      <span class="cm">// any piece — or</span>
+<span class="kw">let</span> <span class="id">round</span> = <span class="id">placed</span>.<span class="id">offset</span>(<span class="num">7</span>, { <span class="id">join</span>: <span class="str">'round'</span> });
 </code></pre><p>A lesson worth keeping from the diagnosis: the bug we <em>logged</em> — &quot;the
 offset flips to the wrong side&quot; — was not the bug that existed.
 Direction was always correct; the joins were at fault. Friction logs
@@ -6260,11 +8637,11 @@ fine — which is what made it treacherous). Projected values now have
 anchors on the first command by definition; the sheet above uses it,
 and the <code>drawTo</code> anchor contract is documented where it can&#39;t surprise
 the next person.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: correct for seam runs, silently wrong for cut pieces</span>
-placed.<span class="hljs-title function_">drawTo</span>(placed.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, placed.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+<pre><code class="hljs language-pathogen"><span class="cm">// before: correct for seam runs, silently wrong for cut pieces</span>
+<span class="id">placed</span>.<span class="id">drawTo</span>(<span class="id">placed</span>.<span class="id">startPoint</span>.<span class="id">x</span>, <span class="id">placed</span>.<span class="id">startPoint</span>.<span class="id">y</span>);
 
-<span class="hljs-comment">// after: correct for both, and says what it means</span>
-placed.<span class="hljs-title function_">draw</span>();
+<span class="cm">// after: correct for both, and says what it means</span>
+<span class="id">placed</span>.<span class="id">draw</span>();
 </code></pre><p><em>Epilogue:</em> the trap itself is now gone at the root. <code>startPoint</code>
 had been hardcoded to the frame origin since the language&#39;s first
 commit — the original spec comment even described the correct
@@ -6332,8 +8709,8 @@ construct by intersection math, trivial to draw once as a stroke. Cut
 geometry you author once multiplies across every piece, and the seams
 come back queryable, so the decoration (registration marks, sorting,
 scattering) is a loop, not a spreadsheet. The classification idiom:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">if</span> (piece.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
-  <span class="hljs-comment">// this piece kept some of the plate&#x27;s labeled border</span>
+<pre><code class="hljs language-pathogen"><span class="kw">if</span> (<span class="id">piece</span>.<span class="id">segmentAll</span>(<span class="str">'rim'</span>).<span class="id">length</span> &gt; <span class="num">0</span>) {
+  <span class="cm">// this piece kept some of the plate's labeled border</span>
 }
 </code></pre><h2>Example 1 — The knife is a path</h2>
 <p>One lazy S-curve, dashed red over a ghost of the plate on the left, and
@@ -6341,8 +8718,7 @@ the two pieces it makes on the right. The amber strokes are each
 piece&#39;s <code>segmentAll(&#39;cut&#39;)</code> — notice they are the <em>same curve</em> as the
 knife, clipped to the material it actually crossed.</p>
 <p><mini-workspace code-open caption="A cubic knife cuts a cubic seam; the healed edges echo the stroke.">
-  <code>// viewBox="0 0 480 230"
-//-- The knife is a path, so curves cut curves: a lazy S-wave slices the
+  <code>//-- The knife is a path, so curves cut curves: a lazy S-wave slices the
 //-- plate, the pieces drift apart, and each healed seam — stroked amber —
 //-- is an exact copy of the knife's arc through the material.
 
@@ -6442,8 +8818,7 @@ out into a knob with a narrow neck, then rejoin the line. One cut,
 two pieces: the left one wears the knob, the right one the socket,
 and both seams are the same mushroom silhouette.</p>
 <p><mini-workspace code-open caption="Two cubics make the knob; the cut hands one piece the nub and the other the socket.">
-  <code>// viewBox="0 0 480 250"
-//-- The interlocking nub: two cubics bulge the knife into a knob with a
+  <code>//-- The interlocking nub: two cubics bulge the knife into a knob with a
 //-- narrow neck. Cut once and the pieces come apart wearing matching
 //-- seams — one knob, one socket, from the same stroke.
 
@@ -6539,8 +8914,7 @@ interior piece, tinted amber. The teal strokes make the mechanism
 visible: they are each piece&#39;s inherited rim runs, the very label the
 classification asked about.</p>
 <p><mini-workspace code-open caption="Teal is the rim each piece kept — the label does the sorting, and the amber piece kept none.">
-  <code>// viewBox="0 0 480 300"
-//-- Which pieces touch the frame? Label the plate's rim before cutting a
+  <code>//-- Which pieces touch the frame? Label the plate's rim before cutting a
 //-- 3x3 wavy grid, and afterward each piece answers for itself: rim run
 //-- kept = tray piece (paper), rim count zero = the one that falls out.
 
@@ -6652,8 +9026,7 @@ both endpoints — so partitioning <em>each piece&#39;s own seam</em> puts rings
 identical spots on both copies. The dotted lines just make the pairing
 visible across the gap.</p>
 <p><mini-workspace code-open caption="partition(3) on each twin seam: same fractions, same spots, guaranteed pairs.">
-  <code>// viewBox="0 0 480 240"
-//-- Registration marks: partition each piece's seam at the same fractions
+  <code>//-- Registration marks: partition each piece's seam at the same fractions
 //-- and the marks pair up across the gap — twin seams are the same curve,
 //-- so the same t lands on the same spot of both copies.
 
@@ -6753,8 +9126,7 @@ corner keeps the assembled picture: every piece run through
 <code>scale(0.44, 0.44)</code> and drawn at one shared origin, reassembling the
 plate in miniature because scaled pieces keep their scaled placement.</p>
 <p><mini-workspace code-open caption="rotate() spins each piece about its own center — no pivot bookkeeping — and the lid is the same cut, scaled.">
-  <code>// viewBox="0 0 480 300"
-//-- The finished puzzle: nine wavy-cut pieces spun in place with
+  <code>//-- The finished puzzle: nine wavy-cut pieces spun in place with
 //-- rotate() and scattered — except the middle piece, gone missing. The
 //-- box lid keeps the assembled picture, scale()d straight from the cut.
 
@@ -6922,15 +9294,15 @@ sites scanned expression siblings without walking postfix chains, so
 <code>for (i in 0..arr.length)</code>, <code>PathLayer(names[i])</code>, and
 <code>define ViewBox(0, 0, sheet.w, …)</code> were all broken the same way. One
 fix later, layers are routable as data:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: one if per tint</span>
-<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">0</span>) { shard0.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
-<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">1</span>) { shard1.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
-<span class="hljs-keyword">if</span> (<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>) == <span class="hljs-number">2</span>) { shard2.<span class="hljs-property">apply</span> { M placeX placeY spun.<span class="hljs-title function_">draw</span>() } }
+<pre><code class="hljs language-pathogen"><span class="cm">// before: one if per tint</span>
+<span class="kw">if</span> (<span class="kw">calc</span>(<span class="id">i</span> % <span class="num">3</span>) == <span class="num">0</span>) { <span class="id">shard0</span>.<span class="kw">apply</span> { M placeX placeY spun.draw() } }
+<span class="kw">if</span> (<span class="kw">calc</span>(<span class="id">i</span> % <span class="num">3</span>) == <span class="num">1</span>) { <span class="id">shard1</span>.<span class="kw">apply</span> { M placeX placeY spun.draw() } }
+<span class="kw">if</span> (<span class="kw">calc</span>(<span class="id">i</span> % <span class="num">3</span>) == <span class="num">2</span>) { <span class="id">shard2</span>.<span class="kw">apply</span> { M placeX placeY spun.draw() } }
 
-<span class="hljs-comment">// after: layers are values — index into a list of them</span>
-<span class="hljs-keyword">let</span> shardLayers = [shard0, shard1, shard2];
-<span class="hljs-title function_">layer</span>(shardLayers[<span class="hljs-title function_">calc</span>(i % <span class="hljs-number">3</span>)]).<span class="hljs-property">apply</span> {
-  M placeX placeY spun.<span class="hljs-title function_">draw</span>()
+<span class="cm">// after: layers are values — index into a list of them</span>
+<span class="kw">let</span> <span class="id">shardLayers</span> = [<span class="id">shard0</span>, <span class="id">shard1</span>, <span class="id">shard2</span>];
+<span class="kw">layer</span>(<span class="id">shardLayers</span>[<span class="kw">calc</span>(<span class="id">i</span> % <span class="num">3</span>)]).<span class="kw">apply</span> {
+  M placeX placeY spun.draw()
 }
 </code></pre><p>(The computed-name spelling <code>layer(\`shard\${i % 3}\`)</code> always worked
 — it is what the shattered-glyph and tinted-panes samples use, and the
@@ -6979,9 +9351,9 @@ shut — and every healed edge remembers that it used to be a wound. (An
 open subject severs into open fragments instead; the healing is for
 closed material.) Each seam carries the automatic segment label <code>cut</code>,
 so a piece can be asked, after the fact, <em>where was I cut?</em></p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> pieces = plate.<span class="hljs-title function_">cut</span>(knife);
-<span class="hljs-keyword">let</span> placed = pieces[<span class="hljs-number">0</span>].<span class="hljs-title function_">project</span>(<span class="hljs-number">20</span>, <span class="hljs-number">30</span>);
-placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>);   <span class="hljs-comment">// every healed edge, as drawable runs</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">pieces</span> = <span class="id">plate</span>.<span class="id">cut</span>(<span class="id">knife</span>);
+<span class="kw">let</span> <span class="id">placed</span> = <span class="id">pieces</span>[<span class="num">0</span>].<span class="id">project</span>(<span class="num">20</span>, <span class="num">30</span>);
+<span class="id">placed</span>.<span class="id">segmentAll</span>(<span class="str">'cut'</span>);   <span class="cm">// every healed edge, as drawable runs</span>
 </code></pre><p>Two things to know before the pictures, because everything below leans
 on them:</p>
 <ul>
@@ -7011,8 +9383,8 @@ dashed lines to fold, tabs to glue. Before seam labels, decorating a
 cut meant re-deriving where the knife went — intersecting lines by
 hand, tracking which piece got which fragment. Now the pieces carry the
 answer. The idiom the whole series leans on:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
-  seam.<span class="hljs-title function_">draw</span>();
+<pre><code class="hljs language-pathogen"><span class="kw">for</span> (<span class="id">seam</span> <span class="kw">in</span> <span class="id">placed</span>.<span class="id">segmentAll</span>(<span class="str">'cut'</span>)) {
+  <span class="id">seam</span>.<span class="id">draw</span>();
 }
 </code></pre><p>A projected value knows where it lives, so <code>draw()</code> draws it exactly
 there — into whatever layer is active, with whatever stroke style that
@@ -7024,8 +9396,7 @@ pieces drawn plain, reassembled. On the right, the same two pieces
 nudged apart, after each was asked for its healed seams — stroked in
 amber with the idiom above.</p>
 <p><mini-workspace code-open caption="Left: the cut pieces, reassembled. Right: the pieces apart — each strokes its own segmentAll('cut').">
-  <code>// viewBox="0 0 480 240"
-//-- The bare mechanism: cut a plate in two, then ask each piece where it
+  <code>//-- The bare mechanism: cut a plate in two, then ask each piece where it
 //-- was healed. Left: the pieces, drawn plain. Right: the same pieces with
 //-- every seam the cut created stroked in amber via segmentAll('cut').
 
@@ -7129,8 +9500,7 @@ itself carries the distinction. Name a knife&#39;s edge
 red), and one loop over the seams routes each fold to its dash style by
 asking which knife made it.</p>
 <p><mini-workspace code-open caption="The outline is the cut line; each named knife's seams keep its name — mountain and valley folds dash differently.">
-  <code>// viewBox="0 0 480 220"
-//-- A four-panel accordion card as one template: the plate's boundary is
+  <code>//-- A four-panel accordion card as one template: the plate's boundary is
 //-- the cut line (solid), and the creases alternate mountain / valley —
 //-- each knife is named, so its healed seams carry the fold's name and
 //-- one loop routes every seam to the right dash style.
@@ -7272,8 +9642,7 @@ points straight out of it — which is all a trapezoid tab needs. The
 left piece grows three tabs along its healed edge, every other seventh
 of the way; the outer boundary, which was never cut, stays clean.</p>
 <p><mini-workspace code-open caption="get(t) walks the seam, normal(t) aims the tab; the uncut boundary grows nothing.">
-  <code>// viewBox="0 0 480 240"
-//-- Glue tabs, generated: the left piece grows trapezoid tabs along its
+  <code>//-- Glue tabs, generated: the left piece grows trapezoid tabs along its
 //-- healed seam — and only there. get(t) walks the seam, normal(t) points
 //-- the tabs outward, and the original boundary never grows a tab.
 
@@ -7374,8 +9743,7 @@ its floor <code>as segment(&#39;base&#39;)</code>, then a horizontal cut splits 
 piece still answers for the names it kept — the roof piece strokes and
 counts its roof, the base piece its base.</p>
 <p><mini-workspace code-open caption="Labels survive the cut: each piece strokes and counts the names it kept.">
-  <code>// viewBox="0 0 480 215"
-//-- Name the edges before you cut, and the pieces introduce themselves.
+  <code>//-- Name the edges before you cut, and the pieces introduce themselves.
 //-- A house-shaped plate labels its roof and base; after a horizontal cut
 //-- each piece still answers for the labels it kept — stroked and counted.
 
@@ -7483,8 +9851,7 @@ The garment-pattern post (part 3) builds its whole workflow on this.</p>
 the uncut plate stays behind, dashed; each drifted piece strokes its
 seams amber, so mating edges face each other across the gaps.</p>
 <p><mini-workspace code-open caption="Pieces drift along rays to their bounding-box centers; amber seam faces amber seam.">
-  <code>// viewBox="0 0 480 260"
-//-- The assembly diagram: four pieces drift away from the plate's center
+  <code>//-- The assembly diagram: four pieces drift away from the plate's center
 //-- along their own centroid rays, the ghost of the uncut plate stays
 //-- behind, and every mating edge glows — that's the seam group again.
 
@@ -7586,8 +9953,7 @@ under it), and wears its piece number — derived from its angle around
 the ring, because <code>cut()</code> makes no promise about the order pieces come
 back in.</p>
 <p><mini-workspace code-open caption="The finished kit sheet: tab the red edge, fold the dashed one, rejoin in order.">
-  <code>// viewBox="0 0 480 300"
-//-- The finished kit sheet: a hex medallion cut into six wedges, exploded
+  <code>//-- The finished kit sheet: a hex medallion cut into six wedges, exploded
 //-- into a ring. Every wedge tabs one healed seam, fold-dashes the other,
 //-- and wears its number — the knives are named, so each radial edge is
 //-- queried by the knife that made it.
@@ -7769,11 +10135,11 @@ an in-place
 <a href="/docs#path-blocks-drawing-a-projectedpath-in-place"><code>draw()</code></a>: it
 anchors on the value&#39;s first command by definition, so the misplacement
 cannot be written at all and the idiom is one self-evident line.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before</span>
-seam.<span class="hljs-title function_">drawTo</span>(seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">x</span>, seam.<span class="hljs-property">startPoint</span>.<span class="hljs-property">y</span>);
+<pre><code class="hljs language-pathogen"><span class="cm">// before</span>
+<span class="id">seam</span>.<span class="id">drawTo</span>(<span class="id">seam</span>.<span class="id">startPoint</span>.<span class="id">x</span>, <span class="id">seam</span>.<span class="id">startPoint</span>.<span class="id">y</span>);
 
-<span class="hljs-comment">// after</span>
-seam.<span class="hljs-title function_">draw</span>();
+<span class="cm">// after</span>
+<span class="id">seam</span>.<span class="id">draw</span>();
 </code></pre><p><strong>Example 2 grew up twice.</strong> The fold lines you see above are the
 result of two rounds of the loop. First, dedup: the original sample
 kept shared folds from double-drawing with an ownership rule — each
@@ -7791,23 +10157,23 @@ accordion template turns on — was inexpressible. Knife labels now
 authored <code>as segment(&#39;mountain&#39;)</code> heals into seams labeled
 <code>cut.mountain</code>, the umbrella <code>segmentAll(&#39;cut&#39;)</code> still answers
 everything, and sub-label queries answer one knife at a time.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// original: per-panel ownership rule (~10 lines)</span>
-<span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
-  <span class="hljs-keyword">let</span> mid = seam.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
-  <span class="hljs-keyword">if</span> (mid.<span class="hljs-property">x</span> &gt; panelCenterX) {
-    seam.<span class="hljs-title function_">draw</span>();
+<pre><code class="hljs language-pathogen"><span class="cm">// original: per-panel ownership rule (~10 lines)</span>
+<span class="kw">for</span> (<span class="id">seam</span> <span class="kw">in</span> <span class="id">placed</span>.<span class="id">segmentAll</span>(<span class="str">'cut'</span>)) {
+  <span class="kw">let</span> <span class="id">mid</span> = <span class="id">seam</span>.<span class="id">get</span>(<span class="num">0.5</span>);
+  <span class="kw">if</span> (<span class="id">mid</span>.<span class="id">x</span> &gt; <span class="id">panelCenterX</span>) {
+    <span class="id">seam</span>.<span class="id">draw</span>();
   }
 }
 
-<span class="hljs-comment">// today: each physical seam once, routed by the knife that made it</span>
-<span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> panels.<span class="hljs-title function_">seams</span>()) {
-  <span class="hljs-keyword">if</span> (seam.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut.mountain&#x27;</span>).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
-    mountainLayer.<span class="hljs-property">apply</span> {
-      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+<span class="cm">// today: each physical seam once, routed by the knife that made it</span>
+<span class="kw">for</span> (<span class="id">seam</span> <span class="kw">in</span> <span class="id">panels</span>.<span class="id">seams</span>()) {
+  <span class="kw">if</span> (<span class="id">seam</span>.<span class="id">segmentAll</span>(<span class="str">'cut.mountain'</span>).<span class="id">length</span> &gt; <span class="num">0</span>) {
+    <span class="id">mountainLayer</span>.<span class="kw">apply</span> {
+      <span class="id">seam</span>.<span class="id">project</span>(<span class="id">originX</span>, <span class="id">originY</span>).<span class="id">draw</span>();
     }
-  } <span class="hljs-keyword">else</span> {
-    valleyLayer.<span class="hljs-property">apply</span> {
-      seam.<span class="hljs-title function_">project</span>(originX, originY).<span class="hljs-title function_">draw</span>();
+  } <span class="kw">else</span> {
+    <span class="id">valleyLayer</span>.<span class="kw">apply</span> {
+      <span class="id">seam</span>.<span class="id">project</span>(<span class="id">originX</span>, <span class="id">originY</span>).<span class="id">draw</span>();
     }
   }
 }
@@ -7827,13 +10193,13 @@ by tests, and both tab samples dropped the dance — with byte-identical
 output, the strongest proof the code was dead. The purest friction-log
 lesson in the series: the feature existed all along; the fix was a
 sentence, and the sentence was the feature.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: probe, dot product, conditional flip</span>
-<span class="hljs-keyword">let</span> n = seam.<span class="hljs-title function_">normal</span>(tabMid);
-<span class="hljs-keyword">let</span> toCenter = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">cos</span>(n.<span class="hljs-property">angle</span>) * (cx - n.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>) + <span class="hljs-title function_">sin</span>(n.<span class="hljs-property">angle</span>) * (cy - n.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>));
-<span class="hljs-keyword">let</span> outwardAngle = <span class="hljs-title function_">calc</span>(toCenter &gt; <span class="hljs-number">0</span> ? n.<span class="hljs-property">angle</span> + <span class="hljs-title function_">PI</span>() : n.<span class="hljs-property">angle</span>);
+<pre><code class="hljs language-pathogen"><span class="cm">// before: probe, dot product, conditional flip</span>
+<span class="kw">let</span> <span class="id">n</span> = <span class="id">seam</span>.<span class="id">normal</span>(<span class="id">tabMid</span>);
+<span class="kw">let</span> <span class="id">toCenter</span> = <span class="kw">calc</span>(<span class="id">cos</span>(<span class="id">n</span>.<span class="id">angle</span>) * (<span class="id">cx</span> - <span class="id">n</span>.<span class="id">point</span>.<span class="id">x</span>) + <span class="id">sin</span>(<span class="id">n</span>.<span class="id">angle</span>) * (<span class="id">cy</span> - <span class="id">n</span>.<span class="id">point</span>.<span class="id">y</span>));
+<span class="kw">let</span> <span class="id">outwardAngle</span> = <span class="kw">calc</span>(<span class="id">toCenter</span> &gt; <span class="num">0</span> ? <span class="id">n</span>.<span class="id">angle</span> + <span class="id">PI</span>() : <span class="id">n</span>.<span class="id">angle</span>);
 
-<span class="hljs-comment">// after: the normal already faces out of the material</span>
-<span class="hljs-keyword">let</span> outwardAngle = seam.<span class="hljs-title function_">normal</span>(tabMid).<span class="hljs-property">angle</span>;
+<span class="cm">// after: the normal already faces out of the material</span>
+<span class="kw">let</span> <span class="id">outwardAngle</span> = <span class="id">seam</span>.<span class="id">normal</span>(<span class="id">tabMid</span>).<span class="id">angle</span>;
 </code></pre><p><strong>The medallion&#39;s knives stopped doing arithmetic.</strong> Example 6&#39;s three
 knives were originally one cutter block whose strokes chained together
 with hand-computed relative moves — and one of those moves shipped
@@ -7855,12 +10221,12 @@ this series <em>needs</em> them anymore — the sub-labels above already
 dissolved the case that demanded an escape hatch — which is exactly why
 they shipped as query syntax rather than yet another method: the
 grammar was already paid for.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: recover an individual edge by fraction guessing</span>
-<span class="hljs-keyword">let</span> firstArc = run.<span class="hljs-title function_">subPath</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0.5</span>);
+<pre><code class="hljs language-pathogen"><span class="cm">// before: recover an individual edge by fraction guessing</span>
+<span class="kw">let</span> <span class="id">firstArc</span> = <span class="id">run</span>.<span class="id">subPath</span>(<span class="num">0</span>, <span class="num">0.5</span>);
 
-<span class="hljs-comment">// after: ask for it</span>
-<span class="hljs-keyword">let</span> arcs = wheel.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;rim:atomic&#x27;</span>);
-<span class="hljs-keyword">let</span> lastTooth = comb.<span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth:last&#x27;</span>);
+<span class="cm">// after: ask for it</span>
+<span class="kw">let</span> <span class="id">arcs</span> = <span class="id">wheel</span>.<span class="id">segmentAll</span>(<span class="str">'rim:atomic'</span>);
+<span class="kw">let</span> <span class="id">lastTooth</span> = <span class="id">comb</span>.<span class="id">segment</span>(<span class="str">'tooth:last'</span>);
 </code></pre><p><strong>The traps got fences.</strong> Two hazards this series stepped on
 never bit the published samples only because a style guideline banned
 the ammunition. Both are now language rules instead of etiquette.
@@ -7923,8 +10289,8 @@ answers for the outer shape&#39;s names <em>and</em> the opening&#39;s.</p>
 queryable, and an evening of coordinate surgery when they are not.
 The whole aesthetic rests on the idiom from part 1 — this time as the
 main event rather than the annotation:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (seam <span class="hljs-keyword">in</span> placed.<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;cut&#x27;</span>)) {
-  seam.<span class="hljs-title function_">draw</span>();    <span class="hljs-comment">// stroked wide, this IS the leading</span>
+<pre><code class="hljs language-pathogen"><span class="kw">for</span> (<span class="id">seam</span> <span class="kw">in</span> <span class="id">placed</span>.<span class="id">segmentAll</span>(<span class="str">'cut'</span>)) {
+  <span class="id">seam</span>.<span class="id">draw</span>();    <span class="cm">// stroked wide, this IS the leading</span>
 }
 </code></pre><h2>Example 1 — Seams as the artwork</h2>
 <p>A glass disc, four straight knives through the center, eight panes.
@@ -7932,8 +10298,7 @@ The leading between panes is the seam group stroked at width 5 in the
 background color — no leading was drawn as such; it is the cut,
 made visible.</p>
 <p><mini-workspace code-open caption="Eight panes; the came between them is segmentAll('cut') stroked wide.">
-  <code>// viewBox="0 0 480 250"
-//-- Seams as the artwork: a glass disc cut by four radial knives becomes
+  <code>//-- Seams as the artwork: a glass disc cut by four radial knives becomes
 //-- eight panes, and stroking every healed seam wide draws the lead came
 //-- between them — the decoration IS the seam group.
 
@@ -8029,8 +10394,7 @@ appeared automatically on the seams it healed — sub-labels to
 your <em>own</em> geometry — an opt-in to <em>join</em> them. Two directions, one
 namespace, one umbrella query.</p>
 <p><mini-workspace code-open caption="Same decoration loop on both windows; only the rim's label name differs.">
-  <code>// viewBox="0 0 480 260"
-//-- The seam group takes volunteers: 'cut.&lt;name&gt;' is the explicit opt-in
+  <code>//-- The seam group takes volunteers: 'cut.&lt;name&gt;' is the explicit opt-in
 //-- that joins your own geometry to the came. Left: rim labeled 'rim' —
 //-- a bare edge the seam loop ignores. Right: rim labeled 'cut.rim' —
 //-- same loop, full came, and the rim stays addressable by name.
@@ -8125,8 +10489,7 @@ layer routing: four glass layers with jewel-tone fills, pieces dealt
 round-robin, came stroked over the top. (The same routing pattern the
 <a href="/blog/pathblock-cutting">cutting post</a> used for its shattered glyph.)</p>
 <p><mini-workspace code-open caption="Four glass layers, pieces routed by index, leading on top.">
-  <code>// viewBox="0 0 480 250"
-//-- The picture emerges: the same eight panes, each routed to one of
+  <code>//-- The picture emerges: the same eight panes, each routed to one of
 //-- four glass layers — jewel tints round-robin — with the came stroked
 //-- on top. Pieces are full PathBlocks, so styling them is layer routing.
 
@@ -8227,8 +10590,7 @@ answers for both names. Then a diagonal cut splits the frame, and
 most of the sill, the upper half a shorter stretch of it, and each
 keeps one of the opening&#39;s sides.</p>
 <p><mini-workspace code-open caption="difference() merges label sets; cut() distributes them to the halves.">
-  <code>// viewBox="0 0 480 260"
-//-- Labels from both operands coexist: a frame made by difference keeps
+  <code>//-- Labels from both operands coexist: a frame made by difference keeps
 //-- the outer square's 'sill' AND the inner square's 'light' — and after
 //-- a diagonal cut, both halves still answer for both names.
 
@@ -8351,8 +10713,7 @@ where real joints get soldered (on the medallion&#39;s closed boundary
 the two coincide — one dot, drawn twice, harmlessly).</li>
 </ul>
 <p><mini-workspace code-open caption="One cut: cookie-cutter medallion plus eight spoke panes — came, tints, and solder all queried.">
-  <code>// viewBox="0 0 480 320"
-//-- The rose window: a cookie-cutter ring knife stamps out the center
+  <code>//-- The rose window: a cookie-cutter ring knife stamps out the center
 //-- medallion while eight spokes (stopping short of it) slice the ring
 //-- into panes. Rim labels sort medallion from ring; the came and solder
 //-- dots are all seam queries.
@@ -8507,20 +10868,20 @@ cutters</a>, so the
 spokes are pushed onto a list in a <code>for</code> loop and handed over in one
 call — knife geometry you can <em>parameterize</em>. Change <code>0..7</code> to <code>0..11</code>
 and the window grows four panes.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: one block, every m computed from the previous stroke&#x27;s end</span>
-m <span class="hljs-title function_">calc</span>(<span class="hljs-number">36</span> * cos45 - <span class="hljs-number">112</span>) <span class="hljs-title function_">calc</span>(<span class="hljs-number">36</span> * cos45)
-l <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</span> * cos45) <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</span> * cos45)
-<span class="hljs-comment">// ...six more chained pairs</span>
+<pre><code class="hljs language-pathogen"><span class="cm">// before: one block, every m computed from the previous stroke's end</span>
+m calc(36 * cos45 - 112) calc(36 * cos45)
+l calc(76 * cos45) calc(76 * cos45)
+<span class="cm">// ...six more chained pairs</span>
 
-<span class="hljs-comment">// after: one knife per spoke, built in a loop</span>
-<span class="hljs-keyword">for</span> (k <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
-  <span class="hljs-keyword">let</span> spokeAngle = <span class="hljs-title function_">calc</span>(k * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">4</span>);
-  knives.<span class="hljs-title function_">push</span>(@{
-    m <span class="hljs-title function_">calc</span>(<span class="hljs-number">36</span> * <span class="hljs-title function_">cos</span>(spokeAngle)) <span class="hljs-title function_">calc</span>(<span class="hljs-number">36</span> * <span class="hljs-title function_">sin</span>(spokeAngle))
-    l <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</span> * <span class="hljs-title function_">cos</span>(spokeAngle)) <span class="hljs-title function_">calc</span>(<span class="hljs-number">76</span> * <span class="hljs-title function_">sin</span>(spokeAngle))
+<span class="cm">// after: one knife per spoke, built in a loop</span>
+<span class="kw">for</span> (<span class="id">k</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">7</span>) {
+  <span class="kw">let</span> <span class="id">spokeAngle</span> = <span class="kw">calc</span>(<span class="id">k</span> * <span class="id">PI</span>() / <span class="num">4</span>);
+  <span class="id">knives</span>.<span class="id">push</span>(@{
+    m calc(36 * cos(spokeAngle)) calc(36 * sin(spokeAngle))
+    l calc(76 * cos(spokeAngle)) calc(76 * sin(spokeAngle))
   });
 }
-<span class="hljs-keyword">let</span> panes = disc.<span class="hljs-title function_">cut</span>(knives);
+<span class="kw">let</span> <span class="id">panes</span> = <span class="id">disc</span>.<span class="id">cut</span>(<span class="id">knives</span>);
 </code></pre><p><strong>Example 2&#39;s trick became a contract.</strong> The rim-joins-the-came
 demo originally leaned on an accident: <code>cut</code> was an ordinary label, so
 naming your own geometry <code>&#39;cut&#39;</code> happened to merge it with the seams —
@@ -8546,16 +10907,16 @@ and <a href="/docs#path-blocks-cutting-paths">cutting paths</a> in the docs.</li
 <p>Pathogen takes a different approach. <code>ConicGradient</code> is a first-class gradient type that compiles to a base64-encoded <code>&lt;pattern&gt;</code> element. The rasterization happens at compile time via WebGPU (or Canvas 2D as a fallback), producing a pixel-perfect image embedded directly in the SVG. The author writes gradient code. The viewer sees a standard SVG.</p>
 <h2>The Color Wheel</h2>
 <p>The simplest conic gradient is a full 360-degree sweep. <code>ConicGradient</code> takes an ID and a center point in absolute coordinates (not <code>objectBoundingBox</code> — conic gradients are rasterized at a fixed resolution, so pixel coordinates make more sense).</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> wheel = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;wheel&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.17</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9c74f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#43aa8b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.50</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#277da1&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.67</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#5e60ce&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.83</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#9b5de5&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">wheel</span> = <span class="id">ConicGradient</span>(<span class="str">'wheel'</span>, <span class="num">200</span>, <span class="num">200</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#e63946'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.17</span>, <span class="id">Color</span>(<span class="str">'#f9c74f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.33</span>, <span class="id">Color</span>(<span class="str">'#43aa8b'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.50</span>, <span class="id">Color</span>(<span class="str">'#277da1'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.67</span>, <span class="id">Color</span>(<span class="str">'#5e60ce'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.83</span>, <span class="id">Color</span>(<span class="str">'#9b5de5'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#e63946'</span>));
 };
-wheel.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">wheel</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>Stops at 0 and 1 should match to avoid a hard seam at the join. With OKLCH interpolation enabled, the transitions stay vibrant across the entire hue wheel — no desaturated dead zones between complementary colors.</p>
 <p>The color wheel below uses <code>innerRadius</code> to create a donut effect and <code>.inherit()</code> to create a smaller inner disc with a different fill mode. One gradient definition, two visual treatments.</p>
 <p><mini-workspace code-open caption="Full 360-degree sweep with innerRadius donut and OKLCH interpolation">
@@ -8627,15 +10988,15 @@ scene.append(bg, ring, disc, frame, inner_frame, title);
 </mini-workspace></p>
 <h2>Partial Sweeps</h2>
 <p>Not every conic gradient needs to go all the way around. The <code>from</code> and <code>to</code> properties define the angular range of the sweep, in degrees. A gauge that covers 270 degrees (from 135 to 405) leaves a gap at the bottom — a natural fit for speedometers, progress rings, and dial indicators.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> gauge = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;speed&#x27;</span>, <span class="hljs-number">120</span>, <span class="hljs-number">150</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#43aa8b&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9c74f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">gauge</span> = <span class="id">ConicGradient</span>(<span class="str">'speed'</span>, <span class="num">120</span>, <span class="num">150</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,   <span class="id">Color</span>(<span class="str">'#43aa8b'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.5</span>, <span class="id">Color</span>(<span class="str">'#f9c74f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,   <span class="id">Color</span>(<span class="str">'#e63946'</span>));
 };
-gauge.<span class="hljs-property">from</span> = 135deg;
-gauge.<span class="hljs-property">to</span> = 405deg;
-gauge.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">38</span>;
-gauge.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;center&#x27;</span>;
+<span class="id">gauge</span>.<span class="id">from</span> = <span class="num">135deg</span>;
+<span class="id">gauge</span>.<span class="id">to</span> = <span class="num">405deg</span>;
+<span class="id">gauge</span>.<span class="id">innerRadius</span> = <span class="num">38</span>;
+<span class="id">gauge</span>.<span class="id">innerFill</span> = <span class="str">'center'</span>;
 </code></pre><p>The <code>from</code> and <code>to</code> values use degree syntax. Values above 360 are valid — <code>405deg</code> is equivalent to <code>45deg</code> but makes the intent clear: a 270-degree arc that wraps past the top. The dashboard below shows three gauges with different angular ranges and inner radii.</p>
 <p><mini-workspace code-open caption="Three gauges using partial sweeps — 270-degree and 180-degree arcs">
   <code>define ViewBox(0, 0, 660, 340);
@@ -8875,13 +11236,13 @@ scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_val
 </mini-workspace></p>
 <h2>Direction: CW and CCW</h2>
 <p>By default, conic gradients sweep clockwise. Setting <code>.direction = &#39;ccw&#39;</code> reverses the sweep direction. The color stops stay in the same order, but the angular progression runs counter-clockwise. This is useful when mirroring UI elements or creating paired visual effects.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> grad = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;grad&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e07a5f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f2cc8f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3d85c6&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">grad</span> = <span class="id">ConicGradient</span>(<span class="str">'grad'</span>, <span class="num">200</span>, <span class="num">200</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#e07a5f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.33</span>, <span class="id">Color</span>(<span class="str">'#f2cc8f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.66</span>, <span class="id">Color</span>(<span class="str">'#3d85c6'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#264653'</span>));
 };
-grad.<span class="hljs-property">direction</span> = <span class="hljs-string">&#x27;ccw&#x27;</span>;
+<span class="id">grad</span>.<span class="id">direction</span> = <span class="str">'ccw'</span>;
 </code></pre><p><mini-workspace caption="Same four stops — clockwise vs counter-clockwise">
   <code>define ViewBox(0, 0, 500, 300);
 // Direction Comparison — CW vs CCW
@@ -8985,12 +11346,12 @@ scene.append(bg, left, right, labels, note);
 <li><strong>center</strong>: The first color stop extends inward, filling the center with a solid disc.</li>
 <li><strong>Color(...)</strong>: A custom color fills the center.</li>
 </ul>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> grad = <span class="hljs-title class_">ConicGradient</span>(<span class="hljs-string">&#x27;grad&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">200</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">grad</span> = <span class="id">ConicGradient</span>(<span class="str">'grad'</span>, <span class="num">200</span>, <span class="num">200</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>, <span class="id">Color</span>(<span class="str">'#7c3aed'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>, <span class="id">Color</span>(<span class="str">'#7c3aed'</span>));
 };
-grad.<span class="hljs-property">innerRadius</span> = <span class="hljs-number">35</span>;
-grad.<span class="hljs-property">innerFill</span> = <span class="hljs-string">&#x27;transparent-blend&#x27;</span>;
+<span class="id">grad</span>.<span class="id">innerRadius</span> = <span class="num">35</span>;
+<span class="id">grad</span>.<span class="id">innerFill</span> = <span class="str">'transparent-blend'</span>;
 </code></pre><p><mini-workspace code-open caption="Four innerFill modes: transparent, transparent-blend, center, and custom color">
   <code>define ViewBox(0, 0, 520, 530);
 // Inner Radius &amp; Fill Modes — 2×2 Grid
@@ -9267,15 +11628,15 @@ scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 <p>This post builds up from a single linear gradient to a full themed palette using inheritance and OKLCH color interpolation. Every demo below is interactive — click &quot;Open in Playground&quot; to experiment with the source.</p>
 <h2>The Gradient Model</h2>
 <p>A <code>LinearGradient</code> maps color stops onto a line defined by two points in <code>objectBoundingBox</code> coordinates. The coordinate space is normalized: <code>(0, 0)</code> is the top-left of the bounding box, <code>(1, 1)</code> is the bottom-right. This means a gradient defined once works at any scale — it stretches to fit whatever shape you fill with it.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sky = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;sky&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0d1b2a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.45</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1b4965&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.75</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c56b5a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sky</span> = <span class="id">LinearGradient</span>(<span class="str">'sky'</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">1</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#0d1b2a'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.45</span>, <span class="id">Color</span>(<span class="str">'#1b4965'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.75</span>, <span class="id">Color</span>(<span class="str">'#c56b5a'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
 };
 </code></pre><p>The constructor takes an ID string and four coordinates: <code>x1, y1, x2, y2</code>. Color stops are added inside the initialization block using <code>g.stop(position, color)</code>, where position is a value between 0 and 1. Once defined, assign the gradient to a layer&#39;s <code>fill</code> property:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sky_layer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sky-fill&#x27;</span>) \${ <span class="hljs-attr">fill</span>: sky; <span class="hljs-attr">stroke</span>: none; };
-sky_layer.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sky_layer</span> = <span class="tp">PathLayer</span>(<span class="str">'sky-fill'</span>) \${ <span class="pr">fill</span>: <span class="id">sky</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
+<span class="id">sky_layer</span>.<span class="kw">apply</span> { <span class="id">rect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">300</span>) }
 </code></pre><p>The landscape below uses four linear gradients — a vertical sky, a diagonal mountain range, a horizontal sun streak, and a vertical ground fill — layered with Pathogen&#39;s <code>GroupLayer</code> to compose the scene.</p>
 <p><mini-workspace code-open caption="Four linear gradients composing a layered landscape">
   <code>define ViewBox(0, 0, 400, 300);
@@ -9461,10 +11822,10 @@ fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 </mini-workspace></p>
 <h2>RadialGradient</h2>
 <p><code>RadialGradient</code> works the same way, but radiates outward from a center point. The constructor takes <code>(id, cx, cy, r)</code>, where <code>cx</code> and <code>cy</code> are the center coordinates (again in <code>objectBoundingBox</code> space) and <code>r</code> is the radius as a fraction of the bounding box.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> glow = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;glow&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.6</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.4</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c56b5a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0d1b2a&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">glow</span> = <span class="id">RadialGradient</span>(<span class="str">'glow'</span>, <span class="num">0.5</span>, <span class="num">0.5</span>, <span class="num">0.6</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,   <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.4</span>, <span class="id">Color</span>(<span class="str">'#c56b5a'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,   <span class="id">Color</span>(<span class="str">'#0d1b2a'</span>));
 };
 </code></pre><p>Radial gradients are natural fits for glows, spotlights, and vignettes. The scene below composes four radial gradients — a nebula background, two star types, and a planet with an off-center highlight — to build a cosmic scene entirely from radial falloffs and transparent stops.</p>
 <p><mini-workspace code-open caption="Four radial gradients — nebula, stars, and a ringed planet">
@@ -9563,11 +11924,11 @@ scene.append(bg, nebula, stars, planet);
 </mini-workspace></p>
 <h3>Focal Points</h3>
 <p>The basic constructor centers the gradient&#39;s falloff at <code>(cx, cy)</code>. But <code>RadialGradient</code> also accepts two extra arguments — <code>fx</code> and <code>fy</code> — that shift the <em>focal point</em> away from the geometric center. The gradient still fills the same circle, but the highlight moves, creating the illusion of directional light on a 3D surface.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// Same radius, different highlight positions</span>
-<span class="hljs-keyword">let</span> sphere = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;s&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.3</span>, <span class="hljs-number">0.3</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffffff&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0a1428&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="cm">// Same radius, different highlight positions</span>
+<span class="kw">let</span> <span class="id">sphere</span> = <span class="id">RadialGradient</span>(<span class="str">'s'</span>, <span class="num">0.5</span>, <span class="num">0.5</span>, <span class="num">0.5</span>, <span class="num">0.3</span>, <span class="num">0.3</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,   <span class="id">Color</span>(<span class="str">'#ffffff'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.5</span>, <span class="id">Color</span>(<span class="str">'#2563eb'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,   <span class="id">Color</span>(<span class="str">'#0a1428'</span>));
 };
 </code></pre><p>The three spheres below use identical color stops. Only <code>fx</code> and <code>fy</code> differ — the highlight shifts from top-left to center to top-right.</p>
 <p><mini-workspace caption="Same gradient stops, three focal points — the highlight shifts with fx, fy">
@@ -9644,11 +12005,11 @@ scene.append(bg, s1, s2, s3, labels);
 <h2>OKLCH Interpolation</h2>
 <p>By default, SVG gradients interpolate in sRGB. This is the web platform default, and it produces muddy midpoints when transitioning between colors that are far apart on the hue wheel. Blue to yellow passes through gray. Red to cyan desaturates through brown.</p>
 <p>OKLCH interpolation solves this. OKLCH (Okay Lightness, Chroma, Hue) is a perceptually uniform color space where interpolation follows a natural arc through the hue wheel instead of cutting through the middle of the RGB cube. Setting <code>.interpolation = &#39;oklch&#39;</code> on any gradient enables this.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;grad&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eab308&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">grad</span> = <span class="id">LinearGradient</span>(<span class="str">'grad'</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">1</span>, <span class="num">0</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>, <span class="id">Color</span>(<span class="str">'#2563eb'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>, <span class="id">Color</span>(<span class="str">'#eab308'</span>));
 };
-grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">grad</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>The comparison below shows three color pairs — blue/yellow, red/cyan, magenta/green — in both sRGB and OKLCH. The difference is dramatic: sRGB midpoints are desaturated and dull, while OKLCH transitions stay vibrant and chromatic.</p>
 <p><mini-workspace code-open caption="sRGB vs OKLCH — same stops, dramatically different midpoints">
   <code>define ViewBox(0, 0, 400, 400);
@@ -9770,13 +12131,13 @@ comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, m
 <li><strong>reflect</strong>: The gradient reverses direction and plays back, creating a mirror effect.</li>
 <li><strong>repeat</strong>: The gradient tiles, repeating its pattern continuously.</li>
 </ul>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;grad&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.3</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">grad</span> = <span class="id">LinearGradient</span>(<span class="str">'grad'</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0.3</span>, <span class="num">0</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#e63946'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.33</span>, <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.66</span>, <span class="id">Color</span>(<span class="str">'#2a9d8f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#264653'</span>));
 };
-grad.<span class="hljs-property">spreadMethod</span> = <span class="hljs-string">&#x27;reflect&#x27;</span>;
+<span class="id">grad</span>.<span class="id">spreadMethod</span> = <span class="str">'reflect'</span>;
 </code></pre><p>The three strips below use the same gradient that covers only the first 30% of each element. The vertical lines mark the gradient&#39;s defined range. Beyond that boundary, each spread method produces a different visual pattern.</p>
 <p><mini-workspace code-open caption="pad, reflect, repeat — same narrow gradient, three spread behaviors">
   <code>define ViewBox(0, 0, 400, 300);
@@ -9879,18 +12240,18 @@ scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label,
 </mini-workspace></p>
 <h2>Gradient Inheritance</h2>
 <p>When you need variations of a gradient — reversed, rotated, desaturated — copying and modifying the stop list is fragile. Pathogen&#39;s <code>.inherit()</code> method creates a new gradient that shares the parent&#39;s stop definitions but can override any property.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;warm-base&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.35</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.65</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e9c46a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">base</span> = <span class="id">LinearGradient</span>(<span class="str">'warm-base'</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">1</span>, <span class="num">0</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#e63946'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.35</span>, <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.65</span>, <span class="id">Color</span>(<span class="str">'#e9c46a'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#2a9d8f'</span>));
 };
 
-<span class="hljs-keyword">let</span> cool = base.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;cool-variant&#x27;</span>);
-cool.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(180, 0.5, 0.5)&#x27;</span>;
+<span class="kw">let</span> <span class="id">cool</span> = <span class="id">base</span>.<span class="id">inherit</span>(<span class="str">'cool-variant'</span>);
+<span class="id">cool</span>.<span class="id">gradientTransform</span> = <span class="str">'rotate(180, 0.5, 0.5)'</span>;
 
-<span class="hljs-keyword">let</span> vertical = base.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;vertical-variant&#x27;</span>);
-vertical.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(90, 0.5, 0.5)&#x27;</span>;
+<span class="kw">let</span> <span class="id">vertical</span> = <span class="id">base</span>.<span class="id">inherit</span>(<span class="str">'vertical-variant'</span>);
+<span class="id">vertical</span>.<span class="id">gradientTransform</span> = <span class="str">'rotate(90, 0.5, 0.5)'</span>;
 </code></pre><p>One base gradient, three variants. Change the base and all inherited gradients update. This is the foundation of a themeable gradient system — define your palette once, derive everything else.</p>
 <p><mini-workspace code-open caption="One base gradient spawns a family of variants via inherit()">
   <code>define ViewBox(0, 0, 400, 300);
@@ -10067,13 +12428,13 @@ scene.append(bg, la, lb, lc);
 <p>Pathogen brings it back, along with a second model that was never even proposed: freeform gradients where color points are placed at arbitrary positions and blended using inverse-distance weighting. Both types are GPU-rendered at compile time, producing base64-encoded <code>&lt;pattern&gt;</code> elements identical to conic gradients.</p>
 <h2>MeshGradient: The Grid Model</h2>
 <p>A <code>MeshGradient</code> defines a rectangular grid of control points, each with an assigned color. Between the points, colors are interpolated bilinearly — smoothly blending across rows and columns. The constructor takes an ID, pixel dimensions, and the grid size:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> mesh = <span class="hljs-title class_">MeshGradient</span>(<span class="hljs-string">&#x27;corners&#x27;</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>, <span class="hljs-number">2</span>, <span class="hljs-number">2</span>) {|g|
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>);
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>);
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">1</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>);
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">mesh</span> = <span class="id">MeshGradient</span>(<span class="str">'corners'</span>, <span class="num">400</span>, <span class="num">400</span>, <span class="num">2</span>, <span class="num">2</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#e63946'</span>);
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">0</span>, <span class="num">1</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#f4a261'</span>);
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">1</span>, <span class="num">0</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#264653'</span>);
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">1</span>, <span class="num">1</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#2a9d8f'</span>);
 };
-mesh.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">mesh</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>A 2x2 grid is the simplest case — four corners, each a different color, with smooth blending across the surface. The result looks like what you might get from a CSS four-corner gradient, except it is rendered as a high-resolution image embedded in SVG.</p>
 <p><mini-workspace code-open caption="2x2 mesh — four corner colors with bilinear OKLCH interpolation">
   <code>define ViewBox(0, 0, 400, 400);
@@ -10135,12 +12496,12 @@ scene.append(bg, patch, labels, title);
 <h2>Working with the Grid</h2>
 <p>Larger grids give more control. A 3x3 grid has 9 control points, allowing you to define a center color distinct from the edges. The <code>getPoint(row, col)</code> method returns a point object whose <code>.color</code> property you set.</p>
 <p>Beyond color assignment, mesh points support <code>.translate(dx, dy)</code> to shift their position away from the uniform grid. This breaks the regularity, creating organic warps and distortions. The bilinear interpolation follows the deformed grid, producing gradient shapes that would be impossible with uniform blending.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> deformed = <span class="hljs-title class_">MeshGradient</span>(<span class="hljs-string">&#x27;deformed&#x27;</span>, <span class="hljs-number">200</span>, <span class="hljs-number">280</span>, <span class="hljs-number">3</span>, <span class="hljs-number">3</span>) {|g|
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-property">color</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#7c3aed&#x27;</span>);
-  <span class="hljs-comment">// ... assign all 9 colors ...</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">deformed</span> = <span class="id">MeshGradient</span>(<span class="str">'deformed'</span>, <span class="num">200</span>, <span class="num">280</span>, <span class="num">3</span>, <span class="num">3</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">color</span> = <span class="id">Color</span>(<span class="str">'#7c3aed'</span>);
+  <span class="cm">// ... assign all 9 colors ...</span>
 
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>).<span class="hljs-title function_">translate</span>(<span class="hljs-number">40</span>, -<span class="hljs-number">30</span>);  <span class="hljs-comment">// shift center</span>
-  g.<span class="hljs-title function_">getPoint</span>(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>).<span class="hljs-title function_">translate</span>(<span class="hljs-number">0</span>, <span class="hljs-number">20</span>);    <span class="hljs-comment">// warp top edge</span>
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">1</span>, <span class="num">1</span>).<span class="id">translate</span>(<span class="num">40</span>, -<span class="num">30</span>);  <span class="cm">// shift center</span>
+  <span class="id">g</span>.<span class="id">getPoint</span>(<span class="num">0</span>, <span class="num">1</span>).<span class="id">translate</span>(<span class="num">0</span>, <span class="num">20</span>);    <span class="cm">// warp top edge</span>
 };
 </code></pre><p><mini-workspace caption="Uniform grid vs deformed grid — same colors, different point positions">
   <code>define ViewBox(0, 0, 500, 400);
@@ -10249,16 +12610,16 @@ scene.append(bg, left_group, right_group, labels, desc, title);
 <p>The <code>getRow(n)</code> method returns all points in a row, useful for applying consistent colors across a horizontal band. For more complex scenes, higher-resolution grids (4x4, 5x5) with translated points can simulate terrain, fabric folds, or atmospheric effects. The <code>mesh-landscape</code> sample demonstrates a 4x3 grid producing a stylized landscape.</p>
 <h2>FreeformGradient: The Scatter Model</h2>
 <p>Where <code>MeshGradient</code> constrains colors to a grid, <code>FreeformGradient</code> places them anywhere. You specify color points at arbitrary pixel coordinates, and the renderer blends them using inverse-distance weighting (IDW). Each pixel&#39;s color is a weighted average of all points, with closer points contributing more.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> nebula = <span class="hljs-title class_">FreeformGradient</span>(<span class="hljs-string">&#x27;nebula&#x27;</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) {|g|
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">60</span>,  <span class="hljs-number">70</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">340</span>, <span class="hljs-number">60</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">200</span>, <span class="hljs-number">200</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#9b5de5&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">80</span>,  <span class="hljs-number">340</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">330</span>, <span class="hljs-number">320</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f72585&#x27;</span>));
-  g.<span class="hljs-title function_">point</span>(<span class="hljs-number">200</span>, <span class="hljs-number">80</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#4cc9f0&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">nebula</span> = <span class="id">FreeformGradient</span>(<span class="str">'nebula'</span>, <span class="num">400</span>, <span class="num">400</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">60</span>,  <span class="num">70</span>,  <span class="id">Color</span>(<span class="str">'#e63946'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">340</span>, <span class="num">60</span>,  <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">200</span>, <span class="num">200</span>, <span class="id">Color</span>(<span class="str">'#9b5de5'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">80</span>,  <span class="num">340</span>, <span class="id">Color</span>(<span class="str">'#2a9d8f'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">330</span>, <span class="num">320</span>, <span class="id">Color</span>(<span class="str">'#f72585'</span>));
+  <span class="id">g</span>.<span class="id">point</span>(<span class="num">200</span>, <span class="num">80</span>,  <span class="id">Color</span>(<span class="str">'#4cc9f0'</span>));
 };
-nebula.<span class="hljs-property">falloff</span> = <span class="hljs-number">2.0</span>;
-nebula.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">nebula</span>.<span class="id">falloff</span> = <span class="num">2.0</span>;
+<span class="id">nebula</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>The <code>g.point(x, y, color)</code> method places a color source at absolute coordinates. Six points with OKLCH interpolation produce a smooth nebula-like color field. The small dots in the demo below mark where each color point is placed.</p>
 <p><mini-workspace code-open caption="Six color points blended with inverse-distance weighting">
   <code>define ViewBox(0, 0, 400, 400);
@@ -10706,11 +13067,11 @@ scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, detail
 </ol>
 <h2>GroupLayer</h2>
 <p>The demos in this series use <code>GroupLayer</code> extensively for scene composition. <code>GroupLayer</code> maps to SVG&#39;s <code>&lt;g&gt;</code> element — it groups child layers into a logical unit that can be positioned, styled, and nested.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> card = <span class="hljs-title class_">GroupLayer</span>(<span class="hljs-string">&#x27;card-1&#x27;</span>) \${
-  translate-<span class="hljs-attr">x</span>: <span class="hljs-number">20</span>;
-  translate-<span class="hljs-attr">y</span>: <span class="hljs-number">25</span>;
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">card</span> = <span class="tp">GroupLayer</span>(<span class="str">'card-1'</span>) \${
+  <span class="pr">translate-x</span>: <span class="num">20</span>;
+  <span class="pr">translate-y</span>: <span class="num">25</span>;
 };
-card.<span class="hljs-title function_">append</span>(fill_layer, label_layer, tag_layer)
+<span class="id">card</span>.<span class="id">append</span>(<span class="id">fill_layer</span>, <span class="id">label_layer</span>, <span class="id">tag_layer</span>)
 </code></pre><p>The <code>translate-x</code>, <code>translate-y</code>, <code>rotate</code>, and <code>scale</code> convenience properties in the style block compile to a <code>transform</code> attribute on the <code>&lt;g&gt;</code> element. This is simpler than writing raw <code>transform: translate(20, 25)</code> and composes correctly when multiple transforms are needed (the order is always translate, rotate, scale).</p>
 <p>The <code>.append()</code> method adds child layers to the group. Children render in append order. When a layer is appended to a new group, it is automatically removed from any previous group — no duplicate references.</p>
 <p><mini-workspace code-open caption="Three cards positioned with GroupLayer translate — mixing native and GPU gradients">
@@ -11088,21 +13449,21 @@ scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title);
 <p>What if the color stops were not positions, but shapes? What if a gradient followed the contour of a path — radiating outward from an organic curve instead of a straight line? This is what <code>TopoGradient</code> does. It takes closed paths at specified elevations and uses signed distance fields to blend between them, producing topographic map-like gradients where the color follows the shape of the terrain.</p>
 <h2>Contours as Color Stops</h2>
 <p>A <code>TopoGradient</code> replaces the linear stop list with a set of contour definitions. Each contour is a closed path placed at an elevation between 0 and 1. The <code>baseColor</code> fills elevation 0 (the &quot;sea level&quot;), and contours define higher-elevation regions with their own colors.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> outer = @{
-  m <span class="hljs-number">0</span> <span class="hljs-number">0</span>
-  c <span class="hljs-number">120</span> -<span class="hljs-number">50</span> <span class="hljs-number">260</span> <span class="hljs-number">30</span> <span class="hljs-number">280</span> <span class="hljs-number">120</span>
-  c -<span class="hljs-number">20</span> <span class="hljs-number">120</span> -<span class="hljs-number">260</span> <span class="hljs-number">130</span> -<span class="hljs-number">280</span> -<span class="hljs-number">120</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">outer</span> = @{
+  m 0 0
+  c 120 -50 260 30 280 120
+  c -20 120 -260 130 -280 -120
   z
 };
 
-<span class="hljs-keyword">let</span> topo = <span class="hljs-title class_">TopoGradient</span>(<span class="hljs-string">&#x27;terrain&#x27;</span>, <span class="hljs-number">400</span>, <span class="hljs-number">400</span>) {|g|
-  g.<span class="hljs-title function_">contour</span>(outer.<span class="hljs-title function_">project</span>(<span class="hljs-number">60</span>, <span class="hljs-number">60</span>), <span class="hljs-number">0.25</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9e79f&#x27;</span>))
-  g.<span class="hljs-title function_">contour</span>(mid.<span class="hljs-title function_">project</span>(<span class="hljs-number">90</span>, <span class="hljs-number">90</span>),   <span class="hljs-number">0.5</span>,  <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#27ae60&#x27;</span>))
-  g.<span class="hljs-title function_">contour</span>(peak.<span class="hljs-title function_">project</span>(<span class="hljs-number">180</span>, <span class="hljs-number">170</span>), <span class="hljs-number">0.8</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#6e2c00&#x27;</span>))
+<span class="kw">let</span> <span class="id">topo</span> = <span class="id">TopoGradient</span>(<span class="str">'terrain'</span>, <span class="num">400</span>, <span class="num">400</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">outer</span>.<span class="id">project</span>(<span class="num">60</span>, <span class="num">60</span>), <span class="num">0.25</span>, <span class="id">Color</span>(<span class="str">'#f9e79f'</span>))
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">mid</span>.<span class="id">project</span>(<span class="num">90</span>, <span class="num">90</span>),   <span class="num">0.5</span>,  <span class="id">Color</span>(<span class="str">'#27ae60'</span>))
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">peak</span>.<span class="id">project</span>(<span class="num">180</span>, <span class="num">170</span>), <span class="num">0.8</span>, <span class="id">Color</span>(<span class="str">'#6e2c00'</span>))
 };
-topo.<span class="hljs-property">baseColor</span> = <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1a5276&#x27;</span>);
-topo.<span class="hljs-property">easing</span> = <span class="hljs-string">&#x27;smoothstep&#x27;</span>;
-topo.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">topo</span>.<span class="id">baseColor</span> = <span class="id">Color</span>(<span class="str">'#1a5276'</span>);
+<span class="id">topo</span>.<span class="id">easing</span> = <span class="str">'smoothstep'</span>;
+<span class="id">topo</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>Contour paths are defined as path variables using the <code>@{ ... }</code> syntax and positioned using <code>.project(x, y)</code>. The <code>.contour()</code> method takes three arguments: a projected path, an elevation scalar, and a <code>Color</code>. The path must be closed (ending with <code>z</code>).</p>
 <p>The elevation value determines where this contour sits in the gradient&#39;s range. At elevation 0.0, the <code>baseColor</code> applies. At 0.25, the first contour&#39;s color takes over. Between contours, the renderer interpolates based on the signed distance from each contour boundary.</p>
 <p><mini-workspace code-open caption="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths">
@@ -11178,14 +13539,14 @@ scene.append(bg, labels, title);
 </mini-workspace></p>
 <h2>Multiple Peaks</h2>
 <p>Contours do not need to be nested. Two separate closed paths at the same elevation create independent features — like two islands in an ocean. The distance field solver treats each contour independently, producing smooth gradients around each shape that merge naturally in the shared base region.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> topo = <span class="hljs-title class_">TopoGradient</span>(<span class="hljs-string">&#x27;twins&#x27;</span>, <span class="hljs-number">500</span>, <span class="hljs-number">350</span>) {|g|
-  <span class="hljs-comment">// Left peak — warm tones</span>
-  g.<span class="hljs-title function_">contour</span>(island.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">60</span>),  <span class="hljs-number">0.3</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f9e79f&#x27;</span>))
-  g.<span class="hljs-title function_">contour</span>(summit.<span class="hljs-title function_">project</span>(<span class="hljs-number">130</span>, <span class="hljs-number">120</span>), <span class="hljs-number">0.7</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e74c3c&#x27;</span>))
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">topo</span> = <span class="id">TopoGradient</span>(<span class="str">'twins'</span>, <span class="num">500</span>, <span class="num">350</span>) {|<span class="id">g</span>|
+  <span class="cm">// Left peak — warm tones</span>
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">island</span>.<span class="id">project</span>(<span class="num">30</span>, <span class="num">60</span>),  <span class="num">0.3</span>, <span class="id">Color</span>(<span class="str">'#f9e79f'</span>))
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">summit</span>.<span class="id">project</span>(<span class="num">130</span>, <span class="num">120</span>), <span class="num">0.7</span>, <span class="id">Color</span>(<span class="str">'#e74c3c'</span>))
 
-  <span class="hljs-comment">// Right peak — cool tones</span>
-  g.<span class="hljs-title function_">contour</span>(island.<span class="hljs-title function_">project</span>(<span class="hljs-number">260</span>, <span class="hljs-number">80</span>),  <span class="hljs-number">0.3</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#aed9e0&#x27;</span>))
-  g.<span class="hljs-title function_">contour</span>(summit.<span class="hljs-title function_">project</span>(<span class="hljs-number">360</span>, <span class="hljs-number">140</span>), <span class="hljs-number">0.7</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#5e60ce&#x27;</span>))
+  <span class="cm">// Right peak — cool tones</span>
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">island</span>.<span class="id">project</span>(<span class="num">260</span>, <span class="num">80</span>),  <span class="num">0.3</span>, <span class="id">Color</span>(<span class="str">'#aed9e0'</span>))
+  <span class="id">g</span>.<span class="id">contour</span>(<span class="id">summit</span>.<span class="id">project</span>(<span class="num">360</span>, <span class="num">140</span>), <span class="num">0.7</span>, <span class="id">Color</span>(<span class="str">'#5e60ce'</span>))
 };
 </code></pre><p>The twin peaks below use the same base shape (an organic blob) projected to two different positions. Each peak has its own color palette — warm tones on the left, cool on the right — but shares the same dark ocean base color.</p>
 <p><mini-workspace caption="Two independent peaks at the same elevation — warm and cool palettes">
@@ -11262,8 +13623,8 @@ scene.append(bg, labels, title);
 <h3>Laplace Solver</h3>
 <p>The Laplace method treats contour elevations as boundary conditions and solves Laplace&#39;s equation using Jacobi iteration. The result is a smooth potential field — like temperature distribution on a surface where each contour is held at a fixed value.</p>
 <p>Where the distance method produces sharp, contour-following bands, the Laplace solver produces organic, flowing transitions that smooth out geometric details. It also handles concave shapes and intersecting contours more naturally.</p>
-<pre><code class="hljs language-pathogen">topo.<span class="hljs-property">method</span> = <span class="hljs-string">&#x27;laplace&#x27;</span>;
-topo.<span class="hljs-property">iterations</span> = <span class="hljs-number">300</span>;
+<pre><code class="hljs language-pathogen"><span class="id">topo</span>.<span class="id">method</span> = <span class="str">'laplace'</span>;
+<span class="id">topo</span>.<span class="id">iterations</span> = <span class="num">300</span>;
 </code></pre><p>The <code>iterations</code> property controls convergence (default 200, max 2000). Higher values produce smoother results at the cost of render time. For most cases, 200-400 iterations are sufficient.</p>
 <p><mini-workspace code-open caption="Same three contours — distance (concentric) vs Laplace (smooth potential field)">
   <code>define ViewBox(0, 0, 500, 300);
@@ -12288,7 +14649,7 @@ scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spi
   'grid-functions': `<p>Grid patterns show up everywhere — engineering overlays, graph paper, game boards, architectural plans, generative art backgrounds. Building one from scratch means nested loops, coordinate math, and careful edge deduplication for triangles and hexagons. Pathogen&#39;s three new grid functions collapse all of that into a single call.</p>
 <p><code>squareGrid</code>, <code>triangleGrid</code>, and <code>hexagonGrid</code> each generate complete path geometry within a bounding rectangle. A <a href="/docs#stdlib-grid-functions"><code>GridPatternType</code></a> enum selects the visual style — <strong>Shape</strong>, <strong>Dot</strong>, <strong>Intersection</strong>, or <strong>Partial</strong> — and all three return <code>PathSegment</code> values, so they compose with <a href="/docs#layers-defining-layers">layers</a>, transforms, and clip paths just like <code>circle()</code> or <code>polygon()</code>.</p>
 <h2>Square Grids</h2>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">squareGrid</span>(type, x, y, width, height, cellSize)
+<pre><code class="hljs language-pathogen"><span class="id">squareGrid</span>(<span class="id">type</span>, <span class="id">x</span>, <span class="id">y</span>, <span class="id">width</span>, <span class="id">height</span>, <span class="id">cellSize</span>)
 </code></pre><table>
 <thead>
 <tr>
@@ -12378,7 +14739,7 @@ labels.apply {
   <img src="/blog/samples/post15/square-grid-patterns.svg" alt="squareGrid — four pattern types with reactive colors" loading="lazy">
 </mini-workspace></p>
 <h2>Triangle Grids</h2>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">triangleGrid</span>(type, x, y, width, height, cellSize)
+<pre><code class="hljs language-pathogen"><span class="id">triangleGrid</span>(<span class="id">type</span>, <span class="id">x</span>, <span class="id">y</span>, <span class="id">width</span>, <span class="id">height</span>, <span class="id">cellSize</span>)
 </code></pre><p>Same parameters as <code>squareGrid</code>, but <code>cellSize</code> is the triangle <strong>height</strong> (altitude of the equilateral triangle). The side length is derived: <code>side = 2 × cellSize / √3</code>. Triangles alternate between point-up and point-down orientations, with odd rows offset by half a side length to form a seamless tessellation.</p>
 <p>The intersection marks on triangle grids are edge-aligned — six arms at 60° intervals (three bidirectional lines), matching the grid&#39;s natural symmetry where six edges meet at each interior vertex.</p>
 <p><mini-workspace code-open caption="triangleGrid — equilateral triangle tessellation in four pattern types">
@@ -12445,7 +14806,7 @@ labels.apply {
   <img src="/blog/samples/post15/triangle-grid-patterns.svg" alt="triangleGrid — equilateral triangle tessellation in four pattern types" loading="lazy">
 </mini-workspace></p>
 <h2>Hexagon Grids</h2>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">hexagonGrid</span>(type, x, y, width, height, cellSize, orientation?)
+<pre><code class="hljs language-pathogen"><span class="id">hexagonGrid</span>(<span class="id">type</span>, <span class="id">x</span>, <span class="id">y</span>, <span class="id">width</span>, <span class="id">height</span>, <span class="id">cellSize</span>, <span class="id">orientation</span>?)
 </code></pre><p>The hexagon function adds a seventh parameter: <code>orientation</code>. It accepts the <code>HexagonOrientation</code> enum — <code>.Edge</code> for flat-top hexagons (an edge faces up) or <code>.Vertex</code> for pointy-top (a vertex faces up). When omitted, it defaults to <code>.Edge</code>.</p>
 <table>
 <thead>
@@ -12670,27 +15031,27 @@ labels.apply {
 `,
   'heading-turn': `<p>Pathogen&#39;s tangent-dependent functions — <a href="/docs#stdlib-tangent-functions"><code>tangentLine</code></a> and <a href="/docs#stdlib-tangent-functions"><code>tangentArc</code></a> — continue drawing in the direction established by the previous command. But what if there <em>is</em> no previous command? After an <code>M</code> (moveTo), the pen has a position but no heading. Calling <code>tangentArc</code> right after <code>M</code> would fail because there&#39;s no direction to continue from.</p>
 <p>The old workaround was a dummy segment:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
-h <span class="hljs-number">0.01</span>            <span class="hljs-comment">// invisible line to set heading rightward</span>
-<span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg)
+<pre><code class="hljs language-pathogen">M 50 100
+h 0.01            <span class="cm">// invisible line to set heading rightward</span>
+<span class="id">tangentArc</span>(<span class="num">20</span>, <span class="num">90deg</span>)
 </code></pre><p>This sets the heading, but the 0.01px offset accumulates. When you close a path with <code>z</code>, it draws a line back to <code>(50.01, 100)</code> instead of <code>(50, 100)</code> — a tiny but visible artifact.</p>
 <h2>heading(angle)</h2>
 <p><a href="/docs#stdlib-heading-control"><code>heading(angle)</code></a> sets the tangent direction without emitting any command or moving the cursor. No offset, no artifact:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
-<span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)           <span class="hljs-comment">// set heading rightward — nothing drawn</span>
-<span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 90deg) <span class="hljs-comment">// works immediately</span>
+<pre><code class="hljs language-pathogen">M 50 100
+<span class="id">heading</span>(<span class="num">0</span>)           <span class="cm">// set heading rightward — nothing drawn</span>
+<span class="id">tangentArc</span>(<span class="num">20</span>, <span class="num">90deg</span>) <span class="cm">// works immediately</span>
 </code></pre><p>Angles follow SVG&#39;s coordinate conventions: 0 is rightward, positive angles rotate clockwise (downward in SVG&#39;s y-down coordinate system). Use the <code>deg</code> suffix for degrees.</p>
 <h2>turn(delta)</h2>
 <p><a href="/docs#stdlib-heading-control"><code>turn(delta)</code></a> rotates the current heading by a relative amount. It requires an existing heading — either from <code>heading()</code> or from a prior drawing command:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">50</span> <span class="hljs-number">100</span>
-<span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)          <span class="hljs-comment">// start rightward</span>
-<span class="hljs-title function_">turn</span>(90deg)         <span class="hljs-comment">// now downward</span>
-<span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">30</span>)     <span class="hljs-comment">// draws 30px down</span>
+<pre><code class="hljs language-pathogen">M 50 100
+<span class="id">heading</span>(<span class="num">0</span>)          <span class="cm">// start rightward</span>
+<span class="id">turn</span>(<span class="num">90deg</span>)         <span class="cm">// now downward</span>
+<span class="id">tangentLine</span>(<span class="num">30</span>)     <span class="cm">// draws 30px down</span>
 </code></pre><p>Negative deltas turn counter-clockwise. Multiple <code>turn()</code> calls accumulate:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
-<span class="hljs-title function_">turn</span>(45deg)         <span class="hljs-comment">// 45°</span>
-<span class="hljs-title function_">turn</span>(45deg)         <span class="hljs-comment">// 90°</span>
-<span class="hljs-title function_">tangentLine</span>(<span class="hljs-number">20</span>)     <span class="hljs-comment">// draws at 90°</span>
+<pre><code class="hljs language-pathogen"><span class="id">heading</span>(<span class="num">0</span>)
+<span class="id">turn</span>(<span class="num">45deg</span>)         <span class="cm">// 45°</span>
+<span class="id">turn</span>(<span class="num">45deg</span>)         <span class="cm">// 90°</span>
+<span class="id">tangentLine</span>(<span class="num">20</span>)     <span class="cm">// draws at 90°</span>
 </code></pre><h2>Shapes Without Dummy Segments</h2>
 <p>The demo below shows four shapes built entirely with <code>heading</code>, <code>turn</code>, <code>tangentLine</code>, and <code>tangentArc</code> — no dummy segments needed. Each shape includes the code used to construct it.</p>
 <p><mini-workspace code-open caption="heading() and turn() — C-shape, S-curve, zigzag, and spiral">
@@ -12822,22 +15183,22 @@ for ([shape, idx] in shapes) {
 </mini-workspace></p>
 <h2>Building Regular Polygons</h2>
 <p><code>heading</code>, <code>turn</code>, and <code>tangentLine</code> are all you need to draw any regular polygon. Set an initial heading at half the exterior angle (this orients the first edge so the polygon sits upright), then loop: draw a side with <code>tangentLine</code>, turn by the exterior angle. Replace <code>tangentLine</code> with <code>tangentArc</code> on the turns and the corners become rounded:</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">sharpPoly</span>(<span class="hljs-params">sides, sideLen</span>) {
-  <span class="hljs-keyword">let</span> ext = <span class="hljs-title function_">calc</span>(<span class="hljs-number">360</span> / sides);
-  <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(ext / <span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span>.<span class="hljs-property">sides</span>) {
-    <span class="hljs-title function_">tangentLine</span>(sideLen)
-    <span class="hljs-title function_">turn</span>(<span class="hljs-title function_">calc</span>(ext * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">sharpPoly</span>(<span class="id">sides</span>, <span class="id">sideLen</span>) {
+  <span class="kw">let</span> <span class="id">ext</span> = <span class="kw">calc</span>(<span class="num">360</span> / <span class="id">sides</span>);
+  <span class="id">heading</span>(<span class="kw">calc</span>(<span class="id">ext</span> / <span class="num">2</span> * <span class="id">PI</span>() / <span class="num">180</span>))
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="id">sides</span>) {
+    <span class="id">tangentLine</span>(<span class="id">sideLen</span>)
+    <span class="id">turn</span>(<span class="kw">calc</span>(<span class="id">ext</span> * <span class="id">PI</span>() / <span class="num">180</span>))
   }
 }
 
-fn <span class="hljs-title function_">roundedPoly</span>(<span class="hljs-params">sides, sideLen, r</span>) {
-  <span class="hljs-keyword">let</span> ext = <span class="hljs-title function_">calc</span>(<span class="hljs-number">360</span> / sides);
-  <span class="hljs-keyword">let</span> straight = <span class="hljs-title function_">calc</span>(sideLen - <span class="hljs-number">2</span> * r * <span class="hljs-title function_">tan</span>(ext / <span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>));
-  <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(ext / <span class="hljs-number">2</span> * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span>.<span class="hljs-property">sides</span>) {
-    <span class="hljs-title function_">tangentLine</span>(straight)
-    <span class="hljs-title function_">tangentArc</span>(r, <span class="hljs-title function_">calc</span>(ext * <span class="hljs-title function_">PI</span>() / <span class="hljs-number">180</span>))
+<span class="kw">fn</span> <span class="id">roundedPoly</span>(<span class="id">sides</span>, <span class="id">sideLen</span>, <span class="id">r</span>) {
+  <span class="kw">let</span> <span class="id">ext</span> = <span class="kw">calc</span>(<span class="num">360</span> / <span class="id">sides</span>);
+  <span class="kw">let</span> <span class="id">straight</span> = <span class="kw">calc</span>(<span class="id">sideLen</span> - <span class="num">2</span> * <span class="id">r</span> * <span class="id">tan</span>(<span class="id">ext</span> / <span class="num">2</span> * <span class="id">PI</span>() / <span class="num">180</span>));
+  <span class="id">heading</span>(<span class="kw">calc</span>(<span class="id">ext</span> / <span class="num">2</span> * <span class="id">PI</span>() / <span class="num">180</span>))
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="id">sides</span>) {
+    <span class="id">tangentLine</span>(<span class="id">straight</span>)
+    <span class="id">tangentArc</span>(<span class="id">r</span>, <span class="kw">calc</span>(<span class="id">ext</span> * <span class="id">PI</span>() / <span class="num">180</span>))
   }
 }
 </code></pre><p>The showcase below draws triangles through decagons — eight polygons in each row, sharp and rounded. One function, one loop, any number of sides.</p>
@@ -12981,27 +15342,27 @@ layer('caption').apply {
 </mini-workspace></p>
 <h2>Clean PathBlock Closure</h2>
 <p><code>heading()</code> is especially valuable inside <a href="/blog/pathblock-introduction">path blocks</a>. The <code>z</code> command draws a line back to the subpath start — and with <code>h 0.01</code>, that start is offset by 0.01px. With <code>heading()</code>, the start is exact:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// With h 0.01 — z closes to (0.01, 0), leaving a gap</span>
-<span class="hljs-keyword">let</span> old = @{
-  h <span class="hljs-number">0.01</span>
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 270deg)
+<pre><code class="hljs language-pathogen"><span class="cm">// With h 0.01 — z closes to (0.01, 0), leaving a gap</span>
+<span class="kw">let</span> <span class="id">old</span> = @{
+  h 0.01
+  <span class="id">tangentArc</span>(<span class="num">20</span>, <span class="num">270deg</span>)
   z
 };
 
-<span class="hljs-comment">// With heading — z closes cleanly to (0, 0)</span>
-<span class="hljs-keyword">let</span> clean = @{
-  <span class="hljs-title function_">heading</span>(<span class="hljs-number">0</span>)
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">20</span>, 270deg)
+<span class="cm">// With heading — z closes cleanly to (0, 0)</span>
+<span class="kw">let</span> <span class="id">clean</span> = @{
+  <span class="id">heading</span>(<span class="num">0</span>)
+  <span class="id">tangentArc</span>(<span class="num">20</span>, <span class="num">270deg</span>)
   z
 };
 </code></pre><h2>Reading the Current Heading</h2>
 <p>The current heading is available via <code>ctx.heading</code> — a read-only property that returns the tangent angle in radians, or <code>undefined</code> after an <code>M</code> (since moves don&#39;t establish direction):</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">0</span> <span class="hljs-number">0</span>  L <span class="hljs-number">50</span> <span class="hljs-number">0</span>
-<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// 0 (rightward)</span>
-<span class="hljs-title function_">heading</span>(90deg)
-<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// 1.5708 (π/2, downward)</span>
-M <span class="hljs-number">200</span> <span class="hljs-number">200</span>
-<span class="hljs-title function_">log</span>(ctx.<span class="hljs-property">heading</span>)   <span class="hljs-comment">// undefined (M clears heading)</span>
+<pre><code class="hljs language-pathogen">M 0 0  L 50 0
+<span class="id">log</span>(<span class="id">ctx</span>.<span class="id">heading</span>)   <span class="cm">// 0 (rightward)</span>
+<span class="id">heading</span>(<span class="num">90deg</span>)
+<span class="id">log</span>(<span class="id">ctx</span>.<span class="id">heading</span>)   <span class="cm">// 1.5708 (π/2, downward)</span>
+M 200 200
+<span class="id">log</span>(<span class="id">ctx</span>.<span class="id">heading</span>)   <span class="cm">// undefined (M clears heading)</span>
 </code></pre><p>Any drawing command that establishes a direction — <code>L</code>, <code>H</code>, <code>V</code>, <code>C</code>, <code>S</code>, <code>Q</code>, <code>T</code>, <code>A</code>, <code>Z</code>, and stdlib path functions — sets the heading automatically. <code>heading()</code> and <code>turn()</code> let you set it explicitly when no drawing command has run yet.</p>
 <p>Together, these two functions eliminate the dummy-segment workaround, enable clean <code>z</code> closure in path blocks, and unlock procedural shape construction — from simple arcs to regular polygons with any number of sides. They pair naturally with <code>tangentLine</code> and <code>tangentArc</code> to build complex shapes from simple, composable operations.</p>
 <p>For more on tangent-dependent functions, see the <a href="/docs#stdlib-tangent-functions">stdlib reference</a>. For path blocks, see the <a href="/blog/pathblock-introduction">PathBlock introduction</a>. For multi-segment smooth curves that benefit from <code>heading()</code>, see the <a href="/blog/chained-bezier-splines">chained Bézier splines post</a>.</p>
@@ -13024,8 +15385,8 @@ shaped, textured — and still reusable?</p>
 a function of position</strong>. Climbing that ladder is what this post is about, and
 near the top it required growing the language itself. Pathogen now has lambda
 expressions:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> f = {|a, b| <span class="hljs-keyword">return</span> a + b; };
-<span class="hljs-keyword">let</span> three = <span class="hljs-title function_">f</span>(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">f</span> = {|<span class="id">a</span>, <span class="id">b</span>| <span class="kw">return</span> <span class="id">a</span> + <span class="id">b</span>; };
+<span class="kw">let</span> <span class="id">three</span> = <span class="id">f</span>(<span class="num">1</span>, <span class="num">2</span>);
 </code></pre><p>The same <code>{|...|}</code> block syntax you already know from <code>map</code> and the gradient
 builders, promoted to a first-class value — with true lexical capture. Here&#39;s
 the stroke that earns it.</p>
@@ -13035,8 +15396,7 @@ loop an index from 16 down to 1, and give each layer stop widths scaled by the
 index — wide soft passes first, a narrow bright core last. Drive the widths
 with <code>randomRange</code> and the result is pleasingly organic:</p>
 <p><mini-workspace code-open caption="Sixteen stacked compoundVariableOffset layers, widths driven by randomRange scaled by the layer index. Fuzzy, organic — and unrepeatable.">
-  <code>// viewBox="0 60 400 140"
-//-- A layered "glow" stroke: sixteen compoundVariableOffset passes, widths
+  <code>//-- A layered "glow" stroke: sixteen compoundVariableOffset passes, widths
 //-- driven by randomRange scaled by the layer index. Wide soft layers paint
 //-- first, a narrow bright core lands last. Organic -- and unrepeatable:
 //-- every compile rolls new widths.
@@ -13088,17 +15448,16 @@ isn&#39;t a number. It&#39;s a <strong>shape</strong>.</p>
 spine. The first envelope worth designing is a <strong>bulge</strong>: a chosen spot where
 the stroke swells, entered and left smoothly. A raised cosine does it in four
 lines:</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">bulge</span>(<span class="hljs-params">t, center, spread</span>) {
-  <span class="hljs-keyword">let</span> d = <span class="hljs-title function_">clamp</span>(<span class="hljs-title function_">abs</span>(t - center) / spread, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);
-  <span class="hljs-keyword">return</span> <span class="hljs-number">0.5</span> * (<span class="hljs-number">1</span> + <span class="hljs-title function_">cos</span>(<span class="hljs-title function_">mpi</span>(d)));
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">bulge</span>(<span class="id">t</span>, <span class="id">center</span>, <span class="id">spread</span>) {
+  <span class="kw">let</span> <span class="id">d</span> = <span class="id">clamp</span>(<span class="id">abs</span>(<span class="id">t</span> - <span class="id">center</span>) / <span class="id">spread</span>, <span class="num">0</span>, <span class="num">1</span>);
+  <span class="kw">return</span> <span class="num">0.5</span> * (<span class="num">1</span> + <span class="id">cos</span>(<span class="id">mpi</span>(<span class="id">d</span>)));
 }
 </code></pre><p><code>d</code> is normalized distance from the bulge center; <code>0.5·(1 + cos(πd))</code> is
 easeInOutSine wearing its trig clothes. The property that matters: its
 derivative is zero at <em>both</em> ends, so the swell leaves the base width and
 rejoins it without a visible crease.</p>
 <p><mini-workspace code-open caption="Three candidate envelopes plotted above the stroke the winner produces. On a straight spine, the stroke's silhouette is its envelope — the dashed guide connects the plot's peak to the widest point. Smoothstep (drawn dashed) hides inside the cosine: the two differ by at most 1% of the peak height.">
-  <code>// viewBox="0 0 400 320"
-//-- SEE the easing: three candidate bulge envelopes plotted as graphs, with
+  <code>//-- SEE the easing: three candidate bulge envelopes plotted as graphs, with
 //-- the stroke the raised cosine produces rendered on a STRAIGHT spine below.
 //-- On a straight spine the silhouette of the stroke IS its envelope; the
 //-- dashed vertical guide ties the plot's peak to the stroke's widest point.
@@ -13254,8 +15613,7 @@ scene.append(axis, peakGuide, tentLayer, cosLayer, smoothLayer, strokeLayer,
 it through the parameter. So the general stroke-maker takes its envelopes <em>as
 functions</em> — one per profile — and samples them at each stop:</p>
 <p><mini-workspace code-open caption="One wrapper, four envelope pairs passed by name: constant, taper, bulge, wave. The wrapper neither knows nor cares what shape arrives.">
-  <code>// viewBox="0 0 400 560"
-//-- Generalize the SHAPE, not the knobs: the wrapper takes envelope
+  <code>//-- Generalize the SHAPE, not the knobs: the wrapper takes envelope
 //-- functions (t) -&gt; signed offset and samples one per profile at each stop.
 //-- Functions are first-class values in Pathogen -- pass them by name, call
 //-- them through the parameter.
@@ -13349,14 +15707,14 @@ lists that grow a slot for every knob.</p>
 <p>The missing piece is a function literal that <em>remembers</em>. A block literal in
 expression position is now a <strong>lambda</strong>: a function value that captures the
 scope where it was written.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> scale = <span class="hljs-number">3</span>;
-<span class="hljs-keyword">let</span> times = {|x| <span class="hljs-keyword">return</span> <span class="hljs-title function_">calc</span>(x * scale); };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">scale</span> = <span class="num">3</span>;
+<span class="kw">let</span> <span class="id">times</span> = {|<span class="id">x</span>| <span class="kw">return</span> <span class="kw">calc</span>(<span class="id">x</span> * <span class="id">scale</span>); };
 
-fn <span class="hljs-title function_">caller</span>(<span class="hljs-params"></span>) {
-  <span class="hljs-keyword">let</span> scale = <span class="hljs-number">100</span>;    <span class="hljs-comment">// does NOT affect the lambda</span>
-  <span class="hljs-keyword">return</span> <span class="hljs-title function_">times</span>(<span class="hljs-number">2</span>);
+<span class="kw">fn</span> <span class="id">caller</span>() {
+  <span class="kw">let</span> <span class="id">scale</span> = <span class="num">100</span>;    <span class="cm">// does NOT affect the lambda</span>
+  <span class="kw">return</span> <span class="id">times</span>(<span class="num">2</span>);
 }
-<span class="hljs-keyword">let</span> six = <span class="hljs-title function_">caller</span>();   <span class="hljs-comment">// 6 — lexical capture, not the caller&#x27;s scale</span>
+<span class="kw">let</span> <span class="id">six</span> = <span class="id">caller</span>();   <span class="cm">// 6 — lexical capture, not the caller's scale</span>
 </code></pre><p>Three design decisions worth spelling out:</p>
 <ul>
 <li><strong>Lambdas are lexical; named <code>fn</code>s stay dynamic.</strong> Changing <code>fn</code> scoping
@@ -13387,8 +15745,7 @@ named taper functions with two inline lambda literals. Then the payoff: three
 bulge strokes from one loop, each iteration&#39;s lambdas closing over that
 iteration&#39;s <code>center</code> and <code>peak</code>:</p>
 <p><mini-workspace code-open caption="Row 1: inline lambdas replace four named taper fns. Rows 2-4: each loop iteration builds envelope lambdas capturing that iteration's center and peak — the bulge marches along the spine.">
-  <code>// viewBox="0 0 400 560"
-//-- Closures dissolve the baked-constants problem. A lambda {|t| ...}
+  <code>//-- Closures dissolve the baked-constants problem. A lambda {|t| ...}
 //-- captures the scope where it is WRITTEN, so a parameterized envelope can
 //-- be built inline, wherever its parameters live. Compare with
 //-- 03-named-envelopes.pathogen: same wrapper, but the envelopes no longer
@@ -13475,8 +15832,7 @@ closures, that&#39;s three lambdas per layer — <code>width1</code>, <code>widt
 capturing the layer index — plus a builder lambda <code>mk</code>, applied with
 <code>spine.compoundVariableOffset() &lt;&lt; mk</code>:</p>
 <p><mini-workspace code-open caption="The glow rebuilt on closures: designed swells, deterministic hash jitter with a per-layer stream (the salt is just a captured variable), and a builder lambda applied with << onto compoundVariableOffset. Compare the opening sample: the random fuzz is gone, the swells sit where they were put, and recompiles are byte-identical.">
-  <code>// viewBox="0 60 400 140"
-//-- The glow, rebuilt on closures -- deterministic this time. Without
+  <code>//-- The glow, rebuilt on closures -- deterministic this time. Without
 //-- closures this program threads TEN parameters through a helper
 //-- (pathBlock, steps, base1, bulges1, base2, bulges2, jitterAmount, salt,
 //-- continuity, cap). Here each layer builds lambdas that CAPTURE the layer
@@ -13597,18 +15953,18 @@ stroke machinery in the <a href="/docs#variable-offset-variable-offset">Variable
 <p>All four operations take two closed paths and return a new PathBlock. Both operands must be closed (end with <code>z</code> or have coincident start/end points).</p>
 <h3>Union</h3>
 <p><a href="/docs#path-blocks-unionother-pathblock"><code>.union(other)</code></a> combines two paths into their outer boundary — everything covered by either shape:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> a = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
-<span class="hljs-keyword">let</span> b = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
-<span class="hljs-keyword">let</span> combined = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>).<span class="hljs-title function_">union</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">a</span> = @{ h 50 v 50 h -50 z };
+<span class="kw">let</span> <span class="id">b</span> = @{ h 50 v 50 h -50 z };
+<span class="kw">let</span> <span class="id">combined</span> = <span class="id">a</span>.<span class="id">project</span>(<span class="num">30</span>, <span class="num">30</span>).<span class="id">union</span>(<span class="id">b</span>.<span class="id">project</span>(<span class="num">55</span>, <span class="num">55</span>));
 </code></pre><h3>Difference</h3>
 <p><a href="/docs#path-blocks-differenceother-pathblock"><code>.difference(other)</code></a> subtracts the second shape from the first — everything in <code>a</code> that is not in <code>b</code>:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> result = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">30</span>).<span class="hljs-title function_">difference</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">55</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">result</span> = <span class="id">a</span>.<span class="id">project</span>(<span class="num">200</span>, <span class="num">30</span>).<span class="id">difference</span>(<span class="id">b</span>.<span class="id">project</span>(<span class="num">225</span>, <span class="num">55</span>));
 </code></pre><h3>Intersection</h3>
 <p><a href="/docs#path-blocks-intersectionother-pathblock"><code>.intersection(other)</code></a> returns only the overlapping region — everything in both shapes:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> overlap = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">intersection</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">235</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">overlap</span> = <span class="id">a</span>.<span class="id">project</span>(<span class="num">30</span>, <span class="num">210</span>).<span class="id">intersection</span>(<span class="id">b</span>.<span class="id">project</span>(<span class="num">55</span>, <span class="num">235</span>));
 </code></pre><h3>XOR</h3>
 <p><a href="/docs#path-blocks-xorother-pathblock"><code>.xor(other)</code></a> returns the symmetric difference — everything in either shape but not both:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> exclusive = a.<span class="hljs-title function_">project</span>(<span class="hljs-number">200</span>, <span class="hljs-number">210</span>).<span class="hljs-title function_">xor</span>(b.<span class="hljs-title function_">project</span>(<span class="hljs-number">225</span>, <span class="hljs-number">235</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">exclusive</span> = <span class="id">a</span>.<span class="id">project</span>(<span class="num">200</span>, <span class="num">210</span>).<span class="id">xor</span>(<span class="id">b</span>.<span class="id">project</span>(<span class="num">225</span>, <span class="num">235</span>));
 </code></pre><p><mini-workspace code-open caption="Four boolean operations on overlapping squares — union, difference, intersection, xor">
   <code>define ViewBox(0, 0, 580, 480);
 // Boolean operations — union, difference, intersection, xor
@@ -13973,18 +16329,18 @@ subtitle.apply {
 </ul>
 <h2>Using with <code>.project()</code></h2>
 <p>Boolean operations need absolute coordinates to compute intersections. Use <a href="/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> to position shapes before combining them:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> circle = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>) };
-<span class="hljs-keyword">let</span> a = circle.<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>);
-<span class="hljs-keyword">let</span> b = circle.<span class="hljs-title function_">project</span>(<span class="hljs-number">70</span>, <span class="hljs-number">50</span>);
-<span class="hljs-keyword">let</span> result = a.<span class="hljs-title function_">union</span>(b);
-result.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">circle</span> = @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">30</span>) };
+<span class="kw">let</span> <span class="id">a</span> = <span class="id">circle</span>.<span class="id">project</span>(<span class="num">50</span>, <span class="num">50</span>);
+<span class="kw">let</span> <span class="id">b</span> = <span class="id">circle</span>.<span class="id">project</span>(<span class="num">70</span>, <span class="num">50</span>);
+<span class="kw">let</span> <span class="id">result</span> = <span class="id">a</span>.<span class="id">union</span>(<span class="id">b</span>);
+<span class="id">result</span>.<span class="id">drawTo</span>(<span class="num">0</span>, <span class="num">0</span>)
 </code></pre><p>The result is a PathBlock at <code>(0, 0)</code> origin. Use <code>.drawTo(x, y)</code> to place it anywhere.</p>
 <h2>Chaining with Transforms</h2>
 <p>Since boolean operations return PathBlocks, you can chain them with <a href="/docs#path-blocks-fillets">fillets</a>, <a href="/docs#path-blocks-chamfers">chamfers</a>, <a href="/docs#path-blocks-parametric-sampling">parametric sampling</a>, or even more boolean operations:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sq = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
-<span class="hljs-keyword">let</span> combined = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-<span class="hljs-keyword">let</span> rounded = combined.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">5</span>);
-rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sq</span> = @{ h 50 v 50 h -50 z };
+<span class="kw">let</span> <span class="id">combined</span> = <span class="id">sq</span>.<span class="id">project</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">union</span>(<span class="id">sq</span>.<span class="id">project</span>(<span class="num">25</span>, <span class="num">25</span>));
+<span class="kw">let</span> <span class="id">rounded</span> = <span class="id">combined</span>.<span class="id">fillet</span>(<span class="num">5</span>);
+<span class="id">rounded</span>.<span class="id">drawTo</span>(<span class="num">10</span>, <span class="num">10</span>)
 </code></pre><p>This creates a union of two overlapping squares, then rounds all the corners with a 5px fillet. The composability is the whole point — each operation produces a value that feeds into the next.</p>
 <p>The pipeline below shows the three stages: overlapping input squares, the union result, and the union with an 8px fillet applied. Each step returns a PathBlock that feeds into the next.</p>
 <p><mini-workspace caption="Chaining pipeline — overlapping squares → union → union + fillet(8)">
@@ -14215,11 +16571,11 @@ subtitle.apply {
 </mini-workspace></p>
 <h2>Standard Library Shapes</h2>
 <p>Pathogen&#39;s <a href="/docs#stdlib-path-functions">standard library</a> provides PathBlock-returning functions for common shapes — <code>circle()</code>, <code>rect()</code>, <code>polygon()</code>, <code>star()</code>, and more. These work directly with boolean operations:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> plate = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">80</span>, <span class="hljs-number">80</span>) };
-<span class="hljs-keyword">let</span> hole = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">10</span>) };
-<span class="hljs-keyword">let</span> d1 = plate.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">25</span>, <span class="hljs-number">25</span>));
-<span class="hljs-keyword">let</span> drilled = d1.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">difference</span>(hole.<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>));
-drilled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">plate</span> = @{ <span class="id">rect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">80</span>, <span class="num">80</span>) };
+<span class="kw">let</span> <span class="id">hole</span> = @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">10</span>) };
+<span class="kw">let</span> <span class="id">d1</span> = <span class="id">plate</span>.<span class="id">project</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">difference</span>(<span class="id">hole</span>.<span class="id">project</span>(<span class="num">25</span>, <span class="num">25</span>));
+<span class="kw">let</span> <span class="id">drilled</span> = <span class="id">d1</span>.<span class="id">project</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">difference</span>(<span class="id">hole</span>.<span class="id">project</span>(<span class="num">55</span>, <span class="num">55</span>));
+<span class="id">drilled</span>.<span class="id">drawTo</span>(<span class="num">0</span>, <span class="num">0</span>)
 </code></pre><p>The demo below shows two practical examples: a plate with four drilled holes (chained <code>.difference()</code> calls), and a badge shape created by unioning a star with a circle.</p>
 <p><mini-workspace code-open caption="Standard library shapes — drilled plate and star-circle badge">
   <code>define ViewBox(0, 0, 400, 200);
@@ -14307,13 +16663,13 @@ badge_desc.apply {
 </mini-workspace></p>
 <h2>Putting It All Together</h2>
 <p>This series covered four layers of PathBlock capability — and since every operation returns a PathBlock, they compose freely. Here&#39;s the full pipeline in one expression: define shapes, combine them with a boolean operation, round the result with a fillet, then sample points along the filleted outline:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sq = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">60</span> h -<span class="hljs-number">60</span> z };
-<span class="hljs-keyword">let</span> combined = sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">union</span>(sq.<span class="hljs-title function_">project</span>(<span class="hljs-number">30</span>, <span class="hljs-number">30</span>));
-<span class="hljs-keyword">let</span> rounded = combined.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>);
-<span class="hljs-keyword">let</span> pts = rounded.<span class="hljs-title function_">partition</span>(<span class="hljs-number">24</span>);
-rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">10</span>, <span class="hljs-number">10</span>)
-<span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
-  @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">2</span>) }.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">10</span> + p.<span class="hljs-property">point</span>.<span class="hljs-property">x</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">10</span> + p.<span class="hljs-property">point</span>.<span class="hljs-property">y</span>))
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sq</span> = @{ h 60 v 60 h -60 z };
+<span class="kw">let</span> <span class="id">combined</span> = <span class="id">sq</span>.<span class="id">project</span>(<span class="num">0</span>, <span class="num">0</span>).<span class="id">union</span>(<span class="id">sq</span>.<span class="id">project</span>(<span class="num">30</span>, <span class="num">30</span>));
+<span class="kw">let</span> <span class="id">rounded</span> = <span class="id">combined</span>.<span class="id">fillet</span>(<span class="num">8</span>);
+<span class="kw">let</span> <span class="id">pts</span> = <span class="id">rounded</span>.<span class="id">partition</span>(<span class="num">24</span>);
+<span class="id">rounded</span>.<span class="id">drawTo</span>(<span class="num">10</span>, <span class="num">10</span>)
+<span class="kw">for</span> (<span class="id">p</span> <span class="kw">in</span> <span class="id">pts</span>) {
+  @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">2</span>) }.<span class="id">drawTo</span>(<span class="kw">calc</span>(<span class="num">10</span> + <span class="id">p</span>.<span class="id">point</span>.<span class="id">x</span>), <span class="kw">calc</span>(<span class="num">10</span> + <span class="id">p</span>.<span class="id">point</span>.<span class="id">y</span>))
 }
 </code></pre><p>Define once (<a href="/blog/pathblock-introduction">PathBlocks</a>), query geometry (<a href="/blog/pathblock-parametric-sampling">parametric sampling</a>), transform corners (<a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a>), combine shapes (<a href="/blog/pathblock-boolean-operations">boolean operations</a>) — all in a single composable pipeline. The full API reference is in the <a href="/docs#path-blocks-syntax">PathBlocks documentation</a>.</p>
 <p>Try it yourself in the <a href="/">Pathogen playground</a> — paste any example from this series and experiment.</p>
@@ -14340,18 +16696,18 @@ contrast but not required.</p>
 <p>You draw a second PathBlock whose strokes act as a knife — open lines and curves, as many as you like — and <code>shape.cut(knife)</code> hands back an array of pieces. Each piece is a complete PathBlock, sealed shut along the lines that cut it. And because every piece is a real PathBlock, nearly everything you already know applies: give each piece its own fill, measure it with <code>boundingBox()</code>, offset it, rotate it, cut it again. Since this post first ran, labels made the trip too: pieces keep the subject&#39;s <code>as segment(...)</code> names on their surviving edges, and every healed seam answers <code>segmentAll(&#39;cut&#39;)</code> — <a href="/blog/cutting-room-papercraft">The Cutting Room series</a> is four projects built on exactly that.</p>
 <h2>One rectangle, one stroke</h2>
 <p>The barest possible picture: a rectangle, a single straight stroke through it, two pieces.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{
-  h <span class="hljs-number">140</span>
-  v <span class="hljs-number">100</span>
-  h -<span class="hljs-number">140</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{
+  h 140
+  v 100
+  h -140
   z
 };
-<span class="hljs-keyword">let</span> knife = @{
-  m <span class="hljs-number">90</span> -<span class="hljs-number">15</span>
-  l <span class="hljs-number">0</span> <span class="hljs-number">130</span>
+<span class="kw">let</span> <span class="id">knife</span> = @{
+  m 90 -15
+  l 0 130
 };
-<span class="hljs-keyword">let</span> pieces = box.<span class="hljs-title function_">cut</span>(knife);
-<span class="hljs-title function_">log</span>(pieces.<span class="hljs-property">length</span>);    <span class="hljs-comment">// 2</span>
+<span class="kw">let</span> <span class="id">pieces</span> = <span class="id">box</span>.<span class="id">cut</span>(<span class="id">knife</span>);
+<span class="id">log</span>(<span class="id">pieces</span>.<span class="id">length</span>);    <span class="cm">// 2</span>
 </code></pre><p>Two things to notice before anything fancier. First, the knife overshoots the box on both ends — a stroke cuts wherever it <em>fully crosses</em> the shape, so the safe habit is to draw strokes a little longer than they need to be. Second, the pieces come back exactly where they were: drawing them all at the same position reassembles the rectangle, and nudging each one apart produces an exploded view. That&#39;s the left and right halves of this demo — same pieces, two ways of placing them:</p>
 <p><mini-workspace code-open caption="One cut, two pieces. Left: drawn at the same position, the shape reassembles. Right: each piece nudged away from the cut line.">
   <code>define ViewBox(0, 0, 480, 240);
@@ -14687,9 +17043,9 @@ knifeLabel.apply {
 </mini-workspace></p>
 <h2>Cookie cutters</h2>
 <p>Every stroke so far has been open. A <em>closed</em> stroke — a loop — acts as a cookie cutter: it stamps the region inside it out of the shape. You get the stamped piece and the shape it left behind, which now carries a hole.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> plate = @{ <span class="hljs-title function_">roundRect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">220</span>, <span class="hljs-number">150</span>, <span class="hljs-number">18</span>); };
-<span class="hljs-keyword">let</span> stamp = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">42</span>); };
-<span class="hljs-keyword">let</span> pieces = plate.<span class="hljs-title function_">cut</span>(stamp.<span class="hljs-title function_">project</span>(<span class="hljs-number">140</span>, <span class="hljs-number">60</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">plate</span> = @{ <span class="id">roundRect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">220</span>, <span class="num">150</span>, <span class="num">18</span>); };
+<span class="kw">let</span> <span class="id">stamp</span> = @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">42</span>); };
+<span class="kw">let</span> <span class="id">pieces</span> = <span class="id">plate</span>.<span class="id">cut</span>(<span class="id">stamp</span>.<span class="id">project</span>(<span class="num">140</span>, <span class="num">60</span>));
 </code></pre><p>Since piece order is unspecified, this demo tells the pieces apart by structure instead: the stamped disk has one subpath (<code>subPathCount == 1</code>), the plate-with-a-hole has two. That&#39;s usually the most robust way to route pieces to different treatments.</p>
 <p><mini-workspace code-open caption="A closed loop stamps a disk out of the plate; the plate keeps the hole.">
   <code>define ViewBox(0, 0, 480, 240);
@@ -14986,18 +17342,18 @@ for ([g, i] in glyphs) {
 <p>A <a href="/docs#path-blocks-chamfers">chamfer</a> replaces a corner vertex with a straight line. The incoming and outgoing edges are trimmed by a distance, and a line segment connects the two trim points. The result is a beveled corner.</p>
 <h3>Symmetric Chamfer</h3>
 <p>The simplest form trims equal amounts from both edges at every corner:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
-<span class="hljs-keyword">let</span> beveled = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">10</span>);
-beveled.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 70 v 70 h -70 z };
+<span class="kw">let</span> <span class="id">beveled</span> = <span class="id">box</span>.<span class="id">chamfer</span>(<span class="num">10</span>);
+<span class="id">beveled</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>Asymmetric Chamfer</h3>
 <p>Pass two distances to trim different amounts on the incoming and outgoing edges — <a href="/docs#path-blocks-chamferd1-d2-pathblock-projectedpath"><code>chamfer(d1, d2)</code></a>:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> asym = box.<span class="hljs-title function_">chamfer</span>(<span class="hljs-number">5</span>, <span class="hljs-number">25</span>);
-asym.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">asym</span> = <span class="id">box</span>.<span class="id">chamfer</span>(<span class="num">5</span>, <span class="num">25</span>);
+<span class="id">asym</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>Per-Vertex Chamfer</h3>
 <p><a href="/docs#path-blocks-chamferatvertexindex-distance-pathblock-projectedpath"><code>chamferAtVertex(index, distance)</code></a> targets a single corner. The index comes from the PathBlock&#39;s <code>.vertices</code> array:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
-<span class="hljs-comment">// vertices: (0,0), (70,0), (70,70), (0,70)</span>
-<span class="hljs-keyword">let</span> oneCorner = box.<span class="hljs-title function_">chamferAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">15</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 70 v 70 h -70 z };
+<span class="cm">// vertices: (0,0), (70,0), (70,70), (0,70)</span>
+<span class="kw">let</span> <span class="id">oneCorner</span> = <span class="id">box</span>.<span class="id">chamferAtVertex</span>(<span class="num">1</span>, <span class="num">15</span>);
 </code></pre><p>You can chain <code>chamferAtVertex</code> calls to selectively bevel specific corners with different distances.</p>
 <p>The anatomy diagram below shows the geometric construction: the red dot is the original vertex, green dots are the trim points at distance <code>d</code> along each edge, and the blue line connects them. The yellow dimension arrows show <code>d1</code> (incoming) and <code>d2</code> (outgoing) trim distances.</p>
 <p><mini-workspace caption="Chamfer anatomy — geometric construction at a right-angle corner">
@@ -15398,13 +17754,13 @@ subtitle.apply {
 <p><strong>Important:</strong> Fillets currently work at <strong>line-line junctions only</strong>. At curve junctions (where a curve meets a line, or two curves meet), the fillet is skipped and a warning is logged. This covers the vast majority of practical cases — rectangles, polygons, stars, and polylines are all line-line. See the <a href="/docs#path-blocks-fillets">documentation</a> for details.</p>
 <h3>All Corners</h3>
 <p><a href="/docs#path-blocks-filletradius-pathblock-projectedpath"><code>fillet(radius)</code></a> rounds every corner:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
-<span class="hljs-keyword">let</span> rounded = box.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">10</span>);
-rounded.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 70 v 70 h -70 z };
+<span class="kw">let</span> <span class="id">rounded</span> = <span class="id">box</span>.<span class="id">fillet</span>(<span class="num">10</span>);
+<span class="id">rounded</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>Per-Vertex</h3>
 <p><a href="/docs#path-blocks-filletatvertexindex-radius-pathblock-projectedpath"><code>filletAtVertex(index, radius)</code></a> rounds a single corner:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> oneRound = box.<span class="hljs-title function_">filletAtVertex</span>(<span class="hljs-number">1</span>, <span class="hljs-number">20</span>);
-oneRound.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">oneRound</span> = <span class="id">box</span>.<span class="id">filletAtVertex</span>(<span class="num">1</span>, <span class="num">20</span>);
+<span class="id">oneRound</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><p>The fillet anatomy diagram shows how a circular arc is constructed at a 90° corner. The arc center (at distance <code>r</code> from both edges) and the trim formula <code>trim = r / tan(halfAngle)</code> are labeled. For a right angle, <code>trim = r</code>.</p>
 <p><mini-workspace caption="Fillet anatomy — arc center, trim points, and radius at a 90° corner">
   <code>define ViewBox(0, 0, 480, 340);
@@ -15677,13 +18033,13 @@ subtitle.apply {
 <p><a href="/docs#path-blocks-elliptical-fillets">Elliptical fillets</a> replace corners with elliptical arcs instead of circular ones. If you&#39;ve used CSS <code>border-radius</code> with two values (e.g., <code>border-radius: 15px / 8px</code>), you&#39;ve already seen elliptical fillets in action — they produce the same asymmetric corner rounding. This gives you control over the corner shape&#39;s aspect ratio, useful for UI components, pill shapes, and organic forms where a circular arc is too uniform.</p>
 <h3>Basic Elliptical</h3>
 <p><a href="/docs#path-blocks-ellipticalfilletrx-ry-pathblock-projectedpath"><code>ellipticalFillet(rx, ry)</code></a> uses two radii:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">70</span> v <span class="hljs-number">70</span> h -<span class="hljs-number">70</span> z };
-<span class="hljs-keyword">let</span> eFilleted = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">15</span>, <span class="hljs-number">8</span>);
-eFilleted.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 70 v 70 h -70 z };
+<span class="kw">let</span> <span class="id">eFilleted</span> = <span class="id">box</span>.<span class="id">ellipticalFillet</span>(<span class="num">15</span>, <span class="num">8</span>);
+<span class="id">eFilleted</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>With Rotation</h3>
 <p><a href="/docs#path-blocks-ellipticalfilletrx-ry-rotation-pathblock-projectedpath"><code>ellipticalFillet(rx, ry, rotation)</code></a> adds an ellipse rotation in radians:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> rotated = box.<span class="hljs-title function_">ellipticalFillet</span>(<span class="hljs-number">15</span>, <span class="hljs-number">8</span>, <span class="hljs-number">0.3</span>);
-rotated.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">20</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">rotated</span> = <span class="id">box</span>.<span class="id">ellipticalFillet</span>(<span class="num">15</span>, <span class="num">8</span>, <span class="num">0.3</span>);
+<span class="id">rotated</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">20</span>)
 </code></pre><h3>Per-Vertex Variants</h3>
 <p><a href="/docs#path-blocks-ellipticalfilletatvertexindex-rx-ry-pathblock-projectedpath"><code>ellipticalFilletAtVertex</code></a> targets individual corners, with an optional rotation parameter.</p>
 <h3>Adapting to Corner Angles</h3>
@@ -16003,11 +18359,11 @@ subtitle.apply {
 </ul>
 <h2>Chaining with Other Operations</h2>
 <p>Because chamfers and fillets return PathBlocks, you can chain them with any other PathBlock method — <a href="/docs#path-blocks-drawing-a-path-block"><code>.draw()</code></a>, <a href="/docs#path-blocks-drawing-a-path-block"><code>.drawTo()</code></a>, <a href="/docs#path-blocks-projecting-without-drawing"><code>.project()</code></a>, <a href="/docs#path-blocks-parametric-sampling">parametric sampling</a>, or <a href="/docs#path-blocks-boolean-operations">boolean operations</a>:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">60</span> v <span class="hljs-number">40</span> h -<span class="hljs-number">60</span> z };
-<span class="hljs-keyword">let</span> rounded = box.<span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>);
-<span class="hljs-keyword">let</span> pts = rounded.<span class="hljs-title function_">partition</span>(<span class="hljs-number">20</span>);
-<span class="hljs-keyword">for</span> (p <span class="hljs-keyword">in</span> pts) {
-  <span class="hljs-comment">// Place dots along the rounded rectangle</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 60 v 40 h -60 z };
+<span class="kw">let</span> <span class="id">rounded</span> = <span class="id">box</span>.<span class="id">fillet</span>(<span class="num">8</span>);
+<span class="kw">let</span> <span class="id">pts</span> = <span class="id">rounded</span>.<span class="id">partition</span>(<span class="num">20</span>);
+<span class="kw">for</span> (<span class="id">p</span> <span class="kw">in</span> <span class="id">pts</span>) {
+  <span class="cm">// Place dots along the rounded rectangle</span>
 }
 </code></pre><h2>What&#39;s Next</h2>
 <p>The final post in this series covers <a href="/blog/pathblock-boolean-operations">boolean operations</a> — combining two closed paths using union, difference, intersection, and xor. Since everything returns a PathBlock, you&#39;ll see how these operations compose with the fillets and chamfers covered here.</p>
@@ -16029,9 +18385,9 @@ subtitle.apply {
 <p>That&#39;s what font integration provides. The <code>@font</code> directive loads a font file, and <code>PathBlock.fromGlyph()</code> converts each character into a PathBlock with the glyph&#39;s full vector outline. From there, everything in the <a href="/blog/pathblock-introduction">PathBlock series</a> applies: <a href="/docs#path-blocks-drawing-a-path-block">drawing and positioning</a>, <a href="/blog/pathblock-parametric-sampling">parametric sampling</a>, <a href="/blog/pathblock-fillets-chamfers">fillets and chamfers</a>, <a href="/blog/pathblock-boolean-operations">boolean operations</a>, and all the transforms.</p>
 <h2>Loading Fonts with @font</h2>
 <p>Before you can extract glyphs, Pathogen needs access to the font&#39;s vector data. The <a href="/docs#path-blocks-font-directive"><code>@font</code> directive</a> declares a font at the top level of your program:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
-@font <span class="hljs-string">&quot;Roboto Mono&quot;</span> <span class="hljs-number">700</span>;
-@font <span class="hljs-string">&quot;./fonts/CustomFont.ttf&quot;</span>;
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
+@font <span class="str">"Roboto Mono"</span> <span class="num">700</span>;
+@font <span class="str">"./fonts/CustomFont.ttf"</span>;
 </code></pre><p>The directive takes a font source (family name or file path) and an optional numeric weight (100-900, default 400). How the font is actually loaded depends on the environment:</p>
 <ul>
 <li><strong>CLI</strong>: Loads from local file paths relative to the source file, or searches system font directories (<code>/Library/Fonts</code>, <code>/System/Library/Fonts</code>, <code>~/Library/Fonts</code> on macOS, with equivalent paths on Linux and Windows).</li>
@@ -16044,40 +18400,40 @@ subtitle.apply {
 </blockquote>
 <h2>Extracting Glyphs with PathBlock.fromGlyph()</h2>
 <p><a href="/docs#path-blocks-pathblockfromglyphtext-styles"><code>PathBlock.fromGlyph(text, styles)</code></a> is the core conversion function. It takes a text string and a style block, and returns an array of PathBlock values — one per character:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
 
-<span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;Hello&quot;</span>, styles);
+<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"Hello"</span>, <span class="id">styles</span>);
 
-<span class="hljs-title function_">log</span>(glyphs.<span class="hljs-property">length</span>);    <span class="hljs-comment">// 5 — one PathBlock per character</span>
+<span class="id">log</span>(<span class="id">glyphs</span>.<span class="id">length</span>);    <span class="cm">// 5 — one PathBlock per character</span>
 </code></pre><p>The style block must include <code>font-family</code> (matching a loaded <code>@font</code> declaration). <code>font-size</code> defaults to 16 and <code>font-weight</code> defaults to 400 if omitted. The function walks each character in the text string, looks up the glyph in the loaded font, extracts its outline as cubic Bezier curves and line segments, scales to the requested font size, and wraps the result as a PathBlock with relative commands starting at <code>(0, 0)</code>.</p>
 <p>Each glyph PathBlock is a full PathBlock value with all the standard properties and methods. You can call <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, <code>.get()</code>, <code>.tangent()</code>, <code>.boundingBox()</code>, <code>.scale()</code>, <code>.fillet()</code>, <code>.union()</code> — everything from the <a href="/docs#path-blocks-syntax">PathBlock documentation</a>. The glyph is geometry now, not text.</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
 
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;A&quot;</span>, \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">72</span>; });
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"A"</span>, \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">72</span>; });
 
-<span class="hljs-comment">// Draw the glyph</span>
-glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">100</span>)
+<span class="cm">// Draw the glyph</span>
+<span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>)
 
-<span class="hljs-comment">// Query its geometry</span>
-<span class="hljs-title function_">log</span>(glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">length</span>);           <span class="hljs-comment">// total outline arc-length</span>
-<span class="hljs-title function_">log</span>(glyphs[<span class="hljs-number">0</span>].<span class="hljs-title function_">boundingBox</span>());    <span class="hljs-comment">// { x, y, width, height }</span>
-<span class="hljs-title function_">log</span>(glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">vertices</span>.<span class="hljs-property">length</span>);  <span class="hljs-comment">// number of junction points</span>
+<span class="cm">// Query its geometry</span>
+<span class="id">log</span>(<span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">length</span>);           <span class="cm">// total outline arc-length</span>
+<span class="id">log</span>(<span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">boundingBox</span>());    <span class="cm">// { x, y, width, height }</span>
+<span class="id">log</span>(<span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">vertices</span>.<span class="id">length</span>);  <span class="cm">// number of junction points</span>
 </code></pre><p><code>fromGlyph()</code> always returns an array — one PathBlock per character — even for single characters. That&#39;s why we index with <code>glyphs[0]</code> above.</p>
 <p>Space characters are handled correctly: they return an empty PathBlock (no path commands, zero length) but still carry a non-zero <code>.advanceWidth</code> for layout purposes. This means a loop over <code>PathBlock.fromGlyph(&quot;Hello World&quot;, styles)</code> will naturally insert a gap between &quot;Hello&quot; and &quot;World&quot; without special-casing.</p>
 <p>If something goes wrong, the <a href="/docs#path-blocks-error-cases">error messages</a> are specific. Wrong argument count, missing <code>font-family</code>, no <code>@font</code> loaded, font not found in the registry — each condition has its own message telling you exactly what to fix.</p>
 <h2>Manual Text Layout with advanceWidth</h2>
 <p>Drawing glyph PathBlocks is straightforward, but you need to position them correctly. In a font, each glyph has an <em>advance width</em> — the horizontal distance the cursor should move after drawing that glyph before drawing the next one. This is how proportional fonts work: a narrow &quot;i&quot; advances less than a wide &quot;M&quot;.</p>
 <p>Every glyph PathBlock from <code>fromGlyph()</code> carries an <a href="/docs#path-blocks-advancewidth"><code>.advanceWidth</code></a> property. To lay out a word, accumulate advance widths in a loop:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Bebas Neue&quot;</span>;
-<span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">BebasNeue</span>-<span class="hljs-title class_">Regular</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">64</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;PATHOGEN&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Bebas Neue"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">BebasNeue-Regular</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"PATHOGEN"</span>, <span class="id">styles</span>);
 
-<span class="hljs-keyword">let</span> cursor_x = <span class="hljs-number">60</span>;
-<span class="hljs-keyword">let</span> baseline_y = <span class="hljs-number">140</span>;
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  g.<span class="hljs-title function_">drawTo</span>(cursor_x, baseline_y)
-  cursor_x = <span class="hljs-title function_">calc</span>(cursor_x + g.<span class="hljs-property">advanceWidth</span>);
+<span class="kw">let</span> <span class="id">cursor_x</span> = <span class="num">60</span>;
+<span class="kw">let</span> <span class="id">baseline_y</span> = <span class="num">140</span>;
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="id">g</span>.<span class="id">drawTo</span>(<span class="id">cursor_x</span>, <span class="id">baseline_y</span>)
+  <span class="id">cursor_x</span> = <span class="kw">calc</span>(<span class="id">cursor_x</span> + <span class="id">g</span>.<span class="id">advanceWidth</span>);
 }
 </code></pre><p>This is the text layout engine&#39;s job, and now it&#39;s yours. The advance width accumulation produces the same letter spacing that a browser would use for the same font at the same size — because the values come directly from the font file via opentype.js.</p>
 <p>The difference between proportional and monospace fonts shows up clearly here. A proportional font like Bebas Neue produces variable spacing: the &quot;P&quot; might advance 22px while the &quot;I&quot; advances 8px. A monospace font like Inconsolata advances every character by the same amount. The demo below renders the same word in both fonts, with dashed tick marks showing each character&#39;s advance-width boundary.</p>
@@ -16238,45 +18594,45 @@ code_group.append(code, kw);
 <h2>Contour Decomposition</h2>
 <p>Most glyphs are made of multiple contours. The letter &quot;O&quot; has an outer ring and an inner hole — two closed paths. The letter &quot;i&quot; has a body and a dot — also two. Some glyphs are more complex: &quot;B&quot; has an outer shape plus two enclosed holes.</p>
 <p>The <a href="/docs#path-blocks-contours"><code>.contours</code></a> property splits a glyph PathBlock into its constituent contours, returning an array of PathBlock values — one per contour:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
-<span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;O&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"O"</span>, <span class="id">styles</span>);
 
-<span class="hljs-keyword">let</span> contours = glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">contours</span>;
-<span class="hljs-title function_">log</span>(contours.<span class="hljs-property">length</span>);    <span class="hljs-comment">// 2 — outer ring + inner hole</span>
+<span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
+<span class="id">log</span>(<span class="id">contours</span>.<span class="id">length</span>);    <span class="cm">// 2 — outer ring + inner hole</span>
 </code></pre><p>Each contour is a closed PathBlock with all standard properties and methods. You can draw them individually, apply different styles, transform them independently, or use them in boolean operations. Here&#39;s what iterating over contours looks like:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
-<span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">48</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;B&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"B"</span>, <span class="id">styles</span>);
 
-<span class="hljs-keyword">let</span> contours = glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">contours</span>;
-<span class="hljs-comment">// contours[0] = outer shape</span>
-<span class="hljs-comment">// contours[1] = upper hole</span>
-<span class="hljs-comment">// contours[2] = lower hole</span>
+<span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
+<span class="cm">// contours[0] = outer shape</span>
+<span class="cm">// contours[1] = upper hole</span>
+<span class="cm">// contours[2] = lower hole</span>
 
-<span class="hljs-comment">// Draw each contour with different styling</span>
-<span class="hljs-keyword">for</span> (c <span class="hljs-keyword">in</span> contours) {
-  c.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">100</span>)
+<span class="cm">// Draw each contour with different styling</span>
+<span class="kw">for</span> (<span class="id">c</span> <span class="kw">in</span> <span class="id">contours</span>) {
+  c.drawTo(50, 100)
 }
 </code></pre><p>The number of contours per glyph varies by character and font design. Simple glyphs like &quot;n&quot; or &quot;c&quot; typically have a single contour. Letters with enclosed spaces — &quot;o&quot;, &quot;e&quot;, &quot;d&quot;, &quot;g&quot; — usually have two. Letters with multiple enclosed regions — &quot;B&quot;, &quot;8&quot; — can have three or more. Punctuation follows the same logic: &quot;!&quot; has two contours (the body stroke and the dot below), while &quot;-&quot; has just one.</p>
 <p>To draw each contour with a different fill, iterate over the array and assign colors from a palette:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Inter&quot;</span>;
-<span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">56</span>; };
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;B&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">56</span>; };
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"B"</span>, <span class="id">styles</span>);
 
-<span class="hljs-keyword">let</span> colors = [<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f6&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b&#x27;</span>)];
-<span class="hljs-keyword">let</span> fills  = [<span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#3b82f630&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#22c55e30&#x27;</span>), <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f59e0b30&#x27;</span>)];
+<span class="kw">let</span> <span class="id">colors</span> = [<span class="id">Color</span>(<span class="str">'#3b82f6'</span>), <span class="id">Color</span>(<span class="str">'#22c55e'</span>), <span class="id">Color</span>(<span class="str">'#f59e0b'</span>)];
+<span class="kw">let</span> <span class="id">fills</span>  = [<span class="id">Color</span>(<span class="str">'#3b82f630'</span>), <span class="id">Color</span>(<span class="str">'#22c55e30'</span>), <span class="id">Color</span>(<span class="str">'#f59e0b30'</span>)];
 
-<span class="hljs-keyword">let</span> contours = glyphs[<span class="hljs-number">0</span>].<span class="hljs-property">contours</span>;
-<span class="hljs-keyword">let</span> ci = <span class="hljs-number">0</span>;
-<span class="hljs-keyword">for</span> (c <span class="hljs-keyword">in</span> contours) {
-  <span class="hljs-keyword">let</span> layer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;c&#x27;</span> + ci) \${
-    <span class="hljs-attr">fill</span>: fills[ci];
-    <span class="hljs-attr">stroke</span>: colors[ci];
-    stroke-<span class="hljs-attr">width</span>: <span class="hljs-number">1.5</span>;
+<span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
+<span class="kw">let</span> <span class="id">ci</span> = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="id">c</span> <span class="kw">in</span> <span class="id">contours</span>) {
+  <span class="kw">let</span> <span class="kw">layer</span> = <span class="tp">PathLayer</span>(<span class="str">'c'</span> + <span class="id">ci</span>) \${
+    <span class="pr">fill</span>: <span class="id">fills</span>[<span class="id">ci</span>];
+    <span class="pr">stroke</span>: <span class="id">colors</span>[<span class="id">ci</span>];
+    <span class="pr">stroke-width</span>: <span class="num">1.5</span>;
   };
-  layer.<span class="hljs-property">apply</span> { c.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">100</span>) }
-  ci = <span class="hljs-title function_">calc</span>(ci + <span class="hljs-number">1</span>);
+  <span class="kw">layer</span>.<span class="kw">apply</span> { <span class="id">c</span>.<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>) }
+  <span class="id">ci</span> = <span class="kw">calc</span>(<span class="id">ci</span> + <span class="num">1</span>);
 }
 </code></pre><p>The demo below decomposes &quot;Bingo!&quot; into its contours. Count them: B has 3 (outer shape + 2 holes), i has 2 (body + dot), n has 1 (solid body), g has 2 (body + descender loop), o has 2 (outer + inner), and ! has 2 (body + dot). That&#39;s 12 contours across 6 characters, each drawn in its own color. Each contour is colored from a 12-color palette cycling through blue, green, amber, red, purple, pink, cyan, lime, orange, indigo, teal, and fuchsia.</p>
 <p><mini-workspace caption="Contour decomposition — 12 contours across 6 characters of 'Bingo!'">
@@ -16600,35 +18956,35 @@ layer('divider').apply { M 345 20 v 370 }
 <p>The interesting part is combining transforms with the advance-width layout loop. Instead of just placing each glyph at the cursor position, you apply a per-character transformation first:</p>
 <h3>Wave Effect</h3>
 <p>Offset each character vertically using a sine function:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> idx = <span class="hljs-number">0</span>;
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  <span class="hljs-keyword">let</span> y_offset = <span class="hljs-title function_">calc</span>(<span class="hljs-title function_">sin</span>(idx * <span class="hljs-number">0.8</span>) * <span class="hljs-number">15</span>);
-  g.<span class="hljs-title function_">drawTo</span>(cursor_x, <span class="hljs-title function_">calc</span>(baseline + y_offset))
-  cursor_x = <span class="hljs-title function_">calc</span>(cursor_x + g.<span class="hljs-property">advanceWidth</span>);
-  idx = <span class="hljs-title function_">calc</span>(idx + <span class="hljs-number">1</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">idx</span> = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="kw">let</span> <span class="id">y_offset</span> = <span class="kw">calc</span>(<span class="id">sin</span>(<span class="id">idx</span> * <span class="num">0.8</span>) * <span class="num">15</span>);
+  <span class="id">g</span>.<span class="id">drawTo</span>(<span class="id">cursor_x</span>, <span class="kw">calc</span>(<span class="id">baseline</span> + <span class="id">y_offset</span>))
+  <span class="id">cursor_x</span> = <span class="kw">calc</span>(<span class="id">cursor_x</span> + <span class="id">g</span>.<span class="id">advanceWidth</span>);
+  <span class="id">idx</span> = <span class="kw">calc</span>(<span class="id">idx</span> + <span class="num">1</span>);
 }
 </code></pre><p>Each character sits at a different vertical position along the sine curve, creating a wave pattern. The advance widths still control horizontal spacing — only the y-coordinate changes.</p>
 <h3>Scale Cascade</h3>
 <p>Increase the scale of each successive character:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> idx = <span class="hljs-number">0</span>;
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  <span class="hljs-keyword">let</span> s = <span class="hljs-title function_">calc</span>(<span class="hljs-number">0.5</span> + idx * <span class="hljs-number">0.25</span>);
-  <span class="hljs-keyword">let</span> scaled = g.<span class="hljs-title function_">scale</span>(s, s);
-  scaled.<span class="hljs-title function_">drawTo</span>(cursor_x, baseline)
-  cursor_x = <span class="hljs-title function_">calc</span>(cursor_x + g.<span class="hljs-property">advanceWidth</span> * s);
-  idx = <span class="hljs-title function_">calc</span>(idx + <span class="hljs-number">1</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">idx</span> = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="kw">let</span> <span class="id">s</span> = <span class="kw">calc</span>(<span class="num">0.5</span> + <span class="id">idx</span> * <span class="num">0.25</span>);
+  <span class="kw">let</span> <span class="id">scaled</span> = <span class="id">g</span>.<span class="id">scale</span>(<span class="id">s</span>, <span class="id">s</span>);
+  <span class="id">scaled</span>.<span class="id">drawTo</span>(<span class="id">cursor_x</span>, <span class="id">baseline</span>)
+  <span class="id">cursor_x</span> = <span class="kw">calc</span>(<span class="id">cursor_x</span> + <span class="id">g</span>.<span class="id">advanceWidth</span> * <span class="id">s</span>);
+  <span class="id">idx</span> = <span class="kw">calc</span>(<span class="id">idx</span> + <span class="num">1</span>);
 }
 </code></pre><p>Notice that both the glyph <em>and</em> its advance width are scaled by the same factor. This keeps the spacing proportional to the size. The first character is half-size, the second is 75%, and so on.</p>
 <h3>Circular Arc Text</h3>
 <p>The key geometric relationship is <code>angle = arc_length / radius</code> — dividing a character&#39;s advance width by the arc radius converts linear distance to angular offset in radians. This lets you place characters along a circular path using trigonometry:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  <span class="hljs-keyword">let</span> char_mid = <span class="hljs-title function_">calc</span>(arc_cursor + g.<span class="hljs-property">advanceWidth</span> / <span class="hljs-number">2</span>);
-  <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(arc_start + char_mid / arc_r);
-  <span class="hljs-keyword">let</span> cx = <span class="hljs-title function_">calc</span>(arc_cx + <span class="hljs-title function_">cos</span>(angle) * arc_r);
-  <span class="hljs-keyword">let</span> cy = <span class="hljs-title function_">calc</span>(arc_cy + <span class="hljs-title function_">sin</span>(angle) * arc_r);
-  <span class="hljs-keyword">let</span> rotated = g.<span class="hljs-title function_">rotateAtVertexIndex</span>(<span class="hljs-number">0</span>, <span class="hljs-title function_">calc</span>(angle + <span class="hljs-number">0.</span>5pi));
-  rotated.<span class="hljs-title function_">drawTo</span>(cx, cy)
-  arc_cursor = <span class="hljs-title function_">calc</span>(arc_cursor + g.<span class="hljs-property">advanceWidth</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="kw">let</span> <span class="id">char_mid</span> = <span class="kw">calc</span>(<span class="id">arc_cursor</span> + <span class="id">g</span>.<span class="id">advanceWidth</span> / <span class="num">2</span>);
+  <span class="kw">let</span> <span class="id">angle</span> = <span class="kw">calc</span>(<span class="id">arc_start</span> + <span class="id">char_mid</span> / <span class="id">arc_r</span>);
+  <span class="kw">let</span> <span class="id">cx</span> = <span class="kw">calc</span>(<span class="id">arc_cx</span> + <span class="id">cos</span>(<span class="id">angle</span>) * <span class="id">arc_r</span>);
+  <span class="kw">let</span> <span class="id">cy</span> = <span class="kw">calc</span>(<span class="id">arc_cy</span> + <span class="id">sin</span>(<span class="id">angle</span>) * <span class="id">arc_r</span>);
+  <span class="kw">let</span> <span class="id">rotated</span> = <span class="id">g</span>.<span class="id">rotateAtVertexIndex</span>(<span class="num">0</span>, <span class="kw">calc</span>(<span class="id">angle</span> + <span class="num">0.5pi</span>));
+  <span class="id">rotated</span>.<span class="id">drawTo</span>(<span class="id">cx</span>, <span class="id">cy</span>)
+  <span class="id">arc_cursor</span> = <span class="kw">calc</span>(<span class="id">arc_cursor</span> + <span class="id">g</span>.<span class="id">advanceWidth</span>);
 }
 </code></pre><p>Each glyph is rotated to follow the arc&#39;s tangent direction using <code>.rotateAtVertexIndex(0, angle)</code>, then placed at the corresponding position on the circle. The <code>0.5pi</code> uses Pathogen&#39;s numeric suffix notation — a shorthand for π/2 (a quarter turn) — which converts the radial angle to the tangent direction. The advance widths are converted to angular offsets by dividing by the arc radius.</p>
 <p><mini-workspace caption="Three per-character transform effects — wave, grow, and circular arc text">
@@ -16884,24 +19240,24 @@ layer('title').apply { text(30, 205)\`Per-Character Transforms\` }
 <p>One of the most visually striking uses of glyph extraction is punching text out of geometry. The conceptual pipeline has three stages: extract the glyph paths, combine them into a single outline, then subtract that outline from a background shape.</p>
 <h3>Punching Text from Geometry</h3>
 <p>The approach uses <a href="/docs#path-blocks-unionother-pathblock"><code>.union()</code></a> and <a href="/docs#path-blocks-differenceother-pathblock"><code>.difference()</code></a> from the <a href="/blog/pathblock-boolean-operations">boolean operations post</a>. First, extract and lay out the glyphs, then union them into a single outline and subtract from a plate:</p>
-<pre><code class="hljs language-pathogen">@font <span class="hljs-string">&quot;Bebas Neue&quot;</span>;
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;CUTTING&quot;</span>, styles);
+<pre><code class="hljs language-pathogen">@font <span class="str">"Bebas Neue"</span>;
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"CUTTING"</span>, <span class="id">styles</span>);
 
-<span class="hljs-comment">// Project each glyph at its layout position (advance-width loop)</span>
-<span class="hljs-keyword">let</span> tracking = <span class="hljs-number">0.8</span>;
-<span class="hljs-keyword">let</span> cursor = <span class="hljs-number">0</span>;
-<span class="hljs-keyword">let</span> projected = [];
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  projected.<span class="hljs-title function_">push</span>(g.<span class="hljs-title function_">project</span>(cursor, <span class="hljs-number">0</span>));
-  cursor = <span class="hljs-title function_">calc</span>(cursor + g.<span class="hljs-property">advanceWidth</span> * tracking);
+<span class="cm">// Project each glyph at its layout position (advance-width loop)</span>
+<span class="kw">let</span> <span class="id">tracking</span> = <span class="num">0.8</span>;
+<span class="kw">let</span> <span class="id">cursor</span> = <span class="num">0</span>;
+<span class="kw">let</span> <span class="id">projected</span> = [];
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="id">projected</span>.<span class="id">push</span>(<span class="id">g</span>.<span class="id">project</span>(<span class="id">cursor</span>, <span class="num">0</span>));
+  <span class="id">cursor</span> = <span class="kw">calc</span>(<span class="id">cursor</span> + <span class="id">g</span>.<span class="id">advanceWidth</span> * <span class="id">tracking</span>);
 }
 
-<span class="hljs-comment">// Union into a single path, then punch from a rectangle</span>
-<span class="hljs-keyword">let</span> combined = projected[<span class="hljs-number">0</span>];
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">1.</span><span class="hljs-number">.6</span>) {  <span class="hljs-comment">// remaining 6 of 7 glyphs</span>
-  combined = combined.<span class="hljs-title function_">union</span>(projected[i]);
+<span class="cm">// Union into a single path, then punch from a rectangle</span>
+<span class="kw">let</span> <span class="id">combined</span> = <span class="id">projected</span>[<span class="num">0</span>];
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">1</span><span class="op">..</span><span class="num">6</span>) {  <span class="cm">// remaining 6 of 7 glyphs</span>
+  <span class="id">combined</span> = <span class="id">combined</span>.<span class="id">union</span>(<span class="id">projected</span>[<span class="id">i</span>]);
 }
-<span class="hljs-keyword">let</span> cutout = plate.<span class="hljs-title function_">project</span>(px, py).<span class="hljs-title function_">difference</span>(combined);
+<span class="kw">let</span> <span class="id">cutout</span> = <span class="id">plate</span>.<span class="id">project</span>(<span class="id">px</span>, <span class="id">py</span>).<span class="id">difference</span>(<span class="id">combined</span>);
 </code></pre><p>The chaining works because every boolean operation returns a PathBlock, so the result of <code>.union()</code> feeds directly into the next <code>.union()</code> or <code>.difference()</code> — for any number of glyphs. Because boolean operations <a href="/blog/pathblock-boolean-operations">preserve curve types</a>, the glyph outlines stay smooth at any zoom level.</p>
 <p>The demo below shows the full pipeline in five panels: individual glyph outlines, a <code>.union()</code> arrow, the combined path, a <code>.difference()</code> arrow, and the final cutout. Stage 1 lays out each of the seven glyphs as a separate colored outline. Stage 2 unions all seven into a single solid path. Stage 3 punches the united text out of a green rectangle using <code>.difference()</code>.</p>
 <p><mini-workspace caption="Text cutout pipeline — 7 glyph outlines → .union() chain → .difference() from a rectangle">
@@ -17306,19 +19662,19 @@ layer('insight').apply {
 <p>This doesn&#39;t mean <code>&lt;text&gt;</code> is wrong for all cases — TextBlock with estimation tables works well for most label placement, especially with <code>.intersects()</code> collision avoidance where a few percent of width variation doesn&#39;t matter. But when you need pixel-level precision — logo construction, stencil output, precise baseline alignment — <code>fromGlyph()</code> eliminates the measurement-rendering mismatch entirely.</p>
 <h2>Putting It Together</h2>
 <p>Here&#39;s the full pipeline from font declaration to rendered output — the workflow that ties together everything in this post:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// 1. Load the font</span>
-@font <span class="hljs-string">&quot;Inter&quot;</span>;
-<span class="hljs-keyword">let</span> styles = \${ font-<span class="hljs-attr">family</span>: <span class="hljs-title class_">Inter</span>; font-<span class="hljs-attr">size</span>: <span class="hljs-number">64</span>; };
+<pre><code class="hljs language-pathogen"><span class="cm">// 1. Load the font</span>
+@font <span class="str">"Inter"</span>;
+<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
 
-<span class="hljs-comment">// 2. Extract glyphs</span>
-<span class="hljs-keyword">let</span> glyphs = <span class="hljs-title class_">PathBlock</span>.<span class="hljs-title function_">fromGlyph</span>(<span class="hljs-string">&quot;HELLO&quot;</span>, styles);
+<span class="cm">// 2. Extract glyphs</span>
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"HELLO"</span>, <span class="id">styles</span>);
 
-<span class="hljs-comment">// 3. Lay out with advance widths</span>
-<span class="hljs-keyword">let</span> cursor_x = <span class="hljs-number">50</span>;
-<span class="hljs-keyword">let</span> baseline_y = <span class="hljs-number">120</span>;
-<span class="hljs-keyword">for</span> (g <span class="hljs-keyword">in</span> glyphs) {
-  g.<span class="hljs-title function_">drawTo</span>(cursor_x, baseline_y)
-  cursor_x = <span class="hljs-title function_">calc</span>(cursor_x + g.<span class="hljs-property">advanceWidth</span>);
+<span class="cm">// 3. Lay out with advance widths</span>
+<span class="kw">let</span> <span class="id">cursor_x</span> = <span class="num">50</span>;
+<span class="kw">let</span> <span class="id">baseline_y</span> = <span class="num">120</span>;
+<span class="kw">for</span> (<span class="id">g</span> <span class="kw">in</span> <span class="id">glyphs</span>) {
+  <span class="id">g</span>.<span class="id">drawTo</span>(<span class="id">cursor_x</span>, <span class="id">baseline_y</span>)
+  <span class="id">cursor_x</span> = <span class="kw">calc</span>(<span class="id">cursor_x</span> + <span class="id">g</span>.<span class="id">advanceWidth</span>);
 }
 </code></pre><p>That&#39;s three steps: <code>@font</code> declares the font, <code>fromGlyph()</code> converts text to geometry, and an advance-width loop handles layout. From there, every PathBlock operation is available — transforms, sampling, fillets, boolean operations, contour decomposition. The glyph is geometry now, and geometry composes.</p>
 <h2>What&#39;s Next</h2>
@@ -17341,15 +19697,15 @@ layer('insight').apply {
 <p>If you build parametric SVGs, icon systems, or generative art, you&#39;ve felt the friction: repeating the same shapes at different positions means copy-pasting <code>&lt;path&gt;</code> elements, tweaking <code>d</code> attributes, adjusting coordinates. PathBlocks solve this by capturing relative path commands as first-class values that you can draw, position, transform, and compose.</p>
 <h2>What Is a PathBlock?</h2>
 <p>A PathBlock is a reusable fragment of SVG path commands. You define one with the <code>@{ ... }</code> syntax, and the commands inside are stored as relative offsets from an implicit <code>(0, 0)</code> origin. The block doesn&#39;t draw anything on its own — it&#39;s a template waiting to be placed.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> arrow = @{
-  h <span class="hljs-number">40</span>
-  l -<span class="hljs-number">10</span> -<span class="hljs-number">8</span>
-  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
-  h -<span class="hljs-number">30</span>
-  v <span class="hljs-number">6</span>
-  h <span class="hljs-number">30</span>
-  l <span class="hljs-number">0</span> <span class="hljs-number">5</span>
-  l <span class="hljs-number">10</span> -<span class="hljs-number">8</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">arrow</span> = @{
+  h 40
+  l -10 -8
+  l 0 5
+  h -30
+  v 6
+  h 30
+  l 0 5
+  l 10 -8
 };
 </code></pre><p>This captures a small arrow shape. The commands are relative (<code>h</code>, <code>l</code>, <code>v</code>), so they describe the shape&#39;s geometry without committing to a position. See the full <a href="/docs#path-blocks-syntax">PathBlock syntax</a> documentation for details.</p>
 <p>The anatomy diagram below shows a PathBlock&#39;s structure: the green crosshair marks the <code>(0, 0)</code> origin, red dots mark <a href="/docs#path-blocks-properties"><code>.vertices</code></a>, the dashed yellow rectangle shows <a href="/docs#path-blocks-properties"><code>.bounds</code></a>, and the purple arrows indicate path direction.</p>
@@ -17629,12 +19985,12 @@ leg.apply {
 <p>There are two ways to draw a PathBlock: the manual approach and the convenience method.</p>
 <h3>Manual: <code>M</code> + <code>.draw()</code></h3>
 <p>Position the cursor with an <code>M</code> command, then call <code>.draw()</code> to emit the relative commands:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">60</span> <span class="hljs-number">70</span>
-arrow.<span class="hljs-title function_">draw</span>()
+<pre><code class="hljs language-pathogen">M 60 70
+arrow.draw()
 </code></pre><p>This is flexible — you control the cursor — but it&#39;s two statements for one shape. See <a href="/docs#path-blocks-drawing-a-path-block">Drawing a Path Block</a> in the documentation.</p>
 <h3>Convenience: <code>.drawTo(x, y)</code></h3>
 <p>The <code>drawTo()</code> method combines positioning and drawing in a single call:</p>
-<pre><code class="hljs language-pathogen">arrow.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">60</span>, <span class="hljs-number">70</span>)
+<pre><code class="hljs language-pathogen"><span class="id">arrow</span>.<span class="id">drawTo</span>(<span class="num">60</span>, <span class="num">70</span>)
 </code></pre><p>It emits <code>M 60 70</code> followed by the PathBlock&#39;s commands, and returns a <code>ProjectedPath</code> value you can use for further operations (sampling, transforms, boolean ops). This is the preferred approach for most use cases.</p>
 <p>The demo below shows both approaches — manual on top, <code>drawTo</code> on the bottom. Same shapes, same positions, less ceremony with <code>drawTo</code>.</p>
 <p><mini-workspace code-open caption="Manual M+draw() vs drawTo() — same result, less code">
@@ -17686,11 +20042,11 @@ drawto.apply {
 </mini-workspace></p>
 <h2>Reuse and Repetition</h2>
 <p>The real power of PathBlocks shows when you draw the same shape many times. Combine <code>drawTo()</code> with <a href="/docs#syntax-for-loops">control flow</a> to generate patterns:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> dot = @{ a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">6</span> <span class="hljs-number">0</span>  a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> -<span class="hljs-number">6</span> <span class="hljs-number">0</span> };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">dot</span> = @{ a 3 3 0 1 1 6 0  a 3 3 0 1 1 -6 0 };
 
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.5</span>) {
-  <span class="hljs-keyword">for</span> (j <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.5</span>) {
-    dot.<span class="hljs-title function_">drawTo</span>(<span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + i * <span class="hljs-number">15</span>), <span class="hljs-title function_">calc</span>(<span class="hljs-number">20</span> + j * <span class="hljs-number">15</span>))
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">5</span>) {
+  <span class="kw">for</span> (<span class="id">j</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">5</span>) {
+    <span class="id">dot</span>.<span class="id">drawTo</span>(<span class="kw">calc</span>(<span class="num">20</span> + <span class="id">i</span> * <span class="num">15</span>), <span class="kw">calc</span>(<span class="num">20</span> + <span class="id">j</span> * <span class="num">15</span>))
   }
 }
 </code></pre><p>PathBlocks are <a href="/docs#path-blocks-first-class-values">first-class values</a> — you can store them in variables, pass them around, and use them wherever a value is expected.</p>
@@ -17922,15 +20278,15 @@ arrows.apply {
 <h2>Projection</h2>
 <p>Drawing places a shape into the SVG output. But sometimes you need to work with a positioned shape <em>without</em> drawing it — for example, to query its geometry or use it in a boolean operation. That&#39;s what <a href="/docs#path-blocks-projecting-without-drawing"><code>.project(x, y)</code></a> is for.</p>
 <p><code>.project()</code> returns a <code>ProjectedPath</code> — the same commands, but offset to absolute coordinates at <code>(x, y)</code>. The PathBlock itself stays unchanged; the ProjectedPath is a positioned view of it:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> box = @{ h <span class="hljs-number">50</span> v <span class="hljs-number">50</span> h -<span class="hljs-number">50</span> z };
-<span class="hljs-keyword">let</span> proj = box.<span class="hljs-title function_">project</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>);
-<span class="hljs-title function_">log</span>(proj.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>));  <span class="hljs-comment">// Point at midpoint of positioned path</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">box</span> = @{ h 50 v 50 h -50 z };
+<span class="kw">let</span> <span class="id">proj</span> = <span class="id">box</span>.<span class="id">project</span>(<span class="num">100</span>, <span class="num">100</span>);
+<span class="id">log</span>(<span class="id">proj</span>.<span class="id">get</span>(<span class="num">0.5</span>));  <span class="cm">// Point at midpoint of positioned path</span>
 </code></pre><p>Think of it as &quot;place the shape here, but don&#39;t draw it yet.&quot; ProjectedPaths support all the same operations as PathBlocks — sampling, fillets, chamfers, booleans — but in absolute coordinates. You&#39;ll see <code>.project()</code> used heavily in the rest of this series whenever shapes need to interact with each other spatially.</p>
 <h2>Standard Library Shapes</h2>
 <p>Pathogen&#39;s <a href="/docs#stdlib-path-functions">standard library</a> provides ready-made PathBlocks for common shapes:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = @{ <span class="hljs-title function_">circle</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">30</span>) };
-<span class="hljs-keyword">let</span> r = @{ <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">60</span>, <span class="hljs-number">40</span>) };
-<span class="hljs-keyword">let</span> s = @{ <span class="hljs-title function_">star</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">25</span>, <span class="hljs-number">12</span>, <span class="hljs-number">5</span>) };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">c</span> = @{ <span class="id">circle</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">30</span>) };
+<span class="kw">let</span> <span class="id">r</span> = @{ <span class="id">rect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">60</span>, <span class="num">40</span>) };
+<span class="kw">let</span> <span class="id">s</span> = @{ <span class="id">star</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">25</span>, <span class="num">12</span>, <span class="num">5</span>) };
 </code></pre><p>These return PathBlocks, so all the same methods — <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, transforms — work on them.</p>
 <p><mini-workspace caption="Standard library shapes — circle, rect, star, polygon, and roundRect">
   <code>define ViewBox(0, 0, 600, 260);
@@ -18104,20 +20460,20 @@ subtitle.apply {
 <p>This is a critical distinction. A cubic Bézier with uneven control point spacing has a non-uniform speed along its raw parameter. Arc-length parameterization normalizes this so that equal increments of <code>t</code> correspond to equal distances along the curve.</p>
 <h2>Querying Points</h2>
 <p>The simplest query is <a href="/docs#path-blocks-gett-point"><code>.get(t)</code></a>, which returns the <code>Point</code> at arc-length fraction <code>t</code>:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
-<span class="hljs-keyword">let</span> mid = curve.<span class="hljs-title function_">get</span>(<span class="hljs-number">0.5</span>);
-<span class="hljs-title function_">log</span>(mid);  <span class="hljs-comment">// Point near the apex of the curve</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">curve</span> = @{ c 0 -100 200 -100 200 0 };
+<span class="kw">let</span> <span class="id">mid</span> = <span class="id">curve</span>.<span class="id">get</span>(<span class="num">0.5</span>);
+<span class="id">log</span>(<span class="id">mid</span>);  <span class="cm">// Point near the apex of the curve</span>
 </code></pre><p>This works on both PathBlocks (relative coordinates from origin) and ProjectedPaths (absolute coordinates). See <a href="/docs#path-blocks-sampling-on-projectedpath">Sampling on ProjectedPath</a> for the coordinate behavior.</p>
 <h2>Tangents and Normals</h2>
 <p><a href="/docs#path-blocks-tangentt-point-angle"><code>.tangent(t)</code></a> returns both a point and the direction of travel at that point:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> -<span class="hljs-number">100</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
-<span class="hljs-keyword">let</span> tan = curve.<span class="hljs-title function_">tangent</span>(<span class="hljs-number">0.0</span>);
-<span class="hljs-title function_">log</span>(tan.<span class="hljs-property">point</span>);   <span class="hljs-comment">// Point(0, 0) — start of curve</span>
-<span class="hljs-title function_">log</span>(tan.<span class="hljs-property">angle</span>);   <span class="hljs-comment">// angle in radians — direction of travel</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">curve</span> = @{ c 0 -100 200 -100 200 0 };
+<span class="kw">let</span> <span class="id">tan</span> = <span class="id">curve</span>.<span class="id">tangent</span>(<span class="num">0.0</span>);
+<span class="id">log</span>(<span class="id">tan</span>.<span class="id">point</span>);   <span class="cm">// Point(0, 0) — start of curve</span>
+<span class="id">log</span>(<span class="id">tan</span>.<span class="id">angle</span>);   <span class="cm">// angle in radians — direction of travel</span>
 </code></pre><p><a href="/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> n = curve.<span class="hljs-title function_">normal</span>(<span class="hljs-number">0.5</span>);
-<span class="hljs-comment">// n.angle is tangent angle - π/2</span>
-<span class="hljs-comment">// Use with cos/sin to offset perpendicular to the curve</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">n</span> = <span class="id">curve</span>.<span class="id">normal</span>(<span class="num">0.5</span>);
+<span class="cm">// n.angle is tangent angle - π/2</span>
+<span class="cm">// Use with cos/sin to offset perpendicular to the curve</span>
 </code></pre><p>The anatomy diagram below visualizes all three queries at <code>t = 0.4</code> on a cubic Bézier. The red dot is <code>.get(0.4)</code>, the green arrow is <code>.tangent(0.4)</code>, and the yellow arrow is <code>.normal(0.4)</code> — the left-hand perpendicular.</p>
 <p><mini-workspace caption="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4">
   <code>define ViewBox(0, 0, 560, 360);
@@ -18367,12 +20723,12 @@ subtitle.apply {
 </mini-workspace></p>
 <h2>Sampling Multiple Points</h2>
 <p>You can sample any number of points by calling <code>.get(t)</code> at specific values. Here&#39;s a curve with four markers at the quarter marks:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> curve = @{ c <span class="hljs-number">0</span> -<span class="hljs-number">80</span> <span class="hljs-number">200</span> -<span class="hljs-number">80</span> <span class="hljs-number">200</span> <span class="hljs-number">0</span> };
-curve.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">20</span>, <span class="hljs-number">60</span>)
-<span class="hljs-keyword">let</span> proj = curve.<span class="hljs-title function_">project</span>(<span class="hljs-number">20</span>, <span class="hljs-number">60</span>);
-<span class="hljs-keyword">for</span> (t <span class="hljs-keyword">in</span> [<span class="hljs-number">0.25</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.75</span>]) {
-  <span class="hljs-keyword">let</span> p = proj.<span class="hljs-title function_">get</span>(t);
-  @{ a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">6</span> <span class="hljs-number">0</span>  a <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> -<span class="hljs-number">6</span> <span class="hljs-number">0</span> }.<span class="hljs-title function_">drawTo</span>(p.<span class="hljs-property">x</span> - <span class="hljs-number">3</span>, p.<span class="hljs-property">y</span>)
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">curve</span> = @{ c 0 -80 200 -80 200 0 };
+<span class="id">curve</span>.<span class="id">drawTo</span>(<span class="num">20</span>, <span class="num">60</span>)
+<span class="kw">let</span> <span class="id">proj</span> = <span class="id">curve</span>.<span class="id">project</span>(<span class="num">20</span>, <span class="num">60</span>);
+<span class="kw">for</span> (<span class="id">t</span> <span class="kw">in</span> [<span class="num">0.25</span>, <span class="num">0.5</span>, <span class="num">0.75</span>]) {
+  <span class="kw">let</span> <span class="id">p</span> = <span class="id">proj</span>.<span class="id">get</span>(<span class="id">t</span>);
+  @{ a 3 3 0 1 1 6 0  a 3 3 0 1 1 -6 0 }.<span class="id">drawTo</span>(<span class="id">p</span>.<span class="id">x</span> - <span class="num">3</span>, <span class="id">p</span>.<span class="id">y</span>)
 }
 </code></pre><p>This works but is manual — you pick the t-values yourself. For evenly-spaced distributions, <code>partition()</code> automates this pattern.</p>
 <h2>Sampling Points Along a Curve</h2>
@@ -18437,9 +20793,9 @@ tangents.apply {
 <p>The red dots use <a href="/docs#path-blocks-partitionn-orientedpoint"><code>partition(8)</code></a> to divide the curve into 8 equal segments. Each partition point includes <code>.point</code>, <code>.angle</code>, and <code>.t</code> properties. The green tangent lines use <code>tangent(t)</code> at each eighth to show the direction of travel.</p>
 <h2>Even Distribution with <code>partition(n)</code></h2>
 <p><a href="/docs#path-blocks-partitionn-orientedpoint"><code>partition(n)</code></a> is the workhorse for distributing elements along a path. It returns <code>n + 1</code> oriented points (both endpoints included), evenly spaced by arc length:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> path = @{ h <span class="hljs-number">100</span> };
-<span class="hljs-keyword">let</span> pts = path.<span class="hljs-title function_">partition</span>(<span class="hljs-number">4</span>);
-<span class="hljs-comment">// 5 points at t = 0, 0.25, 0.5, 0.75, 1.0</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">path</span> = @{ h 100 };
+<span class="kw">let</span> <span class="id">pts</span> = <span class="id">path</span>.<span class="id">partition</span>(<span class="num">4</span>);
+<span class="cm">// 5 points at t = 0, 0.25, 0.5, 0.75, 1.0</span>
 </code></pre><p>Each oriented point has three properties:</p>
 <table>
 <thead>
@@ -20537,8 +22893,7 @@ is the visit (&quot;off → on → off&quot;).</p>
 <p>The two knobs, plotted. Three hills: two share a center (one with wider
 feet), and one is simply moved.</p>
 <p><mini-workspace code-open caption="center places the peak; spread is the peak-to-foot distance. Every hill touches the dashed 1.0 line at its center mark and rests at exactly zero outside its feet.">
-  <code>// viewBox="0 0 400 190"
-//-- The two knobs. Three hills on one axis: same center with a wider
+  <code>//-- The two knobs. Three hills on one axis: same center with a wider
 //-- spread, and a moved center. Each peaks at exactly 1 and its feet rest
 //-- at exactly 0.
 
@@ -20620,8 +22975,7 @@ not near zero, <em>at</em> zero.</p>
 a spotlight at the middle. Bottom row — <strong>two bumps added in one
 expression</strong>, two spotlights.</p>
 <p><mini-workspace code-open caption="Dot radius follows one bump above, a sum of two bumps below.">
-  <code>// viewBox="0 0 400 170"
-//-- Attention without if-statements. Top row: dot radius follows one
+  <code>//-- Attention without if-statements. Top row: dot radius follows one
 //-- bump -- a spotlight at t = 0.5. Bottom row: TWO bumps summed in one
 //-- expression -- two spotlights, and outside their feet the sum
 //-- contributes exactly nothing.
@@ -20670,8 +23024,7 @@ window — the two spotlights can&#39;t contaminate each other.</p>
 — a shoulder, a main peak, a small right summit. A second, softer layer
 uses two more bumps as mist.</p>
 <p><mini-workspace code-open caption="amplitude × bump is a term you can say out loud: 'ninety-five tall, centered past the middle, feet 0.3 wide.' Three sayable terms describe the ridge; moving a peak is editing one number.">
-  <code>// viewBox="0 0 400 210"
-//-- Sums of hills make arbitrary skylines. One filled silhouette whose
+  <code>//-- Sums of hills make arbitrary skylines. One filled silhouette whose
 //-- height is three amplitude-times-bump terms: a tall mid peak, a low
 //-- wide shoulder, and a small right summit.
 
@@ -20723,8 +23076,7 @@ makes ribbons the perfect x-ray for width functions. (Ribbon machinery
 glossed in <a href="/blog/primer-hash11">part 2</a>.) Three ribbons: a plain bump,
 the same bump <strong>squared</strong>, and an asymmetric sum.</p>
 <p><mini-workspace code-open caption="pow(bump, 2) is a one-token remix: sub-1 values shrink when squared, so the peak stays put while the flanks pull in — sharper swell, softer feet. The third ribbon sums two bumps into an asymmetric envelope.">
-  <code>// viewBox="0 0 400 230"
-//-- On a straight spine, the silhouette of a stroke IS its width profile.
+  <code>//-- On a straight spine, the silhouette of a stroke IS its width profile.
 //-- Three ribbons: a plain bump, the same bump squared (sharper peak,
 //-- softer feet), and an asymmetric two-bump sum.
 
@@ -20780,8 +23132,7 @@ width is the same three-term bump expression scaled by its layer index
 <code>k</code>, with a per-layer hue shift — bump algebra alone carries the whole
 effect.</p>
 <p><mini-workspace code-open caption="Twelve layers, one three-term bump expression scaled by k, hue shifted per layer. No jitter, no noise — the swells sit where the centers put them, on every layer, on every compile.">
-  <code>// viewBox="0 60 400 140"
-//-- Twelve compound-offset layers on one curved spine, every width a sum
+  <code>//-- Twelve compound-offset layers on one curved spine, every width a sum
 //-- of bump terms scaled by the layer index, hue shifted per layer. No
 //-- jitter, no noise -- bump algebra alone carries the whole glow.
 
@@ -20894,8 +23245,7 @@ missing endpoint never matters visually.</li>
 same 48 questions from two <em>separate</em> loops. The third row asks
 <code>randomRange(0, 1)</code> instead.</p>
 <p><mini-workspace code-open caption="Three rows of 48 dots: two separate hash01 loops (blue), one randomRange loop (red).">
-  <code>// viewBox="0 0 400 210"
-//-- Three rows of 48 dots. Rows one and two ask hash01 the same questions
+  <code>//-- Three rows of 48 dots. Rows one and two ask hash01 the same questions
 //-- from two separate loops -- identical answers, identical rows. Row three
 //-- asks randomRange, which re-rolls on every compile.
 
@@ -20949,8 +23299,7 @@ the whole lesson.)</p>
 deck 1, the size deck 2 — three independent random-looking properties from
 one loop counter.</p>
 <p><mini-workspace code-open caption="140 stars from one loop: x from seed 0, y from seed 1, radius from seed 2. Three independent streams, one index — and the same sky on every compile.">
-  <code>// viewBox="0 0 400 220"
-//-- One index, three decks: x from the default deck, y from deck 1, size
+  <code>//-- One index, three decks: x from the default deck, y from deck 1, size
 //-- from deck 2. 140 stars land convincingly at random -- and land in
 //-- exactly the same places on every compile.
 
@@ -20981,8 +23330,7 @@ independent properties out as you have seeds.</strong></p>
 sits exactly on its grid cell, but its lightness comes from one stream and
 its hue from another — a woven-textile effect from two lines of code.</p>
 <p><mini-workspace code-open caption="Structure from the grid, variation from two hashed streams: lightness on one deck, hue on another. row * 14 + col gives every cell its own integer label.">
-  <code>// viewBox="0 0 400 240"
-//-- A 14 x 8 grid of tiles. Every tile's lightness comes from one hashed
+  <code>//-- A 14 x 8 grid of tiles. Every tile's lightness comes from one hashed
 //-- stream and its hue from another -- the grid reads as a woven textile
 //-- swatch, and it's the same swatch on every compile.
 
@@ -21013,8 +23361,7 @@ thing.</p>
 human. The bottom ruler jitters each tick&#39;s x-position, lean, and length
 by small hashed amounts.</p>
 <p><mini-workspace code-open caption="Same ruler twice: machine-perfect above, three small hashed nudges below. The lean line's * 2 - 1 remap — 'either direction' instead of 'one way' — is the next post's whole reason to exist.">
-  <code>// viewBox="0 0 400 150"
-//-- Two rulers. The top one is machine-perfect. The bottom one nudges every
+  <code>//-- Two rulers. The top one is machine-perfect. The bottom one nudges every
 //-- tick's position, lean, and length by a hashed amount -- it reads as
 //-- drawn by a person, and redraws identically forever.
 
@@ -21052,8 +23399,7 @@ It&#39;s such a common move that it has its own function:
 position, height, lean, and color each drawn from its own seeded stream,
 composed into a finished little landscape.</p>
 <p><mini-workspace code-open caption="Ninety grass blades and a dozen seed heads — position, height, lean, and color each on its own seeded stream.">
-  <code>// viewBox="0 128 400 132"
-//-- Ninety grass blades and a dozen seed heads, every property -- position,
+  <code>//-- Ninety grass blades and a dozen seed heads, every property -- position,
 //-- height, lean, color -- drawn from its own hashed stream. A finished
 //-- little landscape that regenerates identically on every compile: change
 //-- any one seed constant and the whole meadow re-lands in a new (but
@@ -21139,7 +23485,7 @@ up. Baseline wobble, tilt, breathing room, hand-drawn looseness — they&#39;re
 all symmetric drifts around a deliberate center, and <code>[−1, 1)</code> is their
 natural shape.</p>
 <p>The idiom to memorize (it&#39;s all over this blog):</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> wobble = <span class="hljs-number">1</span> + <span class="hljs-title function_">hash11</span>(i, layerIndex) * <span class="hljs-number">0.2</span>;
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">wobble</span> = <span class="num">1</span> + <span class="id">hash11</span>(<span class="id">i</span>, <span class="id">layerIndex</span>) * <span class="num">0.2</span>;
 </code></pre><p>That&#39;s &quot;a ±20% factor, per index, per layer&quot; — multiply it onto a width, a
 radius, a spacing, anything. The <code>0.2</code> is the amplitude dial; the seed
 keeps each layer&#39;s wobble independent.</p>
@@ -21148,8 +23494,7 @@ keeps each layer&#39;s wobble independent.</p>
 from a center axis. About half land above, half below, at unrelated
 heights.</p>
 <p><mini-workspace code-open caption="48 dots at hash11(i) · 43 from the center axis — ticks mark −1, 0, and +1.">
-  <code>// viewBox="0 0 400 190"
-//-- 48 dots straddling an axis: hash11(i) answers between -1 and 1, so
+  <code>//-- 48 dots straddling an axis: hash11(i) answers between -1 and 1, so
 //-- roughly half land above the line and half below, at hashed heights.
 
 define ViewBox(0, 0, 400, 190);
@@ -21188,8 +23533,7 @@ maps directly onto &quot;which side of the line.&quot;</p>
 the bottom row drops each baseline by <code>hash11(i) * 5</code> and leans each bar
 by <code>hash11(i, 1) * 4</code>.</p>
 <p><mini-workspace code-open caption="The same 26 bars twice: machine-set above, baseline-and-lean jittered below.">
-  <code>// viewBox="0 0 400 170"
-//-- Two rows of "type": equal-width bars standing on a baseline. The top
+  <code>//-- Two rows of "type": equal-width bars standing on a baseline. The top
 //-- row is machine-set. The bottom row nudges each bar's baseline up or
 //-- down and leans it left or right -- instantly warmer, and repeatable.
 
@@ -21223,8 +23567,7 @@ with <code>hash01</code> you&#39;d get a row that only ever sagged one way.</p>
 with every dot offset by <code>(hash11(idx) * j, hash11(idx, 1) * j)</code> — and
 <code>j</code> set to 0, 2, and 5.</p>
 <p><mini-workspace code-open caption="One 10×6 grid, three amplitudes: j = 0, 2, 5.">
-  <code>// viewBox="0 0 400 132"
-//-- The same 10 x 6 dot grid three times. The only difference is j -- the
+  <code>//-- The same 10 x 6 dot grid three times. The only difference is j -- the
 //-- jitter amplitude multiplying hash11: 0 (rigid), 2 (relaxed), 5
 //-- (scattered). One number is the entire design decision.
 
@@ -21280,8 +23623,7 @@ between stops,&quot; and <code>Cap.tapered</code> closes the ends to points. Ful
 the <a href="/docs#variable-offset-variable-offset">variable-offset docs</a>; here,
 all that matters is <em>the width at each stop is a number you compute</em>.</p>
 <p><mini-workspace code-open caption="One smooth width profile, twice: clean above, times 1 + hash11(i) · 0.25 below. The profile is the design; the wobble factor is the texture — and each is tunable without touching the other.">
-  <code>// viewBox="0 0 400 170"
-//-- The house idiom: 1 + hash11(i) * 0.25 is a +/-25% wobble factor you
+  <code>//-- The house idiom: 1 + hash11(i) * 0.25 is a +/-25% wobble factor you
 //-- multiply onto anything. Top ribbon: a smooth width profile. Bottom:
 //-- the same profile times the wobble -- the edge gets tooth.
 
@@ -21322,8 +23664,7 @@ overlapping pencil passes. Every ring is a 64-sided polygon whose vertex
 radius wobbles by ±7%, with the ring-and-pass number as the seed — so
 every pass wobbles its own way.</p>
 <p><mini-workspace code-open caption="Two passes per ring at 65% opacity: where they agree the line darkens, where they disagree it feathers — a pencil, from one signed wobble and disciplined seeds.">
-  <code>// viewBox="0 0 400 260"
-//-- Five concentric "pencil" rings, each drawn twice like overlapping
+  <code>//-- Five concentric "pencil" rings, each drawn twice like overlapping
 //-- pencil passes. Every vertex radius wobbles by a few percent, with the
 //-- ring number and pass number as seeds -- so every pass wobbles its own
 //-- way, and the whole sketch is repeatable.
@@ -21412,8 +23753,7 @@ from <a href="/blog/primer-hash01"><code>hash01</code></a> — this post won&#39
 <p>Both rows size 40 dots from the same 1.5-to-5 range. The top row asks
 <code>randomRange</code>; the bottom asks <code>hashRange</code> with the loop index in front.</p>
 <p><mini-workspace code-open caption="Forty dots sized from the same 1.5–5 range: randomRange above, hashRange(i, ...) below.">
-  <code>// viewBox="0 0 400 160"
-//-- The migration in one picture. Top row: dot sizes from
+  <code>//-- The migration in one picture. Top row: dot sizes from
 //-- randomRange(1.5, 5) -- they reshuffle on every compile. Bottom row:
 //-- hashRange(i, 1.5, 5) -- same call shape with an index in front, and
 //-- the sizes are a fixture.
@@ -21457,8 +23797,7 @@ contrast is the lesson.)</p>
 <code>hashRange(i, 35, 125)</code>, width from <code>hashRange(i, 10, 22, 1)</code>, and a
 subtle facade shade from a third stream.</p>
 <p><mini-workspace code-open caption="The two range calls ARE the spec: heights 35–125, widths 10–22. Edit the height line to (i, 50, 90) and the same code draws a suburb.">
-  <code>// viewBox="0 0 400 210"
-//-- A night skyline where the ranges read like a spec: buildings between
+  <code>//-- A night skyline where the ranges read like a spec: buildings between
 //-- 35 and 125 tall, between 10 and 22 wide. Tighten either range and the
 //-- whole city changes character -- without touching the structure.
 
@@ -21493,8 +23832,7 @@ idea: structure stays, character is in the numbers.</p>
 <p>Four properties, four ranges, four seeds — a complete scatter system in
 four lines: position (x, y), size, and hue.</p>
 <p><mini-workspace code-open caption="Four lines, four independent streams: x, y, radius, hue. Each range line is a design decision you can tighten or loosen without touching the others.">
-  <code>// viewBox="0 0 400 190"
-//-- Four ranges as a spec sheet: where (x, y), how big (r), what color
+  <code>//-- Four ranges as a spec sheet: where (x, y), how big (r), what color
 //-- (hue). Each property reads its own seed; each range line is a design
 //-- decision you can tighten or loosen independently.
 
@@ -21525,8 +23863,7 @@ makes the four lines read as a spec sheet.</p>
 computes <code>floor(hashRange(i, 0, 3, 2))</code> — an even three-way pick — and the
 bucket routes it to a near, middle, or far layer with matching opacity.</p>
 <p><mini-workspace code-open caption="floor(hashRange(i, 0, 3, 2)) buckets every streak into exactly {0, 1, 2} with equal shares — the half-open range earning its keep. One population, three depth styles.">
-  <code>// viewBox="0 0 400 200"
-//-- Eighty slanted rain streaks. Position and length are ranged picks;
+  <code>//-- Eighty slanted rain streaks. Position and length are ranged picks;
 //-- each streak also lands in one of three depth buckets --
 //-- floor(hashRange(i, 0, 3, 2)) picks 0, 1, or 2 -- and the bucket sets
 //-- the opacity, so the rain reads as near, middle, and far.
@@ -21573,8 +23910,7 @@ population, several styles.&quot;</p>
 front; each pebble&#39;s width, squash, position, and warmth come from named
 ranges, and nearer rows draw from bigger width ranges.</p>
 <p><mini-workspace code-open caption="Four overlapping rows, back to front — width, squash, position, and warmth all named ranges, with nearer rows drawing from bigger ones.">
-  <code>// viewBox="0 88 400 152"
-//-- Four overlapping rows of pebbles, back to front. Every knob is a
+  <code>//-- Four overlapping rows of pebbles, back to front. Every knob is a
 //-- named range: width, squash, and gray-warmth per pebble, with nearer
 //-- rows drawing from bigger ranges. Tuning the beach means tuning
 //-- ranges -- narrow one row's width range and the rows behind stay put.
@@ -21664,8 +24000,7 @@ distance under your control.</p>
 numbers 0 through 8; the curve is <code>noise(x)</code> sampled 160 times across the
 same span.</p>
 <p><mini-workspace code-open caption="The curve doesn't approximate the dots — it passes exactly through every one, because at whole numbers noise IS hash01. And it arrives flat at every pin, courtesy of the smoothstep glide.">
-  <code>// viewBox="0 0 400 190"
-//-- The relationship in one picture: dots mark hash01(k) at every whole
+  <code>//-- The relationship in one picture: dots mark hash01(k) at every whole
 //-- number 0..8; the curve is noise(x) sampled finely across the same
 //-- span. The curve threads EXACTLY through every dot -- and flattens as
 //-- it touches each one.
@@ -21723,8 +24058,7 @@ facts are the entire function.</p>
 <p>Three wandering lines, one seed, three input scales: <code>t*3</code>, <code>t*6</code>,
 <code>t*12</code>.</p>
 <p><mini-workspace code-open caption="Slow swells, undulation, chatter — the whole personality range is multiplication on the input. (The slow line also LOOKS lower-amplitude: crossing only three pins, it rarely reaches the range extremes.)">
-  <code>// viewBox="0 0 400 230"
-//-- One knob controls the character: the input scale. noise(t * 3) passes
+  <code>//-- One knob controls the character: the input scale. noise(t * 3) passes
 //-- 3 pins while t crosses 0..1 -- slow swells. noise(t * 6) undulates.
 //-- noise(t * 12) chatters. Same function, same seed, different speed
 //-- past the pins.
@@ -21774,8 +24108,7 @@ frequency at work, not a different amplitude setting.)</p>
 <p>The same randomness source, sampled two ways. Both rows color 60 bars by
 lightness; the top asks <code>hash01(i)</code>, the bottom asks <code>noise(i * 0.15)</code>.</p>
 <p><mini-workspace code-open caption="Sixty bars colored by lightness, twice: hash01(i) above, noise(i · 0.15) below.">
-  <code>// viewBox="0 0 400 180"
-//-- Same randomness source, sampled two ways. Top: each bar's lightness
+  <code>//-- Same randomness source, sampled two ways. Top: each bar's lightness
 //-- is hash01(i) -- neighbors are strangers, it reads as static. Bottom:
 //-- lightness is noise(i * 0.15) -- neighbors agree, it reads as light
 //-- moving across a surface.
@@ -21822,8 +24155,7 @@ organic undulation — times the <a href="/blog/primer-smoothstep"><code>smooths
 end-window <code>smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t)</code>, which eases
 both tips to a point.</p>
 <p><mini-workspace code-open caption="From the inside out: noise(t·6) is the texture, 2 + keeps a minimum body, · 13 sets the amplitude, and the end-window lets the ribbon enter and exit cleanly. Adjacent stops cooperate — that's texture, not jitter.">
-  <code>// viewBox="0 0 400 130"
-//-- Everything so far, on one ribbon: noise drives the width for organic
+  <code>//-- Everything so far, on one ribbon: noise drives the width for organic
 //-- undulation, and a smoothstep end-window eases both tips to a point.
 //-- Width = (2 + noise(t*6) * 13) * smoothstep(0, 0.08, t) * smoothstep(1, 0.92, t).
 
@@ -21874,8 +24206,7 @@ to front — each its own seeded stream, with nearer ridges darker, with
 bigger swings and finer detail. The front ridge stacks <strong>two</strong> streams: a
 slow, tall one for shape plus a fast, quiet one for detail.</p>
 <p><mini-workspace code-open caption="Four seeded ridgelines, back to front — the front one stacks a slow, tall stream with a fast, quiet one.">
-  <code>// viewBox="0 0 400 250"
-//-- Four mountain ridgelines, back to front. Each ridge is one seeded
+  <code>//-- Four mountain ridgelines, back to front. Each ridge is one seeded
 //-- noise stream; nearer ridges are darker, taller, and busier. The front
 //-- ridge stacks two streams -- a slow tall one plus a fast quiet one --
 //-- for detail on top of shape.
@@ -21983,8 +24314,7 @@ strokes that shimmer independently and one glow that flows.</p>
 16×16 grid from the same palette; the left asks <code>hash01</code> of each cell&#39;s
 index, the right asks <code>noise2</code> of each cell&#39;s position.</p>
 <p><mini-workspace code-open caption="One palette, two samplers: hash01 of the cell index (left) versus noise2 of the cell position (right).">
-  <code>// viewBox="0 0 400 220"
-//-- Two shaded grids, same size, same palette. Left: each cell's shade is
+  <code>//-- Two shaded grids, same size, same palette. Left: each cell's shade is
 //-- hash01 of its index -- TV static. Right: noise2 of its (col, row)
 //-- position scaled down -- cloudy patches. Neighboring cells agree in
 //-- BOTH directions.
@@ -22043,8 +24373,7 @@ grid gets large.)</p>
 <p>Sampling the field at each element&#39;s own position. A 30×17 dot grid where
 each radius is <code>0.6 + 3 * noise2(col * 0.12, row * 0.12)</code>.</p>
 <p><mini-workspace code-open caption="Sizes swell in blobs like rain intensity across pavement. The · 0.12 on both coordinates is the frequency knob in 2D — smaller factors, bigger weather systems.">
-  <code>// viewBox="0 0 400 220"
-//-- A 30 x 17 dot grid where each dot's radius samples the field at its
+  <code>//-- A 30 x 17 dot grid where each dot's radius samples the field at its
 //-- own position: 0.6 + 3 * noise2(col * 0.12, row * 0.12). Sizes swell
 //-- in blobs, like rain intensity across pavement.
 
@@ -22084,8 +24413,7 @@ existence. Left: line <code>j</code> samples <code>noise2(t*4, j*0.3)</code> —
 reads as a flowing sheet. Right: the same twelve lines with independent
 1D streams — they ignore each other.</p>
 <p><mini-workspace code-open caption="Twelve lines twice: rows of one noise2 field (left) versus independent noise seeds (right).">
-  <code>// viewBox="0 0 400 230"
-//-- The layer-index trick. Left stack: line j samples noise2(t*4, j*0.3)
+  <code>//-- The layer-index trick. Left stack: line j samples noise2(t*4, j*0.3)
 //-- -- rows of ONE field, so neighboring lines rise and fall together and
 //-- the stack reads as a flowing sheet. Right stack: each line gets its
 //-- own independent 1D stream -- the lines ignore each other.
@@ -22144,8 +24472,7 @@ grid moves horizontally by field 0 and vertically by field 1 —
 <code>(noise2(x, y) - 0.5) * 14</code> each way (the <code>- 0.5</code> recenters [0,1) into a
 signed push, the same remap trick from <a href="/blog/primer-hash11"><code>hash11</code></a>).</p>
 <p><mini-workspace code-open caption="Two smooth fields make a push direction — neighboring vertices get nearly the same push, so the rules bend instead of scattering. The doorway to flow fields, fabric, and water.">
-  <code>// viewBox="0 0 400 230"
-//-- Displacement: two fields make a push direction. Every vertex of a
+  <code>//-- Displacement: two fields make a push direction. Every vertex of a
 //-- ruled grid moves by ((noise2(x,y) - 0.5) * 14, (noise2(x,y,1) - 0.5) * 14)
 //-- -- the default field pushes horizontally, the seed-1 field vertically.
 //-- The low frequency (0.14) keeps neighboring vertices agreeing, so the
@@ -22199,8 +24526,7 @@ profile is <a href="/blog/primer-bump"><code>bump</code></a> algebra, each multi
 texture factor <code>1 + (noise2(t*6, k*0.3) - 0.5) * 0.9</code> — with <code>t</code> running
 along the stroke and layer index <code>k</code> running <em>across</em> the field.</p>
 <p><mini-workspace code-open caption="One noise2 field textures all twelve layers: t along the stroke, k · 0.3 across the stack.">
-  <code>// viewBox="0 78 400 103"
-//-- The series finale: bump-shaped widths (part 5) textured by ONE
+  <code>//-- The series finale: bump-shaped widths (part 5) textured by ONE
 //-- noise2 field. t runs along the stroke; layer * 0.3 runs across the
 //-- layers. Because the field is continuous in both directions,
 //-- neighboring layers sample neighboring rows -- and the whole glow
@@ -22316,8 +24642,7 @@ between its random pins.</p>
 <p>Three ways from 0 to 1 across the same window. The dashed line is a hard
 step. The thin line is a straight ramp. The bold line is <code>smoothstep</code>.</p>
 <p><mini-workspace code-open caption="Three routes across the 0.3–0.7 window: hard step (dashed), straight ramp (thin), smoothstep (bold).">
-  <code>// viewBox="0 0 400 200"
-//-- Three ways to get from 0 to 1 across the window 0.3..0.7: a hard step
+  <code>//-- Three ways to get from 0 to 1 across the window 0.3..0.7: a hard step
 //-- (cliff), a straight lerp-style ramp, and smoothstep -- the S-curve
 //-- that leaves the floor flat and arrives at the ceiling flat.
 
@@ -22392,8 +24717,7 @@ corner-free by construction.</p>
 half. Bottom row: the markers are <strong>reversed</strong> — <code>smoothstep(1.0, 0.6, t)</code>
 — so the fade runs the other way.</p>
 <p><mini-workspace code-open caption="Forward markers fade in; reversed markers fade out — no 1 − s arithmetic, just swap the edges and the ramp runs downhill.">
-  <code>// viewBox="0 0 400 170"
-//-- Applying the dimmer spatially. Top row: dot size fades IN across the
+  <code>//-- Applying the dimmer spatially. Top row: dot size fades IN across the
 //-- left half via smoothstep(0.1, 0.5, t). Bottom row: swap the markers --
 //-- smoothstep(1.0, 0.6, t) -- and the ramp runs downhill, fading OUT
 //-- toward the right.
@@ -22438,8 +24762,7 @@ arithmetic, just swap the edges and the ramp runs downhill.</p>
 <code>smoothstep(0.1, 0.3, t) × smoothstep(0.9, 0.7, t)</code> — drives both the
 plot (top) and the bar heights (bottom).</p>
 <p><mini-workspace code-open caption="Uphill times downhill: rise, hold at a genuinely flat 1.0 (the dashed line), fall. The plot and the bars share one win lambda — the picture and the application are the same function.">
-  <code>// viewBox="0 0 400 250"
-//-- The plateau idiom: an uphill ramp TIMES a downhill ramp makes a
+  <code>//-- The plateau idiom: an uphill ramp TIMES a downhill ramp makes a
 //-- flat-topped window -- rise, hold, fall. The plot (top) and the bar
 //-- heights (bottom) share the exact same lambda.
 
@@ -22515,8 +24838,7 @@ ribbon machinery — <code>compoundVariableOffset</code>, <code>vo.stop</code>, 
 is glossed in <a href="/blog/primer-hash11">part 2</a>; the only part that matters
 here is that each stop&#39;s width is a number we compute.)</p>
 <p><mini-workspace code-open caption="The same 9-unit width, without and with the smoothstep end-window.">
-  <code>// viewBox="0 0 400 160"
-//-- End windows on a stroke. Top: constant width -- the ribbon ends in
+  <code>//-- End windows on a stroke. Top: constant width -- the ribbon ends in
 //-- chopped-off vertical edges. Bottom: the same width times
 //-- smoothstep(0, 0.12, t) * smoothstep(1, 0.88, t), which eases the
 //-- width to zero at both tips.
@@ -22585,8 +24907,7 @@ position — and use it to blend lightness, hue, and chroma from &quot;sky
 values&quot; to &quot;sea values.&quot; The sun&#39;s halo rings shrink by a reversed
 smoothstep of ring index.</p>
 <p><mini-workspace code-open caption="Sixty strips, one eased mix factor m blending every color channel from sky to sea in sync. Every soft edge in this scene is the same three-argument call wearing different numbers.">
-  <code>// viewBox="0 0 400 230"
-//-- A dusk seascape with no gradients: sixty horizontal strips, each
+  <code>//-- A dusk seascape with no gradients: sixty horizontal strips, each
 //-- strip's color MIXED between a sky color and a sea color by one
 //-- smoothstep of its vertical position. The soft horizon line is the
 //-- S-curve; the sun's halo rings shrink by a reversed smoothstep.
@@ -22650,7 +24971,7 @@ and the callable <a href="/docs#stdlib-easing">Easing family</a>
 <h2>The Annular Sector</h2>
 <p>The fundamental shape in a radial bar chart is the <strong>annular sector</strong> — a ring segment defined by an inner radius, outer radius, and two angles. In Pathogen, the new <code>radialWedge()</code> stdlib function generates this shape with a single call:</p>
 <pre><code class="hljs language-pathogen">M cx cy
-<span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
+<span class="id">radialWedge</span>(<span class="id">innerR</span>, <span class="id">outerR</span>, <span class="id">fromAngle</span>, <span class="id">toAngle</span>, <span class="id">cornerR</span>)
 </code></pre><p>The center is wherever the cursor is positioned (via <code>M cx cy</code>). The function emits only relative commands (<code>m</code>, <code>a</code>, <code>l</code>, <code>z</code>) — no absolute <code>M</code> — so it composes naturally inside <a href="/blog/pathblock-introduction">PathBlocks</a>. Angles are in radians (use the <code>deg</code> suffix for degrees — e.g., <code>90deg</code>, <code>-45deg</code>), with <code>fromAngle</code> / <code>toAngle</code> following the same convention as <a href="/blog/gradient-conic">conic gradients</a>. The <code>cornerR</code> parameter controls the rounding at all four arc-line junctions.</p>
 <p><mini-workspace code-open caption="radialWedge() — sharp corners (ghost) vs cornerR = 6 (solid), with parameter annotations">
   <code>define ViewBox(0, 0, 560, 400);
@@ -22918,19 +25239,19 @@ accentLabels.apply {
 <p>The ghost shape shows <code>cornerR = 0</code> (sharp edges). The solid shape uses <code>cornerR = 6</code>, which rounds all four corners where radial lines meet circular arcs.</p>
 <h3>Why a stdlib function?</h3>
 <p>We initially built annular sectors using a <a href="/blog/pathblock-introduction">PathBlock</a> with <a href="/blog/heading-turn"><code>heading</code></a>, <code>tangentArc</code>, <code>turn</code>, and <code>tangentLine</code>:</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">makeWedge</span>(<span class="hljs-params">innerR, outerR, sweep, startAngle, cornerR</span>) {
-  <span class="hljs-keyword">let</span> w = @{
-    <span class="hljs-title function_">heading</span>(<span class="hljs-title function_">calc</span>(startAngle + 90deg))
-    <span class="hljs-title function_">tangentArc</span>(innerR, sweep)
-    <span class="hljs-title function_">turn</span>(-90deg)
-    <span class="hljs-title function_">tangentLine</span>(<span class="hljs-title function_">calc</span>(outerR - innerR))
-    <span class="hljs-title function_">turn</span>(-90deg)
-    <span class="hljs-title function_">tangentArc</span>(outerR, <span class="hljs-title function_">calc</span>(-<span class="hljs-number">1</span> * sweep))
-    <span class="hljs-title function_">turn</span>(-90deg)
-    <span class="hljs-title function_">tangentLine</span>(<span class="hljs-title function_">calc</span>(outerR - innerR))
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">makeWedge</span>(<span class="id">innerR</span>, <span class="id">outerR</span>, <span class="id">sweep</span>, <span class="id">startAngle</span>, <span class="id">cornerR</span>) {
+  <span class="kw">let</span> <span class="id">w</span> = @{
+    <span class="id">heading</span>(<span class="kw">calc</span>(<span class="id">startAngle</span> + <span class="num">90deg</span>))
+    <span class="id">tangentArc</span>(<span class="id">innerR</span>, <span class="id">sweep</span>)
+    <span class="id">turn</span>(-<span class="num">90deg</span>)
+    <span class="id">tangentLine</span>(<span class="kw">calc</span>(<span class="id">outerR</span> - <span class="id">innerR</span>))
+    <span class="id">turn</span>(-<span class="num">90deg</span>)
+    <span class="id">tangentArc</span>(<span class="id">outerR</span>, <span class="kw">calc</span>(-<span class="num">1</span> * <span class="id">sweep</span>))
+    <span class="id">turn</span>(-<span class="num">90deg</span>)
+    <span class="id">tangentLine</span>(<span class="kw">calc</span>(<span class="id">outerR</span> - <span class="id">innerR</span>))
     z
   };
-  <span class="hljs-keyword">return</span> w.<span class="hljs-title function_">fillet</span>(cornerR);
+  <span class="kw">return</span> <span class="id">w</span>.<span class="id">fillet</span>(<span class="id">cornerR</span>);
 }
 </code></pre><p>This approach taught us the <a href="/blog/heading-turn">heading/turn</a> system well, but it hit real problems at chart scale:</p>
 <ol>
@@ -22941,9 +25262,9 @@ accentLabels.apply {
 <p>These challenges led us to create <code>radialWedge()</code> as a native stdlib function — the same design philosophy as <code>roundRect()</code>: encapsulate edge-case geometry so users get correct output without solving it themselves.</p>
 <h2>Drawing Radial Bars</h2>
 <p>A radial bar maps a data value to the outer radius of an annular sector. The inner radius stays constant (forming the center hole), and the bar&#39;s length — its radial extent — encodes the value:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> outerR = <span class="hljs-title function_">calc</span>(innerR + (maxR - innerR) * d.<span class="hljs-property">all</span> / maxVal);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">outerR</span> = <span class="kw">calc</span>(<span class="id">innerR</span> + (<span class="id">maxR</span> - <span class="id">innerR</span>) * <span class="id">d</span>.<span class="id">all</span> / <span class="id">maxVal</span>);
 M cx cy
-<span class="hljs-title function_">radialWedge</span>(innerR, outerR, fromAngle, toAngle, cornerR)
+<span class="id">radialWedge</span>(<span class="id">innerR</span>, <span class="id">outerR</span>, <span class="id">fromAngle</span>, <span class="id">toAngle</span>, <span class="id">cornerR</span>)
 </code></pre><p>To compare two datasets (all games vs top 100), the Observable chart overlays a narrower dark bar on top of each wider red bar. The dark bar uses 50% of the angular width, centered within the slice:</p>
 <p><mini-workspace code-open caption="Two overlaid bars — red (all BGG games, 15.6%) with dark overlay (top 100, 7.6%)">
   <code>define ViewBox(0, 0, 520, 400);
@@ -23283,10 +25604,10 @@ g.append(bg, grid, center, barsAll, barsTop, swAll, swTop, legLabels, title);
 <li><strong>Vertically centered</strong> so the text midline — not baseline — aligns with the bar&#39;s angular center</li>
 </ul>
 <p>Doing this manually requires separate TextLayers for left and right hemispheres, manual <code>cos</code>/<code>sin</code> positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new <code>.radialProject()</code> method on <a href="/blog/textblock-introduction">TextBlock</a> handles all of this in one call:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>)<span class="hljs-string">\`<span class="hljs-subst">\${d.name}</span>\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">11</span>; };
-catLabels.<span class="hljs-property">apply</span> {
-  label.<span class="hljs-title function_">radialProject</span>(cx, cy, midAngle, labelR,
-    <span class="hljs-string">&#x27;start&#x27;</span>, <span class="hljs-number">1</span>, <span class="hljs-title class_">VerticalAnchor</span>.<span class="hljs-property">Midline</span>).<span class="hljs-title function_">draw</span>()
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">0</span>)\`\${<span class="id">d</span>.<span class="id">name</span>}\` } &lt;&lt; \${ <span class="pr">font-size</span>: <span class="num">11</span>; };
+<span class="id">catLabels</span>.<span class="kw">apply</span> {
+  <span class="id">label</span>.<span class="id">radialProject</span>(<span class="id">cx</span>, <span class="id">cy</span>, <span class="id">midAngle</span>, <span class="id">labelR</span>,
+    <span class="str">'start'</span>, <span class="num">1</span>, <span class="id">VerticalAnchor</span>.<span class="id">Midline</span>).<span class="id">draw</span>()
 }
 </code></pre><p>The seven arguments:</p>
 <ol>
@@ -24451,24 +26772,24 @@ g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);
 `,
   'segment-labels-and-suffixes': `<p>A path used to be something you could only write. As of this release, it&#39;s something you can <strong>address</strong>.</p>
 <p>Two small clauses now attach to any path command. <code>as</code> gives an edge or a vertex a name. <code>with</code> attaches a fillet or chamfer to the joint a command creates, right where you draw it:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
-h <span class="hljs-number">60</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;lid&#x27;</span>);
-v <span class="hljs-number">40</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>) <span class="hljs-keyword">as</span> <span class="hljs-title function_">endpoint</span>(<span class="hljs-string">&#x27;corner&#x27;</span>);
-h -<span class="hljs-number">60</span>;
+<pre><code class="hljs language-pathogen">M 10 10
+h 60 as <span class="id">segment</span>(<span class="str">'lid'</span>);
+v 40 with <span class="id">fillet</span>(<span class="num">8</span>) as <span class="id">endpoint</span>(<span class="str">'corner'</span>);
+h -60;
 </code></pre><p>And everything you name can be looked up later — <code>segment(&#39;lid&#39;)</code> returns that edge with the full sampling API, <code>point(&#39;corner&#39;)</code> returns the vertex as a drawTo-ready Point, and <code>vertex(&#39;corner&#39;)</code> returns a handle that can round or cut that specific joint. The full reference lives in the <a href="/docs#segment-labels-syntax">Segment Labels &amp; Corner Suffixes docs</a>; this post is about why the feature exists and what it unlocks.</p>
 <h2>Rounding a corner where you draw it</h2>
 <p>Before this release, rounding one corner mid-path meant doing the trigonometry yourself: shorten the incoming edge, thread a <code>tangentArc</code> between the edges, shorten the outgoing edge. The authored code stops looking like the shape you meant.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: the 60×60 corner, hand-assembled from three pieces</span>
-<span class="hljs-keyword">let</span> manual = @{
-  h <span class="hljs-number">45</span>
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">15</span>, <span class="hljs-number">0.</span>5pi);
-  v <span class="hljs-number">45</span>
+<pre><code class="hljs language-pathogen"><span class="cm">// before: the 60×60 corner, hand-assembled from three pieces</span>
+<span class="kw">let</span> <span class="id">manual</span> = @{
+  h 45
+  <span class="id">tangentArc</span>(<span class="num">15</span>, <span class="num">0.5pi</span>);
+  v 45
 };
 
-<span class="hljs-comment">// after: write the edges you mean, name the rounding where it happens</span>
-<span class="hljs-keyword">let</span> suffixed = @{
-  h <span class="hljs-number">60</span>
-  v <span class="hljs-number">60</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">fillet</span>(<span class="hljs-number">15</span>)
+<span class="cm">// after: write the edges you mean, name the rounding where it happens</span>
+<span class="kw">let</span> <span class="id">suffixed</span> = @{
+  h 60
+  v 60 with <span class="id">fillet</span>(<span class="num">15</span>)
 };
 </code></pre><p><mini-workspace code-open caption="Same rounded corner — hand-assembled tangent arc on the left, \`with fillet(15)\` on the right">
   <code>define ViewBox(0, 0, 240, 120);
@@ -24497,10 +26818,10 @@ suffixed.drawTo(150, 25);
 <p>There&#39;s a design lesson hiding in the syntax. Our first sketch was <code>v 20 joinPreviousWithFillet(5)</code> — a function-call suffix. It read badly because a fillet isn&#39;t a property of an edge; it&#39;s a property of the <strong>joint between two edges</strong>. Every system that solved this before us — PostScript&#39;s <code>arct</code> operator, TikZ&#39;s <code>rounded corners</code>, CSS&#39;s per-corner <code>border-radius</code> — attaches rounding to the corner. <code>with fillet(...)</code> names the operation on the joint the command creates, and the clunkiness disappears.</p>
 <h2>Labels turn paths into structures</h2>
 <p>The deeper change is <code>as</code>. SVG path data is a 1999-era pen-plotter stream — single-letter opcodes and coordinates, no names, no structure. Everything Pathogen does ultimately compiles down to that stream, but <em>you</em> shouldn&#39;t have to think in it.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> card = @{
-  h <span class="hljs-number">160</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;lid&#x27;</span>);
-  v <span class="hljs-number">80</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">fillet</span>(<span class="hljs-number">22</span>);
-  h -<span class="hljs-number">160</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">chamfer</span>(<span class="hljs-number">14</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">card</span> = @{
+  h 160 as <span class="id">segment</span>(<span class="str">'lid'</span>);
+  v 80 with <span class="id">fillet</span>(<span class="num">22</span>);
+  h -160 with <span class="id">chamfer</span>(<span class="num">14</span>);
   z
 };
 </code></pre><p><code>&#39;lid&#39;</code> names the top edge. That name survives everything that happens to the path — fillets trimming it, projection moving it — and it answers questions:</p>
@@ -24557,25 +26878,25 @@ layer('bolts').apply {
 </mini-workspace></p>
 <h2>Names don&#39;t break; indices do</h2>
 <p>We already shipped vertex-targeted fillets: <code>filletAtVertex(1, 12)</code> rounds &quot;the second corner.&quot; The problem is what happens next week, when you add a notch earlier in the path — every index shifts, and your fillet silently lands on the wrong corner. CAD systems call this the topological naming problem, and their answer is the same one we&#39;ve adopted: name the geometry at definition, address it by name forever.</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">tab</span>(<span class="hljs-params">withNotch</span>) {
-  <span class="hljs-keyword">return</span> @{
-    h <span class="hljs-number">30</span>
-    <span class="hljs-keyword">if</span> (withNotch) {
-      v <span class="hljs-number">8</span>
-      h <span class="hljs-number">10</span>
-      v -<span class="hljs-number">8</span>
-    } <span class="hljs-keyword">else</span> {
-      h <span class="hljs-number">10</span>
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">tab</span>(<span class="id">withNotch</span>) {
+  <span class="kw">return</span> @{
+    h 30
+    <span class="kw">if</span> (<span class="id">withNotch</span>) {
+      v 8
+      h 10
+      v -8
+    } <span class="kw">else</span> {
+      h 10
     }
-    h <span class="hljs-number">40</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">endpoint</span>(<span class="hljs-string">&#x27;spout&#x27;</span>)
-    v <span class="hljs-number">55</span>
-    h -<span class="hljs-number">80</span>
+    h 40 as <span class="id">endpoint</span>(<span class="str">'spout'</span>)
+    v 55
+    h -80
     z
   };
 }
 
-<span class="hljs-keyword">let</span> plain = <span class="hljs-title function_">tab</span>(<span class="hljs-literal">false</span>).<span class="hljs-title function_">vertex</span>(<span class="hljs-string">&#x27;spout&#x27;</span>).<span class="hljs-title function_">fillet</span>(<span class="hljs-number">12</span>);
-<span class="hljs-keyword">let</span> notched = <span class="hljs-title function_">tab</span>(<span class="hljs-literal">true</span>).<span class="hljs-title function_">vertex</span>(<span class="hljs-string">&#x27;spout&#x27;</span>).<span class="hljs-title function_">fillet</span>(<span class="hljs-number">12</span>);
+<span class="kw">let</span> <span class="id">plain</span> = <span class="id">tab</span>(<span class="num">false</span>).<span class="id">vertex</span>(<span class="str">'spout'</span>).<span class="id">fillet</span>(<span class="num">12</span>);
+<span class="kw">let</span> <span class="id">notched</span> = <span class="id">tab</span>(<span class="num">true</span>).<span class="id">vertex</span>(<span class="str">'spout'</span>).<span class="id">fillet</span>(<span class="num">12</span>);
 </code></pre><p><mini-workspace code-open caption="The notch adds three commands before the corner — \`vertex('spout')\` rounds the same joint in both variants">
   <code>define ViewBox(0, 0, 240, 130);
 define default PathLayer('tabs') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
@@ -24614,16 +26935,16 @@ notched.drawTo(135, 35);
 <h2>One name, many segments</h2>
 <p>Labels don&#39;t have to be unique. A name shared by several statements forms a <strong>group</strong>, and the query API splits into the pairing you already know from the DOM: <code>segment(&#39;tooth&#39;)</code> is <code>querySelector</code> — the first match — while <code>segmentAll(&#39;tooth&#39;)</code> is <code>querySelectorAll</code>, returning every match in authoring order. The same goes for <code>pointAll</code> and <code>vertexAll</code>.</p>
 <p>That makes loop-generated geometry the easy case. Five teeth, one name, zero index bookkeeping:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">35</span> <span class="hljs-number">105</span>
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.4</span>) {
-  v -<span class="hljs-number">55</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth&#x27;</span>);
-  v <span class="hljs-number">55</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">endpoint</span>(<span class="hljs-string">&#x27;root&#x27;</span>);
-  h <span class="hljs-number">35</span>;
+<pre><code class="hljs language-pathogen">M 35 105
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">4</span>) {
+  v -55 as <span class="id">segment</span>(<span class="str">'tooth'</span>);
+  v 55 as <span class="id">endpoint</span>(<span class="str">'root'</span>);
+  h 35;
 }
 
-<span class="hljs-keyword">for</span> (tooth <span class="hljs-keyword">in</span> <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;comb&#x27;</span>).<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;tooth&#x27;</span>)) {
-  <span class="hljs-keyword">let</span> tip = tooth.<span class="hljs-title function_">get</span>(<span class="hljs-number">1</span>);
-  <span class="hljs-title function_">circle</span>(tip.<span class="hljs-property">x</span>, tip.<span class="hljs-property">y</span>, <span class="hljs-number">4</span>);
+<span class="kw">for</span> (<span class="id">tooth</span> <span class="kw">in</span> <span class="kw">layer</span>(<span class="str">'comb'</span>).<span class="id">segmentAll</span>(<span class="str">'tooth'</span>)) {
+  <span class="kw">let</span> <span class="id">tip</span> = <span class="id">tooth</span>.<span class="id">get</span>(<span class="num">1</span>);
+  <span class="id">circle</span>(<span class="id">tip</span>.<span class="id">x</span>, <span class="id">tip</span>.<span class="id">y</span>, <span class="num">4</span>);
 }
 </code></pre><p><mini-workspace code-open caption="One shared name, five teeth — \`segmentAll('tooth')\` returns the group; each tip decorated without tracking a single index">
   <code>define ViewBox(0, 0, 240, 140);
@@ -24895,10 +27216,10 @@ img.<span class="hljs-property">src</span> = url;
 <p>TextBlock solves this by making text a measurable, positionable value — the same compose-then-place pattern that <a href="/blog/pathblock-introduction">PathBlock</a> brought to shapes. You compose text at relative coordinates, measure its bounding box before placing it, project it into position using polar coordinates and semantic anchors, and check for collisions against other labels and geometry. The result is label placement that adapts automatically when anything changes.</p>
 <h2>What Is a TextBlock?</h2>
 <p>A TextBlock is a composition of text elements at relative coordinates. You create one with the <code>&amp;{ }</code> sigil — the text counterpart to PathBlock&#39;s <code>@{ }</code> — and the elements inside are positioned relative to an implicit <code>(0, 0)</code> origin. Like a PathBlock, the TextBlock doesn&#39;t draw anything on its own. It&#39;s a value: a template holding text content and relative positions, waiting to be styled, measured, and placed. See the full <a href="/docs#text-block-syntax">TextBlock syntax</a> documentation for details.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Server Node\`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`Status: online\`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">48</span>)<span class="hljs-string">\`Latency: 12ms\`</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Server Node\`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">30</span>)\`Status: online\`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">48</span>)\`Latency: 12ms\`
 };
 </code></pre><p>Each <code>text(x, y)</code> statement positions a text element relative to the block&#39;s origin. The backtick-delimited content follows the coordinate pair. You can have as many <code>text()</code> statements as you need — a single-line label, a multi-line card, a table of values.</p>
 <p>The anatomy diagram below shows how this works in practice. A three-line TextBlock is defined once, then drawn at two different positions using <code>.drawTo()</code>. The green crosshairs mark each placement&#39;s origin. The dashed amber rectangles show the bounding box — measured once from the TextBlock value, valid at both locations. The arrow connecting the placements reinforces the key idea: one definition, many positions.</p>
@@ -25125,11 +27446,11 @@ legend_group.append(leg_o, leg_b, leg);
 </mini-workspace></p>
 <p>The coordinate model mirrors SVG&#39;s <code>&lt;text&gt;</code> element: <code>y</code> is the baseline position, so <code>text(0, 14)</code> places the first baseline 14 units below the origin. This means the text&#39;s visible pixels extend <em>above</em> that y coordinate, not below it.</p>
 <p>TextBlocks also support <a href="/docs#text-block-syntax">control flow</a> — <code>let</code>, <code>for</code>, and <code>if</code> work inside the block just as they do elsewhere in Pathogen:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> items = [<span class="hljs-string">&quot;CPU: 42%&quot;</span>, <span class="hljs-string">&quot;MEM: 1.2G&quot;</span>, <span class="hljs-string">&quot;NET: 88Mb/s&quot;</span>];
-<span class="hljs-keyword">let</span> card = &amp;{
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Dashboard\`</span>
-  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.2</span>) {
-    <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-title function_">calc</span>(<span class="hljs-number">30</span> + i * <span class="hljs-number">14</span>))<span class="hljs-string">\`<span class="hljs-subst">\${items[i]}</span>\`</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">items</span> = [<span class="str">"CPU: 42%"</span>, <span class="str">"MEM: 1.2G"</span>, <span class="str">"NET: 88Mb/s"</span>];
+<span class="kw">let</span> <span class="id">card</span> = &amp;{
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Dashboard\`
+  <span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">2</span>) {
+    <span class="kw">text</span>(<span class="num">0</span>, <span class="kw">calc</span>(<span class="num">30</span> + <span class="id">i</span> * <span class="num">14</span>))\`\${<span class="id">items</span>[<span class="id">i</span>]}\`
   }
 };
 </code></pre><p>Notice the parallel with PathBlock: <code>@{ h 40 v 20 h -40 z }</code> captures relative path commands, while <code>&amp;{ text(0, 14)\\</code>Hello\` }\` captures relative text elements. Both are inert values until you project or draw them. Both carry metadata (bounds, element count) you can query before committing to a position.</p>
@@ -25141,29 +27462,29 @@ legend_group.append(leg_o, leg_b, leg);
 <li><strong><code>.polarProject(cx, cy, angle, distance, anchor)</code></strong> — project along a polar vector with anchor alignment. We&#39;ll cover this in detail below.</li>
 </ul>
 <p>TextBlocks emit to TextLayers, which are the text counterpart to PathLayers. You define one with <code>define TextLayer(&#39;name&#39;) \${ styles }</code> and activate it with <code>layer(&#39;name&#39;).apply { ... }</code>:</p>
-<pre><code class="hljs language-pathogen">define <span class="hljs-title class_">TextLayer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>) \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>; <span class="hljs-attr">fill</span>: #<span class="hljs-number">333</span>; }
+<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) \${ <span class="pr">font-size</span>: <span class="num">12</span>; <span class="pr">fill</span>: <span class="str">#333</span>; }
 
-<span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;labels&#x27;</span>).<span class="hljs-property">apply</span> {
-  label.<span class="hljs-title function_">drawTo</span>(<span class="hljs-number">50</span>, <span class="hljs-number">100</span>);
+<span class="kw">layer</span>(<span class="str">'labels'</span>).<span class="kw">apply</span> {
+  <span class="id">label</span>.<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>);
 }
 </code></pre><p>This layer model keeps text and path geometry in separate SVG elements, which matters for rendering order, styling, and accessibility.</p>
 <h2>Style Merge with &lt;&lt;</h2>
 <p>A TextBlock starts unstyled — it has no font-size, no font-family, no fill color. The <code>&lt;&lt;</code> operator merges a <a href="/docs#text-block-style-merging">style block</a> into the TextBlock, producing a new styled TextBlock with block-level styles that apply to all elements unless overridden at the element level:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> info = &amp;{
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Node Status\`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">30</span>)<span class="hljs-string">\`CPU: 42%\`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">44</span>)<span class="hljs-string">\`MEM: 1.2G\`</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">info</span> = &amp;{
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Node Status\`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">30</span>)\`CPU: 42%\`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">44</span>)\`MEM: 1.2G\`
 };
 
-<span class="hljs-keyword">let</span> styled = info &lt;&lt; \${ font-<span class="hljs-attr">family</span>: monospace; font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>; };
+<span class="kw">let</span> <span class="id">styled</span> = <span class="id">info</span> &lt;&lt; \${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 </code></pre><p>The power here is that <code>info</code> remains unstyled. You can merge different styles into the same TextBlock to produce different presentations — and the bounding box adapts to each one:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> mono_sm = \${ font-<span class="hljs-attr">family</span>: monospace; font-<span class="hljs-attr">size</span>: <span class="hljs-number">10</span>; };
-<span class="hljs-keyword">let</span> mono_lg = \${ font-<span class="hljs-attr">family</span>: monospace; font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
-<span class="hljs-keyword">let</span> sans    = \${ font-<span class="hljs-attr">family</span>: sans-serif; font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">mono_sm</span> = \${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">10</span>; };
+<span class="kw">let</span> <span class="id">mono_lg</span> = \${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">14</span>; };
+<span class="kw">let</span> <span class="id">sans</span>    = \${ <span class="pr">font-family</span>: <span class="id">sans-serif</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 
-<span class="hljs-keyword">let</span> bb1 = (info &lt;&lt; mono_sm).<span class="hljs-title function_">boundingBox</span>();  <span class="hljs-comment">// compact</span>
-<span class="hljs-keyword">let</span> bb2 = (info &lt;&lt; mono_lg).<span class="hljs-title function_">boundingBox</span>();  <span class="hljs-comment">// wider, taller</span>
-<span class="hljs-keyword">let</span> bb3 = (info &lt;&lt; sans).<span class="hljs-title function_">boundingBox</span>();     <span class="hljs-comment">// different widths</span>
+<span class="kw">let</span> <span class="id">bb1</span> = (<span class="id">info</span> &lt;&lt; <span class="id">mono_sm</span>).<span class="id">boundingBox</span>();  <span class="cm">// compact</span>
+<span class="kw">let</span> <span class="id">bb2</span> = (<span class="id">info</span> &lt;&lt; <span class="id">mono_lg</span>).<span class="id">boundingBox</span>();  <span class="cm">// wider, taller</span>
+<span class="kw">let</span> <span class="id">bb3</span> = (<span class="id">info</span> &lt;&lt; <span class="id">sans</span>).<span class="id">boundingBox</span>();     <span class="cm">// different widths</span>
 </code></pre><p>This separation of content from presentation is what makes TextBlock composable. Define the text structure once, apply different styles for different contexts, measure for layout, then place. The <code>&lt;&lt;</code> operator does not mutate the original — it returns a new value with the styles merged in, leaving the original available for reuse.</p>
 <p>The demo below shows the same three-line TextBlock rendered with three different style blocks. The dashed outlines are the bounding boxes — each one reflects the actual measured dimensions for that style variant.</p>
 <p><mini-workspace caption="One TextBlock, three styles — bounding box adapts to each font configuration">
@@ -25350,10 +27671,10 @@ dims.apply {
 <p>The dimension annotations at the bottom of each variant confirm what the code reports: same content, different measurements. A monospace 10px version is compact; monospace 14px is proportionally larger; sans-serif 12px has different character widths entirely. The <code>&lt;&lt;</code> operator and <code>.boundingBox()</code> handle all of this transparently.</p>
 <h2>Measuring Before You Place</h2>
 <p>The central insight of TextBlock is that you can measure text <em>before</em> deciding where to put it. The <a href="/docs#text-block-methods"><code>.boundingBox()</code></a> method returns an object with <code>x</code>, <code>y</code>, <code>width</code>, and <code>height</code> — the estimated bounding rectangle of all text elements in the block. Using the <code>&lt;&lt;</code> operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Hello World\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
-<span class="hljs-keyword">let</span> bb = label.<span class="hljs-title function_">boundingBox</span>();
-<span class="hljs-title function_">log</span>(bb.<span class="hljs-property">width</span>);   <span class="hljs-comment">// estimated pixel width</span>
-<span class="hljs-title function_">log</span>(bb.<span class="hljs-property">height</span>);  <span class="hljs-comment">// fontSize * 1.2 (line height)</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Hello World\` } &lt;&lt; \${ <span class="pr">font-size</span>: <span class="num">14</span>; };
+<span class="kw">let</span> <span class="id">bb</span> = <span class="id">label</span>.<span class="id">boundingBox</span>();
+<span class="id">log</span>(<span class="id">bb</span>.<span class="id">width</span>);   <span class="cm">// estimated pixel width</span>
+<span class="id">log</span>(<span class="id">bb</span>.<span class="id">height</span>);  <span class="cm">// fontSize * 1.2 (line height)</span>
 </code></pre><p>This measurement drives layout decisions. Need to center a label above a shape? Subtract half the width. Need to check whether two labels overlap? Compare their bounding boxes. Need to draw a background rectangle behind text? Use the bbox dimensions directly. Need to verify that a label fits inside a container? Compare bbox width to the container&#39;s width.</p>
 <p>The measurement works on both TextBlockValues (relative coordinates) and ProjectedTextValues (absolute coordinates). On a TextBlockValue, the bbox is relative to the origin — just like measuring a PathBlock&#39;s <code>.bounds</code> before drawing. On a ProjectedTextValue, the bbox reflects the absolute position.</p>
 <p>TextBlock computes these estimates using built-in <a href="/docs#text-block-font-metrics">character width tables</a> that cover three font categories:</p>
@@ -25537,10 +27858,10 @@ subtitle.apply { text(30, 44)\`.boundingBox() returns { x, y, width, height }\` 
 <h2>Polar Projection with BBoxAnchor</h2>
 <p>Placing labels around a shape — node diagrams, compass roses, radial charts — is one of the most common annotation patterns in technical SVGs. The naive approach is to compute <code>x</code> and <code>y</code> offsets by hand, adjusting for text width and height at each position. A label to the right of a circle needs <code>x = centerX + radius + gap</code>; a label above needs <code>y = centerY - radius - textHeight</code>. Each direction requires different math, and every label with different content needs a different width offset. This is tedious, error-prone, and breaks the moment the text content or font size changes.</p>
 <p><a href="/docs#text-block-polar-projection"><code>.polarProject()</code></a> replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Node A\`</span> } &lt;&lt; \${ font-<span class="hljs-attr">size</span>: <span class="hljs-number">14</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Node A\` } &lt;&lt; \${ <span class="pr">font-size</span>: <span class="num">14</span>; };
 
-<span class="hljs-comment">// Place 80px from center at 45 degrees, anchored at center-left</span>
-<span class="hljs-keyword">let</span> placed = label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">100</span>, <span class="hljs-number">100</span>, 45deg, <span class="hljs-number">80</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>);
+<span class="cm">// Place 80px from center at 45 degrees, anchored at center-left</span>
+<span class="kw">let</span> <span class="id">placed</span> = <span class="id">label</span>.<span class="id">polarProject</span>(<span class="num">100</span>, <span class="num">100</span>, <span class="num">45deg</span>, <span class="num">80</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>);
 </code></pre><p>The first two arguments are the center point (the thing you&#39;re labeling). The angle and distance describe <em>where</em> the label goes in polar coordinates. The fifth argument — the <a href="/docs#text-block-bboxanchor-enum">BBoxAnchor</a> — is the key innovation: it specifies which point of the text&#39;s bounding box lands on the target location.</p>
 <p>The nine anchor positions form a grid over the bounding box:</p>
 <pre><code class="hljs">BBoxAnchor.TopLeft      BBoxAnchor.Top      BBoxAnchor.TopRight
@@ -25732,51 +28053,51 @@ code_group.append(code, kw);
   <img src="/blog/samples/post11/polar-compass.svg" alt="Polar projection — 8 labels around a hexagon with directional BBoxAnchor alignment" loading="lazy">
 </mini-workspace></p>
 <p>The code for each label is minimal — a one-line TextBlock, a <code>polarProject()</code> call, and a <code>draw()</code>. The loop at the center of the demo iterates through names and anchors in parallel:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
-  <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(i * <span class="hljs-number">0.7854</span> - <span class="hljs-number">1.5708</span>);
-  <span class="hljs-keyword">let</span> label = &amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">11</span>)<span class="hljs-string">\`<span class="hljs-subst">\${names[i]}</span>\`</span> } &lt;&lt; label_styles;
-  <span class="hljs-keyword">let</span> proj = label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, angle, <span class="hljs-number">160</span>, anchors[i]);
-  proj.<span class="hljs-title function_">draw</span>();
+<pre><code class="hljs language-pathogen"><span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">7</span>) {
+  <span class="kw">let</span> <span class="id">angle</span> = <span class="kw">calc</span>(<span class="id">i</span> * <span class="num">0.7854</span> - <span class="num">1.5708</span>);
+  <span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">11</span>)\`\${<span class="id">names</span>[<span class="id">i</span>]}\` } &lt;&lt; <span class="id">label_styles</span>;
+  <span class="kw">let</span> <span class="id">proj</span> = <span class="id">label</span>.<span class="id">polarProject</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="id">angle</span>, <span class="num">160</span>, <span class="id">anchors</span>[<span class="id">i</span>]);
+  <span class="id">proj</span>.<span class="id">draw</span>();
 }
 </code></pre><p>No magic offsets. No per-label width calculations. Change the label text, the font size, or the radius, and the layout adapts. The <code>polarProject()</code> method handles the trigonometry internally — computing <code>cos(angle) * distance</code> and <code>sin(angle) * distance</code> for the target point, then shifting the text so the specified anchor point lands exactly there.</p>
 <p>This matters because label placement around shapes is combinatorial. A hexagon with 6 vertex labels, 6 edge labels, and a center label requires 13 placements. Doing those with manual offsets means 26 magic numbers (x and y for each). With <code>polarProject()</code>, it&#39;s 13 calls with angles, one shared radius, and the appropriate anchors. When you add a seventh vertex to the polygon, the labels redistribute automatically.</p>
 <h2>Collision Avoidance</h2>
 <p>Placing labels one at a time works until two of them end up on top of each other. Scatter plots, node graphs, and dense diagrams inevitably produce clusters where data points are close together and naive placement causes overlaps. A label that&#39;s perfectly clear in one dataset collides with its neighbor when the data changes. This is the label placement problem — well-studied in cartography and information visualization — and TextBlock brings a pragmatic solution directly into the language.</p>
 <p>TextBlock&#39;s <a href="/docs#text-block-intersection-detection"><code>.intersects()</code></a> method detects collisions using axis-aligned bounding box (AABB) overlap testing.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> label1 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`First\`</span> } &lt;&lt; styles).<span class="hljs-title function_">project</span>(<span class="hljs-number">50</span>, <span class="hljs-number">50</span>);
-<span class="hljs-keyword">let</span> label2 = (&amp;{ <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Second\`</span> } &lt;&lt; styles).<span class="hljs-title function_">project</span>(<span class="hljs-number">55</span>, <span class="hljs-number">55</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label1</span> = (&amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`First\` } &lt;&lt; <span class="id">styles</span>).<span class="id">project</span>(<span class="num">50</span>, <span class="num">50</span>);
+<span class="kw">let</span> <span class="id">label2</span> = (&amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Second\` } &lt;&lt; <span class="id">styles</span>).<span class="id">project</span>(<span class="num">55</span>, <span class="num">55</span>);
 
-<span class="hljs-keyword">if</span> (label1.<span class="hljs-title function_">intersects</span>(label2)) {
-  <span class="hljs-comment">// Labels overlap — try a different position</span>
+<span class="kw">if</span> (<span class="id">label1</span>.<span class="id">intersects</span>(<span class="id">label2</span>)) {
+  <span class="cm">// Labels overlap — try a different position</span>
 }
 </code></pre><p><code>.intersects()</code> accepts a ProjectedTextValue (for text-vs-text checks), a ProjectedPathValue (for text-vs-shape checks), or a plain object with <code>{x, y, width, height}</code> (for text-vs-rectangle checks). The test is fast — it&#39;s a simple AABB comparison — which makes it practical to run in a loop over multiple candidate positions.</p>
 <p>The simplest collision check is a single-direction attempt: project the label in your preferred direction and test whether it overlaps anything already placed:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> candidate = label.<span class="hljs-title function_">polarProject</span>(
-  pt.<span class="hljs-property">x</span>, pt.<span class="hljs-property">y</span>, <span class="hljs-number">0</span>, dist, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">candidate</span> = <span class="id">label</span>.<span class="id">polarProject</span>(
+  <span class="id">pt</span>.<span class="id">x</span>, <span class="id">pt</span>.<span class="id">y</span>, <span class="num">0</span>, <span class="id">dist</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>
 );
-<span class="hljs-comment">// (dot-position checks omitted — see full sample)</span>
-<span class="hljs-keyword">if</span> (!candidate.<span class="hljs-title function_">intersects</span>(prevLabel)) {
-  candidate.<span class="hljs-title function_">draw</span>();
+<span class="cm">// (dot-position checks omitted — see full sample)</span>
+<span class="kw">if</span> (!<span class="id">candidate</span>.<span class="id">intersects</span>(<span class="id">prevLabel</span>)) {
+  <span class="id">candidate</span>.<span class="id">draw</span>();
 }
 </code></pre><p>When a single direction isn&#39;t enough, expand to an 8-angle search that tries each compass direction in order and picks the first collision-free position:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> try_anchors = [
-  <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">BottomLeft</span>,
-  <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Bottom</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">BottomRight</span>,
-  <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Right</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">TopRight</span>,
-  <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Top</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">TopLeft</span>,
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">try_anchors</span> = [
+  <span class="id">BBoxAnchor</span>.<span class="id">Left</span>, <span class="id">BBoxAnchor</span>.<span class="id">BottomLeft</span>,
+  <span class="id">BBoxAnchor</span>.<span class="id">Bottom</span>, <span class="id">BBoxAnchor</span>.<span class="id">BottomRight</span>,
+  <span class="id">BBoxAnchor</span>.<span class="id">Right</span>, <span class="id">BBoxAnchor</span>.<span class="id">TopRight</span>,
+  <span class="id">BBoxAnchor</span>.<span class="id">Top</span>, <span class="id">BBoxAnchor</span>.<span class="id">TopLeft</span>,
 ];
 
-<span class="hljs-keyword">for</span> (ai <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.7</span>) {
-  <span class="hljs-keyword">let</span> angle = <span class="hljs-title function_">calc</span>(ai * <span class="hljs-number">0.7854</span>);
-  <span class="hljs-keyword">let</span> candidate = label.<span class="hljs-title function_">polarProject</span>(
-    pt.<span class="hljs-property">x</span>, pt.<span class="hljs-property">y</span>, angle, dist, try_anchors[ai]
+<span class="kw">for</span> (<span class="id">ai</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">7</span>) {
+  <span class="kw">let</span> <span class="id">angle</span> = <span class="kw">calc</span>(<span class="id">ai</span> * <span class="num">0.7854</span>);
+  <span class="kw">let</span> <span class="id">candidate</span> = <span class="id">label</span>.<span class="id">polarProject</span>(
+    <span class="id">pt</span>.<span class="id">x</span>, <span class="id">pt</span>.<span class="id">y</span>, <span class="id">angle</span>, <span class="id">dist</span>, <span class="id">try_anchors</span>[<span class="id">ai</span>]
   );
-  <span class="hljs-comment">// (dot-position checks omitted — see full sample)</span>
-  <span class="hljs-keyword">let</span> ok = <span class="hljs-literal">true</span>;
-  <span class="hljs-keyword">for</span> (prev <span class="hljs-keyword">in</span> placed) {
-    <span class="hljs-keyword">if</span> (candidate.<span class="hljs-title function_">intersects</span>(prev)) { ok = <span class="hljs-literal">false</span>; }
+  <span class="cm">// (dot-position checks omitted — see full sample)</span>
+  <span class="kw">let</span> <span class="id">ok</span> = <span class="num">true</span>;
+  <span class="kw">for</span> (<span class="id">prev</span> <span class="kw">in</span> <span class="id">placed</span>) {
+    <span class="kw">if</span> (<span class="id">candidate</span>.<span class="id">intersects</span>(<span class="id">prev</span>)) { <span class="id">ok</span> = <span class="num">false</span>; }
   }
-  <span class="hljs-keyword">if</span> (ok) { best = candidate; found = <span class="hljs-literal">true</span>; }
+  <span class="kw">if</span> (<span class="id">ok</span>) { <span class="id">best</span> = <span class="id">candidate</span>; <span class="id">found</span> = <span class="num">true</span>; }
 }
 </code></pre><p>Each angle is paired with an anchor that faces back toward the center point. This means the label always radiates outward, regardless of which direction it ends up. The search stops at the first collision-free candidate, so labels near the top of the list get their preferred direction (right, then bottom-left, then bottom, and so on).</p>
 <p>The demo below shows the full pattern in action: a scatter of 8 data points, labeled in two ways. The left panel uses naive fixed-offset placement — every label is shifted right of its point by 8 pixels. Three clusters produce visible collisions, highlighted with red dashed boxes. The right panel uses the 8-angle search above. Study the demo source to see how the complete loop integrates with the data point geometry checks.</p>
@@ -26127,17 +28448,17 @@ leg.apply {
 <p>The <code>.intersects()</code> check also works against path geometry and plain rectangles, not just other TextBlocks. This means you can verify that labels don&#39;t overlap shapes, borders, axis lines, or any other element in the diagram. The collision-avoidance demo checks against both previously placed labels <em>and</em> the data point circles themselves, ensuring labels don&#39;t obscure the data they annotate.</p>
 <h2>Magic Numbers vs Semantic Anchors</h2>
 <p>To see why <code>polarProject()</code> matters, compare the two approaches side by side. The left panel places four cardinal labels around a hexagon using manual offset arithmetic:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// Manual: compute x from center minus half text width</span>
-<span class="hljs-title function_">text</span>(<span class="hljs-number">133</span>, <span class="hljs-number">138</span>)<span class="hljs-string">\`Top\`</span>     <span class="hljs-comment">// 150 - 17 = 133 (how wide is &quot;Top&quot;?)</span>
-<span class="hljs-title function_">text</span>(<span class="hljs-number">218</span>, <span class="hljs-number">213</span>)<span class="hljs-string">\`Right\`</span>   <span class="hljs-comment">// 210 + 8 = 218 (what&#x27;s the gap?)</span>
-<span class="hljs-title function_">text</span>(<span class="hljs-number">124</span>, <span class="hljs-number">290</span>)<span class="hljs-string">\`Bottom\`</span>  <span class="hljs-comment">// 150 - 26 = 124 (different width!)</span>
-<span class="hljs-title function_">text</span>(<span class="hljs-number">57</span>, <span class="hljs-number">213</span>)<span class="hljs-string">\`Left\`</span>     <span class="hljs-comment">// 90 - 38 = 52 (why 38?)</span>
+<pre><code class="hljs language-pathogen"><span class="cm">// Manual: compute x from center minus half text width</span>
+<span class="kw">text</span>(<span class="num">133</span>, <span class="num">138</span>)\`Top\`     <span class="cm">// 150 - 17 = 133 (how wide is "Top"?)</span>
+<span class="kw">text</span>(<span class="num">218</span>, <span class="num">213</span>)\`Right\`   <span class="cm">// 210 + 8 = 218 (what's the gap?)</span>
+<span class="kw">text</span>(<span class="num">124</span>, <span class="num">290</span>)\`Bottom\`  <span class="cm">// 150 - 26 = 124 (different width!)</span>
+<span class="kw">text</span>(<span class="num">57</span>, <span class="num">213</span>)\`Left\`     <span class="cm">// 90 - 38 = 52 (why 38?)</span>
 </code></pre><p>Every position is a magic number derived from the text content, the font metrics, and the shape geometry. Change the text from &quot;Top&quot; to &quot;North&quot; and the offset is wrong. Change the font size and every number needs recalculation.</p>
 <p>The right panel uses <code>polarProject()</code>:</p>
-<pre><code class="hljs language-pathogen">top_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, -<span class="hljs-variable constant_">PI</span>/<span class="hljs-number">2</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Bottom</span>)
-right_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, <span class="hljs-number">0</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>)
-bottom_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, <span class="hljs-variable constant_">PI</span>/<span class="hljs-number">2</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Top</span>)
-left_label.<span class="hljs-title function_">polarProject</span>(<span class="hljs-number">450</span>, <span class="hljs-number">210</span>, <span class="hljs-variable constant_">PI</span>, <span class="hljs-number">75</span>, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Right</span>)
+<pre><code class="hljs language-pathogen"><span class="id">top_label</span>.<span class="id">polarProject</span>(<span class="num">450</span>, <span class="num">210</span>, -<span class="id">PI</span>/<span class="num">2</span>, <span class="num">75</span>, <span class="id">BBoxAnchor</span>.<span class="id">Bottom</span>)
+<span class="id">right_label</span>.<span class="id">polarProject</span>(<span class="num">450</span>, <span class="num">210</span>, <span class="num">0</span>, <span class="num">75</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>)
+<span class="id">bottom_label</span>.<span class="id">polarProject</span>(<span class="num">450</span>, <span class="num">210</span>, <span class="id">PI</span>/<span class="num">2</span>, <span class="num">75</span>, <span class="id">BBoxAnchor</span>.<span class="id">Top</span>)
+<span class="id">left_label</span>.<span class="id">polarProject</span>(<span class="num">450</span>, <span class="num">210</span>, <span class="id">PI</span>, <span class="num">75</span>, <span class="id">BBoxAnchor</span>.<span class="id">Right</span>)
 </code></pre><p>Four calls, four directions, one radius. The text content doesn&#39;t appear in the positioning logic at all — it&#39;s fully decoupled. The demo below makes the contrast visual: red annotations on the left expose the fragile arithmetic; green annotations on the right show the semantic anchor names.</p>
 <p><mini-workspace caption="Manual offset math (fragile) vs polarProject with BBoxAnchor (adaptive)">
   <code>define ViewBox(0, 0, 600, 400);
@@ -26381,25 +28702,25 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 <p>The manual approach isn&#39;t just more work — it&#39;s more <em>fragile</em> work. Every time the diagram&#39;s parameters change (and in parametric SVGs, that&#39;s the whole point), the magic numbers need manual recalculation. <code>polarProject()</code> makes the positioning logic parameter-free with respect to text content.</p>
 <h2>Putting It Together</h2>
 <p>TextBlock follows the same lifecycle as PathBlock: <strong>compose, measure, position, draw</strong>. Here&#39;s the complete pipeline in one snippet:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// 1. Compose — relative coordinates, no styles yet</span>
-<span class="hljs-keyword">let</span> label = &amp;{
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">14</span>)<span class="hljs-string">\`Temperature\`</span>
-  <span class="hljs-title function_">text</span>(<span class="hljs-number">0</span>, <span class="hljs-number">28</span>)<span class="hljs-string">\`23.4 C\`</span>
+<pre><code class="hljs language-pathogen"><span class="cm">// 1. Compose — relative coordinates, no styles yet</span>
+<span class="kw">let</span> <span class="id">label</span> = &amp;{
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Temperature\`
+  <span class="kw">text</span>(<span class="num">0</span>, <span class="num">28</span>)\`23.4 C\`
 };
 
-<span class="hljs-comment">// 2. Style — merge font and color properties</span>
-<span class="hljs-keyword">let</span> styled = label &lt;&lt; \${ font-<span class="hljs-attr">family</span>: monospace; font-<span class="hljs-attr">size</span>: <span class="hljs-number">12</span>; };
+<span class="cm">// 2. Style — merge font and color properties</span>
+<span class="kw">let</span> <span class="id">styled</span> = <span class="id">label</span> &lt;&lt; \${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 
-<span class="hljs-comment">// 3. Measure — get bounding box before placing</span>
-<span class="hljs-keyword">let</span> bb = styled.<span class="hljs-title function_">boundingBox</span>();
+<span class="cm">// 3. Measure — get bounding box before placing</span>
+<span class="kw">let</span> <span class="id">bb</span> = <span class="id">styled</span>.<span class="id">boundingBox</span>();
 
-<span class="hljs-comment">// 4. Position — project with collision awareness</span>
-<span class="hljs-keyword">let</span> placed = styled.<span class="hljs-title function_">polarProject</span>(cx, cy, angle, radius, <span class="hljs-title class_">BBoxAnchor</span>.<span class="hljs-property">Left</span>);
+<span class="cm">// 4. Position — project with collision awareness</span>
+<span class="kw">let</span> <span class="id">placed</span> = <span class="id">styled</span>.<span class="id">polarProject</span>(<span class="id">cx</span>, <span class="id">cy</span>, <span class="id">angle</span>, <span class="id">radius</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>);
 
-<span class="hljs-comment">// 5. Verify — check for overlaps</span>
-<span class="hljs-keyword">if</span> (!placed.<span class="hljs-title function_">intersects</span>(otherLabel)) {
-  <span class="hljs-comment">// 6. Draw — emit to the active TextLayer</span>
-  placed.<span class="hljs-title function_">draw</span>();
+<span class="cm">// 5. Verify — check for overlaps</span>
+<span class="kw">if</span> (!<span class="id">placed</span>.<span class="id">intersects</span>(<span class="id">otherLabel</span>)) {
+  <span class="cm">// 6. Draw — emit to the active TextLayer</span>
+  <span class="id">placed</span>.<span class="id">draw</span>();
 }
 </code></pre><p>Each step is a pure value transformation until <code>.draw()</code>. You can inspect, branch on, and iterate over the intermediate results. This pipeline means text is no longer an afterthought bolted onto a diagram. It&#39;s a first-class participant in the layout — queryable, testable, and automatically adaptive. Labels can respond to the geometry they annotate instead of being hard-coded beside it.</p>
 <p>The TextBlock API surface is small by design — a handful of methods that compose cleanly. For a deeper look at each one, see the <a href="/docs#text-block-syntax">TextBlock documentation</a>, which covers all <a href="/docs#text-block-methods">methods</a>, <a href="/docs#text-block-properties">properties</a>, <a href="/docs#text-block-style-merging">style merging</a>, <a href="/docs#text-block-bboxanchor-enum">BBoxAnchor</a>, <a href="/docs#text-block-font-metrics">font metrics</a>, <a href="/docs#text-block-polar-projection">polar projection</a>, and <a href="/docs#text-block-intersection-detection">intersection detection</a>.</p>
@@ -26429,8 +28750,7 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 </code></pre><p>But it has a quiet flaw for a language that promises <em>byte-identical recompiles</em>: it leans on <code>sin</code>, and the ECMAScript standard does not pin <code>Math.sin</code> to the bit. Engines are free to differ in the last decimal place — and multiplying by 43758.5453 amplifies that last bit into a visibly different fraction. Your glow is reproducible <em>on your machine</em>. Compile the same program in a different browser engine, and &quot;byte-identical&quot; quietly becomes &quot;almost identical&quot;. It also degrades at large inputs, where float precision starts eating the fractional bits the hash lives on.</p>
 <p>The built-in <a href="/docs#stdlib-hash-noise"><code>hash01</code></a> takes a different route: integer bit-mixing (a lowbias32 finalizer), built exclusively from operations the standard specifies exactly — <code>Math.imul</code>, bit operations, IEEE arithmetic. No trigonometry anywhere. The result is a hash that returns the identical value for identical arguments on <strong>every</strong> machine and JavaScript engine: CLI, playground, and VS Code preview agree, today and on every future recompile.</p>
 <p><mini-workspace code-open caption="72 indices through both hashes. Visually interchangeable — the difference is contractual, not aesthetic. The bottom row is bit-specified on every engine; the top row inherits Math.sin's engine-dependence.">
-  <code>// viewBox="0 0 400 230"
-//-- Two hashes, same job: the sin-fract folklore hash from "The Shape of
+  <code>//-- Two hashes, same job: the sin-fract folklore hash from "The Shape of
 //-- a Stroke" (top)
 //-- against the stdlib hash01 (bottom), sampled at the same 72 indices.
 //-- Both scatter convincingly -- the difference is invisible here, and
@@ -26511,8 +28831,7 @@ scene.append(folk, builtin, labels, ticks);
 </code></pre><h2>The glow, third build, shortest yet</h2>
 <p>Here is part 2&#39;s finale rebuilt on the stdlib. Both helper <code>fn</code>s are gone. <code>bump(t, center, spread)</code> <strong>is</strong> the raised cosine — term-for-term, the same formula <code>bulge</code> computed — and the jitter collapses to a single call: <code>hash11(i, haloIndex)</code> returns signed values in <code>[-1, 1)</code>, so &quot;±20% wobble, per-layer stream&quot; is just <code>1 + hash11(i, haloIndex) * 0.2</code>.</p>
 <p><mini-workspace code-open caption="Sixteen compound-offset layers, zero helper fns. bump() replaces bulge, hash11(i, haloIndex) replaces the hash-plus-remap, and the per-layer salt became the seed argument. The lambdas still capture haloIndex — that part 'The Shape of a Stroke' got right the first time. The builder mk is a named lambda, so it's applied with << (see the worker rules in the docs); samples 3 and 4 below pass their builders as literal blocks instead.">
-  <code>// viewBox="0 60 400 140"
-//-- Part 2's deterministic glow, third build, shortest yet. The two helper
+  <code>//-- Part 2's deterministic glow, third build, shortest yet. The two helper
 //-- fns are gone: bump() replaces fn bulge (term-for-term -- same raised
 //-- cosine), and hash11() replaces fn hash01 plus the *2-1 remap. The
 //-- per-layer stream is no longer smuggled through prime arithmetic
@@ -26569,8 +28888,7 @@ for (haloIndex in 16..1) {
 <h2>The envelope vocabulary, built in</h2>
 <p>&quot;The Shape of a Stroke&quot; spent a whole section defining envelope shapes by hand — tent, smoothstep, raised cosine — to argue that the raised cosine enters and leaves its bulge with zero slope. That vocabulary is now one call each, and it composes:</p>
 <p><mini-workspace code-open caption="Three envelope idioms, each one stdlib call: bump() is the raised-cosine hill; two opposing smoothsteps multiply into a flat-topped plateau; easeInOut() is the Easing enum, now callable. Below: the bump-shaped stroke on a straight spine — the silhouette is the envelope.">
-  <code>// viewBox="0 0 400 320"
-//-- The envelope vocabulary, built in. Part 2 defined win/tentEnv/
+  <code>//-- The envelope vocabulary, built in. Part 2 defined win/tentEnv/
 //-- smoothEnv/cosEnv by hand; each shape is now one stdlib call. Three
 //-- curves, three idioms:
 //--   hill:    bump(t, 0.5, 0.35)                       the raised cosine
@@ -26705,8 +29023,7 @@ scene.append(axis, unitLine, unitLabel, hillLayer, plateauLayer, rampLayer,
 <p>Everything so far assigns each stop its own unrelated value. That&#39;s what <em>jitter</em> is — and it&#39;s also its limit: adjacent stops can&#39;t cooperate, so the edge can shimmer but never <em>undulate</em>.</p>
 <p><code>noise(x, seed?)</code> is the continuous upgrade. It equals <code>hash01</code> exactly at every integer, and blends smoothly in between (value noise with a smoothstep fade — zero slope at every lattice point). One knob controls the whole character of the result: scale the input, and you scale the frequency.</p>
 <p><mini-workspace code-open caption="The same noise stream at three input scales. noise(t * 2) is one slow swell; noise(t * 11) chatters. Frequency is just multiplication — no new API.">
-  <code>// viewBox="0 0 400 250"
-//-- From jitter to texture. hash01 gives every stop its own independent
+  <code>//-- From jitter to texture. hash01 gives every stop its own independent
 //-- value; noise() drives the width with a CONTINUOUS wobble instead, so
 //-- adjacent stops agree and the edge undulates organically. One knob
 //-- controls the character: the input scale is the frequency. Same seed,
@@ -26765,8 +29082,7 @@ scene.append(slow, mid, fast, labels);
 <p>One dimension of noise textures a stroke. Two dimensions texture a <em>family</em> of strokes.</p>
 <p>In the rebuilt glow above, each layer jitters independently — layer 7 has no idea what layer 8 is doing. <code>noise2(x, y, seed?)</code> makes the texture a <strong>field</strong>: run <code>t</code> along the stroke and the layer index across it, and because the field is continuous in both directions, neighboring layers sample neighboring rows — and swell together.</p>
 <p><mini-workspace code-open caption="The finale: one noise2 field textures all sixteen layers. t runs along the spine, haloIndex * 0.3 runs across the glow, and the layers breathe together instead of shimmering independently. In the hash-jittered glow above, sixteen edges move independently; here they move as one surface.">
-  <code>// viewBox="0 60 400 140"
-//-- A field of texture. Sample 02 jittered each layer independently --
+  <code>//-- A field of texture. Sample 02 jittered each layer independently --
 //-- hash11(i, haloIndex) gives layer 7 no idea what layer 8 is doing.
 //-- Here the texture is a 2D noise FIELD: t runs along the stroke,
 //-- haloIndex * 0.3 runs across the layers, and because noise2 is
@@ -27887,8 +30203,7 @@ layer('glyphs').apply {
 <h2>Try it</h2>
 <p>The piece in the screenshots is below — open the source, riff on the rings, then take it to the Export dialog and watch the legend set its own title.</p>
 <p><mini-workspace code-open caption="Meridian Bloom — six rings of petals and a Baumans title, drawn as glyph outlines.">
-  <code>// viewBox="0 0 900 1200"
-@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
+  <code>@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
 define ViewBox(0, 0, 900, 1200);
 
 define default PathLayer('background') \${
@@ -28197,13 +30512,13 @@ consumerSubs.apply {
 <p>Rather than manually maintaining lists of stdlib functions and their signatures, we use <code>ts-morph</code> to extract completion data from TypeScript interface declarations in <code>src/pathogen-api.ts</code>. A generation script produces <code>completion-data.generated.ts</code> with every function signature, type member set, and enum value. When the language API changes, we regenerate with <code>npm run generate:completions</code> — no manual synchronization, and a CI check catches drift.</p>
 <h3>Type flow analysis</h3>
 <p>Completions work through variable assignments, callback parameters, and loop destructuring:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> data = [{ <span class="hljs-attr">x</span>: <span class="hljs-number">60</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">160</span>, <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;alpha&quot;</span> }];
-<span class="hljs-keyword">for</span> ([d, i] <span class="hljs-keyword">in</span> data) {
-  d.  <span class="hljs-comment">// completions: x, y, name</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">data</span> = [{ <span class="id">x</span>: <span class="num">60</span>, <span class="id">y</span>: <span class="num">160</span>, <span class="id">name</span>: <span class="str">"alpha"</span> }];
+<span class="kw">for</span> ([<span class="id">d</span>, <span class="id">i</span>] <span class="kw">in</span> <span class="id">data</span>) {
+  <span class="id">d</span>.  <span class="cm">// completions: x, y, name</span>
 }
 
-data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></span>) {|item|
-  item.  <span class="hljs-comment">// completions: x, y, name</span>
+<span class="id">data</span>.<span class="id">map</span>() {|<span class="id">item</span>|
+  <span class="id">item</span>.  <span class="cm">// completions: x, y, name</span>
 };
 </code></pre><p>The engine traces the array element type through <code>for</code> loops and <code>.map()</code> callbacks, then extracts property names from the first object literal in the array initializer.</p>
 <h2>The preview panel</h2>
@@ -28226,13 +30541,13 @@ data.<span class="hljs-title function_">map</span>(<span class="hljs-params"></s
 <h2>Formatting with opinions</h2>
 <p>The formatter follows a style guide developed through a 25-question questionnaire where we reformatted real Pathogen code snippets and documented the reasoning. The core philosophy: <strong>expand for readability</strong>.</p>
 <p>Here&#39;s what formatting does to a typical style block:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// Before</span>
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${ <span class="hljs-attr">fill</span>: #0f172a; <span class="hljs-attr">stroke</span>: none; };
+<pre><code class="hljs language-pathogen"><span class="cm">// Before</span>
+<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) \${ <span class="pr">fill</span>: <span class="str">#0f172a</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
 
-<span class="hljs-comment">// After formatting</span>
-<span class="hljs-keyword">let</span> bg = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;bg&#x27;</span>) \${
-  <span class="hljs-attr">fill</span>: #0f172a;
-  <span class="hljs-attr">stroke</span>: none;
+<span class="cm">// After formatting</span>
+<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) \${
+  <span class="pr">fill</span>: <span class="str">#0f172a</span>;
+  <span class="pr">stroke</span>: <span class="id">none</span>;
 };
 </code></pre><p>Arrays, objects, style blocks, enums, <a href="/blog/pathblock-introduction">path blocks</a>, and text blocks are always multi-line. One item per line. Trailing commas everywhere.</p>
 <p>Key formatter features:</p>

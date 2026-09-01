@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -300,8 +311,7 @@ code.hljs {
 </code></pre><p>But it has a quiet flaw for a language that promises <em>byte-identical recompiles</em>: it leans on <code>sin</code>, and the ECMAScript standard does not pin <code>Math.sin</code> to the bit. Engines are free to differ in the last decimal place — and multiplying by 43758.5453 amplifies that last bit into a visibly different fraction. Your glow is reproducible <em>on your machine</em>. Compile the same program in a different browser engine, and &quot;byte-identical&quot; quietly becomes &quot;almost identical&quot;. It also degrades at large inputs, where float precision starts eating the fractional bits the hash lives on.</p>
 <p>The built-in <a href="/docs#stdlib-hash-noise"><code>hash01</code></a> takes a different route: integer bit-mixing (a lowbias32 finalizer), built exclusively from operations the standard specifies exactly — <code>Math.imul</code>, bit operations, IEEE arithmetic. No trigonometry anywhere. The result is a hash that returns the identical value for identical arguments on <strong>every</strong> machine and JavaScript engine: CLI, playground, and VS Code preview agree, today and on every future recompile.</p>
 <p><mini-workspace code-open caption="72 indices through both hashes. Visually interchangeable — the difference is contractual, not aesthetic. The bottom row is bit-specified on every engine; the top row inherits Math.sin's engine-dependence.">
-  <code>// viewBox="0 0 400 230"
-//-- Two hashes, same job: the sin-fract folklore hash from "The Shape of
+  <code>//-- Two hashes, same job: the sin-fract folklore hash from "The Shape of
 //-- a Stroke" (top)
 //-- against the stdlib hash01 (bottom), sampled at the same 72 indices.
 //-- Both scatter convincingly -- the difference is invisible here, and
@@ -382,8 +392,7 @@ scene.append(folk, builtin, labels, ticks);
 </code></pre><h2>The glow, third build, shortest yet</h2>
 <p>Here is part 2&#39;s finale rebuilt on the stdlib. Both helper <code>fn</code>s are gone. <code>bump(t, center, spread)</code> <strong>is</strong> the raised cosine — term-for-term, the same formula <code>bulge</code> computed — and the jitter collapses to a single call: <code>hash11(i, haloIndex)</code> returns signed values in <code>[-1, 1)</code>, so &quot;±20% wobble, per-layer stream&quot; is just <code>1 + hash11(i, haloIndex) * 0.2</code>.</p>
 <p><mini-workspace code-open caption="Sixteen compound-offset layers, zero helper fns. bump() replaces bulge, hash11(i, haloIndex) replaces the hash-plus-remap, and the per-layer salt became the seed argument. The lambdas still capture haloIndex — that part 'The Shape of a Stroke' got right the first time. The builder mk is a named lambda, so it's applied with << (see the worker rules in the docs); samples 3 and 4 below pass their builders as literal blocks instead.">
-  <code>// viewBox="0 60 400 140"
-//-- Part 2's deterministic glow, third build, shortest yet. The two helper
+  <code>//-- Part 2's deterministic glow, third build, shortest yet. The two helper
 //-- fns are gone: bump() replaces fn bulge (term-for-term -- same raised
 //-- cosine), and hash11() replaces fn hash01 plus the *2-1 remap. The
 //-- per-layer stream is no longer smuggled through prime arithmetic
@@ -440,8 +449,7 @@ for (haloIndex in 16..1) {
 <h2>The envelope vocabulary, built in</h2>
 <p>&quot;The Shape of a Stroke&quot; spent a whole section defining envelope shapes by hand — tent, smoothstep, raised cosine — to argue that the raised cosine enters and leaves its bulge with zero slope. That vocabulary is now one call each, and it composes:</p>
 <p><mini-workspace code-open caption="Three envelope idioms, each one stdlib call: bump() is the raised-cosine hill; two opposing smoothsteps multiply into a flat-topped plateau; easeInOut() is the Easing enum, now callable. Below: the bump-shaped stroke on a straight spine — the silhouette is the envelope.">
-  <code>// viewBox="0 0 400 320"
-//-- The envelope vocabulary, built in. Part 2 defined win/tentEnv/
+  <code>//-- The envelope vocabulary, built in. Part 2 defined win/tentEnv/
 //-- smoothEnv/cosEnv by hand; each shape is now one stdlib call. Three
 //-- curves, three idioms:
 //--   hill:    bump(t, 0.5, 0.35)                       the raised cosine
@@ -576,8 +584,7 @@ scene.append(axis, unitLine, unitLabel, hillLayer, plateauLayer, rampLayer,
 <p>Everything so far assigns each stop its own unrelated value. That&#39;s what <em>jitter</em> is — and it&#39;s also its limit: adjacent stops can&#39;t cooperate, so the edge can shimmer but never <em>undulate</em>.</p>
 <p><code>noise(x, seed?)</code> is the continuous upgrade. It equals <code>hash01</code> exactly at every integer, and blends smoothly in between (value noise with a smoothstep fade — zero slope at every lattice point). One knob controls the whole character of the result: scale the input, and you scale the frequency.</p>
 <p><mini-workspace code-open caption="The same noise stream at three input scales. noise(t * 2) is one slow swell; noise(t * 11) chatters. Frequency is just multiplication — no new API.">
-  <code>// viewBox="0 0 400 250"
-//-- From jitter to texture. hash01 gives every stop its own independent
+  <code>//-- From jitter to texture. hash01 gives every stop its own independent
 //-- value; noise() drives the width with a CONTINUOUS wobble instead, so
 //-- adjacent stops agree and the edge undulates organically. One knob
 //-- controls the character: the input scale is the frequency. Same seed,
@@ -636,8 +643,7 @@ scene.append(slow, mid, fast, labels);
 <p>One dimension of noise textures a stroke. Two dimensions texture a <em>family</em> of strokes.</p>
 <p>In the rebuilt glow above, each layer jitters independently — layer 7 has no idea what layer 8 is doing. <code>noise2(x, y, seed?)</code> makes the texture a <strong>field</strong>: run <code>t</code> along the stroke and the layer index across it, and because the field is continuous in both directions, neighboring layers sample neighboring rows — and swell together.</p>
 <p><mini-workspace code-open caption="The finale: one noise2 field textures all sixteen layers. t runs along the spine, haloIndex * 0.3 runs across the glow, and the layers breathe together instead of shimmering independently. In the hash-jittered glow above, sixteen edges move independently; here they move as one surface.">
-  <code>// viewBox="0 60 400 140"
-//-- A field of texture. Sample 02 jittered each layer independently --
+  <code>//-- A field of texture. Sample 02 jittered each layer independently --
 //-- hash11(i, haloIndex) gives layer 7 no idea what layer 8 is doing.
 //-- Here the texture is a 2D noise FIELD: t runs along the stroke,
 //-- haloIndex * 0.3 runs across the layers, and because noise2 is

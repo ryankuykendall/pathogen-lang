@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -501,13 +512,13 @@ equals.apply {
 <p>The left panel shows the old way: wrap a string in <code>Color()</code>, call methods with decimal arguments. The right panel shows the new way: bare hex literal, percent suffix. Both produce the same three swatches. The <code>Color()</code> wrapper still works — it now accepts bare hex values as a pass-through — but you no longer need it for hex colors.</p>
 <h2>Hex Literals</h2>
 <p>Hex color codes are first-class expressions anywhere a value is expected:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = #cc0000;            <span class="hljs-comment">// 6-digit hex</span>
-<span class="hljs-keyword">let</span> c = #f00;               <span class="hljs-comment">// 3-digit shorthand</span>
-<span class="hljs-keyword">let</span> c = #cc000080;          <span class="hljs-comment">// 8-digit with alpha</span>
-<span class="hljs-keyword">let</span> c = #f008;              <span class="hljs-comment">// 4-digit with alpha</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">c</span> = <span class="str">#cc0000</span>;            <span class="cm">// 6-digit hex</span>
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">#f00</span>;               <span class="cm">// 3-digit shorthand</span>
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">#cc000080</span>;          <span class="cm">// 8-digit with alpha</span>
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">#f008</span>;              <span class="cm">// 4-digit with alpha</span>
 </code></pre><p>Wrap in parentheses for method chaining:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> lighter = (#cc0000).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
-<span class="hljs-keyword">let</span> shifted = (#0066ff).<span class="hljs-title function_">hueShift</span>(<span class="hljs-number">60</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">lighter</span> = (<span class="str">#cc0000</span>).<span class="id">lighten</span>(<span class="num">20%</span>);
+<span class="kw">let</span> <span class="id">shifted</span> = (<span class="str">#0066ff</span>).<span class="id">hueShift</span>(<span class="num">60</span>);
 </code></pre><p>From a single hex literal you can build full color palettes — lighten, darken, shift hue, adjust saturation, set alpha. The demo below starts from <code>#0066ff</code> and derives an entire palette using method chaining and the percent suffix:</p>
 <p><mini-workspace code-open caption="Lightness, hue, and saturation ramps derived from a single hex literal">
   <code>define ViewBox(0, 0, 520, 320);
@@ -701,17 +712,17 @@ base_line.apply {
 </mini-workspace></p>
 <h2>CSS Color Function Literals</h2>
 <p>All major CSS color functions work as bare expressions. You can paste any CSS color value directly into Pathogen code and it will just work — <code>%</code> and <code>/</code> inside function arguments are treated as literal characters, not operators:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">0</span>, <span class="hljs-number">100</span>%, <span class="hljs-number">50</span>%);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.6</span> <span class="hljs-number">0.15</span> <span class="hljs-number">30</span>);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklch</span>(<span class="hljs-number">0.6</span> <span class="hljs-number">0.15</span> <span class="hljs-number">30</span> / <span class="hljs-number">0.5</span>);  <span class="hljs-comment">// slash alpha</span>
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">hwb</span>(<span class="hljs-number">0</span> <span class="hljs-number">0</span>% <span class="hljs-number">0</span>%);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">lab</span>(<span class="hljs-number">50</span> <span class="hljs-number">40</span> <span class="hljs-number">59.5</span>);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">lch</span>(<span class="hljs-number">50</span> <span class="hljs-number">64</span> <span class="hljs-number">30</span>);
-<span class="hljs-keyword">let</span> c = <span class="hljs-title function_">oklab</span>(<span class="hljs-number">0.6</span> -<span class="hljs-number">0.1</span> <span class="hljs-number">0.15</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">c</span> = <span class="str">rgb(255, 0, 0)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">hsl(0, 100%, 50%)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">oklch(0.6 0.15 30)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">oklch(0.6 0.15 30 / 0.5)</span>;  <span class="cm">// slash alpha</span>
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">hwb(0 0% 0%)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">lab(50 40 59.5)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">lch(50 64 30)</span>;
+<span class="kw">let</span> <span class="id">c</span> = <span class="str">oklab(0.6 -0.1 0.15)</span>;
 </code></pre><p>Method chaining works directly — no wrapper needed:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> lighter = <span class="hljs-title function_">rgb</span>(<span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>).<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
-<span class="hljs-keyword">let</span> muted = <span class="hljs-title function_">hsl</span>(<span class="hljs-number">210</span>, <span class="hljs-number">80</span>%, <span class="hljs-number">50</span>%).<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">50</span>%);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">lighter</span> = <span class="str">rgb(255, 0, 0)</span>.<span class="id">lighten</span>(<span class="num">20%</span>);
+<span class="kw">let</span> <span class="id">muted</span> = <span class="str">hsl(210, 80%, 50%)</span>.<span class="id">desaturate</span>(<span class="num">50%</span>);
 </code></pre><p>The demo below expresses the same red in seven different color spaces. Every format converts to <a href="/docs#stdlib-color">OKLCH</a> internally, so the swatches are near-identical — minor rounding differences between color spaces are invisible at screen resolution:</p>
 <p><mini-workspace code-open caption="The same red expressed via seven CSS color function syntaxes — all converge to OKLCH internally">
   <code>define ViewBox(0, 0, 560, 340);
@@ -844,11 +855,11 @@ arrow_line.apply {
 </blockquote>
 <h2>The Percent Suffix</h2>
 <p>The <code>%</code> suffix converts a number to its decimal form: <code>20%</code> becomes <code>0.2</code>, <code>50%</code> becomes <code>0.5</code>. This reads naturally with color methods — &quot;lighten by 20%&quot; instead of &quot;lighten by 0.2&quot;:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> c = #e63946;
-<span class="hljs-keyword">let</span> tint  = c.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);      <span class="hljs-comment">// 20% → 0.2</span>
-<span class="hljs-keyword">let</span> shade = c.<span class="hljs-title function_">darken</span>(<span class="hljs-number">15</span>%);       <span class="hljs-comment">// 15% → 0.15</span>
-<span class="hljs-keyword">let</span> faded = c.<span class="hljs-title function_">alpha</span>(<span class="hljs-number">50</span>%);        <span class="hljs-comment">// 50% → 0.5</span>
-<span class="hljs-keyword">let</span> muted = c.<span class="hljs-title function_">desaturate</span>(<span class="hljs-number">40</span>%);   <span class="hljs-comment">// 40% → 0.4</span>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">c</span> = <span class="str">#e63946</span>;
+<span class="kw">let</span> <span class="id">tint</span>  = <span class="id">c</span>.<span class="id">lighten</span>(<span class="num">20%</span>);      <span class="cm">// 20% → 0.2</span>
+<span class="kw">let</span> <span class="id">shade</span> = <span class="id">c</span>.<span class="id">darken</span>(<span class="num">15%</span>);       <span class="cm">// 15% → 0.15</span>
+<span class="kw">let</span> <span class="id">faded</span> = <span class="id">c</span>.<span class="id">alpha</span>(<span class="num">50%</span>);        <span class="cm">// 50% → 0.5</span>
+<span class="kw">let</span> <span class="id">muted</span> = <span class="id">c</span>.<span class="id">desaturate</span>(<span class="num">40%</span>);   <span class="cm">// 40% → 0.4</span>
 </code></pre><p>The percent suffix isn&#39;t limited to color methods — it works anywhere a number is expected. <code>50%</code> is <code>0.5</code> whether it&#39;s a color alpha, a mix ratio, or a variable assignment.</p>
 <p><strong>Disambiguation:</strong> <code>20%</code> (no space) is a percent literal. <code>20 % 5</code> (with spaces) is the <a href="/docs#syntax-percent-suffix">modulus operator</a>. Existing code that uses modulus with spaces continues to work unchanged.</p>
 <p><mini-workspace code-open caption="Tint, shade, and alpha scales using the percent suffix">
@@ -1033,10 +1044,10 @@ base_ind.apply {
 </mini-workspace></p>
 <h2>Reactive Colors</h2>
 <p>Color literals compose naturally with Pathogen&#39;s <a href="/blog/reactive-color-svg">CSSVar-backed reactive colors</a>. Use a bare hex as the fallback value in <code>Color(CSSVar(...))</code> to create colors that update at runtime when the CSS custom property changes:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">Color</span>(<span class="hljs-title class_">CSSVar</span>(<span class="hljs-string">&#x27;--base-color&#x27;</span>, #0066ff));
-<span class="hljs-keyword">let</span> light = base.<span class="hljs-title function_">lighten</span>(<span class="hljs-number">20</span>%);
-<span class="hljs-keyword">let</span> comp = base.<span class="hljs-title function_">complement</span>();
-<span class="hljs-keyword">let</span> triad = base.<span class="hljs-title function_">triadic</span>();
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">base</span> = <span class="id">Color</span>(<span class="id">CSSVar</span>(<span class="str">'--base-color'</span>, <span class="str">#0066ff</span>));
+<span class="kw">let</span> <span class="id">light</span> = <span class="id">base</span>.<span class="id">lighten</span>(<span class="num">20%</span>);
+<span class="kw">let</span> <span class="id">comp</span> = <span class="id">base</span>.<span class="id">complement</span>();
+<span class="kw">let</span> <span class="id">triad</span> = <span class="id">base</span>.<span class="id">triadic</span>();
 </code></pre><p>Change <code>--base-color</code> and every derived value recalculates — lighten, complement, triadic harmony, everything. The compiler emits <code>@property</code> declarations so the browser knows these are interpolatable <code>&lt;color&gt;</code> values.</p>
 <p>The first demo below shows a full reactive palette — lightness ramp, color transformations, and triadic harmony, all driven by a single CSS variable. Use the color picker to change <code>--base-color</code> and watch every swatch update:</p>
 <p><mini-workspace code-open caption="Reactive palette — change --base-color to update all swatches">

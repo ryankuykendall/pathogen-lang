@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -283,15 +294,15 @@ code.hljs {
 <p>This post builds up from a single linear gradient to a full themed palette using inheritance and OKLCH color interpolation. Every demo below is interactive — click &quot;Open in Playground&quot; to experiment with the source.</p>
 <h2>The Gradient Model</h2>
 <p>A <code>LinearGradient</code> maps color stops onto a line defined by two points in <code>objectBoundingBox</code> coordinates. The coordinate space is normalized: <code>(0, 0)</code> is the top-left of the bounding box, <code>(1, 1)</code> is the bottom-right. This means a gradient defined once works at any scale — it stretches to fit whatever shape you fill with it.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sky = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;sky&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0d1b2a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.45</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#1b4965&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.75</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c56b5a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sky</span> = <span class="id">LinearGradient</span>(<span class="str">'sky'</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">1</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#0d1b2a'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.45</span>, <span class="id">Color</span>(<span class="str">'#1b4965'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.75</span>, <span class="id">Color</span>(<span class="str">'#c56b5a'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
 };
 </code></pre><p>The constructor takes an ID string and four coordinates: <code>x1, y1, x2, y2</code>. Color stops are added inside the initialization block using <code>g.stop(position, color)</code>, where position is a value between 0 and 1. Once defined, assign the gradient to a layer&#39;s <code>fill</code> property:</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> sky_layer = <span class="hljs-title class_">PathLayer</span>(<span class="hljs-string">&#x27;sky-fill&#x27;</span>) ${ <span class="hljs-attr">fill</span>: sky; <span class="hljs-attr">stroke</span>: none; };
-sky_layer.<span class="hljs-property">apply</span> { <span class="hljs-title function_">rect</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">400</span>, <span class="hljs-number">300</span>) }
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sky_layer</span> = <span class="tp">PathLayer</span>(<span class="str">'sky-fill'</span>) ${ <span class="pr">fill</span>: <span class="id">sky</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
+<span class="id">sky_layer</span>.<span class="kw">apply</span> { <span class="id">rect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">300</span>) }
 </code></pre><p>The landscape below uses four linear gradients — a vertical sky, a diagonal mountain range, a horizontal sun streak, and a vertical ground fill — layered with Pathogen&#39;s <code>GroupLayer</code> to compose the scene.</p>
 <p><mini-workspace code-open caption="Four linear gradients composing a layered landscape">
   <code>define ViewBox(0, 0, 400, 300);
@@ -477,10 +488,10 @@ fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 </mini-workspace></p>
 <h2>RadialGradient</h2>
 <p><code>RadialGradient</code> works the same way, but radiates outward from a center point. The constructor takes <code>(id, cx, cy, r)</code>, where <code>cx</code> and <code>cy</code> are the center coordinates (again in <code>objectBoundingBox</code> space) and <code>r</code> is the radius as a fraction of the bounding box.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> glow = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;glow&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.6</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.4</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#c56b5a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0d1b2a&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">glow</span> = <span class="id">RadialGradient</span>(<span class="str">'glow'</span>, <span class="num">0.5</span>, <span class="num">0.5</span>, <span class="num">0.6</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,   <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.4</span>, <span class="id">Color</span>(<span class="str">'#c56b5a'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,   <span class="id">Color</span>(<span class="str">'#0d1b2a'</span>));
 };
 </code></pre><p>Radial gradients are natural fits for glows, spotlights, and vignettes. The scene below composes four radial gradients — a nebula background, two star types, and a planet with an off-center highlight — to build a cosmic scene entirely from radial falloffs and transparent stops.</p>
 <p><mini-workspace code-open caption="Four radial gradients — nebula, stars, and a ringed planet">
@@ -579,11 +590,11 @@ scene.append(bg, nebula, stars, planet);
 </mini-workspace></p>
 <h3>Focal Points</h3>
 <p>The basic constructor centers the gradient&#39;s falloff at <code>(cx, cy)</code>. But <code>RadialGradient</code> also accepts two extra arguments — <code>fx</code> and <code>fy</code> — that shift the <em>focal point</em> away from the geometric center. The gradient still fills the same circle, but the highlight moves, creating the illusion of directional light on a 3D surface.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// Same radius, different highlight positions</span>
-<span class="hljs-keyword">let</span> sphere = <span class="hljs-title class_">RadialGradient</span>(<span class="hljs-string">&#x27;s&#x27;</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.3</span>, <span class="hljs-number">0.3</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#ffffff&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.5</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,   <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#0a1428&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="cm">// Same radius, different highlight positions</span>
+<span class="kw">let</span> <span class="id">sphere</span> = <span class="id">RadialGradient</span>(<span class="str">'s'</span>, <span class="num">0.5</span>, <span class="num">0.5</span>, <span class="num">0.5</span>, <span class="num">0.3</span>, <span class="num">0.3</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,   <span class="id">Color</span>(<span class="str">'#ffffff'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.5</span>, <span class="id">Color</span>(<span class="str">'#2563eb'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,   <span class="id">Color</span>(<span class="str">'#0a1428'</span>));
 };
 </code></pre><p>The three spheres below use identical color stops. Only <code>fx</code> and <code>fy</code> differ — the highlight shifts from top-left to center to top-right.</p>
 <p><mini-workspace caption="Same gradient stops, three focal points — the highlight shifts with fx, fy">
@@ -660,11 +671,11 @@ scene.append(bg, s1, s2, s3, labels);
 <h2>OKLCH Interpolation</h2>
 <p>By default, SVG gradients interpolate in sRGB. This is the web platform default, and it produces muddy midpoints when transitioning between colors that are far apart on the hue wheel. Blue to yellow passes through gray. Red to cyan desaturates through brown.</p>
 <p>OKLCH interpolation solves this. OKLCH (Okay Lightness, Chroma, Hue) is a perceptually uniform color space where interpolation follows a natural arc through the hue wheel instead of cutting through the middle of the RGB cube. Setting <code>.interpolation = &#39;oklch&#39;</code> on any gradient enables this.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;grad&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2563eb&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#eab308&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">grad</span> = <span class="id">LinearGradient</span>(<span class="str">'grad'</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">1</span>, <span class="num">0</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>, <span class="id">Color</span>(<span class="str">'#2563eb'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>, <span class="id">Color</span>(<span class="str">'#eab308'</span>));
 };
-grad.<span class="hljs-property">interpolation</span> = <span class="hljs-string">&#x27;oklch&#x27;</span>;
+<span class="id">grad</span>.<span class="id">interpolation</span> = <span class="str">'oklch'</span>;
 </code></pre><p>The comparison below shows three color pairs — blue/yellow, red/cyan, magenta/green — in both sRGB and OKLCH. The difference is dramatic: sRGB midpoints are desaturated and dull, while OKLCH transitions stay vibrant and chromatic.</p>
 <p><mini-workspace code-open caption="sRGB vs OKLCH — same stops, dramatically different midpoints">
   <code>define ViewBox(0, 0, 400, 400);
@@ -786,13 +797,13 @@ comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, m
 <li><strong>reflect</strong>: The gradient reverses direction and plays back, creating a mirror effect.</li>
 <li><strong>repeat</strong>: The gradient tiles, repeating its pattern continuously.</li>
 </ul>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> grad = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;grad&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.3</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.33</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.66</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#264653&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">grad</span> = <span class="id">LinearGradient</span>(<span class="str">'grad'</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0.3</span>, <span class="num">0</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#e63946'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.33</span>, <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.66</span>, <span class="id">Color</span>(<span class="str">'#2a9d8f'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#264653'</span>));
 };
-grad.<span class="hljs-property">spreadMethod</span> = <span class="hljs-string">&#x27;reflect&#x27;</span>;
+<span class="id">grad</span>.<span class="id">spreadMethod</span> = <span class="str">'reflect'</span>;
 </code></pre><p>The three strips below use the same gradient that covers only the first 30% of each element. The vertical lines mark the gradient&#39;s defined range. Beyond that boundary, each spread method produces a different visual pattern.</p>
 <p><mini-workspace code-open caption="pad, reflect, repeat — same narrow gradient, three spread behaviors">
   <code>define ViewBox(0, 0, 400, 300);
@@ -895,18 +906,18 @@ scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label,
 </mini-workspace></p>
 <h2>Gradient Inheritance</h2>
 <p>When you need variations of a gradient — reversed, rotated, desaturated — copying and modifying the stop list is fragile. Pathogen&#39;s <code>.inherit()</code> method creates a new gradient that shares the parent&#39;s stop definitions but can override any property.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> base = <span class="hljs-title class_">LinearGradient</span>(<span class="hljs-string">&#x27;warm-base&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>) {|g|
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e63946&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.35</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#f4a261&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">0.65</span>, <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#e9c46a&#x27;</span>));
-  g.<span class="hljs-title function_">stop</span>(<span class="hljs-number">1</span>,    <span class="hljs-title class_">Color</span>(<span class="hljs-string">&#x27;#2a9d8f&#x27;</span>));
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">base</span> = <span class="id">LinearGradient</span>(<span class="str">'warm-base'</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">1</span>, <span class="num">0</span>) {|<span class="id">g</span>|
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0</span>,    <span class="id">Color</span>(<span class="str">'#e63946'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.35</span>, <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">0.65</span>, <span class="id">Color</span>(<span class="str">'#e9c46a'</span>));
+  <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#2a9d8f'</span>));
 };
 
-<span class="hljs-keyword">let</span> cool = base.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;cool-variant&#x27;</span>);
-cool.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(180, 0.5, 0.5)&#x27;</span>;
+<span class="kw">let</span> <span class="id">cool</span> = <span class="id">base</span>.<span class="id">inherit</span>(<span class="str">'cool-variant'</span>);
+<span class="id">cool</span>.<span class="id">gradientTransform</span> = <span class="str">'rotate(180, 0.5, 0.5)'</span>;
 
-<span class="hljs-keyword">let</span> vertical = base.<span class="hljs-title function_">inherit</span>(<span class="hljs-string">&#x27;vertical-variant&#x27;</span>);
-vertical.<span class="hljs-property">gradientTransform</span> = <span class="hljs-string">&#x27;rotate(90, 0.5, 0.5)&#x27;</span>;
+<span class="kw">let</span> <span class="id">vertical</span> = <span class="id">base</span>.<span class="id">inherit</span>(<span class="str">'vertical-variant'</span>);
+<span class="id">vertical</span>.<span class="id">gradientTransform</span> = <span class="str">'rotate(90, 0.5, 0.5)'</span>;
 </code></pre><p>One base gradient, three variants. Change the base and all inherited gradients update. This is the foundation of a themeable gradient system — define your palette once, derive everything else.</p>
 <p><mini-workspace code-open caption="One base gradient spawns a family of variants via inherit()">
   <code>define ViewBox(0, 0, 400, 300);

@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stroke Geometry: Dashes, Outlines, and Start Points as Real Paths — Pathogen Studio</title>
+  <meta name="description" content="First in Broken Lines, a five-part series on stroke geometry: dash() partitions a path into its dash and gap pieces, outline() turns a stroked line into a closed, fillable shape, and startAt() decides where a closed path begins.">
+  <link rel="canonical" href="https://pathogen.studio/blog/broken-lines-stroke-geometry">
+  <meta property="og:title" content="Stroke Geometry: Dashes, Outlines, and Start Points as Real Paths — Pathogen Studio">
+  <meta property="og:description" content="First in Broken Lines, a five-part series on stroke geometry: dash() partitions a path into its dash and gap pieces, outline() turns a stroked line into a closed, fillable shape, and startAt() decides where a closed path begins.">
+  <meta property="og:url" content="https://pathogen.studio/blog/broken-lines-stroke-geometry">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Stroke Geometry: Dashes, Outlines, and Start Points as Real Paths","description":"First in Broken Lines, a five-part series on stroke geometry: dash() partitions a path into its dash and gap pieces, outline() turns a stroked line into a closed, fillable shape, and startAt() decides where a closed path begins.","datePublished":"2026-09-01","url":"https://pathogen.studio/blog/broken-lines-stroke-geometry","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Stroke Geometry: Dashes, Outlines, and Start Points as Real Paths</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Stroke Geometry: Dashes, Outlines, and Start Points as Real Paths</h1>
+        <p class="post-meta"><time datetime="2026-09-01">September 1, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 1 of 5 in Broken Lines — projects that treat the stroke not as
+paint, but as geometry you can hold.</em></p>
+<blockquote>
+<p><strong>Series: Broken Lines</strong></p>
+<ol>
+<li><strong>Stroke geometry</strong> (this post) — dashes, outlines, and start
+points as real paths</li>
+<li><a href="/blog/broken-lines-sashiko">Sashiko</a> — running stitches from
+binary sequences</li>
+<li><a href="/blog/broken-lines-leathercraft">Leathercraft</a> — stitch holes
+that can&#39;t disagree</li>
+<li><a href="/blog/broken-lines-stencils">Stencils</a> — bridges are just gaps</li>
+<li><a href="/blog/broken-lines-what-it-taught">What Broken Lines taught the language</a>
+— the friction log, resolved</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This series builds on
+<a href="/blog/pathblock-introduction">PathBlocks</a> — reusable path values you
+draw at a position — and touches the
+<a href="/docs#path-blocks-boolean-operations">boolean operations</a>
+(<code>union</code>, <code>difference</code>) in a few places. Skim those first if either
+is new.</p>
+</blockquote>
+<h2>What it does</h2>
+<p>When a renderer draws a dashed stroke, the dashes exist only as paint:
+you can see them, but you can&#39;t ask for them. Three PathBlock methods
+turn that paint back into geometry.</p>
+<p><a href="/docs#path-blocks-dashstyles-array-of-path-kind-t0-t1"><code>dash(styles)</code></a>
+partitions a path using the same properties CSS uses, and hands back
+every piece — the inked dashes <em>and</em> the spaces between them — as real
+paths:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">pieces</span> = <span class="id">wave</span>.<span class="id">dash</span>(${
+  <span class="pr">stroke-dasharray</span>: <span class="num">26</span> <span class="num">14</span>;
+});
+<span class="cm">// [{ path, kind: 'dash' | 'gap', t0, t1 }, ...]</span>
+</code></pre><p><a href="/docs#path-blocks-outlinestyles-pathblock"><code>outline(styles)</code></a> converts
+a stroked line into the <strong>closed</strong> path that outlines it — the same
+operation as &quot;Outline Stroke&quot; in Illustrator or &quot;Stroke to Path&quot; in
+Inkscape. Closed means fillable, and fillable means it works in boolean
+operations.</p>
+<p><a href="/docs#path-blocks-startatt-pathblock-projectedpath"><code>startAt(t)</code></a>
+re-anchors a path to begin at any fraction of its length — and since a
+dash pattern starts wherever its path does, moving the start moves
+every dash. On a closed path that&#39;s a seamless rotation; on an open
+path the ends can&#39;t be rejoined, so the result is two runs — <code>t</code> to
+the end, then a jump back for the remainder.</p>
+<p>Four things to know before the pictures, because everything below
+leans on them:</p>
+<ul>
+<li><strong>Pieces keep their place.</strong> Every piece from <code>dash()</code> — and every
+outline — remembers exactly where it sat in the source path. Draw
+them all at one position and they reassemble the original. There is
+no coordinate bookkeeping in any example on this page.</li>
+<li><strong>The methods compose.</strong> <code>dash()</code> gives centerline pieces — the bare
+line a stroke would be painted along, with no width of its own, which
+is why <code>dash()</code> rejects <code>stroke-width</code> outright. <code>outline()</code> is what
+gives a piece width, end caps, and corner treatment — <em>per piece</em>,
+which is the one thing a renderer&#39;s stroke can never do.</li>
+<li><strong>Caps extend the geometry.</strong> With <code>round</code> or <code>square</code> caps,
+<code>outline()</code> extends a piece by half the stroke width at <em>each</em> end
+(<code>butt</code> adds nothing). Outlined dash pieces stay separate shapes only
+while the <strong>gap is wider than the stroke</strong> — narrower than that, and
+neighboring pieces fuse.</li>
+<li><strong>Style values are live expressions.</strong> <code>stroke-width: calc(3 + piece.t0 * 16)</code>
+computes per piece. The flip side: a space-separated pair that reads
+as arithmetic (<code>stroke-dasharray: 10 -5</code>) is evaluated as math before
+<code>dash()</code> sees it — use commas in any list whose tokens could parse
+that way.</li>
+</ul>
+<p>One more thing this series is: a <strong>working friction log</strong>, in
+<a href="/blog/cutting-room-papercraft">the Cutting Room</a> tradition. These
+posts were built against the real language, and every place the work
+exposed a gap, a bug, or a rough edge went into a log. Some of those
+entries became fixes that shipped before the series ended; the rest
+are on the bench with their diagnoses attached —
+<a href="/blog/broken-lines-what-it-taught">part 5</a> tells that story.</p>
+<h2>Why you&#39;d use it</h2>
+<p>Because a surprising number of real crafts are made of interrupted
+lines. A sashiko pattern is running stitches — dashes. Leather seams
+are rows of punched holes — very short dashes, outlined round. A
+stencil survives because of its bridges — which are gaps, placed on
+purpose. Each of those needs the pieces as <em>objects</em> — to place, to
+thicken, to punch, to cut — not as paint. That&#39;s the series. This post
+is the toolkit.</p>
+<h2>Example 1 — The first partition</h2>
+<p>One wave, one dash array. The pieces come back alternating in path
+order — dashes drawn solid here, gaps ghosted thin, both from the same
+loop over the same array.</p>
+<p><mini-workspace code-open caption="wave.dash() — drawn by kind.">
+  <code>//-- One wave, one dasharray. dash() hands the pattern back as real
+//-- geometry: every piece is a path — dashes drawn solid, gaps ghosted.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') ${};
+let gaps = PathLayer('gaps') ${
+  stroke: #94a3b840;
+  stroke-width: 1.5;
+  fill: none;
+};
+let dashes = PathLayer('dashes') ${
+  stroke: #38bdf8;
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(gaps, dashes, labels);
+
+let wave = @{
+  c 40 -70 80 -70 120 0
+  c 40 70 80 70 120 0
+  c 40 -70 80 -70 120 0
+};
+
+let pieces = wave.dash(${
+  stroke-dasharray: 26 14;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'dash') {
+    dashes.apply {
+      M 60 120 piece.path.draw()
+    }
+  } else {
+    gaps.apply {
+      M 60 120 piece.path.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(60, 36)`dashes drawn solid, gaps ghosted — same wave, ${pieces.length} pieces`;
+}
+</code>
+  <img src="/blog/samples/post45/01-first-dash.svg" alt="wave.dash() — drawn by kind." loading="lazy">
+</mini-workspace></p>
+<p>Every piece is a PathBlock. Anything a path can do — sample it, bound
+it, transform it — a dash can do.</p>
+<h2>Example 2 — Position rides with the piece</h2>
+<p>Each piece carries <code>t0</code> and <code>t1</code>, its start and end as fractions of
+the path&#39;s length. Filtering on them needs no geometry at all: here
+the first half of the wave goes blue, the rest amber.</p>
+<p><mini-workspace code-open caption="Routing on piece.t0 — no coordinate math.">
+  <code>//-- Every piece carries its position: t0 and t1 are arc-length fractions.
+//-- Here the first half of the wave's dashes go blue, the second half
+//-- amber — a filter on t0, no coordinate math.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') ${};
+let gaps = PathLayer('gaps') ${
+  stroke: #94a3b840;
+  stroke-width: 1.5;
+  fill: none;
+};
+let earlyDashes = PathLayer('early-dashes') ${
+  stroke: #38bdf8;
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+};
+let lateDashes = PathLayer('late-dashes') ${
+  stroke: #f59e0b;
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(gaps, earlyDashes, lateDashes, labels);
+
+let wave = @{
+  c 40 -70 80 -70 120 0
+  c 40 70 80 70 120 0
+  c 40 -70 80 -70 120 0
+};
+
+let pieces = wave.dash(${
+  stroke-dasharray: 22 12;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'gap') {
+    gaps.apply {
+      M 60 120 piece.path.draw()
+    }
+  } else {
+    if (piece.t0 &lt; 0.5) {
+      earlyDashes.apply {
+        M 60 120 piece.path.draw()
+      }
+    } else {
+      lateDashes.apply {
+        M 60 120 piece.path.draw()
+      }
+    }
+  }
+}
+
+labels.apply {
+  text(60, 36)`t0 &lt; 0.5 in blue, the rest in amber — position rides with the piece`;
+}
+</code>
+  <img src="/blog/samples/post45/02-kinds-and-t.svg" alt="Routing on piece.t0 — no coordinate math." loading="lazy">
+</mini-workspace></p>
+<h2>Example 3 — outline() makes strokes into shapes</h2>
+<p>The same curve outlined three times at width 22, with the three CSS
+cap styles. The thin dark line is the original centerline: the outline
+straddles it exactly, because outlines keep their place too. The
+dashed rule marks where the centerline ends — <code>butt</code> stops flush on
+it; <code>round</code> and <code>square</code> reach half the stroke width past it. That
+extension is the cap rule from the list above, drawn to scale.</p>
+<p><mini-workspace code-open caption="stem.outline(${ stroke-width: 22; stroke-linecap: ... }) — butt, round, square.">
+  <code>//-- outline() turns a stroked line into the CLOSED path of the stroked
+//-- region — Illustrator's "Outline Stroke" as a language method. Same
+//-- curve three times: butt, round, square caps; centerline ghosted.
+
+define ViewBox(0, 0, 480, 190);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 190);
+}
+
+let scene = GroupLayer('scene') ${};
+let solids = PathLayer('solids') ${
+  fill: #f59e0b;
+  stroke: none;
+};
+let spines = PathLayer('spines') ${
+  stroke: #0f172a;
+  stroke-width: 1;
+  fill: none;
+};
+let capRule = PathLayer('cap-rule') ${
+  stroke: #94a3b880;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(solids, spines, capRule, labels);
+
+let stem = @{
+  c 0 -70 90 -70 90 0
+};
+
+let capNames = [
+  'butt',
+  'round',
+  'square',
+];
+let anchors = [
+  65,
+  200,
+  335,
+];
+
+for ([capName, columnIndex] in capNames) {
+  let anchorX = anchors[columnIndex];
+  let solid = stem.outline(${
+    stroke-width: 22;
+    stroke-linecap: `${capName}`;
+  });
+  solids.apply {
+    M anchorX 125 solid.draw()
+  }
+  spines.apply {
+    M anchorX 125 stem.draw()
+  }
+  labels.apply {
+    text(calc(anchorX + 45), 165)`${capName}`;
+  }
+}
+
+// Where the butt caps stop: round and square reach past this line by
+// half the stroke width.
+capRule.apply {
+  M 50 125
+  h 380
+}
+</code>
+  <img src="/blog/samples/post45/03-outline-caps.svg" alt="stem.outline(${ stroke-width: 22; stroke-linecap: ... }) — butt, round, square." loading="lazy">
+</mini-workspace></p>
+<p>These are closed, filled paths — not strokes. The amber is <code>fill</code>.</p>
+<h2>Example 4 — Compose: a width per piece</h2>
+<p>Partition first, then thicken each dash with its own <code>outline()</code> call.
+The width is an expression over the piece&#39;s own <code>t0</code>, so the dashes
+swell along the wave. A renderer&#39;s <code>stroke-width</code> applies to the whole
+path; this applies per piece, because each piece is its own path.</p>
+<p><mini-workspace code-open caption="piece.path.outline() with a computed width, per piece.">
+  <code>//-- The methods compose: partition with dash(), thicken each piece with
+//-- its own outline() — the width rides the piece's t0, so the dashes
+//-- swell along the wave. No renderer can style a stroke this way.
+
+define ViewBox(0, 0, 480, 220);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') ${};
+let gaps = PathLayer('gaps') ${
+  stroke: #94a3b840;
+  stroke-width: 1.5;
+  fill: none;
+};
+let swellingDashes = PathLayer('swelling-dashes') ${
+  fill: #f59e0b;
+  stroke: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+};
+scene.append(gaps, swellingDashes, labels);
+
+let wave = @{
+  c 40 -65 80 -65 120 0
+  c 40 65 80 65 120 0
+  c 40 -65 80 -65 120 0
+};
+
+let pieces = wave.dash(${
+  stroke-dasharray: 24 22;
+});
+
+for (piece in pieces) {
+  if (piece.kind == 'gap') {
+    gaps.apply {
+      M 60 120 piece.path.draw()
+    }
+  } else {
+    let swollen = piece.path.outline(${
+      stroke-width: calc(3 + piece.t0 * 16);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    });
+    swellingDashes.apply {
+      M 60 120 swollen.draw()
+    }
+  }
+}
+
+labels.apply {
+  text(60, 34)`stroke-width: calc(3 + piece.t0 * 16) — one width per piece`;
+}
+</code>
+  <img src="/blog/samples/post45/04-compose.svg" alt="piece.path.outline() with a computed width, per piece." loading="lazy">
+</mini-workspace></p>
+<h2>Example 5 — Closed means boolean-ready</h2>
+<p>Because outlines are closed, they participate in boolean operations
+directly. Left: each fat dash subtracted from a plate —
+<code>plate.difference(slot)</code> — leaving three discrete pill-shaped slots
+(the gap is wider than the stroke; the cap rule again). Right: two
+crossing strokes outlined with <code>outline-overlap: union</code>. With the
+default <code>raw</code>, the same cross would fill correctly but keep an
+interior seam where the two contours overlap; <code>union</code> dissolves it
+into one clean boundary — which matters the moment this shape becomes
+a cutting path or a boolean operand.</p>
+<p><mini-workspace code-open caption="Left: dashes as cutters. Right: crossing strokes welded into one outline.">
+  <code>//-- Outlines are closed paths, so booleans just work. Left: fat dashes
+//-- subtracted from a plate — slots. Right: two crossing strokes with
+//-- outline-overlap: union — one clean boundary instead of two contours.
+
+define ViewBox(0, 0, 480, 240);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 240);
+}
+
+let scene = GroupLayer('scene') ${};
+let plateLayer = PathLayer('plate') ${
+  fill: #38bdf830;
+  stroke: #38bdf8;
+  stroke-width: 1.5;
+};
+let crossLayer = PathLayer('cross') ${
+  fill: #f59e0b30;
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(plateLayer, crossLayer, labels);
+
+// Left: dash a track, outline each dash, subtract them all from a plate.
+let plate = @{
+  h 190
+  v 120
+  h -190
+  z
+};
+let track = @{
+  m 25 60
+  h 140
+};
+let slotPieces = track.dash(${
+  stroke-dasharray: 26 26;
+});
+let plaque = plate;
+for (piece in slotPieces) {
+  if (piece.kind == 'dash') {
+    let slot = piece.path.outline(${
+      stroke-width: 16;
+      stroke-linecap: round;
+    });
+    plaque = plaque.difference(slot);
+  }
+}
+plateLayer.apply {
+  M 30 55 plaque.draw()
+}
+
+// Right: crossing strokes, self-unioned into one outline.
+let crossing = @{
+  h 110
+  m -55 -45
+  v 90
+};
+let welded = crossing.outline(${
+  stroke-width: 26;
+  stroke-linecap: round;
+  outline-overlap: union;
+});
+crossLayer.apply {
+  M 305 115 welded.draw()
+}
+
+labels.apply {
+  text(125, 210)`plate.difference(slot)`;
+  text(360, 210)`outline-overlap: union`;
+}
+</code>
+  <img src="/blog/samples/post45/05-boolean-ready.svg" alt="Left: dashes as cutters. Right: crossing strokes welded into one outline." loading="lazy">
+</mini-workspace></p>
+<h2>Example 6 — startAt() slides the pattern</h2>
+<p>A dash pattern begins at its path&#39;s start point. <code>startAt(t)</code>
+re-anchors a closed path to begin at fraction <code>t</code> — seamlessly, the
+old seam healed — so chaining <code>startAt(phase).dash(...)</code> marches the
+whole pattern around the ring. The amber dot on each ring is the
+re-anchored start point, read straight off <code>startPoint</code>. Percent
+literals read naturally: <code>startAt(8%)</code> is <code>startAt(0.08)</code>, and the
+phases here are <code>0%</code>, <code>4%</code>, <code>8%</code>.</p>
+<p><mini-workspace code-open caption="Same ring, same dasharray, three phases — the pattern walks.">
+  <code>//-- startAt(t) re-anchors a closed path's start point, and the dash
+//-- pattern starts wherever the path does — so sliding the start slides
+//-- every dash. Three phases of the same ring.
+
+define ViewBox(0, 0, 480, 210);
+
+let bg = PathLayer('bg') ${
+  fill: #0f172a;
+  stroke: none;
+};
+layer('bg').apply {
+  rect(0, 0, 480, 210);
+}
+
+let scene = GroupLayer('scene') ${};
+let startDots = PathLayer('start-dots') ${
+  fill: #f59e0b;
+  stroke: none;
+};
+let rings = PathLayer('rings') ${
+  stroke: #94a3b850;
+  stroke-width: 1;
+  fill: none;
+};
+let marchers = PathLayer('marchers') ${
+  stroke: #38bdf8;
+  stroke-width: 5;
+  stroke-linecap: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(rings, marchers, startDots, labels);
+
+let ring = @{
+  circle(0, 0, 52);
+};
+
+let phases = [
+  0%,
+  4%,
+  8%,
+];
+let phaseLabels = [
+  '0%',
+  '4%',
+  '8%',
+];
+let anchors = [
+  95,
+  240,
+  385,
+];
+
+for ([phase, columnIndex] in phases) {
+  let anchorX = anchors[columnIndex];
+  rings.apply {
+    M anchorX 92 ring.draw()
+  }
+  let anchored = ring.startAt(phase);
+  let pieces = anchored.dash(${
+    stroke-dasharray: 24 17;
+  });
+  for (piece in pieces) {
+    if (piece.kind == 'dash') {
+      marchers.apply {
+        M anchorX 92 piece.path.draw()
+      }
+    }
+  }
+  // The amber dot marks where the re-anchored path now begins.
+  startDots.apply {
+    circle(calc(anchorX + anchored.startPoint.x), calc(92 + anchored.startPoint.y), 4);
+  }
+  labels.apply {
+    text(anchorX, 185)`startAt(${phaseLabels[columnIndex]})`;
+  }
+}
+</code>
+  <img src="/blog/samples/post45/06-startat-march.svg" alt="Same ring, same dasharray, three phases — the pattern walks." loading="lazy">
+</mini-workspace></p>
+<h2>Where to go next</h2>
+<p>The next three posts each take one craft built on interrupted lines
+and build a real artifact with this toolkit:
+<a href="/blog/broken-lines-sashiko">sashiko stitch patterns</a>, where the dash
+<em>is</em> the craft; <a href="/blog/broken-lines-leathercraft">leather stitch holes</a>,
+where matched seams must agree hole-for-hole; and
+<a href="/blog/broken-lines-stencils">stencil bridges</a>, where the gaps are the
+engineering. The full reference for everything here lives in the
+<a href="/docs#path-blocks-stroke-geometry">Stroke Geometry documentation</a> —
+including pieces this post skipped: <code>stroke-dashoffset</code>,
+<code>dash-seam: merge</code> for closed-path seams, and percentage dash entries,
+which in Pathogen mean a fraction of <em>this path&#39;s</em> length rather than
+SVG&#39;s viewport diagonal.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

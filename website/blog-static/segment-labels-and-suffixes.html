@@ -241,6 +241,17 @@ code.hljs {
   /* purposely ignored */
   
 }
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
@@ -281,24 +292,24 @@ code.hljs {
       <div class="blog-content">
         <p>A path used to be something you could only write. As of this release, it&#39;s something you can <strong>address</strong>.</p>
 <p>Two small clauses now attach to any path command. <code>as</code> gives an edge or a vertex a name. <code>with</code> attaches a fillet or chamfer to the joint a command creates, right where you draw it:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">10</span> <span class="hljs-number">10</span>
-h <span class="hljs-number">60</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;lid&#x27;</span>);
-v <span class="hljs-number">40</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">fillet</span>(<span class="hljs-number">8</span>) <span class="hljs-keyword">as</span> <span class="hljs-title function_">endpoint</span>(<span class="hljs-string">&#x27;corner&#x27;</span>);
-h -<span class="hljs-number">60</span>;
+<pre><code class="hljs language-pathogen">M 10 10
+h 60 as <span class="id">segment</span>(<span class="str">'lid'</span>);
+v 40 with <span class="id">fillet</span>(<span class="num">8</span>) as <span class="id">endpoint</span>(<span class="str">'corner'</span>);
+h -60;
 </code></pre><p>And everything you name can be looked up later — <code>segment(&#39;lid&#39;)</code> returns that edge with the full sampling API, <code>point(&#39;corner&#39;)</code> returns the vertex as a drawTo-ready Point, and <code>vertex(&#39;corner&#39;)</code> returns a handle that can round or cut that specific joint. The full reference lives in the <a href="/docs#segment-labels-syntax">Segment Labels &amp; Corner Suffixes docs</a>; this post is about why the feature exists and what it unlocks.</p>
 <h2>Rounding a corner where you draw it</h2>
 <p>Before this release, rounding one corner mid-path meant doing the trigonometry yourself: shorten the incoming edge, thread a <code>tangentArc</code> between the edges, shorten the outgoing edge. The authored code stops looking like the shape you meant.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-comment">// before: the 60×60 corner, hand-assembled from three pieces</span>
-<span class="hljs-keyword">let</span> manual = @{
-  h <span class="hljs-number">45</span>
-  <span class="hljs-title function_">tangentArc</span>(<span class="hljs-number">15</span>, <span class="hljs-number">0.</span>5pi);
-  v <span class="hljs-number">45</span>
+<pre><code class="hljs language-pathogen"><span class="cm">// before: the 60×60 corner, hand-assembled from three pieces</span>
+<span class="kw">let</span> <span class="id">manual</span> = @{
+  h 45
+  <span class="id">tangentArc</span>(<span class="num">15</span>, <span class="num">0.5pi</span>);
+  v 45
 };
 
-<span class="hljs-comment">// after: write the edges you mean, name the rounding where it happens</span>
-<span class="hljs-keyword">let</span> suffixed = @{
-  h <span class="hljs-number">60</span>
-  v <span class="hljs-number">60</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">fillet</span>(<span class="hljs-number">15</span>)
+<span class="cm">// after: write the edges you mean, name the rounding where it happens</span>
+<span class="kw">let</span> <span class="id">suffixed</span> = @{
+  h 60
+  v 60 with <span class="id">fillet</span>(<span class="num">15</span>)
 };
 </code></pre><p><mini-workspace code-open caption="Same rounded corner — hand-assembled tangent arc on the left, `with fillet(15)` on the right">
   <code>define ViewBox(0, 0, 240, 120);
@@ -327,10 +338,10 @@ suffixed.drawTo(150, 25);
 <p>There&#39;s a design lesson hiding in the syntax. Our first sketch was <code>v 20 joinPreviousWithFillet(5)</code> — a function-call suffix. It read badly because a fillet isn&#39;t a property of an edge; it&#39;s a property of the <strong>joint between two edges</strong>. Every system that solved this before us — PostScript&#39;s <code>arct</code> operator, TikZ&#39;s <code>rounded corners</code>, CSS&#39;s per-corner <code>border-radius</code> — attaches rounding to the corner. <code>with fillet(...)</code> names the operation on the joint the command creates, and the clunkiness disappears.</p>
 <h2>Labels turn paths into structures</h2>
 <p>The deeper change is <code>as</code>. SVG path data is a 1999-era pen-plotter stream — single-letter opcodes and coordinates, no names, no structure. Everything Pathogen does ultimately compiles down to that stream, but <em>you</em> shouldn&#39;t have to think in it.</p>
-<pre><code class="hljs language-pathogen"><span class="hljs-keyword">let</span> card = @{
-  h <span class="hljs-number">160</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;lid&#x27;</span>);
-  v <span class="hljs-number">80</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">fillet</span>(<span class="hljs-number">22</span>);
-  h -<span class="hljs-number">160</span> <span class="hljs-keyword">with</span> <span class="hljs-title function_">chamfer</span>(<span class="hljs-number">14</span>);
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">card</span> = @{
+  h 160 as <span class="id">segment</span>(<span class="str">'lid'</span>);
+  v 80 with <span class="id">fillet</span>(<span class="num">22</span>);
+  h -160 with <span class="id">chamfer</span>(<span class="num">14</span>);
   z
 };
 </code></pre><p><code>&#39;lid&#39;</code> names the top edge. That name survives everything that happens to the path — fillets trimming it, projection moving it — and it answers questions:</p>
@@ -387,25 +398,25 @@ layer('bolts').apply {
 </mini-workspace></p>
 <h2>Names don&#39;t break; indices do</h2>
 <p>We already shipped vertex-targeted fillets: <code>filletAtVertex(1, 12)</code> rounds &quot;the second corner.&quot; The problem is what happens next week, when you add a notch earlier in the path — every index shifts, and your fillet silently lands on the wrong corner. CAD systems call this the topological naming problem, and their answer is the same one we&#39;ve adopted: name the geometry at definition, address it by name forever.</p>
-<pre><code class="hljs language-pathogen">fn <span class="hljs-title function_">tab</span>(<span class="hljs-params">withNotch</span>) {
-  <span class="hljs-keyword">return</span> @{
-    h <span class="hljs-number">30</span>
-    <span class="hljs-keyword">if</span> (withNotch) {
-      v <span class="hljs-number">8</span>
-      h <span class="hljs-number">10</span>
-      v -<span class="hljs-number">8</span>
-    } <span class="hljs-keyword">else</span> {
-      h <span class="hljs-number">10</span>
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">tab</span>(<span class="id">withNotch</span>) {
+  <span class="kw">return</span> @{
+    h 30
+    <span class="kw">if</span> (<span class="id">withNotch</span>) {
+      v 8
+      h 10
+      v -8
+    } <span class="kw">else</span> {
+      h 10
     }
-    h <span class="hljs-number">40</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">endpoint</span>(<span class="hljs-string">&#x27;spout&#x27;</span>)
-    v <span class="hljs-number">55</span>
-    h -<span class="hljs-number">80</span>
+    h 40 as <span class="id">endpoint</span>(<span class="str">'spout'</span>)
+    v 55
+    h -80
     z
   };
 }
 
-<span class="hljs-keyword">let</span> plain = <span class="hljs-title function_">tab</span>(<span class="hljs-literal">false</span>).<span class="hljs-title function_">vertex</span>(<span class="hljs-string">&#x27;spout&#x27;</span>).<span class="hljs-title function_">fillet</span>(<span class="hljs-number">12</span>);
-<span class="hljs-keyword">let</span> notched = <span class="hljs-title function_">tab</span>(<span class="hljs-literal">true</span>).<span class="hljs-title function_">vertex</span>(<span class="hljs-string">&#x27;spout&#x27;</span>).<span class="hljs-title function_">fillet</span>(<span class="hljs-number">12</span>);
+<span class="kw">let</span> <span class="id">plain</span> = <span class="id">tab</span>(<span class="num">false</span>).<span class="id">vertex</span>(<span class="str">'spout'</span>).<span class="id">fillet</span>(<span class="num">12</span>);
+<span class="kw">let</span> <span class="id">notched</span> = <span class="id">tab</span>(<span class="num">true</span>).<span class="id">vertex</span>(<span class="str">'spout'</span>).<span class="id">fillet</span>(<span class="num">12</span>);
 </code></pre><p><mini-workspace code-open caption="The notch adds three commands before the corner — `vertex('spout')` rounds the same joint in both variants">
   <code>define ViewBox(0, 0, 240, 130);
 define default PathLayer('tabs') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
@@ -444,16 +455,16 @@ notched.drawTo(135, 35);
 <h2>One name, many segments</h2>
 <p>Labels don&#39;t have to be unique. A name shared by several statements forms a <strong>group</strong>, and the query API splits into the pairing you already know from the DOM: <code>segment(&#39;tooth&#39;)</code> is <code>querySelector</code> — the first match — while <code>segmentAll(&#39;tooth&#39;)</code> is <code>querySelectorAll</code>, returning every match in authoring order. The same goes for <code>pointAll</code> and <code>vertexAll</code>.</p>
 <p>That makes loop-generated geometry the easy case. Five teeth, one name, zero index bookkeeping:</p>
-<pre><code class="hljs language-pathogen">M <span class="hljs-number">35</span> <span class="hljs-number">105</span>
-<span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0.</span><span class="hljs-number">.4</span>) {
-  v -<span class="hljs-number">55</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">segment</span>(<span class="hljs-string">&#x27;tooth&#x27;</span>);
-  v <span class="hljs-number">55</span> <span class="hljs-keyword">as</span> <span class="hljs-title function_">endpoint</span>(<span class="hljs-string">&#x27;root&#x27;</span>);
-  h <span class="hljs-number">35</span>;
+<pre><code class="hljs language-pathogen">M 35 105
+<span class="kw">for</span> (<span class="id">i</span> <span class="kw">in</span> <span class="num">0</span><span class="op">..</span><span class="num">4</span>) {
+  v -55 as <span class="id">segment</span>(<span class="str">'tooth'</span>);
+  v 55 as <span class="id">endpoint</span>(<span class="str">'root'</span>);
+  h 35;
 }
 
-<span class="hljs-keyword">for</span> (tooth <span class="hljs-keyword">in</span> <span class="hljs-title function_">layer</span>(<span class="hljs-string">&#x27;comb&#x27;</span>).<span class="hljs-title function_">segmentAll</span>(<span class="hljs-string">&#x27;tooth&#x27;</span>)) {
-  <span class="hljs-keyword">let</span> tip = tooth.<span class="hljs-title function_">get</span>(<span class="hljs-number">1</span>);
-  <span class="hljs-title function_">circle</span>(tip.<span class="hljs-property">x</span>, tip.<span class="hljs-property">y</span>, <span class="hljs-number">4</span>);
+<span class="kw">for</span> (<span class="id">tooth</span> <span class="kw">in</span> <span class="kw">layer</span>(<span class="str">'comb'</span>).<span class="id">segmentAll</span>(<span class="str">'tooth'</span>)) {
+  <span class="kw">let</span> <span class="id">tip</span> = <span class="id">tooth</span>.<span class="id">get</span>(<span class="num">1</span>);
+  <span class="id">circle</span>(<span class="id">tip</span>.<span class="id">x</span>, <span class="id">tip</span>.<span class="id">y</span>, <span class="num">4</span>);
 }
 </code></pre><p><mini-workspace code-open caption="One shared name, five teeth — `segmentAll('tooth')` returns the group; each tip decorated without tracking a single index">
   <code>define ViewBox(0, 0, 240, 140);
