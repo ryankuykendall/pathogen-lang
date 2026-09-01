@@ -291,8 +291,10 @@ ParenExpression { "(" expression ")" }
 //-- primaryExpression alternative (lambda literal). The AST builder decides
 //-- which by parent context. "||" admits the zero-param form {|| ... } —
 //-- without it the two pipes lex as the logical-or token and never match.
+//-- A trailing bare expression (no ';') is the expression-bodied sugar
+//-- {|v| v * 2} — the AST builder wraps it in an implicit return.
 TrailingBlock {
-  "{" ("|" VariableName ("," VariableName)* "|" | "||") statement* "}"
+  "{" ("|" VariableName ("," VariableName)* "|" | "||") statement* expression? "}"
 }
 
 CalcExpression {

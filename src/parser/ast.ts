@@ -143,6 +143,9 @@ export interface FunctionDefinition {
 export interface ReturnStatement {
   type: 'ReturnStatement';
   value: Expression;
+  /** True for the expression-bodied lambda sugar {|v| v * 2} — the return
+   *  was synthesized, so the formatter must not print the keyword. */
+  implicit?: boolean;
 }
 
 // break;

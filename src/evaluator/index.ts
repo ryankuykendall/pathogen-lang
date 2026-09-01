@@ -1626,6 +1626,15 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         !expr.left.block &&
         CALLBACK_METHODS.has(expr.left.method)
       ) {
+        // '<<' applies a worker defined ELSEWHERE (a lambda variable or a
+        // named fn). An inline lambda literal here duplicates the trailing
+        // block form, so it is rejected by design.
+        if (expr.right.type === 'LambdaExpression') {
+          throw new Error(
+            `An inline lambda after '<<' is not allowed — '<<' applies a worker defined elsewhere. ` +
+              `Write the callback as a trailing block (.${expr.left.method} {|...| ... }) or bind the lambda to a name first.`,
+          );
+        }
         return evaluateMethodCall(expr.left, scope, expr.right);
       }
 

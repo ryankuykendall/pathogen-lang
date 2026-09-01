@@ -380,17 +380,25 @@ into the left" is the same.)
 let doubler = {|v| return calc(v * 2); };
 let doubled = [1, 2, 3].map() << doubler;
 
+let addCell = {|row, col| return calc(row * 4 + col); };
 let cells = Grid(4, 4, { xDim: 25, yDim: 25 });
-cells.fill() << {|row, col| return calc(row * 4 + col); };
+cells.fill() << addCell;
 
-let total = [1, 2, 3].reduce(0) << {|acc, v| return calc(acc + v); };
+let sum = {|acc, v| return calc(acc + v); };
+let total = [1, 2, 3].reduce(0) << sum;
 
-let spine = @{ l 120 0 };
-let ribbon = spine.variableOffset() << {|go, pb|
+fn haloProfile(go, pb) {
   go.stop(0, 4, CurveContinuity.G1);
   go.stop(1, 12, CurveContinuity.G1);
-};
+}
+let spine = @{ l 120 0 };
+let ribbon = spine.variableOffset() << haloProfile;
 ```
+
+The right side of `<<` must be a *name* (a lambda variable or a named
+`fn`) — a lambda literal written directly after `<<` is a compile
+error, because the inline spelling already exists: the trailing block
+(`cells.fill {|row, col| ... }`).
 
 The rule is structural: when the **left side is one of the nine callback
 builtins** — array `.map`/`.filter`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
@@ -1500,6 +1508,20 @@ let one = {|| return 1; };          // zero parameters
 let three = add(1, 2);
 ```
 
+A lambda whose whole body is one expression can drop the `return` and the
+semicolon — the expression's value is returned:
+
+```
+let add = {|a, b| a + b};
+let isDash = {|piece| piece.kind == 'dash'};
+
+let inked = pieces.filter() << isDash;
+```
+
+The two forms are equivalent; the expression body is sugar for a single
+`return`. A body with statements (a `let`, a loop, path commands) still
+uses the full statement form.
+
 Unlike named functions, lambdas are **lexically scoped**: the body captures
 the scope where the lambda was written (a closure), not the caller's scope.
 
@@ -1535,7 +1557,10 @@ fall through after path commands to produce a path segment.
 trailing block, a lambda (or a named function) can do the same job —
 applied with the `<<` operator, never passed inside the parentheses.
 (Constructor binding blocks are the exception — see the limitations
-below.) A worker earns its keep when it's reused:
+below.) `<<` exists for callbacks *defined elsewhere*: writing a lambda
+literal directly after `<<` is a compile error — an inline callback is
+what the trailing block form is for. A worker earns its keep when it's
+reused:
 
 ```
 let ease = {|t| return calc(t * t * (3 - 2 * t)); };
@@ -1547,10 +1572,10 @@ let cols = [0.1, 0.6].map() << ease;
 let doubler = {|v| return calc(v * 2); };
 
 let a = [1, 2, 3].map() << doubler;      // same as .map {|v| ...}
-let b = [1, 2, 3].map() << {|v| return calc(v * 2); };   // inline literal
+let b = [1, 2, 3].map {|v| calc(v * 2)};  // inline callbacks use the trailing block
 
 let grid = Grid(4, 4, { xDim: 25, yDim: 25 });
-grid.fill() << {|row, col| return calc(row * 4 + col); };
+grid.fill {|row, col| calc(row * 4 + col)};
 ```
 
 This works for array `.map`/`.filter`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
@@ -1568,8 +1593,10 @@ production use; it now errors with a pointer to `<<`.
   literal — is not yet supported: assign to a `let` first.
 - A lambda *literal* cannot appear inside a call in path-argument position
   (`M use({|x| ...}) 0`) — path arguments stop at `|`. Bind the lambda to a
-  variable and pass the name instead. (Worker application is unaffected:
-  `<< {|x| ... }` sits in ordinary expression position.)
+  variable and pass the name instead.
+- A lambda literal directly after `<<` is a compile error by design —
+  `<<` applies a worker defined elsewhere; the inline spelling is the
+  trailing block (`arr.filter {|x| ... }`).
 - Constructor binding blocks (`LinearGradient(...) {|g| ...}`, `Marker`,
   `Pattern`, filters, `Grid(...) {|g| ...}`) still require a literal trailing
   block — `<<` worker application is a possible future extension there.

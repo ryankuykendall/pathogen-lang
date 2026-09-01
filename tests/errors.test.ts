@@ -796,7 +796,7 @@ describe('reserved unit-suffix names: pi, deg, rad (binding coverage matrix)', (
     ['for-in index variable', (n) => `for ([x, ${n}] in [1, 2]) { M 0 0 }`],
     ['fn name', (n) => `fn ${n}(len) { h calc(len) }`],
     ['fn parameter', (n) => `fn f(${n}) { h 1 }\nM 0 0\nf(1);`],
-    ['lambda parameter', (n) => `let arr = [1];\nlet out = arr.map() << {|${n}| return 1; };`],
+    ['lambda parameter', (n) => `let arr = [1];\nlet out = arr.map {|${n}| return 1; };`],
   ];
   for (const name of NAMES) {
     for (const [form, tpl] of BINDING_FORMS) {

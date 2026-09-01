@@ -17,9 +17,7 @@ describe('<< worker application to builtins', () => {
   it('array.map() << f produces output identical to the trailing-block form', () => {
     const viaBlock = logValue('let a = [1, 2, 3].map {|v| return calc(v * 2); }; log(`${a}`); M 0 0;');
     const viaLambda = logValue('let f = {|v| return calc(v * 2); }; let a = [1, 2, 3].map() << f; log(`${a}`); M 0 0;');
-    const inline = logValue('let a = [1, 2, 3].map() << {|v| return calc(v * 2); }; log(`${a}`); M 0 0;');
     expect(viaLambda).toBe(viaBlock);
-    expect(inline).toBe(viaBlock);
     expect(viaLambda).toContain('[2, 4, 6]');
   });
 
@@ -46,9 +44,7 @@ describe('<< worker application to builtins', () => {
   it('array.filter() << f produces output identical to the trailing-block form', () => {
     const viaBlock = logValue('let a = [4, -2, 7, 0].filter {|v| return v > 0; }; log(`${a}`); M 0 0;');
     const viaLambda = logValue('let f = {|v| return v > 0; }; let a = [4, -2, 7, 0].filter() << f; log(`${a}`); M 0 0;');
-    const inline = logValue('let a = [4, -2, 7, 0].filter() << {|v| return v > 0; }; log(`${a}`); M 0 0;');
     expect(viaLambda).toBe(viaBlock);
-    expect(inline).toBe(viaBlock);
     expect(viaLambda).toContain('[4, 7]');
   });
 
@@ -96,8 +92,8 @@ describe('<< worker application to builtins', () => {
   it('Grid.map() << f and Grid.forEach() << f accept lambdas', () => {
     const out = logValue(`
       let g = Grid(2, 2);
-      g.fill() << {|r, c| return calc(r + c); };
-      let doubled = g.map() << {|cell| return calc(cell * 2); };
+      g.fill {|r, c| return calc(r + c); };
+      let doubled = g.map {|cell| return calc(cell * 2); };
       let total = 0;
       let addUp = {|cell| total = total + cell; };
       doubled.forEach() << addUp;
@@ -162,9 +158,10 @@ describe('<< worker application to builtins', () => {
 });
 
 describe('<< worker coverage matrix', () => {
-  // Every callback builtin x every worker kind (lambda variable, named fn,
-  // literal lambda) must match the trailing-block form exactly. Constant
-  // programs, so parity is exact string equality on the logged result.
+  // Every callback builtin x every worker kind (lambda variable, named fn)
+  // must match the trailing-block form exactly; an inline lambda literal
+  // after << errors by design. Constant programs, so parity is exact
+  // string equality on the logged result.
   const builtins: Array<{
     name: string;
     block: string; // full program computing r via trailing block
@@ -224,16 +221,17 @@ describe('<< worker coverage matrix', () => {
   ];
 
   for (const b of builtins) {
-    it(`${b.name}: lambda var, named fn, and literal << all match the block form`, () => {
+    it(`${b.name}: lambda var and named fn match the block form; a literal errors`, () => {
       const tail = ' log(`${r}`); M 0 0;';
       const viaBlock = logValue(b.block + tail);
       const viaVar = logValue(`let w = ${b.lambda};` + b.worker('w') + tail);
-      const viaLiteral = logValue(b.worker(b.lambda) + tail);
       const viaNamed = logValue(b.fnDecl + ' ' + b.worker('w2') + tail);
       expect(viaVar).toBe(viaBlock);
-      expect(viaLiteral).toBe(viaBlock);
       expect(viaNamed).toBe(viaBlock);
       expect(viaBlock).toContain(b.expected);
+      // An inline literal after << is rejected by design — the trailing
+      // block IS the inline spelling.
+      expect(() => compile(b.worker(b.lambda) + tail)).toThrow(/trailing block/);
     });
   }
 
@@ -253,15 +251,14 @@ describe('<< worker coverage matrix', () => {
     ['variableOffset', voBody],
     ['compoundVariableOffset', cvoBody],
   ] as const) {
-    it(`${method}: lambda var, named fn, and literal << all match the block form`, () => {
+    it(`${method}: lambda var and named fn match the block form; an inline literal errors`, () => {
       const viaBlock = compilePath(voProgram(method, `() {|go, pb| ${body} }`));
       const viaVar = compilePath(`let w = {|go, pb| ${body} };` + voProgram(method, '() << w'));
-      const viaLiteral = compilePath(voProgram(method, `() << {|go, pb| ${body} }`));
       const viaNamed = compilePath(`fn w2(go, pb) { ${body} }` + voProgram(method, '() << w2'));
       expect(viaVar).toBe(viaBlock);
-      expect(viaLiteral).toBe(viaBlock);
       expect(viaNamed).toBe(viaBlock);
       expect(viaBlock.length).toBeGreaterThan(20);
+      expect(() => compilePath(voProgram(method, `() << {|go, pb| ${body} }`))).toThrow(/trailing block/);
     });
   }
 });
@@ -347,9 +344,9 @@ describe('lambda position coverage matrix', () => {
     expect(compilePath('fn use(f) { return f(3); } let r = use({|x| return calc(x + 1); }); M r 0;')).toBe('M 4 0');
   });
 
-  it('lambda as << worker operand (variable, literal)', () => {
+  it('lambda as << worker operand (variable form; literal form errors)', () => {
     expect(compilePath('let f = {|v| return calc(v * 2); }; let a = [3].map() << f; let x = a[0]; M x 0;')).toBe('M 6 0');
-    expect(compilePath('let a = [3].map() << {|v| return calc(v * 2); }; let x = a[0]; M x 0;')).toBe('M 6 0');
+    expect(() => compilePath('let a = [3].map() << {|v| return calc(v * 2); }; let x = a[0]; M x 0;')).toThrow(/trailing block/);
   });
 
   it('lambda as array element (retrieved then called by name)', () => {
@@ -372,5 +369,46 @@ describe('lambda position coverage matrix', () => {
     // because calling works, delete it and unpin the docs limitation.
     const out = logValue('let r = {|x| return 9; }(3); log(`${r}`); M 0 0;');
     expect(out).toContain('Lambda(x)');
+  });
+});
+
+describe('expression-bodied lambdas', () => {
+  it('returns the bare expression value', () => {
+    expect(logValue('let add = {|a, b| a + b}; log(add(1, 2)); M 0 0;')).toBe('3');
+  });
+
+  it('equivalent to the return-statement form', () => {
+    const sugar = logValue('let dbl = {|v| calc(v * 2)}; let a = [1, 2, 3].map() << dbl; log(`${a}`); M 0 0;');
+    const full = logValue('let dbl = {|v| return calc(v * 2); }; let a = [1, 2, 3].map() << dbl; log(`${a}`); M 0 0;');
+    expect(sugar).toBe(full);
+  });
+
+  it('works inline as a trailing block', () => {
+    expect(logValue('let a = [1, 2, 3, 4].filter {|v| v > 2}; log(a.length); M 0 0;')).toBe('2');
+  });
+
+  it('an inline lambda literal after << is a compile error with a pointer at the trailing block', () => {
+    expect(() => compilePath('let a = [1, 2, 3, 4].filter() << {|v| v > 2}; M 0 0;')).toThrow(/trailing block/);
+    expect(() => compilePath('let g = Grid(2, 2); g.fill() << {|r, c| return calc(r + c); }; M 0 0;')).toThrow(/defined elsewhere/);
+  });
+
+  it('supports the zero-parameter form', () => {
+    expect(logValue('let five = {|| 5}; log(five()); M 0 0;')).toBe('5');
+  });
+
+  it('member access and comparisons work as expression bodies', () => {
+    expect(logValue(`
+      let wave = @{ h 100 };
+      let pieces = wave.dash(\${ stroke-dasharray: 20 10; });
+      let inked = pieces.filter {|piece| piece.kind == 'dash'};
+      log(inked.length);
+      M 0 0;
+    `)).toBe('4');
+  });
+
+  it('statement bodies still require return (no silent value)', () => {
+    // A statement body that falls through without return yields a path
+    // segment, not the last expression — unchanged behavior.
+    expect(logValue('let f = {|v| let w = calc(v * 2); return w; }; log(f(4)); M 0 0;')).toBe('8');
   });
 });

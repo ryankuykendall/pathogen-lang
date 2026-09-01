@@ -643,3 +643,15 @@ describe('formatDocument', () => {
     });
   });
 });
+
+describe('expression-bodied lambdas', () => {
+  it('preserves the expression-body form (no synthesized return printed)', () => {
+    const source = "let isDash = {|piece| piece.kind == 'dash'};\n";
+    expect(format(source)).toBe(source);
+  });
+
+  it('keeps the statement form as statements', () => {
+    const source = 'let dbl = {|v|\n  return calc(v * 2);\n};\n';
+    expect(format(source)).toBe(source);
+  });
+});

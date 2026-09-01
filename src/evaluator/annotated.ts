@@ -3595,6 +3595,13 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         !expr.left.block &&
         CALLBACK_METHODS.has(expr.left.method)
       ) {
+        // Inline lambda literal after '<<' rejected by design (index.ts twin).
+        if (expr.right.type === 'LambdaExpression') {
+          throw new Error(
+            `An inline lambda after '<<' is not allowed — '<<' applies a worker defined elsewhere. ` +
+              `Write the callback as a trailing block (.${expr.left.method} {|...| ... }) or bind the lambda to a name first.`,
+          );
+        }
         return evaluateMethodCall(expr.left, scope, expr.right);
       }
 

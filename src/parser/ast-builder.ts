@@ -1628,8 +1628,18 @@ function buildTrailingBlock(cursor: TreeCursor, source: string): { params: strin
       } else if (inParams && (cursor.name === 'VariableName' || cursor.name === 'Identifier')) {
         params.push(text(cursor, source));
       } else if (passedParams && cursor.name !== '{' && cursor.name !== '}') {
-        const stmt = buildStatement(cursor, source);
-        if (stmt) body.push(stmt);
+        if (isExpressionNode(cursor.name)) {
+          // Expression-bodied sugar {|v| v * 2}: the grammar admits one
+          // trailing bare expression — wrap it in an implicit return.
+          body.push({
+            type: 'ReturnStatement',
+            value: buildExpressionWithPostfix(cursor, source),
+            implicit: true,
+          });
+        } else {
+          const stmt = buildStatement(cursor, source);
+          if (stmt) body.push(stmt);
+        }
       }
     } while (cursor.nextSibling());
     cursor.parent();

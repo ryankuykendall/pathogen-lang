@@ -392,6 +392,12 @@ function formatTrailingBlock(
   if (block.body.length === 0) {
     return ` {${paramStr}}`;
   }
+  // Expression-bodied sugar {|v| v * 2}: a single implicit return prints
+  // back as the bare expression, inline.
+  const only = block.body.length === 1 ? block.body[0] : null;
+  if (only && only.type === 'ReturnStatement' && only.implicit) {
+    return ` {${paramStr} ${formatExpression(only.value, depth, indent, source)}}`;
+  }
   const bodyLines = formatStatements(block.body, depth + 1, indent, source);
 
   // Attempt gradient stop column alignment
@@ -611,6 +617,12 @@ function formatExpression(expr: Expression, depth: number, indent: string, sourc
       // as an ObjectLiteral.
       const paramStr = expr.params.length > 0 ? `|${expr.params.join(', ')}|` : '||';
       if (expr.body.length === 0) return `{${paramStr}}`;
+      // Expression-bodied sugar {|v| v * 2}: a single implicit return
+      // prints back as the bare expression, inline.
+      const soleStmt = expr.body.length === 1 ? expr.body[0] : null;
+      if (soleStmt && soleStmt.type === 'ReturnStatement' && soleStmt.implicit) {
+        return `{${paramStr} ${formatExpression(soleStmt.value, depth, indent, source)}}`;
+      }
       const bodyLines = formatStatements(expr.body, depth + 1, indent, source);
       return `{${paramStr}\n${bodyLines}\n${indent.repeat(depth)}}`;
     }
