@@ -1229,3 +1229,29 @@ describe('endpoint labels on zero-length z through boolean operations', () => {
     expect(Number(logs[2])).toBeCloseTo(40, 5);
   });
 });
+
+describe('holed subtrahend (multi-contour B without explicit z per ring)', () => {
+  // Regression: splitCmdsIntoSubpaths split only on z, so a subtrahend
+  // whose first ring closed by coincident endpoints (circle() emits no z)
+  // got glued to its hole ring — reverseEntirePath then scrambled the
+  // contours, rendering the hole displaced (Broken Lines friction log #4).
+  it('difference() with an annulus subtrahend keeps ring and island in place', () => {
+    const result = compile(`
+      let sheet = @{ rect(0, 0, 100, 100); };
+      let outer = @{ circle(50, 50, 30); };
+      let inner = @{ circle(50, 50, 15); };
+      let annulus = outer.difference(inner);
+      let cut = sheet.difference(annulus);
+      M 0 0
+      cut.draw();
+    `);
+    const d = result.layers[0].data;
+    // Three contours: sheet, ring hole, island — each closed
+    expect((d.match(/z/gi) || []).length).toBe(3);
+    // The ring hole starts on the outer circle's west point (20, 50) and
+    // the island on the inner circle's west point (35, 50) — in place,
+    // not displaced.
+    expect(d).toContain('m 20 50 a 30 30');
+    expect(d).toContain('m 15 0 a 15 15');
+  });
+});

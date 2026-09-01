@@ -3126,6 +3126,17 @@ function splitCmdsIntoSubpaths(cmds: TransformCmd[]): TransformCmd[][] {
   const subpaths: TransformCmd[][] = [];
   let current: TransformCmd[] = [];
   for (const cmd of cmds) {
+    // An m after drawing commands starts a new subpath even without a
+    // preceding z (a ring closed by coincident endpoints). Splitting only
+    // on z glued such rings together — reverseEntirePath then scrambled a
+    // holed subtrahend's contours (the displaced-counter difference() bug).
+    if (
+      cmd.command.toLowerCase() === 'm' &&
+      current.some((c) => c.command.toLowerCase() !== 'm')
+    ) {
+      subpaths.push(current);
+      current = [];
+    }
     current.push(cmd);
     if (cmd.command.toLowerCase() === 'z') {
       subpaths.push(current);
