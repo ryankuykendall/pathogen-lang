@@ -58,7 +58,7 @@ let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 
 // Shift back half a segment so the bridges land on the diagonals.
 let pieces = centerline.dash(${
-  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });

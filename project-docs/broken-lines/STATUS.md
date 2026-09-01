@@ -64,3 +64,14 @@ in-cycle fixes, closed by a friction wrap-up post.
   build-blog/build-docs); mini-workspace wraps PathogenLang.editorParser
   with /dist/highlight.global.js fallback. Screenshot-verified on both
   surfaces; suite 5,139 green. Part 5 tally: seven entries / four fixed.
+- **2026-09-01 (interpolation session)** — Friction log #1 RESOLVED in the
+  promised dedicated session: bare `${expr}` works in style values (whole
+  value, list tokens, in-args + unit fusion) via a StyleInterp sibling
+  token + StyleBody wrapper node (the in-DFA approach overflows the 16-bit
+  tokenizer tables), interp-aware value scanner, shared splice path,
+  editor Interp node direct-mounted over StyleBody, consumers patched
+  (scope-analysis, completion suppression, chip fallback, tmLanguage).
+  Docs teach bare form as default; series samples + published fences
+  swept; part 5 bench item promoted to a Fixed section with the
+  diagnosis; tally now five fixed / two deferred. Suite 5,159 green.
+  Follow-up logged: expression completions inside bare interps.

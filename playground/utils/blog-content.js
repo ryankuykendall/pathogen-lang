@@ -6,7 +6,7 @@ export const blogIndex = [
     "slug": "broken-lines-what-it-taught",
     "title": "What Broken Lines Taught the Language",
     "date": "2026-09-05",
-    "description": "Closing Broken Lines: the friction log. Building sashiko, leather, and stencil artifacts against the real language filled the log — four entries became fixes that shipped before publication, and the rest are on the bench with their diagnoses attached.",
+    "description": "Closing Broken Lines: the friction log. Building sashiko, leather, and stencil artifacts against the real language filled the log — five entries became fixes — the last one landing after publication, in the session this post promised it, and the rest are on the bench with their diagnoses attached.",
     "series": "Broken Lines",
     "seriesPart": 5
   },
@@ -493,11 +493,9 @@ fn punchRow(anchorY, offsetValue) {
   seamGhost.apply {
     M 70 anchorY seam.draw()
   }
-  // Bare variables in a style value need backtick interpolation — a
-  // logged language limitation (see the series' friction log).
   let pricks = seam.dash(\${
-    stroke-dasharray: 0.01 \`\${pitch}\`;
-    stroke-dashoffset: \`\${offsetValue}\`;
+    stroke-dasharray: 0.01 \${pitch};
+    stroke-dashoffset: \${offsetValue};
   });
   let rowHoles = pricks.filter() {|prick| prick.kind == 'dash'};
   for (prick in rowHoles) {
@@ -612,7 +610,7 @@ let pitch = 20;
 let leftover = calc(seamEdge.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
 let pricks = seamEdge.dash(\${
-  stroke-dasharray: 0.01 \`\${pitch}\`;
+  stroke-dasharray: 0.01 \${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
@@ -735,10 +733,8 @@ let seamU = stitchLine.fillet(8);
 // give up one hole and split a whole extra pitch across the ends.
 let leftover = calc(seamU.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
-// Bare variables in a style value need backtick interpolation — a
-// logged language limitation (see the series' friction log).
 let pricks = seamU.dash(\${
-  stroke-dasharray: 0.01 \`\${pitch}\`;
+  stroke-dasharray: 0.01 \${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
@@ -1023,7 +1019,7 @@ let colSeam = @{
 
 fn sew(seam, anchorX, anchorY, bit) {
   let stitches = seam.dash(\${
-    stroke-dasharray: \`\${cell}\` \`\${cell}\`;
+    stroke-dasharray: \${cell} \${cell};
     stroke-dashoffset: calc(bit * cell);
   });
   for (stitch in stitches) {
@@ -1061,7 +1057,7 @@ labels.apply {
 dashes, place them at the line&#39;s anchor:</p>
 <pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">sew</span>(<span class="id">seam</span>, <span class="id">anchorX</span>, <span class="id">anchorY</span>, <span class="id">bit</span>) {
   <span class="kw">let</span> <span class="id">stitches</span> = <span class="id">seam</span>.<span class="id">dash</span>(\${
-    <span class="pr">stroke-dasharray</span>: <span class="str">\`\${cell}\`</span> <span class="str">\`\${cell}\`</span>;
+    <span class="pr">stroke-dasharray</span>: <span class="str">\${cell}</span> <span class="str">\${cell}</span>;
     <span class="pr">stroke-dashoffset</span>: <span class="id">calc</span>(<span class="id">bit</span> * <span class="id">cell</span>);
   });
   <span class="kw">for</span> (<span class="id">stitch</span> <span class="kw">in</span> <span class="id">stitches</span>) {
@@ -1212,7 +1208,7 @@ let colSeam = @{
 
 fn sew(seam, anchorX, anchorY, bit) {
   let stitches = seam.dash(\${
-    stroke-dasharray: \`\${cell}\` \`\${cell}\`;
+    stroke-dasharray: \${cell} \${cell};
     stroke-dashoffset: calc(bit * cell);
   });
   for (stitch in stitches) {
@@ -1299,12 +1295,12 @@ and (through the dash offset) where the bridges land — while
 guaranteeing the geometry stays cuttable:</p>
 <pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">cutLength</span> = <span class="kw">calc</span>(<span class="id">centerline</span>.<span class="id">length</span> / <span class="id">bridgeCount</span> - <span class="id">bridgeWidth</span>);
 <span class="kw">let</span> <span class="id">pieces</span> = <span class="id">centerline</span>.<span class="id">dash</span>(\${
-  <span class="pr">stroke-dasharray</span>: <span class="str">\`\${cutLength}\`</span> <span class="str">\`\${bridgeWidth}\`</span>;
+  <span class="pr">stroke-dasharray</span>: <span class="str">\${cutLength}</span> <span class="str">\${bridgeWidth}</span>;
   <span class="pr">dash-seam</span>: <span class="id">merge</span>;
 });
 <span class="kw">for</span> (<span class="id">segment</span> <span class="kw">in</span> <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>}) {
   <span class="id">stencil</span> = <span class="id">stencil</span>.<span class="id">difference</span>(<span class="id">segment</span>.<span class="id">path</span>.<span class="id">outline</span>(\${
-    <span class="pr">stroke-width</span>: <span class="str">\`\${bandWidth}\`</span>;
+    <span class="pr">stroke-width</span>: <span class="str">\${bandWidth}</span>;
   }));
 }
 </code></pre><p>Dash the centerline, <code>outline()</code> each dash to the band width,
@@ -1487,7 +1483,7 @@ let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 
 // Shift back half a segment so the bridges land on the diagonals.
 let pieces = centerline.dash(\${
-  stroke-dasharray: \`\${cutLength}\` \`\${bridgeWidth}\`;
+  stroke-dasharray: \${cutLength} \${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -1580,7 +1576,7 @@ let bridgeCount = 4;
 // merge stitches the two halves back into one honest segment.
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 let pieces = centerline.dash(\${
-  stroke-dasharray: \`\${cutLength}\` \`\${bridgeWidth}\`;
+  stroke-dasharray: \${cutLength} \${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -1589,7 +1585,7 @@ let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
 let stencil = sheet;
 for (segment in cutSegments) {
   let aperture = segment.path.outline(\${
-    stroke-width: \`\${bandWidth}\`;
+    stroke-width: \${bandWidth};
     stroke-linecap: butt;
   });
   stencil = stencil.difference(aperture);
@@ -1691,7 +1687,7 @@ let bridgeCount = 6;
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 // Shift back half a segment: bridges off the corners.
 let pieces = centerline.dash(\${
-  stroke-dasharray: \`\${cutLength}\` \`\${bridgeWidth}\`;
+  stroke-dasharray: \${cutLength} \${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -1703,7 +1699,7 @@ for (segment in cutSegments) {
   // tangent-continuous, so there is no corner for a join to act on —
   // the band's rounded corners are concentric OFFSETS of the fillets.
   let aperture = segment.path.outline(\${
-    stroke-width: \`\${bandWidth}\`;
+    stroke-width: \${bandWidth};
     stroke-linecap: butt;
     stroke-linejoin: round;
   });
@@ -1785,7 +1781,7 @@ let bridgeWidth = 14;
 let cutLength = calc(ringCenter.length / 4 - bridgeWidth);
 // Shift back half a segment: bridges off the cardinals.
 let ringPieces = ringCenter.dash(\${
-  stroke-dasharray: \`\${cutLength}\` \`\${bridgeWidth}\`;
+  stroke-dasharray: \${cutLength} \${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -1806,7 +1802,7 @@ let cutSegments = ringPieces.filter() {|piece| piece.kind == 'dash'};
 let stencil = sheet.difference(arrow);
 for (segment in cutSegments) {
   let aperture = segment.path.outline(\${
-    stroke-width: \`\${bandWidth}\`;
+    stroke-width: \${bandWidth};
     stroke-linecap: butt;
   });
   stencil = stencil.difference(aperture);
@@ -2149,7 +2145,7 @@ for ([capName, columnIndex] in capNames) {
   let anchorX = anchors[columnIndex];
   let solid = stem.outline(\${
     stroke-width: 22;
-    stroke-linecap: \`\${capName}\`;
+    stroke-linecap: \${capName};
   });
   solids.apply {
     M anchorX 125 solid.draw()
@@ -2610,16 +2606,40 @@ labels.apply {
 <p>A pleasant footnote: <code>cut()</code> had privately worked around this exact
 limitation with its own local subpath splitting. The fix makes the
 general machinery honest, and the workaround is now just redundancy.</p>
+<h2>Fixed: the interpolation that couldn&#39;t nest</h2>
+<p>This one was on the bench when this post first went to review, with a
+promise that it deserved a careful session of its own. It got one.</p>
+<p>The trap: interpolating a variable as a complete style value was a
+parse-killing error, with a &quot;Missing &#39;;&#39;&quot; pointing nowhere near the
+cause. The workaround was a backtick template — and a list built from
+variables needed one backtick fragment per token:</p>
+<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: \${<span class="pr">capName</span>};      <span class="cm">// parse error, before the fix</span>
+<span class="id">stroke</span>-<span class="id">linecap</span>: \`\${<span class="id">capName</span>}\`;    <span class="cm">// the old workaround</span>
+</code></pre><p>The diagnosis is a good story. A style block&#39;s interior isn&#39;t parsed
+structurally — it&#39;s one opaque token, scanned by a little machine
+that hunts for the closing <code>}</code>. In that machine, <code>$</code> and <code>{</code> were
+ordinary text but <code>}</code> was a hard stop: write <code>\${v}</code> in a value and
+the interpolation&#39;s own closing brace was read as the end of the
+<em>whole style block</em>, wrecking everything after it. Backticks
+survived only because the scanner already knew to skip over template
+literals whole. The irony ran deep: <code>\${</code> is literally how a style
+block <em>opens</em>, yet it was the one thing that couldn&#39;t appear bare
+inside one.</p>
+<p>The fix gives the bare interpolation its own token beside the opaque
+content — the scanner now hands <code>\${...}</code> spans through intact, the
+value parser treats their insides as expression territory, and both
+evaluators splice them through the exact same path as the backtick
+form. So today, the bare form just works — whole values, list
+tokens, even fused to a unit inside a function argument:</p>
+<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: \${<span class="pr">capName</span>};
+<span class="id">stroke</span>-<span class="id">dasharray</span>: \${<span class="pr">cell</span>} \${<span class="pr">cell</span>};
+<span class="id">filter</span>: <span class="id">blur</span>(\${<span class="pr">softness</span>}<span class="id">px</span>);
+</code></pre><p>The backtick form remains equivalent; every sample in this series
+now uses the bare one. (One souvenir of the tokenizer&#39;s size limits:
+inside a style value, a <em>template&#39;s</em> interpolation still can&#39;t nest
+braces — the bare form can, one level, making it the more capable
+spelling as well as the shorter one.)</p>
 <h2>On the bench, with diagnoses</h2>
-<p><strong>Whole-value interpolation in style blocks.</strong> Interpolating a
-variable as a complete style value is a parse error today; wrapping
-the interpolation in a backtick template works:</p>
-<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: \${<span class="pr">capName</span>};      <span class="cm">// parse error today</span>
-<span class="id">stroke</span>-<span class="id">linecap</span>: \`\${<span class="id">capName</span>}\`;    <span class="cm">// the form that works</span>
-</code></pre><p>A list built from variables needs one fragment per token, which is
-worse. The diagnosis points into the style-content tokenizer, a
-famously delicate corner of the grammar, so it&#39;s deferred to a
-session of its own rather than rushed here.</p>
 <p><strong>Stdlib shapes after <code>M</code>.</strong> A shape function can&#39;t follow a move on
 the same line — and would mislead even if it could, because stdlib
 shapes position themselves through their arguments and ignore the
@@ -2642,8 +2662,9 @@ position along the curve. That&#39;s a real feature, not a fix, and it&#39;s
 now on the roadmap ledger with the wallet as its motivating artifact.</p>
 <h2>The tally</h2>
 <p>Seven entries — five while writing, two more when the finished series
-was reviewed: four fixed and shipped before publication, three
-diagnosed and deferred with their next steps written down. (The
+was reviewed: five fixed (four before publication, one in the
+promised follow-up session), two diagnosed and deferred with their
+next steps written down. (The
 seventh was the review pass catching the blog&#39;s own tooling
 red-handed: Pathogen code was being syntax-highlighted <em>as
 JavaScript</em>, splitting <code>stroke-width</code> into two colors — every code

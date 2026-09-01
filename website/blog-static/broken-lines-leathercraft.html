@@ -456,11 +456,9 @@ fn punchRow(anchorY, offsetValue) {
   seamGhost.apply {
     M 70 anchorY seam.draw()
   }
-  // Bare variables in a style value need backtick interpolation — a
-  // logged language limitation (see the series' friction log).
   let pricks = seam.dash(${
-    stroke-dasharray: 0.01 `${pitch}`;
-    stroke-dashoffset: `${offsetValue}`;
+    stroke-dasharray: 0.01 ${pitch};
+    stroke-dashoffset: ${offsetValue};
   });
   let rowHoles = pricks.filter() {|prick| prick.kind == 'dash'};
   for (prick in rowHoles) {
@@ -575,7 +573,7 @@ let pitch = 20;
 let leftover = calc(seamEdge.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
 let pricks = seamEdge.dash(${
-  stroke-dasharray: 0.01 `${pitch}`;
+  stroke-dasharray: 0.01 ${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
@@ -698,10 +696,8 @@ let seamU = stitchLine.fillet(8);
 // give up one hole and split a whole extra pitch across the ends.
 let leftover = calc(seamU.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
-// Bare variables in a style value need backtick interpolation — a
-// logged language limitation (see the series' friction log).
 let pricks = seamU.dash(${
-  stroke-dasharray: 0.01 `${pitch}`;
+  stroke-dasharray: 0.01 ${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};

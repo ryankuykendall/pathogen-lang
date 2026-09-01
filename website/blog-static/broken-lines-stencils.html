@@ -333,12 +333,12 @@ and (through the dash offset) where the bridges land — while
 guaranteeing the geometry stays cuttable:</p>
 <pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">cutLength</span> = <span class="kw">calc</span>(<span class="id">centerline</span>.<span class="id">length</span> / <span class="id">bridgeCount</span> - <span class="id">bridgeWidth</span>);
 <span class="kw">let</span> <span class="id">pieces</span> = <span class="id">centerline</span>.<span class="id">dash</span>(${
-  <span class="pr">stroke-dasharray</span>: <span class="str">`${cutLength}`</span> <span class="str">`${bridgeWidth}`</span>;
+  <span class="pr">stroke-dasharray</span>: <span class="str">${cutLength}</span> <span class="str">${bridgeWidth}</span>;
   <span class="pr">dash-seam</span>: <span class="id">merge</span>;
 });
 <span class="kw">for</span> (<span class="id">segment</span> <span class="kw">in</span> <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>}) {
   <span class="id">stencil</span> = <span class="id">stencil</span>.<span class="id">difference</span>(<span class="id">segment</span>.<span class="id">path</span>.<span class="id">outline</span>(${
-    <span class="pr">stroke-width</span>: <span class="str">`${bandWidth}`</span>;
+    <span class="pr">stroke-width</span>: <span class="str">${bandWidth}</span>;
   }));
 }
 </code></pre><p>Dash the centerline, <code>outline()</code> each dash to the band width,
@@ -521,7 +521,7 @@ let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 
 // Shift back half a segment so the bridges land on the diagonals.
 let pieces = centerline.dash(${
-  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -614,7 +614,7 @@ let bridgeCount = 4;
 // merge stitches the two halves back into one honest segment.
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 let pieces = centerline.dash(${
-  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -623,7 +623,7 @@ let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
 let stencil = sheet;
 for (segment in cutSegments) {
   let aperture = segment.path.outline(${
-    stroke-width: `${bandWidth}`;
+    stroke-width: ${bandWidth};
     stroke-linecap: butt;
   });
   stencil = stencil.difference(aperture);
@@ -725,7 +725,7 @@ let bridgeCount = 6;
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 // Shift back half a segment: bridges off the corners.
 let pieces = centerline.dash(${
-  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -737,7 +737,7 @@ for (segment in cutSegments) {
   // tangent-continuous, so there is no corner for a join to act on —
   // the band's rounded corners are concentric OFFSETS of the fillets.
   let aperture = segment.path.outline(${
-    stroke-width: `${bandWidth}`;
+    stroke-width: ${bandWidth};
     stroke-linecap: butt;
     stroke-linejoin: round;
   });
@@ -819,7 +819,7 @@ let bridgeWidth = 14;
 let cutLength = calc(ringCenter.length / 4 - bridgeWidth);
 // Shift back half a segment: bridges off the cardinals.
 let ringPieces = ringCenter.dash(${
-  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -840,7 +840,7 @@ let cutSegments = ringPieces.filter() {|piece| piece.kind == 'dash'};
 let stencil = sheet.difference(arrow);
 for (segment in cutSegments) {
   let aperture = segment.path.outline(${
-    stroke-width: `${bandWidth}`;
+    stroke-width: ${bandWidth};
     stroke-linecap: butt;
   });
   stencil = stencil.difference(aperture);

@@ -585,7 +585,7 @@ for ([capName, columnIndex] in capNames) {
   let anchorX = anchors[columnIndex];
   let solid = stem.outline(${
     stroke-width: 22;
-    stroke-linecap: `${capName}`;
+    stroke-linecap: ${capName};
   });
   solids.apply {
     M anchorX 125 solid.draw()

@@ -11,10 +11,25 @@ post (part 5) at project end.
 
 ---
 
-1. **OPEN — FEATURE REQUEST (2026-09-01).** Deferred this cycle: the fix
-   lives in the Lezer `StyleContent` token (a known trap-laden regular
-   token — see project memory) and needs its own careful session. The
-   backtick-fragment workaround is documented behavior meanwhile.
+1. **RESOLVED (2026-09-01, its own session as promised).** Bare `${expr}`
+   now works in style-block values — whole values, list tokens
+   (`stroke-dasharray: ${cell} ${cell};`), and inside function args fused
+   to units (`blur(${x}px)`) — with exactly the backtick form's semantics
+   (one shared splice path in css-value-utils; backticks stay equivalent
+   and are no longer the default the docs teach). Implementation: a new
+   `StyleInterp` sibling token + `StyleBody` wrapper node in the outer
+   grammar (adding the interp INSIDE the StyleContent DFA overflows the
+   generator's 16-bit tokenizer tables — the sibling-token shape respects
+   both documented dead ends), an interp-aware value scanner in
+   parseStyleDeclarations, an `Interp` value node in the editor grammar
+   (direct-mounted over StyleBody so every tree walker keeps working),
+   scope-analysis/completions/color-chip/tmLanguage consumers patched, and
+   the parity corpus extended. Bonus: single-quoted values containing
+   `${}` now parse. Known asymmetry: template-form interps inside style
+   values still allow no nested braces (table-size limit) — the bare form
+   allows one level and is the more capable spelling. Follow-up logged:
+   full expression completions INSIDE a bare interp (this cycle only
+   suppresses the wrong style completions there).
 
    Original: **Interpolating a variable as a whole style value is a parse error in
    bare `${var}` form.** Writing `stroke-linecap: ${capName};` inside an

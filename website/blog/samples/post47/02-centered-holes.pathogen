@@ -38,11 +38,9 @@ fn punchRow(anchorY, offsetValue) {
   seamGhost.apply {
     M 70 anchorY seam.draw()
   }
-  // Bare variables in a style value need backtick interpolation — a
-  // logged language limitation (see the series' friction log).
   let pricks = seam.dash(${
-    stroke-dasharray: 0.01 `${pitch}`;
-    stroke-dashoffset: `${offsetValue}`;
+    stroke-dasharray: 0.01 ${pitch};
+    stroke-dashoffset: ${offsetValue};
   });
   let rowHoles = pricks.filter() {|prick| prick.kind == 'dash'};
   for (prick in rowHoles) {

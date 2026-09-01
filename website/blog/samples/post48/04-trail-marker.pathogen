@@ -47,7 +47,7 @@ let bridgeWidth = 14;
 let cutLength = calc(ringCenter.length / 4 - bridgeWidth);
 // Shift back half a segment: bridges off the cardinals.
 let ringPieces = ringCenter.dash(${
-  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -68,7 +68,7 @@ let cutSegments = ringPieces.filter() {|piece| piece.kind == 'dash'};
 let stencil = sheet.difference(arrow);
 for (segment in cutSegments) {
   let aperture = segment.path.outline(${
-    stroke-width: `${bandWidth}`;
+    stroke-width: ${bandWidth};
     stroke-linecap: butt;
   });
   stencil = stencil.difference(aperture);

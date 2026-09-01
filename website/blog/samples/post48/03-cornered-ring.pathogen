@@ -48,7 +48,7 @@ let bridgeCount = 6;
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 // Shift back half a segment: bridges off the corners.
 let pieces = centerline.dash(${
-  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -60,7 +60,7 @@ for (segment in cutSegments) {
   // tangent-continuous, so there is no corner for a join to act on —
   // the band's rounded corners are concentric OFFSETS of the fillets.
   let aperture = segment.path.outline(${
-    stroke-width: `${bandWidth}`;
+    stroke-width: ${bandWidth};
     stroke-linecap: butt;
     stroke-linejoin: round;
   });

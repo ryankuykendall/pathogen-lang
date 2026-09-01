@@ -538,7 +538,7 @@ let colSeam = @{
 
 fn sew(seam, anchorX, anchorY, bit) {
   let stitches = seam.dash(${
-    stroke-dasharray: `${cell}` `${cell}`;
+    stroke-dasharray: ${cell} ${cell};
     stroke-dashoffset: calc(bit * cell);
   });
   for (stitch in stitches) {
@@ -576,7 +576,7 @@ labels.apply {
 dashes, place them at the line&#39;s anchor:</p>
 <pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">sew</span>(<span class="id">seam</span>, <span class="id">anchorX</span>, <span class="id">anchorY</span>, <span class="id">bit</span>) {
   <span class="kw">let</span> <span class="id">stitches</span> = <span class="id">seam</span>.<span class="id">dash</span>(${
-    <span class="pr">stroke-dasharray</span>: <span class="str">`${cell}`</span> <span class="str">`${cell}`</span>;
+    <span class="pr">stroke-dasharray</span>: <span class="str">${cell}</span> <span class="str">${cell}</span>;
     <span class="pr">stroke-dashoffset</span>: <span class="id">calc</span>(<span class="id">bit</span> * <span class="id">cell</span>);
   });
   <span class="kw">for</span> (<span class="id">stitch</span> <span class="kw">in</span> <span class="id">stitches</span>) {
@@ -727,7 +727,7 @@ let colSeam = @{
 
 fn sew(seam, anchorX, anchorY, bit) {
   let stitches = seam.dash(${
-    stroke-dasharray: `${cell}` `${cell}`;
+    stroke-dasharray: ${cell} ${cell};
     stroke-dashoffset: calc(bit * cell);
   });
   for (stitch in stitches) {

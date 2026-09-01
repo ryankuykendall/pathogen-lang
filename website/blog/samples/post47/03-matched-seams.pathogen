@@ -63,7 +63,7 @@ let pitch = 20;
 let leftover = calc(seamEdge.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
 let pricks = seamEdge.dash(${
-  stroke-dasharray: 0.01 `${pitch}`;
+  stroke-dasharray: 0.01 ${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};

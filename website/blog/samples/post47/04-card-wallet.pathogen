@@ -77,10 +77,8 @@ let seamU = stitchLine.fillet(8);
 // give up one hole and split a whole extra pitch across the ends.
 let leftover = calc(seamU.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
-// Bare variables in a style value need backtick interpolation — a
-// logged language limitation (see the series' friction log).
 let pricks = seamU.dash(${
-  stroke-dasharray: 0.01 `${pitch}`;
+  stroke-dasharray: 0.01 ${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};

@@ -58,7 +58,7 @@ let bridgeCount = 4;
 // merge stitches the two halves back into one honest segment.
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 let pieces = centerline.dash(${
-  stroke-dasharray: `${cutLength}` `${bridgeWidth}`;
+  stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
 });
@@ -67,7 +67,7 @@ let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
 let stencil = sheet;
 for (segment in cutSegments) {
   let aperture = segment.path.outline(${
-    stroke-width: `${bandWidth}`;
+    stroke-width: ${bandWidth};
     stroke-linecap: butt;
   });
   stencil = stencil.difference(aperture);

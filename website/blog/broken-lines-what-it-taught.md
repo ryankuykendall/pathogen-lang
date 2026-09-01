@@ -2,7 +2,7 @@
 title: "What Broken Lines Taught the Language"
 slug: broken-lines-what-it-taught
 date: 2026-09-05
-description: "Closing Broken Lines: the friction log. Building sashiko, leather, and stencil artifacts against the real language filled the log — four entries became fixes that shipped before publication, and the rest are on the bench with their diagnoses attached."
+description: "Closing Broken Lines: the friction log. Building sashiko, leather, and stencil artifacts against the real language filled the log — five entries became fixes — the last one landing after publication, in the session this post promised it, and the rest are on the bench with their diagnoses attached."
 series: "Broken Lines"
 seriesPart: 5
 ---
@@ -120,21 +120,52 @@ A pleasant footnote: `cut()` had privately worked around this exact
 limitation with its own local subpath splitting. The fix makes the
 general machinery honest, and the workaround is now just redundancy.
 
-## On the bench, with diagnoses
+## Fixed: the interpolation that couldn't nest
 
-**Whole-value interpolation in style blocks.** Interpolating a
-variable as a complete style value is a parse error today; wrapping
-the interpolation in a backtick template works:
+This one was on the bench when this post first went to review, with a
+promise that it deserved a careful session of its own. It got one.
+
+The trap: interpolating a variable as a complete style value was a
+parse-killing error, with a "Missing ';'" pointing nowhere near the
+cause. The workaround was a backtick template — and a list built from
+variables needed one backtick fragment per token:
 
 ```pathogen
-stroke-linecap: ${capName};      // parse error today
-stroke-linecap: `${capName}`;    // the form that works
+stroke-linecap: ${capName};      // parse error, before the fix
+stroke-linecap: `${capName}`;    // the old workaround
 ```
 
-A list built from variables needs one fragment per token, which is
-worse. The diagnosis points into the style-content tokenizer, a
-famously delicate corner of the grammar, so it's deferred to a
-session of its own rather than rushed here.
+The diagnosis is a good story. A style block's interior isn't parsed
+structurally — it's one opaque token, scanned by a little machine
+that hunts for the closing `}`. In that machine, `$` and `{` were
+ordinary text but `}` was a hard stop: write `${v}` in a value and
+the interpolation's own closing brace was read as the end of the
+*whole style block*, wrecking everything after it. Backticks
+survived only because the scanner already knew to skip over template
+literals whole. The irony ran deep: `${` is literally how a style
+block *opens*, yet it was the one thing that couldn't appear bare
+inside one.
+
+The fix gives the bare interpolation its own token beside the opaque
+content — the scanner now hands `${...}` spans through intact, the
+value parser treats their insides as expression territory, and both
+evaluators splice them through the exact same path as the backtick
+form. So today, the bare form just works — whole values, list
+tokens, even fused to a unit inside a function argument:
+
+```pathogen
+stroke-linecap: ${capName};
+stroke-dasharray: ${cell} ${cell};
+filter: blur(${softness}px);
+```
+
+The backtick form remains equivalent; every sample in this series
+now uses the bare one. (One souvenir of the tokenizer's size limits:
+inside a style value, a *template's* interpolation still can't nest
+braces — the bare form can, one level, making it the more capable
+spelling as well as the shorter one.)
+
+## On the bench, with diagnoses
 
 **Stdlib shapes after `M`.** A shape function can't follow a move on
 the same line — and would mislead even if it could, because stdlib
@@ -169,8 +200,9 @@ now on the roadmap ledger with the wallet as its motivating artifact.
 ## The tally
 
 Seven entries — five while writing, two more when the finished series
-was reviewed: four fixed and shipped before publication, three
-diagnosed and deferred with their next steps written down. (The
+was reviewed: five fixed (four before publication, one in the
+promised follow-up session), two diagnosed and deferred with their
+next steps written down. (The
 seventh was the review pass catching the blog's own tooling
 red-handed: Pathogen code was being syntax-highlighted *as
 JavaScript*, splitting `stroke-width` into two colors — every code
