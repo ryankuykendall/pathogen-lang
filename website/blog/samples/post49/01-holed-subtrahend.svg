@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 220" width="480" height="220">
+
+  <path data-layer-name="table" id="table" d="M 0 0 l 480 0 l 0 220 l -480 0 z" fill="#1c1917" stroke="none" stroke-width="2"/>
+  <g data-layer-name="scene" id="scene">
+    <path data-layer-name="sheet" id="sheet" d="M 70 22 m 10 0 l 140 0 q 10 0 10 10 l 0 140 q 0 10 -10 10 l -140 0 q -10 0 -10 -10 l 0 -140 q 0 -10 10 -10 z m 18 80 a 52 52 0 1 0 104 0 a 52 52 0 1 0 -104 0 z m 24 0 a 28 28 0 1 1 56 0 a 28 28 0 1 1 -56 0 z M 310 22 m 28 80 a 52 52 0 1 1 104 0 a 52 52 0 1 1 -104 0 m 24 0 a 28 28 0 1 0 56 0 a 28 28 0 1 0 -56 0 z" fill="#d9e2ec" stroke="#94a3b8" stroke-width="1"/>
+    <path data-layer-name="drift-ghost" id="drift-ghost" d="M 70 22 m 38 66 a 28 28 0 1 1 56 0 a 28 28 0 1 1 -56 0" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text data-layer-name="labels" id="labels" x="150" y="202" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="middle">sheet.difference(annulus)</text>
+    <text data-layer-name="labels" x="390" y="202" font-family="monospace" font-size="10" fill="#94a3b8" text-anchor="middle">the annulus itself</text>
+  </g>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"table","type":"path","styles":{"fill":"#1c1917","stroke":"none"},"isDefault":false},{"name":"scene","type":"group","styles":{},"isDefault":false,"children":[{"name":"sheet","type":"path","styles":{"fill":"#d9e2ec","stroke":"#94a3b8","stroke-width":"1"},"isDefault":false},{"name":"drift-ghost","type":"path","styles":{"stroke":"#f59e0b","stroke-width":"1.5","stroke-dasharray":"4 3","fill":"none"},"isDefault":false},{"name":"labels","type":"text","styles":{"font-family":"monospace","font-size":"10","fill":"#94a3b8","text-anchor":"middle"},"isDefault":false}]}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":480,"height":220}}]]></script>
+</svg>

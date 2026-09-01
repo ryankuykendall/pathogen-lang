@@ -1,0 +1,71 @@
+//-- The friction-log fix, rendered: subtracting a shape that has a hole
+//-- (an annulus) now keeps both its ring and its island exactly in
+//-- place. Before the fix, the inner contour drifted.
+
+define ViewBox(0, 0, 480, 220);
+
+let table = PathLayer('table') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('table').apply {
+  rect(0, 0, 480, 220);
+}
+
+let scene = GroupLayer('scene') ${};
+let sheetLayer = PathLayer('sheet') ${
+  fill: #d9e2ec;
+  stroke: #94a3b8;
+  stroke-width: 1;
+};
+let driftGhost = PathLayer('drift-ghost') ${
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #94a3b8;
+  text-anchor: middle;
+};
+scene.append(sheetLayer, driftGhost, labels);
+
+let sheet = @{
+  roundRect(0,
+      0,
+      160,
+      160,
+      10);
+};
+let outer = @{
+  circle(80, 80, 52);
+};
+let inner = @{
+  circle(80, 80, 28);
+};
+
+// A shape WITH a hole, used as the subtrahend.
+let annulus = outer.difference(inner);
+let stamped = sheet.difference(annulus);
+
+sheetLayer.apply {
+  M 70 22 stamped.draw()
+}
+sheetLayer.apply {
+  M 310 22 annulus.draw()
+}
+
+// Where the island landed BEFORE the fix — a reconstruction, dashed.
+let driftMarker = @{
+  circle(66, 66, 28);
+};
+driftGhost.apply {
+  M 70 22 driftMarker.draw()
+}
+
+labels.apply {
+  text(150, 202)`sheet.difference(annulus)`;
+  text(390, 202)`the annulus itself`;
+}
