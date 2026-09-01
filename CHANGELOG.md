@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-31 (inspector virtualization follow-ups)
+
+### Fixed
+
+#### Playground
+
+- **Virtualized inspector lists now react to viewport growth without a scroll** — a `ResizeObserver` on each virtual list's scroller (the shared `.inspector` shell, or the list itself in standalone panels) re-windows when the viewport gets taller (window resize, fullscreen entry, mobile-sheet expansion); previously the window stayed under-filled until the next scroll, masked only by the 400px overscan. The refresh runs synchronously in the observer callback — resizes are low-frequency and slice renders never change the scroller's own size, so there's no observer-loop risk.
+
+### Development
+
+- Light/dark visual verification of the palette's fixed-height group headers: `project-docs/inspector-virtualization/inspector-{light,dark}.png` — no regressions, no CSS changes needed.
+
 ## [0.8.0] - 2026-08-31 (inspector virtualization for 20k-layer projects)
 
 ### Fixed

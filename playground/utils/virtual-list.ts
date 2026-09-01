@@ -108,6 +108,8 @@ export class VirtualList<T extends VirtualRow> {
 
   private _onScroll: (() => void) | null = null;
 
+  private _resizeObserver: ResizeObserver | null = null;
+
   private _rafId = 0;
 
   private _sizer: HTMLElement | null = null;
@@ -133,6 +135,20 @@ export class VirtualList<T extends VirtualRow> {
     this._scroller = scroller;
     this._onScroll = (): void => this._scheduleRefresh();
     scroller.addEventListener('scroll', this._onScroll, { passive: true });
+    // A taller viewport must widen the window without waiting for a scroll
+    // (window resize, fullscreen entry, mobile-sheet expansion). Refresh
+    // synchronously rather than through the rAF throttle: resizes are
+    // low-frequency, and the slice render never changes the scroller's own
+    // size (the sizer height is fixed by setRows), so there is no
+    // observer-loop risk. Guarded — jsdom has no ResizeObserver.
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      this._resizeObserver = new ResizeObserver(() => {
+        if (this._sizer) this.refresh();
+      });
+      this._resizeObserver.observe(scroller);
+    }
     if (this._rows.length) this.refresh();
   }
 
@@ -182,6 +198,8 @@ export class VirtualList<T extends VirtualRow> {
 
   destroy(): void {
     this._detachScroll();
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
     if (this._rafId) {
       if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this._rafId);
       this._rafId = 0;

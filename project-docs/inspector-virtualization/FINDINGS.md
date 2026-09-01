@@ -123,12 +123,17 @@ must be tested via direct invocation in this environment.
   (flatten always runs); layers badge always live.
 - `content-visibility: auto` was evaluated and rejected: it would still pay
   the 80k-row string build + innerHTML parse per compile.
-- No `ResizeObserver` on the scrollers: growing the viewport taller without
-  scrolling can leave the window under-filled until the next scroll; the
-  400px overscan masks it in practice. Polish-level follow-up.
-- The `.group-header` visual change (explicit 24px flex height replacing
-  padding-derived height) should get a light/dark-theme eyeball in the
-  playground/storybook when convenient.
+- ~~No `ResizeObserver` on the scrollers~~ — **done (follow-up, same
+  session)**: `VirtualList.setScroller` now observes the scroller and
+  refreshes synchronously on resize (low-frequency; slice renders never
+  change the scroller's own size, so no observer-loop risk; deterministic
+  where rAF is unreliable). Guarded for jsdom; covered by a stubbed-observer
+  test.
+- ~~`.group-header` light/dark eyeball~~ — **done (follow-up, same
+  session)**: `inspector-light.png` / `inspector-dark.png` in this directory
+  (captured via `tests/tmp/inspector-theme-screenshots.ts`-style probe).
+  Headers are uniform 24px, centered, correct tint/contrast in both themes —
+  no CSS changes needed.
 - Compile-roundtrip itself is ~2.5 s at 20k layers (off-main-thread, worker)
   — untouched by this work and now the dominant per-compile cost for such
   scenes.

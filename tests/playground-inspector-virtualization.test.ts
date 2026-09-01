@@ -148,6 +148,59 @@ describe('layers-panel windowed rendering', () => {
   });
 });
 
+describe('virtual-list resize handling', () => {
+  class FakeResizeObserver {
+    static instances: FakeResizeObserver[] = [];
+
+    observed: Element[] = [];
+
+    private _cb: () => void;
+
+    constructor(cb: () => void) {
+      this._cb = cb;
+      FakeResizeObserver.instances.push(this);
+    }
+
+    observe(el: Element): void {
+      this.observed.push(el);
+    }
+
+    disconnect(): void {
+      this.observed = [];
+    }
+
+    fire(): void {
+      this._cb();
+    }
+  }
+
+  it('re-windows when the scroller grows without a scroll, and disconnects on removal', async () => {
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    try {
+      const el = mountLayersPanel();
+      el.layers = manyLayers(1000);
+      await flushMicrotasks();
+
+      // 600px zero-viewport fallback + 400px overscan → rows covering [0, 1000px).
+      expect(el.shadowRoot!.querySelectorAll('.layer-row').length).toBe(Math.ceil(1000 / 28));
+
+      const list = el.shadowRoot!.querySelector('.layer-list') as HTMLElement;
+      const observer = FakeResizeObserver.instances[FakeResizeObserver.instances.length - 1];
+      expect(observer.observed).toContain(list); // standalone panels self-scroll
+
+      Object.defineProperty(list, 'clientHeight', { value: 1400, configurable: true });
+      observer.fire();
+      // Window now covers [−400, 1400 + 400) = [0, 1800px) — no scroll needed.
+      expect(el.shadowRoot!.querySelectorAll('.layer-row').length).toBe(Math.ceil(1800 / 28));
+
+      el.remove(); // disconnectedCallback destroys the virtual list
+      expect(observer.observed).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
 describe('layers-panel visibility diff-patching', () => {
   it('a visibility-only change patches the eye in place without a rebuild', async () => {
     const el = mountLayersPanel();
