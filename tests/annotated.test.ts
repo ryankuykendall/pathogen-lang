@@ -364,12 +364,12 @@ M 0 0`);
       // pre-existing limitation — so forEach is exercised no-op style and the
       // sum goes through reduce.)
       const result = compileAnnotated(`let g = Grid(2, 2);
-g.fill() << {|r, c| return calc(r * 10 + c); };
-let doubled = g.map() << {|cell| return calc(cell * 2); };
-doubled.forEach() << {|cell| return cell; };
+g.fill {|r, c| return calc(r * 10 + c); };
+let doubled = g.map {|cell| return calc(cell * 2); };
+doubled.forEach {|cell| return cell; };
 let cells = doubled.cells();
-let total = cells.reduce(0) << {|acc, v| return calc(acc + v); };
-let s = [3, 1, 2].sort() << {|a, b| return calc(a - b); };
+let total = cells.reduce(0) {|acc, v| return calc(acc + v); };
+let s = [3, 1, 2].sort {|a, b| return calc(a - b); };
 let first = s[0];
 M total first`);
       expect(result).toContain('M 44 1'); // (0+1+10+11)*2 = 44; sort asc → 1
