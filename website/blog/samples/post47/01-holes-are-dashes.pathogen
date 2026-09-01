@@ -1,0 +1,58 @@
+//-- A leather stitch line is a row of punched holes at fixed pitch.
+//-- In dash terms: a near-zero dash, a pitch-sized gap — then outline()
+//-- each dash round and every "stitch" becomes a punchable dot.
+
+define ViewBox(0, 0, 480, 170);
+
+let leather = PathLayer('leather') ${
+  fill: #7c5335;
+  stroke: none;
+};
+layer('leather').apply {
+  rect(0, 0, 480, 170);
+}
+
+let scene = GroupLayer('scene') ${};
+let seamGhost = PathLayer('seam-ghost') ${
+  stroke: #00000040;
+  stroke-width: 1;
+  fill: none;
+};
+let holes = PathLayer('holes') ${
+  fill: #f8fafc;
+  stroke: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #f1e9dd;
+};
+scene.append(seamGhost, holes, labels);
+
+let seam = @{
+  h 340
+};
+
+seamGhost.apply {
+  M 70 92 seam.draw()
+}
+
+let pricks = seam.dash(${
+  stroke-dasharray: 0.01 16;
+});
+
+let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+for (prick in seamHoles) {
+  let dot = prick.path.outline(${
+    stroke-width: 5;
+    stroke-linecap: round;
+  });
+  holes.apply {
+    M 70 92 dot.draw()
+  }
+}
+
+labels.apply {
+  text(70, 44)`stroke-dasharray: 0.01 16 — the dash is the prick`;
+  text(70, 136)`outline(round, width 5) turns each prick into a hole`;
+}

@@ -1,0 +1,73 @@
+//-- Punching from a corner leaves a half-space at the far end. A
+//-- negative stroke-dashoffset centers the run: the leftover length,
+//-- split evenly between both ends.
+
+define ViewBox(0, 0, 480, 200);
+
+let leather = PathLayer('leather') ${
+  fill: #7c5335;
+  stroke: none;
+};
+layer('leather').apply {
+  rect(0, 0, 480, 200);
+}
+
+let scene = GroupLayer('scene') ${};
+let seamGhost = PathLayer('seam-ghost') ${
+  stroke: #00000040;
+  stroke-width: 1;
+  fill: none;
+};
+let holes = PathLayer('holes') ${
+  fill: #f8fafc;
+  stroke: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #f1e9dd;
+};
+scene.append(seamGhost, holes, labels);
+
+let seam = @{
+  h 340
+};
+let pitch = 22;
+
+fn punchRow(anchorY, offsetValue) {
+  seamGhost.apply {
+    M 70 anchorY seam.draw()
+  }
+  // Bare variables in a style value need backtick interpolation — a
+  // logged language limitation (see the series' friction log).
+  let pricks = seam.dash(${
+    stroke-dasharray: 0.01 `${pitch}`;
+    stroke-dashoffset: `${offsetValue}`;
+  });
+  let rowHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+  for (prick in rowHoles) {
+    let dot = prick.path.outline(${
+      stroke-width: 5;
+      stroke-linecap: round;
+    });
+    holes.apply {
+      M 70 anchorY dot.draw()
+    }
+  }
+}
+
+// Naive: first hole lands exactly on the corner.
+punchRow(78, 0);
+
+// Centered: split the leftover between both ends.
+let leftover = calc(seam.length % pitch);
+punchRow(140, calc(0 - leftover / 2));
+
+labels.apply {
+  text(70, 46)`offset 0 — a hole ON the corner, a long remainder at the end`;
+  text(70, 176)`offset -(length % pitch) / 2 — margins agree at both ends`;
+  text(30, 82)`0`;
+  text(424, 82)`10`;
+  text(30, 144)`5`;
+  text(424, 144)`5`;
+}

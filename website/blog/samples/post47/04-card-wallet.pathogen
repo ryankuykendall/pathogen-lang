@@ -1,0 +1,107 @@
+//-- The finished artifact: a card-wallet punch template at 4 units per
+//-- millimetre — the panel really holds an ISO card. The stitch line is
+//-- derived from three named dimensions, so resizing the pocket
+//-- re-derives every hole.
+
+define ViewBox(0, 0, 480, 320);
+
+let bench = PathLayer('bench') ${
+  fill: #1c1917;
+  stroke: none;
+};
+bench.apply {
+  rect(0, 0, 480, 320);
+}
+
+let scene = GroupLayer('scene') ${};
+let backPanel = PathLayer('back-panel') ${
+  fill: #2e2018;
+  stroke: #3f2a17;
+  stroke-width: 1.5;
+};
+let pocket = PathLayer('pocket') ${
+  fill: #7c5335;
+  stroke: #3f2a17;
+  stroke-width: 1.5;
+};
+let guides = PathLayer('guides') ${
+  stroke: #00000035;
+  stroke-width: 1;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #d6c9b8;
+};
+scene.append(backPanel, pocket, guides, labels);
+
+// 4 units = 1 mm. Panel 360 x 236 = 90 x 59 mm — an ISO card
+// (85.6 x 54 mm) fits with margin. Every other number derives.
+let anchorX = 60;
+let anchorY = 36;
+let panelW = 360;
+let panelH = 236;
+let pocketH = 148;
+let seamInset = 12;
+let pitch = 16;
+// 4 mm — a standard iron
+
+backPanel.apply {
+  roundRect(anchorX,
+      anchorY,
+      panelW,
+      panelH,
+      16);
+}
+
+// The pocket covers the lower part; its stitch line is a filleted U
+// derived from the same three dimensions.
+let pocketY = calc(panelH - pocketH);
+let pocketShape = @{
+  roundRect(0,
+      calc(panelH - pocketH),
+      panelW,
+      pocketH,
+      16);
+};
+let stitchLine = @{
+  m seamInset calc(panelH - pocketH + 8)
+  v calc(pocketH - 8 - seamInset)
+  h calc(panelW - seamInset * 2)
+  v calc(0 - (pocketH - 8 - seamInset))
+};
+let seamU = stitchLine.fillet(8);
+
+// Center the run with a guaranteed edge margin: equal is not enough —
+// give up one hole and split a whole extra pitch across the ends.
+let leftover = calc(seamU.length % pitch);
+let endMargin = calc((leftover + pitch) / 2);
+// Bare variables in a style value need backtick interpolation — a
+// logged language limitation (see the series' friction log).
+let pricks = seamU.dash(${
+  stroke-dasharray: 0.01 `${pitch}`;
+  stroke-dashoffset: calc(0 - endMargin);
+});
+let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+
+let punched = pocketShape;
+for (prick in seamHoles) {
+  let hole = prick.path.outline(${
+    stroke-width: 4.5;
+    stroke-linecap: round;
+  });
+  punched = punched.difference(hole);
+}
+
+pocket.apply {
+  M anchorX anchorY punched.draw()
+}
+guides.apply {
+  M anchorX anchorY seamU.draw()
+}
+
+labels.apply {
+  text(60, 24)`card wallet — pocket punch template, 4 mm pitch (4 units = 1 mm)`;
+  text(60, 300)`holes are difference()d out — the darker panel shows through`;
+}

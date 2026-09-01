@@ -1,0 +1,86 @@
+//-- The saddle-stitch rule: two mating pieces must carry the SAME hole
+//-- count at the SAME spacing. Derive the holes from the one shared
+//-- seam edge and the counts cannot disagree.
+
+define ViewBox(0, 0, 480, 330);
+
+let bench = PathLayer('bench') ${
+  fill: #1c1917;
+  stroke: none;
+};
+layer('bench').apply {
+  rect(0, 0, 480, 330);
+}
+
+let scene = GroupLayer('scene') ${};
+let pieces = PathLayer('pieces') ${
+  fill: #7c5335;
+  stroke: #3f2a17;
+  stroke-width: 1.5;
+};
+let holes = PathLayer('holes') ${
+  fill: #f8fafc;
+  stroke: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: monospace;
+  font-size: 10;
+  fill: #d6c9b8;
+};
+scene.append(pieces, holes, labels);
+
+// ONE shared seam edge — a gentle sag, one width to change.
+let seamWidth = 320;
+let seamEdge = @{
+  c 60 22 260 22 seamWidth 0
+};
+
+// The flap's bottom edge and the body's top edge are the same curve.
+let flap = @{
+  m 0 -64
+  h seamWidth
+  v 64
+} << seamEdge.reverse() << @{
+  z
+};
+let body = seamEdge << @{
+  v 92
+  h calc(0 - seamWidth)
+  z
+};
+
+pieces.apply {
+  M 80 112 flap.draw()
+  M 80 206 body.draw()
+}
+
+// Holes derived ONCE, from the shared edge — then drawn on both pieces.
+// Equal end margins aren't automatically ADEQUATE ones: when the
+// leftover is small, give up a hole and split a whole extra pitch, so
+// no hole lands on a corner. (Bare variables in style values need
+// backtick interpolation — a logged language limitation.)
+let pitch = 20;
+let leftover = calc(seamEdge.length % pitch);
+let endMargin = calc((leftover + pitch) / 2);
+let pricks = seamEdge.dash(${
+  stroke-dasharray: 0.01 `${pitch}`;
+  stroke-dashoffset: calc(0 - endMargin);
+});
+let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
+
+for (prick in seamHoles) {
+  let dot = prick.path.outline(${
+    stroke-width: 4.5;
+    stroke-linecap: round;
+  });
+  holes.apply {
+    M 80 112 dot.draw()
+    M 80 206 dot.draw()
+  }
+}
+
+labels.apply {
+  text(80, 28)`${seamHoles.length} + ${seamHoles.length} holes — one array, drawn twice`;
+  text(20, 96)`flap`;
+  text(20, 250)`body`;
+}
