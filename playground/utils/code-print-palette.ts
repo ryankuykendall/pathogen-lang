@@ -12,10 +12,11 @@
 // fails if these constants diverge from the light-theme source values.
 //
 // Keys match the classes emitted by highlightPathogenTokens()
-// (src/highlight.ts): kw num str id fn tp op cm.
+// (src/highlight.ts): kw num str id fn tp op cm pr.
 
 export const CODE_PRINT_COLORS: Record<string, string> = {
   kw: '#6d3aa6',
+  pr: '#3d6b9e',
   fn: '#a83d80',
   num: '#d97a6e',
   str: '#5a8a72',

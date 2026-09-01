@@ -13,6 +13,7 @@ import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
 import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
+import { pathogenCodeCssDark, pathogenCodeCssLight } from './pathogen-code-css';
 
 hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('js', javascript);
@@ -236,9 +237,9 @@ async function buildDocs(): Promise<void> {
   // Add syntax highlighting theme CSS
   const escapeCSS = (css: string): string => css.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 
-  output += `// Syntax highlighting themes (GitHub light/dark)\n`;
-  output += `export const hljsThemeLight = \`${escapeCSS(githubLight)}\`;\n\n`;
-  output += `export const hljsThemeDark = \`${escapeCSS(githubDark)}\`;\n`;
+  output += `// Syntax highlighting themes (GitHub light/dark) + pathogen fence tokens\n`;
+  output += `export const hljsThemeLight = \`${escapeCSS(githubLight + pathogenCodeCssLight)}\`;\n\n`;
+  output += `export const hljsThemeDark = \`${escapeCSS(githubDark + pathogenCodeCssDark)}\`;\n`;
 
   await fs.writeFile(OUTPUT_FILE, output);
 
@@ -395,6 +396,7 @@ async function buildDocs(): Promise<void> {
 
     /* Syntax highlighting */
     ${githubDark.replace(/\\/g, '\\\\').replace(/`/g, '\\`')}
+    ${pathogenCodeCssDark}
 
     /* Mobile sidebar toggle */
     .sidebar-toggle {

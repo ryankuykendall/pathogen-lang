@@ -41,7 +41,6 @@ interface CmModules {
   state: Record<string, any>;
   view: Record<string, any>;
   language: Record<string, any>;
-  langJs: Record<string, any>;
   githubTheme: { githubDark: unknown; githubLight: unknown };
 }
 
@@ -323,16 +322,42 @@ export class MiniWorkspace extends HTMLElement {
   private async _loadCodeMirror(): Promise<CmModules> {
     if (this._cmModules) return this._cmModules;
 
-    const [state, view, language, langJs, githubTheme] = await Promise.all([
+    const [state, view, language, githubTheme] = await Promise.all([
       import('https://esm.sh/@codemirror/state@6'),
       import('https://esm.sh/@codemirror/view@6'),
       import('https://esm.sh/@codemirror/language@6'),
-      import('https://esm.sh/@codemirror/lang-javascript@6'),
       import('https://esm.sh/@uiw/codemirror-theme-github@4'),
     ]);
 
-    this._cmModules = { state, view, language, langJs, githubTheme } as CmModules;
+    this._cmModules = { state, view, language, githubTheme } as CmModules;
     return this._cmModules;
+  }
+
+  // The REAL Pathogen parser (style-block inner grammar mounted), never
+  // lang-javascript — JS highlighting split on the parse errors Pathogen
+  // isn't, coloring dashed style properties differently from undashed ones.
+  // SPA pages have window.PathogenLang; static pages fall back to the small
+  // highlight bundle (same pattern as detail-source-mount.ts).
+  private async _pathogenLanguageExtension(language: unknown): Promise<unknown> {
+    let parser: unknown =
+      (window as any).PathogenLang?.editorParser ?? (window as any).PathogenLang?.lezerParser;
+    if (!parser) {
+      try {
+        const mod = (await import(/* @vite-ignore */ '/dist/highlight.global.js')) as {
+          editorParser?: unknown;
+          lezerParser?: unknown;
+        };
+        parser = mod.editorParser ?? mod.lezerParser;
+      } catch {
+        parser = null;
+      }
+    }
+    if (!parser) return [];
+    const lang = (language as any).LRLanguage.define({
+      parser,
+      languageData: { commentTokens: { line: '//' } },
+    });
+    return new (language as any).LanguageSupport(lang);
   }
 
   private _getThemeExtensions(): unknown[] {
@@ -345,7 +370,8 @@ export class MiniWorkspace extends HTMLElement {
     const container = this.shadowRoot!.querySelector('#editor-container');
     if (!container || this._editor) return;
 
-    const { state, view, langJs } = await this._loadCodeMirror();
+    const { state, view, language } = await this._loadCodeMirror();
+    const pathogenLang = await this._pathogenLanguageExtension(language);
 
     this._themeCompartment = new (state as any).Compartment();
 
@@ -357,7 +383,7 @@ export class MiniWorkspace extends HTMLElement {
         (view as any).drawSelection(),
         (view as any).highlightActiveLine(),
         (this._themeCompartment as any).of(this._getThemeExtensions()),
-        (langJs as any).javascript(),
+        pathogenLang,
         (view as any).EditorView.lineWrapping,
         (state as any).EditorState.readOnly.of(true),
       ],

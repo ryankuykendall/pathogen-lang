@@ -22,6 +22,7 @@ function firstVar(name: string): string {
 
 const VAR_FOR_CLASS: Record<string, string> = {
   kw: '--code-keyword',
+  pr: '--code-pr',
   fn: '--code-fn',
   num: '--code-num',
   str: '--code-str',

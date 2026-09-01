@@ -109,6 +109,7 @@
    * source disclosure (.detail-source-code). Keeping them in theme.css
    * means a single source of truth + automatic dark-mode flip. */
   --code-keyword: #6d3aa6;
+  --code-pr:      #3d6b9e;
   --code-fn:      #a83d80;
   --code-num:     #d97a6e;
   --code-str:     #5a8a72;
@@ -207,6 +208,7 @@
   /* Syntax-highlight palette — lighter saturations to read against the
    * deep-purple backplate without screaming. */
   --code-keyword: #c4a4e8;
+  --code-pr:      #8ab4e8;
   --code-fn:      #f7b56e;
   --code-num:     #f0a07b;
   --code-str:     #8fc4a1;
@@ -283,6 +285,7 @@
     --bg-atmosphere-2: rgba(220, 140, 90, 0.18);
 
     --code-keyword: #c4a4e8;
+    --code-pr:      #8ab4e8;
     --code-fn:      #f7b56e;
     --code-num:     #f0a07b;
     --code-str:     #8fc4a1;

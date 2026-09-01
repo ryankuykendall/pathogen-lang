@@ -401,6 +401,7 @@ body:has(.workspace-detail) main.site-main {
  * to the in-place <pre> innerHTML swap. Scoped under .detail-source-
  * code so they don't collide with any future global classes. */
 .detail-source-code .kw  { color: var(--code-keyword); font-weight: 600; }
+.detail-source-code .pr  { color: var(--code-pr); }
 .detail-source-code .fn  { color: var(--code-fn);      font-style: italic; }
 .detail-source-code .num { color: var(--code-num); }
 .detail-source-code .str { color: var(--code-str); }

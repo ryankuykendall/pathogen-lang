@@ -181,6 +181,7 @@ body:has(.homepage) .site-header .actions { grid-column: 3; }
   opacity: 0.6;
 }
 .dev-code .kw { color: var(--code-keyword); font-weight: 600; }
+.dev-code .pr { color: var(--code-pr); }
 .dev-code .fn { color: var(--code-fn); }
 .dev-code .num { color: var(--code-num); }
 .dev-code .str { color: var(--code-str); }

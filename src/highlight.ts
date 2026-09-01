@@ -24,6 +24,7 @@ export { lezerParser };
 // mounted over StyleContent (parseMixed) — structured highlighting inside
 // `${ ... }`. Small LR table; watch dist/highlight.global.js size.
 export { editorParser } from './parser/editor-parser';
+import { editorParser } from './parser/editor-parser';
 
 // Lookup table: Lezer grammar node names → CSS class names. Mirrors
 // the semantic intent of pathogenHighlighting in src/parser/highlight.ts
@@ -84,7 +85,15 @@ const NODE_CLASS: Record<string, string> = {
   Comment: 'cm',
   LineComment: 'cm',
 
-  // Style block content (CSS-ish text inside ${...} blocks)
+  // Style block content: the editor parser mounts the inner style grammar
+  // over StyleContent, so these are the inner grammar's node names. A
+  // dashed property name (stroke-width) is ONE PropertyName token — never
+  // split it. The bare StyleContent entry is the fallback for the rare
+  // case where the mount is absent.
+  PropertyName: 'pr',
+  NumberUnit: 'num',
+  StringLiteral: 'str',
+  Template: 'str',
   StyleContent: 'str',
 };
 
@@ -144,7 +153,9 @@ function flatTokens(source: string): HighlightToken[] {
   // is fine but the bookkeeping below assumes at least one iteration.
   if (source.length === 0) return tokens;
 
-  const tree = lezerParser.parse(source);
+  // Editor parser: style-block interiors get structured tokens (property
+  // names, values) instead of one opaque string blob.
+  const tree = editorParser.parse(source);
   const cur = tree.cursor();
   let cursorPos = 0;
 

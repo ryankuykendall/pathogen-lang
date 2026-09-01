@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import { Command } from 'commander';
 import hljs from 'highlight.js/lib/core';
+import { highlightPathogen } from '../src/highlight';
+import { pathogenCodeCssDark } from './pathogen-code-css';
 
 import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
 
@@ -23,7 +25,9 @@ hljs.registerLanguage('json', json);
 hljs.registerLanguage('html', xml);
 hljs.registerLanguage('xml', xml);
 hljs.registerLanguage('toml', bash); // Close enough for toml highlighting
-hljs.registerLanguage('pathogen', javascript); // Pathogen shares enough syntax with JS
+// Pathogen fences are highlighted by the real Lezer parser (see the
+// markedHighlight callback), NOT by hljs-as-javascript — which split dashed
+// style properties like `stroke-width` into two differently-colored tokens.
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -39,6 +43,9 @@ marked.use(
     emptyLangClass: 'hljs',
     langPrefix: 'hljs language-',
     highlight(code: string, lang: string) {
+      if (lang === 'pathogen') {
+        return highlightPathogen(code);
+      }
       if (lang && hljs.getLanguage(lang)) {
         return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
       }
@@ -476,6 +483,7 @@ export const latestBlogPost: BlogPostMeta | null = null;
 
     /* Syntax highlighting */
     ${githubDark.replace(/\\/g, '\\\\').replace(/`/g, '\\`')}
+    ${pathogenCodeCssDark}
 
     @media (max-width: 768px) {
       .blog-main { padding: 1.5rem 0.75rem; }
