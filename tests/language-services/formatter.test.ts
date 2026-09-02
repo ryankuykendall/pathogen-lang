@@ -41,6 +41,22 @@ describe('formatDocument', () => {
       expect(result).toBe('for (i in 0..5) {\n  M i 0\n}');
     });
 
+    it('keeps an else-if chain flat instead of nesting it', () => {
+      // `else if` parses as an alternate holding one IfStatement; the
+      // formatter used to print `} else {\n  if (...) {` and lose the chain.
+      const src = 'if (a > 2) {\nM 1 1\n} else if (a > 1) {\nM 2 2\n} else if (a > 0) {\nM 3 3\n} else {\nM 4 4\n}';
+      const result = format(src);
+      expect(result).toBe('if (a > 2) {\n  M 1 1\n} else if (a > 1) {\n  M 2 2\n} else if (a > 0) {\n  M 3 3\n} else {\n  M 4 4\n}');
+      expect(format(result)).toBe(result);
+      expect(() => parse(result)).not.toThrow();
+    });
+
+    it('keeps an else-if chain flat when nested inside a loop', () => {
+      const result = format('for (i in 0..2) {\nif (i == 0) {\nM 0 0\n} else if (i == 1) {\nM 1 1\n}\n}');
+      expect(result).toBe('for (i in 0..2) {\n  if (i == 0) {\n    M 0 0\n  } else if (i == 1) {\n    M 1 1\n  }\n}');
+      expect(format(result)).toBe(result);
+    });
+
     it('preserves the half-open range operator', () => {
       const result = format('for (i in 0..<pts.length) {\nM i 0\n}');
       expect(result).toBe('for (i in 0..<pts.length) {\n  M i 0\n}');

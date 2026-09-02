@@ -167,8 +167,15 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       const consequent = formatStatements(stmt.consequent, depth + 1, indent, source);
       let result = `${prefix}if (${condition}) {\n${consequent}\n${prefix}}`;
       if (stmt.alternate) {
-        const alternate = formatStatements(stmt.alternate, depth + 1, indent, source);
-        result += ` else {\n${alternate}\n${prefix}}`;
+        // `else if` parses as an alternate holding exactly one IfStatement;
+        // print it back as the chain the author wrote, not a nested block.
+        const only = stmt.alternate.length === 1 ? stmt.alternate[0] : null;
+        if (only && only.type === 'IfStatement') {
+          result += ` else ${formatStatement(only, depth, indent, prefix, source).slice(prefix.length)}`;
+        } else {
+          const alternate = formatStatements(stmt.alternate, depth + 1, indent, source);
+          result += ` else {\n${alternate}\n${prefix}}`;
+        }
       }
       return result;
     }
