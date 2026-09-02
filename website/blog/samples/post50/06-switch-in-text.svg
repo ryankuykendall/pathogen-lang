@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140" width="240" height="140">
+
+  <path data-layer-name="marks" d="M 150 20 l 24 0 l 0 12 l -24 0 z M 150 48 l 48 0 l 0 12 l -48 0 z M 150 76 l 72 0 l 0 12 l -72 0 z M 150 104 l 72 0 l 0 12 l -72 0 z" fill="none" stroke="#c0518e" stroke-width="2"/>
+  <text data-layer-name="labels" id="labels" x="16" y="30" font-size="14" font-family="monospace" fill="#8a93a6">#1 (12): <tspan>low</tspan></text>
+  <text data-layer-name="labels" x="16" y="58" font-size="14" font-family="monospace" fill="#8a93a6">#2 (48): <tspan>medium</tspan></text>
+  <text data-layer-name="labels" x="16" y="86" font-size="14" font-family="monospace" fill="#8a93a6">#3 (77): <tspan>high</tspan></text>
+  <text data-layer-name="labels" x="16" y="114" font-size="14" font-family="monospace" fill="#8a93a6">#4 (95): <tspan>high</tspan></text>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"marks","type":"path","styles":{"fill":"none","stroke":"#c0518e","stroke-width":"2"},"isDefault":true},{"name":"labels","type":"text","styles":{"font-size":"14","font-family":"monospace","fill":"#8a93a6"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":240,"height":140}}]]></script>
+</svg>

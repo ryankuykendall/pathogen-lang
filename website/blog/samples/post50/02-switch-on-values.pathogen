@@ -1,0 +1,59 @@
+define ViewBox(0, 0, 320, 150);
+
+define default PathLayer('marks') ${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// After: say the value once. Enum members and string literals both work,
+// and Dot, Spark share one body. No fallthrough, so no break.
+enum Marker {
+  Dot,
+  Ring,
+  Box,
+  Spark,
+}
+
+let rows = [
+  [
+    Marker.Dot,
+    Marker.Ring,
+    Marker.Box,
+    Marker.Spark,
+    Marker.Ring,
+  ],
+  [
+    Marker.Ring,
+    Marker.Box,
+    Marker.Dot,
+    Marker.Dot,
+    Marker.Spark,
+  ],
+];
+
+for ([kinds, row] in rows) {
+  let cy = 45 + row * 60;
+  for ([kind, index] in kinds) {
+    let cx = 40 + index * 60;
+    switch (kind) {
+      case Marker.Dot {
+        circle(cx, cy, 10);
+      }
+      case Marker.Ring {
+        circle(cx, cy, 16);
+        circle(cx, cy, 8);
+      }
+      case Marker.Box {
+        rect(cx - 12, cy - 12, 24, 24);
+      }
+      default {
+        star(cx,
+            cy,
+            16,
+            7,
+            5);
+      }
+    }
+  }
+}

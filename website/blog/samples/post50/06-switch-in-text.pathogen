@@ -1,0 +1,48 @@
+define ViewBox(0, 0, 240, 140);
+
+define default PathLayer('marks') ${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// Inside a text body the case bodies hold text, so a label and its bar
+// come from the same score with the same ranges.
+define TextLayer('labels') ${
+  font-size: 14;
+  font-family: monospace;
+  fill: #8a93a6;
+}
+
+let scores = [
+  12,
+  48,
+  77,
+  95,
+];
+
+for ([score, row] in scores) {
+  let y = 30 + row * 28;
+  layer('labels').apply {
+    text(16, y) {
+      `#${row + 1} (${score}): `
+      switch (score) {
+        case ..<40 {
+          tspan()`low`;
+        }
+        case 40..<75 {
+          tspan()`medium`;
+        }
+        default {
+          tspan()`high`;
+        }
+      }
+    }
+  }
+  let width = switch (score) {
+    case ..<40 { 24 }
+    case 40..<75 { 48 }
+    default { 72 }
+  };
+  rect(150, y - 10, width, 12);
+}

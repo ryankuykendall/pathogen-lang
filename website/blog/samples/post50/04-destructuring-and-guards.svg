@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+
+  <path data-layer-name="marks" d="M 141 40 a 9 9 0 1 1 18 0 a 9 9 0 1 1 -18 0 M 146 40 a 4 4 0 1 1 8 0 a 4 4 0 1 1 -8 0 M 33 143 l 14 0 l 0 14 l -14 0 z M 113 113 l 14 0 l 0 14 l -14 0 z M 100 135 l 5.8778525229247265 16.909830056250513 l 17.898560384454115 0.3647450843758122 l -14.265847744427305 10.815594803123162 l 5.184066144360287 17.135254915624188 l -14.694631307311823 -10.225424859373675 l -14.694631307311823 10.225424859373675 l 5.184066144360287 -17.135254915624188 l -14.265847744427305 -10.815594803123162 l 17.898560384454115 -0.3647450843757838 z M 164 170 a 6 6 0 1 1 12 0 a 6 6 0 1 1 -12 0 M 15 15 L 185 185" fill="none" stroke="#c0518e" stroke-width="2"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"marks","type":"path","styles":{"fill":"none","stroke":"#c0518e","stroke-width":"2"},"isDefault":true}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[],"viewBox":{"originX":0,"originY":0,"width":200,"height":200}}]]></script>
+</svg>

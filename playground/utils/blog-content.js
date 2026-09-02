@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "switch-case-comes-to-pathogen",
+    "title": "Say It Once: switch and case Come to Pathogen",
+    "date": "2026-09-06",
+    "description": "Pathogen has a switch statement. It borrows the keyword from JavaScript, the pattern matching from Swift, and the range cases from Ruby, then drops fallthrough. Values, ranges over numbers and angles, destructured Points and arrays, where guards, and an expression form that drops straight into a let or a path argument."
+  },
+  {
     "slug": "broken-lines-what-it-taught",
     "title": "What Broken Lines Taught the Language",
     "date": "2026-09-05",
@@ -27221,6 +27227,482 @@ img.<span class="hljs-property">src</span> = url;
 <p><strong>SVG-as-image rendering is stricter than inline SVG.</strong> Browsers apply tighter parsing and security restrictions when loading SVG via <code>&lt;img&gt;</code> or <code>new Image()</code>. Markup that renders perfectly as inline <code>&lt;svg&gt;</code> in your document may silently fail when loaded as an image.</p>
 <p><strong>When you control the input, skip the DOM.</strong> If you&#39;re generating SVG from known data (not cloning a live element), build the string directly. It&#39;s simpler, more predictable, and avoids an entire class of serialization edge cases. Template literals make this clean and readable.</p>
 <p>The irony is that the &quot;proper&quot; approach — using the DOM API to construct a well-formed SVG element — was the one that broke. Sometimes the simplest tool is the right one.</p>
+`,
+  'switch-case-comes-to-pathogen': `<blockquote>
+<p><strong>Prerequisites:</strong> the samples lean on <a href="/docs#syntax-enums">enums</a>,
+<a href="/docs#syntax-destructuring"><code>let</code> destructuring</a>, and
+<a href="/docs#layers-writing-to-layers"><code>layer().apply</code></a> without introducing them.
+If those are new, the linked docs sections are short.</p>
+</blockquote>
+<p>Every drawing program has a moment where one value decides several
+things. A marker kind picks a shape. An angle picks a quadrant. A score
+picks a label and a bar width. Until now, Pathogen spelled that moment as
+an <code>if</code> / <code>else if</code> chain that names the value on every branch. Now it
+has a <code>switch</code>:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">switch</span> (<span class="id">marker</span>) {
+  <span class="kw">case</span> <span class="str">"dot"</span>, <span class="str">"bullet"</span> {
+    <span class="id">circle</span>(<span class="id">cx</span>, <span class="id">cy</span>, <span class="num">6</span>);
+  }
+  <span class="kw">case</span> <span class="str">"ring"</span> {
+    <span class="id">circle</span>(<span class="id">cx</span>, <span class="id">cy</span>, <span class="num">10</span>);
+    <span class="id">circle</span>(<span class="id">cx</span>, <span class="id">cy</span>, <span class="num">5</span>);
+  }
+  <span class="kw">default</span> {
+    <span class="id">rect</span>(<span class="id">cx</span> - <span class="num">6</span>, <span class="id">cy</span> - <span class="num">6</span>, <span class="num">12</span>, <span class="num">12</span>);
+  }
+}
+</code></pre><p>The value in parentheses is evaluated once. Cases are tried in order, the
+first one that matches runs its body, and the switch ends. There is no
+fallthrough, so there is no <code>break</code> to remember. That much will look
+familiar from JavaScript. The rest of this post is about what a case can
+be, because that is where Pathogen&#39;s version stops looking like
+JavaScript&#39;s.</p>
+<h2>The chain it replaces</h2>
+<p>Here is the shape of code this feature exists for. Two rows of markers,
+and the marker kind is compared up to three times per marker:</p>
+<p><mini-workspace code-open caption="Two rows of markers drawn by an if / else if chain. Every branch repeats the comparison against kind, and a reader has to check each one to be sure they all compare the same thing.">
+  <code>define ViewBox(0, 0, 320, 150);
+
+define default PathLayer('marks') \${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// Before: the same value compared on every branch. Two rows of markers,
+// and \`kind\` is tested up to three times per marker.
+let rows = [
+  [
+    'dot',
+    'ring',
+    'box',
+    'spark',
+    'ring',
+  ],
+  [
+    'ring',
+    'box',
+    'dot',
+    'dot',
+    'spark',
+  ],
+];
+
+for ([kinds, row] in rows) {
+  let cy = 45 + row * 60;
+  for ([kind, index] in kinds) {
+    let cx = 40 + index * 60;
+    if (kind == 'dot') {
+      circle(cx, cy, 10);
+    } else if (kind == 'ring') {
+      circle(cx, cy, 16);
+      circle(cx, cy, 8);
+    } else if (kind == 'box') {
+      rect(cx - 12, cy - 12, 24, 24);
+    } else {
+      star(cx,
+          cy,
+          16,
+          7,
+          5);
+    }
+  }
+}
+</code>
+  <img src="/blog/samples/post50/01-else-if-chain.svg" alt="Two rows of markers drawn by an if / else if chain. Every branch repeats the comparison against kind, and a reader has to check each one to be sure they all compare the same thing." loading="lazy">
+</mini-workspace></p>
+<p>The same drawing with a switch. The value is named once and the enum
+members read as a list:</p>
+<p><mini-workspace code-open caption="The same markers, dispatched by switch. One case each for Dot, Ring, and Box; Spark names no case and falls to default. The render is identical to the chain above.">
+  <code>define ViewBox(0, 0, 320, 150);
+
+define default PathLayer('marks') \${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// After: say the value once. Enum members and string literals both work,
+// and Dot, Spark share one body. No fallthrough, so no break.
+enum Marker {
+  Dot,
+  Ring,
+  Box,
+  Spark,
+}
+
+let rows = [
+  [
+    Marker.Dot,
+    Marker.Ring,
+    Marker.Box,
+    Marker.Spark,
+    Marker.Ring,
+  ],
+  [
+    Marker.Ring,
+    Marker.Box,
+    Marker.Dot,
+    Marker.Dot,
+    Marker.Spark,
+  ],
+];
+
+for ([kinds, row] in rows) {
+  let cy = 45 + row * 60;
+  for ([kind, index] in kinds) {
+    let cx = 40 + index * 60;
+    switch (kind) {
+      case Marker.Dot {
+        circle(cx, cy, 10);
+      }
+      case Marker.Ring {
+        circle(cx, cy, 16);
+        circle(cx, cy, 8);
+      }
+      case Marker.Box {
+        rect(cx - 12, cy - 12, 24, 24);
+      }
+      default {
+        star(cx,
+            cy,
+            16,
+            7,
+            5);
+      }
+    }
+  }
+}
+</code>
+  <img src="/blog/samples/post50/02-switch-on-values.svg" alt="The same markers, dispatched by switch. One case each for Dot, Ring, and Box; Spark names no case and falls to default. The render is identical to the chain above." loading="lazy">
+</mini-workspace></p>
+<p>A case pattern can be any expression: a number, a string, an enum member,
+a variable, or arithmetic like <code>case cols - 1</code>. The match uses the same
+rules as <code>==</code>, with one difference worth stating early: a value that <code>==</code>
+cannot compare, such as a Point against a number, is simply not a match.
+It falls through to the next case or to <code>default</code> instead of raising an
+error. Several patterns separated by commas share one body, and a
+switch with no <code>default</code> simply does nothing when nothing matches; the
+second switch in the next sample relies on exactly that.</p>
+<h2>Ranges, including angles</h2>
+<p>This is the case that a drawing language needs most, and the one that
+comes from Ruby rather than JavaScript. A range pattern buckets a
+continuous value. <code>0..10</code> matches 0 through 10 inclusive, the same
+spelling <code>for</code> loops use. <code>0..&lt;10</code> is half-open, which means it excludes
+the upper bound, so two adjacent bands never both claim the number on
+their shared boundary. Leave off a bound and the range is open-ended:
+<code>..&lt;0</code> is everything below zero, <code>100..</code> is everything from 100 up.</p>
+<p>Ranges work over angles too, using the same comparison as <code>&lt;</code> and <code>&lt;=</code>,
+so a quadrant test is one line per quadrant:</p>
+<p><mini-workspace code-open caption="Twenty-four spokes. Each spoke's length comes from a switch over its heading with half-open angle ranges, so 90deg belongs to exactly one quadrant. The dot at each tip is sized by a second switch over the spoke index, mixing an inclusive range, a half-open one, and two open-ended ones.">
+  <code>define ViewBox(0, 0, 200, 200);
+
+define default PathLayer('marks') \${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// Range patterns bucket a continuous value. Half-open ranges (..&lt;) mean
+// adjacent bands never both claim a boundary; open-ended ranges (..&lt;6,
+// 18..) catch everything below or above.
+for (i in 0..&lt;24) {
+  let heading = i * 15deg;
+  let len = 0;
+  switch (heading) {
+    case 0deg..&lt;90deg {
+      len = 70;
+    }
+    case 90deg..&lt;180deg {
+      len = 55;
+    }
+    case 180deg..&lt;270deg {
+      len = 40;
+    }
+    default {
+      len = 25;
+    }
+  }
+  M calc(100 + cos(heading) * 8) calc(100 + sin(heading) * 8)
+  L calc(100 + cos(heading) * len) calc(100 + sin(heading) * len)
+
+  let dotRadius = 0;
+  switch (i) {
+    case ..&lt;6 {
+      dotRadius = 5;
+    }
+    case 6..11 {
+      dotRadius = 4;
+    }
+    case 12..&lt;18 {
+      dotRadius = 3;
+    }
+    case 18.. {
+      dotRadius = 2;
+    }
+  }
+  circle(100 + cos(heading) * (len + 8), 100 + sin(heading) * (len + 8), dotRadius);
+}
+</code>
+  <img src="/blog/samples/post50/03-ranges-and-angles.svg" alt="Twenty-four spokes. Each spoke's length comes from a switch over its heading with half-open angle ranges, so 90deg belongs to exactly one quadrant. The dot at each tip is sized by a second switch over the spoke index, mixing an inclusive range, a half-open one, and two open-ended ones." loading="lazy">
+</mini-workspace></p>
+<p>One rule to know: a range pattern always reads low to high. <code>case 5..&lt;0</code>
+matches nothing, while the same range in a <code>for</code> loop counts down. And
+the half-open spelling is now accepted by <code>for</code> loops as well, so
+<code>for (i in 0..&lt;points.length)</code> visits every index exactly once without
+the off-by-one arithmetic.</p>
+<h2>Shapes, bindings, and guards</h2>
+<p>The pattern that comes from Swift. A destructuring pattern tests a
+value&#39;s shape and binds its parts for the body. <code>case {x, y}</code> matches any
+object or struct with those properties, a <code>Point</code> included, and makes <code>x</code>
+and <code>y</code> available inside the case. <code>case [first, second]</code> matches an
+array of exactly that length; add <code>...rest</code> to accept longer ones.</p>
+<p>A <code>where</code> guard narrows a match after the bindings exist. When the guard
+is false the whole case is skipped and matching moves on, which is how
+the second <code>{x, y}</code> case below catches everything the first one turned
+down:</p>
+<p><mini-workspace code-open caption="Five values in one array: three Points and two plain arrays. Points above the diagonal get a ring, points on or below it a box, and the arrays dispatch on their length. Nothing here compares with ==; every case is a shape test.">
+  <code>define ViewBox(0, 0, 200, 200);
+
+define default PathLayer('marks') \${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// Destructuring patterns test a value's shape and bind its parts. A
+// where guard narrows a match after the bindings exist. Points above
+// the diagonal get a ring, points on or below it a box; arrays
+// dispatch on their length.
+let targets = [
+  Point(150, 40),
+  Point(40, 150),
+  Point(120, 120),
+  [
+    100,
+    160,
+    50,
+  ],
+  [
+    170,
+    170,
+  ],
+];
+
+for (item in targets) {
+  switch (item) {
+    case { x, y } where x &gt; y {
+      circle(x, y, 9);
+      circle(x, y, 4);
+    }
+    case { x, y } {
+      rect(x - 7, y - 7, 14, 14);
+    }
+    case [cx, cy, size] {
+      star(cx,
+          cy,
+          size / 2,
+          size / 5,
+          5);
+    }
+    case [cx, cy] {
+      circle(cx, cy, 6);
+    }
+  }
+}
+
+M 15 15
+L 185 185
+</code>
+  <img src="/blog/samples/post50/04-destructuring-and-guards.svg" alt="Five values in one array: three Points and two plain arrays. Points above the diagonal get a ring, points on or below it a box, and the arrays dispatch on their length. Nothing here compares with ==; every case is a shape test." loading="lazy">
+</mini-workspace></p>
+<p>Bindings live only inside their case body. A bare name in a pattern is
+always the variable&#39;s current value, never a new binding, so
+<code>case limit</code> compares against <code>limit</code> rather than capturing it. And
+because array and object literals in a pattern are read as shapes,
+<code>case [1, 2]</code> is a compile error rather than a value to compare against;
+to match on contents, bind them and test in a guard.</p>
+<h2>A switch that is a value</h2>
+<p>Pathogen is an expression-first language, and a switch that could only
+run statements would leave the most common use on the table: picking a
+number. So a switch can also produce a value. Put one expression inside
+each pair of braces, end with <code>default</code>, and use the whole thing wherever
+an expression goes:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">radius</span> = <span class="kw">switch</span> (<span class="id">level</span>) {
+  <span class="kw">case</span> <span class="num">1</span>, <span class="num">2</span> { <span class="num">4</span> }
+  <span class="kw">case</span> <span class="num">3</span><span class="op">..&lt;</span><span class="num">7</span> { <span class="num">8</span> }
+  <span class="kw">default</span> { <span class="num">12</span> }
+};
+</code></pre><p>Only the chosen arm&#39;s expression runs. <code>default</code> is required because the
+expression must always produce something. It works on the right of
+<code>let</code>, in function arguments, inside a backtick template&#39;s <code>\${ }</code>, and
+inside <code>calc()</code>, which is also how it goes into a path command&#39;s
+arguments:</p>
+<p><mini-workspace code-open caption="The size and the vertical lift of each marker are switch expressions dropped into a let; the shape itself is a switch statement. The underline's right end is a switch inside calc() in a path argument, so the box gets a wider bar without a separate branch.">
+  <code>define ViewBox(0, 0, 320, 110);
+
+define default PathLayer('marks') \${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// The expression form: one expression per arm, default required. The
+// size and the lift are switch expressions that drop straight into a
+// let; the underline's right end is one inside a path argument.
+enum Marker {
+  Dot,
+  Ring,
+  Box,
+  Spark,
+}
+
+let kinds = [
+  Marker.Dot,
+  Marker.Ring,
+  Marker.Box,
+  Marker.Spark,
+  Marker.Ring,
+];
+
+for ([kind, index] in kinds) {
+  let cx = 40 + index * 60;
+  let size = switch (kind) {
+    case Marker.Dot { 10 }
+    case Marker.Ring { 16 }
+    default { 12 }
+  };
+  let lift = switch (index) {
+    case 0..&lt;2 { 0 }
+    case 2..&lt;4 { -12 }
+    default { 12 }
+  };
+  let cy = 52 + lift;
+  switch (kind) {
+    case Marker.Dot {
+      circle(cx, cy, size);
+    }
+    case Marker.Ring {
+      circle(cx, cy, size);
+      circle(cx, cy, size - 8);
+    }
+    case Marker.Box {
+      rect(cx - size, cy - size, size * 2, size * 2);
+    }
+    default {
+      star(cx,
+          cy,
+          size + 4,
+          size / 2,
+          5);
+    }
+  }
+  M calc(cx - size) calc(78 + lift)
+  L calc(cx + switch (kind) {
+    case Marker.Box { size * 2 }
+    default { size }
+  }) calc(78 + lift)
+}
+</code>
+  <img src="/blog/samples/post50/05-switch-expressions.svg" alt="The size and the vertical lift of each marker are switch expressions dropped into a let; the shape itself is a switch statement. The underline's right end is a switch inside calc() in a path argument, so the box gets a wider bar without a separate branch." loading="lazy">
+</mini-workspace></p>
+<h2>Inside text</h2>
+<p>A switch works inside <code>text(x, y) { }</code> bodies too, where the case bodies
+hold text items instead of path commands. That lets a label and the
+geometry beside it come from the same value with the same ranges:</p>
+<p><mini-workspace code-open caption="Four scores, shown in the labels. Inside each text body a switch picks the tspan word; outside it a switch expression picks the bar width. The two switches share the 40 and 75 boundaries, so the word and the bar can never disagree.">
+  <code>define ViewBox(0, 0, 240, 140);
+
+define default PathLayer('marks') \${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// Inside a text body the case bodies hold text, so a label and its bar
+// come from the same score with the same ranges.
+define TextLayer('labels') \${
+  font-size: 14;
+  font-family: monospace;
+  fill: #8a93a6;
+}
+
+let scores = [
+  12,
+  48,
+  77,
+  95,
+];
+
+for ([score, row] in scores) {
+  let y = 30 + row * 28;
+  layer('labels').apply {
+    text(16, y) {
+      \`#\${row + 1} (\${score}): \`
+      switch (score) {
+        case ..&lt;40 {
+          tspan()\`low\`;
+        }
+        case 40..&lt;75 {
+          tspan()\`medium\`;
+        }
+        default {
+          tspan()\`high\`;
+        }
+      }
+    }
+  }
+  let width = switch (score) {
+    case ..&lt;40 { 24 }
+    case 40..&lt;75 { 48 }
+    default { 72 }
+  };
+  rect(150, y - 10, width, 12);
+}
+</code>
+  <img src="/blog/samples/post50/06-switch-in-text.svg" alt="Four scores, shown in the labels. Inside each text body a switch picks the tspan word; outside it a switch expression picks the bar width. The two switches share the 40 and 75 boundaries, so the word and the bar can never disagree." loading="lazy">
+</mini-workspace></p>
+<h2>The fine print</h2>
+<p>The sharp edges, stated plainly:</p>
+<ul>
+<li><strong>A <code>break;</code> inside a case is not harmless.</strong> There is no fallthrough to
+stop, and <code>break</code> always means the enclosing loop. Inside a loop it
+exits that loop; outside one it fails to compile. <code>continue</code> behaves the
+same way. This is the JavaScript habit most worth unlearning.</li>
+<li><strong><code>switch</code>, <code>case</code>, and <code>where</code> are reserved words</strong> and can no longer be
+used as variable names. No published sample used them, but a private
+file might.</li>
+<li><strong>A range never matches a non-numeric value.</strong> A string or a Point
+against <code>case 0..10</code> is a non-match, not an error. Booleans count as
+numeric. The bounds themselves must be numeric, and a non-numeric bound
+is a runtime error.</li>
+<li><strong>A guard runs once per case, not once per pattern.</strong> With comma
+alternatives, <code>where</code> is checked against the bindings of the first
+pattern that matched, and a false result does not send the switch back
+to try the rest. Every alternative in such a case must bind the same
+names, or the program fails to parse.</li>
+<li><strong>Two places cannot hold a switch expression directly.</strong> A style value&#39;s
+<code>\${ }</code> allows one level of braces, and a bare path argument outside
+<code>calc()</code> accepts only simple values. In both, compute the value with
+<code>let</code> first.</li>
+<li><strong>A statement-position <code>switch</code> is always the statement form.</strong> Add a
+trailing <code>;</code> and the parser reads it as a switch <em>expression</em> instead,
+which means <code>default</code> becomes mandatory and each arm may hold only one
+expression, so a body of path commands stops parsing.</li>
+</ul>
+<h2>When to reach for it</h2>
+<p>Reach for <code>switch</code> when one value decides the branch. If your <code>else if</code>
+chain compares the same thing on every line, that is the signal. If the
+branches compare different things, keep the chain. And if the decision
+is a number or a string rather than a set of statements, use the
+expression form and let the value land where it is needed.</p>
+<p>The full reference is in the <a href="/docs#syntax-switch-statements">Switch Statements docs</a>,
+the expression form under <a href="/docs#syntax-switch-expressions">Switch Expressions</a>,
+and the loop side of the new range spelling under
+<a href="/docs#syntax-half-open-ranges">Half-Open Ranges</a>. Every sample on this
+page is live: open the code pane, change a kind or a score, and watch the
+right case take over.</p>
+<p>The value was always the thing being decided. Now the code says so once.</p>
 `,
   'textblock-introduction': `<p><em>Part 1 of 2 in our series on TextBlock and font integration.</em></p>
 <blockquote>

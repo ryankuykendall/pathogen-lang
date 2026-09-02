@@ -1,0 +1,51 @@
+define ViewBox(0, 0, 200, 200);
+
+define default PathLayer('marks') ${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// Destructuring patterns test a value's shape and bind its parts. A
+// where guard narrows a match after the bindings exist. Points above
+// the diagonal get a ring, points on or below it a box; arrays
+// dispatch on their length.
+let targets = [
+  Point(150, 40),
+  Point(40, 150),
+  Point(120, 120),
+  [
+    100,
+    160,
+    50,
+  ],
+  [
+    170,
+    170,
+  ],
+];
+
+for (item in targets) {
+  switch (item) {
+    case { x, y } where x > y {
+      circle(x, y, 9);
+      circle(x, y, 4);
+    }
+    case { x, y } {
+      rect(x - 7, y - 7, 14, 14);
+    }
+    case [cx, cy, size] {
+      star(cx,
+          cy,
+          size / 2,
+          size / 5,
+          5);
+    }
+    case [cx, cy] {
+      circle(cx, cy, 6);
+    }
+  }
+}
+
+M 15 15
+L 185 185

@@ -1,0 +1,48 @@
+define ViewBox(0, 0, 200, 200);
+
+define default PathLayer('marks') ${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// Range patterns bucket a continuous value. Half-open ranges (..<) mean
+// adjacent bands never both claim a boundary; open-ended ranges (..<6,
+// 18..) catch everything below or above.
+for (i in 0..<24) {
+  let heading = i * 15deg;
+  let len = 0;
+  switch (heading) {
+    case 0deg..<90deg {
+      len = 70;
+    }
+    case 90deg..<180deg {
+      len = 55;
+    }
+    case 180deg..<270deg {
+      len = 40;
+    }
+    default {
+      len = 25;
+    }
+  }
+  M calc(100 + cos(heading) * 8) calc(100 + sin(heading) * 8)
+  L calc(100 + cos(heading) * len) calc(100 + sin(heading) * len)
+
+  let dotRadius = 0;
+  switch (i) {
+    case ..<6 {
+      dotRadius = 5;
+    }
+    case 6..11 {
+      dotRadius = 4;
+    }
+    case 12..<18 {
+      dotRadius = 3;
+    }
+    case 18.. {
+      dotRadius = 2;
+    }
+  }
+  circle(100 + cos(heading) * (len + 8), 100 + sin(heading) * (len + 8), dotRadius);
+}

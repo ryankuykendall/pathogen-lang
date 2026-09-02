@@ -1,0 +1,64 @@
+define ViewBox(0, 0, 320, 110);
+
+define default PathLayer('marks') ${
+  fill: none;
+  stroke: #c0518e;
+  stroke-width: 2;
+}
+
+// The expression form: one expression per arm, default required. The
+// size and the lift are switch expressions that drop straight into a
+// let; the underline's right end is one inside a path argument.
+enum Marker {
+  Dot,
+  Ring,
+  Box,
+  Spark,
+}
+
+let kinds = [
+  Marker.Dot,
+  Marker.Ring,
+  Marker.Box,
+  Marker.Spark,
+  Marker.Ring,
+];
+
+for ([kind, index] in kinds) {
+  let cx = 40 + index * 60;
+  let size = switch (kind) {
+    case Marker.Dot { 10 }
+    case Marker.Ring { 16 }
+    default { 12 }
+  };
+  let lift = switch (index) {
+    case 0..<2 { 0 }
+    case 2..<4 { -12 }
+    default { 12 }
+  };
+  let cy = 52 + lift;
+  switch (kind) {
+    case Marker.Dot {
+      circle(cx, cy, size);
+    }
+    case Marker.Ring {
+      circle(cx, cy, size);
+      circle(cx, cy, size - 8);
+    }
+    case Marker.Box {
+      rect(cx - size, cy - size, size * 2, size * 2);
+    }
+    default {
+      star(cx,
+          cy,
+          size + 4,
+          size / 2,
+          5);
+    }
+  }
+  M calc(cx - size) calc(78 + lift)
+  L calc(cx + switch (kind) {
+    case Marker.Box { size * 2 }
+    default { size }
+  }) calc(78 + lift)
+}
