@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-02 (switch / case statements)
+
+### Added
+
+#### Core
+
+- **`switch` / `case` statement** — match one value against a list of patterns with braced case bodies and no fallthrough: the scrutinee is evaluated once, cases are tested in source order, the first match runs in its own child scope, and the switch ends. Patterns are a Swift-style family rather than bare equality: any expression (compared with `==` rules; non-comparable kinds like a Point against a number simply don't match), comma alternatives (`case "circle", "dot"`), inclusive ranges `a..b` (the `for` loop's spelling), half-open ranges `a..<b` (new `..<` token), open-ended ranges `..<0` / `100..`, ranges over angles (`case 0deg..<90deg`), object and array destructuring reusing `let`'s patterns (`case {x, y}`, `case {x: px, ...rest}`, `case [first, ...others]`, exact arity unless `...rest`), and `where` guards that run after the bindings. `default` must be last and appear at most once. `break`/`continue` inside a case act on the enclosing loop exactly as inside `if`; `return` returns from the enclosing function. Works everywhere `if` does, including path blocks, `apply` blocks, and both text-body forms (`text(x, y) { }` and `&{ }`). Documented in `docs/syntax.md` → "Switch Statements".
+- Implementation: destructuring case patterns are a cover grammar (parsed as array/object literals and reinterpreted by the AST builder, mirroring how assignment is handled); the `{` after a call or member in pattern position forks against trailing-block lambdas via `~caseBody` ambiguity markers and the generator reports zero conflicts. Matching lives once in `src/evaluator/switch-match.ts` and is driven by both evaluators through a six-line host adapter; `==`, `if`, `? :`, and `where` now share `src/evaluator/value-semantics.ts` (`valuesEqual`, `isTruthy`), so `case` can never drift from `==`. Editor surfaces flow through: completions (`switch`, `case`, `default`, `where` snippets), hover, syntax highlighting (playground, docs/blog fences, VS Code TextMate), formatter, scope analysis (case bindings), inlay hints, and contextual parse diagnostics (including a hint for the colon form).
+- **Compatibility note**: `switch`, `case`, and `where` are now reserved words and can no longer be used as variable names (`default` already was one). No sample in the repository used them.
+
+### Fixed
+
+#### Core
+
+- Annotated (`--annotated`) mode had no `AssignmentStatement` case at all — `len = 70;` failed even at top level — and opened a fresh scope per *statement* inside `if` branches, so `if (x) { let size = 5; M size 0 }` failed only in annotated mode. Both now match the main evaluator.
+- The path-args tokenizer's keyword stop-set was missing `break` and `continue`: `M i 0` followed by `break;` on the next line failed with "Undefined variable: break".
+- Text bodies were built by four hand-copied dispatchers with different coverage — a `for` nested inside a text `if` came back with an empty body, and a text `foreach` never dispatched nested `if`/`for` at all. One shared `buildTextBodyItem` now serves every text-body position.
+- Truthiness was written inline in seven places and had diverged: `""` was truthy in `? :` but falsy in `if`, and `0deg` was truthy inside `&{ }` conditions. All seven sites now share `isTruthy` and agree with `if`.
+- The formatter deleted `tspan` and template items nested inside text `if`/`for` bodies.
+
+### Development
+
+- `tests/keyword-registry.test.ts` reads every `kw<"…">` term from `pathogen.grammar` and fails if any hand-maintained keyword list (tokenizer stop-set, both highlight maps, completions, hover, rename, code actions, snippet highlighter, TextMate regex) is missing one, or if the generated parser does not reserve it; the cross-system lifecycle checklist for keywords was rewritten around it and now names every file a keyword touches.
+- `scripts/debug-switch-case.ts` drives the playground with the `project-docs/switch-case/` demos and compares the preview against the CLI; the VS Code preview webview was verified headlessly against the same demos. Full suite at 5,439 tests (+267).
+
 ## [0.8.0] - 2026-09-01 (expression completions inside interpolations)
 
 ### Fixed
