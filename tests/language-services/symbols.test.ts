@@ -144,3 +144,12 @@ describe('getDocumentSymbols', () => {
     });
   });
 });
+
+describe('getDocumentSymbols switch statements', () => {
+  it('a switch contributes no symbols, even with lets inside its bodies', () => {
+    const base = 'let kind = 1;\nfn draw() {\n  M 0 0\n}\nfor (i in 0..3) {\n  let inner = i;\n}\n';
+    const withSwitch = `${base}switch (kind) {\n  case 1 {\n    let a1 = 2;\n    M a1 0\n  }\n  default {\n    M 0 0\n  }\n}\n`;
+    expect(symbols(withSwitch)).toEqual(symbols(base));
+    expect(symbols(base).map((s) => s.name)).toEqual(['kind', 'draw()', 'for (i in ...)']);
+  });
+});

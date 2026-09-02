@@ -31,8 +31,10 @@ const TOKEN_COLORS: Record<CodeToken['type'], string> = {
 // Tokenizer — regex-based, first-match-wins, per-line
 // ---------------------------------------------------------------------------
 
-const KEYWORDS = new Set([
+export const KEYWORDS = new Set([
   'let', 'for', 'forEach', 'if', 'else', 'define', 'in', 'fn', 'return',
+  'switch', 'case', 'where', 'default', 'break', 'continue',
+  'enum', 'layer', 'apply', 'text', 'tspan', 'calc', 'ViewBox',
 ]);
 
 const BUILTINS = new Set([

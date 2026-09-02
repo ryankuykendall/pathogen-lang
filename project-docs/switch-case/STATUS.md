@@ -1,0 +1,14 @@
+# switch / case — STATUS
+
+- **2026-09-01** Phase 1 (statement form) implemented: docs (`docs/syntax.md` → Switch Statements), grammar + regenerated parser, AST + builder, shared matching modules, both evaluators (six sites), language services, editor surfaces, keyword drift guard, tests. See `plan-v1.md` for the plan as approved and `primer-v1.md` for the rationale and the generator's actual conflict outcome.
+- Demos: `demo-shapes.pathogen` (enum values, alternatives), `demo-ranges.pathogen` (angle quadrants, open-ended ranges), `demo-destructure.pathogen` (Point/array patterns, guards), `demo-text.pathogen` (switch inside text bodies). Each has its CLI-rendered `.svg` and `.png` beside it.
+- **Verification (2026-09-02)**: full suite 118 files / 5,439 tests passing (+267); every `.pathogen` in the repo still parses (the 7 remaining failures are pre-existing corrupted internal demos); all 10 docs fences compile; CLI renders in `demo-*.svg`/`.png`; playground checked live via `scripts/debug-switch-case.ts` (preview matches CLI anchors, error panel shows the misplaced-default parse error, completion popup offers `switch`); VS Code preview webview checked headlessly with the real `getWebviewContent` + `dist/index.global.js` (all four demos match the CLI); `.vsix` packages; TextMate keyword/range regexes and snippets checked structurally (no TextMate tokenizer in the repo). Docs section passed the 4-persona content review; the six must-fix edits were applied.
+- Phase 2 (expression form `let x = switch (…) { case p { expr } default { expr } };`): planned in `plan-v1.md`, not started.
+
+## Follow-ups
+
+- `..<` in `for (i in a..<b)`: the token exists but the loop grammar does not accept it; a one-line grammar change plus evaluator/formatter support if wanted.
+- Enum exhaustiveness diagnostic (warn when a switch over an enum omits members and has no `default`).
+- Duplicate-literal-case diagnostic.
+- Unrelated, observed while testing: an array literal passed directly to a function call in bare path-argument position (`M first([5, 6]) 0`) fails with "for-each requires an array or object", while `M calc(first([5, 6])) 0` and a variable both work. Pre-existing path-args gap.
+- Unrelated, observed while verifying the docs fences: a `let` declared inside an `apply { }` block is not visible inside a `text(x, y) { }` body in that same block (`Undefined variable`), for `if` and `switch` alike. Pre-existing text-body scoping gap.

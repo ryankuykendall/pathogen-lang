@@ -63,6 +63,29 @@
     ],
     "description": "if-else statement"
   },
+  "Switch Statement": {
+    "prefix": "switch",
+    "body": [
+      "switch (${1:value}) {",
+      "  case ${2:pattern} {",
+      "    $0",
+      "  }",
+      "  default {",
+      "    ",
+      "  }",
+      "}"
+    ],
+    "description": "switch statement — match a value against case patterns"
+  },
+  "Case Clause": {
+    "prefix": "case",
+    "body": [
+      "case ${1:pattern} {",
+      "  $0",
+      "}"
+    ],
+    "description": "case clause — value, range (0..<10), or destructuring pattern"
+  },
   "Let Declaration": {
     "prefix": "let",
     "body": "let ${1:name} = ${0};",

@@ -942,6 +942,324 @@ describe('Evaluator', () => {
     });
   });
 
+  describe('switch statements', () => {
+    describe('value patterns', () => {
+      it('runs the first matching case, including comma alternatives, and skips the default', () => {
+        expect(
+          compilePath('let k = "square"; switch (k) { case "circle" { M 1 1 } case "square", "rect" { M 2 2 } default { M 3 3 } }'),
+        ).toBe('M 2 2');
+        expect(
+          compilePath('let k = "rect"; switch (k) { case "circle" { M 1 1 } case "square", "rect" { M 2 2 } default { M 3 3 } }'),
+        ).toBe('M 2 2');
+      });
+
+      it('runs the default when nothing matches', () => {
+        expect(
+          compilePath('let k = "zzz"; switch (k) { case "circle" { M 1 1 } case "square", "rect" { M 2 2 } default { M 3 3 } }'),
+        ).toBe('M 3 3');
+      });
+
+      it('no match and no default is a no-op; execution continues after the switch', () => {
+        expect(compilePath('let k = "zzz"; switch (k) { case "circle" { M 1 1 } } L 9 9')).toBe('L 9 9');
+      });
+
+      it('an empty switch is a no-op', () => {
+        expect(compilePath('let k = 1; switch (k) { } M 1 1')).toBe('M 1 1');
+      });
+
+      it('a default-only switch runs the default', () => {
+        expect(compilePath('let k = 1; switch (k) { default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('does not fall through: only the first matching case runs', () => {
+        expect(compilePath('let k = 1; switch (k) { case 1 { M 1 1 } case 1 { M 2 2 } default { M 3 3 } }')).toBe('M 1 1');
+      });
+
+      it('matches enum members', () => {
+        expect(
+          compilePath('enum Shape { Circle, Square } let s = Shape.Square; switch (s) { case Shape.Circle { M 1 1 } case Shape.Square { M 2 2 } }'),
+        ).toBe('M 2 2');
+      });
+
+      it('evaluates pattern expressions against outer variables', () => {
+        expect(compilePath('let cols = 4; let c = 3; switch (c) { case 0 { M 0 0 } case cols - 1 { M 9 9 } }')).toBe('M 9 9');
+      });
+
+      it('a bare name pattern compares against the variable value (never binds)', () => {
+        expect(compilePath('let limit = 5; let n = 5; switch (n) { case limit { M limit n } default { M 3 3 } }')).toBe('M 5 5');
+        expect(compilePath('let limit = 5; let n = 6; switch (n) { case limit { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('matches negative number literals', () => {
+        expect(compilePath('let t = -3; switch (t) { case -3 { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+      });
+
+      it('null matches only null', () => {
+        expect(compilePath('let nn = null; switch (nn) { case 0 { M 0 0 } case "" { M 2 2 } case null { M 1 1 } }')).toBe('M 1 1');
+        expect(compilePath('let z = 0; switch (z) { case null { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('booleans compare with strings as "true"/"false" and with numbers as 1/0', () => {
+        expect(compilePath('let ok = true; switch (ok) { case "true" { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+        expect(compilePath('let ok = true; switch (ok) { case 1 { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+        expect(compilePath('let ok = false; switch (ok) { case 0 { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+        expect(compilePath('let ok = false; switch (ok) { case "true" { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('a numeric string never matches a number', () => {
+        expect(compilePath('let s1 = "1"; switch (s1) { case 1 { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+        expect(compilePath('let n = 1; switch (n) { case "1" { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('non-comparable kinds are a non-match, not an error', () => {
+        expect(compilePath('let p = Point(3, 4); switch (p) { case 5 { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+        expect(compilePath('let col = Color(0.5, 0.15, 0); switch (col) { case 5 { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+        expect(compilePath('let arr = [1]; switch (arr) { case 1 { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+        expect(compilePath('let n = 5; switch (n) { case Point(5, 5) { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('angles match numerically in radians', () => {
+        expect(compilePath('let h = 180deg; switch (h) { case 1pi { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+        expect(compilePath('let h = 90deg; switch (h) { case 180deg { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('evaluates the scrutinee exactly once', () => {
+        const result = compile('fn g() { log("called"); return 2; } switch (g()) { case 1 { M 1 1 } case 2 { M 2 2 } default { M 3 3 } }');
+        expect(result.logs).toHaveLength(1);
+        expect(result.logs[0].parts[0].value).toBe('called');
+        expect(result.layers[0].data).toBe('M 2 2');
+      });
+
+      it('switches on a method-call discriminant', () => {
+        expect(compilePath('let pts = [Point(1, 1), Point(2, 2)]; switch (pts.length) { case 0 { M 0 0 } case 2 { M 2 2 } }')).toBe('M 2 2');
+      });
+    });
+
+    describe('range patterns', () => {
+      it('half-open ranges exclude the upper bound', () => {
+        expect(compilePath('let t = 0.25; switch (t) { case 0..<0.25 { M 1 1 } case 0.25..<0.75 { M 2 2 } default { M 3 3 } }')).toBe('M 2 2');
+        expect(compilePath('let t = 0.1; switch (t) { case 0..<0.25 { M 1 1 } case 0.25..<0.75 { M 2 2 } default { M 3 3 } }')).toBe('M 1 1');
+        expect(compilePath('let t = 0.75; switch (t) { case 0..<0.25 { M 1 1 } case 0.25..<0.75 { M 2 2 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('inclusive ranges include both bounds', () => {
+        expect(compilePath('let t = 10; switch (t) { case 0..10 { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+        expect(compilePath('let t = 0; switch (t) { case 0..10 { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+        expect(compilePath('let t = 10.001; switch (t) { case 0..10 { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('open-ended ranges', () => {
+        const src = (t: string) => `let t = ${t}; switch (t) { case ..<0 { M 1 1 } case 100.. { M 2 2 } default { M 3 3 } }`;
+        expect(compilePath(src('-3'))).toBe('M 1 1');
+        expect(compilePath(src('0'))).toBe('M 3 3');
+        expect(compilePath(src('150'))).toBe('M 2 2');
+        expect(compilePath(src('100'))).toBe('M 2 2');
+        expect(compilePath('let t = 5; switch (t) { case ..5 { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+      });
+
+      it('range bounds may be negative literals and expressions', () => {
+        expect(compilePath('let t = -3; switch (t) { case -5..<0 { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+        expect(compilePath('let lo = 2; let hi = 4; let t = 8; switch (t) { case lo..calc(hi * 2) { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+      });
+
+      it('ranges over angles compare in radians', () => {
+        const src = (h: string) => `let h = ${h}; switch (h) { case 0deg..<90deg { M 1 1 } case 90deg..<180deg { M 2 2 } default { M 3 3 } }`;
+        expect(compilePath(src('135deg'))).toBe('M 2 2');
+        expect(compilePath(src('90deg'))).toBe('M 2 2');
+        expect(compilePath(src('0.25pi'))).toBe('M 1 1');
+        expect(compilePath(src('180deg'))).toBe('M 3 3');
+      });
+
+      it('a range never matches a non-numeric scrutinee', () => {
+        expect(compilePath('let s = "abc"; switch (s) { case 0..10 { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+        expect(compilePath('let p = Point(1, 1); switch (p) { case 0..10 { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('booleans match numeric ranges as 0/1', () => {
+        expect(compilePath('let ok = true; switch (ok) { case 1..5 { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+      });
+
+      it('non-numeric range bounds throw', () => {
+        expect(() => compilePath('let s = 3; switch (s) { case "a".."b" { M 1 1 } }')).toThrow('Line 1: Range pattern bounds must be numeric');
+      });
+    });
+
+    describe('destructuring patterns', () => {
+      it('destructures a built-in struct and applies the where guard', () => {
+        expect(compilePath('let p = Point(3, 4); switch (p) { case 5 { M 1 1 } case {x, y} where x > y { M 2 2 } case {x, y} { M x y } }')).toBe('M 3 4');
+        expect(compilePath('let p = Point(4, 3); switch (p) { case 5 { M 1 1 } case {x, y} where x > y { M 2 2 } case {x, y} { M x y } }')).toBe('M 2 2');
+      });
+
+      it('an object pattern needs every key; aliases and rest bind', () => {
+        expect(
+          compilePath('let o = { x: 1, y: 2, z: 3 }; switch (o) { case {x, y, w} { M 0 0 } case {x: px, ...rest} { let sum = rest.y + rest.z; M px sum } }'),
+        ).toBe('M 1 5');
+      });
+
+      it('an object pattern does not match arrays or numbers', () => {
+        expect(compilePath('let arr = [1, 2]; switch (arr) { case {x} { M 0 0 } default { M 3 3 } }')).toBe('M 3 3');
+        expect(compilePath('let n = 5; switch (n) { case {x} { M 0 0 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('array patterns need the exact length, or at least that length with a rest', () => {
+        expect(
+          compilePath('let a = [10, 40, 90]; switch (a) { case [] { M 0 0 } case [only] { M only 0 } case [first, ...others] { M first others.length } }'),
+        ).toBe('M 10 2');
+        expect(compilePath('let a = [10, 40]; switch (a) { case [only] { M 1 1 } case [a1, a2, a3] { M 3 3 } case [a1, a2] { M 2 2 } }')).toBe('M 2 2');
+        expect(compilePath('let a = []; switch (a) { case [only] { M 1 1 } case [] { M 0 0 } }')).toBe('M 0 0');
+        expect(compilePath('let a = [7]; switch (a) { case [] { M 0 0 } case [only] { M only 0 } }')).toBe('M 7 0');
+      });
+
+      it('an array pattern does not match a non-array', () => {
+        expect(compilePath('let n = 5; switch (n) { case [a1] { M 0 0 } default { M 3 3 } }')).toBe('M 3 3');
+        expect(compilePath('let p = Point(1, 2); switch (p) { case [a1, a2] { M 0 0 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('bindings are scoped to the case body', () => {
+        expect(() => compilePath('let p = Point(3, 4); switch (p) { case {x, y} { M x y } } M x 0')).toThrow(/Undefined variable: x/);
+      });
+
+      it('a failed clause leaves no bindings behind for later clauses', () => {
+        expect(() => compilePath('let p = Point(3, 4); switch (p) { case {x, y} where x > y { M 1 1 } default { M x 0 } }')).toThrow(
+          /Undefined variable: x/,
+        );
+      });
+    });
+
+    describe('where guards', () => {
+      it('a guard on comma alternatives applies to the whole clause', () => {
+        expect(compilePath('let n = 7; switch (n) { case 1, 7 where n > 5 { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+        expect(compilePath('let n = 1; switch (n) { case 1, 7 where n > 5 { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+      });
+
+      it('a failed guard falls through to the next clause with the same pattern', () => {
+        expect(compilePath('let t = 5; switch (t) { case 0..10 where t > 7 { M 1 1 } case 0..10 { M 2 2 } }')).toBe('M 2 2');
+      });
+
+      it('the guard runs once, after the first matching alternative', () => {
+        const result = compile('fn chk(v) { log("guard"); return v > 0; } let n = 1; switch (n) { case 1, 1 where chk(n) { M 1 1 } }');
+        expect(result.logs).toHaveLength(1);
+        expect(result.layers[0].data).toBe('M 1 1');
+      });
+
+      it('the guard is not evaluated when no alternative matches', () => {
+        const result = compile('fn chk(v) { log("guard"); return true; } let n = 9; switch (n) { case 1, 2 where chk(n) { M 1 1 } default { M 3 3 } }');
+        expect(result.logs).toHaveLength(0);
+        expect(result.layers[0].data).toBe('M 3 3');
+      });
+
+      it('guard truthiness follows if: empty string and 0deg are falsy', () => {
+        expect(compilePath('let n = 1; let s = ""; switch (n) { case 1 where s { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+        expect(compilePath('let n = 1; let a = 0deg; switch (n) { case 1 where a { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+        expect(compilePath('let n = 1; let a = 90deg; switch (n) { case 1 where a { M 1 1 } default { M 3 3 } }')).toBe('M 1 1');
+      });
+    });
+
+    describe('scope and control flow', () => {
+      it('a case body runs in a fresh child scope', () => {
+        expect(compilePath('let n = 1; switch (n) { case 1 { let inner = 5; M inner inner } } let inner = 2; M inner 0')).toBe('M 5 5 M 2 0');
+      });
+
+      it('a let inside a case shadows without mutating the outer variable', () => {
+        expect(compilePath('let sz = 1; switch (sz) { case 1 { let sz = 9; M sz 0 } } M sz 0')).toBe('M 9 0 M 1 0');
+      });
+
+      it('assignment to an outer let from a case body', () => {
+        expect(compilePath('let len = 0; let k = 1; switch (k) { case 1 { len = 70; } default { len = 5; } } M len 0')).toBe('M 70 0');
+        expect(compilePath('let len = 0; let k = 2; switch (k) { case 1 { len = 70; } default { len = 5; } } M len 0')).toBe('M 5 0');
+      });
+
+      it('continue and break inside a case target the enclosing for loop', () => {
+        expect(compilePath('for (i in 0..9) { switch (i % 3) { case 0 { continue; } case 2 where i > 5 { break; } } M i 0 }')).toBe(
+          'M 1 0 M 2 0 M 4 0 M 5 0 M 7 0',
+        );
+      });
+
+      it('break inside a case in a for-each loop', () => {
+        expect(compilePath('let xs = [1, 2, 3, 4]; for (x in xs) { switch (x) { case 3 { break; } } M x 0 }')).toBe('M 1 0 M 2 0');
+      });
+
+      it('break in a nested switch exits only the innermost loop', () => {
+        expect(compilePath('for (i in 0..2) { for (j in 0..5) { switch (j) { case 1 { break; } } M calc(i * 100 + j) 0 } }')).toBe(
+          'M 0 0 M 100 0 M 200 0',
+        );
+      });
+
+      it('return inside a case returns from the enclosing fn', () => {
+        expect(compilePath('fn f(k) { switch (k) { case 1 { return 11; } default { return 22; } } } M f(1) f(2)')).toBe('M 11 22');
+      });
+
+      it('return inside a case unwinds past an enclosing loop', () => {
+        expect(
+          compilePath('fn firstBig(xs) { for (x in xs) { switch (x) { case 10.. { return x; } } } return -1; } let xs1 = [1, 5, 12, 40]; let xs2 = [1, 2]; M firstBig(xs1) firstBig(xs2)'),
+        ).toBe('M 12 -1');
+      });
+
+      it('nested switches', () => {
+        expect(compilePath('let a = 1; let b = 2; switch (a) { case 1 { switch (b) { case 2 { M 12 12 } } } }')).toBe('M 12 12');
+        expect(compilePath('let a = 1; let b = 3; switch (a) { case 1 { switch (b) { case 2 { M 12 12 } default { M 13 13 } } } }')).toBe('M 13 13');
+      });
+
+      it('a switch inside a for loop selects per iteration', () => {
+        expect(compilePath('for (i in 0..4) { switch (i) { case 0 { M 0 0 } case 1..<3 { L i i } default { L 100 i } } }')).toBe(
+          'M 0 0 L 1 1 L 2 2 L 100 3 L 100 4',
+        );
+      });
+    });
+
+    describe('inside other blocks', () => {
+      it('works inside a @{ } path block', () => {
+        expect(compilePath('let kind = "sq"; let pb = @{ switch (kind) { case "sq" { m 0 0 l 10 0 } default { m 5 5 } } }; pb.draw();')).toBe('m 0 0 l 10 0');
+        expect(compilePath('let kind = "zz"; let pb = @{ switch (kind) { case "sq" { m 0 0 l 10 0 } default { m 5 5 } } }; pb.draw();')).toBe('m 5 5');
+      });
+
+      it('works inside an apply { } block', () => {
+        const result = compile("let kind = \"sq\"; let gl = PathLayer('g'); gl.apply { switch (kind) { case \"sq\" { M 2 2 } default { M 3 3 } } }");
+        expect(result.layers.find((l) => l.name === 'g')?.data).toBe('M 2 2');
+      });
+
+      it('works inside a text(x, y) { } body with loop control through the switch', () => {
+        const result = compile(
+          `define default TextLayer('t') \${ font-size: 12; }
+           layer('t').apply {
+             text(0, 0) {
+               for (i in 0..5) {
+                 switch (i) {
+                   case 1 { continue; }
+                   case 4 { break; }
+                 }
+                 \`v\${i}\`
+               }
+             }
+           }`,
+        );
+        const texts = result.layers[0].textElements?.[0]?.children?.map((c: { text?: string }) => c.text) ?? [];
+        expect(texts).toEqual(['v0', 'v2', 'v3']);
+      });
+
+      it('works inside &{ } text-block expressions with loop control through the switch', () => {
+        const result = compile(
+          `let tb = &{
+             for (i in 0..5) {
+               switch (i) { case 2 { break; } }
+               text(calc(i * 10), 10)\`v\${i}\`;
+             }
+           };
+           log(tb.elementCount);`,
+        );
+        expect(result.logs[0].parts[0].value).toBe('2');
+      });
+    });
+
+    describe('truthiness unification', () => {
+      it('ternary treats an empty string as falsy, matching if', () => {
+        expect(compilePath('let str = ""; let n = str ? 1 : 2; M n 0')).toBe('M 2 0');
+        expect(compilePath('let str = "a"; let n = str ? 1 : 2; M n 0')).toBe('M 1 0');
+        expect(compilePath('let str = ""; if (str) { M 1 0 } else { M 2 0 }')).toBe('M 2 0');
+      });
+    });
+  });
+
   describe('function definitions', () => {
     it('evaluates user function', () => {
       expect(compilePath('fn double(x) { M calc(x * 2) 0 } double(5);')).toBe('M 10 0');

@@ -31,8 +31,9 @@ import { editorParser } from './parser/editor-parser';
 // without importing the @lezer/highlight tag system at the call site.
 // Add new entries here as the grammar grows; missing entries render
 // as un-classed text (acceptable graceful degradation).
-const NODE_CLASS: Record<string, string> = {
+export const NODE_CLASS: Record<string, string> = {
   // Keywords — match the `kw<…>` macro names from pathogen.grammar.
+  // tests/keyword-registry.test.ts fails if a grammar keyword is missing.
   let: 'kw',
   fn: 'kw',
   for: 'kw',
@@ -50,6 +51,10 @@ const NODE_CLASS: Record<string, string> = {
   default: 'kw',
   calc: 'kw',
   enum: 'kw',
+  switch: 'kw',
+  case: 'kw',
+  where: 'kw',
+  ViewBox: 'kw',
   // Block-opener keywords inside the path/style/text grammars.
   styleBlockOpen: 'kw',
   pathBlockOpen: 'kw',
@@ -77,6 +82,7 @@ const NODE_CLASS: Record<string, string> = {
 
   // Operators that have named terms in the grammar
   RangeOp: 'op',
+  HalfOpenRangeOp: 'op',
   // Path commands (M, L, H, V, C, S, Q, T, A, Z) read as operators in
   // the editor.
   pathCommandLetter: 'op',

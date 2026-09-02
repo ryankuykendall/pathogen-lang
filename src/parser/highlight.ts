@@ -1,10 +1,17 @@
 import { styleTags, tags as t } from '@lezer/highlight';
 
+/// Space-separated keyword node names (the `kw<…>` specializations plus the
+/// `with`/`as` @extend keywords). Exported so the keyword drift guard can
+/// compare it against the grammar.
+export const KEYWORD_NODE_NAMES =
+  'define default ViewBox calc layer apply text tspan for in if else let enum fn return break continue switch case where with as';
+
 /// Syntax highlighting tags for the Pathogen language grammar.
 /// Maps Lezer parse tree node types to CodeMirror highlight tags.
 export const pathogenHighlighting = styleTags({
-  // Keywords
-  'define default calc layer apply text tspan for in if else let enum fn return break continue with as': t.keyword,
+  // Keywords — every kw<> term in pathogen.grammar plus the @extend
+  // contextual keywords (with, as). Checked by tests/keyword-registry.test.ts.
+  [KEYWORD_NODE_NAMES]: t.keyword,
 
   // Path-command suffix clauses: corner-op and label kinds read as functions
   'CornerOpCall/Identifier LabelCall/Identifier': t.function(t.variableName),
@@ -33,7 +40,7 @@ export const pathogenHighlighting = styleTags({
   VariableName: t.definition(t.variableName),
 
   // Operators
-  'RangeOp': t.operator,
+  'RangeOp HalfOpenRangeOp': t.operator,
   '"+" "-" "*" "/" "%" "!" "==" "!=" "<=" ">=" "<" ">" "||" "&&" "<<" "=" "?" ":"': t.operator,
 
   // Special block delimiters
@@ -61,6 +68,7 @@ export const pathogenHighlighting = styleTags({
   // Structural
   'ForLoop ForEachLoop': t.controlKeyword,
   'IfStatement ElseClause': t.controlKeyword,
+  'SwitchStatement CaseClause DefaultClause WhereGuard TextSwitchStatement TextCaseClause TextDefaultClause': t.controlKeyword,
   FunctionDefinition: t.function(t.definition(t.variableName)),
   EnumDefinition: t.definition(t.typeName),
 });

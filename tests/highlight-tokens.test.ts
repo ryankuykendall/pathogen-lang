@@ -71,6 +71,32 @@ describe('highlightPathogenTokens', () => {
     expect(classes.get('..')).toBe('op');
   });
 
+  it('classifies switch, case, where, default as keywords and ..< as an operator', () => {
+    const source = 'switch (kind) {\n  case 0..<10 where kind > 1 { M 1 1 }\n  case "a", 20..30 { M 2 2 }\n  default { M 3 3 }\n}';
+    const lines = highlightPathogenTokens(source);
+    const classes = classesOf(lines);
+    expect(classes.get('switch')).toBe('kw');
+    expect(classes.get('case')).toBe('kw');
+    expect(classes.get('where')).toBe('kw');
+    expect(classes.get('default')).toBe('kw');
+    expect(classes.get('..<')).toBe('op');
+    expect(classes.get('..')).toBe('op');
+    expect(classes.get('kind')).toBe('id');
+    expect(classes.get('"a"')).toBe('str');
+    expect(roundTrip(lines)).toBe(source);
+  });
+
+  it('classifies switch and case inside a text body', () => {
+    const source = 'text(10, 30) {\n  switch (level) {\n    case 1, 2 { `Low` }\n    default { `High` }\n  }\n}';
+    const lines = highlightPathogenTokens(source);
+    const classes = classesOf(lines);
+    expect(classes.get('switch')).toBe('kw');
+    expect(classes.get('case')).toBe('kw');
+    expect(classes.get('default')).toBe('kw');
+    expect(classes.get('text')).toBe('kw');
+    expect(roundTrip(lines)).toBe(source);
+  });
+
   it('splits multi-line tokens across lines, keeping the class', () => {
     // A gap token containing a newline must not leak a '\n' into any
     // token's text.

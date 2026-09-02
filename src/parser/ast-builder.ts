@@ -20,6 +20,11 @@ import type {
   ForLoop,
   ForEachLoop,
   IfStatement,
+  SwitchStatement,
+  SwitchCase,
+  SwitchDefault,
+  CasePattern,
+  RangePattern,
   FunctionDefinition,
   ReturnStatement,
   BreakStatement,
@@ -315,6 +320,7 @@ function buildStatement(cursor: TreeCursor, source: string): Statement | null {
     case 'ForLoop': return buildForLoop(cursor, source);
     case 'ForEachLoop': return buildForEachLoop(cursor, source);
     case 'IfStatement': return buildIfStatement(cursor, source);
+    case 'SwitchStatement': return buildSwitchStatement(cursor, source);
     case 'FunctionDefinition': return buildFunctionDefinition(cursor, source);
     case 'ReturnStatement': return buildReturnStatement(cursor, source);
     case 'BreakStatement': return buildLoopControl(cursor, source, 'BreakStatement');
@@ -647,6 +653,238 @@ function buildElseClause(cursor: TreeCursor, source: string): Statement[] {
   } while (cursor.nextSibling());
   cursor.parent();
   return result;
+}
+
+// --- Switch statements ---
+
+function parseErrorAt(l: SourceLocation | undefined, message: string): Error {
+  return new Error(l ? `Parse error at line ${l.line}, column ${l.column}: ${message}` : `Parse error: ${message}`);
+}
+
+type CaseBodyBuilder = (cursor: TreeCursor) => Statement[];
+
+function buildSwitchStatement(cursor: TreeCursor, source: string): SwitchStatement {
+  // Case bodies go through plain buildBlock (never buildLoopBody): loopDepth
+  // is untouched, so break/continue inside a case target the enclosing loop
+  // and are still rejected when there is none.
+  return buildSwitchLike(cursor, source, 'CaseClause', 'DefaultClause', (c) => buildBlock(c, source));
+}
+
+function buildTextSwitchStatement(cursor: TreeCursor, source: string): SwitchStatement {
+  return buildSwitchLike(
+    cursor, source, 'TextCaseClause', 'TextDefaultClause',
+    (c) => buildInlineTextBody(c, source) as unknown as Statement[],
+  );
+}
+
+function buildSwitchLike(
+  cursor: TreeCursor,
+  source: string,
+  caseName: string,
+  defaultName: string,
+  buildBody: CaseBodyBuilder,
+): SwitchStatement {
+  const nodeLoc = loc(cursor, source);
+  let discriminant: Expression | null = null;
+  const cases: SwitchCase[] = [];
+  let defaultCase: SwitchDefault | null = null;
+
+  cursor.firstChild();
+  let inParens = false;
+  do {
+    if (cursor.name === '(') {
+      inParens = true;
+    } else if (cursor.name === ')') {
+      inParens = false;
+    } else if (inParens && !discriminant && isExpressionNode(cursor.name)) {
+      // The postfix-aware builder leaves the cursor on the first unconsumed
+      // sibling, which for a discriminant is the closing paren.
+      discriminant = buildExpressionWithPostfix(cursor, source);
+      if ((cursor.name as string) === ')') inParens = false;
+    } else if (cursor.name === caseName) {
+      if (defaultCase) {
+        throw parseErrorAt(loc(cursor, source), "'default' must be the last clause in a switch");
+      }
+      cases.push(buildCaseClause(cursor, source, buildBody));
+    } else if (cursor.name === defaultName) {
+      if (defaultCase) {
+        throw parseErrorAt(loc(cursor, source), "A switch may have only one 'default' clause");
+      }
+      defaultCase = buildDefaultClause(cursor, source, buildBody);
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  return {
+    type: 'SwitchStatement',
+    discriminant: discriminant ?? { type: 'NullLiteral' },
+    cases,
+    defaultCase,
+    loc: nodeLoc,
+  };
+}
+
+function buildCaseClause(cursor: TreeCursor, source: string, buildBody: CaseBodyBuilder): SwitchCase {
+  const nodeLoc = loc(cursor, source);
+  const patterns: CasePattern[] = [];
+  let guard: Expression | null = null;
+  let body: Statement[] = [];
+
+  cursor.firstChild();
+  do {
+    if (cursor.name === 'CasePattern') {
+      patterns.push(buildCasePattern(cursor, source));
+    } else if (cursor.name === 'WhereGuard') {
+      guard = buildWhereGuard(cursor, source);
+    } else if (cursor.name === 'Block' || cursor.name === '{') {
+      // Block: the statement form. '{': the text form's inline body, which
+      // buildInlineTextBody consumes up to the matching '}'.
+      body = buildBody(cursor);
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  checkAlternativeBindings(patterns);
+  return { type: 'SwitchCase', patterns, guard, body, loc: nodeLoc };
+}
+
+function buildDefaultClause(cursor: TreeCursor, source: string, buildBody: CaseBodyBuilder): SwitchDefault {
+  const nodeLoc = loc(cursor, source);
+  let body: Statement[] = [];
+  cursor.firstChild();
+  do {
+    if (cursor.name === 'Block' || cursor.name === '{') body = buildBody(cursor);
+  } while (cursor.nextSibling());
+  cursor.parent();
+  return { type: 'SwitchDefault', body, loc: nodeLoc };
+}
+
+function buildWhereGuard(cursor: TreeCursor, source: string): Expression {
+  let guard: Expression = { type: 'BooleanLiteral', value: true };
+  cursor.firstChild();
+  do {
+    if (cursor.name !== 'where' && isExpressionNode(cursor.name)) {
+      guard = buildExpressionWithPostfix(cursor, source);
+      break;
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+  return guard;
+}
+
+function buildCasePattern(cursor: TreeCursor, source: string): CasePattern {
+  const patLoc = loc(cursor, source);
+  let pattern: CasePattern;
+  cursor.firstChild();
+  if (cursor.name === 'RangePattern') {
+    pattern = buildRangePattern(cursor, source, patLoc);
+  } else {
+    pattern = asCasePattern(buildExpressionWithPostfix(cursor, source), patLoc);
+  }
+  cursor.parent();
+  return pattern;
+}
+
+function buildRangePattern(cursor: TreeCursor, source: string, patLoc: SourceLocation): RangePattern {
+  let start: Expression | null = null;
+  let end: Expression | null = null;
+  let inclusive = true;
+  let phase = 0; // 0 = before the operator, 2 = after it
+
+  const noteOp = (name: string): boolean => {
+    if (name !== 'RangeOp' && name !== 'HalfOpenRangeOp') return false;
+    inclusive = name === 'RangeOp';
+    phase = 2;
+    return true;
+  };
+
+  cursor.firstChild();
+  do {
+    if (noteOp(cursor.name)) {
+      // operator token handled
+    } else if (phase === 0 && isExpressionNode(cursor.name)) {
+      // Same cursor-rest hazard as buildForLoop: the postfix-aware builder
+      // may stop ON the range operator, so check before the loop advances.
+      start = buildExpressionWithPostfix(cursor, source);
+      noteOp(cursor.name as string);
+    } else if (phase === 2 && isExpressionNode(cursor.name)) {
+      end = buildExpressionWithPostfix(cursor, source);
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  return { type: 'RangePattern', start, end, inclusive, loc: patLoc };
+}
+
+// Cover-grammar reinterpretation: the grammar parses `case [a, b]` and
+// `case {x, y}` as array/object LITERALS (a dedicated destructure alternative
+// would conflict with them). Literal-shaped patterns that bind names become
+// destructuring patterns; anything else is a value pattern. A literal that
+// cannot bind (`case [1, 2]`) is rejected — arrays and objects are never
+// `==`-comparable, so a value reading could never match anyway.
+function asCasePattern(expr: Expression, patLoc: SourceLocation): CasePattern {
+  if (expr.type === 'ArrayLiteral') {
+    const elements: string[] = [];
+    let rest: string | undefined;
+    expr.elements.forEach((el, i) => {
+      if (el.type === 'Identifier') {
+        elements.push(el.name);
+      } else if (el.type === 'SpreadElement' && el.argument.type === 'Identifier' && i === expr.elements.length - 1) {
+        rest = el.argument.name;
+      } else {
+        throw parseErrorAt(patLoc, 'Array patterns in a case bind names only — write case [first, second] or case [head, ...rest]');
+      }
+    });
+    return { type: 'ArrayDestructuringPattern', elements, rest, loc: patLoc };
+  }
+  if (expr.type === 'ObjectLiteral') {
+    const properties: { key: string; alias?: string }[] = [];
+    let rest: string | undefined;
+    expr.properties.forEach((prop, i) => {
+      if (prop.type === 'SpreadElement') {
+        if (prop.argument.type === 'Identifier' && i === expr.properties.length - 1) {
+          rest = prop.argument.name;
+        } else {
+          throw parseErrorAt(patLoc, 'Object patterns in a case may end with a single ...rest name');
+        }
+      } else if (prop.shorthand) {
+        properties.push({ key: prop.key });
+      } else if (prop.value.type === 'Identifier') {
+        properties.push({ key: prop.key, alias: prop.value.name });
+      } else {
+        throw parseErrorAt(patLoc, 'Object patterns in a case bind names only — write case {x, y} or case {x: px}');
+      }
+    });
+    return { type: 'ObjectDestructuringPattern', properties, rest, loc: patLoc };
+  }
+  return { type: 'ValuePattern', value: expr, loc: patLoc };
+}
+
+function patternBindingNames(p: CasePattern): string[] {
+  if (p.type === 'ArrayDestructuringPattern') {
+    return [...p.elements, ...(p.rest ? [p.rest] : [])].sort();
+  }
+  if (p.type === 'ObjectDestructuringPattern') {
+    return [...p.properties.map((q) => q.alias ?? q.key), ...(p.rest ? [p.rest] : [])].sort();
+  }
+  return [];
+}
+
+// Swift's rule: comma alternatives share one body and one guard, so every
+// alternative must bind exactly the same names.
+function checkAlternativeBindings(patterns: CasePattern[]): void {
+  if (patterns.length < 2) return;
+  const describe = (names: string[]): string => (names.length ? names.join(', ') : 'nothing');
+  const first = patternBindingNames(patterns[0]);
+  for (let i = 1; i < patterns.length; i++) {
+    const names = patternBindingNames(patterns[i]);
+    if (names.join(',') !== first.join(',')) {
+      throw parseErrorAt(
+        patterns[i].loc ?? patterns[0].loc,
+        `Every pattern in a case must bind the same names (this one binds ${describe(names)}, the first binds ${describe(first)})`,
+      );
+    }
+  }
 }
 
 function buildFunctionDefinition(cursor: TreeCursor, source: string): FunctionDefinition {
@@ -1239,25 +1477,42 @@ function buildTspanStatement(cursor: TreeCursor, source: string): TspanStatement
   return { type: 'TspanStatement', dx, dy, rotation, styles, content, loc: nodeLoc };
 }
 
+// Single dispatcher for every text-body position (TextBlock, and the inline
+// bodies of text for/foreach/if/switch). Text blocks contain text-specific
+// nodes (TextForLoop, TextIfStatement, …) as well as regular statements
+// (LetDeclaration, TspanStatement). One dispatcher means a new text
+// construct is either handled everywhere or nowhere — the previous per-site
+// copies silently dropped nested loops/ifs in some bodies.
+function buildTextBodyItem(cursor: TreeCursor, source: string): TextBodyItem | null {
+  switch (cursor.name) {
+    case 'TspanStatement': return buildTspanStatement(cursor, source);
+    case 'TemplateLiteral': return buildTemplateLiteral(cursor, source) as TextBodyItem;
+    case 'TextForLoop': return buildTextForLoop(cursor, source);
+    case 'TextForEachLoop': return buildTextForEachLoop(cursor, source);
+    case 'TextIfStatement': return buildTextIfStatement(cursor, source);
+    case 'TextSwitchStatement': return buildTextSwitchStatement(cursor, source);
+    default: return buildStatement(cursor, source) as TextBodyItem | null;
+  }
+}
+
+// Consume an inline text body: the cursor is on '{'; items are collected
+// until the matching '}', which the cursor rests on afterwards.
+function buildInlineTextBody(cursor: TreeCursor, source: string): TextBodyItem[] {
+  const items: TextBodyItem[] = [];
+  while (cursor.nextSibling() && cursor.name !== '}') {
+    const item = buildTextBodyItem(cursor, source);
+    if (item) items.push(item);
+  }
+  return items;
+}
+
 function buildTextBlock(cursor: TreeCursor, source: string): TextBodyItem[] {
   const items: TextBodyItem[] = [];
   cursor.firstChild();
   do {
     if (cursor.name === '{' || cursor.name === '}') continue;
-    // Text blocks can contain text-specific nodes (TextForLoop, TextIfStatement, etc.)
-    // as well as regular statements (LetDeclaration, TspanStatement)
-    if (cursor.name === 'TextForLoop') {
-      items.push(buildTextForLoop(cursor, source) as TextBodyItem);
-    } else if (cursor.name === 'TextForEachLoop') {
-      items.push(buildTextForEachLoop(cursor, source) as TextBodyItem);
-    } else if (cursor.name === 'TextIfStatement') {
-      items.push(buildTextIfStatement(cursor, source) as TextBodyItem);
-    } else if (cursor.name === 'TemplateLiteral') {
-      items.push(buildTemplateLiteral(cursor, source) as TextBodyItem);
-    } else {
-      const item = buildStatement(cursor, source);
-      if (item) items.push(item as TextBodyItem);
-    }
+    const item = buildTextBodyItem(cursor, source);
+    if (item) items.push(item);
   } while (cursor.nextSibling());
   cursor.parent();
   return items;
@@ -1288,13 +1543,7 @@ function buildTextForLoop(cursor: TreeCursor, source: string): ForLoop {
       // Collect text body items (a loop body — break/continue become valid)
       loopDepth++;
       try {
-        while (cursor.nextSibling() && cursor.name !== '}') {
-          if (cursor.name === 'TspanStatement') body.push(buildTspanStatement(cursor, source));
-          else if (cursor.name === 'TemplateLiteral') body.push(buildTemplateLiteral(cursor, source) as any);
-          else if (cursor.name === 'TextForLoop') body.push(buildTextForLoop(cursor, source));
-          else if (cursor.name === 'TextIfStatement') body.push(buildTextIfStatement(cursor, source));
-          else { const s = buildStatement(cursor, source); if (s) body.push(s); }
-        }
+        body.push(...(buildInlineTextBody(cursor, source) as Statement[]));
       } finally {
         loopDepth--;
       }
@@ -1327,11 +1576,7 @@ function buildTextForEachLoop(cursor: TreeCursor, source: string): ForEachLoop {
       // Loop body — break/continue become valid
       loopDepth++;
       try {
-        while (cursor.nextSibling() && cursor.name !== '}') {
-          if (cursor.name === 'TspanStatement') body.push(buildTspanStatement(cursor, source));
-          else if (cursor.name === 'TemplateLiteral') body.push(buildTemplateLiteral(cursor, source) as any);
-          else { const s = buildStatement(cursor, source); if (s) body.push(s); }
-        }
+        body.push(...(buildInlineTextBody(cursor, source) as Statement[]));
       } finally {
         loopDepth--;
       }
@@ -1363,21 +1608,7 @@ function buildTextIfStatement(cursor: TreeCursor, source: string): IfStatement {
       }
     } else if (cursor.name === '{') {
       // Text block body — collect items until }
-      const bodyItems: TextBodyItem[] = [];
-      while (cursor.nextSibling() && cursor.name !== '}') {
-        if (cursor.name === 'TspanStatement') {
-          bodyItems.push(buildTspanStatement(cursor, source) as TextBodyItem);
-        } else if (cursor.name === 'TemplateLiteral') {
-          bodyItems.push(buildTemplateLiteral(cursor, source) as TextBodyItem);
-        } else if (cursor.name === 'TextForLoop' || cursor.name === 'TextForEachLoop') {
-          bodyItems.push(buildForLoop(cursor, source) as TextBodyItem);
-        } else if (cursor.name === 'TextIfStatement') {
-          bodyItems.push(buildTextIfStatement(cursor, source) as TextBodyItem);
-        } else {
-          const stmt = buildStatement(cursor, source);
-          if (stmt) bodyItems.push(stmt as TextBodyItem);
-        }
-      }
+      const bodyItems = buildInlineTextBody(cursor, source);
       if (consequent.length === 0 && !alternate) {
         consequent = bodyItems as Statement[];
       } else {

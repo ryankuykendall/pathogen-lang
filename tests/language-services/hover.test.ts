@@ -616,3 +616,69 @@ describe('single-letter variable vs path-command hover', () => {
     expect(lower!.contents).toContain('Move to');
   });
 });
+
+describe('getHoverInfo switch keywords', () => {
+  const src = [
+    'let p = Point(3, 1);',
+    'switch (p) {',
+    '  case { x, y } where x > y {',
+    '    M x y',
+    '  }',
+    '  default {',
+    '    M 0 0',
+    '  }',
+    '}',
+  ].join('\n');
+
+  it('switch hover shows a value case, a range case, a destructuring+where case, default, and the no-fallthrough rule', () => {
+    const result = hover(src, 1, 2)!;
+    expect(result.contents).toContain('**switch**');
+    expect(result.contents).toContain('case "circle" { ... }');
+    expect(result.contents).toContain('case 0..<10 { ... }');
+    expect(result.contents).toContain('case { x, y } where x > y { ... }');
+    expect(result.contents).toContain('default { ... }');
+    expect(result.contents).toContain('No fallthrough: the first matching case runs and the switch ends.');
+  });
+
+  it('case hover explains braced bodies and comma alternatives', () => {
+    const result = hover(src, 2, 3)!;
+    expect(result.contents).toContain('**case**');
+    expect(result.contents).toContain('comma alternatives share the body');
+    expect(result.contents).toContain('no `:` and no fallthrough');
+  });
+
+  it('where hover describes the guard', () => {
+    const result = hover(src, 2, 17)!;
+    expect(result.contents).toContain('**where**');
+    expect(result.contents).toContain('Guard condition on a case clause');
+    expect(result.contents).toContain('Evaluated after the pattern binds its names');
+  });
+
+  it('default hover covers both the switch clause and the default layer', () => {
+    const result = hover(src, 5, 4)!;
+    expect(result.contents).toContain('**default**');
+    expect(result.contents).toContain('must be the last clause');
+    expect(result.contents).toContain('define default PathLayer');
+  });
+
+  it('break and continue hovers mention switch cases nested in a loop', () => {
+    const loop = 'for (i in 0..5) {\n  switch (i) {\n    case 1 {\n      continue;\n    }\n    default {\n      break;\n    }\n  }\n}';
+    const cont = hover(loop, 3, 8)!.contents;
+    expect(cont).toContain('**continue**');
+    expect(cont).toContain('`switch` cases nested in it');
+    expect(cont).toContain('inside a `case` body it still targets the loop');
+    const brk = hover(loop, 6, 8)!.contents;
+    expect(brk).toContain('**break**');
+    expect(brk).toContain('`switch` cases nested in it');
+    expect(brk).toContain('inside a `case` body it exits the loop, not the switch');
+  });
+
+  it('in and apply hover as keywords', () => {
+    const inHover = hover('for (i in 0..5) {\n  M i 0\n}', 0, 8)!;
+    expect(inHover.contents).toContain('**in**');
+    expect(inHover.contents).toContain('for ([item, i] in array) { ... }');
+    const applyHover = hover("layer('a').apply {\n  M 0 0\n}", 0, 13)!;
+    expect(applyHover.contents).toContain('**apply**');
+    expect(applyHover.contents).toContain("layer('name').apply { ... }");
+  });
+});

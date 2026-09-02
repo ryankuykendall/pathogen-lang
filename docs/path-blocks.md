@@ -132,7 +132,7 @@ Each entry in `subPathCommands` is an object with:
 
 ## Control Flow Inside Path Blocks
 
-Variables, `for` loops, `foreach` loops, `if` statements, and function calls all work inside path blocks:
+Variables, `for` loops (range and for-each), `if` and `switch` statements, and function calls all work inside path blocks:
 
 ```
 let zigzag = @{

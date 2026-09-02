@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140" width="240" height="140">
+
+  <path data-layer-name="default" d="M 120 20 l 30 0 l 0 12 l -30 0 z M 120 48 l 60 0 l 0 12 l -60 0 z M 120 76 l 100 0 l 0 12 l -100 0 z M 120 104 l 100 0 l 0 12 l -100 0 z" fill="#457b9d" stroke="#1d3557" stroke-width="2"/>
+  <text data-layer-name="labels" id="labels" x="16" y="30" font-size="14" font-family="monospace" fill="#333">#1: <tspan>low</tspan></text>
+  <text data-layer-name="labels" x="16" y="58" font-size="14" font-family="monospace" fill="#333">#2: <tspan>medium</tspan></text>
+  <text data-layer-name="labels" x="16" y="86" font-size="14" font-family="monospace" fill="#333">#3: <tspan>high</tspan></text>
+  <text data-layer-name="labels" x="16" y="114" font-size="14" font-family="monospace" fill="#333">#4: <tspan>high</tspan></text>
+</svg>

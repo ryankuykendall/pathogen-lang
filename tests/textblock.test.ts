@@ -1137,3 +1137,181 @@ log(x);\`
     });
   });
 });
+
+describe('switch inside text bodies', () => {
+  // text(x, y) { switch (...) { ... } } inside a TextLayer apply block.
+  function textChildren(level: string): unknown[] {
+    const result = compile(`
+      define default TextLayer('t') \${ font-size: 12; }
+      let level = ${level};
+      layer('t').apply {
+        text(0, 0) {
+          switch (level) {
+            case 1, 2 { \`Low\` }
+            case 3..<7 { tspan()\`Medium\` }
+            default { \`High\` }
+          }
+        }
+      }
+    `);
+    return result.layers[0].textElements?.[0]?.children ?? [];
+  }
+
+  it('a value alternative emits the template literal as a run', () => {
+    expect(textChildren('2')).toEqual([{ type: 'run', text: 'Low' }]);
+  });
+
+  it('a range case emits the tspan', () => {
+    expect(textChildren('3')).toEqual([{ type: 'tspan', text: 'Medium', content: undefined }]);
+  });
+
+  it('the half-open upper bound falls to the default', () => {
+    expect(textChildren('7')).toEqual([{ type: 'run', text: 'High' }]);
+  });
+
+  it('a case body may hold several text items', () => {
+    const result = compile(`
+      define default TextLayer('t') \${}
+      let kind = "b";
+      layer('t').apply {
+        text(0, 0) {
+          switch (kind) {
+            case "a" { \`A\` }
+            case "b" { \`B\` tspan(0, 16)\`B2\` }
+          }
+        }
+      }
+    `);
+    expect(result.layers[0].textElements?.[0]?.children).toEqual([
+      { type: 'run', text: 'B' },
+      { type: 'tspan', text: 'B2', dx: 0, dy: 16, rotation: undefined, styles: undefined },
+    ]);
+  });
+
+  it('bindings from a destructuring case are visible in the template', () => {
+    const result = compile(`
+      define default TextLayer('t') \${}
+      let p = Point(3, 4);
+      layer('t').apply {
+        text(0, 0) {
+          switch (p) {
+            case {x, y} where x > y { \`wide\` }
+            case {x, y} { \`\${x},\${y}\` }
+          }
+        }
+      }
+    `);
+    expect(result.layers[0].textElements?.[0]?.children).toEqual([{ type: 'run', text: '3,4' }]);
+  });
+
+  it('case bindings are not visible after the switch in a text body', () => {
+    expect(() =>
+      compile(`
+        define default TextLayer('t') \${}
+        let p = Point(3, 4);
+        layer('t').apply {
+          text(0, 0) {
+            switch (p) { case {x, y} { \`\${x}\` } }
+            \`\${y}\`
+          }
+        }
+      `),
+    ).toThrow(/Undefined variable: y/);
+  });
+
+  it('switch nested in a text for loop, with continue and break targeting the loop', () => {
+    const result = compile(`
+      define default TextLayer('t') \${}
+      layer('t').apply {
+        text(0, 0) {
+          for (i in 0..5) {
+            switch (i) {
+              case 1 { continue; }
+              case 4 { break; }
+            }
+            \`v\${i}\`
+          }
+        }
+      }
+    `);
+    const texts = result.layers[0].textElements?.[0]?.children?.map((c: { text?: string }) => c.text) ?? [];
+    expect(texts).toEqual(['v0', 'v2', 'v3']);
+  });
+
+  it('switch nested in a text if', () => {
+    const result = compile(`
+      define default TextLayer('t') \${}
+      let ok = true;
+      let n = 1;
+      layer('t').apply {
+        text(0, 0) {
+          if (ok) {
+            switch (n) { case 1 { \`one\` } default { \`other\` } }
+          }
+        }
+      }
+    `);
+    expect(result.layers[0].textElements?.[0]?.children).toEqual([{ type: 'run', text: 'one' }]);
+  });
+
+  it('switch at the top level of a &{ } text-block expression', () => {
+    const vals = compileLogValues(`
+      let kind = "b";
+      let tb = &{
+        switch (kind) {
+          case "a" { text(0, 10)\`A\`; }
+          case "b" { text(0, 10)\`B\`; text(0, 20)\`B2\`; }
+        }
+      };
+      log(tb.elementCount);
+    `);
+    expect(vals[0]).toBe('2');
+  });
+
+  it('a &{ } switch draws the selected text element to a TextLayer', () => {
+    const result = compile(`
+      define TextLayer('labels') \${}
+      let kind = "zzz";
+      let tb = &{
+        switch (kind) {
+          case "a" { text(0, 16)\`A\` }
+          default { text(0, 16)\`Other\` }
+        }
+      };
+      layer('labels').apply {
+        tb.drawTo(50, 100);
+      }
+    `);
+    const layer = result.layers.find((l) => l.name === 'labels');
+    expect(layer?.textElements).toHaveLength(1);
+    expect(layer!.textElements![0].x).toBe(50);
+    expect(layer!.textElements![0].y).toBe(116);
+    expect(layer!.textElements![0].children[0]).toEqual({ type: 'run', text: 'Other' });
+  });
+
+  it('break through a switch inside a &{ } for loop', () => {
+    const vals = compileLogValues(`
+      let tb = &{
+        for (i in 0..5) {
+          switch (i) { case 2 { break; } }
+          text(calc(i * 10), 10)\`v\${i}\`;
+        }
+      };
+      log(tb.elementCount);
+    `);
+    expect(vals[0]).toBe('2');
+  });
+
+  it('continue through a switch inside a &{ } for loop', () => {
+    const vals = compileLogValues(`
+      let tb = &{
+        for (i in 0..5) {
+          switch (i) { case 2, 3 { continue; } }
+          text(calc(i * 10), 10)\`v\${i}\`;
+        }
+      };
+      log(tb.elementCount);
+    `);
+    expect(vals[0]).toBe('4');
+  });
+});

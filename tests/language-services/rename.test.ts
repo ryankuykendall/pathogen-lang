@@ -216,3 +216,39 @@ describe('rename inside style-block values', () => {
     expect(prepare(src, 0, 30)).toBeNull();
   });
 });
+
+describe('rename switch keywords and case bindings', () => {
+  const src = [
+    'let p = Point(3, 1);',
+    'switch (p) {',
+    '  case { x, y } where x > y {',
+    '    M x y',
+    '  }',
+    '  default {',
+    '    M 0 0',
+    '  }',
+    '}',
+  ].join('\n');
+
+  it('switch, case, where, and default are not renameable', () => {
+    expect(prepare(src, 1, 2)).toBeNull(); // switch
+    expect(prepare(src, 2, 3)).toBeNull(); // case
+    expect(prepare(src, 2, 17)).toBeNull(); // where
+    expect(prepare(src, 5, 4)).toBeNull(); // default
+  });
+
+  it('break, continue, with, as, and ViewBox are not renameable', () => {
+    expect(prepare('for (i in 0..3) {\n  break;\n}', 1, 3)).toBeNull();
+    expect(prepare('for (i in 0..3) {\n  continue;\n}', 1, 3)).toBeNull();
+    expect(prepare('define ViewBox(0, 0, 10, 10);', 0, 9)).toBeNull();
+  });
+
+  it('renames a destructured case binding in the pattern, the guard, and the body', () => {
+    const edits = rename(src, 3, 6, 'px'); // `x` in `M x y`
+    expect(edits.map((e) => [e.range.start.line, e.range.start.character, e.newText])).toEqual([
+      [2, 9, 'px'],
+      [2, 22, 'px'],
+      [3, 6, 'px'],
+    ]);
+  });
+});

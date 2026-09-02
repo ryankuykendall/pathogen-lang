@@ -100,6 +100,22 @@ function walkStatement(stmt: Statement, source: string, range: Range, hints: Inl
       walkStatements(stmt.consequent, source, range, hints);
       if (stmt.alternate) walkStatements(stmt.alternate, source, range, hints);
       break;
+    case 'SwitchStatement':
+      walkExpr(stmt.discriminant, source, range, hints);
+      for (const c of stmt.cases) {
+        for (const pattern of c.patterns) {
+          if (pattern.type === 'ValuePattern') walkExpr(pattern.value, source, range, hints);
+          else if (pattern.type === 'RangePattern') {
+            if (pattern.start) walkExpr(pattern.start, source, range, hints);
+            if (pattern.end) walkExpr(pattern.end, source, range, hints);
+          }
+          // Destructuring patterns bind names only — nothing to hint.
+        }
+        if (c.guard) walkExpr(c.guard, source, range, hints);
+        walkStatements(c.body, source, range, hints);
+      }
+      if (stmt.defaultCase) walkStatements(stmt.defaultCase.body, source, range, hints);
+      break;
     case 'PathCommand':
       for (const arg of stmt.args) walkPathArg(arg, source, range, hints);
       break;

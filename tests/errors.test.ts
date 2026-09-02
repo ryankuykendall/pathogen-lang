@@ -782,6 +782,57 @@ describe('break and continue placement errors', () => {
       compile('let g = Grid(2, 2);\nfor (i in 0..2) { g.fill {|x, y| break; }; }'),
     ).toThrow(/'break' is only valid inside a for loop/);
   });
+
+  it('errors on break inside a switch case with no enclosing loop (with line/column)', () => {
+    // A case body is loop-transparent: it neither provides a loop nor hides one.
+    expect(() => compile('let x = 1;\nswitch (x) {\n  case 1 { break; }\n}')).toThrow(
+      "Parse error at line 3, column 12: 'break' is only valid inside a for loop",
+    );
+  });
+
+  it('errors on continue inside a switch default with no enclosing loop', () => {
+    expect(() => compile('let x = 1;\nswitch (x) {\n  default { continue; }\n}')).toThrow(
+      "Parse error at line 3, column 13: 'continue' is only valid inside a for loop",
+    );
+  });
+
+  it('errors on break in a switch inside a fn body inside a loop (fn is a boundary)', () => {
+    expect(() => compile('for (i in 0..5) { fn f(k) { switch (k) { case 1 { break; } } } }')).toThrow(
+      /'break' is only valid inside a for loop/,
+    );
+  });
+
+  it('errors on break in a path block inside a switch case inside a loop', () => {
+    expect(() => compile('for (i in 0..5) { switch (i) { case 1 { let pb = @{ break; }; } } }')).toThrow(
+      /'break' is only valid inside a for loop/,
+    );
+  });
+
+  it('does not error on break inside a switch case inside a loop', () => {
+    expect(compilePath('for (i in 0..5) { switch (i) { case 2 { break; } } M i 0 }')).toBe('M 0 0 M 1 0');
+  });
+});
+
+describe('switch range pattern errors', () => {
+  it('throws on non-numeric range bounds, reporting the switch line', () => {
+    expect(() => compile('let sz = 3;\nswitch (sz) {\n  case "a".."b" { M 1 1 }\n}')).toThrow(
+      'Line 2: Range pattern bounds must be numeric',
+    );
+  });
+
+  it('throws when only one bound is non-numeric', () => {
+    expect(() => compile('let sz = 3; switch (sz) { case 0.."z" { M 1 1 } }')).toThrow(
+      'Line 1: Range pattern bounds must be numeric',
+    );
+    expect(() => compile('let sz = 3; switch (sz) { case Point(1, 2).. { M 1 1 } }')).toThrow(
+      'Line 1: Range pattern bounds must be numeric',
+    );
+  });
+
+  it('does not evaluate range bounds when the scrutinee is not numeric', () => {
+    // A range never matches a string, so the bounds are never inspected.
+    expect(compilePath('let s = "abc"; switch (s) { case "a".."b" { M 1 1 } default { M 3 3 } }')).toBe('M 3 3');
+  });
 });
 
 describe('reserved unit-suffix names: pi, deg, rad (binding coverage matrix)', () => {

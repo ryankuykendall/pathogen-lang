@@ -357,3 +357,90 @@ describe('command-letter shadowing rescue (single-letter variable in path args)'
     expect(diags[0].message).toContain("'V' is a path command here");
   });
 });
+
+describe('getDiagnostics switch statements', () => {
+  it('a valid path-form switch produces no diagnostics', () => {
+    expect(diagnose('let kind = 2;\nswitch (kind) {\n  case 1 {\n    M 0 0\n  }\n  case 2..<5 where kind > 0 {\n    M 1 1\n  }\n  default {\n    M 2 2\n  }\n}')).toEqual([]);
+  });
+
+  it('destructuring case bindings do not trigger undefined-variable errors', () => {
+    expect(diagnose('let p = Point(3, 1);\nswitch (p) {\n  case { x, y } where x > y {\n    M x y\n  }\n  case [first, ...others] {\n    M first 0\n  }\n}')).toEqual([]);
+  });
+
+  it('a valid text-form switch produces no diagnostics', () => {
+    const src = [
+      "define TextLayer('labels') ${ font-size: 12; }",
+      'let level = 3;',
+      "layer('labels').apply {",
+      '  text(10, 30) {',
+      '    switch (level) {',
+      '      case 1, 2 { `Low` }',
+      '      case 3..<7 { tspan()`Medium` }',
+      '      default { `High` }',
+      '    }',
+      '  }',
+      '}',
+    ].join('\n');
+    expect(diagnose(src)).toEqual([]);
+  });
+
+  const CASE_COLON = "Case bodies use braces: case value { ... } (no ':' and no fallthrough)";
+  const DEFAULT_COLON = "Case bodies use braces: default { ... } (no ':' and no fallthrough)";
+  const IN_SWITCH = "Unexpected 'foo' in switch — expected 'case', 'default', or '}'";
+
+  it.each([
+    ['switch x { case 1 { M 0 0 } }', "Expected '(' after 'switch'"],
+    ['switch (x { case 1 { M 0 0 } }', "Expected ')' before '{'"],
+    // A zero-width error at end of input is skipped by the Lezer pass (same
+    // for `if (x) {`), so the unclosed forms need a following statement.
+    ['switch (x) {\n  case 1 { M 0 0 }\nlet y = 1;', 'Incomplete switch statement'],
+    ['switch (x) {\n  case 1 { M 0 0 }\n  default { M 1 1 }\nM 2 2\n', 'Incomplete switch statement'],
+    ['switch (x) { foo case 1 { M 0 0 } }', IN_SWITCH],
+    ['switch (x) { case }', "Expected a pattern after 'case'"],
+    ['switch (x) { case ; }', "Expected a pattern after 'case'"],
+    ['switch (x) { case { M 0 0 } }', "Expected a pattern after 'case' — the '{' opened the case body"],
+    ['switch (x) { case 1: M 0 0 }', CASE_COLON],
+    ['switch (x) { case 1 }', "Expected '{' to open the case body"],
+    ['switch (x) { case 1 M 0 0 }', "Expected '{' to open the case body"],
+    ['switch (x) { case 1 ) { M 0 0 } }', "Invalid case pattern — unexpected ')'"],
+    ['switch (x) { case 1..2..3 { M 0 0 } }', "Invalid case pattern — unexpected '..'"],
+    ['switch (x) { case 1.. ) { M 0 0 } }', "Invalid case pattern — unexpected ')'"],
+    ['switch (x) { case 1 where }', "Expected a condition after 'where'"],
+    ['switch (x) { case 1 where > 2 { M 0 0 } }', "Expected a condition after 'where'"],
+    ['switch (x) { case 1 where { M 0 0 } }', "Expected a condition after 'where' — the '{' opened the case body"],
+    ['switch (x) { default }', "Expected '{' after 'default'"],
+    ['switch (x) { default M 0 0 }', "Expected '{' after 'default'"],
+    ['switch (x) { default: M 0 0 }', DEFAULT_COLON],
+    ['case 1 { M 0 0 }', "'case' is only valid inside a switch"],
+    ['where x > 0 { M 0 0 }', "'where' is only valid after a case pattern"],
+    ['let x = 1 where x > 0;', "'where' is only valid after a case pattern"],
+    // Text-form (TextSwitchStatement / TextCaseClause / TextDefaultClause)
+    ['text(0, 0) { switch x { case 1 { `a` } } }', "Expected '(' after 'switch'"],
+    ['text(0, 0) { switch (x) {\n  case 1 { `a` }\nlet y = 1;', 'Incomplete switch statement'],
+    ['text(0, 0) { switch (x) { foo case 1 { `a` } } }', IN_SWITCH],
+    ['text(0, 0) { switch (x) { case 1: `a` } }', CASE_COLON],
+    ['text(0, 0) { switch (x) { case { `a` } } }', "Expected a pattern after 'case' — the '{' opened the case body"],
+    ['text(0, 0) { switch (x) { case 1 `a` } }', "Expected '{' to open the case body"],
+    ['text(0, 0) { switch (x) { default `a` } }', "Expected '{' after 'default'"],
+  ])('%s → %s', (source, message) => {
+    const diags = diagnose(source);
+    expect(diags.length).toBeGreaterThan(0);
+    expect(diags[0].message).toBe(message);
+    expect(diags[0].source).toBe('pathogen-parser');
+  });
+
+  it("points the missing-'(' error at the token after switch", () => {
+    const [diag] = diagnose('switch x {\n  case 1 { M 0 0 }\n}');
+    expect(diag.message).toBe("Expected '(' after 'switch'");
+    expect(diag.range.start).toEqual({ line: 0, character: 7 });
+  });
+
+  it('surfaces AST-builder pattern errors as parser diagnostics', () => {
+    const notLast = diagnose('switch (x) { default { M 0 0 } case 1 { M 1 1 } }');
+    expect(notLast.map((d) => d.message)).toEqual(["'default' must be the last clause in a switch"]);
+    const literalArray = diagnose('switch (x) { case [1, 2] { M 0 0 } }');
+    expect(literalArray.map((d) => d.message)).toEqual([
+      'Array patterns in a case bind names only — write case [first, second] or case [head, ...rest]',
+    ]);
+  });
+});

@@ -25,6 +25,7 @@ export type Node =
   | ForLoop
   | ForEachLoop
   | IfStatement
+  | SwitchStatement
   | FunctionDefinition
   | EnumDefinition
   | PathCommand
@@ -72,6 +73,7 @@ export type Statement =
   | ForLoop
   | ForEachLoop
   | IfStatement
+  | SwitchStatement
   | FunctionDefinition
   | EnumDefinition
   | ReturnStatement
@@ -127,6 +129,59 @@ export interface IfStatement {
   condition: Expression;
   consequent: Statement[];
   alternate: Statement[] | null;
+  loc?: SourceLocation;
+}
+
+// switch (value) { case pattern { ... } default { ... } }
+// No fallthrough: the first matching case runs and the switch ends. Case
+// bodies are ordinary blocks (loop-transparent break/continue, own scope).
+// Text-block switches reuse this node with TextBodyItem[] bodies, exactly as
+// TextIfStatement reuses IfStatement.
+export interface SwitchStatement {
+  type: 'SwitchStatement';
+  discriminant: Expression;
+  cases: SwitchCase[];              // source order; never contains the default
+  defaultCase: SwitchDefault | null; // builder guarantees: last clause, at most one
+  loc?: SourceLocation;
+}
+
+// case p1, p2 where guard { ... }
+export interface SwitchCase {
+  type: 'SwitchCase';
+  patterns: CasePattern[];          // >= 1; comma alternatives share the body and the guard
+  guard: Expression | null;         // `where` expression, evaluated after bindings
+  body: Statement[];
+  loc?: SourceLocation;
+}
+
+// default { ... }
+export interface SwitchDefault {
+  type: 'SwitchDefault';
+  body: Statement[];
+  loc?: SourceLocation;
+}
+
+// A case pattern: a value compared with `==` rules, a numeric range, or a
+// destructuring shape that binds names for the body.
+export type CasePattern =
+  | ValuePattern
+  | RangePattern
+  | ArrayDestructuringPattern
+  | ObjectDestructuringPattern;
+
+// case expr — any expression; a bare name is the variable's value, never a binding
+export interface ValuePattern {
+  type: 'ValuePattern';
+  value: Expression;
+  loc?: SourceLocation;
+}
+
+// case a..b / a..<b / ..b / ..<b / a..
+export interface RangePattern {
+  type: 'RangePattern';
+  start: Expression | null;         // null = open lower bound
+  end: Expression | null;           // null = open upper bound
+  inclusive: boolean;               // `..` true, `..<` false (only meaningful with an end)
   loc?: SourceLocation;
 }
 
@@ -333,6 +388,7 @@ export interface ArrayDestructuringPattern {
   type: 'ArrayDestructuringPattern';
   elements: string[];
   rest?: string;
+  loc?: SourceLocation;
 }
 
 // Object destructuring: let { x, y: alias, ...rest } = expr;
@@ -340,6 +396,7 @@ export interface ObjectDestructuringPattern {
   type: 'ObjectDestructuringPattern';
   properties: { key: string; alias?: string }[];
   rest?: string;
+  loc?: SourceLocation;
 }
 
 // Indexed assignment: obj['key'] = value; or arr[0] = value;
@@ -380,7 +437,7 @@ export interface StyleBlockLiteral {
 }
 
 // text(x, y)`content` or text(x, y) { `text` tspan()... }
-export type TextBodyItem = TspanStatement | TemplateLiteral | ForLoop | ForEachLoop | IfStatement | LetDeclaration | BreakStatement | ContinueStatement;
+export type TextBodyItem = TspanStatement | TemplateLiteral | ForLoop | ForEachLoop | IfStatement | SwitchStatement | LetDeclaration | BreakStatement | ContinueStatement;
 
 export interface TextStatement {
   type: 'TextStatement';

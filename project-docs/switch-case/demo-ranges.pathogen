@@ -1,0 +1,41 @@
+define ViewBox(0, 0, 200, 200);
+
+// Range patterns: spoke length by quadrant (half-open angle ranges) and
+// marker size by spoke index (inclusive and open-ended numeric ranges).
+for (i in 0..23) {
+  let heading = i * 15deg;
+  let len = 0;
+  switch (heading) {
+    case 0deg..<90deg {
+      len = 70;
+    }
+    case 90deg..<180deg {
+      len = 55;
+    }
+    case 180deg..<270deg {
+      len = 40;
+    }
+    default {
+      len = 25;
+    }
+  }
+  M 100 100
+  L calc(100 + cos(heading) * len) calc(100 + sin(heading) * len)
+
+  let r = 0;
+  switch (i) {
+    case ..<6 {
+      r = 2;
+    }
+    case 6..11 {
+      r = 3;
+    }
+    case 12..<18 {
+      r = 4;
+    }
+    case 18.. {
+      r = 5;
+    }
+  }
+  circle(100 + cos(heading) * (len + 8), 100 + sin(heading) * (len + 8), r);
+}

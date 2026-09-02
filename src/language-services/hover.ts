@@ -16,11 +16,14 @@ export interface HoverInfo {
 
 // --- Hover data for keywords ---
 
-const KEYWORD_HOVER: Record<string, string> = {
+export const KEYWORD_HOVER: Record<string, string> = {
   let: '**let** — Declare a variable\n```\nlet name = expression;\n```',
   for: '**for** — Loop over a range or collection\n```\nfor (i in 0..10) { ... }\nfor (item in array) { ... }\n```',
   if: '**if** — Conditional execution\n```\nif (condition) { ... } else { ... }\n```',
   else: '**else** — Alternate branch of an if statement',
+  in: '**in** — Separates the loop variable from its range or collection\n```\nfor (i in 0..10) { ... }\nfor (item in array) { ... }\nfor ([item, i] in array) { ... }\n```',
+  apply:
+    "**apply** — Route a block's output to a layer\n```\nlayer('name').apply { ... }\nmyLayer.apply { ... }\n```\nCommands inside the block draw on that layer instead of the default layer.",
   // NOTE: no 'lambda' entry here — `lambda` is NOT a grammar keyword, just a
   // completion-snippet prefix. A KEYWORD_HOVER entry would shadow the hover of
   // any user variable literally named `lambda` (KEYWORD_HOVER is checked
@@ -28,9 +31,17 @@ const KEYWORD_HOVER: Record<string, string> = {
   fn: '**fn** — Define a function\n```\nfn name(params) { ... }\n```\nNamed functions resolve free names in the *caller\'s* scope (dynamic scoping). For lexical capture, use a lambda: `let f = {|x| ... };`',
   return: '**return** — Return a value from a function\n```\nreturn expression;\n```',
   continue:
-    '**continue** — Skip the rest of the current loop iteration\n```\nfor (i in 0..10) {\n  if (i == 3) { continue; }\n  ...\n}\n```\nValid only inside a for loop body (or `if` branches nested in it); controls the innermost enclosing loop.',
+    '**continue** — Skip the rest of the current loop iteration\n```\nfor (i in 0..10) {\n  if (i == 3) { continue; }\n  ...\n}\n```\nValid only inside a for loop body (or `if` branches and `switch` cases nested in it); controls the innermost enclosing loop. A switch never catches it — inside a `case` body it still targets the loop.',
   break:
-    '**break** — Exit the innermost enclosing for loop\n```\nfor (i in 0..10) {\n  if (done) { break; }\n  ...\n}\n```\nValid only inside a for loop body (or `if` branches nested in it).',
+    '**break** — Exit the innermost enclosing for loop\n```\nfor (i in 0..10) {\n  if (done) { break; }\n  ...\n}\n```\nValid only inside a for loop body (or `if` branches and `switch` cases nested in it). A switch never catches it — inside a `case` body it exits the loop, not the switch.',
+  switch:
+    '**switch** — Match a value against case patterns\n```\nswitch (kind) {\n  case "circle" { ... }\n  case 0..<10 { ... }\n  case { x, y } where x > y { ... }\n  default { ... }\n}\n```\nPatterns: values (comma-separated alternatives), ranges (`0..10` inclusive, `0..<10` half-open, `..<0` / `100..` open-ended), and `[a, ...rest]` / `{ x, y: alias }` destructuring with an optional `where` guard. No fallthrough: the first matching case runs and the switch ends.',
+  case:
+    '**case** — One clause of a switch\n```\ncase "a", "b" { ... }\ncase 0..<0.25 { ... }\ncase [first, ...others] { ... }\ncase { x, y } where x > y { ... }\n```\nValue, range, or destructuring pattern; comma alternatives share the body. Bodies are braced — no `:` and no fallthrough.',
+  where:
+    '**where** — Guard condition on a case clause\n```\ncase { x, y } where x > y { ... }\n```\nEvaluated after the pattern binds its names; the case matches only when the guard is truthy.',
+  default:
+    '**default** — Fallback clause of a switch, or the default layer\n```\nswitch (n) {\n  case 1 { ... }\n  default { ... }\n}\ndefine default PathLayer(\'main\') ${ ... }\n```\nIn a switch it runs when no case matches and must be the last clause (at most one).',
   define:
     "**define** — Define a layer (PathLayer / TextLayer / GroupLayer) or the SVG viewBox\n```\ndefine PathLayer('name') ${ stroke: #000; }\ndefine TextLayer('name') ${ font-size: 14; }\ndefine ViewBox(0, 0, 200, 200);\n```",
   ViewBox:

@@ -73,6 +73,8 @@ import {
 } from '../color';
 import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
 import { getStructDescriptor } from './struct-properties';
+import { isTruthy, toNumber, valuesEqual } from './value-semantics';
+import { selectSwitchClause, type MatchHost } from './switch-match';
 
 import type { PathContext } from './context';
 import type { OKLCH } from '../color';
@@ -110,6 +112,7 @@ import type {
 } from './types';
 import type {
   ArrayDestructuringPattern,
+  SwitchStatement,
   Comment,
   Expression,
   FunctionCall,
@@ -160,13 +163,6 @@ function isBooleanValue(value: Value): value is BooleanValue {
 
 function boolVal(v: boolean | number): BooleanValue {
   return { type: 'BooleanValue', value: v ? 1 : 0 };
-}
-
-function toNumber(v: Value): number | undefined {
-  if (typeof v === 'number') return v;
-  if (isBooleanValue(v)) return v.value;
-  if (isAngleValue(v)) return v.radians;
-  return undefined;
 }
 
 function isCallableValue(v: Value): v is UserFunction {
@@ -731,6 +727,19 @@ function setVariable(scope: Scope, name: string, value: Value): void {
     throw new Error(reservedNameBindingError(name));
   }
   scope.variables.set(name, value);
+}
+
+/** Assign to an existing variable up the scope chain (mirror of index.ts). */
+function updateVariable(scope: Scope, name: string, value: Value, line?: number): void {
+  let current: Scope | null = scope;
+  while (current) {
+    if (current.variables.has(name)) {
+      current.variables.set(name, value);
+      return;
+    }
+    current = current.parent;
+  }
+  throw new Error(formatError(`Cannot assign to undeclared variable: ${name}`, line));
 }
 
 /**
@@ -3574,9 +3583,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
     case 'TernaryExpression': {
       const condVal = evaluateExpression(expr.condition, scope);
-      const condNum = toNumber(condVal);
-      const truthValue = condNum !== undefined ? condNum !== 0 : condVal !== null;
-      return truthValue ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
+      return isTruthy(condVal) ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
     }
 
     case 'BinaryExpression': {
@@ -3675,23 +3682,11 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         );
       }
 
-      // Null equality checks
+      // == / != share their semantics with `case` matching (value-semantics.ts);
+      // non-comparable operands fall through to the numeric check below.
       if (expr.operator === '==' || expr.operator === '!=') {
-        if (left === null || right === null) {
-          if (expr.operator === '==') return boolVal(left === null && right === null);
-          return boolVal(!(left === null && right === null));
-        }
-      }
-
-      // String/BooleanValue equality
-      if (expr.operator === '==' || expr.operator === '!=') {
-        const ls = typeof left === 'string' ? left : isBooleanValue(left) ? (left.value ? 'true' : 'false') : undefined;
-        const rs =
-          typeof right === 'string' ? right : isBooleanValue(right) ? (right.value ? 'true' : 'false') : undefined;
-        if (ls !== undefined && rs !== undefined) {
-          if (expr.operator === '==') return boolVal(ls === rs);
-          return boolVal(ls !== rs);
-        }
+        const eq = valuesEqual(left, right);
+        if (eq !== undefined) return boolVal(expr.operator === '==' ? eq : !eq);
       }
 
       // Null in arithmetic
@@ -3896,6 +3891,7 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
  */
 function evaluateTextBlockStatements(stmts: Statement[], blockScope: Scope, elements: TextBlockElement[]): void {
   for (const stmt of stmts) {
+    if (pendingFlow) return; // stop this body; the enclosing loop consumes the flag
     // Silently skip forbidden constructs (annotated mode pattern)
     if (stmt.type === 'LayerDefinition' || stmt.type === 'LayerApplyBlock' || stmt.type === 'PathCommand' || stmt.type === 'ViewBoxDefinition') {
       continue;
@@ -3928,12 +3924,23 @@ function evaluateTextBlockStatements(stmts: Statement[], blockScope: Scope, elem
 
     if (stmt.type === 'IfStatement') {
       const cond = evaluateExpression(stmt.condition, blockScope);
-      const truthValue = typeof cond === 'number' ? cond !== 0 : (isBooleanValue(cond) ? cond.value !== 0 : cond !== null);
-      if (truthValue) {
+      if (isTruthy(cond)) {
         evaluateTextBlockStatements(stmt.consequent, blockScope, elements);
       } else if (stmt.alternate) {
         evaluateTextBlockStatements(stmt.alternate, blockScope, elements);
       }
+      continue;
+    }
+
+    if (stmt.type === 'SwitchStatement') {
+      const selected = selectSwitchBody(stmt, blockScope);
+      if (selected) evaluateTextBlockStatements(selected.body, selected.scope, elements);
+      continue;
+    }
+
+    if (stmt.type === 'AssignmentStatement') {
+      // Mirrors index.ts's text-block walker (setVariable, not updateVariable).
+      setVariable(blockScope, stmt.name, evaluateExpression(stmt.value, blockScope));
       continue;
     }
 
@@ -4105,13 +4112,14 @@ function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children
       }
     } else if (item.type === 'IfStatement') {
       const condition = evaluateExpression(item.condition, scope);
-      const condNum = toNumber(condition);
-      const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
-      if (isTruthy) {
+      if (isTruthy(condition)) {
         evaluateAnnotatedTextBody(item.consequent as TextBodyItem[], scope, children);
       } else if (item.alternate) {
         evaluateAnnotatedTextBody(item.alternate as TextBodyItem[], scope, children);
       }
+    } else if (item.type === 'SwitchStatement') {
+      const selected = selectSwitchBody(item, scope);
+      if (selected) evaluateAnnotatedTextBody(selected.body as TextBodyItem[], selected.scope, children);
     } else if (item.type === 'LetDeclaration') {
       const value = evaluateExpression(item.value, scope);
       if (item.pattern) {
@@ -5531,6 +5539,42 @@ function evaluateViewBoxDefinition(stmt: ViewBoxDefinition, scope: Scope): void 
   scope.evalState.viewBox = { originX, originY, width, height, loc: stmt.loc };
 }
 
+/** MatchHost for switch-match.ts: pattern expressions, bindings, and errors in the case scope. */
+function switchHost(caseScope: Scope, stmt: SwitchStatement): MatchHost {
+  return {
+    evaluate: (expr) => evaluateExpression(expr, caseScope),
+    bind: (pattern, value) => bindDestructuringPattern(pattern, value as Value, caseScope, getLine(stmt)),
+    fail: (message) => {
+      throw new Error(formatError(message, getLine(stmt)));
+    },
+  };
+}
+
+/** Evaluate the discriminant once and pick the clause body + scope to run (null = no match, no default). */
+function selectSwitchBody(stmt: SwitchStatement, scope: Scope): { body: Statement[]; scope: Scope } | null {
+  const scrutinee = evaluateExpression(stmt.discriminant, scope);
+  return selectSwitchClause(stmt, scrutinee, () => createScope(scope), (caseScope) => switchHost(caseScope, stmt));
+}
+
+/** Run a branch/case body silently; a pending break/continue stops the body and stays set for the loop driver. */
+function evaluateBodyPlain(body: Statement[], bodyScope: Scope): string {
+  const results: string[] = [];
+  for (const bodyStmt of body) {
+    const result = evaluateStatementPlain(bodyStmt, bodyScope);
+    if (result) results.push(result);
+    if (pendingFlow) break;
+  }
+  return results.join(' ');
+}
+
+/** Run a branch/case body with trace output; same pendingFlow contract as evaluateBodyPlain. */
+function evaluateBodyAnnotated(body: Statement[], bodyScope: Scope, ctx: AnnotatedContext): void {
+  for (const bodyStmt of body) {
+    evaluateStatementAnnotated(bodyStmt, bodyScope, ctx);
+    if (pendingFlow) break;
+  }
+}
+
 function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
   switch (stmt.type) {
     case 'Comment':
@@ -5614,29 +5658,29 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
 
     case 'IfStatement': {
       const condition = evaluateExpression(stmt.condition, scope);
-      const condNum = toNumber(condition);
-      const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
 
       // pendingFlow checks let a break/continue in a branch stop the branch
       // and propagate (flag stays set) to the enclosing loop driver.
-      if (isTruthy) {
-        const results: string[] = [];
-        for (const bodyStmt of stmt.consequent) {
-          const result = evaluateStatementPlain(bodyStmt, createScope(scope));
-          if (result) results.push(result);
-          if (pendingFlow) break;
-        }
-        return results.join(' ');
+      // One scope per BRANCH (parity with the main evaluator): a `let` in
+      // the branch must be visible to the statements after it.
+      const branch = isTruthy(condition) ? stmt.consequent : stmt.alternate;
+      return branch ? evaluateBodyPlain(branch, createScope(scope)) : '';
+    }
+
+    case 'SwitchStatement': {
+      const selected = selectSwitchBody(stmt, scope);
+      return selected ? evaluateBodyPlain(selected.body, selected.scope) : '';
+    }
+
+    case 'AssignmentStatement': {
+      // Parity with index.ts: assign up the scope chain; a PathWithResult
+      // assigns its result and emits its path.
+      const value = evaluateExpression(stmt.value, scope);
+      if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
+        updateVariable(scope, stmt.name, value.result, getLine(stmt));
+        return value.path;
       }
-      if (stmt.alternate) {
-        const results: string[] = [];
-        for (const bodyStmt of stmt.alternate) {
-          const result = evaluateStatementPlain(bodyStmt, createScope(scope));
-          if (result) results.push(result);
-          if (pendingFlow) break;
-        }
-        return results.join(' ');
-      }
+      updateVariable(scope, stmt.name, value, getLine(stmt));
       return '';
     }
 
@@ -6017,21 +6061,30 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
     case 'IfStatement': {
       const condition = evaluateExpression(stmt.condition, scope);
-      const condNum = toNumber(condition);
-      const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
 
-      // pendingFlow stops the branch and propagates to the enclosing loop
-      if (isTruthy) {
-        for (const bodyStmt of stmt.consequent) {
-          evaluateStatementAnnotated(bodyStmt, createScope(scope), ctx);
-          if (pendingFlow) break;
-        }
-      } else if (stmt.alternate) {
-        for (const bodyStmt of stmt.alternate) {
-          evaluateStatementAnnotated(bodyStmt, createScope(scope), ctx);
-          if (pendingFlow) break;
-        }
+      // pendingFlow stops the branch and propagates to the enclosing loop.
+      // One scope per BRANCH (parity with the main evaluator).
+      const branch = isTruthy(condition) ? stmt.consequent : stmt.alternate;
+      if (branch) evaluateBodyAnnotated(branch, createScope(scope), ctx);
+      break;
+    }
+
+    case 'SwitchStatement': {
+      const selected = selectSwitchBody(stmt, scope);
+      if (selected) evaluateBodyAnnotated(selected.body, selected.scope, ctx);
+      break;
+    }
+
+    case 'AssignmentStatement': {
+      // Parity with index.ts: assign up the scope chain; a PathWithResult
+      // assigns its result and emits its path.
+      const value = evaluateExpression(stmt.value, scope);
+      if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
+        updateVariable(scope, stmt.name, value.result, getLine(stmt));
+        emitPathString(value.path, ctx);
+        break;
       }
+      updateVariable(scope, stmt.name, value, getLine(stmt));
       break;
     }
 

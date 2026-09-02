@@ -226,6 +226,19 @@ function suggestVariableName(expr: string): string {
 }
 
 /**
+ * Names that can never be a free variable of an extracted selection: every
+ * grammar keyword (checked against the grammar by tests/keyword-registry.test.ts),
+ * literals, and stdlib / context-aware function names.
+ */
+export const RESERVED_IDENTIFIERS: ReadonlySet<string> = new Set([
+  'let', 'for', 'if', 'else', 'fn', 'return', 'define', 'default', 'enum', 'in',
+  'break', 'continue', 'switch', 'case', 'where', 'with', 'as', 'ViewBox',
+  'true', 'false', 'null', 'calc', 'log', 'text', 'tspan', 'layer', 'apply',
+  ...Object.keys(stdlib),
+  ...contextAwareFunctions,
+]);
+
+/**
  * Find variables used in the selection that are defined outside it.
  */
 function findFreeVariables(selectedText: string, fullSource: string, range: Range): string[] {
@@ -238,13 +251,7 @@ function findFreeVariables(selectedText: string, fullSource: string, range: Rang
   }
 
   // Remove keywords, stdlib, and language constructs
-  const reserved = new Set([
-    'let', 'for', 'if', 'else', 'fn', 'return', 'define', 'enum', 'in',
-    'true', 'false', 'null', 'calc', 'log', 'text', 'tspan', 'layer', 'apply',
-    ...Object.keys(stdlib),
-    ...contextAwareFunctions,
-  ]);
-  for (const r of reserved) identifiers.delete(r);
+  for (const r of RESERVED_IDENTIFIERS) identifiers.delete(r);
 
   // Keep only variables that appear in declarations before the selection
   const beforeSelection = fullSource.split('\n').slice(0, range.start.line).join('\n');

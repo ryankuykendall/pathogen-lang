@@ -10,6 +10,7 @@ import type {
   Program,
   Statement,
   Expression,
+  CasePattern,
   SourceLocation,
   FunctionCall,
   MethodCallExpression,
@@ -250,6 +251,33 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       }
       break;
     }
+    case 'SwitchStatement': {
+      // Discriminant resolves in the enclosing scope; every clause gets its
+      // own child scope so destructuring bindings from one case are invisible
+      // to its siblings (mirrors IfStatement's then/else split).
+      walkExpr(stmt.discriminant, scope, col);
+      for (const c of stmt.cases) {
+        const caseScope = mkScope(scope);
+        // Comma alternatives must bind the same NAMES (builder-enforced) but
+        // may bind them from different positions or keys (`case [px, py],
+        // [py, px]`, `case {radius: r}, {size: r}`). Only the alternative
+        // that matches at runtime decides where a name comes from, so with
+        // several alternatives the bindings carry no type context rather
+        // than the last alternative's (which would be wrong for the rest).
+        const withTypeContext = c.patterns.length === 1;
+        for (const pattern of c.patterns) {
+          walkCasePattern(pattern, stmt.discriminant, c.loc, caseScope, col, withTypeContext);
+        }
+        // Guard runs after the pattern binds, so it sees the bound names.
+        if (c.guard) walkExpr(c.guard, caseScope, col);
+        walkStatements(c.body, caseScope, col);
+      }
+      if (stmt.defaultCase) {
+        const defaultScope = mkScope(scope);
+        walkStatements(stmt.defaultCase.body, defaultScope, col);
+      }
+      break;
+    }
     case 'LayerApplyBlock': {
       walkExpr(stmt.layerName, scope, col);
       const blockScope = mkScope(scope);
@@ -298,6 +326,51 @@ function walkStatement(stmt: Statement, scope: Scope, col: Collector): void {
       break;
     case 'Comment':
     case 'FontDirective':
+      break;
+  }
+}
+
+// --- Case pattern walking ---
+
+/**
+ * Value/range patterns are expressions resolved in the case scope;
+ * destructuring patterns declare bindings there with the same type-context
+ * metadata `let` destructuring records (the discriminant plays the role of
+ * the initializer), so hover / inlay type inference works on bound names.
+ */
+function walkCasePattern(
+  pattern: CasePattern,
+  discriminant: Expression,
+  loc: SourceLocation | undefined,
+  scope: Scope,
+  col: Collector,
+  withTypeContext: boolean,
+): void {
+  switch (pattern.type) {
+    case 'ValuePattern':
+      walkExpr(pattern.value, scope, col);
+      break;
+    case 'RangePattern':
+      if (pattern.start) walkExpr(pattern.start, scope, col);
+      if (pattern.end) walkExpr(pattern.end, scope, col);
+      break;
+    case 'ArrayDestructuringPattern':
+      pattern.elements.forEach((elem, index) =>
+        addDecl(
+          scope, elem, 'variable', pattern.loc ?? loc, col,
+          withTypeContext ? { kind: 'arrayElement', expr: discriminant, index } : undefined,
+        ),
+      );
+      if (pattern.rest) addDecl(scope, pattern.rest, 'variable', pattern.loc ?? loc, col);
+      break;
+    case 'ObjectDestructuringPattern':
+      for (const prop of pattern.properties) {
+        addDecl(
+          scope, prop.alias || prop.key, 'variable', pattern.loc ?? loc, col,
+          withTypeContext ? { kind: 'objectProp', expr: discriminant, key: prop.key } : undefined,
+        );
+      }
+      if (pattern.rest) addDecl(scope, pattern.rest, 'variable', pattern.loc ?? loc, col);
       break;
   }
 }

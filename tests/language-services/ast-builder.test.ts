@@ -71,6 +71,61 @@ describe('Lezer AST Builder', () => {
       expect(fn.params).toEqual(['cx', 'cy']);
       expect(fn.body).toHaveLength(1);
     });
+
+    it('parses switch with value, comma, range patterns and a default', () => {
+      const ast = lezerParse('switch (k) { case "a", "b" { M 1 1 } case 0..<10 { M 2 2 } default { M 3 3 } }');
+      expect(ast.body).toHaveLength(1);
+      expect(ast.body[0]).toMatchObject({
+        type: 'SwitchStatement',
+        discriminant: { type: 'Identifier', name: 'k' },
+        cases: [
+          {
+            type: 'SwitchCase',
+            patterns: [
+              { type: 'ValuePattern', value: { type: 'StringLiteral', value: 'a' } },
+              { type: 'ValuePattern', value: { type: 'StringLiteral', value: 'b' } },
+            ],
+            guard: null,
+            body: [{ type: 'PathCommand', command: 'M', args: [{ value: 1 }, { value: 1 }] }],
+          },
+          {
+            type: 'SwitchCase',
+            patterns: [
+              { type: 'RangePattern', start: { value: 0 }, end: { value: 10 }, inclusive: false },
+            ],
+            guard: null,
+            body: [{ type: 'PathCommand', command: 'M', args: [{ value: 2 }, { value: 2 }] }],
+          },
+        ],
+        defaultCase: {
+          type: 'SwitchDefault',
+          body: [{ type: 'PathCommand', command: 'M', args: [{ value: 3 }, { value: 3 }] }],
+        },
+      });
+      const stmt = ast.body[0] as any;
+      expect(stmt.cases).toHaveLength(2);
+      expect(stmt.cases[0].patterns).toHaveLength(2);
+    });
+
+    it('parses switch with destructuring patterns and a where guard', () => {
+      const ast = lezerParse('switch (p) { case {x, y} where x > y { M x y } case [head, ...tail] { M head 0 } }');
+      const stmt = ast.body[0] as any;
+      expect(stmt.type).toBe('SwitchStatement');
+      expect(stmt.defaultCase).toBeNull();
+      expect(stmt.cases[0]).toMatchObject({
+        type: 'SwitchCase',
+        patterns: [{ type: 'ObjectDestructuringPattern', properties: [{ key: 'x' }, { key: 'y' }] }],
+        guard: { type: 'BinaryExpression', operator: '>', left: { name: 'x' }, right: { name: 'y' } },
+        body: [{ type: 'PathCommand', command: 'M', args: [{ name: 'x' }, { name: 'y' }] }],
+      });
+      expect(stmt.cases[0].patterns[0].rest).toBeUndefined();
+      expect(stmt.cases[1]).toMatchObject({
+        type: 'SwitchCase',
+        patterns: [{ type: 'ArrayDestructuringPattern', elements: ['head'], rest: 'tail' }],
+        guard: null,
+        body: [{ type: 'PathCommand', command: 'M', args: [{ name: 'head' }, { value: 0 }] }],
+      });
+    });
   });
 
   describe('path commands', () => {

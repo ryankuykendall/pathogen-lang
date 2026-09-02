@@ -1,0 +1,42 @@
+define ViewBox(0, 0, 240, 140);
+
+// Switch inside text bodies: the label for each row is chosen by a
+// range pattern over its score; the bar beside it is chosen the same way.
+define TextLayer('labels') ${
+  font-size: 14;
+  font-family: monospace;
+  fill: #333;
+}
+
+let scores = [12, 48, 77, 95];
+
+for ([score, row] in scores) {
+  let y = 30 + row * 28;
+  layer('labels').apply {
+    text(16, y) {
+      `#${row + 1}: `
+      switch (score) {
+        case ..<40 {
+          tspan()`low`
+        }
+        case 40..<75 {
+          tspan()`medium`
+        }
+        default {
+          tspan()`high`
+        }
+      }
+    }
+  }
+  switch (score) {
+    case ..<40 {
+      rect(120, y - 10, 30, 12);
+    }
+    case 40..<75 {
+      rect(120, y - 10, 60, 12);
+    }
+    default {
+      rect(120, y - 10, 100, 12);
+    }
+  }
+}

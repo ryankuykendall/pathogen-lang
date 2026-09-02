@@ -1236,6 +1236,93 @@ describe('loop control: continue and break (annotated parity)', () => {
   });
 });
 
+describe('switch statements (parity)', () => {
+  // Path commands emitted by the annotated evaluator, stripped of the
+  // annotation comments and indentation, in source order.
+  function pathLines(out: string): string[] {
+    return out
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.startsWith('//'));
+  }
+
+  it('picks the comma alternative and skips the default', () => {
+    const out = compileAnnotated('let k = "square";\nswitch (k) {\n  case "circle" { M 1 1 }\n  case "square", "rect" { M 2 2 }\n  default { M 3 3 }\n}');
+    expect(pathLines(out)).toEqual(['M 2 2']);
+  });
+
+  it('half-open range: the upper bound belongs to the next clause', () => {
+    const out = compileAnnotated('let t = 0.25;\nswitch (t) {\n  case 0..<0.25 { M 1 1 }\n  case 0.25..<0.75 { M 2 2 }\n  default { M 3 3 }\n}');
+    expect(pathLines(out)).toEqual(['M 2 2']);
+  });
+
+  it('matches enum members as value patterns', () => {
+    const out = compileAnnotated('enum Shape { Circle, Square }\nlet s = Shape.Square;\nswitch (s) {\n  case Shape.Circle { M 1 1 }\n  case Shape.Square { M 2 2 }\n}');
+    expect(pathLines(out)).toEqual(['M 2 2']);
+  });
+
+  it('destructures a Point, and a failed where guard falls through to the next clause', () => {
+    const out = compileAnnotated('let p = Point(3, 4);\nswitch (p) {\n  case 5 { M 1 1 }\n  case {x, y} where x > y { M 2 2 }\n  case {x, y} { M x y }\n}');
+    expect(pathLines(out)).toEqual(['M 3 4']);
+  });
+
+  it('binds an array rest element', () => {
+    const out = compileAnnotated('let a = [10, 40, 90];\nswitch (a) {\n  case [] { M 0 0 }\n  case [only] { M only 0 }\n  case [first, ...others] { M first others.length }\n}');
+    expect(pathLines(out)).toEqual(['M 10 2']);
+  });
+
+  it('a nested switch runs inside a case body', () => {
+    const out = compileAnnotated('let a = 1;\nlet b = 2;\nswitch (a) {\n  case 1 {\n    switch (b) {\n      case 2 { M 12 12 }\n    }\n  }\n}');
+    expect(pathLines(out)).toEqual(['M 12 12']);
+  });
+
+  it('case bodies get a fresh scope that does not leak into the outer scope', () => {
+    const out = compileAnnotated('let n = 1;\nswitch (n) {\n  case 1 {\n    let inner = 5;\n    M inner inner\n  }\n}\nlet inner = 2;\nM inner 0');
+    expect(pathLines(out)).toEqual(['M 5 5', 'M 2 0']);
+  });
+
+  it('continue and break inside a case target the enclosing loop', () => {
+    const out = compileAnnotated('for (i in 0..9) {\n  switch (i % 3) {\n    case 0 { continue; }\n    case 2 where i > 5 { break; }\n  }\n  M i 0\n}');
+    expect(pathLines(out)).toEqual(['M 1 0', 'M 2 0', 'M 4 0', 'M 5 0', 'M 7 0']);
+    expect(out).toContain('iteration 8');
+    expect(out).not.toContain('iteration 9');
+  });
+
+  it('return inside a case returns from the enclosing fn', () => {
+    const out = compileAnnotated('fn f(k) {\n  switch (k) {\n    case 1 { return 11; }\n    default { return 22; }\n  }\n}\nM f(1) f(2)');
+    expect(pathLines(out)).toEqual(['M 11 22']);
+  });
+
+  it('non-numeric range bounds throw in annotated mode too', () => {
+    expect(() => compileAnnotated('let sz = 3;\nswitch (sz) {\n  case "a".."b" { M 1 1 }\n}')).toThrow(
+      /Range pattern bounds must be numeric/,
+    );
+  });
+
+  it('matches the main evaluator output for a switch inside a loop', () => {
+    const src = 'let cols = 4;\nfor (i in 0..5) {\n  switch (i) {\n    case 0 { M 0 0 }\n    case cols - 1 { M 9 9 }\n    case 1..<3 { L i i }\n    default { L 100 i }\n  }\n}';
+    const plain = compile(src);
+    const annotated = compileAnnotated(src);
+    expect(pathLines(annotated).join(' ')).toBe(plain.layers[0].data);
+    expect(plain.layers[0].data).toBe('M 0 0 L 1 1 L 2 2 M 9 9 L 100 4 L 100 5');
+  });
+
+  it('regression: a let declared inside an if body is visible to path commands in that body', () => {
+    const out = compileAnnotated('let x = 1;\nif (x > 0) {\n  let size = 5;\n  M size 0\n}');
+    expect(pathLines(out)).toEqual(['M 5 0']);
+  });
+
+  it('regression: assignment to an outer let is supported in annotated mode', () => {
+    const out = compileAnnotated('let len = 0;\nlen = 70;\nM len 0');
+    expect(pathLines(out)).toEqual(['M 70 0']);
+  });
+
+  it('assignment to an outer let from inside a case body', () => {
+    const out = compileAnnotated('let len = 0;\nlet k = 1;\nswitch (k) {\n  case 1 { len = 70; }\n}\nM len 0');
+    expect(pathLines(out)).toEqual(['M 70 0']);
+  });
+});
+
 describe('rotate() and label carriage parity', () => {
   it('rotate() produces the same geometry as the main evaluator', () => {
     const main = compile('let p = @{ h 50 v 50 };\nlet r = p.rotate(0.5pi, Point(25, 25));\nr.drawTo(10, 10);').layers[0].data;

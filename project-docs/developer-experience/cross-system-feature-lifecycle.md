@@ -100,22 +100,32 @@ See also [`playground-language-parity.md`](./playground-language-parity.md) for 
 
 ### Adding a New Keyword
 
+The keyword lists below are hand-maintained and used to drift silently. `tests/keyword-registry.test.ts` now reads every `kw<"…">` term out of `pathogen.grammar` and fails if any list is missing one (each list has a small, commented exception set), and it also fails if the generated parser does not reserve the word — so an edited grammar that was not regenerated is caught too. Run it early.
+
 1. `docs/syntax.md` — Document the keyword's usage and semantics (docs first)
-2. `src/parser/pathogen.grammar` — Add keyword rule to Lezer grammar
-3. Regenerate parser: the Lezer generator converts grammar → `pathogen.generated.ts`
-4. `src/parser/ast.ts` — Add AST node type if new statement kind
-5. `src/parser/ast-builder.ts` — Handle new CST node in converter
-6. `src/evaluator/index.ts` — Implement evaluation logic
-7. `tests/parser.test.ts` + `tests/evaluator.test.ts` — Add tests
-8. `src/language-services/completion-data.ts` — Add to `KEYWORD_COMPLETIONS`
-9. `src/language-services/hover.ts` — Add to `KEYWORD_HOVER` map
-10. `src/language-services/formatter.ts` — Add formatting rules if it introduces blocks
-11. `src/language-services/scope-analysis.ts` — If it introduces scope (like `for`, `fn`)
-12. `src/parser/highlight.ts` — Add to Lezer highlight tags (CodeMirror highlighting)
-13. `packages/vscode-pathogen/syntaxes/pathogen.tmLanguage.json` — Add to TextMate keyword pattern
-14. `packages/vscode-pathogen/snippets/pathogen.code-snippets` — Add snippet if templatable
-15. `npm run build` to rebuild dist/
-16. **Playground:** keyword completions flow automatically through the shared `getCompletions` call in `playground/utils/cm-language-services.ts`. No playground-side wiring required.
+2. `src/parser/pathogen.grammar` — Add the `kw<"…">` uses and rules
+3. Regenerate the parser: `npx lezer-generator src/parser/pathogen.grammar --typeScript -o src/parser/pathogen.generated.ts` (no npm script; also rewrites `pathogen.generated.terms.ts`). Confirm the `specialized:` line still carries `keyof typeof spec_Identifier`. Read the generator's conflict report before writing any TypeScript.
+4. `src/parser/path-args-tokenizer.ts` — Add to `KEYWORDS` if the keyword can start a statement. This is load-bearing: the path-args tokenizer keeps consuming identifiers across newlines, so `M x y` followed by an unknown keyword swallows it as an argument.
+5. `src/parser/ast.ts` — Add the AST node type and register it in `Node`, `Statement`, and (if it can appear in text bodies) `TextBodyItem`
+6. `src/parser/ast-builder.ts` — Handle the CST node in `buildStatement` (an unhandled node is silently dropped) and, for text bodies, in `buildTextBodyItem`
+7. `src/evaluator/index.ts` — `evaluateStatementToAccum` plus the two text walkers (`evaluateTextBlockBody` for `&{ }`, `evaluateTextBody` for `text(){ }`)
+8. `src/evaluator/annotated.ts` — BOTH dispatchers (`evaluateStatementPlain`, `evaluateStatementAnnotated`) plus its two text walkers; honor `pendingFlow`
+9. `tests/parser.test.ts` + `tests/evaluator.test.ts` + `tests/annotated.test.ts` (parity) — Add tests
+10. `src/parser/highlight.ts` — Add to `KEYWORD_NODE_NAMES` and the structural `t.controlKeyword` line (CodeMirror highlighting)
+11. `src/highlight.ts` — Add to `NODE_CLASS` (docs/blog fences, export legend, PDF)
+12. `src/language-services/completion-data-static.ts` — Add to `KEYWORD_COMPLETIONS` (hand-written; `completion-data.generated.ts` is stdlib only)
+13. `src/language-services/hover.ts` — Add to `KEYWORD_HOVER`
+14. `src/language-services/rename.ts` `NON_RENAMEABLE` and `src/language-services/code-actions.ts` `RESERVED_IDENTIFIERS`
+15. `src/language-services/diagnostics.ts` — Contextual `describeError` messages for the new node names
+16. `src/language-services/formatter.ts` — A printer case is mandatory: `formatStatement`'s default branch prints nothing, which deletes the statement on format
+17. `src/language-services/scope-analysis.ts` and `inlay-hints.ts` — Walk the new node's expressions and bodies (an unwalked body silently loses hints, references, and rename inside it)
+18. `src/language-services/symbols.ts` — Only if the construct should appear in the outline (conditionals deliberately don't)
+19. `src/evaluator/code-snippet.ts` `KEYWORDS` — Thumbnail/social-card highlighter
+20. `packages/vscode-pathogen/syntaxes/pathogen.tmLanguage.json` — Add to the TextMate keyword pattern
+21. `packages/vscode-pathogen/snippets/pathogen.code-snippets` and `playground/utils/codemirror-setup.ts` — Add snippets if templatable
+22. `CHANGELOG.md` — Include a compatibility note: every `kw<>` keyword is a reserved word and can no longer be a variable name
+23. `npm run build` to rebuild dist/
+24. **Playground:** keyword completions flow automatically through the shared `getCompletions` call in `playground/utils/cm-language-services.ts`. No playground-side wiring required.
 
 ### Adding a New Stdlib Function
 

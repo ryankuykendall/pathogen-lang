@@ -340,7 +340,7 @@ describe('references inside style-value interpolations', () => {
   it('member-head references land on the correct line (adjustLocs shared-loc regression)', () => {
     // A shared loc object between MemberExpression and its head used to be
     // line-shifted twice, doubling the line for refs inside interps.
-    const source = 'let p = Point(1, 2);\n\n\n\nlet s = ${ stroke-width: ${p.x}; };';
+    const source = 'let p = { x: 1, y: 2 };\n\n\n\nlet s = ${ stroke-width: ${p.x}; };';
     const info = analyzeScopes(new StringTextDocument(source));
     const pRefs = info.references.filter((r) => r.name === 'p');
     expect(pRefs.length).toBeGreaterThan(0);
@@ -349,5 +349,86 @@ describe('references inside style-value interpolations', () => {
     }
     const interpRef = pRefs.find((r) => r.range.start.line === 4);
     expect(interpRef, 'the interp reference should sit on line 4').toBeDefined();
+  });
+});
+
+describe('analyzeScopes switch statements', () => {
+  const src = [
+    'let p = { x: 1, y: 2 };',
+    'let kind = 1;',
+    'switch (p) {',
+    '  case { x, y } where x > y {',
+    '    M x y',
+    '  }',
+    '  case [first, ...others] {',
+    '    M first 0',
+    '  }',
+    '  default {',
+    '    M kind 0',
+    '  }',
+    '}',
+  ].join('\n');
+
+  it('declares destructured names in the case scope; guard and body references resolve to them', () => {
+    const info = analyze(src);
+    expect(unresolvedRefs(info)).toEqual([]);
+    expect(declNames(info)).toEqual(['p', 'kind', 'x', 'y', 'first', 'others']);
+    const xDecl = info.declarations.find((d) => d.name === 'x')!;
+    const xRefs = info.references.filter((r) => r.name === 'x');
+    expect(xRefs).toHaveLength(2); // guard + body
+    expect(xRefs.every((r) => r.declaration === xDecl)).toBe(true);
+    expect(xDecl.kind).toBe('variable');
+  });
+
+  it("a sibling case cannot see another case's bindings", () => {
+    const info = analyze('let p = { x: 1, y: 2 };\nswitch (p) {\n  case { x, y } {\n    M x y\n  }\n  case [first] {\n    M x 0\n  }\n}');
+    expect(unresolvedRefs(info)).toEqual(['x']);
+  });
+
+  it('the default body cannot see case bindings', () => {
+    const info = analyze('let p = { x: 1, y: 2 };\nswitch (p) {\n  case { x, y } {\n    M x y\n  }\n  default {\n    M y 0\n  }\n}');
+    expect(unresolvedRefs(info)).toEqual(['y']);
+  });
+
+  it('resolves the discriminant and value/range pattern expressions in the enclosing scope', () => {
+    const info = analyze('let lo = 0;\nlet hi = 10;\nlet tag = 5;\nlet kind = 5;\nswitch (kind) {\n  case tag {\n    M 0 0\n  }\n  case lo..<hi {\n    M 1 1\n  }\n  case hi.. {\n    M 2 2\n  }\n}');
+    expect(unresolvedRefs(info)).toEqual([]);
+    const kindRef = info.references.find((r) => r.name === 'kind')!;
+    expect(kindRef.declaration!.name).toBe('kind');
+    expect(kindRef.declaration!.kind).toBe('variable');
+    expect(refNames(info).filter((n) => n === 'hi')).toHaveLength(2);
+    expect(refNames(info).filter((n) => n === 'tag')).toHaveLength(1);
+  });
+
+  it('records let-style type context for destructured case bindings', () => {
+    const info = analyze('let p = { x: 1, y: 2 };\nswitch (p) {\n  case { x, y: py } {\n    M x py\n  }\n  case [first, second] {\n    M first second\n  }\n}');
+    const py = info.declarations.find((d) => d.name === 'py')!;
+    expect(py.typeContext).toEqual({
+      kind: 'objectProp',
+      expr: expect.objectContaining({ type: 'Identifier', name: 'p' }),
+      key: 'y',
+    });
+    const second = info.declarations.find((d) => d.name === 'second')!;
+    expect(second.typeContext).toEqual({
+      kind: 'arrayElement',
+      expr: expect.objectContaining({ type: 'Identifier', name: 'p' }),
+      index: 1,
+    });
+  });
+
+  it('drops type context when comma alternatives bind the same names from different positions', () => {
+    // Alternatives must bind the same NAMES, not the same shape. Only the
+    // alternative that matches at runtime decides where `px` comes from, so
+    // the declaration must not carry the last alternative's (wrong) index —
+    // review finding: hover described px/py swapped relative to execution.
+    const info = analyze('let p = [10, 20];\nswitch (p) {\n  case [px, py], [py, px] {\n    M px py\n  }\n  case {radius: r}, {size: r} {\n    M r r\n  }\n}');
+    expect(unresolvedRefs(info)).toEqual([]);
+    const pxRef = info.references.find((r) => r.name === 'px')!;
+    expect(pxRef.declaration!.typeContext).toBeUndefined();
+    const rRef = info.references.find((r) => r.name === 'r')!;
+    expect(rRef.declaration!.typeContext).toBeUndefined();
+    // Every alternative's binding site is still a declaration (rename covers all of them).
+    expect(info.declarations.filter((d) => d.name === 'px')).toHaveLength(2);
+    expect(info.declarations.filter((d) => d.name === 'r')).toHaveLength(2);
   });
 });

@@ -1664,3 +1664,36 @@ describe('expression completions inside style-value interpolations', () => {
     expect(snip!.insertText).not.toContain('\n');
   });
 });
+
+describe('getCompletions switch keywords', () => {
+  it('offers switch, case, default, and where as snippets with exact bodies', () => {
+    const items = completeAtEnd('');
+    const byLabel = (label: string) => items.find((i) => i.label === label)!;
+
+    const sw = byLabel('switch');
+    expect(sw.insertText).toBe('switch (${1:value}) {\n\tcase ${2:pattern} {\n\t\t$0\n\t}\n\tdefault {\n\t\t\n\t}\n}');
+    expect(sw.detail).toBe('Switch statement — match a value against case patterns');
+    expect(sw.isSnippet).toBe(true);
+
+    const cs = byLabel('case');
+    expect(cs.insertText).toBe('case ${1:pattern} {\n\t$0\n}');
+    expect(cs.detail).toBe('Case clause — value, range (0..<10), or destructuring pattern');
+    expect(cs.isSnippet).toBe(true);
+
+    const df = byLabel('default');
+    expect(df.insertText).toBe('default {\n\t$0\n}');
+    expect(df.detail).toBe('Default clause of a switch (must be last)');
+    expect(df.isSnippet).toBe(true);
+
+    const wh = byLabel('where');
+    expect(wh.insertText).toBe('where ${1:condition} ');
+    expect(wh.detail).toBe('Guard condition on a case clause');
+    expect(wh.isSnippet).toBe(true);
+  });
+
+  it('filters switch by prefix', () => {
+    const names = labels(completeAtEnd('sw'));
+    expect(names).toContain('switch');
+    expect(names).not.toContain('case');
+  });
+});

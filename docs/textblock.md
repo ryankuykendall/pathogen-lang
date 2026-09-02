@@ -42,7 +42,7 @@ let t = &{
 
 Inside a text block you can use:
 - **`text()` statements** — the core text elements
-- **`let`, `for`, `if`** — control flow for dynamic content
+- **`let`, `for`, `if`, `switch`** — control flow for dynamic content
 - **User-defined functions** — called as expressions
 
 Not allowed inside text blocks:

@@ -1,9 +1,15 @@
 import { ExternalTokenizer } from '@lezer/lr';
 import { PathArgs } from './pathogen.generated.terms';
 
-const KEYWORDS = new Set([
+// Statement-starting keywords that end a run of path arguments. Every
+// grammar keyword that can begin a statement must be here — otherwise
+// `M x y` followed by that keyword on the next line swallows it as an
+// argument. tests/keyword-registry.test.ts checks this list against the
+// grammar's kw<> terms.
+export const KEYWORDS = new Set([
   'let', 'for', 'if', 'else', 'fn', 'return', 'define', 'default',
   'layer', 'apply', 'text', 'tspan', 'enum', 'log',
+  'break', 'continue', 'switch', 'case', 'where',
 ]);
 
 // Functions that should start a new statement, not be consumed as path args.

@@ -1,0 +1,25 @@
+define ViewBox(0, 0, 200, 200);
+
+// Destructuring patterns with guards: Points above the diagonal get a
+// hollow marker, Points on or below it a box; arrays dispatch on length.
+let targets = [Point(150, 40), Point(40, 150), Point(120, 120), [30, 30, 60], [170, 170]];
+
+for (item in targets) {
+  switch (item) {
+    case {x, y} where x > y {
+      circle(x, y, 9);
+      circle(x, y, 4);
+    }
+    case {x, y} {
+      rect(x - 7, y - 7, 14, 14);
+    }
+    case [cx, cy, size] {
+      star(cx, cy, size / 2, size / 5, 5);
+    }
+    case [cx, cy] {
+      circle(cx, cy, 6);
+    }
+  }
+}
+
+M 0 0 L 200 200

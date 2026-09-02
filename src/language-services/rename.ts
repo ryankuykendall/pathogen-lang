@@ -14,9 +14,10 @@ export interface PrepareRenameResult {
 }
 
 // Keywords and builtins that cannot be renamed
-const NON_RENAMEABLE = new Set([
+export const NON_RENAMEABLE = new Set([
   'let', 'for', 'in', 'if', 'else', 'fn', 'return', 'define', 'default',
   'layer', 'apply', 'text', 'tspan', 'null', 'true', 'false', 'enum',
+  'break', 'continue', 'switch', 'case', 'where', 'with', 'as', 'ViewBox',
   'calc', 'log', 'ctx', 'Object', 'Color', 'PathBlock',
   'PathLayer', 'TextLayer', 'GroupLayer',
   // stdlib

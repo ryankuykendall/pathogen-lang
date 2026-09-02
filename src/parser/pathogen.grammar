@@ -33,6 +33,7 @@ statement {
   ForLoop |
   ForEachLoop |
   IfStatement |
+  SwitchStatement |
   FunctionDefinition |
   ReturnStatement |
   BreakStatement |
@@ -68,6 +69,43 @@ IfStatement {
 ElseClause {
   kw<"else"> (IfStatement | Block)
 }
+
+// ─── Switch ────────────────────────────────────────────────────
+// Braced case bodies, no fallthrough. A case pattern is a range or any
+// expression; `[a, b]` / `{x, y}` parse as ArrayLiteral / ObjectLiteral
+// (cover grammar) and the AST builder reinterprets them as destructuring
+// patterns — a dedicated destructure alternative here would be a
+// reduce/reduce conflict against the literal forms.
+SwitchStatement {
+  kw<"switch"> "(" expression ")" "{" (CaseClause | DefaultClause)* "}"
+}
+
+CaseClause {
+  kw<"case"> CasePattern ("," CasePattern)* WhereGuard? Block
+}
+
+DefaultClause {
+  kw<"default"> Block
+}
+
+WhereGuard {
+  kw<"where"> expression
+}
+
+CasePattern {
+  RangePattern | expression
+}
+
+// Open-ended forms: `100..`, `..5`, `..<0`. After `100..` a `{` is either
+// an ObjectLiteral/lambda upper bound or the case body; ~rangeEnd lets
+// the parser fork and the bound reading dies at the next token.
+RangePattern {
+  expression rangeOp ~rangeEnd expression |
+  expression rangeOp ~rangeEnd |
+  rangeOp expression
+}
+
+rangeOp { RangeOp | HalfOpenRangeOp }
 
 FunctionDefinition {
   kw<"fn"> VariableName "(" commaSep<VariableName> ")" Block
@@ -121,6 +159,7 @@ textBodyItem {
   TextForLoop |
   TextForEachLoop |
   TextIfStatement |
+  TextSwitchStatement |
   LetDeclaration |
   BreakStatement |
   ContinueStatement
@@ -141,6 +180,18 @@ TextForEachLoop {
 
 TextIfStatement {
   kw<"if"> "(" expression ")" "{" textBodyItem* "}" (kw<"else"> (TextIfStatement | "{" textBodyItem* "}"))?
+}
+
+TextSwitchStatement {
+  kw<"switch"> "(" expression ")" "{" (TextCaseClause | TextDefaultClause)* "}"
+}
+
+TextCaseClause {
+  kw<"case"> CasePattern ("," CasePattern)* WhereGuard? "{" textBodyItem* "}"
+}
+
+TextDefaultClause {
+  kw<"default"> "{" textBodyItem* "}"
 }
 
 FontDirective {
@@ -246,12 +297,15 @@ UnaryExpression {
   !prefix ("-" | "!") expression
 }
 
+//-- ~caseBody: in `case f(x) {` / `case obj.m {` / `where g(x) {` the `{`
+//-- is either a TrailingBlock (needs `|` next) or the case body. The
+//-- marker lets the parser fork; the lambda fork dies unless `|` follows.
 postfixExpression {
   primaryExpression (
-    !call ArgList TrailingBlock? |
-    !member "." Identifier !call ArgList TrailingBlock? |
-    !member "." Identifier TrailingBlock |
-    !member "." Identifier |
+    !call ArgList ~caseBody TrailingBlock? |
+    !member "." Identifier !call ArgList ~caseBody TrailingBlock? |
+    !member "." Identifier ~caseBody TrailingBlock |
+    !member "." Identifier ~caseBody |
     !member "[" expression "]"
   )*
 }
@@ -434,6 +488,7 @@ VariableName { Identifier }
   LayerType { "PathLayer" | "TextLayer" | "GroupLayer" }
 
   RangeOp { ".." }
+  HalfOpenRangeOp { "..<" }
 
   styleBlockOpen { "$" "{" }
   pathBlockOpen { "@" "{" }
@@ -486,7 +541,7 @@ VariableName { Identifier }
     (![}\`$] | "$" ![{}\`$] | styleContentString | styleContentTemplate)+
   }
 
-  @precedence { "...", RangeOp, "." }
+  @precedence { "...", HalfOpenRangeOp, RangeOp, "." }
   @precedence { "||" }
   @precedence { "&&" }
   @precedence { "==", "!=" }

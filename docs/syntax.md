@@ -1407,7 +1407,7 @@ for (g in glyphs) {
 **Placement rules:**
 
 - In nested loops, `continue`/`break` control the **innermost** enclosing loop.
-- They may appear directly in a loop body or inside `if`/`else` branches nested in it.
+- They may appear directly in a loop body or inside `if`/`else` branches and `switch` cases nested in it.
 - Everything else is a boundary: `fn` bodies, lambdas, callback blocks (`Grid.fill`, `.map`, …), `apply { }` blocks, path blocks (`@{ }`), and text blocks (outside their own loops). Using `continue` or `break` there — or outside any loop — is a compile error: `'continue' is only valid inside a for loop`.
 - `break` and `continue` are reserved words and cannot be used as variable names.
 
@@ -1429,7 +1429,233 @@ if (size > 75) {
 }
 ```
 
-You can chain as many `else if` blocks as needed. Comparison results are numeric: `1` for true, `0` for false.
+You can chain as many `else if` blocks as needed. Comparison results are numeric: `1` for true, `0` for false. When every branch compares the same value, a [switch](#syntax-switch-statements) says it once.
+
+## Switch Statements
+
+Match one value against a list of patterns with `switch`:
+
+```
+let kind = "square";
+
+// kind is "square", so this draws the rect
+switch (kind) {
+  case "circle" {
+    circle(50, 50, 20);
+  }
+  case "square", "rect" {   // one body, several patterns
+    rect(30, 30, 40, 40);
+  }
+  default {
+    star(50, 50, 20, 8, 5);
+  }
+}
+```
+
+The value in parentheses is evaluated once. Cases are tested in order, the first one that matches runs its body, and the switch ends. There is no fallthrough, so no `break` is needed, and a `break;` written out of C habit is not harmless: inside a loop it exits that loop, and outside one it fails to compile. If nothing matches and there is no `default`, the switch does nothing. `switch` is a statement, not a value: it cannot appear on the right of `let`. `switch`, `case`, and `where` are reserved words and cannot be used as variable names.
+
+### Value Patterns
+
+A case pattern can be any expression — a number, string, boolean, `null`, an [enum](#syntax-enums) member, a variable, or arithmetic — except array and object literals, which are read as [destructuring patterns](#syntax-destructuring-patterns) instead. The value matches when it equals the pattern under the same rules as `==`:
+
+```
+enum Shape { Circle, Square, Star }
+
+let shape = Shape.Square;
+let cols = 4;
+let column = 3;
+
+switch (shape) {
+  case Shape.Circle {
+    circle(50, 50, 20);
+  }
+  case Shape.Square {
+    rect(30, 30, 40, 40);
+  }
+}
+
+switch (column) {
+  case 0 {
+    M 0 0 L 0 100
+  }
+  case cols - 1 {
+    M 100 0 L 100 100
+  }
+}
+```
+
+A bare name in a pattern is always the variable's current value, never a new binding. Values that `==` cannot compare (a Point against a number, two colors, arrays) simply do not match, so they fall through to later cases or `default` without an error.
+
+List several patterns separated by commas to share one body:
+
+```
+let kind = "dot";
+
+switch (kind) {
+  case "circle", "dot", "ring" {
+    circle(50, 50, 20);
+  }
+  case "square", "rect" {
+    rect(30, 30, 40, 40);
+  }
+}
+```
+
+### Range Patterns
+
+`a..b` matches every number from `a` through `b` inclusive, the same spelling `for` loops use. `a..<b` excludes the upper bound, so adjacent bands never both claim a boundary. The half-open form is a case pattern only; `for` ranges are always inclusive:
+
+```
+let t = 0.4;
+
+switch (t) {
+  case 0..<0.25 {
+    circle(25, 50, 5);
+  }
+  case 0.25..<0.75 {
+    circle(50, 50, 5);
+  }
+  default {
+    circle(75, 50, 5);
+  }
+}
+```
+
+Leave off a bound to make a range open-ended: `..<0` matches everything below zero and `100..` matches everything from 100 up. Ranges work over [angles](#syntax-angle-units) too, using the same comparison as `<` and `<=`:
+
+```
+let heading = 135deg;
+
+switch (heading) {
+  case 0deg..<90deg {
+    M 50 50 L 100 0
+  }
+  case 90deg..<180deg {
+    M 50 50 L 0 0
+  }
+  default {
+    M 50 50 L 50 100
+  }
+}
+```
+
+A range never matches a string, a Point, or any other value without a numeric reading; booleans count as numeric (`false` is 0, `true` is 1). The bounds themselves must be numeric: `case "a".."b"` is a runtime error, `Range pattern bounds must be numeric`.
+
+### Destructuring Patterns
+
+An object pattern matches any object or struct value that has every named property, and binds those properties for the body. An array pattern matches an array of exactly that length, or at least that length when it ends in `...rest`:
+
+```
+let target = Point(30, 70);
+
+switch (target) {
+  case {x, y} {
+    M 0 0 L x y
+  }
+}
+
+let stops = [10, 40, 90];
+
+switch (stops) {
+  case [] {
+    circle(50, 50, 4);
+  }
+  case [only] {
+    circle(only, 50, 4);
+  }
+  case [first, ...others] {
+    M first 50 L 100 50
+  }
+}
+```
+
+Use `key: name` to bind under a different name (`case {x: px, y: py}`), and `...rest` to collect the remaining properties. Bindings exist only inside that case body. Everything [`let` destructuring](#syntax-destructuring) accepts (`Point`, `Color`, `Grid`, plain objects, arrays) works here; when the value has a different shape, the case simply does not match.
+
+These patterns bind names; they do not match literal contents. `case [1, 2]` is a parse error. To match on the elements, bind them and test in a guard: `case [first, second] where first == 1 && second == 2`.
+
+### Guards
+
+Add `where` and a condition after the pattern to narrow a match. The guard runs after the pattern's bindings are made, so it can use them:
+
+```
+let target = Point(30, 70);
+
+switch (target) {
+  case {x, y} where x > y {
+    M 0 0 L x y
+  }
+  case {x, y} {
+    M 0 100 L x y
+  }
+}
+```
+
+A false guard skips the whole case and matching continues with the next case, which is how the second `{x, y}` case above catches everything the first one turned down; a pattern that matches under a failing guard is not a match at all. The guard belongs to the case rather than to one pattern: with several comma-separated patterns it runs once, against the bindings from the first pattern that matched, and a false result does not send the switch back to try the rest. Every pattern in such a case must bind the same names, or the program fails to parse: `Every pattern in a case must bind the same names`.
+
+### Default
+
+`default` runs when no case matched. It must be the last clause and may appear at most once: a case after it is a parse error (`'default' must be the last clause in a switch`), and so is a second one (`A switch may have only one 'default' clause`). A `switch` without `default` is fine; it just does nothing when nothing matches.
+
+### Scope and Loop Control
+
+Each case body is a block with its own scope, like an `if` branch: a `let` inside a case stays inside it. `continue` and `break` inside a case act on the enclosing loop, exactly as they do inside `if`, and are a compile error when there is no loop:
+
+```
+for (i in 0..9) {
+  switch (i % 3) {
+    case 0 {
+      continue;
+    }
+    case 2 where i > 5 {
+      break;
+    }
+  }
+  circle(calc(i * 10), 50, 3);   // circles at x = 10, 20, 40, 50, 70
+}
+```
+
+A `break;` inside a case never ends the case: inside a loop it exits that loop, and with no loop around the switch it is a compile error, `'break' is only valid inside a for loop`.
+
+`return` inside a case returns from the enclosing function. `switch` works everywhere `if` does: at the top level, in functions, lambdas and callback bodies, loops, `apply` blocks, path blocks, and text blocks.
+
+### Switch Inside Text Blocks
+
+Inside a `text(x, y) { }` body, case bodies hold text items — template literals and `tspan` — instead of path commands:
+
+```
+let level = 4;
+
+text(10, 30) {
+  switch (level) {
+    case 1, 2 {
+      `Low`
+    }
+    case 3..<7 {
+      tspan()`Medium`
+    }
+    default {
+      `High`
+    }
+  }
+}
+```
+
+A `switch` works inside a `&{ }` text block too, but a `&{ }` body holds ordinary statements, so its case bodies hold `text(x, y)` statements rather than bare template literals:
+
+```
+let kind = "b";
+
+let block = &{
+  switch (kind) {
+    case "a" {
+      text(0, 16)`A`
+    }
+    default {
+      text(0, 16)`Other`
+    }
+  }
+};
+```
 
 ## Functions
 

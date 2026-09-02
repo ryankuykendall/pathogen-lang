@@ -166,3 +166,35 @@ describe('getInlayHints', () => {
     });
   });
 });
+
+describe('getInlayHints switch statements', () => {
+  it('shows parameter hints for calls in patterns, guards, case bodies, and the default body', () => {
+    const src = [
+      'let kind = 1;',
+      'switch (kind) {',
+      '  case lerp(0, 2, 0.5) where lerp(0, 1, 0.5) > 0 {',
+      '    circle(10, 20, 5);',
+      '  }',
+      '  default {',
+      '    let z = lerp(0, 1, 0.25);',
+      '  }',
+      '}',
+    ].join('\n');
+    const h = paramHints(src);
+    expect(h.map((x) => `${x.position.line}:${x.label}`)).toEqual([
+      '2:a:', '2:b:', '2:t:', // value pattern
+      '2:a:', '2:b:', '2:t:', // where guard
+      '3:cx:', '3:cy:', '3:r:', // case body
+      '6:a:', '6:b:', '6:t:', // default body
+    ]);
+  });
+
+  it('shows parameter hints for calls in range-pattern bounds', () => {
+    const src = 'let kind = 1;\nswitch (kind) {\n  case lerp(0, 2, 0.5)..<lerp(0, 4, 0.5) {\n    M 0 0\n  }\n}';
+    const h = paramHints(src);
+    expect(h.map((x) => `${x.position.line}:${x.position.character}:${x.label}`)).toEqual([
+      '2:12:a:', '2:15:b:', '2:18:t:',
+      '2:30:a:', '2:33:b:', '2:36:t:',
+    ]);
+  });
+});

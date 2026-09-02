@@ -431,6 +431,443 @@ describe('Parser', () => {
     });
   });
 
+  describe('switch statements', () => {
+    it('parses a value case, comma alternatives, and a default', () => {
+      const ast = parse('switch (kind) { case "circle" { M 1 1 } case "square", "rect" { M 2 2 } default { M 3 3 } }');
+      expect(ast.body).toHaveLength(1);
+      expect(ast.body[0]).toMatchObject({
+        type: 'SwitchStatement',
+        discriminant: { type: 'Identifier', name: 'kind' },
+        cases: [
+          {
+            type: 'SwitchCase',
+            patterns: [{ type: 'ValuePattern', value: { type: 'StringLiteral', value: 'circle' } }],
+            guard: null,
+            body: [{ type: 'PathCommand', command: 'M', args: [{ value: 1 }, { value: 1 }] }],
+          },
+          {
+            type: 'SwitchCase',
+            patterns: [
+              { type: 'ValuePattern', value: { type: 'StringLiteral', value: 'square' } },
+              { type: 'ValuePattern', value: { type: 'StringLiteral', value: 'rect' } },
+            ],
+            guard: null,
+            body: [{ type: 'PathCommand', command: 'M', args: [{ value: 2 }, { value: 2 }] }],
+          },
+        ],
+        defaultCase: {
+          type: 'SwitchDefault',
+          body: [{ type: 'PathCommand', command: 'M', args: [{ value: 3 }, { value: 3 }] }],
+        },
+      });
+      const stmt = ast.body[0] as any;
+      expect(stmt.cases).toHaveLength(2);
+      expect(stmt.cases[1].patterns).toHaveLength(2);
+    });
+
+    it('parses an empty switch', () => {
+      const ast = parse('switch (x) { }');
+      expect(ast.body[0]).toMatchObject({
+        type: 'SwitchStatement',
+        discriminant: { type: 'Identifier', name: 'x' },
+        cases: [],
+        defaultCase: null,
+      });
+    });
+
+    it('parses a switch with no default as defaultCase: null', () => {
+      const ast = parse('switch (x) { case 1 { M 1 1 } }');
+      const stmt = ast.body[0] as any;
+      expect(stmt.cases).toHaveLength(1);
+      expect(stmt.defaultCase).toBeNull();
+    });
+
+    it('a bare name pattern is a ValuePattern holding the Identifier, not a binding', () => {
+      const ast = parse('switch (x) { case limit { M 1 1 } }');
+      expect((ast.body[0] as any).cases[0].patterns[0]).toMatchObject({
+        type: 'ValuePattern',
+        value: { type: 'Identifier', name: 'limit' },
+      });
+    });
+
+    it('parses member and arithmetic value patterns', () => {
+      const ast = parse('switch (s) { case Shape.Circle { M 1 1 } case cols - 1 { M 2 2 } }');
+      const stmt = ast.body[0] as any;
+      expect(stmt.cases[0].patterns[0]).toMatchObject({
+        type: 'ValuePattern',
+        value: { type: 'MemberExpression', object: { type: 'Identifier', name: 'Shape' }, property: 'Circle' },
+      });
+      expect(stmt.cases[1].patterns[0]).toMatchObject({
+        type: 'ValuePattern',
+        value: {
+          type: 'BinaryExpression',
+          operator: '-',
+          left: { type: 'Identifier', name: 'cols' },
+          right: { type: 'NumberLiteral', value: 1 },
+        },
+      });
+    });
+
+    it('parses inclusive and half-open range patterns', () => {
+      const ast = parse('switch (t) { case 0..10 { M 1 1 } case 0..<0.25 { M 2 2 } }');
+      const stmt = ast.body[0] as any;
+      expect(stmt.cases[0].patterns[0]).toMatchObject({
+        type: 'RangePattern',
+        start: { type: 'NumberLiteral', value: 0 },
+        end: { type: 'NumberLiteral', value: 10 },
+        inclusive: true,
+      });
+      expect(stmt.cases[1].patterns[0]).toMatchObject({
+        type: 'RangePattern',
+        start: { type: 'NumberLiteral', value: 0 },
+        end: { type: 'NumberLiteral', value: 0.25 },
+        inclusive: false,
+      });
+    });
+
+    it('parses open-ended range patterns', () => {
+      const ast = parse('switch (t) { case ..<0 { M 1 1 } case 100.. { M 2 2 } case ..5 { M 3 3 } }');
+      const stmt = ast.body[0] as any;
+      expect(stmt.cases[0].patterns[0]).toMatchObject({
+        type: 'RangePattern',
+        start: null,
+        end: { type: 'NumberLiteral', value: 0 },
+        inclusive: false,
+      });
+      expect(stmt.cases[1].patterns[0]).toMatchObject({
+        type: 'RangePattern',
+        start: { type: 'NumberLiteral', value: 100 },
+        end: null,
+        inclusive: true,
+      });
+      expect(stmt.cases[2].patterns[0]).toMatchObject({
+        type: 'RangePattern',
+        start: null,
+        end: { type: 'NumberLiteral', value: 5 },
+        inclusive: true,
+      });
+    });
+
+    it('parses range patterns over angle literals', () => {
+      const ast = parse('switch (h) { case 0deg..<90deg { M 1 1 } }');
+      const pattern = (ast.body[0] as any).cases[0].patterns[0];
+      expect(pattern).toMatchObject({
+        type: 'RangePattern',
+        start: { type: 'NumberLiteral', value: 0, unit: 'deg' },
+        end: { type: 'NumberLiteral', value: 90, unit: 'deg' },
+        inclusive: false,
+      });
+    });
+
+    it('parses a range pattern whose bounds are expressions', () => {
+      const ast = parse('switch (t) { case lo..calc(hi * 2) { M 1 1 } }');
+      expect((ast.body[0] as any).cases[0].patterns[0]).toMatchObject({
+        type: 'RangePattern',
+        start: { type: 'Identifier', name: 'lo' },
+        end: { type: 'CalcExpression' },
+        inclusive: true,
+      });
+    });
+
+    it('parses an object destructuring pattern with a where guard', () => {
+      const ast = parse('switch (p) { case {x, y} where x > y { M x y } }');
+      expect((ast.body[0] as any).cases[0]).toMatchObject({
+        type: 'SwitchCase',
+        patterns: [{ type: 'ObjectDestructuringPattern', properties: [{ key: 'x' }, { key: 'y' }] }],
+        guard: {
+          type: 'BinaryExpression',
+          operator: '>',
+          left: { type: 'Identifier', name: 'x' },
+          right: { type: 'Identifier', name: 'y' },
+        },
+        body: [{ type: 'PathCommand', command: 'M', args: [{ name: 'x' }, { name: 'y' }] }],
+      });
+      expect((ast.body[0] as any).cases[0].patterns[0].rest).toBeUndefined();
+    });
+
+    it('parses object patterns with aliases and a rest name', () => {
+      const ast = parse('switch (p) { case {x: px, ...rest} { M px 0 } }');
+      expect((ast.body[0] as any).cases[0].patterns[0]).toMatchObject({
+        type: 'ObjectDestructuringPattern',
+        properties: [{ key: 'x', alias: 'px' }],
+        rest: 'rest',
+      });
+    });
+
+    it('parses array destructuring patterns: fixed, rest, and empty', () => {
+      const ast = parse('switch (a) { case [] { M 0 0 } case [a1, b1] { M a1 b1 } case [first, ...others] { M first 0 } }');
+      const stmt = ast.body[0] as any;
+      expect(stmt.cases[0].patterns[0]).toMatchObject({ type: 'ArrayDestructuringPattern', elements: [] });
+      expect(stmt.cases[0].patterns[0].rest).toBeUndefined();
+      expect(stmt.cases[1].patterns[0]).toMatchObject({ type: 'ArrayDestructuringPattern', elements: ['a1', 'b1'] });
+      expect(stmt.cases[1].patterns[0].rest).toBeUndefined();
+      expect(stmt.cases[2].patterns[0]).toMatchObject({
+        type: 'ArrayDestructuringPattern',
+        elements: ['first'],
+        rest: 'others',
+      });
+    });
+
+    it('parses a where guard on comma alternatives as one guard for the clause', () => {
+      const ast = parse('switch (n) { case 1, 7 where n > 5 { M 1 1 } }');
+      expect((ast.body[0] as any).cases[0]).toMatchObject({
+        patterns: [
+          { type: 'ValuePattern', value: { value: 1 } },
+          { type: 'ValuePattern', value: { value: 7 } },
+        ],
+        guard: { type: 'BinaryExpression', operator: '>', left: { name: 'n' }, right: { value: 5 } },
+      });
+    });
+
+    it('parses a where guard containing a function call', () => {
+      const ast = parse('switch (n) { case {x, y} where inside(x, y) { M 1 1 } }');
+      expect((ast.body[0] as any).cases[0].guard).toMatchObject({
+        type: 'FunctionCall',
+        name: 'inside',
+        args: [{ name: 'x' }, { name: 'y' }],
+      });
+    });
+
+    it('parses a discriminant with a method call', () => {
+      const ast = parse('switch (pts.length()) { case 0 { M 0 0 } }');
+      expect((ast.body[0] as any).discriminant).toMatchObject({
+        type: 'MethodCallExpression',
+        object: { type: 'Identifier', name: 'pts' },
+        method: 'length',
+        args: [],
+      });
+    });
+
+    it('parses a discriminant that is a call with a member access', () => {
+      const ast = parse('switch (Point(1, 2).x) { case 1 { M 1 1 } }');
+      expect((ast.body[0] as any).discriminant).toMatchObject({
+        type: 'MemberExpression',
+        property: 'x',
+      });
+    });
+
+    it('parses a nested switch inside a case body', () => {
+      const ast = parse('switch (a) { case 1 { switch (b) { case 2 { M 12 12 } } } }');
+      expect((ast.body[0] as any).cases[0].body[0]).toMatchObject({
+        type: 'SwitchStatement',
+        discriminant: { type: 'Identifier', name: 'b' },
+        cases: [{ patterns: [{ type: 'ValuePattern', value: { value: 2 } }] }],
+        defaultCase: null,
+      });
+    });
+
+    it('parses a switch inside a for loop body', () => {
+      const ast = parse('for (i in 0..3) { switch (i) { case 0 { continue; } } M i 0 }');
+      const loop = ast.body[0] as any;
+      expect(loop.body[0]).toMatchObject({
+        type: 'SwitchStatement',
+        cases: [{ body: [{ type: 'ContinueStatement' }] }],
+      });
+      expect(loop.body[1]).toMatchObject({ type: 'PathCommand', command: 'M' });
+    });
+
+    it('parses statements after the switch as siblings, not part of the switch', () => {
+      const ast = parse('switch (x) { case 1 { M 1 1 } } L 9 9');
+      expect(ast.body).toHaveLength(2);
+      expect(ast.body[1]).toMatchObject({ type: 'PathCommand', command: 'L' });
+    });
+
+    describe('text form', () => {
+      it('parses a switch in a text body with template, tspan, and default', () => {
+        const ast = parse('text(10, 30) { switch (level) { case 1, 2 { `Low` } case 3..<7 { tspan()`Medium` } default { `High` } } }');
+        const text = ast.body[0] as any;
+        expect(text.type).toBe('TextStatement');
+        expect(text.body).toHaveLength(1);
+        expect(text.body[0]).toMatchObject({
+          type: 'SwitchStatement',
+          discriminant: { type: 'Identifier', name: 'level' },
+          cases: [
+            {
+              patterns: [
+                { type: 'ValuePattern', value: { value: 1 } },
+                { type: 'ValuePattern', value: { value: 2 } },
+              ],
+              body: [{ type: 'TemplateLiteral', parts: ['Low'] }],
+            },
+            {
+              patterns: [{ type: 'RangePattern', start: { value: 3 }, end: { value: 7 }, inclusive: false }],
+              body: [{ type: 'TspanStatement', content: { type: 'TemplateLiteral', parts: ['Medium'] } }],
+            },
+          ],
+          defaultCase: { body: [{ type: 'TemplateLiteral', parts: ['High'] }] },
+        });
+        expect(text.body[0].cases).toHaveLength(2);
+      });
+
+      it('parses a text switch nested in a text for loop', () => {
+        const ast = parse('text(10, 30) { for (i in 0..2) { switch (i) { case 0 { `zero` } default { `other` } } } }');
+        const text = ast.body[0] as any;
+        expect(text.body[0]).toMatchObject({
+          type: 'ForLoop',
+          variable: 'i',
+          body: [
+            {
+              type: 'SwitchStatement',
+              cases: [{ body: [{ type: 'TemplateLiteral', parts: ['zero'] }] }],
+              defaultCase: { body: [{ type: 'TemplateLiteral', parts: ['other'] }] },
+            },
+          ],
+        });
+      });
+
+      it('parses a text switch nested in a text if', () => {
+        const ast = parse('text(10, 30) { if (ok) { switch (n) { case 1 { `one` } } } }');
+        const text = ast.body[0] as any;
+        expect(text.body[0]).toMatchObject({
+          type: 'IfStatement',
+          consequent: [
+            {
+              type: 'SwitchStatement',
+              cases: [{ patterns: [{ type: 'ValuePattern', value: { value: 1 } }], body: [{ type: 'TemplateLiteral', parts: ['one'] }] }],
+            },
+          ],
+        });
+      });
+
+      it('parses a text switch with a where guard and destructuring pattern', () => {
+        const ast = parse('text(0, 0) { switch (p) { case {x, y} where x > y { `wide` } } }');
+        expect((ast.body[0] as any).body[0].cases[0]).toMatchObject({
+          patterns: [{ type: 'ObjectDestructuringPattern', properties: [{ key: 'x' }, { key: 'y' }] }],
+          guard: { type: 'BinaryExpression', operator: '>' },
+          body: [{ type: 'TemplateLiteral', parts: ['wide'] }],
+        });
+      });
+
+      it('keeps the body of an if nested in a text for (single-dispatcher regression)', () => {
+        const ast = parse('text(10, 30) { for (w in words) { if (w == "a") { `x` } } }');
+        const text = ast.body[0] as any;
+        expect(text.body[0]).toMatchObject({
+          type: 'ForEachLoop',
+          body: [
+            {
+              type: 'IfStatement',
+              condition: { type: 'BinaryExpression', operator: '==' },
+              consequent: [{ type: 'TemplateLiteral', parts: ['x'] }],
+              alternate: null,
+            },
+          ],
+        });
+        expect(text.body[0].body[0].consequent).toHaveLength(1);
+      });
+
+      it('keeps the body of a for nested in a text if (single-dispatcher regression)', () => {
+        const ast = parse('text(10, 30) { if (ok) { for (i in 0..2) { `y` } } }');
+        const text = ast.body[0] as any;
+        expect(text.body[0]).toMatchObject({
+          type: 'IfStatement',
+          consequent: [
+            {
+              type: 'ForLoop',
+              variable: 'i',
+              start: { value: 0 },
+              end: { value: 2 },
+              body: [{ type: 'TemplateLiteral', parts: ['y'] }],
+            },
+          ],
+        });
+        expect(text.body[0].consequent[0].body).toHaveLength(1);
+      });
+    });
+
+    describe('parse errors', () => {
+      it('rejects a case after default', () => {
+        expect(() => parse('switch (x) {\n  default { M 0 0 }\n  case 1 { M 1 1 }\n}')).toThrow(
+          "Parse error at line 3, column 3: 'default' must be the last clause in a switch",
+        );
+      });
+
+      it('rejects two default clauses', () => {
+        expect(() => parse('switch (x) {\n  default { M 0 0 }\n  default { M 1 1 }\n}')).toThrow(
+          "Parse error at line 3, column 3: A switch may have only one 'default' clause",
+        );
+      });
+
+      it('rejects array patterns with non-name elements', () => {
+        expect(() => parse('switch (x) { case [1, 2] { M 1 1 } }')).toThrow(
+          'Parse error at line 1, column 19: Array patterns in a case bind names only — write case [first, second] or case [head, ...rest]',
+        );
+      });
+
+      it('rejects object patterns with non-name values', () => {
+        expect(() => parse('switch (x) { case {x: 1} { M 1 1 } }')).toThrow(
+          'Parse error at line 1, column 19: Object patterns in a case bind names only — write case {x, y} or case {x: px}',
+        );
+      });
+
+      it('rejects comma alternatives that bind different names', () => {
+        expect(() => parse('switch (p) { case {x, y}, {x} { M 1 1 } }')).toThrow(
+          'Parse error at line 1, column 27: Every pattern in a case must bind the same names (this one binds x, the first binds x, y)',
+        );
+      });
+
+      it('rejects a value alternative paired with a binding alternative', () => {
+        expect(() => parse('switch (p) { case [a1, b1], 5 { M 1 1 } }')).toThrow(
+          'Parse error at line 1, column 29: Every pattern in a case must bind the same names (this one binds nothing, the first binds a1, b1)',
+        );
+      });
+
+      it('switch, case, and where are reserved words', () => {
+        expect(() => parse('let switch = 1;')).toThrow();
+        expect(() => parse('let case = 1;')).toThrow();
+        expect(() => parse('let where = 1;')).toThrow();
+      });
+    });
+
+    describe('trailing-block regression (caseBody ambiguity marker)', () => {
+      it('still parses a no-paren trailing block on a method call', () => {
+        const decl = parse('let a = list.map {|x| x};').body[0] as any;
+        expect(decl.value).toMatchObject({
+          type: 'MethodCallExpression',
+          object: { name: 'list' },
+          method: 'map',
+          args: [],
+          block: { params: ['x'] },
+        });
+      });
+
+      it('still parses a trailing block after a function call', () => {
+        const decl = parse('let b = f(x) {|q| q};').body[0] as any;
+        expect(decl.value).toMatchObject({
+          type: 'FunctionCall',
+          name: 'f',
+          args: [{ name: 'x' }],
+          block: { params: ['q'] },
+        });
+      });
+
+      it('still parses a zero-param trailing block on a method', () => {
+        const decl = parse('let c = obj.m {|| 1};').body[0] as any;
+        expect(decl.value).toMatchObject({
+          type: 'MethodCallExpression',
+          object: { name: 'obj' },
+          method: 'm',
+          block: { params: [] },
+        });
+      });
+
+      it('a case pattern ending in a call takes the brace as the case body, not a trailing block', () => {
+        const ast = parse('switch (x) { case f(1) { M 1 1 } case obj.m { M 2 2 } }');
+        const stmt = ast.body[0] as any;
+        expect(stmt.cases[0].patterns[0]).toMatchObject({
+          type: 'ValuePattern',
+          value: { type: 'FunctionCall', name: 'f', args: [{ value: 1 }] },
+        });
+        expect(stmt.cases[0].patterns[0].value.block).toBeUndefined();
+        expect(stmt.cases[0].body).toMatchObject([{ type: 'PathCommand', command: 'M', args: [{ value: 1 }, { value: 1 }] }]);
+        expect(stmt.cases[1].patterns[0]).toMatchObject({
+          type: 'ValuePattern',
+          value: { type: 'MemberExpression', object: { name: 'obj' }, property: 'm' },
+        });
+        expect(stmt.cases[1].body).toMatchObject([{ type: 'PathCommand', command: 'M', args: [{ value: 2 }, { value: 2 }] }]);
+      });
+    });
+  });
+
   describe('function definitions', () => {
     it('parses function definition', () => {
       const ast = parse('fn square(x) { M x x }');

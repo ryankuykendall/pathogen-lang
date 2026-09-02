@@ -13,6 +13,9 @@ import type {
   TernaryExpression,
   BinaryExpression,
   TextBodyItem,
+  CasePattern,
+  ArrayDestructuringPattern,
+  ObjectDestructuringPattern,
 } from '../parser/ast';
 
 export interface FormatOptions {
@@ -104,6 +107,16 @@ function formatStatements(stmts: Statement[], depth: number, indent: string, sou
       }
     }
 
+    // Text-form if/for/switch bodies are TextBodyItem[] cast to Statement[]
+    // (see TextIfStatement in the AST builder); tspan and bare template
+    // items must go through the text-body printer or they fall into the
+    // `default` branch below and vanish from the output.
+    const kind = (stmt as { type: string }).type;
+    if (kind === 'TspanStatement' || kind === 'TemplateLiteral') {
+      lines.push(formatTextBodyItem(stmt as unknown as TextBodyItem, depth, indent, source));
+      continue;
+    }
+
     lines.push(formatStatement(stmt, depth, indent, prefix, source));
   }
 
@@ -115,18 +128,7 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
     case 'LetDeclaration': {
       const value = formatExpression(stmt.value, depth, indent, source);
       if (stmt.pattern) {
-        if (stmt.pattern.type === 'ArrayDestructuringPattern') {
-          const elements = stmt.pattern.elements.join(', ');
-          const rest = stmt.pattern.rest ? `, ...${stmt.pattern.rest}` : '';
-          return `${prefix}let [${elements}${rest}] = ${value};`;
-        }
-        if (stmt.pattern.type === 'ObjectDestructuringPattern') {
-          const props = stmt.pattern.properties.map((p) =>
-            p.alias ? `${p.key}: ${p.alias}` : p.key,
-          ).join(', ');
-          const rest = stmt.pattern.rest ? `, ...${stmt.pattern.rest}` : '';
-          return `${prefix}let { ${props}${rest} } = ${value};`;
-        }
+        return `${prefix}let ${formatDestructuringPattern(stmt.pattern)} = ${value};`;
       }
       return `${prefix}let ${stmt.name} = ${value};`;
     }
@@ -244,8 +246,55 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       const src = stmt.sourceKind === 'identifier' ? stmt.source : `"${stmt.source}"`;
       return `${prefix}@font ${src}${stmt.weight ? ` ${stmt.weight}` : ''};`;
     }
+    case 'SwitchStatement': {
+      const disc = formatExpression(stmt.discriminant, depth, indent, source);
+      const inner = indent.repeat(depth + 1);
+      const clauses: string[] = [];
+      for (const c of stmt.cases) {
+        const patterns = c.patterns.map((p) => formatCasePattern(p, depth + 1, indent, source)).join(', ');
+        const guard = c.guard ? ` where ${formatExpression(c.guard, depth + 1, indent, source)}` : '';
+        const body = formatStatements(c.body, depth + 2, indent, source);
+        clauses.push(`${inner}case ${patterns}${guard} {\n${body}\n${inner}}`);
+      }
+      if (stmt.defaultCase) {
+        const body = formatStatements(stmt.defaultCase.body, depth + 2, indent, source);
+        clauses.push(`${inner}default {\n${body}\n${inner}}`);
+      }
+      return `${prefix}switch (${disc}) {\n${clauses.join('\n')}\n${prefix}}`;
+    }
     default:
       return prefix;
+  }
+}
+
+// --- Destructuring + case patterns ---
+
+/** `[a, b, ...rest]` / `{ x, y: alias, ...rest }` — shared by `let` and `case`. */
+function formatDestructuringPattern(pattern: ArrayDestructuringPattern | ObjectDestructuringPattern): string {
+  if (pattern.type === 'ArrayDestructuringPattern') {
+    const elements = pattern.elements.join(', ');
+    const rest = pattern.rest ? `, ...${pattern.rest}` : '';
+    return `[${elements}${rest}]`;
+  }
+  const props = pattern.properties.map((p) =>
+    p.alias ? `${p.key}: ${p.alias}` : p.key,
+  ).join(', ');
+  const rest = pattern.rest ? `, ...${pattern.rest}` : '';
+  return `{ ${props}${rest} }`;
+}
+
+function formatCasePattern(pattern: CasePattern, depth: number, indent: string, source?: string): string {
+  switch (pattern.type) {
+    case 'ValuePattern':
+      return formatExpression(pattern.value, depth, indent, source);
+    case 'RangePattern': {
+      const start = pattern.start ? formatExpression(pattern.start, depth, indent, source) : '';
+      const end = pattern.end ? formatExpression(pattern.end, depth, indent, source) : '';
+      return `${start}${pattern.inclusive ? '..' : '..<'}${end}`;
+    }
+    case 'ArrayDestructuringPattern':
+    case 'ObjectDestructuringPattern':
+      return formatDestructuringPattern(pattern);
   }
 }
 
@@ -266,7 +315,7 @@ function formatTextBodyItem(item: TextBodyItem, depth: number, indent: string, s
     const content = formatExpression(item, depth, indent, source);
     return `${prefix}${content};`;
   }
-  // ForLoop, ForEachLoop, IfStatement, LetDeclaration are Statement types
+  // ForLoop, ForEachLoop, IfStatement, SwitchStatement, LetDeclaration are Statement types
   return formatStatement(item as Statement, depth, indent, prefix, source);
 }
 

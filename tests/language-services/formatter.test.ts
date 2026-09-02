@@ -655,3 +655,123 @@ describe('expression-bodied lambdas', () => {
     expect(format(source)).toBe(source);
   });
 });
+
+// --- Switch statements ---
+describe('formatDocument switch statements', () => {
+  const canonical = [
+    'switch (kind) {',
+    "  case 'circle' {",
+    '    circle(0, 0, 5);',
+    '  }',
+    "  case 'square', 'rect' {",
+    '    rect(0, 0, 5, 5);',
+    '  }',
+    '  case 0..10 {',
+    '    M 0 0',
+    '  }',
+    '  case 0..<0.25 {',
+    '    M 1 1',
+    '  }',
+    '  case ..<0 {',
+    '    M 2 2',
+    '  }',
+    '  case 100.. {',
+    '    M 3 3',
+    '  }',
+    '  case { x, y } where x > y {',
+    '    M x y',
+    '  }',
+    '  case { x: px, ...rest } {',
+    '    M px 0',
+    '  }',
+    '  case [first, second] {',
+    '    M first second',
+    '  }',
+    '  case [first, ...others] {',
+    '    M first 0',
+    '  }',
+    '  default {',
+    '    M 9 9',
+    '  }',
+    '}',
+  ].join('\n');
+
+  it('prints value, range, destructuring, where, and default clauses', () => {
+    const messy = [
+      'switch (kind) {',
+      'case "circle" { circle(0, 0, 5); }',
+      'case "square", "rect" { rect(0, 0, 5, 5); }',
+      'case 0..10 { M 0 0 } case 0..<0.25 { M 1 1 } case ..<0 { M 2 2 } case 100.. { M 3 3 }',
+      'case {x, y} where x > y { M x y }',
+      'case {x: px, ...rest} { M px 0 }',
+      'case [first, second] { M first second } case [first, ...others] { M first 0 }',
+      'default { M 9 9 }',
+      '}',
+    ].join('\n');
+    expect(format(messy)).toBe(canonical);
+  });
+
+  it('is idempotent on the canonical form', () => {
+    expect(format(canonical)).toBe(canonical);
+  });
+
+  it('indents a switch nested in a for loop', () => {
+    const src = 'for (i in 0..3) {\nswitch (i) {\ncase 0 { M 0 0 }\ndefault { M i i }\n}\n}';
+    const expected = [
+      'for (i in 0..3) {',
+      '  switch (i) {',
+      '    case 0 {',
+      '      M 0 0',
+      '    }',
+      '    default {',
+      '      M i i',
+      '    }',
+      '  }',
+      '}',
+    ].join('\n');
+    expect(format(src)).toBe(expected);
+    expect(format(expected)).toBe(expected);
+  });
+
+  it('text-form switch keeps tspan and template-literal bodies', () => {
+    const src = 'text(10, 30) {\nswitch (level) {\ncase 1, 2 { `Low` }\ncase 3..<7 { tspan()`Medium` }\ndefault { `High` }\n}\n}';
+    const expected = [
+      'text(10, 30) {',
+      '  switch (level) {',
+      '    case 1, 2 {',
+      '      `Low`;',
+      '    }',
+      '    case 3..<7 {',
+      '      tspan()`Medium`;',
+      '    }',
+      '    default {',
+      '      `High`;',
+      '    }',
+      '  }',
+      '}',
+    ].join('\n');
+    expect(format(src)).toBe(expected);
+    expect(format(expected)).toBe(expected);
+  });
+
+  it('text-form if keeps a nested tspan body (regression: the tspan used to be dropped)', () => {
+    const src = 'text(10, 30) {\nif (level > 1) { tspan()`Medium` } else { `Low` }\n}';
+    const expected = [
+      'text(10, 30) {',
+      '  if (level > 1) {',
+      '    tspan()`Medium`;',
+      '  } else {',
+      '    `Low`;',
+      '  }',
+      '}',
+    ].join('\n');
+    expect(format(src)).toBe(expected);
+  });
+
+  it('let destructuring printers still work through the shared pattern formatter', () => {
+    expect(format('let [a, b] = arr;')).toBe('let [a, b] = arr;');
+    expect(format('let [head, ...tail] = arr;')).toBe('let [head, ...tail] = arr;');
+    expect(format('let {x, y: py} = p;')).toBe('let { x, y: py } = p;');
+    expect(format('let {x, ...rest} = p;')).toBe('let { x, ...rest } = p;');
+  });
+});

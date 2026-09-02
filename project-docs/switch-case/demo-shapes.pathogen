@@ -1,0 +1,25 @@
+define ViewBox(0, 0, 320, 120);
+
+// Value patterns: enum members and comma alternatives.
+enum Marker { Dot, Ring, Box, Spark }
+
+let kinds = [Marker.Dot, Marker.Ring, Marker.Box, Marker.Spark, Marker.Ring];
+
+for ([kind, index] in kinds) {
+  let cx = 40 + index * 60;
+  switch (kind) {
+    case Marker.Dot {
+      circle(cx, 60, 10);
+    }
+    case Marker.Ring {
+      circle(cx, 60, 16);
+      circle(cx, 60, 8);
+    }
+    case Marker.Box {
+      rect(cx - 12, 48, 24, 24);
+    }
+    default {
+      star(cx, 60, 16, 7, 5);
+    }
+  }
+}

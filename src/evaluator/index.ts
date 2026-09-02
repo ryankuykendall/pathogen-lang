@@ -20,6 +20,8 @@ import { getStructDescriptor } from './struct-properties';
 
 export { BUILTIN_ENUMS };
 import { angle, angleMethod, callStdlibPreservingAngles, formatAngleForDisplay, isAngleValue, radiansToDegreesSnapped } from './angle';
+import { isBooleanValue, isTruthy, toNumber, valuesEqual } from './value-semantics';
+import { selectSwitchClause, type MatchHost } from './switch-match';
 import { checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
@@ -162,6 +164,7 @@ import type {
 } from './types';
 import type {
   ArrayDestructuringPattern,
+  SwitchStatement,
   Expression,
   FunctionCall,
   IndexExpression,
@@ -535,24 +538,11 @@ export function isProjectedTextValue(value: Value): value is ProjectedTextValue 
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedTextValue';
 }
 
-export function isBooleanValue(value: Value): value is BooleanValue {
-  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'BooleanValue';
-}
+export { isBooleanValue };
 
 /** Create a BooleanValue from a JS boolean or truthy/falsy expression */
 function boolVal(v: boolean | number): BooleanValue {
   return { type: 'BooleanValue', value: v ? 1 : 0 };
-}
-
-/**
- * Extract numeric value from a Value that is either a number or a BooleanValue.
- * Returns undefined if the value is neither.
- */
-function toNumber(v: Value): number | undefined {
-  if (typeof v === 'number') return v;
-  if (isBooleanValue(v)) return v.value;
-  if (isAngleValue(v)) return v.radians;
-  return undefined;
 }
 
 /**
@@ -1604,9 +1594,7 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
 
     case 'TernaryExpression': {
       const condVal = evaluateExpression(expr.condition, scope);
-      const condNum = toNumber(condVal);
-      const truthValue = condNum !== undefined ? condNum !== 0 : condVal !== null;
-      return truthValue ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
+      return isTruthy(condVal) ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
     }
 
     case 'BinaryExpression': {
@@ -1700,22 +1688,12 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
         );
       }
 
-      // Null equality checks
+      // == / != share their semantics with `case` matching (value-semantics.ts).
+      // Non-comparable operands fall through to the numeric check below,
+      // which throws the "requires numeric operands" error.
       if (expr.operator === '==' || expr.operator === '!=') {
-        if (left === null || right === null) {
-          if (expr.operator === '==') return boolVal(left === null && right === null);
-          return boolVal(!(left === null && right === null));
-        }
-      }
-
-      // String/BooleanValue equality: == and != (including cross-type with strings for enum interop)
-      if (expr.operator === '==' || expr.operator === '!=') {
-        const ls = typeof left === 'string' ? left : (isBooleanValue(left) ? (left.value ? 'true' : 'false') : undefined);
-        const rs = typeof right === 'string' ? right : (isBooleanValue(right) ? (right.value ? 'true' : 'false') : undefined);
-        if (ls !== undefined && rs !== undefined) {
-          if (expr.operator === '==') return boolVal(ls === rs);
-          return boolVal(ls !== rs);
-        }
+        const eq = valuesEqual(left, right);
+        if (eq !== undefined) return boolVal(expr.operator === '==' ? eq : !eq);
       }
 
       // Null in arithmetic
@@ -2163,13 +2141,21 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
 
     if (stmt.type === 'IfStatement') {
       const cond = evaluateExpression(stmt.condition, scope);
-      const truthValue = typeof cond === 'number' ? cond !== 0 : (isBooleanValue(cond) ? cond.value !== 0 : cond !== null);
       // Propagate loop flow out of the taken branch to the enclosing loop
-      if (truthValue) {
+      if (isTruthy(cond)) {
         const flow = evaluateTextBlockBody(stmt.consequent, scope, elements);
         if (flow) return flow;
       } else if (stmt.alternate) {
         const flow = evaluateTextBlockBody(stmt.alternate, scope, elements);
+        if (flow) return flow;
+      }
+      continue;
+    }
+
+    if (stmt.type === 'SwitchStatement') {
+      const selected = selectSwitchBody(stmt, scope);
+      if (selected) {
+        const flow = evaluateTextBlockBody(selected.body, selected.scope, elements);
         if (flow) return flow;
       }
       continue;
@@ -8546,14 +8532,18 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
       }
     } else if (item.type === 'IfStatement') {
       const condition = evaluateExpression(item.condition, scope);
-      const condNum = toNumber(condition);
-      const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
       // Propagate loop flow out of the taken branch to the enclosing loop
-      if (isTruthy) {
+      if (isTruthy(condition)) {
         const flow = evaluateTextBody(item.consequent as TextBodyItem[], scope, children);
         if (flow) return flow;
       } else if (item.alternate) {
         const flow = evaluateTextBody(item.alternate as TextBodyItem[], scope, children);
+        if (flow) return flow;
+      }
+    } else if (item.type === 'SwitchStatement') {
+      const selected = selectSwitchBody(item, scope);
+      if (selected) {
+        const flow = evaluateTextBody(selected.body as TextBodyItem[], selected.scope, children);
         if (flow) return flow;
       }
     } else if (item.type === 'LetDeclaration') {
@@ -8631,6 +8621,23 @@ function bindDestructuringPattern(
       setVariable(scope, pattern.rest, { type: 'ObjectValue' as const, properties: remaining });
     }
   }
+}
+
+/** MatchHost for switch-match.ts: pattern expressions, bindings, and errors in the case scope. */
+function switchHost(caseScope: Scope, stmt: SwitchStatement): MatchHost {
+  return {
+    evaluate: (expr) => evaluateExpression(expr, caseScope),
+    bind: (pattern, value) => bindDestructuringPattern(pattern, value as Value, caseScope, getLine(stmt)),
+    fail: (message) => {
+      throw new Error(formatError(message, getLine(stmt)));
+    },
+  };
+}
+
+/** Evaluate the discriminant once and pick the clause body + scope to run (null = no match, no default). */
+function selectSwitchBody(stmt: SwitchStatement, scope: Scope): { body: Statement[]; scope: Scope } | null {
+  const scrutinee = evaluateExpression(stmt.discriminant, scope);
+  return selectSwitchClause(stmt, scrutinee, () => createScope(scope), (caseScope) => switchHost(caseScope, stmt));
 }
 
 /**
@@ -8852,16 +8859,21 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
 
     case 'IfStatement': {
       const condition = evaluateExpression(stmt.condition, scope);
-      const condNum = toNumber(condition);
-      const isTruthy = condition !== null && (condNum !== undefined ? condNum !== 0 : Boolean(condition));
 
       // Propagate loop flow out of the taken branch to the enclosing loop
-      if (isTruthy) {
+      if (isTruthy(condition)) {
         return evaluateStatementsToAccum(stmt.consequent, createScope(scope), accum);
       } else if (stmt.alternate) {
         return evaluateStatementsToAccum(stmt.alternate, createScope(scope), accum);
       }
       return;
+    }
+
+    case 'SwitchStatement': {
+      // First matching case (or default) runs in its own child scope; loop
+      // flow propagates out of the body exactly as it does for IfStatement.
+      const selected = selectSwitchBody(stmt, scope);
+      return selected ? evaluateStatementsToAccum(selected.body, selected.scope, accum) : undefined;
     }
 
     case 'ForEachLoop': {

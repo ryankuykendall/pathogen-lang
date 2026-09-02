@@ -189,6 +189,40 @@ function describeErrorWithPosition(
   return { message, line: defaultPos.line, character: defaultPos.character };
 }
 
+/** Every CST node the switch grammar produces (path and text forms). */
+const SWITCH_FAMILY_NODES = new Set([
+  'SwitchStatement', 'TextSwitchStatement',
+  'CaseClause', 'TextCaseClause',
+  'DefaultClause', 'TextDefaultClause',
+  'CasePattern', 'RangePattern', 'WhereGuard',
+]);
+
+const CASE_COLON_MESSAGE = "Case bodies use braces: case value { ... } (no ':' and no fallthrough)";
+const DEFAULT_COLON_MESSAGE = "Case bodies use braces: default { ... } (no ':' and no fallthrough)";
+
+/**
+ * `case { … }` / `case 1, { … }` / `case v where { … }`: the body's `{` is
+ * cover-parsed as an ObjectLiteral (TrailingBlock inside text bodies) that
+ * becomes the pattern / guard expression, and the clause ends in an error
+ * node because no Block follows. Returns the real-mistake message when the
+ * error sits inside such a literal, null otherwise.
+ */
+function describeMissingCaseHead(errorNode: import('@lezer/common').SyntaxNode): string | null {
+  let child: import('@lezer/common').SyntaxNode | null = errorNode;
+  let head: import('@lezer/common').SyntaxNode | null = errorNode.parent;
+  while (head && head.name !== 'CasePattern' && head.name !== 'WhereGuard') {
+    child = head;
+    head = head.parent;
+  }
+  if (!head || !child) return null;
+  if (child.name !== 'ObjectLiteral' && child.name !== 'TrailingBlock') return null;
+  const after = head.nextSibling;
+  if (!after || !after.type.isError) return null;
+  return head.name === 'WhereGuard'
+    ? "Expected a condition after 'where' — the '{' opened the case body"
+    : "Expected a pattern after 'case' — the '{' opened the case body";
+}
+
 function describeError(errorNode: import('@lezer/common').SyntaxNode, source: string): string {
   const parent = errorNode.parent;
   const prev = errorNode.prevSibling;
@@ -208,6 +242,22 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
     const varName = varMatch ? varMatch[1] : 'expression';
     return `Expected property or method name after '${varName}.'`;
   }
+
+  // ── switch keywords outside a switch ──
+  // A stray `case` / `where` token surfaces as an error node carrying the
+  // keyword text. Inside the switch family the clause branches below own it.
+  if (!SWITCH_FAMILY_NODES.has(parentName)) {
+    if (errText === 'case') return "'case' is only valid inside a switch";
+    if (errText === 'where') return "'where' is only valid after a case pattern";
+  }
+
+  // ── Missing case pattern / where condition before '{' ──
+  // `case { … }` and `case v where { … }` cover-parse the body's `{` as an
+  // ObjectLiteral (or TrailingBlock in text bodies) and the real error lands
+  // deep inside it; the clause then has no Block. Detect that shape and
+  // describe the actual mistake instead of the cover grammar's noise.
+  const missingBeforeBrace = describeMissingCaseHead(errorNode);
+  if (missingBeforeBrace) return missingBeforeBrace;
 
   // ── Trailing block / lambda literal issues ──
   if (parentName === 'TrailingBlock') {
@@ -290,6 +340,34 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
     if (errText === '{') return "Expected ')' before '{'";
     if (!errText) return "Incomplete if statement";
     return `Unexpected '${errText}' in if statement`;
+  }
+
+  // ── switch statement issues ──
+  if (parentName === 'SwitchStatement' || parentName === 'TextSwitchStatement') {
+    if (prevName === 'switch') return "Expected '(' after 'switch'";
+    if (errText === '{') return "Expected ')' before '{'";
+    if (!errText) return 'Incomplete switch statement';
+    return `Unexpected '${errText}' in switch — expected 'case', 'default', or '}'`;
+  }
+  if (parentName === 'CaseClause' || parentName === 'TextCaseClause') {
+    if (prevName === 'case') return "Expected a pattern after 'case'";
+    if (errText === ':') return CASE_COLON_MESSAGE;
+    if (!errText) return "Expected '{' to open the case body";
+    return `Unexpected '${errText}' in case clause`;
+  }
+  if (parentName === 'DefaultClause' || parentName === 'TextDefaultClause') {
+    if (errText === ':') return DEFAULT_COLON_MESSAGE;
+    if (!errText) return "Expected '{' after 'default'";
+    return `Unexpected '${errText}' after 'default' — expected '{'`;
+  }
+  // `case 1: …` — the ':' error node lands inside CasePattern, not CaseClause.
+  if (parentName === 'CasePattern' || parentName === 'RangePattern') {
+    if (errText === ':') return CASE_COLON_MESSAGE;
+    return errText ? `Invalid case pattern — unexpected '${errText}'` : 'Invalid case pattern';
+  }
+  if (parentName === 'WhereGuard') {
+    if (prevName === 'where') return "Expected a condition after 'where'";
+    return errText ? `Invalid where guard — unexpected '${errText}'` : 'Invalid where guard';
   }
 
   // ── Function definition issues ──
