@@ -773,6 +773,43 @@ describe('Evaluator', () => {
       expect(compilePath('for (i in 0..3) { L i 0 }')).toBe('L 0 0 L 1 0 L 2 0 L 3 0');
     });
 
+    describe('half-open ranges (a..<b)', () => {
+      it('stops before the upper bound', () => {
+        expect(compilePath('for (i in 0..<3) { L i 0 }')).toBe('L 0 0 L 1 0 L 2 0');
+      });
+
+      it('pairs with array lengths to visit every index exactly once', () => {
+        expect(compilePath('let pts = [10, 20, 30]; for (i in 0..<pts.length) { L pts[i] i }')).toBe('L 10 0 L 20 1 L 30 2');
+      });
+
+      it('counts down and stops before the lower bound', () => {
+        expect(compilePath('for (i in 3..<0) { L i 0 }')).toBe('L 3 0 L 2 0 L 1 0');
+      });
+
+      it('runs zero times for an empty range', () => {
+        expect(compilePath('for (i in 0..<0) { L i 0 } M 9 9')).toBe('M 9 9');
+        expect(compilePath('for (i in 5..<5) { L i 0 } M 9 9')).toBe('M 9 9');
+      });
+
+      it('steps by one from the start with a fractional bound', () => {
+        expect(compilePath('for (i in 0..<2.5) { L i 0 }')).toBe('L 0 0 L 1 0 L 2 0');
+      });
+
+      it('keeps the inclusive spelling unchanged', () => {
+        expect(compilePath('for (i in 0..2.5) { L i 0 }')).toBe('L 0 0 L 1 0 L 2 0');
+        expect(compilePath('for (i in 2.5..0) { L i 0 }')).toBe('L 2.5 0 L 1.5 0 L 0.5 0');
+      });
+
+      it('respects break and continue', () => {
+        expect(compilePath('for (i in 0..<6) { if (i == 1) { continue; } if (i == 4) { break; } L i 0 }')).toBe('L 0 0 L 2 0 L 3 0');
+      });
+
+      it('applies the iteration limit to the exact count', () => {
+        expect(() => compilePath('for (i in 0..<32001) { L i 0 }')).toThrow('for loop would run 32001 iterations (max 32000)');
+        expect(compilePath('for (i in 0..<32000) { } M 1 1')).toBe('M 1 1');
+      });
+    });
+
     it('evaluates for loop with calc', () => {
       // 0..3 is inclusive: 0, 1, 2, 3
       expect(compilePath('for (i in 0..3) { L calc(i * 10) 0 }')).toBe('L 0 0 L 10 0 L 20 0 L 30 0');

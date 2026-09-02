@@ -22,6 +22,7 @@ export { BUILTIN_ENUMS };
 import { angle, angleMethod, callStdlibPreservingAngles, formatAngleForDisplay, isAngleValue, radiansToDegreesSnapped } from './angle';
 import { isBooleanValue, isTruthy, toNumber, valuesEqual } from './value-semantics';
 import { selectSwitchClause, type MatchHost } from './switch-match';
+import { planRange } from './range-loop';
 import { checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
@@ -2107,10 +2108,9 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
       const start = requireNumber(evaluateExpression(stmt.start, scope), 'for loop start');
       const end = requireNumber(evaluateExpression(stmt.end, scope), 'for loop end');
       if (!isFinite(start) || !isFinite(end)) throw new Error('for loop bounds must be finite');
-      const count = Math.abs(end - start) + 1;
-      if (count > 10000) throw new Error('for loop exceeds 10000 iteration limit');
-      const step = start <= end ? 1 : -1;
-      for (let i = start; step > 0 ? i <= end : i >= end; i += step) {
+      const range = planRange(start, end, stmt.inclusive !== false);
+      if (range.iterations > 10000) throw new Error('for loop exceeds 10000 iteration limit');
+      for (let i = start; range.continues(i); i += range.step) {
         const loopScope = createScope(scope);
         loopScope.evalState = scope.evalState;
         setVariable(loopScope, stmt.variable, i);
@@ -8490,26 +8490,16 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
         throw new Error('for loop range must be finite (got Infinity or NaN)');
       }
 
-      const ascending = start <= end;
-      const iterations = ascending ? end - start + 1 : start - end + 1;
-      if (iterations > MAX_ITERATIONS) {
-        throw new Error(`for loop would run ${iterations} iterations (max ${MAX_ITERATIONS})`);
+      const range = planRange(start, end, item.inclusive !== false);
+      if (range.iterations > MAX_ITERATIONS) {
+        throw new Error(`for loop would run ${range.iterations} iterations (max ${MAX_ITERATIONS})`);
       }
 
-      if (ascending) {
-        for (let i = start; i <= end; i++) {
-          const loopScope = createScope(scope);
-          setVariable(loopScope, item.variable, i);
-          const flow = evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
-          if (flow?.flow === 'break') break;
-        }
-      } else {
-        for (let i = start; i >= end; i--) {
-          const loopScope = createScope(scope);
-          setVariable(loopScope, item.variable, i);
-          const flow = evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
-          if (flow?.flow === 'break') break;
-        }
+      for (let i = start; range.continues(i); i += range.step) {
+        const loopScope = createScope(scope);
+        setVariable(loopScope, item.variable, i);
+        const flow = evaluateTextBody(item.body as TextBodyItem[], loopScope, children);
+        if (flow?.flow === 'break') break;
       }
     } else if (item.type === 'ForEachLoop') {
       const iterable = evaluateExpression(item.iterable, scope);
@@ -8828,31 +8818,20 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         throw new Error(formatError('for loop range must be finite (got Infinity or NaN)', getLine(stmt)));
       }
 
-      const ascending = start <= end;
-      // Inclusive ranges: both start and end are included
-      const iterations = ascending ? end - start + 1 : start - end + 1;
-      if (iterations > MAX_ITERATIONS) {
+      // `a..b` includes both ends; `a..<b` stops before b (range-loop.ts).
+      const range = planRange(start, end, stmt.inclusive !== false);
+      if (range.iterations > MAX_ITERATIONS) {
         throw new Error(
-          formatError(`for loop would run ${iterations} iterations (max ${MAX_ITERATIONS})`, getLine(stmt)),
+          formatError(`for loop would run ${range.iterations} iterations (max ${MAX_ITERATIONS})`, getLine(stmt)),
         );
       }
 
-      if (ascending) {
-        for (let i = start; i <= end; i++) {
-          const loopScope = createScope(scope);
-          setVariable(loopScope, stmt.variable, i);
-          const flow = evaluateStatementsToAccum(stmt.body, loopScope, accum);
-          if (flow?.flow === 'break') break;
-          // 'continue' already ended this iteration's body — fall through
-        }
-      } else {
-        // Descending range
-        for (let i = start; i >= end; i--) {
-          const loopScope = createScope(scope);
-          setVariable(loopScope, stmt.variable, i);
-          const flow = evaluateStatementsToAccum(stmt.body, loopScope, accum);
-          if (flow?.flow === 'break') break;
-        }
+      for (let i = start; range.continues(i); i += range.step) {
+        const loopScope = createScope(scope);
+        setVariable(loopScope, stmt.variable, i);
+        const flow = evaluateStatementsToAccum(stmt.body, loopScope, accum);
+        if (flow?.flow === 'break') break;
+        // 'continue' already ended this iteration's body — fall through
       }
       return;
     }

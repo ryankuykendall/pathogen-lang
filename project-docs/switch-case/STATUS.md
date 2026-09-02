@@ -7,7 +7,7 @@
 
 ## Follow-ups
 
-- `..<` in `for (i in a..<b)`: the token exists but the loop grammar does not accept it; a one-line grammar change plus evaluator/formatter support if wanted.
+- ~~`..<` in `for (i in a..<b)`~~ — done 2026-09-02 (`src/evaluator/range-loop.ts` plans every range loop in both evaluators).
 - Enum exhaustiveness diagnostic (warn when a switch over an enum omits members and has no `default`).
 - Duplicate-literal-case diagnostic.
 - Unrelated, observed while testing: an array literal passed directly to a function call in bare path-argument position (`M first([5, 6]) 0`) fails with "for-each requires an array or object", while `M calc(first([5, 6])) 0` and a variable both work. Pre-existing path-args gap.

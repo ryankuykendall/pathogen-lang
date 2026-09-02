@@ -51,7 +51,7 @@ LetDeclaration {
 }
 
 ForLoop {
-  kw<"for"> "(" VariableName kw<"in"> expression RangeOp expression ")" Block
+  kw<"for"> "(" VariableName kw<"in"> expression rangeOp expression ")" Block
 }
 
 ForEachLoop {
@@ -171,7 +171,7 @@ TspanStatement {
 }
 
 TextForLoop {
-  kw<"for"> "(" VariableName kw<"in"> expression RangeOp expression ")" "{" textBodyItem* "}"
+  kw<"for"> "(" VariableName kw<"in"> expression rangeOp expression ")" "{" textBodyItem* "}"
 }
 
 TextForEachLoop {

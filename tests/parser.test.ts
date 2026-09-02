@@ -342,6 +342,28 @@ describe('Parser', () => {
         variable: 'i',
         start: { type: 'NumberLiteral', value: 0 },
         end: { type: 'NumberLiteral', value: 5 },
+        inclusive: true,
+      });
+    });
+
+    it('parses a half-open for loop range', () => {
+      const ast = parse('for (i in 0..<points.length) { M i 0 }');
+      expect(ast.body[0]).toMatchObject({
+        type: 'ForLoop',
+        variable: 'i',
+        start: { type: 'NumberLiteral', value: 0 },
+        end: { type: 'MemberExpression', object: { type: 'Identifier', name: 'points' }, property: 'length' },
+        inclusive: false,
+      });
+    });
+
+    it('parses a half-open range in a text-body for loop', () => {
+      const ast = parse('text(0, 0) { for (i in 0..<2) { `x` } }');
+      expect((ast.body[0] as { body: unknown[] }).body[0]).toMatchObject({
+        type: 'ForLoop',
+        variable: 'i',
+        end: { type: 'NumberLiteral', value: 2 },
+        inclusive: false,
       });
     });
 

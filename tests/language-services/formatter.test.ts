@@ -41,6 +41,12 @@ describe('formatDocument', () => {
       expect(result).toBe('for (i in 0..5) {\n  M i 0\n}');
     });
 
+    it('preserves the half-open range operator', () => {
+      const result = format('for (i in 0..<pts.length) {\nM i 0\n}');
+      expect(result).toBe('for (i in 0..<pts.length) {\n  M i 0\n}');
+      expect(format(result)).toBe(result);
+    });
+
     it('indents function body', () => {
       const result = format('fn draw() {\nM 0 0\nL 100 100\n}');
       expect(result).toBe('fn draw() {\n  M 0 0\n  L 100 100\n}');

@@ -102,6 +102,34 @@ describe('TextBlock', () => {
       expect(result.logs[0].parts[0].value).toBe('TextBlock(1 elements)');
     });
 
+    it('supports half-open for ranges inside text blocks', () => {
+      const result = compile(`
+        let t = &{
+          for (i in 0..<3) {
+            text(0, calc(i * 20))\`item\`
+          }
+        };
+        log(t);
+      `);
+      expect(result.logs[0].parts[0].value).toBe('TextBlock(3 elements)');
+    });
+
+    it('supports half-open for ranges inside text bodies', () => {
+      const result = compile(`
+        define TextLayer('labels') \${}
+        layer('labels').apply {
+          text(0, 16) {
+            for (i in 0..<2) {
+              tspan()\`item \${i}\`
+            }
+          }
+        }
+      `);
+      const textLayer = result.layers.find((l) => l.name === 'labels');
+      const children = textLayer?.textElements?.[0]?.children ?? [];
+      expect(children.map((c) => c.text)).toEqual(['item 0', 'item 1']);
+    });
+
     it('does not emit to any layer on creation', () => {
       const result = compile(`
         define TextLayer('labels') \${}

@@ -31,7 +31,7 @@ export function formatAnnotated(output: AnnotatedOutput, options: FormatOptions 
 
       case 'loop_start':
         lines.push('');
-        lines.push(`${indent()}//--- for (${line.variable} in ${line.start}..${line.end}) from line ${line.line}`);
+        lines.push(`${indent()}//--- for (${line.variable} in ${line.start}${line.inclusive === false ? '..<' : '..'}${line.end}) from line ${line.line}`);
         indentLevel++;
         break;
 

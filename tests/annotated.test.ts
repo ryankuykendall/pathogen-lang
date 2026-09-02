@@ -50,6 +50,24 @@ L 10 20`);
       expect(result).toContain('//--- iteration 3');
     });
 
+    it('annotates a half-open range with the ..< spelling and stops before the bound (parity)', () => {
+      const result = compileAnnotated('for (i in 0..<3) { M i 0 }');
+      expect(result).toContain('//--- for (i in 0..<3) from line 1');
+      expect(result).toContain('//--- iteration 2');
+      expect(result).not.toContain('//--- iteration 3');
+      const pathLines = result.split('\n').map((l) => l.trim()).filter((l) => /^M /.test(l));
+      expect(pathLines).toEqual(['M 0 0', 'M 1 0', 'M 2 0']);
+      expect(pathLines.join(' ')).toBe(compile('for (i in 0..<3) { M i 0 }').layers[0].data);
+    });
+
+    it('truncates a long half-open range on its exact count (parity)', () => {
+      const result = compileAnnotated('for (i in 0..<12) { M i 0 }');
+      expect(result).toContain('//--- iteration 2');
+      expect(result).toContain('//--- iteration 11');
+      expect(result).not.toContain('//--- iteration 12');
+      expect(result).toContain('... 6 more iterations ...');
+    });
+
     it('shows correct line number for loop', () => {
       const result = compileAnnotated(`M 0 0
 for (i in 0..2) { L i 0 }`);

@@ -1342,7 +1342,22 @@ for (i in 0..10) {
 }
 ```
 
-The range `0..10` includes both endpoints (0 through 10, giving 11 iterations). Both bounds are ordinary expressions — variables, member accesses, indexes, and function calls all work without a `calc()` wrapper: `for (i in 1..points.length)`, `for (i in first[0]..limits.max)`. (Remember ranges are inclusive: to visit array indexes, prefer `for (p in points)` or `for ([p, i] in points)` over computing bounds.)
+The range `0..10` includes both endpoints (0 through 10, giving 11 iterations). Both bounds are ordinary expressions — variables, member accesses, indexes, and function calls all work without a `calc()` wrapper: `for (i in 1..points.length)`, `for (i in first[0]..limits.max)`. To visit array indexes, use a half-open range (`for (i in 0..<points.length)`, below) or iterate the array directly with `for (p in points)` or `for ([p, i] in points)`.
+
+### Half-Open Ranges
+
+`a..<b` stops before `b`, so `0..<n` visits exactly `n` values and pairs naturally with array lengths:
+
+```
+let points = [Point(10, 10), Point(50, 30), Point(90, 10)];
+
+for (i in 0..<points.length) {
+  circle(points[i].x, points[i].y, 4);
+}
+// 3 circles: i = 0, 1, 2
+```
+
+Half-open ranges count down too: `5..<0` visits 5, 4, 3, 2, 1. An empty range such as `0..<0` runs zero times.
 
 ### Descending Ranges
 
@@ -1503,7 +1518,7 @@ switch (kind) {
 
 ### Range Patterns
 
-`a..b` matches every number from `a` through `b` inclusive, the same spelling `for` loops use. `a..<b` excludes the upper bound, so adjacent bands never both claim a boundary. The half-open form is a case pattern only; `for` ranges are always inclusive:
+`a..b` matches every number from `a` through `b` inclusive, and `a..<b` excludes the upper bound, so adjacent bands never both claim a boundary. Both are the spellings `for` loops use:
 
 ```
 let t = 0.4;

@@ -75,6 +75,7 @@ import { parseExpression as expressionParserFn } from '../parser/lezer-expressio
 import { getStructDescriptor } from './struct-properties';
 import { isTruthy, toNumber, valuesEqual } from './value-semantics';
 import { selectSwitchClause, type MatchHost } from './switch-match';
+import { planRange } from './range-loop';
 
 import type { PathContext } from './context';
 import type { OKLCH } from '../color';
@@ -145,7 +146,7 @@ const expressionParser = {
 export type AnnotatedLine =
   | { type: 'comment'; text: string }
   | { type: 'path_command'; command: string; args: string; line?: number }
-  | { type: 'loop_start'; variable: string; start: number; end: number; line: number }
+  | { type: 'loop_start'; variable: string; start: number; end: number; inclusive?: boolean; line: number }
   | { type: 'foreach_start'; variable: string; length: number; line: number }
   | { type: 'iteration'; index: number }
   | { type: 'iteration_skip'; count: number }
@@ -3949,13 +3950,11 @@ function evaluateTextBlockStatements(stmts: Statement[], blockScope: Scope, elem
       const end = toNumber(evaluateExpression(stmt.end, blockScope));
       if (start === undefined || end === undefined) throw new Error('for loop range must be numeric');
       if (!Number.isFinite(start) || !Number.isFinite(end)) throw new Error('for loop range must be finite');
-      const ascending = start <= end;
-      const iterations = ascending ? end - start + 1 : start - end + 1;
-      if (iterations > MAX_ITERATIONS) {
-        throw new Error(`for loop would run ${iterations} iterations (max ${MAX_ITERATIONS})`);
+      const range = planRange(start, end, stmt.inclusive !== false);
+      if (range.iterations > MAX_ITERATIONS) {
+        throw new Error(`for loop would run ${range.iterations} iterations (max ${MAX_ITERATIONS})`);
       }
-      const step = ascending ? 1 : -1;
-      for (let i = start; ascending ? i <= end : i >= end; i += step) {
+      for (let i = start; range.continues(i); i += range.step) {
         const loopScope = createScope(blockScope);
         loopScope.evalState = blockScope.evalState;
         setVariable(loopScope, stmt.variable, i);
@@ -4066,28 +4065,15 @@ function evaluateAnnotatedTextBody(items: TextBodyItem[], scope: Scope, children
       const start = evaluateExpression(item.start, scope);
       const end = evaluateExpression(item.end, scope);
       if (typeof start !== 'number' || typeof end !== 'number') continue;
-      const ascending = start <= end;
-      if (ascending) {
-        for (let i = start; i <= end; i++) {
-          const loopScope = createScope(scope);
-          setVariable(loopScope, item.variable, i);
-          evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
-          if (pendingFlow) {
-            const flow = pendingFlow;
-            pendingFlow = null;
-            if (flow === 'break') break;
-          }
-        }
-      } else {
-        for (let i = start; i >= end; i--) {
-          const loopScope = createScope(scope);
-          setVariable(loopScope, item.variable, i);
-          evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
-          if (pendingFlow) {
-            const flow = pendingFlow;
-            pendingFlow = null;
-            if (flow === 'break') break;
-          }
+      const range = planRange(start, end, item.inclusive !== false);
+      for (let i = start; range.continues(i); i += range.step) {
+        const loopScope = createScope(scope);
+        setVariable(loopScope, item.variable, i);
+        evaluateAnnotatedTextBody(item.body as TextBodyItem[], loopScope, children);
+        if (pendingFlow) {
+          const flow = pendingFlow;
+          pendingFlow = null;
+          if (flow === 'break') break;
         }
       }
     } else if (item.type === 'ForEachLoop') {
@@ -5614,43 +5600,25 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
         throw new Error('for loop range must be finite');
       }
 
-      const ascending = start <= end;
-      const iterations = ascending ? end - start + 1 : start - end + 1;
-      if (iterations > MAX_ITERATIONS) {
-        throw new Error(`for loop would run ${iterations} iterations (max ${MAX_ITERATIONS})`);
+      const range = planRange(start, end, stmt.inclusive !== false);
+      if (range.iterations > MAX_ITERATIONS) {
+        throw new Error(`for loop would run ${range.iterations} iterations (max ${MAX_ITERATIONS})`);
       }
 
       const results: string[] = [];
-      if (ascending) {
-        for (let i = start; i <= end; i++) {
-          const loopScope = createScope(scope);
-          setVariable(loopScope, stmt.variable, i);
-          for (const bodyStmt of stmt.body) {
-            const result = evaluateStatementPlain(bodyStmt, loopScope);
-            if (result) results.push(result);
-            if (pendingFlow) break;
-          }
-          if (pendingFlow) {
-            const flow = pendingFlow;
-            pendingFlow = null;
-            if (flow === 'break') break;
-            // 'continue' → next iteration
-          }
+      for (let i = start; range.continues(i); i += range.step) {
+        const loopScope = createScope(scope);
+        setVariable(loopScope, stmt.variable, i);
+        for (const bodyStmt of stmt.body) {
+          const result = evaluateStatementPlain(bodyStmt, loopScope);
+          if (result) results.push(result);
+          if (pendingFlow) break;
         }
-      } else {
-        for (let i = start; i >= end; i--) {
-          const loopScope = createScope(scope);
-          setVariable(loopScope, stmt.variable, i);
-          for (const bodyStmt of stmt.body) {
-            const result = evaluateStatementPlain(bodyStmt, loopScope);
-            if (result) results.push(result);
-            if (pendingFlow) break;
-          }
-          if (pendingFlow) {
-            const flow = pendingFlow;
-            pendingFlow = null;
-            if (flow === 'break') break;
-          }
+        if (pendingFlow) {
+          const flow = pendingFlow;
+          pendingFlow = null;
+          if (flow === 'break') break;
+          // 'continue' → next iteration
         }
       }
       return results.join(' ');
@@ -5984,8 +5952,8 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
         throw new Error('for loop range must be finite');
       }
 
-      const ascending = start <= end;
-      const totalIterations = ascending ? end - start + 1 : start - end + 1;
+      const range = planRange(start, end, stmt.inclusive !== false);
+      const totalIterations = range.iterations;
       if (totalIterations > MAX_ITERATIONS) {
         throw new Error(`for loop would run ${totalIterations} iterations (max ${MAX_ITERATIONS})`);
       }
@@ -5995,6 +5963,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
         variable: stmt.variable,
         start,
         end,
+        inclusive: stmt.inclusive !== false,
         line: stmt.loc?.line ?? 0,
       });
 
@@ -6006,11 +5975,7 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
 
       // Build iteration values array (handles both ascending and descending)
       const iterValues: number[] = [];
-      if (ascending) {
-        for (let i = start; i <= end; i++) iterValues.push(i);
-      } else {
-        for (let i = start; i >= end; i--) iterValues.push(i);
-      }
+      for (let i = start; range.continues(i); i += range.step) iterValues.push(i);
 
       for (let iterIndex = 0; iterIndex < iterValues.length; iterIndex++) {
         const i = iterValues[iterIndex];

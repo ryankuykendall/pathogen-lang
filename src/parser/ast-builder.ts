@@ -535,22 +535,29 @@ function buildForLoop(cursor: TreeCursor, source: string): ForLoop {
   let start: Expression = { type: 'NumberLiteral', value: 0 };
   let end: Expression = { type: 'NumberLiteral', value: 0 };
   let body: Statement[] = [];
+  let inclusive = true;
 
   cursor.firstChild();
   let phase = 0; // 0=before range, 1=after start, 2=after rangeOp
+  const noteRangeOp = (name: string): boolean => {
+    if (name !== 'RangeOp' && name !== 'HalfOpenRangeOp') return false;
+    inclusive = name === 'RangeOp';
+    phase = 2;
+    return true;
+  };
   do {
     if (cursor.name === 'VariableName') {
       variable = text(cursor, source);
-    } else if (cursor.name === 'RangeOp') {
-      phase = 2;
+    } else if (noteRangeOp(cursor.name)) {
+      // range operator handled
     } else if (phase === 0 && isExpressionNode(cursor.name)) {
       // Postfix chains (arr.length, bounds[0], top()) sit at sibling
       // level; the postfix-aware builder consumes them and leaves the
       // cursor on the first UNCONSUMED token — which for a start bound
-      // is RangeOp itself. Check before the loop advances past it, or
-      // phase 2 never arrives and the end bound silently defaults.
+      // is the range operator itself. Check before the loop advances past
+      // it, or phase 2 never arrives and the end bound silently defaults.
       start = buildExpressionWithPostfix(cursor, source);
-      phase = (cursor.name as string) === 'RangeOp' ? 2 : 1;
+      if (!noteRangeOp(cursor.name as string)) phase = 1;
     } else if (phase === 2 && isExpressionNode(cursor.name)) {
       end = buildExpressionWithPostfix(cursor, source);
     } else if (cursor.name === 'Block') {
@@ -559,7 +566,7 @@ function buildForLoop(cursor: TreeCursor, source: string): ForLoop {
   } while (cursor.nextSibling());
   cursor.parent();
 
-  return { type: 'ForLoop', variable, start, end, body, loc: nodeLoc };
+  return { type: 'ForLoop', variable, start, end, inclusive, body, loc: nodeLoc };
 }
 
 function buildForEachLoop(cursor: TreeCursor, source: string): ForEachLoop {
@@ -1524,19 +1531,26 @@ function buildTextForLoop(cursor: TreeCursor, source: string): ForLoop {
   let start: Expression = { type: 'NumberLiteral', value: 0 };
   let end: Expression = { type: 'NumberLiteral', value: 0 };
   const body: Statement[] = [];
+  let inclusive = true;
 
   cursor.firstChild();
   let phase = 0;
+  const noteRangeOp = (name: string): boolean => {
+    if (name !== 'RangeOp' && name !== 'HalfOpenRangeOp') return false;
+    inclusive = name === 'RangeOp';
+    phase = 2;
+    return true;
+  };
   do {
     if (cursor.name === 'VariableName') {
       variable = text(cursor, source);
-    } else if (cursor.name === 'RangeOp') {
-      phase = 2;
+    } else if (noteRangeOp(cursor.name)) {
+      // range operator handled
     } else if (phase === 0 && isExpressionNode(cursor.name) && cursor.name !== 'for' && cursor.name !== 'in') {
-      // Postfix-aware for the same reason as buildForStatement — and the
-      // same RangeOp cursor-rest check (see there).
+      // Postfix-aware for the same reason as buildForLoop — and the same
+      // range-operator cursor-rest check (see there).
       start = buildExpressionWithPostfix(cursor, source);
-      phase = (cursor.name as string) === 'RangeOp' ? 2 : 1;
+      if (!noteRangeOp(cursor.name as string)) phase = 1;
     } else if (phase === 2 && isExpressionNode(cursor.name)) {
       end = buildExpressionWithPostfix(cursor, source);
     } else if (cursor.name === '{') {
@@ -1551,7 +1565,7 @@ function buildTextForLoop(cursor: TreeCursor, source: string): ForLoop {
   } while (cursor.nextSibling());
   cursor.parent();
 
-  return { type: 'ForLoop', variable, start, end, body, loc: nodeLoc };
+  return { type: 'ForLoop', variable, start, end, inclusive, body, loc: nodeLoc };
 }
 
 function buildTextForEachLoop(cursor: TreeCursor, source: string): ForEachLoop {

@@ -18,7 +18,7 @@ export interface HoverInfo {
 
 export const KEYWORD_HOVER: Record<string, string> = {
   let: '**let** — Declare a variable\n```\nlet name = expression;\n```',
-  for: '**for** — Loop over a range or collection\n```\nfor (i in 0..10) { ... }\nfor (item in array) { ... }\n```',
+  for: '**for** — Loop over a range or collection\n```\nfor (i in 0..10) { ... }     // inclusive\nfor (i in 0..<10) { ... }    // half-open: stops before 10\nfor (item in array) { ... }\n```',
   if: '**if** — Conditional execution\n```\nif (condition) { ... } else { ... }\n```',
   else: '**else** — Alternate branch of an if statement',
   in: '**in** — Separates the loop variable from its range or collection\n```\nfor (i in 0..10) { ... }\nfor (item in array) { ... }\nfor ([item, i] in array) { ... }\n```',

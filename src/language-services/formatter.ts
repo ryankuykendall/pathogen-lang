@@ -150,7 +150,8 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       const start = formatExpression(stmt.start, depth, indent, source);
       const end = formatExpression(stmt.end, depth, indent, source);
       const body = formatStatements(stmt.body, depth + 1, indent, source);
-      return `${prefix}for (${stmt.variable} in ${start}..${end}) {\n${body}\n${prefix}}`;
+      const op = stmt.inclusive === false ? '..<' : '..';
+      return `${prefix}for (${stmt.variable} in ${start}${op}${end}) {\n${body}\n${prefix}}`;
     }
     case 'ForEachLoop': {
       const iterable = formatExpression(stmt.iterable, depth, indent, source);

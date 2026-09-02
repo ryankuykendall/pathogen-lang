@@ -103,12 +103,14 @@ export interface AssignmentStatement {
   loc?: SourceLocation;
 }
 
-// for (i in 0..10) { ... }
+// for (i in 0..10) { ... }  or  for (i in 0..<10) { ... }
 export interface ForLoop {
   type: 'ForLoop';
   variable: string;
   start: Expression;
   end: Expression;
+  /** false for the half-open `a..<b` form; absent or true means inclusive `a..b`. */
+  inclusive?: boolean;
   body: Statement[];
   loc?: SourceLocation;
 }
