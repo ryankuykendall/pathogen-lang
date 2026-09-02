@@ -328,8 +328,9 @@ function formatTextBodyItem(item: TextBodyItem, depth: number, indent: string, s
     return `${prefix}tspan(${args.join(', ')})${content};`;
   }
   if (item.type === 'TemplateLiteral') {
-    const content = formatExpression(item, depth, indent, source);
-    return `${prefix}${content};`;
+    // A bare template item takes no semicolon: the text-body grammar has
+    // none for it, so emitting one turned a valid file into a parse error.
+    return `${prefix}${formatExpression(item, depth, indent, source)}`;
   }
   // ForLoop, ForEachLoop, IfStatement, SwitchStatement, LetDeclaration are Statement types
   return formatStatement(item as Statement, depth, indent, prefix, source);

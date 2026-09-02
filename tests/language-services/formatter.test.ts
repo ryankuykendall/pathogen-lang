@@ -454,10 +454,20 @@ describe('formatDocument', () => {
       expect(result).toBe("text(50, 50)`Hello`;");
     });
 
-    it('formats text block form', () => {
-      const result = format("text(50, 50) {\n`line one`\n}");
-      expect(result).toContain('text(50, 50) {\n');
-      expect(result).toContain('  `line one`;');
+    it('formats text block form without a semicolon after a bare template item', () => {
+      // The text-body grammar has no `;` after a bare template item; the
+      // formatter used to add one and turn a valid file into a parse error.
+      const result = format("text(50, 50) {\n`line one`\ntspan()`two`\n}");
+      expect(result).toBe('text(50, 50) {\n  `line one`\n  tspan()`two`;\n}');
+      expect(() => parse(result)).not.toThrow();
+      expect(format(result)).toBe(result);
+    });
+
+    it('round-trips a switch inside a text body with bare template and tspan items', () => {
+      const result = format('text(16, y) {\n`#${row}: `\nswitch (score) {\ncase ..<40 {\ntspan()`low`\n}\ndefault {\n`high`\n}\n}\n}');
+      expect(result).toBe('text(16, y) {\n  `#${row}: `\n  switch (score) {\n    case ..<40 {\n      tspan()`low`;\n    }\n    default {\n      `high`\n    }\n  }\n}');
+      expect(() => parse(result)).not.toThrow();
+      expect(format(result)).toBe(result);
     });
   });
 
@@ -745,13 +755,13 @@ describe('formatDocument switch statements', () => {
       'text(10, 30) {',
       '  switch (level) {',
       '    case 1, 2 {',
-      '      `Low`;',
+      '      `Low`',
       '    }',
       '    case 3..<7 {',
       '      tspan()`Medium`;',
       '    }',
       '    default {',
-      '      `High`;',
+      '      `High`',
       '    }',
       '  }',
       '}',
@@ -767,7 +777,7 @@ describe('formatDocument switch statements', () => {
       '  if (level > 1) {',
       '    tspan()`Medium`;',
       '  } else {',
-      '    `Low`;',
+      '    `Low`',
       '  }',
       '}',
     ].join('\n');
