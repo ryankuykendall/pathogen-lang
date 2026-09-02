@@ -1,4 +1,4 @@
-import { stdlib } from '../stdlib';
+import { stdlib, contextAwareFunctions } from '../stdlib';
 import { analyzeScopes } from './scope-analysis';
 import {
   ENUM_MEMBER_MAP,
@@ -44,7 +44,7 @@ export interface SemanticToken {
   modifiers: number;  // bitmask of TOKEN_MODIFIERS
 }
 
-const STDLIB_NAMES = new Set(Object.keys(stdlib));
+const STDLIB_NAMES = new Set([...Object.keys(stdlib), ...contextAwareFunctions]);
 
 // Derive constructor/type names from generated completion data (not hardcoded)
 // TYPE_MEMBERS keys that start with uppercase are constructable types

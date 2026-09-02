@@ -1,8 +1,10 @@
 import { parseLezer } from '../parser';
 import { parser as styleParser } from '../parser/style.generated';
 import { parseExpressionAtOffset } from '../parser/lezer-expression';
-import { stdlib } from '../stdlib';
+import { stdlib, contextAwareFunctions } from '../stdlib';
 import { CALLBACK_METHODS } from '../callback-methods';
+import { EVALUATOR_CONSTRUCTORS } from '../evaluator/constructor-registry';
+import { BUILTIN_ENUMS as RUNTIME_ENUMS } from '../evaluator/builtin-enums';
 
 import type { TextDocument } from './document';
 import type { Range } from './types';
@@ -20,18 +22,19 @@ import type {
 } from '../parser/ast';
 
 // --- Built-in names that are always in scope ---
+// Derived from the runtime's own registries (constructor-registry,
+// builtin-enums, stdlib + contextAwareFunctions) so a new constructor,
+// enum, or context-aware function is a builtin here the moment it exists.
+// Only the namespaces and globals are resolved specially by the evaluator's
+// lookupVariable and have no registry to derive from.
 
 const BUILTIN_NAMESPACES = new Set(['Object', 'Color', 'PathBlock', 'Cap']);
 
-const BUILTIN_ENUMS = new Set([
-  'Easing', 'Interpolation', 'SpreadMethod', 'GradientUnits', 'Direction',
-  'CurveContinuity',
-  'ConicSpread', 'InnerFill', 'TopoMethod', 'BBoxAnchor', 'GridPatternType',
-  'HexagonOrientation', 'VerticalAnchor',
-  'MarkerUnits', 'MarkerOrient', 'MarkerRefX', 'MarkerRefY', 'MarkerPreserveAspectRatio',
-]);
+const BUILTIN_ENUMS = new Set(Object.keys(RUNTIME_ENUMS));
 
-const STDLIB_NAMES = new Set(Object.keys(stdlib));
+const BUILTIN_CONSTRUCTORS = new Set<string>(EVALUATOR_CONSTRUCTORS);
+
+const STDLIB_NAMES = new Set([...Object.keys(stdlib), ...contextAwareFunctions]);
 
 const BUILTIN_GLOBALS = new Set(['ctx', 'viewbox', 'PI', 'E', 'TAU', 'Infinity', 'NaN']);
 
@@ -173,7 +176,7 @@ function resolveId(name: string, loc: SourceLocation | undefined, scope: Scope, 
     current = current.parent;
   }
   const isBuiltin = BUILTIN_NAMESPACES.has(name) || BUILTIN_ENUMS.has(name) ||
-    STDLIB_NAMES.has(name) || BUILTIN_GLOBALS.has(name);
+    BUILTIN_CONSTRUCTORS.has(name) || STDLIB_NAMES.has(name) || BUILTIN_GLOBALS.has(name);
   col.refs.push({ name, range, declaration: null, isBuiltin });
 }
 
@@ -506,6 +509,9 @@ function walkExpr(expr: Expression, scope: Scope, col: Collector): void {
       for (const part of expr.parts) { if (typeof part !== 'string') walkExpr(part, scope, col); }
       break;
     case 'LayerConstructorExpression':
+      // The constructor name is a field, not a child expression; record it
+      // as a builtin reference so it gets colored like Point(...) does.
+      resolveId(expr.layerType, expr.loc, scope, col);
       walkExpr(expr.name, scope, col);
       if (expr.styleExpr) walkExpr(expr.styleExpr, scope, col);
       break;

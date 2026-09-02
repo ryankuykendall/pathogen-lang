@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { StringTextDocument } from '../../src/language-services/document';
 import { analyzeScopes } from '../../src/language-services/scope-analysis';
+import { EVALUATOR_CONSTRUCTORS } from '../../src/evaluator/constructor-registry';
+import { BUILTIN_ENUMS } from '../../src/evaluator/builtin-enums';
+import { stdlib, contextAwareFunctions } from '../../src/stdlib';
 import type { ScopeInfo, Declaration, Reference } from '../../src/language-services/scope-analysis';
 
 function analyze(source: string): ScopeInfo {
@@ -194,6 +197,32 @@ describe('analyzeScopes', () => {
     it('marks undefined variables as unresolved non-builtin', () => {
       const info = analyze('M undefinedVar 0');
       expect(unresolvedRefs(info)).toContain('undefinedVar');
+    });
+
+    it('marks every runtime constructor, enum, stdlib, and context-aware function as builtin (derived from the registries)', () => {
+      const names = [
+        ...EVALUATOR_CONSTRUCTORS,
+        ...Object.keys(BUILTIN_ENUMS),
+        ...Object.keys(stdlib),
+        ...contextAwareFunctions,
+        'Object', 'Color', 'PathBlock', 'Cap',
+      ];
+      const notBuiltin = names.filter((name) => {
+        const info = analyze(`let probe = ${name};`);
+        const ref = info.references.find((r) => r.name === name);
+        return !ref || !ref.isBuiltin;
+      });
+      expect(notBuiltin).toEqual([]);
+    });
+
+    it('records the layer constructor name as a builtin reference', () => {
+      const info = analyze('let L = PathLayer("a");');
+      expect(builtinRefs(info)).toContain('PathLayer');
+    });
+
+    it('keeps builtin references inside style-value interpolations', () => {
+      const info = analyze('define PathLayer("p") ${ opacity: ${ Point(1, 2).x }; }');
+      expect(builtinRefs(info)).toContain('Point');
     });
   });
 

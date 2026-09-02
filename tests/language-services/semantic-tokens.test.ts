@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { StringTextDocument } from '../../src/language-services/document';
 import { getSemanticTokens, encodeSemanticTokens, TOKEN_TYPES } from '../../src/language-services/semantic-tokens';
 import type { SemanticToken } from '../../src/language-services/semantic-tokens';
+import { EVALUATOR_CONSTRUCTORS } from '../../src/evaluator/constructor-registry';
+import { BUILTIN_ENUMS } from '../../src/evaluator/builtin-enums';
+import { contextAwareFunctions } from '../../src/stdlib';
 
 function tokens(source: string): SemanticToken[] {
   return getSemanticTokens(new StringTextDocument(source));
@@ -165,5 +168,23 @@ describe('getSemanticTokens', () => {
       expect(fnTokens[0].character).toBe(src.split('\n')[1].indexOf('myFn'));
       expect(fnTokens[0].length).toBe(4);
     });
+  });
+});
+
+describe('builtin coloring derived from the runtime registries', () => {
+  it('emits a token for every constructor, enum, and context-aware function', () => {
+    const names = [...EVALUATOR_CONSTRUCTORS, ...Object.keys(BUILTIN_ENUMS), ...contextAwareFunctions];
+    const uncolored = names.filter((name) => {
+      const t = tokens(`let probe = ${name};`);
+      return !t.some((tok) => tok.line === 0 && tok.character === 12 && tok.length === name.length);
+    });
+    expect(uncolored).toEqual([]);
+  });
+
+  it('colors Point, PathLayer, polarPoint, and BlendMode', () => {
+    expect(typeOf(tokens('let p = Point(3, 4);').find((t) => t.character === 8)!)).toBe('type');
+    expect(typeOf(tokens('let L = PathLayer("a");').find((t) => t.character === 8)!)).toBe('type');
+    expect(typeOf(tokens('let q = polarPoint(0, 10);').find((t) => t.character === 8)!)).toBe('function');
+    expect(typeOf(tokens('let b = BlendMode.Multiply;').find((t) => t.character === 8)!)).toBe('type');
   });
 });
