@@ -5817,8 +5817,10 @@ function evaluateStatementPlain(stmt: Statement, scope: Scope): string {
       const prevInsideApply = scope.evalState?.insideLayerApply;
       if (scope.evalState) scope.evalState.insideLayerApply = true;
       try {
+        // One scope for the whole block (parity with index.ts).
+        const blockScope = createScope(scope);
         for (const bodyStmt of stmt.body) {
-          const result = evaluateStatementPlain(bodyStmt, createScope(scope));
+          const result = evaluateStatementPlain(bodyStmt, blockScope);
           if (result) results.push(result);
         }
       } finally {
@@ -6451,8 +6453,10 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
       const prevInsideApply = scope.evalState?.insideLayerApply;
       if (scope.evalState) scope.evalState.insideLayerApply = true;
       try {
+        // One scope for the whole block (parity with index.ts).
+        const blockScope = createScope(scope);
         for (const bodyStmt of stmt.body) {
-          evaluateStatementAnnotated(bodyStmt, createScope(scope), ctx);
+          evaluateStatementAnnotated(bodyStmt, blockScope, ctx);
         }
       } finally {
         if (scope.evalState) scope.evalState.insideLayerApply = prevInsideApply;

@@ -2660,3 +2660,29 @@ describe('Multi-Layer Support', () => {
     });
   });
 });
+
+describe('apply block scoping', () => {
+  // The apply body used to create a fresh scope per STATEMENT, so nothing
+  // declared in the block was visible to the statements after it.
+  const textOf = (source: string, name: string): string[] => {
+    const layer = compile(source).layers.find((l) => l.name === name);
+    return (layer?.textElements ?? []).map((el) => el.children.map((c) => c.text).join(''));
+  };
+  const textLayer = "define TextLayer('t') ${ font-size: 12; }";
+
+  it('a let in a TextLayer apply block reaches a later text() argument, body, and interpolation', () => {
+    expect(textOf(`${textLayer}\nlayer('t').apply {\n  let level = 4;\n  text(10, level) { if (level > 3) { \`hi\` } }\n  text(10, 30)\`L${'$'}{level}\`\n}`, 't')).toEqual(['hi', 'L4']);
+  });
+
+  it('a fn, a for bound, and an &{ } block in a TextLayer apply block see earlier bindings', () => {
+    expect(textOf(`${textLayer}\nlayer('t').apply {\n  fn lbl() { return "z"; }\n  let count = 2;\n  for (i in 0..<count) { text(10, i)\`${'$'}{lbl()}${'$'}{i}\` }\n  let blk = &{ text(0, count)\`b\` };\n  blk.drawTo(0, 0);\n}`, 't')).toEqual(['z0', 'z1', 'b']);
+  });
+
+  it('a let in a PathLayer apply block is visible to later path commands', () => {
+    expect(compilePath("define PathLayer('p') ${ stroke: red; }\nlayer('p').apply {\n  let sz = 4;\n  M sz sz L 10 10\n}")).toBe('M 4 4 L 10 10');
+  });
+
+  it('still rejects path commands inside a TextLayer apply block', () => {
+    expect(() => compile(`${textLayer}\nlayer('t').apply { let sz = 1; M sz sz }`)).toThrow('Path commands cannot be used inside a TextLayer apply block');
+  });
+});

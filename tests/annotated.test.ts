@@ -1601,3 +1601,12 @@ describe('switch expressions (parity)', () => {
     expect(() => compileAnnotated('let n = switch (3) { case "a".."b" { 1 } default { 2 } }; M n n')).toThrow('Line 1: Range pattern bounds must be numeric');
   });
 });
+
+describe('apply block scoping (parity)', () => {
+  it('a let in a PathLayer apply block is visible to later statements in annotated mode', () => {
+    const src = "define PathLayer('p') ${ stroke: red; }\nlayer('p').apply {\n  let sz = 4;\n  M sz sz L 10 10\n}";
+    const lines = compileAnnotated(src).split('\n').map((l) => l.trim()).filter((l) => /^[ML] /.test(l));
+    expect(lines).toEqual(['M 4 4', 'L 10 10']);
+    expect(lines.join(' ')).toBe(compile(src).layers.find((l) => l.name === 'p')!.data);
+  });
+});

@@ -9190,9 +9190,13 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         // TextLayer apply: set activeLayerName so TextStatements write here
         const prevActiveLayerName = scope.evalState.activeLayerName;
         scope.evalState.activeLayerName = nameValue;
+        // One scope for the whole block (parity with the PathLayer branch):
+        // a `let` or `fn` declared here is visible to the statements after
+        // it, including text bodies and their interpolations.
+        const blockScope = createScope(scope);
         for (const bodyStmt of stmt.body) {
           // Apply blocks are break/continue boundaries (builder-enforced; defensive)
-          const flow = evaluateStatementToAccum(bodyStmt, createScope(scope), createPathStore());
+          const flow = evaluateStatementToAccum(bodyStmt, blockScope, createPathStore());
           if (flow) throw loopFlowBoundaryError(flow);
         }
         scope.evalState.activeLayerName = prevActiveLayerName;
