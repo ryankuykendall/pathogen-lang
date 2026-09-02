@@ -9,6 +9,8 @@
 // Scenario 4 — misplaced `default`: asserts the builder's parse error reaches
 // the error panel.
 // Scenario 5 — `switch` keyword completion appears in the editor popup.
+// Scenario 6 — the expression form (`let r = switch (…) { … };`, and a switch
+// inside calc() in a path argument): preview matches the CLI.
 //
 // Requires `npm run dev:website` (or dev:stack) on localhost:3000, with the
 // playground rebuilt after any src/ change
@@ -37,6 +39,7 @@ const DEMO_DIR = 'project-docs/switch-case/';
 const RANGES_PROGRAM = readFileSync(`${DEMO_DIR}demo-ranges.pathogen`, 'utf8');
 const DESTRUCTURE_PROGRAM = readFileSync(`${DEMO_DIR}demo-destructure.pathogen`, 'utf8');
 const TEXT_PROGRAM = readFileSync(`${DEMO_DIR}demo-text.pathogen`, 'utf8');
+const EXPRESSION_PROGRAM = readFileSync(`${DEMO_DIR}demo-expression.pathogen`, 'utf8');
 
 const MISPLACED_DEFAULT_PROGRAM = `let kind = 1;
 switch (kind) {
@@ -161,6 +164,7 @@ function moveAnchors(pathData: string): string[] {
 for (const [name, code] of [
   ['ranges demo renders like the CLI', RANGES_PROGRAM],
   ['destructuring demo renders like the CLI', DESTRUCTURE_PROGRAM],
+  ['expression demo renders like the CLI', EXPRESSION_PROGRAM],
 ] as const) {
   const result = await runScenario(name, code);
   check('no compile error', !result?.errorPanelText);

@@ -46,7 +46,12 @@ const CLAUSE_KEYWORDS = new Set(['with', 'as']);
  */
 export const pathArgsTokenizer = new ExternalTokenizer((input) => {
   let consumed = 0;
-  let depth = 0;
+  let depth = 0; // ( and [ nesting
+  // Braces opened INSIDE parens (a switch expression's arms inside calc()).
+  // Tracked separately from `depth` so an unclosed `(` (a typo) still lets the
+  // enclosing block's `}` and the next line's keyword end the token exactly
+  // as they always did — only a brace this token itself opened is consumed.
+  let braceDepth = 0;
   let lastNonWS = 0;
 
   while (true) {
@@ -73,8 +78,10 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       }
       if (input.next === -1) break;
 
-      // Check if next token starts a new statement
-      if (isAlpha(input.next)) {
+      // Check if next token starts a new statement. Inside a switch
+      // expression's braces a keyword on a new line (`case`, `default`) is
+      // expression content, so the check is skipped only there.
+      if (braceDepth === 0 && isAlpha(input.next)) {
         const word = peekWord(input);
         if (KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word) || CLAUSE_KEYWORDS.has(word) || (word.length === 1 && PATH_COMMANDS.has(word))) {
           break;
@@ -84,7 +91,7 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
           break;
         }
       }
-      if (input.next === 125) break; // '}'
+      if (input.next === 125 && braceDepth === 0) break; // '}' closes the enclosing block
       if (input.next === 47) { // '/' — might be comment
         if (input.peek(1) === 47) break; // '//' comment → stop
         if (depth === 0) break; // Single '/' at top level after newline → stop
@@ -93,8 +100,19 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       continue;
     }
 
-    // Closing brace, semicolon → end of args
-    if (ch === 125 || ch === 59) break; // '}' or ';'
+    // Semicolon → end of args. A closing brace ends the args unless it
+    // closes a brace this token opened (a switch expression inside calc()).
+    if (ch === 59) break; // ';'
+    if (ch === 125) { // '}'
+      if (braceDepth > 0) {
+        braceDepth--;
+        input.advance();
+        consumed++;
+        lastNonWS = consumed;
+        continue;
+      }
+      break;
+    }
 
     // Comment '//' → stop (single '/' handled as operator below)
     if (ch === 47) { // '/'
@@ -107,6 +125,16 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
     // Opening paren/bracket
     if (ch === 40 || ch === 91) { // '(' or '['
       depth++;
+      input.advance();
+      consumed++;
+      lastNonWS = consumed;
+      continue;
+    }
+
+    // Opening brace inside parens: a switch expression's arms inside calc().
+    // At top level `{` is never an argument.
+    if (ch === 123 && depth > 0) { // '{'
+      braceDepth++;
       input.advance();
       consumed++;
       lastNonWS = consumed;

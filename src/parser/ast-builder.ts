@@ -23,6 +23,8 @@ import type {
   SwitchStatement,
   SwitchCase,
   SwitchDefault,
+  SwitchExpression,
+  SwitchArm,
   CasePattern,
   RangePattern,
   FunctionDefinition,
@@ -867,6 +869,98 @@ function asCasePattern(expr: Expression, patLoc: SourceLocation): CasePattern {
   return { type: 'ValuePattern', value: expr, loc: patLoc };
 }
 
+// --- Switch expressions ---
+
+function buildSwitchExpression(cursor: TreeCursor, source: string): SwitchExpression {
+  const nodeLoc = loc(cursor, source);
+  let discriminant: Expression | null = null;
+  const arms: SwitchArm[] = [];
+  let defaultValue: Expression | null = null;
+
+  cursor.firstChild();
+  let inParens = false;
+  do {
+    if (cursor.name === '(') {
+      inParens = true;
+    } else if (cursor.name === ')') {
+      inParens = false;
+    } else if (inParens && !discriminant && isExpressionNode(cursor.name)) {
+      discriminant = buildExpressionWithPostfix(cursor, source);
+      if ((cursor.name as string) === ')') inParens = false;
+    } else if (cursor.name === 'CaseArm') {
+      if (defaultValue) {
+        throw parseErrorAt(loc(cursor, source), "'default' must be the last arm in a switch expression");
+      }
+      arms.push(buildSwitchArm(cursor, source));
+    } else if (cursor.name === 'DefaultArm') {
+      if (defaultValue) {
+        throw parseErrorAt(loc(cursor, source), "A switch expression may have only one 'default' arm");
+      }
+      defaultValue = buildDefaultArm(cursor, source);
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  // The grammar makes the default arm mandatory; this is reachable only
+  // through error recovery, where it still gives the language service a
+  // precise message.
+  if (!defaultValue) {
+    throw parseErrorAt(nodeLoc, "A switch expression needs a 'default' arm so it always produces a value");
+  }
+  return {
+    type: 'SwitchExpression',
+    discriminant: discriminant ?? { type: 'NullLiteral' },
+    arms,
+    defaultValue,
+    loc: nodeLoc,
+  };
+}
+
+function buildSwitchArm(cursor: TreeCursor, source: string): SwitchArm {
+  const nodeLoc = loc(cursor, source);
+  const patterns: CasePattern[] = [];
+  let guard: Expression | null = null;
+  let value: Expression | null = null;
+
+  cursor.firstChild();
+  do {
+    if (cursor.name === 'CasePattern') {
+      patterns.push(buildCasePattern(cursor, source));
+    } else if (cursor.name === 'WhereGuard') {
+      guard = buildWhereGuard(cursor, source);
+    } else if (cursor.name === '{') {
+      value = readArmValue(cursor, source);
+    }
+  } while (cursor.nextSibling());
+  cursor.parent();
+
+  checkAlternativeBindings(patterns);
+  return { type: 'SwitchArm', patterns, guard, value: value ?? { type: 'NullLiteral' }, loc: nodeLoc };
+}
+
+function buildDefaultArm(cursor: TreeCursor, source: string): Expression {
+  let value: Expression | null = null;
+  cursor.firstChild();
+  do {
+    if (cursor.name === '{') value = readArmValue(cursor, source);
+  } while (cursor.nextSibling());
+  cursor.parent();
+  return value ?? { type: 'NullLiteral' };
+}
+
+// Cursor on the arm's '{'; the arm holds exactly one expression (with its
+// postfix chain) before the matching '}'. Leaves the cursor on or after '}'.
+function readArmValue(cursor: TreeCursor, source: string): Expression | null {
+  let value: Expression | null = null;
+  while (cursor.nextSibling() && cursor.name !== '}') {
+    if (!value && isExpressionNode(cursor.name)) {
+      value = buildExpressionWithPostfix(cursor, source);
+      if ((cursor.name as string) === '}') break;
+    }
+  }
+  return value;
+}
+
 function patternBindingNames(p: CasePattern): string[] {
   if (p.type === 'ArrayDestructuringPattern') {
     return [...p.elements, ...(p.rest ? [p.rest] : [])].sort();
@@ -1677,6 +1771,7 @@ function buildFontDirective(cursor: TreeCursor, source: string): FontDirective {
 function buildExpression(cursor: TreeCursor, source: string): Expression {
   switch (cursor.name) {
     case 'TernaryExpression': return buildTernaryExpression(cursor, source);
+    case 'SwitchExpression': return buildSwitchExpression(cursor, source);
     case 'BinaryExpression': return buildBinaryExpression(cursor, source);
     case 'UnaryExpression': return buildUnaryExpression(cursor, source);
     case 'Number': return buildNumberLiteral(cursor, source);
@@ -2720,7 +2815,7 @@ function isExpressionNode(name: string): boolean {
     name === 'ObjectLiteral' || name === 'StyleBlockLiteral' || name === 'PathBlockExpression' ||
     name === 'TextBlockExpression' || name === 'CalcExpression' || name === 'LayerConstructor' || name === 'LayerCallExpression' ||
     name === 'Identifier' || name === 'ParenExpression' || name === 'ArgList' ||
-    name === 'TrailingBlock';
+    name === 'TrailingBlock' || name === 'SwitchExpression';
 }
 
 function isOperator(name: string): boolean {

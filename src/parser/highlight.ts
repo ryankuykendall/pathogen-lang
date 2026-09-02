@@ -68,7 +68,7 @@ export const pathogenHighlighting = styleTags({
   // Structural
   'ForLoop ForEachLoop': t.controlKeyword,
   'IfStatement ElseClause': t.controlKeyword,
-  'SwitchStatement CaseClause DefaultClause WhereGuard TextSwitchStatement TextCaseClause TextDefaultClause': t.controlKeyword,
+  'SwitchStatement CaseClause DefaultClause WhereGuard TextSwitchStatement TextCaseClause TextDefaultClause SwitchExpression CaseArm DefaultArm': t.controlKeyword,
   FunctionDefinition: t.function(t.definition(t.variableName)),
   EnumDefinition: t.definition(t.typeName),
 });

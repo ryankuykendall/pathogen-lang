@@ -432,3 +432,26 @@ describe('analyzeScopes switch statements', () => {
     expect(info.declarations.filter((d) => d.name === 'r')).toHaveLength(2);
   });
 });
+
+describe('switch expressions', () => {
+  it('scopes arm bindings to the arm and resolves the discriminant outside', () => {
+    const info = analyze('let p = { x: 1, y: 2 };\nlet r = switch (p) {\n  case { x, y } where x > y { x + y }\n  default { x }\n};');
+    expect(unresolvedRefs(info)).toEqual(['x']);
+    const pRef = info.references.find((r) => r.name === 'p')!;
+    expect(pRef.declaration!.name).toBe('p');
+    const guardX = info.references.filter((r) => r.name === 'x');
+    expect(guardX.filter((r) => r.declaration).map((r) => r.declaration!.kind)).toEqual(['variable', 'variable']);
+  });
+
+  it('records type context for a single-pattern arm and drops it for comma alternatives', () => {
+    const single = analyze('let p = [1, 2];\nlet r = switch (p) {\n  case [first, second] { second }\n  default { 0 }\n};');
+    expect(single.references.find((r) => r.name === 'second')!.declaration!.typeContext).toEqual({
+      kind: 'arrayElement',
+      expr: expect.objectContaining({ type: 'Identifier', name: 'p' }),
+      index: 1,
+    });
+    const multi = analyze('let p = [1, 2];\nlet r = switch (p) {\n  case [px, py], [py, px] { px }\n  default { 0 }\n};');
+    expect(unresolvedRefs(multi)).toEqual([]);
+    expect(multi.references.find((r) => r.name === 'px')!.declaration!.typeContext).toBeUndefined();
+  });
+});

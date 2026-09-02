@@ -465,6 +465,22 @@ function walkExpr(expr: Expression, scope: Scope, col: Collector): void {
       walkExpr(expr.consequent, scope, col);
       walkExpr(expr.alternate, scope, col);
       break;
+    case 'SwitchExpression': {
+      // Mirrors the SwitchStatement case: discriminant in the enclosing
+      // scope, one child scope per arm, default in its own scope.
+      walkExpr(expr.discriminant, scope, col);
+      for (const arm of expr.arms) {
+        const armScope = mkScope(scope);
+        const withTypeContext = arm.patterns.length === 1;
+        for (const pattern of arm.patterns) {
+          walkCasePattern(pattern, expr.discriminant, arm.loc, armScope, col, withTypeContext);
+        }
+        if (arm.guard) walkExpr(arm.guard, armScope, col);
+        walkExpr(arm.value, armScope, col);
+      }
+      walkExpr(expr.defaultValue, mkScope(scope), col);
+      break;
+    }
     case 'CalcExpression':
       walkExpr(expr.expression, scope, col);
       break;

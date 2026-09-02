@@ -35,7 +35,7 @@ export const KEYWORD_HOVER: Record<string, string> = {
   break:
     '**break** — Exit the innermost enclosing for loop\n```\nfor (i in 0..10) {\n  if (done) { break; }\n  ...\n}\n```\nValid only inside a for loop body (or `if` branches and `switch` cases nested in it). A switch never catches it — inside a `case` body it exits the loop, not the switch.',
   switch:
-    '**switch** — Match a value against case patterns\n```\nswitch (kind) {\n  case "circle" { ... }\n  case 0..<10 { ... }\n  case { x, y } where x > y { ... }\n  default { ... }\n}\n```\nPatterns: values (comma-separated alternatives), ranges (`0..10` inclusive, `0..<10` half-open, `..<0` / `100..` open-ended), and `[a, ...rest]` / `{ x, y: alias }` destructuring with an optional `where` guard. No fallthrough: the first matching case runs and the switch ends.',
+    '**switch** — Match a value against case patterns\n```\nswitch (kind) {\n  case "circle" { ... }\n  case 0..<10 { ... }\n  case { x, y } where x > y { ... }\n  default { ... }\n}\n```\nPatterns: values (comma-separated alternatives), ranges (`0..10` inclusive, `0..<10` half-open, `..<0` / `100..` open-ended), and `[a, ...rest]` / `{ x, y: alias }` destructuring with an optional `where` guard.\n\nAs a value — one expression per arm, `default` required:\n```\nlet r = switch (level) {\n  case 1, 2 { 4 }\n  default { 12 }\n};\n``` No fallthrough: the first matching case runs and the switch ends.',
   case:
     '**case** — One clause of a switch\n```\ncase "a", "b" { ... }\ncase 0..<0.25 { ... }\ncase [first, ...others] { ... }\ncase { x, y } where x > y { ... }\n```\nValue, range, or destructuring pattern; comma alternatives share the body. Bodies are braced — no `:` and no fallthrough.',
   where:

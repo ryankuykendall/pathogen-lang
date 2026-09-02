@@ -14,6 +14,7 @@ import type {
   BinaryExpression,
   TextBodyItem,
   CasePattern,
+  SwitchExpression,
   ArrayDestructuringPattern,
   ObjectDestructuringPattern,
 } from '../parser/ast';
@@ -282,6 +283,20 @@ function formatDestructuringPattern(pattern: ArrayDestructuringPattern | ObjectD
   ).join(', ');
   const rest = pattern.rest ? `, ...${pattern.rest}` : '';
   return `{ ${props}${rest} }`;
+}
+
+// Always multi-line, one arm per line, arms indented one level past the
+// line the expression starts on (the closing brace lines up with that line).
+function formatSwitchExpression(expr: SwitchExpression, depth: number, indent: string, source?: string): string {
+  const disc = formatExpression(expr.discriminant, depth, indent, source);
+  const inner = indent.repeat(depth + 1);
+  const arms = expr.arms.map((arm) => {
+    const patterns = arm.patterns.map((p) => formatCasePattern(p, depth + 1, indent, source)).join(', ');
+    const guard = arm.guard ? ` where ${formatExpression(arm.guard, depth + 1, indent, source)}` : '';
+    return `${inner}case ${patterns}${guard} { ${formatExpression(arm.value, depth + 1, indent, source)} }`;
+  });
+  arms.push(`${inner}default { ${formatExpression(expr.defaultValue, depth + 1, indent, source)} }`);
+  return `switch (${disc}) {\n${arms.join('\n')}\n${indent.repeat(depth)}}`;
 }
 
 function formatCasePattern(pattern: CasePattern, depth: number, indent: string, source?: string): string {
@@ -693,6 +708,8 @@ function formatExpression(expr: Expression, depth: number, indent: string, sourc
     }
     case 'TernaryExpression':
       return formatTernary(expr, depth, indent, source);
+    case 'SwitchExpression':
+      return formatSwitchExpression(expr, depth, indent, source);
     case 'CalcExpression':
       return `calc(${formatExpression(expr.expression, depth, indent, source)})`;
     case 'FunctionCall':

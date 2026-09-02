@@ -225,6 +225,13 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
     case 'TernaryExpression':
       return inferExprType(expr.consequent, scope, visited) ?? inferExprType(expr.alternate, scope, visited);
 
+    case 'SwitchExpression': {
+      // The value's type is known only when every arm agrees.
+      const types = [...expr.arms.map((arm) => inferExprType(arm.value, scope, visited)), inferExprType(expr.defaultValue, scope, visited)];
+      const first = types[0];
+      return first !== null && types.every((t) => t === first) ? first : null;
+    }
+
     case 'Identifier': {
       const decl = resolveInScope(expr.name, scope);
       if (decl) return inferDeclType(decl, visited);

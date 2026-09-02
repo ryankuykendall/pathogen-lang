@@ -1342,11 +1342,11 @@ for (i in 0..10) {
 }
 ```
 
-The range `0..10` includes both endpoints (0 through 10, giving 11 iterations). Both bounds are ordinary expressions — variables, member accesses, indexes, and function calls all work without a `calc()` wrapper: `for (i in 1..points.length)`, `for (i in first[0]..limits.max)`. To visit array indexes, use a half-open range (`for (i in 0..<points.length)`, below) or iterate the array directly with `for (p in points)` or `for ([p, i] in points)`.
+The range `0..10` includes both endpoints (0 through 10, giving 11 iterations). Both bounds are ordinary expressions — variables, member accesses, indexes, and function calls all work without a `calc()` wrapper: `for (i in 1..points.length)`, `for (i in first[0]..limits.max)`. To visit array indexes, use a half-open range (`for (i in 0..<points.length)`, below) or iterate the array directly with `for (point in points)` or `for ([point, i] in points)`.
 
 ### Half-Open Ranges
 
-`a..<b` stops before `b`, so `0..<n` visits exactly `n` values and pairs naturally with array lengths:
+`a..<b` stops before `b`, so for whole-number bounds `0..<n` visits exactly `n` values and pairs naturally with array lengths:
 
 ```
 let points = [Point(10, 10), Point(50, 30), Point(90, 10)];
@@ -1357,7 +1357,7 @@ for (i in 0..<points.length) {
 // 3 circles: i = 0, 1, 2
 ```
 
-Half-open ranges count down too: `5..<0` visits 5, 4, 3, 2, 1. An empty range such as `0..<0` runs zero times.
+An empty range such as `0..<0` runs zero times.
 
 ### Descending Ranges
 
@@ -1370,6 +1370,8 @@ for (i in 5..1) {
 }
 // Produces: M 100 0 M 80 0 M 60 0 M 40 0 M 20 0
 ```
+
+`5..<0` counts down too, stopping before 0: 5, 4, 3, 2, 1.
 
 ### Nested Loops
 
@@ -1467,7 +1469,7 @@ switch (kind) {
 }
 ```
 
-The value in parentheses is evaluated once. Cases are tested in order, the first one that matches runs its body, and the switch ends. There is no fallthrough, so no `break` is needed, and a `break;` written out of C habit is not harmless: inside a loop it exits that loop, and outside one it fails to compile. If nothing matches and there is no `default`, the switch does nothing. `switch` is a statement, not a value: it cannot appear on the right of `let`. `switch`, `case`, and `where` are reserved words and cannot be used as variable names.
+The value in parentheses is evaluated once. Cases are tested in order, the first one that matches runs its body, and the switch ends. There is no fallthrough, so no `break` is needed, and a `break;` written out of C habit is not harmless: inside a loop it exits that loop, and outside one it fails to compile. If nothing matches and there is no `default`, the switch does nothing. A `switch` can also produce a value; see [Switch Expressions](#syntax-switch-expressions) below. `switch`, `case`, and `where` are reserved words and cannot be used as variable names.
 
 ### Value Patterns
 
@@ -1518,7 +1520,7 @@ switch (kind) {
 
 ### Range Patterns
 
-`a..b` matches every number from `a` through `b` inclusive, and `a..<b` excludes the upper bound, so adjacent bands never both claim a boundary. Both are the spellings `for` loops use:
+`a..b` matches every number from `a` through `b` inclusive, and `a..<b` excludes the upper bound, so adjacent bands never both claim a boundary. Both are the spellings `for` loops use, but a range pattern always reads low to high: `case 5..<0` matches nothing, where the same range in a `for` loop counts down.
 
 ```
 let t = 0.4;
@@ -1671,6 +1673,41 @@ let block = &{
   }
 };
 ```
+
+### Switch Expressions
+
+A `switch` can also produce a value. Put one expression inside each pair of braces, end with a `default` arm, and use the whole thing anywhere an expression goes:
+
+```
+let level = 4;
+
+let radius = switch (level) {
+  case 1, 2 { 4 }
+  case 3..<7 { 8 }
+  default { 12 }
+};
+
+let label = switch (level) {
+  case ..<3 { "low" }
+  case 3..<7 { "medium" }
+  default { "high" }
+};
+
+circle(50, 50, radius);
+log(label);   // medium
+```
+
+Each arm is a `case` clause and one expression. The clauses are the statement form's clauses: the same value, range, and destructuring patterns, comma alternatives, and `where` guards. A pattern's bindings are visible in that arm's expression (`case {x, y} { x + y }`). Only the chosen arm's expression runs. An arm holds exactly one expression, so there is no semicolon inside the braces, and omitting `default` is a parse error (`A switch expression needs a 'default' arm so it always produces a value`). A switch expression works on the right of `let`, in function arguments, in a backtick template's `${ }`, and inside `calc()`, which is also how it goes into a path command's arguments:
+
+```
+let target = Point(70, 30);
+
+M 0 0
+L calc(switch (target) { case {x, y} where x > y { x } default { 100 } }) 50
+// L 70 50
+```
+
+At the start of a statement, `switch` is always the statement form; to use the value, put the switch where a value is expected. Two places cannot hold one directly: a style value's `${ }` interpolation allows only one level of braces, and a bare path argument outside `calc()` accepts only simple values. In both, compute the value with `let` first.
 
 ## Functions
 

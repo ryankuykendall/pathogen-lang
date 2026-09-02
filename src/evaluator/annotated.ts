@@ -74,7 +74,7 @@ import {
 import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
 import { getStructDescriptor } from './struct-properties';
 import { isTruthy, toNumber, valuesEqual } from './value-semantics';
-import { selectSwitchClause, type MatchHost } from './switch-match';
+import { selectSwitchArm, selectSwitchClause, type MatchHost } from './switch-match';
 import { planRange } from './range-loop';
 
 import type { PathContext } from './context';
@@ -3587,6 +3587,13 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
       return isTruthy(condVal) ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
     }
 
+    case 'SwitchExpression': {
+      // Same matching as the statement; only the chosen arm's expression runs.
+      const scrutinee = evaluateExpression(expr.discriminant, scope);
+      const selected = selectSwitchArm(expr, scrutinee, () => createScope(scope), (armScope) => switchHost(armScope, expr));
+      return evaluateExpression(selected.value, selected.scope);
+    }
+
     case 'BinaryExpression': {
       // Check for angle unit misuse before evaluation (+/- mixing, angle × angle)
       if (expr.operator === '+' || expr.operator === '-' || expr.operator === '*') {
@@ -5526,7 +5533,7 @@ function evaluateViewBoxDefinition(stmt: ViewBoxDefinition, scope: Scope): void 
 }
 
 /** MatchHost for switch-match.ts: pattern expressions, bindings, and errors in the case scope. */
-function switchHost(caseScope: Scope, stmt: SwitchStatement): MatchHost {
+function switchHost(caseScope: Scope, stmt: { loc?: SourceLocation }): MatchHost {
   return {
     evaluate: (expr) => evaluateExpression(expr, caseScope),
     bind: (pattern, value) => bindDestructuringPattern(pattern, value as Value, caseScope, getLine(stmt)),

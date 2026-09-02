@@ -444,3 +444,26 @@ describe('getDiagnostics switch statements', () => {
     ]);
   });
 });
+
+describe('switch expression diagnostics', () => {
+  const messages = (source: string) => diagnose(source).map((d) => d.message);
+
+  it.each([
+    ['let f = switch (k) { case 1 { 5 } };', "A switch expression needs a 'default' arm so it always produces a value"],
+    ['let f = switch (k) { case 1 { 5; } default { 6 } };', 'A switch expression arm holds a single expression: case value { expr }'],
+    ['let f = switch (k) { case 1 { } default { 6 } };', 'Expected an expression inside the arm'],
+    ['let f = switch (k) { default { 6 } case 1 { 5 } };', "'default' must be the last arm in a switch expression"],
+    ['let f = switch k { default { 6 } };', "Expected '(' after 'switch'"],
+    ['let f = switch (k) { default { 6 };', "Expected '}' to close the switch expression"],
+  ])('%s', (source, expected) => {
+    expect(messages(source)).toContain(expected);
+  });
+
+  it('points a colon-form arm at the braces rule', () => {
+    expect(messages('let f = switch (k) { case 1: 5 default { 6 } };').join(' | ')).toContain('Case bodies use braces');
+  });
+
+  it('reports nothing for a valid switch expression', () => {
+    expect(messages('let k = 1;\nlet f = switch (k) { case 1, 2 { 5 } case {x, y} where x > y { x } default { 6 } };')).toEqual([]);
+  });
+});

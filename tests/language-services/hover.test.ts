@@ -682,3 +682,15 @@ describe('getHoverInfo switch keywords', () => {
     expect(applyHover.contents).toContain("layer('name').apply { ... }");
   });
 });
+
+describe('switch expression type inference', () => {
+  it('infers number when every arm agrees', () => {
+    const result = hover('let k = 1;\nlet r = switch (k) { case 1 { 4 } default { 12 } };\nM r 0', 2, 2);
+    expect(result!.contents).toBe('**r** — *variable: number*\n\nDefined at line 2');
+  });
+
+  it('reports no type when the arms disagree', () => {
+    const result = hover('let k = 1;\nlet r = switch (k) { case 1 { 4 } default { "x" } };\nM r 0', 2, 2);
+    expect(result!.contents).toBe('**r** — *variable*\n\nDefined at line 2');
+  });
+});

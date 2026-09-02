@@ -5543,3 +5543,69 @@ describe('ternary inside path-arg calc() evaluates (friction #18)', () => {
     expect(compile(src).layers[0].data).toBe('M 0 0 L 20 0');
   });
 });
+
+describe('switch expressions', () => {
+  it('selects the first matching arm value, or the default', () => {
+    const program = (level: number) =>
+      `let level = ${level}; let radius = switch (level) { case 1, 2 { 4 } case 3..<7 { 8 } default { 12 } }; M radius 0`;
+    expect(compilePath(program(2))).toBe('M 4 0');
+    expect(compilePath(program(4))).toBe('M 8 0');
+    expect(compilePath(program(9))).toBe('M 12 0');
+  });
+
+  it('works on the right of let with string results and open-ended ranges', () => {
+    const result = compile('let level = 4; let label = switch (level) { case ..<3 { "low" } case 3..<7 { "medium" } default { "high" } }; log(label);');
+    expect(result.logs.map((l) => l.parts.map((p) => p.value).join(''))).toEqual(['medium']);
+  });
+
+  it('works inside calc() in a path argument, with destructuring and a guard', () => {
+    expect(compilePath('let target = Point(30, 70); M 0 0 L calc(switch (target) { case {x, y} where x > y { x } default { 100 } }) 50')).toBe('M 0 0 L 100 50');
+    expect(compilePath('let target = Point(70, 30); M 0 0 L calc(switch (target) { case {x, y} where x > y { x } default { 100 } }) 50')).toBe('M 0 0 L 70 50');
+  });
+
+  it('works across lines inside calc() in a path argument', () => {
+    expect(compilePath('let k = 2;\nM 0 0\nL calc(switch (k) {\n  case 1 { 5 }\n  case 2 { 6 }\n  default { 7 }\n}) 9')).toBe('M 0 0 L 6 9');
+  });
+
+  it('works in template interpolation, nested arms, and function arguments', () => {
+    const tpl = compile('let k = 2; log(`k is ${switch (k) { case 1 { "one" } default { "many" } }}`);');
+    expect(tpl.logs.map((l) => l.parts.map((p) => p.value).join(''))).toEqual(['k is many']);
+    expect(compilePath('let a = 1; let b = 2; let val = switch (a) { case 1 { switch (b) { case 2 { 12 } default { 10 } } } default { 0 } }; M val val')).toBe('M 12 12');
+    expect(compilePath('fn dbl(n) { return n * 2; } M dbl(calc(switch (3) { case 3 { 21 } default { 0 } })) 0')).toBe('M 42 0');
+    expect(compilePath('fn dbl(n) { return n * 2; } let pick = switch (3) { case 3 { 21 } default { 0 } }; M dbl(pick) 0')).toBe('M 42 0');
+  });
+
+  it('evaluates only the chosen arm', () => {
+    const result = compile('fn boom() { log("evaluated"); return 1; } let val = switch (2) { case 1 { boom() } default { 5 } }; M val val');
+    expect(result.layers[0].data).toBe('M 5 5');
+    expect(result.logs).toHaveLength(0);
+  });
+
+  it('binds destructured names for the arm value and runs the guard on the first matching alternative', () => {
+    expect(compilePath('let p = Point(3, 4); let sum = switch (p) { case {x, y} { x + y } default { 0 } }; M sum sum')).toBe('M 7 7');
+    expect(compilePath('let n = 7; let w = switch (n) { case 1, 7 where n > 5 { 1 } default { 3 } }; M w w')).toBe('M 1 1');
+  });
+
+  it('reads a range pattern low to high, unlike a for loop', () => {
+    // for (i in 5..<0) counts down; the same range as a case pattern matches nothing.
+    expect(compilePath('let n = 3; let r = switch (n) { case 5..<0 { 1 } default { 2 } }; M r r')).toBe('M 2 2');
+    expect(compilePath('let n = 3; let r = switch (n) { case 0..<5 { 1 } default { 2 } }; M r r')).toBe('M 1 1');
+  });
+
+  it('treats a non-numeric scrutinee as a range non-match and a non-numeric bound as an error', () => {
+    expect(compilePath('let name = "abc"; let n = switch (name) { case 0..10 { 1 } default { 2 } }; M n n')).toBe('M 2 2');
+    expect(() => compilePath('let n = switch (3) { case "a".."b" { 1 } default { 2 } }; M n n')).toThrow('Line 1: Range pattern bounds must be numeric');
+  });
+
+  it('keeps an angle value flowing out of an arm', () => {
+    expect(compilePath('let k = 1; let a = switch (k) { case 1 { 90deg } default { 0deg } }; M cos(a) sin(a)')).toBe('M 6.123233995736766e-17 1');
+  });
+
+  it('is a no-op expression statement when written at statement position with a trailing semicolon', () => {
+    expect(compilePath('switch (1) { case 1 { 5 } default { 6 } }; M 1 1')).toBe('M 1 1');
+  });
+
+  it('does not leak arm bindings', () => {
+    expect(() => compilePath('let p = Point(3, 4); let sum = switch (p) { case {x, y} { x + y } default { 0 } }; M x y')).toThrow(/Undefined variable: x/);
+  });
+});

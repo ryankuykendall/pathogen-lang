@@ -61,6 +61,12 @@ export function inferUnit(expr: Expression): InferredUnit {
       if (c === 'scalar' && a === 'scalar') return 'scalar';
       return 'unknown';
     }
+    case 'SwitchExpression': {
+      const units = [...expr.arms.map((arm) => inferUnit(arm.value)), inferUnit(expr.defaultValue)];
+      if (units.includes('angle')) return 'angle';
+      if (units.every((u) => u === 'scalar')) return 'scalar';
+      return 'unknown';
+    }
     case 'BinaryExpression': {
       const op = expr.operator;
       if (op !== '+' && op !== '-' && op !== '*' && op !== '/') {

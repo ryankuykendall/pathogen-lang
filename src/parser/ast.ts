@@ -26,6 +26,7 @@ export type Node =
   | ForEachLoop
   | IfStatement
   | SwitchStatement
+  | SwitchExpression
   | FunctionDefinition
   | EnumDefinition
   | PathCommand
@@ -184,6 +185,26 @@ export interface RangePattern {
   start: Expression | null;         // null = open lower bound
   end: Expression | null;           // null = open upper bound
   inclusive: boolean;               // `..` true, `..<` false (only meaningful with an end)
+  loc?: SourceLocation;
+}
+
+// switch (value) { case pattern { expr } default { expr } } — the expression
+// form. Same clauses as the statement, but each arm holds ONE expression and
+// `default` is mandatory (the builder enforces it) so a value always results.
+export interface SwitchExpression {
+  type: 'SwitchExpression';
+  discriminant: Expression;
+  arms: SwitchArm[];
+  defaultValue: Expression;
+  loc?: SourceLocation;
+}
+
+// case p1, p2 where guard { expr }
+export interface SwitchArm {
+  type: 'SwitchArm';
+  patterns: CasePattern[];
+  guard: Expression | null;
+  value: Expression;
   loc?: SourceLocation;
 }
 
@@ -560,6 +581,7 @@ export interface FontDirective {
 
 export type Expression =
   | TernaryExpression
+  | SwitchExpression
   | BinaryExpression
   | UnaryExpression
   | CalcExpression

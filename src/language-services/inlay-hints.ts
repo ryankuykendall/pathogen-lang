@@ -178,6 +178,21 @@ function walkExpr(expr: Expression, source: string, range: Range, hints: InlayHi
       walkExpr(expr.consequent, source, range, hints);
       walkExpr(expr.alternate, source, range, hints);
       break;
+    case 'SwitchExpression':
+      walkExpr(expr.discriminant, source, range, hints);
+      for (const arm of expr.arms) {
+        for (const pattern of arm.patterns) {
+          if (pattern.type === 'ValuePattern') walkExpr(pattern.value, source, range, hints);
+          else if (pattern.type === 'RangePattern') {
+            if (pattern.start) walkExpr(pattern.start, source, range, hints);
+            if (pattern.end) walkExpr(pattern.end, source, range, hints);
+          }
+        }
+        if (arm.guard) walkExpr(arm.guard, source, range, hints);
+        walkExpr(arm.value, source, range, hints);
+      }
+      walkExpr(expr.defaultValue, source, range, hints);
+      break;
     case 'CalcExpression':
       walkExpr(expr.expression, source, range, hints);
       break;

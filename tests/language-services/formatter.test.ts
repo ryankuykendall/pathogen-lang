@@ -781,3 +781,17 @@ describe('formatDocument switch statements', () => {
     expect(format('let {x, ...rest} = p;')).toBe('let { x, ...rest } = p;');
   });
 });
+
+describe('switch expressions', () => {
+  it('prints one arm per line and round-trips patterns, guards, and destructuring', () => {
+    const result = format('let r = switch (level) { case 1, 2 { 4 } case 3..<7 where level > 0 { 8 } case {x, y} { x } default { 12 } };');
+    expect(result).toBe('let r = switch (level) {\n  case 1, 2 { 4 }\n  case 3..<7 where level > 0 { 8 }\n  case { x, y } { x }\n  default { 12 }\n};');
+    expect(format(result)).toBe(result);
+  });
+
+  it('keeps a switch expression inside calc() in a path argument', () => {
+    const result = format('M 0 0\nL calc(switch (k) { case 1 { 5 } default { 7 } }) 9');
+    expect(result).toBe('M 0 0\nL calc(switch (k) {\n  case 1 { 5 }\n  default { 7 }\n}) 9');
+    expect(format(result)).toBe(result);
+  });
+});

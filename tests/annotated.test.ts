@@ -1579,3 +1579,25 @@ M calc(arr.seams().length * 10 + 5) 0`;
     expect(compileAnnotated(src)).toContain('M 5 0');
   });
 });
+
+describe('switch expressions (parity)', () => {
+  const pathLines = (annotated: string): string[] =>
+    annotated.split('\n').map((l) => l.trim()).filter((l) => /^[ML] /.test(l));
+
+  it.each([
+    ['let form', 'let level = 4; let radius = switch (level) { case 1, 2 { 4 } case 3..<7 { 8 } default { 12 } }; M radius 0', ['M 8 0']],
+    ['calc in path arg', 'let target = Point(30, 70); M 0 0 L calc(switch (target) { case {x, y} where x > y { x } default { 100 } }) 50', ['M 0 0', 'L 100 50']],
+    ['multi-line calc', 'let k = 2;\nM 0 0\nL calc(switch (k) {\n  case 1 { 5 }\n  case 2 { 6 }\n  default { 7 }\n}) 9', ['M 0 0', 'L 6 9']],
+    ['nested', 'let a = 1; let b = 2; let val = switch (a) { case 1 { switch (b) { case 2 { 12 } default { 10 } } } default { 0 } }; M val val', ['M 12 12']],
+    ['lazy', 'fn boom() { log("evaluated"); return 1; } let val = switch (2) { case 1 { boom() } default { 5 } }; M val val', ['M 5 5']],
+    ['guard on alternatives', 'let n = 7; let w = switch (n) { case 1, 7 where n > 5 { 1 } default { 3 } }; M w w', ['M 1 1']],
+    ['angle flows', 'let k = 1; let a = switch (k) { case 1 { 90deg } default { 0deg } }; M cos(a) sin(a)', ['M 6.123233995736766e-17 1']],
+  ])('%s matches the main evaluator', (_name, src, expected) => {
+    expect(pathLines(compileAnnotated(src))).toEqual(expected);
+    expect(pathLines(compileAnnotated(src)).join(' ')).toBe(compile(src).layers[0].data);
+  });
+
+  it('throws the same non-numeric bound error', () => {
+    expect(() => compileAnnotated('let n = switch (3) { case "a".."b" { 1 } default { 2 } }; M n n')).toThrow('Line 1: Range pattern bounds must be numeric');
+  });
+});

@@ -147,3 +147,15 @@ describe('highlightPathogenTokens', () => {
     expect(dedupe(classSeq(fromTokens))).toEqual(dedupe(classSeq(direct)));
   });
 });
+
+describe('switch expressions', () => {
+  it('classifies the keywords of a switch expression on the right of let', () => {
+    const lines = highlightPathogenTokens('let r = switch (k) {\n  case 1, 2 { 5 }\n  case 3..<7 { 8 }\n  default { 12 }\n};');
+    const classes = classesOf(lines);
+    expect(classes.get('switch')).toBe('kw');
+    expect(classes.get('case')).toBe('kw');
+    expect(classes.get('default')).toBe('kw');
+    expect(classes.get('..<')).toBe('op');
+    expect(roundTrip(lines)).toBe('let r = switch (k) {\n  case 1, 2 { 5 }\n  case 3..<7 { 8 }\n  default { 12 }\n};');
+  });
+});

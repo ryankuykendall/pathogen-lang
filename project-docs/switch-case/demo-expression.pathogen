@@ -1,0 +1,30 @@
+define ViewBox(0, 0, 320, 120);
+
+// The expression form: one expression per arm, default required. The
+// radius, the ring count, and the vertical offset are each one switch.
+enum Marker { Dot, Ring, Box, Spark }
+
+let kinds = [Marker.Dot, Marker.Ring, Marker.Box, Marker.Spark, Marker.Ring];
+
+for ([kind, index] in kinds) {
+  let cx = 40 + index * 60;
+  let radius = switch (kind) {
+    case Marker.Dot { 10 }
+    case Marker.Ring { 16 }
+    default { 12 }
+  };
+  let rings = switch (kind) {
+    case Marker.Ring { 2 }
+    default { 1 }
+  };
+  let lift = switch (index) {
+    case 0..<2 { 0 }
+    case 2..<4 { -12 }
+    default { 12 }
+  };
+  for (ring in 0..<rings) {
+    circle(cx, 60 + lift, radius - ring * 8);
+  }
+  M calc(cx - radius) calc(90 + lift)
+  L calc(cx + switch (kind) { case Marker.Box { radius * 2 } default { radius } }) calc(90 + lift)
+}

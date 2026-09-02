@@ -21,7 +21,7 @@ import { getStructDescriptor } from './struct-properties';
 export { BUILTIN_ENUMS };
 import { angle, angleMethod, callStdlibPreservingAngles, formatAngleForDisplay, isAngleValue, radiansToDegreesSnapped } from './angle';
 import { isBooleanValue, isTruthy, toNumber, valuesEqual } from './value-semantics';
-import { selectSwitchClause, type MatchHost } from './switch-match';
+import { selectSwitchArm, selectSwitchClause, type MatchHost } from './switch-match';
 import { planRange } from './range-loop';
 import { checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
@@ -165,6 +165,8 @@ import type {
 } from './types';
 import type {
   ArrayDestructuringPattern,
+  CasePattern,
+  SourceLocation,
   SwitchStatement,
   Expression,
   FunctionCall,
@@ -562,6 +564,19 @@ function colorAngleDegrees(v: Value): number | undefined {
 /**
  * Convert an Expression AST node to its source text representation
  */
+function casePatternToSource(pattern: CasePattern): string {
+  switch (pattern.type) {
+    case 'ValuePattern':
+      return expressionToSource(pattern.value);
+    case 'RangePattern':
+      return `${pattern.start ? expressionToSource(pattern.start) : ''}${pattern.inclusive ? '..' : '..<'}${pattern.end ? expressionToSource(pattern.end) : ''}`;
+    case 'ArrayDestructuringPattern':
+      return `[${[...pattern.elements, ...(pattern.rest ? [`...${pattern.rest}`] : [])].join(', ')}]`;
+    case 'ObjectDestructuringPattern':
+      return `{${[...pattern.properties.map((p) => (p.alias ? `${p.key}: ${p.alias}` : p.key)), ...(pattern.rest ? [`...${pattern.rest}`] : [])].join(', ')}}`;
+  }
+}
+
 function expressionToSource(expr: Expression): string {
   switch (expr.type) {
     case 'NumberLiteral':
@@ -580,6 +595,15 @@ function expressionToSource(expr: Expression): string {
       return `calc(${expressionToSource(expr.expression)})`;
     case 'TernaryExpression':
       return `(${expressionToSource(expr.condition)} ? ${expressionToSource(expr.consequent)} : ${expressionToSource(expr.alternate)})`;
+    case 'SwitchExpression': {
+      const arms = expr.arms.map((arm) => {
+        const patterns = arm.patterns.map(casePatternToSource).join(', ');
+        const guard = arm.guard ? ` where ${expressionToSource(arm.guard)}` : '';
+        return `case ${patterns}${guard} { ${expressionToSource(arm.value)} }`;
+      });
+      arms.push(`default { ${expressionToSource(expr.defaultValue)} }`);
+      return `switch (${expressionToSource(expr.discriminant)}) { ${arms.join(' ')} }`;
+    }
     case 'BinaryExpression':
       return `(${expressionToSource(expr.left)} ${expr.operator} ${expressionToSource(expr.right)})`;
     case 'UnaryExpression':
@@ -1596,6 +1620,13 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
     case 'TernaryExpression': {
       const condVal = evaluateExpression(expr.condition, scope);
       return isTruthy(condVal) ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
+    }
+
+    case 'SwitchExpression': {
+      // Same matching as the statement; only the chosen arm's expression runs.
+      const scrutinee = evaluateExpression(expr.discriminant, scope);
+      const selected = selectSwitchArm(expr, scrutinee, () => createScope(scope), (armScope) => switchHost(armScope, expr));
+      return evaluateExpression(selected.value, selected.scope);
     }
 
     case 'BinaryExpression': {
@@ -8614,7 +8645,7 @@ function bindDestructuringPattern(
 }
 
 /** MatchHost for switch-match.ts: pattern expressions, bindings, and errors in the case scope. */
-function switchHost(caseScope: Scope, stmt: SwitchStatement): MatchHost {
+function switchHost(caseScope: Scope, stmt: { loc?: SourceLocation }): MatchHost {
   return {
     evaluate: (expr) => evaluateExpression(expr, caseScope),
     bind: (pattern, value) => bindDestructuringPattern(pattern, value as Value, caseScope, getLine(stmt)),

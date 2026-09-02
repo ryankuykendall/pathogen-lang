@@ -195,7 +195,10 @@ const SWITCH_FAMILY_NODES = new Set([
   'CaseClause', 'TextCaseClause',
   'DefaultClause', 'TextDefaultClause',
   'CasePattern', 'RangePattern', 'WhereGuard',
+  'SwitchExpression', 'CaseArm', 'DefaultArm',
 ]);
+
+const ARM_SEMICOLON_MESSAGE = 'A switch expression arm holds a single expression: case value { expr }';
 
 const CASE_COLON_MESSAGE = "Case bodies use braces: case value { ... } (no ':' and no fallthrough)";
 const DEFAULT_COLON_MESSAGE = "Case bodies use braces: default { ... } (no ':' and no fallthrough)";
@@ -359,6 +362,28 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
     if (errText === ':') return DEFAULT_COLON_MESSAGE;
     if (!errText) return "Expected '{' after 'default'";
     return `Unexpected '${errText}' after 'default' — expected '{'`;
+  }
+  // ── Switch expressions (one expression per arm, default required) ──
+  if (parentName === 'SwitchExpression') {
+    if (prevName === 'switch') return "Expected '(' after 'switch'";
+    if (errText === '{') return "Expected ')' before '{'";
+    if (errText === 'case' && prevName === 'DefaultArm') return "'default' must be the last arm in a switch expression";
+    if (errText === '}' || !errText) {
+      // A missing default and a missing closing brace both surface as an
+      // empty error node; the presence of a DefaultArm tells them apart.
+      return parent?.getChild('DefaultArm')
+        ? "Expected '}' to close the switch expression"
+        : "A switch expression needs a 'default' arm so it always produces a value";
+    }
+    return `Unexpected '${errText}' in switch expression — expected 'case', 'default', or '}'`;
+  }
+  if (parentName === 'CaseArm' || parentName === 'DefaultArm') {
+    if (errText === ';') return ARM_SEMICOLON_MESSAGE;
+    if (errText === ':') return parentName === 'CaseArm' ? CASE_COLON_MESSAGE : DEFAULT_COLON_MESSAGE;
+    if (prevName === 'case' && parentName === 'CaseArm') return "Expected a pattern after 'case'";
+    if (errText === '}' || (prevName === '{' && !errText)) return 'Expected an expression inside the arm';
+    if (!errText) return "Expected '{' to open the arm";
+    return `Unexpected '${errText}' in switch expression arm — one expression per arm`;
   }
   // `case 1: …` — the ':' error node lands inside CasePattern, not CaseClause.
   if (parentName === 'CasePattern' || parentName === 'RangePattern') {

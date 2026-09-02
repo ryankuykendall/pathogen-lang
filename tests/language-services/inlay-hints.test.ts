@@ -198,3 +198,23 @@ describe('getInlayHints switch statements', () => {
     ]);
   });
 });
+
+describe('getInlayHints switch expressions', () => {
+  it('shows parameter hints for calls in the discriminant, patterns, guard, arm values, and the default', () => {
+    const src = [
+      'let kind = 1;',
+      'let r = switch (lerp(0, 2, 0.5)) {',
+      '  case lerp(0, 2, 0.5) where lerp(0, 1, 0.5) > 0 { lerp(0, 4, 0.5) }',
+      '  default { lerp(0, 8, 0.5) }',
+      '};',
+    ].join('\n');
+    const h = paramHints(src);
+    expect(h.map((x) => `${x.position.line}:${x.label}`)).toEqual([
+      '1:a:', '1:b:', '1:t:', // discriminant
+      '2:a:', '2:b:', '2:t:', // value pattern
+      '2:a:', '2:b:', '2:t:', // where guard
+      '2:a:', '2:b:', '2:t:', // arm value
+      '3:a:', '3:b:', '3:t:', // default value
+    ]);
+  });
+});

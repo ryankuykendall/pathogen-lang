@@ -332,7 +332,25 @@ primaryExpression {
   LayerCallExpression |
   Identifier ~applyDot |
   ParenExpression |
+  SwitchExpression |
   TrailingBlock
+}
+
+//-- The expression form: one expression per arm and a mandatory default
+//-- arm. Making the default mandatory is what keeps this free of conflicts
+//-- with SwitchStatement — `switch (x) { }` can only be a statement, and a
+//-- non-empty body tells the two apart within two tokens (`{ red }` is not
+//-- a Block; `{ M 0 0 }` / `{ red; }` are not arms).
+SwitchExpression {
+  kw<"switch"> "(" expression ")" "{" CaseArm* DefaultArm "}"
+}
+
+CaseArm {
+  kw<"case"> CasePattern ("," CasePattern)* WhereGuard? "{" expression "}"
+}
+
+DefaultArm {
+  kw<"default"> "{" expression "}"
 }
 
 LayerCallExpression {

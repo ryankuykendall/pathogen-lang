@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { extractComments, parse, parseLezer, parseWithComments } from '../src/parser';
+import { compile } from '../src';
 
 describe('Parser', () => {
   describe('path commands', () => {
@@ -2430,5 +2431,90 @@ describe('ternary and comparison operators inside path-arg calc() (friction #18)
   });
   it('bare ? at top level of path args still errors', () => {
     expect(() => parse('M 0 0\nL 1 ? 2 : 3')).toThrow();
+  });
+});
+
+describe('switch expressions', () => {
+  it('parses a switch expression on the right of let with value, range, guard, and destructuring arms', () => {
+    const ast = parse('let r = switch (level) { case 1, 2 { 4 } case 3..<7 where level > 0 { 8 } case {x, y} { x } default { 12 } };');
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'r',
+      value: {
+        type: 'SwitchExpression',
+        discriminant: { type: 'Identifier', name: 'level' },
+        arms: [
+          {
+            type: 'SwitchArm',
+            patterns: [
+              { type: 'ValuePattern', value: { type: 'NumberLiteral', value: 1 } },
+              { type: 'ValuePattern', value: { type: 'NumberLiteral', value: 2 } },
+            ],
+            guard: null,
+            value: { type: 'NumberLiteral', value: 4 },
+          },
+          {
+            type: 'SwitchArm',
+            patterns: [{ type: 'RangePattern', start: { type: 'NumberLiteral', value: 3 }, end: { type: 'NumberLiteral', value: 7 }, inclusive: false }],
+            guard: { type: 'BinaryExpression', operator: '>' },
+            value: { type: 'NumberLiteral', value: 8 },
+          },
+          {
+            type: 'SwitchArm',
+            patterns: [{ type: 'ObjectDestructuringPattern', properties: [{ key: 'x' }, { key: 'y' }] }],
+            guard: null,
+            value: { type: 'Identifier', name: 'x' },
+          },
+        ],
+        defaultValue: { type: 'NumberLiteral', value: 12 },
+      },
+    });
+  });
+
+  it('parses a switch expression inside calc() in a path argument, across lines', () => {
+    const ast = parse('M 0 0\nL calc(switch (k) {\n  case 1 { 5 }\n  default { 7 }\n}) 9');
+    expect(ast.body[1]).toMatchObject({
+      type: 'PathCommand',
+      command: 'L',
+      args: [
+        { type: 'CalcExpression', expression: { type: 'SwitchExpression', arms: [{ value: { type: 'NumberLiteral', value: 5 } }], defaultValue: { type: 'NumberLiteral', value: 7 } } },
+        { type: 'NumberLiteral', value: 9 },
+      ],
+    });
+  });
+
+  it('parses a switch expression in a call argument, a template interpolation, and nested in another arm', () => {
+    // A shape call at statement level is a path command carrying the call.
+    const call = parse('circle(0, 0, switch (k) { default { 5 } });');
+    expect(call.body[0]).toMatchObject({
+      type: 'PathCommand',
+      args: [{ type: 'FunctionCall', name: 'circle', args: [{ type: 'NumberLiteral' }, { type: 'NumberLiteral' }, { type: 'SwitchExpression', arms: [], defaultValue: { type: 'NumberLiteral', value: 5 } }] }],
+    });
+    const tpl = parse('let s = `${switch (k) { default { 1 } }}`;');
+    expect(tpl.body[0]).toMatchObject({ type: 'LetDeclaration', value: { type: 'TemplateLiteral', parts: [{ type: 'SwitchExpression' }] } });
+    const nested = parse('let v = switch (a) { default { switch (b) { default { 1 } } } };');
+    expect(nested.body[0]).toMatchObject({ type: 'LetDeclaration', value: { type: 'SwitchExpression', defaultValue: { type: 'SwitchExpression', defaultValue: { type: 'NumberLiteral', value: 1 } } } });
+  });
+
+  it('lets an unclosed paren typo end at the block brace and the next keyword, as before', () => {
+    // The tokenizer nests braces only inside a switch expression's arms; an
+    // unclosed `(` must not swallow the enclosing block's `}` or a `let`.
+    expect(() => compile('let k = 1;\nif (k > 0) {\n  M calc(1\n}\nL 0 0;')).toThrow('Line 3, col 5: Undefined variable: calc');
+    expect(compile('fn f() {\n  M calc(1\n}\nL 0 0').layers[0].data).toBe('L 0 0');
+    expect(compile('let f = 5;\nlet y = 10;\nM f(y\nlet b = 1;\nL b 0;').layers[0].data).toBe('M 5 10 L 1 0');
+  });
+
+  it('keeps the statement form at statement position and treats a trailing ; as an expression statement', () => {
+    expect(parse('switch (k) { case 1 { M 0 0 } default { L 1 1 } }').body[0].type).toBe('SwitchStatement');
+    expect(parse('switch (k) { }').body[0].type).toBe('SwitchStatement');
+    expect(parse('switch (k) { case 1 { 5 } default { 6 } };').body[0]).toMatchObject({ type: 'ExpressionStatement', expression: { type: 'SwitchExpression' } });
+  });
+
+  it('rejects a missing default arm, a statement inside an arm, and mismatched alternative bindings', () => {
+    expect(() => parse('let f = switch (k) { case 1 { 5 } };')).toThrow(/Parse error/);
+    expect(() => parse('let f = switch (k) { case 1 { 5; } default { 6 } };')).toThrow(/Parse error/);
+    expect(() => parse('let f = switch (k) { case [px, py], [px] { px } default { 0 } };')).toThrow(
+      "Parse error at line 1, column 37: Every pattern in a case must bind the same names (this one binds px, the first binds px, py)",
+    );
   });
 });

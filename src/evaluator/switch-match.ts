@@ -9,6 +9,7 @@ import type {
   Expression,
   ObjectDestructuringPattern,
   Statement,
+  SwitchExpression,
   SwitchStatement,
 } from '../parser/ast';
 import { getStructDescriptor } from './struct-properties';
@@ -118,4 +119,21 @@ export function selectSwitchClause<S>(
   }
   if (stmt.defaultCase) return { body: stmt.defaultCase.body, scope: createCaseScope() };
   return null;
+}
+
+/**
+ * The expression form: the first matching arm's value expression (in a fresh
+ * arm scope holding its bindings), else the mandatory default's value.
+ */
+export function selectSwitchArm<S>(
+  expr: SwitchExpression,
+  scrutinee: unknown,
+  createArmScope: () => S,
+  hostFor: (armScope: S) => MatchHost,
+): { value: Expression; scope: S } {
+  for (const arm of expr.arms) {
+    const armScope = createArmScope();
+    if (caseMatches(arm, scrutinee, hostFor(armScope))) return { value: arm.value, scope: armScope };
+  }
+  return { value: expr.defaultValue, scope: createArmScope() };
 }
