@@ -1266,63 +1266,29 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
         }
 
         // Build identifier, then check for member/index chains
-        let expr: PathArg = { type: 'Identifier', name, loc: argLoc } as Identifier;
+        const chained = parsePostfixChain({ type: 'Identifier', name, loc: argLoc } as Identifier, argsText, pos, baseOffset, source);
+        args.push(chained.expr);
+        pos = chained.pos;
+        continue;
+      }
+    }
 
-        // Handle .property chains, [index], and .method() calls
-        while (pos < argsText.length) {
-          if (argsText[pos] === '.') {
-            // Member access or method call
-            const propMatch = argsText.slice(pos + 1).match(/^[a-zA-Z_]\w*/);
-            if (!propMatch) break;
-            const propName = propMatch[0];
-            pos += 1 + propName.length;
-
-            // Check if followed by (args) — method call
-            if (pos < argsText.length && argsText[pos] === '(') {
-              const parenContent = extractParenContent(argsText, pos);
-              if (parenContent !== null) {
-                const methodArgs = parseFunctionArgs(parenContent, baseOffset + pos + 1, source);
-                expr = {
-                  type: 'MethodCallExpression',
-                  object: expr as Expression,
-                  method: propName,
-                  args: methodArgs,
-                  loc: (expr as { loc?: SourceLocation }).loc,
-                } as MethodCallExpression;
-                pos += parenContent.length + 2;
-                continue;
-              }
-            }
-
-            expr = {
-              type: 'MemberExpression',
-              object: expr as Expression,
-              property: propName,
-              loc: (expr as { loc?: SourceLocation }).loc,
-            } as MemberExpression;
-          } else if (argsText[pos] === '[') {
-            // Index access
-            const bracketContent = extractBracketContent(argsText, pos);
-            if (bracketContent !== null) {
-              // Parse the index expression
-              const indexArgs = parsePathArgs(bracketContent, baseOffset + pos + 1, source);
-              const indexExpr = indexArgs.length > 0 ? indexArgs[0] : { type: 'NumberLiteral', value: 0 } as NumberLiteral;
-              expr = {
-                type: 'IndexExpression',
-                object: expr as Expression,
-                index: indexExpr as Expression,
-                loc: (expr as { loc?: SourceLocation }).loc,
-              } as IndexExpression;
-              pos += bracketContent.length + 2;
-            } else {
-              break;
-            }
-          } else {
-            break;
-          }
+    // Array literal (`f([5, 6])`, `[1, 2][0]`): the tokenizer carries the
+    // brackets intact, so hand the whole span to the real expression parser,
+    // which already handles nesting, spread, and negative elements.
+    if (ch === '[') {
+      const bracketContent = extractBracketContent(argsText, pos);
+      if (bracketContent !== null) {
+        const literal = parseExpressionAt(`[${bracketContent}]`, baseOffset + pos, source);
+        const start = pos;
+        pos += bracketContent.length + 2;
+        if (literal) {
+          const chained = parsePostfixChain(literal as PathArg, argsText, pos, baseOffset, source);
+          args.push(chained.expr);
+          pos = chained.pos;
+        } else {
+          pos = start + bracketContent.length + 2;
         }
-
-        args.push(expr);
         continue;
       }
     }
@@ -1343,6 +1309,71 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
   }
 
   return args;
+}
+
+/**
+ * Fold `.prop`, `.method(args)`, and `[index]` suffixes onto a path-arg
+ * expression. Shared by the identifier and array-literal branches of
+ * parsePathArgs so both chain the same way. Returns the expression and the
+ * position of the first unconsumed character.
+ */
+function parsePostfixChain(
+  base: PathArg,
+  argsText: string,
+  pos: number,
+  baseOffset: number,
+  source: string,
+): { expr: PathArg; pos: number } {
+  let expr: PathArg = base;
+  while (pos < argsText.length) {
+    if (argsText[pos] === '.') {
+      // Member access or method call
+      const propMatch = argsText.slice(pos + 1).match(/^[a-zA-Z_]\w*/);
+      if (!propMatch) break;
+      const propName = propMatch[0];
+      pos += 1 + propName.length;
+
+      // Check if followed by (args) — method call
+      if (pos < argsText.length && argsText[pos] === '(') {
+        const parenContent = extractParenContent(argsText, pos);
+        if (parenContent !== null) {
+          const methodArgs = parseFunctionArgs(parenContent, baseOffset + pos + 1, source);
+          expr = {
+            type: 'MethodCallExpression',
+            object: expr as Expression,
+            method: propName,
+            args: methodArgs,
+            loc: (expr as { loc?: SourceLocation }).loc,
+          } as MethodCallExpression;
+          pos += parenContent.length + 2;
+          continue;
+        }
+      }
+
+      expr = {
+        type: 'MemberExpression',
+        object: expr as Expression,
+        property: propName,
+        loc: (expr as { loc?: SourceLocation }).loc,
+      } as MemberExpression;
+    } else if (argsText[pos] === '[') {
+      // Index access
+      const bracketContent = extractBracketContent(argsText, pos);
+      if (bracketContent === null) break;
+      const indexArgs = parsePathArgs(bracketContent, baseOffset + pos + 1, source);
+      const indexExpr = indexArgs.length > 0 ? indexArgs[0] : { type: 'NumberLiteral', value: 0 } as NumberLiteral;
+      expr = {
+        type: 'IndexExpression',
+        object: expr as Expression,
+        index: indexExpr as Expression,
+        loc: (expr as { loc?: SourceLocation }).loc,
+      } as IndexExpression;
+      pos += bracketContent.length + 2;
+    } else {
+      break;
+    }
+  }
+  return { expr, pos };
 }
 
 /**

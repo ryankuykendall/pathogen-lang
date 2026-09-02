@@ -5544,6 +5544,17 @@ describe('ternary inside path-arg calc() evaluates (friction #18)', () => {
   });
 });
 
+describe('array literals as path-argument call arguments', () => {
+  it('passes the whole array to the function (was silently truncated to the first element)', () => {
+    expect(compilePath('fn first(arr) {\n  for (item in arr) { return item; }\n}\nM first([5, 6]) 0')).toBe('M 5 0');
+    expect(compilePath('fn count(arr) { return arr.length; }\nM count([5, 6, 7]) count([]) ')).toBe('M 3 0');
+  });
+
+  it('indexes an array literal and nests literals', () => {
+    expect(compilePath('fn id(n) { return n; }\nM id([7, 8][1]) id([[1, 2], [3, 4]][1][0])')).toBe('M 8 3');
+  });
+});
+
 describe('switch expressions', () => {
   it('selects the first matching arm value, or the default', () => {
     const program = (level: number) =>

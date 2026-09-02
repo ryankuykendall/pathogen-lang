@@ -2518,3 +2518,28 @@ describe('switch expressions', () => {
     );
   });
 });
+
+describe('array literals in path-argument position', () => {
+  // parsePathArgs had no case for `[` at token start, so `f([5, 6])` was
+  // walked character by character and silently became `f(5)`.
+  const lastArgs = (src: string) => (parse(src).body.at(-1) as { args: unknown[] }).args;
+  const num = (value: number) => ({ type: 'NumberLiteral', value });
+  const arr = (...elements: unknown[]) => ({ type: 'ArrayLiteral', elements });
+
+  it.each([
+    ['M sum([1, 2]) 0', [{ type: 'FunctionCall', name: 'sum', args: [arr(num(1), num(2))] }, num(0)]],
+    ['M sum([1, 2], 3) 0', [{ type: 'FunctionCall', name: 'sum', args: [arr(num(1), num(2)), num(3)] }, num(0)]],
+    ['M sum(3, [1, 2]) 0', [{ type: 'FunctionCall', name: 'sum', args: [num(3), arr(num(1), num(2))] }, num(0)]],
+    ['M sum([[1, 2], [3, 4]]) 0', [{ type: 'FunctionCall', name: 'sum', args: [arr(arr(num(1), num(2)), arr(num(3), num(4)))] }, num(0)]],
+    ['M sum([1, [2, 3]]) 0', [{ type: 'FunctionCall', name: 'sum', args: [arr(num(1), arr(num(2), num(3)))] }, num(0)]],
+    ['M sum([]) 0', [{ type: 'FunctionCall', name: 'sum', args: [arr()] }, num(0)]],
+    ['let a = [1];\nM sum([...a]) 0', [{ type: 'FunctionCall', name: 'sum', args: [arr({ type: 'SpreadElement', argument: { type: 'Identifier', name: 'a' } })] }, num(0)]],
+    ['M sum([1, 2][0]) 0', [{ type: 'FunctionCall', name: 'sum', args: [{ type: 'IndexExpression', object: arr(num(1), num(2)), index: num(0) }] }, num(0)]],
+    ['M [1, 2] 0', [arr(num(1), num(2)), num(0)]],
+    ['M pt.f([1, 2]) 0', [{ type: 'MethodCallExpression', method: 'f', args: [arr(num(1), num(2))] }, num(0)]],
+    ['M sum([-5, 3]) 0', [{ type: 'FunctionCall', name: 'sum', args: [arr({ type: 'UnaryExpression', operator: '-', argument: num(5) }, num(3))] }, num(0)]],
+    ['let arr = [1, 2];\nM arr[0] arr[1]', [{ type: 'IndexExpression', object: { type: 'Identifier', name: 'arr' }, index: num(0) }, { type: 'IndexExpression', object: { type: 'Identifier', name: 'arr' }, index: num(1) }]],
+  ])('%s', (src, expected) => {
+    expect(lastArgs(src)).toMatchObject(expected as object[]);
+  });
+});
