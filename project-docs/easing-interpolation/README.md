@@ -13,7 +13,12 @@ gradients, and the "easing with lambdas" blog post.
 | `demo-cubic-bezier.pathogen` (+ `.svg`, `.png`) | Phase 1 demo (2026-09-03): six dot rows spaced by linear, quadratic `easeInOut`, CSS ease-in-out, CSS ease, expo-out and back in-out; the last row overshoots the rails. SVG is CLI output (`npm run cli -- … --output-svg-file=… --stroke=none`). |
 | `render-png.mjs` | Renders any demo SVG here to a 2x PNG: `node project-docs/easing-interpolation/render-png.mjs demo-cubic-bezier`. |
 | `scripts/debug-cubic-bezier.ts` (repo root) | Puppeteer check against the dev playground: CLI ↔ preview path parity for the demo, served completion/hover for `cubicBezier`, bit-exact value from the served bundle, positioned error for an out-of-range handle. |
-| `demo-curve-gallery.pathogen` (+ `.svg`, `.png`) | Phase 2 demo: the named curve family plotted. Added when Phase 2 lands. |
+| `demo-curve-gallery.pathogen` (+ `.svg`, `.png`) | Phase 2 demo (2026-09-03): the 21 named curves as small multiples, seven families by in/out/in-out, plotted with `ease(name, t)`; the dotted boxes are the 0..1 range that back and elastic leave. CLI output. |
+| `preview-topo-bounce-out-distance.png`, `preview-topo-elastic-in-out-laplace.png` | Playground preview screenshots of a TopoGradient rendered with the new easings on both solver methods, captured by `scripts/debug-easing-family.ts`. |
+| `scripts/debug-easing-family.ts` (repo root) | Puppeteer check for Phase 2: served table/enum/`ease`/WGSL agreement, WebGPU compile of the spliced shaders, topo rendering with new easings, the positioned unknown-curve error. |
+| `blog-synopsis-2026-09-03.md` | Phase 3 synopsis for the post "Ease Once, Apply Everywhere: Easing with Lambdas" (`website/blog/easing-with-lambdas.md`, samples in `website/blog/samples/post51/`). |
+| `blog-review-2026-09-03.md` | The four-persona agentic review of the post and what was changed in response. |
+| `check-post-page.mjs`, `blog-post-top.png` | Headless render of the served post confirming all six mini-workspaces draw their previews, and a screenshot of the top of the page. |
 
 ## Approved plan (2026-09-03)
 

@@ -1,0 +1,76 @@
+//-- Five easing curves plotted side by side. Each one is a lambda that
+//-- takes t and hands back a reshaped t: the box is the 0..1 range, the
+//-- line is where the curve sends each t. The last two leave the box.
+
+define ViewBox(0, 0, 400, 200);
+
+let linear = {|t| t};
+let quad = {|t| easeInOut(t)};
+let cssInOut = {|t| cubicBezier(0.42,
+    0,
+    0.58,
+    1,
+    t)};
+let back = {|t| ease(Easing.BackOut, t)};
+let elastic = {|t| ease(Easing.ElasticOut, t)};
+
+let curves = [
+  linear,
+  quad,
+  cssInOut,
+  back,
+  elastic,
+];
+let names = [
+  'linear',
+  'easeInOut',
+  'cubicBezier',
+  'BackOut',
+  'ElasticOut',
+];
+
+let plotW = 60;
+let plotH = 90;
+let gap = 14;
+let baseline = 150;
+
+let boxes = PathLayer('boxes') ${
+  stroke: oklch(0.82 0.02 260);
+  stroke-width: 0.5;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+let lines = PathLayer('curves') ${
+  stroke: oklch(0.58 0.19 350);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  fill: none;
+};
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: #8a93a6;
+  text-anchor: middle;
+};
+
+for (col in 0..4) {
+  let x0 = 25 + col * (plotW + gap);
+  let shape = curves[col];
+  boxes.apply {
+    rect(x0,
+        calc(baseline - plotH),
+        plotW,
+        plotH);
+  }
+  lines.apply {
+    M x0 baseline
+    for (i in 1..96) {
+      let t = i / 96;
+      L calc(x0 + plotW * t) calc(baseline - plotH * shape(t))
+    }
+  }
+  labels.apply {
+    text(calc(x0 + plotW / 2), 170)`${names[col]}`;
+  }
+}

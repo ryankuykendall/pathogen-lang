@@ -1,0 +1,105 @@
+//-- Factories: a fn that returns a lambda. The lambda captures the numbers
+//-- it was built with, so makeWave(12, 5) is a wave you can call with just
+//-- t, and makeEase(0.34, 1.56, 0.64, 1) is a curve with its handles baked
+//-- in. Three waves from one factory, one overshooting dot row from the
+//-- other: the dashed tick is the 1.0 mark the dots pass and come back to.
+
+define ViewBox(0, 0, 400, 250);
+
+fn makeWave(amplitude, halfCycles) {
+  return {|t| amplitude * sin(PI() * halfCycles * t)};
+}
+
+fn makeEase(x1, y1, x2, y2) {
+  return {|t| cubicBezier(x1,
+      y1,
+      x2,
+      y2,
+      t)};
+}
+
+let gentle = makeWave(8, 1);
+let ripple = makeWave(12, 5);
+let flutter = makeWave(6, 9);
+let backOut = makeEase(0.34, 1.56, 0.64, 1);
+
+let left = 40;
+let width = 320;
+let mark = 300;
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  letter-spacing: 0.5;
+  fill: #8a93a6;
+};
+let scene = GroupLayer('scene') ${};
+
+let wavesMade = [
+  gentle,
+  ripple,
+  flutter,
+];
+let names = [
+  'makeWave(8, 1)',
+  'makeWave(12, 5)',
+  'makeWave(6, 9)',
+];
+
+for (row in 0..2) {
+  let mid = 46 + row * 52;
+  let wave = wavesMade[row];
+  let guide = PathLayer(`baseline-${row}`) ${
+    stroke: oklch(0.82 0.02 260);
+    stroke-width: 0.5;
+    stroke-dasharray: 3 4;
+    fill: none;
+  };
+  guide.apply {
+    M left mid
+    L calc(left + width) mid
+  }
+  let trace = PathLayer(`wave-${row}`) ${
+    stroke: oklch(0.58 0.19 350);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    fill: none;
+  };
+  trace.apply {
+    M left mid
+    for (i in 1..96) {
+      let t = i / 96;
+      L calc(left + width * t) calc(mid - wave(t))
+    }
+  }
+  labels.apply {
+    text(left, calc(mid - 18))`${names[row]}`;
+  }
+  scene.append(guide, trace);
+}
+
+labels.apply {
+  text(left, 196)`makeEase(0.34, 1.56, 0.64, 1): past the mark, then back`;
+}
+let tick = PathLayer('mark') ${
+  stroke: oklch(0.82 0.02 260);
+  stroke-width: 0.5;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+tick.apply {
+  M calc(left + mark) 204
+  L calc(left + mark) 228
+}
+let dots = PathLayer('dots') ${
+  fill: none;
+  stroke: oklch(0.55 0.16 260);
+  stroke-width: 1;
+};
+dots.apply {
+  for (i in 0..10) {
+    let t = i / 10;
+    circle(calc(left + mark * backOut(t)), 216, 3);
+  }
+}
+scene.append(labels, tick, dots);

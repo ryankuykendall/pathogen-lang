@@ -1,0 +1,63 @@
+//-- Cycles and half-cycles. Every row is lerp(start, end, t) with a sine
+//-- offset, sin(PI() * halfCycles * t), riding on it. Counting half-cycles
+//-- means counting lobes: one lobe, two, three, four. Whole cycles can only
+//-- give an even number, and any whole count of half-cycles lands back on
+//-- the guide line at t = 1.
+
+define ViewBox(0, 0, 400, 300);
+
+let left = 40;
+let right = 296;
+let amplitude = 14;
+let rowNames = [
+  '1 half-cycle',
+  '2 half-cycles',
+  '3 half-cycles',
+  '4 half-cycles',
+];
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  letter-spacing: 0.5;
+  fill: #8a93a6;
+};
+let scene = GroupLayer('scene') ${};
+
+for (halfCycles in 1..4) {
+  let top = 32 + (halfCycles - 1) * 60;
+  let bottom = top + 36;
+  let wave = {|t| lerp(bottom, top, t) - amplitude * sin(PI() * halfCycles * t)};
+  let guide = PathLayer(`guide-${halfCycles}`) ${
+    stroke: oklch(0.82 0.02 260);
+    stroke-width: 0.5;
+    stroke-dasharray: 3 4;
+    fill: none;
+  };
+  guide.apply {
+    M left bottom
+    L right top
+  }
+  let trace = PathLayer(`wave-${halfCycles}`) ${
+    stroke: oklch(0.58 0.19 350);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    fill: none;
+  };
+  trace.apply {
+    M left bottom
+    for (i in 1..96) {
+      let t = i / 96;
+      L calc(lerp(left, right, t)) calc(wave(t))
+    }
+  }
+  labels.apply {
+    text(calc(right + 10), calc(top + 4))`${rowNames[halfCycles - 1]}`;
+  }
+  scene.append(guide, trace);
+}
+
+labels.apply {
+  text(left, 282)`y = lerp(bottom, top, t) - ${amplitude} * sin(PI() * halfCycles * t)`;
+}
+scene.append(labels);

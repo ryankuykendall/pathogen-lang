@@ -1,0 +1,55 @@
+//-- One eased t, three ranges. Top row: nine dots placed by bare t. Bottom
+//-- row: the same dots placed by smooth(t), and the SAME smooth(t) also
+//-- picks each dot's color (blue to pink) and radius (2 to 5). Change the
+//-- four handle numbers once and all three channels follow.
+
+define ViewBox(0, 0, 400, 170);
+
+let smooth = {|t| cubicBezier(0.42,
+    0,
+    0.58,
+    1,
+    t)};
+
+let left = 40;
+let right = 360;
+let blue = Color(0.55, 0.16, 260);
+let pink = Color(0.62, 0.19, 350);
+
+let labels = TextLayer('labels') ${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  letter-spacing: 0.5;
+  fill: #8a93a6;
+};
+labels.apply {
+  text(left, 34)`x = lerp(left, right, t)`;
+  text(left, 100)`x = lerp(left, right, smooth(t))`;
+  text(left, 113)`fill = blue.mix(pink, smooth(t)) · r = lerp(2, 5, smooth(t))`;
+}
+
+let plain = PathLayer('plain') ${
+  fill: oklch(0.55 0.16 260);
+  stroke: none;
+};
+plain.apply {
+  for (i in 0..8) {
+    let t = i / 8;
+    circle(calc(lerp(left, right, t)), 54, 4);
+  }
+}
+
+let eased = GroupLayer('eased') ${};
+for (i in 0..8) {
+  let t = i / 8;
+  let along = smooth(t);
+  let tint = blue.mix(pink, along);
+  let dot = PathLayer(`eased-${i}`) ${
+    fill: tint;
+    stroke: none;
+  };
+  dot.apply {
+    circle(calc(lerp(left, right, along)), 138, calc(lerp(2, 5, along)));
+  }
+  eased.append(dot);
+}

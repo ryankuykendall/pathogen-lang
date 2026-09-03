@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Core
 
+- **The formatter keeps the parentheses around a `%` right operand of `*`.** `a * (b % c)` was flattened to `a * b % c`, which parses as `(a * b) % c` and changes the value (`6 * (3 % 2)` is 6, `6 * 3 % 2` is 0). `%` shares the times precedence level but is not regroupable, so it is now excluded from the associative-parent shortcut; `+`/`-` and `*`/`/` regrouping is unchanged. Found while formatting the easing blog samples; pinned by tests in `tests/language-services/formatter.test.ts`.
 - **String arguments inside `calc()` in bare path arguments parse.** The greedy path-argument tokenizer stopped at a quote, so `M calc(ease('sine-in', t)) 0` (and `squareGrid('shape', …)`, `Color('#fff')` in the same position) failed with `Missing ';'`. It now consumes a quoted literal whole, escapes included, so a `)` or `;` inside the string cannot end the token. Function-call statements such as `circle(calc(ease('sine-in', t)), …)` were unaffected.
 
 ### Documentation

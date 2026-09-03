@@ -3,6 +3,12 @@
 
 export const blogIndex = [
   {
+    "slug": "easing-with-lambdas",
+    "title": "Ease Once, Apply Everywhere: Easing with Lambdas",
+    "date": "2026-09-07",
+    "description": "A practical walkthrough of Pathogen's easing curves through lambdas: build an eased t once, then feed it to ranges, amplitudes, and cycles and half-cycles, ending with a finished piece."
+  },
+  {
     "slug": "switch-case-comes-to-pathogen",
     "title": "Say It Once: switch and case Come to Pathogen",
     "date": "2026-09-06",
@@ -10928,6 +10934,590 @@ cookie cutters, donuts, open subjects, snapping.</li>
 difference, intersection, xor, and now with label carriage.</li>
 <li>Reference: <a href="/docs#segment-labels-labels-survive-derived-paths">labels survive derived paths</a>
 and <a href="/docs#path-blocks-cutting-paths">cutting paths</a> in the docs.</li>
+</ul>
+`,
+  'easing-with-lambdas': `<blockquote>
+<p><strong>Prerequisites:</strong> the samples lean on <a href="/blog/lambdas-come-to-pathogen">lambdas</a>
+(the <code>{|t| ...}</code> closures), the <a href="/blog/primer-smoothstep"><code>smoothstep</code> primer</a>,
+and <a href="/docs#layers-defining-layers">layers</a> without introducing them. The
+curves themselves are documented in the
+<a href="/docs#stdlib-easing">stdlib&#39;s Easing section</a>.</p>
+</blockquote>
+<h2>The one idea</h2>
+<p>Every example below rests on one idea: <strong>an easing curve is a function that
+takes <code>t</code> and hands back a reshaped <code>t</code>.</strong></p>
+<p>Picture <code>t</code> as a slider you drag at a steady speed from 0 to 1. Under the
+slider sits a cam — a shaped wheel. The slider turns it at a constant rate,
+and the cam&#39;s profile decides how fast the thing riding on it rises: slowly
+and then in a rush, quickly and then settling, or past the top and back
+down. The cam is the easing curve. Swap the cam and everything riding on it
+changes character; the slider never notices.</p>
+<p>One correction for anyone arriving from CSS: here the curves shape
+<strong>space, not time</strong>. Nothing animates. <code>t</code> is a loop counter divided by its
+last value, and the cam decides where the twelfth dot lands, how wide the
+stroke is at its midpoint, which color a strip gets. The same handle
+numbers you would give a transition end up describing a still picture.</p>
+<p>In Pathogen a cam is a lambda:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">smooth</span> = {|<span class="id">t</span>| <span class="id">cubicBezier</span>(<span class="num">0.42</span>, <span class="num">0</span>, <span class="num">0.58</span>, <span class="num">1</span>, <span class="id">t</span>)};
+<span class="kw">let</span> <span class="id">bounce</span> = {|<span class="id">t</span>| <span class="id">ease</span>(<span class="id">Easing</span>.<span class="id">BounceOut</span>, <span class="id">t</span>)};
+</code></pre><p>Two functions make the cams. <code>cubicBezier</code> takes the same four handle
+numbers a CSS <code>cubic-bezier()</code> takes — paste them from a stylesheet or a
+curve tool — and then <code>t</code>. <code>ease</code> takes a named curve from the <code>Easing</code>
+family (<code>Easing.SineInOut</code>, <code>Easing.BackOut</code>, <code>Easing.ElasticOut</code>,
+<code>Easing.BounceIn</code>, and twenty-two more) and then <code>t</code>. The older trio
+<code>easeIn</code>/<code>easeOut</code>/<code>easeInOut</code> and <code>smoothstep(0, 1, t)</code> are cams too.
+Whichever you pick, the lambda names it once; from then on your code just
+says <code>smooth(t)</code>.</p>
+<p>Four things worth knowing before the pictures:</p>
+<ul>
+<li><strong>Two families leave the box.</strong> <code>back</code> and <code>elastic</code> return values below
+0 and above 1 — that is their whole point — and so does <code>cubicBezier</code> when
+a <code>y</code> handle sits outside 0..1. Nothing clamps them. If the number is about
+to become an opacity, a radius, or anything that cannot go negative, clamp
+it yourself: <code>clamp(back(t), 0, 1)</code>.</li>
+<li><strong>The <code>x</code> handles are checked.</strong> <code>cubicBezier</code> refuses <code>x1</code> or <code>x2</code> outside
+0..1 with a compile error, because such a curve would double back on
+itself. Curve tools never produce one, but a typo can.</li>
+<li><strong><code>t</code> is clamped for you</strong> by <code>ease</code> and <code>cubicBezier</code>: anything below 0
+reads as 0 and anything above 1 as 1, with no extrapolation past the ends.
+A cam you write by hand, like the <code>{|t| t}</code> in Example 1, clamps nothing.</li>
+<li><strong>Lambdas take exactly the arguments they declare.</strong> A cam is <code>{|t| ...}</code>
+and is called with one number. When you need the same shape with
+different numbers, a factory returns a lambda with those numbers baked in
+(Example 5); calling the cam with extra arguments is an error.</li>
+</ul>
+<p>Every sample below is live: the code panel is read-only, but the
+&quot;Open in playground workspace&quot; button in each one drops the sample into an
+editor where the handle numbers can be changed and the picture recompiles.</p>
+<h2>Example 1 — Five cams</h2>
+<p>The bare mechanism. Five lambdas, each plotted over <code>t</code> from 0 to 1. The
+dashed box is the 0..1 range; the line is where each cam sends <code>t</code>.</p>
+<p><mini-workspace code-open caption="Left to right: the slider itself (linear), the quadratic easeInOut, CSS ease-in-out via cubicBezier, then BackOut and ElasticOut, which leave the box.">
+  <code>//-- Five easing curves plotted side by side. Each one is a lambda that
+//-- takes t and hands back a reshaped t: the box is the 0..1 range, the
+//-- line is where the curve sends each t. The last two leave the box.
+
+define ViewBox(0, 0, 400, 200);
+
+let linear = {|t| t};
+let quad = {|t| easeInOut(t)};
+let cssInOut = {|t| cubicBezier(0.42,
+    0,
+    0.58,
+    1,
+    t)};
+let back = {|t| ease(Easing.BackOut, t)};
+let elastic = {|t| ease(Easing.ElasticOut, t)};
+
+let curves = [
+  linear,
+  quad,
+  cssInOut,
+  back,
+  elastic,
+];
+let names = [
+  'linear',
+  'easeInOut',
+  'cubicBezier',
+  'BackOut',
+  'ElasticOut',
+];
+
+let plotW = 60;
+let plotH = 90;
+let gap = 14;
+let baseline = 150;
+
+let boxes = PathLayer('boxes') \${
+  stroke: oklch(0.82 0.02 260);
+  stroke-width: 0.5;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+let lines = PathLayer('curves') \${
+  stroke: oklch(0.58 0.19 350);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  fill: none;
+};
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: #8a93a6;
+  text-anchor: middle;
+};
+
+for (col in 0..4) {
+  let x0 = 25 + col * (plotW + gap);
+  let shape = curves[col];
+  boxes.apply {
+    rect(x0,
+        calc(baseline - plotH),
+        plotW,
+        plotH);
+  }
+  lines.apply {
+    M x0 baseline
+    for (i in 1..96) {
+      let t = i / 96;
+      L calc(x0 + plotW * t) calc(baseline - plotH * shape(t))
+    }
+  }
+  labels.apply {
+    text(calc(x0 + plotW / 2), 170)\`\${names[col]}\`;
+  }
+}
+</code>
+  <img src="/blog/samples/post51/01-curve-gallery.svg" alt="Left to right: the slider itself (linear), the quadratic easeInOut, CSS ease-in-out via cubicBezier, then BackOut and ElasticOut, which leave the box." loading="lazy">
+</mini-workspace></p>
+<p>Read the first three as one family: the straight line is the slider, and
+the two S-curves bend it so the ride starts slow and ends slow. The last
+two are the ones to remember for later: <code>BackOut</code> overshoots the top and
+comes back; <code>ElasticOut</code> overshoots and wobbles before it settles. Both are
+one line of code and both really do go past 1.</p>
+<p>The array of lambdas is doing quiet work here. <code>curves[col]</code> picks a cam,
+<code>let shape = curves[col];</code> names it, and <code>shape(t)</code> calls it — the loop body
+never knows which curve it is drawing.</p>
+<h2>Example 2 — Ranges</h2>
+<p>An eased <code>t</code> is only useful once it moves something. The simplest something
+is a range: <code>lerp(start, end, smooth(t))</code> slides a value from <code>start</code> to
+<code>end</code> along the cam. And because <code>smooth(t)</code> is just a number between 0
+and 1, everything else that takes a ratio accepts it too.</p>
+<p><mini-workspace code-open caption="Top: nine dots placed by bare t. Bottom: the same dots placed by smooth(t), and the same smooth(t) picks each dot's color and radius.">
+  <code>//-- One eased t, three ranges. Top row: nine dots placed by bare t. Bottom
+//-- row: the same dots placed by smooth(t), and the SAME smooth(t) also
+//-- picks each dot's color (blue to pink) and radius (2 to 5). Change the
+//-- four handle numbers once and all three channels follow.
+
+define ViewBox(0, 0, 400, 170);
+
+let smooth = {|t| cubicBezier(0.42,
+    0,
+    0.58,
+    1,
+    t)};
+
+let left = 40;
+let right = 360;
+let blue = Color(0.55, 0.16, 260);
+let pink = Color(0.62, 0.19, 350);
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 10;
+  letter-spacing: 0.5;
+  fill: #8a93a6;
+};
+labels.apply {
+  text(left, 34)\`x = lerp(left, right, t)\`;
+  text(left, 100)\`x = lerp(left, right, smooth(t))\`;
+  text(left, 113)\`fill = blue.mix(pink, smooth(t)) · r = lerp(2, 5, smooth(t))\`;
+}
+
+let plain = PathLayer('plain') \${
+  fill: oklch(0.55 0.16 260);
+  stroke: none;
+};
+plain.apply {
+  for (i in 0..8) {
+    let t = i / 8;
+    circle(calc(lerp(left, right, t)), 54, 4);
+  }
+}
+
+let eased = GroupLayer('eased') \${};
+for (i in 0..8) {
+  let t = i / 8;
+  let along = smooth(t);
+  let tint = blue.mix(pink, along);
+  let dot = PathLayer(\`eased-\${i}\`) \${
+    fill: tint;
+    stroke: none;
+  };
+  dot.apply {
+    circle(calc(lerp(left, right, along)), 138, calc(lerp(2, 5, along)));
+  }
+  eased.append(dot);
+}
+</code>
+  <img src="/blog/samples/post51/02-ranges.svg" alt="Top: nine dots placed by bare t. Bottom: the same dots placed by smooth(t), and the same smooth(t) picks each dot's color and radius." loading="lazy">
+</mini-workspace></p>
+<p>One lambda drives three channels — position through <code>lerp</code>, color through
+<code>blue.mix(pink, ...)</code>, radius through another <code>lerp</code> — and they move in
+sync because they share one number. Change the four handle numbers in
+<code>smooth</code> and all three follow. That is the practical payoff of naming the
+cam: the tuning lives in one place.</p>
+<p>It is also where the first gotcha bites. The radius channel is
+<code>lerp(2, 5, smooth(t))</code>, which only stays between 2 and 5 while <code>smooth</code>
+stays inside the box. Swap in <code>back</code> or <code>elastic</code> and the smallest dots go
+negative — so a radius, an opacity, or a stroke width driven by an
+overshooting cam wants <code>clamp(..., 0, 1)</code> around the eased value.</p>
+<h2>Example 3 — Amplitudes</h2>
+<p>Position is the obvious thing to ease. Amplitude is the next one: how big
+a wave is. Each row below is <code>mid - amplitude(t) * sin(TAU() * cycles * t)</code>
+with three full cycles, and only <code>amplitude</code> changes.</p>
+<p><mini-workspace code-open caption="Same three cycles, three amplitude lambdas: a constant, a sine-in that grows the wave from nothing, and a smoothstep window that fades it in and back out.">
+  <code>//-- Amplitude is just another number an eased t can drive. Three waves,
+//-- same three cycles each. Top: a fixed amplitude of 18. Middle: the
+//-- amplitude eases in with sine-in, so the wave grows from nothing.
+//-- Bottom: a window (smoothstep up, smoothstep down) fades it in and out.
+
+define ViewBox(0, 0, 400, 250);
+
+let left = 40;
+let width = 320;
+let cycles = 3;
+
+let fixed = {|t| 18};
+let growing = {|t| 18 * ease(Easing.SineIn, t)};
+let windowed = {|t| 18 * smoothstep(0, 0.35, t) * smoothstep(1, 0.65, t)};
+
+let envelopes = [
+  fixed,
+  growing,
+  windowed,
+];
+let captions = [
+  'amplitude = 18',
+  'amplitude = 18 * ease(Easing.SineIn, t)',
+  'amplitude = 18 * smoothstep(0, 0.35, t) * smoothstep(1, 0.65, t)',
+];
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  letter-spacing: 0.5;
+  fill: oklch(0.45 0.02 260);
+};
+let scene = GroupLayer('scene') \${};
+
+for (row in 0..2) {
+  let mid = 58 + row * 76;
+  let amplitude = envelopes[row];
+  let guide = PathLayer(\`baseline-\${row}\`) \${
+    stroke: oklch(0.82 0.02 260);
+    stroke-width: 0.5;
+    stroke-dasharray: 3 4;
+    fill: none;
+  };
+  guide.apply {
+    M left mid
+    L calc(left + width) mid
+  }
+  let wave = PathLayer(\`wave-\${row}\`) \${
+    stroke: oklch(0.58 0.19 350);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    fill: none;
+  };
+  wave.apply {
+    M left mid
+    for (i in 1..96) {
+      let t = i / 96;
+      L calc(left + width * t) calc(mid - amplitude(t) * sin(TAU() * cycles * t))
+    }
+  }
+  labels.apply {
+    text(left, calc(mid - 26))\`\${captions[row]}\`;
+  }
+  scene.append(guide, wave);
+}
+scene.append(labels);
+</code>
+  <img src="/blog/samples/post51/03-amplitude.svg" alt="Same three cycles, three amplitude lambdas: a constant, a sine-in that grows the wave from nothing, and a smoothstep window that fades it in and back out." loading="lazy">
+</mini-workspace></p>
+<p>The middle row is <code>18 * ease(Easing.SineIn, t)</code>: the wave starts silent and
+swells. The bottom row multiplies two <code>smoothstep</code>s — the plateau idiom
+from the <a href="/blog/primer-smoothstep">primer</a> — so the wave is silent at both
+ends and full in the middle. Whatever you multiply into an eased <code>t</code>
+becomes that thing&#39;s envelope: a second shape that scales the first one
+from end to end.</p>
+<h2>Example 4 — Cycles and half-cycles</h2>
+<p>A wave needs a count as well as a size. <code>sin(TAU() * cycles * t)</code> runs
+<code>cycles</code> whole waves across the range. Counting in half-cycles instead,
+<code>sin(PI() * halfCycles * t)</code>, counts lobes: one bulge, two, three, four.</p>
+<p><mini-workspace code-open caption="Each row is a straight rise, lerp(bottom, top, t), with a sine offset of 1, 2, 3 and 4 half-cycles riding on it.">
+  <code>//-- Cycles and half-cycles. Every row is lerp(start, end, t) with a sine
+//-- offset, sin(PI() * halfCycles * t), riding on it. Counting half-cycles
+//-- means counting lobes: one lobe, two, three, four. Whole cycles can only
+//-- give an even number, and any whole count of half-cycles lands back on
+//-- the guide line at t = 1.
+
+define ViewBox(0, 0, 400, 300);
+
+let left = 40;
+let right = 296;
+let amplitude = 14;
+let rowNames = [
+  '1 half-cycle',
+  '2 half-cycles',
+  '3 half-cycles',
+  '4 half-cycles',
+];
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  letter-spacing: 0.5;
+  fill: #8a93a6;
+};
+let scene = GroupLayer('scene') \${};
+
+for (halfCycles in 1..4) {
+  let top = 32 + (halfCycles - 1) * 60;
+  let bottom = top + 36;
+  let wave = {|t| lerp(bottom, top, t) - amplitude * sin(PI() * halfCycles * t)};
+  let guide = PathLayer(\`guide-\${halfCycles}\`) \${
+    stroke: oklch(0.82 0.02 260);
+    stroke-width: 0.5;
+    stroke-dasharray: 3 4;
+    fill: none;
+  };
+  guide.apply {
+    M left bottom
+    L right top
+  }
+  let trace = PathLayer(\`wave-\${halfCycles}\`) \${
+    stroke: oklch(0.58 0.19 350);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    fill: none;
+  };
+  trace.apply {
+    M left bottom
+    for (i in 1..96) {
+      let t = i / 96;
+      L calc(lerp(left, right, t)) calc(wave(t))
+    }
+  }
+  labels.apply {
+    text(calc(right + 10), calc(top + 4))\`\${rowNames[halfCycles - 1]}\`;
+  }
+  scene.append(guide, trace);
+}
+
+labels.apply {
+  text(left, 282)\`y = lerp(bottom, top, t) - \${amplitude} * sin(PI() * halfCycles * t)\`;
+}
+scene.append(labels);
+</code>
+  <img src="/blog/samples/post51/04-half-cycles.svg" alt="Each row is a straight rise, lerp(bottom, top, t), with a sine offset of 1, 2, 3 and 4 half-cycles riding on it." loading="lazy">
+</mini-workspace></p>
+<p>Two things the rows show. Every whole number of half-cycles lands the wave
+back on its guide line at <code>t = 1</code>, so the shape always arrives cleanly. And
+odd counts give an odd number of lobes — up, down, up — which whole cycles
+can never do. That is why half-cycles is the natural unit when you are
+drawing a shape rather than timing a loop.</p>
+<p>The rows are also the standard recipe for &quot;go from here to there, wobbling
+on the way&quot;: a <code>lerp</code> for the journey, plus an offset for the wobble. Ease
+the <code>lerp</code>&#39;s <code>t</code> and the journey itself gets a cam; ease the amplitude and
+the wobble gets an envelope. They stay independent.</p>
+<h2>Example 5 — Factories</h2>
+<p>When the same shape is needed with different numbers, write a <code>fn</code> that
+returns the lambda. The returned lambda keeps the numbers it was built
+with, so <code>makeWave(12, 5)</code> is a wave you call with just <code>t</code>, and
+<code>makeEase(0.34, 1.56, 0.64, 1)</code> is a cam with its handles baked in.</p>
+<p><mini-workspace code-open caption="Three waves from one factory, one overshooting dot row from the other: the dashed tick is the 1.0 mark the dots pass and come back to.">
+  <code>//-- Factories: a fn that returns a lambda. The lambda captures the numbers
+//-- it was built with, so makeWave(12, 5) is a wave you can call with just
+//-- t, and makeEase(0.34, 1.56, 0.64, 1) is a curve with its handles baked
+//-- in. Three waves from one factory, one overshooting dot row from the
+//-- other: the dashed tick is the 1.0 mark the dots pass and come back to.
+
+define ViewBox(0, 0, 400, 250);
+
+fn makeWave(amplitude, halfCycles) {
+  return {|t| amplitude * sin(PI() * halfCycles * t)};
+}
+
+fn makeEase(x1, y1, x2, y2) {
+  return {|t| cubicBezier(x1,
+      y1,
+      x2,
+      y2,
+      t)};
+}
+
+let gentle = makeWave(8, 1);
+let ripple = makeWave(12, 5);
+let flutter = makeWave(6, 9);
+let backOut = makeEase(0.34, 1.56, 0.64, 1);
+
+let left = 40;
+let width = 320;
+let mark = 300;
+
+let labels = TextLayer('labels') \${
+  font-family: system-ui, sans-serif;
+  font-size: 9;
+  letter-spacing: 0.5;
+  fill: #8a93a6;
+};
+let scene = GroupLayer('scene') \${};
+
+let wavesMade = [
+  gentle,
+  ripple,
+  flutter,
+];
+let names = [
+  'makeWave(8, 1)',
+  'makeWave(12, 5)',
+  'makeWave(6, 9)',
+];
+
+for (row in 0..2) {
+  let mid = 46 + row * 52;
+  let wave = wavesMade[row];
+  let guide = PathLayer(\`baseline-\${row}\`) \${
+    stroke: oklch(0.82 0.02 260);
+    stroke-width: 0.5;
+    stroke-dasharray: 3 4;
+    fill: none;
+  };
+  guide.apply {
+    M left mid
+    L calc(left + width) mid
+  }
+  let trace = PathLayer(\`wave-\${row}\`) \${
+    stroke: oklch(0.58 0.19 350);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    fill: none;
+  };
+  trace.apply {
+    M left mid
+    for (i in 1..96) {
+      let t = i / 96;
+      L calc(left + width * t) calc(mid - wave(t))
+    }
+  }
+  labels.apply {
+    text(left, calc(mid - 18))\`\${names[row]}\`;
+  }
+  scene.append(guide, trace);
+}
+
+labels.apply {
+  text(left, 196)\`makeEase(0.34, 1.56, 0.64, 1): past the mark, then back\`;
+}
+let tick = PathLayer('mark') \${
+  stroke: oklch(0.82 0.02 260);
+  stroke-width: 0.5;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+tick.apply {
+  M calc(left + mark) 204
+  L calc(left + mark) 228
+}
+let dots = PathLayer('dots') \${
+  fill: none;
+  stroke: oklch(0.55 0.16 260);
+  stroke-width: 1;
+};
+dots.apply {
+  for (i in 0..10) {
+    let t = i / 10;
+    circle(calc(left + mark * backOut(t)), 216, 3);
+  }
+}
+scene.append(labels, tick, dots);
+</code>
+  <img src="/blog/samples/post51/05-lambda-factories.svg" alt="Three waves from one factory, one overshooting dot row from the other: the dashed tick is the 1.0 mark the dots pass and come back to." loading="lazy">
+</mini-workspace></p>
+<p>Those four handle numbers are the standard cubic-bézier fit of back-out —
+the same shape Example 1 drew with <code>ease(Easing.BackOut, t)</code>, reached by
+the other route. The two are close, not identical: one is a formula, the
+other a curve fitted to it, and either works as a cam.</p>
+<p>Return a lambda, not a named <code>fn</code>. A named <code>fn</code> looks up free names where
+it is <em>called</em>; a lambda captures them where it is <em>made</em>, which is what
+lets <code>amplitude</code> and <code>halfCycles</code> travel inside the returned value. The
+<a href="/blog/lambdas-come-to-pathogen">lambdas post</a> covers that difference in
+detail.</p>
+<h2>Example 6 — A plume</h2>
+<p>Everything at once. Twelve strands fan out from one point. The fan&#39;s
+spread is <code>ease(Easing.BackInOut, strandT)</code>, which bunches the strands
+toward the middle and sends the ones just inside the edges past their
+outer neighbors, so the tips cross before they settle. Each strand&#39;s wave
+amplitude rides a <code>smoothstep</code> window so it is silent at both ends; its
+lobe count is a small number of half-cycles; and its color is mixed by the
+same strand <code>t</code> that placed it.</p>
+<p><mini-workspace code-open caption="Twelve strands: spread by BackInOut, waves windowed by smoothstep, lobes counted in half-cycles, colors mixed by the strand's own t.">
+  <code>//-- A plume: twelve strands fanning out from one point. Everything in it
+//-- is an eased t. The fan's spread uses back-in-out: strands bunch toward
+//-- the middle, and the ones just inside the edges push past their outer
+//-- neighbors before the tips settle. Each strand's wave amplitude rides a
+//-- smoothstep window (silent at both ends), its lobe count is a small
+//-- number of half-cycles, and its color is mixed by the same strand t.
+
+define ViewBox(0, 0, 400, 260);
+
+let originX = 40;
+let originY = 130;
+let tipX = 360;
+
+let spread = {|strandT| ease(Easing.BackInOut, strandT)};
+let advance = {|t| ease(Easing.SineOut, t)};
+let envelope = {|t| smoothstep(0, 0.3, t) * smoothstep(1, 0.7, t)};
+let blue = Color(0.5, 0.15, 260);
+let pink = Color(0.65, 0.19, 350);
+
+let plume = GroupLayer('plume') \${};
+for (strandIndex in 0..11) {
+  let strandT = strandIndex / 11;
+  let tipY = lerp(210, 50, spread(strandT));
+  let halfCycles = 1 + strandIndex % 3;
+  let amplitude = 10 + 6 * (strandIndex % 2);
+  let tint = blue.mix(pink, strandT);
+  let strand = PathLayer(\`strand-\${strandIndex}\`) \${
+    stroke: tint;
+    stroke-width: 1.25;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  };
+  strand.apply {
+    M originX originY
+    for (i in 1..80) {
+      let t = i / 80;
+      let strandX = lerp(originX, tipX, advance(t));
+      let strandY = lerp(originY, tipY, t) + amplitude * envelope(t) * sin(PI() * halfCycles * t);
+      L calc(strandX) calc(strandY)
+    }
+  }
+  plume.append(strand);
+}
+
+let seed = PathLayer('seed') \${
+  fill: oklch(0.35 0.02 260);
+  stroke: none;
+};
+seed.apply {
+  circle(originX, originY, 3);
+}
+</code>
+  <img src="/blog/samples/post51/06-plume.svg" alt="Twelve strands: spread by BackInOut, waves windowed by smoothstep, lobes counted in half-cycles, colors mixed by the strand's own t." loading="lazy">
+</mini-workspace></p>
+<p>There is no new mechanism in this picture. It is Example 2&#39;s range, Example
+3&#39;s envelope and Example 4&#39;s half-cycles, each fed by a named cam. That is
+the habit the post is arguing for: name the curve once, then let it drive
+whichever numbers the picture needs.</p>
+<h2>Where to go next</h2>
+<ul>
+<li>Open any sample above in the playground and swap one cam for another:
+<code>Easing.BounceOut</code> into the plume&#39;s spread, an elastic curve into the
+ranges row. The whole point is that nothing else has to change.</li>
+<li>The <a href="/docs#stdlib-easing">Easing reference</a> has the full family table and
+a paste-ready list of <code>cubicBezier</code> handle values for the classic curves.</li>
+<li>The same names drive <a href="/docs#gradients-topogradient"><code>TopoGradient.easing</code></a>,
+where the eased elevation is clamped onto the color ramp.</li>
+<li><a href="/blog/primer-bump"><code>bump</code></a> is a hill built from the same easing idea,
+handy when an envelope should peak somewhere specific.</li>
+<li><a href="/blog/lambdas-come-to-pathogen">Lambdas come to Pathogen</a> for the
+closure rules that make the factories in Example 5 work.</li>
 </ul>
 `,
   'gradient-conic': `<p>CSS has <code>conic-gradient()</code>. SVG does not. This is not an oversight — the SVG spec simply never included angular gradients. If you want a color wheel, a gauge, or a pie chart rendered as an SVG gradient, you are out of luck. You can fake it with dozens of wedge-shaped paths, or you can embed a rasterized image and lose the vector benefits.</p>
