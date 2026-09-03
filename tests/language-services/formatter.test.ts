@@ -599,6 +599,17 @@ describe('formatDocument', () => {
       expect(format('let x = calc(a + (b - c));')).toContain('a + b - c');
     });
 
+    it('keeps parentheses around a % right child of * (regrouping changes the value)', () => {
+      // 6 * (3 % 2) is 6; 6 * 3 % 2 is 0. The associative-parent shortcut must
+      // not apply to `%`, which shares the times level but is not regroupable.
+      expect(format('let a = 10 + 6 * (3 % 2);')).toContain('10 + 6 * (3 % 2)');
+      expect(format('let a = 2 * (3 % 2) * 5;')).toContain('2 * (3 % 2) * 5');
+      expect(format('let a = 7 % (5 - 2);')).toContain('7 % (5 - 2)');
+      expect(format('let a = 12 % (6 * 2);')).toContain('12 % (6 * 2)');
+      // A `%` LEFT child is the natural left-assoc parse and needs no parens.
+      expect(format('let a = (7 % 3) * 2;')).toContain('7 % 3 * 2');
+    });
+
     it('parenthesizes binary arguments of unary operators', () => {
       expect(format('let x = calc(-(a + b));')).toContain('-(a + b)');
       expect(format('let x = !(a && b);')).toContain('!(a && b)');

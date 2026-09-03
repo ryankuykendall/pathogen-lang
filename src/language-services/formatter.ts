@@ -647,7 +647,12 @@ function formatBinaryOperand(
   if (childPrec < parentPrec) return `(${text})`;
   // Left-associative grammar: an equal-precedence RIGHT child re-parses as the
   // parent's left unless the operator is associative (a - (b - c), a / (b * c)).
-  if (isRight && childPrec === parentPrec && !ASSOCIATIVE_OPS.has(parentOp)) return `(${text})`;
+  // `%` is the exception at the times level: a * (b % c) is NOT (a * b) % c
+  // (6 * (3 % 2) is 6, 6 * 3 % 2 is 0), so a `%` right child always keeps its
+  // parens even under the associative `*`.
+  const childOp = (child as BinaryExpression).operator;
+  const regroupSafe = ASSOCIATIVE_OPS.has(parentOp) && childOp !== '%';
+  if (isRight && childPrec === parentPrec && !regroupSafe) return `(${text})`;
   return text;
 }
 
