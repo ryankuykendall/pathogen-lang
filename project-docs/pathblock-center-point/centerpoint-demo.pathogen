@@ -1,0 +1,71 @@
+define ViewBox(0, 0, 520, 300);
+// PathBlock / ProjectedPath .centerPoint() demo
+// Left: one arrow pinwheeled about its own bounding-box center.
+// Right: cut() pieces, each spun about its own center.
+
+// --- Panel 1: pivot a shape on its visual center ---
+let arrowX = 70;
+let arrowY = 135;
+let arrow = @{
+  h 70
+  l 20 15
+  l -20 15
+  h -70
+  z
+};
+let arrowCenter = arrow.centerPoint();                          // relative: Point(45, 15)
+let arrowPivot = arrow.project(arrowX, arrowY).centerPoint();   // absolute: Point(115, 150)
+log(arrowCenter, arrowPivot);
+
+let pinwheel = PathLayer('pinwheel') ${ fill: #4a90d9; fill-opacity: 0.18; stroke: #4a90d9; stroke-width: 1.5; };
+pinwheel.apply {
+  for (i in 0..5) {
+    M arrowX arrowY
+    arrow.rotate(calc(i * 1.0472), arrowCenter).draw()
+  }
+}
+
+// --- Panel 2: cut pieces spun about their own centers ---
+let plateX = 310;
+let plateY = 105;
+let plate = @{ h 130 v 90 h -130 z };
+let knife = @{ m 45 -10 l 0 110 l 40 0 l 0 -110 };
+let pieces = plate.cut(knife);
+
+let ghost = PathLayer('plate-ghost') ${ fill: none; stroke: #999; stroke-width: 1; stroke-dasharray: 4 3; };
+ghost.apply {
+  M plateX plateY
+  plate.draw()
+}
+
+let shards = PathLayer('shards') ${ fill: #5ab55a; fill-opacity: 0.25; stroke: #2d8a2d; stroke-width: 1.5; };
+shards.apply {
+  for ([piece, i] in pieces) {
+    let center = piece.centerPoint();
+    M plateX plateY
+    piece.rotate(0.3, center).draw()
+  }
+}
+
+// --- Pivot markers: every rotation origin above, in absolute coordinates ---
+let pivots = PathLayer('pivots') ${ fill: #d94a4a; stroke: none; };
+pivots.apply {
+  circle(arrowPivot.x, arrowPivot.y, 3.5);
+  for ([piece, i] in pieces) {
+    let pivot = piece.project(plateX, plateY).centerPoint();
+    log(pivot);
+    circle(pivot.x, pivot.y, 3.5);
+  }
+}
+
+// --- Labels ---
+let titles = TextLayer('titles') ${ font-size: 14; fill: #222; font-weight: 700; text-anchor: middle; };
+titles.apply {
+  text(115, 40)`arrow.rotate(angle, arrow.centerPoint())`
+  text(375, 40)`piece.rotate(0.3, piece.centerPoint())`
+}
+let captions = TextLayer('captions') ${ font-size: 12; fill: #555; text-anchor: middle; };
+captions.apply {
+  text(115, 265)`six copies, 60° apart, one pivot`
+  text(375, 265)`three bands, each on its own center`
+}

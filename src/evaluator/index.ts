@@ -53,6 +53,7 @@ import {
 import {
   chamferCommands,
   computeBoundingBox,
+  computeBoundingBoxCenter,
   concatenateCommands,
   ellipticalFilletCommands,
   filletCommands,
@@ -2769,6 +2770,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         };
       }
 
+      case 'centerPoint': {
+        if (expr.args.length !== 0) throw mError('centerPoint() expects 0 arguments');
+        const center = computeBoundingBoxCenter(obj.commands);
+        return { type: 'PointValue' as const, x: center.x, y: center.y };
+      }
+
       case 'offset': {
         if (expr.args.length < 1 || expr.args.length > 2) throw mError('offset() expects 1-2 arguments (distance, options?)');
         const dist = evaluateExpression(expr.args[0], scope);
@@ -3473,6 +3480,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
             ['height', bb.height],
           ]),
         };
+      }
+
+      case 'centerPoint': {
+        if (expr.args.length !== 0) throw mError('centerPoint() expects 0 arguments');
+        const center = computeBoundingBoxCenter(obj.commands);
+        return { type: 'PointValue' as const, x: center.x, y: center.y };
       }
 
       case 'offset': {

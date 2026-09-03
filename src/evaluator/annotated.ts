@@ -21,6 +21,7 @@ import {
   chamferCommands,
   commandToPathString,
   computeBoundingBox,
+  computeBoundingBoxCenter,
   concatenateCommands,
   ellipticalFilletCommands,
   filletCommands,
@@ -1508,6 +1509,12 @@ function evaluateAnnotatedPathTransforms(
           ['height', bb.height],
         ]),
       };
+    }
+
+    case 'centerPoint': {
+      if (expr.args.length !== 0) throw new Error('centerPoint() expects 0 arguments');
+      const center = computeBoundingBoxCenter(obj.commands);
+      return { type: 'PointValue' as const, x: center.x, y: center.y };
     }
 
     case 'offset': {

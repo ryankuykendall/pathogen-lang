@@ -269,7 +269,7 @@ Sampling works on all command types including cubic/quadratic Bézier curves and
 
 ## Transforms
 
-Transforms create new paths from existing ones — reversing direction, computing bounding boxes, and constructing parallel paths. These methods work on both PathBlock values and ProjectedPath values.
+Transforms create new paths from existing ones — reversing direction, computing bounding boxes and their centers, and constructing parallel paths. These methods work on both PathBlock values and ProjectedPath values.
 
 ### `reverse()` → PathBlock / ProjectedPath
 
@@ -307,6 +307,43 @@ For a straight-line path the bounding box matches the endpoint coordinates:
 let line = @{ h 100 };
 let bb = line.boundingBox();
 // bb = { x: 0, y: 0, width: 100, height: 0 }
+```
+
+### `centerPoint()` → Point
+
+Returns the center of the path's bounding box as a Point. The box is the one `boundingBox()` reports, so a curve that bulges past its endpoints is included in the center. Use it as the pivot for `rotate()`, or anywhere you need a shape's middle as a Point.
+
+Before `centerPoint()`, the same value took a bounding box and two `calc()` expressions:
+
+```
+let pb = p.boundingBox();
+let c = Point(calc(pb.x + pb.width / 2), calc(pb.y + pb.height / 2));
+```
+
+Now it is one call, and the result is ready to use as a pivot:
+
+```
+let plate = @{
+  h 60
+  v 40
+  h -60
+  z
+};
+let center = plate.centerPoint();
+log(center);                          // Point(30, 20)
+M 20 20
+plate.rotate(15deg, center).draw()    // spins in place, pivoting on (50, 40)
+```
+
+An empty block has no box, so `centerPoint()` returns `Point(0, 0)` — the same answer a shape genuinely centered on the origin gives. Check `isEmpty` first when the block came from `subPath(t, t)` or a `fromGlyph` space glyph.
+
+Because the result is a Point, its members and methods are available directly:
+
+```
+let arch = @{ c 0 -40 50 -40 50 0 };
+let center = arch.centerPoint();
+log(center.x, center.y);              // 25, -15 — the curve rises 30 above its endpoints
+log(center.translate(0, -10));        // Point(25, -25) — Point methods chain off the result
 ```
 
 ### `intersects(geometry)` → Boolean
@@ -476,7 +513,7 @@ let arm = @{
   v 10
 };
 let quarter = arm.rotate(0.5pi);          // about the block origin
-let spun = arm.rotate(45deg, Point(25, 5));  // about the arm's center
+let spun = arm.rotate(45deg, arm.centerPoint());  // about the arm's center
 ```
 
 Unlike `rotateAtVertexIndex`, the result is **not** re-based: the geometry rotates about the pivot inside the block's own coordinate frame and stays where it is. A piece that carries placement — a [`cut()`](#path-blocks-cutting-paths) shard, for example — keeps that placement, so rotating it in place needs no compensation:
@@ -493,10 +530,9 @@ let knife = @{
   l 0 60
 };
 let pieces = plate.cut(knife);
-for ([p, i] in pieces) {
-  let pb = p.boundingBox();
-  let c = Point(calc(pb.x + pb.width / 2), calc(pb.y + pb.height / 2));
-  let spunPiece = p.rotate(0.1, c);
+for (piece in pieces) {
+  let center = piece.centerPoint();
+  let spunPiece = piece.rotate(5deg, center);
   M 20 20
   spunPiece.draw();
 }
@@ -579,6 +615,7 @@ let p = @{ h 100 };
 let proj = p.project(10, 20);
 let bb = proj.boundingBox();
 // bb.x = 10, bb.y = 20 — absolute coordinates
+log(proj.centerPoint());     // Point(60, 20) — absolute, while p.centerPoint() is Point(50, 0)
 
 let rev = proj.reverse();
 log(rev.startPoint);         // Point(110, 20) — starts at original end
@@ -1302,7 +1339,7 @@ glyphs[0].draw()
 | `text` | string | Characters to convert (each becomes a separate PathBlock) |
 | `styles` | style block | Must contain `font-family`; optionally `font-size` (default 16) and `font-weight` (default 400) |
 
-**Returns:** Array of PathBlock values. Each element has all standard PathBlock properties and methods (`draw()`, `project()`, `get()`, `tangent()`, `boundingBox()`, `scale()`, boolean operations, etc.).
+**Returns:** Array of PathBlock values. Each element has all standard PathBlock properties and methods (`draw()`, `project()`, `get()`, `tangent()`, `boundingBox()`, `centerPoint()`, `scale()`, boolean operations, etc.).
 
 ```
 @font "Inter";

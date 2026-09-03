@@ -380,6 +380,12 @@ export function computeBoundingBox(commands: TransformCmd[]): { x: number; y: nu
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 
+/** Center of the axis-aligned bounding box (the box computeBoundingBox reports). */
+export function computeBoundingBoxCenter(commands: TransformCmd[]): { x: number; y: number } {
+  const bb = computeBoundingBox(commands);
+  return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
+}
+
 // ---- offset ----
 
 export function unitNormal(dx: number, dy: number): Point {

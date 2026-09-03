@@ -350,6 +350,18 @@ describe('getHoverInfo', () => {
       expect(result!.contents).toContain('Trace a smooth offset path');
     });
 
+    it('shows the centerPoint method doc on both receivers', () => {
+      const source =
+        'let shape = @{ h 60 v 40 };\nlet proj = shape.project(5, 5);\nlet c = shape.centerPoint();\nlet pc = proj.centerPoint();';
+      const onBlock = hoverOn(source, 'centerPoint()', 0);
+      expect(onBlock!.contents).toContain('**centerPoint**');
+      expect(onBlock!.contents).toContain('PathBlock method');
+      expect(onBlock!.contents).toContain('Center of the bounding box as a Point');
+      const onProjected = hoverOn(source, 'centerPoint()', 1);
+      expect(onProjected!.contents).toContain('ProjectedPath method');
+      expect(onProjected!.contents).toContain('Center of the bounding box as a Point');
+    });
+
     it('types vo at its pipe-declaration site', () => {
       const result = hoverOn(program, 'vo, cpb');
       expect(result!.contents).toContain('*block parameter: VariableOffsetBuilder*');
@@ -472,6 +484,20 @@ M 0 0`;
         needle: 'bb =',
         kind: 'variable',
         type: 'BoundingBox',
+      },
+      {
+        label: 'method return: Point from centerPoint()',
+        source: 'let p = @{ M 0 0 };\nlet c = p.centerPoint();',
+        needle: 'c =',
+        kind: 'variable',
+        type: 'Point',
+      },
+      {
+        label: 'method return: Point from ProjectedPath centerPoint()',
+        source: 'let p = @{ M 0 0 };\nlet proj = p.project(1, 2);\nlet c = proj.centerPoint();',
+        needle: 'c =',
+        kind: 'variable',
+        type: 'Point',
       },
       {
         label: 'array destructure: number element',

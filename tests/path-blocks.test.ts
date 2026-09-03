@@ -1352,6 +1352,149 @@ l 5 0`);
       });
     });
 
+    describe('centerPoint()', () => {
+      it('center of horizontal line', () => {
+        const result = compile(`
+          let p = @{ h 100 };
+          log(p.centerPoint());
+        `);
+        expect(result.logs[0].parts[0].value).toBe('Point(50, 0)');
+      });
+
+      it('center of closed rectangle', () => {
+        const result = compile(`
+          let p = @{ h 40 v 20 h -40 z };
+          log(p.centerPoint());
+        `);
+        expect(result.logs[0].parts[0].value).toBe('Point(20, 10)');
+      });
+
+      it('docs example: the plate pivots on its center when drawn', () => {
+        const result = compile(`
+          let plate = @{
+            h 60
+            v 40
+            h -60
+            z
+          };
+          let center = plate.centerPoint();
+          log(center);
+          M 20 20
+          let spun = plate.rotate(15deg, center).draw();
+          log(spun.centerPoint());
+        `);
+        expect(result.logs[0].parts[0].value).toBe('Point(30, 20)');
+        // A rectangle rotated about its bbox center keeps that center: pen (20, 20) + (30, 20)
+        const spun = /Point\(([-\d.]+), ([-\d.]+)\)/.exec(result.logs[1].parts[0].value)!;
+        expect(Number(spun[1])).toBeCloseTo(50, 10);
+        expect(Number(spun[2])).toBeCloseTo(40, 10);
+      });
+
+      it('center with negative coords', () => {
+        const result = compile(`
+          let p = @{ h -50 v -30 };
+          let c = p.centerPoint();
+          log(c.x, c.y);
+        `);
+        expect(Number(result.logs[0].parts[0].value)).toBe(-25);
+        expect(Number(result.logs[0].parts[1].value)).toBe(-15);
+      });
+
+      it('center accounts for cubic bezier extrema', () => {
+        // y(t) = -120·t·(1-t) bottoms out at t = 0.5 → bbox y = -30, height = 30
+        const result = compile(`
+          let p = @{ c 0 -40 50 -40 50 0 };
+          let c = p.centerPoint();
+          log(c.x, c.y);
+        `);
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(25, 6);
+        expect(Number(result.logs[0].parts[1].value)).toBeCloseTo(-15, 6);
+      });
+
+      it('center is the midpoint of boundingBox()', () => {
+        const result = compile(`
+          let p = @{ q 30 -50 60 0 v 20 h -20 a 10 10 0 0 1 -20 10 };
+          let bb = p.boundingBox();
+          let c = p.centerPoint();
+          log(bb.x, bb.width, bb.y, bb.height, c.x, c.y);
+        `);
+        const [bx, bw, by, bh, cx, cy] = result.logs[0].parts.map((part) => Number(part.value));
+        expect(cx).toBeCloseTo(bx + bw / 2, 10);
+        expect(cy).toBeCloseTo(by + bh / 2, 10);
+      });
+
+      it('centerPoint on ProjectedPath has absolute coords', () => {
+        const result = compile(`
+          let p = @{ h 100 };
+          let proj = p.project(10, 20);
+          log(proj.centerPoint());
+        `);
+        expect(result.logs[0].parts[0].value).toBe('Point(60, 20)');
+      });
+
+      it('returns a real Point with members and methods', () => {
+        const result = compile(`
+          let p = @{ h 100 v 10 };
+          let c = p.centerPoint();
+          log(c.x, c.y, c.translate(5, 5), c.distanceTo(Point(50, 5)));
+        `);
+        expect(result.logs[0].parts[0].value).toBe('50');
+        expect(result.logs[0].parts[1].value).toBe('5');
+        expect(result.logs[0].parts[2].value).toBe('Point(55, 10)');
+        expect(result.logs[0].parts[3].value).toBe('0');
+      });
+
+      it('center of empty path block is the origin', () => {
+        const result = compile(`
+          let p = @{};
+          log(p.centerPoint());
+        `);
+        expect(result.logs[0].parts[0].value).toBe('Point(0, 0)');
+      });
+
+      it('rotating about centerPoint keeps each cut piece centered (docs example)', () => {
+        const result = compile(`
+          let plate = @{ h 60 v 40 h -60 z };
+          let knife = @{ m 30 -10 l 0 60 };
+          let pieces = plate.cut(knife);
+          for (piece in pieces) {
+            let center = piece.centerPoint();
+            let spunPiece = piece.rotate(5deg, center);
+            log(center.x, center.y, spunPiece.centerPoint().x, spunPiece.centerPoint().y);
+            M 20 20
+            spunPiece.draw();
+          }
+        `);
+        expect(result.logs).toHaveLength(2);
+        for (const entry of result.logs) {
+          const [cx, cy, sx, sy] = entry.parts.map((part) => Number(part.value));
+          // A rectangle rotated about its bbox center stays centered on it
+          expect(sx).toBeCloseTo(cx, 10);
+          expect(sy).toBeCloseTo(cy, 10);
+        }
+        // One draw per piece, each starting from the shared pen position
+        expect(result.layers[0].data.match(/M 20 20/g)).toHaveLength(2);
+        expect(result.layers[0].data).toHaveSVGCommandCount('z', 2);
+      });
+
+      it('throws error with arguments', () => {
+        expect(() => compile('let p = @{ h 50 }; p.centerPoint(1);')).toThrow(/0 arguments/);
+      });
+
+      it('works in annotated mode for PathBlock and ProjectedPath', () => {
+        const output = compileAnnotated(`
+          let p = @{ h 100 v 20 };
+          let c = p.centerPoint();
+          M calc(c.x) calc(c.y)
+          let proj = p.project(10, 20);
+          let pc = proj.centerPoint();
+          M calc(pc.x) calc(pc.y)
+        `);
+        expect(output).toContain('M 50 10');
+        expect(output).toContain('M 60 30');
+      });
+    });
+
     describe('offset()', () => {
       it('horizontal line offset preserves length', () => {
         const result = compile(`

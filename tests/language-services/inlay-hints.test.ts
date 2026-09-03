@@ -98,6 +98,13 @@ describe('getInlayHints', () => {
       expect(h[0].kind).toBe(InlayHintKind.Type);
     });
 
+    it('shows Point for a centerPoint() result', () => {
+      const h = typeHints('let shape = @{ h 10 };\nlet c = shape.centerPoint();');
+      const hint = h.find((item) => item.position.line === 1);
+      expect(hint!.label).toBe(': Point');
+      expect(hint!.kind).toBe(InlayHintKind.Type);
+    });
+
     it('shows type for array literal', () => {
       const h = typeHints('let items = [1, 2, 3];');
       expect(h.length).toBe(1);

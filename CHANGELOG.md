@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-02 (centerPoint() on PathBlock and ProjectedPath)
+
+### Added
+
+#### Core
+
+- **`centerPoint()` on PathBlock and ProjectedPath** — returns the center of the path's axis-aligned bounding box as a real `Point`, so `shape.rotate(angle, shape.centerPoint())`, `shape.centerPoint().translate(0, -10)`, and `log(shape.centerPoint())` all work without rebuilding the point by hand from `boundingBox()`. It is the same box `boundingBox()` reports (Bézier and arc extrema included): relative coordinates on a PathBlock, absolute on a ProjectedPath; an empty block reports `Point(0, 0)`; passing any argument is an error. The math lives once in `computeBoundingBoxCenter` (`src/evaluator/path-transforms.ts`) and both evaluators call it. Completions, hover, chained member completion (`shape.centerPoint().`), and inlay type hints all flow from the `pathogen-api.ts` declaration. Documented in `docs/path-blocks.md` → "centerPoint()"; the `cut()` and `rotate()` examples on that page now use it instead of a hand-built center.
+
+### Development
+
+- `project-docs/pathblock-center-point/`: the plan, the review record, a demo program (one arrow pinwheeled about its center; cut bands each spun about their own), and its CLI-rendered SVG and PNG. `scripts/debug-centerpoint.ts` loads that demo in the playground and checks CLI ↔ preview path parity, completions/hover on both receivers, and the arity error.
+
 ## [0.8.0] - 2026-09-02 (elapsed clock on the Compiling chip)
 
 ### Added

@@ -419,7 +419,17 @@ describe('getCompletions', () => {
       expect(names).toContain('draw');
       expect(names).toContain('get');
       expect(names).toContain('boundingBox');
+      expect(names).toContain('centerPoint');
       expect(names).toContain('length');
+      const centerPoint = items.find((item) => item.label === 'centerPoint');
+      expect(centerPoint!.detail).toBe('centerPoint() — Center of the bounding box as a Point');
+      expect(centerPoint!.insertText).toBe('centerPoint()$0');
+    });
+
+    it('offers centerPoint on ProjectedPath variables', () => {
+      const items = completeAtEnd('let shape = @{ h 10 };\nlet proj = shape.project(5, 5);\nproj.');
+      const centerPoint = items.find((item) => item.label === 'centerPoint');
+      expect(centerPoint!.detail).toBe('centerPoint() — Center of the bounding box as a Point');
     });
 
     it('offers array members for array variables', () => {
@@ -805,6 +815,29 @@ describe('getCompletions', () => {
       const names = labels(items);
       expect(names).toContain('x');
       expect(names).toContain('y');
+    });
+
+    it('offers Point members after .centerPoint()', () => {
+      const items = completeAtEnd('let s = @{ h 60 v 60 };\ns.centerPoint().');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('y');
+      expect(names).toContain('translate');
+      expect(names).toContain('distanceTo');
+    });
+
+    it('infers Point from a centerPoint() assignment', () => {
+      const items = completeAtEnd('let s = @{ h 60 };\nlet c = s.centerPoint();\nc.');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('translate');
+    });
+
+    it('offers Point members after ProjectedPath .centerPoint()', () => {
+      const items = completeAtEnd('let s = @{ h 60 };\nlet proj = s.project(1, 2);\nproj.centerPoint().');
+      const names = labels(items);
+      expect(names).toContain('x');
+      expect(names).toContain('translate');
     });
   });
 

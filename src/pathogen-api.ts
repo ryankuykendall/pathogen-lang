@@ -779,6 +779,8 @@ export interface PathogenPathBlock {
   reverse(): PathogenPathBlock;
   /** boundingBox() — Get bounding box */
   boundingBox(): { x: number; y: number; width: number; height: number };
+  /** centerPoint() — Center of the bounding box as a Point */
+  centerPoint(): PathogenPoint;
 
   // Transforms
   /** offset(distance, options?) — Parallel path; options: { join: 'miter' | 'bevel' | 'round' } */
@@ -1152,6 +1154,8 @@ export interface PathogenProjectedPath {
   reverse(): PathogenProjectedPath;
   /** boundingBox() — Get bounding box */
   boundingBox(): { x: number; y: number; width: number; height: number };
+  /** centerPoint() — Center of the bounding box as a Point */
+  centerPoint(): PathogenPoint;
   /** offset(distance, options?) — Parallel path; options: { join: 'miter' | 'bevel' | 'round' } */
   offset(distance: number, options?: { join?: string }): PathogenProjectedPath;
   /** mirror(angle) — Mirror path */

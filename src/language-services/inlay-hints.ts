@@ -359,7 +359,7 @@ function inferExprType(expr: Expression): string | null {
     case 'MethodCallExpression':
       // Common method return types
       if (expr.method === 'boundingBox' || expr.method === 'paddedBoundingBox') return 'BBox';
-      if (expr.method === 'get' || expr.method === 'anchor') return 'Point';
+      if (expr.method === 'get' || expr.method === 'anchor' || expr.method === 'centerPoint') return 'Point';
       if (expr.method === 'slice' || expr.method === 'map' || expr.method === 'mapSlice' ||
           expr.method === 'sort' || expr.method === 'filter') return 'Array';
       if (expr.method === 'pick') return inferExprType(expr.object) === 'Cycler' ? null : null;
