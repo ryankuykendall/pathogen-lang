@@ -235,6 +235,32 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       break;
     }
 
+    // Quoted string literal inside parens: a string argument to a call in
+    // calc() — `ease('sine-in', t)`, `squareGrid('shape', …)`, `Color('#fff')`.
+    // Consumed whole (escapes included) so a `)` or `;` inside the string
+    // cannot end the token; an unterminated string ends at the line break.
+    // At top level a string is never a path argument, so it still stops.
+    if ((ch === 39 || ch === 34) && depth > 0) { // ' or "
+      const quote = ch;
+      input.advance();
+      consumed++;
+      while (input.next !== -1 && input.next !== quote && input.next !== 10 && input.next !== 13) {
+        if (input.next === 92) { // backslash: skip the escaped character too
+          input.advance();
+          consumed++;
+          if (input.next === -1 || input.next === 10 || input.next === 13) break;
+        }
+        input.advance();
+        consumed++;
+      }
+      if (input.next === quote) {
+        input.advance();
+        consumed++;
+      }
+      lastNonWS = consumed;
+      continue;
+    }
+
     // Anything else — stop
     break;
   }

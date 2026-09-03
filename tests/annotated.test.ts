@@ -707,6 +707,20 @@ let a = BBoxAnchor.Center;
 M 0 0`),
       ).not.toThrow();
     });
+
+    it('ease() and the named Easing members agree with the main evaluator', () => {
+      const program = `let bounce = ease(Easing.BounceOut, 0.5);
+let spring = ease('elastic-out', 0.25);
+let bez = cubicBezier(0.42, 0, 0.58, 1, 0.3);
+M calc(bounce) calc(spring) L calc(bez) 0`;
+      const annotated = compileAnnotated(program);
+      const mainPath = compile(program).layers.find((l) => l.type === 'path')?.data ?? '';
+      expect(mainPath.startsWith('M 0.765625 0.9116116523')).toBe(true);
+      const [moveLine] = mainPath.split(' L ');
+      expect(annotated).toContain(moveLine);
+      expect(annotated).toContain('L 0.18739590670531242 0');
+      expect(() => compileAnnotated("let e = ease('wobble', 0.5);")).toThrow(/Line 1, col \d+: ease: unknown curve 'wobble'/);
+    });
   });
 
   describe('member expressions in path args', () => {

@@ -1,5 +1,9 @@
 // Math standard library functions
 
+import { EASING_CURVES, EASING_ORDER } from './easing-curves';
+
+const clamp01 = (t: number): number => Math.min(Math.max(t, 0), 1);
+
 // The hash family must be bit-identical across JS engines (CLI, playground,
 // VS Code preview), so it is built only from operations ECMAScript specifies
 // exactly: Math.imul, bit ops, and IEEE +-*/. No transcendentals.
@@ -85,19 +89,25 @@ export const mathFunctions = {
     const d = Math.min(Math.max(Math.abs(t - center) / spread, 0), 1);
     return 0.5 * (1 + Math.cos(Math.PI * d));
   },
-  // Quadratic eases mirroring the Easing enum runtime (getEasingFn in
-  // playground/gpu/gradient-service.ts); inputs clamp to [0, 1]
-  easeIn: (t: number) => {
-    const u = Math.min(Math.max(t, 0), 1);
-    return u * u;
-  },
-  easeOut: (t: number) => {
-    const u = Math.min(Math.max(t, 0), 1);
-    return 1 - (1 - u) * (1 - u);
-  },
-  easeInOut: (t: number) => {
-    const u = Math.min(Math.max(t, 0), 1);
-    return u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
+  // The quadratic trio: the callable forms of Easing.EaseIn/EaseOut/EaseInOut,
+  // read from the shared curve table (src/stdlib/easing-curves.ts) that also
+  // drives the gradient renderers; inputs clamp to [0, 1].
+  easeIn: (t: number) => EASING_CURVES['ease-in'](clamp01(t)),
+  easeOut: (t: number) => EASING_CURVES['ease-out'](clamp01(t)),
+  easeInOut: (t: number) => EASING_CURVES['ease-in-out'](clamp01(t)),
+  // ease(curve, t): any Easing member (or its string) applied to t. Input
+  // clamps to [0, 1] with exact endpoints; output is NOT clamped, so back and
+  // elastic overshoot on purpose. Per-engine deterministic (sin/pow/sqrt).
+  ease: (curve: unknown, t: number) => {
+    if (typeof curve !== 'string') {
+      throw new Error(`ease: curve must be an Easing member or its string (got ${String(curve)})`);
+    }
+    const fn = EASING_CURVES[curve];
+    if (!fn) throw new Error(`ease: unknown curve '${curve}'. Valid curves: ${EASING_ORDER.join(', ')}`);
+    const u = clamp01(t);
+    if (u === 0) return 0;
+    if (u === 1) return 1;
+    return fn(u);
   },
   // CSS cubic-bezier() timing curve: endpoints pinned at (0,0) and (1,1),
   // (x1,y1)/(x2,y2) are the two handles, t last. Solves x(u) = t (Newton,

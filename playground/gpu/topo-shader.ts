@@ -55,7 +55,7 @@ export const TOPO_FRAGMENT_WGSL: string = /* wgsl */ `
 //   offset  8: grad_size      vec2f     (8 bytes)
 //   offset 16: contour_count  u32       (4 bytes)
 //   offset 20: stop_count     u32       (4 bytes)
-//   offset 24: easing         u32       (4 bytes) — 0=linear 1=smoothstep 2=ease-in 3=ease-out 4=ease-in-out
+//   offset 24: easing         u32       (4 bytes) — index into EASING_ORDER (src/stdlib/easing-curves.ts): 0=linear 1=smoothstep 2=ease-in 3=ease-out 4=ease-in-out 5+=named family
 //   offset 28: interpolation  u32       (4 bytes) — 0=sRGB 1=OKLab
 //   Total: 32 bytes
 struct TopoParams {
@@ -188,36 +188,9 @@ fn minDistToContour(p: vec2f, startIdx: u32, count: u32) -> f32 {
   return minDist;
 }
 
-// --- Easing functions ---
-
-fn applyEasing(t: f32, mode: u32) -> f32 {
-  let tc = clamp(t, 0.0, 1.0);
-  switch (mode) {
-    case 1u: {
-      // smoothstep
-      return tc * tc * (3.0 - 2.0 * tc);
-    }
-    case 2u: {
-      // ease-in (quadratic)
-      return tc * tc;
-    }
-    case 3u: {
-      // ease-out (quadratic)
-      return 1.0 - (1.0 - tc) * (1.0 - tc);
-    }
-    case 4u: {
-      // ease-in-out (quadratic)
-      if (tc < 0.5) {
-        return 2.0 * tc * tc;
-      }
-      return 1.0 - 2.0 * (1.0 - tc) * (1.0 - tc);
-    }
-    default: {
-      // linear (mode 0)
-      return tc;
-    }
-  }
-}
+// --- Easing functions: spliced in by playground/gpu/easing-wgsl.ts from the
+// compiler's buildEasingWgsl() (src/stdlib/easing-curves.ts) ---
+//__EASING_FUNCTIONS__
 
 // --- Color ramp sampling ---
 

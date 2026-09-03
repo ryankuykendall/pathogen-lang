@@ -312,7 +312,7 @@ export interface GradientValue {
   topoContours?: TopoContour[];
   topoWidth?: number;
   topoHeight?: number;
-  topoEasing?: string; // 'linear' | 'smoothstep' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  topoEasing?: string; // any Easing enum value — see src/stdlib/easing-curves.ts EASING_ORDER
   topoMethod?: string; // 'distance' | 'laplace'
   topoIterations?: number; // Jacobi iterations for laplace method (1-2000, default 200)
   topoBlend?: number; // Laplace diffusion spread (0-1, default 1.0)

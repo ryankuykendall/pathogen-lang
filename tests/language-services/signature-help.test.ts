@@ -85,6 +85,13 @@ describe('getSignatureHelp', () => {
       expect(bump!.signatures[0].parameters.map((p) => p.label)).toEqual(['t', 'center', 'spread']);
     });
 
+    it('shows signature for ease with curve then t', () => {
+      const result = sigHelpAtEnd("let y = ease('sine-in', ");
+      expect(result).not.toBeNull();
+      expect(result!.signatures[0].parameters.map((p) => p.label)).toEqual(['curve', 't']);
+      expect(result!.activeParameter).toBe(1);
+    });
+
     it('shows signature for cubicBezier with the four handles then t', () => {
       const result = sigHelpAtEnd('let y = cubicBezier(0.42, 0, ');
       expect(result).not.toBeNull();

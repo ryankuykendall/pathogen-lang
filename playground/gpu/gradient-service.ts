@@ -75,16 +75,16 @@ interface ContourHeader {
 /** Easing function signature. */
 type EasingFn = (t: number) => number;
 
-/** Easing name to integer mapping for GPU shaders. */
-type EasingName = 'linear' | 'smoothstep' | 'ease-in' | 'ease-out' | 'ease-in-out';
-
-const EASING_MAP: Record<EasingName, number> = {
-  linear: 0,
-  smoothstep: 1,
-  'ease-in': 2,
-  'ease-out': 3,
-  'ease-in-out': 4,
-};
+/**
+ * u32 shader mode for an easing name: its index in the compiler's curve table
+ * (src/stdlib/easing-curves.ts, served as window.PathogenLang.EASING_ORDER).
+ * Unknown or missing names fall back to 0 (linear). Read lazily so this module
+ * keeps no load-order dependency on the bundle.
+ */
+function easingModeFor(name: string | undefined): number {
+  const index = window.PathogenLang.easingModeIndex(name || 'linear');
+  return index < 0 ? 0 : index;
+}
 
 // ---------------------------------------------------------------------------
 // Texture size clamping
@@ -1039,7 +1039,7 @@ async function renderTopoWebGPU(
   const totalSegments = Math.max(globalSegmentIdx, 1);
 
   // --- Easing mode ---
-  const easingVal = EASING_MAP[(grad.topoEasing || 'linear') as EasingName] ?? 0;
+  const easingVal = easingModeFor(grad.topoEasing);
   const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
 
   // --- Uniform buffer (TopoParams, 32 bytes) ---
@@ -1190,7 +1190,7 @@ async function renderTopoLaplaceWebGPU(
   const stops = grad.stopsWithOklch || [];
   if (stops.length === 0) return null;
 
-  const easingVal = EASING_MAP[(grad.topoEasing || 'linear') as EasingName] ?? 0;
+  const easingVal = easingModeFor(grad.topoEasing);
   const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
 
   const gw = grad.topoWidth || w;
@@ -1456,7 +1456,7 @@ function renderTopoCanvas2D(grad: GradientOutput, w: number, h: number, scale: n
     const imageData = ctx.createImageData(pw, ph);
     const data = imageData.data;
 
-    const easingFn = getEasingFn((grad.topoEasing || 'linear') as EasingName);
+    const easingFn = getEasingFn(grad.topoEasing);
     const bw = Math.min(gw, gh) * 0.08; // bandwidth: half-width of transition zone
 
     for (let py = 0; py < ph; py++) {
@@ -1525,7 +1525,7 @@ function renderTopoLaplaceCanvas2D(grad: GradientOutput, w: number, h: number, s
 
     const gw = grad.topoWidth || w;
     const gh = grad.topoHeight || h;
-    const easingFn = getEasingFn((grad.topoEasing || 'linear') as EasingName);
+    const easingFn = getEasingFn(grad.topoEasing);
 
     // Adaptive solve resolution (same formula as WebGPU path)
     const maxDim = Math.max(gw, gh);
@@ -1607,20 +1607,20 @@ function minDistToSegments(px: number, py: number, segments: Float32Array): numb
   return minDist;
 }
 
-/** Get easing function by name */
-function getEasingFn(name: string): EasingFn {
-  switch (name) {
-    case 'smoothstep':
-      return (t: number) => t * t * (3 - 2 * t);
-    case 'ease-in':
-      return (t: number) => t * t;
-    case 'ease-out':
-      return (t: number) => 1 - (1 - t) * (1 - t);
-    case 'ease-in-out':
-      return (t: number) => (t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t));
-    default:
-      return (t: number) => t; // linear
-  }
+/**
+ * Easing curve for the Canvas fallbacks, read from the compiler's curve table
+ * (window.PathogenLang.EASING_CURVES). Mirrors the generated WGSL applyEasing:
+ * input clamped to [0, 1] with exact endpoints, output clamped back onto the
+ * color ramp so overshooting curves (back, elastic) hold at the edge.
+ */
+function getEasingFn(name: string | undefined): EasingFn {
+  const curve = window.PathogenLang.EASING_CURVES[name || 'linear'] ?? ((u: number) => u);
+  return (t: number) => {
+    const u = Math.max(0, Math.min(1, t));
+    if (u <= 0) return 0;
+    if (u >= 1) return 1;
+    return Math.max(0, Math.min(1, curve(u)));
+  };
 }
 
 /** Sample a color ramp at a given elevation */

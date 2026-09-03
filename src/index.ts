@@ -11,6 +11,8 @@ export { highlightPathogenTokens } from './highlight';
 export type { HighlightToken } from './highlight';
 export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated, BUILTIN_ENUMS } from './evaluator';
 export { stdlib } from './stdlib';
+export { buildEasingWgsl, EASING_CURVES, EASING_ORDER, EASING_SPECS, easingModeIndex } from './stdlib/easing-curves';
+export type { EasingCurveSpec } from './stdlib/easing-curves';
 export { generateSvg } from './svg-generator';
 export type { SvgGeneratorOptions } from './svg-generator';
 export {

@@ -365,6 +365,8 @@ export declare function easeIn(t: number): number;
 export declare function easeOut(t: number): number;
 /** easeInOut(t) — Quadratic ease-in-out over clamped [0, 1] @boost 8 */
 export declare function easeInOut(t: number): number;
+/** ease(curve, t) — Apply a named Easing curve to t; curve is an Easing member or its string @boost 10 */
+export declare function ease(curve: string, t: number): number;
 /** cubicBezier(x1, y1, x2, y2, t) — CSS cubic-bezier timing curve; y handles may overshoot @boost 8 */
 export declare function cubicBezier(x1: number, y1: number, x2: number, y2: number, t: number): number;
 
@@ -1374,7 +1376,7 @@ export interface PathogenTopoGradient {
   readonly width: number;
   /** Canvas height in user units */
   readonly height: number;
-  /** Elevation easing: 'linear' | 'smoothstep' | 'ease-in' | 'ease-out' | 'ease-in-out' */
+  /** Elevation easing: any Easing member or its string — 'linear', 'smoothstep', 'ease-in-out', 'sine-in-out', … 'bounce-in-out'; overshooting curves clamp to the ramp */
   easing: string;
   /** Solver: 'distance' | 'laplace' */
   method: string;

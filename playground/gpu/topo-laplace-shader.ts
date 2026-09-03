@@ -165,7 +165,7 @@ export const TOPO_LAPLACE_RENDER_WGSL: string = /* wgsl */ `
 // Byte layout (with WGSL alignment rules):
 //   offset  0: resolution     vec2f     (8 bytes)
 //   offset  8: stop_count     u32       (4 bytes)
-//   offset 12: easing         u32       (4 bytes) — 0=linear 1=smoothstep 2=ease-in 3=ease-out 4=ease-in-out
+//   offset 12: easing         u32       (4 bytes) — index into EASING_ORDER (src/stdlib/easing-curves.ts): 0=linear 1=smoothstep 2=ease-in 3=ease-out 4=ease-in-out 5+=named family
 //   offset 16: interpolation  u32       (4 bytes) — 0=sRGB 1=OKLab
 //   offset 20: _pad1          u32       (4 bytes)
 //   offset 24: _pad2          u32       (4 bytes)
@@ -236,36 +236,9 @@ fn oklab_to_srgb(lab: vec3f) -> vec3f {
   return vec3f(linear_to_srgb(clamp(lr, 0.0, 1.0)), linear_to_srgb(clamp(lg, 0.0, 1.0)), linear_to_srgb(clamp(lb, 0.0, 1.0)));
 }
 
-// --- Easing functions ---
-
-fn applyEasing(t: f32, mode: u32) -> f32 {
-  let tc = clamp(t, 0.0, 1.0);
-  switch (mode) {
-    case 1u: {
-      // smoothstep
-      return tc * tc * (3.0 - 2.0 * tc);
-    }
-    case 2u: {
-      // ease-in (quadratic)
-      return tc * tc;
-    }
-    case 3u: {
-      // ease-out (quadratic)
-      return 1.0 - (1.0 - tc) * (1.0 - tc);
-    }
-    case 4u: {
-      // ease-in-out (quadratic)
-      if (tc < 0.5) {
-        return 2.0 * tc * tc;
-      }
-      return 1.0 - 2.0 * (1.0 - tc) * (1.0 - tc);
-    }
-    default: {
-      // linear (mode 0)
-      return tc;
-    }
-  }
-}
+// --- Easing functions: spliced in by playground/gpu/easing-wgsl.ts from the
+// compiler's buildEasingWgsl() (src/stdlib/easing-curves.ts) ---
+//__EASING_FUNCTIONS__
 
 // --- Color ramp sampling ---
 

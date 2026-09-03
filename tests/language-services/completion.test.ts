@@ -109,6 +109,34 @@ describe('getCompletions', () => {
       expect(bump!.detail).toBe('bump(t, center, spread) — Raised-cosine kernel: 1 at center, easing to 0 at center ± spread');
     });
 
+    it('offers ease with generated detail and snippet', () => {
+      const items = completeAtEnd('let e = ea');
+      const item = items.find((i) => i.label === 'ease');
+      expect(item).toBeDefined();
+      expect(item!.detail).toBe('ease(curve, t) — Apply a named Easing curve to t; curve is an Easing member or its string');
+      // The generator quotes string-typed parameters; Easing.X also works there.
+      expect(item!.insertText).toBe("ease('${1:curve}', ${2:t})$0");
+    });
+
+    it("describes TopoGradient's easing property as the whole Easing family", () => {
+      // The hover/completion detail used to enumerate the legacy five values
+      // only; it must name the family so it cannot drift from BUILTIN_ENUMS.
+      const items = completeAtEnd("let topo = TopoGradient('t', 400, 300) {|g| };\ntopo.");
+      const easing = items.find((i) => i.label === 'easing');
+      expect(easing).toBeDefined();
+      expect(easing!.detail).toContain('any Easing member');
+      expect(easing!.detail).toContain('bounce-in-out');
+    });
+
+    it('offers the named curve family after Easing.', () => {
+      const names = labels(completeAtEnd('Easing.'));
+      for (const member of ['SineIn', 'CubicInOut', 'ExpoOut', 'CircIn', 'BackInOut', 'ElasticOut', 'BounceOut']) {
+        expect(names, member).toContain(member);
+      }
+      const bounce = completeAtEnd('Easing.').find((i) => i.label === 'BounceOut');
+      expect(bounce!.detail).toBe('Easing.BounceOut → "bounce-out"');
+    });
+
     it('offers cubicBezier with generated detail and snippet', () => {
       const items = completeAtEnd('cubicB');
       const item = items.find((i) => i.label === 'cubicBezier');

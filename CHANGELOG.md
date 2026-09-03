@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-03 (named easing family: ease() + 21 new Easing members, shared with gradients)
+
+### Added
+
+#### Core
+
+- **`ease(curve, t)`** — any `Easing` member (or its string) applied to `t`: `ease(Easing.BounceOut, t)`, `ease('elastic-out', t)`. The curve comes first and `t` last, matching `cubicBezier`. `t` clamps to `[0, 1]` with exact endpoints; the output is deliberately not clamped, so `back` and `elastic` overshoot. An unknown curve is a compile error, with the call position, that lists every valid name. `ease('ease-in', t)` is exactly `easeIn(t)` and `ease('smoothstep', t)` is `smoothstep(0, 1, t)`.
+- **21 new `Easing` members** — `SineIn/SineOut/SineInOut`, `Cubic…`, `Expo…`, `Circ…`, `Back…`, `Elastic…`, `Bounce…` (strings `'sine-in'` … `'bounce-in-out'`), the standard Penner curves, alongside the legacy `Linear`, `Smoothstep`, `EaseIn`, `EaseOut`, `EaseInOut`. Enum completions and hover regenerate from the table.
+- **One curve table for the language and the gradients.** `src/stdlib/easing-curves.ts` is the single source: the `Easing` enum derives its members from it, `ease()` and the quadratic trio read it, and `buildEasingWgsl()` generates the shaders' `applyEasing` from the same specs (each JS body sits beside its WGSL twin). Exported as `EASING_SPECS`, `EASING_ORDER`, `EASING_CURVES`, `easingModeIndex`, `buildEasingWgsl`. `tests/easing-curves.test.ts` pins the legacy u32 wire values 0..4, enum ↔ table agreement, and the shader splice.
+
+#### Playground
+
+- **`TopoGradient.easing` accepts every `Easing` member**, on both the `distance` and `laplace` methods, in WebGPU and in the Canvas fallback. The two WGSL shaders no longer hand-copy the easing switch: they carry a splice marker that `playground/gpu/easing-wgsl.ts` fills from the served compiler's `buildEasingWgsl()` at pipeline creation, and the Canvas fallback reads `EASING_CURVES`. For gradients the eased elevation is clamped back onto the color ramp (input and output), so overshooting curves hold at the ramp's edge instead of wrapping; the Canvas fallback used to skip the input clamp the shaders applied.
+
+### Fixed
+
+#### Core
+
+- **String arguments inside `calc()` in bare path arguments parse.** The greedy path-argument tokenizer stopped at a quote, so `M calc(ease('sine-in', t)) 0` (and `squareGrid('shape', …)`, `Color('#fff')` in the same position) failed with `Missing ';'`. It now consumes a quoted literal whole, escapes included, so a `)` or `;` inside the string cannot end the token. Function-call statements such as `circle(calc(ease('sine-in', t)), …)` were unaffected.
+
+### Documentation
+
+- `docs/stdlib.md` Easing → "ease": the curve family table, overshoot and clamping rules, the enum/string equivalence. `docs/gradients.md`: the `easing` property row points at the full family and states the ramp clamp. `docs/syntax.md`: the built-in enum table now lists all 23 enums (it listed 8) and the new `Easing` members.
+- **Blog: "Ease Once, Apply Everywhere: Easing with Lambdas"** (`/blog/easing-with-lambdas`, dated 2026-09-07) — a practical walkthrough of the new curves through lambdas: the cam-under-a-slider model, the overshoot and arity gotchas up front, then six samples (`website/blog/samples/post51/`) that apply one eased `t` to ranges (`lerp`, `.mix`, radius), to wave amplitudes as envelopes, to cycles versus half-cycles, to factories that return lambdas with their numbers baked in, and finally to a twelve-strand plume. Samples validate clean (margins, collisions, formatting) and are archived as BBWPs.
+
 ## [0.8.0] - 2026-09-03 (cubicBezier timing curve)
 
 ### Added

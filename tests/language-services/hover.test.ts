@@ -110,6 +110,16 @@ describe('getHoverInfo', () => {
       expect(easeResult!.contents).toContain('Quadratic ease-in-out');
     });
 
+    it('shows hover for ease and for a new Easing member', () => {
+      const fn = hover("let x = ease('bounce-out', 0.5);", 0, 9);
+      expect(fn).not.toBeNull();
+      expect(fn!.contents).toContain('**ease**');
+      expect(fn!.contents).toContain('Apply a named Easing curve');
+      const member = hover('let x = Easing.BounceOut;', 0, 18);
+      expect(member).not.toBeNull();
+      expect(member!.contents).toContain('bounce-out');
+    });
+
     it('shows hover for cubicBezier', () => {
       const result = hover('let x = cubicBezier(0.42, 0, 0.58, 1, 0.5);', 0, 12);
       expect(result).not.toBeNull();

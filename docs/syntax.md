@@ -555,17 +555,33 @@ Pathogen provides built-in enums for gradient and geometry properties. Enum memb
 
 | Enum | Members |
 |------|---------|
-| `Easing` | `Linear`, `Smoothstep`, `EaseIn`, `EaseOut`, `EaseInOut` |
+| `Easing` | `Linear`, `Smoothstep`, `EaseIn`, `EaseOut`, `EaseInOut`, then `In` / `Out` / `InOut` for each of `Sine`, `Cubic`, `Expo`, `Circ`, `Back`, `Elastic`, `Bounce` (`SineIn`, `SineOut`, `SineInOut`, … `BounceInOut`) |
 | `Interpolation` | `SRGB`, `OKLCH`, `LinearRGB` |
 | `SpreadMethod` | `Pad`, `Reflect`, `Repeat` |
 | `GradientUnits` | `ObjectBoundingBox`, `UserSpaceOnUse` |
 | `Direction` | `CW`, `CCW` |
+| `CurveContinuity` | `G0`, `G1`, `G2` |
 | `ConicSpread` | `Clamp`, `Repeat`, `Transparent` |
 | `InnerFill` | `Transparent`, `TransparentBlend`, `Center` |
 | `TopoMethod` | `Distance`, `Laplace` |
+| `BBoxAnchor` | `TopLeft`, `Top`, `TopRight`, `Right`, `BottomRight`, `Bottom`, `BottomLeft`, `Left`, `Center` |
+| `GridPatternType` | `Shape`, `Dot`, `Intersection`, `Partial` |
+| `HexagonOrientation` | `Edge`, `Vertex` |
+| `VerticalAnchor` | `Descender`, `Baseline`, `Midline`, `CapHeight` |
+| `MarkerUnits` | `StrokeWidth`, `UserSpaceOnUse` |
+| `MarkerOrient` | `Auto`, `AutoStartReverse` |
+| `MarkerRefX` | `Left`, `Center`, `Right` |
+| `MarkerRefY` | `Top`, `Center`, `Bottom` |
+| `MarkerPreserveAspectRatio` | `None`, plus every `X{Min,Mid,Max}Y{Min,Mid,Max}{Meet,Slice}` combination (`XMidYMidMeet`, `XMinYMaxSlice`, …) |
+| `NoiseFilterStyle` | `Grain`, `Paper`, `Speckle`, `Static`, `Gradient` |
+| `NoiseFilterScale` | `Fine`, `Medium`, `Coarse` |
+| `GlowMode` | `Outer`, `Inner` |
+| `MotionBlurType` | `Linear`, `Progressive` |
+| `BlendMode` | `Normal`, `Multiply`, `Screen`, `Overlay`, `ColorBurn`, `ColorDodge`, `HardLight`, `SoftLight`, `Darken`, `Lighten`, `Difference`, `Exclusion` |
 
 ```
 topo.easing = Easing.Smoothstep;       // equivalent to 'smoothstep'
+topo.easing = Easing.BounceOut;        // equivalent to 'bounce-out'
 grad.interpolation = Interpolation.OKLCH;
 ```
 
@@ -575,9 +591,10 @@ Enum values are interchangeable with their string equivalents:
 Easing.Linear == 'linear'  // true
 ```
 
-The `Easing` curves are also callable as stdlib functions (`easeIn`,
-`easeOut`, `easeInOut`, `smoothstep`) — the formulas and the enum↔function
-mapping are documented in [the stdlib's Easing section](#stdlib-easing).
+The `Easing` curves are also callable as stdlib functions — the quadratic
+trio as `easeIn`, `easeOut`, `easeInOut`, `smoothstep` as `smoothstep`,
+and every member through `ease(curve, t)` — and the enum↔function mapping
+is documented in [the stdlib's Easing section](#stdlib-easing).
 
 ### User-Defined Enums
 

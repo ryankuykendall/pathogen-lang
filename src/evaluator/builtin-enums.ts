@@ -6,14 +6,13 @@
  * and BlendMode were missing there, so e.g. `BlendMode.Multiply` failed to
  * resolve in annotated mode).
  */
+import { easingEnumMembers } from '../stdlib/easing-curves';
+
 export const BUILTIN_ENUMS: Record<string, Record<string, string>> = {
-  Easing: {
-    Linear: 'linear',
-    Smoothstep: 'smoothstep',
-    EaseIn: 'ease-in',
-    EaseOut: 'ease-out',
-    EaseInOut: 'ease-in-out',
-  },
+  // Linear, Smoothstep, EaseIn, EaseOut, EaseInOut, then SineIn … BounceInOut —
+  // derived from the curve table so the enum, ease(), and the gradient
+  // renderers cannot disagree about which curves exist.
+  Easing: easingEnumMembers(),
   Interpolation: { SRGB: 'srgb', OKLCH: 'oklch', LinearRGB: 'linearRGB' },
   SpreadMethod: { Pad: 'pad', Reflect: 'reflect', Repeat: 'repeat' },
   GradientUnits: { ObjectBoundingBox: 'objectBoundingBox', UserSpaceOnUse: 'userSpaceOnUse' },

@@ -1382,11 +1382,16 @@ function parsePostfixChain(
 function parseFunctionArgs(argsStr: string, baseOffset: number, source: string): Expression[] {
   if (!argsStr.trim()) return [];
 
-  // Split on commas at depth 0
+  // Split on commas at depth 0 (a comma inside a quoted string is content)
   const argStrings: string[] = [];
   let depth = 0;
   let start = 0;
   for (let i = 0; i < argsStr.length; i++) {
+    const afterString = skipQuoted(argsStr, i);
+    if (afterString !== i) {
+      i = afterString - 1;
+      continue;
+    }
     if (argsStr[i] === '(' || argsStr[i] === '[') depth++;
     else if (argsStr[i] === ')' || argsStr[i] === ']') depth--;
     else if (argsStr[i] === ',' && depth === 0) {
@@ -1410,11 +1415,34 @@ function parseFunctionArgs(argsStr: string, baseOffset: number, source: string):
   return result;
 }
 
+/**
+ * If `text[pos]` opens a quoted string literal, return the index just past
+ * its closing quote (or `text.length` when unterminated); otherwise `pos`.
+ * The path-arg helpers below use it so a `)` `]` or `,` inside a string
+ * argument (`calc(ease('sine-in', t))`, `Color('#fff')`) never counts as
+ * structure — the greedy tokenizer already carries such strings intact.
+ */
+function skipQuoted(text: string, pos: number): number {
+  const quote = text[pos];
+  if (quote !== "'" && quote !== '"') return pos;
+  let i = pos + 1;
+  while (i < text.length && text[i] !== quote) {
+    if (text[i] === '\\') i++;
+    i++;
+  }
+  return Math.min(i + 1, text.length);
+}
+
 function extractBracketContent(text: string, openPos: number): string | null {
   if (text[openPos] !== '[') return null;
   let depth = 1;
   let pos = openPos + 1;
   while (pos < text.length && depth > 0) {
+    const afterString = skipQuoted(text, pos);
+    if (afterString !== pos) {
+      pos = afterString;
+      continue;
+    }
     if (text[pos] === '[') depth++;
     else if (text[pos] === ']') depth--;
     pos++;
@@ -1428,6 +1456,11 @@ function extractParenContent(text: string, openPos: number): string | null {
   let depth = 1;
   let pos = openPos + 1;
   while (pos < text.length && depth > 0) {
+    const afterString = skipQuoted(text, pos);
+    if (afterString !== pos) {
+      pos = afterString;
+      continue;
+    }
     if (text[pos] === '(') depth++;
     else if (text[pos] === ')') depth--;
     pos++;

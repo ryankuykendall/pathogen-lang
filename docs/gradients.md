@@ -733,7 +733,7 @@ The path must be closed (end with `closePath()`). Use `@{ ... }` path blocks wit
 | `id` | yes | no | string | — | Gradient ID |
 | `width` | yes | no | number | — | Render width |
 | `height` | yes | no | number | — | Render height |
-| `easing` | yes | yes | string | `'linear'` | Easing: `linear`, `smoothstep`, `ease-in`, `ease-out`, `ease-in-out` |
+| `easing` | yes | yes | string | `'linear'` | Any [`Easing`](#syntax-built-in-enums) member or its string: `linear`, `smoothstep`, the quadratic `ease-in` / `ease-out` / `ease-in-out`, and the named `sine-in` … `bounce-in-out` families (the full table is in the [stdlib's Easing section](#stdlib-easing)). The eased elevation is clamped to the color ramp, so overshooting curves (`back`, `elastic`) rise to the ramp's ceiling and hold there. |
 | `interpolation` | yes | yes | string | `'srgb'` | Color interpolation space |
 | `method` | yes | yes | string | `'distance'` | Solver: `'distance'` (SDF-based) or `'laplace'` (Jacobi iteration) |
 | `iterations` | yes | yes | number | `200` | Jacobi iterations for Laplace solver (range: 1–2000). Only meaningful when `method = 'laplace'`; ignored by `'distance'`. Higher values produce smoother results but take longer to compute. |

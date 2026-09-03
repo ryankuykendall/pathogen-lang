@@ -2,6 +2,7 @@
 // Three cached pipelines: init (compute), Jacobi iteration (compute), render (fragment).
 // Caches per-device; recreates after device loss recovery.
 
+import { withEasingWgsl } from './easing-wgsl.js';
 import { TOPO_LAPLACE_INIT_WGSL, TOPO_LAPLACE_JACOBI_WGSL, TOPO_LAPLACE_RENDER_WGSL } from './topo-laplace-shader.js';
 import { TOPO_VERTEX_WGSL } from './topo-shader.js';
 import { getDevice } from './webgpu-device.js';
@@ -41,7 +42,9 @@ export async function getTopoLaplacePipeline(): Promise<TopoLaplacePipelineResul
     const initModule: GPUShaderModule = device.createShaderModule({ code: TOPO_LAPLACE_INIT_WGSL });
     const jacobiModule: GPUShaderModule = device.createShaderModule({ code: TOPO_LAPLACE_JACOBI_WGSL });
     const vertexModule: GPUShaderModule = device.createShaderModule({ code: TOPO_VERTEX_WGSL });
-    const renderModule: GPUShaderModule = device.createShaderModule({ code: TOPO_LAPLACE_RENDER_WGSL });
+    const renderModule: GPUShaderModule = device.createShaderModule({
+      code: withEasingWgsl(TOPO_LAPLACE_RENDER_WGSL),
+    });
 
     const initPipeline: GPUComputePipeline = device.createComputePipeline({
       layout: 'auto',

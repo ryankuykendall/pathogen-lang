@@ -177,8 +177,55 @@ the curve the gradient renderer applies for `Easing.EaseInOut`:
 
 These are quadratic eases — CSS's `ease-in` family is cubic-bézier, close
 but not identical. Inputs outside `[0, 1]` clamp to the nearer end. For
-the CSS curves themselves, and for any curve you can draw with two
-handles, use `cubicBezier`.
+the full named family — sine through bounce — use `ease`; for the CSS
+curves themselves, and for any curve you can draw with two handles, use
+`cubicBezier`.
+
+#### ease
+
+| Function | Description |
+|----------|-------------|
+| `ease(curve, t)` | `t` eased through a named curve: any [`Easing`](#syntax-built-in-enums) member or its string, from `'linear'` and the quadratic trio through the sine, cubic, expo, circ, back, elastic and bounce families |
+
+`ease` is the one-call form of the whole named family. The curve comes
+first and `t` last, matching `cubicBezier`, and an enum member and its
+string are interchangeable:
+
+```
+let bounce = {|t| ease(Easing.BounceOut, t)};
+let spring = {|t| ease('elastic-out', t)};
+for (i in 0..11) {
+  let t = i / 11;
+  circle(calc(20 + 160 * bounce(t)), 40, 3);
+  circle(calc(20 + 160 * spring(t)), 80, 3);
+}
+```
+
+| Family | `Easing.` members | Strings | Shape |
+|--------|-------------------|---------|-------|
+| linear | `Linear` | `'linear'` | identity |
+| quadratic | `EaseIn`, `EaseOut`, `EaseInOut` | `'ease-in'`, `'ease-out'`, `'ease-in-out'` | the trio above |
+| smoothstep | `Smoothstep` | `'smoothstep'` | Hermite S-curve, `smoothstep(0, 1, t)` |
+| sine | `SineIn`, `SineOut`, `SineInOut` | `'sine-in'`, `'sine-out'`, `'sine-in-out'` | the gentlest curve: a quarter wave of a cosine |
+| cubic | `CubicIn`, `CubicOut`, `CubicInOut` | `'cubic-in'`, `'cubic-out'`, `'cubic-in-out'` | like quadratic, more pronounced |
+| expo | `ExpoIn`, `ExpoOut`, `ExpoInOut` | `'expo-in'`, `'expo-out'`, `'expo-in-out'` | nearly flat, then a sudden rush |
+| circ | `CircIn`, `CircOut`, `CircInOut` | `'circ-in'`, `'circ-out'`, `'circ-in-out'` | a quarter circle: vertical at one end |
+| back | `BackIn`, `BackOut`, `BackInOut` | `'back-in'`, `'back-out'`, `'back-in-out'` | pulls back below 0 before starting, or overshoots past 1 before settling |
+| elastic | `ElasticIn`, `ElasticOut`, `ElasticInOut` | `'elastic-in'`, `'elastic-out'`, `'elastic-in-out'` | overshoots with a decaying wobble |
+| bounce | `BounceIn`, `BounceOut`, `BounceInOut` | `'bounce-in'`, `'bounce-out'`, `'bounce-in-out'` | bounces against the end like a dropped ball |
+
+- `t` clamps to `[0, 1]`. An unknown curve name is a compile error that
+  lists the valid names.
+- `back` and `elastic` leave the box: like `cubicBezier`, `ease` does
+  **not** clamp its output, so those curves really do return values below
+  0 and above 1. Every other family stays within `[0, 1]`.
+- The same names drive [`TopoGradient.easing`](#gradients-topogradient),
+  where the eased elevation is clamped to the color ramp, so an
+  overshooting curve rises to the ramp's ceiling and holds there.
+- `ease('ease-in', t)` is exactly `easeIn(t)`, and `ease('smoothstep', t)`
+  is `smoothstep(0, 1, t)`. The sine, expo, circ, back, elastic and bounce
+  formulas are the standard Penner curves; they use `sin`, `pow` or
+  `sqrt`, so they are deterministic per engine only.
 
 #### cubicBezier
 

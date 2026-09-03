@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../src';
+import { BUILTIN_ENUMS } from '../src/evaluator/builtin-enums';
 import { ANGLE_PRESERVING_ARGS } from '../src/stdlib/angle-preserving';
 import { mathFunctions } from '../src/stdlib/math';
 import { compilePath, expectSVGPathCommandSequence, parseSVGPath } from './helpers';
@@ -531,6 +532,111 @@ describe('Evaluator', () => {
         expect(compilePath('M calc(cubicBezier(0.68, -0.6, 0.32, 1.6, 0.8)) 0')).toBe('M 1.1046120645972985 0');
         expect(compilePath('M calc(cubicBezier(1, 0, 0, 1, 0.5)) 0')).toBe('M 0.5 0');
         expect(compilePath('M calc(cubicBezier(0.12, 0, 0.39, 0, 0.4)) 0')).toBe('M 0.19770206557303885 0');
+      });
+    });
+
+    describe('ease (named curve family)', () => {
+      const num = (expr: string): number => Number(compilePath(`M calc(${expr}) 0`).split(' ')[1]);
+      // Independent reference: the standard Penner formulas evaluated in a
+      // scratch script (see project-docs/easing-interpolation), 12 digits,
+      // at t = 0.25, 0.5, 0.75.
+      const REFERENCE: Record<string, [number, number, number]> = {
+        'sine-in': [0.076120467489, 0.292893218813, 0.617316567635],
+        'sine-out': [0.382683432365, 0.707106781187, 0.923879532511],
+        'sine-in-out': [0.146446609407, 0.5, 0.853553390593],
+        'cubic-in': [0.015625, 0.125, 0.421875],
+        'cubic-out': [0.578125, 0.875, 0.984375],
+        'cubic-in-out': [0.0625, 0.5, 0.9375],
+        'expo-in': [0.005524271728, 0.03125, 0.176776695297],
+        'expo-out': [0.823223304703, 0.96875, 0.994475728272],
+        'expo-in-out': [0.015625, 0.5, 0.984375],
+        'circ-in': [0.031754163448, 0.133974596216, 0.338562172234],
+        'circ-out': [0.661437827766, 0.866025403784, 0.968245836552],
+        'circ-in-out': [0.066987298108, 0.5, 0.933012701892],
+        'back-in': [-0.0641365625, -0.0876975, 0.1825903125],
+        'back-out': [0.8174096875, 1.0876975, 1.0641365625],
+        'back-in-out': [-0.09968184375, 0.5, 1.09968184375],
+        'elastic-in': [-0.005524271728, -0.015625, 0.088388347648],
+        'elastic-out': [0.911611652352, 1.015625, 1.005524271728],
+        'elastic-in-out': [0.011969444424, 0.5, 0.988030555576],
+        'bounce-in': [0.02734375, 0.234375, 0.52734375],
+        'bounce-out': [0.47265625, 0.765625, 0.97265625],
+        'bounce-in-out': [0.1171875, 0.5, 0.8828125],
+      };
+
+      it('matches the reference value of every named curve at 0.25, 0.5 and 0.75', () => {
+        for (const [name, [q1, mid, q3]] of Object.entries(REFERENCE)) {
+          expect(num(`ease('${name}', 0.25)`), `${name} at 0.25`).toBeCloseTo(q1, 9);
+          expect(num(`ease('${name}', 0.5)`), `${name} at 0.5`).toBeCloseTo(mid, 9);
+          expect(num(`ease('${name}', 0.75)`), `${name} at 0.75`).toBeCloseTo(q3, 9);
+        }
+      });
+
+      it('covers every Easing member: exact endpoints, and t clamps to [0, 1]', () => {
+        const names = Object.values(BUILTIN_ENUMS.Easing);
+        expect(names).toHaveLength(26);
+        for (const name of names) {
+          expect(compilePath(`M calc(ease('${name}', 0)) calc(ease('${name}', 1))`), name).toBe('M 0 1');
+          expect(compilePath(`M calc(ease('${name}', -2)) calc(ease('${name}', 3))`), name).toBe('M 0 1');
+        }
+      });
+
+      it('an enum member and its string are the same curve', () => {
+        expect(compilePath("M calc(ease(Easing.BounceOut, 0.5)) calc(ease('bounce-out', 0.5))")).toBe(
+          'M 0.765625 0.765625',
+        );
+        // sine-in-out at the midpoint is -(cos(pi/2) - 1) / 2, one ulp under 0.5
+        const sine = compilePath("M calc(ease(Easing.SineInOut, 0.5)) calc(ease('sine-in-out', 0.5))").split(' ');
+        expect(sine[1]).toBe(sine[2]);
+        expect(Number(sine[1])).toBeCloseTo(0.5, 12);
+      });
+
+      it('the legacy names are exactly the existing functions', () => {
+        // This is a wiring check (the trio now reads the same table). The
+        // independent exact values for the legacy five live in the smoothstep
+        // and 'quadratic easing trio' tests earlier in this file.
+        for (const t of [0.1, 0.25, 0.5, 0.9]) {
+          const pairs = compilePath(
+            `M calc(ease('ease-in', ${t})) calc(easeIn(${t}))
+             L calc(ease('ease-out', ${t})) calc(easeOut(${t}))
+             L calc(ease('ease-in-out', ${t})) calc(easeInOut(${t}))
+             L calc(ease('smoothstep', ${t})) calc(smoothstep(0, 1, ${t}))
+             L calc(ease('linear', ${t})) ${t}`,
+          );
+          const nums = pairs.split(/[ML\s]+/).filter(Boolean);
+          for (let i = 0; i < nums.length; i += 2) expect(nums[i], `t=${t} pair ${i / 2}`).toBe(nums[i + 1]);
+        }
+      });
+
+      it('back and elastic overshoot: the output is not clamped', () => {
+        expect(num("ease('back-in', 0.5)")).toBeLessThan(0);
+        expect(num("ease('back-out', 0.5)")).toBeGreaterThan(1);
+        expect(num("ease('elastic-out', 0.5)")).toBeGreaterThan(1);
+        expect(num("ease('bounce-out', 0.5)")).toBeLessThanOrEqual(1);
+      });
+
+      it('a quoted curve name works inside calc() in bare path arguments', () => {
+        // The greedy path-args tokenizer used to stop at a quote, so any
+        // string argument inside calc() after a path command was a parse
+        // error (`Missing ';'`); it now consumes the literal whole.
+        expect(compilePath("M calc(ease('cubic-in-out', 0.5)) calc(ease(\"cubic-in\", 0.5))")).toBe('M 0.5 0.125');
+        // Quote-protected punctuation cannot end the token early.
+        expect(() => compile("M calc(ease(')', 0.5)) 0")).toThrow(/ease: unknown curve '\)'/);
+        expect(() => compile("M calc(ease('a;b', 0.5)) 0")).toThrow(/ease: unknown curve 'a;b'/);
+        // A string is still not a bare path argument by itself.
+        expect(() => compile("M 'nope' 0")).toThrow();
+      });
+
+      it('an unknown curve is a positioned error that lists the valid names', () => {
+        expect(() => compile("let start = 1;\nlet eased = ease('wobble', 0.5);")).toThrow(
+          /^Line 2, col \d+: ease: unknown curve 'wobble'\. Valid curves: linear, smoothstep, ease-in, ease-out, ease-in-out, sine-in/,
+        );
+        // Object.prototype names must not resolve to a "curve" through the table's prototype chain.
+        expect(() => compile("let eased = ease('constructor', 0.5);")).toThrow(/ease: unknown curve 'constructor'/);
+        expect(() => compile("let eased = ease('toString', 0.5);")).toThrow(/ease: unknown curve 'toString'/);
+        expect(() => compile('let eased = ease(3, 0.5);')).toThrow(
+          /ease: curve must be an Easing member or its string \(got 3\)/,
+        );
       });
     });
 
@@ -1950,6 +2056,21 @@ describe('Evaluator', () => {
     it('unknown member returns null', () => {
       const result = compile('log(Easing.FooBar);');
       expect(result.logs[0].parts[0].value).toBe('null');
+    });
+
+    it('Easing carries the named curve family alongside the legacy five', () => {
+      expect(compile('log(Easing.SineInOut);').logs[0].parts[0].value).toBe('sine-in-out');
+      expect(compile('log(Easing.BounceOut);').logs[0].parts[0].value).toBe('bounce-out');
+      expect(compile('log(Easing.ElasticInOut);').logs[0].parts[0].value).toBe('elastic-in-out');
+      expect(compile('log(Easing.EaseInOut);').logs[0].parts[0].value).toBe('ease-in-out');
+      expect(Object.keys(BUILTIN_ENUMS.Easing).slice(0, 5)).toEqual([
+        'Linear',
+        'Smoothstep',
+        'EaseIn',
+        'EaseOut',
+        'EaseInOut',
+      ]);
+      expect(Object.keys(BUILTIN_ENUMS.Easing)).toHaveLength(26);
     });
   });
 
@@ -5272,8 +5393,8 @@ describe('first-class Angle values', () => {
 
     it('non-transparent math functions still return plain numbers for angle args', () => {
       // 'log' is shadowed by the logging builtin in program source, so Math.log
-      // can't be exercised this way
-      const skip = new Set([...Object.keys(ANGLE_PRESERVING_ARGS), 'log']);
+      // can't be exercised this way; 'ease' takes a curve name in slot 0.
+      const skip = new Set([...Object.keys(ANGLE_PRESERVING_ARGS), 'log', 'ease']);
       for (const [name, fn] of Object.entries(fns)) {
         if (skip.has(name) || fn.length === 0) continue;
         // Distinct per-slot angles keep every function's math well-defined

@@ -1,6 +1,7 @@
 // Topological gradient WebGPU render pipeline
 // Caches per-device; recreates after device loss recovery.
 
+import { withEasingWgsl } from './easing-wgsl.js';
 import { TOPO_FRAGMENT_WGSL, TOPO_VERTEX_WGSL } from './topo-shader.js';
 import { getDevice } from './webgpu-device.js';
 
@@ -32,7 +33,7 @@ export async function getTopoPipeline(): Promise<TopoPipelineResult | null> {
 
   try {
     const vertexModule: GPUShaderModule = device.createShaderModule({ code: TOPO_VERTEX_WGSL });
-    const fragmentModule: GPUShaderModule = device.createShaderModule({ code: TOPO_FRAGMENT_WGSL });
+    const fragmentModule: GPUShaderModule = device.createShaderModule({ code: withEasingWgsl(TOPO_FRAGMENT_WGSL) });
 
     cachedTopoPipeline = device.createRenderPipeline({
       layout: 'auto',

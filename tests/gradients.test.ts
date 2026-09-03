@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { compile } from '../src';
+import { BUILTIN_ENUMS } from '../src/evaluator/builtin-enums';
 
 describe('Gradients', () => {
   describe('construction and stops', () => {
@@ -2294,8 +2295,10 @@ describe('Gradients', () => {
       expect(result.gradients[0].topoEasing).toBe('smoothstep');
     });
 
-    it('easing can be set to ease-in, ease-out, ease-in-out', () => {
-      for (const ease of ['ease-in', 'ease-out', 'ease-in-out']) {
+    it('easing accepts every Easing member value, as a string or as the member', () => {
+      const values = Object.values(BUILTIN_ENUMS.Easing);
+      expect(values).toHaveLength(26);
+      for (const ease of values) {
         const result = compile(`
           let s = @{ circle(0, 0, 100); closePath(); };
           let topo = TopoGradient('t', 400, 300) {|g|
@@ -2305,18 +2308,26 @@ describe('Gradients', () => {
         `);
         expect(result.gradients[0].topoEasing).toBe(ease);
       }
+      const viaMember = compile(`
+        let s = @{ circle(0, 0, 100); closePath(); };
+        let topo = TopoGradient('t', 400, 300) {|g|
+          g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
+        };
+        topo.easing = Easing.BounceOut;
+      `);
+      expect(viaMember.gradients[0].topoEasing).toBe('bounce-out');
     });
 
-    it('easing rejects invalid values', () => {
+    it('easing rejects invalid values and names the valid set', () => {
       expect(() =>
         compile(`
         let s = @{ circle(0, 0, 100); closePath(); };
         let topo = TopoGradient('t', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
-        topo.easing = 'cubic';
+        topo.easing = 'not-a-curve';
       `),
-      ).toThrow(/easing must be one of/);
+      ).toThrow(/easing must be one of: linear, smoothstep, ease-in, ease-out, ease-in-out, sine-in.*bounce-in-out/);
     });
 
     it('easing only settable on topo gradients', () => {

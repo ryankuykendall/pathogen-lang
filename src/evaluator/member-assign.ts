@@ -143,7 +143,7 @@ export function assignGradientProperty(
     // Topo-specific properties
     case 'easing': {
       if (obj.gradientType !== 'topo') fail(`Property 'easing' is only available on TopoGradient`);
-      const valid = ['linear', 'smoothstep', 'ease-in', 'ease-out', 'ease-in-out'];
+      const valid = Object.values(BUILTIN_ENUMS.Easing);
       if (typeof value !== 'string' || !valid.includes(value)) {
         fail(`TopoGradient easing must be one of: ${valid.join(', ')}`);
       }

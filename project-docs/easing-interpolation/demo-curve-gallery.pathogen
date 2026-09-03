@@ -1,0 +1,40 @@
+//-- The named easing family as small multiples: seven rows (sine, cubic,
+//-- expo, circ, back, elastic, bounce) by three columns (in, out, in-out).
+//-- Each cell plots ease(curve, t) for t in 0..1; the dotted box is the
+//-- 0..1 range, so the back and elastic rows visibly leave it.
+
+define ViewBox(0, 0, 420, 560);
+
+let families = ['sine', 'cubic', 'expo', 'circ', 'back', 'elastic', 'bounce'];
+let modes = ['in', 'out', 'in-out'];
+let cellW = 120;
+let cellH = 70;
+let plotW = 100;
+let plotH = 44;
+let originX = 30;
+let originY = 30;
+
+let boxes = PathLayer('boxes') ${ stroke: #d0d0d8; stroke-width: 1; fill: none; stroke-dasharray: 2 2; };
+let curves = PathLayer('curves') ${ stroke: #c0518e; stroke-width: 1.5; fill: none; stroke-linejoin: round; };
+let labels = TextLayer('labels') ${ font-family: system-ui, sans-serif; font-size: 9; fill: #666; };
+
+for (row in 0..6) {
+  for (col in 0..2) {
+    let name = `${families[row]}-${modes[col]}`;
+    let x0 = originX + col * cellW;
+    let baseline = originY + row * cellH + plotH + 12;
+    boxes.apply {
+      rect(x0, calc(baseline - plotH), plotW, plotH);
+    }
+    labels.apply {
+      text(x0, calc(baseline + 12))`${name}`
+    }
+    curves.apply {
+      M x0 baseline
+      for (i in 1..40) {
+        let t = i / 40;
+        L calc(x0 + plotW * t) calc(baseline - plotH * ease(name, t))
+      }
+    }
+  }
+}
