@@ -5258,11 +5258,14 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope, ctx: AnnotatedCo
   const fn = lookupVariable(scope, call.name);
 
   if (typeof fn === 'function') {
-    const result = callStdlibPreservingAngles(
-      call.name,
-      fn as (...ns: number[]) => unknown,
-      call.args.map((arg) => evaluateExpression(arg, scope)),
-    ) as Value;
+    const stdlibArgs = call.args.map((arg) => evaluateExpression(arg, scope));
+    let result: Value;
+    try {
+      result = callStdlibPreservingAngles(call.name, fn as (...ns: number[]) => unknown, stdlibArgs) as Value;
+    } catch (e) {
+      // Parity with index.ts: bare stdlib messages get the call position.
+      throw new Error(formatError(e instanceof Error ? e.message : String(e), getLine(call), getCol(call)));
+    }
     // Parity with the main evaluator (index.ts): a stdlib PathSegment's
     // commands are tracked into the live path context — without this,
     // @{ circle(...) } blocks came back EMPTY in annotated mode
@@ -6321,7 +6324,14 @@ function evaluateStatementAnnotated(stmt: Statement, scope: Scope, ctx: Annotate
           // Stdlib function - evaluate and emit result (args kept raw for the
           // displayArg trace lines)
           const args = funcCall.args.map((arg) => evaluateExpression(arg, scope));
-          const result = callStdlibPreservingAngles(funcCall.name, fn as (...ns: number[]) => unknown, args);
+          let result: unknown;
+          try {
+            result = callStdlibPreservingAngles(funcCall.name, fn as (...ns: number[]) => unknown, args);
+          } catch (e) {
+            throw new Error(
+              formatError(e instanceof Error ? e.message : String(e), getLine(funcCall), getCol(funcCall)),
+            );
+          }
           if (
             typeof result === 'object' &&
             result !== null &&

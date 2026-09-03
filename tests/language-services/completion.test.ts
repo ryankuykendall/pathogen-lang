@@ -109,6 +109,14 @@ describe('getCompletions', () => {
       expect(bump!.detail).toBe('bump(t, center, spread) — Raised-cosine kernel: 1 at center, easing to 0 at center ± spread');
     });
 
+    it('offers cubicBezier with generated detail and snippet', () => {
+      const items = completeAtEnd('cubicB');
+      const item = items.find((i) => i.label === 'cubicBezier');
+      expect(item).toBeDefined();
+      expect(item!.detail).toBe('cubicBezier(x1, y1, x2, y2, t) — CSS cubic-bezier timing curve; y handles may overshoot');
+      expect(item!.insertText).toBe('cubicBezier(${1:x1}, ${2:y1}, ${3:x2}, ${4:y2}, ${5:t})$0');
+    });
+
     it('offers noise and noise2 with generated details', () => {
       const items = completeAtEnd('noi');
       const noise = items.find((i) => i.label === 'noise');

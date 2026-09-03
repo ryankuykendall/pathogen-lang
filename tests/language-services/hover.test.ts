@@ -110,6 +110,13 @@ describe('getHoverInfo', () => {
       expect(easeResult!.contents).toContain('Quadratic ease-in-out');
     });
 
+    it('shows hover for cubicBezier', () => {
+      const result = hover('let x = cubicBezier(0.42, 0, 0.58, 1, 0.5);', 0, 12);
+      expect(result).not.toBeNull();
+      expect(result!.contents).toContain('**cubicBezier**');
+      expect(result!.contents).toContain('CSS cubic-bezier timing curve');
+    });
+
     it('shows hover for noise', () => {
       const result = hover('let x = noise(0.5);', 0, 10);
       expect(result).not.toBeNull();

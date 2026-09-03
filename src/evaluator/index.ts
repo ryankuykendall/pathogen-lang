@@ -7781,11 +7781,15 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       scope.evalState.calledStdlibFunctions.add(call.name);
     }
 
-    const result = callStdlibPreservingAngles(
-      call.name,
-      fn as (...ns: number[]) => unknown,
-      call.args.map((arg) => evaluateExpression(arg, scope)),
-    ) as Value;
+    const stdlibArgs = call.args.map((arg) => evaluateExpression(arg, scope));
+    let result: Value;
+    try {
+      result = callStdlibPreservingAngles(call.name, fn as (...ns: number[]) => unknown, stdlibArgs) as Value;
+    } catch (e) {
+      // Stdlib functions throw bare messages (e.g. cubicBezier handle
+      // validation); attach the call site so the user can find it.
+      throw new Error(formatError(e instanceof Error ? e.message : String(e), getLine(call), getCol(call)));
+    }
 
     // If stdlib function returns a PathSegment, track its commands
     if (typeof result === 'object' && result !== null && 'type' in result) {

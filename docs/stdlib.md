@@ -176,7 +176,86 @@ the curve the gradient renderer applies for `Easing.EaseInOut`:
 | `Easing.Smoothstep` | `smoothstep(0, 1, t)` | `t²(3 − 2t)` |
 
 These are quadratic eases — CSS's `ease-in` family is cubic-bézier, close
-but not identical. Inputs outside `[0, 1]` clamp to the nearer end.
+but not identical. Inputs outside `[0, 1]` clamp to the nearer end. For
+the CSS curves themselves, and for any curve you can draw with two
+handles, use `cubicBezier`.
+
+#### cubicBezier
+
+| Function | Description |
+|----------|-------------|
+| `cubicBezier(x1, y1, x2, y2, t)` | CSS `cubic-bezier()` timing curve: `t` eased through the curve with handles `(x1, y1)` and `(x2, y2)` |
+
+`cubicBezier` takes the same four numbers CSS's `cubic-bezier(x1, y1, x2,
+y2)` takes — the two handles of a curve pinned at `(0, 0)` and `(1, 1)` —
+followed by the value to ease. The four handle numbers come first and `t`
+last, so a curve copied from a design tool or a stylesheet pastes straight
+in, and the order matches `smoothstep(edge0, edge1, x)`.
+
+```
+// CSS ease-in-out: dots bunch at both ends and spread through the middle
+for (i in 0..11) {
+  let t = i / 11;
+  let eased = cubicBezier(0.42, 0, 0.58, 1, t);
+  circle(calc(20 + 160 * eased), 40, 3);
+}
+```
+
+- `t` clamps to `[0, 1]` before evaluation, like the easing trio.
+- `x1` and `x2` must be within `[0, 1]`, and all four handle values must be
+  finite. A handle outside that range would let the curve double back, so
+  one `t` would have two answers; Pathogen reports a compile error instead.
+- `y1` and `y2` are unrestricted. Values outside `[0, 1]` make the curve
+  leave the box and come back — anticipation before the start, overshoot
+  past the end. Unlike `smoothstep`, the result is **not** clamped, so an
+  overshooting curve really does return values below 0 and above 1.
+
+```
+// Overshoot: dips below 0 before it starts, passes 1 before it settles
+let back = {|t| cubicBezier(0.68, -0.6, 0.32, 1.6, t)};
+M 20 100
+for (i in 1..40) {
+  let t = i / 40;
+  L calc(20 + 160 * t) calc(100 - 60 * back(t))
+}
+```
+
+**Name a curve once, then feed it anything that takes a ratio.** A lambda
+holding the four handle numbers is the reusable form; the eased `t` goes
+into `lerp`, `Color.mix`, a Point's `.lerp()`, a stroke width, a gradient
+stop — anything you would otherwise drive with a plain `t`:
+
+```
+let smooth = {|t| cubicBezier(0.42, 0, 0.58, 1, t)};
+let sky = Color('#a5b8ff');
+let sea = Color('#0f3d5c');
+for (i in 0..23) {
+  let t = i / 23;
+  let strip = PathLayer(`strip-${i}`) ${ stroke: none; fill: sky.mix(sea, smooth(t)); };
+  strip.apply { rect(calc(20 + 160 * smooth(t)), 20, 6, 60); }
+}
+```
+
+Handle values for familiar curves, ready to paste (the CSS keywords are
+exact; the rest are the standard cubic-bézier fits of the classic sine,
+cubic, expo, circ and back eases):
+
+| Curve | `x1, y1, x2, y2` |
+|-------|------------------|
+| CSS `ease` | `0.25, 0.1, 0.25, 1` |
+| CSS `ease-in` | `0.42, 0, 1, 1` |
+| CSS `ease-out` | `0, 0, 0.58, 1` |
+| CSS `ease-in-out` | `0.42, 0, 0.58, 1` |
+| sine in · out · in-out | `0.12, 0, 0.39, 0` · `0.61, 1, 0.88, 1` · `0.37, 0, 0.63, 1` |
+| cubic in · out · in-out | `0.32, 0, 0.67, 0` · `0.33, 1, 0.68, 1` · `0.65, 0, 0.35, 1` |
+| expo in · out · in-out | `0.7, 0, 0.84, 0` · `0.16, 1, 0.3, 1` · `0.87, 0, 0.13, 1` |
+| circ in · out · in-out | `0.55, 0, 1, 0.45` · `0, 0.55, 0.45, 1` · `0.85, 0, 0.15, 1` |
+| back in · out · in-out | `0.36, 0, 0.66, -0.56` · `0.34, 1.56, 0.64, 1` · `0.68, -0.6, 0.32, 1.6` |
+
+`cubicBezier` is built only from arithmetic — no `sin`, `cos`, or `pow` —
+with a fixed solve, so like the [hash family](#stdlib-hash-noise) it is
+bit-identical across engines. `bump` and the easing trio stay
+deterministic per engine only.
 
 ### Constants
 

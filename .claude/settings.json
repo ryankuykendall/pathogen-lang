@@ -3,6 +3,25 @@
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "permissions": {
-    "deny": ["Read(./node_modules/**)", "Read(./dist/**)", "Read(./coverage/**)", "Read(./*.webp)"]
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./coverage/**)",
+      "Read(./*.webp)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-vendor-paths.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

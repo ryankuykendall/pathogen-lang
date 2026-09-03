@@ -99,6 +99,63 @@ export const mathFunctions = {
     const u = Math.min(Math.max(t, 0), 1);
     return u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
   },
+  // CSS cubic-bezier() timing curve: endpoints pinned at (0,0) and (1,1),
+  // (x1,y1)/(x2,y2) are the two handles, t last. Solves x(u) = t (Newton,
+  // then bisection — the WebKit UnitBezier structure) and returns y(u).
+  // Only +,-,*,/ with a fixed solve, so results are bit-identical across
+  // engines like the hash family. Input t clamps to [0, 1]; output is NOT
+  // clamped, so y handles outside [0, 1] overshoot on purpose.
+  cubicBezier: (x1: number, y1: number, x2: number, y2: number, t: number) => {
+    if (!(Number.isFinite(x1) && Number.isFinite(y1) && Number.isFinite(x2) && Number.isFinite(y2))) {
+      throw new Error('cubicBezier: all four handle values must be finite');
+    }
+    if (x1 < 0 || x1 > 1 || x2 < 0 || x2 > 1) {
+      throw new Error(`cubicBezier: x1 and x2 must be within [0, 1] (got x1 = ${x1}, x2 = ${x2})`);
+    }
+    const x = Math.min(Math.max(t, 0), 1);
+    if (x === 0) return 0;
+    if (x === 1) return 1;
+    // Power-basis coefficients: B(u) = ((a·u + b)·u + c)·u
+    const cx = 3 * x1;
+    const bx = 3 * (x2 - x1) - cx;
+    const ax = 1 - cx - bx;
+    const cy = 3 * y1;
+    const by = 3 * (y2 - y1) - cy;
+    const ay = 1 - cy - by;
+    const sampleX = (u: number) => ((ax * u + bx) * u + cx) * u;
+    const epsilon = 1e-12;
+    let u = x;
+    let solved = false;
+    for (let i = 0; i < 8; i++) {
+      const err = sampleX(u) - x;
+      if (Math.abs(err) < epsilon) {
+        solved = true;
+        break;
+      }
+      const slope = (3 * ax * u + 2 * bx) * u + cx;
+      if (Math.abs(slope) < 1e-6) break;
+      u -= err / slope;
+      // A step that leaves [0, 1] means Newton is diverging near a flat
+      // stretch of x(u); hand the root over to bisection immediately.
+      if (u < 0 || u > 1) break;
+    }
+    if (!solved) {
+      // Bisection on [0, 1]; x is monotone there because x1, x2 are in range.
+      // Runs until the bracket can no longer shrink (at most 64 halvings), so
+      // the fallback is accurate to the last bit even where x(u) is flat.
+      let lo = 0;
+      let hi = 1;
+      u = x;
+      for (let i = 0; i < 64 && lo < hi; i++) {
+        const err = sampleX(u) - x;
+        if (err === 0) break;
+        if (err < 0) lo = u;
+        else hi = u;
+        u = (hi - lo) * 0.5 + lo;
+      }
+    }
+    return ((ay * u + by) * u + cy) * u;
+  },
 
   // Angle conversions
   deg: (radians: number) => (radians * 180) / Math.PI,

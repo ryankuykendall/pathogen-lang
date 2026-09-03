@@ -365,6 +365,8 @@ export declare function easeIn(t: number): number;
 export declare function easeOut(t: number): number;
 /** easeInOut(t) — Quadratic ease-in-out over clamped [0, 1] @boost 8 */
 export declare function easeInOut(t: number): number;
+/** cubicBezier(x1, y1, x2, y2, t) — CSS cubic-bezier timing curve; y handles may overshoot @boost 8 */
+export declare function cubicBezier(x1: number, y1: number, x2: number, y2: number, t: number): number;
 
 // =============================================================================
 // Stdlib: Rounding

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-03 (cubicBezier timing curve)
+
+### Added
+
+#### Core
+
+- **`cubicBezier(x1, y1, x2, y2, t)`** — the CSS `cubic-bezier()` timing curve as a stdlib function: the four handle numbers first, exactly as a stylesheet or a design tool writes them, then the value to ease. `t` clamps to `[0, 1]`; `x1`/`x2` must be within `[0, 1]` and all handles finite (a compile error otherwise, with the call's line and column); `y1`/`y2` are free, and the output is deliberately **not** clamped, so handles outside the box give anticipation and overshoot (`cubicBezier(0.68, -0.6, 0.32, 1.6, t)` is the classic back in-out). Solved with Newton then bisection using only `+ − × ÷` and a fixed structure, so results are bit-identical across engines like the hash family. The reusable form is a lambda holding the handles — `let smooth = {|t| cubicBezier(0.42, 0, 0.58, 1, t)};` — whose eased `t` feeds `lerp`, `Color.mix`, a Point's `.lerp()`, widths and stops. Completions, hover and signature help flow from the `pathogen-api.ts` declaration; the playground's editor list gained the entry. Documented in `docs/stdlib.md` → Easing → "cubicBezier", with a paste-ready table of the CSS keyword curves and the standard sine/cubic/expo/circ/back fits. The quadratic `easeIn`/`easeOut`/`easeInOut` trio is unchanged so it still matches gradient easing.
+
+### Changed
+
+#### Core
+
+- **Stdlib errors carry the call position.** A message thrown inside a stdlib function (`cubicBezier` handle validation, `cubicSpline: points array must not be empty`, …) used to surface bare; both evaluators now prefix it with `Line N, col M:` of the call, the same way undefined-variable and arity errors already did.
+
+### Development
+
+- `project-docs/easing-interpolation/`: Ryan's original "Easing Interpolation API" proposal, the assessment that shaped this work (why `t -> t'` timing functions rather than `(start, end, time)` interpolators, and why not an `Easing.` namespace), the three-phase plan, the `demo-cubic-bezier.pathogen` demo with its CLI-rendered SVG and PNG, and `render-png.mjs`.
+- `.claude/hooks/block-vendor-paths.sh` + a `PreToolUse` hook in `.claude/settings.json`: auto-denies Bash commands, Reads, Greps and Globs that name `node_modules/`, `dist/`, `public/` or `api/.wrangler-backup-*/` as a path (exclusion idioms such as `--exclude-dir=node_modules` pass; indirection through a shell variable is not caught), replacing prompt-level instructions that subagents kept ignoring.
+- `scripts/debug-cubic-bezier.ts`: puppeteer check against the dev playground (run and passing 2026-09-03): CLI ↔ preview path parity for the demo, served completion/hover, the bit-exact value from the served bundle, and the positioned error for an out-of-range handle.
+
 ## [0.8.0] - 2026-09-02 (centerPoint() on PathBlock and ProjectedPath)
 
 ### Added

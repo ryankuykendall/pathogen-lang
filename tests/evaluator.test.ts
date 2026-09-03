@@ -454,6 +454,86 @@ describe('Evaluator', () => {
       });
     });
 
+    describe('cubicBezier (CSS timing curve)', () => {
+      // Reference values come from an independent Bernstein-form evaluator
+      // with a 200-step bisection inversion (project-docs/easing-interpolation).
+      const num = (expr: string): number => Number(compilePath(`M calc(${expr}) 0`).split(' ')[1]);
+      const cssInOut = (t: number) => `cubicBezier(0.42, 0, 0.58, 1, ${t})`;
+
+      it('hits the endpoints exactly and clamps t to [0, 1]', () => {
+        expect(compilePath(`M calc(${cssInOut(0)}) calc(${cssInOut(1)})`)).toBe('M 0 1');
+        expect(compilePath(`M calc(${cssInOut(-3)}) calc(${cssInOut(7)})`)).toBe('M 0 1');
+      });
+
+      it('cubicBezier(0, 0, 1, 1, t) is the identity curve', () => {
+        for (const t of [0.1, 0.25, 0.5, 0.75, 0.9]) {
+          expect(num(`cubicBezier(0, 0, 1, 1, ${t})`)).toBeCloseTo(t, 9);
+        }
+      });
+
+      it('matches the CSS ease-in-out and ease presets within 1e-6', () => {
+        expect(num(cssInOut(0.25))).toBeCloseTo(0.129161931047, 6);
+        expect(num(cssInOut(0.5))).toBeCloseTo(0.5, 6);
+        expect(num(cssInOut(0.75))).toBeCloseTo(0.870838068953, 6);
+        expect(num('cubicBezier(0.25, 0.1, 0.25, 1, 0.25)')).toBeCloseTo(0.408510591355, 6);
+        expect(num('cubicBezier(0.25, 0.1, 0.25, 1, 0.5)')).toBeCloseTo(0.802403387585, 6);
+        expect(num('cubicBezier(0.25, 0.1, 0.25, 1, 0.75)')).toBeCloseTo(0.960458978349, 6);
+      });
+
+      it('overshoots when the y handles leave [0, 1] (output is not clamped)', () => {
+        // easeInOutBack fit: dips below 0 early, passes 1 late
+        expect(num('cubicBezier(0.68, -0.6, 0.32, 1.6, 0.25)')).toBeCloseTo(-0.097707742123, 6);
+        expect(num('cubicBezier(0.68, -0.6, 0.32, 1.6, 0.75)')).toBeCloseTo(1.097707742123, 6);
+        expect(num('cubicBezier(0.68, -0.6, 0.32, 1.6, 0.5)')).toBeCloseTo(0.5, 9);
+      });
+
+      it('converges for steep and flat handle configurations', () => {
+        // (1, 0, 0, 1) has x'(u) = 0 at u = 0.5, the worst-conditioned legal
+        // curve. Flatness costs solver iterations, not accuracy: measured
+        // error against the 200-step bisection reference is below 1e-13.
+        expect(num('cubicBezier(1, 0, 0, 1, 0.25)')).toBeCloseTo(0.029724605512, 9);
+        expect(num('cubicBezier(1, 0, 0, 1, 0.5)')).toBeCloseTo(0.5, 9);
+        expect(num('cubicBezier(1, 0, 0, 1, 0.75)')).toBeCloseTo(0.970275394488, 9);
+        expect(num('cubicBezier(0, 1, 1, 0, 0.25)')).toBeCloseTo(0.479055466999, 9);
+        expect(num('cubicBezier(0, 1, 1, 0, 0.9)')).toBeCloseTo(0.612599683023, 9);
+      });
+
+      it('falls back to bisection when Newton diverges beside the flat point', () => {
+        // Just off u = 0.5 on (1, 0, 0, 1) the first Newton step overshoots
+        // far outside [0, 1] (the slope is ~1e-7), so these values can only
+        // come from the bisection branch. Reference: 200-step bisection.
+        expect(num('cubicBezier(1, 0, 0, 1, 0.5000001)')).toBeCloseTo(0.50438597660554307, 9);
+        expect(num('cubicBezier(1, 0, 0, 1, 0.499)')).toBeCloseTo(0.40600592125788382, 9);
+        expect(num('cubicBezier(1, 0, 0, 1, 0.501)')).toBeCloseTo(0.59399407874211529, 9);
+        expect(num('cubicBezier(1, 0, 0, 1, 0.4)')).toBeCloseTo(0.11139733926807008, 9);
+      });
+
+      it('rejects x handles outside [0, 1] with a positioned error', () => {
+        expect(() => compile('let v = cubicBezier(1.5, 0, 0.58, 1, 0.5);')).toThrow(
+          /cubicBezier: x1 and x2 must be within \[0, 1\]/,
+        );
+        expect(() => compile('let a = 1;\nlet v = cubicBezier(0.42, 0, -0.1, 1, 0.5);')).toThrow(/^Line 2/);
+        // y handles are free
+        expect(() => compile('let v = cubicBezier(0.42, -2, 0.58, 3, 0.5);')).not.toThrow();
+      });
+
+      it('rejects non-finite handle values', () => {
+        const fn = mathFunctions.cubicBezier as (...ns: number[]) => number;
+        expect(() => fn(NaN, 0, 1, 1, 0.5)).toThrow(/cubicBezier: all four handle values must be finite/);
+        expect(() => fn(0, Infinity, 1, 1, 0.5)).toThrow(/cubicBezier: all four handle values must be finite/);
+      });
+
+      it('is bit-exact: pinned values (arithmetic only, fixed solve)', () => {
+        // Recomputed with a scratch script against the implementation; these
+        // are a cross-engine contract like the hash family's constants.
+        expect(compilePath(`M calc(${cssInOut(0.3)}) 0`)).toBe('M 0.18739590670531242 0');
+        expect(compilePath('M calc(cubicBezier(0.25, 0.1, 0.25, 1, 0.6)) 0')).toBe('M 0.8852293098761203 0');
+        expect(compilePath('M calc(cubicBezier(0.68, -0.6, 0.32, 1.6, 0.8)) 0')).toBe('M 1.1046120645972985 0');
+        expect(compilePath('M calc(cubicBezier(1, 0, 0, 1, 0.5)) 0')).toBe('M 0.5 0');
+        expect(compilePath('M calc(cubicBezier(0.12, 0, 0.39, 0, 0.4)) 0')).toBe('M 0.19770206557303885 0');
+      });
+    });
+
     describe('angle conversions', () => {
       it('evaluates deg (radians to degrees)', () => {
         const result = compilePath('M calc(deg(PI())) 0');

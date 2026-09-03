@@ -118,6 +118,7 @@ export const stdlibCompletions: CompletionItem[] = [
   { label: 'easeIn', type: 'function', info: 'easeIn(t) - Quadratic ease-in over clamped [0, 1]' },
   { label: 'easeOut', type: 'function', info: 'easeOut(t) - Quadratic ease-out over clamped [0, 1]' },
   { label: 'easeInOut', type: 'function', info: 'easeInOut(t) - Quadratic ease-in-out over clamped [0, 1]' },
+  { label: 'cubicBezier', type: 'function', info: 'cubicBezier(x1, y1, x2, y2, t) - CSS cubic-bezier timing curve' },
 
   // 7. Trigonometry
   { label: 'sin', type: 'function', info: 'sin(x) - Sine' },

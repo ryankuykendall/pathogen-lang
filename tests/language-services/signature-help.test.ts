@@ -85,6 +85,13 @@ describe('getSignatureHelp', () => {
       expect(bump!.signatures[0].parameters.map((p) => p.label)).toEqual(['t', 'center', 'spread']);
     });
 
+    it('shows signature for cubicBezier with the four handles then t', () => {
+      const result = sigHelpAtEnd('let y = cubicBezier(0.42, 0, ');
+      expect(result).not.toBeNull();
+      expect(result!.signatures[0].parameters.map((p) => p.label)).toEqual(['x1', 'y1', 'x2', 'y2', 't']);
+      expect(result!.activeParameter).toBe(2);
+    });
+
     it('handles nested function calls', () => {
       // cursor inside sin(), not lerp()
       const result = sigHelpAtEnd('let x = lerp(sin(');
