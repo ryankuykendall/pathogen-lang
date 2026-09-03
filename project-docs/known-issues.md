@@ -355,6 +355,306 @@ Option 1 — string-aware stripping, since users do use `//` comments and `data:
 
 ---
 
+## ISSUE-007: Style sanitizer rejects the quoted font-family stack the design system mandates
+
+**Discovered:** 2026-09-03 (authoring `website/blog/samples/post51/` for the easing post)
+
+**Severity:** Low
+
+**Description:**
+
+`website/guidelines/example-design-system.md` §3 calls this typography stack a hard requirement for every example surface:
+
+```pathogen
+let labels = TextLayer('labels') ${ font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif; };
+```
+
+The style-value allow-list (`src/evaluator/sanitize.ts`, see `docs/security.md`) rejects it at compile time:
+
+```
+Style value for "font-family" contains a disallowed token ("'Helvetica" in "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif")
+```
+
+Every published sample therefore uses `font-family: system-ui, sans-serif;` instead, and the design system's typography section cannot be followed by any `.pathogen` sample. The same guide's `fg_auto` expression (`oklch(from var(--bg) …)`) has not been checked against the sanitizer either.
+
+**Impact:**
+
+- Sample authors discover the conflict only at compile time and fall back to whatever the previous post used, so the design system's typography rules are dead letter for samples.
+- Multi-word family names (`Helvetica Neue`) may be impossible to express at all if unquoted identifier sequences are also rejected (not verified).
+
+**Current Workarounds:**
+
+Single-word or generic families without quotes: `system-ui, sans-serif`.
+
+**Potential Solutions:**
+
+1. **Allow quoted strings for `font-family` only**, validated as a quoted run of letters, digits, spaces and hyphens. Keeps the allow-list strict elsewhere.
+2. **Amend the design system** to an unquoted stack and confirm the sanitizer accepts `Helvetica Neue` as an identifier sequence.
+3. Both: accept quoted names and update the guide to show the exact form that compiles.
+
+**Recommended Long-term Solution:**
+
+Option 3. Quoted font names are ordinary CSS and the security contract is about `url()`/`var()`/function shapes, not string literals in `font-family`; the guide should then show the compiling form and the sanitizer test suite should pin it.
+
+---
+
+## ISSUE-008: The formatter wraps every call with five or more arguments, however short
+
+**Discovered:** 2026-09-03 (formatting the easing post's samples)
+
+**Severity:** Low
+
+**Description:**
+
+`shouldWrapArgs` in `src/language-services/formatter.ts` (~line 507) returns true for any call with `>= 5` arguments, so the canonical form of a short call is one argument per line:
+
+```pathogen
+let smooth = {|t| cubicBezier(0.42,
+    0,
+    0.58,
+    1,
+    t)};
+```
+
+`validate-samples` check #6 requires formatter-clean sources, so every published sample that uses `cubicBezier(x1, y1, x2, y2, t)` (or `map(v, a, b, c, d)`) must carry this shape.
+
+**Impact:**
+
+The central idiom of the easing docs and blog post reads as heavy in the mini-workspace code panel, which the wrapping rule exists to keep readable. Any future five-argument stdlib function inherits the same look.
+
+**Current Workarounds:**
+
+None inside a sample; the `docs/*.md` code fences are not formatted, so they show the one-line form.
+
+**Potential Solutions:**
+
+1. **Width-based rule:** keep a call on one line when every argument is a literal or identifier and the printed call fits within the line budget; wrap otherwise.
+2. **Per-callee exemption list** for known short signatures. Fragile.
+3. Leave as is and accept the look.
+
+**Recommended Long-term Solution:**
+
+Option 1. Note the migration cost: previously formatted samples containing such calls become "unformatted" under the new rule and must be reformatted (they were only ever exploded by this rule, so reformatting is mechanical); run `format:samples` across `website/blog/samples/` in the same change.
+
+---
+
+## ISSUE-009: Topological, mesh and freeform gradients rasterize only in the playground
+
+**Discovered:** 2026-09-03 (three-surface check for `TopoGradient.easing`), pre-existing
+
+**Severity:** Medium
+
+**Description:**
+
+Only the playground renders `TopoGradient`, `MeshGradient` and `FreeformGradient` to pixels (`useImageGradients: true` in `playground/utils/svg-builder.ts` and `components/svg-preview-pane.ts`, via the WebGPU shaders or the Canvas fallback in `playground/gpu/gradient-service.ts`). The CLI's `--output-svg-file` and the VS Code preview both fall into `src/render/build-defs.ts:189-245`, which emits a `<pattern>` holding a single flat-color `<rect>` (the base color or the first contour's color). Every topo property that shapes the field — `easing` (now 26 curves), `method`, `iterations`, contour elevations — has no effect on those two surfaces.
+
+**Impact:**
+
+Violates the three-surface parity rule in `.claude/CLAUDE.md`: the same program produces a shaded field in the playground and a flat fill from the CLI or the editor preview, with no warning. `scripts/compile-bbwp.ts` and `compile-samples.ts` work around it by driving headless Chrome for GPU gradient types.
+
+**Current Workarounds:**
+
+Use `npm run compile:bbwp` / `compile:samples` (puppeteer) for rasterized output outside the playground; the CLI itself cannot.
+
+**Potential Solutions:**
+
+1. **CPU rasterizer in `src/`** (pure JS: the SDF distance blend and the Jacobi solver already exist in JS form in `gradient-service.ts`; add a PNG encoder) shared by the CLI and the VS Code preview, using the same `EASING_CURVES` table.
+2. **Puppeteer path inside the CLI** behind a flag, mirroring `compile-bbwp.ts`. Heavy dependency for a CLI.
+3. **Emit a loud warning** from the CLI and the preview when a rasterized gradient type is present, and document the limitation in `docs/gradients.md`.
+
+**Recommended Long-term Solution:**
+
+Option 1 for parity, with option 3 as the immediate stopgap so users are not misled silently.
+
+---
+
+## ISSUE-010: Enum-backed property doc strings in `pathogen-api.ts` can drift from the enum
+
+**Discovered:** 2026-09-03 (code review of the named easing family)
+
+**Severity:** Low
+
+**Description:**
+
+Hover and completion details for type members come from JSDoc comments in `src/pathogen-api.ts` via `npm run generate:completions`. When a comment enumerates an enum's values by hand, nothing checks it against `BUILTIN_ENUMS`. `TopoGradient.easing` listed five values while the enum had grown to 26; it shipped past every test and was caught only in review (fixed in `ed4e1c2` by naming the family instead of listing it).
+
+**Impact:**
+
+A user hovering a property sees a stale value list. Any future enum growth (blend modes, marker orientations, …) can silently repeat this.
+
+**Current Workarounds:**
+
+Write property doc strings that name the enum ("any `Easing` member or its string") rather than listing values.
+
+**Potential Solutions:**
+
+1. **A drift test:** for every `pathogen-api.ts` doc string that contains a quoted value list matching an enum's values, assert the list equals `Object.values(BUILTIN_ENUMS.X)`.
+2. **A lint** in `scripts/generate-completions.ts --strict` that rejects doc strings enumerating three or more values of a known enum, pointing at the enum name instead.
+3. **Generate** the value list into the detail string from the enum at completion-data generation time, via a `@enum Easing` tag on the property.
+
+**Recommended Long-term Solution:**
+
+Option 3: a `@enum X` tag keeps hover text complete and correct by construction; option 2 as the guard for comments that forget the tag.
+
+---
+
+## ISSUE-011: `tsc --noEmit` reports pre-existing errors in parser and playground files
+
+**Discovered:** 2026-09-03 (typechecking during the easing work), pre-existing
+
+**Severity:** Low (two of the errors may hide real logic bugs)
+
+**Description:**
+
+`npx tsc --noEmit -p tsconfig.json`:
+
+```
+src/parser/ast-builder.ts(2437,20): TS2367 comparison of '"ObjectProperty"' and '":"' has no overlap
+src/parser/ast-builder.ts(2470,13): TS2367 comparison of '"SpreadElement"' and '"..."' has no overlap
+src/parser/lezer-expression.ts(6,20): TS6133 'setExpressionParser' declared but never read
+src/parser/lezer-expression.ts(7,27): TS6196 'SourceLocation' declared but never used
+src/parser/path-args-tokenizer.ts(71,13): TS6133 'saved' declared but never read
+```
+
+`npm run typecheck:playground`:
+
+```
+playground/components/workspace-view.ts(1225,9): TS2322 string not assignable to null | undefined
+playground/components/workspace-view.ts(1276,48): TS2554 expected 1 argument, got 2
+playground/components/workspace-view.ts(1282,27): TS2551 'highlightErrors' does not exist (did you mean 'highlightError'?)
+playground/services/font-loader.ts(492,3): TS2322 ArrayBuffer | SharedArrayBuffer not assignable to ArrayBuffer
+playground/utils/detail-source-mount.ts(48,33): TS2307 cannot find module '/dist/highlight.global.js'
+```
+
+**Impact:**
+
+The two TS2367 errors in `ast-builder.ts` compare a Lezer node name against a punctuation string that can never be a node name, so those branches are dead: either the punctuation case is silently unhandled or the check is redundant. The `workspace-view.ts` errors suggest an error-highlighting call that no longer matches the editor's API (`highlightErrors` vs `highlightError`), which may mean multi-error highlighting is not wired. The rest are hygiene. Because the baseline is red, new type errors do not stand out.
+
+**Current Workarounds:**
+
+None; the build (`tsup`) and esbuild playground transpile do not typecheck, so nothing fails.
+
+**Potential Solutions:**
+
+1. Fix each error and make `tsc --noEmit` part of `npm run lint` or a pre-commit hook so the baseline stays green.
+2. Investigate `ast-builder.ts:2437,2470` and `workspace-view.ts:1276-1282` first as possible behavior bugs.
+
+**Recommended Long-term Solution:**
+
+Both, in that order.
+
+---
+
+## ISSUE-012: `validate-samples` text-geometry collisions use bounding boxes
+
+**Discovered:** 2026-09-03 (validating `website/blog/samples/post51/`)
+
+**Severity:** Low
+
+**Description:**
+
+`scripts/validate-samples.ts` check #3 intersects the text element's rect with each path element's `getBoundingClientRect()`. A path that spans a region (a diagonal guide line, a multi-row wave drawn as one layer) reports a collision for any text inside its box, with no visual overlap:
+
+```
+[text-geometry-collision] Text "1 half-cycle" overlaps <path>#guide-1 (73% of text area)
+```
+
+Authors work around it by splitting rows into separate layers and moving labels outside the path's box, which shapes sample structure around the checker rather than around the reader.
+
+**Impact:**
+
+False positives cost an authoring round trip per sample and can push labels away from the geometry they describe, which the schematic checklist argues against.
+
+**Current Workarounds:**
+
+One layer per row; labels beyond the row's extent.
+
+**Potential Solutions:**
+
+1. **Geometry-aware test:** rasterize the path (or sample points along it via `getPointAtLength`) and check the text rect against those points with a small tolerance.
+2. **Per-sample allowlist** comment for known false positives.
+3. Keep bbox but require a minimum path-area coverage before flagging.
+
+**Recommended Long-term Solution:**
+
+Option 1; `getPointAtLength` sampling is cheap in the puppeteer page the script already drives.
+
+---
+
+## ISSUE-013: `docs/*.md` code fences are not compile-tested
+
+**Discovered:** 2026-09-03 (docs-first work for `cubicBezier` and `ease`), pre-existing
+
+**Severity:** Low
+
+**Description:**
+
+There is no harness that extracts the Pathogen fences from `docs/*.md` and compiles them. The reviewer of the easing docs compiled each new fence by hand. Any fence can rot silently as the language changes (the `docs/gradients.md` TopoGradient example still writes `rect(0, 0, 400, 300)` without a semicolon inside `apply`, for instance, which may or may not parse under mandatory semicolons).
+
+**Impact:**
+
+Published documentation can show code that no longer compiles, which is the worst kind of docs bug for a language.
+
+**Current Workarounds:**
+
+Manual compilation during review.
+
+**Potential Solutions:**
+
+1. A vitest file that walks `docs/*.md`, extracts ```` ```pathogen ```` and unlabeled fences that start with a Pathogen statement, prepends a `define ViewBox` when missing, and asserts `compile()` succeeds (with an allowlist for intentionally failing snippets).
+2. Do the same in `scripts/build-docs.ts` and fail the docs build.
+
+**Recommended Long-term Solution:**
+
+Option 1 first (fast, runs with the suite), option 2 once the corpus is clean.
+
+---
+
+## ISSUE-014: `cubicBezier` handles cannot drive `TopoGradient.easing`
+
+**Discovered:** 2026-09-03 (named easing family design)
+
+**Severity:** Low (limitation, documented)
+
+**Description:**
+
+Gradient easing travels to the shaders as a single `u32` mode (an index into `EASING_ORDER`). The 26 named curves fit that; a CSS `cubic-bezier(x1, y1, x2, y2)` needs four floats and a solve in WGSL, so `topo.easing = cubicBezier(...)` has no spelling. `docs/stdlib.md` documents `cubicBezier` as stdlib-only.
+
+**Impact:**
+
+A user who tunes a curve with `cubicBezier` for geometry cannot reuse the same handles on a gradient; they must pick the nearest named curve.
+
+**Current Workarounds:**
+
+Use the nearest `Easing` member (the docs table maps the classic curves to handle values and back).
+
+**Potential Solutions:**
+
+1. Extend both topo uniform structs with four `f32` handles and a mode value meaning "bezier", port the Newton/bisection solve to WGSL (`buildEasingWgsl` already generates the switch), and accept a `{ x1, y1, x2, y2 }` object or a four-element array on `easing`.
+2. Approximate at compile time: sample the bezier into a small LUT texture. More plumbing.
+
+**Recommended Long-term Solution:**
+
+Option 1 when there is demand; the uniform layouts in `topo-shader.ts` and `topo-laplace-shader.ts` both have room (the laplace struct already carries three pad words).
+
+---
+
+## Fixed during the easing work (2026-09-03)
+
+Logged for the trail; all pinned by tests.
+
+| Bug | Fix |
+|-----|-----|
+| A quoted string inside `calc()` in a bare path command failed to parse (`M calc(ease('sine-in', t)) 0` → `Missing ';'`); the greedy path-args tokenizer stopped at a quote and the AST builder's paren/bracket/comma scanners ignored quotes. Also affected `squareGrid('shape', …)` and `Color('#fff')` in that position. | `ed4e1c2` (`src/parser/path-args-tokenizer.ts`, `src/parser/ast-builder.ts` `skipQuoted`) |
+| The formatter dropped the parentheses in `a * (b % c)`, which the left-associative grammar reads as `(a * b) % c` and which changes the value. | `5c0e258` (`src/language-services/formatter.ts`) |
+| A message thrown inside a stdlib function surfaced without its call position. | `2296107` (both evaluators wrap the stdlib call) |
+| The Canvas-fallback `getEasingFn` in `gradient-service.ts` did not clamp its input while both WGSL copies did, so GPU and Canvas renders could differ for out-of-range elevations. | `ed4e1c2` (shared table; input and output clamped in all four renderers) |
+| `docs/syntax.md` listed 8 of the 23 built-in enums. | `ed4e1c2` |
+| `TopoGradient.easing` hover/completion text listed five values after the enum grew to 26. | `ed4e1c2` (see ISSUE-010 for the missing guard) |
+| `cubicBezier`'s Newton iteration could step far outside `[0, 1]` beside a flat point before the bisection fallback recovered; correct but fragile. | `2296107` (leave-the-interval check; bisection runs to bracket exhaustion) |
+
+---
+
 ## Template for New Issues
 
 ```markdown
