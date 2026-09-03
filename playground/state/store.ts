@@ -146,6 +146,11 @@ export const store = createStore({
   compilationStatus: 'idle', // 'idle', 'compiling', 'rendering', 'completed', 'error'
   compilationError: null,
   compilationId: 0, // Tracks current compilation for staleness detection
+  // Whole-second quantized elapsed time of the in-flight compile. Ticked by
+  // workspace-view's compile ticker (utils/compile-ticker.ts) during real
+  // compiles and reset to 0 at every compile start; storybook stories may seed
+  // a static value for a frozen demo chip. Drives "Compiling... MM:SS".
+  compilationElapsedMs: 0,
   calledStdlibFunctions: [] as string[], // Stdlib function names invoked during last compilation
 
   // SVG dimensions — derived from `define ViewBox(...)` in the latest

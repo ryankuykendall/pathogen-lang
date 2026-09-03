@@ -4,16 +4,38 @@
 // layout local. Used by app-breadcrumb (workspace bar), svg-preview-pane
 // (fullscreen chrome), and playground-header (storybook). Follows the
 // fullscreen-toggle.ts style-string + helper pattern.
+//
+// The compiling chip carries an elapsed clock ("Compiling... MM:SS"). The
+// value comes from store.compilationElapsedMs, ticked once a second by
+// workspace-view's compile ticker (utils/compile-ticker.ts); consumers just
+// paint what the store says.
 
 export interface CompilationStatusView {
   text: string;
   className: string;
 }
 
-export function compilationStatusView(status: string | null): CompilationStatusView {
+/**
+ * Elapsed time as an `MM:SS` clock: whole seconds, minutes zero-padded to two
+ * digits and allowed to grow past 99 (`100:00`). Returns `00:00` for negative
+ * or non-finite input.
+ */
+export function formatElapsedClock(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return '00:00';
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+/**
+ * Status → chip text/class. `elapsedMs` only affects the compiling chip
+ * (`Compiling... MM:SS`); every other status ignores it.
+ */
+export function compilationStatusView(status: string | null, elapsedMs = 0): CompilationStatusView {
   switch (status) {
     case 'compiling':
-      return { text: 'Compiling...', className: 'compiling' };
+      return { text: `Compiling... ${formatElapsedClock(elapsedMs)}`, className: 'compiling' };
     case 'rendering':
       return { text: 'Rendering...', className: 'rendering' };
     case 'completed':

@@ -173,6 +173,8 @@ export class SvgPreviewPane extends HTMLElement {
   // Fullscreen toggle
   private _cleanupFullscreen: (() => void) | null = null;
 
+  private _storeUnsubscribes: (() => void)[] = [];
+
   /**
    * The compiled-SVG render surface lives inside a sandboxed iframe (see
    * `playground/utils/preview-iframe.ts` and
@@ -207,6 +209,8 @@ export class SvgPreviewPane extends HTMLElement {
 
   disconnectedCallback(): void {
     if (this._cleanupFullscreen) this._cleanupFullscreen();
+    for (const unsubscribe of this._storeUnsubscribes) unsubscribe();
+    this._storeUnsubscribes = [];
     this.panZoom?.destroy();
     this.panZoom = null;
   }
@@ -343,13 +347,21 @@ export class SvgPreviewPane extends HTMLElement {
   }
 
   subscribeToStore(): void {
+    // Every subscription is captured so disconnectedCallback can release it:
+    // a detached pane must not keep painting (the compile clock alone notifies
+    // once a second for the length of every compile).
+    const subscribe: typeof store.subscribe = (keys, callback) => {
+      const unsubscribe = store.subscribe(keys, callback);
+      this._storeUnsubscribes.push(unsubscribe);
+      return unsubscribe;
+    };
     // Content-affecting keys run the full (heavy) updateSvgStyles, which resets
     // path styles, bg, grid and rebuilds the navigator minimap. zoomLevel/panX/
     // panY are deliberately NOT here: pan/zoom is owned by the PanZoomController
     // (cheap transform during gestures), and gets its own external-write-only
     // subscription below. Routing pan/zoom through the heavy path would rebuild
     // the navigator and re-style every path each frame — pure waste.
-    store.subscribe(
+    subscribe(
       [
         'width',
         'height',
@@ -370,7 +382,7 @@ export class SvgPreviewPane extends HTMLElement {
     // restore) writes these keys directly. We skip our own echo (onChange
     // mirroring the controller's view into the store) via _panZoomEcho, so the
     // controller is driven only by genuinely-external changes (no feedback loop).
-    store.subscribe(['zoomLevel', 'panX', 'panY'], () => {
+    subscribe(['zoomLevel', 'panX', 'panY'], () => {
       if (this._panZoomEcho || !this.panZoom) return;
       this.panZoom.setView(
         {
@@ -382,22 +394,23 @@ export class SvgPreviewPane extends HTMLElement {
       );
       this._refreshZoomChrome(store.get('zoomLevel') as number);
     });
-    store.subscribe('inspectorOpen', () => {
+    subscribe('inspectorOpen', () => {
       this._applyInspectorOpen();
     });
     // Gates the fullscreen refresh button (:host(.fullscreen.uses-random)).
-    store.subscribe('calledStdlibFunctions', () => {
+    subscribe('calledStdlibFunctions', () => {
       this._applyUsesRandom();
     });
     // Drives the fullscreen status chip (breadcrumb owns it in normal mode).
-    store.subscribe('compilationStatus', () => {
+    // compilationElapsedMs ticks the "Compiling... MM:SS" clock in place.
+    subscribe(['compilationStatus', 'compilationElapsedMs'], () => {
       this._applyCompilationStatus();
     });
-    store.subscribe('layerVisibility', () => {
+    subscribe('layerVisibility', () => {
       this.applyLayerVisibility();
       this.updateNavigatorContent();
     });
-    store.subscribe('defsVisibility', () => {
+    subscribe('defsVisibility', () => {
       this.applyLayerVisibility();
     });
   }
@@ -1094,7 +1107,10 @@ export class SvgPreviewPane extends HTMLElement {
   private _applyCompilationStatus(): void {
     const el = this.shadowRoot!.querySelector('#compilation-status') as HTMLElement | null;
     if (!el) return;
-    const { text, className } = compilationStatusView(store.get('compilationStatus') as string | null);
+    const { text, className } = compilationStatusView(
+      store.get('compilationStatus') as string | null,
+      store.get('compilationElapsedMs') as number,
+    );
     el.textContent = text;
     el.className = `compilation-status ${className}`;
   }

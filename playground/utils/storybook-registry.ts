@@ -125,6 +125,16 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'Random program (fullscreen chrome)',
         props: { pathData: 'M 100 10 L 40 198 L 190 78 L 10 78 L 160 198 Z', usesRandom: true },
       },
+      {
+        // The compiling chip carries an elapsed clock ("Compiling... MM:SS").
+        // Enter fullscreen to see it top-center; 754000 ms renders as 12:34.
+        name: 'Compiling (long, fullscreen chip)',
+        props: {
+          pathData: 'M 50 100 A 50 50 0 1 1 150 100 A 50 50 0 1 1 50 100',
+          compilationStatus: 'compiling',
+          compilationElapsedMs: 754_000,
+        },
+      },
     ],
     controls: [
       {
@@ -147,6 +157,7 @@ layer('hex').apply { circle(60, 100, 40) }`,
           pathData: (props.pathData as string) || '',
           calledStdlibFunctions: props.usesRandom ? ['randomRange'] : [],
           compilationStatus: (props.compilationStatus as string) || 'idle',
+          compilationElapsedMs: (props.compilationElapsedMs as number) || 0,
         });
 
         const preview = document.createElement('svg-preview-pane');
@@ -491,6 +502,18 @@ layer('hex').apply { circle(60, 100, 40) }`,
         name: 'Panes Open',
         props: { fileName: null, isModified: false, annotatedOpen: true, consoleOpen: true },
       },
+      {
+        // The compiling chip carries an elapsed clock; 754000 ms renders as 12:34.
+        name: 'Compiling (long)',
+        props: {
+          fileName: 'slow-drawing.svg',
+          isModified: false,
+          annotatedOpen: false,
+          consoleOpen: false,
+          compilationStatus: 'compiling',
+          compilationElapsedMs: 754_000,
+        },
+      },
     ],
     controls: [
       { name: 'fileName', type: 'text', label: 'File Name', default: '' },
@@ -506,6 +529,8 @@ layer('hex').apply { circle(60, 100, 40) }`,
           isModified: (props.isModified as boolean) || false,
           annotatedOpen: (props.annotatedOpen as boolean) || false,
           consoleOpen: (props.consoleOpen as boolean) || false,
+          compilationStatus: (props.compilationStatus as string) || 'idle',
+          compilationElapsedMs: (props.compilationElapsedMs as number) || 0,
         });
 
         const header = document.createElement('playground-header');

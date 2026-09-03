@@ -57,6 +57,9 @@ const viewConfig: Record<string, ViewConfig> = {
 class AppBreadcrumb extends HTMLElement {
   private unsubscribe: (() => void) | null = null;
 
+  // Elapsed-clock ticks patch the chip in place (never a full render).
+  private _elapsedUnsubscribe: (() => void) | null = null;
+
   private _menuOpen = false;
 
   private _handleOutsideClick: ((e: MouseEvent) => void) | null = null;
@@ -94,6 +97,13 @@ class AppBreadcrumb extends HTMLElement {
       () => this.render(),
     );
 
+    // The "Compiling... MM:SS" clock ticks once a second for the length of a
+    // compile. Patch the chip node in place rather than re-rendering: a 1 Hz
+    // innerHTML rebuild would close the overflow menu, drop focus, and restart
+    // the chip's pulse animation. (A status change still goes through render(),
+    // which reads the current elapsed value.)
+    this._elapsedUnsubscribe = store.subscribe('compilationElapsedMs', () => this._applyCompilationStatus());
+
     // Outside-click closes the overflow menu
     this._handleOutsideClick = (e: MouseEvent): void => {
       if (!this._menuOpen) return;
@@ -117,6 +127,7 @@ class AppBreadcrumb extends HTMLElement {
 
   disconnectedCallback(): void {
     this.unsubscribe?.();
+    this._elapsedUnsubscribe?.();
     if (this._handleOutsideClick) {
       document.removeEventListener('click', this._handleOutsideClick);
     }
@@ -230,8 +241,21 @@ class AppBreadcrumb extends HTMLElement {
   }
 
   getCompilationStatusHtml(): string {
-    const { text, className } = compilationStatusView(store.get('compilationStatus') as string | null);
-    return `<span id="compilation-status" class="compilation-status ${className}">${text}</span>`;
+    // Text and class come from _applyCompilationStatus(), called at the end of
+    // render() and on every clock tick — one painter, so the two paths can't drift.
+    return `<span id="compilation-status" class="compilation-status hidden"></span>`;
+  }
+
+  /** Paints the status chip in place; no-op outside workspace view (no chip). */
+  private _applyCompilationStatus(): void {
+    const el = this.shadowRoot!.querySelector<HTMLElement>('#compilation-status');
+    if (!el) return;
+    const { text, className } = compilationStatusView(
+      store.get('compilationStatus') as string | null,
+      store.get('compilationElapsedMs') as number,
+    );
+    el.textContent = text;
+    el.className = `compilation-status ${className}`;
   }
 
   getOverflowMenuHtml(): string {
@@ -404,6 +428,7 @@ class AppBreadcrumb extends HTMLElement {
     `;
 
     this.setupEventListeners();
+    this._applyCompilationStatus();
   }
 
   setupEventListeners(): void {

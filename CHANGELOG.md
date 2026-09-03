@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-02 (elapsed clock on the Compiling chip)
+
+### Added
+
+#### Playground
+
+- **The "Compiling..." status chip shows elapsed time** — `Compiling... MM:SS`, advancing once a second, in both the workspace bar (editor mode) and the fullscreen preview chrome. Long compiles used to sit behind a pulsing chip with no sense of progress. One clock (`playground/utils/compile-ticker.ts`, owned by the workspace view) writes a new `compilationElapsedMs` store key quantized to whole seconds, and the shared `compilationStatusView()` renders it, so the three chip surfaces (breadcrumb, fullscreen pane, storybook header) cannot drift. The breadcrumb patches its chip in place on each tick rather than re-rendering the bar, so the overflow menu, focus, and the pulse animation survive a multi-minute compile; a compile superseded by a newer one restarts the clock at `00:00`. Storybook stories: "Compiling (long, fullscreen chip)" on the preview pane and "Compiling (long)" on the header.
+
+### Fixed
+
+#### Playground
+
+- **The preview pane releases its store subscriptions on disconnect** — all seven were left attached for the life of the page, so a detached pane (a storybook story, for instance) kept repainting on every store change; with a once-a-second clock that would have become a repaint per second for the length of every compile.
+- The storybook header applies the compilation chip once on mount, so a story that seeds a compile before the element connects actually shows it.
+
+### Development
+
+- New tests: `tests/compile-ticker.test.ts` (fake-timer contract: reset on start, 1 Hz advance, whole-second quantization with no sub-second notifies, self-stop when status moves on, restart with a single live interval, idempotent stop), `tests/svg-preview-pane-compile-clock.test.ts`, `tests/app-breadcrumb-compile-clock.test.ts` (node identity across a tick proves ticks do not re-render), and `tests/playground-header-compile-clock.test.ts`; `tests/compilation-status.test.ts` gains the `formatElapsedClock` table. Browser verification in `project-docs/workspace-fullscreen-chrome/verify-compile-clock.mjs`: 38 checks across light/dark × editor/fullscreen, including wall-clock agreement, zero breadcrumb re-renders during ticks, and the Refresh-mid-compile restart.
+
 ## [0.8.0] - 2026-09-02 (switch / case statements)
 
 ### Added

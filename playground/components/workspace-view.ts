@@ -26,6 +26,7 @@ import tabCoordinator from '../services/tab-coordinator.js';
 import { getUserId } from '../services/user-id.js';
 import { parseWorkspaceSlugId } from '../utils/router.js';
 import { applyURLState, loadFromURL } from '../utils/url-state.js';
+import { createCompileTicker } from '../utils/compile-ticker.js';
 import { collectLayerNames, pruneVisibility } from '../utils/layer-visibility.js';
 import { installPerfObservers, perfSpan, perfSpanAsync } from '../utils/perf-marks.js';
 import { computeDefaultExportSvgBytes } from '../utils/svg-export-size.js';
@@ -35,6 +36,10 @@ import './shared/error-panel.js';
 
 export class WorkspaceView extends HTMLElement {
   private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Once-a-second clock behind the "Compiling... MM:SS" chip. Started at each
+  // compile start, stopped when status leaves 'compiling'.
+  private _compileTicker = createCompileTicker();
 
   private _fileHandle: FileSystemFileHandle | null = null;
 
@@ -149,7 +154,8 @@ export class WorkspaceView extends HTMLElement {
     tabCoordinator.close();
     // Clean up event listeners
     this.cleanupEventListeners();
-    // Terminate compiler worker
+    // Stop the compile clock, then terminate the compiler worker
+    this._compileTicker.stop();
     compilerWorker.terminateWorker();
     // Release GPU texture cache
     gpuGradientService.clearCache();
@@ -1065,7 +1071,12 @@ export class WorkspaceView extends HTMLElement {
       compilationId,
       compilationStatus: 'compiling',
       compilationError: null,
+      // Reset in the same update as the status change so the breadcrumb's
+      // status-triggered re-render paints 00:00, not the previous compile's
+      // residue.
+      compilationElapsedMs: 0,
     });
+    this._compileTicker.start();
 
     // Check if this compilation is stale (newer one started)
     const isStale = (id: number): boolean => store.get('compilationId') !== id;
@@ -1125,6 +1136,7 @@ export class WorkspaceView extends HTMLElement {
       }
 
       // Set rendering state before updating the SVG
+      this._compileTicker.stop();
       store.set('compilationStatus', 'rendering');
 
       // Use timing method to measure rendering — pass layers if available
@@ -1195,6 +1207,9 @@ export class WorkspaceView extends HTMLElement {
       if (e.message === 'Stale result') return;
       if (isStale(compilationId)) return;
 
+      // After the stale guards: a superseded compile's failure must not stop
+      // the newest compile's clock.
+      this._compileTicker.stop();
       this.previewPane.hideLoading();
       // The pane keeps the last good render (and its injected fonts) for
       // context — mark it stale so it can't be mistaken for current output.

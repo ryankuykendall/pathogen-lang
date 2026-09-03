@@ -72,6 +72,11 @@ export interface StoreState {
   compilationStatus: 'idle' | 'compiling' | 'rendering' | 'completed' | 'error';
   compilationError: string | null;
   compilationId: number;
+  // Elapsed time of the in-flight compile, quantized to whole seconds. Ticked
+  // by workspace-view's compile ticker during real compiles and reset to 0 at
+  // every compile start; storybook stories may seed a static value for a
+  // frozen demo chip. Drives the "Compiling... MM:SS" chip.
+  compilationElapsedMs: number;
   calledStdlibFunctions: string[];
   // Formatted font-weight substitution messages for the warning banner;
   // empty when the last compile had none (or failed).

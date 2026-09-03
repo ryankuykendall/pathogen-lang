@@ -9,6 +9,8 @@ import { compilationStatusStyles, compilationStatusView } from '../utils/compila
 export class PlaygroundHeader extends HTMLElement {
   private _unsubscribe: (() => void) | null = null;
 
+  private _elapsedUnsubscribe: (() => void) | null = null;
+
   private _copying = false;
 
   constructor() {
@@ -20,12 +22,16 @@ export class PlaygroundHeader extends HTMLElement {
     this.render();
     this.setupEventListeners();
     this.subscribeToStore();
+    // The header can mount with a compile already in the store (storybook
+    // stories seed it), so the chip can't rely on the subscription alone.
+    this.updateCompilationStatus();
   }
 
   disconnectedCallback(): void {
     if (this._unsubscribe) {
       this._unsubscribe();
     }
+    this._elapsedUnsubscribe?.();
   }
 
   subscribeToStore(): void {
@@ -38,6 +44,8 @@ export class PlaygroundHeader extends HTMLElement {
         this.updateCompilationStatus();
       },
     );
+    // The "Compiling... MM:SS" clock ticks once a second; patch only the chip.
+    this._elapsedUnsubscribe = store.subscribe('compilationElapsedMs', () => this.updateCompilationStatus());
   }
 
   updateToggleStates(): void {
@@ -112,7 +120,7 @@ export class PlaygroundHeader extends HTMLElement {
     if (!statusEl) return;
 
     const status = store.get('compilationStatus') as string;
-    const { text, className } = compilationStatusView(status);
+    const { text, className } = compilationStatusView(status, store.get('compilationElapsedMs') as number);
     statusEl.textContent = text;
     statusEl.className = `compilation-status ${className}`;
 

@@ -1,0 +1,11 @@
+define ViewBox(0, 0, 200, 200);
+// Deliberately slow program for verifying the "Compiling... MM:SS" chip clock.
+// Nested loops (each under the 32000-iteration cap) burn several seconds.
+let acc = 0;
+for (i in 0..4000) {
+  for (j in 0..4000) {
+    acc = acc + sin(i * 0.001 + j * 0.002);
+  }
+}
+let wobble = randomRange(0, 6);
+circle(100, 100, 60 + wobble + acc * 0);
