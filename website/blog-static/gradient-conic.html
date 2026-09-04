@@ -333,30 +333,30 @@ wheel_inner.innerFill = 'center';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Outer ring (donut) ---
 
-let ring = PathLayer('ring') ${ fill: wheel_outer; stroke: none; };
+let ring = PathLayer('ring') #{ fill: wheel_outer; stroke: none; };
 ring.apply { circle(200, 200, 155); closePath(); }
 
 // --- Inner disc ---
 
-let disc = PathLayer('disc') ${ fill: wheel_inner; stroke: none; };
+let disc = PathLayer('disc') #{ fill: wheel_inner; stroke: none; };
 disc.apply { circle(200, 200, 62); closePath(); }
 
 // --- Subtle frame ---
 
-let frame = PathLayer('frame') ${ fill: none; stroke: #333; stroke-width: 1; };
+let frame = PathLayer('frame') #{ fill: none; stroke: #333; stroke-width: 1; };
 frame.apply { circle(200, 200, 155); closePath(); }
 
-let inner_frame = PathLayer('inner-frame') ${ fill: none; stroke: #333; stroke-width: 0.5; };
+let inner_frame = PathLayer('inner-frame') #{ fill: none; stroke: #333; stroke-width: 0.5; };
 inner_frame.apply { circle(200, 200, 62); closePath(); }
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -368,7 +368,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, ring, disc, frame, inner_frame, title);
 </code>
   <img src="/blog/samples/post2/color-wheel.svg" alt="Full 360-degree sweep with innerRadius donut and OKLCH interpolation" loading="lazy">
@@ -432,23 +432,23 @@ fuel_grad.spread = 'transparent';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 660, 340); }
 
 // --- Gauge faces ---
 
-let g1 = PathLayer('g1') ${ fill: speed_grad; stroke: none; };
+let g1 = PathLayer('g1') #{ fill: speed_grad; stroke: none; };
 g1.apply { circle(120, 160, 80); closePath(); }
 
-let g2 = PathLayer('g2') ${ fill: temp_grad; stroke: none; };
+let g2 = PathLayer('g2') #{ fill: temp_grad; stroke: none; };
 g2.apply { circle(330, 160, 80); closePath(); }
 
-let g3 = PathLayer('g3') ${ fill: fuel_grad; stroke: none; };
+let g3 = PathLayer('g3') #{ fill: fuel_grad; stroke: none; };
 g3.apply { circle(540, 160, 65); closePath(); }
 
 // --- Gauge rims ---
 
-let rims = PathLayer('rims') ${ fill: none; stroke: #444; stroke-width: 1.5; };
+let rims = PathLayer('rims') #{ fill: none; stroke: #444; stroke-width: 1.5; };
 rims.apply {
   circle(120, 160, 81); closePath();
   circle(330, 160, 81); closePath();
@@ -459,7 +459,7 @@ rims.apply {
 // 7 ticks from 0 to max, evenly spaced along the 270° arc
 // Angles: 135, 180, 225, 270, 315, 360, 405 degrees
 
-let speed_ticks = PathLayer('speed-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+let speed_ticks = PathLayer('speed-ticks') #{ fill: none; stroke: #ccc; stroke-width: 4; };
 speed_ticks.apply {
   // 135° (bottom-left) — 0 km/h
   line(51, 217, 63, 205);
@@ -479,7 +479,7 @@ speed_ticks.apply {
 
 // --- Tick marks for Temp gauge (135° to 405°, 270° sweep) ---
 
-let temp_ticks = PathLayer('temp-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+let temp_ticks = PathLayer('temp-ticks') #{ fill: none; stroke: #ccc; stroke-width: 4; };
 temp_ticks.apply {
   // 135° — -20°C
   line(261, 217, 273, 205);
@@ -499,7 +499,7 @@ temp_ticks.apply {
 
 // --- Tick marks for Fuel gauge (180° to 360°, 180° sweep) ---
 
-let fuel_ticks = PathLayer('fuel-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+let fuel_ticks = PathLayer('fuel-ticks') #{ fill: none; stroke: #ccc; stroke-width: 4; };
 fuel_ticks.apply {
   // 180° (left) — E
   line(468, 160, 480, 160);
@@ -515,7 +515,7 @@ fuel_ticks.apply {
 
 // --- Speed tick labels ---
 
-let speed_vals = TextLayer('speed-vals') ${
+let speed_vals = TextLayer('speed-vals') #{
   font-family: monospace;
   font-size: 8;
   fill: #888;
@@ -533,7 +533,7 @@ speed_vals.apply {
 
 // --- Temp tick labels ---
 
-let temp_vals = TextLayer('temp-vals') ${
+let temp_vals = TextLayer('temp-vals') #{
   font-family: monospace;
   font-size: 8;
   fill: #888;
@@ -551,7 +551,7 @@ temp_vals.apply {
 
 // --- Fuel tick labels ---
 
-let fuel_vals = TextLayer('fuel-vals') ${
+let fuel_vals = TextLayer('fuel-vals') #{
   font-family: monospace;
   font-size: 8;
   fill: #888;
@@ -567,7 +567,7 @@ fuel_vals.apply {
 
 // --- Gauge titles ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ccc;
@@ -580,7 +580,7 @@ labels.apply {
   text(540, 166)`Fuel`
 }
 
-let titles = TextLayer('titles') ${
+let titles = TextLayer('titles') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #ddd;
@@ -593,7 +593,7 @@ titles.apply {
   text(540, 260)`Fuel`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -607,16 +607,16 @@ subtitle.apply {
 
 // --- Scene ---
 
-let speed_group = GroupLayer('speed-gauge') ${};
+let speed_group = GroupLayer('speed-gauge') #{};
 speed_group.append(g1, speed_ticks);
 
-let temp_group = GroupLayer('temp-gauge') ${};
+let temp_group = GroupLayer('temp-gauge') #{};
 temp_group.append(g2, temp_ticks);
 
-let fuel_group = GroupLayer('fuel-gauge') ${};
+let fuel_group = GroupLayer('fuel-gauge') #{};
 fuel_group.append(g3, fuel_ticks);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle);
 </code>
   <img src="/blog/samples/post2/gauge-dashboard.svg" alt="Three gauges using partial sweeps — 270-degree and 180-degree arcs" loading="lazy">
@@ -657,21 +657,21 @@ ccw_grad.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 500, 300); }
 
 // --- Gradient circles ---
 
-let cw_circle = PathLayer('cw-circle') ${ fill: cw_grad; stroke: #333; stroke-width: 1; };
+let cw_circle = PathLayer('cw-circle') #{ fill: cw_grad; stroke: #333; stroke-width: 1; };
 cw_circle.apply { circle(140, 150, 90); closePath(); }
 
-let ccw_circle = PathLayer('ccw-circle') ${ fill: ccw_grad; stroke: #333; stroke-width: 1; };
+let ccw_circle = PathLayer('ccw-circle') #{ fill: ccw_grad; stroke: #333; stroke-width: 1; };
 ccw_circle.apply { circle(360, 150, 90); closePath(); }
 
 // --- Direction arrows (curved sweep arcs with arrowheads) ---
 
 // CW: curved arrow sweeping clockwise from top
-let cw_arrow = PathLayer('cw-arrow') ${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+let cw_arrow = PathLayer('cw-arrow') #{ fill: none; stroke: #ffffffaa; stroke-width: 2; };
 cw_arrow.apply {
   // Arc sweeping CW from ~top-left to ~top-right
   M 118 56 A 20 20 0 0 1 162 56
@@ -680,7 +680,7 @@ cw_arrow.apply {
 }
 
 // CCW: curved arrow sweeping counter-clockwise from top
-let ccw_arrow = PathLayer('ccw-arrow') ${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+let ccw_arrow = PathLayer('ccw-arrow') #{ fill: none; stroke: #ffffffaa; stroke-width: 2; };
 ccw_arrow.apply {
   // Arc sweeping CCW from ~top-right to ~top-left
   M 382 56 A 20 20 0 0 0 338 56
@@ -690,7 +690,7 @@ ccw_arrow.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ddd;
@@ -702,7 +702,7 @@ labels.apply {
   text(360, 270)`Counter-Clockwise (CCW)`
 }
 
-let note = TextLayer('note') ${
+let note = TextLayer('note') #{
   font-family: monospace;
   font-size: 10;
   fill: #666;
@@ -714,13 +714,13 @@ note.apply {
 
 // --- Scene ---
 
-let left = GroupLayer('left') ${};
+let left = GroupLayer('left') #{};
 left.append(cw_circle, cw_arrow);
 
-let right = GroupLayer('right') ${};
+let right = GroupLayer('right') #{};
 right.append(ccw_circle, ccw_arrow);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left, right, labels, note);
 </code>
   <img src="/blog/samples/post2/direction-comparison.svg" alt="Same four stops — clockwise vs counter-clockwise" loading="lazy">
@@ -804,26 +804,26 @@ g4.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 520, 530); }
 
 // --- Circles ---
 
-let c1 = PathLayer('c1') ${ fill: g1; stroke: #333; stroke-width: 1; };
+let c1 = PathLayer('c1') #{ fill: g1; stroke: #333; stroke-width: 1; };
 c1.apply { circle(cx1, cy1, r); closePath(); }
 
-let c2 = PathLayer('c2') ${ fill: g2; stroke: #333; stroke-width: 1; };
+let c2 = PathLayer('c2') #{ fill: g2; stroke: #333; stroke-width: 1; };
 c2.apply { circle(cx2, cy2, r); closePath(); }
 
-let c3 = PathLayer('c3') ${ fill: g3; stroke: #333; stroke-width: 1; };
+let c3 = PathLayer('c3') #{ fill: g3; stroke: #333; stroke-width: 1; };
 c3.apply { circle(cx3, cy3, r); closePath(); }
 
-let c4 = PathLayer('c4') ${ fill: g4; stroke: #333; stroke-width: 1; };
+let c4 = PathLayer('c4') #{ fill: g4; stroke: #333; stroke-width: 1; };
 c4.apply { circle(cx4, cy4, r); closePath(); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: #ddd;
@@ -837,7 +837,7 @@ labels.apply {
   text(cx4, 493)`Color('#1a1a2e')`
 }
 
-let desc = TextLayer('desc') ${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -850,7 +850,7 @@ desc.apply {
   text(cx4, 509)`custom dark center`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 15;
   fill: #bbb;
@@ -863,13 +863,13 @@ title.apply {
 
 // --- Scene ---
 
-let top_row = GroupLayer('top-row') ${};
+let top_row = GroupLayer('top-row') #{};
 top_row.append(c1, c2);
 
-let bottom_row = GroupLayer('bottom-row') ${};
+let bottom_row = GroupLayer('bottom-row') #{};
 bottom_row.append(c3, c4);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, top_row, bottom_row, labels, desc, title);
 </code>
   <img src="/blog/samples/post2/inner-radius-showcase.svg" alt="Four innerFill modes: transparent, transparent-blend, center, and custom color" loading="lazy">
@@ -914,26 +914,26 @@ oklch_rc.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 600, 540); }
 
 // --- Gradient circles ---
 
-let by_s = PathLayer('by-srgb') ${ fill: srgb_by; stroke: #333; stroke-width: 1; };
+let by_s = PathLayer('by-srgb') #{ fill: srgb_by; stroke: #333; stroke-width: 1; };
 by_s.apply { circle(160, 165, 85); closePath(); }
 
-let by_o = PathLayer('by-oklch') ${ fill: oklch_by; stroke: #333; stroke-width: 1; };
+let by_o = PathLayer('by-oklch') #{ fill: oklch_by; stroke: #333; stroke-width: 1; };
 by_o.apply { circle(440, 165, 85); closePath(); }
 
-let rc_s = PathLayer('rc-srgb') ${ fill: srgb_rc; stroke: #333; stroke-width: 1; };
+let rc_s = PathLayer('rc-srgb') #{ fill: srgb_rc; stroke: #333; stroke-width: 1; };
 rc_s.apply { circle(160, 400, 85); closePath(); }
 
-let rc_o = PathLayer('rc-oklch') ${ fill: oklch_rc; stroke: #333; stroke-width: 1; };
+let rc_o = PathLayer('rc-oklch') #{ fill: oklch_rc; stroke: #333; stroke-width: 1; };
 rc_o.apply { circle(440, 400, 85); closePath(); }
 
 // --- Column headers ---
 
-let headers = TextLayer('headers') ${
+let headers = TextLayer('headers') #{
   font-family: system-ui, sans-serif;
   font-size: 16;
   fill: #ccc;
@@ -947,7 +947,7 @@ headers.apply {
 
 // --- Row labels ---
 
-let row_labels = TextLayer('row-labels') ${
+let row_labels = TextLayer('row-labels') #{
   font-family: monospace;
   font-size: 11;
   fill: #888;
@@ -960,7 +960,7 @@ row_labels.apply {
 
 // --- Annotations ---
 
-let notes = TextLayer('notes') ${
+let notes = TextLayer('notes') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -973,7 +973,7 @@ notes.apply {
   text(440, 507)`rich magenta arc`
 }
 
-let footer = TextLayer('footer') ${
+let footer = TextLayer('footer') #{
   font-family: monospace;
   font-size: 9;
   fill: #444;
@@ -985,13 +985,13 @@ footer.apply {
 
 // --- Scene ---
 
-let top_row = GroupLayer('top-row') ${};
+let top_row = GroupLayer('top-row') #{};
 top_row.append(by_s, by_o);
 
-let bottom_row = GroupLayer('bottom-row') ${};
+let bottom_row = GroupLayer('bottom-row') #{};
 bottom_row.append(rc_s, rc_o);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 </code>
   <img src="/blog/samples/post2/oklch-conic.svg" alt="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs" loading="lazy">

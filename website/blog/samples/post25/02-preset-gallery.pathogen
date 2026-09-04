@@ -1,7 +1,7 @@
 define ViewBox(0, 0, 720, 240);
 // All five NoiseFilterStyle presets applied to the same disc, side by side.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -25,27 +25,27 @@ let f_gradient = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Gradient;
 };
 
-let d1 = PathLayer('grain') ${
+let d1 = PathLayer('grain') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_grain;
 };
-let d2 = PathLayer('paper') ${
+let d2 = PathLayer('paper') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_paper;
 };
-let d3 = PathLayer('speckle') ${
+let d3 = PathLayer('speckle') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_speckle;
 };
-let d4 = PathLayer('static') ${
+let d4 = PathLayer('static') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_static;
 };
-let d5 = PathLayer('gradient') ${
+let d5 = PathLayer('gradient') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_gradient;
@@ -67,7 +67,7 @@ d5.apply {
   circle(640, 100, 45);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -78,7 +78,7 @@ l1.apply {
   text(80, 200)`Grain`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -89,7 +89,7 @@ l2.apply {
   text(220, 200)`Paper`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -100,7 +100,7 @@ l3.apply {
   text(360, 200)`Speckle`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -111,7 +111,7 @@ l4.apply {
   text(500, 200)`Static`;
 }
 
-let l5 = TextLayer('l5') ${
+let l5 = TextLayer('l5') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;

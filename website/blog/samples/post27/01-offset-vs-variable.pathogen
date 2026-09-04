@@ -9,28 +9,28 @@ let fg_hair = Color('#0d1638').alpha(0.28);
 let blue = Color(CSSVar('--stroke-color', #457b9d));
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('spine') ${
+define PathLayer('spine') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
 }
-define PathLayer('uniform') ${
+define PathLayer('uniform') #{
   stroke: fg_muted;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('variable') ${
+define PathLayer('variable') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;

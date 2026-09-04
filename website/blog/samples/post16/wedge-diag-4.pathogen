@@ -8,7 +8,7 @@ let outlineColor = Color('#22aa44');
 let guideColor = Color('#4477aa');
 let textColor = Color('#2f2f2f');
 
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 900, 700); }
 
 let innerR = 30;
@@ -25,7 +25,7 @@ let startX = 80;
 let startY = 90;
 
 // Column headers
-let headers = TextLayer('headers') ${
+let headers = TextLayer('headers') #{
   font-size: 10;
   fill: textColor;
   font-family: monospace, monospace;
@@ -38,7 +38,7 @@ headers.apply {
 }
 
 // Row headers
-let rowHeaders = TextLayer('row-headers') ${
+let rowHeaders = TextLayer('row-headers') #{
   font-size: 10;
   fill: textColor;
   font-family: monospace, monospace;
@@ -51,12 +51,12 @@ rowHeaders.apply {
 }
 
 // Layers in draw order (bottom to top)
-let wedges = PathLayer('wedges') ${ fill: wedgeColor; stroke: none; };
-let xorLayer = PathLayer('xor') ${ fill: xorColor; stroke: none; };
-let outlines = PathLayer('outlines') ${ fill: none; stroke: outlineColor; stroke-width: 1; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
-let guides = PathLayer('guides') ${ fill: none; stroke: guideColor; stroke-width: 0.8; stroke-dasharray: 3 3; };
+let wedges = PathLayer('wedges') #{ fill: wedgeColor; stroke: none; };
+let xorLayer = PathLayer('xor') #{ fill: xorColor; stroke: none; };
+let outlines = PathLayer('outlines') #{ fill: none; stroke: outlineColor; stroke-width: 1; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
+let guides = PathLayer('guides') #{ fill: none; stroke: guideColor; stroke-width: 0.8; stroke-dasharray: 3 3; };
 
-let info = TextLayer('info') ${
+let info = TextLayer('info') #{
   font-size: 7;
   fill: textColor;
   font-family: monospace, monospace;
@@ -111,7 +111,7 @@ for ([oR, ri] in outerRs) {
 }
 
 // Title
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -122,5 +122,5 @@ title.apply {
   text(60, 670)`radialWedge diagnostics — cr=${cornerR}, iR=${innerR} | green=sharp, dark=XOR diff, blue=guide circles`
 }
 
-let g = GroupLayer('all') ${};
+let g = GroupLayer('all') #{};
 g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, title);

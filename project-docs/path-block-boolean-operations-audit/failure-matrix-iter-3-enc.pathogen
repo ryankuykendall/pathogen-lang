@@ -41,15 +41,15 @@ let grid_color = Color('#e7e5d0');
 
 // ─── Background ────────────────────────────────────────────────────
 
-let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bg_color; stroke: none; };
 layer('bg').apply { rect(0, 0, total_w, total_h); }
 
 // ─── Diagnostic layers ──────────────────────────────────────────────
 
-let underlay_fill_layer = PathLayer('underlay-fill') ${ fill: underlay_fill_color; stroke: none; };
-let union_fill_layer = PathLayer('union-fill') ${ fill: union_fill_color; stroke: none; };
-let underlay_stroke_layer = PathLayer('underlay-stroke') ${ fill: none; stroke: underlay_stroke_color; stroke-width: stroke_w; };
-let union_stroke_layer = PathLayer('union-stroke') ${ fill: none; stroke: union_stroke_color; stroke-width: stroke_w; };
+let underlay_fill_layer = PathLayer('underlay-fill') #{ fill: underlay_fill_color; stroke: none; };
+let union_fill_layer = PathLayer('union-fill') #{ fill: union_fill_color; stroke: none; };
+let underlay_stroke_layer = PathLayer('underlay-stroke') #{ fill: none; stroke: underlay_stroke_color; stroke-width: stroke_w; };
+let union_stroke_layer = PathLayer('union-stroke') #{ fill: none; stroke: union_stroke_color; stroke-width: stroke_w; };
 
 // ─── Axis values ───────────────────────────────────────────────────
 
@@ -61,19 +61,19 @@ let tracking_values = [0.5, 0.6, 0.7, 0.8];
 
 // ─── Title ─────────────────────────────────────────────────────────
 
-let title_layer = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 16; fill: title_color; text-anchor: start; };
+let title_layer = TextLayer('title') #{ font-family: system-ui, sans-serif; font-size: 16; fill: title_color; text-anchor: start; };
 layer('title').apply {
   text(20, 26)`Iteration 3 — word = "enc", tracking 0.5..0.8, 4 fonts`
 }
 
-let subtitle_layer = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 10; fill: footer_color; text-anchor: start; };
+let subtitle_layer = TextLayer('subtitle') #{ font-family: system-ui, sans-serif; font-size: 10; fill: footer_color; text-anchor: start; };
 layer('subtitle').apply {
   text(20, 44)`Chained .union(A,B).union(C) — exercises chained-error compounding (§2.9) plus a second intersection cluster.`
 }
 
 // ─── Column headers ────────────────────────────────────────────────
 
-let col_header_layer = TextLayer('col-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: middle; };
+let col_header_layer = TextLayer('col-headers') #{ font-family: monospace; font-size: 9; fill: header_color; text-anchor: middle; };
 layer('col-headers').apply {
   for (tr_idx in 0..3) {
     let cx = calc(header_w + tr_idx * cell_w + cell_w / 2);
@@ -84,7 +84,7 @@ layer('col-headers').apply {
 
 // ─── Row headers ───────────────────────────────────────────────────
 
-let row_header_layer = TextLayer('row-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: end; };
+let row_header_layer = TextLayer('row-headers') #{ font-family: monospace; font-size: 9; fill: header_color; text-anchor: end; };
 layer('row-headers').apply {
   text(header_w - 8, calc(header_h + 0 * cell_h + cell_h / 2 + 3))`Bebas Neue 400 UPPER`
 
@@ -109,7 +109,7 @@ layer('row-headers').apply {
 
 // ─── Grid ──────────────────────────────────────────────────────────
 
-let grid_layer = PathLayer('grid') ${ stroke: grid_color; stroke-width: 0.5; fill: none; };
+let grid_layer = PathLayer('grid') #{ stroke: grid_color; stroke-width: 0.5; fill: none; };
 layer('grid').apply {
   for (col_idx in 0..4) {
     let gx = calc(header_w + col_idx * cell_w);
@@ -131,7 +131,7 @@ let cap_codes = ["U", "l", "F", "A"];
 let tracking_codes = ["50", "60", "70", "80"];
 
 let cell_id_color = Color('#9333ea');
-let cell_id_layer = TextLayer('cell-ids') ${ font-family: monospace; font-size: 9; fill: cell_id_color; text-anchor: middle; };
+let cell_id_layer = TextLayer('cell-ids') #{ font-family: monospace; font-size: 9; fill: cell_id_color; text-anchor: middle; };
 layer('cell-ids').apply {
   for (tr_idx_id_b in 0..3) {
     let cx_id_b = calc(header_w + tr_idx_id_b * cell_w + cell_w / 2);
@@ -166,7 +166,7 @@ layer('cell-ids').apply {
 // 2 iterations: combined = A.union(B), then combined = combined.union(C).
 
 // Bebas Neue (row 0, UPPER only)
-let styles_bebas = ${ font-family: BebasNeue-Regular; font-size: font_size; };
+let styles_bebas = #{ font-family: BebasNeue-Regular; font-size: font_size; };
 let row_y_b = header_h;
 let word_b = cap_words[0];
 let glyphs_b = PathBlock.fromGlyph(word_b, styles_bebas);
@@ -201,7 +201,7 @@ for (tr_idx_b in 0..3) {
 }
 
 // Raleway 200 ExtraLight (rows 1..4)
-let styles_raleway = ${ font-family: Raleway-ExtraLight; font-size: font_size; };
+let styles_raleway = #{ font-family: Raleway-ExtraLight; font-size: font_size; };
 
 for (cap_idx_r in 0..3) {
   let row_idx_r = calc(1 + cap_idx_r);
@@ -240,7 +240,7 @@ for (cap_idx_r in 0..3) {
 }
 
 // Libre Baskerville 700 Bold (rows 5..8)
-let styles_libre = ${ font-family: LibreBaskerville-Bold; font-size: font_size; };
+let styles_libre = #{ font-family: LibreBaskerville-Bold; font-size: font_size; };
 
 for (cap_idx_l in 0..3) {
   let row_idx_l = calc(5 + cap_idx_l);
@@ -279,7 +279,7 @@ for (cap_idx_l in 0..3) {
 }
 
 // Playfair Display 700 Bold (rows 9..12)
-let styles_playfair = ${ font-family: PlayfairDisplay-Bold; font-size: font_size; };
+let styles_playfair = #{ font-family: PlayfairDisplay-Bold; font-size: font_size; };
 
 for (cap_idx_p in 0..3) {
   let row_idx_p = calc(9 + cap_idx_p);
@@ -319,7 +319,7 @@ for (cap_idx_p in 0..3) {
 
 // ─── Footer ────────────────────────────────────────────────────────
 
-let footer_layer = TextLayer('footer') ${ font-family: monospace; font-size: 9; fill: footer_color; text-anchor: start; };
+let footer_layer = TextLayer('footer') #{ font-family: monospace; font-size: 9; fill: footer_color; text-anchor: start; };
 layer('footer').apply {
   text(20, calc(total_h - 24))`Iter 3 of progressive bisection (enc, chained 2-step union). Once clean: longer words (iter-N).`
 }

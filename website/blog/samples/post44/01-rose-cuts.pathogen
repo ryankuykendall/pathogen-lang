@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 250);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,18 +12,18 @@ layer('bg').apply {
   rect(0, 0, 480, 250);
 }
 
-let scene = GroupLayer('scene') ${};
-let panes = PathLayer('panes') ${
+let scene = GroupLayer('scene') #{};
+let panes = PathLayer('panes') #{
   fill: #38bdf8;
   stroke: none;
 };
-let leading = PathLayer('leading') ${
+let leading = PathLayer('leading') #{
   stroke: #0f172a;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;

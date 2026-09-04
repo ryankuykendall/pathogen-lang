@@ -330,10 +330,10 @@ let corner = @{ h 100 v 80 };
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 480, 340); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -351,7 +351,7 @@ grid.apply {
 
 // --- Original corner (dashed) ---
 
-let original = PathLayer('original') ${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b8');
   stroke-width: 1.5;
   stroke-dasharray: "6 4";
@@ -365,7 +365,7 @@ original.apply {
 
 // --- Chamfer line (result) ---
 
-let chamfer_line = PathLayer('chamfer') ${
+let chamfer_line = PathLayer('chamfer') #{
   stroke: Color('#3b82f6');
   stroke-width: 2.5;
   fill: none;
@@ -381,7 +381,7 @@ chamfer_line.apply {
 
 // --- Vertex dot ---
 
-let vertex_dot = PathLayer('vertex-dot') ${
+let vertex_dot = PathLayer('vertex-dot') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -392,7 +392,7 @@ vertex_dot.apply {
 
 // --- Trim points ---
 
-let trim_dots = PathLayer('trim-dots') ${
+let trim_dots = PathLayer('trim-dots') #{
   fill: Color('#22c55e');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -404,7 +404,7 @@ trim_dots.apply {
 
 // --- Dimension lines ---
 
-let dims = PathLayer('dims') ${
+let dims = PathLayer('dims') #{
   stroke: Color('#f59e0b');
   stroke-width: 1;
   fill: none;
@@ -423,7 +423,7 @@ dims.apply {
 
 // --- Dimension arrows ---
 
-let dim_arrows = PathLayer('dim-arrows') ${
+let dim_arrows = PathLayer('dim-arrows') #{
   fill: Color('#f59e0b');
   stroke: none;
 };
@@ -438,7 +438,7 @@ dim_arrows.apply {
 
 // --- Removed corner (hatched area) ---
 
-let removed = PathLayer('removed') ${
+let removed = PathLayer('removed') #{
   fill: Color('#ef444415');
   stroke: Color('#ef444440');
   stroke-width: 1;
@@ -449,7 +449,7 @@ removed.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') ${
+let leaders = PathLayer('leaders') #{
   stroke: Color('#475569');
   stroke-width: 0.5;
   fill: none;
@@ -463,7 +463,7 @@ leaders.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -475,7 +475,7 @@ labels.apply {
   text(315, 142)`chamfer line`
 }
 
-let labels_left = TextLayer('labels-left') ${
+let labels_left = TextLayer('labels-left') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -487,7 +487,7 @@ labels_left.apply {
 
 // --- Dimension labels ---
 
-let dim_labels = TextLayer('dim-labels') ${
+let dim_labels = TextLayer('dim-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#f59e0b');
@@ -500,7 +500,7 @@ dim_labels.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -513,7 +513,7 @@ code.apply {
   text(30, 306)`// If d1 == d2: symmetric chamfer`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -522,18 +522,18 @@ let kw = TextLayer('kw') ${
 
 // --- Legend ---
 
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
 
-let leg_o = PathLayer('leg-orig') ${ fill: Color('#94a3b8'); stroke: none; };
-let leg_c = PathLayer('leg-cham') ${ fill: Color('#3b82f6'); stroke: none; };
-let leg_v = PathLayer('leg-vert') ${ fill: Color('#ef4444'); stroke: none; };
-let leg_t = PathLayer('leg-trim') ${ fill: Color('#22c55e'); stroke: none; };
-let leg_r = PathLayer('leg-rem') ${ fill: Color('#ef444440'); stroke: none; };
+let leg_o = PathLayer('leg-orig') #{ fill: Color('#94a3b8'); stroke: none; };
+let leg_c = PathLayer('leg-cham') #{ fill: Color('#3b82f6'); stroke: none; };
+let leg_v = PathLayer('leg-vert') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_t = PathLayer('leg-trim') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_r = PathLayer('leg-rem') #{ fill: Color('#ef444440'); stroke: none; };
 
 leg_o.apply { rect(310, 256, 8, 8); }
 leg_c.apply { rect(310, 270, 8, 8); }
@@ -551,7 +551,7 @@ leg.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -561,7 +561,7 @@ title.apply {
   text(30, 28)`Chamfer Anatomy`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -581,12 +581,12 @@ let box = @{ h 70 v 70 h -70 z };
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 560, 300); }
 
 // --- Original outlines ---
 
-let original = PathLayer('original') ${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -603,7 +603,7 @@ original.apply {
 
 // --- Chamfered shapes ---
 
-let chamfered = PathLayer('chamfered') ${
+let chamfered = PathLayer('chamfered') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f615');
@@ -633,7 +633,7 @@ chamfered.apply {
 
 // --- Labels ---
 
-let names = TextLayer('names') ${
+let names = TextLayer('names') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -648,7 +648,7 @@ names.apply {
   text(505, 164)`Vertex(1, 20)`
 }
 
-let desc = TextLayer('desc') ${
+let desc = TextLayer('desc') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
@@ -664,7 +664,7 @@ desc.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -676,7 +676,7 @@ code.apply {
   text(30, 252)`beveled.drawTo(x, y)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -689,7 +689,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -699,7 +699,7 @@ title.apply {
   text(30, 32)`Chamfer Gallery`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -733,10 +733,10 @@ subtitle.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 480, 340); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -754,7 +754,7 @@ grid.apply {
 
 // --- Original corner (dashed) ---
 
-let original = PathLayer('original') ${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b8');
   stroke-width: 1.5;
   stroke-dasharray: "6 4";
@@ -768,7 +768,7 @@ original.apply {
 
 // --- Fillet arc + trimmed edges (result) ---
 
-let fillet = PathLayer('fillet') ${
+let fillet = PathLayer('fillet') #{
   stroke: Color('#8b5cf6');
   stroke-width: 2.5;
   fill: none;
@@ -784,7 +784,7 @@ fillet.apply {
 
 // --- Arc center ---
 
-let center_dot = PathLayer('center-dot') ${
+let center_dot = PathLayer('center-dot') #{
   fill: Color('#8b5cf640');
   stroke: Color('#8b5cf6');
   stroke-width: 1;
@@ -795,7 +795,7 @@ center_dot.apply {
 
 // --- Radius lines (from center to trim points) ---
 
-let radii = PathLayer('radii') ${
+let radii = PathLayer('radii') #{
   stroke: Color('#8b5cf660');
   stroke-width: 1;
   stroke-dasharray: "3 3";
@@ -808,7 +808,7 @@ radii.apply {
 
 // --- Vertex dot ---
 
-let vertex = PathLayer('vertex') ${
+let vertex = PathLayer('vertex') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -819,7 +819,7 @@ vertex.apply {
 
 // --- Trim points ---
 
-let trim_dots = PathLayer('trim-dots') ${
+let trim_dots = PathLayer('trim-dots') #{
   fill: Color('#22c55e');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -831,7 +831,7 @@ trim_dots.apply {
 
 // --- Removed corner area ---
 
-let removed = PathLayer('removed') ${
+let removed = PathLayer('removed') #{
   fill: Color('#ef444412');
   stroke: none;
 };
@@ -843,7 +843,7 @@ removed.apply {
 
 // --- Radius dimension ---
 
-let r_dim = PathLayer('r-dim') ${
+let r_dim = PathLayer('r-dim') #{
   stroke: Color('#f59e0b');
   stroke-width: 1;
   fill: none;
@@ -853,7 +853,7 @@ r_dim.apply {
   M 160 160 L calc(160 + 28) calc(160 - 28)
 }
 
-let r_arrow = PathLayer('r-arrow') ${
+let r_arrow = PathLayer('r-arrow') #{
   fill: Color('#f59e0b');
   stroke: none;
 };
@@ -867,7 +867,7 @@ r_arrow.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') ${
+let leaders = PathLayer('leaders') #{
   stroke: Color('#475569');
   stroke-width: 0.5;
   fill: none;
@@ -882,7 +882,7 @@ leaders.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -895,7 +895,7 @@ labels.apply {
   text(315, 150)`a r r 0 0 1 dx dy`
 }
 
-let labels_left = TextLayer('labels-left') ${
+let labels_left = TextLayer('labels-left') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -908,7 +908,7 @@ labels_left.apply {
 
 // --- Radius label ---
 
-let r_label = TextLayer('r-label') ${
+let r_label = TextLayer('r-label') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#f59e0b');
@@ -920,7 +920,7 @@ r_label.apply {
 
 // --- Geometry note ---
 
-let geo = TextLayer('geo') ${
+let geo = TextLayer('geo') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -933,7 +933,7 @@ geo.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -946,17 +946,17 @@ code.apply {
 
 // --- Legend ---
 
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
 
-let leg_o = PathLayer('leg-o') ${ fill: Color('#94a3b8'); stroke: none; };
-let leg_f = PathLayer('leg-f') ${ fill: Color('#8b5cf6'); stroke: none; };
-let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
-let leg_t = PathLayer('leg-t') ${ fill: Color('#22c55e'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#94a3b8'); stroke: none; };
+let leg_f = PathLayer('leg-f') #{ fill: Color('#8b5cf6'); stroke: none; };
+let leg_v = PathLayer('leg-v') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_t = PathLayer('leg-t') #{ fill: Color('#22c55e'); stroke: none; };
 
 leg_o.apply { rect(300, 260, 8, 8); }
 leg_f.apply { rect(300, 274, 8, 8); }
@@ -972,7 +972,7 @@ leg.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -982,7 +982,7 @@ title.apply {
   text(30, 28)`Fillet Anatomy`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -1015,25 +1015,25 @@ subtitle.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 700, 380); }
 
 // --- Layers ---
 
-let original = PathLayer('original') ${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
   fill: none;
 };
 
-let filleted = PathLayer('filleted') ${
+let filleted = PathLayer('filleted') #{
   stroke: Color('#8b5cf6');
   stroke-width: 2;
   fill: Color('#8b5cf615');
 };
 
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -1095,7 +1095,7 @@ for (i in 0..3) {
 
 // --- Angle labels ---
 
-let angle_labels = TextLayer('angle-labels') ${
+let angle_labels = TextLayer('angle-labels') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -1116,15 +1116,15 @@ angle_labels.apply {
 
 // --- Legend ---
 
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
-let leg_o = PathLayer('leg-o') ${ fill: Color('#94a3b8'); stroke: none; };
-let leg_f = PathLayer('leg-f') ${ fill: Color('#8b5cf6'); stroke: none; };
-let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#94a3b8'); stroke: none; };
+let leg_f = PathLayer('leg-f') #{ fill: Color('#8b5cf6'); stroke: none; };
+let leg_v = PathLayer('leg-v') #{ fill: Color('#ef4444'); stroke: none; };
 
 leg_o.apply { rect(560, 20, 8, 8); }
 leg_f.apply { rect(560, 34, 8, 8); }
@@ -1138,7 +1138,7 @@ leg.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -1151,7 +1151,7 @@ code.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -1161,7 +1161,7 @@ title.apply {
   text(30, 32)`Elliptical Fillet at Various Angles`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -1181,12 +1181,12 @@ let box = @{ h 70 v 70 h -70 z };
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 560, 300); }
 
 // --- Original outlines ---
 
-let original = PathLayer('original') ${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -1203,7 +1203,7 @@ original.apply {
 
 // --- Filleted shapes ---
 
-let filleted = PathLayer('filleted') ${
+let filleted = PathLayer('filleted') #{
   stroke: Color('#8b5cf6');
   stroke-width: 2;
   fill: Color('#8b5cf615');
@@ -1233,7 +1233,7 @@ filleted.apply {
 
 // --- Labels ---
 
-let names = TextLayer('names') ${
+let names = TextLayer('names') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -1250,7 +1250,7 @@ names.apply {
   text(505, 164)`Fillet(15,8,.3)`
 }
 
-let desc = TextLayer('desc') ${
+let desc = TextLayer('desc') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
@@ -1266,7 +1266,7 @@ desc.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -1278,7 +1278,7 @@ code.apply {
   text(30, 252)`rounded.drawTo(x, y)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -1291,7 +1291,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -1301,7 +1301,7 @@ title.apply {
   text(30, 32)`Fillet Gallery`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');

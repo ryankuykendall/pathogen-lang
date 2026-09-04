@@ -10,7 +10,7 @@ let plotW = 300;
 let plotY = 150;
 let plotH = 90;
 
-let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
@@ -19,7 +19,7 @@ axis.apply {
 }
 
 //-- Hard step: 0 before the midpoint of the window, 1 after.
-let cliff = PathLayer('cliff') ${ stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; };
+let cliff = PathLayer('cliff') #{ stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; };
 cliff.apply {
   M plotX plotY
   L calc(plotX + plotW * 0.5) plotY
@@ -28,7 +28,7 @@ cliff.apply {
 }
 
 //-- Straight ramp across the window.
-let ramp = PathLayer('ramp') ${ stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; };
+let ramp = PathLayer('ramp') #{ stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; };
 ramp.apply {
   M plotX plotY
   L calc(plotX + plotW * 0.3) plotY
@@ -37,7 +37,7 @@ ramp.apply {
 }
 
 //-- The S-curve.
-let scurve = PathLayer('smoothstep') ${ stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; };
+let scurve = PathLayer('smoothstep') #{ stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; };
 scurve.apply {
   M plotX plotY
   for (i in 1..96) {
@@ -47,7 +47,7 @@ scurve.apply {
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

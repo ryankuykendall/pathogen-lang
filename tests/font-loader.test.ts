@@ -29,25 +29,25 @@ describe('extractFontReferences', () => {
   });
 
   it('extracts font-family from style block (default weight)', () => {
-    const refs = extractFontReferences('let s = ${ font-family: Roboto; font-size: 24; };');
+    const refs = extractFontReferences('let s = #{ font-family: Roboto; font-size: 24; };');
     expect(refs).toEqual([{ family: 'Roboto' }]);
   });
 
   it('pairs font-family with font-weight in the same style block', () => {
-    const refs = extractFontReferences('let s = ${ font-family: Roboto; font-weight: 700; font-size: 24; };');
+    const refs = extractFontReferences('let s = #{ font-family: Roboto; font-weight: 700; font-size: 24; };');
     expect(refs).toEqual([{ family: 'Roboto', weight: 700 }]);
   });
 
   it('skips generic font families', () => {
-    const refs = extractFontReferences('let s = ${ font-family: system-ui, sans-serif; };');
+    const refs = extractFontReferences('let s = #{ font-family: system-ui, sans-serif; };');
     expect(refs).toEqual([]);
   });
 
   it('skips legacy filename-shaped families (Raleway-Bold, BebasNeue-Regular, etc.)', () => {
     const refs = extractFontReferences(`
-      let s1 = \${ font-family: Raleway-Bold; };
-      let s2 = \${ font-family: BebasNeue-Regular; };
-      let s3 = \${ font-family: Inter-SemiBold; };
+      let s1 = #{ font-family: Raleway-Bold; };
+      let s2 = #{ font-family: BebasNeue-Regular; };
+      let s3 = #{ font-family: Inter-SemiBold; };
     `);
     expect(refs).toEqual([]);
   });
@@ -55,8 +55,8 @@ describe('extractFontReferences', () => {
   it('deduplicates the same family+weight across multiple references', () => {
     const refs = extractFontReferences(`
       @font "Roboto" 400;
-      let a = \${ font-family: Roboto; font-weight: 400; };
-      let b = \${ font-family: Roboto; };
+      let a = #{ font-family: Roboto; font-weight: 400; };
+      let b = #{ font-family: Roboto; };
     `);
     expect(refs).toHaveLength(1);
     expect(refs[0]).toMatchObject({ family: 'Roboto', weight: 400 });
@@ -65,7 +65,7 @@ describe('extractFontReferences', () => {
   it('handles multiple distinct font references', () => {
     const refs = extractFontReferences(`
       @font "Inter" 400;
-      let bold = \${ font-family: Inter; font-weight: 700; };
+      let bold = #{ font-family: Inter; font-weight: 700; };
     `);
     expect(refs).toEqual(
       expect.arrayContaining([
@@ -77,7 +77,7 @@ describe('extractFontReferences', () => {
   });
 
   it('quoted family names in style blocks are unquoted', () => {
-    const refs = extractFontReferences(`let s = \${ font-family: "Fira Sans"; font-weight: 200; };`);
+    const refs = extractFontReferences(`let s = #{ font-family: "Fira Sans"; font-weight: 200; };`);
     expect(refs).toEqual([{ family: 'Fira Sans', weight: 200 }]);
   });
 
@@ -88,11 +88,11 @@ describe('extractFontReferences', () => {
     // 400/CORS errors and risk rate-limits. Only the completed name resolves.
     const partials = ['Joseph', 'Josephi', 'Josephin', 'Josephin S', 'Josephin Sa', 'Josephin San'];
     for (const partial of partials) {
-      const refs = extractFontReferences(`let s = \${ font-family: ${partial}; };`);
+      const refs = extractFontReferences(`let s = #{ font-family: ${partial}; };`);
       expect(refs, `partial "${partial}" should not extract`).toEqual([]);
     }
     // Once the user finishes typing, the known family DOES extract.
-    const refs = extractFontReferences(`let s = \${ font-family: "Josefin Sans"; };`);
+    const refs = extractFontReferences(`let s = #{ font-family: "Josefin Sans"; };`);
     expect(refs).toEqual([{ family: 'Josefin Sans' }]);
   });
 
@@ -112,13 +112,13 @@ describe('extractFontReferences', () => {
   });
 
   it('resolves a variable font-family value in a style block', () => {
-    const refs = extractFontReferences(`let f = "Roboto";\nlet s = \${ font-family: f; font-weight: 700; };`);
+    const refs = extractFontReferences(`let f = "Roboto";\nlet s = #{ font-family: f; font-weight: 700; };`);
     expect(refs).toEqual([{ family: 'Roboto', weight: 700 }]);
   });
 
   it('does not substitute quoted names through the let map', () => {
     // "f" is a literal family name, not a variable reference.
-    const refs = extractFontReferences(`let f = "Roboto";\nlet s = \${ font-family: "f"; };`);
+    const refs = extractFontReferences(`let f = "Roboto";\nlet s = #{ font-family: "f"; };`);
     expect(refs).toEqual([]);
   });
 
@@ -131,8 +131,8 @@ describe('extractFontReferences', () => {
     const refs = extractFontReferences(`
       @font "Roboto" 400;
       @font "NotARealFont" 700;
-      let s = \${ font-family: "ImaginaryThing"; };
-      let t = \${ font-family: "Inter"; font-weight: 500; };
+      let s = #{ font-family: "ImaginaryThing"; };
+      let t = #{ font-family: "Inter"; font-weight: 500; };
     `);
     expect(refs).toEqual(
       expect.arrayContaining([
@@ -695,7 +695,7 @@ describe('extractUnknownFontDirectiveFamilies', () => {
 
   it('ignores style-block unknowns — only @font is reported to avoid keystroke noise', () => {
     expect(
-      extractUnknownFontDirectiveFamilies(`let s = \${ font-family: "PartialTypingHere"; };`),
+      extractUnknownFontDirectiveFamilies(`let s = #{ font-family: "PartialTypingHere"; };`),
     ).toEqual([]);
   });
 
@@ -717,7 +717,7 @@ describe('extractUnknownFontDirectiveFamilies', () => {
     const refs = extractUnknownFontDirectiveFamilies(`
       @font "Roboto" 400;
       @font "NotARealFont" 700;
-      let t = \${ font-family: "Inter"; };
+      let t = #{ font-family: "Inter"; };
     `);
     expect(refs).toEqual([{ family: 'NotARealFont', weight: 700 }]);
   });

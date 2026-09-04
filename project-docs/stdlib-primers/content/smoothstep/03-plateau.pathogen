@@ -12,19 +12,19 @@ let plotW = 300;
 let plotY = 110;
 let plotH = 70;
 
-let unitLine = PathLayer('unit-line') ${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
+let unitLine = PathLayer('unit-line') #{ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
 unitLine.apply {
   M plotX calc(plotY - plotH)
   L calc(plotX + plotW) calc(plotY - plotH)
 }
 
-let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
 }
 
-let curve = PathLayer('window-curve') ${ stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; };
+let curve = PathLayer('window-curve') #{ stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; };
 curve.apply {
   M plotX plotY
   for (i in 1..96) {
@@ -34,7 +34,7 @@ curve.apply {
   }
 }
 
-let bars = PathLayer('bars') ${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
+let bars = PathLayer('bars') #{ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
 bars.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -45,7 +45,7 @@ bars.apply {
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

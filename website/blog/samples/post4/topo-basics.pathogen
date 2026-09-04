@@ -33,12 +33,12 @@ topo.interpolation = 'oklch';
 
 // --- Layers ---
 
-let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
+let bg = PathLayer('bg') #{ fill: topo; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #ffffffaa;
@@ -51,7 +51,7 @@ labels.apply {
   text(165, 195)`contour (0.80) — peak`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #aaa;
@@ -63,5 +63,5 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, labels, title);

@@ -3,7 +3,7 @@
 // querying the labeled lid segment, and a tab anchored to a named point.
 
 define ViewBox(0, 0, 160, 120);
-define default PathLayer('card') ${ stroke: #333; stroke-width: 2; fill: none; }
+define default PathLayer('card') #{ stroke: #333; stroke-width: 2; fill: none; }
 
 let outline = @{
   h 100 as segment('lid'), endpoint('ne');

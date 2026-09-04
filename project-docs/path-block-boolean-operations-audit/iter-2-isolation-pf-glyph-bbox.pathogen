@@ -1,5 +1,5 @@
 @font "../../fonts/Playfair_Display/PlayfairDisplay-Bold.ttf"
-let styles = ${ font-family: PlayfairDisplay-Bold; font-size: 100; };
+let styles = #{ font-family: PlayfairDisplay-Bold; font-size: 100; };
 let glyphs = PathBlock.fromGlyph("EN", styles);
 let g0 = glyphs[0];
 let g1 = glyphs[1];

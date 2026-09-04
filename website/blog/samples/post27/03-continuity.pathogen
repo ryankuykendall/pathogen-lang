@@ -11,47 +11,47 @@ let amber = Color('#e0a725');
 let blue = Color('#457b9d');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('spine') ${
+define PathLayer('spine') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
 }
-define PathLayer('g0') ${
+define PathLayer('g0') #{
   stroke: red;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g1') ${
+define PathLayer('g1') #{
   stroke: amber;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g2') ${
+define PathLayer('g2') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g1thin') ${
+define PathLayer('g1thin') #{
   stroke: amber;
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g2dash') ${
+define PathLayer('g2dash') #{
   stroke: blue;
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
   stroke-dasharray: "3 4";
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;

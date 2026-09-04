@@ -7,7 +7,7 @@
 
 define ViewBox(0, 0, 400, 260);
 
-let ground = PathLayer('ground') ${ fill: oklch(0.32 0.06 145); stroke: none; };
+let ground = PathLayer('ground') #{ fill: oklch(0.32 0.06 145); stroke: none; };
 ground.apply {
   rect(15, 228, 370, 17);
 }
@@ -17,7 +17,7 @@ fn blade(i) {
   let h = 25 + hash01(i, 1) * 55;
   let lean = hash01(i, 2) * 30 - 15;
   let c = Color(0.52 + hash01(i, 3) * 0.18, 0.13, 135 + hash01(i, 3) * 30);
-  let g = PathLayer(`blade-${i}`) ${ stroke: c; stroke-width: 1.6; fill: none; };
+  let g = PathLayer(`blade-${i}`) #{ stroke: c; stroke-width: 1.6; fill: none; };
   g.apply {
     M x 230
     q calc(lean * 0.3) calc(0 - h * 0.6) lean calc(0 - h)
@@ -28,7 +28,7 @@ for (i in 0..89) {
   blade(i);
 }
 
-let heads = PathLayer('seed-heads') ${ fill: oklch(0.8 0.1 85); stroke: none; };
+let heads = PathLayer('seed-heads') #{ fill: oklch(0.8 0.1 85); stroke: none; };
 heads.apply {
   for (k in 0..11) {
     let hx = 30 + hash01(k, 10) * 340;

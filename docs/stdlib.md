@@ -148,7 +148,7 @@ Arguments outside those slots are plain numbers by contract — `lerp`'s `t` is 
 // range keeps each hashRange result an Angle, so hueShift reads ±90°
 let c = Color('#c00');
 for (i in 1..9) {
-  let swatch = PathLayer(`jitter-${i}`) ${
+  let swatch = PathLayer(`jitter-${i}`) #{
     stroke: none;
     fill: c.hueShift(hashRange(i, -0.5pi, 0.5pi));
   };
@@ -278,7 +278,7 @@ let sky = Color('#a5b8ff');
 let sea = Color('#0f3d5c');
 for (i in 0..23) {
   let t = i / 23;
-  let strip = PathLayer(`strip-${i}`) ${ stroke: none; fill: sky.mix(sea, smooth(t)); };
+  let strip = PathLayer(`strip-${i}`) #{ stroke: none; fill: sky.mix(sea, smooth(t)); };
   strip.apply { rect(calc(20 + 160 * smooth(t)), 20, 6, 60); }
 }
 ```
@@ -758,7 +758,7 @@ gridLayer.apply {
 Grid functions return path data and are typically used inside `layer.apply {}` blocks. Rotation and styling are handled via the layer:
 
 ```
-let gridStyles = ${ stroke: #88f; stroke-width: 0.25; fill: none; };
+let gridStyles = #{ stroke: #88f; stroke-width: 0.25; fill: none; };
 let gridLayer = PathLayer('grid') << gridStyles;
 
 gridLayer.ctx.transform.rotate.set(0.125pi);
@@ -980,7 +980,7 @@ The `CSSVar` type creates CSS custom property references (`var()`) for use in st
 
 ```
 let fg = CSSVar('--foreground', '#333');
-define PathLayer('main') ${ stroke: fg; }
+define PathLayer('main') #{ stroke: fg; }
 ```
 
 ---

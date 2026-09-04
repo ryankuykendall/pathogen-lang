@@ -1,5 +1,5 @@
 define ViewBox(0, 0, 8192, 8192);
-define default PathLayer('main-path-layer') ${
+define default PathLayer('main-path-layer') #{
   fill: #bbb;
   stroke: #222;
   stroke-width: 1;

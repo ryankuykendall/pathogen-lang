@@ -1,7 +1,7 @@
 define ViewBox(0, 0, 600, 200);
 // One filter, six shapes — one <filter> def in the output SVG.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -16,32 +16,32 @@ let grain = NoiseFilter() {|f|
   f.amount = 0.5;
 };
 
-let c1 = PathLayer('c1') ${
+let c1 = PathLayer('c1') #{
   fill: oklch(70% 0.20  30);
   stroke: none;
   filter: grain;
 };
-let c2 = PathLayer('c2') ${
+let c2 = PathLayer('c2') #{
   fill: oklch(70% 0.20  80);
   stroke: none;
   filter: grain;
 };
-let c3 = PathLayer('c3') ${
+let c3 = PathLayer('c3') #{
   fill: oklch(70% 0.20 150);
   stroke: none;
   filter: grain;
 };
-let c4 = PathLayer('c4') ${
+let c4 = PathLayer('c4') #{
   fill: oklch(70% 0.20 220);
   stroke: none;
   filter: grain;
 };
-let c5 = PathLayer('c5') ${
+let c5 = PathLayer('c5') #{
   fill: oklch(70% 0.20 290);
   stroke: none;
   filter: grain;
 };
-let c6 = PathLayer('c6') ${
+let c6 = PathLayer('c6') #{
   fill: oklch(70% 0.20 340);
   stroke: none;
   filter: grain;

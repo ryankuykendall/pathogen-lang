@@ -44,7 +44,7 @@ The extension spawns the language server as a child process. The server imports 
 |-----------|---------------------------|---------|
 | `textDocumentSync: Full` | `getDiagnostics()` | On document change |
 | `documentSymbolProvider` | `getDocumentSymbols()` | Outline request |
-| `completionProvider` (`.`, `$`) | `getCompletions()` | Typing trigger chars |
+| `completionProvider` (`.`, `$`, `#`) | `getCompletions()` | Typing trigger chars |
 | `hoverProvider` | `getHoverInfo()` | Mouse hover |
 | `definitionProvider` | `getDefinition()` | Ctrl+Click / F12 |
 | `referencesProvider` | `getReferences()` | Find All References |

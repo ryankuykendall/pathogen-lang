@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 200, 200);
 
-define PathLayer('bg') ${ fill: oklch(22% 0.03 265); }
+define PathLayer('bg') #{ fill: oklch(22% 0.03 265); }
 layer('bg').apply { rect(0, 0, 200, 200); }
 
 let fade = MotionBlurFilter() {|f|
@@ -13,7 +13,7 @@ let fade = MotionBlurFilter() {|f|
   f.angle = 90deg;        // sharp at top, blurred toward the bottom
 };
 
-define PathLayer('bars') ${
+define PathLayer('bars') #{
   fill: oklch(86% 0.13 200);
   filter: fade;
 }

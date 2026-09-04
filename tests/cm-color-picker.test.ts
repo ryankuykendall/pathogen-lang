@@ -113,7 +113,7 @@ describe('findColorRanges (AST-based)', () => {
 
   describe('style block property values', () => {
     it('detects hex color in a style-block stroke value', () => {
-      const src = 'let s = ${stroke: #ff0000;};';
+      const src = 'let s = #{stroke: #ff0000;};';
       const r = ranges(src);
       expect(r).toHaveLength(1);
       expect(r[0].color).toBe('#ff0000');
@@ -121,7 +121,7 @@ describe('findColorRanges (AST-based)', () => {
     });
 
     it('detects multiple colors in a style block', () => {
-      const src = 'let s = ${stroke: #ff0000; fill: rgb(0, 0, 0);};';
+      const src = 'let s = #{stroke: #ff0000; fill: rgb(0, 0, 0);};';
       const r = ranges(src);
       expect(r).toHaveLength(2);
       const colors = r.map((x) => x.color).sort();
@@ -129,7 +129,7 @@ describe('findColorRanges (AST-based)', () => {
     });
 
     it('does not detect non-color-accepting property values', () => {
-      const src = 'let s = ${stroke-width: 2;};';
+      const src = 'let s = #{stroke-width: 2;};';
       expect(ranges(src)).toEqual([]);
     });
   });
@@ -141,27 +141,27 @@ describe('findColorRanges (AST-based)', () => {
 
     it('detects a hex color nested inside drop-shadow() on the filter property', () => {
       // The original user report: no chip for #c00 inside drop-shadow.
-      const src = 'let s = ${ filter: drop-shadow(4px 4px 4px #c00); };';
+      const src = 'let s = #{ filter: drop-shadow(4px 4px 4px #c00); };';
       const r = mountedRanges(src);
       expect(r).toHaveLength(1);
       expect(src.slice(r[0].from, r[0].to)).toBe('#c00');
     });
 
     it('detects a color function nested inside drop-shadow()', () => {
-      const src = 'let s = ${ filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5)); };';
+      const src = 'let s = #{ filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5)); };';
       const r = mountedRanges(src);
       expect(r).toHaveLength(1);
       expect(src.slice(r[0].from, r[0].to)).toBe('rgba(0, 0, 0, 0.5)');
     });
 
     it('detects whole-value colors on any property, same as the fallback', () => {
-      const src = 'let s = ${ stroke: #ff0000; fill: oklch(0.7 0.15 30); };';
+      const src = 'let s = #{ stroke: #ff0000; fill: oklch(0.7 0.15 30); };';
       const r = mountedRanges(src);
       expect(r.map((x) => x.color)).toEqual(['#ff0000', 'oklch(0.7 0.15 30)']);
     });
 
     it('chips a bare named color only as the whole value of a color property', () => {
-      const src = 'let s = ${ stroke: tomato; };';
+      const src = 'let s = #{ stroke: tomato; };';
       const r = mountedRanges(src);
       expect(r).toHaveLength(1);
       expect(r[0].color).toBe('tomato');
@@ -172,65 +172,65 @@ describe('findColorRanges (AST-based)', () => {
       // threaded in (as the playground's scope-cache does), `tomato` is known
       // to be a variable reference — chipping it would overwrite the
       // reference with a literal color.
-      const src = 'let tomato = oklch(0.63 0.24 30);\nlet s = ${ stroke: tomato; };';
+      const src = 'let tomato = oklch(0.63 0.24 30);\nlet s = #{ stroke: tomato; };';
       const r = findColorRanges(editorParser.parse(src), src, scopeRanges(src));
       expect(r.find((x) => x.color === 'tomato')).toBeUndefined();
     });
 
     it('without scope info the named-color chip remains (documented default)', () => {
-      const src = 'let tomato = oklch(0.63 0.24 30);\nlet s = ${ stroke: tomato; };';
+      const src = 'let tomato = oklch(0.63 0.24 30);\nlet s = #{ stroke: tomato; };';
       const r = mountedRanges(src);
       expect(r.find((x) => x.color === 'tomato')).toBeDefined();
     });
 
     it('an UNDECLARED named color still chips even with scope info', () => {
-      const src = 'let s = ${ stroke: tomato; };';
+      const src = 'let s = #{ stroke: tomato; };';
       const r = findColorRanges(editorParser.parse(src), src, scopeRanges(src));
       expect(r.find((x) => x.color === 'tomato')).toBeDefined();
     });
 
     it('the regex fallback path applies the same exclusion (unmounted tree)', () => {
-      const src = 'let tomato = oklch(0.63 0.24 30);\nlet s = ${ stroke: tomato; };';
+      const src = 'let tomato = oklch(0.63 0.24 30);\nlet s = #{ stroke: tomato; };';
       const { tree } = parseLezer(src);
       const r = findColorRanges(tree, src, scopeRanges(src));
       expect(r.find((x) => x.color === 'tomato')).toBeUndefined();
       // other chips are unaffected: the oklch literal on the declaration line
       // and the hex value in the block both still chip
-      const src2 = 'let tomato = oklch(0.63 0.24 30);\nlet s = ${ stroke: tomato; fill: #f00; };';
+      const src2 = 'let tomato = oklch(0.63 0.24 30);\nlet s = #{ stroke: tomato; fill: #f00; };';
       const r2 = findColorRanges(parseLezer(src2).tree, src2, scopeRanges(src2));
       expect(r2.map((x) => x.color)).toEqual(['oklch(0.63 0.24 30)', '#f00']);
       expect(r2.find((x) => x.color === 'tomato')).toBeUndefined();
     });
 
     it('does not chip identifiers that merely contain a color name', () => {
-      const src = 'let s = ${ stroke: tomatoJuice; };';
+      const src = 'let s = #{ stroke: tomatoJuice; };';
       expect(mountedRanges(src)).toEqual([]);
     });
 
     it('does not chip identifiers on non-color properties (variable references)', () => {
       // `card` is a Pathogen variable holding a filter — rewriting it as a
       // named color would corrupt the program.
-      const src = 'let s = ${ filter: card; font-family: serif; };';
+      const src = 'let s = #{ filter: card; font-family: serif; };';
       expect(mountedRanges(src)).toEqual([]);
     });
 
     it('does not chip none/inherit/currentColor', () => {
-      const src = 'let s = ${ stroke: none; fill: currentColor; };';
+      const src = 'let s = #{ stroke: none; fill: currentColor; };';
       expect(mountedRanges(src)).toEqual([]);
     });
 
     it('does not chip variable references inside function args', () => {
-      const src = 'let s = ${ filter: drop-shadow(4px 4px 4px shadowColor); };';
+      const src = 'let s = #{ filter: drop-shadow(4px 4px 4px shadowColor); };';
       expect(mountedRanges(src)).toEqual([]);
     });
 
     it('chips template-free multi-value declarations without false positives', () => {
-      const src = 'let s = ${ stroke-dasharray: 4 1 2 3; font-family: "Inter", serif; };';
+      const src = 'let s = #{ stroke-dasharray: 4 1 2 3; font-family: "Inter", serif; };';
       expect(mountedRanges(src)).toEqual([]);
     });
 
     it('still detects colors outside style blocks in the same document', () => {
-      const src = 'let c = #00ff00;\nlet s = ${ filter: drop-shadow(1px 1px #c00); };';
+      const src = 'let c = #00ff00;\nlet s = #{ filter: drop-shadow(1px 1px #c00); };';
       const r = mountedRanges(src);
       expect(r.map((x) => x.color)).toEqual(['#00ff00', '#c00']);
     });

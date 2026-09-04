@@ -161,8 +161,11 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       continue;
     }
 
-    // Hash — color literal
+    // Hash — color literal. A bare '#' with no hex digit after it is not a
+    // color (it is the `#{` style-block opener, or a typo) and must not be
+    // swallowed into the path arguments.
     if (ch === 35) { // '#'
+      if (!isHexDigit(input.peek(1))) break;
       input.advance();
       consumed++;
       while (input.next !== -1 && isHexDigit(input.next)) {

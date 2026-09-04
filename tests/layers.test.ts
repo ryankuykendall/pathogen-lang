@@ -7,7 +7,7 @@ describe('Multi-Layer Support', () => {
   describe('layer definitions', () => {
     it('defines a single PathLayer', () => {
       const result = compile(`
-        define PathLayer('main') \${}
+        define PathLayer('main') #{}
         layer('main').apply { M 10 20 }
       `);
       expect(result.layers).toHaveLength(1);
@@ -18,7 +18,7 @@ describe('Multi-Layer Support', () => {
 
     it('defines a default PathLayer', () => {
       const result = compile(`
-        define default PathLayer('main') \${ stroke: #cc0000; }
+        define default PathLayer('main') #{ stroke: #cc0000; }
         M 10 20
       `);
       expect(result.layers).toHaveLength(1);
@@ -29,8 +29,8 @@ describe('Multi-Layer Support', () => {
 
     it('defines multiple layers', () => {
       const result = compile(`
-        define default PathLayer('main') \${ stroke: #cc0000; stroke-width: 4; }
-        define PathLayer('overlay') \${ stroke: #0000cc; }
+        define default PathLayer('main') #{ stroke: #cc0000; stroke-width: 4; }
+        define PathLayer('overlay') #{ stroke: #0000cc; }
         M 10 10 h 20 v 20 z
         layer('overlay').apply { M 30 30 v 20 h 20 z }
       `);
@@ -44,9 +44,9 @@ describe('Multi-Layer Support', () => {
 
     it('layers appear in definition order', () => {
       const result = compile(`
-        define PathLayer('alpha') \${}
-        define PathLayer('beta') \${}
-        define PathLayer('gamma') \${}
+        define PathLayer('alpha') #{}
+        define PathLayer('beta') #{}
+        define PathLayer('gamma') #{}
         layer('beta').apply { M 1 0 }
         layer('gamma').apply { M 2 0 }
         layer('alpha').apply { M 0 0 }
@@ -58,7 +58,7 @@ describe('Multi-Layer Support', () => {
   describe('style properties', () => {
     it('parses stroke style', () => {
       const result = compile(`
-        define PathLayer('main') \${ stroke: #cc0000; }
+        define PathLayer('main') #{ stroke: #cc0000; }
         layer('main').apply { M 0 0 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: '#cc0000' });
@@ -66,7 +66,7 @@ describe('Multi-Layer Support', () => {
 
     it('parses multiple styles', () => {
       const result = compile(`
-        define PathLayer('main') \${
+        define PathLayer('main') #{
           stroke: #cc0000;
           stroke-width: 4;
           fill: none;
@@ -84,7 +84,7 @@ describe('Multi-Layer Support', () => {
 
     it('ignores comments in style blocks', () => {
       const result = compile(`
-        define PathLayer('main') \${
+        define PathLayer('main') #{
           // This is a comment
           stroke: red;
           // Another comment
@@ -97,7 +97,7 @@ describe('Multi-Layer Support', () => {
 
     it('handles empty style block', () => {
       const result = compile(`
-        define PathLayer('main') \${}
+        define PathLayer('main') #{}
         layer('main').apply { M 0 0 }
       `);
       expect(result.layers[0].styles).toEqual({});
@@ -107,8 +107,8 @@ describe('Multi-Layer Support', () => {
   describe('layer apply blocks', () => {
     it('routes commands to the specified layer', () => {
       const result = compile(`
-        define PathLayer('a') \${}
-        define PathLayer('b') \${}
+        define PathLayer('a') #{}
+        define PathLayer('b') #{}
         layer('a').apply { M 1 1 L 2 2 }
         layer('b').apply { M 3 3 L 4 4 }
       `);
@@ -118,7 +118,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports loops inside apply blocks', () => {
       const result = compile(`
-        define PathLayer('dots') \${}
+        define PathLayer('dots') #{}
         layer('dots').apply {
           for (i in 0..3) {
             M calc(i * 10) 0
@@ -130,7 +130,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports conditionals inside apply blocks', () => {
       const result = compile(`
-        define PathLayer('main') \${}
+        define PathLayer('main') #{}
         layer('main').apply {
           if (1) { M 10 10 } else { M 20 20 }
         }
@@ -140,7 +140,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports function calls inside apply blocks', () => {
       const result = compile(`
-        define PathLayer('main') \${}
+        define PathLayer('main') #{}
         fn box(x, y) { M x y h 10 v 10 h -10 z }
         layer('main').apply { box(5, 5); }
       `);
@@ -149,7 +149,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports variable-based apply blocks', () => {
       const result = compile(`
-        let p = PathLayer('main') \${};
+        let p = PathLayer('main') #{};
         p.apply { M 10 20 L 30 40 }
       `);
       expect(result.layers[0].name).toBe('main');
@@ -158,7 +158,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports comments inside apply blocks', () => {
       const result = compile(`
-        define PathLayer('main') \${}
+        define PathLayer('main') #{}
         layer('main').apply {
           // first command
           M 0 0
@@ -173,8 +173,8 @@ describe('Multi-Layer Support', () => {
   describe('default layer routing', () => {
     it('routes bare commands to default layer', () => {
       const result = compile(`
-        define default PathLayer('bg') \${ stroke: gray; }
-        define PathLayer('fg') \${ stroke: black; }
+        define default PathLayer('bg') #{ stroke: gray; }
+        define PathLayer('fg') #{ stroke: black; }
         M 10 10 L 20 20
         layer('fg').apply { M 30 30 L 40 40 }
       `);
@@ -186,7 +186,7 @@ describe('Multi-Layer Support', () => {
 
     it('bare commands without default layer create implicit default', () => {
       const result = compile(`
-        define PathLayer('overlay') \${}
+        define PathLayer('overlay') #{}
         M 10 10
         layer('overlay').apply { M 20 20 }
       `);
@@ -211,8 +211,8 @@ describe('Multi-Layer Support', () => {
   describe('context isolation', () => {
     it('each layer has its own path context', () => {
       const result = compileWithContext(`
-        define PathLayer('a') \${}
-        define PathLayer('b') \${}
+        define PathLayer('a') #{}
+        define PathLayer('b') #{}
         layer('a').apply { M 100 100 L 200 200 }
         layer('b').apply { M 0 0 L 50 50 }
       `);
@@ -222,7 +222,7 @@ describe('Multi-Layer Support', () => {
 
     it('layer().ctx returns layer-specific context', () => {
       const result = compileWithContext(`
-        define PathLayer('main') \${}
+        define PathLayer('main') #{}
         layer('main').apply { M 100 100 L 200 200 }
         log(layer('main').ctx.position.x);
         log(layer('main').ctx.position.y);
@@ -234,7 +234,7 @@ describe('Multi-Layer Support', () => {
 
     it('ctx updates within apply block reflect the layer context', () => {
       const result = compileWithContext(`
-        define PathLayer('main') \${}
+        define PathLayer('main') #{}
         layer('main').apply {
           M 50 50
           L calc(ctx.position.x + 10) calc(ctx.position.y + 10)
@@ -247,7 +247,7 @@ describe('Multi-Layer Support', () => {
   describe('layer() function', () => {
     it('returns a LayerReference', () => {
       const result = compileWithContext(`
-        define PathLayer('test') \${}
+        define PathLayer('test') #{}
         layer('test').apply { M 10 10 }
         log(layer('test').name);
       `);
@@ -256,7 +256,7 @@ describe('Multi-Layer Support', () => {
 
     it('layer().ctx works', () => {
       const result = compileWithContext(`
-        define PathLayer('test') \${}
+        define PathLayer('test') #{}
         layer('test').apply { M 42 99 }
         log(layer('test').ctx.position.x);
       `);
@@ -267,8 +267,8 @@ describe('Multi-Layer Support', () => {
   describe('compileWithContext with layers', () => {
     it('returns layers in result', () => {
       const result = compileWithContext(`
-        define default PathLayer('main') \${ stroke: red; }
-        define PathLayer('outline') \${ stroke: black; stroke-width: 2; }
+        define default PathLayer('main') #{ stroke: red; }
+        define PathLayer('outline') #{ stroke: black; stroke-width: 2; }
         M 10 10 L 20 20
         layer('outline').apply { M 0 0 L 100 100 }
       `);
@@ -282,7 +282,7 @@ describe('Multi-Layer Support', () => {
 
     it('path property returns first layer data', () => {
       const result = compileWithContext(`
-        define default PathLayer('main') \${}
+        define default PathLayer('main') #{}
         M 10 20
       `);
       expect(result.path).toBe('M 10 20');
@@ -293,7 +293,7 @@ describe('Multi-Layer Support', () => {
     it('supports variable as layer name', () => {
       const result = compile(`
         let name = 'myLayer';
-        define PathLayer(name) \${}
+        define PathLayer(name) #{}
         layer(name).apply { M 10 10 }
       `);
       expect(result.layers[0].name).toBe('myLayer');
@@ -305,8 +305,8 @@ describe('Multi-Layer Support', () => {
     it('throws on duplicate layer name', () => {
       expect(() =>
         compile(`
-        define PathLayer('main') \${}
-        define PathLayer('main') \${}
+        define PathLayer('main') #{}
+        define PathLayer('main') #{}
       `),
       ).toThrow("Duplicate layer name: 'main'");
     });
@@ -314,8 +314,8 @@ describe('Multi-Layer Support', () => {
     it('throws on multiple default layers', () => {
       expect(() =>
         compile(`
-        define default PathLayer('a') \${}
-        define default PathLayer('b') \${}
+        define default PathLayer('a') #{}
+        define default PathLayer('b') #{}
       `),
       ).toThrow("Cannot define multiple default layers. 'a' is already the default");
     });
@@ -323,8 +323,8 @@ describe('Multi-Layer Support', () => {
     it('throws on nested apply blocks', () => {
       expect(() =>
         compile(`
-        define PathLayer('a') \${}
-        define PathLayer('b') \${}
+        define PathLayer('a') #{}
+        define PathLayer('b') #{}
         layer('a').apply {
           layer('b').apply { M 0 0 }
         }
@@ -351,7 +351,7 @@ describe('Multi-Layer Support', () => {
     it('throws on non-string layer name in define', () => {
       expect(() =>
         compile(`
-        define PathLayer(42) \${}
+        define PathLayer(42) #{}
       `),
       ).toThrow('Layer name must be a string');
     });
@@ -359,7 +359,7 @@ describe('Multi-Layer Support', () => {
     it('throws on non-string layer name in apply', () => {
       expect(() =>
         compile(`
-        define PathLayer('test') \${}
+        define PathLayer('test') #{}
         layer(42).apply { M 0 0 }
       `),
       ).toThrow('layer apply target must be a string or layer reference');
@@ -367,7 +367,7 @@ describe('Multi-Layer Support', () => {
 
     it('allows TextLayer definitions', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].type).toBe('text');
@@ -377,7 +377,7 @@ describe('Multi-Layer Support', () => {
     it('throws when path commands target a TextLayer apply block', () => {
       expect(() =>
         compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply { M 10 20 }
       `),
       ).toThrow('Path commands cannot be used inside a TextLayer apply block');
@@ -386,7 +386,7 @@ describe('Multi-Layer Support', () => {
     it('throws when bare path commands route to default TextLayer', () => {
       expect(() =>
         compile(`
-        define default TextLayer('labels') \${}
+        define default TextLayer('labels') #{}
         M 10 20
       `),
       ).toThrow('Path commands cannot be routed to a TextLayer');
@@ -403,7 +403,7 @@ describe('Multi-Layer Support', () => {
     it('throws when text() is used inside a PathLayer apply block', () => {
       expect(() =>
         compile(`
-        define PathLayer('main') \${}
+        define PathLayer('main') #{}
         layer('main').apply { text(10, 20)\`hello\` }
       `),
       ).toThrow('text() can only be used inside a TextLayer apply block');
@@ -413,7 +413,7 @@ describe('Multi-Layer Support', () => {
   describe('TextLayer', () => {
     it('creates a TextLayer with inline text', () => {
       const result = compile(`
-        define TextLayer('labels') \${ font-size: 14; }
+        define TextLayer('labels') #{ font-size: 14; }
         layer('labels').apply {
           text(10, 20)\`Hello\`
         }
@@ -434,7 +434,7 @@ describe('Multi-Layer Support', () => {
 
     it('creates text with rotation in degrees', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(50, 45, 30deg)\`Rotated\`
         }
@@ -447,7 +447,7 @@ describe('Multi-Layer Support', () => {
 
     it('creates text with rotation in radians (default)', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(50, 45, 0.5pi)\`Rotated\`
         }
@@ -458,7 +458,7 @@ describe('Multi-Layer Support', () => {
 
     it('creates text with template literal interpolation', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         let name = "World";
         layer('labels').apply {
           text(10, 20)\`Hello \${name}!\`
@@ -470,7 +470,7 @@ describe('Multi-Layer Support', () => {
 
     it('creates text with block form and tspans', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20) {
             \`Hello \`
@@ -489,7 +489,7 @@ describe('Multi-Layer Support', () => {
 
     it('creates tspan with only dx/dy', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20) {
             tspan()\`first\`
@@ -506,7 +506,7 @@ describe('Multi-Layer Support', () => {
 
     it('data field contains concatenated plain text', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20)\`Hello\`
           text(50, 60)\`World\`
@@ -517,7 +517,7 @@ describe('Multi-Layer Support', () => {
 
     it('accepts optional trailing semicolon on text statements', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20)\`Hello\`;
           text(50, 60)\`World\`;
@@ -530,8 +530,8 @@ describe('Multi-Layer Support', () => {
 
     it('mixes PathLayer and TextLayer', () => {
       const result = compile(`
-        define default PathLayer('shape') \${ stroke: #333; fill: none; }
-        define TextLayer('labels') \${ font-size: 14; fill: #333; }
+        define default PathLayer('shape') #{ stroke: #333; fill: none; }
+        define TextLayer('labels') #{ font-size: 14; fill: #333; }
         M 50 50 L 150 80
         layer('labels').apply {
           text(50, 45)\`Start\`
@@ -547,8 +547,8 @@ describe('Multi-Layer Support', () => {
 
     it('TextLayer can be the default layer', () => {
       const result = compile(`
-        define default TextLayer('labels') \${}
-        define PathLayer('lines') \${}
+        define default TextLayer('labels') #{}
+        define PathLayer('lines') #{}
         layer('lines').apply { M 10 20 }
         layer('labels').apply { text(10, 20)\`hello\` }
       `);
@@ -559,7 +559,7 @@ describe('Multi-Layer Support', () => {
 
     it('uses variables and expressions in text position', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         let x = 10;
         let y = 20;
         layer('labels').apply {
@@ -573,7 +573,7 @@ describe('Multi-Layer Support', () => {
 
     it('uses for loop inside TextLayer apply block', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           for (i in 0..2) {
             text(calc(i * 50), 20)\`item \${i}\`
@@ -589,7 +589,7 @@ describe('Multi-Layer Support', () => {
     it('supports member expression args in text() inside for loop', () => {
       const result = compile(`
         let points = [{ x: 10, y: 20 }, { x: 30, y: 40 }];
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           for ([p, idx] in points) {
             text(p.x, p.y)\`pt\${idx}\`
@@ -607,7 +607,7 @@ describe('Multi-Layer Support', () => {
   describe('for/if/let inside text blocks', () => {
     it('supports for loop inside text block to generate tspans', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(100, 100) {
             for (i in 0..2) {
@@ -626,7 +626,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports if statement inside text block', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20) {
             if (1) {
@@ -644,7 +644,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports if-else inside text block (false branch)', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20) {
             if (0) {
@@ -662,7 +662,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports let declaration inside text block', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20) {
             let prefix = "item";
@@ -679,7 +679,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports nested for loop inside text block', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20) {
             for (row in 0..1) {
@@ -700,7 +700,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports mixed content with for loops in text block', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20) {
             \`Header\`
@@ -723,7 +723,7 @@ describe('Multi-Layer Support', () => {
   describe('style block integration', () => {
     it('layer with style variable', () => {
       const result = compile(`
-        let styles = \${ stroke: #cc0000; stroke-width: 3; fill: none; };
+        let styles = #{ stroke: #cc0000; stroke-width: 3; fill: none; };
         define PathLayer('outline') styles
         layer('outline').apply { M 10 10 L 90 90 }
       `);
@@ -737,8 +737,8 @@ describe('Multi-Layer Support', () => {
 
     it('layer with merged style expression', () => {
       const result = compile(`
-        let base = \${ stroke: black; stroke-width: 1; };
-        define PathLayer('custom') base << \${ stroke-width: 4; fill: none; }
+        let base = #{ stroke: black; stroke-width: 1; };
+        define PathLayer('custom') base << #{ stroke-width: 4; fill: none; }
         layer('custom').apply { M 0 0 H 100 }
       `);
       expect(result.layers[0].styles).toEqual({
@@ -750,8 +750,8 @@ describe('Multi-Layer Support', () => {
 
     it('text element with per-element styles', () => {
       const result = compile(`
-        define TextLayer('labels') \${ font-size: 14; }
-        let bold = \${ font-weight: bold; };
+        define TextLayer('labels') #{ font-size: 14; }
+        let bold = #{ font-weight: bold; };
         layer('labels').apply {
           text(10, 20, 0, bold)\`Hello\`
         }
@@ -762,10 +762,10 @@ describe('Multi-Layer Support', () => {
 
     it('tspan with per-element styles', () => {
       const result = compile(`
-        define TextLayer('labels') \${ font-size: 14; }
+        define TextLayer('labels') #{ font-size: 14; }
         layer('labels').apply {
           text(10, 20) {
-            tspan(0, 0, 0, \${ fill: red; })\`colored\`
+            tspan(0, 0, 0, #{ fill: red; })\`colored\`
           }
         }
       `);
@@ -779,7 +779,7 @@ describe('Multi-Layer Support', () => {
 
     it('empty style block in layer definition', () => {
       const result = compile(`
-        define PathLayer('bare') \${}
+        define PathLayer('bare') #{}
         layer('bare').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers[0].styles).toEqual({});
@@ -788,10 +788,10 @@ describe('Multi-Layer Support', () => {
 
     it('style block property access returns string values', () => {
       const result = compile(`
-        let s = \${ stroke-width: 5; fill: none; };
+        let s = #{ stroke-width: 5; fill: none; };
         log(s.strokeWidth);
         log(s.fill);
-        define default PathLayer('d') \${ stroke: black; }
+        define default PathLayer('d') #{ stroke: black; }
         M 0 0
       `);
       expect(result.logs[0].parts[0].value).toBe('5');
@@ -803,7 +803,7 @@ describe('Multi-Layer Support', () => {
     describe('translate', () => {
       it('sets translate transform on a layer', () => {
         const result = compile(`
-          define PathLayer('main') \${ stroke: red; }
+          define PathLayer('main') #{ stroke: red; }
           layer('main').ctx.transform.translate.set(50, 50);
           layer('main').apply { M 0 0 L 100 0 }
         `);
@@ -812,7 +812,7 @@ describe('Multi-Layer Support', () => {
 
       it('reads translate values', () => {
         const result = compileWithContext(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.translate.set(30, 40);
           log(layer('main').ctx.transform.translate.x);
           log(layer('main').ctx.transform.translate.y);
@@ -823,7 +823,7 @@ describe('Multi-Layer Support', () => {
 
       it('returns 0 for unset translate', () => {
         const result = compileWithContext(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           log(layer('main').ctx.transform.translate.x);
           log(layer('main').ctx.transform.translate.y);
         `);
@@ -833,7 +833,7 @@ describe('Multi-Layer Support', () => {
 
       it('resets translate', () => {
         const result = compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.translate.set(50, 50);
           layer('main').ctx.transform.translate.reset();
           layer('main').apply { M 0 0 }
@@ -845,7 +845,7 @@ describe('Multi-Layer Support', () => {
     describe('rotate', () => {
       it('sets rotate transform (angle only)', () => {
         const result = compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.rotate.set(calc(PI() / 4));
           layer('main').apply { M 0 0 L 100 0 }
         `);
@@ -854,7 +854,7 @@ describe('Multi-Layer Support', () => {
 
       it('sets rotate with origin', () => {
         const result = compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.rotate.set(calc(PI() / 2), 50, 50);
           layer('main').apply { M 0 0 }
         `);
@@ -863,7 +863,7 @@ describe('Multi-Layer Support', () => {
 
       it('reads rotate values', () => {
         const result = compileWithContext(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.rotate.set(calc(PI() / 4), 10, 20);
           log(layer('main').ctx.transform.rotate.angle);
           log(layer('main').ctx.transform.rotate.cx);
@@ -876,7 +876,7 @@ describe('Multi-Layer Support', () => {
 
       it('returns 0 for unset rotate angle', () => {
         const result = compileWithContext(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           log(layer('main').ctx.transform.rotate.angle);
         `);
         expect(result.logs[0].parts[0].value).toBe('0');
@@ -886,7 +886,7 @@ describe('Multi-Layer Support', () => {
     describe('scale', () => {
       it('sets scale transform', () => {
         const result = compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.scale.set(2, 3);
           layer('main').apply { M 0 0 }
         `);
@@ -895,7 +895,7 @@ describe('Multi-Layer Support', () => {
 
       it('sets scale with origin', () => {
         const result = compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.scale.set(2, 2, 50, 50);
           layer('main').apply { M 0 0 }
         `);
@@ -904,7 +904,7 @@ describe('Multi-Layer Support', () => {
 
       it('reads scale values', () => {
         const result = compileWithContext(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.scale.set(2, 3);
           log(layer('main').ctx.transform.scale.x);
           log(layer('main').ctx.transform.scale.y);
@@ -915,7 +915,7 @@ describe('Multi-Layer Support', () => {
 
       it('returns 1 for unset scale', () => {
         const result = compileWithContext(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           log(layer('main').ctx.transform.scale.x);
           log(layer('main').ctx.transform.scale.y);
         `);
@@ -927,7 +927,7 @@ describe('Multi-Layer Support', () => {
     describe('combined transforms', () => {
       it('applies translate + rotate + scale in SVG order', () => {
         const result = compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.translate.set(10, 20);
           layer('main').ctx.transform.rotate.set(calc(PI() / 2));
           layer('main').ctx.transform.scale.set(2, 2);
@@ -940,7 +940,7 @@ describe('Multi-Layer Support', () => {
     describe('reset all transforms', () => {
       it('clears all transforms with transform.reset()', () => {
         const result = compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.translate.set(50, 50);
           layer('main').ctx.transform.rotate.set(1);
           layer('main').ctx.transform.scale.set(2, 2);
@@ -974,7 +974,7 @@ describe('Multi-Layer Support', () => {
     describe('inside apply block', () => {
       it('ctx.transform inside apply block sets that layer transform', () => {
         const result = compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').apply {
             ctx.transform.translate.set(10, 20);
             M 0 0 L 50 50
@@ -987,8 +987,8 @@ describe('Multi-Layer Support', () => {
     describe('per-layer isolation', () => {
       it('each layer has independent transforms', () => {
         const result = compile(`
-          define PathLayer('a') \${}
-          define PathLayer('b') \${}
+          define PathLayer('a') #{}
+          define PathLayer('b') #{}
           layer('a').ctx.transform.translate.set(10, 10);
           layer('b').ctx.transform.scale.set(2, 2);
           layer('a').apply { M 0 0 }
@@ -1002,7 +1002,7 @@ describe('Multi-Layer Support', () => {
     describe('no transform set', () => {
       it('transform is undefined when not set', () => {
         const result = compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').apply { M 0 0 L 100 0 }
         `);
         expect(result.layers[0].transform).toBeUndefined();
@@ -1018,7 +1018,7 @@ describe('Multi-Layer Support', () => {
       it('throws on wrong number of translate.set args', () => {
         expect(() =>
           compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.translate.set(50);
         `),
         ).toThrow('translate.set() expects 2 arguments');
@@ -1027,7 +1027,7 @@ describe('Multi-Layer Support', () => {
       it('throws on wrong number of rotate.set args', () => {
         expect(() =>
           compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.rotate.set(1, 2);
         `),
         ).toThrow('rotate.set() expects 1 or 3 arguments');
@@ -1036,7 +1036,7 @@ describe('Multi-Layer Support', () => {
       it('throws on wrong number of scale.set args', () => {
         expect(() =>
           compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.scale.set(2);
         `),
         ).toThrow('scale.set() expects 2 or 4 arguments');
@@ -1045,7 +1045,7 @@ describe('Multi-Layer Support', () => {
       it('throws on non-numeric transform arguments', () => {
         expect(() =>
           compile(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           layer('main').ctx.transform.translate.set("a", "b");
         `),
         ).toThrow('arguments must be numbers');
@@ -1054,7 +1054,7 @@ describe('Multi-Layer Support', () => {
       it('throws on invalid transform property', () => {
         expect(() =>
           compileWithContext(`
-          define PathLayer('main') \${}
+          define PathLayer('main') #{}
           log(layer('main').ctx.transform.skew);
         `),
         ).toThrow('does not exist on transform');
@@ -1114,10 +1114,10 @@ describe('Multi-Layer Support', () => {
 
     it('respects layer ordering', () => {
       const result = compile(`
-        define PathLayer('bg') \${}
+        define PathLayer('bg') #{}
         let frag = SVGDocumentFragment(\`<rect width="100" height="100"/>\`);
         frag.insert();
-        define PathLayer('fg') \${}
+        define PathLayer('fg') #{}
         layer('bg').apply { M 0 0 }
         layer('fg').apply { M 10 10 }
       `);
@@ -1193,7 +1193,7 @@ describe('Multi-Layer Support', () => {
     it('style auto-wrapping: mask property gets url(#...) wrapper', () => {
       const result = compile(`
         let m = Mask('alpha-mask');
-        define PathLayer('art') \${ mask: m.id; }
+        define PathLayer('art') #{ mask: m.id; }
         layer('art').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers.find((l) => l.name === 'art')!.styles.mask).toBe('url(#alpha-mask)');
@@ -1202,7 +1202,7 @@ describe('Multi-Layer Support', () => {
     it('style auto-wrapping: clip-path property gets url(#...) wrapper', () => {
       const result = compile(`
         let c = ClipPath('clip-id');
-        define PathLayer('scene') \${ clip-path: c.id; }
+        define PathLayer('scene') #{ clip-path: c.id; }
         layer('scene').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers.find((l) => l.name === 'scene')!.styles['clip-path']).toBe('url(#clip-id)');
@@ -1210,7 +1210,7 @@ describe('Multi-Layer Support', () => {
 
     it('does not double-wrap values that already start with url(', () => {
       const result = compile(`
-        define PathLayer('art') \${ mask: url(#existing); }
+        define PathLayer('art') #{ mask: url(#existing); }
         layer('art').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers.find((l) => l.name === 'art')!.styles.mask).toBe('url(#existing)');
@@ -1220,7 +1220,7 @@ describe('Multi-Layer Support', () => {
       const result = compile(`
         let p = @{ m 0 0 l 50 50 };
         let m = Mask('test');
-        m.append(p, \${ fill: white; });
+        m.append(p, #{ fill: white; });
       `);
       expect(result.masks).toHaveLength(1);
       expect(result.masks[0].elements).toHaveLength(1);
@@ -1233,7 +1233,7 @@ describe('Multi-Layer Support', () => {
         let p = @{ m 0 0 l 50 50 };
         let proj = p.project(10, 20);
         let m = Mask('proj-mask');
-        m.append(proj, \${ fill: black; });
+        m.append(proj, #{ fill: black; });
       `);
       expect(result.masks[0].elements).toHaveLength(1);
       expect(result.masks[0].elements[0].pathData).toBe('M 10 20 L 60 70');
@@ -1245,8 +1245,8 @@ describe('Multi-Layer Support', () => {
         let p1 = @{ m 0 0 l 100 0 l 0 100 z };
         let p2 = @{ m 50 50 l 20 0 l 0 20 z };
         let m = Mask('multi');
-        m.append(p1, \${ fill: white; });
-        m.append(p2, \${ fill: black; });
+        m.append(p1, #{ fill: white; });
+        m.append(p2, #{ fill: black; });
       `);
       expect(result.masks[0].elements).toHaveLength(2);
       expect(result.masks[0].elements[0].styles.fill).toBe('white');
@@ -1347,10 +1347,10 @@ describe('Multi-Layer Support', () => {
         let maskShape = @{ m 0 0 l 200 0 l 0 200 l -200 0 z };
         let cutout = @{ m 50 50 l 100 0 l 0 100 l -100 0 z };
         let m = Mask('reveal');
-        m.append(maskShape, \${ fill: white; });
-        m.append(cutout, \${ fill: black; });
+        m.append(maskShape, #{ fill: white; });
+        m.append(cutout, #{ fill: black; });
 
-        define PathLayer('art') \${ mask: m.id; }
+        define PathLayer('art') #{ mask: m.id; }
         layer('art').apply { M 10 10 L 190 190 }
       `);
       expect(result.masks).toHaveLength(1);
@@ -1375,11 +1375,11 @@ describe('Multi-Layer Support', () => {
 
     it('auto-wrapping applies to filter, marker, marker-start, marker-mid, marker-end', () => {
       const result = compile(`
-        define PathLayer('f') \${ filter: blur-filter; }
-        define PathLayer('mk') \${ marker: arrowhead; }
-        define PathLayer('ms') \${ marker-start: arrow; }
-        define PathLayer('mm') \${ marker-mid: dot; }
-        define PathLayer('me') \${ marker-end: arrowhead; }
+        define PathLayer('f') #{ filter: blur-filter; }
+        define PathLayer('mk') #{ marker: arrowhead; }
+        define PathLayer('ms') #{ marker-start: arrow; }
+        define PathLayer('mm') #{ marker-mid: dot; }
+        define PathLayer('me') #{ marker-end: arrowhead; }
         layer('f').apply { M 0 0 }
         layer('mk').apply { M 0 0 }
         layer('ms').apply { M 0 0 }
@@ -1395,7 +1395,7 @@ describe('Multi-Layer Support', () => {
 
     it('does not auto-wrap CSS function values in filter', () => {
       const result = compile(`
-        define PathLayer('a') \${ filter: blur(10px); }
+        define PathLayer('a') #{ filter: blur(10px); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(10px)');
@@ -1403,7 +1403,7 @@ describe('Multi-Layer Support', () => {
 
     it('does not auto-wrap CSS function values in clip-path', () => {
       const result = compile(`
-        define PathLayer('a') \${ clip-path: circle(50%); }
+        define PathLayer('a') #{ clip-path: circle(50%); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles['clip-path']).toBe('circle(50%)');
@@ -1411,7 +1411,7 @@ describe('Multi-Layer Support', () => {
 
     it('does not auto-wrap chained CSS filter functions', () => {
       const result = compile(`
-        define PathLayer('a') \${ filter: blur(5px) brightness(1.2); }
+        define PathLayer('a') #{ filter: blur(5px) brightness(1.2); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(5px) brightness(1.2)');
@@ -1419,7 +1419,7 @@ describe('Multi-Layer Support', () => {
 
     it('does not auto-wrap drop-shadow CSS function', () => {
       const result = compile(`
-        define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px black); }
+        define PathLayer('a') #{ filter: drop-shadow(2px 2px 4px black); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('drop-shadow(2px 2px 4px black)');
@@ -1427,7 +1427,7 @@ describe('Multi-Layer Support', () => {
 
     it('resolves ColorLiteral inside drop-shadow', () => {
       const result = compile(`
-        define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px #ff0000); }
+        define PathLayer('a') #{ filter: drop-shadow(2px 2px 4px #ff0000); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('drop-shadow(2px 2px 4px #ff0000)');
@@ -1436,7 +1436,7 @@ describe('Multi-Layer Support', () => {
     it('resolves Color variable inside drop-shadow', () => {
       const result = compile(`
         let c = oklch(0.63 0.26 29);
-        define PathLayer('a') \${ filter: drop-shadow(4px 4px 8px c); }
+        define PathLayer('a') #{ filter: drop-shadow(4px 4px 8px c); }
         layer('a').apply { M 0 0 }
       `);
       const filter = result.layers.find((l) => l.name === 'a')!.styles.filter;
@@ -1446,7 +1446,7 @@ describe('Multi-Layer Support', () => {
     it('resolves CSSVar inside drop-shadow', () => {
       const result = compile(`
         let v = CSSVar('--shadow-color', #000);
-        define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px v); }
+        define PathLayer('a') #{ filter: drop-shadow(2px 2px 4px v); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
@@ -1458,7 +1458,7 @@ describe('Multi-Layer Support', () => {
       it('splices a template fragment with the unit outside', () => {
         const result = compile(`
           let softness = 1.5;
-          define PathLayer('a') \${ filter: blur(\`\${softness}\`px); }
+          define PathLayer('a') #{ filter: blur(\`\${softness}\`px); }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(1.5px)');
@@ -1467,7 +1467,7 @@ describe('Multi-Layer Support', () => {
       it('splices a template fragment with the unit inside', () => {
         const result = compile(`
           let softness = 1.5;
-          define PathLayer('a') \${ filter: blur(\`\${softness}px\`); }
+          define PathLayer('a') #{ filter: blur(\`\${softness}px\`); }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(1.5px)');
@@ -1475,7 +1475,7 @@ describe('Multi-Layer Support', () => {
 
       it('splices a fragment containing a function call (user repro shape)', () => {
         const result = compile(`
-          define PathLayer('a') \${ filter: blur(\`\${randomRange(1.1, 2.2)}\`px); }
+          define PathLayer('a') #{ filter: blur(\`\${randomRange(1.1, 2.2)}\`px); }
           layer('a').apply { M 0 0 }
         `);
         const filter = result.layers.find((l) => l.name === 'a')!.styles.filter!;
@@ -1488,7 +1488,7 @@ describe('Multi-Layer Support', () => {
         const result = compile(`
           let a = 2;
           let b = 1.2;
-          define PathLayer('a') \${ filter: blur(\`\${a}\`px) brightness(\`\${b}\`); }
+          define PathLayer('a') #{ filter: blur(\`\${a}\`px) brightness(\`\${b}\`); }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(2px) brightness(1.2)');
@@ -1497,7 +1497,7 @@ describe('Multi-Layer Support', () => {
       it('evaluates expressions inside fragments', () => {
         const result = compile(`
           let base = 2;
-          define PathLayer('a') \${ filter: blur(\`\${base * 2}\`px); }
+          define PathLayer('a') #{ filter: blur(\`\${base * 2}\`px); }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(4px)');
@@ -1506,7 +1506,7 @@ describe('Multi-Layer Support', () => {
       it('whole-value template still works (degenerate case)', () => {
         const result = compile(`
           let softness = 1.5;
-          define PathLayer('a') \${ filter: \`blur(\${softness}px)\`; }
+          define PathLayer('a') #{ filter: \`blur(\${softness}px)\`; }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(1.5px)');
@@ -1515,7 +1515,7 @@ describe('Multi-Layer Support', () => {
       it('substitutes a numeric variable as a function argument', () => {
         const result = compile(`
           let level = 1.4;
-          define PathLayer('a') \${ filter: brightness(level); }
+          define PathLayer('a') #{ filter: brightness(level); }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('brightness(1.4)');
@@ -1525,7 +1525,7 @@ describe('Multi-Layer Support', () => {
         const result = compile(`
           let level = 0.8;
           let c = CSSVar('--shadow', #000);
-          define PathLayer('a') \${ filter: opacity(level) drop-shadow(2px 2px 4px c); }
+          define PathLayer('a') #{ filter: opacity(level) drop-shadow(2px 2px 4px c); }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
@@ -1537,7 +1537,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
             let bad = "url(http://evil.example)";
-            define PathLayer('a') \${ filter: blur(2px) \`\${bad}\`; }
+            define PathLayer('a') #{ filter: blur(2px) \`\${bad}\`; }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/url\(\)|disallowed/);
@@ -1547,7 +1547,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
             let bad = "javascript:alert(1)";
-            define PathLayer('a') \${ filter: \`\${bad}\`; }
+            define PathLayer('a') #{ filter: \`\${bad}\`; }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow();
@@ -1556,7 +1556,7 @@ describe('Multi-Layer Support', () => {
       it('still rejects calc() in style values with the fix-it message', () => {
         expect(() =>
           compile(`
-            define PathLayer('a') \${ filter: blur(calc(1 + 1)px); }
+            define PathLayer('a') #{ filter: blur(calc(1 + 1)px); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/calc/);
@@ -1565,7 +1565,7 @@ describe('Multi-Layer Support', () => {
       it('errors clearly when a fragment expression fails to evaluate', () => {
         expect(() =>
           compile(`
-            define PathLayer('a') \${ filter: blur(\`\${nonexistent}\`px); }
+            define PathLayer('a') #{ filter: blur(\`\${nonexistent}\`px); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/nonexistent/);
@@ -1578,7 +1578,7 @@ describe('Multi-Layer Support', () => {
           compile(`
             let level = 1.5;
             let payload = "var(--evil-hack, 1)";
-            define PathLayer('a') \${ filter: \`\${payload}\` brightness(level); }
+            define PathLayer('a') #{ filter: \`\${payload}\` brightness(level); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/var\(\)|disallowed/);
@@ -1588,7 +1588,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
             let c = CSSVar('--shadow', #000);
-            define PathLayer('a') \${ filter: drop-shadow(2px 2px var(--evil,1) c); }
+            define PathLayer('a') #{ filter: drop-shadow(2px 2px var(--evil,1) c); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/var\(\)|disallowed/);
@@ -1599,7 +1599,7 @@ describe('Multi-Layer Support', () => {
         // substitution path must still succeed after the smuggling fix.
         const result = compile(`
           let v = CSSVar('--shadow', #000);
-          define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px v); }
+          define PathLayer('a') #{ filter: drop-shadow(2px 2px 4px v); }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
@@ -1613,7 +1613,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
             let v = CSSVar('--shadow', #000);
-            define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px \`\${v}\`); }
+            define PathLayer('a') #{ filter: drop-shadow(2px 2px 4px \`\${v}\`); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/disallowed token/);
@@ -1622,7 +1622,7 @@ describe('Multi-Layer Support', () => {
       it('preserves negated unit literals during numeric substitution', () => {
         const result = compile(`
           let level = 1.4;
-          define PathLayer('a') \${ filter: hue-rotate(-90deg) brightness(level); }
+          define PathLayer('a') #{ filter: hue-rotate(-90deg) brightness(level); }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
@@ -1636,7 +1636,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
             let tick = "a\\\`b";
-            define PathLayer('a') \${ filter: blur(\`\${tick}\`px); }
+            define PathLayer('a') #{ filter: blur(\`\${tick}\`px); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/disallowed/);
@@ -1646,7 +1646,7 @@ describe('Multi-Layer Support', () => {
         const result = compile(`
           let softness = 1.5;
           let level = 1.4;
-          define PathLayer('a') \${ filter: \`blur(\${softness}px) brightness(level)\`; }
+          define PathLayer('a') #{ filter: \`blur(\${softness}px) brightness(level)\`; }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
@@ -1657,7 +1657,7 @@ describe('Multi-Layer Support', () => {
 
     it('preserves CSS color names in drop-shadow without resolving', () => {
       const result = compile(`
-        define PathLayer('a') \${ filter: drop-shadow(2px 2px 4px blue); }
+        define PathLayer('a') #{ filter: drop-shadow(2px 2px 4px blue); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('drop-shadow(2px 2px 4px blue)');
@@ -1667,7 +1667,7 @@ describe('Multi-Layer Support', () => {
       it('rejects comma-separated drop-shadow args with a fix-it message', () => {
         expect(() =>
           compile(`
-            define PathLayer('a') \${ filter: drop-shadow(4px, 4px, 4px, #c00); }
+            define PathLayer('a') #{ filter: drop-shadow(4px, 4px, 4px, #c00); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/Line 2, col \d+: drop-shadow\(\) uses space-separated CSS syntax.*remove the commas/s);
@@ -1677,7 +1677,7 @@ describe('Multi-Layer Support', () => {
         expect(() =>
           compile(`
             let shadowColor = oklch(0.65 0.26 357);
-            define PathLayer('a') \${ filter: drop-shadow(4px, 4px, 4px, shadowColor); }
+            define PathLayer('a') #{ filter: drop-shadow(4px, 4px, 4px, shadowColor); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/drop-shadow\(\) uses space-separated CSS syntax/);
@@ -1686,7 +1686,7 @@ describe('Multi-Layer Support', () => {
       it('rejects commas in single-argument filter functions', () => {
         expect(() =>
           compile(`
-            define PathLayer('a') \${ filter: blur(2px, 3px); }
+            define PathLayer('a') #{ filter: blur(2px, 3px); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/blur\(\) takes a single value — commas are not allowed/);
@@ -1695,7 +1695,7 @@ describe('Multi-Layer Support', () => {
       it('rejects comma-chained filter functions', () => {
         expect(() =>
           compile(`
-            define PathLayer('a') \${ filter: blur(2px), brightness(1.2); }
+            define PathLayer('a') #{ filter: blur(2px), brightness(1.2); }
             layer('a').apply { M 0 0 }
           `),
         ).toThrow(/filter chains are space-separated: blur\(2px\) brightness\(1\.2\)/);
@@ -1703,7 +1703,7 @@ describe('Multi-Layer Support', () => {
 
       it('positions the error at the declaration value', () => {
         try {
-          compile(`define PathLayer('a') \${ filter: drop-shadow(1px, 1px, black); }\nlayer('a').apply { M 0 0 }`);
+          compile(`define PathLayer('a') #{ filter: drop-shadow(1px, 1px, black); }\nlayer('a').apply { M 0 0 }`);
           expect.unreachable('expected comma-form drop-shadow to throw');
         } catch (e) {
           // Value starts at 1-based column 34 of line 1: `drop-shadow(...)`
@@ -1713,7 +1713,7 @@ describe('Multi-Layer Support', () => {
 
       it('keeps nested commas in genuinely comma-separated functions legal', () => {
         const result = compile(`
-          define PathLayer('a') \${ filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5)); }
+          define PathLayer('a') #{ filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5)); }
           layer('a').apply { M 0 0 }
         `);
         expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe(
@@ -1723,7 +1723,7 @@ describe('Multi-Layer Support', () => {
 
       it('does not affect comma-taking functions on other properties', () => {
         const result = compile(`
-          define PathLayer('a') \${
+          define PathLayer('a') #{
             fill: color-mix(in oklch, red, blue);
             transform: translate(10px, 20px);
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -1742,7 +1742,7 @@ describe('Multi-Layer Support', () => {
     describe('CSS function argument units', () => {
       const styled = (decl: string): string | undefined => {
         const result = compile(`
-          define PathLayer('a') \${ ${decl} }
+          define PathLayer('a') #{ ${decl} }
           layer('a').apply { M 0 0 }
         `);
         const layer = result.layers.find((l) => l.name === 'a')!;
@@ -1878,7 +1878,7 @@ describe('Multi-Layer Support', () => {
           expect(() =>
             compile(`
               let amount = 4;
-              define PathLayer('a') \${ filter: blur(amount); }
+              define PathLayer('a') #{ filter: blur(amount); }
               layer('a').apply { M 0 0 }
             `),
           ).toThrow(/blur\(\) takes a length/);
@@ -1888,7 +1888,7 @@ describe('Multi-Layer Support', () => {
           expect(() =>
             compile(`
               let amount = 4;
-              define PathLayer('a') \${ filter: blur(\`\${amount}\`); }
+              define PathLayer('a') #{ filter: blur(\`\${amount}\`); }
               layer('a').apply { M 0 0 }
             `),
           ).toThrow(/blur\(\) takes a length/);
@@ -1897,7 +1897,7 @@ describe('Multi-Layer Support', () => {
         it('accepts the same variable with a spliced unit', () => {
           const result = compile(`
             let amount = 4;
-            define PathLayer('a') \${ filter: blur(\`\${amount}\`px); }
+            define PathLayer('a') #{ filter: blur(\`\${amount}\`px); }
             layer('a').apply { M 0 0 }
           `);
           expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(4px)');
@@ -1931,7 +1931,7 @@ describe('Multi-Layer Support', () => {
       it('reports the error with a source position', () => {
         expect(() =>
           compile(`
-            define PathLayer('a') \${
+            define PathLayer('a') #{
               filter: blur(4);
             }
             layer('a').apply { M 0 0 }
@@ -1942,7 +1942,7 @@ describe('Multi-Layer Support', () => {
 
       it('keeps font-family fallback lists legal', () => {
         const result = compile(`
-          define TextLayer('t') \${ font-family: "Inter", serif; }
+          define TextLayer('t') #{ font-family: "Inter", serif; }
           layer('t').apply { text(0, 0) \`hi\`; }
         `);
         expect(result.layers.find((l) => l.name === 't')!.styles['font-family']).toBe('"Inter", serif');
@@ -1952,7 +1952,7 @@ describe('Multi-Layer Support', () => {
     it('resolves Color in clip-path CSS function args', () => {
       // Not a typical use case, but verifies generality
       const result = compile(`
-        define PathLayer('a') \${ filter: blur(10px); }
+        define PathLayer('a') #{ filter: blur(10px); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers.find((l) => l.name === 'a')!.styles.filter).toBe('blur(10px)');
@@ -1960,7 +1960,7 @@ describe('Multi-Layer Support', () => {
 
     it('resolves color expression in PathLayer constructor style block', () => {
       const result = compile(`
-        let routeLayer = PathLayer('route-layer') \${
+        let routeLayer = PathLayer('route-layer') #{
           stroke: (rgba(0, 0, 200, 1).lighten(20%));
           stroke-width: 16;
           stroke-linecap: round;
@@ -1977,11 +1977,11 @@ describe('Multi-Layer Support', () => {
 
     it('parens and no-parens color expressions produce same result', () => {
       const withoutParens = compile(`
-        define PathLayer('a') \${ stroke: rgba(0, 0, 200, 1).lighten(20%); }
+        define PathLayer('a') #{ stroke: rgba(0, 0, 200, 1).lighten(20%); }
         layer('a').apply { M 0 0 }
       `);
       const withParens = compile(`
-        define PathLayer('b') \${ stroke: (rgba(0, 0, 200, 1).lighten(20%)); }
+        define PathLayer('b') #{ stroke: (rgba(0, 0, 200, 1).lighten(20%)); }
         layer('b').apply { M 0 0 }
       `);
       expect(withParens.layers[0].styles.stroke).toBe(withoutParens.layers[0].styles.stroke);
@@ -1991,7 +1991,7 @@ describe('Multi-Layer Support', () => {
   describe('dynamic layer constructors', () => {
     it('creates a PathLayer with style block via constructor', () => {
       const result = compile(`
-        let l = PathLayer('x') \${ stroke: red; fill: none; };
+        let l = PathLayer('x') #{ stroke: red; fill: none; };
         layer('x').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers).toHaveLength(1);
@@ -2016,7 +2016,7 @@ describe('Multi-Layer Support', () => {
     it('applies styles via << mutation', () => {
       const result = compile(`
         let l = PathLayer('x');
-        l << \${ stroke: red; };
+        l << #{ stroke: red; };
         layer('x').apply { M 0 0 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'red' });
@@ -2025,7 +2025,7 @@ describe('Multi-Layer Support', () => {
     it('chains << mutations', () => {
       const result = compile(`
         let l = PathLayer('x');
-        l << \${ stroke: red; } << \${ fill: blue; };
+        l << #{ stroke: red; } << #{ fill: blue; };
         layer('x').apply { M 0 0 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'red', fill: 'blue' });
@@ -2033,8 +2033,8 @@ describe('Multi-Layer Support', () => {
 
     it('supports .styles assignment with merge', () => {
       const result = compile(`
-        let l = PathLayer('x') \${ stroke: red; };
-        l.styles = l.styles << \${ fill: blue; };
+        let l = PathLayer('x') #{ stroke: red; };
+        l.styles = l.styles << #{ fill: blue; };
         layer('x').apply { M 0 0 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'red', fill: 'blue' });
@@ -2042,7 +2042,7 @@ describe('Multi-Layer Support', () => {
 
     it('reads .styles as StyleBlockValue copy', () => {
       const result = compile(`
-        let l = PathLayer('x') \${ stroke: red; };
+        let l = PathLayer('x') #{ stroke: red; };
         let s = l.styles;
         log(s.stroke);
       `);
@@ -2051,7 +2051,7 @@ describe('Multi-Layer Support', () => {
 
     it('creates a TextLayer via constructor', () => {
       const result = compile(`
-        let t = TextLayer('labels') \${ font-size: 14; font-family: monospace; };
+        let t = TextLayer('labels') #{ font-size: 14; font-family: monospace; };
         layer('labels').apply { text(0, 0)\`hi\` }
       `);
       expect(result.layers).toHaveLength(1);
@@ -2063,7 +2063,7 @@ describe('Multi-Layer Support', () => {
     it('resolves a bare identifier in a font-family style value', () => {
       const result = compile(`
         let f = "Noto Sans";
-        let t = TextLayer('labels') \${ font-family: f; font-weight: 900; };
+        let t = TextLayer('labels') #{ font-family: f; font-weight: 900; };
         layer('labels').apply { text(0, 0)\`hi\` }
       `);
       expect(result.layers[0].styles).toEqual({ 'font-family': 'Noto Sans', 'font-weight': '900' });
@@ -2072,7 +2072,7 @@ describe('Multi-Layer Support', () => {
     it('resolves a template-literal font-family style value', () => {
       const result = compile(`
         let f = "Noto Sans";
-        let t = TextLayer('labels') \${ font-family: \`\${f}\`; font-size: 16; };
+        let t = TextLayer('labels') #{ font-family: \`\${f}\`; font-size: 16; };
         layer('labels').apply { text(0, 0)\`hi\` }
       `);
       expect(result.layers[0].styles).toEqual({ 'font-family': 'Noto Sans', 'font-size': '16' });
@@ -2081,7 +2081,7 @@ describe('Multi-Layer Support', () => {
     it('keeps a double-quoted font-family value literal (no interpolation)', () => {
       const result = compile(`
         let f = "Noto Sans";
-        let t = TextLayer('labels') \${ font-family: "f"; };
+        let t = TextLayer('labels') #{ font-family: "f"; };
         layer('labels').apply { text(0, 0)\`hi\` }
       `);
       expect(result.layers[0].styles).toEqual({ 'font-family': 'f' });
@@ -2090,7 +2090,7 @@ describe('Multi-Layer Support', () => {
     it('rejects a remote url() on a single-line style block with a clean positioned error', () => {
       // `https://` contains `//` — must not be treated as a comment that
       // swallows the closing brace; the sanitizer must see the full value.
-      expect(() => compile('let s = ${ mask: url(https://evil.example/track); };')).toThrow(
+      expect(() => compile('let s = #{ mask: url(https://evil.example/track); };')).toThrow(
         /contains url\(\)/,
       );
     });
@@ -2099,7 +2099,7 @@ describe('Multi-Layer Support', () => {
       expect(() =>
         compile(`
           let f = "Noto Sans";
-          let t = TextLayer('labels') \${ font-family: "\${f}"; };
+          let t = TextLayer('labels') #{ font-family: "\${f}"; };
           layer('labels').apply { text(0, 0)\`hi\` }
         `),
       ).toThrow(/disallowed token/);
@@ -2107,8 +2107,8 @@ describe('Multi-Layer Support', () => {
 
     it('preserves definition order for multiple dynamic layers', () => {
       const result = compile(`
-        let pa = PathLayer('a') \${ stroke: red; };
-        let pb = PathLayer('b') \${ stroke: blue; };
+        let pa = PathLayer('a') #{ stroke: red; };
+        let pb = PathLayer('b') #{ stroke: blue; };
         layer('a').apply { M 0 0 }
         layer('b').apply { M 10 10 }
       `);
@@ -2119,8 +2119,8 @@ describe('Multi-Layer Support', () => {
 
     it('coexists with define layers', () => {
       const result = compile(`
-        define PathLayer('defined') \${ stroke: green; }
-        let dyn = PathLayer('dynamic') \${ stroke: red; };
+        define PathLayer('defined') #{ stroke: green; }
+        let dyn = PathLayer('dynamic') #{ stroke: red; };
         layer('defined').apply { M 0 0 }
         layer('dynamic').apply { M 10 10 }
       `);
@@ -2131,7 +2131,7 @@ describe('Multi-Layer Support', () => {
 
     it('layer() function works for dynamically-created layers', () => {
       const result = compile(`
-        let l = PathLayer('x') \${ stroke: red; };
+        let l = PathLayer('x') #{ stroke: red; };
         layer('x').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers[0].data).toBe('M 0 0 L 10 10');
@@ -2139,7 +2139,7 @@ describe('Multi-Layer Support', () => {
 
     it('layer().apply works for dynamically-created layers', () => {
       const result = compile(`
-        let l = PathLayer('myLayer') \${ stroke: blue; };
+        let l = PathLayer('myLayer') #{ stroke: blue; };
         layer('myLayer').apply { M 5 5 }
       `);
       expect(result.layers[0].name).toBe('myLayer');
@@ -2148,7 +2148,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports .name property on dynamic layer', () => {
       const result = compile(`
-        let l = PathLayer('test') \${};
+        let l = PathLayer('test') #{};
         log(l.name);
       `);
       expect(result.logs[0].parts[0].value).toBe('test');
@@ -2156,7 +2156,7 @@ describe('Multi-Layer Support', () => {
 
     it('supports .ctx property on dynamic PathLayer', () => {
       const result = compile(`
-        let l = PathLayer('test') \${};
+        let l = PathLayer('test') #{};
         layer('test').apply { M 50 60 }
         log(l.ctx.position.x, l.ctx.position.y);
       `);
@@ -2168,8 +2168,8 @@ describe('Multi-Layer Support', () => {
       it('rejects duplicate layer names (dynamic + dynamic)', () => {
         expect(() =>
           compile(`
-          let a = PathLayer('x') \${};
-          let b = PathLayer('x') \${};
+          let a = PathLayer('x') #{};
+          let b = PathLayer('x') #{};
         `),
         ).toThrow(/Duplicate layer name: 'x'/);
       });
@@ -2177,8 +2177,8 @@ describe('Multi-Layer Support', () => {
       it('rejects duplicate layer names (dynamic + define)', () => {
         expect(() =>
           compile(`
-          define PathLayer('x') \${ stroke: red; }
-          let b = PathLayer('x') \${};
+          define PathLayer('x') #{ stroke: red; }
+          let b = PathLayer('x') #{};
         `),
         ).toThrow(/Duplicate layer name: 'x'/);
       });
@@ -2211,7 +2211,7 @@ describe('Multi-Layer Support', () => {
       it('rejects << with non-StyleBlockValue right side on LayerReference', () => {
         expect(() =>
           compile(`
-          let l = PathLayer('x') \${};
+          let l = PathLayer('x') #{};
           l << 42;
         `),
         ).toThrow();
@@ -2220,7 +2220,7 @@ describe('Multi-Layer Support', () => {
       it('rejects .styles = non-style-block', () => {
         expect(() =>
           compile(`
-          let l = PathLayer('x') \${};
+          let l = PathLayer('x') #{};
           l.styles = 42;
         `),
         ).toThrow(/Layer styles must be a style block/);
@@ -2229,8 +2229,8 @@ describe('Multi-Layer Support', () => {
       it('rejects nested .apply blocks', () => {
         expect(() =>
           compile(`
-          let pa = PathLayer('a') \${};
-          let pb = PathLayer('b') \${};
+          let pa = PathLayer('a') #{};
+          let pb = PathLayer('b') #{};
           layer('a').apply {
             layer('b').apply { M 0 0 }
           }
@@ -2243,7 +2243,7 @@ describe('Multi-Layer Support', () => {
   describe('GroupLayer', () => {
     it('defines GroupLayer with style block via define', () => {
       const result = compile(`
-        define GroupLayer('panel') \${ opacity: 0.8; }
+        define GroupLayer('panel') #{ opacity: 0.8; }
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].name).toBe('panel');
@@ -2254,7 +2254,7 @@ describe('Multi-Layer Support', () => {
 
     it('creates GroupLayer via constructor expression', () => {
       const result = compile(`
-        let g = GroupLayer('g') \${ opacity: 0.5; };
+        let g = GroupLayer('g') #{ opacity: 0.5; };
       `);
       expect(result.layers).toHaveLength(1);
       expect(result.layers[0].type).toBe('group');
@@ -2264,15 +2264,15 @@ describe('Multi-Layer Support', () => {
     it('rejects define default GroupLayer', () => {
       expect(() =>
         compile(`
-        define default GroupLayer('g') \${}
+        define default GroupLayer('g') #{}
       `),
       ).toThrow(/GroupLayer cannot be the default layer/);
     });
 
     it('appends a PathLayer child', () => {
       const result = compile(`
-        let g = GroupLayer('panel') \${};
-        let bg = PathLayer('bg') \${ fill: #eee; };
+        let g = GroupLayer('panel') #{};
+        let bg = PathLayer('bg') #{ fill: #eee; };
         layer('bg').apply { M 0 0 L 100 0 }
         g.append(bg);
       `);
@@ -2286,9 +2286,9 @@ describe('Multi-Layer Support', () => {
 
     it('appends multiple children in order', () => {
       const result = compile(`
-        let g = GroupLayer('g') \${};
-        let a = PathLayer('a') \${};
-        let b = PathLayer('b') \${};
+        let g = GroupLayer('g') #{};
+        let a = PathLayer('a') #{};
+        let b = PathLayer('b') #{};
         g.append(a, b);
       `);
       expect(result.layers).toHaveLength(1);
@@ -2299,8 +2299,8 @@ describe('Multi-Layer Support', () => {
 
     it('appends a TextLayer child', () => {
       const result = compile(`
-        let g = GroupLayer('g') \${};
-        let t = TextLayer('label') \${ font-size: 14; fill: #333; };
+        let g = GroupLayer('g') #{};
+        let t = TextLayer('label') #{ font-size: 14; fill: #333; };
         layer('label').apply { text(10, 20)\`Hello\` }
         g.append(t);
       `);
@@ -2312,11 +2312,11 @@ describe('Multi-Layer Support', () => {
 
     it('nests groups: outer.append(inner)', () => {
       const result = compile(`
-        let inner = GroupLayer('inner') \${};
-        let child = PathLayer('child') \${};
+        let inner = GroupLayer('inner') #{};
+        let child = PathLayer('child') #{};
         layer('child').apply { M 5 5 }
         inner.append(child);
-        let outer = GroupLayer('outer') \${};
+        let outer = GroupLayer('outer') #{};
         outer.append(inner);
       `);
       expect(result.layers).toHaveLength(1);
@@ -2331,7 +2331,7 @@ describe('Multi-Layer Support', () => {
       // Build 11 levels of nesting
       let code = '';
       for (let i = 0; i < 12; i++) {
-        code += `let g${i} = GroupLayer('g${i}') \${};\n`;
+        code += `let g${i} = GroupLayer('g${i}') #{};\n`;
       }
       for (let i = 11; i > 0; i--) {
         code += `g${i - 1}.append(g${i});\n`;
@@ -2341,9 +2341,9 @@ describe('Multi-Layer Support', () => {
 
     it('removes appended layers from top-level result', () => {
       const result = compile(`
-        let g = GroupLayer('g') \${};
-        let a = PathLayer('a') \${};
-        let b = PathLayer('b') \${};
+        let g = GroupLayer('g') #{};
+        let a = PathLayer('a') #{};
+        let b = PathLayer('b') #{};
         g.append(a);
       `);
       // Top level: g and b (a is inside g)
@@ -2354,7 +2354,7 @@ describe('Multi-Layer Support', () => {
 
     it('applies style block transform', () => {
       const result = compile(`
-        let g = GroupLayer('panel') \${ transform: translate(100, 200); };
+        let g = GroupLayer('panel') #{ transform: translate(100, 200); };
       `);
       expect(result.layers[0].transform).toBe('translate(100, 200)');
       expect(result.layers[0].styles).not.toHaveProperty('transform');
@@ -2362,7 +2362,7 @@ describe('Multi-Layer Support', () => {
 
     it('applies imperative transform via ctx', () => {
       const result = compile(`
-        let g = GroupLayer('panel') \${};
+        let g = GroupLayer('panel') #{};
         g.ctx.transform.translate.set(50, 75);
       `);
       expect(result.layers[0].transform).toBe('translate(50, 75)');
@@ -2370,7 +2370,7 @@ describe('Multi-Layer Support', () => {
 
     it('style block transform takes precedence over imperative', () => {
       const result = compile(`
-        let g = GroupLayer('panel') \${ transform: scale(2, 2); };
+        let g = GroupLayer('panel') #{ transform: scale(2, 2); };
         g.ctx.transform.translate.set(50, 75);
       `);
       expect(result.layers[0].transform).toBe('scale(2, 2)');
@@ -2379,8 +2379,8 @@ describe('Multi-Layer Support', () => {
     it('throws on .append() on non-GroupLayer', () => {
       expect(() =>
         compile(`
-        let p = PathLayer('p') \${};
-        let q = PathLayer('q') \${};
+        let p = PathLayer('p') #{};
+        let q = PathLayer('q') #{};
         p.append(q);
       `),
       ).toThrow(/\.append\(\) is only available on GroupLayer/);
@@ -2389,7 +2389,7 @@ describe('Multi-Layer Support', () => {
     it('throws on .append() with non-layer argument', () => {
       expect(() =>
         compile(`
-        let g = GroupLayer('g') \${};
+        let g = GroupLayer('g') #{};
         g.append(42);
       `),
       ).toThrow(/\.append\(\) arguments must be layer references/);
@@ -2397,9 +2397,9 @@ describe('Multi-Layer Support', () => {
 
     it('moves layer from one group to another with warning log', () => {
       const result = compile(`
-        let g1 = GroupLayer('g1') \${};
-        let g2 = GroupLayer('g2') \${};
-        let child = PathLayer('child') \${};
+        let g1 = GroupLayer('g1') #{};
+        let g2 = GroupLayer('g2') #{};
+        let child = PathLayer('child') #{};
         g1.append(child);
         g2.append(child);
       `);
@@ -2415,7 +2415,7 @@ describe('Multi-Layer Support', () => {
     it('throws on appending a group to itself', () => {
       expect(() =>
         compile(`
-        let g = GroupLayer('g') \${};
+        let g = GroupLayer('g') #{};
         g.append(g);
       `),
       ).toThrow(/Cannot append group 'g' to itself/);
@@ -2423,8 +2423,8 @@ describe('Multi-Layer Support', () => {
 
     it('duplicate append to same group is a no-op', () => {
       const result = compile(`
-        let g = GroupLayer('g') \${};
-        let child = PathLayer('child') \${};
+        let g = GroupLayer('g') #{};
+        let child = PathLayer('child') #{};
         g.append(child);
         g.append(child);
       `);
@@ -2434,7 +2434,7 @@ describe('Multi-Layer Support', () => {
     it('rejects apply blocks on GroupLayer', () => {
       expect(() =>
         compile(`
-        let g = GroupLayer('g') \${};
+        let g = GroupLayer('g') #{};
         layer('g').apply { M 0 0 }
       `),
       ).toThrow(/GroupLayer does not support apply blocks/);
@@ -2442,7 +2442,7 @@ describe('Multi-Layer Support', () => {
 
     it('ctx.transform.rotate.set works on GroupLayer', () => {
       const result = compile(`
-        let g = GroupLayer('g') \${};
+        let g = GroupLayer('g') #{};
         g.ctx.transform.rotate.set(0.785);
       `);
       expect(result.layers[0].transform).toContain('rotate(');
@@ -2450,7 +2450,7 @@ describe('Multi-Layer Support', () => {
 
     it('ctx.transform.scale.set works on GroupLayer', () => {
       const result = compile(`
-        let g = GroupLayer('g') \${};
+        let g = GroupLayer('g') #{};
         g.ctx.transform.scale.set(2, 3);
       `);
       expect(result.layers[0].transform).toBe('scale(2, 3)');
@@ -2460,7 +2460,7 @@ describe('Multi-Layer Support', () => {
   describe('transform convenience properties', () => {
     it('translate-x and translate-y on PathLayer', () => {
       const result = compile(`
-        define PathLayer('p') \${ translate-x: 50; translate-y: 100; }
+        define PathLayer('p') #{ translate-x: 50; translate-y: 100; }
         layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('translate(50, 100)');
@@ -2470,7 +2470,7 @@ describe('Multi-Layer Support', () => {
 
     it('translate shorthand on PathLayer', () => {
       const result = compile(`
-        define PathLayer('p') \${ translate: 50, 100; }
+        define PathLayer('p') #{ translate: 50, 100; }
         layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('translate(50, 100)');
@@ -2479,7 +2479,7 @@ describe('Multi-Layer Support', () => {
 
     it('scale-x and scale-y on PathLayer', () => {
       const result = compile(`
-        define PathLayer('p') \${ scale-x: 2; scale-y: 3; }
+        define PathLayer('p') #{ scale-x: 2; scale-y: 3; }
         layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('scale(2, 3)');
@@ -2489,7 +2489,7 @@ describe('Multi-Layer Support', () => {
 
     it('scale shorthand on PathLayer', () => {
       const result = compile(`
-        define PathLayer('p') \${ scale: 2, 3; }
+        define PathLayer('p') #{ scale: 2, 3; }
         layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('scale(2, 3)');
@@ -2497,7 +2497,7 @@ describe('Multi-Layer Support', () => {
 
     it('scale shorthand with single value uses it for both axes', () => {
       const result = compile(`
-        define PathLayer('p') \${ scale: 2; }
+        define PathLayer('p') #{ scale: 2; }
         layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('scale(2, 2)');
@@ -2506,7 +2506,7 @@ describe('Multi-Layer Support', () => {
     it('rotate on PathLayer (value is expression in radians)', () => {
       const result = compile(`
         let a = 0.25pi;
-        define PathLayer('p') \${ rotate: a; }
+        define PathLayer('p') #{ rotate: a; }
         layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('rotate(45)');
@@ -2514,7 +2514,7 @@ describe('Multi-Layer Support', () => {
 
     it('all convenience properties together', () => {
       const result = compile(`
-        define PathLayer('p') \${ translate-x: 50; translate-y: 100; rotate: 0.5pi; scale-x: 2; scale-y: 3; }
+        define PathLayer('p') #{ translate-x: 50; translate-y: 100; rotate: 0.5pi; scale-x: 2; scale-y: 3; }
         layer('p').apply { M 0 0 }
       `);
       // Order: translate, rotate, scale
@@ -2523,14 +2523,14 @@ describe('Multi-Layer Support', () => {
 
     it('convenience properties on GroupLayer', () => {
       const result = compile(`
-        let g = GroupLayer('g') \${ translate-x: 10; translate-y: 20; scale: 2; };
+        let g = GroupLayer('g') #{ translate-x: 10; translate-y: 20; scale: 2; };
       `);
       expect(result.layers[0].transform).toBe('translate(10, 20) scale(2, 2)');
     });
 
     it('convenience properties on TextLayer', () => {
       const result = compile(`
-        define TextLayer('t') \${ translate-x: 5; translate-y: 10; }
+        define TextLayer('t') #{ translate-x: 5; translate-y: 10; }
         layer('t').apply { text(0, 0)\`Hi\` }
       `);
       expect(result.layers[0].transform).toBe('translate(5, 10)');
@@ -2538,7 +2538,7 @@ describe('Multi-Layer Support', () => {
 
     it('explicit transform property takes precedence over convenience', () => {
       const result = compile(`
-        define PathLayer('p') \${ transform: rotate(45); translate-x: 50; }
+        define PathLayer('p') #{ transform: rotate(45); translate-x: 50; }
         layer('p').apply { M 0 0 }
       `);
       // transform property wins, convenience properties are still consumed
@@ -2548,7 +2548,7 @@ describe('Multi-Layer Support', () => {
 
     it('translate-x only defaults y to 0', () => {
       const result = compile(`
-        define PathLayer('p') \${ translate-x: 50; }
+        define PathLayer('p') #{ translate-x: 50; }
         layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('translate(50, 0)');
@@ -2556,7 +2556,7 @@ describe('Multi-Layer Support', () => {
 
     it('scale-x only defaults y to 1', () => {
       const result = compile(`
-        define PathLayer('p') \${ scale-x: 2; }
+        define PathLayer('p') #{ scale-x: 2; }
         layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('scale(2, 1)');
@@ -2564,7 +2564,7 @@ describe('Multi-Layer Support', () => {
 
     it('convenience properties with let constructor', () => {
       const result = compile(`
-        let p = PathLayer('p') \${ translate: 10, 20; rotate: 0.25pi; };
+        let p = PathLayer('p') #{ translate: 10, 20; rotate: 0.25pi; };
         layer('p').apply { M 0 0 }
       `);
       expect(result.layers[0].transform).toBe('translate(10, 20) rotate(45)');
@@ -2582,7 +2582,7 @@ describe('Multi-Layer Support', () => {
       // default layer existed).
       const result = compile(`
         M 0 0 L 10 10
-        define default PathLayer('main') \${ stroke: red; };
+        define default PathLayer('main') #{ stroke: red; };
         M 20 20 L 30 30
       `);
       expect(result.layers).toHaveLength(1);
@@ -2595,7 +2595,7 @@ describe('Multi-Layer Support', () => {
       // Previously the transform mutated the orphaned global transformState while the
       // default layer carried its own (untouched) transformState, so it never emitted.
       const result = compile(`
-        define default PathLayer('main') \${ fill: none; };
+        define default PathLayer('main') #{ fill: none; };
         ctx.transform.translate.set(25, 25);
         M 0 0 L 100 0
       `);
@@ -2609,7 +2609,7 @@ describe('Multi-Layer Support', () => {
       // so an absolute M reset each iteration is honored. (Mirrors the context.test.ts
       // regression, asserted here at the layer-output boundary.)
       const result = compile(`
-        define default PathLayer('main') \${ fill: none; };
+        define default PathLayer('main') #{ fill: none; };
         for (i in 0..2) { M 100 100 m 10 10 polarLine(0, 5); }
       `);
       expect(result.layers[0].data).toBe(
@@ -2622,7 +2622,7 @@ describe('Multi-Layer Support', () => {
       // accumulator as bare top-level commands (the apply swap is a no-op since the
       // layer's context already IS evalState.pathContext).
       const result = compile(`
-        define default PathLayer('main') \${ fill: none; }
+        define default PathLayer('main') #{ fill: none; }
         M 10 10
         layer('main').apply { L 50 50 }
         M 90 90
@@ -2638,7 +2638,7 @@ describe('Multi-Layer Support', () => {
       // it adopts evalState.rootAccum, not the local accum. Previously these were
       // silently dropped.
       const fromFn = compile(`
-        fn setup() { define default PathLayer('main') \${ fill: none; }; return 0; }
+        fn setup() { define default PathLayer('main') #{ fill: none; }; return 0; }
         let _ = setup();
         M 0 0 L 10 10
       `);
@@ -2649,8 +2649,8 @@ describe('Multi-Layer Support', () => {
       // Same when the define runs inside another layer's apply block: the default
       // layer must NOT alias that layer's accumulator.
       const fromApply = compile(`
-        define PathLayer('other') \${}
-        layer('other').apply { define default PathLayer('main') \${ fill: none; }; }
+        define PathLayer('other') #{}
+        layer('other').apply { define default PathLayer('main') #{ fill: none; }; }
         M 0 0 L 10 10
       `);
       const other = fromApply.layers.find((l) => l.name === 'other');
@@ -2668,7 +2668,7 @@ describe('apply block scoping', () => {
     const layer = compile(source).layers.find((l) => l.name === name);
     return (layer?.textElements ?? []).map((el) => el.children.map((c) => c.text).join(''));
   };
-  const textLayer = "define TextLayer('t') ${ font-size: 12; }";
+  const textLayer = "define TextLayer('t') #{ font-size: 12; }";
 
   it('a let in a TextLayer apply block reaches a later text() argument, body, and interpolation', () => {
     expect(textOf(`${textLayer}\nlayer('t').apply {\n  let level = 4;\n  text(10, level) { if (level > 3) { \`hi\` } }\n  text(10, 30)\`L${'$'}{level}\`\n}`, 't')).toEqual(['hi', 'L4']);
@@ -2679,7 +2679,7 @@ describe('apply block scoping', () => {
   });
 
   it('a let in a PathLayer apply block is visible to later path commands', () => {
-    expect(compilePath("define PathLayer('p') ${ stroke: red; }\nlayer('p').apply {\n  let sz = 4;\n  M sz sz L 10 10\n}")).toBe('M 4 4 L 10 10');
+    expect(compilePath("define PathLayer('p') #{ stroke: red; }\nlayer('p').apply {\n  let sz = 4;\n  M sz sz L 10 10\n}")).toBe('M 4 4 L 10 10');
   });
 
   it('still rejects path commands inside a TextLayer apply block', () => {

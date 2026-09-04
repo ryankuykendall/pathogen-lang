@@ -2,11 +2,11 @@
 
 let dot = @{ circle(10, 10, 3); };
 let dots = Pattern('dots', 0, 0, 20, 20) {|p|
-  p.append(dot, ${ fill: Color('#e63946'); });
+  p.append(dot, #{ fill: Color('#e63946'); });
 };
 dots.patternUnits = 'userSpaceOnUse';
 
-define PathLayer('dotted') ${ fill: dots; stroke: none; }
+define PathLayer('dotted') #{ fill: dots; stroke: none; }
 
 layer('dotted').apply {
   M 0 0 L 200 0 L 200 200 L 0 200 Z

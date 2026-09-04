@@ -377,7 +377,7 @@ let accentPlayground = Color('#10b981');
 let accentCli = Color('#f59e0b');
 
 // Background
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bgColor;
   stroke: none;
 };
@@ -386,7 +386,7 @@ bg.apply {
 }
 
 // Central box — Language Services
-let centerBox = PathLayer('center-box') ${
+let centerBox = PathLayer('center-box') #{
   fill: centerBg;
   stroke: none;
 };
@@ -394,7 +394,7 @@ centerBox.apply {
   roundRect(140, 30, 280, 120, 8);
 }
 
-let centerLabels = TextLayer('center-labels') ${
+let centerLabels = TextLayer('center-labels') #{
   font-family: Inconsolata, monospace;
   fill: centerText;
   text-anchor: middle;
@@ -404,7 +404,7 @@ centerLabels.apply {
   text(280, 78)`src/language-services/`;
 }
 
-let funcLabels = TextLayer('func-labels') ${
+let funcLabels = TextLayer('func-labels') #{
   font-family: Inconsolata, monospace;
   font-size: 10;
   fill: Color('#94a3b8');
@@ -419,7 +419,7 @@ funcLabels.apply {
 }
 
 // Arrows
-let arrows = PathLayer('arrows') ${
+let arrows = PathLayer('arrows') #{
   fill: none;
   stroke: arrowColor;
   stroke-width: 2;
@@ -437,7 +437,7 @@ arrows.apply {
 }
 
 // Arrowheads
-let arrowheads = PathLayer('arrowheads') ${
+let arrowheads = PathLayer('arrowheads') #{
   fill: arrowColor;
   stroke: none;
 };
@@ -460,7 +460,7 @@ arrowheads.apply {
 }
 
 // Consumer boxes (narrower with gaps between them)
-let vscodeBorder = PathLayer('vscode-border') ${
+let vscodeBorder = PathLayer('vscode-border') #{
   fill: consumerBg;
   stroke: accentVscode;
   stroke-width: 2;
@@ -469,7 +469,7 @@ vscodeBorder.apply {
   roundRect(30, 220, 155, 70, 6);
 }
 
-let playgroundBorder = PathLayer('playground-border') ${
+let playgroundBorder = PathLayer('playground-border') #{
   fill: consumerBg;
   stroke: accentPlayground;
   stroke-width: 2;
@@ -478,7 +478,7 @@ playgroundBorder.apply {
   roundRect(202, 220, 155, 70, 6);
 }
 
-let cliBorder = PathLayer('cli-border') ${
+let cliBorder = PathLayer('cli-border') #{
   fill: consumerBg;
   stroke: accentCli;
   stroke-width: 2;
@@ -488,7 +488,7 @@ cliBorder.apply {
 }
 
 // Consumer labels
-let consumerLabels = TextLayer('consumer-labels') ${
+let consumerLabels = TextLayer('consumer-labels') #{
   font-family: Inconsolata, monospace;
   font-size: 13;
   fill: labelColor;
@@ -501,7 +501,7 @@ consumerLabels.apply {
   text(452, 252)`CLI`;
 }
 
-let consumerSubs = TextLayer('consumer-subs') ${
+let consumerSubs = TextLayer('consumer-subs') #{
   font-family: Inconsolata, monospace;
   font-size: 10;
   fill: sublabelColor;
@@ -557,10 +557,10 @@ consumerSubs.apply {
 <p>The formatter follows a style guide developed through a 25-question questionnaire where we reformatted real Pathogen code snippets and documented the reasoning. The core philosophy: <strong>expand for readability</strong>.</p>
 <p>Here&#39;s what formatting does to a typical style block:</p>
 <pre><code class="hljs language-pathogen"><span class="cm">// Before</span>
-<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) ${ <span class="pr">fill</span>: <span class="str">#0f172a</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
+<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) #{ <span class="pr">fill</span>: <span class="str">#0f172a</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
 
 <span class="cm">// After formatting</span>
-<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) ${
+<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) #{
   <span class="pr">fill</span>: <span class="str">#0f172a</span>;
   <span class="pr">stroke</span>: <span class="id">none</span>;
 };

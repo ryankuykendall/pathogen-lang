@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 220);
 
-let table = PathLayer('table') ${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -12,19 +12,19 @@ layer('table').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') ${};
-let sheetLayer = PathLayer('sheet') ${
+let scene = GroupLayer('scene') #{};
+let sheetLayer = PathLayer('sheet') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let driftGhost = PathLayer('drift-ghost') ${
+let driftGhost = PathLayer('drift-ghost') #{
   stroke: #f59e0b;
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;

@@ -29,14 +29,14 @@ let x7 = calc(sin(a * y6) + c * cos(a * x6));
 let y7 = calc(sin(b * x6) + d * cos(b * y6));
 
 // Light background for text readability in dark mode
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #f8f7f4;
   stroke: none;
 };
 bg.apply { roundRect(0, 0, 560, 260, 6); }
 
 // Trajectory lines
-let trail = PathLayer('trail') ${
+let trail = PathLayer('trail') #{
   stroke: oklch(0.70 0.10 260);
   stroke-width: 1;
   stroke-dasharray: 4 3;
@@ -55,7 +55,7 @@ trail.apply {
 }
 
 // Points — larger for early, smaller for later
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   stroke: none;
   fill: oklch(0.45 0.20 260);
 };
@@ -72,7 +72,7 @@ dots.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-size: 10;
   fill: #444;
   font-family: system-ui, sans-serif;
@@ -87,7 +87,7 @@ labels.apply {
 }
 
 // Formula text
-let formula = TextLayer('formula') ${
+let formula = TextLayer('formula') #{
   font-size: 13;
   fill: #333;
   font-family: ui-monospace, monospace;
@@ -99,5 +99,5 @@ formula.apply {
   text(30, 246)`yₙ₊₁ = sin(b · xₙ) + d · cos(b · yₙ)`
 }
 
-let g = GroupLayer('concept') ${};
+let g = GroupLayer('concept') #{};
 g.append(bg, trail, dots, labels, formula);

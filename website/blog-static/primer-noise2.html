@@ -352,7 +352,7 @@ fn panel(prefix, x0, useNoise) {
   for (b in 0..15) {
     let L = 0.28 + b * 0.0325;
     let c = Color(L, 0.04, 265);
-    let bucketLayer = PathLayer(`${prefix}-b${b}`) ${ fill: c; stroke: none; };
+    let bucketLayer = PathLayer(`${prefix}-b${b}`) #{ fill: c; stroke: none; };
     bucketLayer.apply {
       for (row in 0..15) {
         for (col in 0..15) {
@@ -375,7 +375,7 @@ fn panel(prefix, x0, useNoise) {
 panel('static', 22, 0);
 panel('fog', 208, 1);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -403,7 +403,7 @@ each radius is <code>0.6 + 3 * noise2(col * 0.12, row * 0.12)</code>.</p>
 
 define ViewBox(0, 0, 400, 220);
 
-let dots = PathLayer('field') ${ fill: oklch(0.66 0.14 220); stroke: none; };
+let dots = PathLayer('field') #{ fill: oklch(0.66 0.14 220); stroke: none; };
 dots.apply {
   for (row in 0..16) {
     for (col in 0..29) {
@@ -413,7 +413,7 @@ dots.apply {
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -445,7 +445,7 @@ reads as a flowing sheet. Right: the same twelve lines with independent
 define ViewBox(0, 0, 400, 230);
 
 fn strandCoherent(name, y0, j) {
-  let line = PathLayer(name) ${ stroke: oklch(0.66 0.14 220); stroke-width: 1.3; fill: none; };
+  let line = PathLayer(name) #{ stroke: oklch(0.66 0.14 220); stroke-width: 1.3; fill: none; };
   line.apply {
     M 22 calc(y0 - noise2(0, j * 0.3) * 26)
     for (i in 1..56) {
@@ -456,7 +456,7 @@ fn strandCoherent(name, y0, j) {
 }
 
 fn strandIndependent(name, y0, j) {
-  let line = PathLayer(name) ${ stroke: oklch(0.62 0.1 300); stroke-width: 1.3; fill: none; };
+  let line = PathLayer(name) #{ stroke: oklch(0.62 0.1 300); stroke-width: 1.3; fill: none; };
   line.apply {
     M 213 calc(y0 - noise(0, j) * 26)
     for (i in 1..56) {
@@ -472,7 +472,7 @@ for (j in 0..11) {
   strandIndependent(`solo-${j}`, y, j);
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -511,7 +511,7 @@ fn warpY(gx, gy) {
   return (noise2(gx * 0.14, gy * 0.14, 1) - 0.5) * 14;
 }
 
-let grid = PathLayer('warped-grid') ${ stroke: oklch(0.64 0.12 200); stroke-width: 1; fill: none; };
+let grid = PathLayer('warped-grid') #{ stroke: oklch(0.64 0.12 200); stroke-width: 1; fill: none; };
 grid.apply {
   //-- Horizontal rules
   for (gy in 0..12) {
@@ -580,7 +580,7 @@ for (k in 12..1) {
   let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(k * -6));
-  let haloLayer = PathLayer(`halo-${k}`) ${
+  let haloLayer = PathLayer(`halo-${k}`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;

@@ -8,20 +8,20 @@ define ViewBox(0, 0, 400, 180);
 for (i in 0..59) {
   let Lh = 0.3 + hash01(i) * 0.5;
   let ch = Color(Lh, 0.05, 260);
-  let barH = PathLayer(`static-${i}`) ${ fill: ch; stroke: none; };
+  let barH = PathLayer(`static-${i}`) #{ fill: ch; stroke: none; };
   barH.apply {
     rect(calc(24 + i * 5.9), 34, 5.4, 50);
   }
 
   let Ln = 0.3 + noise(i * 0.15) * 0.5;
   let cn = Color(Ln, 0.05, 260);
-  let barN = PathLayer(`smooth-${i}`) ${ fill: cn; stroke: none; };
+  let barN = PathLayer(`smooth-${i}`) #{ fill: cn; stroke: none; };
   barN.apply {
     rect(calc(24 + i * 5.9), 112, 5.4, 50);
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

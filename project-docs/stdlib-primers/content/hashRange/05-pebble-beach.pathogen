@@ -14,7 +14,7 @@ fn pebbleRow(row, y0, minW, maxW, count) {
     let x = hashRange(idx, 18, 380 - maxW, 2);
     let L = hashRange(idx, 0.45, 0.68, 3) + row * 0.04;
     let warm = Color(L, 0.02, 75);
-    let stone = PathLayer(`pebble-${idx}`) ${ fill: warm; stroke: none; };
+    let stone = PathLayer(`pebble-${idx}`) #{ fill: warm; stroke: none; };
     stone.apply {
       roundRect(x, calc(y0 - h), w, h, calc(h / 2));
     }

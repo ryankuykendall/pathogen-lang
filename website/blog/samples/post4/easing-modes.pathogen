@@ -51,29 +51,29 @@ t5.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 550, 350); }
 
 // --- Fills ---
 
-let p1 = PathLayer('p1') ${ fill: t1; stroke: #333; stroke-width: 1; };
+let p1 = PathLayer('p1') #{ fill: t1; stroke: #333; stroke-width: 1; };
 p1.apply { roundRect(15, 60, 90, 90, 6); }
 
-let p2 = PathLayer('p2') ${ fill: t2; stroke: #333; stroke-width: 1; };
+let p2 = PathLayer('p2') #{ fill: t2; stroke: #333; stroke-width: 1; };
 p2.apply { roundRect(120, 60, 90, 90, 6); }
 
-let p3 = PathLayer('p3') ${ fill: t3; stroke: #333; stroke-width: 1; };
+let p3 = PathLayer('p3') #{ fill: t3; stroke: #333; stroke-width: 1; };
 p3.apply { roundRect(225, 60, 90, 90, 6); }
 
-let p4 = PathLayer('p4') ${ fill: t4; stroke: #333; stroke-width: 1; };
+let p4 = PathLayer('p4') #{ fill: t4; stroke: #333; stroke-width: 1; };
 p4.apply { roundRect(330, 60, 90, 90, 6); }
 
-let p5 = PathLayer('p5') ${ fill: t5; stroke: #333; stroke-width: 1; };
+let p5 = PathLayer('p5') #{ fill: t5; stroke: #333; stroke-width: 1; };
 p5.apply { roundRect(435, 60, 90, 90, 6); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -88,7 +88,7 @@ labels.apply {
   text(480, 48)`ease-in-out`
 }
 
-let desc = TextLayer('desc') ${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -102,7 +102,7 @@ desc.apply {
   text(480, 168)`slow both`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -112,7 +112,7 @@ title.apply {
   text(275, 240)`Easing Modes — Elevation Interpolation Curves`
 }
 
-let note = TextLayer('note') ${
+let note = TextLayer('note') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -124,5 +124,5 @@ note.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note);

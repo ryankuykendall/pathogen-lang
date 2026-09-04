@@ -2,7 +2,7 @@ define ViewBox(0, 0, 480, 240);
 // A closed cutter loop is a cookie cutter: it stamps the region inside it
 // out of the shape. The stamped disk lifts away; the plate keeps the hole.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -10,23 +10,23 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let plateLayer = PathLayer('plate') ${
+let scene = GroupLayer('scene') #{};
+let plateLayer = PathLayer('plate') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let cookieLayer = PathLayer('cookie') ${
+let cookieLayer = PathLayer('cookie') #{
   fill: #f59e0b;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') ${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;

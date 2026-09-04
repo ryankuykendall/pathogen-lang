@@ -35,7 +35,7 @@ describe('PathBlock.dash()', () => {
     it('splits a line into alternating dash/gap pieces of the given lengths', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 10 10; });
+        let pieces = p.dash(#{ stroke-dasharray: 10 10; });
         log(pieces.length);
         log(pieces[0].kind);
         log(pieces[1].kind);
@@ -52,7 +52,7 @@ describe('PathBlock.dash()', () => {
     it('reports t0/t1 as arc-length fractions covering the path contiguously', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 10 10; });
+        let pieces = p.dash(#{ stroke-dasharray: 10 10; });
         log(pieces[0].t0);
         log(pieces[0].t1);
         log(pieces[3].t0);
@@ -70,7 +70,7 @@ describe('PathBlock.dash()', () => {
       // "25" behaves as "25 25": 100 / 25 = 4 pieces
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 25; });
+        let pieces = p.dash(#{ stroke-dasharray: 25; });
         log(pieces.length);
         log(pieces[0].kind);
         log(pieces[1].kind);
@@ -85,7 +85,7 @@ describe('PathBlock.dash()', () => {
     it('resolves percentage entries against total path length', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 25% 25%; });
+        let pieces = p.dash(#{ stroke-dasharray: 25% 25%; });
         log(pieces.length);
         log(pieces[0].path.length);
       `);
@@ -96,7 +96,7 @@ describe('PathBlock.dash()', () => {
     it('returns the whole path as one dash when every entry is zero', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 0 0; });
+        let pieces = p.dash(#{ stroke-dasharray: 0 0; });
         log(pieces.length);
         log(pieces[0].kind);
         log(pieces[0].t0);
@@ -114,7 +114,7 @@ describe('PathBlock.dash()', () => {
       // offset 5 into "10 10": leading dash of 5, then full gaps/dashes, trailing dash of 5
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 10 10; stroke-dashoffset: 5; });
+        let pieces = p.dash(#{ stroke-dasharray: 10 10; stroke-dashoffset: 5; });
         log(pieces.length);
         log(pieces[0].kind);
         log(pieces[0].path.length);
@@ -132,7 +132,7 @@ describe('PathBlock.dash()', () => {
       // -5 ≡ 15 into "10 10": starts 5 units into the gap entry
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 10 10; stroke-dashoffset: -5; });
+        let pieces = p.dash(#{ stroke-dasharray: 10 10; stroke-dashoffset: -5; });
         log(pieces[0].kind);
         log(pieces[0].path.length);
         log(pieces[1].kind);
@@ -148,7 +148,7 @@ describe('PathBlock.dash()', () => {
       // 10% of 100 = 10 → boundary lands exactly on the first dash end
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 10 10; stroke-dashoffset: 10%; });
+        let pieces = p.dash(#{ stroke-dasharray: 10 10; stroke-dashoffset: 10%; });
         log(pieces[0].kind);
         log(pieces[0].path.length);
       `);
@@ -162,7 +162,7 @@ describe('PathBlock.dash()', () => {
       // Square perimeter 400; dash [200,300] starts at corner (100,100)
       const { logs } = compileWithLogs(`
         let p = @{ h 100 v 100 h -100 z };
-        let pieces = p.dash(${'${'} stroke-dasharray: 100 100; });
+        let pieces = p.dash(#{ stroke-dasharray: 100 100; });
         log(pieces.length);
         log(pieces[2].kind);
         log(pieces[2].path.startPoint.x);
@@ -181,7 +181,7 @@ describe('PathBlock.dash()', () => {
     it('drawing every piece at one anchor reassembles the source geometry', () => {
       const { path, logs } = compileWithLogs(`
         let p = @{ h 60 v 40 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 30 20; });
+        let pieces = p.dash(#{ stroke-dasharray: 30 20; });
         let total = 0;
         for ([piece, i] in pieces) {
           total = calc(total + piece.path.length);
@@ -197,7 +197,7 @@ describe('PathBlock.dash()', () => {
     it('piece boundaries are contiguous: t1[i] == t0[i+1]', () => {
       const { logs } = compileWithLogs(`
         let p = @{ c 0 -40 50 -40 50 0 h 30 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 7 5; });
+        let pieces = p.dash(#{ stroke-dasharray: 7 5; });
         let contiguous = true;
         let last = calc(pieces.length - 1);
         for (i in 1..last) {
@@ -219,7 +219,7 @@ describe('PathBlock.dash()', () => {
     it('restarts the pattern at each subpath (SVG behavior)', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 30 m 10 0 h 30 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 10 10; });
+        let pieces = p.dash(#{ stroke-dasharray: 10 10; });
         log(pieces.length);
         log(pieces[0].kind);
         log(pieces[3].kind);
@@ -237,7 +237,7 @@ describe('PathBlock.dash()', () => {
       // Total length 60 → 50% = 30 = each subpath exactly one dash
       const { logs } = compileWithLogs(`
         let p = @{ h 30 m 10 0 h 30 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 50%; });
+        let pieces = p.dash(#{ stroke-dasharray: 50%; });
         log(pieces.length);
         log(pieces[0].kind);
         log(pieces[1].kind);
@@ -259,7 +259,7 @@ describe('PathBlock.dash()', () => {
     it('requires stroke-dasharray', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.dash(${'${'} stroke-dashoffset: 5; });
+        p.dash(#{ stroke-dashoffset: 5; });
       `)).toThrow(/stroke-dasharray/);
     });
 
@@ -268,35 +268,35 @@ describe('PathBlock.dash()', () => {
       // expression 10 - 5 (style values are live expressions).
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.dash(${'${'} stroke-dasharray: 10, -5; });
+        p.dash(#{ stroke-dasharray: 10, -5; });
       `)).toThrow(/negative/i);
     });
 
     it('rejects non-numeric dash array entries', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.dash(${'${'} stroke-dasharray: 10 wide; });
+        p.dash(#{ stroke-dasharray: 10 wide; });
       `)).toThrow(/stroke-dasharray/);
     });
 
     it('rejects stroke-width with a hint pointing at outline()', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.dash(${'${'} stroke-dasharray: 10 10; stroke-width: 4; });
+        p.dash(#{ stroke-dasharray: 10 10; stroke-width: 4; });
       `)).toThrow(/outline\(\)/);
     });
 
     it('rejects unrelated style properties', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.dash(${'${'} stroke-dasharray: 10 10; fill: red; });
+        p.dash(#{ stroke-dasharray: 10 10; fill: red; });
       `)).toThrow(/fill/);
     });
 
     it('rejects patterns that explode into absurd piece counts', () => {
       expect(() => compilePath(`
         let p = @{ h 10000 };
-        p.dash(${'${'} stroke-dasharray: 0.001, 0.001; });
+        p.dash(#{ stroke-dasharray: 0.001, 0.001; });
       `)).toThrow(/pieces/);
     });
   });
@@ -307,7 +307,7 @@ describe('PathBlock.dash()', () => {
     // 80-long dash — the mergeable configuration.
     const seamSrc = (extra: string): string => `
       let p = @{ h 100 v 100 h -100 z };
-      let pieces = p.dash(${'${'} stroke-dasharray: 80 40; ${extra} });
+      let pieces = p.dash(#{ stroke-dasharray: 80 40; ${extra} });
       log(pieces.length);
     `;
 
@@ -324,7 +324,7 @@ describe('PathBlock.dash()', () => {
     it('dash-seam: merge joins the seam-crossing dash into one piece', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 100 v 100 h -100 z };
-        let pieces = p.dash(${'${'} stroke-dasharray: 80 40; dash-seam: merge; });
+        let pieces = p.dash(#{ stroke-dasharray: 80 40; dash-seam: merge; });
         let last = pieces[calc(pieces.length - 1)];
         log(pieces.length);
         log(last.kind);
@@ -347,7 +347,7 @@ describe('PathBlock.dash()', () => {
       // Cycle 100 divides the perimeter exactly: last piece is a gap
       const { logs } = compileWithLogs(`
         let p = @{ h 100 v 100 h -100 z };
-        let pieces = p.dash(${'${'} stroke-dasharray: 60 40; dash-seam: merge; });
+        let pieces = p.dash(#{ stroke-dasharray: 60 40; dash-seam: merge; });
         log(pieces.length);
         log(pieces[calc(pieces.length - 1)].kind);
       `);
@@ -358,7 +358,7 @@ describe('PathBlock.dash()', () => {
     it('is a no-op on open paths', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let pieces = p.dash(${'${'} stroke-dasharray: 30 20; dash-seam: merge; });
+        let pieces = p.dash(#{ stroke-dasharray: 30 20; dash-seam: merge; });
         log(pieces.length);
         log(pieces[0].t0);
       `);
@@ -369,7 +369,7 @@ describe('PathBlock.dash()', () => {
     it('rejects invalid values', () => {
       expect(() => compilePath(`
         let p = @{ h 100 v 100 h -100 z };
-        p.dash(${'${'} stroke-dasharray: 80 40; dash-seam: fancy; });
+        p.dash(#{ stroke-dasharray: 80 40; dash-seam: fancy; });
       `)).toThrow(/dash-seam/);
     });
   });
@@ -377,7 +377,7 @@ describe('PathBlock.dash()', () => {
   describe('percent literals in style blocks (scoping)', () => {
     it('preserves % only for the dash-pattern properties', () => {
       const result = compile(`
-        let l = PathLayer('a') ${'${'} fill: red; stroke-dasharray: 50%; };
+        let l = PathLayer('a') #{ fill: red; stroke-dasharray: 50%; };
         l.apply { M 0 0 h 10 }
       `);
       expect(result.layers.find((x) => x.name === 'a')!.styles['stroke-dasharray']).toBe('50%');
@@ -387,7 +387,7 @@ describe('PathBlock.dash()', () => {
       // The historical behavior — a regression here would change SVG output
       // for all existing percent-valued styles (opacity, etc.)
       const result = compile(`
-        let l = PathLayer('a') ${'${'} fill: red; fill-opacity: 50%; opacity: 60%; };
+        let l = PathLayer('a') #{ fill: red; fill-opacity: 50%; opacity: 60%; };
         l.apply { M 0 0 h 10 }
       `);
       const styles = result.layers.find((x) => x.name === 'a')!.styles;
@@ -402,7 +402,7 @@ describe('PathBlock.outline()', () => {
     it('butt caps: closed outline hugging the segment ends', () => {
       const { path, logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let solid = p.outline(${'${'} stroke-width: 10; });
+        let solid = p.outline(#{ stroke-width: 10; });
         let bb = solid.boundingBox();
         log(bb.x); log(bb.y); log(bb.width); log(bb.height);
         M 0 50
@@ -419,7 +419,7 @@ describe('PathBlock.outline()', () => {
     it('round caps extend half the stroke width past each end', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let solid = p.outline(${'${'} stroke-width: 10; stroke-linecap: round; });
+        let solid = p.outline(#{ stroke-width: 10; stroke-linecap: round; });
         let bb = solid.boundingBox();
         log(bb.x); log(bb.width); log(bb.height);
       `);
@@ -431,7 +431,7 @@ describe('PathBlock.outline()', () => {
     it('square caps extend half the stroke width past each end', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 100 };
-        let solid = p.outline(${'${'} stroke-width: 10; stroke-linecap: square; });
+        let solid = p.outline(#{ stroke-width: 10; stroke-linecap: square; });
         let bb = solid.boundingBox();
         log(bb.x); log(bb.width);
       `);
@@ -443,7 +443,7 @@ describe('PathBlock.outline()', () => {
       // Vertical segment from (20, 30): outline spans x in [15, 25]
       const { logs } = compileWithLogs(`
         let p = @{ m 20 30 v 50 };
-        let solid = p.outline(${'${'} stroke-width: 10; });
+        let solid = p.outline(#{ stroke-width: 10; });
         let bb = solid.boundingBox();
         log(bb.x); log(bb.y); log(bb.width); log(bb.height);
       `);
@@ -459,7 +459,7 @@ describe('PathBlock.outline()', () => {
       // Spine (0,0)→(50,0)→(50,50), width 10: outer corner at (55,-5), bevel-free
       const { logs } = compileWithLogs(`
         let p = @{ h 50 v 50 };
-        let solid = p.outline(${'${'} stroke-width: 10; });
+        let solid = p.outline(#{ stroke-width: 10; });
         let bb = solid.boundingBox();
         log(bb.x); log(bb.y); log(bb.width); log(bb.height);
       `);
@@ -473,7 +473,7 @@ describe('PathBlock.outline()', () => {
       // Near-reversing turn: miter ratio ≈ 8 — over the SVG default of 4
       const src = (styles: string): string => `
         let p = @{ h 50 l -40 10 };
-        let solid = p.outline(${'${'} ${styles} });
+        let solid = p.outline(#{ ${styles} });
         let bb = solid.boundingBox();
         log(bb.width);
       `;
@@ -486,7 +486,7 @@ describe('PathBlock.outline()', () => {
     it('round join emits an arc connector at the corner', () => {
       const { path } = compileWithLogs(`
         let p = @{ h 50 v 50 };
-        let solid = p.outline(${'${'} stroke-width: 10; stroke-linejoin: round; });
+        let solid = p.outline(#{ stroke-width: 10; stroke-linejoin: round; });
         M 0 0
         solid.draw();
       `);
@@ -499,7 +499,7 @@ describe('PathBlock.outline()', () => {
     it('produces two concentric rings (outer and inner stroke edges)', () => {
       const { path, logs } = compileWithLogs(`
         let p = @{ h 100 v 100 h -100 z };
-        let solid = p.outline(${'${'} stroke-width: 10; });
+        let solid = p.outline(#{ stroke-width: 10; });
         let bb = solid.boundingBox();
         log(bb.x); log(bb.y); log(bb.width); log(bb.height);
         M 0 0
@@ -517,7 +517,7 @@ describe('PathBlock.outline()', () => {
     it('a near-zero spine with round caps outlines to a dot', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 0.001 };
-        let dot = p.outline(${'${'} stroke-width: 10; stroke-linecap: round; });
+        let dot = p.outline(#{ stroke-width: 10; stroke-linecap: round; });
         let bb = dot.boundingBox();
         log(bb.width); log(bb.height);
       `);
@@ -528,7 +528,7 @@ describe('PathBlock.outline()', () => {
     it('a near-zero spine with butt caps produces no visible area', () => {
       const { logs } = compileWithLogs(`
         let p = @{ h 0.001 };
-        let ghost = p.outline(${'${'} stroke-width: 10; });
+        let ghost = p.outline(#{ stroke-width: 10; });
         let bb = ghost.boundingBox();
         log(bb.width);
       `);
@@ -541,7 +541,7 @@ describe('PathBlock.outline()', () => {
     it('outlines participate in union (closed-path requirement satisfied)', () => {
       const { path } = compileWithLogs(`
         let stem = @{ h 60 };
-        let solid = stem.outline(${'${'} stroke-width: 10; });
+        let solid = stem.outline(#{ stroke-width: 10; });
         let box = @{ m 20 -20 h 20 v 40 h -20 z };
         let merged = solid.union(box);
         M 0 0
@@ -555,8 +555,8 @@ describe('PathBlock.outline()', () => {
       const { path } = compileWithLogs(`
         let plate = @{ h 120 v 80 h -120 z };
         let wave = @{ m 10 40 h 100 };
-        let pieces = wave.dash(${'${'} stroke-dasharray: 20 20; });
-        let slot = pieces[1].path.outline(${'${'} stroke-width: 10; });
+        let pieces = wave.dash(#{ stroke-dasharray: 20 20; });
+        let slot = pieces[1].path.outline(#{ stroke-width: 10; });
         let plaque = plate.difference(slot);
         M 0 0
         plaque.draw();
@@ -577,35 +577,35 @@ describe('PathBlock.outline()', () => {
     it('requires stroke-width', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.outline(${'${'} stroke-linecap: round; });
+        p.outline(#{ stroke-linecap: round; });
       `)).toThrow(/stroke-width/);
     });
 
     it('rejects non-positive stroke-width', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.outline(${'${'} stroke-width: 0; });
+        p.outline(#{ stroke-width: 0; });
       `)).toThrow(/positive/);
     });
 
     it('rejects invalid linecap values', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.outline(${'${'} stroke-width: 10; stroke-linecap: fancy; });
+        p.outline(#{ stroke-width: 10; stroke-linecap: fancy; });
       `)).toThrow(/stroke-linecap/);
     });
 
     it('rejects stroke-miterlimit with a non-miter join', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.outline(${'${'} stroke-width: 10; stroke-linejoin: round; stroke-miterlimit: 8; });
+        p.outline(#{ stroke-width: 10; stroke-linejoin: round; stroke-miterlimit: 8; });
       `)).toThrow(/miter/);
     });
 
     it('rejects stroke-dasharray with a hint pointing at dash()', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.outline(${'${'} stroke-width: 10; stroke-dasharray: 4 2; });
+        p.outline(#{ stroke-width: 10; stroke-dasharray: 4 2; });
       `)).toThrow(/dash\(\)/);
     });
   });
@@ -615,7 +615,7 @@ describe('PathBlock.outline()', () => {
     // contours; union dissolves them into one boundary.
     const crossSrc = (extra: string): string => `
       let p = @{ h 60 m -40 -20 v 40 };
-      let solid = p.outline(${'${'} stroke-width: 8; ${extra} });
+      let solid = p.outline(#{ stroke-width: 8; ${extra} });
       M 0 0
       solid.draw();
     `;
@@ -640,7 +640,7 @@ describe('PathBlock.outline()', () => {
     it('union output still participates in boolean operations', () => {
       const { path } = compileWithLogs(`
         let p = @{ h 60 m -40 -20 v 40 };
-        let solid = p.outline(${'${'} stroke-width: 8; outline-overlap: union; });
+        let solid = p.outline(#{ stroke-width: 8; outline-overlap: union; });
         let box = @{ m -10 -30 h 90 v 60 h -90 z };
         let merged = box.difference(solid);
         M 0 0
@@ -653,7 +653,7 @@ describe('PathBlock.outline()', () => {
     it('rejects invalid values', () => {
       expect(() => compilePath(`
         let p = @{ h 100 };
-        p.outline(${'${'} stroke-width: 8; outline-overlap: fancy; });
+        p.outline(#{ stroke-width: 8; outline-overlap: fancy; });
       `)).toThrow(/outline-overlap/);
     });
   });
@@ -751,8 +751,8 @@ describe('PathBlock.startAt()', () => {
       // Rotating the start by half a dash entry shifts every boundary
       const { logs } = compileWithLogs(`
         let p = @{ h 100 v 100 h -100 z };
-        let plain = p.dash(${'${'} stroke-dasharray: 100 100; });
-        let slid = p.startAt(0.125).dash(${'${'} stroke-dasharray: 100 100; });
+        let plain = p.dash(#{ stroke-dasharray: 100 100; });
+        let slid = p.startAt(0.125).dash(#{ stroke-dasharray: 100 100; });
         log(plain[0].path.startPoint.x);
         log(slid[0].path.startPoint.x);
         log(slid[0].path.startPoint.y);
@@ -786,7 +786,7 @@ describe('ProjectedPath receivers', () => {
     const { logs } = compileWithLogs(`
       let p = @{ h 100 };
       let proj = p.project(10, 20);
-      let pieces = proj.dash(${'${'} stroke-dasharray: 25 25; });
+      let pieces = proj.dash(#{ stroke-dasharray: 25 25; });
       log(pieces.length);
       log(pieces[2].path.startPoint.x);
       log(pieces[2].path.startPoint.y);
@@ -800,7 +800,7 @@ describe('ProjectedPath receivers', () => {
     const { logs } = compileWithLogs(`
       let p = @{ h 100 };
       let proj = p.project(10, 20);
-      let solid = proj.outline(${'${'} stroke-width: 10; });
+      let solid = proj.outline(#{ stroke-width: 10; });
       let bb = solid.boundingBox();
       log(bb.x); log(bb.y);
     `);

@@ -35,7 +35,7 @@ describe('viewbox migration — skip detection', () => {
   });
 
   it('detects a real define default PathLayer statement', () => {
-    const code = `define default PathLayer('main-path-layer') \${ stroke: red; };`;
+    const code = `define default PathLayer('main-path-layer') #{ stroke: red; };`;
     expect(inspectCode(code).hasDefaultLayer).toBe(true);
   });
 
@@ -43,7 +43,7 @@ describe('viewbox migration — skip detection', () => {
     const code = `
       let foo = 5;
       define ViewBox(0, 0, 200, 200);
-      define default PathLayer('main') \${ stroke: red; };
+      define default PathLayer('main') #{ stroke: red; };
       M 0 0 L 100 100
     `;
     const result = inspectCode(code);
@@ -53,7 +53,7 @@ describe('viewbox migration — skip detection', () => {
 
   it('does NOT mistake non-default PathLayer for a default-layer match', () => {
     // No `default` keyword → the layer exists but is not the default.
-    const code = `define PathLayer('outline') \${ stroke: red; };`;
+    const code = `define PathLayer('outline') #{ stroke: red; };`;
     expect(inspectCode(code).hasDefaultLayer).toBe(false);
   });
 
@@ -61,7 +61,7 @@ describe('viewbox migration — skip detection', () => {
     // The migration only checks isDefault; layer type doesn't matter
     // because the user's workspace would already error if you tried to
     // prepend a second default.
-    const code = `define default TextLayer('labels') \${ font-size: 14; };`;
+    const code = `define default TextLayer('labels') #{ font-size: 14; };`;
     expect(inspectCode(code).hasDefaultLayer).toBe(true);
   });
 
@@ -78,7 +78,7 @@ describe('viewbox migration — skip detection', () => {
 
   it('does NOT mistake template-literal text for a real definition', () => {
     const code = `
-      define TextLayer('labels') \${ font-size: 14; };
+      define TextLayer('labels') #{ font-size: 14; };
       layer('labels').apply {
         text(10, 10)\`example: define ViewBox(0, 0, 200, 200);\`
       }

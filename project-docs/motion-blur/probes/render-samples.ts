@@ -24,7 +24,7 @@ function comb(filterName: string): string {
   }
   return `
 ${filterName ? '' : ''}
-define PathLayer('art') \${ fill: oklch(45% 0.18 265); ${filterName ? `filter: ${filterName};` : ''} }
+define PathLayer('art') #{ fill: oklch(45% 0.18 265); ${filterName ? `filter: ${filterName};` : ''} }
 layer('art').apply { ${bars} }
 `;
 }

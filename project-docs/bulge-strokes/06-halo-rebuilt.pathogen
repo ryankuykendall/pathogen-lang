@@ -70,7 +70,7 @@ for (haloIndex in 16..1) {
                             CurveContinuity.G1, taperCap);
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
-  let haloLayer = PathLayer(`halo-${haloIndex}`) ${
+  let haloLayer = PathLayer(`halo-${haloIndex}`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;

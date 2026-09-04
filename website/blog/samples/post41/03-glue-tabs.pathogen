@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,18 +12,18 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let tabLayer = PathLayer('tabs') ${
+let scene = GroupLayer('scene') #{};
+let tabLayer = PathLayer('tabs') #{
   fill: #cbbfa3;
   stroke: #ef4444;
   stroke-width: 1.5;
 };
-let pieceLayer = PathLayer('pieces') ${
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;

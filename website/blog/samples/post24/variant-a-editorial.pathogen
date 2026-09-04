@@ -60,14 +60,14 @@ let ramps = [
 // Root & groups
 // ─────────────────────────────────────────────────────────────────
 
-define GroupLayer('diagram') ${}
-define GroupLayer('masthead') ${}
-define GroupLayer('grid') ${}
-define GroupLayer('marginalia') ${}
-define GroupLayer('frieze') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('masthead') #{}
+define GroupLayer('grid') #{}
+define GroupLayer('marginalia') #{}
+define GroupLayer('frieze') #{}
 
 // Paper background
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -80,7 +80,7 @@ layer('diagram').append(layer('bg'));
 // MASTHEAD — display serif title, italic subtitle, folio rule
 // ─────────────────────────────────────────────────────────────────
 
-let folio = TextLayer('folio') ${
+let folio = TextLayer('folio') #{
   font-family: serif;
   font-size: 9;
   font-style: italic;
@@ -92,7 +92,7 @@ folio.apply {
   text(930, 44)`— a schematic / №&#8239;01`;
 }
 
-let display_title = TextLayer('display-title') ${
+let display_title = TextLayer('display-title') #{
   font-family: serif;
   font-size: 84;
   font-weight: 400;
@@ -104,7 +104,7 @@ display_title.apply {
   text(34, 102)`OKLCH`;
 }
 
-let display_sub = TextLayer('display-sub') ${
+let display_sub = TextLayer('display-sub') #{
   font-family: serif;
   font-size: 22;
   font-style: italic;
@@ -115,7 +115,7 @@ display_sub.apply {
   text(34, 146)`the Color Calendar`;
 }
 
-let dek = TextLayer('dek') ${
+let dek = TextLayer('dek') #{
   font-family: serif;
   font-size: 11;
   font-style: italic;
@@ -127,7 +127,7 @@ dek.apply {
 }
 
 // Hairline rule under masthead
-let hair_rule_top = PathLayer('hair-rule-top') ${
+let hair_rule_top = PathLayer('hair-rule-top') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -158,7 +158,7 @@ let row_h = 42;
 let row_gap = 2;
 
 // Column labels (anchor names) above the grid
-let col_header = TextLayer('col-header') ${
+let col_header = TextLayer('col-header') #{
   font-family: serif;
   font-size: 13;
   font-style: italic;
@@ -174,7 +174,7 @@ for ([name, i] in anchor_names) {
 layer('grid').append(layer('col-header'));
 
 // Row L-value labels (to the RIGHT of the grid, small caps style)
-let row_l_label = TextLayer('row-l-label') ${
+let row_l_label = TextLayer('row-l-label') #{
   font-family: serif;
   font-size: 9;
   font-style: italic;
@@ -210,7 +210,7 @@ for ([r, ci] in ramps) {
     let c = r[palette_idx];
     let cell_y = calc(row_start_y + ri * (row_h + row_gap));
     let cell_name = `c_${ci}_${ri}`;
-    let cell = PathLayer(cell_name) ${
+    let cell = PathLayer(cell_name) #{
       fill: c;
       stroke: none;
     };
@@ -240,7 +240,7 @@ let row2_gap_y = calc(row_start_y + 2 * (row_h + row_gap) + row_h);
 let row4_gap_y = calc(row_start_y + 4 * (row_h + row_gap) + row_h);
 // gap below row 4
 
-let crossbar_03 = PathLayer('crossbar-03') ${
+let crossbar_03 = PathLayer('crossbar-03') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.8;
@@ -249,7 +249,7 @@ crossbar_03.apply {
   rect(30, row2_gap_y, 900, 0.8);
 }
 
-let crossbar_02 = PathLayer('crossbar-02') ${
+let crossbar_02 = PathLayer('crossbar-02') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.8;
@@ -260,7 +260,7 @@ crossbar_02.apply {
 
 // Oversized chapter numerals floating beside the crossbars, right-aligned.
 // Baseline roughly centered on the row just ABOVE the crossbar.
-let chapter_numeral = TextLayer('chapter-numeral') ${
+let chapter_numeral = TextLayer('chapter-numeral') #{
   font-family: serif;
   font-size: 64;
   font-weight: 400;
@@ -268,14 +268,14 @@ let chapter_numeral = TextLayer('chapter-numeral') ${
   fill: fg_auto;
   text-anchor: start;
 };
-let chapter_bylabel = TextLayer('chapter-bylabel') ${
+let chapter_bylabel = TextLayer('chapter-bylabel') #{
   font-family: serif;
   font-size: 11;
   font-style: italic;
   fill: fg_auto;
   text-anchor: start;
 };
-let chapter_subline = TextLayer('chapter-subline') ${
+let chapter_subline = TextLayer('chapter-subline') #{
   font-family: serif;
   font-size: 9;
   fill: fg_muted;
@@ -317,7 +317,7 @@ layer('diagram').append(layer('marginalia'));
 
 let frieze_y = 618;
 
-let frieze_rule = PathLayer('frieze-rule') ${
+let frieze_rule = PathLayer('frieze-rule') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -326,7 +326,7 @@ frieze_rule.apply {
   rect(30, frieze_y, 900, 0.5);
 }
 
-let frieze_num = TextLayer('frieze-num') ${
+let frieze_num = TextLayer('frieze-num') #{
   font-family: serif;
   font-size: 40;
   letter-spacing: -1.5;
@@ -337,7 +337,7 @@ frieze_num.apply {
   text(34, calc(frieze_y + 42))`07`;
 }
 
-let frieze_label = TextLayer('frieze-label') ${
+let frieze_label = TextLayer('frieze-label') #{
   font-family: serif;
   font-size: 12;
   font-style: italic;
@@ -348,7 +348,7 @@ frieze_label.apply {
   text(34, calc(frieze_y + 62))`Contrasts`;
 }
 
-let frieze_note = TextLayer('frieze-note') ${
+let frieze_note = TextLayer('frieze-note') #{
   font-family: serif;
   font-size: 8;
   fill: fg_muted;
@@ -392,14 +392,14 @@ let pair_targets = [
   'target · AAA large',
 ];
 
-let pair_label_layer = TextLayer('pair-label') ${
+let pair_label_layer = TextLayer('pair-label') #{
   font-family: serif;
   font-size: 11;
   font-style: italic;
   fill: fg_auto;
   text-anchor: start;
 };
-let pair_target_layer = TextLayer('pair-target') ${
+let pair_target_layer = TextLayer('pair-target') #{
   font-family: serif;
   font-size: 8;
   fill: fg_muted;
@@ -410,7 +410,7 @@ for ([pa, panelIdx] in pair_a_fill) {
   let px = calc(pair_start_x + panelIdx * (pair_col_w + pair_col_gap));
   let ta_name = `pa_${panelIdx}`;
   let tb_name = `pb_${panelIdx}`;
-  let tile_a = PathLayer(ta_name) ${
+  let tile_a = PathLayer(ta_name) #{
     fill: pa;
     stroke: none;
   };
@@ -420,7 +420,7 @@ for ([pa, panelIdx] in pair_a_fill) {
         tile_sz,
         tile_sz);
   }
-  let tile_b = PathLayer(tb_name) ${
+  let tile_b = PathLayer(tb_name) #{
     fill: pair_b_fill[panelIdx];
     stroke: fg_hair;
     stroke-width: 0.5;

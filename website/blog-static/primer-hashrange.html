@@ -342,7 +342,7 @@ from <a href="/blog/primer-hash01"><code>hash01</code></a> — this post won&#39
 
 define ViewBox(0, 0, 400, 160);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -353,14 +353,14 @@ labels.apply {
   text(22, 96)`hashRange(i, 1.5, 5) — a fixture`
 }
 
-let rolling = PathLayer('rolling') ${ fill: oklch(0.6 0.15 20); stroke: none; };
+let rolling = PathLayer('rolling') #{ fill: oklch(0.6 0.15 20); stroke: none; };
 rolling.apply {
   for (i in 0..39) {
     circle(calc(26 + i * 9), 50, calc(randomRange(1.5, 5)));
   }
 }
 
-let pinned = PathLayer('pinned') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+let pinned = PathLayer('pinned') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 pinned.apply {
   for (i in 0..39) {
     circle(calc(26 + i * 9), 120, calc(hashRange(i, 1.5, 5)));
@@ -385,7 +385,7 @@ subtle facade shade from a third stream.</p>
 
 define ViewBox(0, 0, 400, 210);
 
-let sky = PathLayer('sky') ${ fill: oklch(0.24 0.05 275); stroke: none; };
+let sky = PathLayer('sky') #{ fill: oklch(0.24 0.05 275); stroke: none; };
 sky.apply {
   rect(15, 15, 370, 175);
 }
@@ -396,7 +396,7 @@ for (i in 0..25) {
   let h = hashRange(i, 35, 125);
   let shade = Color(0.36 + hashRange(i, 0, 0.1, 2), 0.03, 275);
   if (x + w &lt; 382) {
-    let tower = PathLayer(`tower-${i}`) ${ fill: shade; stroke: none; };
+    let tower = PathLayer(`tower-${i}`) #{ fill: shade; stroke: none; };
     tower.apply {
       rect(x, calc(190 - h), w, h);
     }
@@ -426,7 +426,7 @@ for (i in 0..119) {
   let r = hashRange(i, 1.5, 5, 2);
   let hue = hashRange(i, 0, 360, 3);
   let c = Color(0.72, 0.16, hue);
-  let dot = PathLayer(`confetti-${i}`) ${ fill: c; stroke: none; };
+  let dot = PathLayer(`confetti-${i}`) #{ fill: c; stroke: none; };
   dot.apply {
     circle(cx, cy, r);
   }
@@ -452,9 +452,9 @@ bucket routes it to a near, middle, or far layer with matching opacity.</p>
 
 define ViewBox(0, 0, 400, 200);
 
-let far = PathLayer('far') ${ stroke: oklch(0.6 0.05 260); stroke-width: 1; fill: none; opacity: 0.25; };
-let mid = PathLayer('mid') ${ stroke: oklch(0.65 0.06 260); stroke-width: 1.1; fill: none; opacity: 0.5; };
-let near = PathLayer('near') ${ stroke: oklch(0.72 0.07 260); stroke-width: 1.3; fill: none; opacity: 0.9; };
+let far = PathLayer('far') #{ stroke: oklch(0.6 0.05 260); stroke-width: 1; fill: none; opacity: 0.25; };
+let mid = PathLayer('mid') #{ stroke: oklch(0.65 0.06 260); stroke-width: 1.1; fill: none; opacity: 0.5; };
+let near = PathLayer('near') #{ stroke: oklch(0.72 0.07 260); stroke-width: 1.3; fill: none; opacity: 0.9; };
 
 far.apply {
   for (i in 0..79) {
@@ -507,7 +507,7 @@ fn pebbleRow(row, y0, minW, maxW, count) {
     let x = hashRange(idx, 18, 380 - maxW, 2);
     let L = hashRange(idx, 0.45, 0.68, 3) + row * 0.04;
     let warm = Color(L, 0.02, 75);
-    let stone = PathLayer(`pebble-${idx}`) ${ fill: warm; stroke: none; };
+    let stone = PathLayer(`pebble-${idx}`) #{ fill: warm; stroke: none; };
     stone.apply {
       roundRect(x, calc(y0 - h), w, h, calc(h / 2));
     }

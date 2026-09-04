@@ -1487,7 +1487,7 @@ describe('Path Context Tracking', () => {
       // Each iteration resets to (100,100) via absolute M, moves to (110,110) via m 10 10,
       // then polarLine(0, 5) → dx=cos(0)*5=5, dy=0 → absolute L 115 110. No drift.
       const data = compile(`
-        define default PathLayer('p') \${ fill: none; };
+        define default PathLayer('p') #{ fill: none; };
         for (i in 0..2) {
           M 100 100
           m 10 10
@@ -1501,7 +1501,7 @@ describe('Path Context Tracking', () => {
 
     it('matches the no-default-layer behavior (shared global context)', () => {
       const withDefault = compile(`
-        define default PathLayer('p') \${ fill: none; };
+        define default PathLayer('p') #{ fill: none; };
         for (i in 0..2) { M 100 100 m 10 10 polarLine(0, 5); }
       `).layers[0]?.data;
       const withoutDefault = compile(`
@@ -1515,7 +1515,7 @@ describe('Path Context Tracking', () => {
       // active (default-layer) context. With fixed args each iteration is deterministic,
       // so every subpath must be byte-identical — drift would make them diverge.
       const data = compile(`
-        define default PathLayer('p') \${ fill: none; };
+        define default PathLayer('p') #{ fill: none; };
         for (i in 0..3) {
           M 100 100
           m 10 10

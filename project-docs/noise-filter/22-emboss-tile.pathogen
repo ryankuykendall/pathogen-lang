@@ -7,8 +7,8 @@ let emboss = EmbossFilter() {|f|
   f.shininess = 25;
 };
 
-define PathLayer('bg') ${ fill: oklch(90% 0.02 80); stroke: none; }
+define PathLayer('bg') #{ fill: oklch(90% 0.02 80); stroke: none; }
 layer('bg').apply { rect(0, 0, 200, 200); }
 
-define PathLayer('tile') ${ fill: oklch(60% 0.20 30); stroke: none; filter: emboss; }
+define PathLayer('tile') #{ fill: oklch(60% 0.20 30); stroke: none; filter: emboss; }
 layer('tile').apply { roundRect(40, 40, 120, 120, 16); }

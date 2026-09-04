@@ -4,11 +4,11 @@
 // the healed seams — queryable as segment('cut') — get dotted decoration.
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 layer('bg').apply { rect(0, 0, 480, 240); }
 
-let pieces1 = PathLayer('pieces') ${ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
-let seams = PathLayer('seams') ${ fill: #f59e0b; stroke: none; };
+let pieces1 = PathLayer('pieces') #{ fill: #3b82f6; stroke: #0f172a; stroke-width: 2; };
+let seams = PathLayer('seams') #{ fill: #f59e0b; stroke: none; };
 
 let plate = @{
   h 160 as segment('top')

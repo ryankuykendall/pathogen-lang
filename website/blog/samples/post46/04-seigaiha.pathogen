@@ -3,7 +3,7 @@
 
 define ViewBox(0, 0, 480, 260);
 
-let fabric = PathLayer('fabric') ${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -11,14 +11,14 @@ fabric.apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') ${};
-let thread = PathLayer('thread') ${
+let scene = GroupLayer('scene') #{};
+let thread = PathLayer('thread') #{
   stroke: #f1f5f9;
   stroke-width: 2.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -30,7 +30,7 @@ fn stitchArc(radius, anchorX, anchorY) {
     m calc(0 - radius) 0
     a radius radius 0 0 1 calc(radius * 2) 0
   };
-  let stitches = arcSpan.dash(${
+  let stitches = arcSpan.dash(#{
     stroke-dasharray: 7 4;
   });
   for (stitch in stitches) {

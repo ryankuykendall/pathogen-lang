@@ -30,13 +30,13 @@ let m_complement = Color(CSSVar('--demo-color', #e63946)).hueShift(180);
 let m_alpha = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') ${}
-define GroupLayer('wheel') ${}
-define GroupLayer('hub-group') ${}
-define GroupLayer('labels') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('wheel') #{}
+define GroupLayer('hub-group') #{}
+define GroupLayer('labels') #{}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -45,7 +45,7 @@ bg.apply {
 }
 
 // ─── Eyebrow (top-left) ─────────────────────────────────────
-let eyebrow = TextLayer('eyebrow') ${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -120,7 +120,7 @@ for ([m, i] in methods) {
   let from_a = calc(theta - sector_half_span);
   let to_a = calc(theta + sector_half_span);
 
-  let w = PathLayer(`w-${i}`) ${
+  let w = PathLayer(`w-${i}`) #{
     fill: m[1];
     stroke: none;
   };
@@ -137,7 +137,7 @@ for ([m, i] in methods) {
 
 
 // ─── Outer frame ────────────────────────────────────────────
-let frame = PathLayer('frame') ${
+let frame = PathLayer('frame') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -147,7 +147,7 @@ frame.apply {
 }
 
 // ─── Dashed reference ring at mid-wedge radius ──────────────
-let ring = PathLayer('ring') ${
+let ring = PathLayer('ring') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 1;
@@ -158,7 +158,7 @@ ring.apply {
 }
 
 // ─── Hub (drawn OVER wedges) ────────────────────────────────
-let hub = PathLayer('hub') ${
+let hub = PathLayer('hub') #{
   fill: base;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -167,7 +167,7 @@ hub.apply {
   circle(cx, cy, r_hub);
 }
 
-let hub_title = TextLayer('hub-title') ${
+let hub_title = TextLayer('hub-title') #{
   font-family: font;
   font-size: 14;
   font-weight: 700;
@@ -179,7 +179,7 @@ hub_title.apply {
   text(cx, calc(cy - 2))`OKLCH`;
 }
 
-let hub_sub = TextLayer('hub-sub') ${
+let hub_sub = TextLayer('hub-sub') #{
   font-family: font;
   font-size: 8;
   letter-spacing: 0.8;
@@ -194,7 +194,7 @@ layer('wheel').append(layer('frame'), layer('ring'));
 layer('hub-group').append(layer('hub'), layer('hub-title'), layer('hub-sub'));
 
 // ─── Labels beyond the frame ────────────────────────────────
-let label = TextLayer('label') ${
+let label = TextLayer('label') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;

@@ -354,7 +354,7 @@ come out even, and here that&#39;s one number.</p>
 
 define ViewBox(0, 0, 480, 170);
 
-let fabric = PathLayer('fabric') ${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -362,20 +362,20 @@ fabric.apply {
   rect(0, 0, 480, 170);
 }
 
-let scene = GroupLayer('scene') ${};
-let underside = PathLayer('underside') ${
+let scene = GroupLayer('scene') #{};
+let underside = PathLayer('underside') #{
   stroke: #64748b;
   stroke-width: 3;
   stroke-linecap: round;
   fill: none;
 };
-let topThread = PathLayer('top-thread') ${
+let topThread = PathLayer('top-thread') #{
   stroke: #f1f5f9;
   stroke-width: 3.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -388,7 +388,7 @@ let seam = @{
   h 371
 };
 
-let stitches = seam.dash(${
+let stitches = seam.dash(#{
   stroke-dasharray: 14 7;
 });
 
@@ -425,7 +425,7 @@ Where neighboring rows disagree, the stitches interlock.</p>
 
 define ViewBox(0, 0, 480, 210);
 
-let fabric = PathLayer('fabric') ${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -433,14 +433,14 @@ fabric.apply {
   rect(0, 0, 480, 210);
 }
 
-let scene = GroupLayer('scene') ${};
-let thread = PathLayer('thread') ${
+let scene = GroupLayer('scene') #{};
+let thread = PathLayer('thread') #{
   stroke: #f1f5f9;
   stroke-width: 3;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -462,7 +462,7 @@ let rowBits = [
 
 for ([bit, rowIndex] in rowBits) {
   let rowY = calc(52 + rowIndex * 22);
-  let stitches = seam.dash(${
+  let stitches = seam.dash(#{
     stroke-dasharray: 16 16;
     stroke-dashoffset: calc(bit * 16);
   });
@@ -501,7 +501,7 @@ steps, and boxes are all emergent.</p>
 
 define ViewBox(0, 0, 480, 300);
 
-let fabric = PathLayer('fabric') ${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -509,14 +509,14 @@ fabric.apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') ${};
-let thread = PathLayer('thread') ${
+let scene = GroupLayer('scene') #{};
+let thread = PathLayer('thread') #{
   stroke: #f1f5f9;
   stroke-width: 2.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -537,7 +537,7 @@ let colSeam = @{
 };
 
 fn sew(seam, anchorX, anchorY, bit) {
-  let stitches = seam.dash(${
+  let stitches = seam.dash(#{
     stroke-dasharray: ${cell} ${cell};
     stroke-dashoffset: calc(bit * cell);
   });
@@ -575,7 +575,7 @@ labels.apply {
 <p>The <code>sew</code> helper is the post&#39;s whole engine — dash the seam, keep the
 dashes, place them at the line&#39;s anchor:</p>
 <pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">sew</span>(<span class="id">seam</span>, <span class="id">anchorX</span>, <span class="id">anchorY</span>, <span class="id">bit</span>) {
-  <span class="kw">let</span> <span class="id">stitches</span> = <span class="id">seam</span>.<span class="id">dash</span>(${
+  <span class="kw">let</span> <span class="id">stitches</span> = <span class="id">seam</span>.<span class="id">dash</span>(#{
     <span class="pr">stroke-dasharray</span>: <span class="str">${cell}</span> <span class="str">${cell}</span>;
     <span class="pr">stroke-dashoffset</span>: <span class="id">calc</span>(<span class="id">bit</span> * <span class="id">cell</span>);
   });
@@ -600,7 +600,7 @@ here, staggered fans of stitched arcs make the classic seigaiha wave.</p>
 
 define ViewBox(0, 0, 480, 260);
 
-let fabric = PathLayer('fabric') ${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -608,14 +608,14 @@ fabric.apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') ${};
-let thread = PathLayer('thread') ${
+let scene = GroupLayer('scene') #{};
+let thread = PathLayer('thread') #{
   stroke: #f1f5f9;
   stroke-width: 2.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -627,7 +627,7 @@ fn stitchArc(radius, anchorX, anchorY) {
     m calc(0 - radius) 0
     a radius radius 0 0 1 calc(radius * 2) 0
   };
-  let stitches = arcSpan.dash(${
+  let stitches = arcSpan.dash(#{
     stroke-dasharray: 7 4;
   });
   for (stitch in stitches) {
@@ -676,7 +676,7 @@ trust a percentage — then transfer and stitch.</p>
 
 define ViewBox(0, 0, 480, 320);
 
-let denim = PathLayer('denim') ${
+let denim = PathLayer('denim') #{
   fill: #27466b;
   stroke: none;
 };
@@ -684,19 +684,19 @@ denim.apply {
   rect(0, 0, 480, 320);
 }
 
-let scene = GroupLayer('scene') ${};
-let patch = PathLayer('patch') ${
+let scene = GroupLayer('scene') #{};
+let patch = PathLayer('patch') #{
   fill: #16304f;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let thread = PathLayer('thread') ${
+let thread = PathLayer('thread') #{
   stroke: #f1f5f9;
   stroke-width: 2.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -726,7 +726,7 @@ let colSeam = @{
 };
 
 fn sew(seam, anchorX, anchorY, bit) {
-  let stitches = seam.dash(${
+  let stitches = seam.dash(#{
     stroke-dasharray: ${cell} ${cell};
     stroke-dashoffset: calc(bit * cell);
   });

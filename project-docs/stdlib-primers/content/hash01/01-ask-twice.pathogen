@@ -5,7 +5,7 @@
 
 define ViewBox(0, 0, 400, 210);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -17,9 +17,9 @@ labels.apply {
   text(22, 152)`randomRange(0, 1) — different every compile`
 }
 
-let rowA = PathLayer('hash-first-ask') ${ fill: oklch(0.62 0.16 260); stroke: none; };
-let rowB = PathLayer('hash-second-ask') ${ fill: oklch(0.62 0.16 260); stroke: none; };
-let rowC = PathLayer('random-every-time') ${ fill: oklch(0.6 0.15 20); stroke: none; };
+let rowA = PathLayer('hash-first-ask') #{ fill: oklch(0.62 0.16 260); stroke: none; };
+let rowB = PathLayer('hash-second-ask') #{ fill: oklch(0.62 0.16 260); stroke: none; };
+let rowC = PathLayer('random-every-time') #{ fill: oklch(0.6 0.15 20); stroke: none; };
 
 rowA.apply {
   for (i in 0..47) {

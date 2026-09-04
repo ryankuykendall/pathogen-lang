@@ -13,7 +13,7 @@ let grainy = NoiseFilter() {|f|
   f.amount = 0.55;
 };
 
-define PathLayer('orb') ${
+define PathLayer('orb') #{
   fill: glow;
   stroke: none;
   filter: grainy;

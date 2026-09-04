@@ -385,7 +385,7 @@ counter used to land:</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let table = PathLayer('table') ${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -393,19 +393,19 @@ layer('table').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') ${};
-let sheetLayer = PathLayer('sheet') ${
+let scene = GroupLayer('scene') #{};
+let sheetLayer = PathLayer('sheet') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let driftGhost = PathLayer('drift-ghost') ${
+let driftGhost = PathLayer('drift-ghost') #{
   stroke: #f59e0b;
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -463,7 +463,7 @@ promise that it deserved a careful session of its own. It got one.</p>
 parse-killing error, with a &quot;Missing &#39;;&#39;&quot; pointing nowhere near the
 cause. The workaround was a backtick template — and a list built from
 variables needed one backtick fragment per token:</p>
-<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: ${<span class="pr">capName</span>};      <span class="cm">// parse error, before the fix</span>
+<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: ${<span class="id">capName</span>};      <span class="cm">// parse error, before the fix</span>
 <span class="id">stroke</span>-<span class="id">linecap</span>: `${<span class="id">capName</span>}`;    <span class="cm">// the old workaround</span>
 </code></pre><p>The diagnosis is a good story. A style block&#39;s interior isn&#39;t parsed
 structurally — it&#39;s one opaque token, scanned by a little machine
@@ -475,15 +475,21 @@ survived only because the scanner already knew to skip over template
 literals whole. The irony ran deep: <code>${</code> is literally how a style
 block <em>opens</em>, yet it was the one thing that couldn&#39;t appear bare
 inside one.</p>
+<blockquote>
+<p><strong>Editor&#39;s note, September 2026:</strong> that irony was the last straw. Style
+blocks now open with <code>#{ … }</code>; <code>${ … }</code> is interpolation and nothing
+else. The samples on this page were migrated mechanically — every
+<code>${</code> that opened a block became <code>#{</code>, every <code>${</code> inside a value stayed.</p>
+</blockquote>
 <p>The fix gives the bare interpolation its own token beside the opaque
 content — the scanner now hands <code>${...}</code> spans through intact, the
 value parser treats their insides as expression territory, and both
 evaluators splice them through the exact same path as the backtick
 form. So today, the bare form just works — whole values, list
 tokens, even fused to a unit inside a function argument:</p>
-<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: ${<span class="pr">capName</span>};
-<span class="id">stroke</span>-<span class="id">dasharray</span>: ${<span class="pr">cell</span>} ${<span class="pr">cell</span>};
-<span class="id">filter</span>: <span class="id">blur</span>(${<span class="pr">softness</span>}<span class="id">px</span>);
+<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: ${<span class="id">capName</span>};
+<span class="id">stroke</span>-<span class="id">dasharray</span>: ${<span class="id">cell</span>} ${<span class="id">cell</span>};
+<span class="id">filter</span>: <span class="id">blur</span>(${<span class="id">softness</span>}<span class="id">px</span>);
 </code></pre><p>The backtick form remains equivalent; every sample in this series
 now uses the bare one. (One souvenir of the tokenizer&#39;s size limits:
 inside a style value, a <em>template&#39;s</em> interpolation still can&#39;t nest

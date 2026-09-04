@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { StringTextDocument } from '../../src/language-services/document';
 import { getDiagnostics } from '../../src/language-services/diagnostics';
 import { DiagnosticSeverity } from '../../src/language-services/types';
+import { LEGACY_STYLE_OPENER_MESSAGE } from '../../src/parser';
 
 function diagnose(source: string) {
   return getDiagnostics(new StringTextDocument(source));
@@ -37,7 +38,9 @@ describe('getDiagnostics', () => {
     });
 
     it('reports a style declaration missing its trailing semicolon', () => {
-      const diags = diagnose("define PathLayer('a') ${ fill: none; stroke-width: 3 }\nlayer('a').apply { M 0 0 L 10 10 }");
+      const diags = diagnose(
+        "define PathLayer('a') #{ fill: none; stroke-width: 3 }\nlayer('a').apply { M 0 0 L 10 10 }",
+      );
       expect(diags.length).toBeGreaterThanOrEqual(1);
       expect(diags[0].message).toContain("Missing ';'");
     });
@@ -45,7 +48,7 @@ describe('getDiagnostics', () => {
     it('stays resilient (no throw) for an incomplete style block being typed', () => {
       // AST-building is lenient, so a half-typed block still yields a single
       // diagnostic rather than crashing the language service.
-      expect(() => diagnose('let accent = oklch(0.7 0.1 250);\nlet s = ${ stroke:  };')).not.toThrow();
+      expect(() => diagnose('let accent = oklch(0.7 0.1 250);\nlet s = #{ stroke:  };')).not.toThrow();
     });
 
     it('reports correct 0-based line for multi-line error', () => {
@@ -109,10 +112,10 @@ describe('getDiagnostics', () => {
   describe('multi-error recovery', () => {
     it('reports multiple errors across separate statements', () => {
       const source = [
-        'let x = 10',     // line 0: missing semicolon
-        'let y = 20;',    // line 1: valid
-        'let z = 30',     // line 2: missing semicolon
-        'M y 0',          // line 3: valid
+        'let x = 10', // line 0: missing semicolon
+        'let y = 20;', // line 1: valid
+        'let z = 30', // line 2: missing semicolon
+        'M y 0', // line 3: valid
       ].join('\n');
       const diags = diagnose(source);
       expect(diags.length).toBeGreaterThanOrEqual(2);
@@ -123,9 +126,9 @@ describe('getDiagnostics', () => {
 
     it('reports errors on correct lines after recovery', () => {
       const source = [
-        'let a = 10',   // line 0: missing semicolon
-        'let b = 20;',  // line 1: valid
-        'M b 0',        // line 2: valid
+        'let a = 10', // line 0: missing semicolon
+        'let b = 20;', // line 1: valid
+        'M b 0', // line 2: valid
       ].join('\n');
       const diags = diagnose(source);
       expect(diags.length).toBeGreaterThanOrEqual(1);
@@ -135,12 +138,12 @@ describe('getDiagnostics', () => {
 
     it('recovers at for-loop and let boundaries', () => {
       const source = [
-        'let x = 10',       // line 0: missing semicolon
+        'let x = 10', // line 0: missing semicolon
         'for (i in 0..5) {', // line 1: recovery point
-        '  M i 0',           // line 2: valid
-        '}',                 // line 3: valid
-        'let y = 20',        // line 4: missing semicolon
-        'M 0 0',             // line 5: recovery point
+        '  M i 0', // line 2: valid
+        '}', // line 3: valid
+        'let y = 20', // line 4: missing semicolon
+        'M 0 0', // line 5: recovery point
       ].join('\n');
       const diags = diagnose(source);
       expect(diags.length).toBeGreaterThanOrEqual(2);
@@ -149,11 +152,11 @@ describe('getDiagnostics', () => {
     it('reports errors with correct line numbers after recovery', () => {
       // Missing semicolons on lines 0 and 3, with valid recovery points between
       const source = [
-        'let x = 10',     // line 0: missing semicolon
-        'M 0 0',          // line 1: recovery point
-        'L 10 10',        // line 2: valid
-        'let y = 20',     // line 3: missing semicolon
-        'M 5 5',          // line 4: recovery point
+        'let x = 10', // line 0: missing semicolon
+        'M 0 0', // line 1: recovery point
+        'L 10 10', // line 2: valid
+        'let y = 20', // line 3: missing semicolon
+        'M 5 5', // line 4: recovery point
       ].join('\n');
       const diags = diagnose(source);
       expect(diags.length).toBeGreaterThanOrEqual(2);
@@ -168,8 +171,8 @@ describe('getDiagnostics', () => {
     it('filters cascade errors adjacent to the real error', () => {
       // Missing ';' after style block — only one real error, the next line is cascade noise
       const source = [
-        "let bg = PathLayer('bg') ${ fill: red; }",  // line 0: missing ;
-        'bg.apply {',                                  // line 1: cascade
+        "let bg = PathLayer('bg') #{ fill: red; }", // line 0: missing ;
+        'bg.apply {', // line 1: cascade
         '  rect(0, 0, 100, 100);',
         '}',
       ].join('\n');
@@ -180,23 +183,18 @@ describe('getDiagnostics', () => {
 
     it('preserves genuinely separate errors across distant lines', () => {
       const source = [
-        'let x = 10',     // line 0: missing ;
-        'M x 0',          // line 1: valid (cascade filtered)
-        'L 20 20',        // line 2: valid
-        'let y = 20',     // line 3: missing ; (separate error, >2 lines away)
-        'M y 0',          // line 4: valid
+        'let x = 10', // line 0: missing ;
+        'M x 0', // line 1: valid (cascade filtered)
+        'L 20 20', // line 2: valid
+        'let y = 20', // line 3: missing ; (separate error, >2 lines away)
+        'M y 0', // line 4: valid
       ].join('\n');
       const diags = diagnose(source);
       expect(diags.length).toBeGreaterThanOrEqual(2);
     });
 
     it('does not produce false positives for valid programs', () => {
-      const source = [
-        'let x = 10;',
-        'let y = 20;',
-        'M x y',
-        'L calc(x + 10) calc(y + 10)',
-      ].join('\n');
+      const source = ['let x = 10;', 'let y = 20;', 'M x y', 'L calc(x + 10) calc(y + 10)'].join('\n');
       expect(diagnose(source)).toEqual([]);
     });
 
@@ -235,9 +233,7 @@ describe('getDiagnostics', () => {
     it("reports did-you-mean for '@fontFamily' (missing space after @font)", () => {
       const diags = diagnose('@fontFamily;\nM 0 0');
       expect(diags).toHaveLength(1);
-      expect(diags[0].message).toBe(
-        "unknown directive '@fontFamily' — did you mean '@font fontFamily'?",
-      );
+      expect(diags[0].message).toBe("unknown directive '@fontFamily' — did you mean '@font fontFamily'?");
       // Anchored to the directive, not the top of the file.
       expect(diags[0].range.start).toEqual({ line: 0, character: 0 });
       expect(diags[0].range.end.character).toBeGreaterThan(0);
@@ -299,7 +295,7 @@ describe('getDiagnostics', () => {
     it('does not surface "no fonts were loaded" when source uses PathBlock.fromGlyph', () => {
       const source = `
         @font "Inconsolata" 400;
-        let s = \${ font-family: "Inconsolata"; font-size: 16; };
+        let s = #{ font-family: "Inconsolata"; font-size: 16; };
         let g = PathBlock.fromGlyph('A', s);
       `;
       const diags = diagnose(source);
@@ -360,16 +356,24 @@ describe('command-letter shadowing rescue (single-letter variable in path args)'
 
 describe('getDiagnostics switch statements', () => {
   it('a valid path-form switch produces no diagnostics', () => {
-    expect(diagnose('let kind = 2;\nswitch (kind) {\n  case 1 {\n    M 0 0\n  }\n  case 2..<5 where kind > 0 {\n    M 1 1\n  }\n  default {\n    M 2 2\n  }\n}')).toEqual([]);
+    expect(
+      diagnose(
+        'let kind = 2;\nswitch (kind) {\n  case 1 {\n    M 0 0\n  }\n  case 2..<5 where kind > 0 {\n    M 1 1\n  }\n  default {\n    M 2 2\n  }\n}',
+      ),
+    ).toEqual([]);
   });
 
   it('destructuring case bindings do not trigger undefined-variable errors', () => {
-    expect(diagnose('let p = Point(3, 1);\nswitch (p) {\n  case { x, y } where x > y {\n    M x y\n  }\n  case [first, ...others] {\n    M first 0\n  }\n}')).toEqual([]);
+    expect(
+      diagnose(
+        'let p = Point(3, 1);\nswitch (p) {\n  case { x, y } where x > y {\n    M x y\n  }\n  case [first, ...others] {\n    M first 0\n  }\n}',
+      ),
+    ).toEqual([]);
   });
 
   it('a valid text-form switch produces no diagnostics', () => {
     const src = [
-      "define TextLayer('labels') ${ font-size: 12; }",
+      "define TextLayer('labels') #{ font-size: 12; }",
       'let level = 3;',
       "layer('labels').apply {",
       '  text(10, 30) {',
@@ -450,7 +454,10 @@ describe('switch expression diagnostics', () => {
 
   it.each([
     ['let f = switch (k) { case 1 { 5 } };', "A switch expression needs a 'default' arm so it always produces a value"],
-    ['let f = switch (k) { case 1 { 5; } default { 6 } };', 'A switch expression arm holds a single expression: case value { expr }'],
+    [
+      'let f = switch (k) { case 1 { 5; } default { 6 } };',
+      'A switch expression arm holds a single expression: case value { expr }',
+    ],
     ['let f = switch (k) { case 1 { } default { 6 } };', 'Expected an expression inside the arm'],
     ['let f = switch (k) { default { 6 } case 1 { 5 } };', "'default' must be the last arm in a switch expression"],
     ['let f = switch k { default { 6 } };', "Expected '(' after 'switch'"],
@@ -464,6 +471,53 @@ describe('switch expression diagnostics', () => {
   });
 
   it('reports nothing for a valid switch expression', () => {
-    expect(messages('let k = 1;\nlet f = switch (k) { case 1, 2 { 5 } case {x, y} where x > y { x } default { 6 } };')).toEqual([]);
+    expect(
+      messages('let k = 1;\nlet f = switch (k) { case 1, 2 { 5 } case {x, y} where x > y { x } default { 6 } };'),
+    ).toEqual([]);
+  });
+});
+
+describe('legacy style-block opener (${ … } → #{ … })', () => {
+  const O = '${';
+
+  it('reports the migration message once at the opener and suppresses the cascade inside the block', () => {
+    const diags = diagnose(`let s = ${O} fill: red; stroke-width: 2; };\nM 0 0`);
+    expect(diags).toHaveLength(1);
+    expect(diags[0].message).toBe(LEGACY_STYLE_OPENER_MESSAGE);
+    expect(diags[0].range.start).toEqual({ line: 0, character: 8 });
+  });
+
+  it('positions the message at a define-statement opener', () => {
+    const diags = diagnose(`define PathLayer('a') ${O} fill: red; }\nlayer('a').apply { M 0 0 }`);
+    expect(diags.map((d) => d.message)).toEqual([LEGACY_STYLE_OPENER_MESSAGE]);
+    expect(diags[0].range.start).toEqual({ line: 0, character: 22 });
+  });
+
+  it('does not flag interpolations in templates or style values', () => {
+    const diags = diagnose(
+      `let w = 2;\nlet s = #{ stroke-width: ${O}w}; stroke-dasharray: ${O}w} ${O}w}; };\nlet t = \`a ${O}w} b\`;\nM 0 0`,
+    );
+    expect(diags).toHaveLength(0);
+  });
+
+  it('fires for the constructor forms too, where recovery synthesizes a StyleBlockLiteral around the stray opener', () => {
+    const bare = diagnose(`PathLayer('a') ${O} fill: red; }\nM 0 0`);
+    expect(bare.map((d) => d.message)).toEqual([LEGACY_STYLE_OPENER_MESSAGE]);
+    expect(bare[0].range.start).toEqual({ line: 0, character: 15 });
+    const firstClass = diagnose(`let pl = PathLayer('outline') ${O} stroke: red; };\nM 0 0`);
+    expect(firstClass.map((d) => d.message)).toEqual([LEGACY_STYLE_OPENER_MESSAGE]);
+    expect(firstClass[0].range.start).toEqual({ line: 0, character: 30 });
+    const merged = diagnose(`let base = #{ fill: red; };\nlet both = base << ${O} stroke: blue; };\nM 0 0`);
+    expect(merged.map((d) => d.message)).toEqual([LEGACY_STYLE_OPENER_MESSAGE]);
+  });
+
+  it('a } inside a quoted value does not end the cascade suppression early', () => {
+    const diags = diagnose(`let s = ${O}\n  font-family: "a}b";\n  stroke: red;\n};\nM 0 0`);
+    expect(diags.map((d) => d.message)).toEqual([LEGACY_STYLE_OPENER_MESSAGE]);
+  });
+
+  it('a broken interpolation inside a template is not reported as a legacy opener', () => {
+    const diags = diagnose(`let t = \`a ${O} b\`;`);
+    expect(diags.some((d) => d.message === LEGACY_STYLE_OPENER_MESSAGE)).toBe(false);
   });
 });

@@ -14,12 +14,12 @@ fn sinFract(i) {
   return s - floor(s);
 }
 
-let folk = PathLayer('sin-fract') ${
+let folk = PathLayer('sin-fract') #{
   fill: oklch(0.6 0.15 20);
   stroke: none;
   opacity: 0.85;
 };
-let builtin = PathLayer('hash01') ${
+let builtin = PathLayer('hash01') #{
   fill: oklch(0.55 0.18 260);
   stroke: none;
   opacity: 0.85;
@@ -36,7 +36,7 @@ builtin.apply {
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -49,7 +49,7 @@ labels.apply {
 
 //-- Value-axis ticks: vertical position IS the hash output, 0 at the top
 //-- of each band, 1 at the bottom.
-let ticks = TextLayer('value-ticks') ${
+let ticks = TextLayer('value-ticks') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: #666;
@@ -62,5 +62,5 @@ ticks.apply {
   text(372, 207)`1`
 }
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(folk, builtin, labels, ticks);

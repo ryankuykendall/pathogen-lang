@@ -333,14 +333,14 @@ let x7 = calc(sin(a * y6) + c * cos(a * x6));
 let y7 = calc(sin(b * x6) + d * cos(b * y6));
 
 // Light background for text readability in dark mode
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #f8f7f4;
   stroke: none;
 };
 bg.apply { roundRect(0, 0, 560, 260, 6); }
 
 // Trajectory lines
-let trail = PathLayer('trail') ${
+let trail = PathLayer('trail') #{
   stroke: oklch(0.70 0.10 260);
   stroke-width: 1;
   stroke-dasharray: 4 3;
@@ -359,7 +359,7 @@ trail.apply {
 }
 
 // Points — larger for early, smaller for later
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   stroke: none;
   fill: oklch(0.45 0.20 260);
 };
@@ -376,7 +376,7 @@ dots.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-size: 10;
   fill: #444;
   font-family: system-ui, sans-serif;
@@ -391,7 +391,7 @@ labels.apply {
 }
 
 // Formula text
-let formula = TextLayer('formula') ${
+let formula = TextLayer('formula') #{
   font-size: 13;
   fill: #333;
   font-family: ui-monospace, monospace;
@@ -403,7 +403,7 @@ formula.apply {
   text(30, 246)`yₙ₊₁ = sin(b · xₙ) + d · cos(b · yₙ)`
 }
 
-let g = GroupLayer('concept') ${};
+let g = GroupLayer('concept') #{};
 g.append(bg, trail, dots, labels, formula);
 </code>
   <img src="/blog/samples/post23/iteration-concept.svg" alt="Iteration trajectory — each point maps to the next through the Clifford equations" loading="lazy">
@@ -450,7 +450,7 @@ let cy = 170;
 let x = 0.1;
 let y = 0.1;
 
-define default PathLayer('attractor') ${
+define default PathLayer('attractor') #{
   stroke: none;
   fill: oklch(0.45 0.18 260);
   opacity: 0.7;
@@ -470,7 +470,7 @@ for (i in 0..99) {
 <h2>Scaling Up: 10,000 Points</h2>
 <p>Pathogen&#39;s <code>for</code> loop supports up to 32,000 iterations per loop (a safety limit to prevent runaway programs). For our first full render, 10,000 points is plenty to reveal the attractor&#39;s structure.</p>
 <p>But first, an optimization. Each <code>circle()</code> call generates two SVG arc commands — for 10,000 circles, that&#39;s 30,000 path commands and roughly 800KB of SVG data. Instead, we can render each point as a zero-length line segment: <code>M x y l 0 0</code>. With <code>stroke-linecap: round</code> set on the layer, SVG renders this as a circular dot. Two commands per point instead of three, cutting the SVG output nearly in half.</p>
-<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="kw">default</span> <span class="tp">PathLayer</span>(<span class="str">'attractor'</span>) ${
+<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="kw">default</span> <span class="tp">PathLayer</span>(<span class="str">'attractor'</span>) #{
   <span class="pr">stroke</span>: <span class="id">oklch</span>(<span class="num">0.55</span> <span class="num">0.18</span> <span class="num">260</span>);
   <span class="pr">stroke-width</span>: <span class="num">1.0</span>;
   <span class="pr">stroke-linecap</span>: <span class="id">round</span>;
@@ -505,7 +505,7 @@ let cy = 240;
 let x = 0.1;
 let y = 0.1;
 
-define default PathLayer('attractor') ${
+define default PathLayer('attractor') #{
   stroke: oklch(0.55 0.18 260);
   stroke-width: 1.0;
   stroke-linecap: round;
@@ -530,14 +530,14 @@ for (i in 1..9999) {
 <h2>Color Mapping with Layers</h2>
 <p>A single-color attractor is striking, but color can reveal the attractor&#39;s temporal structure — how the trajectory evolves over time. In many attractor renderers, each point&#39;s color is determined by its iteration index or by the local density of visits. Pathogen&#39;s layer system gives us a clean way to approximate this.</p>
 <p>The idea: split 10,000 iterations into 5 chunks of 2,000 each. Each chunk renders to a different layer with a different color from a palette. Early iterations (exploring the attractor&#39;s outline) get one color; later iterations (filling in the dense interior) get another.</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">baseStyles</span> = ${
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">baseStyles</span> = #{
   <span class="pr">stroke-width</span>: <span class="num">1</span>;
   <span class="pr">stroke-linecap</span>: <span class="id">round</span>;
   <span class="pr">fill</span>: <span class="id">none</span>;
 };
 <span class="kw">let</span> <span class="id">colors</span> = <span class="id">Color</span>.<span class="id">palette</span>(<span class="id">Color</span>(<span class="str">'#1e40af'</span>), <span class="id">Color</span>(<span class="str">'#f97316'</span>), <span class="num">5</span>);
 <span class="kw">let</span> <span class="id">layers</span> = <span class="id">colors</span>.<span class="id">map</span> {|<span class="id">c</span>, <span class="id">i</span>|
-  <span class="kw">return</span> <span class="tp">PathLayer</span>(`color-${<span class="id">i</span>}`) ${ <span class="pr">stroke</span>: <span class="id">c</span>; } &lt;&lt; <span class="id">baseStyles</span>;
+  <span class="kw">return</span> <span class="tp">PathLayer</span>(`color-${<span class="id">i</span>}`) #{ <span class="pr">stroke</span>: <span class="id">c</span>; } &lt;&lt; <span class="id">baseStyles</span>;
 };
 </code></pre><p><code>Color.palette()</code> generates 5 evenly interpolated colors between blue and orange. <code>.map</code> iterates over them, creating a <code>PathLayer</code> for each — the <code>&lt;&lt;</code> operator merges the per-layer stroke color with the shared base styles. No repetition, and the layer count is driven by the palette size.</p>
 <p>The nested loop handles iteration and color dispatch:</p>
@@ -570,14 +570,14 @@ let x = 0.1;
 let y = 0.1;
 
 // Shared styles + 5-color palette from deep blue to warm orange
-let baseStyles = ${
+let baseStyles = #{
   stroke-width: 1;
   stroke-linecap: round;
   fill: none;
 };
 let colors = Color.palette(Color('#1e40af'), Color('#f97316'), 5);
 let layers = colors.map {|c, i|
-  return PathLayer(`color-${i}`) ${ stroke: c; } &lt;&lt; baseStyles;
+  return PathLayer(`color-${i}`) #{ stroke: c; } &lt;&lt; baseStyles;
 };
 
 // Each chunk renders 2,000 iterations in a different color.
@@ -595,7 +595,7 @@ for ([colorLayer, chunk] in layers) {
   }
 }
 
-let g = GroupLayer('all') ${};
+let g = GroupLayer('all') #{};
 g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </code>
   <img src="/blog/samples/post23/color-attractor.svg" alt="Temporal color mapping — blue (early iterations) to orange (late iterations)" loading="lazy">
@@ -630,7 +630,7 @@ fn drawAttractor(target, ox, oy, a, b, c, d) {
 }
 
 // --- Set 1: Classic ---
-let p1 = PathLayer('set1') ${
+let p1 = PathLayer('set1') #{
   stroke: oklch(0.50 0.20 260);
   stroke-width: 0.8;
   stroke-linecap: round;
@@ -638,7 +638,7 @@ let p1 = PathLayer('set1') ${
 };
 
 // --- Set 2: Swirl ---
-let p2 = PathLayer('set2') ${
+let p2 = PathLayer('set2') #{
   stroke: oklch(0.50 0.20 330);
   stroke-width: 0.8;
   stroke-linecap: round;
@@ -646,7 +646,7 @@ let p2 = PathLayer('set2') ${
 };
 
 // --- Set 3: Organic ---
-let p3 = PathLayer('set3') ${
+let p3 = PathLayer('set3') #{
   stroke: oklch(0.50 0.20 150);
   stroke-width: 0.8;
   stroke-linecap: round;
@@ -658,7 +658,7 @@ drawAttractor(p2, 450, 175, 1.6, -0.6, -1.2, 1.6);
 drawAttractor(p3, 750, 175, 1.7, 1.7, 0.6, 1.2);
 
 // Labels
-let names = TextLayer('names') ${
+let names = TextLayer('names') #{
   font-size: 14;
   fill: oklch(0.75 0.05 260);
   font-family: system-ui, sans-serif;
@@ -672,7 +672,7 @@ names.apply {
   text(750, 332)`Organic`
 }
 
-let params = TextLayer('params') ${
+let params = TextLayer('params') #{
   font-size: 11;
   fill: oklch(0.55 0.03 260);
   font-family: ui-monospace, monospace;
@@ -685,7 +685,7 @@ params.apply {
   text(750, 348)`a=1.7  b=1.7  c=0.6  d=1.2`
 }
 
-let g = GroupLayer('gallery') ${};
+let g = GroupLayer('gallery') #{};
 g.append(p1, p2, p3, names, params);
 </code>
   <img src="/blog/samples/post23/parameter-gallery.svg" alt="Three parameter sets — each producing a distinct attractor form" loading="lazy">
@@ -721,14 +721,14 @@ let y = 0.1;
 let earlyColor = Color(CSSVar('--early-color', '#1e40af'));
 let lateColor = Color(CSSVar('--late-color', '#f97316'));
 
-let baseStyles = ${
+let baseStyles = #{
   stroke-width: 1.2;
   stroke-linecap: round;
   fill: none;
 };
 let colors = Color.palette(earlyColor, lateColor, 5);
 let layers = colors.map {|c, i|
-  return PathLayer(`color-${i}`) ${ stroke: c; } &lt;&lt; baseStyles;
+  return PathLayer(`color-${i}`) #{ stroke: c; } &lt;&lt; baseStyles;
 };
 
 for ([colorLayer, chunk] in layers) {
@@ -743,7 +743,7 @@ for ([colorLayer, chunk] in layers) {
   }
 }
 
-let g = GroupLayer('all') ${};
+let g = GroupLayer('all') #{};
 g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </code>
   <img src="/blog/samples/post23/interactive-attractor.svg" alt="Reactive color palette — change --early-color and --late-color to restyle the attractor" loading="lazy">

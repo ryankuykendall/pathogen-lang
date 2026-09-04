@@ -119,7 +119,7 @@ let ramp_red = Color.palette(red, 9);   // L ≈ 0.15 → 0.95
 ### Dashed L-threshold reference rings
 
 ```pathogen
-let ring_055 = PathLayer('ring-055') ${
+let ring_055 = PathLayer('ring-055') #{
   fill: none; stroke: fg_auto; stroke-width: 1; stroke-dasharray: 3 4;
 };
 ```
@@ -131,10 +131,10 @@ Dashed reference rings at `L = 0.55` and `L = 0.75` are a visual assertion: "thi
 For labels sitting over busy geometry:
 
 ```pathogen
-let chip_bg = PathLayer('chip-bg') ${ fill: bg_color; stroke: fg_hair; stroke-width: 0.5; };
+let chip_bg = PathLayer('chip-bg') #{ fill: bg_color; stroke: fg_hair; stroke-width: 0.5; };
 chip_bg.apply { rect(calc(x - 28), calc(y - 8), 56, 16); }
 
-let chip_label = TextLayer('chip-label') ${
+let chip_label = TextLayer('chip-label') #{
   font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   font-size: 8; letter-spacing: 1.4; fill: fg_auto; text-anchor: middle;
 };
@@ -203,19 +203,19 @@ let fg_hair  = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.22)
 let fg_faint = 'oklch(from var(--bg, #d0d7f0) calc((0.5 - l) * 1000) 0 0 / 0.10)';
 
 // ─── Background ────────────────────────────────────────────────
-let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bg_color; stroke: none; };
 bg.apply { rect(0, 0, 520, 320); }
 
 // ─── Typography styles ─────────────────────────────────────────
 let font = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
 
-let eyebrow = TextLayer('eyebrow') ${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font; font-size: 8; font-weight: 700;
   letter-spacing: 3; fill: fg_muted; text-anchor: start;
 };
 eyebrow.apply { text(15, 28)`EXAMPLE / 01` }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: font; font-size: 38; font-weight: 200;
   letter-spacing: -1; fill: fg_auto; text-anchor: start;
 };

@@ -3,12 +3,12 @@ define ViewBox(0, 0, 600, 260);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 260); }
 
 // --- Grid cells ---
 
-let cells = PathLayer('cells') ${
+let cells = PathLayer('cells') #{
   fill: Color('#1e293b');
   stroke: Color('#334155');
   stroke-width: 1;
@@ -23,35 +23,35 @@ cells.apply {
 
 // --- Shapes ---
 
-let s1 = PathLayer('s-circle') ${
+let s1 = PathLayer('s-circle') #{
   fill: Color('#3b82f618');
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
 s1.apply { circle(65, 100, 30); }
 
-let s2 = PathLayer('s-rect') ${
+let s2 = PathLayer('s-rect') #{
   fill: Color('#22c55e18');
   stroke: Color('#22c55e');
   stroke-width: 1.5;
 };
 s2.apply { rect(150, 72, 60, 40); }
 
-let s3 = PathLayer('s-star') ${
+let s3 = PathLayer('s-star') #{
   fill: Color('#f59e0b18');
   stroke: Color('#f59e0b');
   stroke-width: 1.5;
 };
 s3.apply { star(295, 100, 32, 14, 5); }
 
-let s4 = PathLayer('s-polygon') ${
+let s4 = PathLayer('s-polygon') #{
   fill: Color('#ef444418');
   stroke: Color('#ef4444');
   stroke-width: 1.5;
 };
 s4.apply { polygon(410, 100, 30, 6); }
 
-let s5 = PathLayer('s-roundrect') ${
+let s5 = PathLayer('s-roundrect') #{
   fill: Color('#8b5cf618');
   stroke: Color('#8b5cf6');
   stroke-width: 1.5;
@@ -60,7 +60,7 @@ s5.apply { roundRect(498, 75, 55, 40, 8); }
 
 // --- Shape names ---
 
-let names = TextLayer('names') ${
+let names = TextLayer('names') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -76,7 +76,7 @@ names.apply {
 
 // --- Signatures ---
 
-let sigs = TextLayer('sigs') ${
+let sigs = TextLayer('sigs') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#64748b');
@@ -92,7 +92,7 @@ sigs.apply {
 
 // --- Usage example ---
 
-let usage = TextLayer('usage') ${
+let usage = TextLayer('usage') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -103,7 +103,7 @@ usage.apply {
   text(15, 234)`shape.drawTo(100, 100)`
 }
 
-let usage_kw = TextLayer('usage-kw') ${
+let usage_kw = TextLayer('usage-kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -113,7 +113,7 @@ usage_kw.apply {
   text(15, 220)`let`
 }
 
-let usage_note = TextLayer('usage-note') ${
+let usage_note = TextLayer('usage-note') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -126,7 +126,7 @@ usage_note.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -136,7 +136,7 @@ title.apply {
   text(15, 32)`Standard Library Shapes`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');

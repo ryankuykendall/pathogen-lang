@@ -39,7 +39,7 @@ describe('define ViewBox — parsing', () => {
   it('coexists with layer definitions and path commands', () => {
     const ast = parseLezer(`
       define ViewBox(0, 0, 200, 200);
-      define default PathLayer('main') \${ stroke: red; };
+      define default PathLayer('main') #{ stroke: red; };
       M 0 0 L 100 100
     `);
     const types = ast.ast.body.map((s) => s.type);
@@ -60,7 +60,7 @@ describe('define ViewBox — parsing', () => {
     // user-facing boilerplate (which uses `};`) parses, while existing
     // definitions without `;` continue to parse. This test pins both forms.
     const ast = parse(
-      `define PathLayer('a') \${ stroke: red; };\ndefine PathLayer('b') \${ stroke: blue; }`,
+      `define PathLayer('a') #{ stroke: red; };\ndefine PathLayer('b') #{ stroke: blue; }`,
     );
     expect(ast.body.map((s) => s.type)).toEqual(['LayerDefinition', 'LayerDefinition']);
   });
@@ -179,7 +179,7 @@ describe('viewbox global — reading', () => {
 
   it('is readable inside a layer apply block', () => {
     const result = compile(
-      "define ViewBox(0, 0, 100, 50);\ndefine PathLayer('a') ${ stroke: red; };\nlayer('a').apply {\n  rect(0, 0, viewbox.width, viewbox.height);\n}",
+      "define ViewBox(0, 0, 100, 50);\ndefine PathLayer('a') #{ stroke: red; };\nlayer('a').apply {\n  rect(0, 0, viewbox.width, viewbox.height);\n}",
     );
     const layerA = result.layers.find((l) => l.name === 'a');
     expect(layerA?.data).toBe('M 0 0 l 100 0 l 0 50 l -100 0 z');
@@ -248,13 +248,13 @@ describe('viewbox global — reading', () => {
 
   it('rejects bare viewbox as a style value instead of emitting broken CSS', () => {
     expect(() =>
-      compile("define ViewBox(0, 0, 100, 100);\ndefine PathLayer('a') ${ stroke-width: viewbox; };"),
+      compile("define ViewBox(0, 0, 100, 100);\ndefine PathLayer('a') #{ stroke-width: viewbox; };"),
     ).toThrow(/a ViewBox value has no CSS form/);
   });
 
   it('rejects other struct values (ctx) as style values too', () => {
     expect(() =>
-      compile("define PathLayer('a') ${ stroke-width: ctx; };\nM 0 0"),
+      compile("define PathLayer('a') #{ stroke-width: ctx; };\nM 0 0"),
     ).toThrow(/has no CSS form/);
   });
 });

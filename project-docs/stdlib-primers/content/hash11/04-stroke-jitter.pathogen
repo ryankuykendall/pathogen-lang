@@ -17,7 +17,7 @@ fn ribbon(name, y0, wobble) {
   };
   let spine = @{ l 330 0 };
   let rib = spine.compoundVariableOffset() << mk;
-  let band = PathLayer(name) ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  let band = PathLayer(name) #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
   band.apply {
     M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
     rib.draw();

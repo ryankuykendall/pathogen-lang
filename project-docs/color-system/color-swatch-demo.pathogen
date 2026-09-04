@@ -15,20 +15,20 @@ let y2 = 110;
 let labelDy = 36;
 
 // ── Row 1: Lightness & Saturation ──
-define PathLayer('base') ${ fill: baseColor; stroke: none; }
-define PathLayer('lighten') ${ fill: baseColor.lighten(0.2); stroke: none; }
-define PathLayer('darken') ${ fill: baseColor.darken(0.15); stroke: none; }
-define PathLayer('saturate') ${ fill: baseColor.saturate(1.5); stroke: none; }
-define PathLayer('desaturate') ${ fill: baseColor.desaturate(0.3); stroke: none; }
+define PathLayer('base') #{ fill: baseColor; stroke: none; }
+define PathLayer('lighten') #{ fill: baseColor.lighten(0.2); stroke: none; }
+define PathLayer('darken') #{ fill: baseColor.darken(0.15); stroke: none; }
+define PathLayer('saturate') #{ fill: baseColor.saturate(1.5); stroke: none; }
+define PathLayer('desaturate') #{ fill: baseColor.desaturate(0.3); stroke: none; }
 
 // ── Row 2: Hue, Alpha & Mixing ──
-define PathLayer('hueshift') ${ fill: baseColor.hueShift(90); stroke: none; }
-define PathLayer('complement') ${ fill: baseColor.complement(); stroke: none; }
-define PathLayer('alpha') ${ fill: baseColor.alpha(0.5); stroke: none; }
-define PathLayer('mix') ${ fill: baseColor.mix(Color('#457b9d'), 0.5); stroke: none; }
+define PathLayer('hueshift') #{ fill: baseColor.hueShift(90); stroke: none; }
+define PathLayer('complement') #{ fill: baseColor.complement(); stroke: none; }
+define PathLayer('alpha') #{ fill: baseColor.alpha(0.5); stroke: none; }
+define PathLayer('mix') #{ fill: baseColor.mix(Color('#457b9d'), 0.5); stroke: none; }
 
 // ── Labels ──
-define TextLayer('labels') ${ font-size: 9; fill: #333; text-anchor: middle; font-family: monospace; }
+define TextLayer('labels') #{ font-size: 9; fill: #333; text-anchor: middle; font-family: monospace; }
 
 // Draw Row 1
 layer('base').apply { swatch(sx, y1, r); }

@@ -30,29 +30,29 @@ repeat_grad.spreadMethod = 'repeat';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #14141e; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #14141e; stroke: none; };
 bg.apply { rect(0, 0, 400, 300); }
 
 // --- Gradient strips ---
 
-let strip_pad = PathLayer('strip-pad') ${ fill: pad_grad; stroke: #333; stroke-width: 1; };
+let strip_pad = PathLayer('strip-pad') #{ fill: pad_grad; stroke: #333; stroke-width: 1; };
 strip_pad.apply { roundRect(60, 45, 320, 50, 4); }
 
-let strip_reflect = PathLayer('strip-reflect') ${ fill: reflect_grad; stroke: #333; stroke-width: 1; };
+let strip_reflect = PathLayer('strip-reflect') #{ fill: reflect_grad; stroke: #333; stroke-width: 1; };
 strip_reflect.apply { roundRect(60, 120, 320, 50, 4); }
 
-let strip_repeat = PathLayer('strip-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
+let strip_repeat = PathLayer('strip-repeat') #{ fill: repeat_grad; stroke: #333; stroke-width: 1; };
 strip_repeat.apply { roundRect(60, 195, 320, 50, 4); }
 
 // --- Range indicator (shows the 0–30% region) ---
 
-let indicator = PathLayer('range-indicator') ${ fill: none; stroke: #ffffff44; stroke-width: 1; };
+let indicator = PathLayer('range-indicator') #{ fill: none; stroke: #ffffff44; stroke-width: 1; };
 indicator.apply {
   M 60 40 L 60 255
   M 156 40 L 156 255
 }
 
-let range_label = TextLayer('range-label') ${
+let range_label = TextLayer('range-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -64,7 +64,7 @@ range_label.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 12;
   fill: #a0a0c0;
@@ -78,7 +78,7 @@ labels.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 16;
   fill: #e0e0ff;
@@ -91,5 +91,5 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title);

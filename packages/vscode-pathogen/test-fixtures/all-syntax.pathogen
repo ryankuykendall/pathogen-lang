@@ -87,9 +87,9 @@ lerp(0, 100, 0.5);
 clamp(x, 0, 100);
 
 // --- Layers ---
-define PathLayer('outline') ${ stroke: #000; stroke-width: 2; fill: none; }
-define TextLayer('labels') ${ font-size: 14; fill: #333; }
-define GroupLayer('group1') ${}
+define PathLayer('outline') #{ stroke: #000; stroke-width: 2; fill: none; }
+define TextLayer('labels') #{ font-size: 14; fill: #333; }
+define GroupLayer('group1') #{}
 
 layer('outline').apply {
   circle(100, 100, 50);

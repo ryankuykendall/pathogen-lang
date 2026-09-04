@@ -27,52 +27,52 @@ let subtle = LinearGradient('subtle-variant', 0, 0, 1, 0) {|g|
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 400, 300); }
 
 // --- Base showcase (large card) ---
 
-let base_card = PathLayer('base-card') ${ fill: base; stroke: #333; stroke-width: 1; };
+let base_card = PathLayer('base-card') #{ fill: base; stroke: #333; stroke-width: 1; };
 base_card.apply { roundRect(20, 40, 170, 80, 8); }
 
-let cool_card = PathLayer('cool-card') ${ fill: cool; stroke: #333; stroke-width: 1; };
+let cool_card = PathLayer('cool-card') #{ fill: cool; stroke: #333; stroke-width: 1; };
 cool_card.apply { roundRect(210, 40, 170, 80, 8); }
 
 // --- Vertical variant: tall sidebar ---
 
-let vert_bar = PathLayer('vert-bar') ${ fill: vertical; stroke: #333; stroke-width: 1; };
+let vert_bar = PathLayer('vert-bar') #{ fill: vertical; stroke: #333; stroke-width: 1; };
 vert_bar.apply { roundRect(20, 145, 60, 120, 8); }
 
 // --- Subtle variant: UI elements ---
 
-let btn1 = PathLayer('btn1') ${ fill: subtle; stroke: none; };
+let btn1 = PathLayer('btn1') #{ fill: subtle; stroke: none; };
 btn1.apply { roundRect(100, 145, 120, 36, 6); }
 
-let btn2 = PathLayer('btn2') ${ fill: subtle; stroke: none; };
+let btn2 = PathLayer('btn2') #{ fill: subtle; stroke: none; };
 btn2.apply { roundRect(100, 195, 120, 36, 6); }
 
 // --- Small accent circles using base ---
 
-let dot1 = PathLayer('dot1') ${ fill: base; stroke: none; };
+let dot1 = PathLayer('dot1') #{ fill: base; stroke: none; };
 dot1.apply { circle(260, 163, 18); closePath(); }
 
-let dot2 = PathLayer('dot2') ${ fill: cool; stroke: none; };
+let dot2 = PathLayer('dot2') #{ fill: cool; stroke: none; };
 dot2.apply { circle(310, 163, 18); closePath(); }
 
-let dot3 = PathLayer('dot3') ${ fill: vertical; stroke: none; };
+let dot3 = PathLayer('dot3') #{ fill: vertical; stroke: none; };
 dot3.apply { circle(360, 163, 18); closePath(); }
 
 // --- Pill shapes with inherited gradient ---
 
-let pill1 = PathLayer('pill1') ${ fill: base; stroke: none; };
+let pill1 = PathLayer('pill1') #{ fill: base; stroke: none; };
 pill1.apply { roundRect(240, 200, 140, 28, 14); }
 
-let pill2 = PathLayer('pill2') ${ fill: cool; stroke: none; };
+let pill2 = PathLayer('pill2') #{ fill: cool; stroke: none; };
 pill2.apply { roundRect(240, 236, 140, 28, 14); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #888;
@@ -86,7 +86,7 @@ labels.apply {
   text(310, 195)`accent dots`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ccccdd;
@@ -99,5 +99,5 @@ title.apply {
 
 // --- Scene ---
 
-let palette = GroupLayer('palette') ${};
+let palette = GroupLayer('palette') #{};
 palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title);

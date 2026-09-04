@@ -28,7 +28,7 @@ const OUT_DIR = join(process.cwd(), 'project-docs', 'unified-export', 'verify');
 // (watermark contrast).
 const MAIN_SOURCE = `define ViewBox(0, 0, 800, 500);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: #14101c;
 }
 
@@ -37,7 +37,7 @@ layer('background').apply {
 }
 
 // concentric study
-define PathLayer('rings') \${
+define PathLayer('rings') #{
   stroke: #f7b56e;
   stroke-width: 3;
   fill: #b384e0;
@@ -55,7 +55,7 @@ layer('rings').apply {
 // transparent mode), not by drawn artwork.
 const OPEN_CORNER_SOURCE = `define ViewBox(0, 0, 400, 300);
 
-define default PathLayer('dot') \${
+define default PathLayer('dot') #{
   fill: #b384e0;
   stroke: none;
 }

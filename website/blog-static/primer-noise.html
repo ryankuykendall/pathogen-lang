@@ -341,12 +341,12 @@ same span.</p>
 
 define ViewBox(0, 0, 400, 190);
 
-let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M 30 155 L 370 155
 }
 
-let curve = PathLayer('noise-curve') ${ stroke: oklch(0.68 0.13 200); stroke-width: 2; fill: none; };
+let curve = PathLayer('noise-curve') #{ stroke: oklch(0.68 0.13 200); stroke-width: 2; fill: none; };
 curve.apply {
   M 30 calc(155 - noise(0) * 115)
   for (i in 1..160) {
@@ -355,7 +355,7 @@ curve.apply {
   }
 }
 
-let pins = PathLayer('hash-pins') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+let pins = PathLayer('hash-pins') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 pins.apply {
   for (k in 0..8) {
     circle(calc(30 + k * 42.5), calc(155 - hash01(k) * 115), 3);
@@ -363,12 +363,12 @@ pins.apply {
 }
 
 //-- Legend tinted to match the geometry.
-let legendDots = TextLayer('legend-dots') ${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.15 260); text-anchor: start; };
+let legendDots = TextLayer('legend-dots') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.15 260); text-anchor: start; };
 legendDots.apply { text(30, 26)`dots: hash01(k) at whole numbers` }
-let legendCurve = TextLayer('legend-curve') ${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.72 0.13 200); text-anchor: start; };
+let legendCurve = TextLayer('legend-curve') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.72 0.13 200); text-anchor: start; };
 legendCurve.apply { text(230, 26)`curve: noise(x)` }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -379,7 +379,7 @@ labels.apply {
   text(360, 172)`8`
 }
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(axis, curve, pins, legendDots, legendCurve, labels);
 </code>
   <img src="/blog/samples/post38/01-curve-through-dice.svg" alt="The curve doesn't approximate the dots — it passes exactly through every one, because at whole numbers noise IS hash01. And it arrives flat at every pin, courtesy of the smoothstep glide." loading="lazy">
@@ -401,7 +401,7 @@ define ViewBox(0, 0, 400, 230);
 
 fn wander(name, y0, freq, hue) {
   let c = Color(0.65, 0.13, hue);
-  let line = PathLayer(name) ${ stroke: c; stroke-width: 1.8; fill: none; };
+  let line = PathLayer(name) #{ stroke: c; stroke-width: 1.8; fill: none; };
   line.apply {
     M 30 calc(y0 - noise(0) * 34)
     for (i in 1..120) {
@@ -418,7 +418,7 @@ wander('swells', 70, 3, 260);
 wander('undulating', 140, 6, 200);
 wander('chattering', 210, 12, 150);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -452,20 +452,20 @@ define ViewBox(0, 0, 400, 180);
 for (i in 0..59) {
   let Lh = 0.3 + hash01(i) * 0.5;
   let ch = Color(Lh, 0.05, 260);
-  let barH = PathLayer(`static-${i}`) ${ fill: ch; stroke: none; };
+  let barH = PathLayer(`static-${i}`) #{ fill: ch; stroke: none; };
   barH.apply {
     rect(calc(24 + i * 5.9), 34, 5.4, 50);
   }
 
   let Ln = 0.3 + noise(i * 0.15) * 0.5;
   let cn = Color(Ln, 0.05, 260);
-  let barN = PathLayer(`smooth-${i}`) ${ fill: cn; stroke: none; };
+  let barN = PathLayer(`smooth-${i}`) #{ fill: cn; stroke: none; };
   barN.apply {
     rect(calc(24 + i * 5.9), 112, 5.4, 50);
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -509,13 +509,13 @@ let mk = {|vo, pb|
 let spine = @{ l 340 0 };
 let rib = spine.compoundVariableOffset() &lt;&lt; mk;
 
-let band = PathLayer('textured') ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.92; };
+let band = PathLayer('textured') #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.92; };
 band.apply {
   M calc(30 + rib.anchor.x) calc(72 + rib.anchor.y)
   rib.draw();
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -549,7 +549,7 @@ define ViewBox(0, 0, 400, 250);
 
 fn ridge(name, baseY, seed, freq, amp, L) {
   let c = Color(L, 0.06, 265);
-  let hill = PathLayer(name) ${ fill: c; stroke: none; };
+  let hill = PathLayer(name) #{ fill: c; stroke: none; };
   hill.apply {
     M 15 235
     L 15 calc(baseY - noise(0, seed) * amp)
@@ -567,7 +567,7 @@ ridge('middle', 135, 2, 4, 48, 0.58);
 ridge('near', 170, 3, 5, 55, 0.44);
 
 //-- Front ridge: slow + tall stacked with fast + quiet.
-let front = PathLayer('front') ${ fill: oklch(0.3 0.06 265); stroke: none; };
+let front = PathLayer('front') #{ fill: oklch(0.3 0.06 265); stroke: none; };
 front.apply {
   M 15 235
   let h0 = noise(0, 4) * 55 + noise(0, 5) * 12;

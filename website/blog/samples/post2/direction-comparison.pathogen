@@ -24,21 +24,21 @@ ccw_grad.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 500, 300); }
 
 // --- Gradient circles ---
 
-let cw_circle = PathLayer('cw-circle') ${ fill: cw_grad; stroke: #333; stroke-width: 1; };
+let cw_circle = PathLayer('cw-circle') #{ fill: cw_grad; stroke: #333; stroke-width: 1; };
 cw_circle.apply { circle(140, 150, 90); closePath(); }
 
-let ccw_circle = PathLayer('ccw-circle') ${ fill: ccw_grad; stroke: #333; stroke-width: 1; };
+let ccw_circle = PathLayer('ccw-circle') #{ fill: ccw_grad; stroke: #333; stroke-width: 1; };
 ccw_circle.apply { circle(360, 150, 90); closePath(); }
 
 // --- Direction arrows (curved sweep arcs with arrowheads) ---
 
 // CW: curved arrow sweeping clockwise from top
-let cw_arrow = PathLayer('cw-arrow') ${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+let cw_arrow = PathLayer('cw-arrow') #{ fill: none; stroke: #ffffffaa; stroke-width: 2; };
 cw_arrow.apply {
   // Arc sweeping CW from ~top-left to ~top-right
   M 118 56 A 20 20 0 0 1 162 56
@@ -47,7 +47,7 @@ cw_arrow.apply {
 }
 
 // CCW: curved arrow sweeping counter-clockwise from top
-let ccw_arrow = PathLayer('ccw-arrow') ${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+let ccw_arrow = PathLayer('ccw-arrow') #{ fill: none; stroke: #ffffffaa; stroke-width: 2; };
 ccw_arrow.apply {
   // Arc sweeping CCW from ~top-right to ~top-left
   M 382 56 A 20 20 0 0 0 338 56
@@ -57,7 +57,7 @@ ccw_arrow.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ddd;
@@ -69,7 +69,7 @@ labels.apply {
   text(360, 270)`Counter-Clockwise (CCW)`
 }
 
-let note = TextLayer('note') ${
+let note = TextLayer('note') #{
   font-family: monospace;
   font-size: 10;
   fill: #666;
@@ -81,11 +81,11 @@ note.apply {
 
 // --- Scene ---
 
-let left = GroupLayer('left') ${};
+let left = GroupLayer('left') #{};
 left.append(cw_circle, cw_arrow);
 
-let right = GroupLayer('right') ${};
+let right = GroupLayer('right') #{};
 right.append(ccw_circle, ccw_arrow);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left, right, labels, note);

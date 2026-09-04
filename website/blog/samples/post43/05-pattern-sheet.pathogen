@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,35 +12,35 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let panel = PathLayer('panel') ${
+let scene = GroupLayer('scene') #{};
+let panel = PathLayer('panel') #{
   fill: #e7dfd0;
   stroke: #64748b;
   stroke-width: 1.1;
   stroke-dasharray: 4 3;
 };
-let allowance = PathLayer('allowance') ${
+let allowance = PathLayer('allowance') #{
   stroke: #ef4444;
   stroke-width: 1.5;
   fill: none;
 };
-let notches = PathLayer('notches') ${
+let notches = PathLayer('notches') #{
   stroke: #2dd4bf;
   stroke-width: 2;
   fill: none;
 };
-let grain = PathLayer('grain') ${
+let grain = PathLayer('grain') #{
   stroke: #64748b;
   stroke-width: 1.4;
   fill: none;
 };
-let names = TextLayer('names') ${
+let names = TextLayer('names') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;

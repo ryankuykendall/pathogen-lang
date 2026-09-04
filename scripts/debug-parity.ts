@@ -1,7 +1,7 @@
 import { parse } from '../src/parser/index.ts';
 
 // Test dynamic layer constructor
-const ast1 = parse("let l = PathLayer('x') ${ stroke: red; };");
+const ast1 = parse("let l = PathLayer('x') #{ stroke: red; };");
 const decl1 = ast1.body[0] as any;
 console.log('=== Dynamic layer constructor ===');
 console.log('type:', decl1.type, 'name:', decl1.name);

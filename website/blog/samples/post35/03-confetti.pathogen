@@ -10,7 +10,7 @@ for (i in 0..119) {
   let r = hashRange(i, 1.5, 5, 2);
   let hue = hashRange(i, 0, 360, 3);
   let c = Color(0.72, 0.16, hue);
-  let dot = PathLayer(`confetti-${i}`) ${ fill: c; stroke: none; };
+  let dot = PathLayer(`confetti-${i}`) #{ fill: c; stroke: none; };
   dot.apply {
     circle(cx, cy, r);
   }

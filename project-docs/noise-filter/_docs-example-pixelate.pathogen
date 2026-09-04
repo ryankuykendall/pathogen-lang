@@ -1,9 +1,9 @@
 // Canonical source for the PixelateFilter Generated SVG Output section in
 // docs/filters.md. If you change this file, update the doc accordingly.
-define PathLayer('bg') ${ fill: oklch(92% 0.03 70); stroke: none; }
+define PathLayer('bg') #{ fill: oklch(92% 0.03 70); stroke: none; }
 layer('bg').apply { rect(0, 0, 200, 200); }
 
 let pix = PixelateFilter(12, 12, 6);
 
-define PathLayer('portrait') ${ fill: oklch(70% 0.18 30); stroke: none; filter: pix; }
+define PathLayer('portrait') #{ fill: oklch(70% 0.18 30); stroke: none; filter: pix; }
 layer('portrait').apply { circle(100, 100, 60); }

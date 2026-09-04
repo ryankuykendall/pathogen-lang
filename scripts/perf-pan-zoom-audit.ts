@@ -54,7 +54,7 @@ const OUT_DIR_DEFAULT = join(
 /** The workspace source under investigation. */
 const SOURCE = `define ViewBox(0, 0, 13200, 7200);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: #fff;
 }
 
@@ -74,7 +74,7 @@ let colors = Color.palette(
   oklch(0.2390 0.0728 252.6 / 0.8),
   colorCount);
 let drawingLayerSet = colors.map {|color, index|
-  return PathLayer(\`drawing-layer-\${index}\`) \${
+  return PathLayer(\`drawing-layer-\${index}\`) #{
     stroke-width: 0.2;
     stroke: color.darken(0.2).alpha(0.48);
     fill: color.alpha(0.325);

@@ -679,7 +679,7 @@ export function extractFontReferences(source: string): { family: string; weight?
   // the same block. Style blocks may not be perfectly delimited by `}` if
   // nested expressions appear, but in practice Pathogen style blocks contain
   // only flat property declarations, so a simple non-greedy match is safe.
-  const styleBlockRe = /\$\{([^}]*)\}/g;
+  const styleBlockRe = /#\{([^}]*)\}/g;
   while ((match = styleBlockRe.exec(source)) !== null) {
     const block = match[1];
     const familyMatch = block.match(/font-family:\s*([^;\n]+)/);

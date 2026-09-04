@@ -4,7 +4,7 @@ define ViewBox(0, 0, 440, 340);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 440, 340); }
 
 // ═══════════════════════════════════════
@@ -17,7 +17,7 @@ let wave = @{
   c 15 -35 30 -35 45 0;
 };
 
-let p1_spine = PathLayer('p1-spine') ${
+let p1_spine = PathLayer('p1-spine') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   fill: none;
@@ -27,14 +27,14 @@ p1_spine.apply {
   wave.draw();
 }
 
-let p1_dashes = PathLayer('p1-dashes') ${
+let p1_dashes = PathLayer('p1-dashes') #{
   stroke: Color('#3b82f6');
   stroke-width: 3;
   stroke-linecap: round;
   fill: none;
 };
 p1_dashes.apply {
-  let wavePieces = wave.dash(${ stroke-dasharray: 14 9; });
+  let wavePieces = wave.dash(#{ stroke-dasharray: 14 9; });
   for (piece in wavePieces) {
     if (piece.kind == 'dash') {
       M 30 90
@@ -47,15 +47,15 @@ p1_dashes.apply {
 // Panel 2 (top-right): outline() fat dashes
 // ═══════════════════════════════════════
 
-let p2_solids = PathLayer('p2-solids') ${
+let p2_solids = PathLayer('p2-solids') #{
   fill: Color('#f59e0b');
   stroke: none;
 };
 p2_solids.apply {
-  let fatPieces = wave.dash(${ stroke-dasharray: 16 12; });
+  let fatPieces = wave.dash(#{ stroke-dasharray: 16 12; });
   for (piece in fatPieces) {
     if (piece.kind == 'dash') {
-      let solid = piece.path.outline(${
+      let solid = piece.path.outline(#{
         stroke-width: calc(3 + piece.t0 * 14);
         stroke-linecap: round;
         stroke-linejoin: round;
@@ -70,7 +70,7 @@ p2_solids.apply {
 // Panel 3 (bottom-left): fat dashes as boolean cutters
 // ═══════════════════════════════════════
 
-let p3_plate = PathLayer('p3-plate') ${
+let p3_plate = PathLayer('p3-plate') #{
   fill: Color('#3b82f630');
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
@@ -78,11 +78,11 @@ let p3_plate = PathLayer('p3-plate') ${
 p3_plate.apply {
   let plate = @{ h 170 v 90 h -170 z };
   let track = @{ m 20 45 h 130 };
-  let slotPieces = track.dash(${ stroke-dasharray: 22 14; });
+  let slotPieces = track.dash(#{ stroke-dasharray: 22 14; });
   let plaque = plate;
   for (piece in slotPieces) {
     if (piece.kind == 'dash') {
-      let slot = piece.path.outline(${
+      let slot = piece.path.outline(#{
         stroke-width: 16;
         stroke-linecap: round;
       });
@@ -101,7 +101,7 @@ let ring = @{
   h 60; v 60; h -60; z;
 };
 
-let p4_back = PathLayer('p4-back') ${
+let p4_back = PathLayer('p4-back') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   fill: none;
@@ -113,21 +113,21 @@ p4_back.apply {
   ring.startAt(12.5%).draw();
 }
 
-let p4_a = PathLayer('p4-a') ${
+let p4_a = PathLayer('p4-a') #{
   stroke: Color('#22c55e');
   stroke-width: 4;
   stroke-linecap: round;
   fill: none;
 };
 p4_a.apply {
-  let plainPieces = ring.dash(${ stroke-dasharray: 20 10; });
+  let plainPieces = ring.dash(#{ stroke-dasharray: 20 10; });
   for (piece in plainPieces) {
     if (piece.kind == 'dash') {
       M 280 190
       piece.path.draw();
     }
   }
-  let slidPieces = ring.startAt(12.5%).dash(${ stroke-dasharray: 20 10; });
+  let slidPieces = ring.startAt(12.5%).dash(#{ stroke-dasharray: 20 10; });
   for (piece in slidPieces) {
     if (piece.kind == 'dash') {
       M 360 190
@@ -138,7 +138,7 @@ p4_a.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#94a3b8');

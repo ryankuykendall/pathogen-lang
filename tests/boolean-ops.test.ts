@@ -1018,7 +1018,7 @@ describe('Boolean Operations', () => {
       addFont(registry, 'BebasNeue-Regular', 400, 'normal', ab);
       const src = `
 @font "${fontPath}"
-let styles = \${ font-family: BebasNeue-Regular; font-size: 60; };
+let styles = #{ font-family: BebasNeue-Regular; font-size: 60; };
 let glyphs = PathBlock.fromGlyph("CUTTING", styles);
 let tracking = 0.8;
 let cursor = 0;

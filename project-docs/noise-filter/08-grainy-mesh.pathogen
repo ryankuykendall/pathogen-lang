@@ -20,7 +20,7 @@ let grainy = NoiseFilter() {|f|
   f.contrast = 1.9;
 };
 
-define PathLayer('panel') ${
+define PathLayer('panel') #{
   fill: dusk;
   stroke: none;
   filter: grainy;

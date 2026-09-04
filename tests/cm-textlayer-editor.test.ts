@@ -11,7 +11,7 @@ function targets(source: string) {
 describe('findFontTargets (AST-based)', () => {
   describe('TextLayer targets', () => {
     it('detects `define TextLayer(...) ${...}`', () => {
-      const src = "define TextLayer('labels') ${ font-family: 'Inter'; font-size: 14; };";
+      const src = "define TextLayer('labels') #{ font-family: 'Inter'; font-size: 14; };";
       const t = targets(src);
       expect(t).toHaveLength(1);
       expect(t[0].kind).toBe('textlayer');
@@ -23,7 +23,7 @@ describe('findFontTargets (AST-based)', () => {
     });
 
     it('detects `let x = TextLayer(...) ${...}` (the previously-missing form)', () => {
-      const src = "let labels = TextLayer('labels') ${ font-family: 'Inter'; };";
+      const src = "let labels = TextLayer('labels') #{ font-family: 'Inter'; };";
       const t = targets(src);
       expect(t).toHaveLength(1);
       expect(t[0].kind).toBe('textlayer');
@@ -38,12 +38,12 @@ describe('findFontTargets (AST-based)', () => {
     });
 
     it('skips PathLayer (not a TextLayer)', () => {
-      const src = "define PathLayer('outline') ${ stroke: #f00; };";
+      const src = "define PathLayer('outline') #{ stroke: #f00; };";
       expect(targets(src)).toEqual([]);
     });
 
     it('skips GroupLayer (not a TextLayer)', () => {
-      const src = "define GroupLayer('g') ${ opacity: 0.5; };";
+      const src = "define GroupLayer('g') #{ opacity: 0.5; };";
       expect(targets(src)).toEqual([]);
     });
 
@@ -59,8 +59,8 @@ describe('findFontTargets (AST-based)', () => {
 
     it('finds multiple TextLayer targets', () => {
       const src =
-        "define TextLayer('a') ${ font-family: 'Inter'; };\n" +
-        "let b = TextLayer('b') ${ font-family: 'Roboto'; };";
+        "define TextLayer('a') #{ font-family: 'Inter'; };\n" +
+        "let b = TextLayer('b') #{ font-family: 'Roboto'; };";
       const t = targets(src);
       expect(t).toHaveLength(2);
       expect(t.every((x) => x.kind === 'textlayer')).toBe(true);
@@ -135,8 +135,8 @@ describe('findFontTargets (AST-based)', () => {
     it('finds both TextLayer and FontDirective targets in one file', () => {
       const src =
         `@font 'Inter';\n` +
-        `define TextLayer('x') \${ font-family: 'Inter'; };\n` +
-        `let y = TextLayer('y') \${ font-family: 'Roboto'; };`;
+        `define TextLayer('x') #{ font-family: 'Inter'; };\n` +
+        `let y = TextLayer('y') #{ font-family: 'Roboto'; };`;
       const t = targets(src);
       expect(t).toHaveLength(3);
       const kinds = t.map((x) => x.kind).sort();

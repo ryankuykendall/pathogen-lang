@@ -68,17 +68,17 @@ let ramps = [
 // Root & groups
 // ─────────────────────────────────────────────────────────────────
 
-define GroupLayer('diagram') ${}
-define GroupLayer('grid-bg') ${}
-define GroupLayer('masthead') ${}
-define GroupLayer('section-01') ${}
-define GroupLayer('section-02') ${}
-define GroupLayer('section-03') ${}
-define GroupLayer('section-05') ${}
-define GroupLayer('section-07') ${}
-define GroupLayer('titleblock') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('grid-bg') #{}
+define GroupLayer('masthead') #{}
+define GroupLayer('section-01') #{}
+define GroupLayer('section-02') #{}
+define GroupLayer('section-03') #{}
+define GroupLayer('section-05') #{}
+define GroupLayer('section-07') #{}
+define GroupLayer('titleblock') #{}
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -91,7 +91,7 @@ layer('diagram').append(layer('bg'));
 // Hairline engineering grid (every 40px)
 // ─────────────────────────────────────────────────────────────────
 
-let grid_lines = PathLayer('grid-lines') ${
+let grid_lines = PathLayer('grid-lines') #{
   fill: none;
   stroke: fg_grid;
   stroke-width: 0.4;
@@ -119,7 +119,7 @@ layer('diagram').append(layer('grid-bg'));
 
 let mono = 'monospace';
 
-let section_header = TextLayer('section-header') ${
+let section_header = TextLayer('section-header') #{
   font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
@@ -132,7 +132,7 @@ let section_header = TextLayer('section-header') ${
 // Masthead — top strip
 // ─────────────────────────────────────────────────────────────────
 
-let eyebrow = TextLayer('eyebrow') ${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: 'monospace';
   font-size: 8;
   letter-spacing: 2.5;
@@ -143,7 +143,7 @@ eyebrow.apply {
   text(30, 36)`SPEC № 024  //  OKLCH PALETTE  //  REV 01`;
 }
 
-let mast_title = TextLayer('mast-title') ${
+let mast_title = TextLayer('mast-title') #{
   font-family: 'monospace';
   font-size: 26;
   font-weight: 700;
@@ -155,7 +155,7 @@ mast_title.apply {
   text(30, 64)`PALETTE.SPEC`;
 }
 
-let mast_sub = TextLayer('mast-sub') ${
+let mast_sub = TextLayer('mast-sub') #{
   font-family: 'monospace';
   font-size: 9;
   fill: fg_muted;
@@ -166,7 +166,7 @@ mast_sub.apply {
 }
 
 // Top-right ruler callout
-let eyebrow_r = TextLayer('eyebrow-r') ${
+let eyebrow_r = TextLayer('eyebrow-r') #{
   font-family: 'monospace';
   font-size: 8;
   letter-spacing: 2.5;
@@ -177,7 +177,7 @@ eyebrow_r.apply {
   text(930, 36)`UNIT = PX  /  GRID = 40`;
 }
 
-let eyebrow_r2 = TextLayer('eyebrow-r2') ${
+let eyebrow_r2 = TextLayer('eyebrow-r2') #{
   font-family: 'monospace';
   font-size: 8;
   letter-spacing: 2.5;
@@ -189,7 +189,7 @@ eyebrow_r2.apply {
 }
 
 // Thick rule under masthead
-let mast_rule = PathLayer('mast-rule') ${
+let mast_rule = PathLayer('mast-rule') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 1.2;
@@ -228,13 +228,13 @@ section_header.apply {
 let specimen_y = calc(section_01_y + 14);
 let specimen_h = 60;
 
-let coord_label = TextLayer('coord-label') ${
+let coord_label = TextLayer('coord-label') #{
   font-family: 'monospace';
   font-size: 7;
   fill: fg_auto;
   text-anchor: start;
 };
-let anchor_name_lay = TextLayer('anchor-name-lay') ${
+let anchor_name_lay = TextLayer('anchor-name-lay') #{
   font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
@@ -246,7 +246,7 @@ let anchor_name_lay = TextLayer('anchor-name-lay') ${
 for ([c, ai] in anchors) {
   let sx = calc(col_start + ai * (col_w + col_gap));
   let tile_name = `sp_${ai}`;
-  let tile = PathLayer(tile_name) ${
+  let tile = PathLayer(tile_name) #{
     fill: c;
     stroke: fg_auto;
     stroke-width: 0.5;
@@ -257,7 +257,7 @@ for ([c, ai] in anchors) {
 
   // Crosshair tick at top-left corner — architectural marker
   let ch_name = `ch_${ai}`;
-  let ch = PathLayer(ch_name) ${
+  let ch = PathLayer(ch_name) #{
     fill: none;
     stroke: fg_auto;
     stroke-width: 0.5;
@@ -292,7 +292,7 @@ for ([name, ai] in anchor_names) {
 
 // Dimension line below specimens showing hue progression
 let dim_y = calc(specimen_y + specimen_h + 54);
-let dim_line = PathLayer('dim-line') ${
+let dim_line = PathLayer('dim-line') #{
   fill: none;
   stroke: fg_rule;
   stroke-width: 0.5;
@@ -318,7 +318,7 @@ dim_line.apply {
   L 900 calc(dim_y + 5)
 }
 
-let dim_label = TextLayer('dim-label') ${
+let dim_label = TextLayer('dim-label') #{
   font-family: 'monospace';
   font-size: 7;
   letter-spacing: 1;
@@ -340,7 +340,7 @@ layer('diagram').append(layer('section-01'));
 // 02 · NORMALIZE — row of tiles at ramp[4] (L=0.55)
 // ─────────────────────────────────────────────────────────────────
 
-let s2_header = TextLayer('s2-header') ${
+let s2_header = TextLayer('s2-header') #{
   font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
@@ -352,7 +352,7 @@ s2_header.apply {
   text(30, 286)`[ 02 · L=0.55 ]`;
 }
 
-let s2_meta = TextLayer('s2-meta') ${
+let s2_meta = TextLayer('s2-meta') #{
   font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
@@ -368,7 +368,7 @@ for ([r, ai] in ramps) {
   let sx = calc(col_start + ai * (col_w + col_gap));
   let c = r[4];
   let tn = `n_${ai}`;
-  let tile = PathLayer(tn) ${
+  let tile = PathLayer(tn) #{
     fill: c;
     stroke: fg_auto;
     stroke-width: 0.5;
@@ -386,7 +386,7 @@ layer('diagram').append(layer('section-02'));
 // 03 · LIFT — row of tiles at ramp[6] (L=0.75)
 // ─────────────────────────────────────────────────────────────────
 
-let s3_header = TextLayer('s3-header') ${
+let s3_header = TextLayer('s3-header') #{
   font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
@@ -398,7 +398,7 @@ s3_header.apply {
   text(30, 358)`[ 03 · L=0.75 ]`;
 }
 
-let s3_meta = TextLayer('s3-meta') ${
+let s3_meta = TextLayer('s3-meta') #{
   font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
@@ -412,7 +412,7 @@ for ([r, ai] in ramps) {
   let sx = calc(col_start + ai * (col_w + col_gap));
   let c = r[6];
   let tn = `l_${ai}`;
-  let tile = PathLayer(tn) ${
+  let tile = PathLayer(tn) #{
     fill: c;
     stroke: fg_auto;
     stroke-width: 0.5;
@@ -430,7 +430,7 @@ layer('diagram').append(layer('section-03'));
 // 05 · BUILD RAMPS — 9-stop grid per anchor, compact
 // ─────────────────────────────────────────────────────────────────
 
-let s5_header = TextLayer('s5-header') ${
+let s5_header = TextLayer('s5-header') #{
   font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
@@ -442,7 +442,7 @@ s5_header.apply {
   text(30, 420)`[ 05 · BUILD RAMPS ]`;
 }
 
-let s5_meta = TextLayer('s5-meta') ${
+let s5_meta = TextLayer('s5-meta') #{
   font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
@@ -471,7 +471,7 @@ let stop_numbers = [
   'j=7',
   'j=8',
 ];
-let g_col_label = TextLayer('g-col-label') ${
+let g_col_label = TextLayer('g-col-label') #{
   font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
@@ -484,7 +484,7 @@ for ([sn, si] in stop_numbers) {
   }
 }
 
-let g_row_label = TextLayer('g-row-label') ${
+let g_row_label = TextLayer('g-row-label') #{
   font-family: 'monospace';
   font-size: 8;
   fill: fg_auto;
@@ -501,7 +501,7 @@ for ([r, ri] in ramps) {
   for ([c, ci] in r) {
     let cell_x = calc(g_start_x + ci * (g_cell_w + g_cell_gap));
     let cell_name = `g_${ri}_${ci}`;
-    let cell = PathLayer(cell_name) ${
+    let cell = PathLayer(cell_name) #{
       fill: c;
       stroke: none;
     };
@@ -514,7 +514,7 @@ for ([r, ri] in ramps) {
 
 
 // Highlight ramp[4] and ramp[6] columns with vertical brackets
-let g_bracket = PathLayer('g-bracket') ${
+let g_bracket = PathLayer('g-bracket') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.8;
@@ -543,7 +543,7 @@ g_bracket.apply {
   L b6_right b4_top
 }
 
-let g_bracket_label = TextLayer('g-bracket-label') ${
+let g_bracket_label = TextLayer('g-bracket-label') #{
   font-family: 'monospace';
   font-size: 7;
   font-weight: 700;
@@ -572,7 +572,7 @@ layer('diagram').append(layer('section-05'));
 // 07 · CONTRAST ASSERTIONS
 // ─────────────────────────────────────────────────────────────────
 
-let s7_header = TextLayer('s7-header') ${
+let s7_header = TextLayer('s7-header') #{
   font-family: 'monospace';
   font-size: 9;
   font-weight: 700;
@@ -584,7 +584,7 @@ s7_header.apply {
   text(30, 638)`[ 07 · CONTRAST ASSERTIONS ]`;
 }
 
-let s7_meta = TextLayer('s7-meta') ${
+let s7_meta = TextLayer('s7-meta') #{
   font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
@@ -628,7 +628,7 @@ let pair_x_start = 240;
 let pair_w = 210;
 let pair_gap = 10;
 
-let pair_name_lay = TextLayer('pair-name-lay') ${
+let pair_name_lay = TextLayer('pair-name-lay') #{
   font-family: 'monospace';
   font-size: 8;
   font-weight: 700;
@@ -636,7 +636,7 @@ let pair_name_lay = TextLayer('pair-name-lay') ${
   fill: fg_auto;
   text-anchor: start;
 };
-let pair_target_lay = TextLayer('pair-target-lay') ${
+let pair_target_lay = TextLayer('pair-target-lay') #{
   font-family: 'monospace';
   font-size: 7;
   fill: fg_muted;
@@ -647,7 +647,7 @@ for ([pa, panelIdx] in pair_fills_a) {
   let px = calc(pair_x_start + panelIdx * (pair_w + pair_gap));
   let tna = `pa_${panelIdx}`;
   let tnb = `pb_${panelIdx}`;
-  let tile_a = PathLayer(tna) ${
+  let tile_a = PathLayer(tna) #{
     fill: pa;
     stroke: fg_auto;
     stroke-width: 0.5;
@@ -655,7 +655,7 @@ for ([pa, panelIdx] in pair_fills_a) {
   tile_a.apply {
     rect(px, 634, 30, 30);
   }
-  let tile_b = PathLayer(tnb) ${
+  let tile_b = PathLayer(tnb) #{
     fill: pair_fills_b[panelIdx];
     stroke: fg_auto;
     stroke-width: 0.5;
@@ -690,7 +690,7 @@ let tb_y = 676;
 let tb_w = 200;
 let tb_h = 24;
 
-let tb_frame = PathLayer('tb-frame') ${
+let tb_frame = PathLayer('tb-frame') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.8;
@@ -703,14 +703,14 @@ tb_frame.apply {
   L calc(tb_x + 140) calc(tb_y + tb_h)
 }
 
-let tb_t1 = TextLayer('tb-t1') ${
+let tb_t1 = TextLayer('tb-t1') #{
   font-family: 'monospace';
   font-size: 7;
   letter-spacing: 0.5;
   fill: fg_muted;
   text-anchor: middle;
 };
-let tb_t2 = TextLayer('tb-t2') ${
+let tb_t2 = TextLayer('tb-t2') #{
   font-family: 'monospace';
   font-size: 8;
   font-weight: 700;

@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 190);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,23 +12,23 @@ layer('bg').apply {
   rect(0, 0, 480, 190);
 }
 
-let scene = GroupLayer('scene') ${};
-let solids = PathLayer('solids') ${
+let scene = GroupLayer('scene') #{};
+let solids = PathLayer('solids') #{
   fill: #f59e0b;
   stroke: none;
 };
-let spines = PathLayer('spines') ${
+let spines = PathLayer('spines') #{
   stroke: #0f172a;
   stroke-width: 1;
   fill: none;
 };
-let capRule = PathLayer('cap-rule') ${
+let capRule = PathLayer('cap-rule') #{
   stroke: #94a3b880;
   stroke-width: 1;
   stroke-dasharray: 4 3;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -53,7 +53,7 @@ let anchors = [
 
 for ([capName, columnIndex] in capNames) {
   let anchorX = anchors[columnIndex];
-  let solid = stem.outline(${
+  let solid = stem.outline(#{
     stroke-width: 22;
     stroke-linecap: ${capName};
   });

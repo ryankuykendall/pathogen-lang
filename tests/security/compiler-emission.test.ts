@@ -53,7 +53,7 @@ describe('Security · compiler emission', () => {
       expect(() =>
         compile(`
           let v = CSSVar("--x}; @import url(https://evil.example/log); /*", Color("#ff0000"));
-          define PathLayer('a') \${ stroke: v; }
+          define PathLayer('a') #{ stroke: v; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -75,7 +75,7 @@ describe('Security · compiler emission', () => {
       expect(() =>
         compile(`
           let v = CSSVar("--brand", "url(https://evil.example/log)");
-          define PathLayer('a') \${ stroke: v; }
+          define PathLayer('a') #{ stroke: v; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -85,7 +85,7 @@ describe('Security · compiler emission', () => {
       expect(() =>
         compile(`
           let v = CSSVar("--brand", "} @import url(https://evil.example/log) {");
-          define PathLayer('a') \${ stroke: v; }
+          define PathLayer('a') #{ stroke: v; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -104,7 +104,7 @@ describe('Security · compiler emission', () => {
     it('rejects url(https:host/path) without // (validator path)', () => {
       expect(() =>
         compile(`
-          define PathLayer('a') \${ background-image: "url(https:evil.example/log)"; }
+          define PathLayer('a') #{ background-image: "url(https:evil.example/log)"; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -115,7 +115,7 @@ describe('Security · compiler emission', () => {
       // but a remote URL must be rejected.
       expect(() =>
         compile(`
-          define PathLayer('a') \${ filter: "url(https:evil.example/log)"; }
+          define PathLayer('a') #{ filter: "url(https:evil.example/log)"; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -127,7 +127,7 @@ describe('Security · compiler emission', () => {
       // parser now keeps the value intact and validateCSSValue rejects it.
       expect(() =>
         compile(`
-          define PathLayer('a') \${ background-image: "url(https://evil.example/log)"; }
+          define PathLayer('a') #{ background-image: "url(https://evil.example/log)"; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow(/url\(/);
@@ -138,7 +138,7 @@ describe('Security · compiler emission', () => {
     it('rejects backslash-escaped url() (\\75\\72\\6c)', () => {
       expect(() =>
         compile(`
-          define PathLayer('a') \${ fill: "\\\\75\\\\72\\\\6c(test)"; }
+          define PathLayer('a') #{ fill: "\\\\75\\\\72\\\\6c(test)"; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -149,7 +149,7 @@ describe('Security · compiler emission', () => {
     it('rejects image-set() in style block', () => {
       expect(() =>
         compile(`
-          define PathLayer('a') \${ background-image: "image-set('test' 1x)"; }
+          define PathLayer('a') #{ background-image: "image-set('test' 1x)"; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -160,7 +160,7 @@ describe('Security · compiler emission', () => {
     it('rejects raw var() — direct users to CSSVar()', () => {
       expect(() =>
         compile(`
-          define PathLayer('a') \${ fill: "var(--evil)"; }
+          define PathLayer('a') #{ fill: "var(--evil)"; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -171,7 +171,7 @@ describe('Security · compiler emission', () => {
     it('rejects calc() in style block values', () => {
       expect(() =>
         compile(`
-          define PathLayer('a') \${ stroke-width: "calc(2 + 3)"; }
+          define PathLayer('a') #{ stroke-width: "calc(2 + 3)"; }
           layer('a').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -184,7 +184,7 @@ describe('Security · compiler emission', () => {
     it('rejects layer name with closing brace + injection', () => {
       expect(() =>
         compile(`
-          define PathLayer('a}; @import url(x); /*') \${}
+          define PathLayer('a}; @import url(x); /*') #{}
           layer('a}; @import url(x); /*').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -193,7 +193,7 @@ describe('Security · compiler emission', () => {
     it('rejects layer name with quotes', () => {
       expect(() =>
         compile(`
-          define PathLayer('a"b') \${}
+          define PathLayer('a"b') #{}
           layer('a"b').apply { M 0 0 L 10 10 }
         `),
       ).toThrow();
@@ -241,7 +241,7 @@ describe('Security · compiler emission', () => {
   describe('end-to-end: clean source produces clean SVG', () => {
     it('emits no forbidden tokens for a benign program', () => {
       const svg = compileToSvg(`
-        define PathLayer('main') \${ fill: "#e63946"; stroke: oklch(0.7 0.15 240); stroke-width: 2; }
+        define PathLayer('main') #{ fill: "#e63946"; stroke: oklch(0.7 0.15 240); stroke-width: 2; }
         layer('main').apply { M 0 0 L 100 0 L 100 100 L 0 100 Z }
       `);
       expectSafeSvg(svg);
@@ -250,7 +250,7 @@ describe('Security · compiler emission', () => {
     it('emits no forbidden tokens for CSSVar with proper identifier', () => {
       const svg = compileToSvg(`
         let brand = CSSVar('--brand', '#e63946');
-        define PathLayer('main') \${ stroke: brand; }
+        define PathLayer('main') #{ stroke: brand; }
         layer('main').apply { M 0 0 L 100 0 }
       `);
       expectSafeSvg(svg);
@@ -262,7 +262,7 @@ describe('Security · compiler emission', () => {
           gr.stop(0, Color('#000000'));
           gr.stop(1, Color('#ffffff'));
         };
-        define PathLayer('main') \${ fill: g; }
+        define PathLayer('main') #{ fill: g; }
         layer('main').apply { M 0 0 L 100 0 L 100 100 L 0 100 Z }
       `);
       expectSafeSvg(svg);

@@ -5,7 +5,7 @@
 
 define ViewBox(0, 0, 400, 170);
 
-let machine = PathLayer('machine-set') ${ stroke: oklch(0.7 0.03 260); stroke-width: 7; fill: none; };
+let machine = PathLayer('machine-set') #{ stroke: oklch(0.7 0.03 260); stroke-width: 7; fill: none; };
 machine.apply {
   for (i in 0..25) {
     M calc(28 + i * 13.5) 62
@@ -13,7 +13,7 @@ machine.apply {
   }
 }
 
-let hand = PathLayer('hand-set') ${ stroke: oklch(0.75 0.12 60); stroke-width: 7; fill: none; };
+let hand = PathLayer('hand-set') #{ stroke: oklch(0.75 0.12 60); stroke-width: 7; fill: none; };
 hand.apply {
   for (i in 0..25) {
     let drop = calc(hash11(i) * 5);

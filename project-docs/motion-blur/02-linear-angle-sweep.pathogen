@@ -3,7 +3,7 @@
 
 define ViewBox(0, 0, 300, 80);
 
-define PathLayer('bg') ${ fill: oklch(97% 0.01 250); }
+define PathLayer('bg') #{ fill: oklch(97% 0.01 250); }
 layer('bg').apply { rect(0, 0, 300, 80); }
 
 let b0  = MotionBlurFilter() {|f| f.distance = 26; f.angle = 0deg;   f.samples = 16; };
@@ -12,11 +12,11 @@ let b90 = MotionBlurFilter() {|f| f.distance = 26; f.angle = 90deg;  f.samples =
 let b135 = MotionBlurFilter() {|f| f.distance = 26; f.angle = 135deg; f.samples = 16; };
 let b180 = MotionBlurFilter() {|f| f.distance = 26; f.angle = 180deg; f.samples = 16; };
 
-define PathLayer('s0')   ${ fill: oklch(55% 0.2 280); filter: b0; }
-define PathLayer('s45')  ${ fill: oklch(55% 0.2 280); filter: b45; }
-define PathLayer('s90')  ${ fill: oklch(55% 0.2 280); filter: b90; }
-define PathLayer('s135') ${ fill: oklch(55% 0.2 280); filter: b135; }
-define PathLayer('s180') ${ fill: oklch(55% 0.2 280); filter: b180; }
+define PathLayer('s0')   #{ fill: oklch(55% 0.2 280); filter: b0; }
+define PathLayer('s45')  #{ fill: oklch(55% 0.2 280); filter: b45; }
+define PathLayer('s90')  #{ fill: oklch(55% 0.2 280); filter: b90; }
+define PathLayer('s135') #{ fill: oklch(55% 0.2 280); filter: b135; }
+define PathLayer('s180') #{ fill: oklch(55% 0.2 280); filter: b180; }
 
 layer('s0').apply   { rect(18, 28, 24, 24); }
 layer('s45').apply  { rect(78, 28, 24, 24); }

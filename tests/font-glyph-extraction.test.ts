@@ -15,7 +15,7 @@ function buildRegistry() {
 
 const src = `
 @font "${fontPath}"
-let styles = \${ font-family: BebasNeue-Regular; font-size: 60; };
+let styles = #{ font-family: BebasNeue-Regular; font-size: 60; };
 let glyphs = PathBlock.fromGlyph("A", styles);
 glyphs[0].drawTo(0, 0);
 `;

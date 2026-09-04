@@ -302,24 +302,24 @@ code.hljs {
 // Style variables
 // ═══════════════════════════════════════
 
-let kw   = ${ fill: #c084fc; };
-let str  = ${ fill: #a3e635; };
-let hex  = ${ fill: #fb923c; };
-let pct  = ${ fill: #38bdf8; };
-let base = ${ fill: #94a3b8; };
+let kw   = #{ fill: #c084fc; };
+let str  = #{ fill: #a3e635; };
+let hex  = #{ fill: #fb923c; };
+let pct  = #{ fill: #38bdf8; };
+let base = #{ fill: #94a3b8; };
 
 // ═══════════════════════════════════════
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 540, 280); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -329,7 +329,7 @@ title.apply {
   text(30, 30)`Before &amp; After`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -343,7 +343,7 @@ subtitle.apply {
 // Divider
 // ═══════════════════════════════════════
 
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: "4 4";
@@ -357,7 +357,7 @@ divider.apply {
 // "Before" panel (left)
 // ═══════════════════════════════════════
 
-let before_label = TextLayer('before-label') ${
+let before_label = TextLayer('before-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -368,7 +368,7 @@ before_label.apply {
 }
 
 // Code block background
-let before_code_bg = PathLayer('before-code-bg') ${
+let before_code_bg = PathLayer('before-code-bg') #{
   fill: #1e293b;
   stroke: #334155;
   stroke-width: 1;
@@ -376,7 +376,7 @@ let before_code_bg = PathLayer('before-code-bg') ${
 before_code_bg.apply { roundRect(30, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
-let before_code = TextLayer('before-code') ${
+let before_code = TextLayer('before-code') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -400,16 +400,16 @@ before_code.apply {
 }
 
 // Swatches for before
-let b_swatch1 = PathLayer('b-sw1') ${ fill: Color('#cc0000'); stroke: #475569; stroke-width: 1; };
+let b_swatch1 = PathLayer('b-sw1') #{ fill: Color('#cc0000'); stroke: #475569; stroke-width: 1; };
 b_swatch1.apply { roundRect(48, 183, 55, 40, 4); }
 
-let b_swatch2 = PathLayer('b-sw2') ${ fill: Color('#cc0000').lighten(0.2); stroke: #475569; stroke-width: 1; };
+let b_swatch2 = PathLayer('b-sw2') #{ fill: Color('#cc0000').lighten(0.2); stroke: #475569; stroke-width: 1; };
 b_swatch2.apply { roundRect(113, 183, 55, 40, 4); }
 
-let b_swatch3 = PathLayer('b-sw3') ${ fill: Color('#cc0000').alpha(0.5); stroke: #475569; stroke-width: 1; };
+let b_swatch3 = PathLayer('b-sw3') #{ fill: Color('#cc0000').alpha(0.5); stroke: #475569; stroke-width: 1; };
 b_swatch3.apply { roundRect(178, 183, 55, 40, 4); }
 
-let b_sw_labels = TextLayer('b-sw-labels') ${
+let b_sw_labels = TextLayer('b-sw-labels') #{
   font-family: monospace;
   font-size: 8;
   fill: #64748b;
@@ -425,7 +425,7 @@ b_sw_labels.apply {
 // "After" panel (right)
 // ═══════════════════════════════════════
 
-let after_label = TextLayer('after-label') ${
+let after_label = TextLayer('after-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #38bdf8;
@@ -436,7 +436,7 @@ after_label.apply {
 }
 
 // Code block background
-let after_code_bg = PathLayer('after-code-bg') ${
+let after_code_bg = PathLayer('after-code-bg') #{
   fill: #1e293b;
   stroke: #38bdf8;
   stroke-width: 1;
@@ -444,7 +444,7 @@ let after_code_bg = PathLayer('after-code-bg') ${
 after_code_bg.apply { roundRect(285, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
-let after_code = TextLayer('after-code') ${
+let after_code = TextLayer('after-code') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -472,16 +472,16 @@ after_code.apply {
 }
 
 // Swatches for after
-let a_swatch1 = PathLayer('a-sw1') ${ fill: #cc0000; stroke: #475569; stroke-width: 1; };
+let a_swatch1 = PathLayer('a-sw1') #{ fill: #cc0000; stroke: #475569; stroke-width: 1; };
 a_swatch1.apply { roundRect(298, 183, 55, 40, 4); }
 
-let a_swatch2 = PathLayer('a-sw2') ${ fill: (#cc0000).lighten(20%); stroke: #475569; stroke-width: 1; };
+let a_swatch2 = PathLayer('a-sw2') #{ fill: (#cc0000).lighten(20%); stroke: #475569; stroke-width: 1; };
 a_swatch2.apply { roundRect(363, 183, 55, 40, 4); }
 
-let a_swatch3 = PathLayer('a-sw3') ${ fill: (#cc0000).alpha(50%); stroke: #475569; stroke-width: 1; };
+let a_swatch3 = PathLayer('a-sw3') #{ fill: (#cc0000).alpha(50%); stroke: #475569; stroke-width: 1; };
 a_swatch3.apply { roundRect(428, 183, 55, 40, 4); }
 
-let a_sw_labels = TextLayer('a-sw-labels') ${
+let a_sw_labels = TextLayer('a-sw-labels') #{
   font-family: monospace;
   font-size: 8;
   fill: #64748b;
@@ -497,7 +497,7 @@ a_sw_labels.apply {
 // Equals sign between swatches
 // ═══════════════════════════════════════
 
-let equals = TextLayer('equals') ${
+let equals = TextLayer('equals') #{
   font-family: system-ui, sans-serif;
   font-size: 20;
   fill: #38bdf8;
@@ -529,14 +529,14 @@ equals.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 320); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -546,7 +546,7 @@ title.apply {
   text(30, 30)`Palette from a Single Hex Literal`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -604,7 +604,7 @@ let sr = 5;
 
 // ── Row labels ──────────────────────
 
-let row_labels = TextLayer('row-labels') ${
+let row_labels = TextLayer('row-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
@@ -613,7 +613,7 @@ let row_labels = TextLayer('row-labels') ${
 
 // ── Swatch labels ───────────────────
 
-let sw_labels = TextLayer('sw-labels') ${
+let sw_labels = TextLayer('sw-labels') #{
   font-family: monospace;
   font-size: 7;
   fill: #64748b;
@@ -630,7 +630,7 @@ row_labels.apply {
 
 for ([color, i] in lightness_row) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`l_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`l_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -650,7 +650,7 @@ row_labels.apply {
 
 for ([color, i] in hue_row) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`h_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`h_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -670,7 +670,7 @@ row_labels.apply {
 
 for ([color, i] in sat_row) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`s_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`s_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
@@ -684,7 +684,7 @@ sw_labels.apply {
 // Base indicator
 // ═══════════════════════════════════════
 
-let base_indicator = TextLayer('base-indicator') ${
+let base_indicator = TextLayer('base-indicator') #{
   font-family: monospace;
   font-size: 9;
   fill: #38bdf8;
@@ -696,7 +696,7 @@ base_indicator.apply {
 
 // ── Vertical base line ──────────────
 
-let base_line = PathLayer('base-line') ${
+let base_line = PathLayer('base-line') #{
   stroke: #38bdf8;
   stroke-width: 1;
   stroke-dasharray: "3 3";
@@ -733,14 +733,14 @@ base_line.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 560, 340); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -750,7 +750,7 @@ title.apply {
   text(30, 30)`CSS Color Function Literals`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -789,14 +789,14 @@ let sw = 40;
 let sh = 40;
 let sr = 4;
 
-let space_label = TextLayer('space-label') ${
+let space_label = TextLayer('space-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #e2e8f0;
   text-anchor: start;
 };
 
-let code_label = TextLayer('code-label') ${
+let code_label = TextLayer('code-label') #{
   font-family: monospace;
   font-size: 8;
   fill: #94a3b8;
@@ -810,7 +810,7 @@ for ([color, i] in colors) {
   let y = calc(sy + row * row_h);
 
   // Swatch
-  let swatch = PathLayer(`cs_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`cs_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(x, y, sw, sh, sr); }
 
   // Space name
@@ -828,7 +828,7 @@ for ([color, i] in colors) {
 // Convergence annotation
 // ═══════════════════════════════════════
 
-let arrow_label = TextLayer('arrow-label') ${
+let arrow_label = TextLayer('arrow-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: #38bdf8;
@@ -838,7 +838,7 @@ arrow_label.apply {
   text(280, 312)`All converge → OKLCH internally`
 }
 
-let arrow_line = PathLayer('arrow-line') ${
+let arrow_line = PathLayer('arrow-line') #{
   stroke: #38bdf8;
   stroke-width: 1;
   fill: none;
@@ -871,14 +871,14 @@ arrow_line.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 300); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -888,7 +888,7 @@ title.apply {
   text(30, 30)`The Percent Suffix`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -945,14 +945,14 @@ let sw = 54;
 let sh = 40;
 let sr = 4;
 
-let row_label = TextLayer('row-label') ${
+let row_label = TextLayer('row-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: end;
 };
 
-let sw_label = TextLayer('sw-label') ${
+let sw_label = TextLayer('sw-label') #{
   font-family: monospace;
   font-size: 8;
   fill: #64748b;
@@ -969,7 +969,7 @@ row_label.apply {
 
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`t_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`t_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -989,7 +989,7 @@ row_label.apply {
 
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`d_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`d_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -1010,13 +1010,13 @@ row_label.apply {
 // White background behind alpha row so opacity gradient is visible
 for ([_, i] in alphas) {
   let x = calc(sx + i * sp - sw / 2);
-  let checker = PathLayer(`ck_${i}`) ${ fill: #ffffff; stroke: none; };
+  let checker = PathLayer(`ck_${i}`) #{ fill: #ffffff; stroke: none; };
   checker.apply { roundRect(x, row3_y, sw, sh, sr); }
 }
 
 for ([color, i] in alphas) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`a_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`a_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
@@ -1030,7 +1030,7 @@ sw_label.apply {
 // Base indicator
 // ═══════════════════════════════════════
 
-let base_ind = TextLayer('base-ind') ${
+let base_ind = TextLayer('base-ind') #{
   font-family: monospace;
   font-size: 9;
   fill: #38bdf8;
@@ -1059,14 +1059,14 @@ base_ind.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 340); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -1076,7 +1076,7 @@ title.apply {
   text(30, 30)`Reactive Palette`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -1115,14 +1115,14 @@ let sw = 54;
 let sh = 44;
 let sr = 5;
 
-let row_label = TextLayer('row-label') ${
+let row_label = TextLayer('row-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: end;
 };
 
-let sw_label = TextLayer('sw-label') ${
+let sw_label = TextLayer('sw-label') #{
   font-family: monospace;
   font-size: 7;
   fill: #64748b;
@@ -1139,7 +1139,7 @@ row_label.apply {
 
 for ([color, i] in ramp) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`r_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`r_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -1163,7 +1163,7 @@ row_label.apply {
 
 for ([color, i] in transforms) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`x_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`x_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -1186,7 +1186,7 @@ row_label.apply {
 
 for ([color, i] in triad) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`tri_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`tri_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
@@ -1201,10 +1201,10 @@ sw_label.apply {
 // Code annotation
 // ═══════════════════════════════════════
 
-let code_bg = PathLayer('code-bg') ${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
+let code_bg = PathLayer('code-bg') #{ fill: #1e293b; stroke: #334155; stroke-width: 1; };
 code_bg.apply { roundRect(30, 300, 460, 28, 4); }
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -1214,7 +1214,7 @@ code.apply {
   text(42, 318)`let base = Color(CSSVar('--base-color', #0066ff));`
 }
 
-let code_kw = TextLayer('code-kw') ${
+let code_kw = TextLayer('code-kw') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;
@@ -1236,14 +1236,14 @@ code_kw.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -1253,7 +1253,7 @@ title.apply {
   text(30, 30)`Reactive Tint / Shade Scale`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -1280,14 +1280,14 @@ let sh = 44;
 let sr = 4;
 let steps = 7;
 
-let row_label = TextLayer('row-label') ${
+let row_label = TextLayer('row-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: end;
 };
 
-let pct_label = TextLayer('pct-label') ${
+let pct_label = TextLayer('pct-label') #{
   font-family: monospace;
   font-size: 7;
   fill: #64748b;
@@ -1316,7 +1316,7 @@ let tints = [
 
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`lt_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`lt_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -1349,7 +1349,7 @@ let shades = [
 
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`dk_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`dk_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -1364,10 +1364,10 @@ pct_label.apply {
 // Code annotation
 // ═══════════════════════════════════════
 
-let code_bg = PathLayer('code-bg') ${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
+let code_bg = PathLayer('code-bg') #{ fill: #1e293b; stroke: #334155; stroke-width: 1; };
 code_bg.apply { roundRect(30, 228, 460, 40, 4); }
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -1378,7 +1378,7 @@ code.apply {
   text(42, 259)`let tint = base.lighten(20%);`
 }
 
-let code_kw = TextLayer('code-kw') ${
+let code_kw = TextLayer('code-kw') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;
@@ -1389,7 +1389,7 @@ code_kw.apply {
   text(42, 259)`let`
 }
 
-let code_comment = TextLayer('code-comment') ${
+let code_comment = TextLayer('code-comment') #{
   font-family: monospace;
   font-size: 9;
   fill: #64748b;

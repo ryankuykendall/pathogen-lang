@@ -59,7 +59,7 @@ describe('sharedCompletionSource (cm-completion-bridge)', () => {
     const { sharedCompletionSource } = await import('../../playground/utils/cm-completion-bridge.js');
 
     const source =
-      "let bg = PathLayer('bg') ${ fill: '#f00'; stroke: none; };\n" +
+      "let bg = PathLayer('bg') #{ fill: '#f00'; stroke: none; };\n" +
       'bg.apply {\n' +
       '  rect(0, 0, 600, 600);\n' +
       '}\n' +
@@ -99,7 +99,7 @@ describe('sharedCompletionSource (cm-completion-bridge)', () => {
 describe('style property replacement range (hyphen handling)', () => {
   it('starts the replacement at the beginning of the hyphenated prefix in a style block', async () => {
     const { sharedCompletionSource } = await import('../../playground/utils/cm-completion-bridge.js');
-    const source = 'let s = ${ stroke-w';
+    const source = 'let s = #{ stroke-w';
     const result = sharedCompletionSource(makeContext(source) as unknown as Parameters<typeof sharedCompletionSource>[0]);
     expect(result).not.toBeNull();
     // Replacing [from, pos) with 'stroke-width' must consume the typed
@@ -200,7 +200,7 @@ describe('style-value interpolation contexts', () => {
   it('member completion inside a bare interp replaces from after the dot', async () => {
     const { makeSharedCompletionSource } = await import('../../playground/utils/cm-completion-bridge');
     const source = makeSharedCompletionSource();
-    const doc = 'let p = Point(10, 20);\nlet s = ${ stroke: ${p.di';
+    const doc = 'let p = Point(10, 20);\nlet s = #{ stroke: ${p.di';
     const result = await source(makeContext(doc));
     expect(result).not.toBeNull();
     // Replacement starts after the dot: only "di" is replaced.
@@ -212,7 +212,7 @@ describe('style-value interpolation contexts', () => {
   it('a bare ${ with nothing typed does not auto-open (explicit-only by design)', async () => {
     const { makeSharedCompletionSource } = await import('../../playground/utils/cm-completion-bridge');
     const source = makeSharedCompletionSource();
-    const doc = 'let cutoff = 4;\nlet s = ${ stroke-width: ${';
+    const doc = 'let cutoff = 4;\nlet s = #{ stroke-width: ${';
     // Non-explicit (typing) context: zero-length match bails.
     const typing = await source(makeContext(doc));
     expect(typing).toBeNull();

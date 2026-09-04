@@ -14,7 +14,7 @@ fn warpY(gx, gy) {
   return (noise2(gx * 0.14, gy * 0.14, 1) - 0.5) * 14;
 }
 
-let grid = PathLayer('warped-grid') ${ stroke: oklch(0.64 0.12 200); stroke-width: 1; fill: none; };
+let grid = PathLayer('warped-grid') #{ stroke: oklch(0.64 0.12 200); stroke-width: 1; fill: none; };
 grid.apply {
   //-- Horizontal rules
   for (gy in 0..12) {

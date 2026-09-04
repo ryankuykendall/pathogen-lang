@@ -46,7 +46,7 @@ The `viewbox` global (lowercase) exposes the values set by `define ViewBox` as a
 
 ```
 define ViewBox(0, 0, 880, 280);
-define default PathLayer('base') ${ fill: #fff; };
+define default PathLayer('base') #{ fill: #fff; };
 let {width, height} = viewbox;
 rect(0, 0, width, height);
 ```
@@ -100,7 +100,7 @@ If a program contains no `define ViewBox` statement, the *rendered* viewBox defa
 ```
 // OK
 define ViewBox(0, 0, 200, 200);
-define default PathLayer('main') ${ stroke: #222; };
+define default PathLayer('main') #{ stroke: #222; };
 M 0 0 L 200 200
 
 // Error: ViewBox must appear at top level

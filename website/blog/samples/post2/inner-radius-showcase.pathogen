@@ -62,26 +62,26 @@ g4.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 520, 530); }
 
 // --- Circles ---
 
-let c1 = PathLayer('c1') ${ fill: g1; stroke: #333; stroke-width: 1; };
+let c1 = PathLayer('c1') #{ fill: g1; stroke: #333; stroke-width: 1; };
 c1.apply { circle(cx1, cy1, r); closePath(); }
 
-let c2 = PathLayer('c2') ${ fill: g2; stroke: #333; stroke-width: 1; };
+let c2 = PathLayer('c2') #{ fill: g2; stroke: #333; stroke-width: 1; };
 c2.apply { circle(cx2, cy2, r); closePath(); }
 
-let c3 = PathLayer('c3') ${ fill: g3; stroke: #333; stroke-width: 1; };
+let c3 = PathLayer('c3') #{ fill: g3; stroke: #333; stroke-width: 1; };
 c3.apply { circle(cx3, cy3, r); closePath(); }
 
-let c4 = PathLayer('c4') ${ fill: g4; stroke: #333; stroke-width: 1; };
+let c4 = PathLayer('c4') #{ fill: g4; stroke: #333; stroke-width: 1; };
 c4.apply { circle(cx4, cy4, r); closePath(); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: #ddd;
@@ -95,7 +95,7 @@ labels.apply {
   text(cx4, 493)`Color('#1a1a2e')`
 }
 
-let desc = TextLayer('desc') ${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -108,7 +108,7 @@ desc.apply {
   text(cx4, 509)`custom dark center`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 15;
   fill: #bbb;
@@ -121,11 +121,11 @@ title.apply {
 
 // --- Scene ---
 
-let top_row = GroupLayer('top-row') ${};
+let top_row = GroupLayer('top-row') #{};
 top_row.append(c1, c2);
 
-let bottom_row = GroupLayer('bottom-row') ${};
+let bottom_row = GroupLayer('bottom-row') #{};
 bottom_row.append(c3, c4);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, top_row, bottom_row, labels, desc, title);

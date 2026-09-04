@@ -10,7 +10,7 @@ let gridColor = Color('#d4c9b8').darken(20%);
 let annotColor = Color('#6b7280');
 let subtleColor = Color('#9ca3af');
 
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 1000, 750); }
 
 // === Chart parameters ===
@@ -68,22 +68,22 @@ let topBarSweep = calc(barSweep * 0.5);
 let topBarOffset = calc((barSweep - topBarSweep) / 2);
 
 // === Grid rings ===
-define GroupLayer('chart') ${}
+define GroupLayer('chart') #{}
 
 // Solid center circle
-let centerCircle = PathLayer('center-circle') ${ fill: none; stroke: gridColor; stroke-width: 0.8; };
+let centerCircle = PathLayer('center-circle') #{ fill: none; stroke: gridColor; stroke-width: 0.8; };
 layer('chart').append(centerCircle);
 centerCircle.apply { circle(cx, cy, innerR); }
 
 // Dashed concentric grid rings at 5% and 10%
-let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 1; stroke-dasharray: 3 4; };
+let grid = PathLayer('grid') #{ fill: none; stroke: gridColor; stroke-width: 1; stroke-dasharray: 3 4; };
 layer('chart').append(grid);
 grid.apply {
   circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal));
   circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal));
 }
 
-let gridLabels = TextLayer('grid-labels') ${
+let gridLabels = TextLayer('grid-labels') #{
   font-size: 7;
   fill: subtleColor;
   font-family: system-ui, sans-serif;
@@ -101,10 +101,10 @@ gridLabels.apply {
 
 // Shared label styles
 let pctSize = 7.2;
-let redDot = ${ fill: allBarColor; white-space: pre; font-size: pctSize; };
-let redPct = ${ fill: allBarColor; font-weight: normal; font-size: pctSize; };
-let darkDot = ${ fill: topBarColor; white-space: pre; font-size: pctSize; };
-let darkPct = ${ fill: topBarColor; font-weight: normal; font-size: pctSize; };
+let redDot = #{ fill: allBarColor; white-space: pre; font-size: pctSize; };
+let redPct = #{ fill: allBarColor; font-weight: normal; font-size: pctSize; };
+let darkDot = #{ fill: topBarColor; white-space: pre; font-size: pctSize; };
+let darkPct = #{ fill: topBarColor; font-weight: normal; font-size: pctSize; };
 
 // Extract first word for group naming
 let firstWords = [
@@ -121,13 +121,13 @@ for ([d, i] in data) {
   let midAngle = calc(startOffset + (i + 0.5) * sliceAngle);
 
   // Create per-category GroupLayer
-  let catGroup = GroupLayer(`group-${i}-${firstWords[i]}`) ${};
+  let catGroup = GroupLayer(`group-${i}-${firstWords[i]}`) #{};
   layer('chart').append(catGroup);
 
   // Red bar (all BGG games)
   if (d.all > 0) {
     let outerR = calc(barInnerR + (maxR - barInnerR) * d.all / maxVal);
-    let barLayer = PathLayer(`bar-all-${i}`) ${ fill: allBarColor; stroke: bgColor; stroke-width: 1; };
+    let barLayer = PathLayer(`bar-all-${i}`) #{ fill: allBarColor; stroke: bgColor; stroke-width: 1; };
     catGroup.append(barLayer);
     barLayer.apply {
       M cx cy
@@ -140,7 +140,7 @@ for ([d, i] in data) {
     let topOuterR = calc(barInnerR + (maxR - barInnerR) * d.top / maxVal);
     let topFrom = calc(sliceFrom + topBarOffset);
     let topTo = calc(topFrom + topBarSweep);
-    let topLayer = PathLayer(`bar-top-${i}`) ${ fill: topBarColor; stroke: bgColor; stroke-width: 1; };
+    let topLayer = PathLayer(`bar-top-${i}`) #{ fill: topBarColor; stroke: bgColor; stroke-width: 1; };
     catGroup.append(topLayer);
     topLayer.apply {
       M cx cy
@@ -153,7 +153,7 @@ for ([d, i] in data) {
   let barTipR = calc(barInnerR + (maxR - barInnerR) * longerVal / maxVal);
   let labelR = calc(barTipR + 8);
 
-  let catLabel = TextLayer(`label-${i}`) ${
+  let catLabel = TextLayer(`label-${i}`) #{
     font-size: 9;
     fill: textColor;
     font-family: Georgia, serif;
@@ -169,7 +169,7 @@ for ([d, i] in data) {
       tspan(0, 0, 0, darkDot)` · `
       tspan(0, 0, 0, darkPct)`${d.top}%`
     }
-  } << ${ font-size: 9; };
+  } << #{ font-size: 9; };
 
   catLabel.apply {
     labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
@@ -185,21 +185,21 @@ for ([d, i] in data) {
     let by = polarY(cy, midAngle, badgeR);
 
     if (d.name == "Economic") {
-      let bc = PathLayer(`badge-circ-${i}`) ${ fill: textColor; stroke: none; };
-      let bs = PathLayer(`badge-star-${i}`) ${ fill: bgColor; stroke: none; };
+      let bc = PathLayer(`badge-circ-${i}`) #{ fill: textColor; stroke: none; };
+      let bs = PathLayer(`badge-star-${i}`) #{ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
       bc.apply { circle(bx, by, 4.5); }
       bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Wargame") {
-      let bc = PathLayer(`badge-circ-${i}`) ${ fill: allBarColor; stroke: none; };
-      let bs = PathLayer(`badge-star-${i}`) ${ fill: bgColor; stroke: none; };
+      let bc = PathLayer(`badge-circ-${i}`) #{ fill: allBarColor; stroke: none; };
+      let bs = PathLayer(`badge-star-${i}`) #{ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
       bc.apply { circle(bx, by, 4.5); }
       bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Humor" || d.name == "Music" || d.name == "Mafia" || d.name == "Prehistoric") {
-      let bs = PathLayer(`badge-star-${i}`) ${ fill: textColor; stroke: none; };
+      let bs = PathLayer(`badge-star-${i}`) #{ fill: textColor; stroke: none; };
       catGroup.append(bs);
       bs.apply { star(bx, by, 4, 1.6, 5); }
     }
@@ -207,9 +207,9 @@ for ([d, i] in data) {
 }
 
 // === Title and subtitle ===
-define GroupLayer('chrome') ${}
+define GroupLayer('chrome') #{}
 
-let titleLayer = TextLayer('title') ${
+let titleLayer = TextLayer('title') #{
   font-size: 20;
   fill: textColor;
   font-family: Georgia, serif;
@@ -225,7 +225,7 @@ titleLayer.apply {
 // Subtitle with highlighted phrases
 // Each segment rendered as a separate text element at measured positions,
 // so rectangles and text share the same anchor points.
-let subStyle = ${ font-size: 11; font-family: system-ui, sans-serif; };
+let subStyle = #{ font-size: 11; font-family: system-ui, sans-serif; };
 let subY = 100;
 let subPad = 3;
 
@@ -256,8 +256,8 @@ let fracHi2 = calc(wHi2 / totalW);          // fraction of "top 100"
 let browserW = calc(totalW * 1.12);
 let browserStart = calc(500 - browserW / 2);
 
-let subtitleBg = PathLayer('subtitle-bg') ${ fill: allBarColor; stroke: none; };
-let subtitleBg2 = PathLayer('subtitle-bg2') ${ fill: topBarColor; stroke: none; };
+let subtitleBg = PathLayer('subtitle-bg') #{ fill: allBarColor; stroke: none; };
+let subtitleBg2 = PathLayer('subtitle-bg2') #{ fill: topBarColor; stroke: none; };
 layer('chrome').append(subtitleBg, subtitleBg2);
 
 subtitleBg.apply {
@@ -271,7 +271,7 @@ subtitleBg2.apply {
 // The browser positions tspans using its own font metrics (continuous flow),
 // which is correct. The rectangles above use our measured positions.
 // Accept ~1-2px offset as the cost of approximate character width tables.
-let subtitleLayer = TextLayer('subtitle') ${
+let subtitleLayer = TextLayer('subtitle') #{
   font-size: 11;
   fill: annotColor;
   font-family: system-ui, sans-serif;
@@ -279,7 +279,7 @@ let subtitleLayer = TextLayer('subtitle') ${
 };
 layer('chrome').append(subtitleLayer);
 
-let hiWhite = ${ fill: #ffffff; };
+let hiWhite = #{ fill: #ffffff; };
 subtitleLayer.apply {
   text(500, subY) {
     `They make up nearly 30% of `
@@ -291,7 +291,7 @@ subtitleLayer.apply {
 }
 
 // === Wedge Legend (bottom-left) ===
-define GroupLayer('legend') ${ translate-x: 94; translate-y: 540; }
+define GroupLayer('legend') #{ translate-x: 94; translate-y: 540; }
 
 let legIR = 6;
 let legBarStart = 7;  // 1-unit gap from center circle
@@ -308,7 +308,7 @@ let legA2 = calc(legA1 + legSweep + 3deg);
 let legA3 = calc(legA2 + legSweep + 3deg);
 
 // Red wedge fan — lightened 8%
-let legRedWedges = PathLayer('leg-red') ${ fill: legRedColor; stroke: bgColor; stroke-width: 0.5; };
+let legRedWedges = PathLayer('leg-red') #{ fill: legRedColor; stroke: bgColor; stroke-width: 0.5; };
 layer('legend').append(legRedWedges);
 legRedWedges.apply {
   M legOX legOY
@@ -320,20 +320,20 @@ legRedWedges.apply {
 }
 
 // Right-half semicircles + center for red
-let legRedGuides = PathLayer('leg-red-guides') ${ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
+let legRedGuides = PathLayer('leg-red-guides') #{ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
 layer('legend').append(legRedGuides);
 legRedGuides.apply {
   M legOX calc(legOY - 20) A 20 20 0 0 1 legOX calc(legOY + 20)
   M legOX calc(legOY - 34) A 34 34 0 0 1 legOX calc(legOY + 34)
 }
-let legRedCenter = PathLayer('leg-red-ctr') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+let legRedCenter = PathLayer('leg-red-ctr') #{ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legRedCenter);
 legRedCenter.apply { circle(legOX, legOY, legIR); }
 
 // Dark wedge fan — same radii, lightened 8%
 let legDX = 130;
 let legDarkX = calc(legDX + legOX);
-let legDarkWedges = PathLayer('leg-dark') ${ fill: legDarkColor; stroke: bgColor; stroke-width: 0.5; };
+let legDarkWedges = PathLayer('leg-dark') #{ fill: legDarkColor; stroke: bgColor; stroke-width: 0.5; };
 layer('legend').append(legDarkWedges);
 legDarkWedges.apply {
   M legDarkX legOY
@@ -345,18 +345,18 @@ legDarkWedges.apply {
 }
 
 // Right-half semicircles + center for dark
-let legDarkGuides = PathLayer('leg-dark-guides') ${ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
+let legDarkGuides = PathLayer('leg-dark-guides') #{ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
 layer('legend').append(legDarkGuides);
 legDarkGuides.apply {
   M legDarkX calc(legOY - 20) A 20 20 0 0 1 legDarkX calc(legOY + 20)
   M legDarkX calc(legOY - 34) A 34 34 0 0 1 legDarkX calc(legOY + 34)
 }
-let legDarkCenter = PathLayer('leg-dark-ctr') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+let legDarkCenter = PathLayer('leg-dark-ctr') #{ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legDarkCenter);
 legDarkCenter.apply { circle(legDarkX, legOY, legIR); }
 
 // 5%/10% labels
-let legGuideLabels = TextLayer('leg-guide-labels') ${
+let legGuideLabels = TextLayer('leg-guide-labels') #{
   font-size: 7;
   fill: subtleColor.darken(20%);
   font-family: system-ui, sans-serif;
@@ -369,7 +369,7 @@ legGuideLabels.apply {
 }
 
 // Legend text labels
-let legLabels = TextLayer('leg-labels') ${
+let legLabels = TextLayer('leg-labels') #{
   font-size: 9;
   fill: textColor;
   font-family: Georgia, serif;
@@ -383,7 +383,7 @@ legLabels.apply {
 }
 
 // Footnote
-let footNote = TextLayer('footnote') ${
+let footNote = TextLayer('footnote') #{
   font-size: 8;
   fill: annotColor;
   font-family: system-ui, sans-serif;
@@ -397,7 +397,7 @@ footNote.apply {
 
 // === Top Categories Bar Chart (bottom-right) ===
 // Dots on a gentle leftward arc, bars extend left from dots, labels right
-define GroupLayer('summary') ${ translate-x: 680; translate-y: 496; }
+define GroupLayer('summary') #{ translate-x: 680; translate-y: 496; }
 
 let summData = [
   { name: "Economic",        pct: 9.7, rank: 1 },
@@ -428,7 +428,7 @@ fn summDotXAt(idx) {
 }
 
 // Title — centered directly above the bar cluster
-let summTitle = TextLayer('summ-title') ${
+let summTitle = TextLayer('summ-title') #{
   font-size: 11;
   fill: textColor;
   font-family: Georgia, serif;
@@ -443,7 +443,7 @@ summTitle.apply {
 }
 
 // Circular arc behind dots — extends 8 units above first dot and below last dot
-let summArcLineLayer = PathLayer('summ-arc') ${ fill: none; stroke: topBarColor; stroke-width: 1; };
+let summArcLineLayer = PathLayer('summ-arc') #{ fill: none; stroke: topBarColor; stroke-width: 1; };
 layer('summary').append(summArcLineLayer);
 let summArcTopY = calc(summDotY0 - 8);
 let summArcBotY = calc(summDotY0 + 4 * summItemStep + 8);
@@ -457,9 +457,9 @@ summArcLineLayer.apply {
 }
 
 // Bars, dots, labels
-let summBars = PathLayer('summ-bars') ${ fill: topBarColor; stroke: none; };
-let summDots = PathLayer('summ-dots') ${ fill: bgColor; stroke: topBarColor; stroke-width: 1; };
-let summLabels = TextLayer('summ-labels') ${
+let summBars = PathLayer('summ-bars') #{ fill: topBarColor; stroke: none; };
+let summDots = PathLayer('summ-dots') #{ fill: bgColor; stroke: topBarColor; stroke-width: 1; };
+let summLabels = TextLayer('summ-labels') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -495,13 +495,13 @@ let a1Angle = annotStart;
 let a1x = polarX(cx, a1Angle, annotR);
 let a1y = polarY(cy, a1Angle, annotR);
 
-let badge1Circle = PathLayer('badge1-circle') ${ fill: textColor; stroke: none; };
-let badge1Star = PathLayer('badge1-star') ${ fill: bgColor; stroke: none; };
+let badge1Circle = PathLayer('badge1-circle') #{ fill: textColor; stroke: none; };
+let badge1Star = PathLayer('badge1-star') #{ fill: bgColor; stroke: none; };
 layer('chrome').append(badge1Circle, badge1Star);
 badge1Circle.apply { circle(a1x, a1y, 6.5); }
 badge1Star.apply { star(a1x, a1y, 5.5, 2.2, 5); }
 
-let badge1Text = TextLayer('badge1-text') ${
+let badge1Text = TextLayer('badge1-text') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -521,13 +521,13 @@ let a2Angle = calc(annotStart + 18deg);
 let a2x = polarX(cx, a2Angle, annotR);
 let a2y = polarY(cy, a2Angle, annotR);
 
-let badge2Circle = PathLayer('badge2-circle') ${ fill: allBarColor; stroke: none; };
-let badge2Star = PathLayer('badge2-star') ${ fill: bgColor; stroke: none; };
+let badge2Circle = PathLayer('badge2-circle') #{ fill: allBarColor; stroke: none; };
+let badge2Star = PathLayer('badge2-star') #{ fill: bgColor; stroke: none; };
 layer('chrome').append(badge2Circle, badge2Star);
 badge2Circle.apply { circle(a2x, a2y, 6.5); }
 badge2Star.apply { star(a2x, a2y, 5.5, 2.2, 5); }
 
-let badge2Text = TextLayer('badge2-text') ${
+let badge2Text = TextLayer('badge2-text') #{
   font-size: 9;
   fill: allBarColor;
   font-family: system-ui, sans-serif;
@@ -545,11 +545,11 @@ let a3Angle = calc(annotStart + 18deg + 27deg);
 let a3x = polarX(cx, a3Angle, annotR);
 let a3y = polarY(cy, a3Angle, annotR);
 
-let badge3Star = PathLayer('badge3-star') ${ fill: textColor; stroke: none; };
+let badge3Star = PathLayer('badge3-star') #{ fill: textColor; stroke: none; };
 layer('chrome').append(badge3Star);
 badge3Star.apply { star(a3x, a3y, 6.5, 2.6, 5); }
 
-let badge3Text = TextLayer('badge3-text') ${
+let badge3Text = TextLayer('badge3-text') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -562,7 +562,7 @@ badge3Text.apply {
 }
 
 // === Disclaimer and source attribution ===
-let disclaimer = TextLayer('disclaimer') ${
+let disclaimer = TextLayer('disclaimer') #{
   font-size: 8;
   fill: annotColor;
   font-family: Georgia, serif;
@@ -575,7 +575,7 @@ disclaimer.apply {
   text(120, 717)`favour of broader categories. Percentages are normalized separately for each group, showing relative preference rather than total volume.`
 }
 
-let sourceNote = TextLayer('source') ${
+let sourceNote = TextLayer('source') #{
   font-size: 8;
   fill: annotColor;
   font-family: system-ui, sans-serif;

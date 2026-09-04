@@ -36,12 +36,12 @@ trans_grad.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 540, 400); }
 
 // --- Checkerboard behind transparent (to show transparency) ---
 
-let checks = PathLayer('checks') ${ fill: #1e1e2a; stroke: none; };
+let checks = PathLayer('checks') #{ fill: #1e1e2a; stroke: none; };
 checks.apply {
   rect(398, 148, 16, 16); rect(430, 148, 16, 16);
   rect(414, 164, 16, 16); rect(446, 164, 16, 16);
@@ -51,18 +51,18 @@ checks.apply {
 
 // --- Gradient circles ---
 
-let c1 = PathLayer('c-clamp') ${ fill: clamp_grad; stroke: #333; stroke-width: 1; };
+let c1 = PathLayer('c-clamp') #{ fill: clamp_grad; stroke: #333; stroke-width: 1; };
 c1.apply { circle(110, 180, 80); closePath(); }
 
-let c2 = PathLayer('c-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
+let c2 = PathLayer('c-repeat') #{ fill: repeat_grad; stroke: #333; stroke-width: 1; };
 c2.apply { circle(270, 180, 80); closePath(); }
 
-let c3 = PathLayer('c-trans') ${ fill: trans_grad; stroke: #333; stroke-width: 1; };
+let c3 = PathLayer('c-trans') #{ fill: trans_grad; stroke: #333; stroke-width: 1; };
 c3.apply { circle(430, 180, 80); closePath(); }
 
 // --- Arc range indicators ---
 
-let arcs = PathLayer('arc-lines') ${ fill: none; stroke: #ffffff44; stroke-width: 1; stroke-dasharray: 3 3; };
+let arcs = PathLayer('arc-lines') #{ fill: none; stroke: #ffffff44; stroke-width: 1; stroke-dasharray: 3 3; };
 arcs.apply {
   // Vertical lines at 90° (top) and 270° (bottom) for each circle
   line(110, 92, 110, 98);   line(110, 262, 110, 268);
@@ -72,7 +72,7 @@ arcs.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ddd;
@@ -85,7 +85,7 @@ labels.apply {
   text(430, 292)`transparent`
 }
 
-let desc = TextLayer('desc') ${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 9;
   fill: #777;
@@ -97,7 +97,7 @@ desc.apply {
   text(430, 308)`gap area is transparent`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 15;
   fill: #bbb;
@@ -108,7 +108,7 @@ title.apply {
   text(270, 50)`Spread Modes on Partial Sweep (90° → 270°)`
 }
 
-let angle_note = TextLayer('angle-note') ${
+let angle_note = TextLayer('angle-note') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -120,5 +120,5 @@ angle_note.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, checks, c1, c2, c3, arcs, labels, desc, title, angle_note);

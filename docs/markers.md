@@ -14,10 +14,10 @@ let arrow = @{
 };
 
 let arrowMarker = Marker('arrowhead', 10, 10) {|m|
-  m.append(arrow, ${ fill: Color('#333'); });
+  m.append(arrow, #{ fill: Color('#333'); });
 };
 
-define PathLayer('line') ${
+define PathLayer('line') #{
   stroke: Color('#333');
   stroke-width: 3;
   fill: none;
@@ -38,7 +38,7 @@ The trailing block `{|m| ... }` binds the newly-created marker to `m`. Use `m.ap
 Use `.append(pathBlock, styles?)` to add path geometry to the marker:
 
 ```
-m.append(arrow, ${ fill: context-stroke; });
+m.append(arrow, #{ fill: context-stroke; });
 ```
 
 - **pathBlock** — a `PathBlock` (`@{ ... }`) or `ProjectedPath`. PathBlocks are automatically projected at the marker's local origin `(0, 0)`.
@@ -51,7 +51,7 @@ m.append(arrow, ${ fill: context-stroke; });
 Reference a marker in a layer's style block using `marker-start`, `marker-mid`, or `marker-end`:
 
 ```
-define PathLayer('line') ${
+define PathLayer('line') #{
   stroke: Color('#333');
   stroke-width: 3;
   fill: none;
@@ -70,7 +70,7 @@ These properties — along with the shorthand `marker` — automatically wrap th
 The `marker` shorthand applies the same marker to all three positions:
 
 ```
-define PathLayer('vertices') ${
+define PathLayer('vertices') #{
   stroke: Color('#333');
   stroke-width: 2;
   fill: none;
@@ -97,7 +97,7 @@ After construction, properties can be reassigned to override the defaults. Numer
 
 ```
 let arrowMarker = Marker('flow-arrow', 12, 12) {|m|
-  m.append(arrow, ${ fill: context-stroke; });
+  m.append(arrow, #{ fill: context-stroke; });
 };
 
 // Numeric override: position the arrow tip exactly at the endpoint
@@ -157,12 +157,12 @@ let arrow = @{
 
 // One marker reused across many lines; fill picks up each line's stroke color
 let arrowMarker = Marker('context-arrow', 10, 10) {|m|
-  m.append(arrow, ${ fill: context-stroke; stroke: none; });
+  m.append(arrow, #{ fill: context-stroke; stroke: none; });
 };
 
-define PathLayer('red')    ${ stroke: Color('#e63946'); stroke-width: 3; fill: none; marker-end: arrowMarker; }
-define PathLayer('orange') ${ stroke: Color('#f77f00'); stroke-width: 3; fill: none; marker-end: arrowMarker; }
-define PathLayer('green')  ${ stroke: Color('#2a9d8f'); stroke-width: 3; fill: none; marker-end: arrowMarker; }
+define PathLayer('red')    #{ stroke: Color('#e63946'); stroke-width: 3; fill: none; marker-end: arrowMarker; }
+define PathLayer('orange') #{ stroke: Color('#f77f00'); stroke-width: 3; fill: none; marker-end: arrowMarker; }
+define PathLayer('green')  #{ stroke: Color('#2a9d8f'); stroke-width: 3; fill: none; marker-end: arrowMarker; }
 
 layer('red').apply    { M 40 60  L 360 60 }
 layer('orange').apply { M 40 130 L 360 130 }
@@ -183,16 +183,16 @@ let dot   = @{ circle(5, 5, 4); };
 let ring  = @{ circle(5, 5, 4); };
 
 let arrowMarker = Marker('arrow', 10, 10) {|m|
-  m.append(arrow, ${ fill: context-stroke; });
+  m.append(arrow, #{ fill: context-stroke; });
 };
 let dotMarker = Marker('dot', 10, 10) {|m|
-  m.append(dot, ${ fill: context-stroke; });
+  m.append(dot, #{ fill: context-stroke; });
 };
 let ringMarker = Marker('ring', 10, 10) {|m|
-  m.append(ring, ${ fill: Color('#fff'); stroke: context-stroke; stroke-width: 1.5; });
+  m.append(ring, #{ fill: Color('#fff'); stroke: context-stroke; stroke-width: 1.5; });
 };
 
-define PathLayer('path1') ${
+define PathLayer('path1') #{
   stroke: Color('#2a9d8f');
   stroke-width: 3;
   fill: none;
@@ -266,7 +266,7 @@ If the value already starts with `url(`, it's left as-is.
 | `Duplicate defs ID '<id>'` | Another Mask, ClipPath, Gradient, Pattern, or Marker already uses this ID |
 | `Marker.append() expects 1-2 arguments (path, styles?)` | Wrong number of `.append()` args |
 | `Marker.append() first argument must be a PathBlock or ProjectedPath` | Passed something other than `@{ ... }` or a projected path |
-| `Marker.append() second argument must be a style block` | Passed something other than a `${ ... }` style block |
+| `Marker.append() second argument must be a style block` | Passed something other than a `#{ ... }` style block |
 | `Unknown Marker method: <name>` | Called a method other than `.append()` |
 | `Cannot assign to Marker property '<name>'` | Assigned to a non-mutable property |
 | `Marker.refX must be a number or MarkerRefX enum value` | Assigned an invalid type to `refX` (same pattern applies to `refY`, `orient`, `markerUnits`, `preserveAspectRatio`) |

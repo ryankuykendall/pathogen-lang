@@ -23,8 +23,8 @@ let base = @{ m 0 0 l 200 0 l 0 200 l -200 0 z };
 let hole = @{ m 50 50 l 100 0 l 0 100 l -100 0 z };
 
 let m = Mask('reveal');
-m.append(base, ${ fill: white; });    // visible area
-m.append(hole, ${ fill: black; });    // hidden cutout
+m.append(base, #{ fill: white; });    // visible area
+m.append(hole, #{ fill: black; });    // hidden cutout
 ```
 
 The first argument accepts either a `PathBlock` or a `ProjectedPath`. PathBlocks are automatically projected at the origin (0, 0). The optional second argument is a style block for the path element.
@@ -34,7 +34,7 @@ The first argument accepts either a `PathBlock` or a `ProjectedPath`. PathBlocks
 Reference the mask from a layer's style block using the `.id` property:
 
 ```
-define PathLayer('art') ${ mask: m.id; }
+define PathLayer('art') #{ mask: m.id; }
 layer('art').apply {
   M 10 10 L 190 190
 }
@@ -51,11 +51,11 @@ let circle = @{ m 100 50 a 50 50 0 1 1 0 100 a 50 50 0 1 1 0 -100 };
 
 // Create mask: white = visible, black = hidden
 let m = Mask('circle-reveal');
-m.append(fullRect, ${ fill: black; });
-m.append(circle, ${ fill: white; });
+m.append(fullRect, #{ fill: black; });
+m.append(circle, #{ fill: white; });
 
 // Apply mask to layer
-define PathLayer('drawing') ${ mask: m.id; stroke: #333; stroke-width: 2; }
+define PathLayer('drawing') #{ mask: m.id; stroke: #333; stroke-width: 2; }
 layer('drawing').apply {
   for (i in 0..20) {
     M 0 calc(i * 10)
@@ -89,7 +89,7 @@ c.append(shape);
 ### Using a Clip Path
 
 ```
-define PathLayer('scene') ${ clip-path: c.id; }
+define PathLayer('scene') #{ clip-path: c.id; }
 layer('scene').apply {
   M 0 0 L 200 200
 }
@@ -112,8 +112,8 @@ If the value already starts with `url(`, it's left as-is:
 
 ```
 // These produce the same output:
-define PathLayer('a') ${ mask: m.id; }         // m.id → 'my-mask' → url(#my-mask)
-define PathLayer('b') ${ mask: url(#my-mask); } // already wrapped, left as-is
+define PathLayer('a') #{ mask: m.id; }         // m.id → 'my-mask' → url(#my-mask)
+define PathLayer('b') #{ mask: url(#my-mask); } // already wrapped, left as-is
 ```
 
 ## Properties

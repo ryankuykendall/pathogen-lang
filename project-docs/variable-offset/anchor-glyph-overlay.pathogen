@@ -6,14 +6,14 @@
 
 define ViewBox(0, 0, 580, 200);
 let {width, height} = viewbox;
-define default PathLayer('main-path-layer') ${
+define default PathLayer('main-path-layer') #{
   fill: #bbb;
   stroke: #222;
   stroke-width: 0.2;
 };
 
 @font "../../fonts/Baumans/Baumans-Regular.ttf";
-let baseGlyphStyles = ${
+let baseGlyphStyles = #{
   fill: #ccc;
   stroke: #222;
   stroke-width: 1;
@@ -26,7 +26,7 @@ let glyphLayer = PathLayer(`glyph-layer`) << baseGlyphStyles;
 
 //-- Blue dots mark each ribbon's anchor — they must sit exactly where the
 //-- red ribbon begins, riding the glyph outline (1 unit off, the first stop's offset1).
-let anchorDotLayer = PathLayer('anchor-dots') ${
+let anchorDotLayer = PathLayer('anchor-dots') #{
   fill: #06c;
   stroke: none;
 };
@@ -48,7 +48,7 @@ for ([glyph, gIndex] in glyphSet) {
       vo.endCap(Cap.tapered(10, CurveContinuity.G0));
     };
 
-    let contourStrokeyLayer = PathLayer(`strokey-layer-${gIndex}-${cIndex}`) ${
+    let contourStrokeyLayer = PathLayer(`strokey-layer-${gIndex}-${cIndex}`) #{
       fill: #c00;
       stroke: none;
     };

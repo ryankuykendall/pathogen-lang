@@ -31,7 +31,7 @@ function encodeState(code: string): string {
 
 const PROGRAM = `define ViewBox(0, 0, 400, 160);
 @font "Inter" 400;
-let styles = \${ font-family: Inter; font-size: 48; };
+let styles = #{ font-family: Inter; font-size: 48; };
 let glyphs = PathBlock.fromGlyph("a b\\nc", styles);
 
 for (g in glyphs) {

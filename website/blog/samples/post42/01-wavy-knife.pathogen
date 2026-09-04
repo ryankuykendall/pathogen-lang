@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 230);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,25 +12,25 @@ layer('bg').apply {
   rect(0, 0, 480, 230);
 }
 
-let scene = GroupLayer('scene') ${};
-let knifeLayer = PathLayer('knife') ${
+let scene = GroupLayer('scene') #{};
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
   stroke-dasharray: 2 3;
 };
-let pieceLayer = PathLayer('pieces') ${
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let seamLayer = PathLayer('seams') ${
+let seamLayer = PathLayer('seams') #{
   stroke: #f59e0b;
   stroke-width: 2.2;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -52,7 +52,7 @@ let pieces = plate.cut(knife);
 
 // The knife's full arc over a ghost of the plate — the overshoot on
 // both ends is what makes it a complete cut.
-let ghost = PathLayer('ghost') ${
+let ghost = PathLayer('ghost') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 3 4;

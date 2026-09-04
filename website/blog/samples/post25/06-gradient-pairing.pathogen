@@ -17,7 +17,7 @@ let grainy = NoiseFilter() {|f|
   f.amount = 0.65;
 };
 
-let panel = PathLayer('panel') ${
+let panel = PathLayer('panel') #{
   fill: sky;
   stroke: none;
   filter: grainy;

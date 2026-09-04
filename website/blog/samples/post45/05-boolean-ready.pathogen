@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,18 +12,18 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let plateLayer = PathLayer('plate') ${
+let scene = GroupLayer('scene') #{};
+let plateLayer = PathLayer('plate') #{
   fill: #38bdf830;
   stroke: #38bdf8;
   stroke-width: 1.5;
 };
-let crossLayer = PathLayer('cross') ${
+let crossLayer = PathLayer('cross') #{
   fill: #f59e0b30;
   stroke: #f59e0b;
   stroke-width: 1.5;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -42,13 +42,13 @@ let track = @{
   m 25 60
   h 140
 };
-let slotPieces = track.dash(${
+let slotPieces = track.dash(#{
   stroke-dasharray: 26 26;
 });
 let plaque = plate;
 for (piece in slotPieces) {
   if (piece.kind == 'dash') {
-    let slot = piece.path.outline(${
+    let slot = piece.path.outline(#{
       stroke-width: 16;
       stroke-linecap: round;
     });
@@ -65,7 +65,7 @@ let crossing = @{
   m -55 -45
   v 90
 };
-let welded = crossing.outline(${
+let welded = crossing.outline(#{
   stroke-width: 26;
   stroke-linecap: round;
   outline-overlap: union;

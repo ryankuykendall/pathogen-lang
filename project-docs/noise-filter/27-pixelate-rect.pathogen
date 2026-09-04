@@ -9,5 +9,5 @@ let sunset = LinearGradient('sunset', 0, 0, 1, 1) {|g|
 
 let pix = PixelateFilter(8, 8, 4);
 
-define PathLayer('panel') ${ fill: sunset; stroke: none; filter: pix; }
+define PathLayer('panel') #{ fill: sunset; stroke: none; filter: pix; }
 layer('panel').apply { rect(0, 0, 200, 200); }

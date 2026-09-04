@@ -962,7 +962,7 @@ Cutting works on multi-contour subjects — a glyph, a donut, a shape with holes
 
 ```
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 96; };
+let styles = #{ font-family: Inter; font-size: 96; };
 let glyphs = PathBlock.fromGlyph("O", styles);
 let knife = @{ m -10 -40 l 90 8 };
 let pieces = glyphs[0].cut(knife);
@@ -988,8 +988,8 @@ let parts = wave.cut(knife);    // 2 open fragments
 Because every piece is a full PathBlock, styling them individually is just iteration — cut once, then route pieces to differently-styled layers:
 
 ```
-let warm = PathLayer(`warm`) ${ fill: #e0b17c; stroke: #40311f; stroke-width: 1; };
-let cool = PathLayer(`cool`) ${ fill: #7c9ce0; stroke: #1f2540; stroke-width: 1; };
+let warm = PathLayer(`warm`) #{ fill: #e0b17c; stroke: #40311f; stroke-width: 1; };
+let cool = PathLayer(`cool`) #{ fill: #7c9ce0; stroke: #1f2540; stroke-width: 1; };
 
 let disc = @{ circle(0, 0, 40); };
 let knives = @{
@@ -1080,7 +1080,7 @@ let wave = @{
   c 20 -30 40 -30 60 0;
   c 20 30 40 30 60 0;
 };
-let pieces = wave.dash(${
+let pieces = wave.dash(#{
   stroke-dasharray: 12 6;
 });
 M 20 100
@@ -1104,7 +1104,7 @@ let ring = @{
   a 50 50 0 1 1 0.1 0;
   z;
 };
-let quarters = ring.dash(${
+let quarters = ring.dash(#{
   stroke-dasharray: 20% 5%;
 });
 ```
@@ -1114,7 +1114,7 @@ Negative entries are an error. If every entry is zero, the whole path comes back
 **Dash offset.** `stroke-dashoffset` advances the pattern's starting position, wrapping around the pattern length; negative offsets are allowed, as in CSS:
 
 ```
-let ticks = line.dash(${
+let ticks = line.dash(#{
   stroke-dasharray: 2 10;
   stroke-dashoffset: 6;
 });
@@ -1126,7 +1126,7 @@ let ticks = line.dash(${
 let loop = @{
   h 80; v 80; h -80; z;
 };
-let joined = loop.dash(${
+let joined = loop.dash(#{
   stroke-dasharray: 25 15;
   dash-seam: merge;
 });
@@ -1148,7 +1148,7 @@ Converts a stroked path into the **closed** path that outlines it — the same o
 let stem = @{
   c 0 -40 50 -40 50 0;
 };
-let solid = stem.outline(${
+let solid = stem.outline(#{
   stroke-width: 12;
   stroke-linecap: round;
 });
@@ -1167,13 +1167,13 @@ The outline keeps the source's placement (normalized to a `(0, 0)` origin): draw
 Composing with `dash()` is the intended workflow — partition first, then thicken exactly the pieces you want, with any width per piece:
 
 ```
-let pieces = wave.dash(${
+let pieces = wave.dash(#{
   stroke-dasharray: 18 9;
 });
 M 20 100
 for (piece in pieces) {
   if (piece.kind == 'dash') {
-    let fat = piece.path.outline(${
+    let fat = piece.path.outline(#{
       stroke-width: calc(4 + 10 * piece.t0);
       stroke-linecap: round;
     });
@@ -1188,7 +1188,7 @@ And because outlines are closed, fat dashes participate in boolean operations:
 let plate = @{
   h 120; v 80; h -120; z;
 };
-let slot = pieces[2].path.outline(${
+let slot = pieces[2].path.outline(#{
   stroke-width: 10;
 });
 let plaque = plate.difference(slot);
@@ -1227,7 +1227,7 @@ let shifted = arc.startAt(0.25);
 Combine with `dash()` to slide a dash pattern around a closed loop without touching the offset math:
 
 ```
-let marching = ring.startAt(phase).dash(${
+let marching = ring.startAt(phase).dash(#{
   stroke-dasharray: 6 6;
 });
 ```
@@ -1311,7 +1311,7 @@ let family = "Inter";
 
 @font family;
 
-let styles = ${
+let styles = #{
   font-family: ${family};
   font-size: 48;
 };
@@ -1324,7 +1324,7 @@ Converts text into an array of PathBlock values — one per character. Each Path
 ```
 @font "Inter";
 
-let glyphs = PathBlock.fromGlyph("A", ${ font-family: Inter; font-size: 48; });
+let glyphs = PathBlock.fromGlyph("A", #{ font-family: Inter; font-size: 48; });
 
 M 50 100
 glyphs[0].draw()
@@ -1341,7 +1341,7 @@ glyphs[0].draw()
 
 ```
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 48; };
+let styles = #{ font-family: Inter; font-size: 48; };
 let glyphs = PathBlock.fromGlyph("Hi", styles);
 log(glyphs.length);    // 2
 ```
@@ -1352,7 +1352,7 @@ Each glyph PathBlock has an `.advanceWidth` property — the horizontal distance
 
 ```
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 48; };
+let styles = #{ font-family: Inter; font-size: 48; };
 let glyphs = PathBlock.fromGlyph("Hello", styles);
 
 let x = 10;
@@ -1389,7 +1389,7 @@ Use `isNewline` to honor hard line breaks during layout:
 
 ```
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 48; };
+let styles = #{ font-family: Inter; font-size: 48; };
 let glyphs = PathBlock.fromGlyph("Hello\nworld", styles);
 
 let marginX = 10;
@@ -1421,7 +1421,7 @@ for (g in glyphs) {
 
 ```
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 48; };
+let styles = #{ font-family: Inter; font-size: 48; };
 // Decomposed "é": "e" followed by the combining acute U+0301 (code point 769)
 let glyphs = PathBlock.fromGlyph("é", styles);
 log(glyphs[1].isMark);      // true
@@ -1454,7 +1454,7 @@ Glyphs with multiple contours (e.g., "O" has an outer ring and inner hole) can b
 
 ```
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 48; };
+let styles = #{ font-family: Inter; font-size: 48; };
 let glyphs = PathBlock.fromGlyph("O", styles);
 let contours = glyphs[0].contours;
 log(contours.length);              // 2 (outer + inner)
@@ -1472,7 +1472,7 @@ Each contour is a closed PathBlock with all standard properties and methods.
 
 ```
 @font "Nanum Gothic";
-let styles = ${ font-family: "Nanum Gothic"; font-size: 48; };
+let styles = #{ font-family: "Nanum Gothic"; font-size: 48; };
 let glyphs = PathBlock.fromGlyph("안녕하세요", styles);
 ```
 

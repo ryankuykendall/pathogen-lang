@@ -5,8 +5,8 @@ let cellSize = 20;
 let gridW = 180;
 let gridH = 180;
 
-define PathLayer('flat') ${ stroke: #4488ff; stroke-width: 0.3; fill: none; }
-define PathLayer('pointy') ${ stroke: #ff4488; stroke-width: 0.3; fill: none; }
+define PathLayer('flat') #{ stroke: #4488ff; stroke-width: 0.3; fill: none; }
+define PathLayer('pointy') #{ stroke: #ff4488; stroke-width: 0.3; fill: none; }
 
 // Left: Flat-top (HexagonOrientation.Edge)
 layer('flat').apply {

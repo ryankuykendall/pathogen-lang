@@ -43,10 +43,10 @@ topo.interpolation = 'oklch';
 
 // --- Layers ---
 
-let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
+let bg = PathLayer('bg') #{ fill: topo; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: #777;
@@ -58,5 +58,5 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, title);

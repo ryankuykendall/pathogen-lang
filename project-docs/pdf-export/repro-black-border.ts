@@ -12,7 +12,7 @@ const ANON_KEY = 'pathogen-lang:userId';
 
 const MAIN_SOURCE = `define ViewBox(0, 0, 800, 500);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: #14101c;
 }
 
@@ -20,7 +20,7 @@ layer('background').apply {
   rect(0, 0, 800, 500);
 }
 
-define PathLayer('rings') \${
+define PathLayer('rings') #{
   stroke: #f7b56e;
   stroke-width: 3;
   fill: #b384e0;

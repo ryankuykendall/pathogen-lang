@@ -8,19 +8,19 @@ let diamond = @{
   z
 };
 
-let manual = PathLayer('manual') ${
+let manual = PathLayer('manual') #{
   fill: Color('#f59e0b');
   stroke: Color('#b45309');
   stroke-width: 1.5;
 };
 
-let drawto = PathLayer('drawto') ${
+let drawto = PathLayer('drawto') #{
   fill: Color('#8b5cf6');
   stroke: Color('#6d28d9');
   stroke-width: 1.5;
 };
 
-let label = PathLayer('label') ${
+let label = PathLayer('label') #{
   fill: none;
   stroke: Color('#64748b');
   stroke-width: 1;

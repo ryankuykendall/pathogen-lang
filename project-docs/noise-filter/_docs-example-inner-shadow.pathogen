@@ -1,6 +1,6 @@
 // Canonical source for the InnerShadowFilter Generated SVG Output section in
 // docs/filters.md. If you change this file, update the doc accordingly.
-define PathLayer('surface') ${ fill: oklch(94% 0.01 80); stroke: none; }
+define PathLayer('surface') #{ fill: oklch(94% 0.01 80); stroke: none; }
 layer('surface').apply { rect(0, 0, 200, 200); }
 
 let press = InnerShadowFilter() {|f|
@@ -11,5 +11,5 @@ let press = InnerShadowFilter() {|f|
   f.opacity = 0.5;
 };
 
-define PathLayer('button') ${ fill: oklch(80% 0.06 230); stroke: none; filter: press; }
+define PathLayer('button') #{ fill: oklch(80% 0.06 230); stroke: none; filter: press; }
 layer('button').apply { roundRect(40, 80, 120, 40, 12); }

@@ -44,23 +44,23 @@ fuel_grad.spread = 'transparent';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 660, 340); }
 
 // --- Gauge faces ---
 
-let g1 = PathLayer('g1') ${ fill: speed_grad; stroke: none; };
+let g1 = PathLayer('g1') #{ fill: speed_grad; stroke: none; };
 g1.apply { circle(120, 160, 80); closePath(); }
 
-let g2 = PathLayer('g2') ${ fill: temp_grad; stroke: none; };
+let g2 = PathLayer('g2') #{ fill: temp_grad; stroke: none; };
 g2.apply { circle(330, 160, 80); closePath(); }
 
-let g3 = PathLayer('g3') ${ fill: fuel_grad; stroke: none; };
+let g3 = PathLayer('g3') #{ fill: fuel_grad; stroke: none; };
 g3.apply { circle(540, 160, 65); closePath(); }
 
 // --- Gauge rims ---
 
-let rims = PathLayer('rims') ${ fill: none; stroke: #444; stroke-width: 1.5; };
+let rims = PathLayer('rims') #{ fill: none; stroke: #444; stroke-width: 1.5; };
 rims.apply {
   circle(120, 160, 81); closePath();
   circle(330, 160, 81); closePath();
@@ -71,7 +71,7 @@ rims.apply {
 // 7 ticks from 0 to max, evenly spaced along the 270° arc
 // Angles: 135, 180, 225, 270, 315, 360, 405 degrees
 
-let speed_ticks = PathLayer('speed-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+let speed_ticks = PathLayer('speed-ticks') #{ fill: none; stroke: #ccc; stroke-width: 4; };
 speed_ticks.apply {
   // 135° (bottom-left) — 0 km/h
   line(51, 217, 63, 205);
@@ -91,7 +91,7 @@ speed_ticks.apply {
 
 // --- Tick marks for Temp gauge (135° to 405°, 270° sweep) ---
 
-let temp_ticks = PathLayer('temp-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+let temp_ticks = PathLayer('temp-ticks') #{ fill: none; stroke: #ccc; stroke-width: 4; };
 temp_ticks.apply {
   // 135° — -20°C
   line(261, 217, 273, 205);
@@ -111,7 +111,7 @@ temp_ticks.apply {
 
 // --- Tick marks for Fuel gauge (180° to 360°, 180° sweep) ---
 
-let fuel_ticks = PathLayer('fuel-ticks') ${ fill: none; stroke: #ccc; stroke-width: 4; };
+let fuel_ticks = PathLayer('fuel-ticks') #{ fill: none; stroke: #ccc; stroke-width: 4; };
 fuel_ticks.apply {
   // 180° (left) — E
   line(468, 160, 480, 160);
@@ -127,7 +127,7 @@ fuel_ticks.apply {
 
 // --- Speed tick labels ---
 
-let speed_vals = TextLayer('speed-vals') ${
+let speed_vals = TextLayer('speed-vals') #{
   font-family: monospace;
   font-size: 8;
   fill: #888;
@@ -145,7 +145,7 @@ speed_vals.apply {
 
 // --- Temp tick labels ---
 
-let temp_vals = TextLayer('temp-vals') ${
+let temp_vals = TextLayer('temp-vals') #{
   font-family: monospace;
   font-size: 8;
   fill: #888;
@@ -163,7 +163,7 @@ temp_vals.apply {
 
 // --- Fuel tick labels ---
 
-let fuel_vals = TextLayer('fuel-vals') ${
+let fuel_vals = TextLayer('fuel-vals') #{
   font-family: monospace;
   font-size: 8;
   fill: #888;
@@ -179,7 +179,7 @@ fuel_vals.apply {
 
 // --- Gauge titles ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ccc;
@@ -192,7 +192,7 @@ labels.apply {
   text(540, 166)`Fuel`
 }
 
-let titles = TextLayer('titles') ${
+let titles = TextLayer('titles') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #ddd;
@@ -205,7 +205,7 @@ titles.apply {
   text(540, 260)`Fuel`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -219,14 +219,14 @@ subtitle.apply {
 
 // --- Scene ---
 
-let speed_group = GroupLayer('speed-gauge') ${};
+let speed_group = GroupLayer('speed-gauge') #{};
 speed_group.append(g1, speed_ticks);
 
-let temp_group = GroupLayer('temp-gauge') ${};
+let temp_group = GroupLayer('temp-gauge') #{};
 temp_group.append(g2, temp_ticks);
 
-let fuel_group = GroupLayer('fuel-gauge') ${};
+let fuel_group = GroupLayer('fuel-gauge') #{};
 fuel_group.append(g3, fuel_ticks);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle);

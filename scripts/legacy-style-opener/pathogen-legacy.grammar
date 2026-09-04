@@ -1,0 +1,581 @@
+// Pathogen Language Grammar — Lezer LR Parser
+// Single source of truth for Pathogen syntax, powering both the compiler
+// (via CST-to-AST conversion) and the playground editor (CodeMirror 6).
+
+@top Program { statement* }
+
+@precedence {
+  member @left,
+  call @left,
+  prefix,
+  times @left,
+  plus @left,
+  compare @left,
+  merge @left,
+  equality @left,
+  and @left,
+  or @left,
+  ternary @right,
+  assign @right
+}
+
+// ─── Statements ────────────────────────────────────────────────
+
+statement {
+  Comment |
+  FontDirective |
+  ViewBoxDefinition |
+  LayerDefinition |
+  LayerApplyBlock |
+  TextStatement |
+  EnumDefinition |
+  LetDeclaration |
+  ForLoop |
+  ForEachLoop |
+  IfStatement |
+  SwitchStatement |
+  FunctionDefinition |
+  ReturnStatement |
+  BreakStatement |
+  ContinueStatement |
+  PathCommand |
+  ExpressionStatement
+}
+
+// Note: Assignment, IndexedAssignment, MemberAssignment are handled
+// within ExpressionStatement. The AST builder distinguishes them by
+// checking if the expression ends with "= expr ;".
+
+LetDeclaration {
+  kw<"let"> (ArrayDestructure | ObjectDestructure | VariableName) "=" expression ";"
+}
+
+ForLoop {
+  kw<"for"> "(" VariableName kw<"in"> expression rangeOp expression ")" Block
+}
+
+ForEachLoop {
+  kw<"for"> "(" (ForEachDestructure | VariableName) kw<"in"> expression ")" Block
+}
+
+ForEachDestructure {
+  "[" VariableName "," VariableName "]"
+}
+
+IfStatement {
+  kw<"if"> "(" expression ")" Block ElseClause?
+}
+
+ElseClause {
+  kw<"else"> (IfStatement | Block)
+}
+
+// ─── Switch ────────────────────────────────────────────────────
+// Braced case bodies, no fallthrough. A case pattern is a range or any
+// expression; `[a, b]` / `{x, y}` parse as ArrayLiteral / ObjectLiteral
+// (cover grammar) and the AST builder reinterprets them as destructuring
+// patterns — a dedicated destructure alternative here would be a
+// reduce/reduce conflict against the literal forms.
+SwitchStatement {
+  kw<"switch"> "(" expression ")" "{" (CaseClause | DefaultClause)* "}"
+}
+
+CaseClause {
+  kw<"case"> CasePattern ("," CasePattern)* WhereGuard? Block
+}
+
+DefaultClause {
+  kw<"default"> Block
+}
+
+WhereGuard {
+  kw<"where"> expression
+}
+
+CasePattern {
+  RangePattern | expression
+}
+
+// Open-ended forms: `100..`, `..5`, `..<0`. After `100..` a `{` is either
+// an ObjectLiteral/lambda upper bound or the case body; ~rangeEnd lets
+// the parser fork and the bound reading dies at the next token.
+RangePattern {
+  expression rangeOp ~rangeEnd expression |
+  expression rangeOp ~rangeEnd |
+  rangeOp expression
+}
+
+rangeOp { RangeOp | HalfOpenRangeOp }
+
+FunctionDefinition {
+  kw<"fn"> VariableName "(" commaSep<VariableName> ")" Block
+}
+
+ReturnStatement {
+  kw<"return"> expression ";"
+}
+
+BreakStatement {
+  kw<"break"> ";"
+}
+
+ContinueStatement {
+  kw<"continue"> ";"
+}
+
+EnumDefinition {
+  kw<"enum"> VariableName "{" EnumMember ("," EnumMember)* ","? "}"
+}
+
+EnumMember {
+  VariableName ("=" expression)?
+}
+
+LayerDefinition {
+  kw<"define"> kw<"default">? LayerType "(" expression ")" expression ";"?
+}
+
+ViewBoxDefinition {
+  kw<"define"> kw<"ViewBox"> "(" expression "," expression "," expression "," expression ")" ";"
+}
+
+LayerApplyBlock {
+  kw<"layer"> "(" expression ")" ~layerDot "." kw<"apply"> Block |
+  Identifier ~applyDot "." kw<"apply"> Block
+}
+
+TextStatement {
+  kw<"text"> "(" expression "," expression ("," expression ("," expression)?)? ")"
+  (TemplateLiteral | TextBlock) ";"?
+}
+
+TextBlock {
+  "{" textBodyItem* "}"
+}
+
+textBodyItem {
+  TspanStatement |
+  TemplateLiteral |
+  TextForLoop |
+  TextForEachLoop |
+  TextIfStatement |
+  TextSwitchStatement |
+  LetDeclaration |
+  BreakStatement |
+  ContinueStatement
+}
+
+TspanStatement {
+  kw<"tspan"> "(" expression ("," expression)* ")" TemplateLiteral ";"? |
+  kw<"tspan"> "(" ")" TemplateLiteral ";"?
+}
+
+TextForLoop {
+  kw<"for"> "(" VariableName kw<"in"> expression rangeOp expression ")" "{" textBodyItem* "}"
+}
+
+TextForEachLoop {
+  kw<"for"> "(" (ForEachDestructure | VariableName) kw<"in"> expression ")" "{" textBodyItem* "}"
+}
+
+TextIfStatement {
+  kw<"if"> "(" expression ")" "{" textBodyItem* "}" (kw<"else"> (TextIfStatement | "{" textBodyItem* "}"))?
+}
+
+TextSwitchStatement {
+  kw<"switch"> "(" expression ")" "{" (TextCaseClause | TextDefaultClause)* "}"
+}
+
+TextCaseClause {
+  kw<"case"> CasePattern ("," CasePattern)* WhereGuard? "{" textBodyItem* "}"
+}
+
+TextDefaultClause {
+  kw<"default"> "{" textBodyItem* "}"
+}
+
+FontDirective {
+  fontDirectiveKw (String | Identifier) ~fontWeight Number ";"? |
+  fontDirectiveKw (String | Identifier) ~fontWeight ";"?
+}
+
+// Path commands: always greedy when args are available.
+// Z/z take no args; all others take at least one.
+// Optional suffix clauses: `with <cornerOp>(...)` records behavior on the
+// vertex the command creates; `as segment('x'), endpoint('y')` attaches
+// labels. Order is fixed (with before as); trailing semicolon is optional.
+PathCommand[@dynamicPrecedence=1] {
+  pathCmd PathArgs WithClause? AsClause? ";"? |
+  pathCmdZ WithClause? AsClause? ";"?
+}
+
+WithClause {
+  withKw CornerOpCall
+}
+
+CornerOpCall {
+  Identifier ArgList
+}
+
+AsClause {
+  asKw LabelCall ("," LabelCall)*
+}
+
+LabelCall {
+  Identifier ArgList
+}
+
+withKw[@name=with] { @extend[@name=with]<Identifier, "with"> }
+asKw[@name=as] { @extend[@name=as]<Identifier, "as"> }
+
+pathCmd[@name=PathCommandLetter] {
+  @extend[@name=PathCommandLetter]<Identifier, "M"> |
+  @extend[@name=PathCommandLetter]<Identifier, "m"> |
+  @extend[@name=PathCommandLetter]<Identifier, "L"> |
+  @extend[@name=PathCommandLetter]<Identifier, "l"> |
+  @extend[@name=PathCommandLetter]<Identifier, "H"> |
+  @extend[@name=PathCommandLetter]<Identifier, "h"> |
+  @extend[@name=PathCommandLetter]<Identifier, "V"> |
+  @extend[@name=PathCommandLetter]<Identifier, "v"> |
+  @extend[@name=PathCommandLetter]<Identifier, "C"> |
+  @extend[@name=PathCommandLetter]<Identifier, "c"> |
+  @extend[@name=PathCommandLetter]<Identifier, "S"> |
+  @extend[@name=PathCommandLetter]<Identifier, "s"> |
+  @extend[@name=PathCommandLetter]<Identifier, "Q"> |
+  @extend[@name=PathCommandLetter]<Identifier, "q"> |
+  @extend[@name=PathCommandLetter]<Identifier, "T"> |
+  @extend[@name=PathCommandLetter]<Identifier, "t"> |
+  @extend[@name=PathCommandLetter]<Identifier, "A"> |
+  @extend[@name=PathCommandLetter]<Identifier, "a">
+}
+
+pathCmdZ[@name=PathCommandLetter] {
+  @extend[@name=PathCommandLetter]<Identifier, "Z"> |
+  @extend[@name=PathCommandLetter]<Identifier, "z">
+}
+
+// PathArgs is a single opaque token consumed by an external tokenizer.
+// The tokenizer greedily consumes numbers, identifiers, calc(), booleans,
+// and member/index/call chains until hitting a statement boundary
+// (keyword, path command letter, EOF, or closing brace).
+@external tokens pathArgsTokenizer from "./path-args-tokenizer" {
+  PathArgs
+}
+
+ExpressionStatement {
+  expression ("=" expression)? WithClause? AsClause? ";"
+}
+
+Block {
+  "{" statement* "}"
+}
+
+// ─── Expressions ───────────────────────────────────────────────
+
+expression {
+  TernaryExpression |
+  BinaryExpression |
+  UnaryExpression |
+  postfixExpression
+}
+
+TernaryExpression {
+  expression !ternary "?" expression ":" expression
+}
+
+BinaryExpression {
+  expression !or "||" expression |
+  expression !and "&&" expression |
+  expression !equality ("==" | "!=") expression |
+  expression !compare ("<=" | ">=" | "<" | ">") expression |
+  expression !merge "<<" expression |
+  expression !plus ("+" | "-") expression |
+  expression !times ("*" | "/" | "%") expression
+}
+
+UnaryExpression {
+  !prefix ("-" | "!") expression
+}
+
+//-- ~caseBody: in `case f(x) {` / `case obj.m {` / `where g(x) {` the `{`
+//-- is either a TrailingBlock (needs `|` next) or the case body. The
+//-- marker lets the parser fork; the lambda fork dies unless `|` follows.
+postfixExpression {
+  primaryExpression (
+    !call ArgList ~caseBody TrailingBlock? |
+    !member "." Identifier !call ArgList ~caseBody TrailingBlock? |
+    !member "." Identifier ~caseBody TrailingBlock |
+    !member "." Identifier ~caseBody |
+    !member "[" expression "]"
+  )*
+}
+
+ArgList {
+  "(" commaSep<expression> ")"
+}
+
+primaryExpression {
+  Number |
+  String |
+  TemplateLiteral |
+  BooleanLiteral |
+  NullLiteral |
+  ColorLiteral |
+  CSSColorLiteral |
+  ArrayLiteral |
+  ObjectLiteral |
+  StyleBlockLiteral |
+  PathBlockExpression |
+  TextBlockExpression |
+  CalcExpression |
+  LayerConstructor |
+  LayerCallExpression |
+  Identifier ~applyDot |
+  ParenExpression |
+  SwitchExpression |
+  TrailingBlock
+}
+
+//-- The expression form: one expression per arm and a mandatory default
+//-- arm. Making the default mandatory is what keeps this free of conflicts
+//-- with SwitchStatement — `switch (x) { }` can only be a statement, and a
+//-- non-empty body tells the two apart within two tokens (`{ red }` is not
+//-- a Block; `{ M 0 0 }` / `{ red; }` are not arms).
+SwitchExpression {
+  kw<"switch"> "(" expression ")" "{" CaseArm* DefaultArm "}"
+}
+
+CaseArm {
+  kw<"case"> CasePattern ("," CasePattern)* WhereGuard? "{" expression "}"
+}
+
+DefaultArm {
+  kw<"default"> "{" expression "}"
+}
+
+LayerCallExpression {
+  kw<"layer"> "(" expression ")" ~layerDot
+}
+
+ParenExpression { "(" expression ")" }
+
+//-- Appears in two positions: as a call suffix (trailing block) and as a
+//-- primaryExpression alternative (lambda literal). The AST builder decides
+//-- which by parent context. "||" admits the zero-param form {|| ... } —
+//-- without it the two pipes lex as the logical-or token and never match.
+//-- A trailing bare expression (no ';') is the expression-bodied sugar
+//-- {|v| v * 2} — the AST builder wraps it in an implicit return.
+TrailingBlock {
+  "{" ("|" VariableName ("," VariableName)* "|" | "||") statement* expression? "}"
+}
+
+CalcExpression {
+  kw<"calc"> "(" expression ")"
+}
+
+ArrayLiteral {
+  "[" (arrayElement ("," arrayElement)* ","?)? "]"
+}
+
+arrayElement {
+  SpreadElement | expression
+}
+
+SpreadElement {
+  "..." expression
+}
+
+ObjectLiteral {
+  "{" (objectElement ("," objectElement)* ","?)? "}"
+}
+
+objectElement {
+  SpreadElement | ObjectProperty
+}
+
+ObjectProperty {
+  Identifier (":" expression)? | String ":" expression
+}
+
+StyleBlockLiteral {
+  styleBlockOpen StyleBody "}"
+}
+
+// A named node spanning the whole interior (its children are the
+// interleaved StyleContent / StyleInterp tokens) so the editor can DIRECT-
+// mount the inner style grammar over one contiguous range — overlay mounts
+// are invisible to plain tree iteration, which the fence renderer, color
+// chips, and the parity tests all rely on.
+StyleBody { (StyleContent | StyleInterp)* }
+
+PathBlockExpression {
+  pathBlockOpen statement* "}"
+}
+
+TextBlockExpression {
+  textBlockOpen statement* "}"
+}
+
+LayerConstructor {
+  LayerType "(" expression ")" ~layerStyle StyleBlockLiteral |
+  LayerType "(" expression ")" ~layerStyle
+}
+
+// ─── Destructuring ─────────────────────────────────────────────
+
+ArrayDestructure {
+  "[" VariableName ("," VariableName)* ("," "..." VariableName)? "]"
+}
+
+ObjectDestructure {
+  "{" ObjectDestructureProp ("," ObjectDestructureProp)* ("," "..." VariableName)? "}"
+}
+
+ObjectDestructureProp {
+  Identifier (":" VariableName)?
+}
+
+// ─── Template Literals ─────────────────────────────────────────
+
+TemplateLiteral {
+  templateStart (templateContent | TemplateInterpolation)* templateEnd
+}
+
+TemplateInterpolation {
+  templateInterpStart expression templateInterpEnd
+}
+
+// ─── Helpers ───────────────────────────────────────────────────
+
+commaSep<content> {
+  (content ("," content)*)?
+}
+
+kw<term> { @specialize[@name={term}]<Identifier, term> }
+
+VariableName { Identifier }
+
+// ─── Tokens ────────────────────────────────────────────────────
+
+@skip { whitespace | LineComment }
+
+// LineComment is skipped (not preserved in tree). Comment nodes in statements
+// are preserved so the formatter can re-emit them. Both use "//" syntax — the
+// parser tries Comment first (in statement position), LineComment handles the rest.
+
+@tokens {
+  whitespace { @whitespace+ }
+
+  Comment { "//" ![\n]* }
+  LineComment { "//" ![\n]* }
+
+  @precedence { Comment, LineComment, "/" }
+
+  // Numbers: no leading minus (unary minus at expression level).
+  // Require at least one digit after decimal point to prevent matching "0." before ".." range.
+  Number {
+    (@digit+ "." @digit+ | "." @digit+ | @digit+) ("deg" | "rad" | "pi" | "%")?
+  }
+
+  String {
+    "\"" (![\\\"\n] | "\\" _)* "\"" |
+    "'" (![\\\'\n] | "\\" _)* "'"
+  }
+
+  ColorLiteral { "#" $[0-9a-fA-F]+ }
+
+  CSSColorLiteral {
+    ("rgb" | "rgba" | "hsl" | "hsla" | "hwb" | "lab" | "lch" | "oklab" | "oklch")
+    "(" (![\)]* ) ")"
+  }
+
+  BooleanLiteral { "true" | "false" }
+
+  NullLiteral { "null" }
+
+  templateStart { "`" }
+  templateEnd { "`" }
+  templateContent { (![\`\\$] | "\\" _ | "$" ![\{])+ }
+  templateInterpStart { "$" "{" }
+  templateInterpEnd { "}" }
+
+  Identifier { $[a-zA-Z_] $[a-zA-Z0-9_]* }
+
+  // pathCommandLetter removed — handled via @specialize on Identifier
+
+  LayerType { "PathLayer" | "TextLayer" | "GroupLayer" }
+
+  RangeOp { ".." }
+  HalfOpenRangeOp { "..<" }
+
+  styleBlockOpen { "$" "{" }
+  pathBlockOpen { "@" "{" }
+  textBlockOpen { "&" "{" }
+
+  fontDirectiveKw { "@" "font" }
+
+  // Style-block content: everything up to the first `}` that is not inside
+  // a `//` comment, a quoted string, a backtick template, or a `${...}`
+  // interpolation — bare in a value (one nested brace level, matching the
+  // inner style grammar's `interp`) or inside a template (no nesting; see
+  // styleContentInterp below). This lets interpolated values like
+  // `stroke-width: ${w * 2};`, template values like `font-family:
+  // `${family}`;`, and quoted values containing `}` survive to
+  // parseStyleDeclarations intact.
+  // Quote characters are BOTH ordinary content and possible string starts;
+  // the DFA's longest-accepting-match rule sorts out the extent: a string
+  // terminated on the same line (`content: "}";`) carries the token across
+  // its `}`, while an unterminated quote (mid-typing, or an apostrophe in a
+  // `// don't` comment whose "string" would die at the newline) falls back
+  // to the plain-content path, which stops at the first `}` — the old
+  // `![}]+` behavior. Single-quoted strings additionally never cross `}`:
+  // apostrophes are everyday comment text ("don't … it's"), and a same-line
+  // pair straddling the real closing brace must not swallow it — use double
+  // quotes for a literal `}` value. No escape handling inside style-value
+  // strings — mirrors the AST builder's value scanner, which tracks bare
+  // quote pairs.
+  styleContentString {
+    "\"" ![\"\n]* "\"" |
+    "'" ![\'\n}]* "'"
+  }
+  // Zero nested braces here: adding nesting to the TEMPLATE-internal interp
+  // overflows the 16-bit tokenizer tables (the template arm lives inside the
+  // big StyleContent DFA). The bare StyleInterp token below DOES support one
+  // nested level — inside style values, the bare form is the more capable
+  // spelling.
+  styleContentInterp { "$" "{" ![{}]* "}" }
+  // Bare `${...}` interpolation in a style VALUE — a sibling token of
+  // StyleContent (adding it as an alternative INSIDE the StyleContent DFA
+  // overflows the generator's 16-bit tokenizer tables against the
+  // quote-superposition states). One nested brace level, matching the
+  // inner style grammar's `interp` and the AST builder's value scanner.
+  StyleInterp { "$" "{" (![{}] | "{" ![{}]* "}")* "}" }
+  styleContentTemplate { "`" (![\`\\$] | "\\" _ | "$" ![\{] | styleContentInterp)* "`" }
+  // `$` is consumable only when NOT followed by `{` (the paired alternative
+  // consumes `$` plus one safe char) so the DFA STOPS before a bare `${…}`
+  // and hands it to the sibling StyleInterp token. Known edge: an unquoted
+  // lone `$` immediately before `}`/backtick no longer tokenizes — quote it.
+  StyleContent {
+    (![}\`$] | "$" ![{}\`$] | styleContentString | styleContentTemplate)+
+  }
+
+  @precedence { "...", HalfOpenRangeOp, RangeOp, "." }
+  @precedence { "||" }
+  @precedence { "&&" }
+  @precedence { "==", "!=" }
+  @precedence { "<=", ">=", "<<" }
+  @precedence { fontDirectiveKw, pathBlockOpen }
+  @precedence { styleBlockOpen, templateInterpStart }
+  @precedence { Number, "." }
+  @precedence { BooleanLiteral, NullLiteral, LayerType, CSSColorLiteral, Identifier }
+  @precedence { StyleInterp, StyleContent }
+  @precedence { StyleContent, templateContent, LineComment, whitespace }
+  @precedence { templateStart, templateContent, templateEnd }
+
+  "(" ")" "[" "]" "{" "}" ";" "," ":" "?" "."
+  "+" "-" "*" "/" "%" "!" "=" "<" ">" "|"
+  "||" "&&" "==" "!=" "<=" ">=" "<<" "..."
+}
+
+@detectDelim
+

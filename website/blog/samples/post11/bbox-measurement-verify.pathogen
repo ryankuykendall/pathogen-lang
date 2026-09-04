@@ -3,9 +3,9 @@ define ViewBox(0, 0, 600, 320);
 
 // --- Recreate the FIXED text blocks (with font-family: monospace) ---
 
-let small_text = &{ text(0, 10)`font-size: 10` } << ${ font-size: 10; font-family: monospace; };
-let med_text = &{ text(0, 16)`font-size: 16` } << ${ font-size: 16; font-family: monospace; };
-let large_text = &{ text(0, 24)`font-size: 24` } << ${ font-size: 24; font-family: monospace; };
+let small_text = &{ text(0, 10)`font-size: 10` } << #{ font-size: 10; font-family: monospace; };
+let med_text = &{ text(0, 16)`font-size: 16` } << #{ font-size: 16; font-family: monospace; };
+let large_text = &{ text(0, 24)`font-size: 24` } << #{ font-size: 24; font-family: monospace; };
 
 let bb_s = small_text.boundingBox();
 let bb_m = med_text.boundingBox();
@@ -29,7 +29,7 @@ let l_proj = large_text.project(x0, y_l);
 
 // --- Project height labels at FIXED positions (offset 16px instead of 12px) ---
 
-let anno_style = ${ font-size: 8; font-family: monospace; };
+let anno_style = #{ font-size: 8; font-family: monospace; };
 
 let hl_s = (&{ text(0, 8)`h = ${round(bb_s.height)}` } << anno_style).project(calc(x0 + bb_s.width + 16), calc(y_s + bb_s.y + bb_s.height / 2 + 3));
 let hl_m = (&{ text(0, 8)`h = ${round(bb_m.height * 10) / 10}` } << anno_style).project(calc(x0 + bb_m.width + 16), calc(y_m + bb_m.y + bb_m.height / 2 + 3));

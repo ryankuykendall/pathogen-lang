@@ -41,9 +41,9 @@ export const KEYWORD_HOVER: Record<string, string> = {
   where:
     '**where** — Guard condition on a case clause\n```\ncase { x, y } where x > y { ... }\n```\nEvaluated after the pattern binds its names; the case matches only when the guard is truthy.',
   default:
-    '**default** — Fallback clause of a switch, or the default layer\n```\nswitch (n) {\n  case 1 { ... }\n  default { ... }\n}\ndefine default PathLayer(\'main\') ${ ... }\n```\nIn a switch it runs when no case matches and must be the last clause (at most one).',
+    '**default** — Fallback clause of a switch, or the default layer\n```\nswitch (n) {\n  case 1 { ... }\n  default { ... }\n}\ndefine default PathLayer(\'main\') #{ ... }\n```\nIn a switch it runs when no case matches and must be the last clause (at most one).',
   define:
-    "**define** — Define a layer (PathLayer / TextLayer / GroupLayer) or the SVG viewBox\n```\ndefine PathLayer('name') ${ stroke: #000; }\ndefine TextLayer('name') ${ font-size: 14; }\ndefine ViewBox(0, 0, 200, 200);\n```",
+    "**define** — Define a layer (PathLayer / TextLayer / GroupLayer) or the SVG viewBox\n```\ndefine PathLayer('name') #{ stroke: #000; }\ndefine TextLayer('name') #{ font-size: 14; }\ndefine ViewBox(0, 0, 200, 200);\n```",
   ViewBox:
     '**ViewBox** — Declare the SVG viewBox in source code\n```\ndefine ViewBox(originX, originY, width, height);\n```\nSource-defined viewBox overrides any CLI `--viewBox` flag.',
   viewbox:

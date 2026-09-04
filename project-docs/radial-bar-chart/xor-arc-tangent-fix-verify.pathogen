@@ -16,34 +16,34 @@ let rowSpacing = 160;
 let startX = 80;
 let startY = 90;
 
-let bg = PathLayer('bg') ${ fill: '#f8f8f8'; stroke: none; };
-let roundedFill = PathLayer('rounded-fill') ${ fill: '#ffcccc'; stroke: none; };
-let xorFill = PathLayer('xor-fill') ${ fill: '#cc2222'; stroke: none; };
-let sharpOutline = PathLayer('sharp-outline') ${ fill: none; stroke: '#22aa44'; stroke-width: 1.5; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
-let guideLayer = PathLayer('guides') ${ fill: none; stroke: '#4477aa'; stroke-width: 0.8; stroke-dasharray: 3 3; };
+let bg = PathLayer('bg') #{ fill: '#f8f8f8'; stroke: none; };
+let roundedFill = PathLayer('rounded-fill') #{ fill: '#ffcccc'; stroke: none; };
+let xorFill = PathLayer('xor-fill') #{ fill: '#cc2222'; stroke: none; };
+let sharpOutline = PathLayer('sharp-outline') #{ fill: none; stroke: '#22aa44'; stroke-width: 1.5; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
+let guideLayer = PathLayer('guides') #{ fill: none; stroke: '#4477aa'; stroke-width: 0.8; stroke-dasharray: 3 3; };
 
-let headers = TextLayer('headers') ${
+let headers = TextLayer('headers') #{
   font-size: 10;
   fill: '#333';
   font-family: monospace, monospace;
   text-anchor: middle;
 };
 
-let rowHeaders = TextLayer('row-headers') ${
+let rowHeaders = TextLayer('row-headers') #{
   font-size: 10;
   fill: '#333';
   font-family: monospace, monospace;
   text-anchor: end;
 };
 
-let info = TextLayer('info') ${
+let info = TextLayer('info') #{
   font-size: 8;
   fill: '#333';
   font-family: monospace, monospace;
   text-anchor: middle;
 };
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: '#333';
   font-family: system-ui, sans-serif;
@@ -118,5 +118,5 @@ title.apply {
   text(60, 505)`XOR arc tangent fix verification — cr=${cornerR}, iR=${innerR} | green=sharp, dark=XOR diff, blue=guides`
 }
 
-let g = GroupLayer('all') ${};
+let g = GroupLayer('all') #{};
 g.append(bg, roundedFill, xorFill, sharpOutline, guideLayer, headers, rowHeaders, info, title);

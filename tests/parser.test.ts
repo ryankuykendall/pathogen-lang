@@ -1055,7 +1055,7 @@ L 10 20 // end point`;
 
   describe('layer definitions', () => {
     it('parses basic PathLayer definition', () => {
-      const ast = parse("define PathLayer('main') ${}");
+      const ast = parse("define PathLayer('main') #{}");
       expect(ast.body).toHaveLength(1);
       expect(ast.body[0]).toMatchObject({
         type: 'LayerDefinition',
@@ -1066,7 +1066,7 @@ L 10 20 // end point`;
     });
 
     it('parses default PathLayer definition', () => {
-      const ast = parse("define default PathLayer('main') ${}");
+      const ast = parse("define default PathLayer('main') #{}");
       expect(ast.body[0]).toMatchObject({
         type: 'LayerDefinition',
         layerType: 'PathLayer',
@@ -1075,7 +1075,7 @@ L 10 20 // end point`;
     });
 
     it('parses TextLayer definition', () => {
-      const ast = parse("define TextLayer('text') ${}");
+      const ast = parse("define TextLayer('text') #{}");
       expect(ast.body[0]).toMatchObject({
         type: 'LayerDefinition',
         layerType: 'TextLayer',
@@ -1083,7 +1083,7 @@ L 10 20 // end point`;
     });
 
     it('parses style properties', () => {
-      const ast = parse("define PathLayer('main') ${ stroke: #cc0000; stroke-width: 4; }");
+      const ast = parse("define PathLayer('main') #{ stroke: #cc0000; stroke-width: 4; }");
       const def = ast.body[0] as any;
       expect(def.type).toBe('LayerDefinition');
       expect(def.styleExpr.type).toBe('StyleBlockLiteral');
@@ -1094,7 +1094,7 @@ L 10 20 // end point`;
     });
 
     it('parses style block with comments', () => {
-      const ast = parse("define PathLayer('main') ${ // comment\nstroke: red; }");
+      const ast = parse("define PathLayer('main') #{ // comment\nstroke: red; }");
       const def = ast.body[0] as any;
       expect(def.styleExpr.properties).toHaveLength(1);
       expect(def.styleExpr.properties[0].name).toBe('stroke');
@@ -1103,14 +1103,14 @@ L 10 20 // end point`;
     it('keeps the last declaration when it has a trailing semicolon', () => {
       // Guards the fixed drop-bug: the old regex required `;` and silently
       // dropped a `;`-less last declaration.
-      const ast = parse("define PathLayer('main') ${ fill: none; stroke-width: 3; }");
+      const ast = parse("define PathLayer('main') #{ fill: none; stroke-width: 3; }");
       const def = ast.body[0] as any;
       expect(def.styleExpr.properties.map((p: { name: string }) => p.name)).toEqual(['fill', 'stroke-width']);
     });
 
     it('parses paren- and quote-bearing values as a single declaration', () => {
       const ast = parse(
-        "define PathLayer('main') ${ filter: drop-shadow(0 2px rgba(0,0,0,.5)); font-family: \"Arial\", sans-serif; }",
+        "define PathLayer('main') #{ filter: drop-shadow(0 2px rgba(0,0,0,.5)); font-family: \"Arial\", sans-serif; }",
       );
       const props = (ast.body[0] as any).styleExpr.properties;
       expect(props[0]).toMatchObject({ name: 'filter', value: 'drop-shadow(0 2px rgba(0,0,0,.5))' });
@@ -1120,7 +1120,7 @@ L 10 20 // end point`;
     it('builds leniently for a declaration missing its trailing semicolon (marks incomplete, does not throw)', () => {
       // AST-building stays resilient (for the language service); the evaluator
       // enforces the missing `;` strictly.
-      const ast = parse("define PathLayer('main') ${ fill: none; stroke-width: 3 }");
+      const ast = parse("define PathLayer('main') #{ fill: none; stroke-width: 3 }");
       const style = (ast.body[0] as any).styleExpr;
       expect(style.incomplete).toMatchObject({ message: "Missing ';'" });
       // The complete declaration before the error is still captured.
@@ -1131,28 +1131,28 @@ L 10 20 // end point`;
       // A bare newline bounds a value, so a missing `;` on an earlier
       // declaration is reported at that declaration — it must not absorb the
       // following declaration into a multi-line value.
-      const ast = parse("define PathLayer('main') ${\n  stroke: black\n  stroke-width: 2;\n  fill: none;\n}");
+      const ast = parse("define PathLayer('main') #{\n  stroke: black\n  stroke-width: 2;\n  fill: none;\n}");
       const style = (ast.body[0] as any).styleExpr;
       // Error points just past `black` (line 2), not the last declaration.
       expect(style.incomplete).toEqual({ message: "Missing ';'", line: 2, column: 16 });
     });
 
     it('reports the exact position of a single-line missing semicolon', () => {
-      const ast = parse("define PathLayer('m') ${ fill: none; stroke-width: 3 }");
+      const ast = parse("define PathLayer('m') #{ fill: none; stroke-width: 3 }");
       const style = (ast.body[0] as any).styleExpr;
       // Column points just past `3` (index 51, 0-based) → column 53 (1-based).
       expect(style.incomplete).toEqual({ message: "Missing ';'", line: 1, column: 53 });
     });
 
     it('keeps a semicolon inside a quoted value from terminating the declaration', () => {
-      const ast = parse("define PathLayer('m') ${ content: \"a;b\"; fill: red; }");
+      const ast = parse("define PathLayer('m') #{ content: \"a;b\"; fill: red; }");
       const props = (ast.body[0] as any).styleExpr.properties;
       expect(props[0]).toMatchObject({ name: 'content', value: '"a;b"' });
       expect(props[1]).toMatchObject({ name: 'fill', value: 'red' });
     });
 
     it('keeps a bracketed value as a single declaration', () => {
-      const ast = parse("define PathLayer('m') ${ stroke-dasharray: [4, 2]; }");
+      const ast = parse("define PathLayer('m') #{ stroke-dasharray: [4, 2]; }");
       expect((ast.body[0] as any).styleExpr.properties[0]).toMatchObject({
         name: 'stroke-dasharray',
         value: '[4, 2]',
@@ -1160,7 +1160,7 @@ L 10 20 // end point`;
     });
 
     it('parses layer name as expression', () => {
-      const ast = parse('define PathLayer(myVar) ${}');
+      const ast = parse('define PathLayer(myVar) #{}');
       const def = ast.body[0] as any;
       expect(def.name).toMatchObject({ type: 'Identifier', name: 'myVar' });
     });
@@ -1168,7 +1168,7 @@ L 10 20 // end point`;
 
   describe('style block literals', () => {
     it('parses empty style block', () => {
-      const ast = parse('let s = ${};');
+      const ast = parse('let s = #{};');
       const decl = ast.body[0] as any;
       expect(decl.value).toMatchObject({
         type: 'StyleBlockLiteral',
@@ -1177,7 +1177,7 @@ L 10 20 // end point`;
     });
 
     it('parses style block with properties', () => {
-      const ast = parse('let s = ${ stroke: red; fill: blue; };');
+      const ast = parse('let s = #{ stroke: red; fill: blue; };');
       const decl = ast.body[0] as any;
       expect(decl.value.type).toBe('StyleBlockLiteral');
       expect(decl.value.properties).toHaveLength(2);
@@ -1186,7 +1186,7 @@ L 10 20 // end point`;
     });
 
     it('parses template-literal values inside style blocks', () => {
-      const ast = parse('let s = ${ font-family: `${family}`; font-size: 16; };');
+      const ast = parse('let s = #{ font-family: `${family}`; font-size: 16; };');
       const decl = ast.body[0] as any;
       expect(decl.value.type).toBe('StyleBlockLiteral');
       expect(decl.value.properties).toHaveLength(2);
@@ -1195,13 +1195,13 @@ L 10 20 // end point`;
     });
 
     it('parses multiple interpolations in one template value', () => {
-      const ast = parse('let s = ${ font-family: `${a}, ${b}`; };');
+      const ast = parse('let s = #{ font-family: `${a}, ${b}`; };');
       const decl = ast.body[0] as any;
       expect(decl.value.properties[0]).toMatchObject({ name: 'font-family', value: '`${a}, ${b}`' });
     });
 
     it('allows } inside quoted style values', () => {
-      const ast = parse('let s = ${ content: "}"; stroke: red; };');
+      const ast = parse('let s = #{ content: "}"; stroke: red; };');
       const decl = ast.body[0] as any;
       expect(decl.value.properties).toHaveLength(2);
       expect(decl.value.properties[0]).toMatchObject({ name: 'content', value: '"}"' });
@@ -1209,11 +1209,11 @@ L 10 20 // end point`;
     });
 
     it('rejects an unterminated template literal in a style value', () => {
-      expect(() => parse('let s = ${ font-family: `${family; };')).toThrow();
+      expect(() => parse('let s = #{ font-family: `${family; };')).toThrow();
     });
 
     it('a single-line trailing comment does not swallow the closing brace', () => {
-      const ast = parse('let s = ${ fill: red; // trailing comment };\nlet next = 1;');
+      const ast = parse('let s = #{ fill: red; // trailing comment };\nlet next = 1;');
       expect(ast.body).toHaveLength(2);
       expect(ast.body[1].type).toBe('LetDeclaration');
       const decl = ast.body[0] as any;
@@ -1222,13 +1222,13 @@ L 10 20 // end point`;
     });
 
     it('a comment containing an apostrophe does not derail the style block', () => {
-      const ast = parse("let s = ${ fill: red; // don't use blue\n stroke: blue; };");
+      const ast = parse("let s = #{ fill: red; // don't use blue\n stroke: blue; };");
       const decl = ast.body[0] as any;
       expect(decl.value.properties.map((p: any) => p.name)).toEqual(['fill', 'stroke']);
     });
 
     it('a slash inside a value stays plain content', () => {
-      const ast = parse('let s = ${ font: 1/2; };');
+      const ast = parse('let s = #{ font: 1/2; };');
       const decl = ast.body[0] as any;
       expect(decl.value.properties[0]).toMatchObject({ name: 'font', value: '1/2' });
     });
@@ -1236,7 +1236,7 @@ L 10 20 // end point`;
     it('same-line apostrophe pair straddling the closing brace does not swallow it', () => {
       // "don't" + "it's" put two apostrophes on one line around the real `}`;
       // single-quoted strings never cross `}`, so the block still ends there.
-      const ast = parse("define PathLayer('a') ${ fill: red; // don't change } M 0 0 L 10 10 Z // it's fine\n");
+      const ast = parse("define PathLayer('a') #{ fill: red; // don't change } M 0 0 L 10 10 Z // it's fine\n");
       expect(ast.body.map((s: any) => s.type)).toEqual([
         'LayerDefinition',
         'PathCommand',
@@ -1250,13 +1250,13 @@ L 10 20 // end point`;
     it("a literal `}` needs double quotes — single-quoted '}' does not cross the brace", () => {
       // Deliberate asymmetry: apostrophes are everyday comment text, so the
       // single-quote branch never crosses `}` (old stop-at-brace behavior).
-      expect(() => parse("let s = ${ content: '}'; };")).toThrow();
-      const ast = parse('let s = ${ content: "}"; };');
+      expect(() => parse("let s = #{ content: '}'; };")).toThrow();
+      const ast = parse('let s = #{ content: "}"; };');
       expect((ast.body[0] as any).value.properties[0]).toMatchObject({ name: 'content', value: '"}"' });
     });
 
     it('parses << merge operator', () => {
-      const ast = parse('let s = ${ stroke: red; } << ${ fill: blue; };');
+      const ast = parse('let s = #{ stroke: red; } << #{ fill: blue; };');
       const decl = ast.body[0] as any;
       expect(decl.value).toMatchObject({
         type: 'BinaryExpression',
@@ -1275,7 +1275,7 @@ L 10 20 // end point`;
     });
 
     it('parses style block with member access', () => {
-      const ast = parse('let x = ${ stroke: red; }.stroke;');
+      const ast = parse('let x = #{ stroke: red; }.stroke;');
       const decl = ast.body[0] as any;
       expect(decl.value).toMatchObject({
         type: 'MemberExpression',
@@ -2334,7 +2334,7 @@ describe('Path command suffix clauses (with / as)', () => {
 
   it('parses clauses inside path blocks and apply blocks', () => {
     const ast = parse(
-      "let p = @{\n  h 20 as segment('lid')\n};\nlet pl = PathLayer('x') ${ fill: none; };\npl.apply {\n  v 20 with fillet(3)\n}",
+      "let p = @{\n  h 20 as segment('lid')\n};\nlet pl = PathLayer('x') #{ fill: none; };\npl.apply {\n  v 20 with fillet(3)\n}",
     );
     const block = (ast.body[0] as any).value;
     expect(block.body[0].annotations.labels[0].name.value).toBe('lid');

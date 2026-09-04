@@ -1,6 +1,6 @@
 define ViewBox(0, 0, 240, 140);
-define default PathLayer('bracket') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
-define PathLayer('bolts') ${ fill: none; stroke: #0d9488; stroke-width: 2.5; }
+define default PathLayer('bracket') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('bolts') #{ fill: none; stroke: #0d9488; stroke-width: 2.5; }
 
 // Name the two mounting corners as the bracket is drawn.
 let bracket = @{

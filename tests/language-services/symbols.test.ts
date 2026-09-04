@@ -86,14 +86,14 @@ describe('getDocumentSymbols', () => {
 
   describe('layer definitions', () => {
     it('extracts PathLayer definition', () => {
-      const syms = symbols("define PathLayer('outline') ${ stroke: #000; }");
+      const syms = symbols("define PathLayer('outline') #{ stroke: #000; }");
       expect(syms).toHaveLength(1);
       expect(syms[0].name).toBe("PathLayer('outline')");
       expect(syms[0].kind).toBe(SymbolKind.Struct);
     });
 
     it('extracts TextLayer definition', () => {
-      const syms = symbols("define TextLayer('labels') ${ fill: #333; }");
+      const syms = symbols("define TextLayer('labels') #{ fill: #333; }");
       expect(syms).toHaveLength(1);
       expect(syms[0].name).toBe("TextLayer('labels')");
     });
@@ -125,7 +125,7 @@ describe('getDocumentSymbols', () => {
     it('extracts all symbol types from a program', () => {
       const source = [
         'let r = 50;',
-        "define PathLayer('main') ${ stroke: #000; }",
+        "define PathLayer('main') #{ stroke: #000; }",
         'fn draw(x, y) {',
         '  circle(x, y, r);',
         '}',

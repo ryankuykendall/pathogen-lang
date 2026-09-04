@@ -1,10 +1,10 @@
 define ViewBox(0, 0, 860, 200);
-define default PathLayer('base') ${ fill: #fff; };
+define default PathLayer('base') #{ fill: #fff; };
 rect(0, 0, 860, 200);
 
 let mainPLFillColor = oklch(0.9792 0.1035 107.6 / 0.1);
 let shadowColor = oklch(0.6573 0.2590 356.8 / 0.32);
-let baseMainStyles = ${
+let baseMainStyles = #{
   fill: mainPLFillColor;
   stroke: mainPLFillColor.darken(64%).alpha(50%);
   stroke-width: 0.1;
@@ -12,7 +12,7 @@ let baseMainStyles = ${
 };
 let mainPathLayer = PathLayer('main-path-layer') << baseMainStyles;
 
-let glyphLayerStyles = ${
+let glyphLayerStyles = #{
   fill: oklch(0.3397 0.0641 77.6 / 0.84);
   stroke: #667a;
   stroke-width: 0.1;
@@ -22,7 +22,7 @@ let fontFamily = 'Noto Sans';
 @font fontFamily;
 @font './Noto Sans.ttf';
 let glyphFontColor = oklch(0.3302 0.0678 109.6);
-let fontStyles = ${
+let fontStyles = #{
   fill: glyphFontColor.alpha(40%);
   font-family: fontFamily;
   font-size: 32;

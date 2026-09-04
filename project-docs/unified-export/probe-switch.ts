@@ -12,7 +12,7 @@ function makeAnonId(): string {
 }
 
 const SOURCE = `define ViewBox(0, 0, 400, 300);
-define default PathLayer('dot') \${ fill: #b384e0; stroke: none; }
+define default PathLayer('dot') #{ fill: #b384e0; stroke: none; }
 layer('dot').apply { circle(200, 150, 60); }
 `;
 

@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 300);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,43 +12,43 @@ layer('bg').apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') ${};
-let shard0 = PathLayer('shard0') ${
+let scene = GroupLayer('scene') #{};
+let shard0 = PathLayer('shard0') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard1 = PathLayer('shard1') ${
+let shard1 = PathLayer('shard1') #{
   fill: #a78bfa;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard2 = PathLayer('shard2') ${
+let shard2 = PathLayer('shard2') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let lid = PathLayer('lid') ${
+let lid = PathLayer('lid') #{
   fill: #1e293b;
   stroke: #475569;
   stroke-width: 1;
 };
-let lid0 = PathLayer('lid0') ${
+let lid0 = PathLayer('lid0') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 0.8;
 };
-let lid1 = PathLayer('lid1') ${
+let lid1 = PathLayer('lid1') #{
   fill: #a78bfa;
   stroke: #0f172a;
   stroke-width: 0.8;
 };
-let lid2 = PathLayer('lid2') ${
+let lid2 = PathLayer('lid2') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 0.8;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;

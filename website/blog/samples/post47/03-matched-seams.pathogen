@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 330);
 
-let bench = PathLayer('bench') ${
+let bench = PathLayer('bench') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -12,17 +12,17 @@ layer('bench').apply {
   rect(0, 0, 480, 330);
 }
 
-let scene = GroupLayer('scene') ${};
-let pieces = PathLayer('pieces') ${
+let scene = GroupLayer('scene') #{};
+let pieces = PathLayer('pieces') #{
   fill: #7c5335;
   stroke: #3f2a17;
   stroke-width: 1.5;
 };
-let holes = PathLayer('holes') ${
+let holes = PathLayer('holes') #{
   fill: #f8fafc;
   stroke: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #d6c9b8;
@@ -62,14 +62,14 @@ pieces.apply {
 let pitch = 20;
 let leftover = calc(seamEdge.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
-let pricks = seamEdge.dash(${
+let pricks = seamEdge.dash(#{
   stroke-dasharray: 0.01 ${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
 
 for (prick in seamHoles) {
-  let dot = prick.path.outline(${
+  let dot = prick.path.outline(#{
     stroke-width: 4.5;
     stroke-linecap: round;
   });

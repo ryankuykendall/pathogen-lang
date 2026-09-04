@@ -44,22 +44,22 @@ water.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0a0a2e; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0a0a2e; stroke: none; };
 bg.apply { rect(0, 0, 500, 300); }
 
 // --- Sky fill ---
 
-let sky_layer = PathLayer('sky-layer') ${ fill: sky; stroke: none; };
+let sky_layer = PathLayer('sky-layer') #{ fill: sky; stroke: none; };
 sky_layer.apply { rect(0, 0, 500, 210); }
 
 // --- Water fill ---
 
-let water_layer = PathLayer('water-layer') ${ fill: water; stroke: none; };
+let water_layer = PathLayer('water-layer') #{ fill: water; stroke: none; };
 water_layer.apply { rect(0, 210, 500, 90); }
 
 // --- Horizon line ---
 
-let horizon = PathLayer('horizon') ${ fill: none; stroke: #f9c74f44; stroke-width: 1; };
+let horizon = PathLayer('horizon') #{ fill: none; stroke: #f9c74f44; stroke-width: 1; };
 horizon.apply { line(0, 210, 500, 210); }
 
 // --- Sun glow (simple circle) ---
@@ -71,12 +71,12 @@ let sun_grad = RadialGradient('sun-glow', 0.5, 0.5, 0.5) {|g|
   g.stop(1,   Color('#00000000'));
 };
 
-let sun = PathLayer('sun') ${ fill: sun_grad; stroke: none; };
+let sun = PathLayer('sun') #{ fill: sun_grad; stroke: none; };
 sun.apply { circle(250, 195, 55); closePath(); }
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #998866;
@@ -88,5 +88,5 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, sky_layer, water_layer, horizon, sun, title);

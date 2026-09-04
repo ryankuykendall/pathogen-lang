@@ -9,7 +9,7 @@ Both clauses read left to right like English and work everywhere path commands d
 
 ```
 define ViewBox(0, 0, 120, 80);
-define default PathLayer('shape') ${ stroke: #333; stroke-width: 2; fill: none; }
+define default PathLayer('shape') #{ stroke: #333; stroke-width: 2; fill: none; }
 
 M 10 10
 h 60 as segment('top');
@@ -97,7 +97,7 @@ Labels don't have to be unique, so the natural way to label loop-generated geome
 
 ```
 define ViewBox(0, 0, 200, 120);
-define default PathLayer('ribs') ${ stroke: #333; stroke-width: 2; fill: none; }
+define default PathLayer('ribs') #{ stroke: #333; stroke-width: 2; fill: none; }
 
 M 10 60
 for (i in 0..5) {
@@ -125,7 +125,7 @@ Rounds the joint with a circular arc of the given radius, trimming the two adjac
 
 ```
 define ViewBox(0, 0, 100, 100);
-define default PathLayer('box') ${ stroke: #333; stroke-width: 2; fill: none; }
+define default PathLayer('box') #{ stroke: #333; stroke-width: 2; fill: none; }
 
 M 20 20
 h 60;
@@ -276,8 +276,8 @@ Layers built with `apply { }` are queryable by the same names. `layer('name').se
 
 ```
 define ViewBox(0, 0, 200, 120);
-define default PathLayer('road') ${ stroke: #333; stroke-width: 2; fill: none; }
-define PathLayer('markers') ${ fill: #cc0000; }
+define default PathLayer('road') #{ stroke: #333; stroke-width: 2; fill: none; }
+define PathLayer('markers') #{ fill: #cc0000; }
 
 layer('road').apply {
   M 10 60

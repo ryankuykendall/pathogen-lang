@@ -353,9 +353,9 @@ let plotW = 320;
 let plotY = 150;
 let plotH = 100;
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 
-let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
@@ -363,14 +363,14 @@ axis.apply {
 
 fn hill(name, center, spread, hue) {
   //-- fns are dynamically scoped, so `scene` resolves at the call site.
-  let mark = PathLayer(`${name}-mark`) ${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 3 3; fill: none; };
+  let mark = PathLayer(`${name}-mark`) #{ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 3 3; fill: none; };
   scene.append(mark);
   mark.apply {
     M calc(plotX + plotW * center) calc(plotY - plotH - 6)
     L calc(plotX + plotW * center) calc(plotY + 6)
   }
   let c = Color(0.64, 0.15, hue);
-  let curve = PathLayer(name) ${ stroke: c; stroke-width: 2; fill: none; };
+  let curve = PathLayer(name) #{ stroke: c; stroke-width: 2; fill: none; };
   scene.append(curve);
   curve.apply {
     M plotX calc(plotY - plotH * bump(0, center, spread))
@@ -382,7 +382,7 @@ fn hill(name, center, spread, hue) {
   }
 }
 
-let unitLine = PathLayer('unit-line') ${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
+let unitLine = PathLayer('unit-line') #{ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
 unitLine.apply {
   M plotX calc(plotY - plotH)
   L calc(plotX + plotW) calc(plotY - plotH)
@@ -393,14 +393,14 @@ hill('wide', 0.3, 0.28, 200);
 hill('moved', 0.75, 0.2, 20);
 
 //-- Legend entries tinted to match their curves.
-let legendA = TextLayer('legend-narrow') ${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 260); text-anchor: start; };
+let legendA = TextLayer('legend-narrow') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 260); text-anchor: start; };
 legendA.apply { text(40, 27)`bump(t, 0.3, 0.15)` }
-let legendB = TextLayer('legend-wide') ${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 200); text-anchor: start; };
+let legendB = TextLayer('legend-wide') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 200); text-anchor: start; };
 legendB.apply { text(160, 27)`bump(t, 0.3, 0.28)` }
-let legendC = TextLayer('legend-moved') ${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 20); text-anchor: start; };
+let legendC = TextLayer('legend-moved') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 20); text-anchor: start; };
 legendC.apply { text(280, 27)`bump(t, 0.75, 0.2)` }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -431,7 +431,7 @@ expression</strong>, two spotlights.</p>
 
 define ViewBox(0, 0, 400, 170);
 
-let one = PathLayer('one-spotlight') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+let one = PathLayer('one-spotlight') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 one.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -440,7 +440,7 @@ one.apply {
   }
 }
 
-let two = PathLayer('two-spotlights') ${ fill: oklch(0.68 0.13 200); stroke: none; };
+let two = PathLayer('two-spotlights') #{ fill: oklch(0.68 0.13 200); stroke: none; };
 two.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -449,7 +449,7 @@ two.apply {
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -479,7 +479,7 @@ uses two more bumps as mist.</p>
 
 define ViewBox(0, 0, 400, 210);
 
-let range = PathLayer('mountain') ${ fill: oklch(0.45 0.08 265); stroke: none; };
+let range = PathLayer('mountain') #{ fill: oklch(0.45 0.08 265); stroke: none; };
 range.apply {
   M 20 185
   for (i in 0..140) {
@@ -491,7 +491,7 @@ range.apply {
   Z
 }
 
-let mist = PathLayer('mist') ${ fill: oklch(0.6 0.05 265); stroke: none; opacity: 0.5; };
+let mist = PathLayer('mist') #{ fill: oklch(0.6 0.05 265); stroke: none; opacity: 0.5; };
 mist.apply {
   M 20 185
   for (i in 0..140) {
@@ -503,7 +503,7 @@ mist.apply {
   Z
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -546,7 +546,7 @@ fn ribbon(name, y0, kind) {
   };
   let spine = @{ l 330 0 };
   let rib = spine.compoundVariableOffset() &lt;&lt; mk;
-  let band = PathLayer(name) ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  let band = PathLayer(name) #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
   band.apply {
     M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
     rib.draw();
@@ -557,7 +557,7 @@ ribbon('plain-bump', 48, 0);
 ribbon('bump-squared', 118, 1);
 ribbon('two-bump-sum', 188, 2);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -608,7 +608,7 @@ for (k in 12..1) {
   let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(k * -6));
-  let haloLayer = PathLayer(`halo-${k}`) ${
+  let haloLayer = PathLayer(`halo-${k}`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;

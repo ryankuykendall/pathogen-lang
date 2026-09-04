@@ -46,7 +46,7 @@ function encodeState(code: string): string {
 const MOIRAI_PROGRAM = `define ViewBox(0, 0, 2600, 300);
 let fontFamily = 'Moirai One';
 @font fontFamily 400;
-let baseGlyphStyles = \${
+let baseGlyphStyles = #{
   fill: #ccc;
   stroke: #222;
   stroke-width: 1;
@@ -72,7 +72,7 @@ for ([glyph, gIndex] in glyphSet) {
 // skipped via !glyph.isEmpty during layout.
 const LATIN_PROGRAM = `define ViewBox(0, 0, 800, 200);
 @font "Inter" 400;
-let styles = \${ font-family: Inter; font-size: 64; };
+let styles = #{ font-family: Inter; font-size: 64; };
 let glyphSet = PathBlock.fromGlyph(\`Latin only\`, styles);
 log(glyphSet[5].char);
 log(glyphSet[5].isWhitespace);

@@ -50,7 +50,7 @@ describe('AST builder — postfix folding inside expression contexts', () => {
   it('text() args can be function calls (no longer "x must be a number")', () => {
     const result = compile(`
       define ViewBox(0,0,200,200);
-      define TextLayer('t') \${ font-size: 12; };
+      define TextLayer('t') #{ font-size: 12; };
       layer('t').apply {
         text(polarX(100, 0, 50), polarY(100, 0, 50))\`hi\`
       }
@@ -65,7 +65,7 @@ describe('AST builder — postfix folding inside expression contexts', () => {
   it('tspan() args can be function calls', () => {
     const result = compile(`
       define ViewBox(0,0,200,200);
-      define TextLayer('t') \${ font-size: 12; };
+      define TextLayer('t') #{ font-size: 12; };
       layer('t').apply {
         text(50, 50) {
           tspan(polarX(0, 0, 10), polarY(0, 0, 10))\`x\`
@@ -85,7 +85,7 @@ describe('AST builder — postfix folding inside expression contexts', () => {
     // Pattern from website/blog/samples/post16: text(calc(dotX + 8), calc(dotY + 3))
     const result = compile(`
       define ViewBox(0,0,200,200);
-      define TextLayer('t') \${ font-size: 12; };
+      define TextLayer('t') #{ font-size: 12; };
       fn pos() { return 100; }
       layer('t').apply {
         text(calc(pos() + 5), calc(pos() - 5))\`labeled\`
@@ -102,7 +102,7 @@ describe('AST builder — postfix folding inside expression contexts', () => {
     // is still folded correctly.
     const result = compile(`
       define ViewBox(0,0,200,200);
-      define TextLayer('t') \${ font-size: 12; };
+      define TextLayer('t') #{ font-size: 12; };
       let pt = Point(50, 75);
       layer('t').apply {
         text(pt.x, pt.y)\`p\`

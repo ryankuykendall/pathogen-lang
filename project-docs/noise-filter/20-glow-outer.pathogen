@@ -8,8 +8,8 @@ let halo = GlowFilter() {|f|
 };
 
 // Background panel for contrast
-define PathLayer('bg') ${ fill: oklch(18% 0.02 270); stroke: none; }
+define PathLayer('bg') #{ fill: oklch(18% 0.02 270); stroke: none; }
 layer('bg').apply { rect(0, 0, 200, 200); }
 
-define PathLayer('star') ${ fill: oklch(80% 0.22 60); stroke: none; filter: halo; }
+define PathLayer('star') #{ fill: oklch(80% 0.22 60); stroke: none; filter: halo; }
 layer('star').apply { star(100, 100, 45, 20, 5); }

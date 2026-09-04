@@ -5,12 +5,12 @@ let box = @{ h 70 v 70 h -70 z };
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 560, 300); }
 
 // --- Original outlines ---
 
-let original = PathLayer('original') ${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -27,7 +27,7 @@ original.apply {
 
 // --- Chamfered shapes ---
 
-let chamfered = PathLayer('chamfered') ${
+let chamfered = PathLayer('chamfered') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f615');
@@ -57,7 +57,7 @@ chamfered.apply {
 
 // --- Labels ---
 
-let names = TextLayer('names') ${
+let names = TextLayer('names') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -72,7 +72,7 @@ names.apply {
   text(505, 164)`Vertex(1, 20)`
 }
 
-let desc = TextLayer('desc') ${
+let desc = TextLayer('desc') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
@@ -88,7 +88,7 @@ desc.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -100,7 +100,7 @@ code.apply {
   text(30, 252)`beveled.drawTo(x, y)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -113,7 +113,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -123,7 +123,7 @@ title.apply {
   text(30, 32)`Chamfer Gallery`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');

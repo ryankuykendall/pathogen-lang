@@ -17,17 +17,17 @@ nebula.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Fill ---
 
-let field = PathLayer('field') ${ fill: nebula; stroke: none; };
+let field = PathLayer('field') #{ fill: nebula; stroke: none; };
 field.apply { roundRect(20, 40, 360, 320, 8); }
 
 // --- Point markers ---
 
-let dots = PathLayer('dots') ${ fill: #ffffff88; stroke: #fff; stroke-width: 1; };
+let dots = PathLayer('dots') #{ fill: #ffffff88; stroke: #fff; stroke-width: 1; };
 dots.apply {
   circle(60,  70,  4); closePath();
   circle(340, 60,  4); closePath();
@@ -39,7 +39,7 @@ dots.apply {
 
 // --- Labels ---
 
-let point_labels = TextLayer('point-labels') ${
+let point_labels = TextLayer('point-labels') #{
   font-family: monospace;
   font-size: 8;
   fill: #ffffffaa;
@@ -54,7 +54,7 @@ point_labels.apply {
   text(210, 78)`#4cc9f0`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -66,5 +66,5 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, field, dots, point_labels, title);

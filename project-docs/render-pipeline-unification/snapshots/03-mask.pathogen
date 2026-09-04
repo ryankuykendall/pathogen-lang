@@ -4,10 +4,10 @@ let bg = @{ m 0 0 l 200 0 l 0 200 l -200 0 z };
 let hole = @{ m 50 50 l 100 0 l 0 100 l -100 0 z };
 
 let m = Mask('reveal');
-m.append(bg, ${ fill: Color('#ffffff'); });
-m.append(hole, ${ fill: Color('#000000'); });
+m.append(bg, #{ fill: Color('#ffffff'); });
+m.append(hole, #{ fill: Color('#000000'); });
 
-define PathLayer('masked') ${ stroke: Color('#333333'); stroke-width: 2; fill: none; mask: m.id; }
+define PathLayer('masked') #{ stroke: Color('#333333'); stroke-width: 2; fill: none; mask: m.id; }
 
 layer('masked').apply {
   M 0 100 L 200 100

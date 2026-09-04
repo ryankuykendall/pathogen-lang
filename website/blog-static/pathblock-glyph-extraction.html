@@ -324,7 +324,7 @@ code.hljs {
 <p><a href="/docs#path-blocks-pathblockfromglyphtext-styles"><code>PathBlock.fromGlyph(text, styles)</code></a> is the core conversion function. It takes a text string and a style block, and returns an array of PathBlock values — one per character:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
 
-<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"Hello"</span>, <span class="id">styles</span>);
 
 <span class="id">log</span>(<span class="id">glyphs</span>.<span class="id">length</span>);    <span class="cm">// 5 — one PathBlock per character</span>
@@ -332,7 +332,7 @@ code.hljs {
 <p>Each glyph PathBlock is a full PathBlock value with all the standard properties and methods. You can call <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, <code>.get()</code>, <code>.tangent()</code>, <code>.boundingBox()</code>, <code>.scale()</code>, <code>.fillet()</code>, <code>.union()</code> — everything from the <a href="/docs#path-blocks-syntax">PathBlock documentation</a>. The glyph is geometry now, not text.</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
 
-<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"A"</span>, ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">72</span>; });
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"A"</span>, #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">72</span>; });
 
 <span class="cm">// Draw the glyph</span>
 <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>)
@@ -348,7 +348,7 @@ code.hljs {
 <p>Drawing glyph PathBlocks is straightforward, but you need to position them correctly. In a font, each glyph has an <em>advance width</em> — the horizontal distance the cursor should move after drawing that glyph before drawing the next one. This is how proportional fonts work: a narrow &quot;i&quot; advances less than a wide &quot;M&quot;.</p>
 <p>Every glyph PathBlock from <code>fromGlyph()</code> carries an <a href="/docs#path-blocks-advancewidth"><code>.advanceWidth</code></a> property. To lay out a word, accumulate advance widths in a loop:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Bebas Neue"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">BebasNeue-Regular</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">BebasNeue-Regular</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"PATHOGEN"</span>, <span class="id">styles</span>);
 
 <span class="kw">let</span> <span class="id">cursor_x</span> = <span class="num">60</span>;
@@ -368,17 +368,17 @@ code.hljs {
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 600, 300); }
 
 // ─── Glyph layout with advance widths ────────────────────────────
 
 let word = "PATHOGEN";
-let styles = ${ font-family: "Bebas Neue"; font-size: 64; };
+let styles = #{ font-family: "Bebas Neue"; font-size: 64; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 // Place glyphs using advance width accumulation
-let glyph_layer = PathLayer('glyphs') ${
+let glyph_layer = PathLayer('glyphs') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -396,7 +396,7 @@ layer('glyphs').apply {
 
 // --- Baseline and advance width markers ---
 
-let markers = PathLayer('markers') ${
+let markers = PathLayer('markers') #{
   stroke: Color('#f59e0b');
   stroke-width: 0.75;
   fill: none;
@@ -408,7 +408,7 @@ layer('markers').apply {
 }
 
 // Advance width ticks
-let ticks = PathLayer('ticks') ${
+let ticks = PathLayer('ticks') #{
   stroke: Color('#f59e0b60');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -427,10 +427,10 @@ layer('ticks').apply {
 // --- Second row: Inconsolata (monospace) ---
 
 let word2 = "PATHOGEN";
-let styles2 = ${ font-family: Inconsolata; font-size: 48; };
+let styles2 = #{ font-family: Inconsolata; font-size: 48; };
 let glyphs2 = PathBlock.fromGlyph(word2, styles2);
 
-let glyph_layer2 = PathLayer('glyphs2') ${
+let glyph_layer2 = PathLayer('glyphs2') #{
   fill: Color('#22c55e');
   stroke: none;
 };
@@ -446,7 +446,7 @@ layer('glyphs2').apply {
 }
 
 // Baseline 2
-let markers2 = PathLayer('markers2') ${
+let markers2 = PathLayer('markers2') #{
   stroke: Color('#22c55e');
   stroke-width: 0.75;
   fill: none;
@@ -457,7 +457,7 @@ layer('markers2').apply {
 
 // --- Font labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -470,7 +470,7 @@ layer('labels').apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -480,9 +480,9 @@ layer('title').apply { text(30, 30)`Glyph Layout with Advance Widths` }
 
 // --- Code snippet ---
 
-let code_group = GroupLayer('code-block') ${ translate-x: 350; translate-y: 20; };
+let code_group = GroupLayer('code-block') #{ translate-x: 350; translate-y: 20; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -496,7 +496,7 @@ layer('code').apply {
   text(0, 48)`}`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#c084fc');
@@ -517,14 +517,14 @@ code_group.append(code, kw);
 <p>Most glyphs are made of multiple contours. The letter &quot;O&quot; has an outer ring and an inner hole — two closed paths. The letter &quot;i&quot; has a body and a dot — also two. Some glyphs are more complex: &quot;B&quot; has an outer shape plus two enclosed holes.</p>
 <p>The <a href="/docs#path-blocks-contours"><code>.contours</code></a> property splits a glyph PathBlock into its constituent contours, returning an array of PathBlock values — one per contour:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"O"</span>, <span class="id">styles</span>);
 
 <span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
 <span class="id">log</span>(<span class="id">contours</span>.<span class="id">length</span>);    <span class="cm">// 2 — outer ring + inner hole</span>
 </code></pre><p>Each contour is a closed PathBlock with all standard properties and methods. You can draw them individually, apply different styles, transform them independently, or use them in boolean operations. Here&#39;s what iterating over contours looks like:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"B"</span>, <span class="id">styles</span>);
 
 <span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
@@ -539,7 +539,7 @@ code_group.append(code, kw);
 </code></pre><p>The number of contours per glyph varies by character and font design. Simple glyphs like &quot;n&quot; or &quot;c&quot; typically have a single contour. Letters with enclosed spaces — &quot;o&quot;, &quot;e&quot;, &quot;d&quot;, &quot;g&quot; — usually have two. Letters with multiple enclosed regions — &quot;B&quot;, &quot;8&quot; — can have three or more. Punctuation follows the same logic: &quot;!&quot; has two contours (the body stroke and the dot below), while &quot;-&quot; has just one.</p>
 <p>To draw each contour with a different fill, iterate over the array and assign colors from a palette:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">56</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">56</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"B"</span>, <span class="id">styles</span>);
 
 <span class="kw">let</span> <span class="id">colors</span> = [<span class="id">Color</span>(<span class="str">'#3b82f6'</span>), <span class="id">Color</span>(<span class="str">'#22c55e'</span>), <span class="id">Color</span>(<span class="str">'#f59e0b'</span>)];
@@ -548,7 +548,7 @@ code_group.append(code, kw);
 <span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
 <span class="kw">let</span> <span class="id">ci</span> = <span class="num">0</span>;
 <span class="kw">for</span> (<span class="id">c</span> <span class="kw">in</span> <span class="id">contours</span>) {
-  <span class="kw">let</span> <span class="kw">layer</span> = <span class="tp">PathLayer</span>(<span class="str">'c'</span> + <span class="id">ci</span>) ${
+  <span class="kw">let</span> <span class="kw">layer</span> = <span class="tp">PathLayer</span>(<span class="str">'c'</span> + <span class="id">ci</span>) #{
     <span class="pr">fill</span>: <span class="id">fills</span>[<span class="id">ci</span>];
     <span class="pr">stroke</span>: <span class="id">colors</span>[<span class="id">ci</span>];
     <span class="pr">stroke-width</span>: <span class="num">1.5</span>;
@@ -565,7 +565,7 @@ code_group.append(code, kw);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 660, 400); }
 
 // --- Contour color palette (12 colors for 12 contours) ---
@@ -590,10 +590,10 @@ let word = "Bingo!";
 
 // ─── LEFT COLUMN ─────────────────────────────────────────────────
 
-let g_left = GroupLayer('left-col') ${ translate-x: 30; translate-y: 0; };
+let g_left = GroupLayer('left-col') #{ translate-x: 30; translate-y: 0; };
 
 // Title
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -601,7 +601,7 @@ let title = TextLayer('title') ${
 };
 layer('title').apply { text(0, 30)`Contour Decomposition` }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -610,10 +610,10 @@ let subtitle = TextLayer('subtitle') ${
 layer('subtitle').apply { text(0, 44)`.contours splits glyphs into individual PathBlocks` }
 
 // Assembled word — size to fit within ~290px column
-let asm_styles = ${ font-family: "Raleway"; font-weight: 700; font-size: 72; };
+let asm_styles = #{ font-family: "Raleway"; font-weight: 700; font-size: 72; };
 let asm_glyphs = PathBlock.fromGlyph(word, asm_styles);
 
-let asm_layer = PathLayer('assembled') ${
+let asm_layer = PathLayer('assembled') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -626,7 +626,7 @@ layer('assembled').apply {
   }
 }
 
-let asm_label = TextLayer('asm-label') ${
+let asm_label = TextLayer('asm-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -638,9 +638,9 @@ g_left.append(title, subtitle, asm_layer, asm_label);
 
 // ─── Decomposed contours — smaller size to fit all 6 letters ────
 
-let g_decomp = GroupLayer('decomposed') ${ translate-x: 30; translate-y: 176; };
+let g_decomp = GroupLayer('decomposed') #{ translate-x: 30; translate-y: 176; };
 
-let dec_styles = ${ font-family: "Raleway"; font-weight: 700; font-size: 56; };
+let dec_styles = #{ font-family: "Raleway"; font-weight: 700; font-size: 56; };
 let dec_glyphs = PathBlock.fromGlyph(word, dec_styles);
 
 let letter_gap = 6;
@@ -657,9 +657,9 @@ let dec_y = 70;
 
 // --- B: 3 contours (outer + 2 holes) ---
 let contours_B = dec_glyphs[0].contours;
-let cB0 = PathLayer('cB0') ${ fill: fills[0]; stroke: colors[0]; stroke-width: 1.5; };
-let cB1 = PathLayer('cB1') ${ fill: fills[1]; stroke: colors[1]; stroke-width: 1.5; };
-let cB2 = PathLayer('cB2') ${ fill: fills[2]; stroke: colors[2]; stroke-width: 1.5; };
+let cB0 = PathLayer('cB0') #{ fill: fills[0]; stroke: colors[0]; stroke-width: 1.5; };
+let cB1 = PathLayer('cB1') #{ fill: fills[1]; stroke: colors[1]; stroke-width: 1.5; };
+let cB2 = PathLayer('cB2') #{ fill: fills[2]; stroke: colors[2]; stroke-width: 1.5; };
 layer('cB0').apply { contours_B[0].drawTo(x_B, dec_y); }
 layer('cB1').apply { contours_B[1].drawTo(x_B, dec_y); }
 layer('cB2').apply { contours_B[2].drawTo(x_B, dec_y); }
@@ -667,38 +667,38 @@ g_decomp.append(cB0, cB1, cB2);
 
 // --- i: 2 contours (body + dot) ---
 let contours_i = dec_glyphs[1].contours;
-let ci0 = PathLayer('ci0') ${ fill: fills[3]; stroke: colors[3]; stroke-width: 1.5; };
-let ci1 = PathLayer('ci1') ${ fill: fills[4]; stroke: colors[4]; stroke-width: 1.5; };
+let ci0 = PathLayer('ci0') #{ fill: fills[3]; stroke: colors[3]; stroke-width: 1.5; };
+let ci1 = PathLayer('ci1') #{ fill: fills[4]; stroke: colors[4]; stroke-width: 1.5; };
 layer('ci0').apply { contours_i[0].drawTo(x_i, dec_y); }
 layer('ci1').apply { contours_i[1].drawTo(x_i, dec_y); }
 g_decomp.append(ci0, ci1);
 
 // --- n: 1 contour ---
 let contours_n = dec_glyphs[2].contours;
-let cn0 = PathLayer('cn0') ${ fill: fills[5]; stroke: colors[5]; stroke-width: 1.5; };
+let cn0 = PathLayer('cn0') #{ fill: fills[5]; stroke: colors[5]; stroke-width: 1.5; };
 layer('cn0').apply { contours_n[0].drawTo(x_n, dec_y); }
 g_decomp.append(cn0);
 
 // --- g: 2 contours (body + tail) ---
 let contours_g = dec_glyphs[3].contours;
-let cg0 = PathLayer('cg0') ${ fill: fills[6]; stroke: colors[6]; stroke-width: 1.5; };
-let cg1 = PathLayer('cg1') ${ fill: fills[7]; stroke: colors[7]; stroke-width: 1.5; };
+let cg0 = PathLayer('cg0') #{ fill: fills[6]; stroke: colors[6]; stroke-width: 1.5; };
+let cg1 = PathLayer('cg1') #{ fill: fills[7]; stroke: colors[7]; stroke-width: 1.5; };
 layer('cg0').apply { contours_g[0].drawTo(x_g, dec_y); }
 layer('cg1').apply { contours_g[1].drawTo(x_g, dec_y); }
 g_decomp.append(cg0, cg1);
 
 // --- o: 2 contours (outer + hole) ---
 let contours_o = dec_glyphs[4].contours;
-let co0 = PathLayer('co0') ${ fill: fills[8]; stroke: colors[8]; stroke-width: 1.5; };
-let co1 = PathLayer('co1') ${ fill: fills[9]; stroke: colors[9]; stroke-width: 1.5; };
+let co0 = PathLayer('co0') #{ fill: fills[8]; stroke: colors[8]; stroke-width: 1.5; };
+let co1 = PathLayer('co1') #{ fill: fills[9]; stroke: colors[9]; stroke-width: 1.5; };
 layer('co0').apply { contours_o[0].drawTo(x_o, dec_y); }
 layer('co1').apply { contours_o[1].drawTo(x_o, dec_y); }
 g_decomp.append(co0, co1);
 
 // --- !: 2 contours (body + dot) ---
 let contours_ex = dec_glyphs[5].contours;
-let cex0 = PathLayer('cex0') ${ fill: fills[10]; stroke: colors[10]; stroke-width: 1.5; };
-let cex1 = PathLayer('cex1') ${ fill: fills[11]; stroke: colors[11]; stroke-width: 1.5; };
+let cex0 = PathLayer('cex0') #{ fill: fills[10]; stroke: colors[10]; stroke-width: 1.5; };
+let cex1 = PathLayer('cex1') #{ fill: fills[11]; stroke: colors[11]; stroke-width: 1.5; };
 layer('cex0').apply { contours_ex[0].drawTo(x_ex, dec_y); }
 layer('cex1').apply { contours_ex[1].drawTo(x_ex, dec_y); }
 g_decomp.append(cex0, cex1);
@@ -709,13 +709,13 @@ let char_labels = ["B", "i", "n", "g", "o", "!"];
 let char_counts = ["3", "2", "1", "2", "2", "2"];
 let x_positions = [x_B, x_i, x_n, x_g, x_o, x_ex];
 
-let lbl_layer = TextLayer('char-labels') ${
+let lbl_layer = TextLayer('char-labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
   text-anchor: middle;
 };
-let cnt_layer = TextLayer('char-counts') ${
+let cnt_layer = TextLayer('char-counts') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#64748b');
@@ -743,7 +743,7 @@ layer('char-counts').apply {
 g_decomp.append(lbl_layer, cnt_layer);
 
 // Decomposed section footer
-let dec_footer = TextLayer('dec-footer') ${
+let dec_footer = TextLayer('dec-footer') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -754,10 +754,10 @@ g_decomp.append(dec_footer);
 
 // ─── RIGHT COLUMN ────────────────────────────────────────────────
 
-let g_right = GroupLayer('right-col') ${ translate-x: 360; translate-y: 0; };
+let g_right = GroupLayer('right-col') #{ translate-x: 360; translate-y: 0; };
 
 // Contour Color Key title
-let leg_title = TextLayer('leg-title') ${
+let leg_title = TextLayer('leg-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -769,18 +769,18 @@ layer('leg-title').apply { text(0, 30)`Contour Color Key` }
 let leg_top = 44;
 let leg_h = 14;
 
-let ld0 = PathLayer('ld0') ${ fill: colors[0]; stroke: none; };
-let ld1 = PathLayer('ld1') ${ fill: colors[1]; stroke: none; };
-let ld2 = PathLayer('ld2') ${ fill: colors[2]; stroke: none; };
-let ld3 = PathLayer('ld3') ${ fill: colors[3]; stroke: none; };
-let ld4 = PathLayer('ld4') ${ fill: colors[4]; stroke: none; };
-let ld5 = PathLayer('ld5') ${ fill: colors[5]; stroke: none; };
-let ld6 = PathLayer('ld6') ${ fill: colors[6]; stroke: none; };
-let ld7 = PathLayer('ld7') ${ fill: colors[7]; stroke: none; };
-let ld8 = PathLayer('ld8') ${ fill: colors[8]; stroke: none; };
-let ld9 = PathLayer('ld9') ${ fill: colors[9]; stroke: none; };
-let ld10 = PathLayer('ld10') ${ fill: colors[10]; stroke: none; };
-let ld11 = PathLayer('ld11') ${ fill: colors[11]; stroke: none; };
+let ld0 = PathLayer('ld0') #{ fill: colors[0]; stroke: none; };
+let ld1 = PathLayer('ld1') #{ fill: colors[1]; stroke: none; };
+let ld2 = PathLayer('ld2') #{ fill: colors[2]; stroke: none; };
+let ld3 = PathLayer('ld3') #{ fill: colors[3]; stroke: none; };
+let ld4 = PathLayer('ld4') #{ fill: colors[4]; stroke: none; };
+let ld5 = PathLayer('ld5') #{ fill: colors[5]; stroke: none; };
+let ld6 = PathLayer('ld6') #{ fill: colors[6]; stroke: none; };
+let ld7 = PathLayer('ld7') #{ fill: colors[7]; stroke: none; };
+let ld8 = PathLayer('ld8') #{ fill: colors[8]; stroke: none; };
+let ld9 = PathLayer('ld9') #{ fill: colors[9]; stroke: none; };
+let ld10 = PathLayer('ld10') #{ fill: colors[10]; stroke: none; };
+let ld11 = PathLayer('ld11') #{ fill: colors[11]; stroke: none; };
 
 layer('ld0').apply { rect(0, leg_top, 8, 8); }
 layer('ld1').apply { rect(0, calc(leg_top + leg_h), 8, 8); }
@@ -795,7 +795,7 @@ layer('ld9').apply { rect(0, calc(leg_top + leg_h * 9), 8, 8); }
 layer('ld10').apply { rect(0, calc(leg_top + leg_h * 10), 8, 8); }
 layer('ld11').apply { rect(0, calc(leg_top + leg_h * 11), 8, 8); }
 
-let leg_text = TextLayer('leg-text') ${
+let leg_text = TextLayer('leg-text') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -822,7 +822,7 @@ g_right.append(leg_title, ld0, ld1, ld2, ld3, ld4, ld5, ld6, ld7, ld8, ld9, ld10
 // Code snippet — well below the legend
 let code_top = calc(leg_top + leg_h * 12 + 30);
 
-let code_title = TextLayer('code-title') ${
+let code_title = TextLayer('code-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -830,7 +830,7 @@ let code_title = TextLayer('code-title') ${
 };
 layer('code-title').apply { text(0, code_top)`Usage` }
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -845,7 +845,7 @@ layer('code').apply {
   text(0, calc(cl + 54))`}`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#c084fc');
@@ -861,7 +861,7 @@ g_right.append(code_title, code, kw);
 
 // ─── Divider ─────────────────────────────────────────────────────
 
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: Color('#1e293b');
   stroke-width: 1;
   fill: none;
@@ -917,12 +917,12 @@ layer('divider').apply { M 345 20 v 370 }
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 600, 220); }
 
 // Shared font styles
-let styles = ${ font-family: "Bebas Neue"; font-size: 72; };
-let label_styles = ${ font-family: monospace; font-size: 8; };
+let styles = #{ font-family: "Bebas Neue"; font-size: 72; };
+let label_styles = #{ font-family: monospace; font-size: 8; };
 
 // Column geometry: three equal columns across 600px
 // Each column ~200px wide, starting at x=0, x=200, x=400
@@ -935,10 +935,10 @@ let placed_labels = [];
 // WAVE — sin() vertical offset per character (left column)
 // ═══════════════════════════════════════════════════════════════════
 
-let g_wave = GroupLayer('wave-group') ${ translate-x: 20; translate-y: 30; };
+let g_wave = GroupLayer('wave-group') #{ translate-x: 20; translate-y: 30; };
 
 // Effect name
-let wave_title = TextLayer('wave-title') ${
+let wave_title = TextLayer('wave-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#94a3b8');
@@ -949,7 +949,7 @@ layer('wave-title').apply { text(0, 0)`WAVE` }
 let word = "WAVE";
 let glyphs = PathBlock.fromGlyph(word, styles);
 
-let wave_layer = PathLayer('wave') ${
+let wave_layer = PathLayer('wave') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -971,7 +971,7 @@ layer('wave').apply {
 let wave_label_block = &amp;{ text(0, 8)`sin(i) vertical offset` } &lt;&lt; label_styles;
 let wave_label_proj = wave_label_block.project(0, 120);
 
-let wave_label = TextLayer('wave-label') ${
+let wave_label = TextLayer('wave-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -989,10 +989,10 @@ g_wave.append(wave_title, wave_layer, wave_label);
 // GROW — increasing scale per character (center column)
 // ═══════════════════════════════════════════════════════════════════
 
-let g_scale = GroupLayer('scale-group') ${ translate-x: 210; translate-y: 30; };
+let g_scale = GroupLayer('scale-group') #{ translate-x: 210; translate-y: 30; };
 
 // Effect name
-let grow_title = TextLayer('grow-title') ${
+let grow_title = TextLayer('grow-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#94a3b8');
@@ -1003,7 +1003,7 @@ layer('grow-title').apply { text(0, 0)`GROW` }
 let word2 = "GROW";
 let glyphs2 = PathBlock.fromGlyph(word2, styles);
 
-let scale_layer = PathLayer('scale') ${
+let scale_layer = PathLayer('scale') #{
   fill: Color('#22c55e');
   stroke: none;
 };
@@ -1025,7 +1025,7 @@ layer('scale').apply {
 let scale_label_block = &amp;{ text(0, 8)`scale(0.5 + i * 0.25)` } &lt;&lt; label_styles;
 let scale_label_proj = scale_label_block.project(0, 120);
 
-let scale_label = TextLayer('scale-label') ${
+let scale_label = TextLayer('scale-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -1043,10 +1043,10 @@ g_scale.append(grow_title, scale_layer, scale_label);
 // CIRCULAR — characters along a circular arc (right column)
 // ═══════════════════════════════════════════════════════════════════
 
-let g_arc = GroupLayer('arc-group') ${ translate-x: 400; translate-y: 30; };
+let g_arc = GroupLayer('arc-group') #{ translate-x: 400; translate-y: 30; };
 
 // Effect name
-let arc_title = TextLayer('arc-title') ${
+let arc_title = TextLayer('arc-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#94a3b8');
@@ -1055,7 +1055,7 @@ let arc_title = TextLayer('arc-title') ${
 layer('arc-title').apply { text(0, 0)`CIRCULAR` }
 
 let word3 = "CIRCULAR";
-let arc_styles = ${ font-family: "Bebas Neue"; font-size: 30; };
+let arc_styles = #{ font-family: "Bebas Neue"; font-size: 30; };
 let glyphs3 = PathBlock.fromGlyph(word3, arc_styles);
 
 // Compute total width for arc distribution
@@ -1064,7 +1064,7 @@ for (g in glyphs3) {
   total_width = calc(total_width + g.advanceWidth);
 }
 
-let arc_layer = PathLayer('arc') ${
+let arc_layer = PathLayer('arc') #{
   fill: Color('#f59e0b');
   stroke: none;
 };
@@ -1094,7 +1094,7 @@ layer('arc').apply {
 }
 
 // Guide arc (dashed circle)
-let guide = PathLayer('guide') ${
+let guide = PathLayer('guide') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -1106,7 +1106,7 @@ layer('guide').apply { circle(calc(arc_cx), calc(arc_cy), arc_r); }
 let arc_label_block = &amp;{ text(0, 8)`rotateAtVertexIndex along arc` } &lt;&lt; label_styles;
 let arc_label_proj = arc_label_block.project(calc(arc_cx - 50), 140);
 
-let arc_label = TextLayer('arc-label') ${
+let arc_label = TextLayer('arc-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -1145,7 +1145,7 @@ log("Label collisions: ", collision_count, " (0 expected)");
 // Title (bottom)
 // ═══════════════════════════════════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -1190,7 +1190,7 @@ layer('title').apply { text(30, 205)`Per-Character Transforms` }
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 900, 310); }
 
 // --- Palette ---
@@ -1213,7 +1213,7 @@ let palette_fill = [Color('#3b82f618'), Color('#22c55e18'), Color('#f59e0b18'), 
 // ─── Build glyph paths with advance-width layout ──────────────────
 
 let word = "CUTTING";
-let styles = ${ font-family: "Bebas Neue"; font-size: 60; };
+let styles = #{ font-family: "Bebas Neue"; font-size: 60; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 // Compute cursor positions with tracking
@@ -1256,14 +1256,14 @@ let label_y = 200;
 // Stage 1: Individual glyph outlines
 // ═══════════════════════════════════════
 
-let g_stage1 = GroupLayer('stage1') ${ translate-x: 0; translate-y: 0; };
+let g_stage1 = GroupLayer('stage1') #{ translate-x: 0; translate-y: 0; };
 
 let s1_x = 30;
 let glyph_names = ["g-0", "g-1", "g-2", "g-3", "g-4", "g-5", "g-6"];
 let gi = 0;
 for (g in glyphs) {
   let gn = glyph_names[gi];
-  let gl = PathLayer(gn) ${
+  let gl = PathLayer(gn) #{
     stroke: palette[gi];
     stroke-width: 1.5;
     fill: palette_fill[gi];
@@ -1273,7 +1273,7 @@ for (g in glyphs) {
   gi = calc(gi + 1);
 }
 
-let s1_label = TextLayer('s1-label') ${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
+let s1_label = TextLayer('s1-label') #{ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 layer('s1-label').apply {
   text(s1_x, label_y)`7 glyph PathBlocks`
   text(s1_x, calc(label_y + 12))`laid out by advanceWidth`
@@ -1285,12 +1285,12 @@ g_stage1.append(s1_label);
 // Stage 2: Union result
 // ═══════════════════════════════════════
 
-let g_stage2 = GroupLayer('stage2') ${ translate-x: 320; translate-y: 0; };
+let g_stage2 = GroupLayer('stage2') #{ translate-x: 320; translate-y: 0; };
 
-let union_layer = PathLayer('union-result') ${ fill: c_blue; stroke: none; };
+let union_layer = PathLayer('union-result') #{ fill: c_blue; stroke: none; };
 layer('union-result').apply { combined.drawTo(30, calc(geo_y + baseline_y)); }
 
-let s2_label = TextLayer('s2-label') ${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
+let s2_label = TextLayer('s2-label') #{ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 layer('s2-label').apply { text(30, label_y)`single united path` }
 
 g_stage2.append(union_layer, s2_label);
@@ -1299,12 +1299,12 @@ g_stage2.append(union_layer, s2_label);
 // Stage 3: Difference cutout
 // ═══════════════════════════════════════
 
-let g_stage3 = GroupLayer('stage3') ${ translate-x: 610; translate-y: 0; };
+let g_stage3 = GroupLayer('stage3') #{ translate-x: 610; translate-y: 0; };
 
-let cutout_layer = PathLayer('cutout-result') ${ fill: c_green; stroke: none; };
+let cutout_layer = PathLayer('cutout-result') #{ fill: c_green; stroke: none; };
 layer('cutout-result').apply { cutout.drawTo(30, calc(geo_y + baseline_y)); }
 
-let s3_label = TextLayer('s3-label') ${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
+let s3_label = TextLayer('s3-label') #{ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 layer('s3-label').apply { text(30, label_y)`text punched from plate` }
 
 g_stage3.append(cutout_layer, s3_label);
@@ -1317,46 +1317,46 @@ let arrow_y = calc(geo_y + baseline_y - 20);
 
 // Arrow 1: Stage 1 → Stage 2 (x=240..320, centered at x=280)
 let a1_x = 252;
-let arrow1 = PathLayer('arrow1') ${ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
+let arrow1 = PathLayer('arrow1') #{ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
 layer('arrow1').apply { M a1_x arrow_y h 50  M calc(a1_x + 46) calc(arrow_y - 4) l 8 4 l -8 4 z }
 
-let arrow1_label = TextLayer('arrow1-label') ${ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
+let arrow1_label = TextLayer('arrow1-label') #{ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
 layer('arrow1-label').apply { text(280, calc(arrow_y + 16))`.union()` }
 
 // Arrow 2: Stage 2 → Stage 3 (x=520..610, centered at x=565)
 let a2_x = 532;
-let arrow2 = PathLayer('arrow2') ${ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
+let arrow2 = PathLayer('arrow2') #{ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
 layer('arrow2').apply { M a2_x arrow_y h 60  M calc(a2_x + 56) calc(arrow_y - 4) l 8 4 l -8 4 z }
 
-let arrow2_label = TextLayer('arrow2-label') ${ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
+let arrow2_label = TextLayer('arrow2-label') #{ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
 layer('arrow2-label').apply { text(565, calc(arrow_y + 16))`.difference()` }
 
 // ═══════════════════════════════════════
 // Title and subtitle
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 14; fill: c_text; text-anchor: start; };
+let title = TextLayer('title') #{ font-family: system-ui, sans-serif; font-size: 14; fill: c_text; text-anchor: start; };
 layer('title').apply { text(30, 28)`Text Cutout with Boolean Operations` }
 
-let subtitle = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 9; fill: c_muted; text-anchor: start; };
+let subtitle = TextLayer('subtitle') #{ font-family: system-ui, sans-serif; font-size: 9; fill: c_muted; text-anchor: start; };
 layer('subtitle').apply { text(30, 43)`7 glyph paths → .union() chain → .difference() from rectangle` }
 
 // ═══════════════════════════════════════
 // Code snippet (bottom, fitted to content)
 // ═══════════════════════════════════════
 
-let code_group = GroupLayer('code-block') ${ translate-x: 235; translate-y: 255; };
+let code_group = GroupLayer('code-block') #{ translate-x: 235; translate-y: 255; };
 
-let code_bg = PathLayer('code-bg') ${ fill: Color('#1e293b'); stroke: Color('#334155'); stroke-width: 0.5; };
+let code_bg = PathLayer('code-bg') #{ fill: Color('#1e293b'); stroke: Color('#334155'); stroke-width: 0.5; };
 layer('code-bg').apply { roundRect(0, 0, 430, 42, 4); }
 
-let code = TextLayer('code') ${ font-family: monospace; font-size: 8; fill: c_faint; text-anchor: start; };
+let code = TextLayer('code') #{ font-family: monospace; font-size: 8; fill: c_faint; text-anchor: start; };
 layer('code').apply {
   text(10, 16)`let combined = projected[0];  for ... combined.union(projected[i]);`
   text(10, 30)`let cutout = plate.difference(combined);`
 }
 
-let kw = TextLayer('kw') ${ font-family: monospace; font-size: 8; fill: Color('#c084fc'); text-anchor: start; };
+let kw = TextLayer('kw') #{ font-family: monospace; font-size: 8; fill: Color('#c084fc'); text-anchor: start; };
 layer('kw').apply {
   text(10, 16)`let`
   text(10, 30)`let`
@@ -1385,18 +1385,18 @@ code_group.append(code_bg, code, kw);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 600, 340); }
 
 // ─── Left: fromGlyph() — paths AND metrics from the same font ──
 
-let g_left = GroupLayer('glyph-side') ${ translate-x: 30; translate-y: 50; };
+let g_left = GroupLayer('glyph-side') #{ translate-x: 30; translate-y: 50; };
 
 let word = "LAYOUT";
-let styles = ${ font-family: "Bebas Neue"; font-size: 56; };
+let styles = #{ font-family: "Bebas Neue"; font-size: 56; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
-let path_layer = PathLayer('glyph-paths') ${
+let path_layer = PathLayer('glyph-paths') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -1416,7 +1416,7 @@ layer('glyph-paths').apply {
 let total_w = cursor;
 
 // Bounding box from summed advance widths — matches perfectly
-let total_bbox = PathLayer('total-bbox') ${
+let total_bbox = PathLayer('total-bbox') #{
   fill: none;
   stroke: Color('#22c55e');
   stroke-width: 1.5;
@@ -1433,7 +1433,7 @@ layer('total-bbox').apply {
 }
 
 // Per-glyph advance width markers
-let tick_layer = PathLayer('ticks') ${
+let tick_layer = PathLayer('ticks') #{
   stroke: Color('#22c55e50');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -1448,7 +1448,7 @@ layer('ticks').apply {
   M tick_cursor calc(first_bb.y - 2) v calc(combined_h + 4)
 }
 
-let left_label = TextLayer('left-label') ${
+let left_label = TextLayer('left-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#22c55e');
@@ -1463,10 +1463,10 @@ g_left.append(path_layer, total_bbox, tick_layer, left_label);
 
 // ─── Right: same word as SVG text (browser font) ───────────────
 
-let g_right = GroupLayer('text-side') ${ translate-x: 310; translate-y: 50; };
+let g_right = GroupLayer('text-side') #{ translate-x: 310; translate-y: 50; };
 
 // Render as SVG &lt;text&gt; — browser picks its own font
-let text_layer = TextLayer('svg-text') ${
+let text_layer = TextLayer('svg-text') #{
   font-family: monospace;
   font-size: 24;
   fill: Color('#94a3b8');
@@ -1476,10 +1476,10 @@ layer('svg-text').apply {
 }
 
 // Measure with monospace table — use same y coordinate as rendering
-let text_label_block = &amp;{ text(0, 60)`LAYOUT` } &lt;&lt; ${ font-size: 24; font-family: monospace; };
+let text_label_block = &amp;{ text(0, 60)`LAYOUT` } &lt;&lt; #{ font-size: 24; font-family: monospace; };
 let text_bb = text_label_block.boundingBox();
 
-let text_bbox = PathLayer('text-bbox') ${
+let text_bbox = PathLayer('text-bbox') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -1489,7 +1489,7 @@ layer('text-bbox').apply {
   rect(text_bb.x, text_bb.y, text_bb.width, text_bb.height);
 }
 
-let right_label = TextLayer('right-label') ${
+let right_label = TextLayer('right-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#f59e0b');
@@ -1501,7 +1501,7 @@ layer('right-label').apply {
 }
 
 // Note about the mismatch
-let note = TextLayer('note') ${
+let note = TextLayer('note') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#64748b');
@@ -1516,7 +1516,7 @@ g_right.append(text_layer, text_bbox, right_label, note);
 
 // ─── Section titles ─────────────────────────────────────────────
 
-let left_title = TextLayer('l-title') ${
+let left_title = TextLayer('l-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#22c55e');
@@ -1524,7 +1524,7 @@ let left_title = TextLayer('l-title') ${
 };
 layer('l-title').apply { text(30, 42)`PathBlock.fromGlyph() — exact` }
 
-let right_title = TextLayer('r-title') ${
+let right_title = TextLayer('r-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#f59e0b');
@@ -1534,7 +1534,7 @@ layer('r-title').apply { text(310, 42)`SVG &lt;text&gt; — estimated` }
 
 // ─── Divider ─────────────────────────────────────────────────────
 
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: Color('#334155');
   stroke-width: 1;
   fill: none;
@@ -1543,7 +1543,7 @@ layer('divider').apply { M 295 40 v 170 }
 
 // ─── Title ───────────────────────────────────────────────────────
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -1553,7 +1553,7 @@ layer('title').apply { text(30, 25)`Why @font Matters: Paths vs Text` }
 
 // ─── Bottom annotation ──────────────────────────────────────────
 
-let anno = TextLayer('anno') ${
+let anno = TextLayer('anno') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -1568,7 +1568,7 @@ layer('anno').apply {
 
 // ─── Key insight callout ────────────────────────────────────────
 
-let insight = TextLayer('insight') ${
+let insight = TextLayer('insight') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#3b82f6');
@@ -1586,7 +1586,7 @@ layer('insight').apply {
 <p>Here&#39;s the full pipeline from font declaration to rendered output — the workflow that ties together everything in this post:</p>
 <pre><code class="hljs language-pathogen"><span class="cm">// 1. Load the font</span>
 @font <span class="str">"Inter"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = ${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
 
 <span class="cm">// 2. Extract glyphs</span>
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"HELLO"</span>, <span class="id">styles</span>);

@@ -3,10 +3,10 @@
 
 let arrow = @{ m 0 0 l 10 5 l -10 5 z };
 let arrowMarker = Marker('arrowhead', 10, 10) {|m|
-  m.append(arrow, ${ fill: Color('#333333'); });
+  m.append(arrow, #{ fill: Color('#333333'); });
 };
 
-define PathLayer('line') ${
+define PathLayer('line') #{
   stroke: Color('#333333');
   stroke-width: 3;
   fill: none;

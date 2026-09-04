@@ -8,7 +8,7 @@ define ViewBox(0, 0, 400, 250);
 
 fn ridge(name, baseY, seed, freq, amp, L) {
   let c = Color(L, 0.06, 265);
-  let hill = PathLayer(name) ${ fill: c; stroke: none; };
+  let hill = PathLayer(name) #{ fill: c; stroke: none; };
   hill.apply {
     M 15 235
     L 15 calc(baseY - noise(0, seed) * amp)
@@ -26,7 +26,7 @@ ridge('middle', 135, 2, 4, 48, 0.58);
 ridge('near', 170, 3, 5, 55, 0.44);
 
 //-- Front ridge: slow + tall stacked with fast + quiet.
-let front = PathLayer('front') ${ fill: oklch(0.3 0.06 265); stroke: none; };
+let front = PathLayer('front') #{ fill: oklch(0.3 0.06 265); stroke: none; };
 front.apply {
   M 15 235
   let h0 = noise(0, 4) * 55 + noise(0, 5) * 12;

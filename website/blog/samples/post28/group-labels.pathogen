@@ -1,6 +1,6 @@
 define ViewBox(0, 0, 240, 140);
-define default PathLayer('comb') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
-define PathLayer('tips') ${ fill: #db2777; }
+define default PathLayer('comb') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('tips') #{ fill: #db2777; }
 
 // One name, five teeth. Labels don't have to be unique — a shared name
 // forms a GROUP, so loops need no index bookkeeping at all.

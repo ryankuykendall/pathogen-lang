@@ -404,7 +404,7 @@ round caps at the punch diameter and the seam becomes a row of holes.</p>
 
 define ViewBox(0, 0, 480, 170);
 
-let leather = PathLayer('leather') \${
+let leather = PathLayer('leather') #{
   fill: #7c5335;
   stroke: none;
 };
@@ -412,17 +412,17 @@ layer('leather').apply {
   rect(0, 0, 480, 170);
 }
 
-let scene = GroupLayer('scene') \${};
-let seamGhost = PathLayer('seam-ghost') \${
+let scene = GroupLayer('scene') #{};
+let seamGhost = PathLayer('seam-ghost') #{
   stroke: #00000040;
   stroke-width: 1;
   fill: none;
 };
-let holes = PathLayer('holes') \${
+let holes = PathLayer('holes') #{
   fill: #f8fafc;
   stroke: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #f1e9dd;
@@ -437,13 +437,13 @@ seamGhost.apply {
   M 70 92 seam.draw()
 }
 
-let pricks = seam.dash(\${
+let pricks = seam.dash(#{
   stroke-dasharray: 0.01 16;
 });
 
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
 for (prick in seamHoles) {
-  let dot = prick.path.outline(\${
+  let dot = prick.path.outline(#{
     stroke-width: 5;
     stroke-linecap: round;
   });
@@ -471,7 +471,7 @@ by half the remainder, and the margins agree at both ends.</p>
 
 define ViewBox(0, 0, 480, 200);
 
-let leather = PathLayer('leather') \${
+let leather = PathLayer('leather') #{
   fill: #7c5335;
   stroke: none;
 };
@@ -479,17 +479,17 @@ layer('leather').apply {
   rect(0, 0, 480, 200);
 }
 
-let scene = GroupLayer('scene') \${};
-let seamGhost = PathLayer('seam-ghost') \${
+let scene = GroupLayer('scene') #{};
+let seamGhost = PathLayer('seam-ghost') #{
   stroke: #00000040;
   stroke-width: 1;
   fill: none;
 };
-let holes = PathLayer('holes') \${
+let holes = PathLayer('holes') #{
   fill: #f8fafc;
   stroke: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #f1e9dd;
@@ -505,13 +505,13 @@ fn punchRow(anchorY, offsetValue) {
   seamGhost.apply {
     M 70 anchorY seam.draw()
   }
-  let pricks = seam.dash(\${
+  let pricks = seam.dash(#{
     stroke-dasharray: 0.01 \${pitch};
     stroke-dashoffset: \${offsetValue};
   });
   let rowHoles = pricks.filter() {|prick| prick.kind == 'dash'};
   for (prick in rowHoles) {
-    let dot = prick.path.outline(\${
+    let dot = prick.path.outline(#{
       stroke-width: 5;
       stroke-linecap: round;
     });
@@ -563,7 +563,7 @@ differ if you tried.</p>
 
 define ViewBox(0, 0, 480, 330);
 
-let bench = PathLayer('bench') \${
+let bench = PathLayer('bench') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -571,17 +571,17 @@ layer('bench').apply {
   rect(0, 0, 480, 330);
 }
 
-let scene = GroupLayer('scene') \${};
-let pieces = PathLayer('pieces') \${
+let scene = GroupLayer('scene') #{};
+let pieces = PathLayer('pieces') #{
   fill: #7c5335;
   stroke: #3f2a17;
   stroke-width: 1.5;
 };
-let holes = PathLayer('holes') \${
+let holes = PathLayer('holes') #{
   fill: #f8fafc;
   stroke: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #d6c9b8;
@@ -621,14 +621,14 @@ pieces.apply {
 let pitch = 20;
 let leftover = calc(seamEdge.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
-let pricks = seamEdge.dash(\${
+let pricks = seamEdge.dash(#{
   stroke-dasharray: 0.01 \${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
 
 for (prick in seamHoles) {
-  let dot = prick.path.outline(\${
+  let dot = prick.path.outline(#{
     stroke-width: 4.5;
     stroke-linecap: round;
   });
@@ -673,7 +673,7 @@ beneath shows through each one.</p>
 
 define ViewBox(0, 0, 480, 320);
 
-let bench = PathLayer('bench') \${
+let bench = PathLayer('bench') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -681,23 +681,23 @@ bench.apply {
   rect(0, 0, 480, 320);
 }
 
-let scene = GroupLayer('scene') \${};
-let backPanel = PathLayer('back-panel') \${
+let scene = GroupLayer('scene') #{};
+let backPanel = PathLayer('back-panel') #{
   fill: #2e2018;
   stroke: #3f2a17;
   stroke-width: 1.5;
 };
-let pocket = PathLayer('pocket') \${
+let pocket = PathLayer('pocket') #{
   fill: #7c5335;
   stroke: #3f2a17;
   stroke-width: 1.5;
 };
-let guides = PathLayer('guides') \${
+let guides = PathLayer('guides') #{
   stroke: #00000035;
   stroke-width: 1;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #d6c9b8;
@@ -745,7 +745,7 @@ let seamU = stitchLine.fillet(8);
 // give up one hole and split a whole extra pitch across the ends.
 let leftover = calc(seamU.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
-let pricks = seamU.dash(\${
+let pricks = seamU.dash(#{
   stroke-dasharray: 0.01 \${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
@@ -753,7 +753,7 @@ let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
 
 let punched = pocketShape;
 for (prick in seamHoles) {
-  let hole = prick.path.outline(\${
+  let hole = prick.path.outline(#{
     stroke-width: 4.5;
     stroke-linecap: round;
   });
@@ -847,7 +847,7 @@ come out even, and here that&#39;s one number.</p>
 
 define ViewBox(0, 0, 480, 170);
 
-let fabric = PathLayer('fabric') \${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -855,20 +855,20 @@ fabric.apply {
   rect(0, 0, 480, 170);
 }
 
-let scene = GroupLayer('scene') \${};
-let underside = PathLayer('underside') \${
+let scene = GroupLayer('scene') #{};
+let underside = PathLayer('underside') #{
   stroke: #64748b;
   stroke-width: 3;
   stroke-linecap: round;
   fill: none;
 };
-let topThread = PathLayer('top-thread') \${
+let topThread = PathLayer('top-thread') #{
   stroke: #f1f5f9;
   stroke-width: 3.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -881,7 +881,7 @@ let seam = @{
   h 371
 };
 
-let stitches = seam.dash(\${
+let stitches = seam.dash(#{
   stroke-dasharray: 14 7;
 });
 
@@ -918,7 +918,7 @@ Where neighboring rows disagree, the stitches interlock.</p>
 
 define ViewBox(0, 0, 480, 210);
 
-let fabric = PathLayer('fabric') \${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -926,14 +926,14 @@ fabric.apply {
   rect(0, 0, 480, 210);
 }
 
-let scene = GroupLayer('scene') \${};
-let thread = PathLayer('thread') \${
+let scene = GroupLayer('scene') #{};
+let thread = PathLayer('thread') #{
   stroke: #f1f5f9;
   stroke-width: 3;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -955,7 +955,7 @@ let rowBits = [
 
 for ([bit, rowIndex] in rowBits) {
   let rowY = calc(52 + rowIndex * 22);
-  let stitches = seam.dash(\${
+  let stitches = seam.dash(#{
     stroke-dasharray: 16 16;
     stroke-dashoffset: calc(bit * 16);
   });
@@ -994,7 +994,7 @@ steps, and boxes are all emergent.</p>
 
 define ViewBox(0, 0, 480, 300);
 
-let fabric = PathLayer('fabric') \${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -1002,14 +1002,14 @@ fabric.apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') \${};
-let thread = PathLayer('thread') \${
+let scene = GroupLayer('scene') #{};
+let thread = PathLayer('thread') #{
   stroke: #f1f5f9;
   stroke-width: 2.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -1030,7 +1030,7 @@ let colSeam = @{
 };
 
 fn sew(seam, anchorX, anchorY, bit) {
-  let stitches = seam.dash(\${
+  let stitches = seam.dash(#{
     stroke-dasharray: \${cell} \${cell};
     stroke-dashoffset: calc(bit * cell);
   });
@@ -1068,7 +1068,7 @@ labels.apply {
 <p>The <code>sew</code> helper is the post&#39;s whole engine — dash the seam, keep the
 dashes, place them at the line&#39;s anchor:</p>
 <pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">sew</span>(<span class="id">seam</span>, <span class="id">anchorX</span>, <span class="id">anchorY</span>, <span class="id">bit</span>) {
-  <span class="kw">let</span> <span class="id">stitches</span> = <span class="id">seam</span>.<span class="id">dash</span>(\${
+  <span class="kw">let</span> <span class="id">stitches</span> = <span class="id">seam</span>.<span class="id">dash</span>(#{
     <span class="pr">stroke-dasharray</span>: <span class="str">\${cell}</span> <span class="str">\${cell}</span>;
     <span class="pr">stroke-dashoffset</span>: <span class="id">calc</span>(<span class="id">bit</span> * <span class="id">cell</span>);
   });
@@ -1093,7 +1093,7 @@ here, staggered fans of stitched arcs make the classic seigaiha wave.</p>
 
 define ViewBox(0, 0, 480, 260);
 
-let fabric = PathLayer('fabric') \${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -1101,14 +1101,14 @@ fabric.apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') \${};
-let thread = PathLayer('thread') \${
+let scene = GroupLayer('scene') #{};
+let thread = PathLayer('thread') #{
   stroke: #f1f5f9;
   stroke-width: 2.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -1120,7 +1120,7 @@ fn stitchArc(radius, anchorX, anchorY) {
     m calc(0 - radius) 0
     a radius radius 0 0 1 calc(radius * 2) 0
   };
-  let stitches = arcSpan.dash(\${
+  let stitches = arcSpan.dash(#{
     stroke-dasharray: 7 4;
   });
   for (stitch in stitches) {
@@ -1169,7 +1169,7 @@ trust a percentage — then transfer and stitch.</p>
 
 define ViewBox(0, 0, 480, 320);
 
-let denim = PathLayer('denim') \${
+let denim = PathLayer('denim') #{
   fill: #27466b;
   stroke: none;
 };
@@ -1177,19 +1177,19 @@ denim.apply {
   rect(0, 0, 480, 320);
 }
 
-let scene = GroupLayer('scene') \${};
-let patch = PathLayer('patch') \${
+let scene = GroupLayer('scene') #{};
+let patch = PathLayer('patch') #{
   fill: #16304f;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let thread = PathLayer('thread') \${
+let thread = PathLayer('thread') #{
   stroke: #f1f5f9;
   stroke-width: 2.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -1219,7 +1219,7 @@ let colSeam = @{
 };
 
 fn sew(seam, anchorX, anchorY, bit) {
-  let stitches = seam.dash(\${
+  let stitches = seam.dash(#{
     stroke-dasharray: \${cell} \${cell};
     stroke-dashoffset: calc(bit * cell);
   });
@@ -1306,12 +1306,12 @@ stencil maker argues about — band width, bridge width, bridge count,
 and (through the dash offset) where the bridges land — while
 guaranteeing the geometry stays cuttable:</p>
 <pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">cutLength</span> = <span class="kw">calc</span>(<span class="id">centerline</span>.<span class="id">length</span> / <span class="id">bridgeCount</span> - <span class="id">bridgeWidth</span>);
-<span class="kw">let</span> <span class="id">pieces</span> = <span class="id">centerline</span>.<span class="id">dash</span>(\${
+<span class="kw">let</span> <span class="id">pieces</span> = <span class="id">centerline</span>.<span class="id">dash</span>(#{
   <span class="pr">stroke-dasharray</span>: <span class="str">\${cutLength}</span> <span class="str">\${bridgeWidth}</span>;
   <span class="pr">dash-seam</span>: <span class="id">merge</span>;
 });
 <span class="kw">for</span> (<span class="id">segment</span> <span class="kw">in</span> <span class="id">pieces</span>.<span class="id">filter</span> {|<span class="id">piece</span>| <span class="id">piece</span>.<span class="id">kind</span> == <span class="str">'dash'</span>}) {
-  <span class="id">stencil</span> = <span class="id">stencil</span>.<span class="id">difference</span>(<span class="id">segment</span>.<span class="id">path</span>.<span class="id">outline</span>(\${
+  <span class="id">stencil</span> = <span class="id">stencil</span>.<span class="id">difference</span>(<span class="id">segment</span>.<span class="id">path</span>.<span class="id">outline</span>(#{
     <span class="pr">stroke-width</span>: <span class="str">\${bandWidth}</span>;
   }));
 }
@@ -1331,7 +1331,7 @@ is attached to nothing, and gravity is undefeated.</p>
 
 define ViewBox(0, 0, 480, 250);
 
-let table = PathLayer('table') \${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -1339,29 +1339,29 @@ layer('table').apply {
   rect(0, 0, 480, 250);
 }
 
-let scene = GroupLayer('scene') \${};
-let mylar = PathLayer('mylar') \${
+let scene = GroupLayer('scene') #{};
+let mylar = PathLayer('mylar') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let fallen = PathLayer('fallen') \${
+let fallen = PathLayer('fallen') #{
   fill: #8298ad;
   stroke: #64748b;
   stroke-width: 1;
 };
-let driftMarks = PathLayer('drift-marks') \${
+let driftMarks = PathLayer('drift-marks') #{
   stroke: #f59e0b;
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
   fill: none;
 };
-let leaders = PathLayer('leaders') \${
+let leaders = PathLayer('leaders') #{
   stroke: #94a3b8;
   stroke-width: 1;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -1441,7 +1441,7 @@ bridges on the diagonals instead of the cardinals.</p>
 
 define ViewBox(0, 0, 480, 256);
 
-let table = PathLayer('table') \${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -1449,25 +1449,25 @@ table.apply {
   rect(0, 0, 480, 256);
 }
 
-let scene = GroupLayer('scene') \${};
-let sheetLayer = PathLayer('sheet') \${
+let scene = GroupLayer('scene') #{};
+let sheetLayer = PathLayer('sheet') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let cutMarks = PathLayer('cut-marks') \${
+let cutMarks = PathLayer('cut-marks') #{
   stroke: #334155;
   stroke-width: 4;
   stroke-linecap: butt;
   fill: none;
 };
-let bridgeMarks = PathLayer('bridge-marks') \${
+let bridgeMarks = PathLayer('bridge-marks') #{
   stroke: #22c55e;
   stroke-width: 6;
   stroke-linecap: butt;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -1494,7 +1494,7 @@ let bridgeCount = 4;
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 
 // Shift back half a segment so the bridges land on the diagonals.
-let pieces = centerline.dash(\${
+let pieces = centerline.dash(#{
   stroke-dasharray: \${cutLength} \${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
@@ -1535,7 +1535,7 @@ subtracted from the sheet. The leader lines mark the three parameters.</p>
 
 define ViewBox(0, 0, 480, 256);
 
-let table = PathLayer('table') \${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -1543,23 +1543,23 @@ layer('table').apply {
   rect(0, 0, 480, 256);
 }
 
-let scene = GroupLayer('scene') \${};
-let mylar = PathLayer('mylar') \${
+let scene = GroupLayer('scene') #{};
+let mylar = PathLayer('mylar') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let centerlineGhost = PathLayer('centerline-ghost') \${
+let centerlineGhost = PathLayer('centerline-ghost') #{
   stroke: #f59e0b;
   stroke-width: 1.5;
   fill: none;
 };
-let leaders = PathLayer('leaders') \${
+let leaders = PathLayer('leaders') #{
   stroke: #94a3b8;
   stroke-width: 1;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -1587,7 +1587,7 @@ let bridgeCount = 4;
 // the cardinals. That drops the path's own seam mid-cut — dash-seam:
 // merge stitches the two halves back into one honest segment.
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
-let pieces = centerline.dash(\${
+let pieces = centerline.dash(#{
   stroke-dasharray: \${cutLength} \${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
@@ -1596,7 +1596,7 @@ let cutSegments = pieces.filter() {|piece| piece.kind == 'dash'};
 
 let stencil = sheet;
 for (segment in cutSegments) {
-  let aperture = segment.path.outline(\${
+  let aperture = segment.path.outline(#{
     stroke-width: \${bandWidth};
     stroke-linecap: butt;
   });
@@ -1623,7 +1623,7 @@ leaders.apply {
 labels.apply {
   text(240, 238)\`\${cutSegments.length} cut segments, \${pieces.length - cutSegments.length} bridges — island held\`;
 }
-let sideLabels = TextLayer('side-labels') \${
+let sideLabels = TextLayer('side-labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -1656,7 +1656,7 @@ centerline, keep the recipe.</p>
 
 define ViewBox(0, 0, 480, 250);
 
-let table = PathLayer('table') \${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -1664,13 +1664,13 @@ layer('table').apply {
   rect(0, 0, 480, 250);
 }
 
-let scene = GroupLayer('scene') \${};
-let mylar = PathLayer('mylar') \${
+let scene = GroupLayer('scene') #{};
+let mylar = PathLayer('mylar') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -1698,7 +1698,7 @@ let bridgeCount = 6;
 
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 // Shift back half a segment: bridges off the corners.
-let pieces = centerline.dash(\${
+let pieces = centerline.dash(#{
   stroke-dasharray: \${cutLength} \${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
@@ -1710,7 +1710,7 @@ for (segment in cutSegments) {
   // stroke-linejoin is inert here: the roundRect centerline is already
   // tangent-continuous, so there is no corner for a join to act on —
   // the band's rounded corners are concentric OFFSETS of the fillets.
-  let aperture = segment.path.outline(\${
+  let aperture = segment.path.outline(#{
     stroke-width: \${bandWidth};
     stroke-linecap: butt;
     stroke-linejoin: round;
@@ -1749,7 +1749,7 @@ pass two.</p>
 
 define ViewBox(0, 0, 480, 300);
 
-let table = PathLayer('table') \${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -1757,18 +1757,18 @@ layer('table').apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') \${};
-let mylar = PathLayer('mylar') \${
+let scene = GroupLayer('scene') #{};
+let mylar = PathLayer('mylar') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let registration = PathLayer('registration') \${
+let registration = PathLayer('registration') #{
   stroke: #64748b;
   stroke-width: 1.5;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -1792,7 +1792,7 @@ let bandWidth = 26;
 let bridgeWidth = 14;
 let cutLength = calc(ringCenter.length / 4 - bridgeWidth);
 // Shift back half a segment: bridges off the cardinals.
-let ringPieces = ringCenter.dash(\${
+let ringPieces = ringCenter.dash(#{
   stroke-dasharray: \${cutLength} \${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
@@ -1813,7 +1813,7 @@ let arrow = @{
 let cutSegments = ringPieces.filter() {|piece| piece.kind == 'dash'};
 let stencil = sheet.difference(arrow);
 for (segment in cutSegments) {
-  let aperture = segment.path.outline(\${
+  let aperture = segment.path.outline(#{
     stroke-width: \${bandWidth};
     stroke-linecap: butt;
   });
@@ -1894,7 +1894,7 @@ turn that paint back into geometry.</p>
 partitions a path using the same properties CSS uses, and hands back
 every piece — the inked dashes <em>and</em> the spaces between them — as real
 paths:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">pieces</span> = <span class="id">wave</span>.<span class="id">dash</span>(\${
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">pieces</span> = <span class="id">wave</span>.<span class="id">dash</span>(#{
   <span class="pr">stroke-dasharray</span>: <span class="num">26</span> <span class="num">14</span>;
 });
 <span class="cm">// [{ path, kind: 'dash' | 'gap', t0, t1 }, ...]</span>
@@ -1957,7 +1957,7 @@ loop over the same array.</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -1965,19 +1965,19 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') \${};
-let gaps = PathLayer('gaps') \${
+let scene = GroupLayer('scene') #{};
+let gaps = PathLayer('gaps') #{
   stroke: #94a3b840;
   stroke-width: 1.5;
   fill: none;
 };
-let dashes = PathLayer('dashes') \${
+let dashes = PathLayer('dashes') #{
   stroke: #38bdf8;
   stroke-width: 4;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -1990,7 +1990,7 @@ let wave = @{
   c 40 -70 80 -70 120 0
 };
 
-let pieces = wave.dash(\${
+let pieces = wave.dash(#{
   stroke-dasharray: 26 14;
 });
 
@@ -2025,7 +2025,7 @@ the first half of the wave goes blue, the rest amber.</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -2033,25 +2033,25 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') \${};
-let gaps = PathLayer('gaps') \${
+let scene = GroupLayer('scene') #{};
+let gaps = PathLayer('gaps') #{
   stroke: #94a3b840;
   stroke-width: 1.5;
   fill: none;
 };
-let earlyDashes = PathLayer('early-dashes') \${
+let earlyDashes = PathLayer('early-dashes') #{
   stroke: #38bdf8;
   stroke-width: 4;
   stroke-linecap: round;
   fill: none;
 };
-let lateDashes = PathLayer('late-dashes') \${
+let lateDashes = PathLayer('late-dashes') #{
   stroke: #f59e0b;
   stroke-width: 4;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -2064,7 +2064,7 @@ let wave = @{
   c 40 -70 80 -70 120 0
 };
 
-let pieces = wave.dash(\${
+let pieces = wave.dash(#{
   stroke-dasharray: 22 12;
 });
 
@@ -2106,7 +2106,7 @@ extension is the cap rule from the list above, drawn to scale.</p>
 
 define ViewBox(0, 0, 480, 190);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -2114,23 +2114,23 @@ layer('bg').apply {
   rect(0, 0, 480, 190);
 }
 
-let scene = GroupLayer('scene') \${};
-let solids = PathLayer('solids') \${
+let scene = GroupLayer('scene') #{};
+let solids = PathLayer('solids') #{
   fill: #f59e0b;
   stroke: none;
 };
-let spines = PathLayer('spines') \${
+let spines = PathLayer('spines') #{
   stroke: #0f172a;
   stroke-width: 1;
   fill: none;
 };
-let capRule = PathLayer('cap-rule') \${
+let capRule = PathLayer('cap-rule') #{
   stroke: #94a3b880;
   stroke-width: 1;
   stroke-dasharray: 4 3;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -2155,7 +2155,7 @@ let anchors = [
 
 for ([capName, columnIndex] in capNames) {
   let anchorX = anchors[columnIndex];
-  let solid = stem.outline(\${
+  let solid = stem.outline(#{
     stroke-width: 22;
     stroke-linecap: \${capName};
   });
@@ -2192,7 +2192,7 @@ path; this applies per piece, because each piece is its own path.</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -2200,17 +2200,17 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') \${};
-let gaps = PathLayer('gaps') \${
+let scene = GroupLayer('scene') #{};
+let gaps = PathLayer('gaps') #{
   stroke: #94a3b840;
   stroke-width: 1.5;
   fill: none;
 };
-let swellingDashes = PathLayer('swelling-dashes') \${
+let swellingDashes = PathLayer('swelling-dashes') #{
   fill: #f59e0b;
   stroke: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -2223,7 +2223,7 @@ let wave = @{
   c 40 -65 80 -65 120 0
 };
 
-let pieces = wave.dash(\${
+let pieces = wave.dash(#{
   stroke-dasharray: 24 22;
 });
 
@@ -2233,7 +2233,7 @@ for (piece in pieces) {
       M 60 120 piece.path.draw()
     }
   } else {
-    let swollen = piece.path.outline(\${
+    let swollen = piece.path.outline(#{
       stroke-width: calc(3 + piece.t0 * 16);
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -2267,7 +2267,7 @@ a cutting path or a boolean operand.</p>
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -2275,18 +2275,18 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') \${};
-let plateLayer = PathLayer('plate') \${
+let scene = GroupLayer('scene') #{};
+let plateLayer = PathLayer('plate') #{
   fill: #38bdf830;
   stroke: #38bdf8;
   stroke-width: 1.5;
 };
-let crossLayer = PathLayer('cross') \${
+let crossLayer = PathLayer('cross') #{
   fill: #f59e0b30;
   stroke: #f59e0b;
   stroke-width: 1.5;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -2305,13 +2305,13 @@ let track = @{
   m 25 60
   h 140
 };
-let slotPieces = track.dash(\${
+let slotPieces = track.dash(#{
   stroke-dasharray: 26 26;
 });
 let plaque = plate;
 for (piece in slotPieces) {
   if (piece.kind == 'dash') {
-    let slot = piece.path.outline(\${
+    let slot = piece.path.outline(#{
       stroke-width: 16;
       stroke-linecap: round;
     });
@@ -2328,7 +2328,7 @@ let crossing = @{
   m -55 -45
   v 90
 };
-let welded = crossing.outline(\${
+let welded = crossing.outline(#{
   stroke-width: 26;
   stroke-linecap: round;
   outline-overlap: union;
@@ -2359,7 +2359,7 @@ phases here are <code>0%</code>, <code>4%</code>, <code>8%</code>.</p>
 
 define ViewBox(0, 0, 480, 210);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -2367,23 +2367,23 @@ layer('bg').apply {
   rect(0, 0, 480, 210);
 }
 
-let scene = GroupLayer('scene') \${};
-let startDots = PathLayer('start-dots') \${
+let scene = GroupLayer('scene') #{};
+let startDots = PathLayer('start-dots') #{
   fill: #f59e0b;
   stroke: none;
 };
-let rings = PathLayer('rings') \${
+let rings = PathLayer('rings') #{
   stroke: #94a3b850;
   stroke-width: 1;
   fill: none;
 };
-let marchers = PathLayer('marchers') \${
+let marchers = PathLayer('marchers') #{
   stroke: #38bdf8;
   stroke-width: 5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -2417,7 +2417,7 @@ for ([phase, columnIndex] in phases) {
     M anchorX 92 ring.draw()
   }
   let anchored = ring.startAt(phase);
-  let pieces = anchored.dash(\${
+  let pieces = anchored.dash(#{
     stroke-dasharray: 24 17;
   });
   for (piece in pieces) {
@@ -2547,7 +2547,7 @@ counter used to land:</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let table = PathLayer('table') \${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -2555,19 +2555,19 @@ layer('table').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') \${};
-let sheetLayer = PathLayer('sheet') \${
+let scene = GroupLayer('scene') #{};
+let sheetLayer = PathLayer('sheet') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let driftGhost = PathLayer('drift-ghost') \${
+let driftGhost = PathLayer('drift-ghost') #{
   stroke: #f59e0b;
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -2625,7 +2625,7 @@ promise that it deserved a careful session of its own. It got one.</p>
 parse-killing error, with a &quot;Missing &#39;;&#39;&quot; pointing nowhere near the
 cause. The workaround was a backtick template — and a list built from
 variables needed one backtick fragment per token:</p>
-<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: \${<span class="pr">capName</span>};      <span class="cm">// parse error, before the fix</span>
+<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: \${<span class="id">capName</span>};      <span class="cm">// parse error, before the fix</span>
 <span class="id">stroke</span>-<span class="id">linecap</span>: \`\${<span class="id">capName</span>}\`;    <span class="cm">// the old workaround</span>
 </code></pre><p>The diagnosis is a good story. A style block&#39;s interior isn&#39;t parsed
 structurally — it&#39;s one opaque token, scanned by a little machine
@@ -2637,15 +2637,21 @@ survived only because the scanner already knew to skip over template
 literals whole. The irony ran deep: <code>\${</code> is literally how a style
 block <em>opens</em>, yet it was the one thing that couldn&#39;t appear bare
 inside one.</p>
+<blockquote>
+<p><strong>Editor&#39;s note, September 2026:</strong> that irony was the last straw. Style
+blocks now open with <code>#{ … }</code>; <code>\${ … }</code> is interpolation and nothing
+else. The samples on this page were migrated mechanically — every
+<code>\${</code> that opened a block became <code>#{</code>, every <code>\${</code> inside a value stayed.</p>
+</blockquote>
 <p>The fix gives the bare interpolation its own token beside the opaque
 content — the scanner now hands <code>\${...}</code> spans through intact, the
 value parser treats their insides as expression territory, and both
 evaluators splice them through the exact same path as the backtick
 form. So today, the bare form just works — whole values, list
 tokens, even fused to a unit inside a function argument:</p>
-<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: \${<span class="pr">capName</span>};
-<span class="id">stroke</span>-<span class="id">dasharray</span>: \${<span class="pr">cell</span>} \${<span class="pr">cell</span>};
-<span class="id">filter</span>: <span class="id">blur</span>(\${<span class="pr">softness</span>}<span class="id">px</span>);
+<pre><code class="hljs language-pathogen"><span class="id">stroke</span>-<span class="id">linecap</span>: \${<span class="id">capName</span>};
+<span class="id">stroke</span>-<span class="id">dasharray</span>: \${<span class="id">cell</span>} \${<span class="id">cell</span>};
+<span class="id">filter</span>: <span class="id">blur</span>(\${<span class="id">softness</span>}<span class="id">px</span>);
 </code></pre><p>The backtick form remains equivalent; every sample in this series
 now uses the bare one. (One souvenir of the tokenizer&#39;s size limits:
 inside a style value, a <em>template&#39;s</em> interpolation still can&#39;t nest
@@ -2771,10 +2777,10 @@ C 367.6 141.7  410.9 72.6  470 70
 // cubicSpline anatomy — control points, tangent lines, angle arcs
 
 // --- Background ---
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 540, 330); }
 
-let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..16) { M 0 calc(i * 20) h 540 }
   for (j in 0..27) { M calc(j * 20) 0 v 330 }
@@ -2819,29 +2825,29 @@ let pts = [
 ];
 
 // === Diagram group ===
-define GroupLayer('diagram') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('diagram') #{ translate-x: 0; translate-y: 0; }
 
 // Title
-define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
+define TextLayer('title') #{ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('title'));
 layer('title').apply { text(30, 24)\`cubicSpline — waypoints, tangent lines, and control points\` }
 
 // The curve
-define PathLayer('curve') \${ fill: none; stroke: #3b82f6; stroke-width: 3; }
+define PathLayer('curve') #{ fill: none; stroke: #3b82f6; stroke-width: 3; }
 layer('diagram').append(layer('curve'));
 layer('curve').apply { cubicSpline(pts); }
 
 // On-curve points
-define PathLayer('anchors') \${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5; }
+define PathLayer('anchors') #{ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5; }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
   for ([p, i] in pts) { circle(p.x, p.y, 5); }
 }
 
 // Control points and tangent lines
-define PathLayer('cp-exit') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
-define PathLayer('cp-entry') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
-define PathLayer('tangent') \${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; }
+define PathLayer('cp-exit') #{ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
+define PathLayer('cp-entry') #{ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
+define PathLayer('tangent') #{ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; }
 layer('diagram').append(layer('cp-exit'), layer('cp-entry'), layer('tangent'));
 
 let n = calc(pts.length - 1);
@@ -2862,16 +2868,16 @@ for (i in 1..n) {
 }
 
 // Angle visualization layers
-define PathLayer('angle-fills') \${ fill: rgba(245, 158, 11, 0.15); stroke: none; }
-define PathLayer('angle-arcs') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
-define PathLayer('angle-ticks') \${ fill: none; stroke: #f59e0b; stroke-width: 0.8; }
-define TextLayer('angle-labels') \${ font-size: 9; fill: #f59e0b; font-family: system-ui, sans-serif; }
+define PathLayer('angle-fills') #{ fill: rgba(245, 158, 11, 0.15); stroke: none; }
+define PathLayer('angle-arcs') #{ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
+define PathLayer('angle-ticks') #{ fill: none; stroke: #f59e0b; stroke-width: 0.8; }
+define TextLayer('angle-labels') #{ font-size: 9; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('angle-fills'), layer('angle-arcs'), layer('angle-ticks'), layer('angle-labels'));
 
 for ([p, i] in pts) { angleWedge(p.x, p.y, 28, p.angle); }
 
 // Point labels
-define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+define TextLayer('labels') #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(38, 182)\`P0\`
@@ -2881,13 +2887,13 @@ layer('labels').apply {
 }
 
 // === Legend group ===
-define GroupLayer('legend-group') \${ translate-x: 30; translate-y: 230; }
+define GroupLayer('legend-group') #{ translate-x: 30; translate-y: 230; }
 
-define PathLayer('sw-curve') \${ fill: #3b82f6; stroke: none; }
-define PathLayer('sw-exit') \${ fill: #ef4444; stroke: none; }
-define PathLayer('sw-entry') \${ fill: #22c55e; stroke: none; }
-define PathLayer('sw-tangent') \${ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; }
-define PathLayer('sw-angle') \${ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1; }
+define PathLayer('sw-curve') #{ fill: #3b82f6; stroke: none; }
+define PathLayer('sw-exit') #{ fill: #ef4444; stroke: none; }
+define PathLayer('sw-entry') #{ fill: #22c55e; stroke: none; }
+define PathLayer('sw-tangent') #{ fill: none; stroke: #94a3b8; stroke-width: 1; stroke-dasharray: 4 3; }
+define PathLayer('sw-angle') #{ fill: rgba(245, 158, 11, 0.15); stroke: #f59e0b; stroke-width: 1; }
 layer('legend-group').append(layer('sw-curve'), layer('sw-exit'), layer('sw-entry'), layer('sw-tangent'), layer('sw-angle'));
 
 layer('sw-curve').apply { rect(0, 0, 12, 3); }
@@ -2898,7 +2904,7 @@ layer('sw-angle').apply {
   M 0 64 L 12 64 A 6 6 0 0 0 6 58 Z
 }
 
-define TextLayer('legend-text') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
+define TextLayer('legend-text') #{ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('legend-text'));
 layer('legend-text').apply {
   text(20, 6)\`Curve\`
@@ -2917,20 +2923,20 @@ layer('legend-text').apply {
 // G1 continuity at a join point — collinear control points
 
 // --- Background ---
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 420, 255); }
 
-let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..12) { M 0 calc(i * 20) h 420 }
   for (j in 0..21) { M calc(j * 20) 0 v 255 }
 }
 
 // === Diagram group ===
-define GroupLayer('diagram') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('diagram') #{ translate-x: 0; translate-y: 0; }
 
 // Title — top, clear of geometry
-define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
+define TextLayer('title') #{ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('title'));
 layer('title').apply {
   text(30, 28)\`G1 continuity: CPs are collinear through the join\`
@@ -2941,14 +2947,14 @@ let cpIn   = { x: 135, y: 135 };
 let cpOut  = { x: 265, y: 95 };
 
 // Collinear line through CPs
-define PathLayer('g1-line') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
+define PathLayer('g1-line') #{ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
 layer('diagram').append(layer('g1-line'));
 layer('g1-line').apply {
   M cpIn.x cpIn.y L cpOut.x cpOut.y
 }
 
 // Incoming and outgoing curve segments
-define PathLayer('curves') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
+define PathLayer('curves') #{ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('diagram').append(layer('curves'));
 layer('curves').apply {
   M 75 175 C 100 155 cpIn.x cpIn.y joinPt.x joinPt.y
@@ -2956,19 +2962,19 @@ layer('curves').apply {
 }
 
 // Join point
-define PathLayer('anchor') \${ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5; }
+define PathLayer('anchor') #{ fill: #3b82f6; stroke: #1e3a5f; stroke-width: 1.5; }
 layer('diagram').append(layer('anchor'));
 layer('anchor').apply { circle(joinPt.x, joinPt.y, 6); }
 
 // Control points
-define PathLayer('cp-entry') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
-define PathLayer('cp-exit') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
+define PathLayer('cp-entry') #{ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
+define PathLayer('cp-exit') #{ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
 layer('diagram').append(layer('cp-entry'), layer('cp-exit'));
 layer('cp-entry').apply { circle(cpIn.x, cpIn.y, 4); }
 layer('cp-exit').apply { circle(cpOut.x, cpOut.y, 4); }
 
 // Endpoint markers
-define PathLayer('endpoints') \${ fill: #64748b; stroke: #334155; stroke-width: 1; }
+define PathLayer('endpoints') #{ fill: #64748b; stroke: #334155; stroke-width: 1; }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
   circle(75, 175, 3);
@@ -2976,7 +2982,7 @@ layer('endpoints').apply {
 }
 
 // Labels — positioned with clearance from geometry
-define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+define TextLayer('labels') #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(175, 98)\`join point\`
@@ -2987,7 +2993,7 @@ layer('labels').apply {
 }
 
 // Explanation — two shorter lines with safe margins
-define TextLayer('note') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('note') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('note'));
 layer('note').apply {
   text(30, 218)\`Both CPs share the same tangent angle — the curve\`
@@ -3003,27 +3009,27 @@ layer('note').apply {
 // Three cubicSpline examples: S-curve, sine wave, closed loop
 
 // --- Background ---
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 460, 145); }
 
-let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..7) { M 0 calc(i * 20) h 460 }
   for (j in 0..23) { M calc(j * 20) 0 v 145 }
 }
 
 // === Layout group ===
-define GroupLayer('layout') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('layout') #{ translate-x: 0; translate-y: 0; }
 
 // --- S-curve group ---
-define GroupLayer('s-curve-group') \${ translate-x: 15; translate-y: 8; }
+define GroupLayer('s-curve-group') #{ translate-x: 15; translate-y: 8; }
 layer('layout').append(layer('s-curve-group'));
 
-define TextLayer('s-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('s-label') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('s-curve-group').append(layer('s-label'));
 layer('s-label').apply { text(27, 20)\`S-curve\` }
 
-define PathLayer('s-curve') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
+define PathLayer('s-curve') #{ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('s-curve-group').append(layer('s-curve'));
 layer('s-curve').apply {
   cubicSpline([
@@ -3034,14 +3040,14 @@ layer('s-curve').apply {
 }
 
 // --- Sine wave group ---
-define GroupLayer('sine-group') \${ translate-x: 145; translate-y: 8; }
+define GroupLayer('sine-group') #{ translate-x: 145; translate-y: 8; }
 layer('layout').append(layer('sine-group'));
 
-define TextLayer('sine-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('sine-label') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('sine-group').append(layer('sine-label'));
 layer('sine-label').apply { text(27, 20)\`Sine wave\` }
 
-define PathLayer('sine') \${ fill: none; stroke: #ef4444; stroke-width: 2.5; }
+define PathLayer('sine') #{ fill: none; stroke: #ef4444; stroke-width: 2.5; }
 layer('sine-group').append(layer('sine'));
 layer('sine').apply {
   cubicSpline([
@@ -3054,14 +3060,14 @@ layer('sine').apply {
 }
 
 // --- Closed loop group ---
-define GroupLayer('loop-group') \${ translate-x: 280; translate-y: 8; }
+define GroupLayer('loop-group') #{ translate-x: 280; translate-y: 8; }
 layer('layout').append(layer('loop-group'));
 
-define TextLayer('loop-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('loop-label') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('loop-group').append(layer('loop-label'));
 layer('loop-label').apply { text(38, 20)\`Closed loop\` }
 
-define PathLayer('loop') \${ fill: rgba(34, 197, 94, 0.1); stroke: #22c55e; stroke-width: 2.5; }
+define PathLayer('loop') #{ fill: rgba(34, 197, 94, 0.1); stroke: #22c55e; stroke-width: 2.5; }
 layer('loop-group').append(layer('loop'));
 layer('loop').apply {
   cubicSpline([
@@ -3116,10 +3122,10 @@ layer('loop').apply {
 // quadSpline anatomy — implicit angle derivation from previous CP
 
 // --- Background ---
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 540, 350); }
 
-let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..17) { M 0 calc(i * 20) h 540 }
   for (j in 0..27) { M calc(j * 20) 0 v 350 }
@@ -3134,20 +3140,20 @@ let midPts = [
 let endPt = { x: 500, y: 150 };
 
 // === Diagram group ===
-define GroupLayer('diagram') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('diagram') #{ translate-x: 0; translate-y: 0; }
 
 // Title
-define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
+define TextLayer('title') #{ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('title'));
 layer('title').apply { text(30, 24)\`quadSpline — implicit angle derivation\` }
 
 // The curve
-define PathLayer('curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 3; }
+define PathLayer('curve') #{ fill: none; stroke: #8b5cf6; stroke-width: 3; }
 layer('diagram').append(layer('curve'));
 layer('curve').apply { quadSpline(startPt, midPts, endPt); }
 
 // On-curve points
-define PathLayer('anchors') \${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5; }
+define PathLayer('anchors') #{ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5; }
 layer('diagram').append(layer('anchors'));
 layer('anchors').apply {
   circle(startPt.x, startPt.y, 5);
@@ -3156,9 +3162,9 @@ layer('anchors').apply {
 }
 
 // Recompute CPs for visualization
-define PathLayer('shared-cp') \${ fill: #f97316; stroke: #7c2d12; stroke-width: 1; }
-define PathLayer('tangent-line') \${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3; }
-define PathLayer('derived-dir') \${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2; }
+define PathLayer('shared-cp') #{ fill: #f97316; stroke: #7c2d12; stroke-width: 1; }
+define PathLayer('tangent-line') #{ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3; }
+define PathLayer('derived-dir') #{ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2; }
 layer('diagram').append(layer('shared-cp'), layer('tangent-line'), layer('derived-dir'));
 
 // First CP from explicit angle
@@ -3188,7 +3194,7 @@ for ([pt, idx] in midPts) {
 }
 
 // Labels — positioned with clearance
-define TextLayer('labels') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+define TextLayer('labels') #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(26, 165)\`start\`
@@ -3199,12 +3205,12 @@ layer('labels').apply {
 }
 
 // === Legend group ===
-define GroupLayer('legend-group') \${ translate-x: 30; translate-y: 248; }
+define GroupLayer('legend-group') #{ translate-x: 30; translate-y: 248; }
 
-define PathLayer('lg-curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 2.5; }
-define PathLayer('lg-cp') \${ fill: #f97316; stroke: none; }
-define PathLayer('lg-dir') \${ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2; }
-define PathLayer('lg-tan') \${ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3; }
+define PathLayer('lg-curve') #{ fill: none; stroke: #8b5cf6; stroke-width: 2.5; }
+define PathLayer('lg-cp') #{ fill: #f97316; stroke: none; }
+define PathLayer('lg-dir') #{ fill: none; stroke: #22d3ee; stroke-width: 1.5; stroke-dasharray: 3 2; }
+define PathLayer('lg-tan') #{ fill: none; stroke: #f97316; stroke-width: 1; stroke-dasharray: 5 3; }
 layer('legend-group').append(layer('lg-curve'), layer('lg-cp'), layer('lg-dir'), layer('lg-tan'));
 
 layer('lg-curve').apply { M 0 0 L 16 0 }
@@ -3212,7 +3218,7 @@ layer('lg-cp').apply { circle(8, 16, 4); }
 layer('lg-dir').apply { M 0 30 L 16 30 }
 layer('lg-tan').apply { M 0 44 L 16 44 }
 
-define TextLayer('legend') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
+define TextLayer('legend') #{ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('legend'));
 layer('legend').apply {
   text(24, 4)\`Curve\`
@@ -3221,7 +3227,7 @@ layer('legend').apply {
   text(24, 48)\`Tangent extension (point -&gt; nextCP)\`
 }
 
-define TextLayer('note') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('note') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('note'));
 layer('note').apply {
   text(0, 68)\`Only the start has an explicit angle.\`
@@ -3236,27 +3242,27 @@ layer('note').apply {
 // Three quadSpline examples: simple arc, flowing curve, zigzag
 
 // --- Background ---
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 460, 145); }
 
-let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..7) { M 0 calc(i * 20) h 460 }
   for (j in 0..23) { M calc(j * 20) 0 v 145 }
 }
 
 // === Layout group ===
-define GroupLayer('layout') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('layout') #{ translate-x: 0; translate-y: 0; }
 
 // --- Simple arc group ---
-define GroupLayer('arc-group') \${ translate-x: 15; translate-y: 8; }
+define GroupLayer('arc-group') #{ translate-x: 15; translate-y: 8; }
 layer('layout').append(layer('arc-group'));
 
-define TextLayer('arc-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('arc-label') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('arc-group').append(layer('arc-label'));
 layer('arc-label').apply { text(23, 20)\`Simple arc\` }
 
-define PathLayer('arc') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
+define PathLayer('arc') #{ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('arc-group').append(layer('arc'));
 layer('arc').apply {
   quadSpline(
@@ -3267,14 +3273,14 @@ layer('arc').apply {
 }
 
 // --- Flowing curve group ---
-define GroupLayer('flow-group') \${ translate-x: 145; translate-y: 8; }
+define GroupLayer('flow-group') #{ translate-x: 145; translate-y: 8; }
 layer('layout').append(layer('flow-group'));
 
-define TextLayer('flow-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('flow-label') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('flow-group').append(layer('flow-label'));
 layer('flow-label').apply { text(40, 20)\`Flowing curve\` }
 
-define PathLayer('flowing') \${ fill: none; stroke: #ef4444; stroke-width: 2.5; }
+define PathLayer('flowing') #{ fill: none; stroke: #ef4444; stroke-width: 2.5; }
 layer('flow-group').append(layer('flowing'));
 layer('flowing').apply {
   quadSpline(
@@ -3289,14 +3295,14 @@ layer('flowing').apply {
 }
 
 // --- Zigzag group ---
-define GroupLayer('zig-group') \${ translate-x: 310; translate-y: 8; }
+define GroupLayer('zig-group') #{ translate-x: 310; translate-y: 8; }
 layer('layout').append(layer('zig-group'));
 
-define TextLayer('zig-label') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('zig-label') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('zig-group').append(layer('zig-label'));
 layer('zig-label').apply { text(30, 20)\`Zigzag\` }
 
-define PathLayer('zigzag') \${ fill: none; stroke: #22c55e; stroke-width: 2.5; }
+define PathLayer('zigzag') #{ fill: none; stroke: #22c55e; stroke-width: 2.5; }
 layer('zig-group').append(layer('zigzag'));
 layer('zigzag').apply {
   quadSpline(
@@ -3356,23 +3362,23 @@ layer('zigzag').apply {
 // clippedQuadSpline anatomy — virtual shared CP and lerped actual CPs
 
 // --- Background ---
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 460, 270); }
 
-let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..13) { M 0 calc(i * 20) h 460 }
   for (j in 0..23) { M calc(j * 20) 0 v 270 }
 }
 
 // Title — top, clear of geometry
-define TextLayer('title') \${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
+define TextLayer('title') #{ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('title').apply {
   text(30, 26)\`Single segment (t = 0.6) — CPs pulled 60% toward shared CP\`
 }
 
 // === Diagram group ===
-define GroupLayer('diagram') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('diagram') #{ translate-x: 0; translate-y: 0; }
 
 let sx = 70;
 let sy = 180;
@@ -3388,7 +3394,7 @@ let cp2x = calc(lerp(ex, sharedX, t));
 let cp2y = calc(lerp(ey, sharedY, t));
 
 // Arms from endpoints to virtual shared CP
-define PathLayer('arms') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5; stroke-dasharray: 3 3; }
+define PathLayer('arms') #{ fill: none; stroke: #f59e0b; stroke-width: 1.5; stroke-dasharray: 3 3; }
 layer('diagram').append(layer('arms'));
 layer('arms').apply {
   M sx sy L sharedX sharedY
@@ -3396,7 +3402,7 @@ layer('arms').apply {
 }
 
 // Virtual shared CP diamond
-define PathLayer('virtual') \${ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
+define PathLayer('virtual') #{ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
 layer('diagram').append(layer('virtual'));
 layer('virtual').apply {
   M sharedX calc(sharedY - 6)
@@ -3406,31 +3412,31 @@ layer('virtual').apply {
 }
 
 // Actual CPs (lerped)
-define PathLayer('cp1') \${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
-define PathLayer('cp2') \${ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
+define PathLayer('cp1') #{ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
+define PathLayer('cp2') #{ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
 layer('diagram').append(layer('cp1'), layer('cp2'));
 layer('cp1').apply { circle(cp1x, cp1y, 5); }
 layer('cp2').apply { circle(cp2x, cp2y, 5); }
 
 // Lines from endpoints to actual CPs
-define PathLayer('cp1-arm') \${ fill: none; stroke: #ef4444; stroke-width: 1.5; }
-define PathLayer('cp2-arm') \${ fill: none; stroke: #22c55e; stroke-width: 1.5; }
+define PathLayer('cp1-arm') #{ fill: none; stroke: #ef4444; stroke-width: 1.5; }
+define PathLayer('cp2-arm') #{ fill: none; stroke: #22c55e; stroke-width: 1.5; }
 layer('diagram').append(layer('cp1-arm'), layer('cp2-arm'));
 layer('cp1-arm').apply { M sx sy L cp1x cp1y }
 layer('cp2-arm').apply { M ex ey L cp2x cp2y }
 
 // The resulting cubic curve
-define PathLayer('curve') \${ fill: none; stroke: #8b5cf6; stroke-width: 3; }
+define PathLayer('curve') #{ fill: none; stroke: #8b5cf6; stroke-width: 3; }
 layer('diagram').append(layer('curve'));
 layer('curve').apply { M sx sy C cp1x cp1y cp2x cp2y ex ey }
 
 // Quadratic reference (t=1.0)
-define PathLayer('quad-ref') \${ fill: none; stroke: #475569; stroke-width: 1; stroke-dasharray: 4 4; }
+define PathLayer('quad-ref') #{ fill: none; stroke: #475569; stroke-width: 1; stroke-dasharray: 4 4; }
 layer('diagram').append(layer('quad-ref'));
 layer('quad-ref').apply { M sx sy Q sharedX sharedY ex ey }
 
 // Endpoints
-define PathLayer('endpoints') \${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5; }
+define PathLayer('endpoints') #{ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5; }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
   circle(sx, sy, 5);
@@ -3438,7 +3444,7 @@ layer('endpoints').apply {
 }
 
 // Labels — positioned with clearance from geometry
-define TextLayer('labels') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
+define TextLayer('labels') #{ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(calc(sharedX + 10), calc(sharedY - 4))\`virtual shared CP\`
@@ -3449,9 +3455,9 @@ layer('labels').apply {
 }
 
 // === Formula group — right side ===
-define GroupLayer('formula-group') \${ translate-x: 340; translate-y: 55; }
+define GroupLayer('formula-group') #{ translate-x: 340; translate-y: 55; }
 
-define TextLayer('formula') \${ font-size: 10; fill: #94a3b8; font-family: monospace; }
+define TextLayer('formula') #{ font-size: 10; fill: #94a3b8; font-family: monospace; }
 layer('formula-group').append(layer('formula'));
 layer('formula').apply {
   text(0, 10)\`CP1 = lerp(start,\`
@@ -3461,7 +3467,7 @@ layer('formula').apply {
 }
 
 // Reference note — bottom with safe margin
-define TextLayer('ref-note') \${ font-size: 9; fill: #475569; font-family: system-ui, sans-serif; }
+define TextLayer('ref-note') #{ font-size: 9; fill: #475569; font-family: system-ui, sans-serif; }
 layer('ref-note').apply {
   text(130, 250)\`dashed gray: quadratic reference (t = 1.0)\`
 }
@@ -3474,23 +3480,23 @@ layer('ref-note').apply {
 // clippedQuadSpline eccentricity comparison — same geometry, different time values
 
 // --- Background ---
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 250); }
 
-let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..12) { M 0 calc(i * 20) h 520 }
   for (j in 0..26) { M calc(j * 20) 0 v 250 }
 }
 
 // === Diagram group ===
-define GroupLayer('diagram') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('diagram') #{ translate-x: 0; translate-y: 0; }
 
 let sAngle = -40deg;
 let sExit = 80;
 
 // t = 1.0 (full quadratic — most eccentric)
-define PathLayer('t100') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
+define PathLayer('t100') #{ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('t100').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 1.0 },
@@ -3500,7 +3506,7 @@ layer('t100').apply {
 }
 
 // t = 0.75
-define PathLayer('t075') \${ fill: none; stroke: #8b5cf6; stroke-width: 2; }
+define PathLayer('t075') #{ fill: none; stroke: #8b5cf6; stroke-width: 2; }
 layer('t075').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.75 },
@@ -3510,7 +3516,7 @@ layer('t075').apply {
 }
 
 // t = 0.5
-define PathLayer('t050') \${ fill: none; stroke: #ec4899; stroke-width: 2; }
+define PathLayer('t050') #{ fill: none; stroke: #ec4899; stroke-width: 2; }
 layer('t050').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.5 },
@@ -3520,7 +3526,7 @@ layer('t050').apply {
 }
 
 // t = 0.25
-define PathLayer('t025') \${ fill: none; stroke: #f97316; stroke-width: 2; }
+define PathLayer('t025') #{ fill: none; stroke: #f97316; stroke-width: 2; }
 layer('t025').apply {
   clippedQuadSpline(
     { x: 60, y: 165, angle: sAngle, exit: sExit, exitTime: 0.25 },
@@ -3530,7 +3536,7 @@ layer('t025').apply {
 }
 
 // On-curve points
-define PathLayer('pts') \${ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5; }
+define PathLayer('pts') #{ fill: #e2e8f0; stroke: #475569; stroke-width: 1.5; }
 layer('diagram').append(layer('t100'), layer('t075'), layer('t050'), layer('t025'), layer('pts'));
 layer('pts').apply {
   circle(60, 165, 5);
@@ -3539,12 +3545,12 @@ layer('pts').apply {
 }
 
 // === Legend group ===
-define GroupLayer('legend-group') \${ translate-x: 345; translate-y: 42; }
+define GroupLayer('legend-group') #{ translate-x: 345; translate-y: 42; }
 
-define PathLayer('lg1') \${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
-define PathLayer('lg2') \${ fill: none; stroke: #8b5cf6; stroke-width: 2; }
-define PathLayer('lg3') \${ fill: none; stroke: #ec4899; stroke-width: 2; }
-define PathLayer('lg4') \${ fill: none; stroke: #f97316; stroke-width: 2; }
+define PathLayer('lg1') #{ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
+define PathLayer('lg2') #{ fill: none; stroke: #8b5cf6; stroke-width: 2; }
+define PathLayer('lg3') #{ fill: none; stroke: #ec4899; stroke-width: 2; }
+define PathLayer('lg4') #{ fill: none; stroke: #f97316; stroke-width: 2; }
 layer('legend-group').append(layer('lg1'), layer('lg2'), layer('lg3'), layer('lg4'));
 
 layer('lg1').apply { M 0 0 L 20 0 }
@@ -3552,7 +3558,7 @@ layer('lg2').apply { M 0 18 L 20 18 }
 layer('lg3').apply { M 0 36 L 20 36 }
 layer('lg4').apply { M 0 54 L 20 54 }
 
-define TextLayer('legend') \${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
+define TextLayer('legend') #{ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('legend-group').append(layer('legend'));
 layer('legend').apply {
   text(28, 4)\`t = 1.0 (quadratic)\`
@@ -3561,7 +3567,7 @@ layer('legend').apply {
   text(28, 58)\`t = 0.25 (dampened)\`
 }
 
-define TextLayer('note') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('note') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('note').apply {
   text(60, 203)\`Same waypoints, same angles — only\`
   text(60, 217)\`exitTime / entryTime change.\`
@@ -3617,14 +3623,14 @@ let x7 = calc(sin(a * y6) + c * cos(a * x6));
 let y7 = calc(sin(b * x6) + d * cos(b * y6));
 
 // Light background for text readability in dark mode
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #f8f7f4;
   stroke: none;
 };
 bg.apply { roundRect(0, 0, 560, 260, 6); }
 
 // Trajectory lines
-let trail = PathLayer('trail') \${
+let trail = PathLayer('trail') #{
   stroke: oklch(0.70 0.10 260);
   stroke-width: 1;
   stroke-dasharray: 4 3;
@@ -3643,7 +3649,7 @@ trail.apply {
 }
 
 // Points — larger for early, smaller for later
-let dots = PathLayer('dots') \${
+let dots = PathLayer('dots') #{
   stroke: none;
   fill: oklch(0.45 0.20 260);
 };
@@ -3660,7 +3666,7 @@ dots.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-size: 10;
   fill: #444;
   font-family: system-ui, sans-serif;
@@ -3675,7 +3681,7 @@ labels.apply {
 }
 
 // Formula text
-let formula = TextLayer('formula') \${
+let formula = TextLayer('formula') #{
   font-size: 13;
   fill: #333;
   font-family: ui-monospace, monospace;
@@ -3687,7 +3693,7 @@ formula.apply {
   text(30, 246)\`yₙ₊₁ = sin(b · xₙ) + d · cos(b · yₙ)\`
 }
 
-let g = GroupLayer('concept') \${};
+let g = GroupLayer('concept') #{};
 g.append(bg, trail, dots, labels, formula);
 </code>
   <img src="/blog/samples/post23/iteration-concept.svg" alt="Iteration trajectory — each point maps to the next through the Clifford equations" loading="lazy">
@@ -3734,7 +3740,7 @@ let cy = 170;
 let x = 0.1;
 let y = 0.1;
 
-define default PathLayer('attractor') \${
+define default PathLayer('attractor') #{
   stroke: none;
   fill: oklch(0.45 0.18 260);
   opacity: 0.7;
@@ -3754,7 +3760,7 @@ for (i in 0..99) {
 <h2>Scaling Up: 10,000 Points</h2>
 <p>Pathogen&#39;s <code>for</code> loop supports up to 32,000 iterations per loop (a safety limit to prevent runaway programs). For our first full render, 10,000 points is plenty to reveal the attractor&#39;s structure.</p>
 <p>But first, an optimization. Each <code>circle()</code> call generates two SVG arc commands — for 10,000 circles, that&#39;s 30,000 path commands and roughly 800KB of SVG data. Instead, we can render each point as a zero-length line segment: <code>M x y l 0 0</code>. With <code>stroke-linecap: round</code> set on the layer, SVG renders this as a circular dot. Two commands per point instead of three, cutting the SVG output nearly in half.</p>
-<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="kw">default</span> <span class="tp">PathLayer</span>(<span class="str">'attractor'</span>) \${
+<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="kw">default</span> <span class="tp">PathLayer</span>(<span class="str">'attractor'</span>) #{
   <span class="pr">stroke</span>: <span class="id">oklch</span>(<span class="num">0.55</span> <span class="num">0.18</span> <span class="num">260</span>);
   <span class="pr">stroke-width</span>: <span class="num">1.0</span>;
   <span class="pr">stroke-linecap</span>: <span class="id">round</span>;
@@ -3789,7 +3795,7 @@ let cy = 240;
 let x = 0.1;
 let y = 0.1;
 
-define default PathLayer('attractor') \${
+define default PathLayer('attractor') #{
   stroke: oklch(0.55 0.18 260);
   stroke-width: 1.0;
   stroke-linecap: round;
@@ -3814,14 +3820,14 @@ for (i in 1..9999) {
 <h2>Color Mapping with Layers</h2>
 <p>A single-color attractor is striking, but color can reveal the attractor&#39;s temporal structure — how the trajectory evolves over time. In many attractor renderers, each point&#39;s color is determined by its iteration index or by the local density of visits. Pathogen&#39;s layer system gives us a clean way to approximate this.</p>
 <p>The idea: split 10,000 iterations into 5 chunks of 2,000 each. Each chunk renders to a different layer with a different color from a palette. Early iterations (exploring the attractor&#39;s outline) get one color; later iterations (filling in the dense interior) get another.</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">baseStyles</span> = \${
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">baseStyles</span> = #{
   <span class="pr">stroke-width</span>: <span class="num">1</span>;
   <span class="pr">stroke-linecap</span>: <span class="id">round</span>;
   <span class="pr">fill</span>: <span class="id">none</span>;
 };
 <span class="kw">let</span> <span class="id">colors</span> = <span class="id">Color</span>.<span class="id">palette</span>(<span class="id">Color</span>(<span class="str">'#1e40af'</span>), <span class="id">Color</span>(<span class="str">'#f97316'</span>), <span class="num">5</span>);
 <span class="kw">let</span> <span class="id">layers</span> = <span class="id">colors</span>.<span class="id">map</span> {|<span class="id">c</span>, <span class="id">i</span>|
-  <span class="kw">return</span> <span class="tp">PathLayer</span>(\`color-\${<span class="id">i</span>}\`) \${ <span class="pr">stroke</span>: <span class="id">c</span>; } &lt;&lt; <span class="id">baseStyles</span>;
+  <span class="kw">return</span> <span class="tp">PathLayer</span>(\`color-\${<span class="id">i</span>}\`) #{ <span class="pr">stroke</span>: <span class="id">c</span>; } &lt;&lt; <span class="id">baseStyles</span>;
 };
 </code></pre><p><code>Color.palette()</code> generates 5 evenly interpolated colors between blue and orange. <code>.map</code> iterates over them, creating a <code>PathLayer</code> for each — the <code>&lt;&lt;</code> operator merges the per-layer stroke color with the shared base styles. No repetition, and the layer count is driven by the palette size.</p>
 <p>The nested loop handles iteration and color dispatch:</p>
@@ -3854,14 +3860,14 @@ let x = 0.1;
 let y = 0.1;
 
 // Shared styles + 5-color palette from deep blue to warm orange
-let baseStyles = \${
+let baseStyles = #{
   stroke-width: 1;
   stroke-linecap: round;
   fill: none;
 };
 let colors = Color.palette(Color('#1e40af'), Color('#f97316'), 5);
 let layers = colors.map {|c, i|
-  return PathLayer(\`color-\${i}\`) \${ stroke: c; } &lt;&lt; baseStyles;
+  return PathLayer(\`color-\${i}\`) #{ stroke: c; } &lt;&lt; baseStyles;
 };
 
 // Each chunk renders 2,000 iterations in a different color.
@@ -3879,7 +3885,7 @@ for ([colorLayer, chunk] in layers) {
   }
 }
 
-let g = GroupLayer('all') \${};
+let g = GroupLayer('all') #{};
 g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </code>
   <img src="/blog/samples/post23/color-attractor.svg" alt="Temporal color mapping — blue (early iterations) to orange (late iterations)" loading="lazy">
@@ -3914,7 +3920,7 @@ fn drawAttractor(target, ox, oy, a, b, c, d) {
 }
 
 // --- Set 1: Classic ---
-let p1 = PathLayer('set1') \${
+let p1 = PathLayer('set1') #{
   stroke: oklch(0.50 0.20 260);
   stroke-width: 0.8;
   stroke-linecap: round;
@@ -3922,7 +3928,7 @@ let p1 = PathLayer('set1') \${
 };
 
 // --- Set 2: Swirl ---
-let p2 = PathLayer('set2') \${
+let p2 = PathLayer('set2') #{
   stroke: oklch(0.50 0.20 330);
   stroke-width: 0.8;
   stroke-linecap: round;
@@ -3930,7 +3936,7 @@ let p2 = PathLayer('set2') \${
 };
 
 // --- Set 3: Organic ---
-let p3 = PathLayer('set3') \${
+let p3 = PathLayer('set3') #{
   stroke: oklch(0.50 0.20 150);
   stroke-width: 0.8;
   stroke-linecap: round;
@@ -3942,7 +3948,7 @@ drawAttractor(p2, 450, 175, 1.6, -0.6, -1.2, 1.6);
 drawAttractor(p3, 750, 175, 1.7, 1.7, 0.6, 1.2);
 
 // Labels
-let names = TextLayer('names') \${
+let names = TextLayer('names') #{
   font-size: 14;
   fill: oklch(0.75 0.05 260);
   font-family: system-ui, sans-serif;
@@ -3956,7 +3962,7 @@ names.apply {
   text(750, 332)\`Organic\`
 }
 
-let params = TextLayer('params') \${
+let params = TextLayer('params') #{
   font-size: 11;
   fill: oklch(0.55 0.03 260);
   font-family: ui-monospace, monospace;
@@ -3969,7 +3975,7 @@ params.apply {
   text(750, 348)\`a=1.7  b=1.7  c=0.6  d=1.2\`
 }
 
-let g = GroupLayer('gallery') \${};
+let g = GroupLayer('gallery') #{};
 g.append(p1, p2, p3, names, params);
 </code>
   <img src="/blog/samples/post23/parameter-gallery.svg" alt="Three parameter sets — each producing a distinct attractor form" loading="lazy">
@@ -4005,14 +4011,14 @@ let y = 0.1;
 let earlyColor = Color(CSSVar('--early-color', '#1e40af'));
 let lateColor = Color(CSSVar('--late-color', '#f97316'));
 
-let baseStyles = \${
+let baseStyles = #{
   stroke-width: 1.2;
   stroke-linecap: round;
   fill: none;
 };
 let colors = Color.palette(earlyColor, lateColor, 5);
 let layers = colors.map {|c, i|
-  return PathLayer(\`color-\${i}\`) \${ stroke: c; } &lt;&lt; baseStyles;
+  return PathLayer(\`color-\${i}\`) #{ stroke: c; } &lt;&lt; baseStyles;
 };
 
 for ([colorLayer, chunk] in layers) {
@@ -4027,7 +4033,7 @@ for ([colorLayer, chunk] in layers) {
   }
 }
 
-let g = GroupLayer('all') \${};
+let g = GroupLayer('all') #{};
 g.append(layers[0], layers[1], layers[2], layers[3], layers[4]);
 </code>
   <img src="/blog/samples/post23/interactive-attractor.svg" alt="Reactive color palette — change --early-color and --late-color to restyle the attractor" loading="lazy">
@@ -4183,24 +4189,24 @@ not_found_handling = <span class="hljs-string">&quot;single-page-application&quo
 // Style variables
 // ═══════════════════════════════════════
 
-let kw   = \${ fill: #c084fc; };
-let str  = \${ fill: #a3e635; };
-let hex  = \${ fill: #fb923c; };
-let pct  = \${ fill: #38bdf8; };
-let base = \${ fill: #94a3b8; };
+let kw   = #{ fill: #c084fc; };
+let str  = #{ fill: #a3e635; };
+let hex  = #{ fill: #fb923c; };
+let pct  = #{ fill: #38bdf8; };
+let base = #{ fill: #94a3b8; };
 
 // ═══════════════════════════════════════
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 540, 280); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -4210,7 +4216,7 @@ title.apply {
   text(30, 30)\`Before &amp; After\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -4224,7 +4230,7 @@ subtitle.apply {
 // Divider
 // ═══════════════════════════════════════
 
-let divider = PathLayer('divider') \${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: "4 4";
@@ -4238,7 +4244,7 @@ divider.apply {
 // "Before" panel (left)
 // ═══════════════════════════════════════
 
-let before_label = TextLayer('before-label') \${
+let before_label = TextLayer('before-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -4249,7 +4255,7 @@ before_label.apply {
 }
 
 // Code block background
-let before_code_bg = PathLayer('before-code-bg') \${
+let before_code_bg = PathLayer('before-code-bg') #{
   fill: #1e293b;
   stroke: #334155;
   stroke-width: 1;
@@ -4257,7 +4263,7 @@ let before_code_bg = PathLayer('before-code-bg') \${
 before_code_bg.apply { roundRect(30, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
-let before_code = TextLayer('before-code') \${
+let before_code = TextLayer('before-code') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -4281,16 +4287,16 @@ before_code.apply {
 }
 
 // Swatches for before
-let b_swatch1 = PathLayer('b-sw1') \${ fill: Color('#cc0000'); stroke: #475569; stroke-width: 1; };
+let b_swatch1 = PathLayer('b-sw1') #{ fill: Color('#cc0000'); stroke: #475569; stroke-width: 1; };
 b_swatch1.apply { roundRect(48, 183, 55, 40, 4); }
 
-let b_swatch2 = PathLayer('b-sw2') \${ fill: Color('#cc0000').lighten(0.2); stroke: #475569; stroke-width: 1; };
+let b_swatch2 = PathLayer('b-sw2') #{ fill: Color('#cc0000').lighten(0.2); stroke: #475569; stroke-width: 1; };
 b_swatch2.apply { roundRect(113, 183, 55, 40, 4); }
 
-let b_swatch3 = PathLayer('b-sw3') \${ fill: Color('#cc0000').alpha(0.5); stroke: #475569; stroke-width: 1; };
+let b_swatch3 = PathLayer('b-sw3') #{ fill: Color('#cc0000').alpha(0.5); stroke: #475569; stroke-width: 1; };
 b_swatch3.apply { roundRect(178, 183, 55, 40, 4); }
 
-let b_sw_labels = TextLayer('b-sw-labels') \${
+let b_sw_labels = TextLayer('b-sw-labels') #{
   font-family: monospace;
   font-size: 8;
   fill: #64748b;
@@ -4306,7 +4312,7 @@ b_sw_labels.apply {
 // "After" panel (right)
 // ═══════════════════════════════════════
 
-let after_label = TextLayer('after-label') \${
+let after_label = TextLayer('after-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #38bdf8;
@@ -4317,7 +4323,7 @@ after_label.apply {
 }
 
 // Code block background
-let after_code_bg = PathLayer('after-code-bg') \${
+let after_code_bg = PathLayer('after-code-bg') #{
   fill: #1e293b;
   stroke: #38bdf8;
   stroke-width: 1;
@@ -4325,7 +4331,7 @@ let after_code_bg = PathLayer('after-code-bg') \${
 after_code_bg.apply { roundRect(285, 90, 225, 80, 6); }
 
 // Code text with tspan-based syntax coloring
-let after_code = TextLayer('after-code') \${
+let after_code = TextLayer('after-code') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -4353,16 +4359,16 @@ after_code.apply {
 }
 
 // Swatches for after
-let a_swatch1 = PathLayer('a-sw1') \${ fill: #cc0000; stroke: #475569; stroke-width: 1; };
+let a_swatch1 = PathLayer('a-sw1') #{ fill: #cc0000; stroke: #475569; stroke-width: 1; };
 a_swatch1.apply { roundRect(298, 183, 55, 40, 4); }
 
-let a_swatch2 = PathLayer('a-sw2') \${ fill: (#cc0000).lighten(20%); stroke: #475569; stroke-width: 1; };
+let a_swatch2 = PathLayer('a-sw2') #{ fill: (#cc0000).lighten(20%); stroke: #475569; stroke-width: 1; };
 a_swatch2.apply { roundRect(363, 183, 55, 40, 4); }
 
-let a_swatch3 = PathLayer('a-sw3') \${ fill: (#cc0000).alpha(50%); stroke: #475569; stroke-width: 1; };
+let a_swatch3 = PathLayer('a-sw3') #{ fill: (#cc0000).alpha(50%); stroke: #475569; stroke-width: 1; };
 a_swatch3.apply { roundRect(428, 183, 55, 40, 4); }
 
-let a_sw_labels = TextLayer('a-sw-labels') \${
+let a_sw_labels = TextLayer('a-sw-labels') #{
   font-family: monospace;
   font-size: 8;
   fill: #64748b;
@@ -4378,7 +4384,7 @@ a_sw_labels.apply {
 // Equals sign between swatches
 // ═══════════════════════════════════════
 
-let equals = TextLayer('equals') \${
+let equals = TextLayer('equals') #{
   font-family: system-ui, sans-serif;
   font-size: 20;
   fill: #38bdf8;
@@ -4410,14 +4416,14 @@ equals.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 320); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -4427,7 +4433,7 @@ title.apply {
   text(30, 30)\`Palette from a Single Hex Literal\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -4485,7 +4491,7 @@ let sr = 5;
 
 // ── Row labels ──────────────────────
 
-let row_labels = TextLayer('row-labels') \${
+let row_labels = TextLayer('row-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
@@ -4494,7 +4500,7 @@ let row_labels = TextLayer('row-labels') \${
 
 // ── Swatch labels ───────────────────
 
-let sw_labels = TextLayer('sw-labels') \${
+let sw_labels = TextLayer('sw-labels') #{
   font-family: monospace;
   font-size: 7;
   fill: #64748b;
@@ -4511,7 +4517,7 @@ row_labels.apply {
 
 for ([color, i] in lightness_row) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`l_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`l_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -4531,7 +4537,7 @@ row_labels.apply {
 
 for ([color, i] in hue_row) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`h_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`h_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -4551,7 +4557,7 @@ row_labels.apply {
 
 for ([color, i] in sat_row) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`s_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`s_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
@@ -4565,7 +4571,7 @@ sw_labels.apply {
 // Base indicator
 // ═══════════════════════════════════════
 
-let base_indicator = TextLayer('base-indicator') \${
+let base_indicator = TextLayer('base-indicator') #{
   font-family: monospace;
   font-size: 9;
   fill: #38bdf8;
@@ -4577,7 +4583,7 @@ base_indicator.apply {
 
 // ── Vertical base line ──────────────
 
-let base_line = PathLayer('base-line') \${
+let base_line = PathLayer('base-line') #{
   stroke: #38bdf8;
   stroke-width: 1;
   stroke-dasharray: "3 3";
@@ -4614,14 +4620,14 @@ base_line.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 560, 340); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -4631,7 +4637,7 @@ title.apply {
   text(30, 30)\`CSS Color Function Literals\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -4670,14 +4676,14 @@ let sw = 40;
 let sh = 40;
 let sr = 4;
 
-let space_label = TextLayer('space-label') \${
+let space_label = TextLayer('space-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #e2e8f0;
   text-anchor: start;
 };
 
-let code_label = TextLayer('code-label') \${
+let code_label = TextLayer('code-label') #{
   font-family: monospace;
   font-size: 8;
   fill: #94a3b8;
@@ -4691,7 +4697,7 @@ for ([color, i] in colors) {
   let y = calc(sy + row * row_h);
 
   // Swatch
-  let swatch = PathLayer(\`cs_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`cs_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(x, y, sw, sh, sr); }
 
   // Space name
@@ -4709,7 +4715,7 @@ for ([color, i] in colors) {
 // Convergence annotation
 // ═══════════════════════════════════════
 
-let arrow_label = TextLayer('arrow-label') \${
+let arrow_label = TextLayer('arrow-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: #38bdf8;
@@ -4719,7 +4725,7 @@ arrow_label.apply {
   text(280, 312)\`All converge → OKLCH internally\`
 }
 
-let arrow_line = PathLayer('arrow-line') \${
+let arrow_line = PathLayer('arrow-line') #{
   stroke: #38bdf8;
   stroke-width: 1;
   fill: none;
@@ -4752,14 +4758,14 @@ arrow_line.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 300); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -4769,7 +4775,7 @@ title.apply {
   text(30, 30)\`The Percent Suffix\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -4826,14 +4832,14 @@ let sw = 54;
 let sh = 40;
 let sr = 4;
 
-let row_label = TextLayer('row-label') \${
+let row_label = TextLayer('row-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: end;
 };
 
-let sw_label = TextLayer('sw-label') \${
+let sw_label = TextLayer('sw-label') #{
   font-family: monospace;
   font-size: 8;
   fill: #64748b;
@@ -4850,7 +4856,7 @@ row_label.apply {
 
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`t_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`t_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -4870,7 +4876,7 @@ row_label.apply {
 
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`d_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`d_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -4891,13 +4897,13 @@ row_label.apply {
 // White background behind alpha row so opacity gradient is visible
 for ([_, i] in alphas) {
   let x = calc(sx + i * sp - sw / 2);
-  let checker = PathLayer(\`ck_\${i}\`) \${ fill: #ffffff; stroke: none; };
+  let checker = PathLayer(\`ck_\${i}\`) #{ fill: #ffffff; stroke: none; };
   checker.apply { roundRect(x, row3_y, sw, sh, sr); }
 }
 
 for ([color, i] in alphas) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`a_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`a_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
@@ -4911,7 +4917,7 @@ sw_label.apply {
 // Base indicator
 // ═══════════════════════════════════════
 
-let base_ind = TextLayer('base-ind') \${
+let base_ind = TextLayer('base-ind') #{
   font-family: monospace;
   font-size: 9;
   fill: #38bdf8;
@@ -4940,14 +4946,14 @@ base_ind.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 340); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -4957,7 +4963,7 @@ title.apply {
   text(30, 30)\`Reactive Palette\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -4996,14 +5002,14 @@ let sw = 54;
 let sh = 44;
 let sr = 5;
 
-let row_label = TextLayer('row-label') \${
+let row_label = TextLayer('row-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: end;
 };
 
-let sw_label = TextLayer('sw-label') \${
+let sw_label = TextLayer('sw-label') #{
   font-family: monospace;
   font-size: 7;
   fill: #64748b;
@@ -5020,7 +5026,7 @@ row_label.apply {
 
 for ([color, i] in ramp) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`r_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`r_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -5044,7 +5050,7 @@ row_label.apply {
 
 for ([color, i] in transforms) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`x_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`x_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -5067,7 +5073,7 @@ row_label.apply {
 
 for ([color, i] in triad) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`tri_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`tri_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
@@ -5082,10 +5088,10 @@ sw_label.apply {
 // Code annotation
 // ═══════════════════════════════════════
 
-let code_bg = PathLayer('code-bg') \${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
+let code_bg = PathLayer('code-bg') #{ fill: #1e293b; stroke: #334155; stroke-width: 1; };
 code_bg.apply { roundRect(30, 300, 460, 28, 4); }
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -5095,7 +5101,7 @@ code.apply {
   text(42, 318)\`let base = Color(CSSVar('--base-color', #0066ff));\`
 }
 
-let code_kw = TextLayer('code-kw') \${
+let code_kw = TextLayer('code-kw') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;
@@ -5117,14 +5123,14 @@ code_kw.apply {
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -5134,7 +5140,7 @@ title.apply {
   text(30, 30)\`Reactive Tint / Shade Scale\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -5161,14 +5167,14 @@ let sh = 44;
 let sr = 4;
 let steps = 7;
 
-let row_label = TextLayer('row-label') \${
+let row_label = TextLayer('row-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: end;
 };
 
-let pct_label = TextLayer('pct-label') \${
+let pct_label = TextLayer('pct-label') #{
   font-family: monospace;
   font-size: 7;
   fill: #64748b;
@@ -5197,7 +5203,7 @@ let tints = [
 
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`lt_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`lt_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -5230,7 +5236,7 @@ let shades = [
 
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(\`dk_\${i}\`) \${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(\`dk_\${i}\`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -5245,10 +5251,10 @@ pct_label.apply {
 // Code annotation
 // ═══════════════════════════════════════
 
-let code_bg = PathLayer('code-bg') \${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
+let code_bg = PathLayer('code-bg') #{ fill: #1e293b; stroke: #334155; stroke-width: 1; };
 code_bg.apply { roundRect(30, 228, 460, 40, 4); }
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -5259,7 +5265,7 @@ code.apply {
   text(42, 259)\`let tint = base.lighten(20%);\`
 }
 
-let code_kw = TextLayer('code-kw') \${
+let code_kw = TextLayer('code-kw') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;
@@ -5270,7 +5276,7 @@ code_kw.apply {
   text(42, 259)\`let\`
 }
 
-let code_comment = TextLayer('code-comment') \${
+let code_comment = TextLayer('code-comment') #{
   font-family: monospace;
   font-size: 9;
   fill: #64748b;
@@ -5306,7 +5312,7 @@ code_comment.apply {
   <code>define ViewBox(0, 0, 600, 400);
 // Six filters, one shape per cell — the family portrait.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -5341,32 +5347,32 @@ let f_inner = InnerShadowFilter() {|f|
 };
 let f_pixelate = PixelateFilter(12, 12, 6);
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_grain;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_glow;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_emboss;
 };
-let d4 = PathLayer('d4') \${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_elevation;
 };
-let d5 = PathLayer('d5') \${
+let d5 = PathLayer('d5') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_inner;
 };
-let d6 = PathLayer('d6') \${
+let d6 = PathLayer('d6') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_pixelate;
@@ -5391,7 +5397,7 @@ d6.apply {
   circle(500, 270, 50);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5402,7 +5408,7 @@ l1.apply {
   text(100, 175)\`Grain\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5413,7 +5419,7 @@ l2.apply {
   text(300, 175)\`Glow\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5424,7 +5430,7 @@ l3.apply {
   text(500, 175)\`Emboss\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5435,7 +5441,7 @@ l4.apply {
   text(100, 360)\`Elevation\`;
 }
 
-let l5 = TextLayer('l5') \${
+let l5 = TextLayer('l5') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5446,7 +5452,7 @@ l5.apply {
   text(300, 360)\`Inner Shadow\`;
 }
 
-let l6 = TextLayer('l6') \${
+let l6 = TextLayer('l6') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5467,7 +5473,7 @@ l6.apply {
   <code>define ViewBox(0, 0, 400, 220);
 // GlowMode.Outer vs GlowMode.Inner on the same disc.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(25% 0.04 270);
   stroke: none;
 };
@@ -5490,12 +5496,12 @@ let f_inner = GlowFilter() {|f|
   f.opacity = 0.85;
 };
 
-let d_outer = PathLayer('outer') \${
+let d_outer = PathLayer('outer') #{
   fill: oklch(60% 0.20 240);
   stroke: none;
   filter: f_outer;
 };
-let d_inner = PathLayer('inner') \${
+let d_inner = PathLayer('inner') #{
   fill: oklch(60% 0.20 240);
   stroke: none;
   filter: f_inner;
@@ -5508,7 +5514,7 @@ d_inner.apply {
   circle(290, 90, 50);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5519,7 +5525,7 @@ l1.apply {
   text(110, 180)\`GlowMode.Outer\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5538,7 +5544,7 @@ l2.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // GlowFilter outer — radius sweep. Larger radius = wider, softer halo.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(20% 0.04 270);
   stroke: none;
 };
@@ -5571,22 +5577,22 @@ let f4 = GlowFilter() {|f|
   f.opacity = 0.9;
 };
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') \${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f4;
@@ -5605,7 +5611,7 @@ d4.apply {
   circle(560, 100, 40);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5616,7 +5622,7 @@ l1.apply {
   text(80, 200)\`radius =  2\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5627,7 +5633,7 @@ l2.apply {
   text(240, 200)\`radius =  6\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5638,7 +5644,7 @@ l3.apply {
   text(400, 200)\`radius = 12\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5655,7 +5661,7 @@ l4.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // GlowFilter outer — opacity sweep at constant radius.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(20% 0.04 270);
   stroke: none;
 };
@@ -5688,22 +5694,22 @@ let f4 = GlowFilter() {|f|
   f.opacity = 0.9;
 };
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') \${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f4;
@@ -5722,7 +5728,7 @@ d4.apply {
   circle(560, 100, 40);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5733,7 +5739,7 @@ l1.apply {
   text(80, 200)\`opacity = 0.3\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5744,7 +5750,7 @@ l2.apply {
   text(240, 200)\`opacity = 0.5\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5755,7 +5761,7 @@ l3.apply {
   text(400, 200)\`opacity = 0.7\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -5787,7 +5793,7 @@ l4.apply {
   <code>define ViewBox(0, 0, 720, 240);
 // EmbossFilter — light azimuth sweep. The highlight tracks the light source.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(90% 0.02 80);
   stroke: none;
 };
@@ -5826,32 +5832,32 @@ let f6 = EmbossFilter() {|f|
   f.strength = 1;
 };
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') \${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f4;
 };
-let d5 = PathLayer('d5') \${
+let d5 = PathLayer('d5') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f5;
 };
-let d6 = PathLayer('d6') \${
+let d6 = PathLayer('d6') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f6;
@@ -5876,7 +5882,7 @@ d6.apply {
   circle(660, 100, 38);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -5887,7 +5893,7 @@ l1.apply {
   text(60, 195)\`45°\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -5898,7 +5904,7 @@ l2.apply {
   text(180, 195)\`90°\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -5909,7 +5915,7 @@ l3.apply {
   text(300, 195)\`135°\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -5920,7 +5926,7 @@ l4.apply {
   text(420, 195)\`180°\`;
 }
 
-let l5 = TextLayer('l5') \${
+let l5 = TextLayer('l5') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -5931,7 +5937,7 @@ l5.apply {
   text(540, 195)\`225°\`;
 }
 
-let l6 = TextLayer('l6') \${
+let l6 = TextLayer('l6') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -5950,7 +5956,7 @@ l6.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // EmbossFilter — depth sweep at constant angle. Higher depth = more pronounced bevel.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(90% 0.02 80);
   stroke: none;
 };
@@ -5979,22 +5985,22 @@ let f4 = EmbossFilter() {|f|
   f.strength = 1;
 };
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') \${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f4;
@@ -6013,7 +6019,7 @@ d4.apply {
   circle(560, 100, 50);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6024,7 +6030,7 @@ l1.apply {
   text(80, 200)\`depth = 1\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6035,7 +6041,7 @@ l2.apply {
   text(240, 200)\`depth = 2\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6046,7 +6052,7 @@ l3.apply {
   text(400, 200)\`depth = 4\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6065,7 +6071,7 @@ l4.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // EmbossFilter — strength sweep. Brighter highlights at higher specularConstant.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(90% 0.02 80);
   stroke: none;
 };
@@ -6094,22 +6100,22 @@ let f4 = EmbossFilter() {|f|
   f.strength = 1.5;
 };
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') \${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f4;
@@ -6128,7 +6134,7 @@ d4.apply {
   circle(560, 100, 50);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6139,7 +6145,7 @@ l1.apply {
   text(80, 200)\`strength = 0.3\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6150,7 +6156,7 @@ l2.apply {
   text(240, 200)\`strength = 0.6\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6161,7 +6167,7 @@ l3.apply {
   text(400, 200)\`strength = 1.0\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6184,7 +6190,7 @@ l4.apply {
 // ElevationShadowFilter — one knob, six elevations.
 // 0 = flat. 2 = resting. 4 = card. 8 = lifted. 16 = floating. 24 = max.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -6217,32 +6223,32 @@ let f24 = ElevationShadowFilter() {|f|
   f.color = oklch(20% 0.04 280);
 };
 
-let c0 = PathLayer('c0') \${
+let c0 = PathLayer('c0') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f0;
 };
-let c2 = PathLayer('c2') \${
+let c2 = PathLayer('c2') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f2;
 };
-let c4 = PathLayer('c4') \${
+let c4 = PathLayer('c4') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f4;
 };
-let c8 = PathLayer('c8') \${
+let c8 = PathLayer('c8') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f8;
 };
-let c16 = PathLayer('c16') \${
+let c16 = PathLayer('c16') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f16;
 };
-let c24 = PathLayer('c24') \${
+let c24 = PathLayer('c24') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f24;
@@ -6291,7 +6297,7 @@ c24.apply {
       8);
 }
 
-let l0 = TextLayer('l0') \${
+let l0 = TextLayer('l0') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -6302,7 +6308,7 @@ l0.apply {
   text(62, 200)\`elevation = 0\`;
 }
 
-let l2t = TextLayer('l2') \${
+let l2t = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -6313,7 +6319,7 @@ l2t.apply {
   text(177, 200)\`elevation = 2\`;
 }
 
-let l4t = TextLayer('l4') \${
+let l4t = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -6324,7 +6330,7 @@ l4t.apply {
   text(292, 200)\`elevation = 4\`;
 }
 
-let l8t = TextLayer('l8') \${
+let l8t = TextLayer('l8') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -6335,7 +6341,7 @@ l8t.apply {
   text(407, 200)\`elevation = 8\`;
 }
 
-let l16 = TextLayer('l16') \${
+let l16 = TextLayer('l16') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -6346,7 +6352,7 @@ l16.apply {
   text(522, 200)\`elevation = 16\`;
 }
 
-let l24 = TextLayer('l24') \${
+let l24 = TextLayer('l24') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -6367,7 +6373,7 @@ l24.apply {
 // ElevationShadowFilter — tightness sweep at fixed elevation=6.
 // 0.5 = tighter, crisper depth. 1.0 = Material default. 2.0 = wider, hazier.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -6391,17 +6397,17 @@ let f3 = ElevationShadowFilter() {|f|
   f.color = oklch(20% 0.04 280);
 };
 
-let c1 = PathLayer('c1') \${
+let c1 = PathLayer('c1') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f1;
 };
-let c2 = PathLayer('c2') \${
+let c2 = PathLayer('c2') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f2;
 };
-let c3 = PathLayer('c3') \${
+let c3 = PathLayer('c3') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f3;
@@ -6429,7 +6435,7 @@ c3.apply {
       8);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6440,7 +6446,7 @@ l1.apply {
   text(90, 200)\`tightness = 0.5\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6451,7 +6457,7 @@ l2.apply {
   text(270, 200)\`tightness = 1.0\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6472,7 +6478,7 @@ l3.apply {
 // Left: native CSS \`drop-shadow(0 6px 12px black)\` — a single shadow.
 // Right: ElevationShadowFilter at elevation=6 — three layered shadows tuned for physical depth.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -6485,7 +6491,7 @@ let elev = ElevationShadowFilter() {|f|
   f.color = oklch(15% 0.04 280);
 };
 
-let c_native = PathLayer('native') \${
+let c_native = PathLayer('native') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: drop-shadow(0 6px 12px rgba(20, 21, 31, 0.4));
@@ -6498,7 +6504,7 @@ c_native.apply {
       10);
 }
 
-let c_pathogen = PathLayer('pathogen') \${
+let c_pathogen = PathLayer('pathogen') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: elev;
@@ -6511,7 +6517,7 @@ c_pathogen.apply {
       10);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -6522,7 +6528,7 @@ l1.apply {
   text(90, 200)\`drop-shadow()\`;
 }
 
-let l1b = TextLayer('l1b') \${
+let l1b = TextLayer('l1b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -6533,7 +6539,7 @@ l1b.apply {
   text(90, 215)\`single layer\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -6544,7 +6550,7 @@ l2.apply {
   text(310, 200)\`ElevationShadowFilter\`;
 }
 
-let l2b = TextLayer('l2b') \${
+let l2b = TextLayer('l2b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -6565,7 +6571,7 @@ l2b.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // InnerShadowFilter — blur sweep. Crisper to softer pressed-in edge.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -6598,22 +6604,22 @@ let f4 = InnerShadowFilter() {|f|
   f.opacity = 0.55;
 };
 
-let c1 = PathLayer('c1') \${
+let c1 = PathLayer('c1') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f1;
 };
-let c2 = PathLayer('c2') \${
+let c2 = PathLayer('c2') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f2;
 };
-let c3 = PathLayer('c3') \${
+let c3 = PathLayer('c3') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f3;
 };
-let c4 = PathLayer('c4') \${
+let c4 = PathLayer('c4') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f4;
@@ -6648,7 +6654,7 @@ c4.apply {
       10);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6659,7 +6665,7 @@ l1.apply {
   text(85, 200)\`blur = 2\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6670,7 +6676,7 @@ l2.apply {
   text(245, 200)\`blur = 4\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6681,7 +6687,7 @@ l3.apply {
   text(405, 200)\`blur = 8\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -6702,7 +6708,7 @@ l4.apply {
 // InnerShadowFilter — 8 offset directions around a clock face.
 // The shadow falls toward (offsetX, offsetY); light comes from the opposite side.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -6768,42 +6774,42 @@ let f_nw = InnerShadowFilter() {|f|
   f.opacity = 0.6;
 };
 
-let mk_n = PathLayer('n') \${
+let mk_n = PathLayer('n') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_n;
 };
-let mk_ne = PathLayer('ne') \${
+let mk_ne = PathLayer('ne') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_ne;
 };
-let mk_e = PathLayer('e') \${
+let mk_e = PathLayer('e') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_e;
 };
-let mk_se = PathLayer('se') \${
+let mk_se = PathLayer('se') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_se;
 };
-let mk_s = PathLayer('s') \${
+let mk_s = PathLayer('s') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_s;
 };
-let mk_sw = PathLayer('sw') \${
+let mk_sw = PathLayer('sw') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_sw;
 };
-let mk_w = PathLayer('w') \${
+let mk_w = PathLayer('w') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_w;
 };
-let mk_nw = PathLayer('nw') \${
+let mk_nw = PathLayer('nw') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_nw;
@@ -6834,7 +6840,7 @@ mk_se.apply {
   circle(360, 360, 50);
 }
 
-let label_nw = TextLayer('lnw') \${
+let label_nw = TextLayer('lnw') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -6845,7 +6851,7 @@ label_nw.apply {
   text(120, 183)\`(-4, -4)\`;
 }
 
-let label_n = TextLayer('ln') \${
+let label_n = TextLayer('ln') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -6856,7 +6862,7 @@ label_n.apply {
   text(240, 183)\`(0, -5)\`;
 }
 
-let label_ne = TextLayer('lne') \${
+let label_ne = TextLayer('lne') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -6867,7 +6873,7 @@ label_ne.apply {
   text(360, 183)\`(4, -4)\`;
 }
 
-let label_w = TextLayer('lw') \${
+let label_w = TextLayer('lw') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -6878,7 +6884,7 @@ label_w.apply {
   text(120, 303)\`(-5, 0)\`;
 }
 
-let label_e = TextLayer('le') \${
+let label_e = TextLayer('le') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -6889,7 +6895,7 @@ label_e.apply {
   text(360, 303)\`(5, 0)\`;
 }
 
-let label_sw = TextLayer('lsw') \${
+let label_sw = TextLayer('lsw') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -6900,7 +6906,7 @@ label_sw.apply {
   text(120, 435)\`(-4, 4)\`;
 }
 
-let label_s = TextLayer('ls') \${
+let label_s = TextLayer('ls') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -6911,7 +6917,7 @@ label_s.apply {
   text(240, 435)\`(0, 5)\`;
 }
 
-let label_se = TextLayer('lse') \${
+let label_se = TextLayer('lse') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -6922,7 +6928,7 @@ label_se.apply {
   text(360, 435)\`(4, 4)\`;
 }
 
-let caption = TextLayer('caption') \${
+let caption = TextLayer('caption') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 700;
@@ -6956,7 +6962,7 @@ caption.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // PixelateFilter — block size sweep. radius = width / 2 keeps blocks touching.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -6969,22 +6975,22 @@ let f2 = PixelateFilter(8, 8, 4);
 let f3 = PixelateFilter(16, 16, 8);
 let f4 = PixelateFilter(32, 32, 16);
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') \${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f4;
@@ -7003,7 +7009,7 @@ d4.apply {
   circle(560, 100, 55);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7014,7 +7020,7 @@ l1.apply {
   text(80, 200)\`(4, 4, 2)\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7025,7 +7031,7 @@ l2.apply {
   text(240, 200)\`(8, 8, 4)\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7036,7 +7042,7 @@ l3.apply {
   text(400, 200)\`(16, 16, 8)\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7047,7 +7053,7 @@ l4.apply {
   text(560, 200)\`(32, 32, 16)\`;
 }
 
-let lcap = TextLayer('lcap') \${
+let lcap = TextLayer('lcap') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 400;
@@ -7067,7 +7073,7 @@ lcap.apply {
 // PixelateFilter — three radius regimes at fixed block size width=height=16.
 // radius &lt; 8: gaps between blocks. radius = 8: blocks touch. radius &gt; 8: overlap.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -7079,17 +7085,17 @@ let f_gap = PixelateFilter(16, 16, 4);
 let f_touch = PixelateFilter(16, 16, 8);
 let f_overlap = PixelateFilter(16, 16, 12);
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_gap;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_touch;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_overlap;
@@ -7105,7 +7111,7 @@ d3.apply {
   circle(450, 100, 55);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -7116,7 +7122,7 @@ l1.apply {
   text(90, 195)\`radius = 4\`;
 }
 
-let l1b = TextLayer('l1b') \${
+let l1b = TextLayer('l1b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -7127,7 +7133,7 @@ l1b.apply {
   text(90, 212)\`gaps between blocks\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -7138,7 +7144,7 @@ l2.apply {
   text(270, 195)\`radius = 8\`;
 }
 
-let l2b = TextLayer('l2b') \${
+let l2b = TextLayer('l2b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -7149,7 +7155,7 @@ l2b.apply {
   text(270, 212)\`blocks just touch (= width / 2)\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -7160,7 +7166,7 @@ l3.apply {
   text(450, 195)\`radius = 12\`;
 }
 
-let l3b = TextLayer('l3b') \${
+let l3b = TextLayer('l3b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -7182,7 +7188,7 @@ l3b.apply {
 // Stacking custom filters via GroupLayer: outer Elevation + inner Inner Shadow.
 // Two filters, one card — raised above its surface, recessed on its top edge.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -7203,7 +7209,7 @@ let press = InnerShadowFilter() {|f|
 };
 
 // Inner layer carries the inner shadow.
-let inner = PathLayer('inner') \${
+let inner = PathLayer('inner') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: press;
@@ -7217,12 +7223,12 @@ inner.apply {
 }
 
 // Outer group carries the elevation shadow.
-let chip = GroupLayer('chip') \${
+let chip = GroupLayer('chip') #{
   filter: lift;
 };
 chip.append(inner);
 
-let label = TextLayer('label') \${
+let label = TextLayer('label') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -7262,7 +7268,7 @@ label.apply {
   <code>define ViewBox(0, 0, 400, 200);
 // Hero: one line of Pathogen — five SVG filter primitives in the output.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -7275,7 +7281,7 @@ let grain = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
 };
 
-let disc = PathLayer('disc') \${
+let disc = PathLayer('disc') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: grain;
@@ -7311,7 +7317,7 @@ disc.apply {
 <span class="hljs-built_in">log</span>(<span class="hljs-string">&quot;filter id:&quot;</span>, grain.id);     // pathogen-noise-1
 <span class="hljs-built_in">log</span>(<span class="hljs-string">&quot;amount:&quot;</span>,    grain.amount); // 0.6
 
-define PathLayer(<span class="hljs-string">&#x27;disc&#x27;</span>) <span class="hljs-variable">\${ fill: oklch(70% 0.20 30); filter: grain; }</span>
+define PathLayer(<span class="hljs-string">&#x27;disc&#x27;</span>) <span class="hljs-comment">#{ fill: oklch(70% 0.20 30); filter: grain; }</span>
 </code></pre><p>That snippet exercises four ergonomic wins at once:</p>
 <ol>
 <li><strong>Trailing-block named overrides.</strong> Inside <code>{|f| ... }</code> you assign properties by name. Order doesn&#39;t matter, mismatches throw with a clear message, and the IDE knows the property set.</li>
@@ -7326,7 +7332,7 @@ define PathLayer(<span class="hljs-string">&#x27;disc&#x27;</span>) <span class=
   <code>define ViewBox(0, 0, 720, 240);
 // All five NoiseFilterStyle presets applied to the same disc, side by side.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -7350,27 +7356,27 @@ let f_gradient = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Gradient;
 };
 
-let d1 = PathLayer('grain') \${
+let d1 = PathLayer('grain') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_grain;
 };
-let d2 = PathLayer('paper') \${
+let d2 = PathLayer('paper') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_paper;
 };
-let d3 = PathLayer('speckle') \${
+let d3 = PathLayer('speckle') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_speckle;
 };
-let d4 = PathLayer('static') \${
+let d4 = PathLayer('static') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_static;
 };
-let d5 = PathLayer('gradient') \${
+let d5 = PathLayer('gradient') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_gradient;
@@ -7392,7 +7398,7 @@ d5.apply {
   circle(640, 100, 45);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7403,7 +7409,7 @@ l1.apply {
   text(80, 200)\`Grain\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7414,7 +7420,7 @@ l2.apply {
   text(220, 200)\`Paper\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7425,7 +7431,7 @@ l3.apply {
   text(360, 200)\`Speckle\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7436,7 +7442,7 @@ l4.apply {
   text(500, 200)\`Static\`;
 }
 
-let l5 = TextLayer('l5') \${
+let l5 = TextLayer('l5') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7457,7 +7463,7 @@ l5.apply {
 // NoiseFilter Grain — scale sweep from coarse to fine.
 // Each disc uses the same preset, only \`scale\` changes.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -7482,22 +7488,22 @@ let f4 = NoiseFilter() {|f|
   f.scale = NoiseFilterScale.Fine;
 };
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') \${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f4;
@@ -7516,7 +7522,7 @@ d4.apply {
   circle(560, 100, 55);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7527,7 +7533,7 @@ l1.apply {
   text(80, 200)\`scale = 0.3 (Coarse)\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7538,7 +7544,7 @@ l2.apply {
   text(240, 200)\`scale = 1.0\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7549,7 +7555,7 @@ l3.apply {
   text(400, 200)\`scale = NoiseFilterScale.Medium\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7560,7 +7566,7 @@ l4.apply {
   text(560, 200)\`scale = NoiseFilterScale.Fine\`;
 }
 
-let lh = TextLayer('lh') \${
+let lh = TextLayer('lh') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 400;
@@ -7579,7 +7585,7 @@ lh.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // NoiseFilter Grain — amount sweep. amount = 0 is no effect; 1 is full strength.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -7604,22 +7610,22 @@ let f4 = NoiseFilter() {|f|
   f.amount = 0.8;
 };
 
-let d1 = PathLayer('d1') \${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') \${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') \${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') \${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f4;
@@ -7638,7 +7644,7 @@ d4.apply {
   circle(560, 100, 55);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7649,7 +7655,7 @@ l1.apply {
   text(80, 200)\`amount = 0.2\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7660,7 +7666,7 @@ l2.apply {
   text(240, 200)\`amount = 0.4\`;
 }
 
-let l3 = TextLayer('l3') \${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7671,7 +7677,7 @@ l3.apply {
   text(400, 200)\`amount = 0.6\`;
 }
 
-let l4 = TextLayer('l4') \${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7691,7 +7697,7 @@ l4.apply {
   <code>define ViewBox(0, 0, 400, 220);
 // NoiseFilter Speckle — monochrome on vs off, same seed, same shape.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -7712,12 +7718,12 @@ let f_color = NoiseFilter() {|f|
   f.seed = 17;
 };
 
-let d_mono = PathLayer('mono') \${
+let d_mono = PathLayer('mono') #{
   fill: oklch(60% 0.20 30);
   stroke: none;
   filter: f_mono;
 };
-let d_color = PathLayer('color') \${
+let d_color = PathLayer('color') #{
   fill: oklch(60% 0.20 30);
   stroke: none;
   filter: f_color;
@@ -7730,7 +7736,7 @@ d_color.apply {
   circle(290, 90, 55);
 }
 
-let l1 = TextLayer('l1') \${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7741,7 +7747,7 @@ l1.apply {
   text(110, 180)\`monochrome = true\`;
 }
 
-let l2 = TextLayer('l2') \${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -7776,7 +7782,7 @@ let grainy = NoiseFilter() {|f|
   f.amount = 0.65;
 };
 
-let panel = PathLayer('panel') \${
+let panel = PathLayer('panel') #{
   fill: sky;
   stroke: none;
   filter: grainy;
@@ -7794,7 +7800,7 @@ panel.apply {
   <code>define ViewBox(0, 0, 600, 200);
 // One filter, six shapes — one &lt;filter&gt; def in the output SVG.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -7809,32 +7815,32 @@ let grain = NoiseFilter() {|f|
   f.amount = 0.5;
 };
 
-let c1 = PathLayer('c1') \${
+let c1 = PathLayer('c1') #{
   fill: oklch(70% 0.20  30);
   stroke: none;
   filter: grain;
 };
-let c2 = PathLayer('c2') \${
+let c2 = PathLayer('c2') #{
   fill: oklch(70% 0.20  80);
   stroke: none;
   filter: grain;
 };
-let c3 = PathLayer('c3') \${
+let c3 = PathLayer('c3') #{
   fill: oklch(70% 0.20 150);
   stroke: none;
   filter: grain;
 };
-let c4 = PathLayer('c4') \${
+let c4 = PathLayer('c4') #{
   fill: oklch(70% 0.20 220);
   stroke: none;
   filter: grain;
 };
-let c5 = PathLayer('c5') \${
+let c5 = PathLayer('c5') #{
   fill: oklch(70% 0.20 290);
   stroke: none;
   filter: grain;
 };
-let c6 = PathLayer('c6') \${
+let c6 = PathLayer('c6') #{
   fill: oklch(70% 0.20 340);
   stroke: none;
   filter: grain;
@@ -7880,7 +7886,7 @@ log('amount:', grain.amount);
 log('blend: ', grain.blend);
 log('seed:  ', grain.seed);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -7888,7 +7894,7 @@ bg.apply {
   rect(0, 0, 400, 200);
 }
 
-let disc = PathLayer('disc') \${
+let disc = PathLayer('disc') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: grain;
@@ -7982,7 +7988,7 @@ by the block and drawn over the outline.</p>
 
 define ViewBox(0, 0, 480, 260);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -7990,75 +7996,75 @@ layer('bg').apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') \${};
-let panel = PathLayer('panel') \${
+let scene = GroupLayer('scene') #{};
+let panel = PathLayer('panel') #{
   fill: #e7dfd0;
   stroke: #64748b;
   stroke-width: 1;
 };
-let neckRun = PathLayer('neck-run') \${
+let neckRun = PathLayer('neck-run') #{
   stroke: #2dd4bf;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let shoulderRun = PathLayer('shoulder-run') \${
+let shoulderRun = PathLayer('shoulder-run') #{
   stroke: #3b82f6;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let armholeRun = PathLayer('armhole-run') \${
+let armholeRun = PathLayer('armhole-run') #{
   stroke: #c084fc;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let sideRun = PathLayer('side-run') \${
+let sideRun = PathLayer('side-run') #{
   stroke: #f59e0b;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let hemRun = PathLayer('hem-run') \${
+let hemRun = PathLayer('hem-run') #{
   stroke: #fb7185;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let frontRun = PathLayer('front-run') \${
+let frontRun = PathLayer('front-run') #{
   stroke: #94a3b8;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
   stroke-dasharray: 6 4;
 };
-let legendNeck = TextLayer('legend-neck') \${
+let legendNeck = TextLayer('legend-neck') #{
   font-family: monospace;
   font-size: 9;
   fill: #2dd4bf;
 };
-let legendShoulder = TextLayer('legend-shoulder') \${
+let legendShoulder = TextLayer('legend-shoulder') #{
   font-family: monospace;
   font-size: 9;
   fill: #3b82f6;
 };
-let legendArmhole = TextLayer('legend-armhole') \${
+let legendArmhole = TextLayer('legend-armhole') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;
 };
-let legendSide = TextLayer('legend-side') \${
+let legendSide = TextLayer('legend-side') #{
   font-family: monospace;
   font-size: 9;
   fill: #f59e0b;
 };
-let legendHem = TextLayer('legend-hem') \${
+let legendHem = TextLayer('legend-hem') #{
   font-family: monospace;
   font-size: 9;
   fill: #fb7185;
 };
-let legendFold = TextLayer('legend-fold') \${
+let legendFold = TextLayer('legend-fold') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -8164,7 +8170,7 @@ itself as the yoke; the hem stayed with the bottom, so it is the body.</p>
 
 define ViewBox(0, 0, 480, 280);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -8172,31 +8178,31 @@ layer('bg').apply {
   rect(0, 0, 480, 280);
 }
 
-let scene = GroupLayer('scene') \${};
-let panel = PathLayer('panel') \${
+let scene = GroupLayer('scene') #{};
+let panel = PathLayer('panel') #{
   fill: #e7dfd0;
   stroke: #64748b;
   stroke-width: 1;
 };
-let neckRun = PathLayer('neck-run') \${
+let neckRun = PathLayer('neck-run') #{
   stroke: #2dd4bf;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let hemRun = PathLayer('hem-run') \${
+let hemRun = PathLayer('hem-run') #{
   stroke: #fb7185;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let leaders = PathLayer('leaders') \${
+let leaders = PathLayer('leaders') #{
   stroke: #475569;
   stroke-width: 1;
   stroke-dasharray: 2 3;
   fill: none;
 };
-let captions = TextLayer('captions') \${
+let captions = TextLayer('captions') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -8276,7 +8282,7 @@ seam <em>on the allowance outline</em>, not the original.</p>
 
 define ViewBox(0, 0, 480, 230);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -8284,35 +8290,35 @@ layer('bg').apply {
   rect(0, 0, 480, 230);
 }
 
-let scene = GroupLayer('scene') \${};
-let panel = PathLayer('panel') \${
+let scene = GroupLayer('scene') #{};
+let panel = PathLayer('panel') #{
   fill: #e7dfd0;
   stroke: #64748b;
   stroke-width: 1.2;
   stroke-dasharray: 4 3;
 };
-let allowance = PathLayer('allowance') \${
+let allowance = PathLayer('allowance') #{
   stroke: #ef4444;
   stroke-width: 1.6;
   fill: none;
 };
-let sideRun = PathLayer('side-run') \${
+let sideRun = PathLayer('side-run') #{
   stroke: #f59e0b;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let legendCut = TextLayer('legend-cut') \${
+let legendCut = TextLayer('legend-cut') #{
   font-family: monospace;
   font-size: 9;
   fill: #f87171;
 };
-let legendStitch = TextLayer('legend-stitch') \${
+let legendStitch = TextLayer('legend-stitch') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
 };
-let legendSide = TextLayer('legend-side') \${
+let legendSide = TextLayer('legend-side') #{
   font-family: monospace;
   font-size: 9;
   fill: #f59e0b;
@@ -8389,7 +8395,7 @@ endpoints, and if it runs right-to-left, flip <code>t</code>.</p>
 
 define ViewBox(0, 0, 480, 280);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -8397,18 +8403,18 @@ layer('bg').apply {
   rect(0, 0, 480, 280);
 }
 
-let scene = GroupLayer('scene') \${};
-let panel = PathLayer('panel') \${
+let scene = GroupLayer('scene') #{};
+let panel = PathLayer('panel') #{
   fill: #e7dfd0;
   stroke: #64748b;
   stroke-width: 1;
 };
-let notches = PathLayer('notches') \${
+let notches = PathLayer('notches') #{
   stroke: #2dd4bf;
   stroke-width: 2;
   fill: none;
 };
-let captions = TextLayer('captions') \${
+let captions = TextLayer('captions') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -8483,7 +8489,7 @@ language, and the fold is the <code>z</code> edge from Example 1.</p>
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -8491,35 +8497,35 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') \${};
-let panel = PathLayer('panel') \${
+let scene = GroupLayer('scene') #{};
+let panel = PathLayer('panel') #{
   fill: #e7dfd0;
   stroke: #64748b;
   stroke-width: 1.1;
   stroke-dasharray: 4 3;
 };
-let allowance = PathLayer('allowance') \${
+let allowance = PathLayer('allowance') #{
   stroke: #ef4444;
   stroke-width: 1.5;
   fill: none;
 };
-let notches = PathLayer('notches') \${
+let notches = PathLayer('notches') #{
   stroke: #2dd4bf;
   stroke-width: 2;
   fill: none;
 };
-let grain = PathLayer('grain') \${
+let grain = PathLayer('grain') #{
   stroke: #64748b;
   stroke-width: 1.4;
   fill: none;
 };
-let names = TextLayer('names') \${
+let names = TextLayer('names') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -8757,7 +8763,7 @@ knife, clipped to the material it actually crossed.</p>
 
 define ViewBox(0, 0, 480, 230);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -8765,25 +8771,25 @@ layer('bg').apply {
   rect(0, 0, 480, 230);
 }
 
-let scene = GroupLayer('scene') \${};
-let knifeLayer = PathLayer('knife') \${
+let scene = GroupLayer('scene') #{};
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
   stroke-dasharray: 2 3;
 };
-let pieceLayer = PathLayer('pieces') \${
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let seamLayer = PathLayer('seams') \${
+let seamLayer = PathLayer('seams') #{
   stroke: #f59e0b;
   stroke-width: 2.2;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -8805,7 +8811,7 @@ let pieces = plate.cut(knife);
 
 // The knife's full arc over a ghost of the plate — the overshoot on
 // both ends is what makes it a complete cut.
-let ghost = PathLayer('ghost') \${
+let ghost = PathLayer('ghost') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 3 4;
@@ -8857,7 +8863,7 @@ and both seams are the same mushroom silhouette.</p>
 
 define ViewBox(0, 0, 480, 250);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -8865,25 +8871,25 @@ layer('bg').apply {
   rect(0, 0, 480, 250);
 }
 
-let scene = GroupLayer('scene') \${};
-let knifeLayer = PathLayer('knife') \${
+let scene = GroupLayer('scene') #{};
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
   stroke-dasharray: 2 3;
 };
-let pieceLayer = PathLayer('pieces') \${
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let seamLayer = PathLayer('seams') \${
+let seamLayer = PathLayer('seams') #{
   stroke: #f59e0b;
   stroke-width: 2.2;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -8953,7 +8959,7 @@ classification asked about.</p>
 
 define ViewBox(0, 0, 480, 300);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -8961,24 +8967,24 @@ layer('bg').apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') \${};
-let framePieces = PathLayer('frame-pieces') \${
+let scene = GroupLayer('scene') #{};
+let framePieces = PathLayer('frame-pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let middlePieces = PathLayer('middle-pieces') \${
+let middlePieces = PathLayer('middle-pieces') #{
   fill: #f59e0b;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let rimRuns = PathLayer('rim-runs') \${
+let rimRuns = PathLayer('rim-runs') #{
   stroke: #2dd4bf;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -9065,7 +9071,7 @@ visible across the gap.</p>
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -9073,24 +9079,24 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') \${};
-let matchLines = PathLayer('match-lines') \${
+let scene = GroupLayer('scene') #{};
+let matchLines = PathLayer('match-lines') #{
   stroke: #475569;
   stroke-width: 1;
   stroke-dasharray: 2 3;
   fill: none;
 };
-let pieceLayer = PathLayer('pieces') \${
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let markLayer = PathLayer('marks') \${
+let markLayer = PathLayer('marks') #{
   fill: none;
   stroke: #2dd4bf;
   stroke-width: 1.6;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -9165,7 +9171,7 @@ plate in miniature because scaled pieces keep their scaled placement.</p>
 
 define ViewBox(0, 0, 480, 300);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -9173,43 +9179,43 @@ layer('bg').apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') \${};
-let shard0 = PathLayer('shard0') \${
+let scene = GroupLayer('scene') #{};
+let shard0 = PathLayer('shard0') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard1 = PathLayer('shard1') \${
+let shard1 = PathLayer('shard1') #{
   fill: #a78bfa;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard2 = PathLayer('shard2') \${
+let shard2 = PathLayer('shard2') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let lid = PathLayer('lid') \${
+let lid = PathLayer('lid') #{
   fill: #1e293b;
   stroke: #475569;
   stroke-width: 1;
 };
-let lid0 = PathLayer('lid0') \${
+let lid0 = PathLayer('lid0') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 0.8;
 };
-let lid1 = PathLayer('lid1') \${
+let lid1 = PathLayer('lid1') #{
   fill: #a78bfa;
   stroke: #0f172a;
   stroke-width: 0.8;
 };
-let lid2 = PathLayer('lid2') \${
+let lid2 = PathLayer('lid2') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 0.8;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -9435,7 +9441,7 @@ amber with the idiom above.</p>
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -9443,25 +9449,25 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') \${};
-let pieceLayer = PathLayer('pieces') \${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let seamLayer = PathLayer('seams') \${
+let seamLayer = PathLayer('seams') #{
   stroke: #f59e0b;
   stroke-width: 2.5;
   fill: none;
   stroke-linecap: round;
 };
-let divider = PathLayer('divider') \${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 4 4;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -9540,7 +9546,7 @@ asking which knife made it.</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -9548,41 +9554,41 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') \${};
-let panelLayer = PathLayer('panels') \${
+let scene = GroupLayer('scene') #{};
+let panelLayer = PathLayer('panels') #{
   fill: #e7dfd0;
   stroke: none;
 };
-let cutLayer = PathLayer('cut-line') \${
+let cutLayer = PathLayer('cut-line') #{
   stroke: #ef4444;
   stroke-width: 2;
   fill: none;
 };
-let mountainLayer = PathLayer('mountain-folds') \${
+let mountainLayer = PathLayer('mountain-folds') #{
   stroke: #334155;
   stroke-width: 1.5;
   fill: none;
   stroke-dasharray: 7 3 1.5 3;
 };
-let valleyLayer = PathLayer('valley-folds') \${
+let valleyLayer = PathLayer('valley-folds') #{
   stroke: #475569;
   stroke-width: 1.5;
   fill: none;
   stroke-dasharray: 5 4;
 };
-let cutCaption = TextLayer('cut-caption') \${
+let cutCaption = TextLayer('cut-caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #f87171;
   text-anchor: middle;
 };
-let mountainCaption = TextLayer('mountain-caption') \${
+let mountainCaption = TextLayer('mountain-caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let valleyCaption = TextLayer('valley-caption') \${
+let valleyCaption = TextLayer('valley-caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -9681,7 +9687,7 @@ of the way; the outer boundary, which was never cut, stays clean.</p>
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -9689,18 +9695,18 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') \${};
-let tabLayer = PathLayer('tabs') \${
+let scene = GroupLayer('scene') #{};
+let tabLayer = PathLayer('tabs') #{
   fill: #cbbfa3;
   stroke: #ef4444;
   stroke-width: 1.5;
 };
-let pieceLayer = PathLayer('pieces') \${
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -9782,7 +9788,7 @@ counts its roof, the base piece its base.</p>
 
 define ViewBox(0, 0, 480, 215);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -9790,30 +9796,30 @@ layer('bg').apply {
   rect(0, 0, 480, 215);
 }
 
-let scene = GroupLayer('scene') \${};
-let pieceLayer = PathLayer('pieces') \${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let roofLayer = PathLayer('roof-runs') \${
+let roofLayer = PathLayer('roof-runs') #{
   stroke: #2dd4bf;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let baseLayer = PathLayer('base-runs') \${
+let baseLayer = PathLayer('base-runs') #{
   stroke: #c084fc;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let roofCount = TextLayer('roof-count') \${
+let roofCount = TextLayer('roof-count') #{
   font-family: monospace;
   font-size: 9;
   fill: #2dd4bf;
 };
-let baseCount = TextLayer('base-count') \${
+let baseCount = TextLayer('base-count') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;
@@ -9890,7 +9896,7 @@ seams amber, so mating edges face each other across the gaps.</p>
 
 define ViewBox(0, 0, 480, 260);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -9898,25 +9904,25 @@ layer('bg').apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') \${};
-let ghost = PathLayer('ghost') \${
+let scene = GroupLayer('scene') #{};
+let ghost = PathLayer('ghost') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 3 4;
   fill: none;
 };
-let pieceLayer = PathLayer('pieces') \${
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let seamLayer = PathLayer('seams') \${
+let seamLayer = PathLayer('seams') #{
   stroke: #f59e0b;
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -9993,7 +9999,7 @@ back in.</p>
 
 define ViewBox(0, 0, 480, 300);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -10001,43 +10007,43 @@ layer('bg').apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') \${};
-let ghost = PathLayer('ghost') \${
+let scene = GroupLayer('scene') #{};
+let ghost = PathLayer('ghost') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 3 4;
   fill: none;
 };
-let tabLayer = PathLayer('tabs') \${
+let tabLayer = PathLayer('tabs') #{
   fill: #cbbfa3;
   stroke: #ef4444;
   stroke-width: 1.2;
 };
-let wedgeLayer = PathLayer('wedges') \${
+let wedgeLayer = PathLayer('wedges') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let foldLayer = PathLayer('folds') \${
+let foldLayer = PathLayer('folds') #{
   stroke: #475569;
   stroke-width: 1.4;
   fill: none;
   stroke-dasharray: 4 3;
 };
-let numbers = TextLayer('numbers') \${
+let numbers = TextLayer('numbers') #{
   font-family: monospace;
   font-size: 10;
   fill: #0f172a;
   text-anchor: middle;
 };
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: middle;
   letter-spacing: 3;
 };
-let caption = TextLayer('caption') \${
+let caption = TextLayer('caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -10337,7 +10343,7 @@ made visible.</p>
 
 define ViewBox(0, 0, 480, 250);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -10345,18 +10351,18 @@ layer('bg').apply {
   rect(0, 0, 480, 250);
 }
 
-let scene = GroupLayer('scene') \${};
-let panes = PathLayer('panes') \${
+let scene = GroupLayer('scene') #{};
+let panes = PathLayer('panes') #{
   fill: #38bdf8;
   stroke: none;
 };
-let leading = PathLayer('leading') \${
+let leading = PathLayer('leading') #{
   stroke: #0f172a;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -10434,7 +10440,7 @@ namespace, one umbrella query.</p>
 
 define ViewBox(0, 0, 480, 260);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -10442,22 +10448,22 @@ layer('bg').apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') \${};
-let stone = PathLayer('stone') \${
+let scene = GroupLayer('scene') #{};
+let stone = PathLayer('stone') #{
   fill: #64748b;
   stroke: none;
 };
-let panes = PathLayer('panes') \${
+let panes = PathLayer('panes') #{
   fill: #a78bfa;
   stroke: none;
 };
-let leading = PathLayer('leading') \${
+let leading = PathLayer('leading') #{
   stroke: #0f172a;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -10528,7 +10534,7 @@ round-robin, came stroked over the top. (The same routing pattern the
 
 define ViewBox(0, 0, 480, 250);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -10536,30 +10542,30 @@ layer('bg').apply {
   rect(0, 0, 480, 250);
 }
 
-let scene = GroupLayer('scene') \${};
-let glass0 = PathLayer('glass0') \${
+let scene = GroupLayer('scene') #{};
+let glass0 = PathLayer('glass0') #{
   fill: #38bdf8;
   stroke: none;
 };
-let glass1 = PathLayer('glass1') \${
+let glass1 = PathLayer('glass1') #{
   fill: #a78bfa;
   stroke: none;
 };
-let glass2 = PathLayer('glass2') \${
+let glass2 = PathLayer('glass2') #{
   fill: #2dd4bf;
   stroke: none;
 };
-let glass3 = PathLayer('glass3') \${
+let glass3 = PathLayer('glass3') #{
   fill: #fbbf24;
   stroke: none;
 };
-let leading = PathLayer('leading') \${
+let leading = PathLayer('leading') #{
   stroke: #0f172a;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -10629,7 +10635,7 @@ keeps one of the opening&#39;s sides.</p>
 
 define ViewBox(0, 0, 480, 260);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -10637,30 +10643,30 @@ layer('bg').apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') \${};
-let frame = PathLayer('frame') \${
+let scene = GroupLayer('scene') #{};
+let frame = PathLayer('frame') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let sillRun = PathLayer('sill-run') \${
+let sillRun = PathLayer('sill-run') #{
   stroke: #f59e0b;
   stroke-width: 3.5;
   fill: none;
   stroke-linecap: round;
 };
-let lightRun = PathLayer('light-run') \${
+let lightRun = PathLayer('light-run') #{
   stroke: #2dd4bf;
   stroke-width: 3.5;
   fill: none;
   stroke-linecap: round;
 };
-let legendSill = TextLayer('legend-sill') \${
+let legendSill = TextLayer('legend-sill') #{
   font-family: monospace;
   font-size: 9;
   fill: #f59e0b;
 };
-let legendLight = TextLayer('legend-light') \${
+let legendLight = TextLayer('legend-light') #{
   font-family: monospace;
   font-size: 9;
   fill: #2dd4bf;
@@ -10753,7 +10759,7 @@ the two coincide — one dot, drawn twice, harmlessly).</li>
 
 define ViewBox(0, 0, 480, 320);
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -10761,39 +10767,39 @@ layer('bg').apply {
   rect(0, 0, 480, 320);
 }
 
-let scene = GroupLayer('scene') \${};
-let stone = PathLayer('stone') \${
+let scene = GroupLayer('scene') #{};
+let stone = PathLayer('stone') #{
   fill: #1e293b;
   stroke: #334155;
   stroke-width: 2;
 };
-let glass0 = PathLayer('glass0') \${
+let glass0 = PathLayer('glass0') #{
   fill: #38bdf8;
   stroke: none;
 };
-let glass1 = PathLayer('glass1') \${
+let glass1 = PathLayer('glass1') #{
   fill: #a78bfa;
   stroke: none;
 };
-let glass2 = PathLayer('glass2') \${
+let glass2 = PathLayer('glass2') #{
   fill: #2dd4bf;
   stroke: none;
 };
-let medallion = PathLayer('medallion') \${
+let medallion = PathLayer('medallion') #{
   fill: #fbbf24;
   stroke: none;
 };
-let leading = PathLayer('leading') \${
+let leading = PathLayer('leading') #{
   stroke: #0f172a;
   stroke-width: 4.5;
   fill: none;
   stroke-linecap: round;
 };
-let solder = PathLayer('solder') \${
+let solder = PathLayer('solder') #{
   fill: #cbd5e1;
   stroke: none;
 };
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -11029,19 +11035,19 @@ let plotH = 90;
 let gap = 14;
 let baseline = 150;
 
-let boxes = PathLayer('boxes') \${
+let boxes = PathLayer('boxes') #{
   stroke: oklch(0.82 0.02 260);
   stroke-width: 0.5;
   stroke-dasharray: 3 4;
   fill: none;
 };
-let lines = PathLayer('curves') \${
+let lines = PathLayer('curves') #{
   stroke: oklch(0.58 0.19 350);
   stroke-width: 1.5;
   stroke-linejoin: round;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   letter-spacing: 0.5;
@@ -11104,7 +11110,7 @@ let right = 360;
 let blue = Color(0.55, 0.16, 260);
 let pink = Color(0.62, 0.19, 350);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   letter-spacing: 0.5;
@@ -11116,7 +11122,7 @@ labels.apply {
   text(left, 113)\`fill = blue.mix(pink, smooth(t)) · r = lerp(2, 5, smooth(t))\`;
 }
 
-let plain = PathLayer('plain') \${
+let plain = PathLayer('plain') #{
   fill: oklch(0.55 0.16 260);
   stroke: none;
 };
@@ -11127,12 +11133,12 @@ plain.apply {
   }
 }
 
-let eased = GroupLayer('eased') \${};
+let eased = GroupLayer('eased') #{};
 for (i in 0..8) {
   let t = i / 8;
   let along = smooth(t);
   let tint = blue.mix(pink, along);
-  let dot = PathLayer(\`eased-\${i}\`) \${
+  let dot = PathLayer(\`eased-\${i}\`) #{
     fill: tint;
     stroke: none;
   };
@@ -11185,18 +11191,18 @@ let captions = [
   'amplitude = 18 * smoothstep(0, 0.35, t) * smoothstep(1, 0.65, t)',
 ];
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   letter-spacing: 0.5;
   fill: oklch(0.45 0.02 260);
 };
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 
 for (row in 0..2) {
   let mid = 58 + row * 76;
   let amplitude = envelopes[row];
-  let guide = PathLayer(\`baseline-\${row}\`) \${
+  let guide = PathLayer(\`baseline-\${row}\`) #{
     stroke: oklch(0.82 0.02 260);
     stroke-width: 0.5;
     stroke-dasharray: 3 4;
@@ -11206,7 +11212,7 @@ for (row in 0..2) {
     M left mid
     L calc(left + width) mid
   }
-  let wave = PathLayer(\`wave-\${row}\`) \${
+  let wave = PathLayer(\`wave-\${row}\`) #{
     stroke: oklch(0.58 0.19 350);
     stroke-width: 1.5;
     stroke-linejoin: round;
@@ -11257,19 +11263,19 @@ let rowNames = [
   '4 half-cycles',
 ];
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   letter-spacing: 0.5;
   fill: #8a93a6;
 };
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 
 for (halfCycles in 1..4) {
   let top = 32 + (halfCycles - 1) * 60;
   let bottom = top + 36;
   let wave = {|t| lerp(bottom, top, t) - amplitude * sin(PI() * halfCycles * t)};
-  let guide = PathLayer(\`guide-\${halfCycles}\`) \${
+  let guide = PathLayer(\`guide-\${halfCycles}\`) #{
     stroke: oklch(0.82 0.02 260);
     stroke-width: 0.5;
     stroke-dasharray: 3 4;
@@ -11279,7 +11285,7 @@ for (halfCycles in 1..4) {
     M left bottom
     L right top
   }
-  let trace = PathLayer(\`wave-\${halfCycles}\`) \${
+  let trace = PathLayer(\`wave-\${halfCycles}\`) #{
     stroke: oklch(0.58 0.19 350);
     stroke-width: 1.5;
     stroke-linejoin: round;
@@ -11349,13 +11355,13 @@ let left = 40;
 let width = 320;
 let mark = 300;
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   letter-spacing: 0.5;
   fill: #8a93a6;
 };
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 
 let wavesMade = [
   gentle,
@@ -11371,7 +11377,7 @@ let names = [
 for (row in 0..2) {
   let mid = 46 + row * 52;
   let wave = wavesMade[row];
-  let guide = PathLayer(\`baseline-\${row}\`) \${
+  let guide = PathLayer(\`baseline-\${row}\`) #{
     stroke: oklch(0.82 0.02 260);
     stroke-width: 0.5;
     stroke-dasharray: 3 4;
@@ -11381,7 +11387,7 @@ for (row in 0..2) {
     M left mid
     L calc(left + width) mid
   }
-  let trace = PathLayer(\`wave-\${row}\`) \${
+  let trace = PathLayer(\`wave-\${row}\`) #{
     stroke: oklch(0.58 0.19 350);
     stroke-width: 1.5;
     stroke-linejoin: round;
@@ -11403,7 +11409,7 @@ for (row in 0..2) {
 labels.apply {
   text(left, 196)\`makeEase(0.34, 1.56, 0.64, 1): past the mark, then back\`;
 }
-let tick = PathLayer('mark') \${
+let tick = PathLayer('mark') #{
   stroke: oklch(0.82 0.02 260);
   stroke-width: 0.5;
   stroke-dasharray: 3 4;
@@ -11413,7 +11419,7 @@ tick.apply {
   M calc(left + mark) 204
   L calc(left + mark) 228
 }
-let dots = PathLayer('dots') \${
+let dots = PathLayer('dots') #{
   fill: none;
   stroke: oklch(0.55 0.16 260);
   stroke-width: 1;
@@ -11465,14 +11471,14 @@ let envelope = {|t| smoothstep(0, 0.3, t) * smoothstep(1, 0.7, t)};
 let blue = Color(0.5, 0.15, 260);
 let pink = Color(0.65, 0.19, 350);
 
-let plume = GroupLayer('plume') \${};
+let plume = GroupLayer('plume') #{};
 for (strandIndex in 0..11) {
   let strandT = strandIndex / 11;
   let tipY = lerp(210, 50, spread(strandT));
   let halfCycles = 1 + strandIndex % 3;
   let amplitude = 10 + 6 * (strandIndex % 2);
   let tint = blue.mix(pink, strandT);
-  let strand = PathLayer(\`strand-\${strandIndex}\`) \${
+  let strand = PathLayer(\`strand-\${strandIndex}\`) #{
     stroke: tint;
     stroke-width: 1.25;
     stroke-linecap: round;
@@ -11491,7 +11497,7 @@ for (strandIndex in 0..11) {
   plume.append(strand);
 }
 
-let seed = PathLayer('seed') \${
+let seed = PathLayer('seed') #{
   fill: oklch(0.35 0.02 260);
   stroke: none;
 };
@@ -11563,30 +11569,30 @@ wheel_inner.innerFill = 'center';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Outer ring (donut) ---
 
-let ring = PathLayer('ring') \${ fill: wheel_outer; stroke: none; };
+let ring = PathLayer('ring') #{ fill: wheel_outer; stroke: none; };
 ring.apply { circle(200, 200, 155); closePath(); }
 
 // --- Inner disc ---
 
-let disc = PathLayer('disc') \${ fill: wheel_inner; stroke: none; };
+let disc = PathLayer('disc') #{ fill: wheel_inner; stroke: none; };
 disc.apply { circle(200, 200, 62); closePath(); }
 
 // --- Subtle frame ---
 
-let frame = PathLayer('frame') \${ fill: none; stroke: #333; stroke-width: 1; };
+let frame = PathLayer('frame') #{ fill: none; stroke: #333; stroke-width: 1; };
 frame.apply { circle(200, 200, 155); closePath(); }
 
-let inner_frame = PathLayer('inner-frame') \${ fill: none; stroke: #333; stroke-width: 0.5; };
+let inner_frame = PathLayer('inner-frame') #{ fill: none; stroke: #333; stroke-width: 0.5; };
 inner_frame.apply { circle(200, 200, 62); closePath(); }
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -11598,7 +11604,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, ring, disc, frame, inner_frame, title);
 </code>
   <img src="/blog/samples/post2/color-wheel.svg" alt="Full 360-degree sweep with innerRadius donut and OKLCH interpolation" loading="lazy">
@@ -11662,23 +11668,23 @@ fuel_grad.spread = 'transparent';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 660, 340); }
 
 // --- Gauge faces ---
 
-let g1 = PathLayer('g1') \${ fill: speed_grad; stroke: none; };
+let g1 = PathLayer('g1') #{ fill: speed_grad; stroke: none; };
 g1.apply { circle(120, 160, 80); closePath(); }
 
-let g2 = PathLayer('g2') \${ fill: temp_grad; stroke: none; };
+let g2 = PathLayer('g2') #{ fill: temp_grad; stroke: none; };
 g2.apply { circle(330, 160, 80); closePath(); }
 
-let g3 = PathLayer('g3') \${ fill: fuel_grad; stroke: none; };
+let g3 = PathLayer('g3') #{ fill: fuel_grad; stroke: none; };
 g3.apply { circle(540, 160, 65); closePath(); }
 
 // --- Gauge rims ---
 
-let rims = PathLayer('rims') \${ fill: none; stroke: #444; stroke-width: 1.5; };
+let rims = PathLayer('rims') #{ fill: none; stroke: #444; stroke-width: 1.5; };
 rims.apply {
   circle(120, 160, 81); closePath();
   circle(330, 160, 81); closePath();
@@ -11689,7 +11695,7 @@ rims.apply {
 // 7 ticks from 0 to max, evenly spaced along the 270° arc
 // Angles: 135, 180, 225, 270, 315, 360, 405 degrees
 
-let speed_ticks = PathLayer('speed-ticks') \${ fill: none; stroke: #ccc; stroke-width: 4; };
+let speed_ticks = PathLayer('speed-ticks') #{ fill: none; stroke: #ccc; stroke-width: 4; };
 speed_ticks.apply {
   // 135° (bottom-left) — 0 km/h
   line(51, 217, 63, 205);
@@ -11709,7 +11715,7 @@ speed_ticks.apply {
 
 // --- Tick marks for Temp gauge (135° to 405°, 270° sweep) ---
 
-let temp_ticks = PathLayer('temp-ticks') \${ fill: none; stroke: #ccc; stroke-width: 4; };
+let temp_ticks = PathLayer('temp-ticks') #{ fill: none; stroke: #ccc; stroke-width: 4; };
 temp_ticks.apply {
   // 135° — -20°C
   line(261, 217, 273, 205);
@@ -11729,7 +11735,7 @@ temp_ticks.apply {
 
 // --- Tick marks for Fuel gauge (180° to 360°, 180° sweep) ---
 
-let fuel_ticks = PathLayer('fuel-ticks') \${ fill: none; stroke: #ccc; stroke-width: 4; };
+let fuel_ticks = PathLayer('fuel-ticks') #{ fill: none; stroke: #ccc; stroke-width: 4; };
 fuel_ticks.apply {
   // 180° (left) — E
   line(468, 160, 480, 160);
@@ -11745,7 +11751,7 @@ fuel_ticks.apply {
 
 // --- Speed tick labels ---
 
-let speed_vals = TextLayer('speed-vals') \${
+let speed_vals = TextLayer('speed-vals') #{
   font-family: monospace;
   font-size: 8;
   fill: #888;
@@ -11763,7 +11769,7 @@ speed_vals.apply {
 
 // --- Temp tick labels ---
 
-let temp_vals = TextLayer('temp-vals') \${
+let temp_vals = TextLayer('temp-vals') #{
   font-family: monospace;
   font-size: 8;
   fill: #888;
@@ -11781,7 +11787,7 @@ temp_vals.apply {
 
 // --- Fuel tick labels ---
 
-let fuel_vals = TextLayer('fuel-vals') \${
+let fuel_vals = TextLayer('fuel-vals') #{
   font-family: monospace;
   font-size: 8;
   fill: #888;
@@ -11797,7 +11803,7 @@ fuel_vals.apply {
 
 // --- Gauge titles ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ccc;
@@ -11810,7 +11816,7 @@ labels.apply {
   text(540, 166)\`Fuel\`
 }
 
-let titles = TextLayer('titles') \${
+let titles = TextLayer('titles') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #ddd;
@@ -11823,7 +11829,7 @@ titles.apply {
   text(540, 260)\`Fuel\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -11837,16 +11843,16 @@ subtitle.apply {
 
 // --- Scene ---
 
-let speed_group = GroupLayer('speed-gauge') \${};
+let speed_group = GroupLayer('speed-gauge') #{};
 speed_group.append(g1, speed_ticks);
 
-let temp_group = GroupLayer('temp-gauge') \${};
+let temp_group = GroupLayer('temp-gauge') #{};
 temp_group.append(g2, temp_ticks);
 
-let fuel_group = GroupLayer('fuel-gauge') \${};
+let fuel_group = GroupLayer('fuel-gauge') #{};
 fuel_group.append(g3, fuel_ticks);
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, speed_group, temp_group, fuel_group, rims, speed_vals, temp_vals, fuel_vals, labels, titles, subtitle);
 </code>
   <img src="/blog/samples/post2/gauge-dashboard.svg" alt="Three gauges using partial sweeps — 270-degree and 180-degree arcs" loading="lazy">
@@ -11887,21 +11893,21 @@ ccw_grad.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 500, 300); }
 
 // --- Gradient circles ---
 
-let cw_circle = PathLayer('cw-circle') \${ fill: cw_grad; stroke: #333; stroke-width: 1; };
+let cw_circle = PathLayer('cw-circle') #{ fill: cw_grad; stroke: #333; stroke-width: 1; };
 cw_circle.apply { circle(140, 150, 90); closePath(); }
 
-let ccw_circle = PathLayer('ccw-circle') \${ fill: ccw_grad; stroke: #333; stroke-width: 1; };
+let ccw_circle = PathLayer('ccw-circle') #{ fill: ccw_grad; stroke: #333; stroke-width: 1; };
 ccw_circle.apply { circle(360, 150, 90); closePath(); }
 
 // --- Direction arrows (curved sweep arcs with arrowheads) ---
 
 // CW: curved arrow sweeping clockwise from top
-let cw_arrow = PathLayer('cw-arrow') \${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+let cw_arrow = PathLayer('cw-arrow') #{ fill: none; stroke: #ffffffaa; stroke-width: 2; };
 cw_arrow.apply {
   // Arc sweeping CW from ~top-left to ~top-right
   M 118 56 A 20 20 0 0 1 162 56
@@ -11910,7 +11916,7 @@ cw_arrow.apply {
 }
 
 // CCW: curved arrow sweeping counter-clockwise from top
-let ccw_arrow = PathLayer('ccw-arrow') \${ fill: none; stroke: #ffffffaa; stroke-width: 2; };
+let ccw_arrow = PathLayer('ccw-arrow') #{ fill: none; stroke: #ffffffaa; stroke-width: 2; };
 ccw_arrow.apply {
   // Arc sweeping CCW from ~top-right to ~top-left
   M 382 56 A 20 20 0 0 0 338 56
@@ -11920,7 +11926,7 @@ ccw_arrow.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ddd;
@@ -11932,7 +11938,7 @@ labels.apply {
   text(360, 270)\`Counter-Clockwise (CCW)\`
 }
 
-let note = TextLayer('note') \${
+let note = TextLayer('note') #{
   font-family: monospace;
   font-size: 10;
   fill: #666;
@@ -11944,13 +11950,13 @@ note.apply {
 
 // --- Scene ---
 
-let left = GroupLayer('left') \${};
+let left = GroupLayer('left') #{};
 left.append(cw_circle, cw_arrow);
 
-let right = GroupLayer('right') \${};
+let right = GroupLayer('right') #{};
 right.append(ccw_circle, ccw_arrow);
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left, right, labels, note);
 </code>
   <img src="/blog/samples/post2/direction-comparison.svg" alt="Same four stops — clockwise vs counter-clockwise" loading="lazy">
@@ -12034,26 +12040,26 @@ g4.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 520, 530); }
 
 // --- Circles ---
 
-let c1 = PathLayer('c1') \${ fill: g1; stroke: #333; stroke-width: 1; };
+let c1 = PathLayer('c1') #{ fill: g1; stroke: #333; stroke-width: 1; };
 c1.apply { circle(cx1, cy1, r); closePath(); }
 
-let c2 = PathLayer('c2') \${ fill: g2; stroke: #333; stroke-width: 1; };
+let c2 = PathLayer('c2') #{ fill: g2; stroke: #333; stroke-width: 1; };
 c2.apply { circle(cx2, cy2, r); closePath(); }
 
-let c3 = PathLayer('c3') \${ fill: g3; stroke: #333; stroke-width: 1; };
+let c3 = PathLayer('c3') #{ fill: g3; stroke: #333; stroke-width: 1; };
 c3.apply { circle(cx3, cy3, r); closePath(); }
 
-let c4 = PathLayer('c4') \${ fill: g4; stroke: #333; stroke-width: 1; };
+let c4 = PathLayer('c4') #{ fill: g4; stroke: #333; stroke-width: 1; };
 c4.apply { circle(cx4, cy4, r); closePath(); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: #ddd;
@@ -12067,7 +12073,7 @@ labels.apply {
   text(cx4, 493)\`Color('#1a1a2e')\`
 }
 
-let desc = TextLayer('desc') \${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -12080,7 +12086,7 @@ desc.apply {
   text(cx4, 509)\`custom dark center\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 15;
   fill: #bbb;
@@ -12093,13 +12099,13 @@ title.apply {
 
 // --- Scene ---
 
-let top_row = GroupLayer('top-row') \${};
+let top_row = GroupLayer('top-row') #{};
 top_row.append(c1, c2);
 
-let bottom_row = GroupLayer('bottom-row') \${};
+let bottom_row = GroupLayer('bottom-row') #{};
 bottom_row.append(c3, c4);
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, top_row, bottom_row, labels, desc, title);
 </code>
   <img src="/blog/samples/post2/inner-radius-showcase.svg" alt="Four innerFill modes: transparent, transparent-blend, center, and custom color" loading="lazy">
@@ -12144,26 +12150,26 @@ oklch_rc.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 600, 540); }
 
 // --- Gradient circles ---
 
-let by_s = PathLayer('by-srgb') \${ fill: srgb_by; stroke: #333; stroke-width: 1; };
+let by_s = PathLayer('by-srgb') #{ fill: srgb_by; stroke: #333; stroke-width: 1; };
 by_s.apply { circle(160, 165, 85); closePath(); }
 
-let by_o = PathLayer('by-oklch') \${ fill: oklch_by; stroke: #333; stroke-width: 1; };
+let by_o = PathLayer('by-oklch') #{ fill: oklch_by; stroke: #333; stroke-width: 1; };
 by_o.apply { circle(440, 165, 85); closePath(); }
 
-let rc_s = PathLayer('rc-srgb') \${ fill: srgb_rc; stroke: #333; stroke-width: 1; };
+let rc_s = PathLayer('rc-srgb') #{ fill: srgb_rc; stroke: #333; stroke-width: 1; };
 rc_s.apply { circle(160, 400, 85); closePath(); }
 
-let rc_o = PathLayer('rc-oklch') \${ fill: oklch_rc; stroke: #333; stroke-width: 1; };
+let rc_o = PathLayer('rc-oklch') #{ fill: oklch_rc; stroke: #333; stroke-width: 1; };
 rc_o.apply { circle(440, 400, 85); closePath(); }
 
 // --- Column headers ---
 
-let headers = TextLayer('headers') \${
+let headers = TextLayer('headers') #{
   font-family: system-ui, sans-serif;
   font-size: 16;
   fill: #ccc;
@@ -12177,7 +12183,7 @@ headers.apply {
 
 // --- Row labels ---
 
-let row_labels = TextLayer('row-labels') \${
+let row_labels = TextLayer('row-labels') #{
   font-family: monospace;
   font-size: 11;
   fill: #888;
@@ -12190,7 +12196,7 @@ row_labels.apply {
 
 // --- Annotations ---
 
-let notes = TextLayer('notes') \${
+let notes = TextLayer('notes') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -12203,7 +12209,7 @@ notes.apply {
   text(440, 507)\`rich magenta arc\`
 }
 
-let footer = TextLayer('footer') \${
+let footer = TextLayer('footer') #{
   font-family: monospace;
   font-size: 9;
   fill: #444;
@@ -12215,13 +12221,13 @@ footer.apply {
 
 // --- Scene ---
 
-let top_row = GroupLayer('top-row') \${};
+let top_row = GroupLayer('top-row') #{};
 top_row.append(by_s, by_o);
 
-let bottom_row = GroupLayer('bottom-row') \${};
+let bottom_row = GroupLayer('bottom-row') #{};
 bottom_row.append(rc_s, rc_o);
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
 </code>
   <img src="/blog/samples/post2/oklch-conic.svg" alt="sRGB vs OKLCH on conics — muddy midpoints vs vibrant arcs" loading="lazy">
@@ -12252,7 +12258,7 @@ scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);
   <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
 };
 </code></pre><p>The constructor takes an ID string and four coordinates: <code>x1, y1, x2, y2</code>. Color stops are added inside the initialization block using <code>g.stop(position, color)</code>, where position is a value between 0 and 1. Once defined, assign the gradient to a layer&#39;s <code>fill</code> property:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sky_layer</span> = <span class="tp">PathLayer</span>(<span class="str">'sky-fill'</span>) \${ <span class="pr">fill</span>: <span class="id">sky</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sky_layer</span> = <span class="tp">PathLayer</span>(<span class="str">'sky-fill'</span>) #{ <span class="pr">fill</span>: <span class="id">sky</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
 <span class="id">sky_layer</span>.<span class="kw">apply</span> { <span class="id">rect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">300</span>) }
 </code></pre><p>The landscape below uses four linear gradients — a vertical sky, a diagonal mountain range, a horizontal sun streak, and a vertical ground fill — layered with Pathogen&#39;s <code>GroupLayer</code> to compose the scene.</p>
 <p><mini-workspace code-open caption="Four linear gradients composing a layered landscape">
@@ -12291,13 +12297,13 @@ let sun_grad = LinearGradient('sunstreak', 0, 0, 1, 0) {|g|
 
 // --- Layers ---
 
-let sky = PathLayer('sky-fill') \${ fill: sky_grad; stroke: none; };
+let sky = PathLayer('sky-fill') #{ fill: sky_grad; stroke: none; };
 sky.apply { rect(0, 0, 400, 300); }
 
-let sun = PathLayer('sun-streak') \${ fill: sun_grad; stroke: none; };
+let sun = PathLayer('sun-streak') #{ fill: sun_grad; stroke: none; };
 sun.apply { rect(0, 155, 400, 30); }
 
-let far_mtns = PathLayer('far-mountains') \${ fill: mtn_grad; stroke: none; };
+let far_mtns = PathLayer('far-mountains') #{ fill: mtn_grad; stroke: none; };
 far_mtns.apply {
   M 0 220
   L 40 175 L 90 200 L 140 155 L 200 130
@@ -12305,7 +12311,7 @@ far_mtns.apply {
   L 400 300 L 0 300 Z
 }
 
-let near_mtns = PathLayer('near-mountains') \${ fill: mtn_grad; stroke: none; opacity: 0.7; };
+let near_mtns = PathLayer('near-mountains') #{ fill: mtn_grad; stroke: none; opacity: 0.7; };
 near_mtns.apply {
   M 0 260
   L 50 220 L 100 240 L 170 195 L 230 225
@@ -12313,15 +12319,15 @@ near_mtns.apply {
   L 400 300 L 0 300 Z
 }
 
-let ground = PathLayer('ground-fill') \${ fill: ground_grad; stroke: none; };
+let ground = PathLayer('ground-fill') #{ fill: ground_grad; stroke: none; };
 ground.apply { rect(0, 255, 400, 45); }
 
-let frame = PathLayer('frame') \${ fill: none; stroke: #1a0e2e; stroke-width: 4; };
+let frame = PathLayer('frame') #{ fill: none; stroke: #1a0e2e; stroke-width: 4; };
 frame.apply { rect(0, 0, 400, 300); }
 
 // --- Scene Organization ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(sky, sun, far_mtns, near_mtns, ground, frame);
 </code>
   <img src="/blog/samples/post1/linear-basics.svg" alt="Four linear gradients composing a layered landscape" loading="lazy">
@@ -12368,32 +12374,32 @@ let g270 = LinearGradient('g-up', 0, 1, 0, 0) {|g|
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #1a1a2e; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #1a1a2e; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Swatch grid: 3 columns × 2 rows ---
 
-let sw1 = PathLayer('swatch-right') \${ fill: g0; stroke: #333; stroke-width: 1; };
+let sw1 = PathLayer('swatch-right') #{ fill: g0; stroke: #333; stroke-width: 1; };
 sw1.apply { roundRect(20, 55, 110, 70, 6); }
 
-let sw2 = PathLayer('swatch-down-right') \${ fill: g60; stroke: #333; stroke-width: 1; };
+let sw2 = PathLayer('swatch-down-right') #{ fill: g60; stroke: #333; stroke-width: 1; };
 sw2.apply { roundRect(145, 55, 110, 70, 6); }
 
-let sw3 = PathLayer('swatch-down') \${ fill: g90; stroke: #333; stroke-width: 1; };
+let sw3 = PathLayer('swatch-down') #{ fill: g90; stroke: #333; stroke-width: 1; };
 sw3.apply { roundRect(270, 55, 110, 70, 6); }
 
-let sw4 = PathLayer('swatch-left') \${ fill: g180; stroke: #333; stroke-width: 1; };
+let sw4 = PathLayer('swatch-left') #{ fill: g180; stroke: #333; stroke-width: 1; };
 sw4.apply { roundRect(20, 215, 110, 70, 6); }
 
-let sw5 = PathLayer('swatch-up-left') \${ fill: g240; stroke: #333; stroke-width: 1; };
+let sw5 = PathLayer('swatch-up-left') #{ fill: g240; stroke: #333; stroke-width: 1; };
 sw5.apply { roundRect(145, 215, 110, 70, 6); }
 
-let sw6 = PathLayer('swatch-up') \${ fill: g270; stroke: #333; stroke-width: 1; };
+let sw6 = PathLayer('swatch-up') #{ fill: g270; stroke: #333; stroke-width: 1; };
 sw6.apply { roundRect(270, 215, 110, 70, 6); }
 
 // --- Direction labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 11;
   fill: #a0a0c0;
@@ -12410,7 +12416,7 @@ labels.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 18;
   fill: #e0e0ff;
@@ -12423,7 +12429,7 @@ title.apply {
 
 // --- Central connector ---
 
-let connector = PathLayer('connector') \${ fill: none; stroke: #444466; stroke-width: 1; };
+let connector = PathLayer('connector') #{ fill: none; stroke: #444466; stroke-width: 1; };
 connector.apply {
   M 75 130 L 75 210
   M 200 130 L 200 210
@@ -12432,7 +12438,7 @@ connector.apply {
 
 // --- Scene ---
 
-let fan = GroupLayer('fan') \${};
+let fan = GroupLayer('fan') #{};
 fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 </code>
   <img src="/blog/samples/post1/angle-fan.svg" alt="Same stops, six directions — the two-point model controls angle" loading="lazy">
@@ -12492,49 +12498,49 @@ let ring_grad = LinearGradient('ring', 0, 0, 1, 0) {|g|
 
 // --- Background and Nebula ---
 
-let bg = PathLayer('bg') \${ fill: #080612; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #080612; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
-let nebula = PathLayer('nebula-layer') \${ fill: nebula_grad; stroke: none; };
+let nebula = PathLayer('nebula-layer') #{ fill: nebula_grad; stroke: none; };
 nebula.apply { rect(0, 0, 400, 400); }
 
 // --- Stars ---
 
-let s1 = PathLayer('s1') \${ fill: star_grad; stroke: none; };
+let s1 = PathLayer('s1') #{ fill: star_grad; stroke: none; };
 s1.apply { circle(70, 55, 18); closePath(); }
 
-let s2 = PathLayer('s2') \${ fill: warm_star; stroke: none; };
+let s2 = PathLayer('s2') #{ fill: warm_star; stroke: none; };
 s2.apply { circle(330, 80, 22); closePath(); }
 
-let s3 = PathLayer('s3') \${ fill: star_grad; stroke: none; };
+let s3 = PathLayer('s3') #{ fill: star_grad; stroke: none; };
 s3.apply { circle(60, 320, 14); closePath(); }
 
-let s4 = PathLayer('s4') \${ fill: warm_star; stroke: none; };
+let s4 = PathLayer('s4') #{ fill: warm_star; stroke: none; };
 s4.apply { circle(350, 290, 16); closePath(); }
 
-let s5 = PathLayer('s5') \${ fill: star_grad; stroke: none; };
+let s5 = PathLayer('s5') #{ fill: star_grad; stroke: none; };
 s5.apply { circle(200, 40, 10); closePath(); }
 
-let stars = GroupLayer('stars') \${};
+let stars = GroupLayer('stars') #{};
 stars.append(s1, s2, s3, s4, s5);
 
 // --- Planet with Ring ---
 
-let planet_body = PathLayer('planet-body') \${ fill: planet_grad; stroke: none; };
+let planet_body = PathLayer('planet-body') #{ fill: planet_grad; stroke: none; };
 planet_body.apply { circle(260, 280, 45); closePath(); }
 
-let planet_ring = PathLayer('planet-ring') \${ fill: ring_grad; stroke: none; opacity: 0.6; };
+let planet_ring = PathLayer('planet-ring') #{ fill: ring_grad; stroke: none; opacity: 0.6; };
 planet_ring.apply {
   M 200 282 Q 230 260 260 262 Q 290 260 320 282
   Q 290 290 260 288 Q 230 290 200 282 Z
 }
 
-let planet = GroupLayer('planet') \${};
+let planet = GroupLayer('planet') #{};
 planet.append(planet_body, planet_ring);
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, nebula, stars, planet);
 </code>
   <img src="/blog/samples/post1/radial-glow.svg" alt="Four radial gradients — nebula, stars, and a ringed planet" loading="lazy">
@@ -12555,7 +12561,7 @@ scene.append(bg, nebula, stars, planet);
 
 // --- Shared background ---
 
-let bg = PathLayer('bg') \${ fill: #0a0a1a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0a0a1a; stroke: none; };
 bg.apply { rect(0, 0, 450, 180); }
 
 // --- Sphere gradients with different focal points ---
@@ -12589,18 +12595,18 @@ sphere3_grad.interpolation = 'oklch';
 
 // --- Sphere layers ---
 
-let s1 = PathLayer('s1') \${ fill: sphere1_grad; stroke: none; };
+let s1 = PathLayer('s1') #{ fill: sphere1_grad; stroke: none; };
 s1.apply { circle(80, 80, 60); closePath(); }
 
-let s2 = PathLayer('s2') \${ fill: sphere2_grad; stroke: none; };
+let s2 = PathLayer('s2') #{ fill: sphere2_grad; stroke: none; };
 s2.apply { circle(225, 80, 60); closePath(); }
 
-let s3 = PathLayer('s3') \${ fill: sphere3_grad; stroke: none; };
+let s3 = PathLayer('s3') #{ fill: sphere3_grad; stroke: none; };
 s3.apply { circle(370, 80, 60); closePath(); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #667;
@@ -12614,7 +12620,7 @@ labels.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, s1, s2, s3, labels);
 </code>
   <img src="/blog/samples/post1/radial-focal.svg" alt="Same gradient stops, three focal points — the highlight shifts with fx, fy" loading="lazy">
@@ -12674,7 +12680,7 @@ oklch_mag_green.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Gradient bars ---
@@ -12684,29 +12690,29 @@ let bar_h = 32;
 let x0 = 50;
 
 // Pair 1
-let by_srgb = PathLayer('by-srgb') \${ fill: srgb_blue_yellow; stroke: none; };
+let by_srgb = PathLayer('by-srgb') #{ fill: srgb_blue_yellow; stroke: none; };
 by_srgb.apply { roundRect(x0, 52, bar_w, bar_h, 4); }
 
-let by_oklch = PathLayer('by-oklch') \${ fill: oklch_blue_yellow; stroke: none; };
+let by_oklch = PathLayer('by-oklch') #{ fill: oklch_blue_yellow; stroke: none; };
 by_oklch.apply { roundRect(x0, 92, bar_w, bar_h, 4); }
 
 // Pair 2
-let rc_srgb = PathLayer('rc-srgb') \${ fill: srgb_red_cyan; stroke: none; };
+let rc_srgb = PathLayer('rc-srgb') #{ fill: srgb_red_cyan; stroke: none; };
 rc_srgb.apply { roundRect(x0, 172, bar_w, bar_h, 4); }
 
-let rc_oklch = PathLayer('rc-oklch') \${ fill: oklch_red_cyan; stroke: none; };
+let rc_oklch = PathLayer('rc-oklch') #{ fill: oklch_red_cyan; stroke: none; };
 rc_oklch.apply { roundRect(x0, 212, bar_w, bar_h, 4); }
 
 // Pair 3
-let mg_srgb = PathLayer('mg-srgb') \${ fill: srgb_mag_green; stroke: none; };
+let mg_srgb = PathLayer('mg-srgb') #{ fill: srgb_mag_green; stroke: none; };
 mg_srgb.apply { roundRect(x0, 292, bar_w, bar_h, 4); }
 
-let mg_oklch = PathLayer('mg-oklch') \${ fill: oklch_mag_green; stroke: none; };
+let mg_oklch = PathLayer('mg-oklch') #{ fill: oklch_mag_green; stroke: none; };
 mg_oklch.apply { roundRect(x0, 332, bar_w, bar_h, 4); }
 
 // --- Labels ---
 
-let mode_labels = TextLayer('mode-labels') \${
+let mode_labels = TextLayer('mode-labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #888;
@@ -12721,7 +12727,7 @@ mode_labels.apply {
   text(44, 353)\`OKLCH\`
 }
 
-let pair_labels = TextLayer('pair-labels') \${
+let pair_labels = TextLayer('pair-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #ccccdd;
@@ -12736,7 +12742,7 @@ pair_labels.apply {
 
 // --- Scene ---
 
-let comparison = GroupLayer('comparison') \${};
+let comparison = GroupLayer('comparison') #{};
 comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels);
 </code>
   <img src="/blog/samples/post1/oklch-vs-srgb.svg" alt="sRGB vs OKLCH — same stops, dramatically different midpoints" loading="lazy">
@@ -12789,29 +12795,29 @@ repeat_grad.spreadMethod = 'repeat';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #14141e; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #14141e; stroke: none; };
 bg.apply { rect(0, 0, 400, 300); }
 
 // --- Gradient strips ---
 
-let strip_pad = PathLayer('strip-pad') \${ fill: pad_grad; stroke: #333; stroke-width: 1; };
+let strip_pad = PathLayer('strip-pad') #{ fill: pad_grad; stroke: #333; stroke-width: 1; };
 strip_pad.apply { roundRect(60, 45, 320, 50, 4); }
 
-let strip_reflect = PathLayer('strip-reflect') \${ fill: reflect_grad; stroke: #333; stroke-width: 1; };
+let strip_reflect = PathLayer('strip-reflect') #{ fill: reflect_grad; stroke: #333; stroke-width: 1; };
 strip_reflect.apply { roundRect(60, 120, 320, 50, 4); }
 
-let strip_repeat = PathLayer('strip-repeat') \${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
+let strip_repeat = PathLayer('strip-repeat') #{ fill: repeat_grad; stroke: #333; stroke-width: 1; };
 strip_repeat.apply { roundRect(60, 195, 320, 50, 4); }
 
 // --- Range indicator (shows the 0–30% region) ---
 
-let indicator = PathLayer('range-indicator') \${ fill: none; stroke: #ffffff44; stroke-width: 1; };
+let indicator = PathLayer('range-indicator') #{ fill: none; stroke: #ffffff44; stroke-width: 1; };
 indicator.apply {
   M 60 40 L 60 255
   M 156 40 L 156 255
 }
 
-let range_label = TextLayer('range-label') \${
+let range_label = TextLayer('range-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -12823,7 +12829,7 @@ range_label.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 12;
   fill: #a0a0c0;
@@ -12837,7 +12843,7 @@ labels.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 16;
   fill: #e0e0ff;
@@ -12850,7 +12856,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title);
 </code>
   <img src="/blog/samples/post1/spread-modes.svg" alt="pad, reflect, repeat — same narrow gradient, three spread behaviors" loading="lazy">
@@ -12900,52 +12906,52 @@ let subtle = LinearGradient('subtle-variant', 0, 0, 1, 0) {|g|
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 400, 300); }
 
 // --- Base showcase (large card) ---
 
-let base_card = PathLayer('base-card') \${ fill: base; stroke: #333; stroke-width: 1; };
+let base_card = PathLayer('base-card') #{ fill: base; stroke: #333; stroke-width: 1; };
 base_card.apply { roundRect(20, 40, 170, 80, 8); }
 
-let cool_card = PathLayer('cool-card') \${ fill: cool; stroke: #333; stroke-width: 1; };
+let cool_card = PathLayer('cool-card') #{ fill: cool; stroke: #333; stroke-width: 1; };
 cool_card.apply { roundRect(210, 40, 170, 80, 8); }
 
 // --- Vertical variant: tall sidebar ---
 
-let vert_bar = PathLayer('vert-bar') \${ fill: vertical; stroke: #333; stroke-width: 1; };
+let vert_bar = PathLayer('vert-bar') #{ fill: vertical; stroke: #333; stroke-width: 1; };
 vert_bar.apply { roundRect(20, 145, 60, 120, 8); }
 
 // --- Subtle variant: UI elements ---
 
-let btn1 = PathLayer('btn1') \${ fill: subtle; stroke: none; };
+let btn1 = PathLayer('btn1') #{ fill: subtle; stroke: none; };
 btn1.apply { roundRect(100, 145, 120, 36, 6); }
 
-let btn2 = PathLayer('btn2') \${ fill: subtle; stroke: none; };
+let btn2 = PathLayer('btn2') #{ fill: subtle; stroke: none; };
 btn2.apply { roundRect(100, 195, 120, 36, 6); }
 
 // --- Small accent circles using base ---
 
-let dot1 = PathLayer('dot1') \${ fill: base; stroke: none; };
+let dot1 = PathLayer('dot1') #{ fill: base; stroke: none; };
 dot1.apply { circle(260, 163, 18); closePath(); }
 
-let dot2 = PathLayer('dot2') \${ fill: cool; stroke: none; };
+let dot2 = PathLayer('dot2') #{ fill: cool; stroke: none; };
 dot2.apply { circle(310, 163, 18); closePath(); }
 
-let dot3 = PathLayer('dot3') \${ fill: vertical; stroke: none; };
+let dot3 = PathLayer('dot3') #{ fill: vertical; stroke: none; };
 dot3.apply { circle(360, 163, 18); closePath(); }
 
 // --- Pill shapes with inherited gradient ---
 
-let pill1 = PathLayer('pill1') \${ fill: base; stroke: none; };
+let pill1 = PathLayer('pill1') #{ fill: base; stroke: none; };
 pill1.apply { roundRect(240, 200, 140, 28, 14); }
 
-let pill2 = PathLayer('pill2') \${ fill: cool; stroke: none; };
+let pill2 = PathLayer('pill2') #{ fill: cool; stroke: none; };
 pill2.apply { roundRect(240, 236, 140, 28, 14); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #888;
@@ -12959,7 +12965,7 @@ labels.apply {
   text(310, 195)\`accent dots\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ccccdd;
@@ -12972,7 +12978,7 @@ title.apply {
 
 // --- Scene ---
 
-let palette = GroupLayer('palette') \${};
+let palette = GroupLayer('palette') #{};
 palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title);
 </code>
   <img src="/blog/samples/post1/inheritance-theme.svg" alt="One base gradient spawns a family of variants via inherit()" loading="lazy">
@@ -13016,23 +13022,23 @@ glow_c.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #0a0a1a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0a0a1a; stroke: none; };
 bg.apply { rect(0, 0, 400, 300); }
 
 // --- Light circles (overlapping for color mixing) ---
 
-let la = PathLayer('light-a') \${ fill: glow_a; stroke: none; opacity: 0.8; };
+let la = PathLayer('light-a') #{ fill: glow_a; stroke: none; opacity: 0.8; };
 la.apply { circle(140, 120, 130); closePath(); }
 
-let lb = PathLayer('light-b') \${ fill: glow_b; stroke: none; opacity: 0.8; };
+let lb = PathLayer('light-b') #{ fill: glow_b; stroke: none; opacity: 0.8; };
 lb.apply { circle(280, 110, 130); closePath(); }
 
-let lc = PathLayer('light-c') \${ fill: glow_c; stroke: none; opacity: 0.8; };
+let lc = PathLayer('light-c') #{ fill: glow_c; stroke: none; opacity: 0.8; };
 lc.apply { circle(200, 220, 130); closePath(); }
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, la, lb, lc);
 </code>
   <img src="/blog/samples/post1/radial-reactive.svg" alt="Drag the color pickers to recolor three overlapping radial lights" loading="lazy">
@@ -13070,17 +13076,17 @@ mesh.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Mesh fill ---
 
-let patch = PathLayer('patch') \${ fill: mesh; stroke: none; };
+let patch = PathLayer('patch') #{ fill: mesh; stroke: none; };
 patch.apply { roundRect(30, 50, 340, 300, 8); }
 
 // --- Corner labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #ccc;
@@ -13093,7 +13099,7 @@ labels.apply {
   text(350, 368)\`(1,1) #2a9d8f\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -13105,7 +13111,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, patch, labels, title);
 </code>
   <img src="/blog/samples/post3/mesh-basics.svg" alt="2x2 mesh — four corner colors with bilinear OKLCH interpolation" loading="lazy">
@@ -13165,20 +13171,20 @@ deformed.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 500, 400); }
 
 // --- Mesh fills ---
 
-let left = PathLayer('left') \${ fill: uniform; stroke: #333; stroke-width: 1; };
+let left = PathLayer('left') #{ fill: uniform; stroke: #333; stroke-width: 1; };
 left.apply { roundRect(30, 50, 200, 280, 6); }
 
-let right = PathLayer('right') \${ fill: deformed; stroke: #333; stroke-width: 1; };
+let right = PathLayer('right') #{ fill: deformed; stroke: #333; stroke-width: 1; };
 right.apply { roundRect(270, 50, 200, 280, 6); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #ddd;
@@ -13190,7 +13196,7 @@ labels.apply {
   text(370, 36)\`Deformed Grid\`
 }
 
-let desc = TextLayer('desc') \${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -13201,7 +13207,7 @@ desc.apply {
   text(370, 348)\`same colors + .translate()\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -13213,13 +13219,13 @@ title.apply {
 
 // --- Scene ---
 
-let left_group = GroupLayer('left-group') \${};
+let left_group = GroupLayer('left-group') #{};
 left_group.append(left);
 
-let right_group = GroupLayer('right-group') \${};
+let right_group = GroupLayer('right-group') #{};
 right_group.append(right);
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
   <img src="/blog/samples/post3/mesh-deformation.svg" alt="Uniform grid vs deformed grid — same colors, different point positions" loading="lazy">
@@ -13258,17 +13264,17 @@ nebula.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Fill ---
 
-let field = PathLayer('field') \${ fill: nebula; stroke: none; };
+let field = PathLayer('field') #{ fill: nebula; stroke: none; };
 field.apply { roundRect(20, 40, 360, 320, 8); }
 
 // --- Point markers ---
 
-let dots = PathLayer('dots') \${ fill: #ffffff88; stroke: #fff; stroke-width: 1; };
+let dots = PathLayer('dots') #{ fill: #ffffff88; stroke: #fff; stroke-width: 1; };
 dots.apply {
   circle(60,  70,  4); closePath();
   circle(340, 60,  4); closePath();
@@ -13280,7 +13286,7 @@ dots.apply {
 
 // --- Labels ---
 
-let point_labels = TextLayer('point-labels') \${
+let point_labels = TextLayer('point-labels') #{
   font-family: monospace;
   font-size: 8;
   fill: #ffffffaa;
@@ -13295,7 +13301,7 @@ point_labels.apply {
   text(210, 78)\`#4cc9f0\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -13307,7 +13313,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, field, dots, point_labels, title);
 </code>
   <img src="/blog/samples/post3/freeform-scatter.svg" alt="Six color points blended with inverse-distance weighting" loading="lazy">
@@ -13358,23 +13364,23 @@ grad_4.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 500, 400); }
 
 // --- Fills ---
 
-let f1 = PathLayer('f1') \${ fill: grad_1; stroke: #333; stroke-width: 1; };
+let f1 = PathLayer('f1') #{ fill: grad_1; stroke: #333; stroke-width: 1; };
 f1.apply { roundRect(25, 50, 140, 260, 6); }
 
-let f2 = PathLayer('f2') \${ fill: grad_2; stroke: #333; stroke-width: 1; };
+let f2 = PathLayer('f2') #{ fill: grad_2; stroke: #333; stroke-width: 1; };
 f2.apply { roundRect(180, 50, 140, 260, 6); }
 
-let f3 = PathLayer('f3') \${ fill: grad_4; stroke: #333; stroke-width: 1; };
+let f3 = PathLayer('f3') #{ fill: grad_4; stroke: #333; stroke-width: 1; };
 f3.apply { roundRect(335, 50, 140, 260, 6); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ddd;
@@ -13387,7 +13393,7 @@ labels.apply {
   text(405, 36)\`falloff = 4.0\`
 }
 
-let desc = TextLayer('desc') \${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -13399,7 +13405,7 @@ desc.apply {
   text(405, 328)\`tight halos\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -13411,7 +13417,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, f1, f2, f3, labels, desc, title);
 </code>
   <img src="/blog/samples/post3/falloff-comparison.svg" alt="Same five points at three falloff exponents: 1.0, 2.0, 4.0" loading="lazy">
@@ -13468,20 +13474,20 @@ freeform.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 500, 400); }
 
 // --- Fills ---
 
-let mesh_fill = PathLayer('mesh-fill') \${ fill: mesh; stroke: #333; stroke-width: 1; };
+let mesh_fill = PathLayer('mesh-fill') #{ fill: mesh; stroke: #333; stroke-width: 1; };
 mesh_fill.apply { roundRect(30, 50, 200, 280, 6); }
 
-let ff_fill = PathLayer('ff-fill') \${ fill: freeform; stroke: #333; stroke-width: 1; };
+let ff_fill = PathLayer('ff-fill') #{ fill: freeform; stroke: #333; stroke-width: 1; };
 ff_fill.apply { roundRect(270, 50, 200, 280, 6); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ddd;
@@ -13493,7 +13499,7 @@ labels.apply {
   text(370, 36)\`FreeformGradient\`
 }
 
-let desc = TextLayer('desc') \${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -13504,7 +13510,7 @@ desc.apply {
   text(370, 348)\`inverse-distance weighting\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #999;
@@ -13516,13 +13522,13 @@ title.apply {
 
 // --- Scene ---
 
-let left_group = GroupLayer('left-group') \${};
+let left_group = GroupLayer('left-group') #{};
 left_group.append(mesh_fill);
 
-let right_group = GroupLayer('right-group') \${};
+let right_group = GroupLayer('right-group') #{};
 right_group.append(ff_fill);
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
   <img src="/blog/samples/post3/mesh-vs-freeform.svg" alt="Same 9 colors — bilinear grid vs inverse-distance scatter" loading="lazy">
@@ -13555,29 +13561,29 @@ let bg_grad = LinearGradient('bg-g', 0, 0, 0, 1) {|g|
   g.stop(1, Color('#12121f'));
 };
 
-let bg = PathLayer('bg') \${ fill: bg_grad; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bg_grad; stroke: none; };
 bg.apply { rect(0, 0, 700, 250); }
 
 // --- Stage boxes (5 pipeline stages) ---
 
-let box1 = PathLayer('box1') \${ fill: #1a3a3a; stroke: #2a9d8f; stroke-width: 1.5; };
+let box1 = PathLayer('box1') #{ fill: #1a3a3a; stroke: #2a9d8f; stroke-width: 1.5; };
 box1.apply { roundRect(15, 60, 115, 55, 6); }
 
-let box2 = PathLayer('box2') \${ fill: #2a1a4a; stroke: #7c3aed; stroke-width: 1.5; };
+let box2 = PathLayer('box2') #{ fill: #2a1a4a; stroke: #7c3aed; stroke-width: 1.5; };
 box2.apply { roundRect(160, 60, 115, 55, 6); }
 
-let box3 = PathLayer('box3') \${ fill: #4a1a2a; stroke: #f72585; stroke-width: 1.5; };
+let box3 = PathLayer('box3') #{ fill: #4a1a2a; stroke: #f72585; stroke-width: 1.5; };
 box3.apply { roundRect(305, 60, 115, 55, 6); }
 
-let box4 = PathLayer('box4') \${ fill: #3a3a1a; stroke: #e9c46a; stroke-width: 1.5; };
+let box4 = PathLayer('box4') #{ fill: #3a3a1a; stroke: #e9c46a; stroke-width: 1.5; };
 box4.apply { roundRect(450, 60, 115, 55, 6); }
 
-let box5 = PathLayer('box5') \${ fill: #1a2a4a; stroke: #4361ee; stroke-width: 1.5; };
+let box5 = PathLayer('box5') #{ fill: #1a2a4a; stroke: #4361ee; stroke-width: 1.5; };
 box5.apply { roundRect(595, 60, 90, 55, 6); }
 
 // --- Arrow lines ---
 
-let arrows = PathLayer('arrows') \${ fill: none; stroke: #555; stroke-width: 1.5; };
+let arrows = PathLayer('arrows') #{ fill: none; stroke: #555; stroke-width: 1.5; };
 arrows.apply {
   M 130 87 L 157 87
   M 275 87 L 302 87
@@ -13587,7 +13593,7 @@ arrows.apply {
 
 // --- Arrow heads ---
 
-let heads = PathLayer('heads') \${ fill: #555; stroke: none; };
+let heads = PathLayer('heads') #{ fill: #555; stroke: none; };
 heads.apply {
   M 155 82 L 160 87 L 155 92 Z
   M 300 82 L 305 87 L 300 92 Z
@@ -13597,7 +13603,7 @@ heads.apply {
 
 // --- Box labels ---
 
-let box_labels = TextLayer('box-labels') \${
+let box_labels = TextLayer('box-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #eee;
@@ -13617,7 +13623,7 @@ box_labels.apply {
 
 // --- Detail labels below each box ---
 
-let details = TextLayer('details') \${
+let details = TextLayer('details') #{
   font-family: monospace;
   font-size: 7;
   fill: #666;
@@ -13643,7 +13649,7 @@ details.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #888;
@@ -13653,7 +13659,7 @@ title.apply {
   text(350, 200)\`The Gradient Compilation Pipeline\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -13665,7 +13671,7 @@ subtitle.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle);
 </code>
   <img src="/blog/samples/post5/pipeline-flow.svg" alt="Five stages: source, compiler, GPU renderer, SVG output, blog embed" loading="lazy">
@@ -13684,7 +13690,7 @@ scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, detail
 </ol>
 <h2>GroupLayer</h2>
 <p>The demos in this series use <code>GroupLayer</code> extensively for scene composition. <code>GroupLayer</code> maps to SVG&#39;s <code>&lt;g&gt;</code> element — it groups child layers into a logical unit that can be positioned, styled, and nested.</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">card</span> = <span class="tp">GroupLayer</span>(<span class="str">'card-1'</span>) \${
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">card</span> = <span class="tp">GroupLayer</span>(<span class="str">'card-1'</span>) #{
   <span class="pr">translate-x</span>: <span class="num">20</span>;
   <span class="pr">translate-y</span>: <span class="num">25</span>;
 };
@@ -13741,20 +13747,20 @@ topo_fill.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 600, 320); }
 
 // --- Card 1: Linear (left) ---
 
-let card1 = GroupLayer('card-1') \${
+let card1 = GroupLayer('card-1') #{
   translate-x: 20;
   translate-y: 25;
 };
 
-let c1_fill = PathLayer('c1-fill') \${ fill: warm; stroke: #444; stroke-width: 1; };
+let c1_fill = PathLayer('c1-fill') #{ fill: warm; stroke: #444; stroke-width: 1; };
 c1_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
-let c1_label = TextLayer('c1-label') \${
+let c1_label = TextLayer('c1-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -13763,7 +13769,7 @@ let c1_label = TextLayer('c1-label') \${
 };
 c1_label.apply { text(85, 160)\`LinearGradient\` }
 
-let c1_tag = TextLayer('c1-tag') \${
+let c1_tag = TextLayer('c1-tag') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -13775,15 +13781,15 @@ card1.append(c1_fill, c1_label, c1_tag);
 
 // --- Card 2: Radial (center) ---
 
-let card2 = GroupLayer('card-2') \${
+let card2 = GroupLayer('card-2') #{
   translate-x: 215;
   translate-y: 25;
 };
 
-let c2_fill = PathLayer('c2-fill') \${ fill: cool; stroke: #444; stroke-width: 1; };
+let c2_fill = PathLayer('c2-fill') #{ fill: cool; stroke: #444; stroke-width: 1; };
 c2_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
-let c2_label = TextLayer('c2-label') \${
+let c2_label = TextLayer('c2-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -13792,7 +13798,7 @@ let c2_label = TextLayer('c2-label') \${
 };
 c2_label.apply { text(85, 160)\`RadialGradient\` }
 
-let c2_tag = TextLayer('c2-tag') \${
+let c2_tag = TextLayer('c2-tag') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -13804,15 +13810,15 @@ card2.append(c2_fill, c2_label, c2_tag);
 
 // --- Card 3: Topo (right) ---
 
-let card3 = GroupLayer('card-3') \${
+let card3 = GroupLayer('card-3') #{
   translate-x: 410;
   translate-y: 25;
 };
 
-let c3_fill = PathLayer('c3-fill') \${ fill: topo_fill; stroke: #444; stroke-width: 1; };
+let c3_fill = PathLayer('c3-fill') #{ fill: topo_fill; stroke: #444; stroke-width: 1; };
 c3_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
-let c3_label = TextLayer('c3-label') \${
+let c3_label = TextLayer('c3-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -13821,7 +13827,7 @@ let c3_label = TextLayer('c3-label') \${
 };
 c3_label.apply { text(85, 160)\`TopoGradient\` }
 
-let c3_tag = TextLayer('c3-tag') \${
+let c3_tag = TextLayer('c3-tag') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -13833,7 +13839,7 @@ card3.append(c3_fill, c3_label, c3_tag);
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -13843,7 +13849,7 @@ title.apply {
   text(300, 265)\`GroupLayer — Card Layout with translate\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -13855,7 +13861,7 @@ subtitle.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, card1, card2, card3, title, subtitle);
 </code>
   <img src="/blog/samples/post5/grouplayer-cards.svg" alt="Three cards positioned with GroupLayer translate — mixing native and GPU gradients" loading="lazy">
@@ -13975,32 +13981,32 @@ g_topo.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 580, 400); }
 
 // --- Panels (2 rows × 3 columns) ---
 
-let p1 = PathLayer('p-lin') \${ fill: g_lin; stroke: #444; stroke-width: 1; };
+let p1 = PathLayer('p-lin') #{ fill: g_lin; stroke: #444; stroke-width: 1; };
 p1.apply { roundRect(20, 20, 160, 120, 6); }
 
-let p2 = PathLayer('p-rad') \${ fill: g_rad; stroke: #444; stroke-width: 1; };
+let p2 = PathLayer('p-rad') #{ fill: g_rad; stroke: #444; stroke-width: 1; };
 p2.apply { roundRect(210, 20, 160, 120, 6); }
 
-let p3 = PathLayer('p-con') \${ fill: g_con; stroke: #444; stroke-width: 1; };
+let p3 = PathLayer('p-con') #{ fill: g_con; stroke: #444; stroke-width: 1; };
 p3.apply { roundRect(400, 20, 160, 120, 6); }
 
-let p4 = PathLayer('p-mesh') \${ fill: g_mesh; stroke: #444; stroke-width: 1; };
+let p4 = PathLayer('p-mesh') #{ fill: g_mesh; stroke: #444; stroke-width: 1; };
 p4.apply { roundRect(20, 210, 160, 120, 6); }
 
-let p5 = PathLayer('p-free') \${ fill: g_free; stroke: #444; stroke-width: 1; };
+let p5 = PathLayer('p-free') #{ fill: g_free; stroke: #444; stroke-width: 1; };
 p5.apply { roundRect(210, 210, 160, 120, 6); }
 
-let p6 = PathLayer('p-topo') \${ fill: g_topo; stroke: #444; stroke-width: 1; };
+let p6 = PathLayer('p-topo') #{ fill: g_topo; stroke: #444; stroke-width: 1; };
 p6.apply { roundRect(400, 210, 160, 120, 6); }
 
 // --- Labels ---
 
-let names = TextLayer('names') \${
+let names = TextLayer('names') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -14016,7 +14022,7 @@ names.apply {
   text(480, 345)\`Topo\`
 }
 
-let tags = TextLayer('tags') \${
+let tags = TextLayer('tags') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -14033,7 +14039,7 @@ tags.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #999;
@@ -14045,7 +14051,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title);
 </code>
   <img src="/blog/samples/post5/gradient-gallery.svg" alt="The complete Pathogen gradient system — six types, one language" loading="lazy">
@@ -14119,12 +14125,12 @@ topo.interpolation = 'oklch';
 
 // --- Layers ---
 
-let bg = PathLayer('bg') \${ fill: topo; stroke: none; };
+let bg = PathLayer('bg') #{ fill: topo; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #ffffffaa;
@@ -14137,7 +14143,7 @@ labels.apply {
   text(165, 195)\`contour (0.80) — peak\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #aaa;
@@ -14149,7 +14155,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, labels, title);
 </code>
   <img src="/blog/samples/post4/topo-basics.svg" alt="Three nested contours at elevations 0.25, 0.5, and 0.8 — terrain from paths" loading="lazy">
@@ -14199,12 +14205,12 @@ topo.interpolation = 'oklch';
 
 // --- Layers ---
 
-let bg = PathLayer('bg') \${ fill: topo; stroke: none; };
+let bg = PathLayer('bg') #{ fill: topo; stroke: none; };
 bg.apply { rect(0, 0, 500, 350); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #ffffff88;
@@ -14215,7 +14221,7 @@ labels.apply {
   text(360, 125)\`cool peak (0.7)\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #aaa;
@@ -14227,7 +14233,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, labels, title);
 </code>
   <img src="/blog/samples/post4/topo-twin-peaks.svg" alt="Two independent peaks at the same elevation — warm and cool palettes" loading="lazy">
@@ -14278,20 +14284,20 @@ topo_l.easing = 'smoothstep';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 500, 300); }
 
 // --- Fills ---
 
-let left = PathLayer('left') \${ fill: topo_d; stroke: #333; stroke-width: 1; };
+let left = PathLayer('left') #{ fill: topo_d; stroke: #333; stroke-width: 1; };
 left.apply { roundRect(20, 30, 220, 220, 6); }
 
-let right = PathLayer('right') \${ fill: topo_l; stroke: #333; stroke-width: 1; };
+let right = PathLayer('right') #{ fill: topo_l; stroke: #333; stroke-width: 1; };
 right.apply { roundRect(260, 30, 220, 220, 6); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ddd;
@@ -14303,7 +14309,7 @@ labels.apply {
   text(370, 22)\`Laplace Solver\`
 }
 
-let desc = TextLayer('desc') \${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -14314,7 +14320,7 @@ desc.apply {
   text(370, 268)\`smooth potential field (300 iter)\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #999;
@@ -14326,13 +14332,13 @@ title.apply {
 
 // --- Scene ---
 
-let left_group = GroupLayer('left-group') \${};
+let left_group = GroupLayer('left-group') #{};
 left_group.append(left);
 
-let right_group = GroupLayer('right-group') \${};
+let right_group = GroupLayer('right-group') #{};
 right_group.append(right);
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left_group, right_group, labels, desc, title);
 </code>
   <img src="/blog/samples/post4/method-comparison.svg" alt="Same three contours — distance (concentric) vs Laplace (smooth potential field)" loading="lazy">
@@ -14401,29 +14407,29 @@ t5.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 550, 350); }
 
 // --- Fills ---
 
-let p1 = PathLayer('p1') \${ fill: t1; stroke: #333; stroke-width: 1; };
+let p1 = PathLayer('p1') #{ fill: t1; stroke: #333; stroke-width: 1; };
 p1.apply { roundRect(15, 60, 90, 90, 6); }
 
-let p2 = PathLayer('p2') \${ fill: t2; stroke: #333; stroke-width: 1; };
+let p2 = PathLayer('p2') #{ fill: t2; stroke: #333; stroke-width: 1; };
 p2.apply { roundRect(120, 60, 90, 90, 6); }
 
-let p3 = PathLayer('p3') \${ fill: t3; stroke: #333; stroke-width: 1; };
+let p3 = PathLayer('p3') #{ fill: t3; stroke: #333; stroke-width: 1; };
 p3.apply { roundRect(225, 60, 90, 90, 6); }
 
-let p4 = PathLayer('p4') \${ fill: t4; stroke: #333; stroke-width: 1; };
+let p4 = PathLayer('p4') #{ fill: t4; stroke: #333; stroke-width: 1; };
 p4.apply { roundRect(330, 60, 90, 90, 6); }
 
-let p5 = PathLayer('p5') \${ fill: t5; stroke: #333; stroke-width: 1; };
+let p5 = PathLayer('p5') #{ fill: t5; stroke: #333; stroke-width: 1; };
 p5.apply { roundRect(435, 60, 90, 90, 6); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -14438,7 +14444,7 @@ labels.apply {
   text(480, 48)\`ease-in-out\`
 }
 
-let desc = TextLayer('desc') \${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -14452,7 +14458,7 @@ desc.apply {
   text(480, 168)\`slow both\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -14462,7 +14468,7 @@ title.apply {
   text(275, 240)\`Easing Modes — Elevation Interpolation Curves\`
 }
 
-let note = TextLayer('note') \${
+let note = TextLayer('note') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -14474,7 +14480,7 @@ note.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, p1, p2, p3, p4, p5, labels, desc, title, note);
 </code>
   <img src="/blog/samples/post4/easing-modes.svg" alt="Five easing modes applied to the same two contours" loading="lazy">
@@ -14537,28 +14543,28 @@ topo.interpolation = 'oklch';
 
 // --- Layers ---
 
-let bg = PathLayer('bg') \${ fill: topo; stroke: none; };
+let bg = PathLayer('bg') #{ fill: topo; stroke: none; };
 bg.apply { rect(0, 0, 500, 400); }
 
 // --- Elevation legend ---
 
-let legend_bg = PathLayer('legend-bg') \${ fill: #00000066; stroke: none; };
+let legend_bg = PathLayer('legend-bg') #{ fill: #00000066; stroke: none; };
 legend_bg.apply { roundRect(350, 270, 135, 110, 4); }
 
-let s1 = PathLayer('s1') \${ fill: #1a5276; stroke: #444; stroke-width: 0.5; };
+let s1 = PathLayer('s1') #{ fill: #1a5276; stroke: #444; stroke-width: 0.5; };
 s1.apply { rect(360, 280, 14, 10); }
-let s2 = PathLayer('s2') \${ fill: #c2b280; stroke: #444; stroke-width: 0.5; };
+let s2 = PathLayer('s2') #{ fill: #c2b280; stroke: #444; stroke-width: 0.5; };
 s2.apply { rect(360, 296, 14, 10); }
-let s3 = PathLayer('s3') \${ fill: #8fbc8f; stroke: #444; stroke-width: 0.5; };
+let s3 = PathLayer('s3') #{ fill: #8fbc8f; stroke: #444; stroke-width: 0.5; };
 s3.apply { rect(360, 312, 14, 10); }
-let s4 = PathLayer('s4') \${ fill: #228b22; stroke: #444; stroke-width: 0.5; };
+let s4 = PathLayer('s4') #{ fill: #228b22; stroke: #444; stroke-width: 0.5; };
 s4.apply { rect(360, 328, 14, 10); }
-let s5 = PathLayer('s5') \${ fill: #8b6914; stroke: #444; stroke-width: 0.5; };
+let s5 = PathLayer('s5') #{ fill: #8b6914; stroke: #444; stroke-width: 0.5; };
 s5.apply { rect(360, 344, 14, 10); }
-let s6 = PathLayer('s6') \${ fill: #dcdcdc; stroke: #444; stroke-width: 0.5; };
+let s6 = PathLayer('s6') #{ fill: #dcdcdc; stroke: #444; stroke-width: 0.5; };
 s6.apply { rect(360, 360, 14, 10); }
 
-let legend = TextLayer('legend') \${
+let legend = TextLayer('legend') #{
   font-family: monospace;
   font-size: 8;
   fill: #ccc;
@@ -14573,7 +14579,7 @@ legend.apply {
   text(380, 369)\`0.92 summit\`
 }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #aaa;
@@ -14585,10 +14591,10 @@ title.apply {
 
 // --- Scene ---
 
-let legend_group = GroupLayer('legend-group') \${};
+let legend_group = GroupLayer('legend-group') #{};
 legend_group.append(legend_bg, s1, s2, s3, s4, s5, s6, legend);
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, legend_group, title);
 </code>
   <img src="/blog/samples/post4/terrain-map.svg" alt="Five elevation bands with Laplace solver — ocean to summit" loading="lazy">
@@ -14642,10 +14648,10 @@ topo.interpolation = 'oklch';
 
 // --- Layers ---
 
-let bg = PathLayer('bg') \${ fill: topo; stroke: none; };
+let bg = PathLayer('bg') #{ fill: topo; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: #777;
@@ -14657,7 +14663,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, title);
 </code>
   <img src="/blog/samples/post4/topo-abstract.svg" alt="Overlapping contour clusters with Laplace blending — abstract topography" loading="lazy">
@@ -14728,47 +14734,47 @@ topo.interpolation = 'oklch';
 
 // ========== LEFT PANEL: Rendered Gradient ==========
 
-let bg = PathLayer('bg') \${ fill: #111; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111; stroke: none; };
 bg.apply { rect(0, 0, 840, 420); }
 
-let left_fill = PathLayer('left-fill') \${ fill: topo; stroke: #333; stroke-width: 1; };
+let left_fill = PathLayer('left-fill') #{ fill: topo; stroke: #333; stroke-width: 1; };
 left_fill.apply { roundRect(10, 10, 400, 400, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
-let schema_border = PathLayer('schema-border') \${ fill: none; stroke: #333; stroke-width: 1; };
+let schema_border = PathLayer('schema-border') #{ fill: none; stroke: #333; stroke-width: 1; };
 schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // Schematic: same shapes drawn at +430 x offset (center ≈ 630, 200)
 // M positions mirror the gradient projections offset into right panel
 
-let outline1 = PathLayer('outline1') \${ fill: none; stroke: #888; stroke-width: 1.2; };
+let outline1 = PathLayer('outline1') #{ fill: none; stroke: #888; stroke-width: 1.2; };
 outline1.apply { M 639 189 r1.draw() }
 
-let outline2 = PathLayer('outline2') \${ fill: none; stroke: #aaa; stroke-width: 1.2; };
+let outline2 = PathLayer('outline2') #{ fill: none; stroke: #aaa; stroke-width: 1.2; };
 outline2.apply { M 639 190 r2.draw() }
 
-let outline3 = PathLayer('outline3') \${ fill: none; stroke: #ccc; stroke-width: 1.2; };
+let outline3 = PathLayer('outline3') #{ fill: none; stroke: #ccc; stroke-width: 1.2; };
 outline3.apply { M 637 193 r3.draw() }
 
-let outline4 = PathLayer('outline4') \${ fill: none; stroke: #eee; stroke-width: 1.2; };
+let outline4 = PathLayer('outline4') #{ fill: none; stroke: #eee; stroke-width: 1.2; };
 outline4.apply { M 633 200 r4.draw() }
 
 // --- Paint chips (25% larger: 15x13) + elevation labels ---
 
-let chip1 = PathLayer('chip1') \${ fill: #264653; stroke: #555; stroke-width: 0.5; };
+let chip1 = PathLayer('chip1') #{ fill: #264653; stroke: #555; stroke-width: 0.5; };
 chip1.apply { rect(770, 145, 15, 13); }
 
-let chip2 = PathLayer('chip2') \${ fill: #2a9d8f; stroke: #555; stroke-width: 0.5; };
+let chip2 = PathLayer('chip2') #{ fill: #2a9d8f; stroke: #555; stroke-width: 0.5; };
 chip2.apply { rect(770, 190, 15, 13); }
 
-let chip3 = PathLayer('chip3') \${ fill: #e9c46a; stroke: #555; stroke-width: 0.5; };
+let chip3 = PathLayer('chip3') #{ fill: #e9c46a; stroke: #555; stroke-width: 0.5; };
 chip3.apply { rect(770, 235, 15, 13); }
 
-let chip4 = PathLayer('chip4') \${ fill: #e76f51; stroke: #555; stroke-width: 0.5; };
+let chip4 = PathLayer('chip4') #{ fill: #e76f51; stroke: #555; stroke-width: 0.5; };
 chip4.apply { rect(770, 280, 15, 13); }
 
-let elev_labels = TextLayer('elev-labels') \${
+let elev_labels = TextLayer('elev-labels') #{
   font-family: monospace;
   font-size: 11;
   fill: #bbb;
@@ -14784,7 +14790,7 @@ elev_labels.apply {
 // --- Leader lines (from chip left edge to shape right edge) ---
 // Endpoints computed from rotated vertex positions in schematic space
 
-let leaders = PathLayer('leaders') \${ fill: none; stroke: #555; stroke-width: 0.7; };
+let leaders = PathLayer('leaders') #{ fill: none; stroke: #555; stroke-width: 0.7; };
 leaders.apply {
   M 770 152 l -37 23
   M 770 197 l -80 -2
@@ -14794,7 +14800,7 @@ leaders.apply {
 
 // --- Panel labels ---
 
-let panel_labels = TextLayer('panel-labels') \${
+let panel_labels = TextLayer('panel-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -14807,7 +14813,7 @@ panel_labels.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels);
 </code>
   <img src="/blog/samples/post4/topo-nested-rects-annotated.svg" alt="Nested rotated rectangles — four angular contours at increasing elevations with annotated contour map" loading="lazy">
@@ -14907,15 +14913,15 @@ topo.interpolation = 'oklch';
 
 // ========== LEFT PANEL: Rendered Gradient ==========
 
-let bg = PathLayer('bg') \${ fill: #111; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111; stroke: none; };
 bg.apply { rect(0, 0, 840, 420); }
 
-let left_fill = PathLayer('left-fill') \${ fill: topo; stroke: #333; stroke-width: 1; };
+let left_fill = PathLayer('left-fill') #{ fill: topo; stroke: #333; stroke-width: 1; };
 left_fill.apply { roundRect(10, 10, 400, 400, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
-let schema_border = PathLayer('schema-border') \${ fill: none; stroke: #333; stroke-width: 1; };
+let schema_border = PathLayer('schema-border') #{ fill: none; stroke: #333; stroke-width: 1; };
 schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // Schematic offset: +420 to x for all projections
@@ -14925,62 +14931,62 @@ schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // --- Primary cluster outlines (center, blue) ---
 
-let o_hex = PathLayer('o-hex') \${ fill: none; stroke: #667; stroke-width: 1.2; };
+let o_hex = PathLayer('o-hex') #{ fill: none; stroke: #667; stroke-width: 1.2; };
 o_hex.apply { M 610 185 hex_r.draw() }
 
-let o_pent = PathLayer('o-pent') \${ fill: none; stroke: #8899bb; stroke-width: 1.2; };
+let o_pent = PathLayer('o-pent') #{ fill: none; stroke: #8899bb; stroke-width: 1.2; };
 o_pent.apply { M 615 188 pent_r.draw() }
 
-let o_sq = PathLayer('o-sq') \${ fill: none; stroke: #aabbdd; stroke-width: 1.2; };
+let o_sq = PathLayer('o-sq') #{ fill: none; stroke: #aabbdd; stroke-width: 1.2; };
 o_sq.apply { M 615 190 sq_r.draw() }
 
-let o_tri = PathLayer('o-tri') \${ fill: none; stroke: #ddd; stroke-width: 1.2; };
+let o_tri = PathLayer('o-tri') #{ fill: none; stroke: #ddd; stroke-width: 1.2; };
 o_tri.apply { M 618 192 tri_r.draw() }
 
 // --- Secondary cluster outlines (lower right, magenta) ---
 
-let o_wedge = PathLayer('o-wedge') \${ fill: none; stroke: #886; stroke-width: 1.2; };
+let o_wedge = PathLayer('o-wedge') #{ fill: none; stroke: #886; stroke-width: 1.2; };
 o_wedge.apply { M 730 295 wedge_r.draw() }
 
-let o_shard = PathLayer('o-shard') \${ fill: none; stroke: #bb88aa; stroke-width: 1.2; };
+let o_shard = PathLayer('o-shard') #{ fill: none; stroke: #bb88aa; stroke-width: 1.2; };
 o_shard.apply { M 735 298 shard_r.draw() }
 
 // --- Tertiary cluster outlines (upper left, green) ---
 
-let o_shard2 = PathLayer('o-shard2') \${ fill: none; stroke: #687; stroke-width: 1.2; };
+let o_shard2 = PathLayer('o-shard2') #{ fill: none; stroke: #687; stroke-width: 1.2; };
 o_shard2.apply { M 505 90 shard_r2.scale(1.3, 1.3).draw() }
 
-let o_tri2 = PathLayer('o-tri2') \${ fill: none; stroke: #9bb; stroke-width: 1.2; };
+let o_tri2 = PathLayer('o-tri2') #{ fill: none; stroke: #9bb; stroke-width: 1.2; };
 o_tri2.apply { M 512 97 tri_r.draw() }
 
 // --- Paint chips + labels: Primary cluster (right of center) ---
 
-let cp1 = PathLayer('cp1') \${ fill: #1e3a5f; stroke: #555; stroke-width: 0.5; };
+let cp1 = PathLayer('cp1') #{ fill: #1e3a5f; stroke: #555; stroke-width: 0.5; };
 cp1.apply { rect(700, 120, 12, 10); }
-let cp2 = PathLayer('cp2') \${ fill: #4a90d9; stroke: #555; stroke-width: 0.5; };
+let cp2 = PathLayer('cp2') #{ fill: #4a90d9; stroke: #555; stroke-width: 0.5; };
 cp2.apply { rect(700, 138, 12, 10); }
-let cp3 = PathLayer('cp3') \${ fill: #a5d8ff; stroke: #555; stroke-width: 0.5; };
+let cp3 = PathLayer('cp3') #{ fill: #a5d8ff; stroke: #555; stroke-width: 0.5; };
 cp3.apply { rect(700, 156, 12, 10); }
-let cp4 = PathLayer('cp4') \${ fill: #ffffff; stroke: #555; stroke-width: 0.5; };
+let cp4 = PathLayer('cp4') #{ fill: #ffffff; stroke: #555; stroke-width: 0.5; };
 cp4.apply { rect(700, 174, 12, 10); }
 
 // --- Paint chips + labels: Secondary cluster ---
 
-let cs1 = PathLayer('cs1') \${ fill: #5f1e3a; stroke: #555; stroke-width: 0.5; };
+let cs1 = PathLayer('cs1') #{ fill: #5f1e3a; stroke: #555; stroke-width: 0.5; };
 cs1.apply { rect(770, 280, 12, 10); }
-let cs2 = PathLayer('cs2') \${ fill: #d94a90; stroke: #555; stroke-width: 0.5; };
+let cs2 = PathLayer('cs2') #{ fill: #d94a90; stroke: #555; stroke-width: 0.5; };
 cs2.apply { rect(770, 298, 12, 10); }
 
 // --- Paint chips + labels: Tertiary cluster ---
 
-let ct1 = PathLayer('ct1') \${ fill: #3a5f1e; stroke: #555; stroke-width: 0.5; };
+let ct1 = PathLayer('ct1') #{ fill: #3a5f1e; stroke: #555; stroke-width: 0.5; };
 ct1.apply { rect(460, 55, 12, 10); }
-let ct2 = PathLayer('ct2') \${ fill: #90d94a; stroke: #555; stroke-width: 0.5; };
+let ct2 = PathLayer('ct2') #{ fill: #90d94a; stroke: #555; stroke-width: 0.5; };
 ct2.apply { rect(460, 73, 12, 10); }
 
 // --- Elevation labels ---
 
-let elev_primary = TextLayer('elev-primary') \${
+let elev_primary = TextLayer('elev-primary') #{
   font-family: monospace;
   font-size: 8;
   fill: #bbb;
@@ -14993,7 +14999,7 @@ elev_primary.apply {
   text(718, 183)\`0.85\`
 }
 
-let elev_secondary = TextLayer('elev-secondary') \${
+let elev_secondary = TextLayer('elev-secondary') #{
   font-family: monospace;
   font-size: 8;
   fill: #bbb;
@@ -15004,7 +15010,7 @@ elev_secondary.apply {
   text(788, 307)\`0.50\`
 }
 
-let elev_tertiary = TextLayer('elev-tertiary') \${
+let elev_tertiary = TextLayer('elev-tertiary') #{
   font-family: monospace;
   font-size: 8;
   fill: #bbb;
@@ -15017,7 +15023,7 @@ elev_tertiary.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') \${ fill: none; stroke: #444; stroke-width: 0.5; };
+let leaders = PathLayer('leaders') #{ fill: none; stroke: #444; stroke-width: 0.5; };
 leaders.apply {
   // Primary cluster leaders (from chips to center area)
   M 700 125 l -50 50
@@ -15034,7 +15040,7 @@ leaders.apply {
 
 // --- Cluster labels ---
 
-let cluster_labels = TextLayer('cluster-labels') \${
+let cluster_labels = TextLayer('cluster-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 7;
   fill: #666;
@@ -15048,7 +15054,7 @@ cluster_labels.apply {
 
 // --- Panel labels ---
 
-let panel_labels = TextLayer('panel-labels') \${
+let panel_labels = TextLayer('panel-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -15061,7 +15067,7 @@ panel_labels.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels);
 </code>
   <img src="/blog/samples/post4/topo-crystal-annotated.svg" alt="Crystal formation — eight polygonal contours across three clusters with annotated contour map" loading="lazy">
@@ -15127,51 +15133,51 @@ topo_l.interpolation = 'oklch';
 
 // ========== BACKGROUND ==========
 
-let bg = PathLayer('bg') \${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 740, 370); }
 
 // ========== LEFT PANEL: Distance ==========
 
-let left = PathLayer('left') \${ fill: topo_d; stroke: #333; stroke-width: 1; };
+let left = PathLayer('left') #{ fill: topo_d; stroke: #333; stroke-width: 1; };
 left.apply { roundRect(15, 30, 220, 260, 6); }
 
 // ========== CENTER PANEL: Laplace ==========
 
-let center = PathLayer('center') \${ fill: topo_l; stroke: #333; stroke-width: 1; };
+let center = PathLayer('center') #{ fill: topo_l; stroke: #333; stroke-width: 1; };
 center.apply { roundRect(255, 30, 220, 260, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
-let schema_border = PathLayer('schema-border') \${ fill: none; stroke: #333; stroke-width: 1; };
+let schema_border = PathLayer('schema-border') #{ fill: none; stroke: #333; stroke-width: 1; };
 schema_border.apply { roundRect(495, 30, 230, 260, 6); }
 
 // Contour outlines — offset shapes into schematic panel
 // Original projections: coast(30,50), mesa(55,85), spire(110,130)
 // Schematic panel starts at x=495, so shape origin ≈ 495+30=525 for coast
 
-let o_coast = PathLayer('o-coast') \${ fill: none; stroke: #8bc4e0; stroke-width: 1.2; };
+let o_coast = PathLayer('o-coast') #{ fill: none; stroke: #8bc4e0; stroke-width: 1.2; };
 o_coast.apply { M 525 80 coast.draw() }
 
-let o_mesa = PathLayer('o-mesa') \${ fill: none; stroke: #7bb89a; stroke-width: 1.2; };
+let o_mesa = PathLayer('o-mesa') #{ fill: none; stroke: #7bb89a; stroke-width: 1.2; };
 o_mesa.apply { M 550 115 mesa.draw() }
 
-let o_spire = PathLayer('o-spire') \${ fill: none; stroke: #d4b060; stroke-width: 1.2; };
+let o_spire = PathLayer('o-spire') #{ fill: none; stroke: #d4b060; stroke-width: 1.2; };
 o_spire.apply { M 605 160 spire.draw() }
 
 // --- Paint chips ---
 
-let chip_coast = PathLayer('chip-coast') \${ fill: #4cc9f0; stroke: #555; stroke-width: 0.5; };
+let chip_coast = PathLayer('chip-coast') #{ fill: #4cc9f0; stroke: #555; stroke-width: 0.5; };
 chip_coast.apply { rect(680, 90, 12, 10); }
 
-let chip_mesa = PathLayer('chip-mesa') \${ fill: #43aa8b; stroke: #555; stroke-width: 0.5; };
+let chip_mesa = PathLayer('chip-mesa') #{ fill: #43aa8b; stroke: #555; stroke-width: 0.5; };
 chip_mesa.apply { rect(680, 140, 12, 10); }
 
-let chip_spire = PathLayer('chip-spire') \${ fill: #f9c74f; stroke: #555; stroke-width: 0.5; };
+let chip_spire = PathLayer('chip-spire') #{ fill: #f9c74f; stroke: #555; stroke-width: 0.5; };
 chip_spire.apply { rect(680, 190, 12, 10); }
 
 // --- Elevation labels ---
 
-let elev_labels = TextLayer('elev-labels') \${
+let elev_labels = TextLayer('elev-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #bbb;
@@ -15185,7 +15191,7 @@ elev_labels.apply {
 
 // --- Shape name labels ---
 
-let shape_labels = TextLayer('shape-labels') \${
+let shape_labels = TextLayer('shape-labels') #{
   font-family: monospace;
   font-size: 7;
   fill: #777;
@@ -15199,7 +15205,7 @@ shape_labels.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') \${ fill: none; stroke: #444; stroke-width: 0.5; };
+let leaders = PathLayer('leaders') #{ fill: none; stroke: #444; stroke-width: 0.5; };
 leaders.apply {
   M 680 95 l -30 15
   M 680 145 l -40 -15
@@ -15208,7 +15214,7 @@ leaders.apply {
 
 // --- Panel header labels ---
 
-let headers = TextLayer('headers') \${
+let headers = TextLayer('headers') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: #ddd;
@@ -15223,7 +15229,7 @@ headers.apply {
 
 // --- Panel descriptions ---
 
-let desc = TextLayer('desc') \${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -15237,7 +15243,7 @@ desc.apply {
 
 // --- Bottom title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: #999;
@@ -15249,13 +15255,13 @@ title.apply {
 
 // --- Scene ---
 
-let left_group = GroupLayer('left-group') \${};
+let left_group = GroupLayer('left-group') #{};
 left_group.append(left);
 
-let center_group = GroupLayer('center-group') \${};
+let center_group = GroupLayer('center-group') #{};
 center_group.append(center);
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left_group, center_group, schema_border, o_coast, o_mesa, o_spire, chip_coast, chip_mesa, chip_spire, elev_labels, shape_labels, leaders, headers, desc, title);
 </code>
   <img src="/blog/samples/post4/method-organic-annotated.svg" alt="Distance vs Laplace with organic contours — annotated schematic shows the three shared shapes" loading="lazy">
@@ -15305,7 +15311,7 @@ let gridH = 150;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers — each pattern in a different hue
@@ -15314,10 +15320,10 @@ let dotColor = gridColor.hueShift(90);
 let intColor = gridColor.hueShift(180);
 let partColor = gridColor.hueShift(270);
 
-let shapeLayer = PathLayer('shape') \${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
-let dotLayer = PathLayer('dot') \${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
-let intLayer = PathLayer('int') \${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
-let partLayer = PathLayer('part') \${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let shapeLayer = PathLayer('shape') #{ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') #{ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') #{ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') #{ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
 
 // Top-left: Shape
 shapeLayer.apply {
@@ -15340,7 +15346,7 @@ partLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -15372,7 +15378,7 @@ let gridH = 150;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers
@@ -15381,10 +15387,10 @@ let dotColor = gridColor.hueShift(90);
 let intColor = gridColor.hueShift(180);
 let partColor = gridColor.hueShift(270);
 
-let shapeLayer = PathLayer('shape') \${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
-let dotLayer = PathLayer('dot') \${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
-let intLayer = PathLayer('int') \${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
-let partLayer = PathLayer('part') \${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let shapeLayer = PathLayer('shape') #{ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') #{ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') #{ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') #{ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
 
 // Top-left: Shape
 shapeLayer.apply {
@@ -15407,7 +15413,7 @@ partLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -15458,7 +15464,7 @@ let gridH = 150;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers
@@ -15467,10 +15473,10 @@ let dotColor = gridColor.hueShift(90);
 let intColor = gridColor.hueShift(180);
 let partColor = gridColor.hueShift(270);
 
-let shapeLayer = PathLayer('shape') \${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
-let dotLayer = PathLayer('dot') \${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
-let intLayer = PathLayer('int') \${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
-let partLayer = PathLayer('part') \${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let shapeLayer = PathLayer('shape') #{ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') #{ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') #{ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') #{ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
 
 // Top-left: Shape
 shapeLayer.apply {
@@ -15493,7 +15499,7 @@ partLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -15523,15 +15529,15 @@ let gridH = 140;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 200); }
 
 // Grid layers
 let flatColor = gridColor;
 let pointyColor = gridColor.hueShift(120);
 
-let flatLayer = PathLayer('flat') \${ stroke: flatColor; stroke-width: 0.4; fill: none; };
-let pointyLayer = PathLayer('pointy') \${ stroke: pointyColor; stroke-width: 0.4; fill: none; };
+let flatLayer = PathLayer('flat') #{ stroke: flatColor; stroke-width: 0.4; fill: none; };
+let pointyLayer = PathLayer('pointy') #{ stroke: pointyColor; stroke-width: 0.4; fill: none; };
 
 // Left: Flat-top (Edge)
 flatLayer.apply {
@@ -15544,7 +15550,7 @@ pointyLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -15599,11 +15605,11 @@ let gridColor = Color(CSSVar('--grid-color', #5577aa));
 let bgColor = Color(CSSVar('--bg-color', #0f172a));
 
 // Background
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // Layer 1: Rotated partial grid as background texture
-let gridLayer = PathLayer('grid') \${ stroke: gridColor; stroke-width: 0.3; fill: none; stroke-linecap: round; };
+let gridLayer = PathLayer('grid') #{ stroke: gridColor; stroke-width: 0.3; fill: none; stroke-linecap: round; };
 gridLayer.ctx.transform.rotate.set(0.08pi);
 gridLayer.apply {
   squareGrid(GridPatternType.Partial, -40, -40, 480, 480, 16);
@@ -15611,20 +15617,20 @@ gridLayer.apply {
 
 // Layer 2: Hex grid overlay with shape pattern
 let accentColor = gridColor.lighten(30%);
-let hexLayer = PathLayer('hex') \${ stroke: accentColor; stroke-width: 0.5; fill: none; };
+let hexLayer = PathLayer('hex') #{ stroke: accentColor; stroke-width: 0.5; fill: none; };
 hexLayer.apply {
   hexagonGrid(GridPatternType.Shape, 60, 60, 280, 280, 30);
 }
 
 // Layer 3: Triangle intersection marks at center
 let triColor = gridColor.hueShift(180).lighten(20%);
-let triLayer = PathLayer('tri') \${ stroke: triColor; stroke-width: 0.6; fill: none; stroke-linecap: round; };
+let triLayer = PathLayer('tri') #{ stroke: triColor; stroke-width: 0.6; fill: none; stroke-linecap: round; };
 triLayer.apply {
   triangleGrid(GridPatternType.Intersection, 120, 120, 160, 160, 25);
 }
 
 // Labels
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: #64748b;
@@ -15676,10 +15682,10 @@ h 0.01            <span class="cm">// invisible line to set heading rightward</s
 // heading() and turn() — tangent context without path commands
 
 // --- Background ---
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 540, 220); }
 
-let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..11) { M 0 calc(i * 20) h 540 }
   for (j in 0..27) { M calc(j * 20) 0 v 220 }
@@ -15692,7 +15698,7 @@ let codeRowY = 130;
 let labelY = 28;
 
 // === Layout group ===
-define GroupLayer('layout') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('layout') #{ translate-x: 0; translate-y: 0; }
 
 // --- Build each shape as a PathBlock, center via boundingBox ---
 
@@ -15770,12 +15776,12 @@ for ([shape, idx] in shapes) {
 
   // --- Group for this example ---
   let gName = \`g\${idx}\`;
-  define GroupLayer(gName) \${ translate-x: 0; translate-y: 0; }
+  define GroupLayer(gName) #{ translate-x: 0; translate-y: 0; }
   layer('layout').append(layer(gName));
 
   // --- Label ---
   let tlName = \`l\${idx}\`;
-  define TextLayer(tlName) \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+  define TextLayer(tlName) #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   let labelX = calc(cx - shape.label.length * 3.3);
   layer(tlName).apply { text(labelX, labelY)\`\${shape.label}\` }
@@ -15784,7 +15790,7 @@ for ([shape, idx] in shapes) {
   let drawX = calc(cx - shape.bb.x - shape.bb.width / 2);
   let drawY = calc(shapeRowY - shape.bb.y - shape.bb.height / 2);
   let plName = \`p\${idx}\`;
-  define PathLayer(plName) \${ fill: none; stroke: shape.col; stroke-width: 2.5; }
+  define PathLayer(plName) #{ fill: none; stroke: shape.col; stroke-width: 2.5; }
   layer(gName).append(layer(plName));
   layer(plName).apply { shape.pb.drawTo(drawX, drawY); }
 
@@ -15792,7 +15798,7 @@ for ([shape, idx] in shapes) {
   let snippet = codeTexts[idx].toCodeSnippetBlock(snippetNames[idx], 8, 6);
   // Center the snippet horizontally under the shape
   let snippetBB = snippet.ctx.transform;
-  snippet &lt;&lt; \${ translate-x: calc(cx - 55); translate-y: codeRowY; };
+  snippet &lt;&lt; #{ translate-x: calc(cx - 55); translate-y: codeRowY; };
   layer(gName).append(snippet);
 }
 </code>
@@ -15824,10 +15830,10 @@ for ([shape, idx] in shapes) {
 // Regular polygons via heading + turn + tangentLine/tangentArc
 
 // --- Background ---
-let bg = PathLayer('bg') \${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 680, 400); }
 
-let grid = PathLayer('grid') \${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..20) { M 0 calc(i * 20) h 680 }
   for (j in 0..34) { M calc(j * 20) 0 v 400 }
@@ -15876,9 +15882,9 @@ let sides = [3, 4, 5, 6, 7, 8, 9, 10];
 let spacing = 80;
 
 // === Row 1: Sharp polygons ===
-define GroupLayer('sharp-row') \${ translate-x: 0; translate-y: 20; }
+define GroupLayer('sharp-row') #{ translate-x: 0; translate-y: 20; }
 
-define TextLayer('r1-title') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+define TextLayer('r1-title') #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('sharp-row').append(layer('r1-title'));
 layer('r1-title').apply { text(20, 14)\`Sharp corners — heading + tangentLine + turn\` }
 
@@ -15897,26 +15903,26 @@ for (idx in 0..7) {
   let drawY = calc(72 - bb.y - bb.height / 2);
 
   let gName = \`sg\${n}\`;
-  define GroupLayer(gName) \${ translate-x: 0; translate-y: 0; }
+  define GroupLayer(gName) #{ translate-x: 0; translate-y: 0; }
   layer('sharp-row').append(layer(gName));
 
   let lName = \`s\${n}\`;
-  define PathLayer(lName) \${ fill: none; stroke: col; stroke-width: 2; }
+  define PathLayer(lName) #{ fill: none; stroke: col; stroke-width: 2; }
   layer(gName).append(layer(lName));
   layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   // Center label under the shape
   let labelX = calc(cx - name.length * 2.7);
   let tlName = \`s\${n}-l\`;
-  define TextLayer(tlName) \${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
+  define TextLayer(tlName) #{ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   layer(tlName).apply { text(labelX, 112)\`\${name}\` }
 }
 
 // === Row 2: Rounded polygons ===
-define GroupLayer('round-row') \${ translate-x: 0; translate-y: 190; }
+define GroupLayer('round-row') #{ translate-x: 0; translate-y: 190; }
 
-define TextLayer('r2-title') \${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+define TextLayer('r2-title') #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('round-row').append(layer('r2-title'));
 layer('r2-title').apply { text(20, 14)\`Rounded corners — tangentLine + tangentArc\` }
 
@@ -15934,23 +15940,23 @@ for (idx in 0..7) {
   let drawY = calc(72 - bb.y - bb.height / 2);
 
   let gName = \`rg\${n}\`;
-  define GroupLayer(gName) \${ translate-x: 0; translate-y: 0; }
+  define GroupLayer(gName) #{ translate-x: 0; translate-y: 0; }
   layer('round-row').append(layer(gName));
 
   let lName = \`r\${n}\`;
-  define PathLayer(lName) \${ fill: none; stroke: col; stroke-width: 2; }
+  define PathLayer(lName) #{ fill: none; stroke: col; stroke-width: 2; }
   layer(gName).append(layer(lName));
   layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   let labelX = calc(cx - name.length * 2.7);
   let tlName = \`r\${n}-l\`;
-  define TextLayer(tlName) \${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
+  define TextLayer(tlName) #{ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   layer(tlName).apply { text(labelX, 112)\`\${name}\` }
 }
 
 // --- Caption ---
-define TextLayer('caption') \${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('caption') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('caption').apply {
   text(20, 382)\`All shapes built with heading(), turn(), tangentLine(), and tangentArc().\`
 }
@@ -16043,7 +16049,7 @@ for (haloIndex in 16..1) {
   };
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
-  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) \${
+  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;
@@ -16146,14 +16152,14 @@ fn plotEnvelope(curveLayer, envFn) {
   }
 }
 
-let axis = PathLayer('axis') \${ fill: none; stroke: #bbb; stroke-width: 1; };
+let axis = PathLayer('axis') #{ fill: none; stroke: #bbb; stroke-width: 1; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
 }
 
 //-- Vertical dashed guide through the bulge center: plot peak -&gt; stroke waist.
-let peakGuide = PathLayer('peak-guide') \${
+let peakGuide = PathLayer('peak-guide') #{
   fill: none;
   stroke: #999;
   stroke-width: 0.75;
@@ -16165,9 +16171,9 @@ peakGuide.apply {
 }
 
 //-- Smoothstep is plotted last so its dashes sit on top of the cosine.
-let tentLayer = PathLayer('env-tent') \${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
-let cosLayer = PathLayer('env-raised-cos') \${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
-let smoothLayer = PathLayer('env-smoothstep') \${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+let tentLayer = PathLayer('env-tent') #{ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+let cosLayer = PathLayer('env-raised-cos') #{ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+let smoothLayer = PathLayer('env-smoothstep') #{ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
 
 plotEnvelope(tentLayer, tentEnv);
 plotEnvelope(cosLayer, cosEnv);
@@ -16179,13 +16185,13 @@ let ribbon = strokeFromPathBlock(spine, 48, center, spread,
                                  0.75, 13, -0.75, -13,
                                  CurveContinuity.G1,
                                  Cap.tapered(2, CurveContinuity.G0));
-let strokeLayer = PathLayer('shaped-stroke') \${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+let strokeLayer = PathLayer('shaped-stroke') #{ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
 strokeLayer.apply {
   M calc(plotX + ribbon.anchor.x) calc(240 + ribbon.anchor.y)
   ribbon.draw();
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -16200,26 +16206,26 @@ labels.apply {
 }
 //-- Legend: each entry gets a line sample drawn with that curve's real
 //-- stroke and dash pattern, so the key reads without relying on color.
-let swatchTent = PathLayer('swatch-tent') \${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+let swatchTent = PathLayer('swatch-tent') #{ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
 swatchTent.apply { M 252 37 L 268 37 }
-let legendTent = TextLayer('legend-tent') \${
+let legendTent = TextLayer('legend-tent') #{
   font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: #b0b0b0;
 };
 legendTent.apply { text(274, 40)\`linear tent\` }
-let swatchSmooth = PathLayer('swatch-smoothstep') \${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+let swatchSmooth = PathLayer('swatch-smoothstep') #{ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
 swatchSmooth.apply { M 252 51 L 268 51 }
-let legendSmooth = TextLayer('legend-smoothstep') \${
+let legendSmooth = TextLayer('legend-smoothstep') #{
   font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.62 0.16 160);
 };
 legendSmooth.apply { text(274, 54)\`smoothstep\` }
-let swatchCos = PathLayer('swatch-raised-cos') \${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+let swatchCos = PathLayer('swatch-raised-cos') #{ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
 swatchCos.apply { M 252 65 L 268 65 }
-let legendCos = TextLayer('legend-raised-cos') \${
+let legendCos = TextLayer('legend-raised-cos') #{
   font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.72 0.15 260);
 };
 legendCos.apply { text(274, 68)\`raised cosine\` }
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(axis, peakGuide, tentLayer, cosLayer, smoothLayer, strokeLayer,
              labels, swatchTent, legendTent, swatchSmooth, legendSmooth, swatchCos, legendCos);
 </code>
@@ -16283,7 +16289,7 @@ let base = oklch(0.55 0.18 260);
 
 fn drawRow(name, ribbon, py, hueOffset) {
   let rowColor = base.hueShift(hueOffset);
-  let rowLayer = PathLayer(\`row-\${name}\`) \${ fill: rowColor; stroke: none; opacity: 0.9; };
+  let rowLayer = PathLayer(\`row-\${name}\`) #{ fill: rowColor; stroke: none; opacity: 0.9; };
   rowLayer.apply {
     M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
     ribbon.draw();
@@ -16295,7 +16301,7 @@ drawRow('taper',    strokeWithEnvelopes(spine, 48, taper1,    taper2,    CurveCo
 drawRow('bulge',    strokeWithEnvelopes(spine, 48, bulged1,   bulged2,   CurveContinuity.G1, taperCap), 355, 120);
 drawRow('wave',     strokeWithEnvelopes(spine, 96, wave1,     wave2,     CurveContinuity.G1, taperCap), 490, 180);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -16399,7 +16405,7 @@ let base = oklch(0.55 0.18 260);
 
 fn drawRow(name, ribbon, py, hueOffset) {
   let rowColor = base.hueShift(hueOffset);
-  let rowLayer = PathLayer(\`row-\${name}\`) \${ fill: rowColor; stroke: none; opacity: 0.9; };
+  let rowLayer = PathLayer(\`row-\${name}\`) #{ fill: rowColor; stroke: none; opacity: 0.9; };
   rowLayer.apply {
     M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
     ribbon.draw();
@@ -16423,7 +16429,7 @@ for (rowIndex in 0..2) {
   drawRow(\`loop-\${rowIndex}\`, ribbon, calc(225 + rowIndex * 130), calc(60 + rowIndex * 60));
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -16505,7 +16511,7 @@ for (haloIndex in 16..1) {
   let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
-  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) \${
+  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;
@@ -16591,14 +16597,14 @@ let sq = @{ h 50 v 50 h -50 z };
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 580, 480); }
 
 // ═══════════════════════════════════════
 // Union (top-left quadrant)
 // ═══════════════════════════════════════
 
-let u_orig = PathLayer('u-orig') \${
+let u_orig = PathLayer('u-orig') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -16609,7 +16615,7 @@ u_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let u_result = PathLayer('u-result') \${
+let u_result = PathLayer('u-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f618');
@@ -16619,7 +16625,7 @@ u_result.apply {
   u.drawTo(0, 0);
 }
 
-let u_ab = TextLayer('u-ab') \${
+let u_ab = TextLayer('u-ab') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -16630,7 +16636,7 @@ u_ab.apply {
   text(62, 60)\`B\`
 }
 
-let u_op = TextLayer('u-op') \${
+let u_op = TextLayer('u-op') #{
   font-family: monospace;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -16641,7 +16647,7 @@ u_op.apply {
   text(110, 50)\`A ∪ B\`
 }
 
-let u_desc = TextLayer('u-desc') \${
+let u_desc = TextLayer('u-desc') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
@@ -16651,14 +16657,14 @@ u_desc.apply {
   text(110, 68)\`Combined outline\`
 }
 
-let g_union = GroupLayer('g-union') \${ translate-x: 50; translate-y: 80; };
+let g_union = GroupLayer('g-union') #{ translate-x: 50; translate-y: 80; };
 g_union.append(u_orig, u_result, u_ab, u_op, u_desc);
 
 // ═══════════════════════════════════════
 // Difference (top-right quadrant)
 // ═══════════════════════════════════════
 
-let d_orig = PathLayer('d-orig') \${
+let d_orig = PathLayer('d-orig') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -16669,7 +16675,7 @@ d_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let d_result = PathLayer('d-result') \${
+let d_result = PathLayer('d-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f618');
@@ -16679,7 +16685,7 @@ d_result.apply {
   d.drawTo(0, 0);
 }
 
-let d_ab = TextLayer('d-ab') \${
+let d_ab = TextLayer('d-ab') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -16690,7 +16696,7 @@ d_ab.apply {
   text(62, 60)\`B\`
 }
 
-let d_op = TextLayer('d-op') \${
+let d_op = TextLayer('d-op') #{
   font-family: monospace;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -16701,7 +16707,7 @@ d_op.apply {
   text(110, 50)\`A \\ B\`
 }
 
-let d_desc = TextLayer('d-desc') \${
+let d_desc = TextLayer('d-desc') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
@@ -16711,14 +16717,14 @@ d_desc.apply {
   text(110, 68)\`A minus overlap\`
 }
 
-let g_diff = GroupLayer('g-diff') \${ translate-x: 320; translate-y: 80; };
+let g_diff = GroupLayer('g-diff') #{ translate-x: 320; translate-y: 80; };
 g_diff.append(d_orig, d_result, d_ab, d_op, d_desc);
 
 // ═══════════════════════════════════════
 // Intersection (bottom-left quadrant)
 // ═══════════════════════════════════════
 
-let i_orig = PathLayer('i-orig') \${
+let i_orig = PathLayer('i-orig') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -16729,7 +16735,7 @@ i_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let i_result = PathLayer('i-result') \${
+let i_result = PathLayer('i-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f618');
@@ -16739,7 +16745,7 @@ i_result.apply {
   ix.drawTo(0, 0);
 }
 
-let i_ab = TextLayer('i-ab') \${
+let i_ab = TextLayer('i-ab') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -16750,7 +16756,7 @@ i_ab.apply {
   text(62, 60)\`B\`
 }
 
-let i_op = TextLayer('i-op') \${
+let i_op = TextLayer('i-op') #{
   font-family: monospace;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -16761,7 +16767,7 @@ i_op.apply {
   text(110, 50)\`A ∩ B\`
 }
 
-let i_desc = TextLayer('i-desc') \${
+let i_desc = TextLayer('i-desc') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
@@ -16771,14 +16777,14 @@ i_desc.apply {
   text(110, 68)\`Only overlap\`
 }
 
-let g_int = GroupLayer('g-int') \${ translate-x: 50; translate-y: 290; };
+let g_int = GroupLayer('g-int') #{ translate-x: 50; translate-y: 290; };
 g_int.append(i_orig, i_result, i_ab, i_op, i_desc);
 
 // ═══════════════════════════════════════
 // XOR (bottom-right quadrant)
 // ═══════════════════════════════════════
 
-let x_orig = PathLayer('x-orig') \${
+let x_orig = PathLayer('x-orig') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -16789,7 +16795,7 @@ x_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let x_result = PathLayer('x-result') \${
+let x_result = PathLayer('x-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f618');
@@ -16799,7 +16805,7 @@ x_result.apply {
   xr.drawTo(0, 0);
 }
 
-let x_ab = TextLayer('x-ab') \${
+let x_ab = TextLayer('x-ab') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -16810,7 +16816,7 @@ x_ab.apply {
   text(62, 60)\`B\`
 }
 
-let x_op = TextLayer('x-op') \${
+let x_op = TextLayer('x-op') #{
   font-family: monospace;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -16821,7 +16827,7 @@ x_op.apply {
   text(110, 50)\`A △ B\`
 }
 
-let x_desc = TextLayer('x-desc') \${
+let x_desc = TextLayer('x-desc') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
@@ -16831,7 +16837,7 @@ x_desc.apply {
   text(110, 68)\`Everything except overlap\`
 }
 
-let g_xor = GroupLayer('g-xor') \${ translate-x: 320; translate-y: 290; };
+let g_xor = GroupLayer('g-xor') #{ translate-x: 320; translate-y: 290; };
 g_xor.append(x_orig, x_result, x_ab, x_op, x_desc);
 
 // ═══════════════════════════════════════
@@ -16840,7 +16846,7 @@ g_xor.append(x_orig, x_result, x_ab, x_op, x_desc);
 
 // --- Dividers ---
 
-let dividers = PathLayer('dividers') \${
+let dividers = PathLayer('dividers') #{
   stroke: Color('#334155');
   stroke-width: 1;
   stroke-dasharray: "6 4";
@@ -16853,7 +16859,7 @@ dividers.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -16865,7 +16871,7 @@ code.apply {
   text(30, 468)\`result.drawTo(0, 0)\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -16878,7 +16884,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -16888,7 +16894,7 @@ title.apply {
   text(30, 30)\`Boolean Operations\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -16969,14 +16975,14 @@ let sq = @{ h 60 v 60 h -60 z };
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Step 1: Two overlapping squares (input)
 // ═══════════════════════════════════════
 
-let s1_orig = PathLayer('s1-orig') \${
+let s1_orig = PathLayer('s1-orig') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -16987,7 +16993,7 @@ s1_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let s1_label = TextLayer('s1-label') \${
+let s1_label = TextLayer('s1-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -16997,7 +17003,7 @@ s1_label.apply {
   text(42, 115)\`Overlapping squares\`
 }
 
-let s1_num = TextLayer('s1-num') \${
+let s1_num = TextLayer('s1-num') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -17007,14 +17013,14 @@ s1_num.apply {
   text(42, 130)\`step 1: input\`
 }
 
-let g_step1 = GroupLayer('g-step1') \${ translate-x: 30; translate-y: 60; };
+let g_step1 = GroupLayer('g-step1') #{ translate-x: 30; translate-y: 60; };
 g_step1.append(s1_orig, s1_label, s1_num);
 
 // ═══════════════════════════════════════
 // Step 2: Union result
 // ═══════════════════════════════════════
 
-let s2_orig = PathLayer('s2-orig') \${
+let s2_orig = PathLayer('s2-orig') #{
   stroke: Color('#94a3b830');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -17025,7 +17031,7 @@ s2_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let s2_result = PathLayer('s2-result') \${
+let s2_result = PathLayer('s2-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f615');
@@ -17035,7 +17041,7 @@ s2_result.apply {
   u.drawTo(0, 0);
 }
 
-let s2_label = TextLayer('s2-label') \${
+let s2_label = TextLayer('s2-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -17045,7 +17051,7 @@ s2_label.apply {
   text(42, 115)\`.union()\`
 }
 
-let s2_num = TextLayer('s2-num') \${
+let s2_num = TextLayer('s2-num') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -17055,14 +17061,14 @@ s2_num.apply {
   text(42, 130)\`step 2: combine\`
 }
 
-let g_step2 = GroupLayer('g-step2') \${ translate-x: 195; translate-y: 60; };
+let g_step2 = GroupLayer('g-step2') #{ translate-x: 195; translate-y: 60; };
 g_step2.append(s2_orig, s2_result, s2_label, s2_num);
 
 // ═══════════════════════════════════════
 // Step 3: Union + fillet
 // ═══════════════════════════════════════
 
-let s3_orig = PathLayer('s3-orig') \${
+let s3_orig = PathLayer('s3-orig') #{
   stroke: Color('#94a3b830');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -17073,7 +17079,7 @@ s3_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let s3_result = PathLayer('s3-result') \${
+let s3_result = PathLayer('s3-result') #{
   stroke: Color('#8b5cf6');
   stroke-width: 2;
   fill: Color('#8b5cf615');
@@ -17084,7 +17090,7 @@ s3_result.apply {
   rounded.drawTo(0, 0);
 }
 
-let s3_label = TextLayer('s3-label') \${
+let s3_label = TextLayer('s3-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -17094,7 +17100,7 @@ s3_label.apply {
   text(42, 115)\`.union().fillet(8)\`
 }
 
-let s3_num = TextLayer('s3-num') \${
+let s3_num = TextLayer('s3-num') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -17104,14 +17110,14 @@ s3_num.apply {
   text(42, 130)\`step 3: round\`
 }
 
-let g_step3 = GroupLayer('g-step3') \${ translate-x: 370; translate-y: 60; };
+let g_step3 = GroupLayer('g-step3') #{ translate-x: 370; translate-y: 60; };
 g_step3.append(s3_orig, s3_result, s3_label, s3_num);
 
 // ═══════════════════════════════════════
 // Arrow connectors (absolute positions)
 // ═══════════════════════════════════════
 
-let arrows = PathLayer('arrows') \${
+let arrows = PathLayer('arrows') #{
   stroke: Color('#475569');
   stroke-width: 1.5;
   fill: Color('#475569');
@@ -17129,7 +17135,7 @@ arrows.apply {
 // Code block (absolute positions)
 // ═══════════════════════════════════════
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -17141,7 +17147,7 @@ code.apply {
   text(30, 250)\`rounded.drawTo(x, y)\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -17152,7 +17158,7 @@ kw.apply {
   text(30, 236)\`let\`
 }
 
-let code_note = TextLayer('code-note') \${
+let code_note = TextLayer('code-note') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -17164,7 +17170,7 @@ code_note.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -17174,7 +17180,7 @@ title.apply {
   text(30, 28)\`Chaining: Boolean + Fillet\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -17198,7 +17204,7 @@ subtitle.apply {
   <code>define ViewBox(0, 0, 400, 200);
 // Standard library shapes with boolean operations
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 400, 200); }
 
 // --- Plate with drilled holes ---
@@ -17211,7 +17217,7 @@ let d2 = d1.project(0, 0).difference(hole.project(55, 25));
 let d3 = d2.project(0, 0).difference(hole.project(25, 55));
 let drilled = d3.project(0, 0).difference(hole.project(55, 55));
 
-let plate_result = PathLayer('plate-result') \${
+let plate_result = PathLayer('plate-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f618');
@@ -17220,7 +17226,7 @@ plate_result.apply {
   drilled.drawTo(30, 55);
 }
 
-let plate_label = TextLayer('plate-label') \${
+let plate_label = TextLayer('plate-label') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -17230,7 +17236,7 @@ plate_label.apply {
   text(30, 30)\`plate.difference(hole)\`
 }
 
-let plate_desc = TextLayer('plate-desc') \${
+let plate_desc = TextLayer('plate-desc') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -17247,7 +17253,7 @@ let circ = @{ circle(0, 0, 18); };
 
 let badge = st.project(0, 0).union(circ.project(0, 0));
 
-let badge_result = PathLayer('badge-result') \${
+let badge_result = PathLayer('badge-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f618');
@@ -17256,7 +17262,7 @@ badge_result.apply {
   badge.drawTo(260, 100);
 }
 
-let badge_label = TextLayer('badge-label') \${
+let badge_label = TextLayer('badge-label') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -17266,7 +17272,7 @@ badge_label.apply {
   text(220, 30)\`star.union(circle)\`
 }
 
-let badge_desc = TextLayer('badge-desc') \${
+let badge_desc = TextLayer('badge-desc') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -17332,7 +17338,7 @@ contrast but not required.</p>
 // Left: the pieces drawn at the same position — the shape reassembles.
 // Right: the same pieces pushed apart to show the cut.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -17340,30 +17346,30 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') \${};
-let pieceLayer = PathLayer('pieces') \${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') \${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.5;
   fill: none;
 };
-let divider = PathLayer('divider') \${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 4 4;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let knifeLabel = TextLayer('knife-label') \${
+let knifeLabel = TextLayer('knife-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #ef4444;
@@ -17431,7 +17437,7 @@ knifeLabel.apply {
 
 @font "Playfair Display" 700;
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -17439,30 +17445,30 @@ layer('bg').apply {
   rect(0, 0, 620, 290);
 }
 
-let scene = GroupLayer('scene') \${};
-let pieceLayer = PathLayer('pieces') \${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') \${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
 };
-let divider = PathLayer('divider') \${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 4 4;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let knifeLabel = TextLayer('knife-label') \${
+let knifeLabel = TextLayer('knife-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #ef4444;
@@ -17474,7 +17480,7 @@ scene.append(pieceLayer,
     labels,
     knifeLabel);
 
-let styles = \${
+let styles = #{
   font-family: "Playfair Display";
   font-weight: 700;
   font-size: 200;
@@ -17556,7 +17562,7 @@ knifeLabel.apply {
 // Right: the knife misses the hole — a lens comes off, and the hole rides
 // along inside the big remaining piece.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -17564,30 +17570,30 @@ layer('bg').apply {
   rect(0, 0, 520, 250);
 }
 
-let scene = GroupLayer('scene') \${};
-let pieceLayer = PathLayer('pieces') \${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') \${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
 };
-let divider = PathLayer('divider') \${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 4 4;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let knifeLabel = TextLayer('knife-label') \${
+let knifeLabel = TextLayer('knife-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #ef4444;
@@ -17668,7 +17674,7 @@ knifeLabel.apply {
 // A closed cutter loop is a cookie cutter: it stamps the region inside it
 // out of the shape. The stamped disk lifts away; the plate keeps the hole.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -17676,23 +17682,23 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') \${};
-let plateLayer = PathLayer('plate') \${
+let scene = GroupLayer('scene') #{};
+let plateLayer = PathLayer('plate') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let cookieLayer = PathLayer('cookie') \${
+let cookieLayer = PathLayer('cookie') #{
   fill: #f59e0b;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') \${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -17749,7 +17755,7 @@ labels.apply {
 // no healing, since there's no interior to close. Nine vertical strokes
 // turn one long wave into alternating-color dashes.
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -17757,26 +17763,26 @@ layer('bg').apply {
   rect(0, 0, 480, 170);
 }
 
-let scene = GroupLayer('scene') \${};
-let warm = PathLayer('warm') \${
+let scene = GroupLayer('scene') #{};
+let warm = PathLayer('warm') #{
   stroke: #f59e0b;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let cool = PathLayer('cool') \${
+let cool = PathLayer('cool') #{
   stroke: #3b82f6;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let knifeLayer = PathLayer('knife') \${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 0.75;
   fill: none;
   opacity: 0.55;
 };
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -17846,7 +17852,7 @@ labels.apply {
 
 @font "Baumans";
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -17854,25 +17860,25 @@ layer('bg').apply {
   rect(0, 0, 960, 170);
 }
 
-let wordmark = GroupLayer('wordmark') \${};
-let shard0 = PathLayer('shard0') \${
+let wordmark = GroupLayer('wordmark') #{};
+let shard0 = PathLayer('shard0') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard1 = PathLayer('shard1') \${
+let shard1 = PathLayer('shard1') #{
   fill: #a78bfa;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard2 = PathLayer('shard2') \${
+let shard2 = PathLayer('shard2') #{
   fill: #f59e0b;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
 wordmark.append(shard0, shard1, shard2);
 
-let styles = \${
+let styles = #{
   font-family: Baumans;
   font-size: 120;
 };
@@ -17981,10 +17987,10 @@ let corner = @{ h 100 v 80 };
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 480, 340); }
 
-let grid = PathLayer('grid') \${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -18002,7 +18008,7 @@ grid.apply {
 
 // --- Original corner (dashed) ---
 
-let original = PathLayer('original') \${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b8');
   stroke-width: 1.5;
   stroke-dasharray: "6 4";
@@ -18016,7 +18022,7 @@ original.apply {
 
 // --- Chamfer line (result) ---
 
-let chamfer_line = PathLayer('chamfer') \${
+let chamfer_line = PathLayer('chamfer') #{
   stroke: Color('#3b82f6');
   stroke-width: 2.5;
   fill: none;
@@ -18032,7 +18038,7 @@ chamfer_line.apply {
 
 // --- Vertex dot ---
 
-let vertex_dot = PathLayer('vertex-dot') \${
+let vertex_dot = PathLayer('vertex-dot') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -18043,7 +18049,7 @@ vertex_dot.apply {
 
 // --- Trim points ---
 
-let trim_dots = PathLayer('trim-dots') \${
+let trim_dots = PathLayer('trim-dots') #{
   fill: Color('#22c55e');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -18055,7 +18061,7 @@ trim_dots.apply {
 
 // --- Dimension lines ---
 
-let dims = PathLayer('dims') \${
+let dims = PathLayer('dims') #{
   stroke: Color('#f59e0b');
   stroke-width: 1;
   fill: none;
@@ -18074,7 +18080,7 @@ dims.apply {
 
 // --- Dimension arrows ---
 
-let dim_arrows = PathLayer('dim-arrows') \${
+let dim_arrows = PathLayer('dim-arrows') #{
   fill: Color('#f59e0b');
   stroke: none;
 };
@@ -18089,7 +18095,7 @@ dim_arrows.apply {
 
 // --- Removed corner (hatched area) ---
 
-let removed = PathLayer('removed') \${
+let removed = PathLayer('removed') #{
   fill: Color('#ef444415');
   stroke: Color('#ef444440');
   stroke-width: 1;
@@ -18100,7 +18106,7 @@ removed.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') \${
+let leaders = PathLayer('leaders') #{
   stroke: Color('#475569');
   stroke-width: 0.5;
   fill: none;
@@ -18114,7 +18120,7 @@ leaders.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -18126,7 +18132,7 @@ labels.apply {
   text(315, 142)\`chamfer line\`
 }
 
-let labels_left = TextLayer('labels-left') \${
+let labels_left = TextLayer('labels-left') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -18138,7 +18144,7 @@ labels_left.apply {
 
 // --- Dimension labels ---
 
-let dim_labels = TextLayer('dim-labels') \${
+let dim_labels = TextLayer('dim-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#f59e0b');
@@ -18151,7 +18157,7 @@ dim_labels.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -18164,7 +18170,7 @@ code.apply {
   text(30, 306)\`// If d1 == d2: symmetric chamfer\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -18173,18 +18179,18 @@ let kw = TextLayer('kw') \${
 
 // --- Legend ---
 
-let leg = TextLayer('legend') \${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
 
-let leg_o = PathLayer('leg-orig') \${ fill: Color('#94a3b8'); stroke: none; };
-let leg_c = PathLayer('leg-cham') \${ fill: Color('#3b82f6'); stroke: none; };
-let leg_v = PathLayer('leg-vert') \${ fill: Color('#ef4444'); stroke: none; };
-let leg_t = PathLayer('leg-trim') \${ fill: Color('#22c55e'); stroke: none; };
-let leg_r = PathLayer('leg-rem') \${ fill: Color('#ef444440'); stroke: none; };
+let leg_o = PathLayer('leg-orig') #{ fill: Color('#94a3b8'); stroke: none; };
+let leg_c = PathLayer('leg-cham') #{ fill: Color('#3b82f6'); stroke: none; };
+let leg_v = PathLayer('leg-vert') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_t = PathLayer('leg-trim') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_r = PathLayer('leg-rem') #{ fill: Color('#ef444440'); stroke: none; };
 
 leg_o.apply { rect(310, 256, 8, 8); }
 leg_c.apply { rect(310, 270, 8, 8); }
@@ -18202,7 +18208,7 @@ leg.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -18212,7 +18218,7 @@ title.apply {
   text(30, 28)\`Chamfer Anatomy\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -18232,12 +18238,12 @@ let box = @{ h 70 v 70 h -70 z };
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 560, 300); }
 
 // --- Original outlines ---
 
-let original = PathLayer('original') \${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -18254,7 +18260,7 @@ original.apply {
 
 // --- Chamfered shapes ---
 
-let chamfered = PathLayer('chamfered') \${
+let chamfered = PathLayer('chamfered') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f615');
@@ -18284,7 +18290,7 @@ chamfered.apply {
 
 // --- Labels ---
 
-let names = TextLayer('names') \${
+let names = TextLayer('names') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -18299,7 +18305,7 @@ names.apply {
   text(505, 164)\`Vertex(1, 20)\`
 }
 
-let desc = TextLayer('desc') \${
+let desc = TextLayer('desc') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
@@ -18315,7 +18321,7 @@ desc.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -18327,7 +18333,7 @@ code.apply {
   text(30, 252)\`beveled.drawTo(x, y)\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -18340,7 +18346,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -18350,7 +18356,7 @@ title.apply {
   text(30, 32)\`Chamfer Gallery\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -18384,10 +18390,10 @@ subtitle.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 480, 340); }
 
-let grid = PathLayer('grid') \${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -18405,7 +18411,7 @@ grid.apply {
 
 // --- Original corner (dashed) ---
 
-let original = PathLayer('original') \${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b8');
   stroke-width: 1.5;
   stroke-dasharray: "6 4";
@@ -18419,7 +18425,7 @@ original.apply {
 
 // --- Fillet arc + trimmed edges (result) ---
 
-let fillet = PathLayer('fillet') \${
+let fillet = PathLayer('fillet') #{
   stroke: Color('#8b5cf6');
   stroke-width: 2.5;
   fill: none;
@@ -18435,7 +18441,7 @@ fillet.apply {
 
 // --- Arc center ---
 
-let center_dot = PathLayer('center-dot') \${
+let center_dot = PathLayer('center-dot') #{
   fill: Color('#8b5cf640');
   stroke: Color('#8b5cf6');
   stroke-width: 1;
@@ -18446,7 +18452,7 @@ center_dot.apply {
 
 // --- Radius lines (from center to trim points) ---
 
-let radii = PathLayer('radii') \${
+let radii = PathLayer('radii') #{
   stroke: Color('#8b5cf660');
   stroke-width: 1;
   stroke-dasharray: "3 3";
@@ -18459,7 +18465,7 @@ radii.apply {
 
 // --- Vertex dot ---
 
-let vertex = PathLayer('vertex') \${
+let vertex = PathLayer('vertex') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -18470,7 +18476,7 @@ vertex.apply {
 
 // --- Trim points ---
 
-let trim_dots = PathLayer('trim-dots') \${
+let trim_dots = PathLayer('trim-dots') #{
   fill: Color('#22c55e');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -18482,7 +18488,7 @@ trim_dots.apply {
 
 // --- Removed corner area ---
 
-let removed = PathLayer('removed') \${
+let removed = PathLayer('removed') #{
   fill: Color('#ef444412');
   stroke: none;
 };
@@ -18494,7 +18500,7 @@ removed.apply {
 
 // --- Radius dimension ---
 
-let r_dim = PathLayer('r-dim') \${
+let r_dim = PathLayer('r-dim') #{
   stroke: Color('#f59e0b');
   stroke-width: 1;
   fill: none;
@@ -18504,7 +18510,7 @@ r_dim.apply {
   M 160 160 L calc(160 + 28) calc(160 - 28)
 }
 
-let r_arrow = PathLayer('r-arrow') \${
+let r_arrow = PathLayer('r-arrow') #{
   fill: Color('#f59e0b');
   stroke: none;
 };
@@ -18518,7 +18524,7 @@ r_arrow.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') \${
+let leaders = PathLayer('leaders') #{
   stroke: Color('#475569');
   stroke-width: 0.5;
   fill: none;
@@ -18533,7 +18539,7 @@ leaders.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -18546,7 +18552,7 @@ labels.apply {
   text(315, 150)\`a r r 0 0 1 dx dy\`
 }
 
-let labels_left = TextLayer('labels-left') \${
+let labels_left = TextLayer('labels-left') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -18559,7 +18565,7 @@ labels_left.apply {
 
 // --- Radius label ---
 
-let r_label = TextLayer('r-label') \${
+let r_label = TextLayer('r-label') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#f59e0b');
@@ -18571,7 +18577,7 @@ r_label.apply {
 
 // --- Geometry note ---
 
-let geo = TextLayer('geo') \${
+let geo = TextLayer('geo') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -18584,7 +18590,7 @@ geo.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -18597,17 +18603,17 @@ code.apply {
 
 // --- Legend ---
 
-let leg = TextLayer('legend') \${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
 
-let leg_o = PathLayer('leg-o') \${ fill: Color('#94a3b8'); stroke: none; };
-let leg_f = PathLayer('leg-f') \${ fill: Color('#8b5cf6'); stroke: none; };
-let leg_v = PathLayer('leg-v') \${ fill: Color('#ef4444'); stroke: none; };
-let leg_t = PathLayer('leg-t') \${ fill: Color('#22c55e'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#94a3b8'); stroke: none; };
+let leg_f = PathLayer('leg-f') #{ fill: Color('#8b5cf6'); stroke: none; };
+let leg_v = PathLayer('leg-v') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_t = PathLayer('leg-t') #{ fill: Color('#22c55e'); stroke: none; };
 
 leg_o.apply { rect(300, 260, 8, 8); }
 leg_f.apply { rect(300, 274, 8, 8); }
@@ -18623,7 +18629,7 @@ leg.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -18633,7 +18639,7 @@ title.apply {
   text(30, 28)\`Fillet Anatomy\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -18666,25 +18672,25 @@ subtitle.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 700, 380); }
 
 // --- Layers ---
 
-let original = PathLayer('original') \${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
   fill: none;
 };
 
-let filleted = PathLayer('filleted') \${
+let filleted = PathLayer('filleted') #{
   stroke: Color('#8b5cf6');
   stroke-width: 2;
   fill: Color('#8b5cf615');
 };
 
-let dots = PathLayer('dots') \${
+let dots = PathLayer('dots') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -18746,7 +18752,7 @@ for (i in 0..3) {
 
 // --- Angle labels ---
 
-let angle_labels = TextLayer('angle-labels') \${
+let angle_labels = TextLayer('angle-labels') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -18767,15 +18773,15 @@ angle_labels.apply {
 
 // --- Legend ---
 
-let leg = TextLayer('legend') \${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
-let leg_o = PathLayer('leg-o') \${ fill: Color('#94a3b8'); stroke: none; };
-let leg_f = PathLayer('leg-f') \${ fill: Color('#8b5cf6'); stroke: none; };
-let leg_v = PathLayer('leg-v') \${ fill: Color('#ef4444'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#94a3b8'); stroke: none; };
+let leg_f = PathLayer('leg-f') #{ fill: Color('#8b5cf6'); stroke: none; };
+let leg_v = PathLayer('leg-v') #{ fill: Color('#ef4444'); stroke: none; };
 
 leg_o.apply { rect(560, 20, 8, 8); }
 leg_f.apply { rect(560, 34, 8, 8); }
@@ -18789,7 +18795,7 @@ leg.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -18802,7 +18808,7 @@ code.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -18812,7 +18818,7 @@ title.apply {
   text(30, 32)\`Elliptical Fillet at Various Angles\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -18832,12 +18838,12 @@ let box = @{ h 70 v 70 h -70 z };
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 560, 300); }
 
 // --- Original outlines ---
 
-let original = PathLayer('original') \${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -18854,7 +18860,7 @@ original.apply {
 
 // --- Filleted shapes ---
 
-let filleted = PathLayer('filleted') \${
+let filleted = PathLayer('filleted') #{
   stroke: Color('#8b5cf6');
   stroke-width: 2;
   fill: Color('#8b5cf615');
@@ -18884,7 +18890,7 @@ filleted.apply {
 
 // --- Labels ---
 
-let names = TextLayer('names') \${
+let names = TextLayer('names') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -18901,7 +18907,7 @@ names.apply {
   text(505, 164)\`Fillet(15,8,.3)\`
 }
 
-let desc = TextLayer('desc') \${
+let desc = TextLayer('desc') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
@@ -18917,7 +18923,7 @@ desc.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -18929,7 +18935,7 @@ code.apply {
   text(30, 252)\`rounded.drawTo(x, y)\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -18942,7 +18948,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -18952,7 +18958,7 @@ title.apply {
   text(30, 32)\`Fillet Gallery\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -19018,7 +19024,7 @@ subtitle.apply {
 <p><a href="/docs#path-blocks-pathblockfromglyphtext-styles"><code>PathBlock.fromGlyph(text, styles)</code></a> is the core conversion function. It takes a text string and a style block, and returns an array of PathBlock values — one per character:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
 
-<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"Hello"</span>, <span class="id">styles</span>);
 
 <span class="id">log</span>(<span class="id">glyphs</span>.<span class="id">length</span>);    <span class="cm">// 5 — one PathBlock per character</span>
@@ -19026,7 +19032,7 @@ subtitle.apply {
 <p>Each glyph PathBlock is a full PathBlock value with all the standard properties and methods. You can call <code>.draw()</code>, <code>.drawTo()</code>, <code>.project()</code>, <code>.get()</code>, <code>.tangent()</code>, <code>.boundingBox()</code>, <code>.scale()</code>, <code>.fillet()</code>, <code>.union()</code> — everything from the <a href="/docs#path-blocks-syntax">PathBlock documentation</a>. The glyph is geometry now, not text.</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
 
-<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"A"</span>, \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">72</span>; });
+<span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"A"</span>, #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">72</span>; });
 
 <span class="cm">// Draw the glyph</span>
 <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>)
@@ -19042,7 +19048,7 @@ subtitle.apply {
 <p>Drawing glyph PathBlocks is straightforward, but you need to position them correctly. In a font, each glyph has an <em>advance width</em> — the horizontal distance the cursor should move after drawing that glyph before drawing the next one. This is how proportional fonts work: a narrow &quot;i&quot; advances less than a wide &quot;M&quot;.</p>
 <p>Every glyph PathBlock from <code>fromGlyph()</code> carries an <a href="/docs#path-blocks-advancewidth"><code>.advanceWidth</code></a> property. To lay out a word, accumulate advance widths in a loop:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Bebas Neue"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">BebasNeue-Regular</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">BebasNeue-Regular</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"PATHOGEN"</span>, <span class="id">styles</span>);
 
 <span class="kw">let</span> <span class="id">cursor_x</span> = <span class="num">60</span>;
@@ -19062,17 +19068,17 @@ subtitle.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 600, 300); }
 
 // ─── Glyph layout with advance widths ────────────────────────────
 
 let word = "PATHOGEN";
-let styles = \${ font-family: "Bebas Neue"; font-size: 64; };
+let styles = #{ font-family: "Bebas Neue"; font-size: 64; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 // Place glyphs using advance width accumulation
-let glyph_layer = PathLayer('glyphs') \${
+let glyph_layer = PathLayer('glyphs') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -19090,7 +19096,7 @@ layer('glyphs').apply {
 
 // --- Baseline and advance width markers ---
 
-let markers = PathLayer('markers') \${
+let markers = PathLayer('markers') #{
   stroke: Color('#f59e0b');
   stroke-width: 0.75;
   fill: none;
@@ -19102,7 +19108,7 @@ layer('markers').apply {
 }
 
 // Advance width ticks
-let ticks = PathLayer('ticks') \${
+let ticks = PathLayer('ticks') #{
   stroke: Color('#f59e0b60');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -19121,10 +19127,10 @@ layer('ticks').apply {
 // --- Second row: Inconsolata (monospace) ---
 
 let word2 = "PATHOGEN";
-let styles2 = \${ font-family: Inconsolata; font-size: 48; };
+let styles2 = #{ font-family: Inconsolata; font-size: 48; };
 let glyphs2 = PathBlock.fromGlyph(word2, styles2);
 
-let glyph_layer2 = PathLayer('glyphs2') \${
+let glyph_layer2 = PathLayer('glyphs2') #{
   fill: Color('#22c55e');
   stroke: none;
 };
@@ -19140,7 +19146,7 @@ layer('glyphs2').apply {
 }
 
 // Baseline 2
-let markers2 = PathLayer('markers2') \${
+let markers2 = PathLayer('markers2') #{
   stroke: Color('#22c55e');
   stroke-width: 0.75;
   fill: none;
@@ -19151,7 +19157,7 @@ layer('markers2').apply {
 
 // --- Font labels ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -19164,7 +19170,7 @@ layer('labels').apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -19174,9 +19180,9 @@ layer('title').apply { text(30, 30)\`Glyph Layout with Advance Widths\` }
 
 // --- Code snippet ---
 
-let code_group = GroupLayer('code-block') \${ translate-x: 350; translate-y: 20; };
+let code_group = GroupLayer('code-block') #{ translate-x: 350; translate-y: 20; };
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -19190,7 +19196,7 @@ layer('code').apply {
   text(0, 48)\`}\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#c084fc');
@@ -19211,14 +19217,14 @@ code_group.append(code, kw);
 <p>Most glyphs are made of multiple contours. The letter &quot;O&quot; has an outer ring and an inner hole — two closed paths. The letter &quot;i&quot; has a body and a dot — also two. Some glyphs are more complex: &quot;B&quot; has an outer shape plus two enclosed holes.</p>
 <p>The <a href="/docs#path-blocks-contours"><code>.contours</code></a> property splits a glyph PathBlock into its constituent contours, returning an array of PathBlock values — one per contour:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"O"</span>, <span class="id">styles</span>);
 
 <span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
 <span class="id">log</span>(<span class="id">contours</span>.<span class="id">length</span>);    <span class="cm">// 2 — outer ring + inner hole</span>
 </code></pre><p>Each contour is a closed PathBlock with all standard properties and methods. You can draw them individually, apply different styles, transform them independently, or use them in boolean operations. Here&#39;s what iterating over contours looks like:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">48</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"B"</span>, <span class="id">styles</span>);
 
 <span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
@@ -19233,7 +19239,7 @@ code_group.append(code, kw);
 </code></pre><p>The number of contours per glyph varies by character and font design. Simple glyphs like &quot;n&quot; or &quot;c&quot; typically have a single contour. Letters with enclosed spaces — &quot;o&quot;, &quot;e&quot;, &quot;d&quot;, &quot;g&quot; — usually have two. Letters with multiple enclosed regions — &quot;B&quot;, &quot;8&quot; — can have three or more. Punctuation follows the same logic: &quot;!&quot; has two contours (the body stroke and the dot below), while &quot;-&quot; has just one.</p>
 <p>To draw each contour with a different fill, iterate over the array and assign colors from a palette:</p>
 <pre><code class="hljs language-pathogen">@font <span class="str">"Inter"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">56</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">56</span>; };
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"B"</span>, <span class="id">styles</span>);
 
 <span class="kw">let</span> <span class="id">colors</span> = [<span class="id">Color</span>(<span class="str">'#3b82f6'</span>), <span class="id">Color</span>(<span class="str">'#22c55e'</span>), <span class="id">Color</span>(<span class="str">'#f59e0b'</span>)];
@@ -19242,7 +19248,7 @@ code_group.append(code, kw);
 <span class="kw">let</span> <span class="id">contours</span> = <span class="id">glyphs</span>[<span class="num">0</span>].<span class="id">contours</span>;
 <span class="kw">let</span> <span class="id">ci</span> = <span class="num">0</span>;
 <span class="kw">for</span> (<span class="id">c</span> <span class="kw">in</span> <span class="id">contours</span>) {
-  <span class="kw">let</span> <span class="kw">layer</span> = <span class="tp">PathLayer</span>(<span class="str">'c'</span> + <span class="id">ci</span>) \${
+  <span class="kw">let</span> <span class="kw">layer</span> = <span class="tp">PathLayer</span>(<span class="str">'c'</span> + <span class="id">ci</span>) #{
     <span class="pr">fill</span>: <span class="id">fills</span>[<span class="id">ci</span>];
     <span class="pr">stroke</span>: <span class="id">colors</span>[<span class="id">ci</span>];
     <span class="pr">stroke-width</span>: <span class="num">1.5</span>;
@@ -19259,7 +19265,7 @@ code_group.append(code, kw);
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 660, 400); }
 
 // --- Contour color palette (12 colors for 12 contours) ---
@@ -19284,10 +19290,10 @@ let word = "Bingo!";
 
 // ─── LEFT COLUMN ─────────────────────────────────────────────────
 
-let g_left = GroupLayer('left-col') \${ translate-x: 30; translate-y: 0; };
+let g_left = GroupLayer('left-col') #{ translate-x: 30; translate-y: 0; };
 
 // Title
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -19295,7 +19301,7 @@ let title = TextLayer('title') \${
 };
 layer('title').apply { text(0, 30)\`Contour Decomposition\` }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -19304,10 +19310,10 @@ let subtitle = TextLayer('subtitle') \${
 layer('subtitle').apply { text(0, 44)\`.contours splits glyphs into individual PathBlocks\` }
 
 // Assembled word — size to fit within ~290px column
-let asm_styles = \${ font-family: "Raleway"; font-weight: 700; font-size: 72; };
+let asm_styles = #{ font-family: "Raleway"; font-weight: 700; font-size: 72; };
 let asm_glyphs = PathBlock.fromGlyph(word, asm_styles);
 
-let asm_layer = PathLayer('assembled') \${
+let asm_layer = PathLayer('assembled') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -19320,7 +19326,7 @@ layer('assembled').apply {
   }
 }
 
-let asm_label = TextLayer('asm-label') \${
+let asm_label = TextLayer('asm-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -19332,9 +19338,9 @@ g_left.append(title, subtitle, asm_layer, asm_label);
 
 // ─── Decomposed contours — smaller size to fit all 6 letters ────
 
-let g_decomp = GroupLayer('decomposed') \${ translate-x: 30; translate-y: 176; };
+let g_decomp = GroupLayer('decomposed') #{ translate-x: 30; translate-y: 176; };
 
-let dec_styles = \${ font-family: "Raleway"; font-weight: 700; font-size: 56; };
+let dec_styles = #{ font-family: "Raleway"; font-weight: 700; font-size: 56; };
 let dec_glyphs = PathBlock.fromGlyph(word, dec_styles);
 
 let letter_gap = 6;
@@ -19351,9 +19357,9 @@ let dec_y = 70;
 
 // --- B: 3 contours (outer + 2 holes) ---
 let contours_B = dec_glyphs[0].contours;
-let cB0 = PathLayer('cB0') \${ fill: fills[0]; stroke: colors[0]; stroke-width: 1.5; };
-let cB1 = PathLayer('cB1') \${ fill: fills[1]; stroke: colors[1]; stroke-width: 1.5; };
-let cB2 = PathLayer('cB2') \${ fill: fills[2]; stroke: colors[2]; stroke-width: 1.5; };
+let cB0 = PathLayer('cB0') #{ fill: fills[0]; stroke: colors[0]; stroke-width: 1.5; };
+let cB1 = PathLayer('cB1') #{ fill: fills[1]; stroke: colors[1]; stroke-width: 1.5; };
+let cB2 = PathLayer('cB2') #{ fill: fills[2]; stroke: colors[2]; stroke-width: 1.5; };
 layer('cB0').apply { contours_B[0].drawTo(x_B, dec_y); }
 layer('cB1').apply { contours_B[1].drawTo(x_B, dec_y); }
 layer('cB2').apply { contours_B[2].drawTo(x_B, dec_y); }
@@ -19361,38 +19367,38 @@ g_decomp.append(cB0, cB1, cB2);
 
 // --- i: 2 contours (body + dot) ---
 let contours_i = dec_glyphs[1].contours;
-let ci0 = PathLayer('ci0') \${ fill: fills[3]; stroke: colors[3]; stroke-width: 1.5; };
-let ci1 = PathLayer('ci1') \${ fill: fills[4]; stroke: colors[4]; stroke-width: 1.5; };
+let ci0 = PathLayer('ci0') #{ fill: fills[3]; stroke: colors[3]; stroke-width: 1.5; };
+let ci1 = PathLayer('ci1') #{ fill: fills[4]; stroke: colors[4]; stroke-width: 1.5; };
 layer('ci0').apply { contours_i[0].drawTo(x_i, dec_y); }
 layer('ci1').apply { contours_i[1].drawTo(x_i, dec_y); }
 g_decomp.append(ci0, ci1);
 
 // --- n: 1 contour ---
 let contours_n = dec_glyphs[2].contours;
-let cn0 = PathLayer('cn0') \${ fill: fills[5]; stroke: colors[5]; stroke-width: 1.5; };
+let cn0 = PathLayer('cn0') #{ fill: fills[5]; stroke: colors[5]; stroke-width: 1.5; };
 layer('cn0').apply { contours_n[0].drawTo(x_n, dec_y); }
 g_decomp.append(cn0);
 
 // --- g: 2 contours (body + tail) ---
 let contours_g = dec_glyphs[3].contours;
-let cg0 = PathLayer('cg0') \${ fill: fills[6]; stroke: colors[6]; stroke-width: 1.5; };
-let cg1 = PathLayer('cg1') \${ fill: fills[7]; stroke: colors[7]; stroke-width: 1.5; };
+let cg0 = PathLayer('cg0') #{ fill: fills[6]; stroke: colors[6]; stroke-width: 1.5; };
+let cg1 = PathLayer('cg1') #{ fill: fills[7]; stroke: colors[7]; stroke-width: 1.5; };
 layer('cg0').apply { contours_g[0].drawTo(x_g, dec_y); }
 layer('cg1').apply { contours_g[1].drawTo(x_g, dec_y); }
 g_decomp.append(cg0, cg1);
 
 // --- o: 2 contours (outer + hole) ---
 let contours_o = dec_glyphs[4].contours;
-let co0 = PathLayer('co0') \${ fill: fills[8]; stroke: colors[8]; stroke-width: 1.5; };
-let co1 = PathLayer('co1') \${ fill: fills[9]; stroke: colors[9]; stroke-width: 1.5; };
+let co0 = PathLayer('co0') #{ fill: fills[8]; stroke: colors[8]; stroke-width: 1.5; };
+let co1 = PathLayer('co1') #{ fill: fills[9]; stroke: colors[9]; stroke-width: 1.5; };
 layer('co0').apply { contours_o[0].drawTo(x_o, dec_y); }
 layer('co1').apply { contours_o[1].drawTo(x_o, dec_y); }
 g_decomp.append(co0, co1);
 
 // --- !: 2 contours (body + dot) ---
 let contours_ex = dec_glyphs[5].contours;
-let cex0 = PathLayer('cex0') \${ fill: fills[10]; stroke: colors[10]; stroke-width: 1.5; };
-let cex1 = PathLayer('cex1') \${ fill: fills[11]; stroke: colors[11]; stroke-width: 1.5; };
+let cex0 = PathLayer('cex0') #{ fill: fills[10]; stroke: colors[10]; stroke-width: 1.5; };
+let cex1 = PathLayer('cex1') #{ fill: fills[11]; stroke: colors[11]; stroke-width: 1.5; };
 layer('cex0').apply { contours_ex[0].drawTo(x_ex, dec_y); }
 layer('cex1').apply { contours_ex[1].drawTo(x_ex, dec_y); }
 g_decomp.append(cex0, cex1);
@@ -19403,13 +19409,13 @@ let char_labels = ["B", "i", "n", "g", "o", "!"];
 let char_counts = ["3", "2", "1", "2", "2", "2"];
 let x_positions = [x_B, x_i, x_n, x_g, x_o, x_ex];
 
-let lbl_layer = TextLayer('char-labels') \${
+let lbl_layer = TextLayer('char-labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
   text-anchor: middle;
 };
-let cnt_layer = TextLayer('char-counts') \${
+let cnt_layer = TextLayer('char-counts') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#64748b');
@@ -19437,7 +19443,7 @@ layer('char-counts').apply {
 g_decomp.append(lbl_layer, cnt_layer);
 
 // Decomposed section footer
-let dec_footer = TextLayer('dec-footer') \${
+let dec_footer = TextLayer('dec-footer') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -19448,10 +19454,10 @@ g_decomp.append(dec_footer);
 
 // ─── RIGHT COLUMN ────────────────────────────────────────────────
 
-let g_right = GroupLayer('right-col') \${ translate-x: 360; translate-y: 0; };
+let g_right = GroupLayer('right-col') #{ translate-x: 360; translate-y: 0; };
 
 // Contour Color Key title
-let leg_title = TextLayer('leg-title') \${
+let leg_title = TextLayer('leg-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -19463,18 +19469,18 @@ layer('leg-title').apply { text(0, 30)\`Contour Color Key\` }
 let leg_top = 44;
 let leg_h = 14;
 
-let ld0 = PathLayer('ld0') \${ fill: colors[0]; stroke: none; };
-let ld1 = PathLayer('ld1') \${ fill: colors[1]; stroke: none; };
-let ld2 = PathLayer('ld2') \${ fill: colors[2]; stroke: none; };
-let ld3 = PathLayer('ld3') \${ fill: colors[3]; stroke: none; };
-let ld4 = PathLayer('ld4') \${ fill: colors[4]; stroke: none; };
-let ld5 = PathLayer('ld5') \${ fill: colors[5]; stroke: none; };
-let ld6 = PathLayer('ld6') \${ fill: colors[6]; stroke: none; };
-let ld7 = PathLayer('ld7') \${ fill: colors[7]; stroke: none; };
-let ld8 = PathLayer('ld8') \${ fill: colors[8]; stroke: none; };
-let ld9 = PathLayer('ld9') \${ fill: colors[9]; stroke: none; };
-let ld10 = PathLayer('ld10') \${ fill: colors[10]; stroke: none; };
-let ld11 = PathLayer('ld11') \${ fill: colors[11]; stroke: none; };
+let ld0 = PathLayer('ld0') #{ fill: colors[0]; stroke: none; };
+let ld1 = PathLayer('ld1') #{ fill: colors[1]; stroke: none; };
+let ld2 = PathLayer('ld2') #{ fill: colors[2]; stroke: none; };
+let ld3 = PathLayer('ld3') #{ fill: colors[3]; stroke: none; };
+let ld4 = PathLayer('ld4') #{ fill: colors[4]; stroke: none; };
+let ld5 = PathLayer('ld5') #{ fill: colors[5]; stroke: none; };
+let ld6 = PathLayer('ld6') #{ fill: colors[6]; stroke: none; };
+let ld7 = PathLayer('ld7') #{ fill: colors[7]; stroke: none; };
+let ld8 = PathLayer('ld8') #{ fill: colors[8]; stroke: none; };
+let ld9 = PathLayer('ld9') #{ fill: colors[9]; stroke: none; };
+let ld10 = PathLayer('ld10') #{ fill: colors[10]; stroke: none; };
+let ld11 = PathLayer('ld11') #{ fill: colors[11]; stroke: none; };
 
 layer('ld0').apply { rect(0, leg_top, 8, 8); }
 layer('ld1').apply { rect(0, calc(leg_top + leg_h), 8, 8); }
@@ -19489,7 +19495,7 @@ layer('ld9').apply { rect(0, calc(leg_top + leg_h * 9), 8, 8); }
 layer('ld10').apply { rect(0, calc(leg_top + leg_h * 10), 8, 8); }
 layer('ld11').apply { rect(0, calc(leg_top + leg_h * 11), 8, 8); }
 
-let leg_text = TextLayer('leg-text') \${
+let leg_text = TextLayer('leg-text') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -19516,7 +19522,7 @@ g_right.append(leg_title, ld0, ld1, ld2, ld3, ld4, ld5, ld6, ld7, ld8, ld9, ld10
 // Code snippet — well below the legend
 let code_top = calc(leg_top + leg_h * 12 + 30);
 
-let code_title = TextLayer('code-title') \${
+let code_title = TextLayer('code-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -19524,7 +19530,7 @@ let code_title = TextLayer('code-title') \${
 };
 layer('code-title').apply { text(0, code_top)\`Usage\` }
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -19539,7 +19545,7 @@ layer('code').apply {
   text(0, calc(cl + 54))\`}\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#c084fc');
@@ -19555,7 +19561,7 @@ g_right.append(code_title, code, kw);
 
 // ─── Divider ─────────────────────────────────────────────────────
 
-let divider = PathLayer('divider') \${
+let divider = PathLayer('divider') #{
   stroke: Color('#1e293b');
   stroke-width: 1;
   fill: none;
@@ -19611,12 +19617,12 @@ layer('divider').apply { M 345 20 v 370 }
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 600, 220); }
 
 // Shared font styles
-let styles = \${ font-family: "Bebas Neue"; font-size: 72; };
-let label_styles = \${ font-family: monospace; font-size: 8; };
+let styles = #{ font-family: "Bebas Neue"; font-size: 72; };
+let label_styles = #{ font-family: monospace; font-size: 8; };
 
 // Column geometry: three equal columns across 600px
 // Each column ~200px wide, starting at x=0, x=200, x=400
@@ -19629,10 +19635,10 @@ let placed_labels = [];
 // WAVE — sin() vertical offset per character (left column)
 // ═══════════════════════════════════════════════════════════════════
 
-let g_wave = GroupLayer('wave-group') \${ translate-x: 20; translate-y: 30; };
+let g_wave = GroupLayer('wave-group') #{ translate-x: 20; translate-y: 30; };
 
 // Effect name
-let wave_title = TextLayer('wave-title') \${
+let wave_title = TextLayer('wave-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#94a3b8');
@@ -19643,7 +19649,7 @@ layer('wave-title').apply { text(0, 0)\`WAVE\` }
 let word = "WAVE";
 let glyphs = PathBlock.fromGlyph(word, styles);
 
-let wave_layer = PathLayer('wave') \${
+let wave_layer = PathLayer('wave') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -19665,7 +19671,7 @@ layer('wave').apply {
 let wave_label_block = &amp;{ text(0, 8)\`sin(i) vertical offset\` } &lt;&lt; label_styles;
 let wave_label_proj = wave_label_block.project(0, 120);
 
-let wave_label = TextLayer('wave-label') \${
+let wave_label = TextLayer('wave-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -19683,10 +19689,10 @@ g_wave.append(wave_title, wave_layer, wave_label);
 // GROW — increasing scale per character (center column)
 // ═══════════════════════════════════════════════════════════════════
 
-let g_scale = GroupLayer('scale-group') \${ translate-x: 210; translate-y: 30; };
+let g_scale = GroupLayer('scale-group') #{ translate-x: 210; translate-y: 30; };
 
 // Effect name
-let grow_title = TextLayer('grow-title') \${
+let grow_title = TextLayer('grow-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#94a3b8');
@@ -19697,7 +19703,7 @@ layer('grow-title').apply { text(0, 0)\`GROW\` }
 let word2 = "GROW";
 let glyphs2 = PathBlock.fromGlyph(word2, styles);
 
-let scale_layer = PathLayer('scale') \${
+let scale_layer = PathLayer('scale') #{
   fill: Color('#22c55e');
   stroke: none;
 };
@@ -19719,7 +19725,7 @@ layer('scale').apply {
 let scale_label_block = &amp;{ text(0, 8)\`scale(0.5 + i * 0.25)\` } &lt;&lt; label_styles;
 let scale_label_proj = scale_label_block.project(0, 120);
 
-let scale_label = TextLayer('scale-label') \${
+let scale_label = TextLayer('scale-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -19737,10 +19743,10 @@ g_scale.append(grow_title, scale_layer, scale_label);
 // CIRCULAR — characters along a circular arc (right column)
 // ═══════════════════════════════════════════════════════════════════
 
-let g_arc = GroupLayer('arc-group') \${ translate-x: 400; translate-y: 30; };
+let g_arc = GroupLayer('arc-group') #{ translate-x: 400; translate-y: 30; };
 
 // Effect name
-let arc_title = TextLayer('arc-title') \${
+let arc_title = TextLayer('arc-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#94a3b8');
@@ -19749,7 +19755,7 @@ let arc_title = TextLayer('arc-title') \${
 layer('arc-title').apply { text(0, 0)\`CIRCULAR\` }
 
 let word3 = "CIRCULAR";
-let arc_styles = \${ font-family: "Bebas Neue"; font-size: 30; };
+let arc_styles = #{ font-family: "Bebas Neue"; font-size: 30; };
 let glyphs3 = PathBlock.fromGlyph(word3, arc_styles);
 
 // Compute total width for arc distribution
@@ -19758,7 +19764,7 @@ for (g in glyphs3) {
   total_width = calc(total_width + g.advanceWidth);
 }
 
-let arc_layer = PathLayer('arc') \${
+let arc_layer = PathLayer('arc') #{
   fill: Color('#f59e0b');
   stroke: none;
 };
@@ -19788,7 +19794,7 @@ layer('arc').apply {
 }
 
 // Guide arc (dashed circle)
-let guide = PathLayer('guide') \${
+let guide = PathLayer('guide') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -19800,7 +19806,7 @@ layer('guide').apply { circle(calc(arc_cx), calc(arc_cy), arc_r); }
 let arc_label_block = &amp;{ text(0, 8)\`rotateAtVertexIndex along arc\` } &lt;&lt; label_styles;
 let arc_label_proj = arc_label_block.project(calc(arc_cx - 50), 140);
 
-let arc_label = TextLayer('arc-label') \${
+let arc_label = TextLayer('arc-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -19839,7 +19845,7 @@ log("Label collisions: ", collision_count, " (0 expected)");
 // Title (bottom)
 // ═══════════════════════════════════════════════════════════════════
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -19884,7 +19890,7 @@ layer('title').apply { text(30, 205)\`Per-Character Transforms\` }
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 900, 310); }
 
 // --- Palette ---
@@ -19907,7 +19913,7 @@ let palette_fill = [Color('#3b82f618'), Color('#22c55e18'), Color('#f59e0b18'), 
 // ─── Build glyph paths with advance-width layout ──────────────────
 
 let word = "CUTTING";
-let styles = \${ font-family: "Bebas Neue"; font-size: 60; };
+let styles = #{ font-family: "Bebas Neue"; font-size: 60; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 // Compute cursor positions with tracking
@@ -19950,14 +19956,14 @@ let label_y = 200;
 // Stage 1: Individual glyph outlines
 // ═══════════════════════════════════════
 
-let g_stage1 = GroupLayer('stage1') \${ translate-x: 0; translate-y: 0; };
+let g_stage1 = GroupLayer('stage1') #{ translate-x: 0; translate-y: 0; };
 
 let s1_x = 30;
 let glyph_names = ["g-0", "g-1", "g-2", "g-3", "g-4", "g-5", "g-6"];
 let gi = 0;
 for (g in glyphs) {
   let gn = glyph_names[gi];
-  let gl = PathLayer(gn) \${
+  let gl = PathLayer(gn) #{
     stroke: palette[gi];
     stroke-width: 1.5;
     fill: palette_fill[gi];
@@ -19967,7 +19973,7 @@ for (g in glyphs) {
   gi = calc(gi + 1);
 }
 
-let s1_label = TextLayer('s1-label') \${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
+let s1_label = TextLayer('s1-label') #{ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 layer('s1-label').apply {
   text(s1_x, label_y)\`7 glyph PathBlocks\`
   text(s1_x, calc(label_y + 12))\`laid out by advanceWidth\`
@@ -19979,12 +19985,12 @@ g_stage1.append(s1_label);
 // Stage 2: Union result
 // ═══════════════════════════════════════
 
-let g_stage2 = GroupLayer('stage2') \${ translate-x: 320; translate-y: 0; };
+let g_stage2 = GroupLayer('stage2') #{ translate-x: 320; translate-y: 0; };
 
-let union_layer = PathLayer('union-result') \${ fill: c_blue; stroke: none; };
+let union_layer = PathLayer('union-result') #{ fill: c_blue; stroke: none; };
 layer('union-result').apply { combined.drawTo(30, calc(geo_y + baseline_y)); }
 
-let s2_label = TextLayer('s2-label') \${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
+let s2_label = TextLayer('s2-label') #{ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 layer('s2-label').apply { text(30, label_y)\`single united path\` }
 
 g_stage2.append(union_layer, s2_label);
@@ -19993,12 +19999,12 @@ g_stage2.append(union_layer, s2_label);
 // Stage 3: Difference cutout
 // ═══════════════════════════════════════
 
-let g_stage3 = GroupLayer('stage3') \${ translate-x: 610; translate-y: 0; };
+let g_stage3 = GroupLayer('stage3') #{ translate-x: 610; translate-y: 0; };
 
-let cutout_layer = PathLayer('cutout-result') \${ fill: c_green; stroke: none; };
+let cutout_layer = PathLayer('cutout-result') #{ fill: c_green; stroke: none; };
 layer('cutout-result').apply { cutout.drawTo(30, calc(geo_y + baseline_y)); }
 
-let s3_label = TextLayer('s3-label') \${ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
+let s3_label = TextLayer('s3-label') #{ font-family: monospace; font-size: 8; fill: c_muted; text-anchor: start; };
 layer('s3-label').apply { text(30, label_y)\`text punched from plate\` }
 
 g_stage3.append(cutout_layer, s3_label);
@@ -20011,46 +20017,46 @@ let arrow_y = calc(geo_y + baseline_y - 20);
 
 // Arrow 1: Stage 1 → Stage 2 (x=240..320, centered at x=280)
 let a1_x = 252;
-let arrow1 = PathLayer('arrow1') \${ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
+let arrow1 = PathLayer('arrow1') #{ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
 layer('arrow1').apply { M a1_x arrow_y h 50  M calc(a1_x + 46) calc(arrow_y - 4) l 8 4 l -8 4 z }
 
-let arrow1_label = TextLayer('arrow1-label') \${ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
+let arrow1_label = TextLayer('arrow1-label') #{ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
 layer('arrow1-label').apply { text(280, calc(arrow_y + 16))\`.union()\` }
 
 // Arrow 2: Stage 2 → Stage 3 (x=520..610, centered at x=565)
 let a2_x = 532;
-let arrow2 = PathLayer('arrow2') \${ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
+let arrow2 = PathLayer('arrow2') #{ stroke: c_arrow; stroke-width: 1.5; fill: c_arrow; };
 layer('arrow2').apply { M a2_x arrow_y h 60  M calc(a2_x + 56) calc(arrow_y - 4) l 8 4 l -8 4 z }
 
-let arrow2_label = TextLayer('arrow2-label') \${ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
+let arrow2_label = TextLayer('arrow2-label') #{ font-family: monospace; font-size: 9; fill: c_faint; text-anchor: middle; };
 layer('arrow2-label').apply { text(565, calc(arrow_y + 16))\`.difference()\` }
 
 // ═══════════════════════════════════════
 // Title and subtitle
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') \${ font-family: system-ui, sans-serif; font-size: 14; fill: c_text; text-anchor: start; };
+let title = TextLayer('title') #{ font-family: system-ui, sans-serif; font-size: 14; fill: c_text; text-anchor: start; };
 layer('title').apply { text(30, 28)\`Text Cutout with Boolean Operations\` }
 
-let subtitle = TextLayer('subtitle') \${ font-family: system-ui, sans-serif; font-size: 9; fill: c_muted; text-anchor: start; };
+let subtitle = TextLayer('subtitle') #{ font-family: system-ui, sans-serif; font-size: 9; fill: c_muted; text-anchor: start; };
 layer('subtitle').apply { text(30, 43)\`7 glyph paths → .union() chain → .difference() from rectangle\` }
 
 // ═══════════════════════════════════════
 // Code snippet (bottom, fitted to content)
 // ═══════════════════════════════════════
 
-let code_group = GroupLayer('code-block') \${ translate-x: 235; translate-y: 255; };
+let code_group = GroupLayer('code-block') #{ translate-x: 235; translate-y: 255; };
 
-let code_bg = PathLayer('code-bg') \${ fill: Color('#1e293b'); stroke: Color('#334155'); stroke-width: 0.5; };
+let code_bg = PathLayer('code-bg') #{ fill: Color('#1e293b'); stroke: Color('#334155'); stroke-width: 0.5; };
 layer('code-bg').apply { roundRect(0, 0, 430, 42, 4); }
 
-let code = TextLayer('code') \${ font-family: monospace; font-size: 8; fill: c_faint; text-anchor: start; };
+let code = TextLayer('code') #{ font-family: monospace; font-size: 8; fill: c_faint; text-anchor: start; };
 layer('code').apply {
   text(10, 16)\`let combined = projected[0];  for ... combined.union(projected[i]);\`
   text(10, 30)\`let cutout = plate.difference(combined);\`
 }
 
-let kw = TextLayer('kw') \${ font-family: monospace; font-size: 8; fill: Color('#c084fc'); text-anchor: start; };
+let kw = TextLayer('kw') #{ font-family: monospace; font-size: 8; fill: Color('#c084fc'); text-anchor: start; };
 layer('kw').apply {
   text(10, 16)\`let\`
   text(10, 30)\`let\`
@@ -20079,18 +20085,18 @@ code_group.append(code_bg, code, kw);
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 600, 340); }
 
 // ─── Left: fromGlyph() — paths AND metrics from the same font ──
 
-let g_left = GroupLayer('glyph-side') \${ translate-x: 30; translate-y: 50; };
+let g_left = GroupLayer('glyph-side') #{ translate-x: 30; translate-y: 50; };
 
 let word = "LAYOUT";
-let styles = \${ font-family: "Bebas Neue"; font-size: 56; };
+let styles = #{ font-family: "Bebas Neue"; font-size: 56; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
-let path_layer = PathLayer('glyph-paths') \${
+let path_layer = PathLayer('glyph-paths') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -20110,7 +20116,7 @@ layer('glyph-paths').apply {
 let total_w = cursor;
 
 // Bounding box from summed advance widths — matches perfectly
-let total_bbox = PathLayer('total-bbox') \${
+let total_bbox = PathLayer('total-bbox') #{
   fill: none;
   stroke: Color('#22c55e');
   stroke-width: 1.5;
@@ -20127,7 +20133,7 @@ layer('total-bbox').apply {
 }
 
 // Per-glyph advance width markers
-let tick_layer = PathLayer('ticks') \${
+let tick_layer = PathLayer('ticks') #{
   stroke: Color('#22c55e50');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -20142,7 +20148,7 @@ layer('ticks').apply {
   M tick_cursor calc(first_bb.y - 2) v calc(combined_h + 4)
 }
 
-let left_label = TextLayer('left-label') \${
+let left_label = TextLayer('left-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#22c55e');
@@ -20157,10 +20163,10 @@ g_left.append(path_layer, total_bbox, tick_layer, left_label);
 
 // ─── Right: same word as SVG text (browser font) ───────────────
 
-let g_right = GroupLayer('text-side') \${ translate-x: 310; translate-y: 50; };
+let g_right = GroupLayer('text-side') #{ translate-x: 310; translate-y: 50; };
 
 // Render as SVG &lt;text&gt; — browser picks its own font
-let text_layer = TextLayer('svg-text') \${
+let text_layer = TextLayer('svg-text') #{
   font-family: monospace;
   font-size: 24;
   fill: Color('#94a3b8');
@@ -20170,10 +20176,10 @@ layer('svg-text').apply {
 }
 
 // Measure with monospace table — use same y coordinate as rendering
-let text_label_block = &amp;{ text(0, 60)\`LAYOUT\` } &lt;&lt; \${ font-size: 24; font-family: monospace; };
+let text_label_block = &amp;{ text(0, 60)\`LAYOUT\` } &lt;&lt; #{ font-size: 24; font-family: monospace; };
 let text_bb = text_label_block.boundingBox();
 
-let text_bbox = PathLayer('text-bbox') \${
+let text_bbox = PathLayer('text-bbox') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -20183,7 +20189,7 @@ layer('text-bbox').apply {
   rect(text_bb.x, text_bb.y, text_bb.width, text_bb.height);
 }
 
-let right_label = TextLayer('right-label') \${
+let right_label = TextLayer('right-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#f59e0b');
@@ -20195,7 +20201,7 @@ layer('right-label').apply {
 }
 
 // Note about the mismatch
-let note = TextLayer('note') \${
+let note = TextLayer('note') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#64748b');
@@ -20210,7 +20216,7 @@ g_right.append(text_layer, text_bbox, right_label, note);
 
 // ─── Section titles ─────────────────────────────────────────────
 
-let left_title = TextLayer('l-title') \${
+let left_title = TextLayer('l-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#22c55e');
@@ -20218,7 +20224,7 @@ let left_title = TextLayer('l-title') \${
 };
 layer('l-title').apply { text(30, 42)\`PathBlock.fromGlyph() — exact\` }
 
-let right_title = TextLayer('r-title') \${
+let right_title = TextLayer('r-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#f59e0b');
@@ -20228,7 +20234,7 @@ layer('r-title').apply { text(310, 42)\`SVG &lt;text&gt; — estimated\` }
 
 // ─── Divider ─────────────────────────────────────────────────────
 
-let divider = PathLayer('divider') \${
+let divider = PathLayer('divider') #{
   stroke: Color('#334155');
   stroke-width: 1;
   fill: none;
@@ -20237,7 +20243,7 @@ layer('divider').apply { M 295 40 v 170 }
 
 // ─── Title ───────────────────────────────────────────────────────
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -20247,7 +20253,7 @@ layer('title').apply { text(30, 25)\`Why @font Matters: Paths vs Text\` }
 
 // ─── Bottom annotation ──────────────────────────────────────────
 
-let anno = TextLayer('anno') \${
+let anno = TextLayer('anno') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -20262,7 +20268,7 @@ layer('anno').apply {
 
 // ─── Key insight callout ────────────────────────────────────────
 
-let insight = TextLayer('insight') \${
+let insight = TextLayer('insight') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#3b82f6');
@@ -20280,7 +20286,7 @@ layer('insight').apply {
 <p>Here&#39;s the full pipeline from font declaration to rendered output — the workflow that ties together everything in this post:</p>
 <pre><code class="hljs language-pathogen"><span class="cm">// 1. Load the font</span>
 @font <span class="str">"Inter"</span>;
-<span class="kw">let</span> <span class="id">styles</span> = \${ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
+<span class="kw">let</span> <span class="id">styles</span> = #{ <span class="pr">font-family</span>: <span class="id">Inter</span>; <span class="pr">font-size</span>: <span class="num">64</span>; };
 
 <span class="cm">// 2. Extract glyphs</span>
 <span class="kw">let</span> <span class="id">glyphs</span> = <span class="id">PathBlock</span>.<span class="id">fromGlyph</span>(<span class="str">"HELLO"</span>, <span class="id">styles</span>);
@@ -20341,10 +20347,10 @@ let arrow = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 380); }
 
-let grid = PathLayer('grid') \${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -20362,7 +20368,7 @@ grid.apply {
 
 // --- Shape ---
 
-let shape = PathLayer('shape') \${
+let shape = PathLayer('shape') #{
   fill: Color('#3b82f618');
   stroke: Color('#3b82f6');
   stroke-width: 2;
@@ -20377,7 +20383,7 @@ shape.apply {
 
 // --- Bounding box overlay ---
 
-let bbox = PathLayer('bbox') \${
+let bbox = PathLayer('bbox') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -20390,7 +20396,7 @@ bbox.apply {
 
 // --- Vertex dots ---
 
-let vdots = PathLayer('vdots') \${
+let vdots = PathLayer('vdots') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -20407,7 +20413,7 @@ vdots.apply {
 
 // --- Origin crosshair ---
 
-let origin_mark = PathLayer('origin-mark') \${
+let origin_mark = PathLayer('origin-mark') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -20419,7 +20425,7 @@ origin_mark.apply {
 
 // --- Direction indicators along edges ---
 
-let dir_arrows = PathLayer('dir-arrows') \${
+let dir_arrows = PathLayer('dir-arrows') #{
   fill: Color('#818cf8');
   stroke: none;
 };
@@ -20434,7 +20440,7 @@ dir_arrows.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') \${
+let leaders = PathLayer('leaders') #{
   fill: none;
   stroke: Color('#475569');
   stroke-width: 0.5;
@@ -20454,7 +20460,7 @@ leaders.apply {
 
 // --- Vertex index labels ---
 
-let vidx = TextLayer('vidx') \${
+let vidx = TextLayer('vidx') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#fca5a5');
@@ -20472,7 +20478,7 @@ vidx.apply {
 
 // --- Property callouts ---
 
-let props = TextLayer('props') \${
+let props = TextLayer('props') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -20491,7 +20497,7 @@ props.apply {
 
 // --- Subdued property type labels ---
 
-let type_labels = TextLayer('types') \${
+let type_labels = TextLayer('types') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -20505,7 +20511,7 @@ type_labels.apply {
 
 // --- Direction label ---
 
-let dir_label = TextLayer('dir-label') \${
+let dir_label = TextLayer('dir-label') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#818cf8');
@@ -20517,7 +20523,7 @@ dir_label.apply {
 
 // --- Code block (top-left) ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#94a3b8');
@@ -20534,7 +20540,7 @@ code.apply {
 
 // --- Syntax highlight: keywords ---
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#c084fc');
@@ -20546,7 +20552,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 15;
   fill: Color('#e2e8f0');
@@ -20556,7 +20562,7 @@ title.apply {
   text(30, 30)\`PathBlock Anatomy\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -20568,18 +20574,18 @@ subtitle.apply {
 
 // --- Legend ---
 
-let leg = TextLayer('legend') \${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
 
-let leg_s = PathLayer('leg-s') \${ fill: Color('#3b82f6'); stroke: none; };
-let leg_b = PathLayer('leg-b') \${ fill: Color('#f59e0b'); stroke: none; };
-let leg_v = PathLayer('leg-v') \${ fill: Color('#ef4444'); stroke: none; };
-let leg_o = PathLayer('leg-o') \${ fill: Color('#22c55e'); stroke: none; };
-let leg_d = PathLayer('leg-d') \${ fill: Color('#818cf8'); stroke: none; };
+let leg_s = PathLayer('leg-s') #{ fill: Color('#3b82f6'); stroke: none; };
+let leg_b = PathLayer('leg-b') #{ fill: Color('#f59e0b'); stroke: none; };
+let leg_v = PathLayer('leg-v') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_d = PathLayer('leg-d') #{ fill: Color('#818cf8'); stroke: none; };
 
 leg_s.apply { rect(30, 335, 8, 8); }
 leg_b.apply { rect(30, 349, 8, 8); }
@@ -20620,19 +20626,19 @@ let diamond = @{
   z
 };
 
-let manual = PathLayer('manual') \${
+let manual = PathLayer('manual') #{
   fill: Color('#f59e0b');
   stroke: Color('#b45309');
   stroke-width: 1.5;
 };
 
-let drawto = PathLayer('drawto') \${
+let drawto = PathLayer('drawto') #{
   fill: Color('#8b5cf6');
   stroke: Color('#6d28d9');
   stroke-width: 1.5;
 };
 
-let label = PathLayer('label') \${
+let label = PathLayer('label') #{
   fill: none;
   stroke: Color('#64748b');
   stroke-width: 1;
@@ -20688,18 +20694,18 @@ let gem = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Radial leaf pattern (center) ---
 
-let leaves = PathLayer('leaves') \${
+let leaves = PathLayer('leaves') #{
   fill: Color('#22c55e12');
   stroke: Color('#22c55e');
   stroke-width: 1;
 };
 
-let leaves2 = PathLayer('leaves2') \${
+let leaves2 = PathLayer('leaves2') #{
   fill: Color('#3b82f612');
   stroke: Color('#3b82f6');
   stroke-width: 1;
@@ -20727,7 +20733,7 @@ leaves2.apply {
 
 // --- Diamond accents ---
 
-let gems = PathLayer('gems') \${
+let gems = PathLayer('gems') #{
   fill: Color('#f59e0b');
   stroke: Color('#b45309');
   stroke-width: 0.5;
@@ -20743,7 +20749,7 @@ gems.apply {
 
 // --- Center dot ---
 
-let center = PathLayer('center') \${
+let center = PathLayer('center') #{
   fill: Color('#e2e8f0');
   stroke: none;
 };
@@ -20753,7 +20759,7 @@ center.apply {
 
 // --- Construction circles ---
 
-let guides = PathLayer('guides') \${
+let guides = PathLayer('guides') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "3 4";
@@ -20767,7 +20773,7 @@ guides.apply {
 
 // --- Annotations ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -20781,7 +20787,7 @@ labels.apply {
 
 // --- Code annotation ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -20795,7 +20801,7 @@ code.apply {
   text(20, 73)\`};\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -20807,7 +20813,7 @@ kw.apply {
 
 // --- Stats ---
 
-let stats = TextLayer('stats') \${
+let stats = TextLayer('stats') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -20820,7 +20826,7 @@ stats.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -20849,13 +20855,13 @@ let arrow = @{
   l 10 -8
 };
 
-let arrows = PathLayer('arrows') \${
+let arrows = PathLayer('arrows') #{
   fill: Color('#3b82f6');
   stroke: Color('#1e40af');
   stroke-width: 1.5;
 };
 
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   stroke: Color('#94a3b8');
   stroke-width: 1;
   fill: none;
@@ -20910,12 +20916,12 @@ arrows.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 260); }
 
 // --- Grid cells ---
 
-let cells = PathLayer('cells') \${
+let cells = PathLayer('cells') #{
   fill: Color('#1e293b');
   stroke: Color('#334155');
   stroke-width: 1;
@@ -20930,35 +20936,35 @@ cells.apply {
 
 // --- Shapes ---
 
-let s1 = PathLayer('s-circle') \${
+let s1 = PathLayer('s-circle') #{
   fill: Color('#3b82f618');
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
 };
 s1.apply { circle(65, 100, 30); }
 
-let s2 = PathLayer('s-rect') \${
+let s2 = PathLayer('s-rect') #{
   fill: Color('#22c55e18');
   stroke: Color('#22c55e');
   stroke-width: 1.5;
 };
 s2.apply { rect(150, 72, 60, 40); }
 
-let s3 = PathLayer('s-star') \${
+let s3 = PathLayer('s-star') #{
   fill: Color('#f59e0b18');
   stroke: Color('#f59e0b');
   stroke-width: 1.5;
 };
 s3.apply { star(295, 100, 32, 14, 5); }
 
-let s4 = PathLayer('s-polygon') \${
+let s4 = PathLayer('s-polygon') #{
   fill: Color('#ef444418');
   stroke: Color('#ef4444');
   stroke-width: 1.5;
 };
 s4.apply { polygon(410, 100, 30, 6); }
 
-let s5 = PathLayer('s-roundrect') \${
+let s5 = PathLayer('s-roundrect') #{
   fill: Color('#8b5cf618');
   stroke: Color('#8b5cf6');
   stroke-width: 1.5;
@@ -20967,7 +20973,7 @@ s5.apply { roundRect(498, 75, 55, 40, 8); }
 
 // --- Shape names ---
 
-let names = TextLayer('names') \${
+let names = TextLayer('names') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -20983,7 +20989,7 @@ names.apply {
 
 // --- Signatures ---
 
-let sigs = TextLayer('sigs') \${
+let sigs = TextLayer('sigs') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#64748b');
@@ -20999,7 +21005,7 @@ sigs.apply {
 
 // --- Usage example ---
 
-let usage = TextLayer('usage') \${
+let usage = TextLayer('usage') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -21010,7 +21016,7 @@ usage.apply {
   text(15, 234)\`shape.drawTo(100, 100)\`
 }
 
-let usage_kw = TextLayer('usage-kw') \${
+let usage_kw = TextLayer('usage-kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -21020,7 +21026,7 @@ usage_kw.apply {
   text(15, 220)\`let\`
 }
 
-let usage_note = TextLayer('usage-note') \${
+let usage_note = TextLayer('usage-note') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -21033,7 +21039,7 @@ usage_note.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -21043,7 +21049,7 @@ title.apply {
   text(15, 32)\`Standard Library Shapes\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -21101,10 +21107,10 @@ let curve = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 560, 360); }
 
-let grid = PathLayer('grid') \${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -21122,7 +21128,7 @@ grid.apply {
 
 // --- The curve ---
 
-let path = PathLayer('path') \${
+let path = PathLayer('path') #{
   stroke: Color('#3b82f6');
   stroke-width: 2.5;
   fill: none;
@@ -21140,7 +21146,7 @@ let norm = proj.normal(0.4);
 
 // --- Sample point dot ---
 
-let sample_dot = PathLayer('sample-dot') \${
+let sample_dot = PathLayer('sample-dot') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 2;
@@ -21151,7 +21157,7 @@ sample_dot.apply {
 
 // --- Tangent line ---
 
-let tangent = PathLayer('tangent') \${
+let tangent = PathLayer('tangent') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -21162,7 +21168,7 @@ tangent.apply {
 }
 
 // Tangent direction arrow
-let tan_arrow = PathLayer('tan-arrow') \${
+let tan_arrow = PathLayer('tan-arrow') #{
   fill: Color('#22c55e');
   stroke: none;
 };
@@ -21180,7 +21186,7 @@ tan_arrow.apply {
 
 // --- Normal line ---
 
-let normal = PathLayer('normal') \${
+let normal = PathLayer('normal') #{
   stroke: Color('#f59e0b');
   stroke-width: 1.5;
   fill: none;
@@ -21205,7 +21211,7 @@ normal.apply {
 
 // --- t=0 and t=1 endpoint markers ---
 
-let endpoints = PathLayer('endpoints') \${
+let endpoints = PathLayer('endpoints') #{
   fill: Color('#94a3b8');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -21217,7 +21223,7 @@ endpoints.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') \${
+let leaders = PathLayer('leaders') #{
   fill: none;
   stroke: Color('#475569');
   stroke-width: 0.5;
@@ -21241,7 +21247,7 @@ leaders.apply {
 
 // --- Endpoint labels ---
 
-let ep_labels = TextLayer('ep-labels') \${
+let ep_labels = TextLayer('ep-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -21254,7 +21260,7 @@ ep_labels.apply {
 
 // --- Method callout labels ---
 
-let method_labels = TextLayer('method-labels') \${
+let method_labels = TextLayer('method-labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -21265,7 +21271,7 @@ method_labels.apply {
   text(370, 269)\`→ Point\`
 }
 
-let tangent_label = TextLayer('tangent-label') \${
+let tangent_label = TextLayer('tangent-label') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#22c55e');
@@ -21276,7 +21282,7 @@ tangent_label.apply {
   text(315, 89)\`→ { point, angle }\`
 }
 
-let normal_label = TextLayer('normal-label') \${
+let normal_label = TextLayer('normal-label') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#f59e0b');
@@ -21289,17 +21295,17 @@ normal_label.apply {
 
 // --- Legend ---
 
-let leg = TextLayer('legend') \${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
 
-let leg_c = PathLayer('leg-curve') \${ fill: Color('#3b82f6'); stroke: none; };
-let leg_t = PathLayer('leg-tan') \${ fill: Color('#22c55e'); stroke: none; };
-let leg_n = PathLayer('leg-norm') \${ fill: Color('#f59e0b'); stroke: none; };
-let leg_p = PathLayer('leg-pt') \${ fill: Color('#ef4444'); stroke: none; };
+let leg_c = PathLayer('leg-curve') #{ fill: Color('#3b82f6'); stroke: none; };
+let leg_t = PathLayer('leg-tan') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_n = PathLayer('leg-norm') #{ fill: Color('#f59e0b'); stroke: none; };
+let leg_p = PathLayer('leg-pt') #{ fill: Color('#ef4444'); stroke: none; };
 
 leg_c.apply { rect(370, 310, 8, 8); }
 leg_t.apply { rect(370, 324, 8, 8); }
@@ -21315,7 +21321,7 @@ leg.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -21325,7 +21331,7 @@ title.apply {
   text(30, 328)\`Parametric Sampling\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -21358,18 +21364,18 @@ let curve = @{
   c 0 120 -200 120 -200 0
 };
 
-let path = PathLayer('path') \${
+let path = PathLayer('path') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: none;
 };
 
-let dots = PathLayer('dots') \${
+let dots = PathLayer('dots') #{
   fill: Color('#ef4444');
   stroke: none;
 };
 
-let tangents = PathLayer('tangents') \${
+let tangents = PathLayer('tangents') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -21449,12 +21455,12 @@ let curve = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 520, 300); }
 
 // --- The curve ---
 
-let path = PathLayer('path') \${
+let path = PathLayer('path') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: none;
@@ -21468,7 +21474,7 @@ path.apply {
 let proj = curve.project(60, 150);
 let pts = proj.partition(8);
 
-let dots = PathLayer('dots') \${
+let dots = PathLayer('dots') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -21481,7 +21487,7 @@ dots.apply {
 
 // --- t-value labels (positioned relative to actual points) ---
 
-let tvals = TextLayer('tvals') \${
+let tvals = TextLayer('tvals') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#fca5a5');
@@ -21513,7 +21519,7 @@ tvals.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -21524,7 +21530,7 @@ code.apply {
   text(30, 276)\`// → 9 points at t = 0, 0.125, 0.25, ... 1.0\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -21536,7 +21542,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -21546,7 +21552,7 @@ title.apply {
   text(30, 28)\`partition(8) — Even Distribution\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -21571,24 +21577,24 @@ let road = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 540, 320); }
 
 // --- Layers ---
 
-let roadLayer = PathLayer('road') \${
+let roadLayer = PathLayer('road') #{
   stroke: Color('#475569');
   stroke-width: 4;
   fill: none;
 };
 
-let posts = PathLayer('posts') \${
+let posts = PathLayer('posts') #{
   stroke: Color('#854d0e');
   stroke-width: 2;
   fill: none;
 };
 
-let rails = PathLayer('rails') \${
+let rails = PathLayer('rails') #{
   stroke: Color('#a16207');
   stroke-width: 1;
   fill: none;
@@ -21632,7 +21638,7 @@ rails.apply {
 
 // --- Post base dots ---
 
-let base_dots = PathLayer('base-dots') \${
+let base_dots = PathLayer('base-dots') #{
   fill: Color('#854d0e');
   stroke: none;
 };
@@ -21644,7 +21650,7 @@ base_dots.apply {
 
 // --- Annotations ---
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -21656,21 +21662,21 @@ labels.apply {
   text(360, 56)\`rails: connecting adjacent posts\`
 }
 
-let label_dots = PathLayer('label-dots') \${
+let label_dots = PathLayer('label-dots') #{
   fill: none;
   stroke-width: 1.5;
 };
 
-let ld1 = PathLayer('ld1') \${ fill: none; stroke: Color('#475569'); stroke-width: 3; };
-let ld2 = PathLayer('ld2') \${ fill: none; stroke: Color('#854d0e'); stroke-width: 3; };
-let ld3 = PathLayer('ld3') \${ fill: none; stroke: Color('#a16207'); stroke-width: 3; };
+let ld1 = PathLayer('ld1') #{ fill: none; stroke: Color('#475569'); stroke-width: 3; };
+let ld2 = PathLayer('ld2') #{ fill: none; stroke: Color('#854d0e'); stroke-width: 3; };
+let ld3 = PathLayer('ld3') #{ fill: none; stroke: Color('#a16207'); stroke-width: 3; };
 ld1.apply { M 350 24 h 6 }
 ld2.apply { M 350 38 h 6 }
 ld3.apply { M 350 52 h 6 }
 
 // --- Code annotation ---
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -21681,7 +21687,7 @@ code.apply {
   text(30, 286)\`let norm = proj.normal(p.t);\`
 }
 
-let code_comment = TextLayer('code-comment') \${
+let code_comment = TextLayer('code-comment') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -21693,7 +21699,7 @@ code_comment.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -21703,7 +21709,7 @@ title.apply {
   text(30, 28)\`Fence Along a Curve\`
 }
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -21795,13 +21801,13 @@ let m_complement = Color(CSSVar('--demo-color', #e63946)).hueShift(180);
 let m_alpha = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') \${}
-define GroupLayer('wheel') \${}
-define GroupLayer('hub-group') \${}
-define GroupLayer('labels') \${}
+define GroupLayer('diagram') #{}
+define GroupLayer('wheel') #{}
+define GroupLayer('hub-group') #{}
+define GroupLayer('labels') #{}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -21810,7 +21816,7 @@ bg.apply {
 }
 
 // ─── Eyebrow (top-left) ─────────────────────────────────────
-let eyebrow = TextLayer('eyebrow') \${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -21885,7 +21891,7 @@ for ([m, i] in methods) {
   let from_a = calc(theta - sector_half_span);
   let to_a = calc(theta + sector_half_span);
 
-  let w = PathLayer(\`w-\${i}\`) \${
+  let w = PathLayer(\`w-\${i}\`) #{
     fill: m[1];
     stroke: none;
   };
@@ -21902,7 +21908,7 @@ for ([m, i] in methods) {
 
 
 // ─── Outer frame ────────────────────────────────────────────
-let frame = PathLayer('frame') \${
+let frame = PathLayer('frame') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -21912,7 +21918,7 @@ frame.apply {
 }
 
 // ─── Dashed reference ring at mid-wedge radius ──────────────
-let ring = PathLayer('ring') \${
+let ring = PathLayer('ring') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 1;
@@ -21923,7 +21929,7 @@ ring.apply {
 }
 
 // ─── Hub (drawn OVER wedges) ────────────────────────────────
-let hub = PathLayer('hub') \${
+let hub = PathLayer('hub') #{
   fill: base;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -21932,7 +21938,7 @@ hub.apply {
   circle(cx, cy, r_hub);
 }
 
-let hub_title = TextLayer('hub-title') \${
+let hub_title = TextLayer('hub-title') #{
   font-family: font;
   font-size: 14;
   font-weight: 700;
@@ -21944,7 +21950,7 @@ hub_title.apply {
   text(cx, calc(cy - 2))\`OKLCH\`;
 }
 
-let hub_sub = TextLayer('hub-sub') \${
+let hub_sub = TextLayer('hub-sub') #{
   font-family: font;
   font-size: 8;
   letter-spacing: 0.8;
@@ -21959,7 +21965,7 @@ layer('wheel').append(layer('frame'), layer('ring'));
 layer('hub-group').append(layer('hub'), layer('hub-title'), layer('hub-sub'));
 
 // ─── Labels beyond the frame ────────────────────────────────
-let label = TextLayer('label') \${
+let label = TextLayer('label') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -22046,13 +22052,13 @@ let c_i_75 = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.7
 let c_i_100 = '#457b9d';
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') \${}
-define GroupLayer('wheel') \${}
-define GroupLayer('chords') \${}
-define GroupLayer('strips') \${}
+define GroupLayer('diagram') #{}
+define GroupLayer('wheel') #{}
+define GroupLayer('chords') #{}
+define GroupLayer('strips') #{}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -22061,7 +22067,7 @@ bg.apply {
 }
 
 // ─── Masthead ───────────────────────────────────────────────
-let eyebrow = TextLayer('eyebrow') \${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -22092,62 +22098,62 @@ let r_hub = 50;
 let seg_span = 0.5236;
 // π/6
 
-let w0 = PathLayer('w-0') \${
+let w0 = PathLayer('w-0') #{
   fill: 'oklch(0.70 0.16 0)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w1 = PathLayer('w-1') \${
+let w1 = PathLayer('w-1') #{
   fill: 'oklch(0.70 0.16 30)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w2 = PathLayer('w-2') \${
+let w2 = PathLayer('w-2') #{
   fill: 'oklch(0.70 0.16 60)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w3 = PathLayer('w-3') \${
+let w3 = PathLayer('w-3') #{
   fill: 'oklch(0.70 0.16 90)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w4 = PathLayer('w-4') \${
+let w4 = PathLayer('w-4') #{
   fill: 'oklch(0.70 0.16 120)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w5 = PathLayer('w-5') \${
+let w5 = PathLayer('w-5') #{
   fill: 'oklch(0.70 0.16 150)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w6 = PathLayer('w-6') \${
+let w6 = PathLayer('w-6') #{
   fill: 'oklch(0.70 0.16 180)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w7 = PathLayer('w-7') \${
+let w7 = PathLayer('w-7') #{
   fill: 'oklch(0.70 0.16 210)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w8 = PathLayer('w-8') \${
+let w8 = PathLayer('w-8') #{
   fill: 'oklch(0.70 0.16 240)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w9 = PathLayer('w-9') \${
+let w9 = PathLayer('w-9') #{
   fill: 'oklch(0.70 0.16 270)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w10 = PathLayer('w-10') \${
+let w10 = PathLayer('w-10') #{
   fill: 'oklch(0.70 0.16 300)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w11 = PathLayer('w-11') \${
+let w11 = PathLayer('w-11') #{
   fill: 'oklch(0.70 0.16 330)';
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -22184,7 +22190,7 @@ for (i in 0..11) {
 }
 
 // ─── Frame + hub ─────────────────────────────────────────────
-let frame = PathLayer('frame') \${
+let frame = PathLayer('frame') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -22193,7 +22199,7 @@ frame.apply {
   circle(cx, cy, r_frame);
 }
 
-let hub = PathLayer('hub') \${
+let hub = PathLayer('hub') #{
   fill: bg_color;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -22202,7 +22208,7 @@ hub.apply {
   circle(cx, cy, r_hub);
 }
 
-let hub_title = TextLayer('hub-title') \${
+let hub_title = TextLayer('hub-title') #{
   font-family: font;
   font-size: 14;
   font-weight: 700;
@@ -22214,7 +22220,7 @@ hub_title.apply {
   text(cx, calc(cy - 2))\`OKLCH\`;
 }
 
-let hub_sub = TextLayer('hub-sub') \${
+let hub_sub = TextLayer('hub-sub') #{
   font-family: font;
   font-size: 8;
   letter-spacing: 0.8;
@@ -22236,7 +22242,7 @@ layer('wheel').append(layer('frame'),
 // sits on each vertex.
 
 // Analogous: chord = short line from −30° to +30°
-let ana_chord = PathLayer('ana-chord') \${
+let ana_chord = PathLayer('ana-chord') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 1;
@@ -22248,7 +22254,7 @@ ana_chord.apply {
 }
 
 // Triadic: equilateral triangle, base at north
-let tri_chord = PathLayer('tri-chord') \${
+let tri_chord = PathLayer('tri-chord') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.7;
@@ -22262,7 +22268,7 @@ tri_chord.apply {
 }
 
 // Tetradic: square, base at north
-let tet_chord = PathLayer('tet-chord') \${
+let tet_chord = PathLayer('tet-chord') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.7;
@@ -22277,7 +22283,7 @@ tet_chord.apply {
 }
 
 // Split-comp: Y from base to +150° and +210° (= −150°)
-let sc_chord = PathLayer('sc-chord') \${
+let sc_chord = PathLayer('sc-chord') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 1;
@@ -22302,52 +22308,52 @@ layer('chords').append(layer('ana-chord'),
 //         0 (tet+90), π/2 (tet+180), π (tet+270),
 //         π/3 (sc+150), 2π/3 (sc+210)
 
-let vertex_base = PathLayer('v-base') \${
+let vertex_base = PathLayer('v-base') #{
   fill: c_base;
   stroke: fg_auto;
   stroke-width: 1;
 };
-let vertex_am30 = PathLayer('v-ana-m30') \${
+let vertex_am30 = PathLayer('v-ana-m30') #{
   fill: c_ana_m30;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_ap30 = PathLayer('v-ana-p30') \${
+let vertex_ap30 = PathLayer('v-ana-p30') #{
   fill: c_ana_p30;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tp120 = PathLayer('v-tri-p120') \${
+let vertex_tp120 = PathLayer('v-tri-p120') #{
   fill: c_tri_p120;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tm120 = PathLayer('v-tri-m120') \${
+let vertex_tm120 = PathLayer('v-tri-m120') #{
   fill: c_tri_m120;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tep90 = PathLayer('v-tet-p90') \${
+let vertex_tep90 = PathLayer('v-tet-p90') #{
   fill: c_tet_p90;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tep180 = PathLayer('v-tet-p180') \${
+let vertex_tep180 = PathLayer('v-tet-p180') #{
   fill: c_tet_p180;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tep270 = PathLayer('v-tet-p270') \${
+let vertex_tep270 = PathLayer('v-tet-p270') #{
   fill: c_tet_p270;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_scp150 = PathLayer('v-sc-p150') \${
+let vertex_scp150 = PathLayer('v-sc-p150') #{
   fill: c_sc_p150;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_scp210 = PathLayer('v-sc-p210') \${
+let vertex_scp210 = PathLayer('v-sc-p210') #{
   fill: c_sc_p210;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -22401,7 +22407,7 @@ layer('chords').append(layer('v-base'),
 // Strip 2: interpolate at y=445..495
 // 5 chips per strip, full-width.
 
-let strip_label_layer = TextLayer('strip-label') \${
+let strip_label_layer = TextLayer('strip-label') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -22427,7 +22433,7 @@ let l_colors = [
 ];
 for ([col, i] in l_colors) {
   let cx_i = calc(chip_x0 + i * (chip_w + chip_gap));
-  let sw = PathLayer(\`l-\${i}\`) \${
+  let sw = PathLayer(\`l-\${i}\`) #{
     fill: col;
     stroke: fg_hair;
     stroke-width: 0.5;
@@ -22455,7 +22461,7 @@ let i_colors = [
 ];
 for ([col, i] in i_colors) {
   let cx_i = calc(chip_x0 + i * (chip_w + chip_gap));
-  let sw = PathLayer(\`i-\${i}\`) \${
+  let sw = PathLayer(\`i-\${i}\`) #{
     fill: col;
     stroke: fg_hair;
     stroke-width: 0.5;
@@ -22471,7 +22477,7 @@ for ([col, i] in i_colors) {
 }
 
 // Strip sub labels — small value markers at bottom of each strip
-let strip_sub_layer = TextLayer('strip-sub') \${
+let strip_sub_layer = TextLayer('strip-sub') #{
   font-family: font;
   font-size: 6;
   letter-spacing: 0.5;
@@ -22507,7 +22513,7 @@ for ([s, i] in i_subs) {
 
 // ─── Chord legend (bottom) ──────────────────────────────────
 let legend_y = 535;
-let legend = TextLayer('legend') \${
+let legend = TextLayer('legend') #{
   font-family: font;
   font-size: 6;
   font-weight: 700;
@@ -22590,13 +22596,13 @@ let primary_raw = Color(CSSVar('--primary', #e63946));
 let font = 'sans-serif';
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') \${}
-define GroupLayer('sys') \${}
-define GroupLayer('seam') \${}
-define GroupLayer('stage') \${}
+define GroupLayer('diagram') #{}
+define GroupLayer('sys') #{}
+define GroupLayer('seam') #{}
+define GroupLayer('stage') #{}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -22608,7 +22614,7 @@ bg.apply {
 // TOP HALF — THEME SYSTEM (y 0..290)
 // ═══════════════════════════════════════════════════════════
 
-let sys_eyebrow = TextLayer('sys-eyebrow') \${
+let sys_eyebrow = TextLayer('sys-eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -22622,7 +22628,7 @@ sys_eyebrow.apply {
 
 // ─── Accent linking arcs (central connective tissue) ──────
 // Four Q curves from mid-sides to star tips. Raw --accent, 1.2 stroke.
-let sys_arcs = PathLayer('sys-arcs') \${
+let sys_arcs = PathLayer('sys-arcs') #{
   fill: none;
   stroke: accent_raw;
   stroke-width: 1.2;
@@ -22640,7 +22646,7 @@ sys_arcs.apply {
 }
 
 // ─── Dashed fg_auto L=0.55 reference ring ─────────────────
-let sys_ring = PathLayer('sys-ring') \${
+let sys_ring = PathLayer('sys-ring') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 1;
@@ -22651,7 +22657,7 @@ sys_ring.apply {
 }
 
 // ─── Accent halo disc behind the star ─────────────────────
-let sys_halo = PathLayer('sys-halo') \${
+let sys_halo = PathLayer('sys-halo') #{
   fill: accent_raw;
   stroke: none;
   opacity: 0.28;
@@ -22663,7 +22669,7 @@ sys_halo.apply {
 // ─── Accent tick marks at ring diagonals ──────────────────
 // 4 short strokes pointing outward at ±45° from ring center.
 // Inner point on ring (r=95), outer point on r=107.
-let sys_ticks = PathLayer('sys-ticks') \${
+let sys_ticks = PathLayer('sys-ticks') #{
   fill: none;
   stroke: accent_raw;
   stroke-width: 1.5;
@@ -22681,7 +22687,7 @@ sys_ticks.apply {
 }
 
 // ─── 4 orbiting circles (desaturated secondary) on reference ring ──
-let sys_orbit = PathLayer('sys-orbit') \${
+let sys_orbit = PathLayer('sys-orbit') #{
   fill: secondary_muted;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -22694,7 +22700,7 @@ sys_orbit.apply {
 }
 
 // ─── Central 5-point star (lightened primary) ──────────────
-let sys_star = PathLayer('sys-star') \${
+let sys_star = PathLayer('sys-star') #{
   fill: primary_lighter;
   stroke: primary;
   stroke-width: 1;
@@ -22710,7 +22716,7 @@ sys_star.apply {
 
 // ─── 3 corner diamonds (hue-shifted accent) ─────────────────
 // Top-left, top-right, bottom-left. Bottom-right hosts the legend.
-let sys_diamonds = PathLayer('sys-diamonds') \${
+let sys_diamonds = PathLayer('sys-diamonds') #{
   fill: accent_shifted;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -22739,7 +22745,7 @@ let legend_y = 213;
 let legend_w = 140;
 let legend_h = 62;
 
-let legend_bg = PathLayer('legend-bg') \${
+let legend_bg = PathLayer('legend-bg') #{
   fill: bg_color;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -22752,12 +22758,12 @@ legend_bg.apply {
       5.5);
 }
 
-let legend_sw_layer = PathLayer('legend-sw') \${
+let legend_sw_layer = PathLayer('legend-sw') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let legend_name_layer = TextLayer('legend-name') \${
+let legend_name_layer = TextLayer('legend-name') #{
   font-family: font;
   font-size: 7;
   font-weight: 700;
@@ -22765,7 +22771,7 @@ let legend_name_layer = TextLayer('legend-name') \${
   fill: fg_auto;
   text-anchor: start;
 };
-let legend_role_layer = TextLayer('legend-role') \${
+let legend_role_layer = TextLayer('legend-role') #{
   font-family: font;
   font-size: 7;
   letter-spacing: 0.5;
@@ -22800,7 +22806,7 @@ let legend_items = [
 for ([item, i] in legend_items) {
   let row_y = calc(legend_y + 10 + i * 12);
   let sw_name = \`legend-sw-\${i}\`;
-  let sw = PathLayer(sw_name) \${
+  let sw = PathLayer(sw_name) #{
     fill: item[0];
     stroke: fg_hair;
     stroke-width: 0.5;
@@ -22840,7 +22846,7 @@ layer('sys').append(layer('sys-eyebrow'),
 // SEAM — hairline divider + "SYSTEM" / "STAGE" chapter labels
 // ═══════════════════════════════════════════════════════════
 
-let seam_line = PathLayer('seam-line') \${
+let seam_line = PathLayer('seam-line') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -22849,7 +22855,7 @@ seam_line.apply {
   line(15, 290, 505, 290);
 }
 
-let seam_top_label = TextLayer('seam-top-label') \${
+let seam_top_label = TextLayer('seam-top-label') #{
   font-family: font;
   font-size: 7;
   font-weight: 700;
@@ -22861,7 +22867,7 @@ seam_top_label.apply {
   text(15, 283)\`SYSTEM\`;
 }
 
-let seam_bot_label = TextLayer('seam-bot-label') \${
+let seam_bot_label = TextLayer('seam-bot-label') #{
   font-family: font;
   font-size: 7;
   font-weight: 700;
@@ -22879,7 +22885,7 @@ layer('seam').append(layer('seam-line'), layer('seam-top-label'), layer('seam-bo
 // BOTTOM HALF — THEME STAGE (y 310..640)
 // ═══════════════════════════════════════════════════════════
 
-let stage_eyebrow = TextLayer('stage-eyebrow') \${
+let stage_eyebrow = TextLayer('stage-eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -22892,7 +22898,7 @@ stage_eyebrow.apply {
 }
 
 // ─── Backdrop plate ───────────────────────────────────────
-let stage_backdrop = PathLayer('stage-backdrop') \${
+let stage_backdrop = PathLayer('stage-backdrop') #{
   fill: fg_faint;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -22941,7 +22947,7 @@ let actors = [
 for ([a, i] in actors) {
   let ax = a[6];
   let actor_name = \`actor-\${i}\`;
-  let actor = PathLayer(actor_name) \${
+  let actor = PathLayer(actor_name) #{
     fill: a[3];
     stroke: none;
   };
@@ -22953,7 +22959,7 @@ for ([a, i] in actors) {
         5.5);
   }
 
-  let role_layer = TextLayer(\`actor-role-\${i}\`) \${
+  let role_layer = TextLayer(\`actor-role-\${i}\`) #{
     font-family: font;
     font-size: 6;
     font-weight: 700;
@@ -22965,7 +22971,7 @@ for ([a, i] in actors) {
     text(calc(ax + 12), 386)\`\${a[0]}\`;
   }
 
-  let varname_layer = TextLayer(\`actor-name-\${i}\`) \${
+  let varname_layer = TextLayer(\`actor-name-\${i}\`) #{
     font-family: font;
     font-size: 14;
     font-weight: 700;
@@ -22977,7 +22983,7 @@ for ([a, i] in actors) {
     text(calc(ax + 12), 500)\`\${a[1]}\`;
   }
 
-  let desc_layer = TextLayer(\`actor-desc-\${i}\`) \${
+  let desc_layer = TextLayer(\`actor-desc-\${i}\`) #{
     font-family: font;
     font-size: 7;
     letter-spacing: 0.5;
@@ -22993,7 +22999,7 @@ for ([a, i] in actors) {
 // ─── Spotlight halos (simplified — translucent filled discs) ───
 // Real CSS radial-gradient doesn't translate to SVG fills; use
 // low-opacity discs as approximation of the spotlight effect.
-let spotlight_1 = PathLayer('spotlight-1') \${
+let spotlight_1 = PathLayer('spotlight-1') #{
   fill: primary_lighter;
   stroke: none;
   opacity: 0.18;
@@ -23002,7 +23008,7 @@ spotlight_1.apply {
   circle(160, 392, 70);
 }
 
-let spotlight_2 = PathLayer('spotlight-2') \${
+let spotlight_2 = PathLayer('spotlight-2') #{
   fill: accent_shifted;
   stroke: none;
   opacity: 0.18;
@@ -23012,7 +23018,7 @@ spotlight_2.apply {
 }
 
 // ─── Bottom-left masthead ────────────────────────────────
-let masthead_eyebrow = TextLayer('masthead-eyebrow') \${
+let masthead_eyebrow = TextLayer('masthead-eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -23024,7 +23030,7 @@ masthead_eyebrow.apply {
   text(15, 574)\`THEME  /  03 — REACTIVE\`;
 }
 
-let masthead_title = TextLayer('masthead-title') \${
+let masthead_title = TextLayer('masthead-title') #{
   font-family: font;
   font-size: 38;
   font-weight: 200;
@@ -23037,7 +23043,7 @@ masthead_title.apply {
 }
 
 // ─── Bottom-right credits ────────────────────────────────
-let credits = TextLayer('credits') \${
+let credits = TextLayer('credits') #{
   font-family: font;
   font-size: 6;
   font-weight: 700;
@@ -23172,9 +23178,9 @@ let ink_hue = Color('#0d1638');
 let ink_complement = Color('#0d1638');
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') \${}
-define GroupLayer('chips') \${}
-define GroupLayer('labels') \${}
+define GroupLayer('diagram') #{}
+define GroupLayer('chips') #{}
+define GroupLayer('labels') #{}
 
 // ─── Gradient origin (off canvas, 50% left of left edge) ──
 let cx = -260;
@@ -23195,7 +23201,7 @@ ld_grad.spread = 'transparent';
 ld_grad.interpolation = 'oklch';
 
 // ─── Canvas fill ───────────────────────────────────────────
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: ld_grad;
   stroke: none;
 };
@@ -23204,7 +23210,7 @@ bg.apply {
 }
 
 // ─── Horizon line (at y = cy = 260, the gradient midpoint axis) ──
-let horizon_line = PathLayer('horizon-line') \${
+let horizon_line = PathLayer('horizon-line') #{
   fill: none;
   stroke: ink_on_light_m;
   stroke-width: 0.5;
@@ -23268,7 +23274,7 @@ for ([c, i] in chip_data) {
   let cfill = c[1];
   let cin = c[2];
   let cout = c[3];
-  let chip_layer = PathLayer(cname) \${
+  let chip_layer = PathLayer(cname) #{
     fill: cfill;
     stroke: none;
   };
@@ -23331,7 +23337,7 @@ for ([p, i] in pill_data) {
   let ptext = p[1];
   let pcx = p[2];
   let txt_name = \`pt-\${i}\`;
-  let txt = TextLayer(txt_name) \${
+  let txt = TextLayer(txt_name) #{
     font-family: font;
     font-size: 9;
     font-weight: 700;
@@ -23346,7 +23352,7 @@ for ([p, i] in pill_data) {
 }
 
 // ─── Masthead typography ─────────────────────────────────────
-let eyebrow = TextLayer('eyebrow') \${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -23359,7 +23365,7 @@ eyebrow.apply {
 }
 
 // "Light" display — top-left, reads against light end of gradient
-let display_light = TextLayer('display-light') \${
+let display_light = TextLayer('display-light') #{
   font-family: font;
   font-size: 56;
   font-weight: 200;
@@ -23372,7 +23378,7 @@ display_light.apply {
 }
 
 // "Dark" display — bottom-right, reads against dark end of gradient
-let display_dark = TextLayer('display-dark') \${
+let display_dark = TextLayer('display-dark') #{
   font-family: font;
   font-size: 56;
   font-weight: 200;
@@ -23385,7 +23391,7 @@ display_dark.apply {
 }
 
 // Horizon label — right side at horizon line
-let horizon_lbl = TextLayer('horizon-lbl') \${
+let horizon_lbl = TextLayer('horizon-lbl') #{
   font-family: font;
   font-size: 7;
   font-weight: 700;
@@ -23398,7 +23404,7 @@ horizon_lbl.apply {
 }
 
 // Zone labels — subtle corner markers
-let zone_light = TextLayer('zone-light') \${
+let zone_light = TextLayer('zone-light') #{
   font-family: font;
   font-size: 6;
   font-weight: 700;
@@ -23410,7 +23416,7 @@ zone_light.apply {
   text(505, 30)\`TOP · −90° · --bg-light\`;
 }
 
-let zone_dark = TextLayer('zone-dark') \${
+let zone_dark = TextLayer('zone-dark') #{
   font-family: font;
   font-size: 6;
   font-weight: 700;
@@ -23423,7 +23429,7 @@ zone_dark.apply {
 }
 
 // Credit
-let credit = TextLayer('credit') \${
+let credit = TextLayer('credit') #{
   font-family: font;
   font-size: 7;
   font-weight: 700;
@@ -23520,9 +23526,9 @@ let plotW = 320;
 let plotY = 150;
 let plotH = 100;
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 
-let axis = PathLayer('axis') \${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
@@ -23530,14 +23536,14 @@ axis.apply {
 
 fn hill(name, center, spread, hue) {
   //-- fns are dynamically scoped, so \`scene\` resolves at the call site.
-  let mark = PathLayer(\`\${name}-mark\`) \${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 3 3; fill: none; };
+  let mark = PathLayer(\`\${name}-mark\`) #{ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 3 3; fill: none; };
   scene.append(mark);
   mark.apply {
     M calc(plotX + plotW * center) calc(plotY - plotH - 6)
     L calc(plotX + plotW * center) calc(plotY + 6)
   }
   let c = Color(0.64, 0.15, hue);
-  let curve = PathLayer(name) \${ stroke: c; stroke-width: 2; fill: none; };
+  let curve = PathLayer(name) #{ stroke: c; stroke-width: 2; fill: none; };
   scene.append(curve);
   curve.apply {
     M plotX calc(plotY - plotH * bump(0, center, spread))
@@ -23549,7 +23555,7 @@ fn hill(name, center, spread, hue) {
   }
 }
 
-let unitLine = PathLayer('unit-line') \${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
+let unitLine = PathLayer('unit-line') #{ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
 unitLine.apply {
   M plotX calc(plotY - plotH)
   L calc(plotX + plotW) calc(plotY - plotH)
@@ -23560,14 +23566,14 @@ hill('wide', 0.3, 0.28, 200);
 hill('moved', 0.75, 0.2, 20);
 
 //-- Legend entries tinted to match their curves.
-let legendA = TextLayer('legend-narrow') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 260); text-anchor: start; };
+let legendA = TextLayer('legend-narrow') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 260); text-anchor: start; };
 legendA.apply { text(40, 27)\`bump(t, 0.3, 0.15)\` }
-let legendB = TextLayer('legend-wide') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 200); text-anchor: start; };
+let legendB = TextLayer('legend-wide') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 200); text-anchor: start; };
 legendB.apply { text(160, 27)\`bump(t, 0.3, 0.28)\` }
-let legendC = TextLayer('legend-moved') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 20); text-anchor: start; };
+let legendC = TextLayer('legend-moved') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.14 20); text-anchor: start; };
 legendC.apply { text(280, 27)\`bump(t, 0.75, 0.2)\` }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -23598,7 +23604,7 @@ expression</strong>, two spotlights.</p>
 
 define ViewBox(0, 0, 400, 170);
 
-let one = PathLayer('one-spotlight') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+let one = PathLayer('one-spotlight') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 one.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -23607,7 +23613,7 @@ one.apply {
   }
 }
 
-let two = PathLayer('two-spotlights') \${ fill: oklch(0.68 0.13 200); stroke: none; };
+let two = PathLayer('two-spotlights') #{ fill: oklch(0.68 0.13 200); stroke: none; };
 two.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -23616,7 +23622,7 @@ two.apply {
   }
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -23646,7 +23652,7 @@ uses two more bumps as mist.</p>
 
 define ViewBox(0, 0, 400, 210);
 
-let range = PathLayer('mountain') \${ fill: oklch(0.45 0.08 265); stroke: none; };
+let range = PathLayer('mountain') #{ fill: oklch(0.45 0.08 265); stroke: none; };
 range.apply {
   M 20 185
   for (i in 0..140) {
@@ -23658,7 +23664,7 @@ range.apply {
   Z
 }
 
-let mist = PathLayer('mist') \${ fill: oklch(0.6 0.05 265); stroke: none; opacity: 0.5; };
+let mist = PathLayer('mist') #{ fill: oklch(0.6 0.05 265); stroke: none; opacity: 0.5; };
 mist.apply {
   M 20 185
   for (i in 0..140) {
@@ -23670,7 +23676,7 @@ mist.apply {
   Z
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -23713,7 +23719,7 @@ fn ribbon(name, y0, kind) {
   };
   let spine = @{ l 330 0 };
   let rib = spine.compoundVariableOffset() &lt;&lt; mk;
-  let band = PathLayer(name) \${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  let band = PathLayer(name) #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
   band.apply {
     M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
     rib.draw();
@@ -23724,7 +23730,7 @@ ribbon('plain-bump', 48, 0);
 ribbon('bump-squared', 118, 1);
 ribbon('two-bump-sum', 188, 2);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -23775,7 +23781,7 @@ for (k in 12..1) {
   let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(k * -6));
-  let haloLayer = PathLayer(\`halo-\${k}\`) \${
+  let haloLayer = PathLayer(\`halo-\${k}\`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;
@@ -23867,7 +23873,7 @@ same 48 questions from two <em>separate</em> loops. The third row asks
 
 define ViewBox(0, 0, 400, 210);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -23879,9 +23885,9 @@ labels.apply {
   text(22, 152)\`randomRange(0, 1) — different every compile\`
 }
 
-let rowA = PathLayer('hash-first-ask') \${ fill: oklch(0.62 0.16 260); stroke: none; };
-let rowB = PathLayer('hash-second-ask') \${ fill: oklch(0.62 0.16 260); stroke: none; };
-let rowC = PathLayer('random-every-time') \${ fill: oklch(0.6 0.15 20); stroke: none; };
+let rowA = PathLayer('hash-first-ask') #{ fill: oklch(0.62 0.16 260); stroke: none; };
+let rowB = PathLayer('hash-second-ask') #{ fill: oklch(0.62 0.16 260); stroke: none; };
+let rowC = PathLayer('random-every-time') #{ fill: oklch(0.6 0.15 20); stroke: none; };
 
 rowA.apply {
   for (i in 0..47) {
@@ -23899,7 +23905,7 @@ rowC.apply {
   }
 }
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(labels, rowA, rowB, rowC);
 </code>
   <img src="/blog/samples/post33/01-ask-twice.svg" alt="Three rows of 48 dots: two separate hash01 loops (blue), one randomRange loop (red)." loading="lazy">
@@ -23921,12 +23927,12 @@ one loop counter.</p>
 
 define ViewBox(0, 0, 400, 220);
 
-let backdrop = PathLayer('night') \${ fill: oklch(0.22 0.04 275); stroke: none; };
+let backdrop = PathLayer('night') #{ fill: oklch(0.22 0.04 275); stroke: none; };
 backdrop.apply {
   rect(15, 15, 370, 190);
 }
 
-let stars = PathLayer('stars') \${ fill: oklch(0.92 0.03 260); stroke: none; };
+let stars = PathLayer('stars') #{ fill: oklch(0.92 0.03 260); stroke: none; };
 stars.apply {
   for (i in 0..139) {
     circle(calc(22 + hash01(i) * 356),
@@ -23958,7 +23964,7 @@ for (row in 0..7) {
     let L = 0.5 + hash01(idx) * 0.3;
     let H = 200 + hash01(idx, 1) * 130;
     let c = Color(L, 0.11, H);
-    let cell = PathLayer(\`cell-\${idx}\`) \${ fill: c; stroke: none; };
+    let cell = PathLayer(\`cell-\${idx}\`) #{ fill: c; stroke: none; };
     cell.apply {
       roundRect(calc(20 + col * 26), calc(20 + row * 26), 22, 22, 5);
     }
@@ -23983,7 +23989,7 @@ by small hashed amounts.</p>
 
 define ViewBox(0, 0, 400, 150);
 
-let rigid = PathLayer('machine') \${ stroke: oklch(0.65 0.02 260); stroke-width: 1.2; fill: none; };
+let rigid = PathLayer('machine') #{ stroke: oklch(0.65 0.02 260); stroke-width: 1.2; fill: none; };
 rigid.apply {
   M 20 48 L 380 48
   for (i in 0..35) {
@@ -23992,7 +23998,7 @@ rigid.apply {
   }
 }
 
-let loose = PathLayer('hand-drawn') \${ stroke: oklch(0.75 0.12 60); stroke-width: 1.2; fill: none; };
+let loose = PathLayer('hand-drawn') #{ stroke: oklch(0.75 0.12 60); stroke-width: 1.2; fill: none; };
 loose.apply {
   M 20 115 L 380 115
   for (i in 0..35) {
@@ -24023,7 +24029,7 @@ composed into a finished little landscape.</p>
 
 define ViewBox(0, 128, 400, 132);
 
-let ground = PathLayer('ground') \${ fill: oklch(0.32 0.06 145); stroke: none; };
+let ground = PathLayer('ground') #{ fill: oklch(0.32 0.06 145); stroke: none; };
 ground.apply {
   rect(15, 228, 370, 17);
 }
@@ -24033,7 +24039,7 @@ fn blade(i) {
   let h = 25 + hash01(i, 1) * 55;
   let lean = hash01(i, 2) * 30 - 15;
   let c = Color(0.52 + hash01(i, 3) * 0.18, 0.13, 135 + hash01(i, 3) * 30);
-  let g = PathLayer(\`blade-\${i}\`) \${ stroke: c; stroke-width: 1.6; fill: none; };
+  let g = PathLayer(\`blade-\${i}\`) #{ stroke: c; stroke-width: 1.6; fill: none; };
   g.apply {
     M x 230
     q calc(lean * 0.3) calc(0 - h * 0.6) lean calc(0 - h)
@@ -24044,7 +24050,7 @@ for (i in 0..89) {
   blade(i);
 }
 
-let heads = PathLayer('seed-heads') \${ fill: oklch(0.8 0.1 85); stroke: none; };
+let heads = PathLayer('seed-heads') #{ fill: oklch(0.8 0.1 85); stroke: none; };
 heads.apply {
   for (k in 0..11) {
     let hx = 30 + hash01(k, 10) * 340;
@@ -24115,12 +24121,12 @@ heights.</p>
 
 define ViewBox(0, 0, 400, 190);
 
-let axis = PathLayer('axis') \${ stroke: oklch(0.5 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.5 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M 40 95 L 380 95
 }
 
-let ticks = TextLayer('ticks') \${
+let ticks = TextLayer('ticks') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -24132,7 +24138,7 @@ ticks.apply {
   text(34, 146)\`−1\`
 }
 
-let dots = PathLayer('dots') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+let dots = PathLayer('dots') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 dots.apply {
   for (i in 0..47) {
     circle(calc(44 + i * 7), calc(95 - hash11(i) * 43), 2);
@@ -24155,7 +24161,7 @@ by <code>hash11(i, 1) * 4</code>.</p>
 
 define ViewBox(0, 0, 400, 170);
 
-let machine = PathLayer('machine-set') \${ stroke: oklch(0.7 0.03 260); stroke-width: 7; fill: none; };
+let machine = PathLayer('machine-set') #{ stroke: oklch(0.7 0.03 260); stroke-width: 7; fill: none; };
 machine.apply {
   for (i in 0..25) {
     M calc(28 + i * 13.5) 62
@@ -24163,7 +24169,7 @@ machine.apply {
   }
 }
 
-let hand = PathLayer('hand-set') \${ stroke: oklch(0.75 0.12 60); stroke-width: 7; fill: none; };
+let hand = PathLayer('hand-set') #{ stroke: oklch(0.75 0.12 60); stroke-width: 7; fill: none; };
 hand.apply {
   for (i in 0..25) {
     let drop = calc(hash11(i) * 5);
@@ -24190,7 +24196,7 @@ with every dot offset by <code>(hash11(idx) * j, hash11(idx, 1) * j)</code> — 
 define ViewBox(0, 0, 400, 132);
 
 fn jitteredGrid(name, x0, j) {
-  let g = PathLayer(name) \${ fill: oklch(0.68 0.13 200); stroke: none; };
+  let g = PathLayer(name) #{ fill: oklch(0.68 0.13 200); stroke: none; };
   g.apply {
     for (row in 0..5) {
       for (col in 0..9) {
@@ -24207,7 +24213,7 @@ jitteredGrid('rigid', 28, 0);
 jitteredGrid('relaxed', 153, 2);
 jitteredGrid('scattered', 278, 5);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -24257,7 +24263,7 @@ fn ribbon(name, y0, wobble) {
   };
   let spine = @{ l 330 0 };
   let rib = spine.compoundVariableOffset() &lt;&lt; mk;
-  let band = PathLayer(name) \${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  let band = PathLayer(name) #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
   band.apply {
     M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
     rib.draw();
@@ -24288,7 +24294,7 @@ every pass wobbles its own way.</p>
 define ViewBox(0, 0, 400, 260);
 
 fn ring(name, r, seed) {
-  let g = PathLayer(name) \${ stroke: oklch(0.6 0.11 280); stroke-width: 1; fill: none; opacity: 0.65; };
+  let g = PathLayer(name) #{ stroke: oklch(0.6 0.11 280); stroke-width: 1; fill: none; opacity: 0.65; };
   g.apply {
     let r0 = calc(r * (1 + hash11(0, seed) * 0.07));
     M calc(200 + r0) 130
@@ -24376,7 +24382,7 @@ from <a href="/blog/primer-hash01"><code>hash01</code></a> — this post won&#39
 
 define ViewBox(0, 0, 400, 160);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -24387,14 +24393,14 @@ labels.apply {
   text(22, 96)\`hashRange(i, 1.5, 5) — a fixture\`
 }
 
-let rolling = PathLayer('rolling') \${ fill: oklch(0.6 0.15 20); stroke: none; };
+let rolling = PathLayer('rolling') #{ fill: oklch(0.6 0.15 20); stroke: none; };
 rolling.apply {
   for (i in 0..39) {
     circle(calc(26 + i * 9), 50, calc(randomRange(1.5, 5)));
   }
 }
 
-let pinned = PathLayer('pinned') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+let pinned = PathLayer('pinned') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 pinned.apply {
   for (i in 0..39) {
     circle(calc(26 + i * 9), 120, calc(hashRange(i, 1.5, 5)));
@@ -24419,7 +24425,7 @@ subtle facade shade from a third stream.</p>
 
 define ViewBox(0, 0, 400, 210);
 
-let sky = PathLayer('sky') \${ fill: oklch(0.24 0.05 275); stroke: none; };
+let sky = PathLayer('sky') #{ fill: oklch(0.24 0.05 275); stroke: none; };
 sky.apply {
   rect(15, 15, 370, 175);
 }
@@ -24430,7 +24436,7 @@ for (i in 0..25) {
   let h = hashRange(i, 35, 125);
   let shade = Color(0.36 + hashRange(i, 0, 0.1, 2), 0.03, 275);
   if (x + w &lt; 382) {
-    let tower = PathLayer(\`tower-\${i}\`) \${ fill: shade; stroke: none; };
+    let tower = PathLayer(\`tower-\${i}\`) #{ fill: shade; stroke: none; };
     tower.apply {
       rect(x, calc(190 - h), w, h);
     }
@@ -24460,7 +24466,7 @@ for (i in 0..119) {
   let r = hashRange(i, 1.5, 5, 2);
   let hue = hashRange(i, 0, 360, 3);
   let c = Color(0.72, 0.16, hue);
-  let dot = PathLayer(\`confetti-\${i}\`) \${ fill: c; stroke: none; };
+  let dot = PathLayer(\`confetti-\${i}\`) #{ fill: c; stroke: none; };
   dot.apply {
     circle(cx, cy, r);
   }
@@ -24486,9 +24492,9 @@ bucket routes it to a near, middle, or far layer with matching opacity.</p>
 
 define ViewBox(0, 0, 400, 200);
 
-let far = PathLayer('far') \${ stroke: oklch(0.6 0.05 260); stroke-width: 1; fill: none; opacity: 0.25; };
-let mid = PathLayer('mid') \${ stroke: oklch(0.65 0.06 260); stroke-width: 1.1; fill: none; opacity: 0.5; };
-let near = PathLayer('near') \${ stroke: oklch(0.72 0.07 260); stroke-width: 1.3; fill: none; opacity: 0.9; };
+let far = PathLayer('far') #{ stroke: oklch(0.6 0.05 260); stroke-width: 1; fill: none; opacity: 0.25; };
+let mid = PathLayer('mid') #{ stroke: oklch(0.65 0.06 260); stroke-width: 1.1; fill: none; opacity: 0.5; };
+let near = PathLayer('near') #{ stroke: oklch(0.72 0.07 260); stroke-width: 1.3; fill: none; opacity: 0.9; };
 
 far.apply {
   for (i in 0..79) {
@@ -24541,7 +24547,7 @@ fn pebbleRow(row, y0, minW, maxW, count) {
     let x = hashRange(idx, 18, 380 - maxW, 2);
     let L = hashRange(idx, 0.45, 0.68, 3) + row * 0.04;
     let warm = Color(L, 0.02, 75);
-    let stone = PathLayer(\`pebble-\${idx}\`) \${ fill: warm; stroke: none; };
+    let stone = PathLayer(\`pebble-\${idx}\`) #{ fill: warm; stroke: none; };
     stone.apply {
       roundRect(x, calc(y0 - h), w, h, calc(h / 2));
     }
@@ -24623,12 +24629,12 @@ same span.</p>
 
 define ViewBox(0, 0, 400, 190);
 
-let axis = PathLayer('axis') \${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M 30 155 L 370 155
 }
 
-let curve = PathLayer('noise-curve') \${ stroke: oklch(0.68 0.13 200); stroke-width: 2; fill: none; };
+let curve = PathLayer('noise-curve') #{ stroke: oklch(0.68 0.13 200); stroke-width: 2; fill: none; };
 curve.apply {
   M 30 calc(155 - noise(0) * 115)
   for (i in 1..160) {
@@ -24637,7 +24643,7 @@ curve.apply {
   }
 }
 
-let pins = PathLayer('hash-pins') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+let pins = PathLayer('hash-pins') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 pins.apply {
   for (k in 0..8) {
     circle(calc(30 + k * 42.5), calc(155 - hash01(k) * 115), 3);
@@ -24645,12 +24651,12 @@ pins.apply {
 }
 
 //-- Legend tinted to match the geometry.
-let legendDots = TextLayer('legend-dots') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.15 260); text-anchor: start; };
+let legendDots = TextLayer('legend-dots') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.7 0.15 260); text-anchor: start; };
 legendDots.apply { text(30, 26)\`dots: hash01(k) at whole numbers\` }
-let legendCurve = TextLayer('legend-curve') \${ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.72 0.13 200); text-anchor: start; };
+let legendCurve = TextLayer('legend-curve') #{ font-family: system-ui, sans-serif; font-size: 10; fill: oklch(0.72 0.13 200); text-anchor: start; };
 legendCurve.apply { text(230, 26)\`curve: noise(x)\` }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -24661,7 +24667,7 @@ labels.apply {
   text(360, 172)\`8\`
 }
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(axis, curve, pins, legendDots, legendCurve, labels);
 </code>
   <img src="/blog/samples/post38/01-curve-through-dice.svg" alt="The curve doesn't approximate the dots — it passes exactly through every one, because at whole numbers noise IS hash01. And it arrives flat at every pin, courtesy of the smoothstep glide." loading="lazy">
@@ -24683,7 +24689,7 @@ define ViewBox(0, 0, 400, 230);
 
 fn wander(name, y0, freq, hue) {
   let c = Color(0.65, 0.13, hue);
-  let line = PathLayer(name) \${ stroke: c; stroke-width: 1.8; fill: none; };
+  let line = PathLayer(name) #{ stroke: c; stroke-width: 1.8; fill: none; };
   line.apply {
     M 30 calc(y0 - noise(0) * 34)
     for (i in 1..120) {
@@ -24700,7 +24706,7 @@ wander('swells', 70, 3, 260);
 wander('undulating', 140, 6, 200);
 wander('chattering', 210, 12, 150);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -24734,20 +24740,20 @@ define ViewBox(0, 0, 400, 180);
 for (i in 0..59) {
   let Lh = 0.3 + hash01(i) * 0.5;
   let ch = Color(Lh, 0.05, 260);
-  let barH = PathLayer(\`static-\${i}\`) \${ fill: ch; stroke: none; };
+  let barH = PathLayer(\`static-\${i}\`) #{ fill: ch; stroke: none; };
   barH.apply {
     rect(calc(24 + i * 5.9), 34, 5.4, 50);
   }
 
   let Ln = 0.3 + noise(i * 0.15) * 0.5;
   let cn = Color(Ln, 0.05, 260);
-  let barN = PathLayer(\`smooth-\${i}\`) \${ fill: cn; stroke: none; };
+  let barN = PathLayer(\`smooth-\${i}\`) #{ fill: cn; stroke: none; };
   barN.apply {
     rect(calc(24 + i * 5.9), 112, 5.4, 50);
   }
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -24791,13 +24797,13 @@ let mk = {|vo, pb|
 let spine = @{ l 340 0 };
 let rib = spine.compoundVariableOffset() &lt;&lt; mk;
 
-let band = PathLayer('textured') \${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.92; };
+let band = PathLayer('textured') #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.92; };
 band.apply {
   M calc(30 + rib.anchor.x) calc(72 + rib.anchor.y)
   rib.draw();
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -24831,7 +24837,7 @@ define ViewBox(0, 0, 400, 250);
 
 fn ridge(name, baseY, seed, freq, amp, L) {
   let c = Color(L, 0.06, 265);
-  let hill = PathLayer(name) \${ fill: c; stroke: none; };
+  let hill = PathLayer(name) #{ fill: c; stroke: none; };
   hill.apply {
     M 15 235
     L 15 calc(baseY - noise(0, seed) * amp)
@@ -24849,7 +24855,7 @@ ridge('middle', 135, 2, 4, 48, 0.58);
 ridge('near', 170, 3, 5, 55, 0.44);
 
 //-- Front ridge: slow + tall stacked with fast + quiet.
-let front = PathLayer('front') \${ fill: oklch(0.3 0.06 265); stroke: none; };
+let front = PathLayer('front') #{ fill: oklch(0.3 0.06 265); stroke: none; };
 front.apply {
   M 15 235
   let h0 = noise(0, 4) * 55 + noise(0, 5) * 12;
@@ -24944,7 +24950,7 @@ fn panel(prefix, x0, useNoise) {
   for (b in 0..15) {
     let L = 0.28 + b * 0.0325;
     let c = Color(L, 0.04, 265);
-    let bucketLayer = PathLayer(\`\${prefix}-b\${b}\`) \${ fill: c; stroke: none; };
+    let bucketLayer = PathLayer(\`\${prefix}-b\${b}\`) #{ fill: c; stroke: none; };
     bucketLayer.apply {
       for (row in 0..15) {
         for (col in 0..15) {
@@ -24967,7 +24973,7 @@ fn panel(prefix, x0, useNoise) {
 panel('static', 22, 0);
 panel('fog', 208, 1);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -24995,7 +25001,7 @@ each radius is <code>0.6 + 3 * noise2(col * 0.12, row * 0.12)</code>.</p>
 
 define ViewBox(0, 0, 400, 220);
 
-let dots = PathLayer('field') \${ fill: oklch(0.66 0.14 220); stroke: none; };
+let dots = PathLayer('field') #{ fill: oklch(0.66 0.14 220); stroke: none; };
 dots.apply {
   for (row in 0..16) {
     for (col in 0..29) {
@@ -25005,7 +25011,7 @@ dots.apply {
   }
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -25037,7 +25043,7 @@ reads as a flowing sheet. Right: the same twelve lines with independent
 define ViewBox(0, 0, 400, 230);
 
 fn strandCoherent(name, y0, j) {
-  let line = PathLayer(name) \${ stroke: oklch(0.66 0.14 220); stroke-width: 1.3; fill: none; };
+  let line = PathLayer(name) #{ stroke: oklch(0.66 0.14 220); stroke-width: 1.3; fill: none; };
   line.apply {
     M 22 calc(y0 - noise2(0, j * 0.3) * 26)
     for (i in 1..56) {
@@ -25048,7 +25054,7 @@ fn strandCoherent(name, y0, j) {
 }
 
 fn strandIndependent(name, y0, j) {
-  let line = PathLayer(name) \${ stroke: oklch(0.62 0.1 300); stroke-width: 1.3; fill: none; };
+  let line = PathLayer(name) #{ stroke: oklch(0.62 0.1 300); stroke-width: 1.3; fill: none; };
   line.apply {
     M 213 calc(y0 - noise(0, j) * 26)
     for (i in 1..56) {
@@ -25064,7 +25070,7 @@ for (j in 0..11) {
   strandIndependent(\`solo-\${j}\`, y, j);
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -25103,7 +25109,7 @@ fn warpY(gx, gy) {
   return (noise2(gx * 0.14, gy * 0.14, 1) - 0.5) * 14;
 }
 
-let grid = PathLayer('warped-grid') \${ stroke: oklch(0.64 0.12 200); stroke-width: 1; fill: none; };
+let grid = PathLayer('warped-grid') #{ stroke: oklch(0.64 0.12 200); stroke-width: 1; fill: none; };
 grid.apply {
   //-- Horizontal rules
   for (gy in 0..12) {
@@ -25172,7 +25178,7 @@ for (k in 12..1) {
   let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(k * -6));
-  let haloLayer = PathLayer(\`halo-\${k}\`) \${
+  let haloLayer = PathLayer(\`halo-\${k}\`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;
@@ -25269,7 +25275,7 @@ let plotW = 300;
 let plotY = 150;
 let plotH = 90;
 
-let axis = PathLayer('axis') \${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
@@ -25278,7 +25284,7 @@ axis.apply {
 }
 
 //-- Hard step: 0 before the midpoint of the window, 1 after.
-let cliff = PathLayer('cliff') \${ stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; };
+let cliff = PathLayer('cliff') #{ stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; };
 cliff.apply {
   M plotX plotY
   L calc(plotX + plotW * 0.5) plotY
@@ -25287,7 +25293,7 @@ cliff.apply {
 }
 
 //-- Straight ramp across the window.
-let ramp = PathLayer('ramp') \${ stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; };
+let ramp = PathLayer('ramp') #{ stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; };
 ramp.apply {
   M plotX plotY
   L calc(plotX + plotW * 0.3) plotY
@@ -25296,7 +25302,7 @@ ramp.apply {
 }
 
 //-- The S-curve.
-let scurve = PathLayer('smoothstep') \${ stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; };
+let scurve = PathLayer('smoothstep') #{ stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; };
 scurve.apply {
   M plotX plotY
   for (i in 1..96) {
@@ -25306,7 +25312,7 @@ scurve.apply {
   }
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -25319,7 +25325,7 @@ labels.apply {
   text(50, 36)\`smoothstep — bold · ramp — thin · step — dashed\`
 }
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(axis, cliff, ramp, scurve, labels);
 </code>
   <img src="/blog/samples/post36/01-cliff-ramp-scurve.svg" alt="Three routes across the 0.3–0.7 window: hard step (dashed), straight ramp (thin), smoothstep (bold)." loading="lazy">
@@ -25340,7 +25346,7 @@ half. Bottom row: the markers are <strong>reversed</strong> — <code>smoothstep
 
 define ViewBox(0, 0, 400, 170);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -25351,7 +25357,7 @@ labels.apply {
   text(24, 100)\`smoothstep(1.0, 0.6, t) — reversed markers, fade out\`
 }
 
-let fadeIn = PathLayer('fade-in') \${ fill: oklch(0.62 0.16 260); stroke: none; };
+let fadeIn = PathLayer('fade-in') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 fadeIn.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -25360,7 +25366,7 @@ fadeIn.apply {
   }
 }
 
-let fadeOut = PathLayer('fade-out') \${ fill: oklch(0.68 0.13 200); stroke: none; };
+let fadeOut = PathLayer('fade-out') #{ fill: oklch(0.68 0.13 200); stroke: none; };
 fadeOut.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -25391,19 +25397,19 @@ let plotW = 300;
 let plotY = 110;
 let plotH = 70;
 
-let unitLine = PathLayer('unit-line') \${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
+let unitLine = PathLayer('unit-line') #{ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
 unitLine.apply {
   M plotX calc(plotY - plotH)
   L calc(plotX + plotW) calc(plotY - plotH)
 }
 
-let axis = PathLayer('axis') \${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
 }
 
-let curve = PathLayer('window-curve') \${ stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; };
+let curve = PathLayer('window-curve') #{ stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; };
 curve.apply {
   M plotX plotY
   for (i in 1..96) {
@@ -25413,7 +25419,7 @@ curve.apply {
   }
 }
 
-let bars = PathLayer('bars') \${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
+let bars = PathLayer('bars') #{ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
 bars.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -25424,7 +25430,7 @@ bars.apply {
   }
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -25435,7 +25441,7 @@ labels.apply {
   text(356, 44)\`1.0\`
 }
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(unitLine, axis, curve, bars, labels);
 </code>
   <img src="/blog/samples/post36/03-plateau.svg" alt="Uphill times downhill: rise, hold at a genuinely flat 1.0 (the dashed line), fall. The plot and the bars share one win lambda — the picture and the application are the same function." loading="lazy">
@@ -25489,7 +25495,7 @@ fn band(name, y0, windowed) {
   };
   let spine = @{ l 330 0 };
   let rib = spine.compoundVariableOffset() &lt;&lt; mk;
-  let stroke = PathLayer(name) \${ fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; };
+  let stroke = PathLayer(name) #{ fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; };
   stroke.apply {
     M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
     rib.draw();
@@ -25499,7 +25505,7 @@ fn band(name, y0, windowed) {
 band('blunt', 45, 0);
 band('windowed', 115, 1);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -25538,7 +25544,7 @@ for (i in 0..59) {
   let H = 300 - 100 * m;
   let C = 0.05 + 0.06 * m;
   let c = Color(L, C, H);
-  let strip = PathLayer(\`strip-\${i}\`) \${ fill: c; stroke: none; };
+  let strip = PathLayer(\`strip-\${i}\`) #{ fill: c; stroke: none; };
   strip.apply {
     rect(15, calc(15 + i * 3.32), 370, 3.45);
   }
@@ -25549,12 +25555,12 @@ for (k in 0..5) {
   let u = k / 5;
   let fade = smoothstep(1, 0.2, u);
   let r = 6 + 16 * (1 - fade);
-  let ring = PathLayer(\`halo-\${k}\`) \${ stroke: oklch(0.88 0.09 75); stroke-width: 1; fill: none; opacity: calc(0.15 + fade * 0.5); };
+  let ring = PathLayer(\`halo-\${k}\`) #{ stroke: oklch(0.88 0.09 75); stroke-width: 1; fill: none; opacity: calc(0.15 + fade * 0.5); };
   ring.apply {
     circle(300, 96, r);
   }
 }
-let sun = PathLayer('sun') \${ fill: oklch(0.92 0.1 75); stroke: none; };
+let sun = PathLayer('sun') #{ fill: oklch(0.92 0.1 75); stroke: none; };
 sun.apply {
   circle(300, 96, 6);
 }
@@ -25602,15 +25608,15 @@ let leaderColor = Color('#b0a898');
 let kwColor = Color('#3b82f6');
 let paramColor = Color('#8b5cf6');
 
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 560, 400); }
 
 // ============================================================
 // Group 1: Title
 // ============================================================
-define GroupLayer('title-group') \${ translate-x: 0; translate-y: 0; }
+define GroupLayer('title-group') #{ translate-x: 0; translate-y: 0; }
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -25625,7 +25631,7 @@ title.apply {
 // ============================================================
 // Group 2: Wedge diagram with annotations
 // ============================================================
-define GroupLayer('diagram') \${ translate-x: 30; translate-y: 50; }
+define GroupLayer('diagram') #{ translate-x: 30; translate-y: 50; }
 
 let cx = 130;
 let cy = 155;
@@ -25635,7 +25641,7 @@ let fromA = rad(-50);
 let toA = rad(35);
 
 // Reference circles (dashed)
-let guides = PathLayer('guides') \${ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
+let guides = PathLayer('guides') #{ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
 layer('diagram').append(guides);
 guides.apply {
   circle(cx, cy, innerR);
@@ -25643,7 +25649,7 @@ guides.apply {
 }
 
 // Sharp corners (ghost)
-let sharpLayer = PathLayer('sharp') \${ fill: barColor; stroke: none; opacity: 0.2; };
+let sharpLayer = PathLayer('sharp') #{ fill: barColor; stroke: none; opacity: 0.2; };
 layer('diagram').append(sharpLayer);
 sharpLayer.apply {
   M cx cy
@@ -25651,7 +25657,7 @@ sharpLayer.apply {
 }
 
 // Rounded corners
-let roundLayer = PathLayer('rounded') \${ fill: barColor; stroke: none; };
+let roundLayer = PathLayer('rounded') #{ fill: barColor; stroke: none; };
 layer('diagram').append(roundLayer);
 roundLayer.apply {
   M cx cy
@@ -25659,23 +25665,23 @@ roundLayer.apply {
 }
 
 // --- Annotation layers ---
-let dots = PathLayer('dots') \${ fill: annotColor; stroke: none; };
-let leaders = PathLayer('leaders') \${ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
-let arcs = PathLayer('arcs') \${ fill: none; stroke: annotColor; stroke-width: 0.8; };
-let ticks = PathLayer('ticks') \${ fill: none; stroke: annotColor; stroke-width: 0.7; };
-let labelsMid = TextLayer('labels-mid') \${
+let dots = PathLayer('dots') #{ fill: annotColor; stroke: none; };
+let leaders = PathLayer('leaders') #{ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
+let arcs = PathLayer('arcs') #{ fill: none; stroke: annotColor; stroke-width: 0.8; };
+let ticks = PathLayer('ticks') #{ fill: none; stroke: annotColor; stroke-width: 0.7; };
+let labelsMid = TextLayer('labels-mid') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
   text-anchor: middle;
 };
-let labelsStart = TextLayer('labels-start') \${
+let labelsStart = TextLayer('labels-start') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
   text-anchor: start;
 };
-let labelsEnd = TextLayer('labels-end') \${
+let labelsEnd = TextLayer('labels-end') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -25758,9 +25764,9 @@ guides.apply { M cx cy L calc(cx + arcR + 3) cy }
 // ============================================================
 // Group 3: Stdlib function call (code)
 // ============================================================
-define GroupLayer('code-group') \${ translate-x: 350; translate-y: 50; }
+define GroupLayer('code-group') #{ translate-x: 350; translate-y: 50; }
 
-let headerLabel = TextLayer('header') \${
+let headerLabel = TextLayer('header') #{
   font-size: 10;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -25770,7 +25776,7 @@ let headerLabel = TextLayer('header') \${
 layer('code-group').append(headerLabel);
 headerLabel.apply { text(0, 10)\`stdlib function call:\` }
 
-let codeLayer = TextLayer('code') \${
+let codeLayer = TextLayer('code') #{
   font-size: 9.5;
   fill: annotColor;
   font-family: monospace, monospace;
@@ -25778,9 +25784,9 @@ let codeLayer = TextLayer('code') \${
 };
 layer('code-group').append(codeLayer);
 
-let kwStyle = \${ fill: kwColor; };
-let paramStyle = \${ fill: paramColor; };
-let plainStyle = \${ fill: annotColor; };
+let kwStyle = #{ fill: kwColor; };
+let paramStyle = #{ fill: paramColor; };
+let plainStyle = #{ fill: annotColor; };
 
 codeLayer.apply {
   text(0, 32) {
@@ -25812,9 +25818,9 @@ codeLayer.apply {
 // ============================================================
 // Group 4: Graceful degradation + corner callout
 // ============================================================
-define GroupLayer('notes-group') \${ translate-x: 350; translate-y: 195; }
+define GroupLayer('notes-group') #{ translate-x: 350; translate-y: 195; }
 
-let notesHeader = TextLayer('notes-header') \${
+let notesHeader = TextLayer('notes-header') #{
   font-size: 10;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -25824,7 +25830,7 @@ let notesHeader = TextLayer('notes-header') \${
 layer('notes-group').append(notesHeader);
 notesHeader.apply { text(0, 10)\`Graceful degradation:\` }
 
-let notesCode = TextLayer('notes-code') \${
+let notesCode = TextLayer('notes-code') #{
   font-size: 9.5;
   fill: Color('#6b7280');
   font-family: monospace, monospace;
@@ -25838,7 +25844,7 @@ notesCode.apply {
   text(0, 78)\`// No M — composable in @{}\`
 }
 
-let accentLabels = TextLayer('accent') \${
+let accentLabels = TextLayer('accent') #{
   font-size: 9;
   fill: barColor;
   font-family: system-ui, sans-serif;
@@ -25896,15 +25902,15 @@ let leaderColor = Color('#b0a898');
 let kwColor = Color('#3b82f6');
 let paramColor = Color('#8b5cf6');
 
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 520, 400); }
 
 // ============================================================
 // Group 1: Title
 // ============================================================
-define GroupLayer('title-group') \${}
+define GroupLayer('title-group') #{}
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -25919,7 +25925,7 @@ title.apply {
 // ============================================================
 // Group 2: Wedge diagram
 // ============================================================
-define GroupLayer('diagram') \${ translate-x: 10; translate-y: 40; }
+define GroupLayer('diagram') #{ translate-x: 10; translate-y: 40; }
 
 let cx = 105;
 let cy = 175;
@@ -25933,7 +25939,7 @@ let sliceTo = rad(25);
 let sliceMid = calc((sliceFrom + sliceTo) / 2);
 
 // Reference circles
-let guides = PathLayer('guides') \${ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
+let guides = PathLayer('guides') #{ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
 layer('diagram').append(guides);
 // Right-half semicircles only — frees up left-side space
 guides.apply {
@@ -25943,7 +25949,7 @@ guides.apply {
 
 // "All BGG games" bar — Fantasy 15.6%
 let allOuterR = calc(innerR + (maxR - innerR) * 15.6 / maxVal);
-let barsAll = PathLayer('bars-all') \${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
+let barsAll = PathLayer('bars-all') #{ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
 layer('diagram').append(barsAll);
 barsAll.apply {
   M cx cy
@@ -25954,7 +25960,7 @@ barsAll.apply {
 let topOuterR = calc(innerR + (maxR - innerR) * 7.6 / maxVal);
 let topSweep = calc((sliceTo - sliceFrom) * 0.5);
 let topOff = calc((sliceTo - sliceFrom - topSweep) / 2);
-let barsTop = PathLayer('bars-top') \${ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
+let barsTop = PathLayer('bars-top') #{ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
 layer('diagram').append(barsTop);
 barsTop.apply {
   M cx cy
@@ -25962,9 +25968,9 @@ barsTop.apply {
 }
 
 // Percentage labels — outside each bar tip with dots + leaders
-let dots = PathLayer('dots') \${ fill: annotColor; stroke: none; };
-let leaders = PathLayer('leaders') \${ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
-let pctLabels = TextLayer('pct') \${
+let dots = PathLayer('dots') #{ fill: annotColor; stroke: none; };
+let leaders = PathLayer('leaders') #{ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
+let pctLabels = TextLayer('pct') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -25981,7 +25987,7 @@ leaders.apply {
   M allTipX allTipY
   L polarX(cx, sliceMid, allLabelR) polarY(cy, sliceMid, allLabelR)
 }
-let allPctStyle = \${ fill: allBarColor; };
+let allPctStyle = #{ fill: allBarColor; };
 pctLabels.apply {
   text(polarX(cx, sliceMid, calc(allLabelR + 3)), calc(polarY(cy, sliceMid, calc(allLabelR + 3)) + 3)) {
     tspan(0, 0, 0, allPctStyle)\`15.6%\`
@@ -25997,7 +26003,7 @@ leaders.apply {
   M topTipX topTipY
   L polarX(cx, calc(sliceMid + 0.15), topLabelR) polarY(cy, calc(sliceMid + 0.15), topLabelR)
 }
-let topPctStyle = \${ fill: topBarColor; };
+let topPctStyle = #{ fill: topBarColor; };
 pctLabels.apply {
   text(polarX(cx, calc(sliceMid + 0.15), calc(topLabelR + 3)), calc(polarY(cy, calc(sliceMid + 0.15), calc(topLabelR + 3)) + 3)) {
     tspan(0, 0, 0, topPctStyle)\`7.6%\`
@@ -26007,10 +26013,10 @@ pctLabels.apply {
 // ============================================================
 // Group 3: Legend + code
 // ============================================================
-define GroupLayer('info') \${ translate-x: 330; translate-y: 55; }
+define GroupLayer('info') #{ translate-x: 330; translate-y: 55; }
 
 // Category name
-let catLabel = TextLayer('cat') \${
+let catLabel = TextLayer('cat') #{
   font-size: 14;
   fill: textColor;
   font-family: Georgia, serif;
@@ -26021,9 +26027,9 @@ layer('info').append(catLabel);
 catLabel.apply { text(0, 0)\`Fantasy\` }
 
 // Legend swatches
-let swAll = PathLayer('sw-all') \${ fill: allBarColor; stroke: none; };
-let swTop = PathLayer('sw-top') \${ fill: topBarColor; stroke: none; };
-let legLabels = TextLayer('leg') \${
+let swAll = PathLayer('sw-all') #{ fill: allBarColor; stroke: none; };
+let swTop = PathLayer('sw-top') #{ fill: topBarColor; stroke: none; };
+let legLabels = TextLayer('leg') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -26038,7 +26044,7 @@ legLabels.apply {
 }
 
 // Code — syntax highlighted
-let codeLayer = TextLayer('code') \${
+let codeLayer = TextLayer('code') #{
   font-size: 9;
   fill: annotColor;
   font-family: monospace, monospace;
@@ -26046,9 +26052,9 @@ let codeLayer = TextLayer('code') \${
 };
 layer('info').append(codeLayer);
 
-let kwStyle = \${ fill: kwColor; };
-let paramStyle = \${ fill: paramColor; };
-let plainStyle = \${ fill: annotColor; };
+let kwStyle = #{ fill: kwColor; };
+let paramStyle = #{ fill: paramColor; };
+let plainStyle = #{ fill: annotColor; };
 
 codeLayer.apply {
   text(0, 72) {
@@ -26083,9 +26089,9 @@ codeLayer.apply {
 // ============================================================
 // Group 4: Bottom note
 // ============================================================
-define GroupLayer('note') \${ translate-x: 330; translate-y: 270; }
+define GroupLayer('note') #{ translate-x: 330; translate-y: 270; }
 
-let noteLabel = TextLayer('note-text') \${
+let noteLabel = TextLayer('note-text') #{
   font-size: 9;
   fill: allBarColor;
   font-family: system-ui, sans-serif;
@@ -26112,7 +26118,7 @@ let topBarColor = Color(CSSVar('--bar-top', #1a1a2e));
 let textColor = Color('#2f2f2f');
 let gridColor = Color('#d4c9b8');
 
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 600, 600); }
 
 // === Chart parameters ===
@@ -26142,19 +26148,19 @@ let overlap = rad(0.3);
 let barSweep = calc(sliceAngle + overlap);
 
 // === Grid rings ===
-let grid = PathLayer('grid') \${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
+let grid = PathLayer('grid') #{ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
   circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
   circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
 }
 
 // Center circle
-let center = PathLayer('center') \${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+let center = PathLayer('center') #{ fill: none; stroke: gridColor; stroke-width: 0.6; };
 center.apply { circle(cx, cy, innerR); }
 
 // === Draw bars ===
-let barsAll = PathLayer('bars-all') \${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
-let barsTop = PathLayer('bars-top') \${ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
+let barsAll = PathLayer('bars-all') #{ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
+let barsTop = PathLayer('bars-top') #{ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
 
 for ([d, i] in data) {
   let sliceFrom = calc(startOffset + i * sliceAngle);
@@ -26178,9 +26184,9 @@ for ([d, i] in data) {
 }
 
 // === Legend ===
-let swAll = PathLayer('sw-all') \${ fill: allBarColor; stroke: none; };
-let swTop = PathLayer('sw-top') \${ fill: topBarColor; stroke: none; };
-let legLabels = TextLayer('legend') \${
+let swAll = PathLayer('sw-all') #{ fill: allBarColor; stroke: none; };
+let swTop = PathLayer('sw-top') #{ fill: topBarColor; stroke: none; };
+let legLabels = TextLayer('legend') #{
   font-size: 10;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -26194,7 +26200,7 @@ legLabels.apply {
 }
 
 // === Title ===
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -26205,7 +26211,7 @@ title.apply {
   text(300, 30)\`8 categories with radialWedge() — for ([d, i] in data) { ... }\`
 }
 
-let g = GroupLayer('all') \${};
+let g = GroupLayer('all') #{};
 g.append(bg, grid, center, barsAll, barsTop, swAll, swTop, legLabels, title);
 </code>
   <img src="/blog/samples/post16/category-layout.svg" alt="8 categories distributed radially — labels are added in the next section" loading="lazy">
@@ -26220,7 +26226,7 @@ g.append(bg, grid, center, barsAll, barsTop, swAll, swTop, legLabels, title);
 <li><strong>Vertically centered</strong> so the text midline — not baseline — aligns with the bar&#39;s angular center</li>
 </ul>
 <p>Doing this manually requires separate TextLayers for left and right hemispheres, manual <code>cos</code>/<code>sin</code> positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new <code>.radialProject()</code> method on <a href="/blog/textblock-introduction">TextBlock</a> handles all of this in one call:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">0</span>)\`\${<span class="id">d</span>.<span class="id">name</span>}\` } &lt;&lt; \${ <span class="pr">font-size</span>: <span class="num">11</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">0</span>)\`\${<span class="id">d</span>.<span class="id">name</span>}\` } &lt;&lt; #{ <span class="pr">font-size</span>: <span class="num">11</span>; };
 <span class="id">catLabels</span>.<span class="kw">apply</span> {
   <span class="id">label</span>.<span class="id">radialProject</span>(<span class="id">cx</span>, <span class="id">cy</span>, <span class="id">midAngle</span>, <span class="id">labelR</span>,
     <span class="str">'start'</span>, <span class="num">1</span>, <span class="id">VerticalAnchor</span>.<span class="id">Midline</span>).<span class="id">draw</span>()
@@ -26246,7 +26252,7 @@ let textColor = Color('#2f2f2f');
 let gridColor = Color('#d4c9b8');
 let pctColor = Color('#6b7280');
 
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 700, 700); }
 
 // === Chart parameters ===
@@ -26276,17 +26282,17 @@ let overlap = rad(0.3);
 let barSweep = calc(sliceAngle + overlap);
 
 // === Grid rings + center ===
-let grid = PathLayer('grid') \${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
+let grid = PathLayer('grid') #{ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
   circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
   circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
 }
-let center = PathLayer('center') \${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+let center = PathLayer('center') #{ fill: none; stroke: gridColor; stroke-width: 0.6; };
 center.apply { circle(cx, cy, innerR); }
 
 // === Draw bars ===
-let barsAll = PathLayer('bars-all') \${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
-let barsTop = PathLayer('bars-top') \${ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
+let barsAll = PathLayer('bars-all') #{ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
+let barsTop = PathLayer('bars-top') #{ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
 
 for ([d, i] in data) {
   let sliceFrom = calc(startOffset + i * sliceAngle);
@@ -26310,17 +26316,17 @@ for ([d, i] in data) {
 }
 
 // === Radial labels — single TextLayer via radialProject + VerticalAnchor ===
-let catLabels = TextLayer('cat-labels') \${
+let catLabels = TextLayer('cat-labels') #{
   font-size: 11;
   fill: textColor;
   font-family: Georgia, serif;
   font-weight: bold;
 };
 
-let redDot = \${ fill: allBarColor; white-space: pre; font-size: 8.8; };
-let redPct = \${ fill: allBarColor; font-weight: normal; font-size: 8.8; };
-let darkDot = \${ fill: topBarColor; white-space: pre; font-size: 8.8; };
-let darkPct = \${ fill: topBarColor; font-weight: normal; font-size: 8.8; };
+let redDot = #{ fill: allBarColor; white-space: pre; font-size: 8.8; };
+let redPct = #{ fill: allBarColor; font-weight: normal; font-size: 8.8; };
+let darkDot = #{ fill: topBarColor; white-space: pre; font-size: 8.8; };
+let darkPct = #{ fill: topBarColor; font-weight: normal; font-size: 8.8; };
 
 for ([d, i] in data) {
   let midAngle = calc(startOffset + (i + 0.5) * sliceAngle);
@@ -26336,7 +26342,7 @@ for ([d, i] in data) {
       tspan(0, 0, 0, darkDot)\` · \`
       tspan(0, 0, 0, darkPct)\`\${d.top}%\`
     }
-  } &lt;&lt; \${ font-size: 11; };
+  } &lt;&lt; #{ font-size: 11; };
 
   catLabels.apply {
     labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
@@ -26344,9 +26350,9 @@ for ([d, i] in data) {
 }
 
 // === Legend ===
-let swAll = PathLayer('sw-all') \${ fill: allBarColor; stroke: none; };
-let swTop = PathLayer('sw-top') \${ fill: topBarColor; stroke: none; };
-let legLabels = TextLayer('legend') \${
+let swAll = PathLayer('sw-all') #{ fill: allBarColor; stroke: none; };
+let swTop = PathLayer('sw-top') #{ fill: topBarColor; stroke: none; };
+let legLabels = TextLayer('legend') #{
   font-size: 10;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -26360,7 +26366,7 @@ legLabels.apply {
 }
 
 // === Title ===
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -26371,7 +26377,7 @@ title.apply {
   text(350, 28)\`radialProject + VerticalAnchor.Midline — one TextLayer, no branching\`
 }
 
-let g = GroupLayer('all') \${};
+let g = GroupLayer('all') #{};
 g.append(bg, grid, center, barsAll, barsTop, catLabels,
   swAll, swTop, legLabels, title);
 </code>
@@ -26393,7 +26399,7 @@ let outlineColor = Color('#22aa44');
 let guideColor = Color('#4477aa');
 let textColor = Color('#2f2f2f');
 
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 900, 700); }
 
 let innerR = 30;
@@ -26410,7 +26416,7 @@ let startX = 80;
 let startY = 90;
 
 // Column headers
-let headers = TextLayer('headers') \${
+let headers = TextLayer('headers') #{
   font-size: 10;
   fill: textColor;
   font-family: monospace, monospace;
@@ -26423,7 +26429,7 @@ headers.apply {
 }
 
 // Row headers
-let rowHeaders = TextLayer('row-headers') \${
+let rowHeaders = TextLayer('row-headers') #{
   font-size: 10;
   fill: textColor;
   font-family: monospace, monospace;
@@ -26436,12 +26442,12 @@ rowHeaders.apply {
 }
 
 // Layers in draw order (bottom to top)
-let wedges = PathLayer('wedges') \${ fill: wedgeColor; stroke: none; };
-let xorLayer = PathLayer('xor') \${ fill: xorColor; stroke: none; };
-let outlines = PathLayer('outlines') \${ fill: none; stroke: outlineColor; stroke-width: 1; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
-let guides = PathLayer('guides') \${ fill: none; stroke: guideColor; stroke-width: 0.8; stroke-dasharray: 3 3; };
+let wedges = PathLayer('wedges') #{ fill: wedgeColor; stroke: none; };
+let xorLayer = PathLayer('xor') #{ fill: xorColor; stroke: none; };
+let outlines = PathLayer('outlines') #{ fill: none; stroke: outlineColor; stroke-width: 1; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
+let guides = PathLayer('guides') #{ fill: none; stroke: guideColor; stroke-width: 0.8; stroke-dasharray: 3 3; };
 
-let info = TextLayer('info') \${
+let info = TextLayer('info') #{
   font-size: 7;
   fill: textColor;
   font-family: monospace, monospace;
@@ -26496,7 +26502,7 @@ for ([oR, ri] in outerRs) {
 }
 
 // Title
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -26507,7 +26513,7 @@ title.apply {
   text(60, 670)\`radialWedge diagnostics — cr=\${cornerR}, iR=\${innerR} | green=sharp, dark=XOR diff, blue=guide circles\`
 }
 
-let g = GroupLayer('all') \${};
+let g = GroupLayer('all') #{};
 g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, title);
 </code>
   <img src="/blog/samples/post16/wedge-diag-4.svg" alt="Diagnostic matrix — cornerR = 4, varying theta × outerR. Dotted outline = sharp reference, dark red = areas where rounding changes geometry" loading="lazy">
@@ -26523,7 +26529,7 @@ let outlineColor = Color('#22aa44');
 let guideColor = Color('#4477aa');
 let textColor = Color('#2f2f2f');
 
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 900, 700); }
 
 let innerR = 30;
@@ -26540,7 +26546,7 @@ let startX = 80;
 let startY = 90;
 
 // Column headers
-let headers = TextLayer('headers') \${
+let headers = TextLayer('headers') #{
   font-size: 10;
   fill: textColor;
   font-family: monospace, monospace;
@@ -26553,7 +26559,7 @@ headers.apply {
 }
 
 // Row headers
-let rowHeaders = TextLayer('row-headers') \${
+let rowHeaders = TextLayer('row-headers') #{
   font-size: 10;
   fill: textColor;
   font-family: monospace, monospace;
@@ -26566,12 +26572,12 @@ rowHeaders.apply {
 }
 
 // Layers in draw order (bottom to top)
-let wedges = PathLayer('wedges') \${ fill: wedgeColor; stroke: none; };
-let xorLayer = PathLayer('xor') \${ fill: xorColor; stroke: none; };
-let outlines = PathLayer('outlines') \${ fill: none; stroke: outlineColor; stroke-width: 1; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
-let guides = PathLayer('guides') \${ fill: none; stroke: guideColor; stroke-width: 0.8; stroke-dasharray: 3 3; };
+let wedges = PathLayer('wedges') #{ fill: wedgeColor; stroke: none; };
+let xorLayer = PathLayer('xor') #{ fill: xorColor; stroke: none; };
+let outlines = PathLayer('outlines') #{ fill: none; stroke: outlineColor; stroke-width: 1; stroke-dasharray: 0.01 1.6; stroke-linecap: round; };
+let guides = PathLayer('guides') #{ fill: none; stroke: guideColor; stroke-width: 0.8; stroke-dasharray: 3 3; };
 
-let info = TextLayer('info') \${
+let info = TextLayer('info') #{
   font-size: 7;
   fill: textColor;
   font-family: monospace, monospace;
@@ -26626,7 +26632,7 @@ for ([oR, ri] in outerRs) {
 }
 
 // Title
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -26637,7 +26643,7 @@ title.apply {
   text(60, 670)\`radialWedge diagnostics — cr=\${cornerR}, iR=\${innerR} | green=sharp, dark=XOR diff, blue=guide circles\`
 }
 
-let g = GroupLayer('all') \${};
+let g = GroupLayer('all') #{};
 g.append(bg, wedges, xorLayer, outlines, guides, headers, rowHeaders, info, title);
 </code>
   <img src="/blog/samples/post16/wedge-diag-16.svg" alt="Diagnostic matrix — cornerR = 16, stress-testing graceful degradation at narrow inner arcs" loading="lazy">
@@ -26659,7 +26665,7 @@ let gridColor = Color('#d4c9b8').darken(20%);
 let annotColor = Color('#6b7280');
 let subtleColor = Color('#9ca3af');
 
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 1000, 750); }
 
 // === Chart parameters ===
@@ -26717,22 +26723,22 @@ let topBarSweep = calc(barSweep * 0.5);
 let topBarOffset = calc((barSweep - topBarSweep) / 2);
 
 // === Grid rings ===
-define GroupLayer('chart') \${}
+define GroupLayer('chart') #{}
 
 // Solid center circle
-let centerCircle = PathLayer('center-circle') \${ fill: none; stroke: gridColor; stroke-width: 0.8; };
+let centerCircle = PathLayer('center-circle') #{ fill: none; stroke: gridColor; stroke-width: 0.8; };
 layer('chart').append(centerCircle);
 centerCircle.apply { circle(cx, cy, innerR); }
 
 // Dashed concentric grid rings at 5% and 10%
-let grid = PathLayer('grid') \${ fill: none; stroke: gridColor; stroke-width: 1; stroke-dasharray: 3 4; };
+let grid = PathLayer('grid') #{ fill: none; stroke: gridColor; stroke-width: 1; stroke-dasharray: 3 4; };
 layer('chart').append(grid);
 grid.apply {
   circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 5 / maxVal));
   circle(cx, cy, calc(barInnerR + (maxR - barInnerR) * 10 / maxVal));
 }
 
-let gridLabels = TextLayer('grid-labels') \${
+let gridLabels = TextLayer('grid-labels') #{
   font-size: 7;
   fill: subtleColor;
   font-family: system-ui, sans-serif;
@@ -26750,10 +26756,10 @@ gridLabels.apply {
 
 // Shared label styles
 let pctSize = 7.2;
-let redDot = \${ fill: allBarColor; white-space: pre; font-size: pctSize; };
-let redPct = \${ fill: allBarColor; font-weight: normal; font-size: pctSize; };
-let darkDot = \${ fill: topBarColor; white-space: pre; font-size: pctSize; };
-let darkPct = \${ fill: topBarColor; font-weight: normal; font-size: pctSize; };
+let redDot = #{ fill: allBarColor; white-space: pre; font-size: pctSize; };
+let redPct = #{ fill: allBarColor; font-weight: normal; font-size: pctSize; };
+let darkDot = #{ fill: topBarColor; white-space: pre; font-size: pctSize; };
+let darkPct = #{ fill: topBarColor; font-weight: normal; font-size: pctSize; };
 
 // Extract first word for group naming
 let firstWords = [
@@ -26770,13 +26776,13 @@ for ([d, i] in data) {
   let midAngle = calc(startOffset + (i + 0.5) * sliceAngle);
 
   // Create per-category GroupLayer
-  let catGroup = GroupLayer(\`group-\${i}-\${firstWords[i]}\`) \${};
+  let catGroup = GroupLayer(\`group-\${i}-\${firstWords[i]}\`) #{};
   layer('chart').append(catGroup);
 
   // Red bar (all BGG games)
   if (d.all &gt; 0) {
     let outerR = calc(barInnerR + (maxR - barInnerR) * d.all / maxVal);
-    let barLayer = PathLayer(\`bar-all-\${i}\`) \${ fill: allBarColor; stroke: bgColor; stroke-width: 1; };
+    let barLayer = PathLayer(\`bar-all-\${i}\`) #{ fill: allBarColor; stroke: bgColor; stroke-width: 1; };
     catGroup.append(barLayer);
     barLayer.apply {
       M cx cy
@@ -26789,7 +26795,7 @@ for ([d, i] in data) {
     let topOuterR = calc(barInnerR + (maxR - barInnerR) * d.top / maxVal);
     let topFrom = calc(sliceFrom + topBarOffset);
     let topTo = calc(topFrom + topBarSweep);
-    let topLayer = PathLayer(\`bar-top-\${i}\`) \${ fill: topBarColor; stroke: bgColor; stroke-width: 1; };
+    let topLayer = PathLayer(\`bar-top-\${i}\`) #{ fill: topBarColor; stroke: bgColor; stroke-width: 1; };
     catGroup.append(topLayer);
     topLayer.apply {
       M cx cy
@@ -26802,7 +26808,7 @@ for ([d, i] in data) {
   let barTipR = calc(barInnerR + (maxR - barInnerR) * longerVal / maxVal);
   let labelR = calc(barTipR + 8);
 
-  let catLabel = TextLayer(\`label-\${i}\`) \${
+  let catLabel = TextLayer(\`label-\${i}\`) #{
     font-size: 9;
     fill: textColor;
     font-family: Georgia, serif;
@@ -26818,7 +26824,7 @@ for ([d, i] in data) {
       tspan(0, 0, 0, darkDot)\` · \`
       tspan(0, 0, 0, darkPct)\`\${d.top}%\`
     }
-  } &lt;&lt; \${ font-size: 9; };
+  } &lt;&lt; #{ font-size: 9; };
 
   catLabel.apply {
     labelTb.radialProject(cx, cy, midAngle, labelR, 'start', 1, VerticalAnchor.Midline).draw();
@@ -26834,21 +26840,21 @@ for ([d, i] in data) {
     let by = polarY(cy, midAngle, badgeR);
 
     if (d.name == "Economic") {
-      let bc = PathLayer(\`badge-circ-\${i}\`) \${ fill: textColor; stroke: none; };
-      let bs = PathLayer(\`badge-star-\${i}\`) \${ fill: bgColor; stroke: none; };
+      let bc = PathLayer(\`badge-circ-\${i}\`) #{ fill: textColor; stroke: none; };
+      let bs = PathLayer(\`badge-star-\${i}\`) #{ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
       bc.apply { circle(bx, by, 4.5); }
       bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Wargame") {
-      let bc = PathLayer(\`badge-circ-\${i}\`) \${ fill: allBarColor; stroke: none; };
-      let bs = PathLayer(\`badge-star-\${i}\`) \${ fill: bgColor; stroke: none; };
+      let bc = PathLayer(\`badge-circ-\${i}\`) #{ fill: allBarColor; stroke: none; };
+      let bs = PathLayer(\`badge-star-\${i}\`) #{ fill: bgColor; stroke: none; };
       catGroup.append(bc, bs);
       bc.apply { circle(bx, by, 4.5); }
       bs.apply { star(bx, by, 3.5, 1.4, 5); }
     }
     if (d.name == "Humor" || d.name == "Music" || d.name == "Mafia" || d.name == "Prehistoric") {
-      let bs = PathLayer(\`badge-star-\${i}\`) \${ fill: textColor; stroke: none; };
+      let bs = PathLayer(\`badge-star-\${i}\`) #{ fill: textColor; stroke: none; };
       catGroup.append(bs);
       bs.apply { star(bx, by, 4, 1.6, 5); }
     }
@@ -26856,9 +26862,9 @@ for ([d, i] in data) {
 }
 
 // === Title and subtitle ===
-define GroupLayer('chrome') \${}
+define GroupLayer('chrome') #{}
 
-let titleLayer = TextLayer('title') \${
+let titleLayer = TextLayer('title') #{
   font-size: 20;
   fill: textColor;
   font-family: Georgia, serif;
@@ -26874,7 +26880,7 @@ titleLayer.apply {
 // Subtitle with highlighted phrases
 // Each segment rendered as a separate text element at measured positions,
 // so rectangles and text share the same anchor points.
-let subStyle = \${ font-size: 11; font-family: system-ui, sans-serif; };
+let subStyle = #{ font-size: 11; font-family: system-ui, sans-serif; };
 let subY = 100;
 let subPad = 3;
 
@@ -26905,8 +26911,8 @@ let fracHi2 = calc(wHi2 / totalW);          // fraction of "top 100"
 let browserW = calc(totalW * 1.12);
 let browserStart = calc(500 - browserW / 2);
 
-let subtitleBg = PathLayer('subtitle-bg') \${ fill: allBarColor; stroke: none; };
-let subtitleBg2 = PathLayer('subtitle-bg2') \${ fill: topBarColor; stroke: none; };
+let subtitleBg = PathLayer('subtitle-bg') #{ fill: allBarColor; stroke: none; };
+let subtitleBg2 = PathLayer('subtitle-bg2') #{ fill: topBarColor; stroke: none; };
 layer('chrome').append(subtitleBg, subtitleBg2);
 
 subtitleBg.apply {
@@ -26920,7 +26926,7 @@ subtitleBg2.apply {
 // The browser positions tspans using its own font metrics (continuous flow),
 // which is correct. The rectangles above use our measured positions.
 // Accept ~1-2px offset as the cost of approximate character width tables.
-let subtitleLayer = TextLayer('subtitle') \${
+let subtitleLayer = TextLayer('subtitle') #{
   font-size: 11;
   fill: annotColor;
   font-family: system-ui, sans-serif;
@@ -26928,7 +26934,7 @@ let subtitleLayer = TextLayer('subtitle') \${
 };
 layer('chrome').append(subtitleLayer);
 
-let hiWhite = \${ fill: #ffffff; };
+let hiWhite = #{ fill: #ffffff; };
 subtitleLayer.apply {
   text(500, subY) {
     \`They make up nearly 30% of \`
@@ -26940,7 +26946,7 @@ subtitleLayer.apply {
 }
 
 // === Wedge Legend (bottom-left) ===
-define GroupLayer('legend') \${ translate-x: 94; translate-y: 540; }
+define GroupLayer('legend') #{ translate-x: 94; translate-y: 540; }
 
 let legIR = 6;
 let legBarStart = 7;  // 1-unit gap from center circle
@@ -26957,7 +26963,7 @@ let legA2 = calc(legA1 + legSweep + 3deg);
 let legA3 = calc(legA2 + legSweep + 3deg);
 
 // Red wedge fan — lightened 8%
-let legRedWedges = PathLayer('leg-red') \${ fill: legRedColor; stroke: bgColor; stroke-width: 0.5; };
+let legRedWedges = PathLayer('leg-red') #{ fill: legRedColor; stroke: bgColor; stroke-width: 0.5; };
 layer('legend').append(legRedWedges);
 legRedWedges.apply {
   M legOX legOY
@@ -26969,20 +26975,20 @@ legRedWedges.apply {
 }
 
 // Right-half semicircles + center for red
-let legRedGuides = PathLayer('leg-red-guides') \${ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
+let legRedGuides = PathLayer('leg-red-guides') #{ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
 layer('legend').append(legRedGuides);
 legRedGuides.apply {
   M legOX calc(legOY - 20) A 20 20 0 0 1 legOX calc(legOY + 20)
   M legOX calc(legOY - 34) A 34 34 0 0 1 legOX calc(legOY + 34)
 }
-let legRedCenter = PathLayer('leg-red-ctr') \${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+let legRedCenter = PathLayer('leg-red-ctr') #{ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legRedCenter);
 legRedCenter.apply { circle(legOX, legOY, legIR); }
 
 // Dark wedge fan — same radii, lightened 8%
 let legDX = 130;
 let legDarkX = calc(legDX + legOX);
-let legDarkWedges = PathLayer('leg-dark') \${ fill: legDarkColor; stroke: bgColor; stroke-width: 0.5; };
+let legDarkWedges = PathLayer('leg-dark') #{ fill: legDarkColor; stroke: bgColor; stroke-width: 0.5; };
 layer('legend').append(legDarkWedges);
 legDarkWedges.apply {
   M legDarkX legOY
@@ -26994,18 +27000,18 @@ legDarkWedges.apply {
 }
 
 // Right-half semicircles + center for dark
-let legDarkGuides = PathLayer('leg-dark-guides') \${ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
+let legDarkGuides = PathLayer('leg-dark-guides') #{ fill: none; stroke: gridColor; stroke-width: 0.4; stroke-dasharray: 2 2; };
 layer('legend').append(legDarkGuides);
 legDarkGuides.apply {
   M legDarkX calc(legOY - 20) A 20 20 0 0 1 legDarkX calc(legOY + 20)
   M legDarkX calc(legOY - 34) A 34 34 0 0 1 legDarkX calc(legOY + 34)
 }
-let legDarkCenter = PathLayer('leg-dark-ctr') \${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+let legDarkCenter = PathLayer('leg-dark-ctr') #{ fill: none; stroke: gridColor; stroke-width: 0.6; };
 layer('legend').append(legDarkCenter);
 legDarkCenter.apply { circle(legDarkX, legOY, legIR); }
 
 // 5%/10% labels
-let legGuideLabels = TextLayer('leg-guide-labels') \${
+let legGuideLabels = TextLayer('leg-guide-labels') #{
   font-size: 7;
   fill: subtleColor.darken(20%);
   font-family: system-ui, sans-serif;
@@ -27018,7 +27024,7 @@ legGuideLabels.apply {
 }
 
 // Legend text labels
-let legLabels = TextLayer('leg-labels') \${
+let legLabels = TextLayer('leg-labels') #{
   font-size: 9;
   fill: textColor;
   font-family: Georgia, serif;
@@ -27032,7 +27038,7 @@ legLabels.apply {
 }
 
 // Footnote
-let footNote = TextLayer('footnote') \${
+let footNote = TextLayer('footnote') #{
   font-size: 8;
   fill: annotColor;
   font-family: system-ui, sans-serif;
@@ -27046,7 +27052,7 @@ footNote.apply {
 
 // === Top Categories Bar Chart (bottom-right) ===
 // Dots on a gentle leftward arc, bars extend left from dots, labels right
-define GroupLayer('summary') \${ translate-x: 680; translate-y: 496; }
+define GroupLayer('summary') #{ translate-x: 680; translate-y: 496; }
 
 let summData = [
   { name: "Economic",        pct: 9.7, rank: 1 },
@@ -27077,7 +27083,7 @@ fn summDotXAt(idx) {
 }
 
 // Title — centered directly above the bar cluster
-let summTitle = TextLayer('summ-title') \${
+let summTitle = TextLayer('summ-title') #{
   font-size: 11;
   fill: textColor;
   font-family: Georgia, serif;
@@ -27092,7 +27098,7 @@ summTitle.apply {
 }
 
 // Circular arc behind dots — extends 8 units above first dot and below last dot
-let summArcLineLayer = PathLayer('summ-arc') \${ fill: none; stroke: topBarColor; stroke-width: 1; };
+let summArcLineLayer = PathLayer('summ-arc') #{ fill: none; stroke: topBarColor; stroke-width: 1; };
 layer('summary').append(summArcLineLayer);
 let summArcTopY = calc(summDotY0 - 8);
 let summArcBotY = calc(summDotY0 + 4 * summItemStep + 8);
@@ -27106,9 +27112,9 @@ summArcLineLayer.apply {
 }
 
 // Bars, dots, labels
-let summBars = PathLayer('summ-bars') \${ fill: topBarColor; stroke: none; };
-let summDots = PathLayer('summ-dots') \${ fill: bgColor; stroke: topBarColor; stroke-width: 1; };
-let summLabels = TextLayer('summ-labels') \${
+let summBars = PathLayer('summ-bars') #{ fill: topBarColor; stroke: none; };
+let summDots = PathLayer('summ-dots') #{ fill: bgColor; stroke: topBarColor; stroke-width: 1; };
+let summLabels = TextLayer('summ-labels') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -27144,13 +27150,13 @@ let a1Angle = annotStart;
 let a1x = polarX(cx, a1Angle, annotR);
 let a1y = polarY(cy, a1Angle, annotR);
 
-let badge1Circle = PathLayer('badge1-circle') \${ fill: textColor; stroke: none; };
-let badge1Star = PathLayer('badge1-star') \${ fill: bgColor; stroke: none; };
+let badge1Circle = PathLayer('badge1-circle') #{ fill: textColor; stroke: none; };
+let badge1Star = PathLayer('badge1-star') #{ fill: bgColor; stroke: none; };
 layer('chrome').append(badge1Circle, badge1Star);
 badge1Circle.apply { circle(a1x, a1y, 6.5); }
 badge1Star.apply { star(a1x, a1y, 5.5, 2.2, 5); }
 
-let badge1Text = TextLayer('badge1-text') \${
+let badge1Text = TextLayer('badge1-text') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -27170,13 +27176,13 @@ let a2Angle = calc(annotStart + 18deg);
 let a2x = polarX(cx, a2Angle, annotR);
 let a2y = polarY(cy, a2Angle, annotR);
 
-let badge2Circle = PathLayer('badge2-circle') \${ fill: allBarColor; stroke: none; };
-let badge2Star = PathLayer('badge2-star') \${ fill: bgColor; stroke: none; };
+let badge2Circle = PathLayer('badge2-circle') #{ fill: allBarColor; stroke: none; };
+let badge2Star = PathLayer('badge2-star') #{ fill: bgColor; stroke: none; };
 layer('chrome').append(badge2Circle, badge2Star);
 badge2Circle.apply { circle(a2x, a2y, 6.5); }
 badge2Star.apply { star(a2x, a2y, 5.5, 2.2, 5); }
 
-let badge2Text = TextLayer('badge2-text') \${
+let badge2Text = TextLayer('badge2-text') #{
   font-size: 9;
   fill: allBarColor;
   font-family: system-ui, sans-serif;
@@ -27194,11 +27200,11 @@ let a3Angle = calc(annotStart + 18deg + 27deg);
 let a3x = polarX(cx, a3Angle, annotR);
 let a3y = polarY(cy, a3Angle, annotR);
 
-let badge3Star = PathLayer('badge3-star') \${ fill: textColor; stroke: none; };
+let badge3Star = PathLayer('badge3-star') #{ fill: textColor; stroke: none; };
 layer('chrome').append(badge3Star);
 badge3Star.apply { star(a3x, a3y, 6.5, 2.6, 5); }
 
-let badge3Text = TextLayer('badge3-text') \${
+let badge3Text = TextLayer('badge3-text') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -27211,7 +27217,7 @@ badge3Text.apply {
 }
 
 // === Disclaimer and source attribution ===
-let disclaimer = TextLayer('disclaimer') \${
+let disclaimer = TextLayer('disclaimer') #{
   font-size: 8;
   fill: annotColor;
   font-family: Georgia, serif;
@@ -27224,7 +27230,7 @@ disclaimer.apply {
   text(120, 717)\`favour of broader categories. Percentages are normalized separately for each group, showing relative preference rather than total volume.\`
 }
 
-let sourceNote = TextLayer('source') \${
+let sourceNote = TextLayer('source') #{
   font-size: 8;
   fill: annotColor;
   font-family: system-ui, sans-serif;
@@ -27257,7 +27263,7 @@ let accentColor = Color(CSSVar('--bar-all', #cc3333));
 let textColor = Color('#2f2f2f');
 let subtleColor = Color('#9ca3af');
 
-let bg = PathLayer('bg') \${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 450, 280); }
 
 // === Data ===
@@ -27278,7 +27284,7 @@ let barSpacing = 32;
 let maxVal = 12;
 
 // === Title ===
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-size: 14;
   fill: textColor;
   font-family: Georgia, serif;
@@ -27290,20 +27296,20 @@ title.apply {
 }
 
 // === Draw bars ===
-let bars = PathLayer('bars') \${ fill: barColor; stroke: none; };
-let barLabels = TextLayer('labels') \${
+let bars = PathLayer('bars') #{ fill: barColor; stroke: none; };
+let barLabels = TextLayer('labels') #{
   font-size: 11;
   fill: textColor;
   font-family: system-ui, sans-serif;
   text-anchor: end;
 };
-let barValues = TextLayer('values') \${
+let barValues = TextLayer('values') #{
   font-size: 10;
   fill: subtleColor;
   font-family: system-ui, sans-serif;
   text-anchor: start;
 };
-let rankLabels = TextLayer('ranks') \${
+let rankLabels = TextLayer('ranks') #{
   font-size: 10;
   fill: accentColor;
   font-family: system-ui, sans-serif;
@@ -27329,7 +27335,7 @@ for ([item, idx] in top5) {
 }
 
 // === Footnote ===
-let foot = TextLayer('footnote') \${
+let foot = TextLayer('footnote') #{
   font-size: 8;
   fill: subtleColor;
   font-family: system-ui, sans-serif;
@@ -27340,7 +27346,7 @@ foot.apply {
   text(30, 258)\`The same reusable functions power both the radial chart and this summary view.\`
 }
 
-let g = GroupLayer('all') \${};
+let g = GroupLayer('all') #{};
 g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);
 </code>
   <img src="/blog/samples/post16/summary-bars.svg" alt="Top categories among the 100 highest-ranked board games — circles on a circular arc, bars extending left" loading="lazy">
@@ -27409,7 +27415,7 @@ h -60;
 };
 </code></pre><p><mini-workspace code-open caption="Same rounded corner — hand-assembled tangent arc on the left, \`with fillet(15)\` on the right">
   <code>define ViewBox(0, 0, 240, 120);
-define default PathLayer('shapes') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define default PathLayer('shapes') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
 
 // BEFORE: rounding a corner by hand means re-computing both edge
 // lengths and threading a tangent arc between them.
@@ -27443,8 +27449,8 @@ suffixed.drawTo(150, 25);
 </code></pre><p><code>&#39;lid&#39;</code> names the top edge. That name survives everything that happens to the path — fillets trimming it, projection moving it — and it answers questions:</p>
 <p><mini-workspace code-open caption="\`card.segment('lid').partition(6)\` — decorating evenly along one named edge">
   <code>define ViewBox(0, 0, 240, 140);
-define default PathLayer('card') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
-define PathLayer('studs') \${ fill: #7c3aed; }
+define default PathLayer('card') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('studs') #{ fill: #7c3aed; }
 
 // Name the lid while drawing it...
 let card = @{
@@ -27469,8 +27475,8 @@ layer('studs').apply {
 <p>Vertices work the same way. <code>as endpoint(&#39;name&#39;)</code> names the point a command lands on, and <code>point(&#39;name&#39;)</code> retrieves it — an anchor that follows the geometry instead of a hand-computed coordinate:</p>
 <p><mini-workspace code-open caption="Bolt heads anchored to named corners — \`placed.point('mount-east')\` instead of coordinates">
   <code>define ViewBox(0, 0, 240, 140);
-define default PathLayer('bracket') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
-define PathLayer('bolts') \${ fill: none; stroke: #0d9488; stroke-width: 2.5; }
+define default PathLayer('bracket') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('bolts') #{ fill: none; stroke: #0d9488; stroke-width: 2.5; }
 
 // Name the two mounting corners as the bracket is drawn.
 let bracket = @{
@@ -27515,7 +27521,7 @@ layer('bolts').apply {
 <span class="kw">let</span> <span class="id">notched</span> = <span class="id">tab</span>(<span class="num">true</span>).<span class="id">vertex</span>(<span class="str">'spout'</span>).<span class="id">fillet</span>(<span class="num">12</span>);
 </code></pre><p><mini-workspace code-open caption="The notch adds three commands before the corner — \`vertex('spout')\` rounds the same joint in both variants">
   <code>define ViewBox(0, 0, 240, 130);
-define default PathLayer('tabs') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define default PathLayer('tabs') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
 
 // Index-based: filletAtVertex(1, 12) rounds "the second corner" — until an
 // edit inserts a notch earlier in the path and every index shifts.
@@ -27564,8 +27570,8 @@ notched.drawTo(135, 35);
 }
 </code></pre><p><mini-workspace code-open caption="One shared name, five teeth — \`segmentAll('tooth')\` returns the group; each tip decorated without tracking a single index">
   <code>define ViewBox(0, 0, 240, 140);
-define default PathLayer('comb') \${ stroke: #334155; stroke-width: 2.5; fill: none; }
-define PathLayer('tips') \${ fill: #db2777; }
+define default PathLayer('comb') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('tips') #{ fill: #db2777; }
 
 // One name, five teeth. Labels don't have to be unique — a shared name
 // forms a GROUP, so loops need no index bookkeeping at all.
@@ -27591,8 +27597,8 @@ layer('tips').apply {
 <p>The quiet structural win: layers built with <code>apply { }</code> used to be write-only. You could route commands into them, but a layer could never tell you anything about its own geometry. Labels change that — <code>layer(&#39;name&#39;).segment(...)</code>, <code>.point(...)</code>, and <code>.vertex(...)</code> read named geometry back out of any path layer:</p>
 <p><mini-workspace code-open caption="A ticks layer cross-hatching a named stretch of the road layer — one layer reading another's geometry by name">
   <code>define ViewBox(0, 0, 240, 140);
-define PathLayer('road') \${ stroke: #334155; stroke-width: 3; fill: none; }
-define PathLayer('ticks') \${ stroke: #f59e0b; stroke-width: 2; fill: none; }
+define PathLayer('road') #{ stroke: #334155; stroke-width: 3; fill: none; }
+define PathLayer('ticks') #{ stroke: #f59e0b; stroke-width: 2; fill: none; }
 
 // A layer built with apply {} used to be write-only: you could add to it,
 // but never ask it anything. Labels make layers queryable.
@@ -27852,7 +27858,7 @@ and the marker kind is compared up to three times per marker:</p>
 <p><mini-workspace code-open caption="Two rows of markers drawn by an if / else if chain. Every branch repeats the comparison against kind, and a reader has to check each one to be sure they all compare the same thing.">
   <code>define ViewBox(0, 0, 320, 150);
 
-define default PathLayer('marks') \${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -27905,7 +27911,7 @@ members read as a list:</p>
 <p><mini-workspace code-open caption="The same markers, dispatched by switch. One case each for Dot, Ring, and Box; Spark names no case and falls to default. The render is identical to the chain above.">
   <code>define ViewBox(0, 0, 320, 150);
 
-define default PathLayer('marks') \${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -27986,7 +27992,7 @@ so a quadrant test is one line per quadrant:</p>
 <p><mini-workspace code-open caption="Twenty-four spokes. Each spoke's length comes from a switch over its heading with half-open angle ranges, so 90deg belongs to exactly one quadrant. The dot at each tip is sized by a second switch over the spoke index, mixing an inclusive range, a half-open one, and two open-ended ones.">
   <code>define ViewBox(0, 0, 200, 200);
 
-define default PathLayer('marks') \${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -28053,7 +28059,7 @@ down:</p>
 <p><mini-workspace code-open caption="Five values in one array: three Points and two plain arrays. Points above the diagonal get a ring, points on or below it a box, and the arrays dispatch on their length. Nothing here compares with ==; every case is a shape test.">
   <code>define ViewBox(0, 0, 200, 200);
 
-define default PathLayer('marks') \${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -28130,7 +28136,7 @@ arguments:</p>
 <p><mini-workspace code-open caption="The size and the vertical lift of each marker are switch expressions dropped into a let; the shape itself is a switch statement. The underline's right end is a switch inside calc() in a path argument, so the box gets a wider bar without a separate branch.">
   <code>define ViewBox(0, 0, 320, 110);
 
-define default PathLayer('marks') \${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -28202,7 +28208,7 @@ geometry beside it come from the same value with the same ranges:</p>
 <p><mini-workspace code-open caption="Four scores, shown in the labels. Inside each text body a switch picks the tspan word; outside it a switch expression picks the bar width. The two switches share the 40 and 75 boundaries, so the word and the bar can never disagree.">
   <code>define ViewBox(0, 0, 240, 140);
 
-define default PathLayer('marks') \${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -28210,7 +28216,7 @@ define default PathLayer('marks') \${
 
 // Inside a text body the case bodies hold text, so a label and its bar
 // come from the same score with the same ranges.
-define TextLayer('labels') \${
+define TextLayer('labels') #{
   font-size: 14;
   font-family: monospace;
   fill: #8a93a6;
@@ -28321,10 +28327,10 @@ right case take over.</p>
 
 // ─── Background ─────────────────────────────────────────────────────
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 340); }
 
-let grid = PathLayer('grid') \${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -28336,7 +28342,7 @@ grid.apply {
 
 // ─── Define a TextBlock at relative coordinates ─────────────────────
 
-let mono_styles = \${ font-family: monospace; font-size: 11; };
+let mono_styles = #{ font-family: monospace; font-size: 11; };
 
 let card = &amp;{
   text(0, 14)\`Server Node\`
@@ -28349,13 +28355,13 @@ let bb = card.boundingBox();
 
 // ─── Card 1: First placement ────────────────────────────────────────
 
-let g1 = GroupLayer('card1') \${ translate-x: 80; translate-y: 100; };
+let g1 = GroupLayer('card1') #{ translate-x: 80; translate-y: 100; };
 
-let demo1 = TextLayer('demo1') \${ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
+let demo1 = TextLayer('demo1') #{ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
 demo1.apply { card.drawTo(0, 0); }
 
 // Bounding box overlay
-let bb1_layer = PathLayer('bb1') \${
+let bb1_layer = PathLayer('bb1') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -28364,7 +28370,7 @@ let bb1_layer = PathLayer('bb1') \${
 bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
-let cross1 = PathLayer('cross1') \${
+let cross1 = PathLayer('cross1') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -28384,13 +28390,13 @@ g1.append(demo1, bb1_layer, cross1);
 
 // ─── Card 2: Second placement ───────────────────────────────────────
 
-let g2 = GroupLayer('card2') \${ translate-x: 360; translate-y: 180; };
+let g2 = GroupLayer('card2') #{ translate-x: 360; translate-y: 180; };
 
-let demo2 = TextLayer('demo2') \${ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
+let demo2 = TextLayer('demo2') #{ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
 demo2.apply { card.drawTo(0, 0); }
 
 // Bounding box overlay
-let bb2_layer = PathLayer('bb2') \${
+let bb2_layer = PathLayer('bb2') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -28399,7 +28405,7 @@ let bb2_layer = PathLayer('bb2') \${
 bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
-let cross2 = PathLayer('cross2') \${
+let cross2 = PathLayer('cross2') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -28418,9 +28424,9 @@ g2.append(demo2, bb2_layer, cross2);
 
 // ─── Leader lines and connection arrow ──────────────────────────────
 
-let leader_group = GroupLayer('leaders-group') \${};
+let leader_group = GroupLayer('leaders-group') #{};
 
-let leaders = PathLayer('leaders') \${
+let leaders = PathLayer('leaders') #{
   fill: none;
   stroke: Color('#475569');
   stroke-width: 0.5;
@@ -28435,7 +28441,7 @@ leaders.apply {
 }
 
 // Arrowhead at connection endpoint
-let arrow_layer = PathLayer('arrow') \${
+let arrow_layer = PathLayer('arrow') #{
   fill: Color('#818cf8');
   stroke: none;
 };
@@ -28447,9 +28453,9 @@ leader_group.append(leaders, arrow_layer);
 
 // ─── Annotations ────────────────────────────────────────────────────
 
-let anno_group = GroupLayer('anno-group') \${};
+let anno_group = GroupLayer('anno-group') #{};
 
-let anno = TextLayer('anno') \${
+let anno = TextLayer('anno') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -28465,9 +28471,9 @@ anno_group.append(anno);
 
 // ─── Code block (top-right) ─────────────────────────────────────────
 
-let code_group = GroupLayer('code-block') \${ translate-x: 400; translate-y: 22; };
+let code_group = GroupLayer('code-block') #{ translate-x: 400; translate-y: 22; };
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -28483,7 +28489,7 @@ code.apply {
   text(0, 92)\`card.drawTo(360, 180)\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -28497,9 +28503,9 @@ code_group.append(code, kw);
 
 // ─── Title ──────────────────────────────────────────────────────────
 
-let title_group = GroupLayer('title-group') \${};
+let title_group = GroupLayer('title-group') #{};
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -28513,16 +28519,16 @@ title_group.append(title);
 
 // ─── Legend ──────────────────────────────────────────────────────────
 
-let legend_group = GroupLayer('legend-group') \${ translate-x: 400; translate-y: 300; };
+let legend_group = GroupLayer('legend-group') #{ translate-x: 400; translate-y: 300; };
 
-let leg = TextLayer('legend') \${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
-let leg_o = PathLayer('leg-o') \${ fill: Color('#22c55e'); stroke: none; };
-let leg_b = PathLayer('leg-b') \${ fill: Color('#f59e0b'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_b = PathLayer('leg-b') #{ fill: Color('#f59e0b'); stroke: none; };
 
 leg_o.apply { rect(0, 0, 8, 8); }
 leg_b.apply { rect(0, 14, 8, 8); }
@@ -28554,7 +28560,7 @@ legend_group.append(leg_o, leg_b, leg);
 <li><strong><code>.polarProject(cx, cy, angle, distance, anchor)</code></strong> — project along a polar vector with anchor alignment. We&#39;ll cover this in detail below.</li>
 </ul>
 <p>TextBlocks emit to TextLayers, which are the text counterpart to PathLayers. You define one with <code>define TextLayer(&#39;name&#39;) \${ styles }</code> and activate it with <code>layer(&#39;name&#39;).apply { ... }</code>:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) \${ <span class="pr">font-size</span>: <span class="num">12</span>; <span class="pr">fill</span>: <span class="str">#333</span>; }
+<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) #{ <span class="pr">font-size</span>: <span class="num">12</span>; <span class="pr">fill</span>: <span class="str">#333</span>; }
 
 <span class="kw">layer</span>(<span class="str">'labels'</span>).<span class="kw">apply</span> {
   <span class="id">label</span>.<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>);
@@ -28568,11 +28574,11 @@ legend_group.append(leg_o, leg_b, leg);
   <span class="kw">text</span>(<span class="num">0</span>, <span class="num">44</span>)\`MEM: 1.2G\`
 };
 
-<span class="kw">let</span> <span class="id">styled</span> = <span class="id">info</span> &lt;&lt; \${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
+<span class="kw">let</span> <span class="id">styled</span> = <span class="id">info</span> &lt;&lt; #{ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 </code></pre><p>The power here is that <code>info</code> remains unstyled. You can merge different styles into the same TextBlock to produce different presentations — and the bounding box adapts to each one:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">mono_sm</span> = \${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">10</span>; };
-<span class="kw">let</span> <span class="id">mono_lg</span> = \${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">14</span>; };
-<span class="kw">let</span> <span class="id">sans</span>    = \${ <span class="pr">font-family</span>: <span class="id">sans-serif</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">mono_sm</span> = #{ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">10</span>; };
+<span class="kw">let</span> <span class="id">mono_lg</span> = #{ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">14</span>; };
+<span class="kw">let</span> <span class="id">sans</span>    = #{ <span class="pr">font-family</span>: <span class="id">sans-serif</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 
 <span class="kw">let</span> <span class="id">bb1</span> = (<span class="id">info</span> &lt;&lt; <span class="id">mono_sm</span>).<span class="id">boundingBox</span>();  <span class="cm">// compact</span>
 <span class="kw">let</span> <span class="id">bb2</span> = (<span class="id">info</span> &lt;&lt; <span class="id">mono_lg</span>).<span class="id">boundingBox</span>();  <span class="cm">// wider, taller</span>
@@ -28585,10 +28591,10 @@ legend_group.append(leg_o, leg_b, leg);
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 300); }
 
-let grid = PathLayer('grid') \${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -28608,28 +28614,28 @@ let info = &amp;{
 
 // --- Three style variations ---
 
-let mono_sm = \${ font-family: monospace; font-size: 10; };
-let mono_lg = \${ font-family: monospace; font-size: 14; };
-let sans = \${ font-family: system-ui, sans-serif; font-size: 12; };
+let mono_sm = #{ font-family: monospace; font-size: 10; };
+let mono_lg = #{ font-family: monospace; font-size: 14; };
+let sans = #{ font-family: system-ui, sans-serif; font-size: 12; };
 
 // --- Shared annotation style for .intersects() checks ---
 
-let anno_styles = \${ font-family: monospace; font-size: 8; };
+let anno_styles = #{ font-family: monospace; font-size: 8; };
 
 // ─── Variant 1: mono 10px ────────────────────────────────────────
 
-let g1 = GroupLayer('variant1') \${ translate-x: 30; translate-y: 70; };
+let g1 = GroupLayer('variant1') #{ translate-x: 30; translate-y: 70; };
 
-let v1_text = TextLayer('v1-text') \${ font-family: monospace; font-size: 10; fill: Color('#22c55e'); };
+let v1_text = TextLayer('v1-text') #{ font-family: monospace; font-size: 10; fill: Color('#22c55e'); };
 v1_text.apply { (info &lt;&lt; mono_sm).drawTo(0, 0); }
 
 let styled1 = info &lt;&lt; mono_sm;
 let bb1 = styled1.boundingBox();
 
-let v1_bbox = PathLayer('v1-bbox') \${ fill: none; stroke: Color('#22c55e40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
+let v1_bbox = PathLayer('v1-bbox') #{ fill: none; stroke: Color('#22c55e40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
 v1_bbox.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
-let v1_label = TextLayer('v1-label') \${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
+let v1_label = TextLayer('v1-label') #{ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v1_label.apply { text(0, -10)\`mono 10px\` }
 
 g1.append(v1_text, v1_bbox, v1_label);
@@ -28644,18 +28650,18 @@ if (v1_label_proj.intersects(v1_bbox_rect)) { log("WARN: v1 label intersects bbo
 
 // ─── Variant 2: mono 14px ────────────────────────────────────────
 
-let g2 = GroupLayer('variant2') \${ translate-x: 210; translate-y: 70; };
+let g2 = GroupLayer('variant2') #{ translate-x: 210; translate-y: 70; };
 
-let v2_text = TextLayer('v2-text') \${ font-family: monospace; font-size: 14; fill: Color('#3b82f6'); };
+let v2_text = TextLayer('v2-text') #{ font-family: monospace; font-size: 14; fill: Color('#3b82f6'); };
 v2_text.apply { (info &lt;&lt; mono_lg).drawTo(0, 0); }
 
 let styled2 = info &lt;&lt; mono_lg;
 let bb2 = styled2.boundingBox();
 
-let v2_bbox = PathLayer('v2-bbox') \${ fill: none; stroke: Color('#3b82f640'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
+let v2_bbox = PathLayer('v2-bbox') #{ fill: none; stroke: Color('#3b82f640'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
 v2_bbox.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
-let v2_label = TextLayer('v2-label') \${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
+let v2_label = TextLayer('v2-label') #{ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v2_label.apply { text(0, -10)\`mono 14px\` }
 
 g2.append(v2_text, v2_bbox, v2_label);
@@ -28670,18 +28676,18 @@ if (v2_label_proj.intersects(v2_bbox_rect)) { log("WARN: v2 label intersects bbo
 
 // ─── Variant 3: sans-serif 12px ─────────────────────────────────
 
-let g3 = GroupLayer('variant3') \${ translate-x: 420; translate-y: 70; };
+let g3 = GroupLayer('variant3') #{ translate-x: 420; translate-y: 70; };
 
-let v3_text = TextLayer('v3-text') \${ font-family: system-ui, sans-serif; font-size: 12; fill: Color('#f59e0b'); };
+let v3_text = TextLayer('v3-text') #{ font-family: system-ui, sans-serif; font-size: 12; fill: Color('#f59e0b'); };
 v3_text.apply { (info &lt;&lt; sans).drawTo(0, 0); }
 
 let styled3 = info &lt;&lt; sans;
 let bb3 = styled3.boundingBox();
 
-let v3_bbox = PathLayer('v3-bbox') \${ fill: none; stroke: Color('#f59e0b40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
+let v3_bbox = PathLayer('v3-bbox') #{ fill: none; stroke: Color('#f59e0b40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
 v3_bbox.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
-let v3_label = TextLayer('v3-label') \${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
+let v3_label = TextLayer('v3-label') #{ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v3_label.apply { text(0, -10)\`sans-serif 12px\` }
 
 g3.append(v3_text, v3_bbox, v3_label);
@@ -28696,9 +28702,9 @@ if (v3_label_proj.intersects(v3_bbox_rect)) { log("WARN: v3 label intersects bbo
 
 // ─── Code block ─────────────────────────────────────────────────
 
-let g4 = GroupLayer('code-block') \${ translate-x: 30; translate-y: 190; };
+let g4 = GroupLayer('code-block') #{ translate-x: 30; translate-y: 190; };
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -28711,7 +28717,7 @@ code.apply {
   text(0, 44)\`(info &lt;&lt; sans).drawTo(430, 100)\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -28722,7 +28728,7 @@ g4.append(code);
 
 // --- Title (top-level) ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -28734,7 +28740,7 @@ title.apply {
 
 // --- Subtitle (top-level) ---
 
-let subtitle = TextLayer('subtitle') \${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -28746,7 +28752,7 @@ subtitle.apply {
 
 // --- Size annotations (top-level) ---
 
-let dims = TextLayer('dims') \${
+let dims = TextLayer('dims') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#475569');
@@ -28763,7 +28769,7 @@ dims.apply {
 <p>The dimension annotations at the bottom of each variant confirm what the code reports: same content, different measurements. A monospace 10px version is compact; monospace 14px is proportionally larger; sans-serif 12px has different character widths entirely. The <code>&lt;&lt;</code> operator and <code>.boundingBox()</code> handle all of this transparently.</p>
 <h2>Measuring Before You Place</h2>
 <p>The central insight of TextBlock is that you can measure text <em>before</em> deciding where to put it. The <a href="/docs#text-block-methods"><code>.boundingBox()</code></a> method returns an object with <code>x</code>, <code>y</code>, <code>width</code>, and <code>height</code> — the estimated bounding rectangle of all text elements in the block. Using the <code>&lt;&lt;</code> operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Hello World\` } &lt;&lt; \${ <span class="pr">font-size</span>: <span class="num">14</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Hello World\` } &lt;&lt; #{ <span class="pr">font-size</span>: <span class="num">14</span>; };
 <span class="kw">let</span> <span class="id">bb</span> = <span class="id">label</span>.<span class="id">boundingBox</span>();
 <span class="id">log</span>(<span class="id">bb</span>.<span class="id">width</span>);   <span class="cm">// estimated pixel width</span>
 <span class="id">log</span>(<span class="id">bb</span>.<span class="id">height</span>);  <span class="cm">// fontSize * 1.2 (line height)</span>
@@ -28793,10 +28799,10 @@ dims.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 360); }
 
-let grid = PathLayer('grid') \${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -28812,33 +28818,33 @@ let dim_above = 14;
 let dim_label_above = 6;
 let bracket_right = 16;
 let h_label_gap = 8;
-let anno_styles = \${ font-size: 8; font-family: monospace; };
+let anno_styles = #{ font-size: 8; font-family: monospace; };
 
 // ─── Row 1: font-size 10 ─────────────────────────────────────────
 
-let t1 = &amp;{ text(0, 10)\`font-size: 10\` } &lt;&lt; \${ font-size: 10; font-family: monospace; };
+let t1 = &amp;{ text(0, 10)\`font-size: 10\` } &lt;&lt; #{ font-size: 10; font-family: monospace; };
 let bb1 = t1.boundingBox();
 
-let g1 = GroupLayer('row-10') \${ translate-x: 60; translate-y: 100; };
+let g1 = GroupLayer('row-10') #{ translate-x: 60; translate-y: 100; };
 
-let t1_layer = TextLayer('t1') \${ font-family: monospace; font-size: 10; fill: Color('#e2e8f0'); };
+let t1_layer = TextLayer('t1') #{ font-family: monospace; font-size: 10; fill: Color('#e2e8f0'); };
 t1_layer.apply { t1.drawTo(0, 0); }
 
-let bb1_layer = PathLayer('bb1') \${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
+let bb1_layer = PathLayer('bb1') #{ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
 bb1_layer.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
 let wy1 = calc(bb1.y - dim_above);
-let wd1 = PathLayer('wd1') \${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
+let wd1 = PathLayer('wd1') #{ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
 wd1.apply { M 0 wy1 h bb1.width  M 0 calc(wy1 - 3) v 6  M bb1.width calc(wy1 - 3) v 6 }
 
-let wl1 = TextLayer('wl1') \${ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
+let wl1 = TextLayer('wl1') #{ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
 wl1.apply { text(calc(bb1.width / 2), calc(wy1 - dim_label_above))\`w = \${round(bb1.width)}\` }
 
 let hx1 = calc(bb1.width + bracket_right);
-let hd1 = PathLayer('hd1') \${ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
+let hd1 = PathLayer('hd1') #{ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
 hd1.apply { M hx1 bb1.y v bb1.height  M calc(hx1 - 3) bb1.y h 6  M calc(hx1 - 3) calc(bb1.y + bb1.height) h 6 }
 
-let hl1 = TextLayer('hl1') \${ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
+let hl1 = TextLayer('hl1') #{ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
 hl1.apply { text(calc(hx1 + h_label_gap), calc(bb1.y + bb1.height / 2 + 3))\`h = \${round(bb1.height)}\` }
 
 g1.append(t1_layer, bb1_layer, wd1, wl1, hd1, hl1);
@@ -28851,29 +28857,29 @@ if (hl1_proj.intersects({ x: calc(hx1 - 3), y: bb1.y, width: 6, height: bb1.heig
 
 // ─── Row 2: font-size 16 ─────────────────────────────────────────
 
-let t2 = &amp;{ text(0, 16)\`font-size: 16\` } &lt;&lt; \${ font-size: 16; font-family: monospace; };
+let t2 = &amp;{ text(0, 16)\`font-size: 16\` } &lt;&lt; #{ font-size: 16; font-family: monospace; };
 let bb2 = t2.boundingBox();
 
-let g2 = GroupLayer('row-16') \${ translate-x: 60; translate-y: 195; };
+let g2 = GroupLayer('row-16') #{ translate-x: 60; translate-y: 195; };
 
-let t2_layer = TextLayer('t2') \${ font-family: monospace; font-size: 16; fill: Color('#e2e8f0'); };
+let t2_layer = TextLayer('t2') #{ font-family: monospace; font-size: 16; fill: Color('#e2e8f0'); };
 t2_layer.apply { t2.drawTo(0, 0); }
 
-let bb2_layer = PathLayer('bb2') \${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
+let bb2_layer = PathLayer('bb2') #{ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
 bb2_layer.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
 let wy2 = calc(bb2.y - dim_above);
-let wd2 = PathLayer('wd2') \${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
+let wd2 = PathLayer('wd2') #{ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
 wd2.apply { M 0 wy2 h bb2.width  M 0 calc(wy2 - 3) v 6  M bb2.width calc(wy2 - 3) v 6 }
 
-let wl2 = TextLayer('wl2') \${ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
+let wl2 = TextLayer('wl2') #{ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
 wl2.apply { text(calc(bb2.width / 2), calc(wy2 - dim_label_above))\`w = \${round(bb2.width * 10) / 10}\` }
 
 let hx2 = calc(bb2.width + bracket_right);
-let hd2 = PathLayer('hd2') \${ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
+let hd2 = PathLayer('hd2') #{ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
 hd2.apply { M hx2 bb2.y v bb2.height  M calc(hx2 - 3) bb2.y h 6  M calc(hx2 - 3) calc(bb2.y + bb2.height) h 6 }
 
-let hl2 = TextLayer('hl2') \${ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
+let hl2 = TextLayer('hl2') #{ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
 hl2.apply { text(calc(hx2 + h_label_gap), calc(bb2.y + bb2.height / 2 + 3))\`h = \${round(bb2.height * 10) / 10}\` }
 
 g2.append(t2_layer, bb2_layer, wd2, wl2, hd2, hl2);
@@ -28884,29 +28890,29 @@ if (hl2_proj.intersects(t2_proj)) { log("WARN: row-16 h-label intersects text");
 
 // ─── Row 3: font-size 24 ─────────────────────────────────────────
 
-let t3 = &amp;{ text(0, 24)\`font-size: 24\` } &lt;&lt; \${ font-size: 24; font-family: monospace; };
+let t3 = &amp;{ text(0, 24)\`font-size: 24\` } &lt;&lt; #{ font-size: 24; font-family: monospace; };
 let bb3 = t3.boundingBox();
 
-let g3 = GroupLayer('row-24') \${ translate-x: 60; translate-y: 300; };
+let g3 = GroupLayer('row-24') #{ translate-x: 60; translate-y: 300; };
 
-let t3_layer = TextLayer('t3') \${ font-family: monospace; font-size: 24; fill: Color('#e2e8f0'); };
+let t3_layer = TextLayer('t3') #{ font-family: monospace; font-size: 24; fill: Color('#e2e8f0'); };
 t3_layer.apply { t3.drawTo(0, 0); }
 
-let bb3_layer = PathLayer('bb3') \${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
+let bb3_layer = PathLayer('bb3') #{ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
 bb3_layer.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
 let wy3 = calc(bb3.y - dim_above);
-let wd3 = PathLayer('wd3') \${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
+let wd3 = PathLayer('wd3') #{ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
 wd3.apply { M 0 wy3 h bb3.width  M 0 calc(wy3 - 3) v 6  M bb3.width calc(wy3 - 3) v 6 }
 
-let wl3 = TextLayer('wl3') \${ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
+let wl3 = TextLayer('wl3') #{ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
 wl3.apply { text(calc(bb3.width / 2), calc(wy3 - dim_label_above))\`w = \${round(bb3.width * 10) / 10}\` }
 
 let hx3 = calc(bb3.width + bracket_right);
-let hd3 = PathLayer('hd3') \${ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
+let hd3 = PathLayer('hd3') #{ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
 hd3.apply { M hx3 bb3.y v bb3.height  M calc(hx3 - 3) bb3.y h 6  M calc(hx3 - 3) calc(bb3.y + bb3.height) h 6 }
 
-let hl3 = TextLayer('hl3') \${ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
+let hl3 = TextLayer('hl3') #{ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
 hl3.apply { text(calc(hx3 + h_label_gap), calc(bb3.y + bb3.height / 2 + 3))\`h = \${round(bb3.height * 10) / 10}\` }
 
 g3.append(t3_layer, bb3_layer, wd3, wl3, hd3, hl3);
@@ -28917,9 +28923,9 @@ if (hl3_proj.intersects(t3_proj)) { log("WARN: row-24 h-label intersects text");
 
 // ─── Code block (top-right) ──────────────────────────────────────
 
-let code_group = GroupLayer('code-group') \${ translate-x: 360; translate-y: 80; };
+let code_group = GroupLayer('code-group') #{ translate-x: 360; translate-y: 80; };
 
-let code = TextLayer('code') \${ font-family: monospace; font-size: 9; fill: Color('#94a3b8'); text-anchor: start; };
+let code = TextLayer('code') #{ font-family: monospace; font-size: 9; fill: Color('#94a3b8'); text-anchor: start; };
 code.apply {
   text(0, 0)\`let label = &amp;{\`
   text(12, 12)\`text(0, 24) ...\`
@@ -28929,7 +28935,7 @@ code.apply {
   text(0, 76)\`// bb.height = fontSize * 1.2\`
 }
 
-let kw = TextLayer('kw') \${ font-family: monospace; font-size: 9; fill: Color('#c084fc'); text-anchor: start; };
+let kw = TextLayer('kw') #{ font-family: monospace; font-size: 9; fill: Color('#c084fc'); text-anchor: start; };
 kw.apply {
   text(0, 0)\`let\`
   text(0, 44)\`let\`
@@ -28939,10 +28945,10 @@ code_group.append(code, kw);
 
 // ─── Title ───────────────────────────────────────────────────────
 
-let title = TextLayer('title') \${ font-family: system-ui, sans-serif; font-size: 14; fill: Color('#e2e8f0'); text-anchor: start; };
+let title = TextLayer('title') #{ font-family: system-ui, sans-serif; font-size: 14; fill: Color('#e2e8f0'); text-anchor: start; };
 title.apply { text(30, 30)\`Measure Before You Place\` }
 
-let subtitle = TextLayer('subtitle') \${ font-family: system-ui, sans-serif; font-size: 9; fill: Color('#64748b'); text-anchor: start; };
+let subtitle = TextLayer('subtitle') #{ font-family: system-ui, sans-serif; font-size: 9; fill: Color('#64748b'); text-anchor: start; };
 subtitle.apply { text(30, 44)\`.boundingBox() returns { x, y, width, height }\` }
 </code>
   <img src="/blog/samples/post11/bbox-measurement.svg" alt="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text" loading="lazy">
@@ -28950,7 +28956,7 @@ subtitle.apply { text(30, 44)\`.boundingBox() returns { x, y, width, height }\` 
 <h2>Polar Projection with BBoxAnchor</h2>
 <p>Placing labels around a shape — node diagrams, compass roses, radial charts — is one of the most common annotation patterns in technical SVGs. The naive approach is to compute <code>x</code> and <code>y</code> offsets by hand, adjusting for text width and height at each position. A label to the right of a circle needs <code>x = centerX + radius + gap</code>; a label above needs <code>y = centerY - radius - textHeight</code>. Each direction requires different math, and every label with different content needs a different width offset. This is tedious, error-prone, and breaks the moment the text content or font size changes.</p>
 <p><a href="/docs#text-block-polar-projection"><code>.polarProject()</code></a> replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Node A\` } &lt;&lt; \${ <span class="pr">font-size</span>: <span class="num">14</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)\`Node A\` } &lt;&lt; #{ <span class="pr">font-size</span>: <span class="num">14</span>; };
 
 <span class="cm">// Place 80px from center at 45 degrees, anchored at center-left</span>
 <span class="kw">let</span> <span class="id">placed</span> = <span class="id">label</span>.<span class="id">polarProject</span>(<span class="num">100</span>, <span class="num">100</span>, <span class="num">45deg</span>, <span class="num">80</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>);
@@ -28968,12 +28974,12 @@ BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 500, 500); }
 
 // --- Title (top-level) ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -28985,7 +28991,7 @@ title.apply {
 
 // --- Annotations (top-level) ---
 
-let anno = TextLayer('anno') \${
+let anno = TextLayer('anno') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -28998,10 +29004,10 @@ anno.apply {
 
 // ─── Compass group ── hexagon + center + guide + radials + dots + labels ───
 
-let compass = GroupLayer('compass') \${ translate-x: 250; translate-y: 250; };
+let compass = GroupLayer('compass') #{ translate-x: 250; translate-y: 250; };
 
 // Central hexagon (coordinates relative to group origin)
-let hex = PathLayer('hex') \${
+let hex = PathLayer('hex') #{
   fill: Color('#3b82f615');
   stroke: Color('#3b82f6');
   stroke-width: 2;
@@ -29009,14 +29015,14 @@ let hex = PathLayer('hex') \${
 hex.apply { polygon(0, 0, 80, 6); }
 
 // Center marker
-let center_dot = PathLayer('center-dot') \${
+let center_dot = PathLayer('center-dot') #{
   fill: Color('#22c55e');
   stroke: none;
 };
 center_dot.apply { circle(0, 0, 3); }
 
 // Guide circle
-let guide = PathLayer('guide') \${
+let guide = PathLayer('guide') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "3 4";
@@ -29025,7 +29031,7 @@ let guide = PathLayer('guide') \${
 guide.apply { circle(0, 0, 140); }
 
 // Radial lines from hex edge to guide circle
-let radials = PathLayer('radials') \${
+let radials = PathLayer('radials') #{
   stroke: Color('#475569');
   stroke-width: 0.5;
   fill: none;
@@ -29042,7 +29048,7 @@ radials.apply {
 }
 
 // Anchor dots ON the guide circle (r=140)
-let dots = PathLayer('dots') \${
+let dots = PathLayer('dots') #{
   fill: Color('#f59e0b');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -29069,9 +29075,9 @@ let anchors = [
   BBoxAnchor.BottomRight,
 ];
 
-let label_styles = \${ font-family: monospace; font-size: 11; };
+let label_styles = #{ font-family: monospace; font-size: 11; };
 
-define TextLayer('labels') \${
+define TextLayer('labels') #{
   font-family: monospace;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -29110,9 +29116,9 @@ compass.append(hex, center_dot, guide, radials, dots, layer('labels'));
 
 // ─── Code block group ── code snippet at top-left ────────────────────
 
-let code_group = GroupLayer('code-block') \${ translate-x: 30; translate-y: 22; };
+let code_group = GroupLayer('code-block') #{ translate-x: 30; translate-y: 22; };
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -29127,7 +29133,7 @@ code.apply {
   text(0, 68)\`)\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#64748b');
@@ -29199,12 +29205,12 @@ code_group.append(code, kw);
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
-let divider = PathLayer('divider') \${
+let divider = PathLayer('divider') #{
   stroke: Color('#334155');
   stroke-width: 1;
   fill: none;
@@ -29224,7 +29230,7 @@ let points = [
   { x: 210, y: 140, name: "theta" },
 ];
 
-let label_styles = \${ font-family: monospace; font-size: 9; };
+let label_styles = #{ font-family: monospace; font-size: 9; };
 let dot_r = 3.5;
 let label_dist = 10;
 
@@ -29244,9 +29250,9 @@ let try_anchors = [
 // LEFT PANEL — Naive: all labels offset to the right (shows collisions)
 // ═══════════════════════════════════════════════════════════════════
 
-let left = GroupLayer('left-panel') \${ translate-x: 10; translate-y: 0; };
+let left = GroupLayer('left-panel') #{ translate-x: 10; translate-y: 0; };
 
-let left_title = TextLayer('l-title') \${
+let left_title = TextLayer('l-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -29254,7 +29260,7 @@ let left_title = TextLayer('l-title') \${
 };
 left_title.apply { text(140, 42)\`Naive Placement\` }
 
-let left_sub = TextLayer('l-sub') \${
+let left_sub = TextLayer('l-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#ef4444');
@@ -29263,7 +29269,7 @@ let left_sub = TextLayer('l-sub') \${
 left_sub.apply { text(140, 54)\`fixed offset — labels collide\` }
 
 // Dots
-let l_dots = PathLayer('l-dots') \${
+let l_dots = PathLayer('l-dots') #{
   fill: Color('#3b82f6');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -29273,7 +29279,7 @@ l_dots.apply {
 }
 
 // Labels — all placed to the right (naive)
-let l_labels = TextLayer('l-labels') \${
+let l_labels = TextLayer('l-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -29300,7 +29306,7 @@ l_labels.apply {
 }
 
 // Collision markers — red boxes around overlapping labels
-let l_collision_boxes = PathLayer('l-collisions') \${
+let l_collision_boxes = PathLayer('l-collisions') #{
   fill: Color('#ef444410');
   stroke: Color('#ef4444');
   stroke-width: 1;
@@ -29336,9 +29342,9 @@ log("Naive placement: ", naive_collisions, " collisions detected");
 // RIGHT PANEL — Smart: .polarProject() tries 8 angles per label
 // ═══════════════════════════════════════════════════════════════════
 
-let right = GroupLayer('right-panel') \${ translate-x: 300; translate-y: 0; };
+let right = GroupLayer('right-panel') #{ translate-x: 300; translate-y: 0; };
 
-let right_title = TextLayer('r-title') \${
+let right_title = TextLayer('r-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -29346,7 +29352,7 @@ let right_title = TextLayer('r-title') \${
 };
 right_title.apply { text(140, 42)\`Smart Placement\` }
 
-let right_sub = TextLayer('r-sub') \${
+let right_sub = TextLayer('r-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#22c55e');
@@ -29355,7 +29361,7 @@ let right_sub = TextLayer('r-sub') \${
 right_sub.apply { text(140, 54)\`polarProject tries 8 angles\` }
 
 // Dots
-let r_dots = PathLayer('r-dots') \${
+let r_dots = PathLayer('r-dots') #{
   fill: Color('#3b82f6');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -29365,7 +29371,7 @@ r_dots.apply {
 }
 
 // Labels — smart placement using polarProject with collision avoidance
-let r_labels = TextLayer('r-labels') \${
+let r_labels = TextLayer('r-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -29375,7 +29381,7 @@ let smart_placed = [];
 let smart_bboxes = [];
 
 // Leader lines from dot to label anchor point
-let r_leaders = PathLayer('r-leaders') \${
+let r_leaders = PathLayer('r-leaders') #{
   stroke: Color('#47556950');
   stroke-width: 0.5;
   fill: none;
@@ -29425,7 +29431,7 @@ r_labels.apply {
 }
 
 // Draw green bboxes around smartly placed labels
-let r_ok_rects = PathLayer('r-ok') \${
+let r_ok_rects = PathLayer('r-ok') #{
   fill: Color('#22c55e08');
   stroke: Color('#22c55e');
   stroke-width: 0.75;
@@ -29471,7 +29477,7 @@ log("Smart placement: ", smart_collisions, " collisions (0 expected)");
 // Shared: Title + Code block
 // ═══════════════════════════════════════════════════════════════════
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -29480,9 +29486,9 @@ let title = TextLayer('title') \${
 title.apply { text(300, 385)\`Label Placement: Naive vs polarProject()\` }
 
 // Code snippet
-let code_group = GroupLayer('code-block') \${ translate-x: 330; translate-y: 270; };
+let code_group = GroupLayer('code-block') #{ translate-x: 330; translate-y: 270; };
 
-let code = TextLayer('code') \${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -29499,7 +29505,7 @@ code.apply {
   text(0, 70)\`}\`
 }
 
-let kw = TextLayer('kw') \${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#c084fc');
@@ -29513,15 +29519,15 @@ kw.apply {
 code_group.append(code, kw);
 
 // Legend
-let leg = TextLayer('legend') \${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 7;
   fill: Color('#64748b');
   text-anchor: start;
 };
-let leg_red = PathLayer('leg-red') \${ fill: Color('#ef4444'); stroke: none; };
-let leg_green = PathLayer('leg-green') \${ fill: Color('#22c55e'); stroke: none; };
-let leg_blue = PathLayer('leg-blue') \${ fill: Color('#3b82f6'); stroke: none; };
+let leg_red = PathLayer('leg-red') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_green = PathLayer('leg-green') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_blue = PathLayer('leg-blue') #{ fill: Color('#3b82f6'); stroke: none; };
 
 leg_red.apply { rect(20, 370, 6, 6); }
 leg_green.apply { rect(20, 380, 6, 6); }
@@ -29559,12 +29565,12 @@ leg.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') \${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
-let divider = PathLayer('divider') \${
+let divider = PathLayer('divider') #{
   stroke: Color('#334155');
   stroke-width: 1;
   fill: none;
@@ -29573,7 +29579,7 @@ divider.apply { M 300 40 v 320 }
 
 // --- Title (top-level, not in a panel) ---
 
-let title = TextLayer('title') \${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -29585,7 +29591,7 @@ title.apply {
 
 // --- Guide circles (top-level) ---
 
-let guides = PathLayer('guides') \${
+let guides = PathLayer('guides') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -29600,10 +29606,10 @@ guides.apply {
 // LEFT PANEL — Manual positioning with hardcoded magic-number offsets
 // ═══════════════════════════════════════════════════════════════════
 
-let left_panel = GroupLayer('left-panel') \${ translate-x: 0; translate-y: 0; };
+let left_panel = GroupLayer('left-panel') #{ translate-x: 0; translate-y: 0; };
 
 // Section heading
-let left_title = TextLayer('left-title') \${
+let left_title = TextLayer('left-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -29611,7 +29617,7 @@ let left_title = TextLayer('left-title') \${
 };
 left_title.apply { text(150, 50)\`Manual Offsets\` }
 
-let left_sub = TextLayer('left-sub') \${
+let left_sub = TextLayer('left-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#ef4444');
@@ -29620,7 +29626,7 @@ let left_sub = TextLayer('left-sub') \${
 left_sub.apply { text(150, 64)\`fragile, breaks with font changes\` }
 
 // Hex shape
-let hex_left = PathLayer('hex-l') \${
+let hex_left = PathLayer('hex-l') #{
   fill: Color('#3b82f615');
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
@@ -29628,7 +29634,7 @@ let hex_left = PathLayer('hex-l') \${
 hex_left.apply { polygon(150, 210, 55, 6); }
 
 // Manual labels — hardcoded positions with magic numbers
-let manual_labels = TextLayer('manual') \${
+let manual_labels = TextLayer('manual') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -29646,7 +29652,7 @@ manual_labels.apply {
 
 // Red annotations showing the hardcoded offset math
 // Positioned along radial lines, further out from labels to avoid overlap
-let offset_anno = TextLayer('offsets') \${
+let offset_anno = TextLayer('offsets') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#ef4444');
@@ -29665,8 +29671,8 @@ offset_anno.apply {
 
 // --- Collision checks for left panel ---
 
-let mono_styles = \${ font-family: monospace; font-size: 10; };
-let anno_styles = \${ font-family: monospace; font-size: 7; };
+let mono_styles = #{ font-family: monospace; font-size: 10; };
+let anno_styles = #{ font-family: monospace; font-size: 7; };
 
 // Top label vs top annotation
 let l_top_label = (&amp;{ text(0, 10)\`Top\` } &lt;&lt; mono_styles).project(133, 138);
@@ -29694,10 +29700,10 @@ left_panel.append(left_title, left_sub, hex_left, manual_labels, offset_anno);
 // RIGHT PANEL — polarProject with BBoxAnchor (automatic alignment)
 // ═══════════════════════════════════════════════════════════════════
 
-let right_panel = GroupLayer('right-panel') \${ translate-x: 0; translate-y: 0; };
+let right_panel = GroupLayer('right-panel') #{ translate-x: 0; translate-y: 0; };
 
 // Section heading
-let right_title = TextLayer('right-title') \${
+let right_title = TextLayer('right-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -29705,7 +29711,7 @@ let right_title = TextLayer('right-title') \${
 };
 right_title.apply { text(450, 50)\`polarProject()\` }
 
-let right_sub = TextLayer('right-sub') \${
+let right_sub = TextLayer('right-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#22c55e');
@@ -29714,7 +29720,7 @@ let right_sub = TextLayer('right-sub') \${
 right_sub.apply { text(450, 64)\`adapts to any text or font size\` }
 
 // Hex shape
-let hex_right = PathLayer('hex-r') \${
+let hex_right = PathLayer('hex-r') #{
   fill: Color('#3b82f615');
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
@@ -29722,14 +29728,14 @@ let hex_right = PathLayer('hex-r') \${
 hex_right.apply { polygon(450, 210, 55, 6); }
 
 // Polar-projected labels
-let styles = \${ font-family: monospace; font-size: 10; };
+let styles = #{ font-family: monospace; font-size: 10; };
 
 let top_label = &amp;{ text(0, 10)\`Top\` } &lt;&lt; styles;
 let right_label = &amp;{ text(0, 10)\`Right\` } &lt;&lt; styles;
 let bottom_label = &amp;{ text(0, 10)\`Bottom\` } &lt;&lt; styles;
 let left_label = &amp;{ text(0, 10)\`Left\` } &lt;&lt; styles;
 
-let polar_labels = TextLayer('polar') \${
+let polar_labels = TextLayer('polar') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -29750,7 +29756,7 @@ polar_labels.apply {
 
 // Green annotations showing BBoxAnchor names
 // Placed further along the radial than the labels, with offset to avoid overlap
-let anchor_anno = TextLayer('anchors') \${
+let anchor_anno = TextLayer('anchors') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#22c55e');
@@ -29801,7 +29807,7 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 };
 
 <span class="cm">// 2. Style — merge font and color properties</span>
-<span class="kw">let</span> <span class="id">styled</span> = <span class="id">label</span> &lt;&lt; \${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
+<span class="kw">let</span> <span class="id">styled</span> = <span class="id">label</span> &lt;&lt; #{ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 
 <span class="cm">// 3. Measure — get bounding box before placing</span>
 <span class="kw">let</span> <span class="id">bb</span> = <span class="id">styled</span>.<span class="id">boundingBox</span>();
@@ -29858,12 +29864,12 @@ fn sinFract(i) {
   return s - floor(s);
 }
 
-let folk = PathLayer('sin-fract') \${
+let folk = PathLayer('sin-fract') #{
   fill: oklch(0.6 0.15 20);
   stroke: none;
   opacity: 0.85;
 };
-let builtin = PathLayer('hash01') \${
+let builtin = PathLayer('hash01') #{
   fill: oklch(0.55 0.18 260);
   stroke: none;
   opacity: 0.85;
@@ -29880,7 +29886,7 @@ builtin.apply {
   }
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -29893,7 +29899,7 @@ labels.apply {
 
 //-- Value-axis ticks: vertical position IS the hash output, 0 at the top
 //-- of each band, 1 at the bottom.
-let ticks = TextLayer('value-ticks') \${
+let ticks = TextLayer('value-ticks') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: #666;
@@ -29906,7 +29912,7 @@ ticks.apply {
   text(372, 207)\`1\`
 }
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(folk, builtin, labels, ticks);
 </code>
   <img src="/blog/samples/post32/01-two-hashes.svg" alt="72 indices through both hashes. Visually interchangeable — the difference is contractual, not aesthetic. The bottom row is bit-specified on every engine; the top row inherits Math.sin's engine-dependence." loading="lazy">
@@ -29962,7 +29968,7 @@ for (haloIndex in 16..1) {
   let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
-  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) \${
+  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;
@@ -30016,7 +30022,7 @@ fn plotCurve(curveLayer, envFn) {
   }
 }
 
-let axis = PathLayer('axis') \${ fill: none; stroke: #bbb; stroke-width: 1; };
+let axis = PathLayer('axis') #{ fill: none; stroke: #bbb; stroke-width: 1; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
@@ -30024,7 +30030,7 @@ axis.apply {
 
 //-- Reference line at value 1.0 — bump's peak and the plateau's flat top
 //-- both touch it exactly, which is what makes them composable kernels.
-let unitLine = PathLayer('unit-line') \${
+let unitLine = PathLayer('unit-line') #{
   fill: none;
   stroke: #555;
   stroke-width: 0.75;
@@ -30034,7 +30040,7 @@ unitLine.apply {
   M plotX calc(plotY - plotH)
   L calc(plotX + plotW) calc(plotY - plotH)
 }
-let unitLabel = TextLayer('unit-label') \${
+let unitLabel = TextLayer('unit-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #777;
@@ -30042,9 +30048,9 @@ let unitLabel = TextLayer('unit-label') \${
 };
 unitLabel.apply { text(56, 73)\`1.0\` }
 
-let hillLayer = PathLayer('env-bump') \${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
-let plateauLayer = PathLayer('env-plateau') \${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
-let rampLayer = PathLayer('env-ease') \${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+let hillLayer = PathLayer('env-bump') #{ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+let plateauLayer = PathLayer('env-plateau') #{ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+let rampLayer = PathLayer('env-ease') #{ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
 
 plotCurve(hillLayer, hill);
 plotCurve(plateauLayer, plateau);
@@ -30062,13 +30068,13 @@ let ribbon = spine.compoundVariableOffset() {|vo, pb|
   }
   vo.endCap(Cap.tapered(2, CurveContinuity.G0));
 };
-let strokeLayer = PathLayer('shaped-stroke') \${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+let strokeLayer = PathLayer('shaped-stroke') #{ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
 strokeLayer.apply {
   M calc(plotX + ribbon.anchor.x) calc(240 + ribbon.anchor.y)
   ribbon.draw();
 }
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -30083,26 +30089,26 @@ labels.apply {
 }
 
 //-- Legend: line samples drawn with each curve's real stroke + dashes.
-let swatchHill = PathLayer('swatch-bump') \${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+let swatchHill = PathLayer('swatch-bump') #{ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
 swatchHill.apply { M 252 27 L 268 27 }
-let legendHill = TextLayer('legend-bump') \${
+let legendHill = TextLayer('legend-bump') #{
   font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.72 0.15 260);
 };
 legendHill.apply { text(274, 30)\`bump()\` }
-let swatchPlateau = PathLayer('swatch-plateau') \${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+let swatchPlateau = PathLayer('swatch-plateau') #{ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
 swatchPlateau.apply { M 252 41 L 268 41 }
-let legendPlateau = TextLayer('legend-plateau') \${
+let legendPlateau = TextLayer('legend-plateau') #{
   font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.62 0.16 160);
 };
 legendPlateau.apply { text(274, 44)\`smoothstep window\` }
-let swatchRamp = PathLayer('swatch-ease') \${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+let swatchRamp = PathLayer('swatch-ease') #{ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
 swatchRamp.apply { M 252 55 L 268 55 }
-let legendRamp = TextLayer('legend-ease') \${
+let legendRamp = TextLayer('legend-ease') #{
   font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: #b0b0b0;
 };
 legendRamp.apply { text(274, 58)\`easeInOut()\` }
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(axis, unitLine, unitLabel, hillLayer, plateauLayer, rampLayer,
              strokeLayer, labels, swatchHill, legendHill, swatchPlateau,
              legendPlateau, swatchRamp, legendRamp);
@@ -30144,15 +30150,15 @@ fn texturedStroke(strokeLayer, y, freq) {
   }
 }
 
-let slow = PathLayer('freq-3') \${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
-let mid = PathLayer('freq-6') \${ fill: oklch(0.58 0.17 220); stroke: none; opacity: 0.9; };
-let fast = PathLayer('freq-12') \${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.9; };
+let slow = PathLayer('freq-3') #{ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+let mid = PathLayer('freq-6') #{ fill: oklch(0.58 0.17 220); stroke: none; opacity: 0.9; };
+let fast = PathLayer('freq-12') #{ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.9; };
 
 texturedStroke(slow, 55, 3);
 texturedStroke(mid, 130, 6);
 texturedStroke(fast, 205, 12);
 
-let labels = TextLayer('labels') \${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -30164,7 +30170,7 @@ labels.apply {
   text(40, 176)\`noise(t * 12) — chattering\`
 }
 
-let scene = GroupLayer('scene') \${};
+let scene = GroupLayer('scene') #{};
 scene.append(slow, mid, fast, labels);
 </code>
   <img src="/blog/samples/post32/04-noise-stroke.svg" alt="The same noise stream at three input scales. noise(t * 2) is one slow swell; noise(t * 11) chatters. Frequency is just multiplication — no new API." loading="lazy">
@@ -30215,7 +30221,7 @@ for (haloIndex in 16..1) {
   let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
-  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) \${
+  let haloLayer = PathLayer(\`halo-\${haloIndex}\`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;
@@ -30265,28 +30271,28 @@ let fg_hair = Color('#0d1638').alpha(0.28);
 let blue = Color(CSSVar('--stroke-color', #457b9d));
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') \${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('spine') \${
+define PathLayer('spine') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
 }
-define PathLayer('uniform') \${
+define PathLayer('uniform') #{
   stroke: fg_muted;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('variable') \${
+define PathLayer('variable') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define TextLayer('eyebrow') \${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -30351,37 +30357,37 @@ let blue = Color(CSSVar('--stroke-color', #457b9d));
 let red = Color('#e63946');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') \${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('rail') \${
+define PathLayer('rail') #{
   stroke: fg_muted;
   stroke-width: 1.5;
   fill: none;
 }
-define PathLayer('normals') \${
+define PathLayer('normals') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
   stroke-dasharray: "3 4";
 }
-define PathLayer('curve') \${
+define PathLayer('curve') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('knots') \${
+define PathLayer('knots') #{
   fill: red;
   stroke: none;
 }
-define PathLayer('leaders') \${
+define PathLayer('leaders') #{
   stroke: fg_hair;
   stroke-width: 0.5;
   fill: none;
 }
-define TextLayer('anno') \${
+define TextLayer('anno') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -30476,47 +30482,47 @@ let amber = Color('#e0a725');
 let blue = Color('#457b9d');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') \${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('spine') \${
+define PathLayer('spine') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
 }
-define PathLayer('g0') \${
+define PathLayer('g0') #{
   stroke: red;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g1') \${
+define PathLayer('g1') #{
   stroke: amber;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g2') \${
+define PathLayer('g2') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g1thin') \${
+define PathLayer('g1thin') #{
   stroke: amber;
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g2dash') \${
+define PathLayer('g2dash') #{
   stroke: blue;
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
   stroke-dasharray: "3 4";
 }
-define TextLayer('eyebrow') \${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -30612,28 +30618,28 @@ let blue = Color('#457b9d');
 let red = Color('#e63946');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') \${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('spine') \${
+define PathLayer('spine') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
 }
-define PathLayer('a') \${
+define PathLayer('a') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('b') \${
+define PathLayer('b') #{
   stroke: red;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define TextLayer('eyebrow') \${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -30711,35 +30717,35 @@ let amber = Color('#e0a725');
 let red = Color('#e63946');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') \${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('ribbonSym') \${
+define PathLayer('ribbonSym') #{
   fill: blue;
   fill-opacity: 0.45;
   stroke: blue;
   stroke-width: 1.5;
 }
-define PathLayer('ribbonAsym') \${
+define PathLayer('ribbonAsym') #{
   fill: amber;
   fill-opacity: 0.45;
   stroke: amber;
   stroke-width: 1.5;
 }
-define PathLayer('ribbonBand') \${
+define PathLayer('ribbonBand') #{
   fill: red;
   fill-opacity: 0.38;
   stroke: red;
   stroke-width: 1.5;
 }
-define PathLayer('rail') \${
+define PathLayer('rail') #{
   stroke: fg_muted;
   stroke-width: 1;
   fill: none;
   stroke-dasharray: "3 4";
 }
-define TextLayer('eyebrow') \${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -30884,17 +30890,17 @@ let fg_muted = Color('#0d1638').alpha(0.6);
 let blue = Color(CSSVar('--ribbon-color', #457b9d));
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') \${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('ribbon') \${
+define PathLayer('ribbon') #{
   fill: blue;
   fill-opacity: 0.45;
   stroke: blue;
   stroke-width: 1.5;
 }
-define TextLayer('eyebrow') \${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -30988,20 +30994,20 @@ let fg_muted = Color('#0d1638').alpha(0.6);
 let blue = Color(CSSVar('--stroke-color', #457b9d));
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') \${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('flourish') \${
+define PathLayer('flourish') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('glyph') \${
+define PathLayer('glyph') #{
   fill: fg;
 }
-define TextLayer('eyebrow') \${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -31013,7 +31019,7 @@ layer('bg').apply {
   rect(0, 0, 520, 400);
 }
 
-let styles = \${
+let styles = #{
   font-family: Baumans-Regular;
   font-size: 300;
 };
@@ -31061,29 +31067,29 @@ let red = Color(CSSVar('--band-inner', #e63946));
 let amber = Color(CSSVar('--band-middle', #e0a725));
 let blue = Color(CSSVar('--band-outer', #457b9d));
 
-define PathLayer('bg') \${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('bandOuter') \${
+define PathLayer('bandOuter') #{
   fill: blue;
   fill-opacity: 0.30;
   stroke: blue;
   stroke-width: 0.5;
 }
-define PathLayer('bandMiddle') \${
+define PathLayer('bandMiddle') #{
   fill: amber;
   fill-opacity: 0.38;
   stroke: amber;
   stroke-width: 0.5;
 }
-define PathLayer('bandInner') \${
+define PathLayer('bandInner') #{
   fill: red;
   fill-opacity: 0.32;
   stroke: red;
   stroke-width: 0.5;
 }
-define PathLayer('glyph') \${
+define PathLayer('glyph') #{
   fill: fg;
 }
 
@@ -31091,7 +31097,7 @@ layer('bg').apply {
   rect(0, 0, 520, 440);
 }
 
-let styles = \${
+let styles = #{
   font-family: Baumans-Regular;
   font-size: 300;
 };
@@ -31160,29 +31166,29 @@ let red = Color(CSSVar('--band-inner', #e63946));
 let amber = Color(CSSVar('--band-middle', #e0a725));
 let blue = Color(CSSVar('--band-outer', #457b9d));
 
-define PathLayer('bg') \${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('bandOuter') \${
+define PathLayer('bandOuter') #{
   fill: blue;
   fill-opacity: 0.30;
   stroke: blue;
   stroke-width: 0.4;
 }
-define PathLayer('bandMiddle') \${
+define PathLayer('bandMiddle') #{
   fill: amber;
   fill-opacity: 0.38;
   stroke: amber;
   stroke-width: 0.4;
 }
-define PathLayer('bandInner') \${
+define PathLayer('bandInner') #{
   fill: red;
   fill-opacity: 0.32;
   stroke: red;
   stroke-width: 0.4;
 }
-define PathLayer('glyphs') \${
+define PathLayer('glyphs') #{
   fill: fg;
 }
 
@@ -31190,7 +31196,7 @@ layer('bg').apply {
   rect(0, 0, 620, 280);
 }
 
-let styles = \${
+let styles = #{
   font-family: Baumans-Regular;
   font-size: 120;
 };
@@ -31298,7 +31304,7 @@ layer('glyphs').apply {
   <code>@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
 define ViewBox(0, 0, 900, 1200);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: #14101c;
   stroke: none;
 }
@@ -31308,7 +31314,7 @@ layer('background').apply {
 }
 
 // Six rings of petals, each ring rotated half a step from the last
-let petals = PathLayer('petals') \${
+let petals = PathLayer('petals') #{
   stroke: oklch(0.75 0.12 300);
   stroke-width: 2;
   fill: none;
@@ -31327,7 +31333,7 @@ petals.apply {
   }
 }
 
-let core = PathLayer('core') \${
+let core = PathLayer('core') #{
   fill: oklch(0.78 0.15 60);
   stroke: none;
 };
@@ -31336,16 +31342,16 @@ core.apply {
   circle(450, 540, 34);
 }
 
-let bloom = GroupLayer('bloom') \${};
+let bloom = GroupLayer('bloom') #{};
 bloom.append(petals, core);
 
 // Title drawn as glyph outlines in Baumans
-define PathLayer('title') \${
+define PathLayer('title') #{
   fill: #f6e9da;
   stroke: none;
 }
 
-let glyphs = PathBlock.fromGlyph('MERIDIAN BLOOM', \${
+let glyphs = PathBlock.fromGlyph('MERIDIAN BLOOM', #{
   font-family: Baumans-Regular;
   font-size: 44;
 });
@@ -31454,7 +31460,7 @@ let accentPlayground = Color('#10b981');
 let accentCli = Color('#f59e0b');
 
 // Background
-let bg = PathLayer('bg') \${
+let bg = PathLayer('bg') #{
   fill: bgColor;
   stroke: none;
 };
@@ -31463,7 +31469,7 @@ bg.apply {
 }
 
 // Central box — Language Services
-let centerBox = PathLayer('center-box') \${
+let centerBox = PathLayer('center-box') #{
   fill: centerBg;
   stroke: none;
 };
@@ -31471,7 +31477,7 @@ centerBox.apply {
   roundRect(140, 30, 280, 120, 8);
 }
 
-let centerLabels = TextLayer('center-labels') \${
+let centerLabels = TextLayer('center-labels') #{
   font-family: Inconsolata, monospace;
   fill: centerText;
   text-anchor: middle;
@@ -31481,7 +31487,7 @@ centerLabels.apply {
   text(280, 78)\`src/language-services/\`;
 }
 
-let funcLabels = TextLayer('func-labels') \${
+let funcLabels = TextLayer('func-labels') #{
   font-family: Inconsolata, monospace;
   font-size: 10;
   fill: Color('#94a3b8');
@@ -31496,7 +31502,7 @@ funcLabels.apply {
 }
 
 // Arrows
-let arrows = PathLayer('arrows') \${
+let arrows = PathLayer('arrows') #{
   fill: none;
   stroke: arrowColor;
   stroke-width: 2;
@@ -31514,7 +31520,7 @@ arrows.apply {
 }
 
 // Arrowheads
-let arrowheads = PathLayer('arrowheads') \${
+let arrowheads = PathLayer('arrowheads') #{
   fill: arrowColor;
   stroke: none;
 };
@@ -31537,7 +31543,7 @@ arrowheads.apply {
 }
 
 // Consumer boxes (narrower with gaps between them)
-let vscodeBorder = PathLayer('vscode-border') \${
+let vscodeBorder = PathLayer('vscode-border') #{
   fill: consumerBg;
   stroke: accentVscode;
   stroke-width: 2;
@@ -31546,7 +31552,7 @@ vscodeBorder.apply {
   roundRect(30, 220, 155, 70, 6);
 }
 
-let playgroundBorder = PathLayer('playground-border') \${
+let playgroundBorder = PathLayer('playground-border') #{
   fill: consumerBg;
   stroke: accentPlayground;
   stroke-width: 2;
@@ -31555,7 +31561,7 @@ playgroundBorder.apply {
   roundRect(202, 220, 155, 70, 6);
 }
 
-let cliBorder = PathLayer('cli-border') \${
+let cliBorder = PathLayer('cli-border') #{
   fill: consumerBg;
   stroke: accentCli;
   stroke-width: 2;
@@ -31565,7 +31571,7 @@ cliBorder.apply {
 }
 
 // Consumer labels
-let consumerLabels = TextLayer('consumer-labels') \${
+let consumerLabels = TextLayer('consumer-labels') #{
   font-family: Inconsolata, monospace;
   font-size: 13;
   fill: labelColor;
@@ -31578,7 +31584,7 @@ consumerLabels.apply {
   text(452, 252)\`CLI\`;
 }
 
-let consumerSubs = TextLayer('consumer-subs') \${
+let consumerSubs = TextLayer('consumer-subs') #{
   font-family: Inconsolata, monospace;
   font-size: 10;
   fill: sublabelColor;
@@ -31634,10 +31640,10 @@ consumerSubs.apply {
 <p>The formatter follows a style guide developed through a 25-question questionnaire where we reformatted real Pathogen code snippets and documented the reasoning. The core philosophy: <strong>expand for readability</strong>.</p>
 <p>Here&#39;s what formatting does to a typical style block:</p>
 <pre><code class="hljs language-pathogen"><span class="cm">// Before</span>
-<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) \${ <span class="pr">fill</span>: <span class="str">#0f172a</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
+<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) #{ <span class="pr">fill</span>: <span class="str">#0f172a</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
 
 <span class="cm">// After formatting</span>
-<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) \${
+<span class="kw">let</span> <span class="id">bg</span> = <span class="tp">PathLayer</span>(<span class="str">'bg'</span>) #{
   <span class="pr">fill</span>: <span class="str">#0f172a</span>;
   <span class="pr">stroke</span>: <span class="id">none</span>;
 };

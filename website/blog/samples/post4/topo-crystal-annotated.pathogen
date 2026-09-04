@@ -91,15 +91,15 @@ topo.interpolation = 'oklch';
 
 // ========== LEFT PANEL: Rendered Gradient ==========
 
-let bg = PathLayer('bg') ${ fill: #111; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111; stroke: none; };
 bg.apply { rect(0, 0, 840, 420); }
 
-let left_fill = PathLayer('left-fill') ${ fill: topo; stroke: #333; stroke-width: 1; };
+let left_fill = PathLayer('left-fill') #{ fill: topo; stroke: #333; stroke-width: 1; };
 left_fill.apply { roundRect(10, 10, 400, 400, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
-let schema_border = PathLayer('schema-border') ${ fill: none; stroke: #333; stroke-width: 1; };
+let schema_border = PathLayer('schema-border') #{ fill: none; stroke: #333; stroke-width: 1; };
 schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // Schematic offset: +420 to x for all projections
@@ -109,62 +109,62 @@ schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // --- Primary cluster outlines (center, blue) ---
 
-let o_hex = PathLayer('o-hex') ${ fill: none; stroke: #667; stroke-width: 1.2; };
+let o_hex = PathLayer('o-hex') #{ fill: none; stroke: #667; stroke-width: 1.2; };
 o_hex.apply { M 610 185 hex_r.draw() }
 
-let o_pent = PathLayer('o-pent') ${ fill: none; stroke: #8899bb; stroke-width: 1.2; };
+let o_pent = PathLayer('o-pent') #{ fill: none; stroke: #8899bb; stroke-width: 1.2; };
 o_pent.apply { M 615 188 pent_r.draw() }
 
-let o_sq = PathLayer('o-sq') ${ fill: none; stroke: #aabbdd; stroke-width: 1.2; };
+let o_sq = PathLayer('o-sq') #{ fill: none; stroke: #aabbdd; stroke-width: 1.2; };
 o_sq.apply { M 615 190 sq_r.draw() }
 
-let o_tri = PathLayer('o-tri') ${ fill: none; stroke: #ddd; stroke-width: 1.2; };
+let o_tri = PathLayer('o-tri') #{ fill: none; stroke: #ddd; stroke-width: 1.2; };
 o_tri.apply { M 618 192 tri_r.draw() }
 
 // --- Secondary cluster outlines (lower right, magenta) ---
 
-let o_wedge = PathLayer('o-wedge') ${ fill: none; stroke: #886; stroke-width: 1.2; };
+let o_wedge = PathLayer('o-wedge') #{ fill: none; stroke: #886; stroke-width: 1.2; };
 o_wedge.apply { M 730 295 wedge_r.draw() }
 
-let o_shard = PathLayer('o-shard') ${ fill: none; stroke: #bb88aa; stroke-width: 1.2; };
+let o_shard = PathLayer('o-shard') #{ fill: none; stroke: #bb88aa; stroke-width: 1.2; };
 o_shard.apply { M 735 298 shard_r.draw() }
 
 // --- Tertiary cluster outlines (upper left, green) ---
 
-let o_shard2 = PathLayer('o-shard2') ${ fill: none; stroke: #687; stroke-width: 1.2; };
+let o_shard2 = PathLayer('o-shard2') #{ fill: none; stroke: #687; stroke-width: 1.2; };
 o_shard2.apply { M 505 90 shard_r2.scale(1.3, 1.3).draw() }
 
-let o_tri2 = PathLayer('o-tri2') ${ fill: none; stroke: #9bb; stroke-width: 1.2; };
+let o_tri2 = PathLayer('o-tri2') #{ fill: none; stroke: #9bb; stroke-width: 1.2; };
 o_tri2.apply { M 512 97 tri_r.draw() }
 
 // --- Paint chips + labels: Primary cluster (right of center) ---
 
-let cp1 = PathLayer('cp1') ${ fill: #1e3a5f; stroke: #555; stroke-width: 0.5; };
+let cp1 = PathLayer('cp1') #{ fill: #1e3a5f; stroke: #555; stroke-width: 0.5; };
 cp1.apply { rect(700, 120, 12, 10); }
-let cp2 = PathLayer('cp2') ${ fill: #4a90d9; stroke: #555; stroke-width: 0.5; };
+let cp2 = PathLayer('cp2') #{ fill: #4a90d9; stroke: #555; stroke-width: 0.5; };
 cp2.apply { rect(700, 138, 12, 10); }
-let cp3 = PathLayer('cp3') ${ fill: #a5d8ff; stroke: #555; stroke-width: 0.5; };
+let cp3 = PathLayer('cp3') #{ fill: #a5d8ff; stroke: #555; stroke-width: 0.5; };
 cp3.apply { rect(700, 156, 12, 10); }
-let cp4 = PathLayer('cp4') ${ fill: #ffffff; stroke: #555; stroke-width: 0.5; };
+let cp4 = PathLayer('cp4') #{ fill: #ffffff; stroke: #555; stroke-width: 0.5; };
 cp4.apply { rect(700, 174, 12, 10); }
 
 // --- Paint chips + labels: Secondary cluster ---
 
-let cs1 = PathLayer('cs1') ${ fill: #5f1e3a; stroke: #555; stroke-width: 0.5; };
+let cs1 = PathLayer('cs1') #{ fill: #5f1e3a; stroke: #555; stroke-width: 0.5; };
 cs1.apply { rect(770, 280, 12, 10); }
-let cs2 = PathLayer('cs2') ${ fill: #d94a90; stroke: #555; stroke-width: 0.5; };
+let cs2 = PathLayer('cs2') #{ fill: #d94a90; stroke: #555; stroke-width: 0.5; };
 cs2.apply { rect(770, 298, 12, 10); }
 
 // --- Paint chips + labels: Tertiary cluster ---
 
-let ct1 = PathLayer('ct1') ${ fill: #3a5f1e; stroke: #555; stroke-width: 0.5; };
+let ct1 = PathLayer('ct1') #{ fill: #3a5f1e; stroke: #555; stroke-width: 0.5; };
 ct1.apply { rect(460, 55, 12, 10); }
-let ct2 = PathLayer('ct2') ${ fill: #90d94a; stroke: #555; stroke-width: 0.5; };
+let ct2 = PathLayer('ct2') #{ fill: #90d94a; stroke: #555; stroke-width: 0.5; };
 ct2.apply { rect(460, 73, 12, 10); }
 
 // --- Elevation labels ---
 
-let elev_primary = TextLayer('elev-primary') ${
+let elev_primary = TextLayer('elev-primary') #{
   font-family: monospace;
   font-size: 8;
   fill: #bbb;
@@ -177,7 +177,7 @@ elev_primary.apply {
   text(718, 183)`0.85`
 }
 
-let elev_secondary = TextLayer('elev-secondary') ${
+let elev_secondary = TextLayer('elev-secondary') #{
   font-family: monospace;
   font-size: 8;
   fill: #bbb;
@@ -188,7 +188,7 @@ elev_secondary.apply {
   text(788, 307)`0.50`
 }
 
-let elev_tertiary = TextLayer('elev-tertiary') ${
+let elev_tertiary = TextLayer('elev-tertiary') #{
   font-family: monospace;
   font-size: 8;
   fill: #bbb;
@@ -201,7 +201,7 @@ elev_tertiary.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') ${ fill: none; stroke: #444; stroke-width: 0.5; };
+let leaders = PathLayer('leaders') #{ fill: none; stroke: #444; stroke-width: 0.5; };
 leaders.apply {
   // Primary cluster leaders (from chips to center area)
   M 700 125 l -50 50
@@ -218,7 +218,7 @@ leaders.apply {
 
 // --- Cluster labels ---
 
-let cluster_labels = TextLayer('cluster-labels') ${
+let cluster_labels = TextLayer('cluster-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 7;
   fill: #666;
@@ -232,7 +232,7 @@ cluster_labels.apply {
 
 // --- Panel labels ---
 
-let panel_labels = TextLayer('panel-labels') ${
+let panel_labels = TextLayer('panel-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -245,5 +245,5 @@ panel_labels.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left_fill, schema_border, o_hex, o_pent, o_sq, o_tri, o_wedge, o_shard, o_shard2, o_tri2, cp1, cp2, cp3, cp4, cs1, cs2, ct1, ct2, elev_primary, elev_secondary, elev_tertiary, leaders, cluster_labels, panel_labels);

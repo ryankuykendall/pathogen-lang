@@ -10,15 +10,15 @@ let gridH = 140;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 200); }
 
 // Grid layers
 let flatColor = gridColor;
 let pointyColor = gridColor.hueShift(120);
 
-let flatLayer = PathLayer('flat') ${ stroke: flatColor; stroke-width: 0.4; fill: none; };
-let pointyLayer = PathLayer('pointy') ${ stroke: pointyColor; stroke-width: 0.4; fill: none; };
+let flatLayer = PathLayer('flat') #{ stroke: flatColor; stroke-width: 0.4; fill: none; };
+let pointyLayer = PathLayer('pointy') #{ stroke: pointyColor; stroke-width: 0.4; fill: none; };
 
 // Left: Flat-top (Edge)
 flatLayer.apply {
@@ -31,7 +31,7 @@ pointyLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;

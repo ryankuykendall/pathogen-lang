@@ -221,7 +221,7 @@ describe('analyzeScopes', () => {
     });
 
     it('keeps builtin references inside style-value interpolations', () => {
-      const info = analyze('define PathLayer("p") ${ opacity: ${ Point(1, 2).x }; }');
+      const info = analyze('define PathLayer("p") #{ opacity: ${ Point(1, 2).x }; }');
       expect(builtinRefs(info)).toContain('Point');
     });
   });
@@ -283,7 +283,7 @@ describe('analyzeScopes', () => {
     }
 
     it('emits a reference for a bare declared identifier as a value', () => {
-      const src = 'let c = #f00;\nlet s = ${ stroke: c; };';
+      const src = 'let c = #f00;\nlet s = #{ stroke: c; };';
       const refs = styleRefs(analyze(src));
       expect(refs).toHaveLength(1);
       expect(refs[0].name).toBe('c');
@@ -292,14 +292,14 @@ describe('analyzeScopes', () => {
     });
 
     it('emits references inside CSS function args (drop-shadow)', () => {
-      const src = 'let shadowColor = #000;\nlet s = ${ filter: drop-shadow(4px 4px 8px shadowColor); };';
+      const src = 'let shadowColor = #000;\nlet s = #{ filter: drop-shadow(4px 4px 8px shadowColor); };';
       const refs = styleRefs(analyze(src));
       expect(refs.map((r) => r.name)).toEqual(['shadowColor']);
       expectExactRange(src, refs[0]);
     });
 
     it('member heads are references; method names are not', () => {
-      const src = 'let c = #f00;\nlet s = ${ fill: c.alpha(40%); };';
+      const src = 'let c = #f00;\nlet s = #{ fill: c.alpha(40%); };';
       const refs = styleRefs(analyze(src));
       expect(refs.map((r) => r.name)).toEqual(['c']);
       expectExactRange(src, refs[0]);
@@ -307,39 +307,39 @@ describe('analyzeScopes', () => {
 
     it('function callee names are never references', () => {
       // `blur` is also a plausible variable name — as a callee it stays CSS.
-      const src = 'let blur = 4;\nlet s = ${ filter: blur(2px); };';
+      const src = 'let blur = 4;\nlet s = #{ filter: blur(2px); };';
       expect(styleRefs(analyze(src))).toHaveLength(0);
     });
 
     it('CSS keywords and undeclared identifiers are not references', () => {
-      const src = 'let s = ${ stroke-linejoin: round; text-anchor: middle; fill: tomato; };';
+      const src = 'let s = #{ stroke-linejoin: round; text-anchor: middle; fill: tomato; };';
       expect(styleRefs(analyze(src))).toHaveLength(0);
     });
 
     it('stdlib/builtin names are not references at CSS level', () => {
       // Evaluator keeps function-valued identifiers as raw CSS; `round` is
       // stdlib but must not be a reference unless the USER declares it.
-      const src = 'let s = ${ stroke-linejoin: round; };';
+      const src = 'let s = #{ stroke-linejoin: round; };';
       const info = analyze(src);
       expect(styleRefs(info)).toHaveLength(0);
     });
 
     it('a user declaration shadowing a CSS keyword IS a reference', () => {
-      const src = 'let round = #0f0;\nlet s = ${ stroke: round; };';
+      const src = 'let round = #0f0;\nlet s = #{ stroke: round; };';
       const refs = styleRefs(analyze(src));
       expect(refs.map((r) => r.name)).toEqual(['round']);
       expect(refs[0].declaration).not.toBeNull();
     });
 
     it('template interpolation identifiers use normal Pathogen semantics', () => {
-      const src = "let family = 'Inter';\nfn myFn(x) { return x; }\nlet s = ${ font-family: `${family} ${myFn(2)}`; };";
+      const src = "let family = 'Inter';\nfn myFn(x) { return x; }\nlet s = #{ font-family: `${family} ${myFn(2)}`; };";
       const refs = styleRefs(analyze(src));
       expect(refs.map((r) => r.name).sort()).toEqual(['family', 'myFn']);
       for (const r of refs) expectExactRange(src, r);
     });
 
     it('multiple references on one line each get exact distinct ranges', () => {
-      const src = 'let c = #f00;\nlet s = ${ filter: drop-shadow(1px 1px c) drop-shadow(2px 2px c); };';
+      const src = 'let c = #f00;\nlet s = #{ filter: drop-shadow(1px 1px c) drop-shadow(2px 2px c); };';
       const refs = styleRefs(analyze(src));
       expect(refs).toHaveLength(2);
       expect(refs[0].range.start.character).not.toBe(refs[1].range.start.character);
@@ -347,19 +347,19 @@ describe('analyzeScopes', () => {
     });
 
     it('style refs carry full-width ranges (end > start)', () => {
-      const src = 'let c = #f00;\nlet s = ${ stroke: c; };';
+      const src = 'let c = #f00;\nlet s = #{ stroke: c; };';
       const [ref] = styleRefs(analyze(src));
       expect(ref.range.end.character).toBeGreaterThan(ref.range.start.character);
     });
 
     it('stays lenient on incomplete blocks', () => {
-      const src = 'let c = #f00;\nlet s = ${\n  stroke: c;\n  filter: \n};';
+      const src = 'let c = #f00;\nlet s = #{\n  stroke: c;\n  filter: \n};';
       const refs = styleRefs(analyze(src));
       expect(refs.map((r) => r.name)).toEqual(['c']);
     });
 
     it('declarations after the style block are not in scope', () => {
-      const src = 'let s = ${ stroke: later; };\nlet later = #f00;';
+      const src = 'let s = #{ stroke: later; };\nlet later = #f00;';
       expect(styleRefs(analyze(src))).toHaveLength(0);
     });
   });
@@ -369,7 +369,7 @@ describe('references inside style-value interpolations', () => {
   it('member-head references land on the correct line (adjustLocs shared-loc regression)', () => {
     // A shared loc object between MemberExpression and its head used to be
     // line-shifted twice, doubling the line for refs inside interps.
-    const source = 'let p = { x: 1, y: 2 };\n\n\n\nlet s = ${ stroke-width: ${p.x}; };';
+    const source = 'let p = { x: 1, y: 2 };\n\n\n\nlet s = #{ stroke-width: ${p.x}; };';
     const info = analyzeScopes(new StringTextDocument(source));
     const pRefs = info.references.filter((r) => r.name === 'p');
     expect(pRefs.length).toBeGreaterThan(0);

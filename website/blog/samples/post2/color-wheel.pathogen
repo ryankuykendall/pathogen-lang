@@ -24,30 +24,30 @@ wheel_inner.innerFill = 'center';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Outer ring (donut) ---
 
-let ring = PathLayer('ring') ${ fill: wheel_outer; stroke: none; };
+let ring = PathLayer('ring') #{ fill: wheel_outer; stroke: none; };
 ring.apply { circle(200, 200, 155); closePath(); }
 
 // --- Inner disc ---
 
-let disc = PathLayer('disc') ${ fill: wheel_inner; stroke: none; };
+let disc = PathLayer('disc') #{ fill: wheel_inner; stroke: none; };
 disc.apply { circle(200, 200, 62); closePath(); }
 
 // --- Subtle frame ---
 
-let frame = PathLayer('frame') ${ fill: none; stroke: #333; stroke-width: 1; };
+let frame = PathLayer('frame') #{ fill: none; stroke: #333; stroke-width: 1; };
 frame.apply { circle(200, 200, 155); closePath(); }
 
-let inner_frame = PathLayer('inner-frame') ${ fill: none; stroke: #333; stroke-width: 0.5; };
+let inner_frame = PathLayer('inner-frame') #{ fill: none; stroke: #333; stroke-width: 0.5; };
 inner_frame.apply { circle(200, 200, 62); closePath(); }
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -59,5 +59,5 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, ring, disc, frame, inner_frame, title);

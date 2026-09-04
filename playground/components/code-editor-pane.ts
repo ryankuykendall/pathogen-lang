@@ -384,6 +384,22 @@ export class CodeEditorPane extends HTMLElement {
     });
   }
 
+  /**
+   * Replace the whole document as ONE undoable transaction. Unlike the `code`
+   * setter (a fresh EditorState for document loads), this goes through the
+   * update listener, so `code-change` fires and the store, autosave, and the
+   * recompile all follow exactly as they do for typed edits.
+   */
+  replaceDocument(text: string): void {
+    if (!this._editor) {
+      this._resetDocument(text);
+      return;
+    }
+    this._editor.dispatch({
+      changes: { from: 0, to: this._editor.state.doc.length, insert: text },
+    });
+  }
+
   /** Format the current document via the shared language-services formatter. */
   formatDocument(): void {
     if (!this._editor) return;

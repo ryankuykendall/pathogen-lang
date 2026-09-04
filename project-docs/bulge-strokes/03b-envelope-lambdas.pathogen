@@ -34,7 +34,7 @@ let px = 80;
 let taperCap = Cap.tapered(2, CurveContinuity.G0);
 let base = oklch(0.55 0.18 260);
 
-let guide = PathLayer('spine-guide') ${
+let guide = PathLayer('spine-guide') #{
   fill: none;
   stroke: #999;
   stroke-width: 0.75;
@@ -47,7 +47,7 @@ fn drawRow(name, ribbon, py, hueOffset) {
     spine.draw();
   }
   let rowColor = base.hueShift(hueOffset);
-  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  let rowLayer = PathLayer(`row-${name}`) #{ fill: rowColor; stroke: none; opacity: 0.9; };
   rowLayer.apply {
     M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
     ribbon.draw();
@@ -71,7 +71,7 @@ for (rowIndex in 0..2) {
   drawRow(`loop-${rowIndex}`, ribbon, calc(225 + rowIndex * 130), calc(60 + rowIndex * 60));
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;

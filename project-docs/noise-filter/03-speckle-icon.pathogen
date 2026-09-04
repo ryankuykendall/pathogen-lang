@@ -8,14 +8,14 @@ let riso = NoiseFilter() {|f|
 };
 
 // Backdrop
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 }
 layer('bg').apply { rect(0, 0, 200, 200); }
 
 // Star icon
-define PathLayer('star') ${
+define PathLayer('star') #{
   fill: oklch(60% 0.20 30);
   stroke: none;
   filter: riso;

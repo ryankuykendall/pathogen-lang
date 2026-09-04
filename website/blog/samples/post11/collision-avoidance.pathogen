@@ -3,12 +3,12 @@ define ViewBox(0, 0, 600, 400);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: Color('#334155');
   stroke-width: 1;
   fill: none;
@@ -28,7 +28,7 @@ let points = [
   { x: 210, y: 140, name: "theta" },
 ];
 
-let label_styles = ${ font-family: monospace; font-size: 9; };
+let label_styles = #{ font-family: monospace; font-size: 9; };
 let dot_r = 3.5;
 let label_dist = 10;
 
@@ -48,9 +48,9 @@ let try_anchors = [
 // LEFT PANEL — Naive: all labels offset to the right (shows collisions)
 // ═══════════════════════════════════════════════════════════════════
 
-let left = GroupLayer('left-panel') ${ translate-x: 10; translate-y: 0; };
+let left = GroupLayer('left-panel') #{ translate-x: 10; translate-y: 0; };
 
-let left_title = TextLayer('l-title') ${
+let left_title = TextLayer('l-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -58,7 +58,7 @@ let left_title = TextLayer('l-title') ${
 };
 left_title.apply { text(140, 42)`Naive Placement` }
 
-let left_sub = TextLayer('l-sub') ${
+let left_sub = TextLayer('l-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#ef4444');
@@ -67,7 +67,7 @@ let left_sub = TextLayer('l-sub') ${
 left_sub.apply { text(140, 54)`fixed offset — labels collide` }
 
 // Dots
-let l_dots = PathLayer('l-dots') ${
+let l_dots = PathLayer('l-dots') #{
   fill: Color('#3b82f6');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -77,7 +77,7 @@ l_dots.apply {
 }
 
 // Labels — all placed to the right (naive)
-let l_labels = TextLayer('l-labels') ${
+let l_labels = TextLayer('l-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -104,7 +104,7 @@ l_labels.apply {
 }
 
 // Collision markers — red boxes around overlapping labels
-let l_collision_boxes = PathLayer('l-collisions') ${
+let l_collision_boxes = PathLayer('l-collisions') #{
   fill: Color('#ef444410');
   stroke: Color('#ef4444');
   stroke-width: 1;
@@ -140,9 +140,9 @@ log("Naive placement: ", naive_collisions, " collisions detected");
 // RIGHT PANEL — Smart: .polarProject() tries 8 angles per label
 // ═══════════════════════════════════════════════════════════════════
 
-let right = GroupLayer('right-panel') ${ translate-x: 300; translate-y: 0; };
+let right = GroupLayer('right-panel') #{ translate-x: 300; translate-y: 0; };
 
-let right_title = TextLayer('r-title') ${
+let right_title = TextLayer('r-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -150,7 +150,7 @@ let right_title = TextLayer('r-title') ${
 };
 right_title.apply { text(140, 42)`Smart Placement` }
 
-let right_sub = TextLayer('r-sub') ${
+let right_sub = TextLayer('r-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#22c55e');
@@ -159,7 +159,7 @@ let right_sub = TextLayer('r-sub') ${
 right_sub.apply { text(140, 54)`polarProject tries 8 angles` }
 
 // Dots
-let r_dots = PathLayer('r-dots') ${
+let r_dots = PathLayer('r-dots') #{
   fill: Color('#3b82f6');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -169,7 +169,7 @@ r_dots.apply {
 }
 
 // Labels — smart placement using polarProject with collision avoidance
-let r_labels = TextLayer('r-labels') ${
+let r_labels = TextLayer('r-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -179,7 +179,7 @@ let smart_placed = [];
 let smart_bboxes = [];
 
 // Leader lines from dot to label anchor point
-let r_leaders = PathLayer('r-leaders') ${
+let r_leaders = PathLayer('r-leaders') #{
   stroke: Color('#47556950');
   stroke-width: 0.5;
   fill: none;
@@ -229,7 +229,7 @@ r_labels.apply {
 }
 
 // Draw green bboxes around smartly placed labels
-let r_ok_rects = PathLayer('r-ok') ${
+let r_ok_rects = PathLayer('r-ok') #{
   fill: Color('#22c55e08');
   stroke: Color('#22c55e');
   stroke-width: 0.75;
@@ -275,7 +275,7 @@ log("Smart placement: ", smart_collisions, " collisions (0 expected)");
 // Shared: Title + Code block
 // ═══════════════════════════════════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -284,9 +284,9 @@ let title = TextLayer('title') ${
 title.apply { text(300, 385)`Label Placement: Naive vs polarProject()` }
 
 // Code snippet
-let code_group = GroupLayer('code-block') ${ translate-x: 330; translate-y: 270; };
+let code_group = GroupLayer('code-block') #{ translate-x: 330; translate-y: 270; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -303,7 +303,7 @@ code.apply {
   text(0, 70)`}`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#c084fc');
@@ -317,15 +317,15 @@ kw.apply {
 code_group.append(code, kw);
 
 // Legend
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 7;
   fill: Color('#64748b');
   text-anchor: start;
 };
-let leg_red = PathLayer('leg-red') ${ fill: Color('#ef4444'); stroke: none; };
-let leg_green = PathLayer('leg-green') ${ fill: Color('#22c55e'); stroke: none; };
-let leg_blue = PathLayer('leg-blue') ${ fill: Color('#3b82f6'); stroke: none; };
+let leg_red = PathLayer('leg-red') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_green = PathLayer('leg-green') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_blue = PathLayer('leg-blue') #{ fill: Color('#3b82f6'); stroke: none; };
 
 leg_red.apply { rect(20, 370, 6, 6); }
 leg_green.apply { rect(20, 380, 6, 6); }

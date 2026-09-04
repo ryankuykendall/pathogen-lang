@@ -329,7 +329,7 @@ code.hljs {
   <code>@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
 define ViewBox(0, 0, 900, 1200);
 
-define default PathLayer('background') ${
+define default PathLayer('background') #{
   fill: #14101c;
   stroke: none;
 }
@@ -339,7 +339,7 @@ layer('background').apply {
 }
 
 // Six rings of petals, each ring rotated half a step from the last
-let petals = PathLayer('petals') ${
+let petals = PathLayer('petals') #{
   stroke: oklch(0.75 0.12 300);
   stroke-width: 2;
   fill: none;
@@ -358,7 +358,7 @@ petals.apply {
   }
 }
 
-let core = PathLayer('core') ${
+let core = PathLayer('core') #{
   fill: oklch(0.78 0.15 60);
   stroke: none;
 };
@@ -367,16 +367,16 @@ core.apply {
   circle(450, 540, 34);
 }
 
-let bloom = GroupLayer('bloom') ${};
+let bloom = GroupLayer('bloom') #{};
 bloom.append(petals, core);
 
 // Title drawn as glyph outlines in Baumans
-define PathLayer('title') ${
+define PathLayer('title') #{
   fill: #f6e9da;
   stroke: none;
 }
 
-let glyphs = PathBlock.fromGlyph('MERIDIAN BLOOM', ${
+let glyphs = PathBlock.fromGlyph('MERIDIAN BLOOM', #{
   font-family: Baumans-Regular;
   font-size: 44;
 });

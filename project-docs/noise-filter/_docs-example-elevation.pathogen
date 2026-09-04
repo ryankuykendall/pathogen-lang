@@ -1,6 +1,6 @@
 // Canonical source for the ElevationShadowFilter Generated SVG Output section
 // in docs/filters.md. If you change this file, update the doc accordingly.
-define PathLayer('surface') ${ fill: oklch(94% 0.01 80); stroke: none; }
+define PathLayer('surface') #{ fill: oklch(94% 0.01 80); stroke: none; }
 layer('surface').apply { rect(0, 0, 200, 200); }
 
 let card = ElevationShadowFilter() {|f|
@@ -8,5 +8,5 @@ let card = ElevationShadowFilter() {|f|
   f.color = oklch(20% 0.02 280);
 };
 
-define PathLayer('card') ${ fill: white; stroke: none; filter: card; }
+define PathLayer('card') #{ fill: white; stroke: none; filter: card; }
 layer('card').apply { roundRect(40, 60, 120, 80, 12); }

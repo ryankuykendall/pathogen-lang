@@ -6,14 +6,14 @@ define ViewBox(0, 0, 520, 280);
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -23,7 +23,7 @@ title.apply {
   text(30, 30)`Reactive Tint / Shade Scale`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -50,14 +50,14 @@ let sh = 44;
 let sr = 4;
 let steps = 7;
 
-let row_label = TextLayer('row-label') ${
+let row_label = TextLayer('row-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: end;
 };
 
-let pct_label = TextLayer('pct-label') ${
+let pct_label = TextLayer('pct-label') #{
   font-family: monospace;
   font-size: 7;
   fill: #64748b;
@@ -86,7 +86,7 @@ let tints = [
 
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`lt_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`lt_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -119,7 +119,7 @@ let shades = [
 
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`dk_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`dk_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -134,10 +134,10 @@ pct_label.apply {
 // Code annotation
 // ═══════════════════════════════════════
 
-let code_bg = PathLayer('code-bg') ${ fill: #1e293b; stroke: #334155; stroke-width: 1; };
+let code_bg = PathLayer('code-bg') #{ fill: #1e293b; stroke: #334155; stroke-width: 1; };
 code_bg.apply { roundRect(30, 228, 460, 40, 4); }
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -148,7 +148,7 @@ code.apply {
   text(42, 259)`let tint = base.lighten(20%);`
 }
 
-let code_kw = TextLayer('code-kw') ${
+let code_kw = TextLayer('code-kw') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;
@@ -159,7 +159,7 @@ code_kw.apply {
   text(42, 259)`let`
 }
 
-let code_comment = TextLayer('code-comment') ${
+let code_comment = TextLayer('code-comment') #{
   font-family: monospace;
   font-size: 9;
   fill: #64748b;

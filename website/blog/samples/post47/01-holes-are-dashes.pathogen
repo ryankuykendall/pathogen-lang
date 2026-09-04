@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 170);
 
-let leather = PathLayer('leather') ${
+let leather = PathLayer('leather') #{
   fill: #7c5335;
   stroke: none;
 };
@@ -12,17 +12,17 @@ layer('leather').apply {
   rect(0, 0, 480, 170);
 }
 
-let scene = GroupLayer('scene') ${};
-let seamGhost = PathLayer('seam-ghost') ${
+let scene = GroupLayer('scene') #{};
+let seamGhost = PathLayer('seam-ghost') #{
   stroke: #00000040;
   stroke-width: 1;
   fill: none;
 };
-let holes = PathLayer('holes') ${
+let holes = PathLayer('holes') #{
   fill: #f8fafc;
   stroke: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #f1e9dd;
@@ -37,13 +37,13 @@ seamGhost.apply {
   M 70 92 seam.draw()
 }
 
-let pricks = seam.dash(${
+let pricks = seam.dash(#{
   stroke-dasharray: 0.01 16;
 });
 
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
 for (prick in seamHoles) {
-  let dot = prick.path.outline(${
+  let dot = prick.path.outline(#{
     stroke-width: 5;
     stroke-linecap: round;
   });

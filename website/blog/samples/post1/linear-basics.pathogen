@@ -33,13 +33,13 @@ let sun_grad = LinearGradient('sunstreak', 0, 0, 1, 0) {|g|
 
 // --- Layers ---
 
-let sky = PathLayer('sky-fill') ${ fill: sky_grad; stroke: none; };
+let sky = PathLayer('sky-fill') #{ fill: sky_grad; stroke: none; };
 sky.apply { rect(0, 0, 400, 300); }
 
-let sun = PathLayer('sun-streak') ${ fill: sun_grad; stroke: none; };
+let sun = PathLayer('sun-streak') #{ fill: sun_grad; stroke: none; };
 sun.apply { rect(0, 155, 400, 30); }
 
-let far_mtns = PathLayer('far-mountains') ${ fill: mtn_grad; stroke: none; };
+let far_mtns = PathLayer('far-mountains') #{ fill: mtn_grad; stroke: none; };
 far_mtns.apply {
   M 0 220
   L 40 175 L 90 200 L 140 155 L 200 130
@@ -47,7 +47,7 @@ far_mtns.apply {
   L 400 300 L 0 300 Z
 }
 
-let near_mtns = PathLayer('near-mountains') ${ fill: mtn_grad; stroke: none; opacity: 0.7; };
+let near_mtns = PathLayer('near-mountains') #{ fill: mtn_grad; stroke: none; opacity: 0.7; };
 near_mtns.apply {
   M 0 260
   L 50 220 L 100 240 L 170 195 L 230 225
@@ -55,13 +55,13 @@ near_mtns.apply {
   L 400 300 L 0 300 Z
 }
 
-let ground = PathLayer('ground-fill') ${ fill: ground_grad; stroke: none; };
+let ground = PathLayer('ground-fill') #{ fill: ground_grad; stroke: none; };
 ground.apply { rect(0, 255, 400, 45); }
 
-let frame = PathLayer('frame') ${ fill: none; stroke: #1a0e2e; stroke-width: 4; };
+let frame = PathLayer('frame') #{ fill: none; stroke: #1a0e2e; stroke-width: 4; };
 frame.apply { rect(0, 0, 400, 300); }
 
 // --- Scene Organization ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(sky, sun, far_mtns, near_mtns, ground, frame);

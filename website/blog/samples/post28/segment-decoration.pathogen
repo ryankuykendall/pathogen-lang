@@ -1,6 +1,6 @@
 define ViewBox(0, 0, 240, 140);
-define default PathLayer('card') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
-define PathLayer('studs') ${ fill: #7c3aed; }
+define default PathLayer('card') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('studs') #{ fill: #7c3aed; }
 
 // Name the lid while drawing it...
 let card = @{

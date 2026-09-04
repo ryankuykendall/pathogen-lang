@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 400, 210);
 
-let range = PathLayer('mountain') ${ fill: oklch(0.45 0.08 265); stroke: none; };
+let range = PathLayer('mountain') #{ fill: oklch(0.45 0.08 265); stroke: none; };
 range.apply {
   M 20 185
   for (i in 0..140) {
@@ -16,7 +16,7 @@ range.apply {
   Z
 }
 
-let mist = PathLayer('mist') ${ fill: oklch(0.6 0.05 265); stroke: none; opacity: 0.5; };
+let mist = PathLayer('mist') #{ fill: oklch(0.6 0.05 265); stroke: none; opacity: 0.5; };
 mist.apply {
   M 20 185
   for (i in 0..140) {
@@ -28,7 +28,7 @@ mist.apply {
   Z
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

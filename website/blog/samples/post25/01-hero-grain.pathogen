@@ -1,7 +1,7 @@
 define ViewBox(0, 0, 400, 200);
 // Hero: one line of Pathogen — five SVG filter primitives in the output.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -14,7 +14,7 @@ let grain = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
 };
 
-let disc = PathLayer('disc') ${
+let disc = PathLayer('disc') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: grain;

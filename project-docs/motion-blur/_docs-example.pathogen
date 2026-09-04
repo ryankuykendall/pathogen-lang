@@ -8,7 +8,7 @@ let smear = MotionBlurFilter() {|f|
   f.samples = 12;
 };
 
-define PathLayer('car') ${
+define PathLayer('car') #{
   fill: oklch(60% 0.2 250);
   filter: smear;
 }

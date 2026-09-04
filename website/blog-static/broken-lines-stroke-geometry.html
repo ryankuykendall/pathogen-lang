@@ -322,7 +322,7 @@ turn that paint back into geometry.</p>
 partitions a path using the same properties CSS uses, and hands back
 every piece — the inked dashes <em>and</em> the spaces between them — as real
 paths:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">pieces</span> = <span class="id">wave</span>.<span class="id">dash</span>(${
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">pieces</span> = <span class="id">wave</span>.<span class="id">dash</span>(#{
   <span class="pr">stroke-dasharray</span>: <span class="num">26</span> <span class="num">14</span>;
 });
 <span class="cm">// [{ path, kind: 'dash' | 'gap', t0, t1 }, ...]</span>
@@ -385,7 +385,7 @@ loop over the same array.</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -393,19 +393,19 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') ${};
-let gaps = PathLayer('gaps') ${
+let scene = GroupLayer('scene') #{};
+let gaps = PathLayer('gaps') #{
   stroke: #94a3b840;
   stroke-width: 1.5;
   fill: none;
 };
-let dashes = PathLayer('dashes') ${
+let dashes = PathLayer('dashes') #{
   stroke: #38bdf8;
   stroke-width: 4;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -418,7 +418,7 @@ let wave = @{
   c 40 -70 80 -70 120 0
 };
 
-let pieces = wave.dash(${
+let pieces = wave.dash(#{
   stroke-dasharray: 26 14;
 });
 
@@ -453,7 +453,7 @@ the first half of the wave goes blue, the rest amber.</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -461,25 +461,25 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') ${};
-let gaps = PathLayer('gaps') ${
+let scene = GroupLayer('scene') #{};
+let gaps = PathLayer('gaps') #{
   stroke: #94a3b840;
   stroke-width: 1.5;
   fill: none;
 };
-let earlyDashes = PathLayer('early-dashes') ${
+let earlyDashes = PathLayer('early-dashes') #{
   stroke: #38bdf8;
   stroke-width: 4;
   stroke-linecap: round;
   fill: none;
 };
-let lateDashes = PathLayer('late-dashes') ${
+let lateDashes = PathLayer('late-dashes') #{
   stroke: #f59e0b;
   stroke-width: 4;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -492,7 +492,7 @@ let wave = @{
   c 40 -70 80 -70 120 0
 };
 
-let pieces = wave.dash(${
+let pieces = wave.dash(#{
   stroke-dasharray: 22 12;
 });
 
@@ -534,7 +534,7 @@ extension is the cap rule from the list above, drawn to scale.</p>
 
 define ViewBox(0, 0, 480, 190);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -542,23 +542,23 @@ layer('bg').apply {
   rect(0, 0, 480, 190);
 }
 
-let scene = GroupLayer('scene') ${};
-let solids = PathLayer('solids') ${
+let scene = GroupLayer('scene') #{};
+let solids = PathLayer('solids') #{
   fill: #f59e0b;
   stroke: none;
 };
-let spines = PathLayer('spines') ${
+let spines = PathLayer('spines') #{
   stroke: #0f172a;
   stroke-width: 1;
   fill: none;
 };
-let capRule = PathLayer('cap-rule') ${
+let capRule = PathLayer('cap-rule') #{
   stroke: #94a3b880;
   stroke-width: 1;
   stroke-dasharray: 4 3;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -583,7 +583,7 @@ let anchors = [
 
 for ([capName, columnIndex] in capNames) {
   let anchorX = anchors[columnIndex];
-  let solid = stem.outline(${
+  let solid = stem.outline(#{
     stroke-width: 22;
     stroke-linecap: ${capName};
   });
@@ -620,7 +620,7 @@ path; this applies per piece, because each piece is its own path.</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -628,17 +628,17 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') ${};
-let gaps = PathLayer('gaps') ${
+let scene = GroupLayer('scene') #{};
+let gaps = PathLayer('gaps') #{
   stroke: #94a3b840;
   stroke-width: 1.5;
   fill: none;
 };
-let swellingDashes = PathLayer('swelling-dashes') ${
+let swellingDashes = PathLayer('swelling-dashes') #{
   fill: #f59e0b;
   stroke: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -651,7 +651,7 @@ let wave = @{
   c 40 -65 80 -65 120 0
 };
 
-let pieces = wave.dash(${
+let pieces = wave.dash(#{
   stroke-dasharray: 24 22;
 });
 
@@ -661,7 +661,7 @@ for (piece in pieces) {
       M 60 120 piece.path.draw()
     }
   } else {
-    let swollen = piece.path.outline(${
+    let swollen = piece.path.outline(#{
       stroke-width: calc(3 + piece.t0 * 16);
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -695,7 +695,7 @@ a cutting path or a boolean operand.</p>
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -703,18 +703,18 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let plateLayer = PathLayer('plate') ${
+let scene = GroupLayer('scene') #{};
+let plateLayer = PathLayer('plate') #{
   fill: #38bdf830;
   stroke: #38bdf8;
   stroke-width: 1.5;
 };
-let crossLayer = PathLayer('cross') ${
+let crossLayer = PathLayer('cross') #{
   fill: #f59e0b30;
   stroke: #f59e0b;
   stroke-width: 1.5;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -733,13 +733,13 @@ let track = @{
   m 25 60
   h 140
 };
-let slotPieces = track.dash(${
+let slotPieces = track.dash(#{
   stroke-dasharray: 26 26;
 });
 let plaque = plate;
 for (piece in slotPieces) {
   if (piece.kind == 'dash') {
-    let slot = piece.path.outline(${
+    let slot = piece.path.outline(#{
       stroke-width: 16;
       stroke-linecap: round;
     });
@@ -756,7 +756,7 @@ let crossing = @{
   m -55 -45
   v 90
 };
-let welded = crossing.outline(${
+let welded = crossing.outline(#{
   stroke-width: 26;
   stroke-linecap: round;
   outline-overlap: union;
@@ -787,7 +787,7 @@ phases here are <code>0%</code>, <code>4%</code>, <code>8%</code>.</p>
 
 define ViewBox(0, 0, 480, 210);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -795,23 +795,23 @@ layer('bg').apply {
   rect(0, 0, 480, 210);
 }
 
-let scene = GroupLayer('scene') ${};
-let startDots = PathLayer('start-dots') ${
+let scene = GroupLayer('scene') #{};
+let startDots = PathLayer('start-dots') #{
   fill: #f59e0b;
   stroke: none;
 };
-let rings = PathLayer('rings') ${
+let rings = PathLayer('rings') #{
   stroke: #94a3b850;
   stroke-width: 1;
   fill: none;
 };
-let marchers = PathLayer('marchers') ${
+let marchers = PathLayer('marchers') #{
   stroke: #38bdf8;
   stroke-width: 5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -845,7 +845,7 @@ for ([phase, columnIndex] in phases) {
     M anchorX 92 ring.draw()
   }
   let anchored = ring.startAt(phase);
-  let pieces = anchored.dash(${
+  let pieces = anchored.dash(#{
     stroke-dasharray: 24 17;
   });
   for (piece in pieces) {

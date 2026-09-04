@@ -5,7 +5,7 @@
 
 define ViewBox(0, 0, 400, 220);
 
-let dots = PathLayer('field') ${ fill: oklch(0.66 0.14 220); stroke: none; };
+let dots = PathLayer('field') #{ fill: oklch(0.66 0.14 220); stroke: none; };
 dots.apply {
   for (row in 0..16) {
     for (col in 0..29) {
@@ -15,7 +15,7 @@ dots.apply {
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

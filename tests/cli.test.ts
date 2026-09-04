@@ -421,7 +421,7 @@ describe('CLI', () => {
       const outputFile = join(TMP_DIR, 'text-test.svg');
       writeFileSync(
         inputFile,
-        "define TextLayer('labels') ${ font-size: 14; fill: #333; }\nlayer('labels').apply {\n  text(50, 45)`Hello`\n}",
+        "define TextLayer('labels') #{ font-size: 14; fill: #333; }\nlayer('labels').apply {\n  text(50, 45)`Hello`\n}",
       );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputFile}`]);
 
@@ -444,7 +444,7 @@ describe('CLI', () => {
     it('generates <text> with rotation', () => {
       const inputFile = join(TMP_DIR, 'text-rot.svgx');
       const outputFile = join(TMP_DIR, 'text-rot.svg');
-      writeFileSync(inputFile, "define TextLayer('t') ${}\nlayer('t').apply {\n  text(10, 20, 45deg)`Rotated`\n}");
+      writeFileSync(inputFile, "define TextLayer('t') #{}\nlayer('t').apply {\n  text(10, 20, 45deg)`Rotated`\n}");
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputFile}`]);
 
       const content = readFileSync(outputFile, 'utf-8');
@@ -460,7 +460,7 @@ describe('CLI', () => {
       const outputFile = join(TMP_DIR, 'text-tspan.svg');
       writeFileSync(
         inputFile,
-        "define TextLayer('t') ${}\nlayer('t').apply {\n  text(10, 20) {\n    tspan()`first`\n    tspan(0, 16)`second`\n  }\n}",
+        "define TextLayer('t') #{}\nlayer('t').apply {\n  text(10, 20) {\n    tspan()`first`\n    tspan(0, 16)`second`\n  }\n}",
       );
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputFile}`]);
 
@@ -475,7 +475,7 @@ describe('CLI', () => {
     it('escapes XML special characters in text', () => {
       const inputFile = join(TMP_DIR, 'text-escape.svgx');
       const outputFile = join(TMP_DIR, 'text-escape.svg');
-      writeFileSync(inputFile, "define TextLayer('t') ${}\nlayer('t').apply {\n  text(10, 20)`a < b & c > d`\n}");
+      writeFileSync(inputFile, "define TextLayer('t') #{}\nlayer('t').apply {\n  text(10, 20)`a < b & c > d`\n}");
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputFile}`]);
 
       const content = readFileSync(outputFile, 'utf-8');
@@ -499,7 +499,7 @@ describe('CLI', () => {
         inputFile,
         `
         let c = Color(CSSVar('--base-color', '#e63946'));
-        define PathLayer('a') \${ fill: c; }
+        define PathLayer('a') #{ fill: c; }
         layer('a').apply { M 0 0 L 100 100 }
       `,
       );
@@ -522,7 +522,7 @@ describe('CLI', () => {
         `
         let c1 = Color(CSSVar('--base', '#e63946'));
         let c2 = Color(CSSVar('--accent', '#457b9d'));
-        define PathLayer('a') \${ fill: c1; stroke: c2; }
+        define PathLayer('a') #{ fill: c1; stroke: c2; }
         layer('a').apply { M 0 0 L 100 100 }
       `,
       );
@@ -541,7 +541,7 @@ describe('CLI', () => {
         inputFile,
         `
         let c = Color('#e63946');
-        define PathLayer('a') \${ fill: c; }
+        define PathLayer('a') #{ fill: c; }
         layer('a').apply { M 0 0 }
       `,
       );
@@ -630,7 +630,7 @@ describe('CLI', () => {
         let g = ConicGradient('cg', 100, 100);
         g.stop(0, Color('red'));
         g.stop(1, Color('blue'));
-        define PathLayer('p') \${ fill: url(#cg); }
+        define PathLayer('p') #{ fill: url(#cg); }
         layer('p').apply { rect(0, 0, 200, 200); }
       `,
       );
@@ -658,7 +658,7 @@ describe('CLI', () => {
         let g = LinearGradient('lg', 0, 0, 200, 200);
         g.stop(0, Color('red'));
         g.stop(1, Color('blue'));
-        define PathLayer('p') \${ fill: url(#lg); }
+        define PathLayer('p') #{ fill: url(#lg); }
         layer('p').apply { rect(0, 0, 200, 200); }
       `,
       );
@@ -681,7 +681,7 @@ describe('CLI', () => {
         inputFile,
         `let fontPath = "../fixtures/fonts/Inter-Regular.ttf";
 @font fontPath;
-let g = PathBlock.fromGlyph("A", \${ font-family: Inter-Regular; font-size: 48; });
+let g = PathBlock.fromGlyph("A", #{ font-family: Inter-Regular; font-size: 48; });
 M 10 100
 g[0].draw()
 `,
@@ -710,7 +710,7 @@ g[0].draw()
       writeFileSync(
         inputFile,
         `@font "Baumans";
-let g = PathBlock.fromGlyph("A", \${ font-family: Baumans; font-size: 48; });
+let g = PathBlock.fromGlyph("A", #{ font-family: Baumans; font-size: 48; });
 M 10 100
 g[0].draw()
 `,
@@ -732,8 +732,8 @@ g[0].draw()
         inputFile,
         `@font "Playfair Display" 700;
 @font "Raleway" 200;
-let po = PathBlock.fromGlyph("O", \${ font-family: "Playfair Display"; font-weight: 700; font-size: 48; });
-let ro = PathBlock.fromGlyph("O", \${ font-family: "Raleway"; font-weight: 200; font-size: 48; });
+let po = PathBlock.fromGlyph("O", #{ font-family: "Playfair Display"; font-weight: 700; font-size: 48; });
+let ro = PathBlock.fromGlyph("O", #{ font-family: "Raleway"; font-weight: 200; font-size: 48; });
 M 10 100
 po[0].draw()
 M 80 100
@@ -754,7 +754,7 @@ ro[0].draw()
       writeFileSync(
         inputFile,
         `@font "Baumans";
-let g = PathBlock.fromGlyph("A", \${ font-family: Baumans; font-size: 48; });
+let g = PathBlock.fromGlyph("A", #{ font-family: Baumans; font-size: 48; });
 M 10 100
 g[0].draw()
 `,

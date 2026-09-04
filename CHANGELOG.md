@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-03 (style blocks open with `#{`)
+
+### Changed
+
+#### Core
+
+- **BREAKING: the style-block opener is `#{ … }`, no longer `${ … }`.** `${` is now only ever an interpolation — inside backtick templates and inside style-block values — and `#{` is only ever a style block: `let s = #{ fill: red; stroke-width: ${w}; };`, `define PathLayer('a') #{ stroke: blue; }`, `p.dash(#{ stroke-dasharray: 10 5; })`. There is no transitional alias. Why: both constructs were spelled `${`, told apart only by Lezer's contextual token groups and a pile of text scanners guessing which one a given `${` was. That ambiguity was the root of a whole class of bugs and dead ends (LR-structuring the block silently broke every interpolation; externalizing the content token collapsed the token groups; the 2026-09-01 completion misroute offered CSS property names inside an expression). With distinct openers the grammar needs no precedence rule between them, every scanner keys on a unique two-character sequence, and a `$` inside a style block can only mean interpolation. The sigil family is now `@{` path block, `&{` text block, `#{` style block — `#` being the CSS hash. Documented in `docs/syntax.md` and `docs/layers.md`.
+- **A legacy `${` in block position is a parse error that names the fix**: `Style blocks open with '#{ … }' — '${ … }' is only template interpolation now. Change this '${' to '#{'`, reported once at the opener (the cascade inside the old block is suppressed) by the CLI, the playground, and VS Code. Two quick fixes accompany it: *Change '${' to '#{'* for the one at hand, and *Convert all legacy '${' style blocks to '#{'*, which finds every opener with the parser (iterated to a fixpoint) rather than a text scan, so interpolations are never touched.
+- The path-argument tokenizer no longer swallows a bare `#` (one with no hex digit after it) into the arguments, so `#{` directly after a path command line parses as a style block.
+
+#### Playground / VS Code
+
+- Typing `#` in expression position offers the `#{…}` style-block snippet (and declaration snippets at statement start); typing `$` inside a style value still offers the `${expr}` interpolation snippet. `#` joins the LSP completion trigger characters. The TextMate `style-block` scope begins at `#{`; the bare `${…}` interpolation rule inside it is unchanged. The `newfile` and `define` VS Code snippets emit `#{`.
+
+#### Documentation / corpus
+
+- Every published docs page, blog post, blog sample, guideline, test fixture, playground template, and VS Code fixture was migrated mechanically by `scripts/migrate-style-opener.ts`: the FROZEN pre-change grammar (`scripts/legacy-style-opener/`) is built at runtime and its own parse tree decides which `${` are openers, so roughly 4,400 openers changed and none of the ~1,300 interpolations did. Verified by byte-identical CLI output for all 264 blog samples before and after, unchanged render snapshots, and the full test suite. `project-docs/**/*.md` primers keep the syntax of their day; their `.pathogen` demos are migrated so they still compile.
+
 ## [0.8.0] - 2026-09-03 (retire the annotated evaluator)
 
 ### Removed

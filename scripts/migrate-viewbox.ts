@@ -76,7 +76,7 @@ interface Workspace {
   [key: string]: unknown;
 }
 
-const DEFAULT_LAYER_BLOCK = `define default PathLayer('main-path-layer') \${
+const DEFAULT_LAYER_BLOCK = `define default PathLayer('main-path-layer') #{
   fill: #bbb;
   stroke: #222;
   stroke-width: 1;

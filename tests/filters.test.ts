@@ -31,7 +31,7 @@ function compileFilter(body: string) {
     let f = NoiseFilter() {|f|
       ${body}
     };
-    define PathLayer('layer') \${
+    define PathLayer('layer') #{
       fill: hotpink;
       filter: f;
     }
@@ -182,7 +182,7 @@ describe('NoiseFilter', () => {
     it('filter: <FilterValue> resolves to url(#id)', () => {
       const result = compile(`
         let f = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
-        define PathLayer('a') \${ fill: hotpink; filter: f; }
+        define PathLayer('a') #{ fill: hotpink; filter: f; }
         layer('a').apply { M 0 0 L 10 0 L 10 10 L 0 10 Z }
       `);
       const layer = result.layers.find((l) => l.name === 'a')!;
@@ -192,9 +192,9 @@ describe('NoiseFilter', () => {
     it('reusing one filter across N layers emits a single filter def', () => {
       const result = compile(`
         let g = NoiseFilter() {|f| f.style = NoiseFilterStyle.Paper; };
-        define PathLayer('a') \${ fill: red; filter: g; }
-        define PathLayer('b') \${ fill: blue; filter: g; }
-        define PathLayer('c') \${ fill: green; filter: g; }
+        define PathLayer('a') #{ fill: red; filter: g; }
+        define PathLayer('b') #{ fill: blue; filter: g; }
+        define PathLayer('c') #{ fill: green; filter: g; }
         layer('a').apply { M 0 0 L 10 0 Z }
         layer('b').apply { M 0 0 L 10 0 Z }
         layer('c').apply { M 0 0 L 10 0 Z }
@@ -212,11 +212,11 @@ describe('NoiseFilter', () => {
       // ...; };`) is not parseable today. The bare form `filter: NoiseFilter();`
       // still works — and yields a default Grain filter, one def per site.
       const result = compile(`
-        define PathLayer('a') \${
+        define PathLayer('a') #{
           fill: red;
           filter: NoiseFilter();
         }
-        define PathLayer('b') \${
+        define PathLayer('b') #{
           fill: blue;
           filter: NoiseFilter();
         }
@@ -320,7 +320,7 @@ describe('NoiseFilter', () => {
       let f = NoiseFilter() {|f|
         ${body}
       };
-      define PathLayer('a') \${ fill: red; filter: f; }
+      define PathLayer('a') #{ fill: red; filter: f; }
       layer('a').apply { M 0 0 L 10 0 L 10 10 L 0 10 Z }
     `;
 
@@ -405,7 +405,7 @@ describe('NoiseFilter', () => {
 function wrapInLayer(constructorSource: string) {
   return `
     let f = ${constructorSource};
-    define PathLayer('layer') \${ fill: hotpink; filter: f; }
+    define PathLayer('layer') #{ fill: hotpink; filter: f; }
     layer('layer').apply { M 0 0 L 10 0 L 10 10 L 0 10 Z }
   `;
 }

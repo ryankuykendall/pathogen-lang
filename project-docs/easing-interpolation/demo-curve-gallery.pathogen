@@ -14,9 +14,9 @@ let plotH = 44;
 let originX = 30;
 let originY = 30;
 
-let boxes = PathLayer('boxes') ${ stroke: #d0d0d8; stroke-width: 1; fill: none; stroke-dasharray: 2 2; };
-let curves = PathLayer('curves') ${ stroke: #c0518e; stroke-width: 1.5; fill: none; stroke-linejoin: round; };
-let labels = TextLayer('labels') ${ font-family: system-ui, sans-serif; font-size: 9; fill: #666; };
+let boxes = PathLayer('boxes') #{ stroke: #d0d0d8; stroke-width: 1; fill: none; stroke-dasharray: 2 2; };
+let curves = PathLayer('curves') #{ stroke: #c0518e; stroke-width: 1.5; fill: none; stroke-linejoin: round; };
+let labels = TextLayer('labels') #{ font-family: system-ui, sans-serif; font-size: 9; fill: #666; };
 
 for (row in 0..6) {
   for (col in 0..2) {

@@ -3,7 +3,7 @@
 // colors readable but adds photographic texture.
 
 // Background panel so the portrait reads against a chosen color
-define PathLayer('bg') ${ fill: oklch(92% 0.03 70); stroke: none; }
+define PathLayer('bg') #{ fill: oklch(92% 0.03 70); stroke: none; }
 layer('bg').apply { rect(0, 0, 200, 200); }
 
 let grain = NoiseFilter() {|f|
@@ -12,7 +12,7 @@ let grain = NoiseFilter() {|f|
 };
 
 // Face
-define PathLayer('face') ${
+define PathLayer('face') #{
   fill: oklch(78% 0.10 60);
   stroke: none;
   filter: grain;
@@ -20,7 +20,7 @@ define PathLayer('face') ${
 layer('face').apply { circle(100, 110, 60); }
 
 // Cheeks
-define PathLayer('cheeks') ${
+define PathLayer('cheeks') #{
   fill: oklch(68% 0.18 30);
   stroke: none;
   filter: grain;
@@ -31,7 +31,7 @@ layer('cheeks').apply {
 }
 
 // Eyes
-define PathLayer('eyes') ${
+define PathLayer('eyes') #{
   fill: oklch(20% 0.02 250);
   stroke: none;
   filter: grain;
@@ -42,7 +42,7 @@ layer('eyes').apply {
 }
 
 // Hair
-define PathLayer('hair') ${
+define PathLayer('hair') #{
   fill: oklch(25% 0.07 30);
   stroke: none;
   filter: grain;

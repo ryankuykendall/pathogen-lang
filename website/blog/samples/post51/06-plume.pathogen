@@ -17,14 +17,14 @@ let envelope = {|t| smoothstep(0, 0.3, t) * smoothstep(1, 0.7, t)};
 let blue = Color(0.5, 0.15, 260);
 let pink = Color(0.65, 0.19, 350);
 
-let plume = GroupLayer('plume') ${};
+let plume = GroupLayer('plume') #{};
 for (strandIndex in 0..11) {
   let strandT = strandIndex / 11;
   let tipY = lerp(210, 50, spread(strandT));
   let halfCycles = 1 + strandIndex % 3;
   let amplitude = 10 + 6 * (strandIndex % 2);
   let tint = blue.mix(pink, strandT);
-  let strand = PathLayer(`strand-${strandIndex}`) ${
+  let strand = PathLayer(`strand-${strandIndex}`) #{
     stroke: tint;
     stroke-width: 1.25;
     stroke-linecap: round;
@@ -43,7 +43,7 @@ for (strandIndex in 0..11) {
   plume.append(strand);
 }
 
-let seed = PathLayer('seed') ${
+let seed = PathLayer('seed') #{
   fill: oklch(0.35 0.02 260);
   stroke: none;
 };

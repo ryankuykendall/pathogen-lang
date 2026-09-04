@@ -1,6 +1,6 @@
 define ViewBox(0, 0, 240, 140);
 
-define default PathLayer('marks') ${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -8,7 +8,7 @@ define default PathLayer('marks') ${
 
 // Inside a text body the case bodies hold text, so a label and its bar
 // come from the same score with the same ranges.
-define TextLayer('labels') ${
+define TextLayer('labels') #{
   font-size: 14;
   font-family: monospace;
   fill: #8a93a6;

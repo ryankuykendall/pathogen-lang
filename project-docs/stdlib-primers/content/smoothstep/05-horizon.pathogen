@@ -14,7 +14,7 @@ for (i in 0..59) {
   let H = 300 - 100 * m;
   let C = 0.05 + 0.06 * m;
   let c = Color(L, C, H);
-  let strip = PathLayer(`strip-${i}`) ${ fill: c; stroke: none; };
+  let strip = PathLayer(`strip-${i}`) #{ fill: c; stroke: none; };
   strip.apply {
     rect(15, calc(15 + i * 3.34), 370, 3.5);
   }
@@ -25,12 +25,12 @@ for (k in 0..5) {
   let u = k / 5;
   let fade = smoothstep(1, 0.2, u);
   let r = 6 + 16 * (1 - fade);
-  let ring = PathLayer(`halo-${k}`) ${ stroke: oklch(0.88 0.09 75); stroke-width: 1; fill: none; opacity: calc(0.15 + fade * 0.5); };
+  let ring = PathLayer(`halo-${k}`) #{ stroke: oklch(0.88 0.09 75); stroke-width: 1; fill: none; opacity: calc(0.15 + fade * 0.5); };
   ring.apply {
     circle(300, 96, r);
   }
 }
-let sun = PathLayer('sun') ${ fill: oklch(0.92 0.1 75); stroke: none; };
+let sun = PathLayer('sun') #{ fill: oklch(0.92 0.1 75); stroke: none; };
 sun.apply {
   circle(300, 96, 6);
 }

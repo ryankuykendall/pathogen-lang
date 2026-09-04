@@ -7,7 +7,7 @@ let topBarColor = Color(CSSVar('--bar-top', #1a1a2e));
 let textColor = Color('#2f2f2f');
 let gridColor = Color('#d4c9b8');
 
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 600, 600); }
 
 // === Chart parameters ===
@@ -37,19 +37,19 @@ let overlap = rad(0.3);
 let barSweep = calc(sliceAngle + overlap);
 
 // === Grid rings ===
-let grid = PathLayer('grid') ${ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
+let grid = PathLayer('grid') #{ fill: none; stroke: gridColor; stroke-width: 0.5; stroke-dasharray: 3 4; };
 grid.apply {
   circle(cx, cy, calc(innerR + (maxR - innerR) * 5 / maxVal));
   circle(cx, cy, calc(innerR + (maxR - innerR) * 10 / maxVal));
 }
 
 // Center circle
-let center = PathLayer('center') ${ fill: none; stroke: gridColor; stroke-width: 0.6; };
+let center = PathLayer('center') #{ fill: none; stroke: gridColor; stroke-width: 0.6; };
 center.apply { circle(cx, cy, innerR); }
 
 // === Draw bars ===
-let barsAll = PathLayer('bars-all') ${ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
-let barsTop = PathLayer('bars-top') ${ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
+let barsAll = PathLayer('bars-all') #{ fill: allBarColor; stroke: bgColor; stroke-width: 0.5; };
+let barsTop = PathLayer('bars-top') #{ fill: topBarColor; stroke: bgColor; stroke-width: 0.5; };
 
 for ([d, i] in data) {
   let sliceFrom = calc(startOffset + i * sliceAngle);
@@ -73,9 +73,9 @@ for ([d, i] in data) {
 }
 
 // === Legend ===
-let swAll = PathLayer('sw-all') ${ fill: allBarColor; stroke: none; };
-let swTop = PathLayer('sw-top') ${ fill: topBarColor; stroke: none; };
-let legLabels = TextLayer('legend') ${
+let swAll = PathLayer('sw-all') #{ fill: allBarColor; stroke: none; };
+let swTop = PathLayer('sw-top') #{ fill: topBarColor; stroke: none; };
+let legLabels = TextLayer('legend') #{
   font-size: 10;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -89,7 +89,7 @@ legLabels.apply {
 }
 
 // === Title ===
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -100,5 +100,5 @@ title.apply {
   text(300, 30)`8 categories with radialWedge() — for ([d, i] in data) { ... }`
 }
 
-let g = GroupLayer('all') ${};
+let g = GroupLayer('all') #{};
 g.append(bg, grid, center, barsAll, barsTop, swAll, swTop, legLabels, title);

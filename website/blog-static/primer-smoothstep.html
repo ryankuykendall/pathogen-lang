@@ -353,7 +353,7 @@ let plotW = 300;
 let plotY = 150;
 let plotH = 90;
 
-let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
@@ -362,7 +362,7 @@ axis.apply {
 }
 
 //-- Hard step: 0 before the midpoint of the window, 1 after.
-let cliff = PathLayer('cliff') ${ stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; };
+let cliff = PathLayer('cliff') #{ stroke: oklch(0.6 0.1 20); stroke-width: 1.25; stroke-dasharray: 4 3; fill: none; };
 cliff.apply {
   M plotX plotY
   L calc(plotX + plotW * 0.5) plotY
@@ -371,7 +371,7 @@ cliff.apply {
 }
 
 //-- Straight ramp across the window.
-let ramp = PathLayer('ramp') ${ stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; };
+let ramp = PathLayer('ramp') #{ stroke: oklch(0.72 0.06 260); stroke-width: 1.25; fill: none; };
 ramp.apply {
   M plotX plotY
   L calc(plotX + plotW * 0.3) plotY
@@ -380,7 +380,7 @@ ramp.apply {
 }
 
 //-- The S-curve.
-let scurve = PathLayer('smoothstep') ${ stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; };
+let scurve = PathLayer('smoothstep') #{ stroke: oklch(0.62 0.16 260); stroke-width: 2.25; fill: none; };
 scurve.apply {
   M plotX plotY
   for (i in 1..96) {
@@ -390,7 +390,7 @@ scurve.apply {
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -403,7 +403,7 @@ labels.apply {
   text(50, 36)`smoothstep — bold · ramp — thin · step — dashed`
 }
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(axis, cliff, ramp, scurve, labels);
 </code>
   <img src="/blog/samples/post36/01-cliff-ramp-scurve.svg" alt="Three routes across the 0.3–0.7 window: hard step (dashed), straight ramp (thin), smoothstep (bold)." loading="lazy">
@@ -424,7 +424,7 @@ half. Bottom row: the markers are <strong>reversed</strong> — <code>smoothstep
 
 define ViewBox(0, 0, 400, 170);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -435,7 +435,7 @@ labels.apply {
   text(24, 100)`smoothstep(1.0, 0.6, t) — reversed markers, fade out`
 }
 
-let fadeIn = PathLayer('fade-in') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+let fadeIn = PathLayer('fade-in') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 fadeIn.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -444,7 +444,7 @@ fadeIn.apply {
   }
 }
 
-let fadeOut = PathLayer('fade-out') ${ fill: oklch(0.68 0.13 200); stroke: none; };
+let fadeOut = PathLayer('fade-out') #{ fill: oklch(0.68 0.13 200); stroke: none; };
 fadeOut.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -475,19 +475,19 @@ let plotW = 300;
 let plotY = 110;
 let plotH = 70;
 
-let unitLine = PathLayer('unit-line') ${ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
+let unitLine = PathLayer('unit-line') #{ stroke: oklch(0.5 0.02 260); stroke-width: 0.75; stroke-dasharray: 2 4; fill: none; };
 unitLine.apply {
   M plotX calc(plotY - plotH)
   L calc(plotX + plotW) calc(plotY - plotH)
 }
 
-let axis = PathLayer('axis') ${ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.55 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
 }
 
-let curve = PathLayer('window-curve') ${ stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; };
+let curve = PathLayer('window-curve') #{ stroke: oklch(0.62 0.16 160); stroke-width: 2; fill: none; };
 curve.apply {
   M plotX plotY
   for (i in 1..96) {
@@ -497,7 +497,7 @@ curve.apply {
   }
 }
 
-let bars = PathLayer('bars') ${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
+let bars = PathLayer('bars') #{ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
 bars.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -508,7 +508,7 @@ bars.apply {
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -519,7 +519,7 @@ labels.apply {
   text(356, 44)`1.0`
 }
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(unitLine, axis, curve, bars, labels);
 </code>
   <img src="/blog/samples/post36/03-plateau.svg" alt="Uphill times downhill: rise, hold at a genuinely flat 1.0 (the dashed line), fall. The plot and the bars share one win lambda — the picture and the application are the same function." loading="lazy">
@@ -573,7 +573,7 @@ fn band(name, y0, windowed) {
   };
   let spine = @{ l 330 0 };
   let rib = spine.compoundVariableOffset() &lt;&lt; mk;
-  let stroke = PathLayer(name) ${ fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; };
+  let stroke = PathLayer(name) #{ fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; };
   stroke.apply {
     M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
     rib.draw();
@@ -583,7 +583,7 @@ fn band(name, y0, windowed) {
 band('blunt', 45, 0);
 band('windowed', 115, 1);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -622,7 +622,7 @@ for (i in 0..59) {
   let H = 300 - 100 * m;
   let C = 0.05 + 0.06 * m;
   let c = Color(L, C, H);
-  let strip = PathLayer(`strip-${i}`) ${ fill: c; stroke: none; };
+  let strip = PathLayer(`strip-${i}`) #{ fill: c; stroke: none; };
   strip.apply {
     rect(15, calc(15 + i * 3.32), 370, 3.45);
   }
@@ -633,12 +633,12 @@ for (k in 0..5) {
   let u = k / 5;
   let fade = smoothstep(1, 0.2, u);
   let r = 6 + 16 * (1 - fade);
-  let ring = PathLayer(`halo-${k}`) ${ stroke: oklch(0.88 0.09 75); stroke-width: 1; fill: none; opacity: calc(0.15 + fade * 0.5); };
+  let ring = PathLayer(`halo-${k}`) #{ stroke: oklch(0.88 0.09 75); stroke-width: 1; fill: none; opacity: calc(0.15 + fade * 0.5); };
   ring.apply {
     circle(300, 96, r);
   }
 }
-let sun = PathLayer('sun') ${ fill: oklch(0.92 0.1 75); stroke: none; };
+let sun = PathLayer('sun') #{ fill: oklch(0.92 0.1 75); stroke: none; };
 sun.apply {
   circle(300, 96, 6);
 }

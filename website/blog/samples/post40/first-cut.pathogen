@@ -3,7 +3,7 @@ define ViewBox(0, 0, 480, 240);
 // Left: the pieces drawn at the same position — the shape reassembles.
 // Right: the same pieces pushed apart to show the cut.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -11,30 +11,30 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') ${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.5;
   fill: none;
 };
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 4 4;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let knifeLabel = TextLayer('knife-label') ${
+let knifeLabel = TextLayer('knife-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #ef4444;

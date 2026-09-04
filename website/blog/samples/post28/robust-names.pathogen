@@ -1,5 +1,5 @@
 define ViewBox(0, 0, 240, 130);
-define default PathLayer('tabs') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define default PathLayer('tabs') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
 
 // Index-based: filletAtVertex(1, 12) rounds "the second corner" — until an
 // edit inserts a notch earlier in the path and every index shifts.

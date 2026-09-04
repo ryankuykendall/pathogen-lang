@@ -8,7 +8,7 @@ Try this simple example in the playground:
 
 ```
 define ViewBox(0, 0, 200, 200);
-define default PathLayer('main-path-layer') ${
+define default PathLayer('main-path-layer') #{
   fill: #bbb;
   stroke: #222;
   stroke-width: 1;

@@ -75,63 +75,63 @@ describe('inner style grammar', () => {
     const corpus: Array<{ label: string; source: string }> = [
       {
         label: 'well-formed multi-declaration block',
-        source: 'let s = ${\n  fill: #cc0000;\n  stroke-width: 4;\n  opacity: 0.5;\n};',
+        source: 'let s = #{\n  fill: #cc0000;\n  stroke-width: 4;\n  opacity: 0.5;\n};',
       },
       {
         label: 'function values with nested commas',
-        source: 'let s = ${ filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5)); };',
+        source: 'let s = #{ filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5)); };',
       },
       {
         label: 'chained filter functions',
-        source: 'let s = ${ filter: blur(2px) brightness(1.2); };',
+        source: 'let s = #{ filter: blur(2px) brightness(1.2); };',
       },
       {
         label: 'template value with interpolation',
-        source: 'let s = ${ font-family: `${family}`; fill: red; };',
+        source: 'let s = #{ font-family: `${family}`; fill: red; };',
       },
       {
         label: 'bare whole-value interpolation',
-        source: 'let s = ${ stroke-linecap: ${v}; fill: red; };',
+        source: 'let s = #{ stroke-linecap: ${v}; fill: red; };',
       },
       {
         label: 'bare interpolation list',
-        source: 'let s = ${ stroke-dasharray: ${cell} ${cell}; };',
+        source: 'let s = #{ stroke-dasharray: ${cell} ${cell}; };',
       },
       {
         label: 'bare interpolation in function args',
-        source: 'let s = ${ filter: blur(${x}px); };',
+        source: 'let s = #{ filter: blur(${x}px); };',
       },
       {
         label: 'quoted strings containing ; and }',
-        source: 'let s = ${ content: "a;b}c"; fill: none; };',
+        source: 'let s = #{ content: "a;b}c"; fill: none; };',
       },
       {
         label: 'font-family fallback list',
-        source: 'let s = ${ font-family: "Inter", serif; };',
+        source: 'let s = #{ font-family: "Inter", serif; };',
       },
       {
         label: 'line comments between declarations',
-        source: 'let s = ${\n  // header\n  fill: red;\n  // footer\n  stroke: blue;\n};',
+        source: 'let s = #{\n  // header\n  fill: red;\n  // footer\n  stroke: blue;\n};',
       },
       {
         label: 'multi-line function args',
-        source: 'let s = ${\n  filter: drop-shadow(\n    4px 4px\n    black\n  );\n};',
+        source: 'let s = #{\n  filter: drop-shadow(\n    4px 4px\n    black\n  );\n};',
       },
       {
         label: 'dasharray multi-token value',
-        source: 'let s = ${ stroke-dasharray: 4 1 2 3; };',
+        source: 'let s = #{ stroke-dasharray: 4 1 2 3; };',
       },
       {
         label: 'member-access value',
-        source: 'let s = ${ fill: c.alpha(40%); };',
+        source: 'let s = #{ fill: c.alpha(40%); };',
       },
       {
         label: 'member chain with call head',
-        source: 'let s = ${ stroke: rgba(0, 0, 200, 1).lighten(20%); filter: a.b.c(1).d; };',
+        source: 'let s = #{ stroke: rgba(0, 0, 200, 1).lighten(20%); filter: a.b.c(1).d; };',
       },
       {
         label: 'member nested inside function args',
-        source: 'let s = ${ filter: drop-shadow(1px 1px shadowColor.alpha(50%)); };',
+        source: 'let s = #{ filter: drop-shadow(1px 1px shadowColor.alpha(50%)); };',
       },
     ];
 
@@ -155,7 +155,7 @@ describe('inner style grammar', () => {
       // `filter: ` with no value/terminator — compiler marks incomplete; the
       // inner tree must still produce the earlier complete declaration and a
       // Declaration node carrying the property name being typed.
-      const source = 'let s = ${\n  fill: red;\n  filter: \n};';
+      const source = 'let s = #{\n  fill: red;\n  filter: \n};';
       const inner = innerDeclarations(source);
       expect(inner.length).toBeGreaterThanOrEqual(2);
       expect(inner[0]).toMatchObject({ name: 'fill', value: 'red' });
@@ -166,7 +166,7 @@ describe('inner style grammar', () => {
       // `fill: red` newline-terminated: compiler treats the newline as the
       // value bound and reports missing ';'. The inner tree still yields both
       // declarations (newline is a declaration terminator there).
-      const source = 'let s = ${\n  fill: red\n  stroke: blue;\n};';
+      const source = 'let s = #{\n  fill: red\n  stroke: blue;\n};';
       const block = styleBlockAST(source);
       expect(block.incomplete?.message).toBe("Missing ';'");
       const inner = innerDeclarations(source);
@@ -179,13 +179,13 @@ describe('inner style grammar', () => {
     // and without the wrap, including the template-interpolation cases that
     // motivated keeping StyleContent opaque in the outer grammar.
     const programs = [
-      'let s = ${ fill: red; };',
-      "let v = 'round';\nlet s = ${ stroke-linecap: ${v}; };\nlet t = `a ${v} b`;",
-      'let cell = 12;\nlet s = ${ stroke-dasharray: ${cell} ${cell}; };',
-      'let s = ${ filter: drop-shadow(4px 4px 4px #c00); };\nlet t = `a ${s} b`;',
-      'let msg = `value: ${calc(1 + 2)}`;\nlet s = ${ font-family: `${msg}`; };',
-      "define PathLayer('a') ${ stroke: #667a; stroke-width: 0.5; }\nlayer('a').apply { M 0 0 }",
-      'let empty = ${};',
+      'let s = #{ fill: red; };',
+      "let v = 'round';\nlet s = #{ stroke-linecap: ${v}; };\nlet t = `a ${v} b`;",
+      'let cell = 12;\nlet s = #{ stroke-dasharray: ${cell} ${cell}; };',
+      'let s = #{ filter: drop-shadow(4px 4px 4px #c00); };\nlet t = `a ${s} b`;',
+      'let msg = `value: ${calc(1 + 2)}`;\nlet s = #{ font-family: `${msg}`; };',
+      "define PathLayer('a') #{ stroke: #667a; stroke-width: 0.5; }\nlayer('a').apply { M 0 0 }",
+      'let empty = #{};',
       'for (i in 0..3) { M i 0 }',
     ];
 

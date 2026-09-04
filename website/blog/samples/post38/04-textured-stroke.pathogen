@@ -18,13 +18,13 @@ let mk = {|vo, pb|
 let spine = @{ l 340 0 };
 let rib = spine.compoundVariableOffset() << mk;
 
-let band = PathLayer('textured') ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.92; };
+let band = PathLayer('textured') #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.92; };
 band.apply {
   M calc(30 + rib.anchor.x) calc(72 + rib.anchor.y)
   rib.draw();
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

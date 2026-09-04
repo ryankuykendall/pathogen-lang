@@ -10,7 +10,7 @@ let arrow = @{
 };
 
 let arrowMarker = Marker('flow-arrow', 12, 12) {|m|
-  m.append(arrow, ${ fill: context-stroke; stroke: none; });
+  m.append(arrow, #{ fill: context-stroke; stroke: none; });
 };
 // refX positioned so the arrow tip sits at the endpoint
 arrowMarker.refX = 12;
@@ -22,27 +22,27 @@ let nodeShape = @{
 };
 
 // Layer definitions must precede their usage
-define PathLayer('nodes') ${
+define PathLayer('nodes') #{
   fill: Color('#f5f5f5');
   stroke: Color('#264653');
   stroke-width: 2;
 }
 
-define PathLayer('data-flow') ${
+define PathLayer('data-flow') #{
   stroke: Color('#2a9d8f');
   stroke-width: 3;
   fill: none;
   marker-end: arrowMarker;
 }
 
-define PathLayer('control-flow') ${
+define PathLayer('control-flow') #{
   stroke: Color('#e76f51');
   stroke-width: 3;
   fill: none;
   marker-end: arrowMarker;
 }
 
-define PathLayer('error-flow') ${
+define PathLayer('error-flow') #{
   stroke: Color('#e63946');
   stroke-width: 3;
   fill: none;

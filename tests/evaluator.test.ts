@@ -1443,7 +1443,7 @@ describe('Evaluator', () => {
 
       it('works inside a text(x, y) { } body with loop control through the switch', () => {
         const result = compile(
-          `define default TextLayer('t') \${ font-size: 12; }
+          `define default TextLayer('t') #{ font-size: 12; }
            layer('t').apply {
              text(0, 0) {
                for (i in 0..5) {
@@ -1792,7 +1792,7 @@ describe('Evaluator', () => {
     it('reassigns variable after path command on next line', () => {
       const result = compile(`
         let pos = { "x": 0, "y": 0 };
-        let myLayer = PathLayer('test') \${};
+        let myLayer = PathLayer('test') #{};
         myLayer.apply {
           m 10 20
           pos = { "x": 10, "y": 20 };
@@ -1805,7 +1805,7 @@ describe('Evaluator', () => {
     it('reassigns variable inside if/else in apply block after path command', () => {
       const result = compile(`
         let pos = { "x": 0, "y": 0 };
-        let myLayer = PathLayer('test') \${};
+        let myLayer = PathLayer('test') #{};
         myLayer.apply {
           if (1) {
             m 100 200
@@ -1819,7 +1819,7 @@ describe('Evaluator', () => {
 
     it('tracks position across loop iterations with assignment after path command', () => {
       const result = compile(`
-        let myLayer = PathLayer('test') \${};
+        let myLayer = PathLayer('test') #{};
         let lastX = 0;
         let lastY = 0;
         let points = [{ "x": 10, "y": 20 }, { "x": 30, "y": 40 }];
@@ -3192,7 +3192,7 @@ log(p.color.hex);`);
 
       it('destructures inside a text block body', () => {
         const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20) {
             let { x, y } = Point(7, 9);
@@ -3207,7 +3207,7 @@ log(p.color.hex);`);
       it('missing struct key inside a text block reports a line number', () => {
         expect(() =>
           compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(10, 20) {
             let { z } = Point(1, 2);
@@ -3557,7 +3557,7 @@ log(p.color.hex);`);
   describe('style blocks', () => {
     it('creates a style block value', () => {
       const result = compile(`
-        let s = \${ stroke: red; stroke-width: 2; };
+        let s = #{ stroke: red; stroke-width: 2; };
         define PathLayer('test') s
         layer('test').apply { M 0 0 L 10 10 }
       `);
@@ -3566,8 +3566,8 @@ log(p.color.hex);`);
 
     it('merges style blocks with <<', () => {
       const result = compile(`
-        let base = \${ stroke: red; stroke-width: 2; };
-        let merged = base << \${ stroke-width: 4; fill: blue; };
+        let base = #{ stroke: red; stroke-width: 2; };
+        let merged = base << #{ stroke-width: 4; fill: blue; };
         define PathLayer('test') merged
         layer('test').apply { M 0 0 }
       `);
@@ -3576,7 +3576,7 @@ log(p.color.hex);`);
 
     it('accesses style block property with camelCase', () => {
       const result = compile(`
-        let s = \${ stroke-width: 4; };
+        let s = #{ stroke-width: 4; };
         let sw = s.strokeWidth;
         log(sw);
       `);
@@ -3585,9 +3585,9 @@ log(p.color.hex);`);
 
     it('accesses simple property names with dot notation', () => {
       const result = compilePath(`
-        let s = \${ stroke: red; fill: blue; };
+        let s = #{ stroke: red; fill: blue; };
         // stroke and fill are simple names, no camel conversion needed
-        define default PathLayer('d') \${ stroke: black; }
+        define default PathLayer('d') #{ stroke: black; }
         M 0 0
       `);
       expect(result).toBe('M 0 0');
@@ -3595,7 +3595,7 @@ log(p.color.hex);`);
 
     it('try-evaluates calc expressions in style block values', () => {
       const result = compile(`
-        let s = \${ font-size: calc(12 + 15); };
+        let s = #{ font-size: calc(12 + 15); };
         define PathLayer('test') s
         layer('test').apply { M 0 0 }
       `);
@@ -3604,7 +3604,7 @@ log(p.color.hex);`);
 
     it('keeps raw string for non-evaluable values', () => {
       const result = compile(`
-        define PathLayer('test') \${ stroke: rgb(232, 74, 166); fill: #996633; }
+        define PathLayer('test') #{ stroke: rgb(232, 74, 166); fill: #996633; }
         layer('test').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.stroke).toBe('rgb(232, 74, 166)');
@@ -3613,8 +3613,8 @@ log(p.color.hex);`);
 
     it('uses style block expression in layer definition', () => {
       const result = compile(`
-        let baseStyles = \${ stroke: red; stroke-width: 2; };
-        define PathLayer('main') baseStyles << \${ fill: none; }
+        let baseStyles = #{ stroke: red; stroke-width: 2; };
+        define PathLayer('main') baseStyles << #{ fill: none; }
         layer('main').apply { M 0 0 L 50 50 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'red', 'stroke-width': '2', fill: 'none' });
@@ -3623,7 +3623,7 @@ log(p.color.hex);`);
     it('evaluates style block with variable references in values', () => {
       const result = compile(`
         let w = 8;
-        let s = \${ stroke-width: w; };
+        let s = #{ stroke-width: w; };
         define PathLayer('test') s
         layer('test').apply { M 0 0 }
       `);
@@ -3632,9 +3632,9 @@ log(p.color.hex);`);
 
     it('chains multiple << merges', () => {
       const result = compile(`
-        let a = \${ stroke: red; };
-        let b = \${ fill: blue; };
-        let c = \${ opacity: 0.5; };
+        let a = #{ stroke: red; };
+        let b = #{ fill: blue; };
+        let c = #{ opacity: 0.5; };
         let merged = a << b << c;
         define PathLayer('test') merged
         layer('test').apply { M 0 0 }
@@ -4982,7 +4982,7 @@ log(p.color.hex);`);
       it('forEach inside layer.apply emits paths to the surrounding layer', () => {
         const result = compile(`
           define ViewBox(0, 0, 100, 100);
-          define PathLayer('flow') \${ stroke: Color('#000'); }
+          define PathLayer('flow') #{ stroke: Color('#000'); }
           let g = Grid(2, 2, { xDim: 50, yDim: 50 });
           layer('flow').apply {
             g.forEach {|cell, row, col, center|
@@ -5318,13 +5318,13 @@ describe('first-class Angle values', () => {
 
   describe('style blocks', () => {
     it('rotate: 90deg emits transform="rotate(90)" (unchanged contract)', () => {
-      const result = compile("define PathLayer('p') ${ rotate: 90deg; }\nlayer('p').apply { M 0 0 L 10 10 }");
+      const result = compile("define PathLayer('p') #{ rotate: 90deg; }\nlayer('p').apply { M 0 0 L 10 10 }");
       const p = result.layers.find((l) => l.name === 'p');
       expect(p?.transform).toBe('rotate(90)');
     });
 
     it('an Angle variable in a style value behaves like the inline literal', () => {
-      const result = compile("let a = 90deg;\ndefine PathLayer('p') ${ rotate: a; }\nlayer('p').apply { M 0 0 L 10 10 }");
+      const result = compile("let a = 90deg;\ndefine PathLayer('p') #{ rotate: a; }\nlayer('p').apply { M 0 0 L 10 10 }");
       const p = result.layers.find((l) => l.name === 'p');
       expect(p?.transform).toBe('rotate(90)');
     });
@@ -5502,7 +5502,7 @@ describe('loop control: continue and break', () => {
 
   it('continue works in text-block loops', () => {
     const result = compile(
-      `define default TextLayer('t') \${ font-size: 12; }
+      `define default TextLayer('t') #{ font-size: 12; }
        layer('t').apply {
          text(0, 0) {
            for (i in 0..3) {
@@ -5577,8 +5577,8 @@ describe('postfix expressions in sibling-scanned argument positions (item J)', (
     let names = ['shard-0', 'shard-1'];
     let o = { n: 'shard-0', count: 2, w: 90 };
     fn pick(i) { return names[i]; }
-    let a = PathLayer('shard-0') \${ fill: none; };
-    let b = PathLayer('shard-1') \${ fill: none; };
+    let a = PathLayer('shard-0') #{ fill: none; };
+    let b = PathLayer('shard-1') #{ fill: none; };
   `;
   const layerData = (source: string, layerName: string): string => {
     const result = compile(source);
@@ -5626,7 +5626,7 @@ describe('postfix expressions in sibling-scanned argument positions (item J)', (
       // bound (1..0 descending) would give n1/n0, not n1/n2/n3 — a
       // 2-element count assertion passed that bug by coincidence once
       // (review finding).
-      const src = `let arr = [10, 20, 30];\nlet tl = TextLayer('t') \${ font-size: 10; };\nlet t = &{\n  for (i in 1..arr.length) {\n    text(calc(i * 10), 10)\`n\${i}\`;\n  }\n};\nlayer('t').apply {\n  t.drawTo(0, 0);\n}`;
+      const src = `let arr = [10, 20, 30];\nlet tl = TextLayer('t') #{ font-size: 10; };\nlet t = &{\n  for (i in 1..arr.length) {\n    text(calc(i * 10), 10)\`n\${i}\`;\n  }\n};\nlayer('t').apply {\n  t.drawTo(0, 0);\n}`;
       const result = compile(src);
       const texts = result.layers.flatMap((l) => l.textElements ?? []);
       expect(texts.map((t) => t.children.map((c) => ('text' in c ? c.text : '')).join(''))).toEqual(['n1', 'n2', 'n3']);
@@ -5636,19 +5636,19 @@ describe('postfix expressions in sibling-scanned argument positions (item J)', (
 
   describe('layer-definition names', () => {
     it('PathLayer(indexed name)', () => {
-      const src = `let names = ['dyn-a'];\nlet lay = PathLayer(names[0]) \${ fill: none; };\nlayer('dyn-a').apply {\n  M 0 0\n  h 5\n}`;
+      const src = `let names = ['dyn-a'];\nlet lay = PathLayer(names[0]) #{ fill: none; };\nlayer('dyn-a').apply {\n  M 0 0\n  h 5\n}`;
       const result = compile(src);
       expect(result.layers.find((l) => l.name === 'dyn-a')?.data).toBe('M 0 0 h 5');
     });
     it('TextLayer(member name)', () => {
-      const src = `let o = { n: 'dyn-t' };\nlet lay = TextLayer(o.n) \${ font-size: 10; };\nlayer('dyn-t').apply {\n  text(5, 5)\`hi\`;\n}`;
+      const src = `let o = { n: 'dyn-t' };\nlet lay = TextLayer(o.n) #{ font-size: 10; };\nlayer('dyn-t').apply {\n  text(5, 5)\`hi\`;\n}`;
       const result = compile(src);
       const tl = result.layers.find((l) => l.name === 'dyn-t');
       expect(tl?.textElements?.map((t) => t.children.map((c) => ('text' in c ? c.text : '')).join(''))).toEqual(['hi']);
     });
 
     it('define-form PathLayer(indexed name) — distinct builder from the constructor form', () => {
-      const src = `let names = ['dyn-d'];\ndefine PathLayer(names[0]) \${ fill: none; };\nlayer('dyn-d').apply {\n  M 0 0\n  h 5\n}`;
+      const src = `let names = ['dyn-d'];\ndefine PathLayer(names[0]) #{ fill: none; };\nlayer('dyn-d').apply {\n  M 0 0\n  h 5\n}`;
       const result = compile(src);
       expect(result.layers.find((l) => l.name === 'dyn-d')?.data).toBe('M 0 0 h 5');
     });
@@ -5656,7 +5656,7 @@ describe('postfix expressions in sibling-scanned argument positions (item J)', (
 
   describe('same-class review findings (pre-existing, fixed with item J)', () => {
     it('define-form style expression with member access: define PathLayer(name) cfg.style;', () => {
-      const src = `let cfg = { style: \${ stroke-width: 7; } };\ndefine PathLayer('sx') cfg.style;\nlayer('sx').apply {\n  M 0 0\n  h 5\n}`;
+      const src = `let cfg = { style: #{ stroke-width: 7; } };\ndefine PathLayer('sx') cfg.style;\nlayer('sx').apply {\n  M 0 0\n  h 5\n}`;
       const result = compile(src);
       const lay = result.layers.find((l) => l.name === 'sx');
       expect(lay?.data).toBe('M 0 0 h 5');
@@ -5664,7 +5664,7 @@ describe('postfix expressions in sibling-scanned argument positions (item J)', (
     });
 
     it('layer(cfg.name) as a VALUE expression (not the .apply block form)', () => {
-      const src = `let a = PathLayer('v0') \${ fill: none; };\nlet cfg = { name: 'v0' };\nlet ref = layer(cfg.name);\nref.apply {\n  M 0 0\n  h 5\n}`;
+      const src = `let a = PathLayer('v0') #{ fill: none; };\nlet cfg = { name: 'v0' };\nlet ref = layer(cfg.name);\nref.apply {\n  M 0 0\n  h 5\n}`;
       const result = compile(src);
       expect(result.layers.find((l) => l.name === 'v0')?.data).toBe('M 0 0 h 5');
     });
@@ -5681,7 +5681,7 @@ describe('postfix expressions in sibling-scanned argument positions (item J)', (
 
 describe('paren-less variable.apply survives the postfix-aware layer builder (item J regression guard)', () => {
   it('myLayer.apply { } routes correctly (the walker must unwrap .apply, not eat it)', () => {
-    const src = `let myLayer = PathLayer('t') \${ fill: none; };\nmyLayer.apply {\n  M 0 0\n  h 5\n}`;
+    const src = `let myLayer = PathLayer('t') #{ fill: none; };\nmyLayer.apply {\n  M 0 0\n  h 5\n}`;
     const result = compile(src);
     expect(result.layers.find((l) => l.name === 't')?.data).toBe('M 0 0 h 5');
   });

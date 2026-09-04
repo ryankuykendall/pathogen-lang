@@ -5,10 +5,10 @@ let cellSize = 15;
 let gridW = 180;
 let gridH = 180;
 
-define PathLayer('shape') ${ stroke: #4488ff; stroke-width: 0.3; fill: none; }
-define PathLayer('dot') ${ stroke: #ff4488; stroke-width: 0.3; fill: #ff4488; }
-define PathLayer('intersection') ${ stroke: #44cc88; stroke-width: 0.4; fill: none; stroke-linecap: round; }
-define PathLayer('partial') ${ stroke: #cc8844; stroke-width: 0.4; fill: none; stroke-linecap: round; }
+define PathLayer('shape') #{ stroke: #4488ff; stroke-width: 0.3; fill: none; }
+define PathLayer('dot') #{ stroke: #ff4488; stroke-width: 0.3; fill: #ff4488; }
+define PathLayer('intersection') #{ stroke: #44cc88; stroke-width: 0.4; fill: none; stroke-linecap: round; }
+define PathLayer('partial') #{ stroke: #cc8844; stroke-width: 0.4; fill: none; stroke-linecap: round; }
 
 layer('shape').apply {
   triangleGrid(GridPatternType.Shape, 10, 10, gridW, gridH, cellSize);

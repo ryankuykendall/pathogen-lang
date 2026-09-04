@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 250);
 
-let table = PathLayer('table') ${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -12,29 +12,29 @@ layer('table').apply {
   rect(0, 0, 480, 250);
 }
 
-let scene = GroupLayer('scene') ${};
-let mylar = PathLayer('mylar') ${
+let scene = GroupLayer('scene') #{};
+let mylar = PathLayer('mylar') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let fallen = PathLayer('fallen') ${
+let fallen = PathLayer('fallen') #{
   fill: #8298ad;
   stroke: #64748b;
   stroke-width: 1;
 };
-let driftMarks = PathLayer('drift-marks') ${
+let driftMarks = PathLayer('drift-marks') #{
   stroke: #f59e0b;
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
   fill: none;
 };
-let leaders = PathLayer('leaders') ${
+let leaders = PathLayer('leaders') #{
   stroke: #94a3b8;
   stroke-width: 1;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;

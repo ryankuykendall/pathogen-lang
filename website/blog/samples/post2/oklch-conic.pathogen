@@ -34,26 +34,26 @@ oklch_rc.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 600, 540); }
 
 // --- Gradient circles ---
 
-let by_s = PathLayer('by-srgb') ${ fill: srgb_by; stroke: #333; stroke-width: 1; };
+let by_s = PathLayer('by-srgb') #{ fill: srgb_by; stroke: #333; stroke-width: 1; };
 by_s.apply { circle(160, 165, 85); closePath(); }
 
-let by_o = PathLayer('by-oklch') ${ fill: oklch_by; stroke: #333; stroke-width: 1; };
+let by_o = PathLayer('by-oklch') #{ fill: oklch_by; stroke: #333; stroke-width: 1; };
 by_o.apply { circle(440, 165, 85); closePath(); }
 
-let rc_s = PathLayer('rc-srgb') ${ fill: srgb_rc; stroke: #333; stroke-width: 1; };
+let rc_s = PathLayer('rc-srgb') #{ fill: srgb_rc; stroke: #333; stroke-width: 1; };
 rc_s.apply { circle(160, 400, 85); closePath(); }
 
-let rc_o = PathLayer('rc-oklch') ${ fill: oklch_rc; stroke: #333; stroke-width: 1; };
+let rc_o = PathLayer('rc-oklch') #{ fill: oklch_rc; stroke: #333; stroke-width: 1; };
 rc_o.apply { circle(440, 400, 85); closePath(); }
 
 // --- Column headers ---
 
-let headers = TextLayer('headers') ${
+let headers = TextLayer('headers') #{
   font-family: system-ui, sans-serif;
   font-size: 16;
   fill: #ccc;
@@ -67,7 +67,7 @@ headers.apply {
 
 // --- Row labels ---
 
-let row_labels = TextLayer('row-labels') ${
+let row_labels = TextLayer('row-labels') #{
   font-family: monospace;
   font-size: 11;
   fill: #888;
@@ -80,7 +80,7 @@ row_labels.apply {
 
 // --- Annotations ---
 
-let notes = TextLayer('notes') ${
+let notes = TextLayer('notes') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -93,7 +93,7 @@ notes.apply {
   text(440, 507)`rich magenta arc`
 }
 
-let footer = TextLayer('footer') ${
+let footer = TextLayer('footer') #{
   font-family: monospace;
   font-size: 9;
   fill: #444;
@@ -105,11 +105,11 @@ footer.apply {
 
 // --- Scene ---
 
-let top_row = GroupLayer('top-row') ${};
+let top_row = GroupLayer('top-row') #{};
 top_row.append(by_s, by_o);
 
-let bottom_row = GroupLayer('bottom-row') ${};
+let bottom_row = GroupLayer('bottom-row') #{};
 bottom_row.append(rc_s, rc_o);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, top_row, bottom_row, headers, row_labels, notes, footer);

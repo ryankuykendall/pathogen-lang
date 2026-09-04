@@ -33,7 +33,7 @@ fn band(name, y0, windowed) {
   };
   let spine = @{ l 330 0 };
   let rib = spine.compoundVariableOffset() << mk;
-  let stroke = PathLayer(name) ${ fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; };
+  let stroke = PathLayer(name) #{ fill: oklch(0.68 0.13 200); stroke: none; opacity: 0.9; };
   stroke.apply {
     M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
     rib.draw();
@@ -43,7 +43,7 @@ fn band(name, y0, windowed) {
 band('blunt', 45, 0);
 band('windowed', 115, 1);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

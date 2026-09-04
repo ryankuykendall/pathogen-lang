@@ -3,10 +3,10 @@ define ViewBox(0, 0, 600, 360);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 360); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -22,33 +22,33 @@ let dim_above = 14;
 let dim_label_above = 6;
 let bracket_right = 16;
 let h_label_gap = 8;
-let anno_styles = ${ font-size: 8; font-family: monospace; };
+let anno_styles = #{ font-size: 8; font-family: monospace; };
 
 // ─── Row 1: font-size 10 ─────────────────────────────────────────
 
-let t1 = &{ text(0, 10)`font-size: 10` } << ${ font-size: 10; font-family: monospace; };
+let t1 = &{ text(0, 10)`font-size: 10` } << #{ font-size: 10; font-family: monospace; };
 let bb1 = t1.boundingBox();
 
-let g1 = GroupLayer('row-10') ${ translate-x: 60; translate-y: 100; };
+let g1 = GroupLayer('row-10') #{ translate-x: 60; translate-y: 100; };
 
-let t1_layer = TextLayer('t1') ${ font-family: monospace; font-size: 10; fill: Color('#e2e8f0'); };
+let t1_layer = TextLayer('t1') #{ font-family: monospace; font-size: 10; fill: Color('#e2e8f0'); };
 t1_layer.apply { t1.drawTo(0, 0); }
 
-let bb1_layer = PathLayer('bb1') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
+let bb1_layer = PathLayer('bb1') #{ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
 bb1_layer.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
 let wy1 = calc(bb1.y - dim_above);
-let wd1 = PathLayer('wd1') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
+let wd1 = PathLayer('wd1') #{ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
 wd1.apply { M 0 wy1 h bb1.width  M 0 calc(wy1 - 3) v 6  M bb1.width calc(wy1 - 3) v 6 }
 
-let wl1 = TextLayer('wl1') ${ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
+let wl1 = TextLayer('wl1') #{ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
 wl1.apply { text(calc(bb1.width / 2), calc(wy1 - dim_label_above))`w = ${round(bb1.width)}` }
 
 let hx1 = calc(bb1.width + bracket_right);
-let hd1 = PathLayer('hd1') ${ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
+let hd1 = PathLayer('hd1') #{ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
 hd1.apply { M hx1 bb1.y v bb1.height  M calc(hx1 - 3) bb1.y h 6  M calc(hx1 - 3) calc(bb1.y + bb1.height) h 6 }
 
-let hl1 = TextLayer('hl1') ${ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
+let hl1 = TextLayer('hl1') #{ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
 hl1.apply { text(calc(hx1 + h_label_gap), calc(bb1.y + bb1.height / 2 + 3))`h = ${round(bb1.height)}` }
 
 g1.append(t1_layer, bb1_layer, wd1, wl1, hd1, hl1);
@@ -61,29 +61,29 @@ if (hl1_proj.intersects({ x: calc(hx1 - 3), y: bb1.y, width: 6, height: bb1.heig
 
 // ─── Row 2: font-size 16 ─────────────────────────────────────────
 
-let t2 = &{ text(0, 16)`font-size: 16` } << ${ font-size: 16; font-family: monospace; };
+let t2 = &{ text(0, 16)`font-size: 16` } << #{ font-size: 16; font-family: monospace; };
 let bb2 = t2.boundingBox();
 
-let g2 = GroupLayer('row-16') ${ translate-x: 60; translate-y: 195; };
+let g2 = GroupLayer('row-16') #{ translate-x: 60; translate-y: 195; };
 
-let t2_layer = TextLayer('t2') ${ font-family: monospace; font-size: 16; fill: Color('#e2e8f0'); };
+let t2_layer = TextLayer('t2') #{ font-family: monospace; font-size: 16; fill: Color('#e2e8f0'); };
 t2_layer.apply { t2.drawTo(0, 0); }
 
-let bb2_layer = PathLayer('bb2') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
+let bb2_layer = PathLayer('bb2') #{ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
 bb2_layer.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
 let wy2 = calc(bb2.y - dim_above);
-let wd2 = PathLayer('wd2') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
+let wd2 = PathLayer('wd2') #{ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
 wd2.apply { M 0 wy2 h bb2.width  M 0 calc(wy2 - 3) v 6  M bb2.width calc(wy2 - 3) v 6 }
 
-let wl2 = TextLayer('wl2') ${ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
+let wl2 = TextLayer('wl2') #{ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
 wl2.apply { text(calc(bb2.width / 2), calc(wy2 - dim_label_above))`w = ${round(bb2.width * 10) / 10}` }
 
 let hx2 = calc(bb2.width + bracket_right);
-let hd2 = PathLayer('hd2') ${ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
+let hd2 = PathLayer('hd2') #{ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
 hd2.apply { M hx2 bb2.y v bb2.height  M calc(hx2 - 3) bb2.y h 6  M calc(hx2 - 3) calc(bb2.y + bb2.height) h 6 }
 
-let hl2 = TextLayer('hl2') ${ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
+let hl2 = TextLayer('hl2') #{ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
 hl2.apply { text(calc(hx2 + h_label_gap), calc(bb2.y + bb2.height / 2 + 3))`h = ${round(bb2.height * 10) / 10}` }
 
 g2.append(t2_layer, bb2_layer, wd2, wl2, hd2, hl2);
@@ -94,29 +94,29 @@ if (hl2_proj.intersects(t2_proj)) { log("WARN: row-16 h-label intersects text");
 
 // ─── Row 3: font-size 24 ─────────────────────────────────────────
 
-let t3 = &{ text(0, 24)`font-size: 24` } << ${ font-size: 24; font-family: monospace; };
+let t3 = &{ text(0, 24)`font-size: 24` } << #{ font-size: 24; font-family: monospace; };
 let bb3 = t3.boundingBox();
 
-let g3 = GroupLayer('row-24') ${ translate-x: 60; translate-y: 300; };
+let g3 = GroupLayer('row-24') #{ translate-x: 60; translate-y: 300; };
 
-let t3_layer = TextLayer('t3') ${ font-family: monospace; font-size: 24; fill: Color('#e2e8f0'); };
+let t3_layer = TextLayer('t3') #{ font-family: monospace; font-size: 24; fill: Color('#e2e8f0'); };
 t3_layer.apply { t3.drawTo(0, 0); }
 
-let bb3_layer = PathLayer('bb3') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
+let bb3_layer = PathLayer('bb3') #{ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
 bb3_layer.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
 let wy3 = calc(bb3.y - dim_above);
-let wd3 = PathLayer('wd3') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
+let wd3 = PathLayer('wd3') #{ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
 wd3.apply { M 0 wy3 h bb3.width  M 0 calc(wy3 - 3) v 6  M bb3.width calc(wy3 - 3) v 6 }
 
-let wl3 = TextLayer('wl3') ${ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
+let wl3 = TextLayer('wl3') #{ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
 wl3.apply { text(calc(bb3.width / 2), calc(wy3 - dim_label_above))`w = ${round(bb3.width * 10) / 10}` }
 
 let hx3 = calc(bb3.width + bracket_right);
-let hd3 = PathLayer('hd3') ${ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
+let hd3 = PathLayer('hd3') #{ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
 hd3.apply { M hx3 bb3.y v bb3.height  M calc(hx3 - 3) bb3.y h 6  M calc(hx3 - 3) calc(bb3.y + bb3.height) h 6 }
 
-let hl3 = TextLayer('hl3') ${ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
+let hl3 = TextLayer('hl3') #{ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
 hl3.apply { text(calc(hx3 + h_label_gap), calc(bb3.y + bb3.height / 2 + 3))`h = ${round(bb3.height * 10) / 10}` }
 
 g3.append(t3_layer, bb3_layer, wd3, wl3, hd3, hl3);
@@ -127,9 +127,9 @@ if (hl3_proj.intersects(t3_proj)) { log("WARN: row-24 h-label intersects text");
 
 // ─── Code block (top-right) ──────────────────────────────────────
 
-let code_group = GroupLayer('code-group') ${ translate-x: 360; translate-y: 80; };
+let code_group = GroupLayer('code-group') #{ translate-x: 360; translate-y: 80; };
 
-let code = TextLayer('code') ${ font-family: monospace; font-size: 9; fill: Color('#94a3b8'); text-anchor: start; };
+let code = TextLayer('code') #{ font-family: monospace; font-size: 9; fill: Color('#94a3b8'); text-anchor: start; };
 code.apply {
   text(0, 0)`let label = &{`
   text(12, 12)`text(0, 24) ...`
@@ -139,7 +139,7 @@ code.apply {
   text(0, 76)`// bb.height = fontSize * 1.2`
 }
 
-let kw = TextLayer('kw') ${ font-family: monospace; font-size: 9; fill: Color('#c084fc'); text-anchor: start; };
+let kw = TextLayer('kw') #{ font-family: monospace; font-size: 9; fill: Color('#c084fc'); text-anchor: start; };
 kw.apply {
   text(0, 0)`let`
   text(0, 44)`let`
@@ -149,8 +149,8 @@ code_group.append(code, kw);
 
 // ─── Title ───────────────────────────────────────────────────────
 
-let title = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 14; fill: Color('#e2e8f0'); text-anchor: start; };
+let title = TextLayer('title') #{ font-family: system-ui, sans-serif; font-size: 14; fill: Color('#e2e8f0'); text-anchor: start; };
 title.apply { text(30, 30)`Measure Before You Place` }
 
-let subtitle = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 9; fill: Color('#64748b'); text-anchor: start; };
+let subtitle = TextLayer('subtitle') #{ font-family: system-ui, sans-serif; font-size: 9; fill: Color('#64748b'); text-anchor: start; };
 subtitle.apply { text(30, 44)`.boundingBox() returns { x, y, width, height }` }

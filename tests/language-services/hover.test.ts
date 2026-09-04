@@ -319,7 +319,7 @@ describe('getHoverInfo', () => {
 
   describe('variableOffset repro program (end-to-end)', () => {
     const program = [
-      "let fontStyles = ${ font-family: 'Baumans'; };",
+      "let fontStyles = #{ font-family: 'Baumans'; };",
       "let glyphs = PathBlock.fromGlyph('AB', fontStyles);",
       'for ([glyph, gIndex] in glyphs) {',
       '  for ([contour, cIndex] in glyph.contours) {',
@@ -486,7 +486,7 @@ M 0 0`;
       { label: 'string literal', source: "let str = 'hi';\ncircle(0, 0, 1);", needle: 'str =', kind: 'variable', type: 'string' },
       { label: 'color literal', source: 'let col = #ff0000;', needle: 'col =', kind: 'variable', type: 'Color' },
       { label: 'path block', source: 'let p = @{ M 0 0 };', needle: 'p =', kind: 'variable', type: 'PathBlock' },
-      { label: 'style block', source: 'let st = ${ stroke: #000; };', needle: 'st =', kind: 'variable', type: 'StyleBlock' },
+      { label: 'style block', source: 'let st = #{ stroke: #000; };', needle: 'st =', kind: 'variable', type: 'StyleBlock' },
       { label: 'array literal', source: 'let arr = [1, 2];', needle: 'arr =', kind: 'variable', type: 'array<number>' },
       { label: 'object literal', source: 'let o = { x: 1 };', needle: 'o =', kind: 'variable', type: 'object' },
       // Lambda literal: the value itself is a function; no type name exists
@@ -518,21 +518,21 @@ M 0 0`;
       },
       {
         label: 'array destructure: number element',
-        source: 'let [num, pb, sb] = [5, @{ M 0 0 }, ${ stroke: #000; }];',
+        source: 'let [num, pb, sb] = [5, @{ M 0 0 }, #{ stroke: #000; }];',
         needle: 'num,',
         kind: 'variable',
         type: 'number',
       },
       {
         label: 'array destructure: path-block element',
-        source: 'let [num, pb, sb] = [5, @{ M 0 0 }, ${ stroke: #000; }];',
+        source: 'let [num, pb, sb] = [5, @{ M 0 0 }, #{ stroke: #000; }];',
         needle: 'pb,',
         kind: 'variable',
         type: 'PathBlock',
       },
       {
         label: 'array destructure: style-block element',
-        source: 'let [num, pb, sb] = [5, @{ M 0 0 }, ${ stroke: #000; }];',
+        source: 'let [num, pb, sb] = [5, @{ M 0 0 }, #{ stroke: #000; }];',
         needle: 'sb]',
         kind: 'variable',
         type: 'StyleBlock',

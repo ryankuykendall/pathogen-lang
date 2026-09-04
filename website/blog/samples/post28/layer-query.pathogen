@@ -1,6 +1,6 @@
 define ViewBox(0, 0, 240, 140);
-define PathLayer('road') ${ stroke: #334155; stroke-width: 3; fill: none; }
-define PathLayer('ticks') ${ stroke: #f59e0b; stroke-width: 2; fill: none; }
+define PathLayer('road') #{ stroke: #334155; stroke-width: 3; fill: none; }
+define PathLayer('ticks') #{ stroke: #f59e0b; stroke-width: 2; fill: none; }
 
 // A layer built with apply {} used to be write-only: you could add to it,
 // but never ask it anything. Labels make layers queryable.

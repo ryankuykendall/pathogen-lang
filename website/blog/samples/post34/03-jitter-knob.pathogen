@@ -5,7 +5,7 @@
 define ViewBox(0, 0, 400, 132);
 
 fn jitteredGrid(name, x0, j) {
-  let g = PathLayer(name) ${ fill: oklch(0.68 0.13 200); stroke: none; };
+  let g = PathLayer(name) #{ fill: oklch(0.68 0.13 200); stroke: none; };
   g.apply {
     for (row in 0..5) {
       for (col in 0..9) {
@@ -22,7 +22,7 @@ jitteredGrid('rigid', 28, 0);
 jitteredGrid('relaxed', 153, 2);
 jitteredGrid('scattered', 278, 5);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

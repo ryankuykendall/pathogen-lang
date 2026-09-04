@@ -4,12 +4,12 @@ define ViewBox(0, 0, 500, 500);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 500, 500); }
 
 // --- Title (top-level) ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -21,7 +21,7 @@ title.apply {
 
 // --- Annotations (top-level) ---
 
-let anno = TextLayer('anno') ${
+let anno = TextLayer('anno') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -34,10 +34,10 @@ anno.apply {
 
 // ─── Compass group ── hexagon + center + guide + radials + dots + labels ───
 
-let compass = GroupLayer('compass') ${ translate-x: 250; translate-y: 250; };
+let compass = GroupLayer('compass') #{ translate-x: 250; translate-y: 250; };
 
 // Central hexagon (coordinates relative to group origin)
-let hex = PathLayer('hex') ${
+let hex = PathLayer('hex') #{
   fill: Color('#3b82f615');
   stroke: Color('#3b82f6');
   stroke-width: 2;
@@ -45,14 +45,14 @@ let hex = PathLayer('hex') ${
 hex.apply { polygon(0, 0, 80, 6); }
 
 // Center marker
-let center_dot = PathLayer('center-dot') ${
+let center_dot = PathLayer('center-dot') #{
   fill: Color('#22c55e');
   stroke: none;
 };
 center_dot.apply { circle(0, 0, 3); }
 
 // Guide circle
-let guide = PathLayer('guide') ${
+let guide = PathLayer('guide') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "3 4";
@@ -61,7 +61,7 @@ let guide = PathLayer('guide') ${
 guide.apply { circle(0, 0, 140); }
 
 // Radial lines from hex edge to guide circle
-let radials = PathLayer('radials') ${
+let radials = PathLayer('radials') #{
   stroke: Color('#475569');
   stroke-width: 0.5;
   fill: none;
@@ -78,7 +78,7 @@ radials.apply {
 }
 
 // Anchor dots ON the guide circle (r=140)
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   fill: Color('#f59e0b');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -105,9 +105,9 @@ let anchors = [
   BBoxAnchor.BottomRight,
 ];
 
-let label_styles = ${ font-family: monospace; font-size: 11; };
+let label_styles = #{ font-family: monospace; font-size: 11; };
 
-define TextLayer('labels') ${
+define TextLayer('labels') #{
   font-family: monospace;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -146,9 +146,9 @@ compass.append(hex, center_dot, guide, radials, dots, layer('labels'));
 
 // ─── Code block group ── code snippet at top-left ────────────────────
 
-let code_group = GroupLayer('code-block') ${ translate-x: 30; translate-y: 22; };
+let code_group = GroupLayer('code-block') #{ translate-x: 30; translate-y: 22; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -163,7 +163,7 @@ code.apply {
   text(0, 68)`)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#64748b');

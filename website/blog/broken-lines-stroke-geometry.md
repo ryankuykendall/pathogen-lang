@@ -41,7 +41,7 @@ every piece — the inked dashes *and* the spaces between them — as real
 paths:
 
 ```pathogen
-let pieces = wave.dash(${
+let pieces = wave.dash(#{
   stroke-dasharray: 26 14;
 });
 // [{ path, kind: 'dash' | 'gap', t0, t1 }, ...]

@@ -1,7 +1,7 @@
 // LB-A-70 — Libre Baskerville Bold "eN" tracking 0.7 (O6: missing intersection at N's bottom-left serif)
 @font "../../fonts/Libre_Baskerville/LibreBaskerville-Bold.ttf"
 
-let styles = ${ font-family: LibreBaskerville-Bold; font-size: 100; };
+let styles = #{ font-family: LibreBaskerville-Bold; font-size: 100; };
 let glyphs = PathBlock.fromGlyph("eN", styles);
 let g0 = glyphs[0];
 let g1 = glyphs[1];
@@ -11,13 +11,13 @@ let g0p = g0.project(0, 0);
 let g1p = g1.project(pos1, 0);
 let combined = g0p.union(g1p);
 
-let bg = PathLayer('bg') ${ fill: '#fefce8'; stroke: none; };
+let bg = PathLayer('bg') #{ fill: '#fefce8'; stroke: none; };
 layer('bg').apply { rect(0, 0, 1200, 600); }
 
-let underlay_fill = PathLayer('underlay-fill') ${ fill: '#f9731680'; stroke: none; };
-let union_fill = PathLayer('union-fill') ${ fill: '#1e3a8a80'; stroke: none; };
-let underlay_stroke = PathLayer('underlay-stroke') ${ fill: none; stroke: '#7c2d12e6'; stroke-width: 0.5; };
-let union_stroke = PathLayer('union-stroke') ${ fill: none; stroke: '#06b6d4f2'; stroke-width: 0.5; };
+let underlay_fill = PathLayer('underlay-fill') #{ fill: '#f9731680'; stroke: none; };
+let union_fill = PathLayer('union-fill') #{ fill: '#1e3a8a80'; stroke: none; };
+let underlay_stroke = PathLayer('underlay-stroke') #{ fill: none; stroke: '#7c2d12e6'; stroke-width: 0.5; };
+let union_stroke = PathLayer('union-stroke') #{ fill: none; stroke: '#06b6d4f2'; stroke-width: 0.5; };
 
 let baseline = 480;
 let dx = 100;

@@ -24,7 +24,7 @@ fn drawAttractor(target, ox, oy, a, b, c, d) {
 }
 
 // --- Set 1: Classic ---
-let p1 = PathLayer('set1') ${
+let p1 = PathLayer('set1') #{
   stroke: oklch(0.50 0.20 260);
   stroke-width: 0.8;
   stroke-linecap: round;
@@ -32,7 +32,7 @@ let p1 = PathLayer('set1') ${
 };
 
 // --- Set 2: Swirl ---
-let p2 = PathLayer('set2') ${
+let p2 = PathLayer('set2') #{
   stroke: oklch(0.50 0.20 330);
   stroke-width: 0.8;
   stroke-linecap: round;
@@ -40,7 +40,7 @@ let p2 = PathLayer('set2') ${
 };
 
 // --- Set 3: Organic ---
-let p3 = PathLayer('set3') ${
+let p3 = PathLayer('set3') #{
   stroke: oklch(0.50 0.20 150);
   stroke-width: 0.8;
   stroke-linecap: round;
@@ -52,7 +52,7 @@ drawAttractor(p2, 450, 175, 1.6, -0.6, -1.2, 1.6);
 drawAttractor(p3, 750, 175, 1.7, 1.7, 0.6, 1.2);
 
 // Labels
-let names = TextLayer('names') ${
+let names = TextLayer('names') #{
   font-size: 14;
   fill: oklch(0.75 0.05 260);
   font-family: system-ui, sans-serif;
@@ -66,7 +66,7 @@ names.apply {
   text(750, 332)`Organic`
 }
 
-let params = TextLayer('params') ${
+let params = TextLayer('params') #{
   font-size: 11;
   fill: oklch(0.55 0.03 260);
   font-family: ui-monospace, monospace;
@@ -79,5 +79,5 @@ params.apply {
   text(750, 348)`a=1.7  b=1.7  c=0.6  d=1.2`
 }
 
-let g = GroupLayer('gallery') ${};
+let g = GroupLayer('gallery') #{};
 g.append(p1, p2, p3, names, params);

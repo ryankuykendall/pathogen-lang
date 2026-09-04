@@ -301,7 +301,7 @@ code.hljs {
   <span class="id">g</span>.<span class="id">stop</span>(<span class="num">1</span>,    <span class="id">Color</span>(<span class="str">'#f4a261'</span>));
 };
 </code></pre><p>The constructor takes an ID string and four coordinates: <code>x1, y1, x2, y2</code>. Color stops are added inside the initialization block using <code>g.stop(position, color)</code>, where position is a value between 0 and 1. Once defined, assign the gradient to a layer&#39;s <code>fill</code> property:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sky_layer</span> = <span class="tp">PathLayer</span>(<span class="str">'sky-fill'</span>) ${ <span class="pr">fill</span>: <span class="id">sky</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">sky_layer</span> = <span class="tp">PathLayer</span>(<span class="str">'sky-fill'</span>) #{ <span class="pr">fill</span>: <span class="id">sky</span>; <span class="pr">stroke</span>: <span class="id">none</span>; };
 <span class="id">sky_layer</span>.<span class="kw">apply</span> { <span class="id">rect</span>(<span class="num">0</span>, <span class="num">0</span>, <span class="num">400</span>, <span class="num">300</span>) }
 </code></pre><p>The landscape below uses four linear gradients — a vertical sky, a diagonal mountain range, a horizontal sun streak, and a vertical ground fill — layered with Pathogen&#39;s <code>GroupLayer</code> to compose the scene.</p>
 <p><mini-workspace code-open caption="Four linear gradients composing a layered landscape">
@@ -340,13 +340,13 @@ let sun_grad = LinearGradient('sunstreak', 0, 0, 1, 0) {|g|
 
 // --- Layers ---
 
-let sky = PathLayer('sky-fill') ${ fill: sky_grad; stroke: none; };
+let sky = PathLayer('sky-fill') #{ fill: sky_grad; stroke: none; };
 sky.apply { rect(0, 0, 400, 300); }
 
-let sun = PathLayer('sun-streak') ${ fill: sun_grad; stroke: none; };
+let sun = PathLayer('sun-streak') #{ fill: sun_grad; stroke: none; };
 sun.apply { rect(0, 155, 400, 30); }
 
-let far_mtns = PathLayer('far-mountains') ${ fill: mtn_grad; stroke: none; };
+let far_mtns = PathLayer('far-mountains') #{ fill: mtn_grad; stroke: none; };
 far_mtns.apply {
   M 0 220
   L 40 175 L 90 200 L 140 155 L 200 130
@@ -354,7 +354,7 @@ far_mtns.apply {
   L 400 300 L 0 300 Z
 }
 
-let near_mtns = PathLayer('near-mountains') ${ fill: mtn_grad; stroke: none; opacity: 0.7; };
+let near_mtns = PathLayer('near-mountains') #{ fill: mtn_grad; stroke: none; opacity: 0.7; };
 near_mtns.apply {
   M 0 260
   L 50 220 L 100 240 L 170 195 L 230 225
@@ -362,15 +362,15 @@ near_mtns.apply {
   L 400 300 L 0 300 Z
 }
 
-let ground = PathLayer('ground-fill') ${ fill: ground_grad; stroke: none; };
+let ground = PathLayer('ground-fill') #{ fill: ground_grad; stroke: none; };
 ground.apply { rect(0, 255, 400, 45); }
 
-let frame = PathLayer('frame') ${ fill: none; stroke: #1a0e2e; stroke-width: 4; };
+let frame = PathLayer('frame') #{ fill: none; stroke: #1a0e2e; stroke-width: 4; };
 frame.apply { rect(0, 0, 400, 300); }
 
 // --- Scene Organization ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(sky, sun, far_mtns, near_mtns, ground, frame);
 </code>
   <img src="/blog/samples/post1/linear-basics.svg" alt="Four linear gradients composing a layered landscape" loading="lazy">
@@ -417,32 +417,32 @@ let g270 = LinearGradient('g-up', 0, 1, 0, 0) {|g|
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #1a1a2e; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #1a1a2e; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Swatch grid: 3 columns × 2 rows ---
 
-let sw1 = PathLayer('swatch-right') ${ fill: g0; stroke: #333; stroke-width: 1; };
+let sw1 = PathLayer('swatch-right') #{ fill: g0; stroke: #333; stroke-width: 1; };
 sw1.apply { roundRect(20, 55, 110, 70, 6); }
 
-let sw2 = PathLayer('swatch-down-right') ${ fill: g60; stroke: #333; stroke-width: 1; };
+let sw2 = PathLayer('swatch-down-right') #{ fill: g60; stroke: #333; stroke-width: 1; };
 sw2.apply { roundRect(145, 55, 110, 70, 6); }
 
-let sw3 = PathLayer('swatch-down') ${ fill: g90; stroke: #333; stroke-width: 1; };
+let sw3 = PathLayer('swatch-down') #{ fill: g90; stroke: #333; stroke-width: 1; };
 sw3.apply { roundRect(270, 55, 110, 70, 6); }
 
-let sw4 = PathLayer('swatch-left') ${ fill: g180; stroke: #333; stroke-width: 1; };
+let sw4 = PathLayer('swatch-left') #{ fill: g180; stroke: #333; stroke-width: 1; };
 sw4.apply { roundRect(20, 215, 110, 70, 6); }
 
-let sw5 = PathLayer('swatch-up-left') ${ fill: g240; stroke: #333; stroke-width: 1; };
+let sw5 = PathLayer('swatch-up-left') #{ fill: g240; stroke: #333; stroke-width: 1; };
 sw5.apply { roundRect(145, 215, 110, 70, 6); }
 
-let sw6 = PathLayer('swatch-up') ${ fill: g270; stroke: #333; stroke-width: 1; };
+let sw6 = PathLayer('swatch-up') #{ fill: g270; stroke: #333; stroke-width: 1; };
 sw6.apply { roundRect(270, 215, 110, 70, 6); }
 
 // --- Direction labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 11;
   fill: #a0a0c0;
@@ -459,7 +459,7 @@ labels.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 18;
   fill: #e0e0ff;
@@ -472,7 +472,7 @@ title.apply {
 
 // --- Central connector ---
 
-let connector = PathLayer('connector') ${ fill: none; stroke: #444466; stroke-width: 1; };
+let connector = PathLayer('connector') #{ fill: none; stroke: #444466; stroke-width: 1; };
 connector.apply {
   M 75 130 L 75 210
   M 200 130 L 200 210
@@ -481,7 +481,7 @@ connector.apply {
 
 // --- Scene ---
 
-let fan = GroupLayer('fan') ${};
+let fan = GroupLayer('fan') #{};
 fan.append(bg, sw1, sw2, sw3, sw4, sw5, sw6, labels, title, connector);
 </code>
   <img src="/blog/samples/post1/angle-fan.svg" alt="Same stops, six directions — the two-point model controls angle" loading="lazy">
@@ -541,49 +541,49 @@ let ring_grad = LinearGradient('ring', 0, 0, 1, 0) {|g|
 
 // --- Background and Nebula ---
 
-let bg = PathLayer('bg') ${ fill: #080612; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #080612; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
-let nebula = PathLayer('nebula-layer') ${ fill: nebula_grad; stroke: none; };
+let nebula = PathLayer('nebula-layer') #{ fill: nebula_grad; stroke: none; };
 nebula.apply { rect(0, 0, 400, 400); }
 
 // --- Stars ---
 
-let s1 = PathLayer('s1') ${ fill: star_grad; stroke: none; };
+let s1 = PathLayer('s1') #{ fill: star_grad; stroke: none; };
 s1.apply { circle(70, 55, 18); closePath(); }
 
-let s2 = PathLayer('s2') ${ fill: warm_star; stroke: none; };
+let s2 = PathLayer('s2') #{ fill: warm_star; stroke: none; };
 s2.apply { circle(330, 80, 22); closePath(); }
 
-let s3 = PathLayer('s3') ${ fill: star_grad; stroke: none; };
+let s3 = PathLayer('s3') #{ fill: star_grad; stroke: none; };
 s3.apply { circle(60, 320, 14); closePath(); }
 
-let s4 = PathLayer('s4') ${ fill: warm_star; stroke: none; };
+let s4 = PathLayer('s4') #{ fill: warm_star; stroke: none; };
 s4.apply { circle(350, 290, 16); closePath(); }
 
-let s5 = PathLayer('s5') ${ fill: star_grad; stroke: none; };
+let s5 = PathLayer('s5') #{ fill: star_grad; stroke: none; };
 s5.apply { circle(200, 40, 10); closePath(); }
 
-let stars = GroupLayer('stars') ${};
+let stars = GroupLayer('stars') #{};
 stars.append(s1, s2, s3, s4, s5);
 
 // --- Planet with Ring ---
 
-let planet_body = PathLayer('planet-body') ${ fill: planet_grad; stroke: none; };
+let planet_body = PathLayer('planet-body') #{ fill: planet_grad; stroke: none; };
 planet_body.apply { circle(260, 280, 45); closePath(); }
 
-let planet_ring = PathLayer('planet-ring') ${ fill: ring_grad; stroke: none; opacity: 0.6; };
+let planet_ring = PathLayer('planet-ring') #{ fill: ring_grad; stroke: none; opacity: 0.6; };
 planet_ring.apply {
   M 200 282 Q 230 260 260 262 Q 290 260 320 282
   Q 290 290 260 288 Q 230 290 200 282 Z
 }
 
-let planet = GroupLayer('planet') ${};
+let planet = GroupLayer('planet') #{};
 planet.append(planet_body, planet_ring);
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, nebula, stars, planet);
 </code>
   <img src="/blog/samples/post1/radial-glow.svg" alt="Four radial gradients — nebula, stars, and a ringed planet" loading="lazy">
@@ -604,7 +604,7 @@ scene.append(bg, nebula, stars, planet);
 
 // --- Shared background ---
 
-let bg = PathLayer('bg') ${ fill: #0a0a1a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0a0a1a; stroke: none; };
 bg.apply { rect(0, 0, 450, 180); }
 
 // --- Sphere gradients with different focal points ---
@@ -638,18 +638,18 @@ sphere3_grad.interpolation = 'oklch';
 
 // --- Sphere layers ---
 
-let s1 = PathLayer('s1') ${ fill: sphere1_grad; stroke: none; };
+let s1 = PathLayer('s1') #{ fill: sphere1_grad; stroke: none; };
 s1.apply { circle(80, 80, 60); closePath(); }
 
-let s2 = PathLayer('s2') ${ fill: sphere2_grad; stroke: none; };
+let s2 = PathLayer('s2') #{ fill: sphere2_grad; stroke: none; };
 s2.apply { circle(225, 80, 60); closePath(); }
 
-let s3 = PathLayer('s3') ${ fill: sphere3_grad; stroke: none; };
+let s3 = PathLayer('s3') #{ fill: sphere3_grad; stroke: none; };
 s3.apply { circle(370, 80, 60); closePath(); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #667;
@@ -663,7 +663,7 @@ labels.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, s1, s2, s3, labels);
 </code>
   <img src="/blog/samples/post1/radial-focal.svg" alt="Same gradient stops, three focal points — the highlight shifts with fx, fy" loading="lazy">
@@ -723,7 +723,7 @@ oklch_mag_green.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Gradient bars ---
@@ -733,29 +733,29 @@ let bar_h = 32;
 let x0 = 50;
 
 // Pair 1
-let by_srgb = PathLayer('by-srgb') ${ fill: srgb_blue_yellow; stroke: none; };
+let by_srgb = PathLayer('by-srgb') #{ fill: srgb_blue_yellow; stroke: none; };
 by_srgb.apply { roundRect(x0, 52, bar_w, bar_h, 4); }
 
-let by_oklch = PathLayer('by-oklch') ${ fill: oklch_blue_yellow; stroke: none; };
+let by_oklch = PathLayer('by-oklch') #{ fill: oklch_blue_yellow; stroke: none; };
 by_oklch.apply { roundRect(x0, 92, bar_w, bar_h, 4); }
 
 // Pair 2
-let rc_srgb = PathLayer('rc-srgb') ${ fill: srgb_red_cyan; stroke: none; };
+let rc_srgb = PathLayer('rc-srgb') #{ fill: srgb_red_cyan; stroke: none; };
 rc_srgb.apply { roundRect(x0, 172, bar_w, bar_h, 4); }
 
-let rc_oklch = PathLayer('rc-oklch') ${ fill: oklch_red_cyan; stroke: none; };
+let rc_oklch = PathLayer('rc-oklch') #{ fill: oklch_red_cyan; stroke: none; };
 rc_oklch.apply { roundRect(x0, 212, bar_w, bar_h, 4); }
 
 // Pair 3
-let mg_srgb = PathLayer('mg-srgb') ${ fill: srgb_mag_green; stroke: none; };
+let mg_srgb = PathLayer('mg-srgb') #{ fill: srgb_mag_green; stroke: none; };
 mg_srgb.apply { roundRect(x0, 292, bar_w, bar_h, 4); }
 
-let mg_oklch = PathLayer('mg-oklch') ${ fill: oklch_mag_green; stroke: none; };
+let mg_oklch = PathLayer('mg-oklch') #{ fill: oklch_mag_green; stroke: none; };
 mg_oklch.apply { roundRect(x0, 332, bar_w, bar_h, 4); }
 
 // --- Labels ---
 
-let mode_labels = TextLayer('mode-labels') ${
+let mode_labels = TextLayer('mode-labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #888;
@@ -770,7 +770,7 @@ mode_labels.apply {
   text(44, 353)`OKLCH`
 }
 
-let pair_labels = TextLayer('pair-labels') ${
+let pair_labels = TextLayer('pair-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #ccccdd;
@@ -785,7 +785,7 @@ pair_labels.apply {
 
 // --- Scene ---
 
-let comparison = GroupLayer('comparison') ${};
+let comparison = GroupLayer('comparison') #{};
 comparison.append(bg, by_srgb, by_oklch, rc_srgb, rc_oklch, mg_srgb, mg_oklch, mode_labels, pair_labels);
 </code>
   <img src="/blog/samples/post1/oklch-vs-srgb.svg" alt="sRGB vs OKLCH — same stops, dramatically different midpoints" loading="lazy">
@@ -838,29 +838,29 @@ repeat_grad.spreadMethod = 'repeat';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #14141e; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #14141e; stroke: none; };
 bg.apply { rect(0, 0, 400, 300); }
 
 // --- Gradient strips ---
 
-let strip_pad = PathLayer('strip-pad') ${ fill: pad_grad; stroke: #333; stroke-width: 1; };
+let strip_pad = PathLayer('strip-pad') #{ fill: pad_grad; stroke: #333; stroke-width: 1; };
 strip_pad.apply { roundRect(60, 45, 320, 50, 4); }
 
-let strip_reflect = PathLayer('strip-reflect') ${ fill: reflect_grad; stroke: #333; stroke-width: 1; };
+let strip_reflect = PathLayer('strip-reflect') #{ fill: reflect_grad; stroke: #333; stroke-width: 1; };
 strip_reflect.apply { roundRect(60, 120, 320, 50, 4); }
 
-let strip_repeat = PathLayer('strip-repeat') ${ fill: repeat_grad; stroke: #333; stroke-width: 1; };
+let strip_repeat = PathLayer('strip-repeat') #{ fill: repeat_grad; stroke: #333; stroke-width: 1; };
 strip_repeat.apply { roundRect(60, 195, 320, 50, 4); }
 
 // --- Range indicator (shows the 0–30% region) ---
 
-let indicator = PathLayer('range-indicator') ${ fill: none; stroke: #ffffff44; stroke-width: 1; };
+let indicator = PathLayer('range-indicator') #{ fill: none; stroke: #ffffff44; stroke-width: 1; };
 indicator.apply {
   M 60 40 L 60 255
   M 156 40 L 156 255
 }
 
-let range_label = TextLayer('range-label') ${
+let range_label = TextLayer('range-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -872,7 +872,7 @@ range_label.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 12;
   fill: #a0a0c0;
@@ -886,7 +886,7 @@ labels.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 16;
   fill: #e0e0ff;
@@ -899,7 +899,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, strip_pad, strip_reflect, strip_repeat, indicator, range_label, labels, title);
 </code>
   <img src="/blog/samples/post1/spread-modes.svg" alt="pad, reflect, repeat — same narrow gradient, three spread behaviors" loading="lazy">
@@ -949,52 +949,52 @@ let subtle = LinearGradient('subtle-variant', 0, 0, 1, 0) {|g|
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 400, 300); }
 
 // --- Base showcase (large card) ---
 
-let base_card = PathLayer('base-card') ${ fill: base; stroke: #333; stroke-width: 1; };
+let base_card = PathLayer('base-card') #{ fill: base; stroke: #333; stroke-width: 1; };
 base_card.apply { roundRect(20, 40, 170, 80, 8); }
 
-let cool_card = PathLayer('cool-card') ${ fill: cool; stroke: #333; stroke-width: 1; };
+let cool_card = PathLayer('cool-card') #{ fill: cool; stroke: #333; stroke-width: 1; };
 cool_card.apply { roundRect(210, 40, 170, 80, 8); }
 
 // --- Vertical variant: tall sidebar ---
 
-let vert_bar = PathLayer('vert-bar') ${ fill: vertical; stroke: #333; stroke-width: 1; };
+let vert_bar = PathLayer('vert-bar') #{ fill: vertical; stroke: #333; stroke-width: 1; };
 vert_bar.apply { roundRect(20, 145, 60, 120, 8); }
 
 // --- Subtle variant: UI elements ---
 
-let btn1 = PathLayer('btn1') ${ fill: subtle; stroke: none; };
+let btn1 = PathLayer('btn1') #{ fill: subtle; stroke: none; };
 btn1.apply { roundRect(100, 145, 120, 36, 6); }
 
-let btn2 = PathLayer('btn2') ${ fill: subtle; stroke: none; };
+let btn2 = PathLayer('btn2') #{ fill: subtle; stroke: none; };
 btn2.apply { roundRect(100, 195, 120, 36, 6); }
 
 // --- Small accent circles using base ---
 
-let dot1 = PathLayer('dot1') ${ fill: base; stroke: none; };
+let dot1 = PathLayer('dot1') #{ fill: base; stroke: none; };
 dot1.apply { circle(260, 163, 18); closePath(); }
 
-let dot2 = PathLayer('dot2') ${ fill: cool; stroke: none; };
+let dot2 = PathLayer('dot2') #{ fill: cool; stroke: none; };
 dot2.apply { circle(310, 163, 18); closePath(); }
 
-let dot3 = PathLayer('dot3') ${ fill: vertical; stroke: none; };
+let dot3 = PathLayer('dot3') #{ fill: vertical; stroke: none; };
 dot3.apply { circle(360, 163, 18); closePath(); }
 
 // --- Pill shapes with inherited gradient ---
 
-let pill1 = PathLayer('pill1') ${ fill: base; stroke: none; };
+let pill1 = PathLayer('pill1') #{ fill: base; stroke: none; };
 pill1.apply { roundRect(240, 200, 140, 28, 14); }
 
-let pill2 = PathLayer('pill2') ${ fill: cool; stroke: none; };
+let pill2 = PathLayer('pill2') #{ fill: cool; stroke: none; };
 pill2.apply { roundRect(240, 236, 140, 28, 14); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #888;
@@ -1008,7 +1008,7 @@ labels.apply {
   text(310, 195)`accent dots`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #ccccdd;
@@ -1021,7 +1021,7 @@ title.apply {
 
 // --- Scene ---
 
-let palette = GroupLayer('palette') ${};
+let palette = GroupLayer('palette') #{};
 palette.append(bg, base_card, cool_card, vert_bar, btn1, btn2, dot1, dot2, dot3, pill1, pill2, labels, title);
 </code>
   <img src="/blog/samples/post1/inheritance-theme.svg" alt="One base gradient spawns a family of variants via inherit()" loading="lazy">
@@ -1065,23 +1065,23 @@ glow_c.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0a0a1a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0a0a1a; stroke: none; };
 bg.apply { rect(0, 0, 400, 300); }
 
 // --- Light circles (overlapping for color mixing) ---
 
-let la = PathLayer('light-a') ${ fill: glow_a; stroke: none; opacity: 0.8; };
+let la = PathLayer('light-a') #{ fill: glow_a; stroke: none; opacity: 0.8; };
 la.apply { circle(140, 120, 130); closePath(); }
 
-let lb = PathLayer('light-b') ${ fill: glow_b; stroke: none; opacity: 0.8; };
+let lb = PathLayer('light-b') #{ fill: glow_b; stroke: none; opacity: 0.8; };
 lb.apply { circle(280, 110, 130); closePath(); }
 
-let lc = PathLayer('light-c') ${ fill: glow_c; stroke: none; opacity: 0.8; };
+let lc = PathLayer('light-c') #{ fill: glow_c; stroke: none; opacity: 0.8; };
 lc.apply { circle(200, 220, 130); closePath(); }
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, la, lb, lc);
 </code>
   <img src="/blog/samples/post1/radial-reactive.svg" alt="Drag the color pickers to recolor three overlapping radial lights" loading="lazy">

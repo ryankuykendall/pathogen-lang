@@ -34,7 +34,7 @@ CSSVar values auto-convert in style blocks — no `.css` needed:
 ```
 let fg = CSSVar('--foreground', '#333');
 
-define PathLayer('main') ${ stroke: fg; fill: CSSVar('--fill', 'none'); }
+define PathLayer('main') #{ stroke: fg; fill: CSSVar('--fill', 'none'); }
 ```
 
 This produces `stroke="var(--foreground, #333)"` and `fill="var(--fill, none)"` in the SVG output.

@@ -6,9 +6,9 @@ define ViewBox(0, 0, 600, 320);
 // --- Reproduce original style setup ---
 
 // These match the original sample EXACTLY:
-let small_text = &{ text(0, 10)`font-size: 10` } << ${ font-size: 10; };
-let med_text = &{ text(0, 16)`font-size: 16` } << ${ font-size: 16; };
-let large_text = &{ text(0, 24)`font-size: 24` } << ${ font-size: 24; };
+let small_text = &{ text(0, 10)`font-size: 10` } << #{ font-size: 10; };
+let med_text = &{ text(0, 16)`font-size: 16` } << #{ font-size: 16; };
+let large_text = &{ text(0, 24)`font-size: 24` } << #{ font-size: 24; };
 
 // These are what .boundingBox() sees (sans-serif defaults, no font-family specified):
 let bb_s = small_text.boundingBox();
@@ -21,9 +21,9 @@ log("med   w:", bb_m.width, "h:", bb_m.height);
 log("large w:", bb_l.width, "h:", bb_l.height);
 
 // Now measure the SAME text with monospace (what the browser actually renders):
-let small_mono = &{ text(0, 10)`font-size: 10` } << ${ font-size: 10; font-family: monospace; };
-let med_mono = &{ text(0, 16)`font-size: 16` } << ${ font-size: 16; font-family: monospace; };
-let large_mono = &{ text(0, 24)`font-size: 24` } << ${ font-size: 24; font-family: monospace; };
+let small_mono = &{ text(0, 10)`font-size: 10` } << #{ font-size: 10; font-family: monospace; };
+let med_mono = &{ text(0, 16)`font-size: 16` } << #{ font-size: 16; font-family: monospace; };
+let large_mono = &{ text(0, 24)`font-size: 24` } << #{ font-size: 24; font-family: monospace; };
 
 let bb_s_mono = small_mono.boundingBox();
 let bb_m_mono = med_mono.boundingBox();
@@ -86,9 +86,9 @@ let m_proj = med_mono.project(x0, y_m);
 let l_proj = large_mono.project(x0, y_l);
 
 // Project the height labels at their original positions
-let h_label_s = &{ text(0, 8)`h = ${bb_s.height}` } << ${ font-size: 8; font-family: monospace; };
-let h_label_m = &{ text(0, 8)`h = ${bb_m.height}` } << ${ font-size: 8; font-family: monospace; };
-let h_label_l = &{ text(0, 8)`h = ${bb_l.height}` } << ${ font-size: 8; font-family: monospace; };
+let h_label_s = &{ text(0, 8)`h = ${bb_s.height}` } << #{ font-size: 8; font-family: monospace; };
+let h_label_m = &{ text(0, 8)`h = ${bb_m.height}` } << #{ font-size: 8; font-family: monospace; };
+let h_label_l = &{ text(0, 8)`h = ${bb_l.height}` } << #{ font-size: 8; font-family: monospace; };
 
 let hl_s_proj = h_label_s.project(calc(x0 + bb_s.width + 12), calc(y_s + bb_s.y + bb_s.height / 2 + 3));
 let hl_m_proj = h_label_m.project(calc(x0 + bb_m.width + 12), calc(y_m + bb_m.y + bb_m.height / 2 + 3));
@@ -99,6 +99,6 @@ log("med   h-label intersects text:", hl_m_proj.intersects(m_proj));
 log("large h-label intersects text:", hl_l_proj.intersects(l_proj));
 
 // Width dimension labels
-let w_label_s = &{ text(0, 8)`w = ${bb_s.width}` } << ${ font-size: 8; font-family: monospace; };
+let w_label_s = &{ text(0, 8)`w = ${bb_s.width}` } << #{ font-size: 8; font-family: monospace; };
 let wl_s_proj = w_label_s.project(calc(x0 + bb_s.width / 2), calc(y_s + bb_s.y - 12));
 log("small w-label intersects text:", wl_s_proj.intersects(s_proj));

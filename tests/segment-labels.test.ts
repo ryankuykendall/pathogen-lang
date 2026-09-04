@@ -29,7 +29,7 @@ describe('segment labels and corner-op suffixes: recording', () => {
   });
 
   it('works inside apply blocks', () => {
-    const src = "let pl = PathLayer('p') ${ fill: none; };\npl.apply {\n  M 5 5\n  h 10 as segment('a')\n}";
+    const src = "let pl = PathLayer('p') #{ fill: none; };\npl.apply {\n  M 5 5\n  h 10 as segment('a')\n}";
     expect(() => compile(src)).not.toThrow();
   });
 
@@ -46,8 +46,8 @@ describe('segment labels and corner-op suffixes: validation errors', () => {
 
   it('allows the same label in different layers', () => {
     const src = [
-      "let a = PathLayer('a') ${ fill: none; };",
-      "let b = PathLayer('b') ${ fill: none; };",
+      "let a = PathLayer('a') #{ fill: none; };",
+      "let b = PathLayer('b') #{ fill: none; };",
       "a.apply {\n  M 0 0\n  h 10 as segment('lid')\n}",
       "b.apply {\n  M 0 0\n  h 10 as segment('lid')\n}",
     ].join('\n');
@@ -204,7 +204,7 @@ describe('name-based query APIs (segment / point / vertex)', () => {
 
   it('layer().segment() returns absolute geometry from the layer store', () => {
     const src = [
-      "let pl = PathLayer('a') ${ fill: none; };",
+      "let pl = PathLayer('a') #{ fill: none; };",
       "pl.apply {\n  M 10 10\n  h 30 as segment('top')\n  v 30\n}",
       "let top = layer('a').segment('top');",
       "let bb = top.boundingBox();",
@@ -217,7 +217,7 @@ describe('name-based query APIs (segment / point / vertex)', () => {
   });
 
   it('layer().point() reads authored geometry', () => {
-    const src = "let pl = PathLayer('a') ${ fill: none; };\npl.apply {\n  M 10 10\n  h 30 as endpoint('e')\n}\nlet e = layer('a').point('e');\nM e.x e.y\nh 1";
+    const src = "let pl = PathLayer('a') #{ fill: none; };\npl.apply {\n  M 10 10\n  h 30 as endpoint('e')\n}\nlet e = layer('a').point('e');\nM e.x e.y\nh 1";
     const result = compile(src);
     // Bare command after apply goes to the default layer
     const defaultLayer = result.layers.find((l) => l.isDefault);
@@ -240,7 +240,7 @@ describe('name-based query APIs (segment / point / vertex)', () => {
   });
 
   it('layer/projected vertex handles reject corner ops honestly', () => {
-    const src = "let pl = PathLayer('a') ${ fill: none; };\npl.apply {\n  M 0 0\n  h 10\n  v 10 as endpoint('c')\n}\nlayer('a').vertex('c').fillet(2);";
+    const src = "let pl = PathLayer('a') #{ fill: none; };\npl.apply {\n  M 0 0\n  h 10\n  v 10 as endpoint('c')\n}\nlayer('a').vertex('c').fillet(2);";
     expect(() => compile(src)).toThrow(/not supported yet/);
   });
 
@@ -312,7 +312,7 @@ describe('group labels (querySelector/querySelectorAll model)', () => {
 
   it('groups work through layer queries', () => {
     const src = [
-      "let pl = PathLayer('g') ${ fill: none; };",
+      "let pl = PathLayer('g') #{ fill: none; };",
       "pl.apply {\n  M 0 0\n  h 10 as segment('rib')\n  v 5\n  h 10 as segment('rib')\n}",
       "log(layer('g').segmentAll('rib').length);",
     ].join('\n');
@@ -644,7 +644,7 @@ describe('query pseudo-selectors (:atomic, :first, :last, :nth)', () => {
       let placed = comb.project(50, 50);
       log(placed.segmentAll('tooth:atomic').length);
       log(placed.segment('tooth:last').startPoint.x);
-      let lay = PathLayer('teeth') \${};
+      let lay = PathLayer('teeth') #{};
       layer('teeth').apply {
         M 10 10
         h 5 as segment('edge');
@@ -662,7 +662,7 @@ describe('query pseudo-selectors (:atomic, :first, :last, :nth)', () => {
 describe('pseudo guard on the layer query path (review warning 3)', () => {
   it('layer().point/vertexAll reject pseudo syntax through the layer dispatch', () => {
     const src = `
-      let lay = PathLayer('shape') \${};
+      let lay = PathLayer('shape') #{};
       layer('shape').apply {
         M 10 10
         h 5 as endpoint('tip');

@@ -6,18 +6,18 @@ let curve = @{
   c 0 120 -200 120 -200 0
 };
 
-let path = PathLayer('path') ${
+let path = PathLayer('path') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: none;
 };
 
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   fill: Color('#ef4444');
   stroke: none;
 };
 
-let tangents = PathLayer('tangents') ${
+let tangents = PathLayer('tangents') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;

@@ -236,7 +236,7 @@ let label = count > 1 ? 'pieces' : 'piece';
 let caption = `${count} ${count > 1 ? 'pieces' : 'piece'} total`;
 
 // …and inside style-block values:
-let hot = PathLayer('mark') ${ stroke-width: count > 1 ? 4 : 1; };
+let hot = PathLayer('mark') #{ stroke-width: count > 1 ? 4 : 1; };
 ```
 
 Ternaries also work inside a path argument's `calc()` — `L calc(count > 1 ? 40 : 10) 0`.
@@ -252,12 +252,14 @@ if (temperature > 30) {
 
 ## Style Blocks
 
-Style blocks are CSS-like key-value maps wrapped in `${ }`. They're used for layer styles but are also first-class values — you can store them in variables, merge them, and read their properties.
+Style blocks are CSS-like key-value maps wrapped in `#{ }` — the hash is the CSS mnemonic, and it keeps the block opener distinct from `${ }`, which is always an interpolation. They're used for layer styles but are also first-class values — you can store them in variables, merge them, and read their properties.
+
+> **Migrating from `${ }`:** before September 2026 style blocks opened with `${`. A `${` that is not inside a backtick template or a style value is now a parse error that says so — `Style blocks open with '#{ … }' — '${ … }' is only template interpolation now` — and the playground and VS Code offer *Change '${' to '#{'* and *Convert all legacy '${' style blocks to '#{'* quick fixes. Interpolations (`` `${x}` ``, `stroke-width: ${w};`) are unchanged.
 
 ### Literals
 
 ```
-let styles = ${
+let styles = #{
   stroke: #cc0000;
   stroke-width: 3;
   fill: none;
@@ -356,8 +358,8 @@ The `<<` operator merges two values of the same type. The right side overrides t
 
 ```
 // Style blocks
-let base = ${ stroke: red; stroke-width: 2; };
-let merged = base << ${ stroke-width: 4; fill: blue; };
+let base = #{ stroke: red; stroke-width: 2; };
+let merged = base << #{ stroke-width: 4; fill: blue; };
 // Result: stroke: red, stroke-width: 4, fill: blue
 
 // Objects
@@ -431,7 +433,7 @@ A few consequences of the structural rule:
 Use dot notation with camelCase names to read kebab-case properties:
 
 ```
-let s = ${ stroke-width: 4; };
+let s = #{ stroke-width: 4; };
 let sw = s.strokeWidth;  // "4" (reads 'stroke-width')
 ```
 

@@ -67,13 +67,13 @@ let ramps = [
 // Root & groups
 // ─────────────────────────────────────────────────────────────────
 
-define GroupLayer('diagram') ${}
-define GroupLayer('celestial') ${}
-define GroupLayer('masthead') ${}
-define GroupLayer('legend') ${}
-define GroupLayer('test-bench') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('celestial') #{}
+define GroupLayer('masthead') #{}
+define GroupLayer('legend') #{}
+define GroupLayer('test-bench') #{}
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -100,7 +100,7 @@ let r_step = 20;
 // ramp[6] (L=0.75) at r=232
 
 // Faint outline ring at outermost + innermost
-let outer_frame = PathLayer('outer-frame') ${
+let outer_frame = PathLayer('outer-frame') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -109,7 +109,7 @@ outer_frame.apply {
   circle(cx, cy, 285);
 }
 
-let inner_frame = PathLayer('inner-frame') ${
+let inner_frame = PathLayer('inner-frame') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -119,7 +119,7 @@ inner_frame.apply {
 }
 
 // Dashed reference rings for the two L-normalization thresholds
-let ring_055 = PathLayer('ring-055') ${
+let ring_055 = PathLayer('ring-055') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.8;
@@ -129,7 +129,7 @@ ring_055.apply {
   circle(cx, cy, 192);
 }
 
-let ring_075 = PathLayer('ring-075') ${
+let ring_075 = PathLayer('ring-075') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.8;
@@ -148,7 +148,7 @@ layer('celestial').append(layer('outer-frame'),
 // Spoke lines from hub to rim (faint guides)
 // ─────────────────────────────────────────────────────────────────
 
-let spokes = PathLayer('spokes') ${
+let spokes = PathLayer('spokes') #{
   fill: none;
   stroke: fg_faint;
   stroke-width: 0.5;
@@ -182,7 +182,7 @@ for ([r, ai] in ramps) {
     let sy = calc(cy + stop_r * sin(theta));
     let c = r[j];
     let dot_name = `d_${ai}_${j}`;
-    let dot = PathLayer(dot_name) ${
+    let dot = PathLayer(dot_name) #{
       fill: c;
       stroke: none;
     };
@@ -197,7 +197,7 @@ for ([r, ai] in ramps) {
 // Anchor name labels — beyond the outer frame, tangential
 // ─────────────────────────────────────────────────────────────────
 
-let anchor_name_layer = TextLayer('anchor-name') ${
+let anchor_name_layer = TextLayer('anchor-name') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 700;
@@ -205,7 +205,7 @@ let anchor_name_layer = TextLayer('anchor-name') ${
   fill: fg_auto;
   text-anchor: middle;
 };
-let anchor_hue_layer = TextLayer('anchor-hue') ${
+let anchor_hue_layer = TextLayer('anchor-hue') #{
   font-family: sans-serif;
   font-size: 8;
   letter-spacing: 0.5;
@@ -233,7 +233,7 @@ layer('diagram').append(layer('celestial'));
 // Central hub — title + small key
 // ─────────────────────────────────────────────────────────────────
 
-let hub_fill = PathLayer('hub-fill') ${
+let hub_fill = PathLayer('hub-fill') #{
   fill: bg_color;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -242,7 +242,7 @@ hub_fill.apply {
   circle(cx, cy, r_hub);
 }
 
-let hub_title = TextLayer('hub-title') ${
+let hub_title = TextLayer('hub-title') #{
   font-family: sans-serif;
   font-size: 14;
   font-weight: 700;
@@ -254,7 +254,7 @@ hub_title.apply {
   text(cx, calc(cy - 6))`OKLCH`;
 }
 
-let hub_sub = TextLayer('hub-sub') ${
+let hub_sub = TextLayer('hub-sub') #{
   font-family: sans-serif;
   font-size: 8;
   letter-spacing: 0.8;
@@ -265,7 +265,7 @@ hub_sub.apply {
   text(cx, calc(cy + 10))`HUE CONSERVATORY`;
 }
 
-let hub_label_055 = TextLayer('hub-055') ${
+let hub_label_055 = TextLayer('hub-055') #{
   font-family: sans-serif;
   font-size: 6;
   letter-spacing: 0.8;
@@ -286,11 +286,11 @@ layer('diagram').append(layer('masthead'));
 // Ring annotations — floating labels on the reference rings
 // ─────────────────────────────────────────────────────────────────
 
-let ring_ann_bg = PathLayer('ring-ann-bg') ${
+let ring_ann_bg = PathLayer('ring-ann-bg') #{
   fill: bg_color;
   stroke: none;
 };
-let ring_label = TextLayer('ring-label') ${
+let ring_label = TextLayer('ring-label') #{
   font-family: sans-serif;
   font-size: 8;
   letter-spacing: 1.2;
@@ -334,7 +334,7 @@ layer('celestial').append(layer('ring-ann-bg'), layer('ring-label'));
 // Title block top-left (outside the wheel)
 // ─────────────────────────────────────────────────────────────────
 
-let eyebrow = TextLayer('eyebrow') ${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: sans-serif;
   font-size: 8;
   font-weight: 700;
@@ -346,7 +346,7 @@ eyebrow.apply {
   text(34, 42)`CHART № 02  /  SIX-HUE SERIES`;
 }
 
-let masthead_title = TextLayer('masthead-title') ${
+let masthead_title = TextLayer('masthead-title') #{
   font-family: sans-serif;
   font-size: 38;
   font-weight: 200;
@@ -358,7 +358,7 @@ masthead_title.apply {
   text(34, 82)`Hue Conservatory`;
 }
 
-let masthead_sub = TextLayer('masthead-sub') ${
+let masthead_sub = TextLayer('masthead-sub') #{
   font-family: sans-serif;
   font-size: 10;
   font-style: italic;
@@ -378,7 +378,7 @@ layer('masthead').append(layer('eyebrow'), layer('masthead-title'), layer('masth
 let key_x = 760;
 let key_y = 40;
 
-let key_title = TextLayer('key-title') ${
+let key_title = TextLayer('key-title') #{
   font-family: sans-serif;
   font-size: 8;
   font-weight: 700;
@@ -390,13 +390,13 @@ key_title.apply {
   text(key_x, key_y)`KEY`;
 }
 
-let key_line_1 = TextLayer('key-line-1') ${
+let key_line_1 = TextLayer('key-line-1') #{
   font-family: sans-serif;
   font-size: 9;
   fill: fg_auto;
   text-anchor: start;
 };
-let key_line_2 = TextLayer('key-line-2') ${
+let key_line_2 = TextLayer('key-line-2') #{
   font-family: sans-serif;
   font-size: 9;
   fill: fg_auto;
@@ -412,7 +412,7 @@ key_line_2.apply {
 // Stop-growth legend: small row showing that dot size grows with j
 let legend_bar_x = key_x;
 let legend_bar_y = calc(key_y + 54);
-let legend_label = TextLayer('legend-label') ${
+let legend_label = TextLayer('legend-label') #{
   font-family: sans-serif;
   font-size: 9;
   fill: fg_auto;
@@ -422,7 +422,7 @@ legend_label.apply {
   text(legend_bar_x, legend_bar_y)`stop j:  dark → light`;
 }
 
-let legend_dot_layer = PathLayer('legend-dots') ${
+let legend_dot_layer = PathLayer('legend-dots') #{
   fill: fg_muted;
   stroke: none;
 };
@@ -446,7 +446,7 @@ layer('diagram').append(layer('legend'));
 // ─────────────────────────────────────────────────────────────────
 
 let bench_y = 660;
-let bench_label = TextLayer('bench-label') ${
+let bench_label = TextLayer('bench-label') #{
   font-family: sans-serif;
   font-size: 8;
   font-weight: 700;
@@ -489,7 +489,7 @@ let card_targets = [
   'AAA large',
 ];
 
-let card_name_layer = TextLayer('card-name') ${
+let card_name_layer = TextLayer('card-name') #{
   font-family: sans-serif;
   font-size: 8;
   font-weight: 700;
@@ -497,7 +497,7 @@ let card_name_layer = TextLayer('card-name') ${
   fill: fg_auto;
   text-anchor: start;
 };
-let card_target_layer = TextLayer('card-target') ${
+let card_target_layer = TextLayer('card-target') #{
   font-family: sans-serif;
   font-size: 7;
   font-style: italic;
@@ -509,7 +509,7 @@ for ([a, ki] in card_a_fills) {
   let px = calc(card_start_x + ki * (card_w + card_gap));
   let kn_a = `ba_${ki}`;
   let kn_b = `bb_${ki}`;
-  let swatch_a = PathLayer(kn_a) ${
+  let swatch_a = PathLayer(kn_a) #{
     fill: a;
     stroke: none;
   };
@@ -519,7 +519,7 @@ for ([a, ki] in card_a_fills) {
         22,
         22);
   }
-  let swatch_b = PathLayer(kn_b) ${
+  let swatch_b = PathLayer(kn_b) #{
     fill: card_b_fills[ki];
     stroke: fg_hair;
     stroke-width: 0.5;

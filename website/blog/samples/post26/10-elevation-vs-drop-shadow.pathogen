@@ -3,7 +3,7 @@ define ViewBox(0, 0, 400, 240);
 // Left: native CSS `drop-shadow(0 6px 12px black)` — a single shadow.
 // Right: ElevationShadowFilter at elevation=6 — three layered shadows tuned for physical depth.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -16,7 +16,7 @@ let elev = ElevationShadowFilter() {|f|
   f.color = oklch(15% 0.04 280);
 };
 
-let c_native = PathLayer('native') ${
+let c_native = PathLayer('native') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: drop-shadow(0 6px 12px rgba(20, 21, 31, 0.4));
@@ -29,7 +29,7 @@ c_native.apply {
       10);
 }
 
-let c_pathogen = PathLayer('pathogen') ${
+let c_pathogen = PathLayer('pathogen') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: elev;
@@ -42,7 +42,7 @@ c_pathogen.apply {
       10);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -53,7 +53,7 @@ l1.apply {
   text(90, 200)`drop-shadow()`;
 }
 
-let l1b = TextLayer('l1b') ${
+let l1b = TextLayer('l1b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -64,7 +64,7 @@ l1b.apply {
   text(90, 215)`single layer`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -75,7 +75,7 @@ l2.apply {
   text(310, 200)`ElevationShadowFilter`;
 }
 
-let l2b = TextLayer('l2b') ${
+let l2b = TextLayer('l2b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;

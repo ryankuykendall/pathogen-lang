@@ -48,7 +48,7 @@ let grain = NoiseFilter() {|f|
 log("filter id:", grain.id);     // pathogen-noise-1
 log("amount:",    grain.amount); // 0.6
 
-define PathLayer('disc') ${ fill: oklch(70% 0.20 30); filter: grain; }
+define PathLayer('disc') #{ fill: oklch(70% 0.20 30); filter: grain; }
 ```
 
 That snippet exercises four ergonomic wins at once:

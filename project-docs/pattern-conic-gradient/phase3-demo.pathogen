@@ -21,7 +21,7 @@ let guideClr = base.lighten(0.2).alpha(0.55);
 let labelClr = base.desaturate(0.4).lighten(0.3);
 
 // ── Background ──
-let bg = PathLayer('bg') ${ fill: surface; stroke: none; };
+let bg = PathLayer('bg') #{ fill: surface; stroke: none; };
 bg.;;;;;;;;;;;;;;;;;;;;apply { rect(0, 0, W, H); }
 
 // ── Schematic PathBlock builder ──
@@ -118,7 +118,7 @@ for ([cfg, i] in cfgs) {
   g.interpolation = 'oklch';
 
   // ── Fill layer — rectangle filled with gradient ──
-  let fillLayer = PathLayer(`fill_${i}`) ${ fill: g; stroke: none; };
+  let fillLayer = PathLayer(`fill_${i}`) #{ fill: g; stroke: none; };
   fillLayer.apply {
     rect(rectX, rectY, fillW, fillH);
   }
@@ -133,7 +133,7 @@ for ([cfg, i] in cfgs) {
     );
   };
 
-  let schemaLayer = PathLayer(`schema_${i}`) ${
+  let schemaLayer = PathLayer(`schema_${i}`) #{
     fill: none;
     stroke: guideClr;
     stroke-width: 1;
@@ -146,7 +146,7 @@ for ([cfg, i] in cfgs) {
 
   // ── Inner radius highlight (solid) ──
   if (cfg.innerR > 0) {
-    let irLayer = PathLayer(`ir_${i}`) ${
+    let irLayer = PathLayer(`ir_${i}`) #{
       fill: faint;
       stroke: guideClr;
       stroke-width: 1.5;
@@ -157,7 +157,7 @@ for ([cfg, i] in cfgs) {
   }
 
   // ── Center dot ──
-  let dotLayer = PathLayer(`dot_${i}`) ${
+  let dotLayer = PathLayer(`dot_${i}`) #{
     fill: guideClr;
     stroke: none;
   };
@@ -167,7 +167,7 @@ for ([cfg, i] in cfgs) {
 }
 
 // ── Title labels ──
-let titleLayer = TextLayer('titles') ${
+let titleLayer = TextLayer('titles') #{
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 12;
   fill: labelClr;
@@ -184,7 +184,7 @@ titleLayer.apply {
 }
 
 // ── Parameter annotations ──
-let annotLayer = TextLayer('params') ${
+let annotLayer = TextLayer('params') #{
   font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 9;
   fill: guideClr;
@@ -207,7 +207,7 @@ annotLayer.apply {
 }
 
 // ── Footer ──
-let footer = TextLayer('footer') ${
+let footer = TextLayer('footer') #{
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 11;
   fill: labelClr;

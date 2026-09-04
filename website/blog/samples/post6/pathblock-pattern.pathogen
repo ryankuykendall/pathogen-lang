@@ -18,18 +18,18 @@ let gem = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Radial leaf pattern (center) ---
 
-let leaves = PathLayer('leaves') ${
+let leaves = PathLayer('leaves') #{
   fill: Color('#22c55e12');
   stroke: Color('#22c55e');
   stroke-width: 1;
 };
 
-let leaves2 = PathLayer('leaves2') ${
+let leaves2 = PathLayer('leaves2') #{
   fill: Color('#3b82f612');
   stroke: Color('#3b82f6');
   stroke-width: 1;
@@ -57,7 +57,7 @@ leaves2.apply {
 
 // --- Diamond accents ---
 
-let gems = PathLayer('gems') ${
+let gems = PathLayer('gems') #{
   fill: Color('#f59e0b');
   stroke: Color('#b45309');
   stroke-width: 0.5;
@@ -73,7 +73,7 @@ gems.apply {
 
 // --- Center dot ---
 
-let center = PathLayer('center') ${
+let center = PathLayer('center') #{
   fill: Color('#e2e8f0');
   stroke: none;
 };
@@ -83,7 +83,7 @@ center.apply {
 
 // --- Construction circles ---
 
-let guides = PathLayer('guides') ${
+let guides = PathLayer('guides') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "3 4";
@@ -97,7 +97,7 @@ guides.apply {
 
 // --- Annotations ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -111,7 +111,7 @@ labels.apply {
 
 // --- Code annotation ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -125,7 +125,7 @@ code.apply {
   text(20, 73)`};`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -137,7 +137,7 @@ kw.apply {
 
 // --- Stats ---
 
-let stats = TextLayer('stats') ${
+let stats = TextLayer('stats') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -150,7 +150,7 @@ stats.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');

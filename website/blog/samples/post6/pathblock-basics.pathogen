@@ -12,13 +12,13 @@ let arrow = @{
   l 10 -8
 };
 
-let arrows = PathLayer('arrows') ${
+let arrows = PathLayer('arrows') #{
   fill: Color('#3b82f6');
   stroke: Color('#1e40af');
   stroke-width: 1.5;
 };
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   stroke: Color('#94a3b8');
   stroke-width: 1;
   fill: none;

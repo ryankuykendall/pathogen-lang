@@ -1,7 +1,7 @@
 define ViewBox(0, 0, 400, 200);
 // Standard library shapes with boolean operations
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 400, 200); }
 
 // --- Plate with drilled holes ---
@@ -14,7 +14,7 @@ let d2 = d1.project(0, 0).difference(hole.project(55, 25));
 let d3 = d2.project(0, 0).difference(hole.project(25, 55));
 let drilled = d3.project(0, 0).difference(hole.project(55, 55));
 
-let plate_result = PathLayer('plate-result') ${
+let plate_result = PathLayer('plate-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f618');
@@ -23,7 +23,7 @@ plate_result.apply {
   drilled.drawTo(30, 55);
 }
 
-let plate_label = TextLayer('plate-label') ${
+let plate_label = TextLayer('plate-label') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -33,7 +33,7 @@ plate_label.apply {
   text(30, 30)`plate.difference(hole)`
 }
 
-let plate_desc = TextLayer('plate-desc') ${
+let plate_desc = TextLayer('plate-desc') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -50,7 +50,7 @@ let circ = @{ circle(0, 0, 18); };
 
 let badge = st.project(0, 0).union(circ.project(0, 0));
 
-let badge_result = PathLayer('badge-result') ${
+let badge_result = PathLayer('badge-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f618');
@@ -59,7 +59,7 @@ badge_result.apply {
   badge.drawTo(260, 100);
 }
 
-let badge_label = TextLayer('badge-label') ${
+let badge_label = TextLayer('badge-label') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -69,7 +69,7 @@ badge_label.apply {
   text(220, 30)`star.union(circle)`
 }
 
-let badge_desc = TextLayer('badge-desc') ${
+let badge_desc = TextLayer('badge-desc') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');

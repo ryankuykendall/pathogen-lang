@@ -16,7 +16,7 @@ let right = 360;
 let blue = Color(0.55, 0.16, 260);
 let pink = Color(0.62, 0.19, 350);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   letter-spacing: 0.5;
@@ -28,7 +28,7 @@ labels.apply {
   text(left, 113)`fill = blue.mix(pink, smooth(t)) · r = lerp(2, 5, smooth(t))`;
 }
 
-let plain = PathLayer('plain') ${
+let plain = PathLayer('plain') #{
   fill: oklch(0.55 0.16 260);
   stroke: none;
 };
@@ -39,12 +39,12 @@ plain.apply {
   }
 }
 
-let eased = GroupLayer('eased') ${};
+let eased = GroupLayer('eased') #{};
 for (i in 0..8) {
   let t = i / 8;
   let along = smooth(t);
   let tint = blue.mix(pink, along);
-  let dot = PathLayer(`eased-${i}`) ${
+  let dot = PathLayer(`eased-${i}`) #{
     fill: tint;
     stroke: none;
   };

@@ -12,7 +12,7 @@ fn panel(prefix, x0, useNoise) {
   for (b in 0..15) {
     let L = 0.28 + b * 0.0325;
     let c = Color(L, 0.04, 265);
-    let bucketLayer = PathLayer(`${prefix}-b${b}`) ${ fill: c; stroke: none; };
+    let bucketLayer = PathLayer(`${prefix}-b${b}`) #{ fill: c; stroke: none; };
     bucketLayer.apply {
       for (row in 0..15) {
         for (col in 0..15) {
@@ -35,7 +35,7 @@ fn panel(prefix, x0, useNoise) {
 panel('static', 22, 0);
 panel('fog', 208, 1);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

@@ -1,7 +1,7 @@
 // Definition-site annotations: `as segment/endpoint` labels (emit-neutral)
 // and `with fillet/chamfer` corner ops applied at finalization.
 
-define PathLayer('annotated') ${
+define PathLayer('annotated') #{
   stroke: Color('#7c3aed');
   stroke-width: 2;
   fill: none;

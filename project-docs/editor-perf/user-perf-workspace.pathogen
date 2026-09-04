@@ -1,5 +1,5 @@
 define ViewBox(0, 0, 1180, 560);
-define default PathLayer('base') ${
+define default PathLayer('base') #{
   fill: #fff;
   stroke: none;
 }
@@ -8,7 +8,7 @@ rect(0, 0, width, height);
 
 let mainPLFillColor = oklch(0.9792 0.1035 107.6 / 0.075).hueShift(1.25pi);
 let shadowColor = oklch(0.6573 0.2590 356.8 / 0.28).hueShift(-0.5pi).saturate(120%);
-let baseMainStyles = ${
+let baseMainStyles = #{
   fill: mainPLFillColor;
   stroke: mainPLFillColor.darken(84%).alpha(64%);
   stroke-width: 0.3;
@@ -19,7 +19,7 @@ let mainPathLayer = PathLayer('main-path-layer') << baseMainStyles;
 let fontFamily = 'Gravitas One';
 @font fontFamily;
 let glyphFontColor = oklch(0.6291 0.2562 26.8);
-let glyphStyles = ${
+let glyphStyles = #{
   fill: glyphFontColor.alpha(28%);
   font-family: fontFamily;
   font-size: 32;
@@ -57,7 +57,7 @@ for ([glyph, gIndex] in glyphs) {
         }
       };
       let updatedFill = mainPLFillColor.hueShift(calc(offsetBase * 0.075pi));
-      let pl = PathLayer(`pl-${layerCounter}`) << baseMainStyles << ${
+      let pl = PathLayer(`pl-${layerCounter}`) << baseMainStyles << #{
         fill: updatedFill;
         stroke: updatedFill.hueShift(1.2pi).darken(randomRange(0.32, 0.62)).alpha(66%);
         stroke-width: randomRange(0.075, 0.975);
@@ -71,7 +71,7 @@ for ([glyph, gIndex] in glyphs) {
   }
 
 
-  let glyphLayer = PathLayer(`gl-${gIndex}`) << glyphStyles << ${
+  let glyphLayer = PathLayer(`gl-${gIndex}`) << glyphStyles << #{
     filter: `blur(${randomRange(1.8, 4.2)}px)`;
   };
   glyphLayer.apply {

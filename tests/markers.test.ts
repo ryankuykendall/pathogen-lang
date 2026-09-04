@@ -8,7 +8,7 @@ describe('Markers', () => {
       const result = compile(`
         let arrow = @{ m 0 0 l 10 5 l -10 5 z };
         let m = Marker('arrowhead', 10, 10) {|m|
-          m.append(arrow, \${ fill: Color('#333'); });
+          m.append(arrow, #{ fill: Color('#333'); });
         };
       `);
       expect(result.markers).toHaveLength(1);
@@ -40,7 +40,7 @@ describe('Markers', () => {
       const result = compile(`
         let arrow = @{ m 0 0 l 10 5 l -10 5 z };
         let m = Marker('a', 10, 10) {|m|
-          m.append(arrow, \${ fill: Color('#ff0000'); stroke: Color('#000'); });
+          m.append(arrow, #{ fill: Color('#ff0000'); stroke: Color('#000'); });
         };
       `);
       expect(result.markers[0].elements[0].styles).toHaveProperty('fill');
@@ -52,8 +52,8 @@ describe('Markers', () => {
         let tri = @{ m 0 0 l 10 5 l -10 5 z };
         let dot = @{ circle(5, 5, 1); };
         let m = Marker('a', 10, 10) {|m|
-          m.append(tri, \${ fill: Color('#333'); });
-          m.append(dot, \${ fill: Color('#fff'); });
+          m.append(tri, #{ fill: Color('#333'); });
+          m.append(dot, #{ fill: Color('#fff'); });
         };
       `);
       expect(result.markers[0].elements).toHaveLength(2);
@@ -246,7 +246,7 @@ describe('Markers', () => {
       const result = compile(`
         let arrow = @{ m 0 0 l 10 5 l -10 5 z };
         let m = Marker('arrowhead', 10, 10) {|m| m.append(arrow); };
-        define PathLayer('line') \${ marker-end: m; }
+        define PathLayer('line') #{ marker-end: m; }
         layer('line').apply { M 0 0 L 100 100 }
       `);
       const layer = result.layers.find((l) => l.name === 'line');
@@ -257,7 +257,7 @@ describe('Markers', () => {
       const result = compile(`
         let arrow = @{ m 0 0 l 10 5 l -10 5 z };
         let m = Marker('a', 10, 10) {|m| m.append(arrow); };
-        define PathLayer('line') \${ marker: m; }
+        define PathLayer('line') #{ marker: m; }
         layer('line').apply { M 0 0 L 100 100 }
       `);
       const layer = result.layers.find((l) => l.name === 'line');
@@ -270,7 +270,7 @@ describe('Markers', () => {
         let a = Marker('a', 10, 10) {|m| m.append(arrow); };
         let b = Marker('b', 5, 5) {|m| m.append(arrow); };
         let c = Marker('c', 8, 8) {|m| m.append(arrow); };
-        define PathLayer('line') \${
+        define PathLayer('line') #{
           marker-start: a;
           marker-mid: b;
           marker-end: c;
@@ -341,7 +341,7 @@ describe('Markers', () => {
       const result = compile(`
         let arrow = @{ m 0 0 l 10 5 l -10 5 z };
         let m = Marker('arrowhead', 10, 10) {|m|
-          m.append(arrow, \${ fill: Color('#333'); });
+          m.append(arrow, #{ fill: Color('#333'); });
         };
       `);
       const marker = result.markers[0];
@@ -363,7 +363,7 @@ describe('Markers', () => {
       const source = `
         let arrow = @{ m 0 0 l 10 5 l -10 5 z };
         let m = Marker('arrowhead', 10, 10) {|m|
-          m.append(arrow, \${ fill: Color('#333'); });
+          m.append(arrow, #{ fill: Color('#333'); });
         };
       `;
       const compileResult = compile(source);

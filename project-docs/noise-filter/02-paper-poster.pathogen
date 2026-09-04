@@ -7,7 +7,7 @@ let paper = NoiseFilter() {|f|
 };
 
 // Background panel
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: oklch(92% 0.05 80);
   stroke: none;
   filter: paper;
@@ -15,7 +15,7 @@ define PathLayer('bg') ${
 layer('bg').apply { rect(0, 0, 200, 200); }
 
 // Title bar
-define PathLayer('bar') ${
+define PathLayer('bar') #{
   fill: oklch(35% 0.18 30);
   stroke: none;
   filter: paper;
@@ -23,7 +23,7 @@ define PathLayer('bar') ${
 layer('bar').apply { rect(0, 20, 200, 40); }
 
 // Sun
-define PathLayer('sun') ${
+define PathLayer('sun') #{
   fill: oklch(80% 0.18 80);
   stroke: none;
   filter: paper;
@@ -31,7 +31,7 @@ define PathLayer('sun') ${
 layer('sun').apply { circle(140, 120, 30); }
 
 // Mountain
-define PathLayer('mountain') ${
+define PathLayer('mountain') #{
   fill: oklch(40% 0.10 150);
   stroke: none;
   filter: paper;

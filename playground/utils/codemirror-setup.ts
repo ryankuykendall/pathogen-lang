@@ -229,7 +229,7 @@ export const snippetTemplates: CompletionItem[] = [
     label: 'define',
     type: 'keyword',
     info: 'define a layer with styles',
-    template: "define PathLayer('name') ${ stroke: #000; stroke-width: 2; }",
+    template: "define PathLayer('name') #{ stroke: #000; stroke-width: 2; }",
     cursorOffset: 18,
   },
   {
@@ -1017,7 +1017,7 @@ export function svgPathCompletions(context: CompletionContext): CompletionResult
 
 /**
  * Detect whether the cursor is inside a `${ ... }` style block. The check
- * walks backward from the cursor looking for the nearest unmatched `${`
+ * walks backward from the cursor looking for the nearest unmatched `#{`
  * before any closing `}`. When this returns true, svgPathCompletions should
  * return null so the shared language-services engine owns completions for
  * both property-name and value positions.
@@ -1028,7 +1028,7 @@ function isInsideLegacyStyleBlock(context: CompletionContext): boolean {
   for (let i = textBefore.length - 1; i >= 0; i--) {
     const ch = textBefore[i];
     if (ch === '}') depth++;
-    if (ch === '{' && i > 0 && textBefore[i - 1] === '$') {
+    if (ch === '{' && i > 0 && textBefore[i - 1] === '#') {
       if (depth === 0) return true;
       depth--;
     }

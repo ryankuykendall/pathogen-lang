@@ -13,7 +13,7 @@ let cy = 240;
 let x = 0.1;
 let y = 0.1;
 
-define default PathLayer('attractor') ${
+define default PathLayer('attractor') #{
   stroke: oklch(0.55 0.18 260);
   stroke-width: 1.0;
   stroke-linecap: round;

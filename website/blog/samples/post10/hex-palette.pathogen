@@ -6,14 +6,14 @@ define ViewBox(0, 0, 520, 320);
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 320); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -23,7 +23,7 @@ title.apply {
   text(30, 30)`Palette from a Single Hex Literal`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -81,7 +81,7 @@ let sr = 5;
 
 // ── Row labels ──────────────────────
 
-let row_labels = TextLayer('row-labels') ${
+let row_labels = TextLayer('row-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
@@ -90,7 +90,7 @@ let row_labels = TextLayer('row-labels') ${
 
 // ── Swatch labels ───────────────────
 
-let sw_labels = TextLayer('sw-labels') ${
+let sw_labels = TextLayer('sw-labels') #{
   font-family: monospace;
   font-size: 7;
   fill: #64748b;
@@ -107,7 +107,7 @@ row_labels.apply {
 
 for ([color, i] in lightness_row) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`l_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`l_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -127,7 +127,7 @@ row_labels.apply {
 
 for ([color, i] in hue_row) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`h_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`h_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -147,7 +147,7 @@ row_labels.apply {
 
 for ([color, i] in sat_row) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`s_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`s_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
@@ -161,7 +161,7 @@ sw_labels.apply {
 // Base indicator
 // ═══════════════════════════════════════
 
-let base_indicator = TextLayer('base-indicator') ${
+let base_indicator = TextLayer('base-indicator') #{
   font-family: monospace;
   font-size: 9;
   fill: #38bdf8;
@@ -173,7 +173,7 @@ base_indicator.apply {
 
 // ── Vertical base line ──────────────
 
-let base_line = PathLayer('base-line') ${
+let base_line = PathLayer('base-line') #{
   stroke: #38bdf8;
   stroke-width: 1;
   stroke-dasharray: "3 3";

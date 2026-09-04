@@ -43,9 +43,9 @@ let ink_hue = Color('#0d1638');
 let ink_complement = Color('#0d1638');
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') ${}
-define GroupLayer('chips') ${}
-define GroupLayer('labels') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('chips') #{}
+define GroupLayer('labels') #{}
 
 // ─── Gradient origin (off canvas, 50% left of left edge) ──
 let cx = -260;
@@ -66,7 +66,7 @@ ld_grad.spread = 'transparent';
 ld_grad.interpolation = 'oklch';
 
 // ─── Canvas fill ───────────────────────────────────────────
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: ld_grad;
   stroke: none;
 };
@@ -75,7 +75,7 @@ bg.apply {
 }
 
 // ─── Horizon line (at y = cy = 260, the gradient midpoint axis) ──
-let horizon_line = PathLayer('horizon-line') ${
+let horizon_line = PathLayer('horizon-line') #{
   fill: none;
   stroke: ink_on_light_m;
   stroke-width: 0.5;
@@ -139,7 +139,7 @@ for ([c, i] in chip_data) {
   let cfill = c[1];
   let cin = c[2];
   let cout = c[3];
-  let chip_layer = PathLayer(cname) ${
+  let chip_layer = PathLayer(cname) #{
     fill: cfill;
     stroke: none;
   };
@@ -202,7 +202,7 @@ for ([p, i] in pill_data) {
   let ptext = p[1];
   let pcx = p[2];
   let txt_name = `pt-${i}`;
-  let txt = TextLayer(txt_name) ${
+  let txt = TextLayer(txt_name) #{
     font-family: font;
     font-size: 9;
     font-weight: 700;
@@ -217,7 +217,7 @@ for ([p, i] in pill_data) {
 }
 
 // ─── Masthead typography ─────────────────────────────────────
-let eyebrow = TextLayer('eyebrow') ${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -230,7 +230,7 @@ eyebrow.apply {
 }
 
 // "Light" display — top-left, reads against light end of gradient
-let display_light = TextLayer('display-light') ${
+let display_light = TextLayer('display-light') #{
   font-family: font;
   font-size: 56;
   font-weight: 200;
@@ -243,7 +243,7 @@ display_light.apply {
 }
 
 // "Dark" display — bottom-right, reads against dark end of gradient
-let display_dark = TextLayer('display-dark') ${
+let display_dark = TextLayer('display-dark') #{
   font-family: font;
   font-size: 56;
   font-weight: 200;
@@ -256,7 +256,7 @@ display_dark.apply {
 }
 
 // Horizon label — right side at horizon line
-let horizon_lbl = TextLayer('horizon-lbl') ${
+let horizon_lbl = TextLayer('horizon-lbl') #{
   font-family: font;
   font-size: 7;
   font-weight: 700;
@@ -269,7 +269,7 @@ horizon_lbl.apply {
 }
 
 // Zone labels — subtle corner markers
-let zone_light = TextLayer('zone-light') ${
+let zone_light = TextLayer('zone-light') #{
   font-family: font;
   font-size: 6;
   font-weight: 700;
@@ -281,7 +281,7 @@ zone_light.apply {
   text(505, 30)`TOP · −90° · --bg-light`;
 }
 
-let zone_dark = TextLayer('zone-dark') ${
+let zone_dark = TextLayer('zone-dark') #{
   font-family: font;
   font-size: 6;
   font-weight: 700;
@@ -294,7 +294,7 @@ zone_dark.apply {
 }
 
 // Credit
-let credit = TextLayer('credit') ${
+let credit = TextLayer('credit') #{
   font-family: font;
   font-size: 7;
   font-weight: 700;

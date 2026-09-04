@@ -6,7 +6,7 @@
 
 define ViewBox(0, 0, 400, 170);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -17,7 +17,7 @@ labels.apply {
   text(24, 100)`smoothstep(1.0, 0.6, t) — reversed markers, fade out`
 }
 
-let fadeIn = PathLayer('fade-in') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+let fadeIn = PathLayer('fade-in') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 fadeIn.apply {
   for (i in 0..47) {
     let t = i / 47;
@@ -26,7 +26,7 @@ fadeIn.apply {
   }
 }
 
-let fadeOut = PathLayer('fade-out') ${ fill: oklch(0.68 0.13 200); stroke: none; };
+let fadeOut = PathLayer('fade-out') #{ fill: oklch(0.68 0.13 200); stroke: none; };
 fadeOut.apply {
   for (i in 0..47) {
     let t = i / 47;

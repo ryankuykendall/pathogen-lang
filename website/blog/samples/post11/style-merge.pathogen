@@ -3,10 +3,10 @@ define ViewBox(0, 0, 600, 300);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 300); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -26,28 +26,28 @@ let info = &{
 
 // --- Three style variations ---
 
-let mono_sm = ${ font-family: monospace; font-size: 10; };
-let mono_lg = ${ font-family: monospace; font-size: 14; };
-let sans = ${ font-family: system-ui, sans-serif; font-size: 12; };
+let mono_sm = #{ font-family: monospace; font-size: 10; };
+let mono_lg = #{ font-family: monospace; font-size: 14; };
+let sans = #{ font-family: system-ui, sans-serif; font-size: 12; };
 
 // --- Shared annotation style for .intersects() checks ---
 
-let anno_styles = ${ font-family: monospace; font-size: 8; };
+let anno_styles = #{ font-family: monospace; font-size: 8; };
 
 // ─── Variant 1: mono 10px ────────────────────────────────────────
 
-let g1 = GroupLayer('variant1') ${ translate-x: 30; translate-y: 70; };
+let g1 = GroupLayer('variant1') #{ translate-x: 30; translate-y: 70; };
 
-let v1_text = TextLayer('v1-text') ${ font-family: monospace; font-size: 10; fill: Color('#22c55e'); };
+let v1_text = TextLayer('v1-text') #{ font-family: monospace; font-size: 10; fill: Color('#22c55e'); };
 v1_text.apply { (info << mono_sm).drawTo(0, 0); }
 
 let styled1 = info << mono_sm;
 let bb1 = styled1.boundingBox();
 
-let v1_bbox = PathLayer('v1-bbox') ${ fill: none; stroke: Color('#22c55e40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
+let v1_bbox = PathLayer('v1-bbox') #{ fill: none; stroke: Color('#22c55e40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
 v1_bbox.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
-let v1_label = TextLayer('v1-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
+let v1_label = TextLayer('v1-label') #{ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v1_label.apply { text(0, -10)`mono 10px` }
 
 g1.append(v1_text, v1_bbox, v1_label);
@@ -62,18 +62,18 @@ if (v1_label_proj.intersects(v1_bbox_rect)) { log("WARN: v1 label intersects bbo
 
 // ─── Variant 2: mono 14px ────────────────────────────────────────
 
-let g2 = GroupLayer('variant2') ${ translate-x: 210; translate-y: 70; };
+let g2 = GroupLayer('variant2') #{ translate-x: 210; translate-y: 70; };
 
-let v2_text = TextLayer('v2-text') ${ font-family: monospace; font-size: 14; fill: Color('#3b82f6'); };
+let v2_text = TextLayer('v2-text') #{ font-family: monospace; font-size: 14; fill: Color('#3b82f6'); };
 v2_text.apply { (info << mono_lg).drawTo(0, 0); }
 
 let styled2 = info << mono_lg;
 let bb2 = styled2.boundingBox();
 
-let v2_bbox = PathLayer('v2-bbox') ${ fill: none; stroke: Color('#3b82f640'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
+let v2_bbox = PathLayer('v2-bbox') #{ fill: none; stroke: Color('#3b82f640'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
 v2_bbox.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
-let v2_label = TextLayer('v2-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
+let v2_label = TextLayer('v2-label') #{ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v2_label.apply { text(0, -10)`mono 14px` }
 
 g2.append(v2_text, v2_bbox, v2_label);
@@ -88,18 +88,18 @@ if (v2_label_proj.intersects(v2_bbox_rect)) { log("WARN: v2 label intersects bbo
 
 // ─── Variant 3: sans-serif 12px ─────────────────────────────────
 
-let g3 = GroupLayer('variant3') ${ translate-x: 420; translate-y: 70; };
+let g3 = GroupLayer('variant3') #{ translate-x: 420; translate-y: 70; };
 
-let v3_text = TextLayer('v3-text') ${ font-family: system-ui, sans-serif; font-size: 12; fill: Color('#f59e0b'); };
+let v3_text = TextLayer('v3-text') #{ font-family: system-ui, sans-serif; font-size: 12; fill: Color('#f59e0b'); };
 v3_text.apply { (info << sans).drawTo(0, 0); }
 
 let styled3 = info << sans;
 let bb3 = styled3.boundingBox();
 
-let v3_bbox = PathLayer('v3-bbox') ${ fill: none; stroke: Color('#f59e0b40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
+let v3_bbox = PathLayer('v3-bbox') #{ fill: none; stroke: Color('#f59e0b40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
 v3_bbox.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
-let v3_label = TextLayer('v3-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
+let v3_label = TextLayer('v3-label') #{ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v3_label.apply { text(0, -10)`sans-serif 12px` }
 
 g3.append(v3_text, v3_bbox, v3_label);
@@ -114,9 +114,9 @@ if (v3_label_proj.intersects(v3_bbox_rect)) { log("WARN: v3 label intersects bbo
 
 // ─── Code block ─────────────────────────────────────────────────
 
-let g4 = GroupLayer('code-block') ${ translate-x: 30; translate-y: 190; };
+let g4 = GroupLayer('code-block') #{ translate-x: 30; translate-y: 190; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -129,7 +129,7 @@ code.apply {
   text(0, 44)`(info << sans).drawTo(430, 100)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -140,7 +140,7 @@ g4.append(code);
 
 // --- Title (top-level) ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -152,7 +152,7 @@ title.apply {
 
 // --- Subtitle (top-level) ---
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -164,7 +164,7 @@ subtitle.apply {
 
 // --- Size annotations (top-level) ---
 
-let dims = TextLayer('dims') ${
+let dims = TextLayer('dims') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#475569');

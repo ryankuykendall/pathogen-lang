@@ -116,7 +116,7 @@ describe('TextBlock', () => {
 
     it('supports half-open for ranges inside text bodies', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         layer('labels').apply {
           text(0, 16) {
             for (i in 0..<2) {
@@ -132,7 +132,7 @@ describe('TextBlock', () => {
 
     it('does not emit to any layer on creation', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         let t = &{ text(0, 16)\`Hello\` };
       `);
       // No text elements emitted to any layer
@@ -150,12 +150,12 @@ describe('TextBlock', () => {
     });
 
     it('rejects layer definitions inside text blocks', () => {
-      expect(() => compile("let t = &{ define PathLayer('x') \${} };")).toThrow(/Layer definitions are not allowed inside text blocks/);
+      expect(() => compile("let t = &{ define PathLayer('x') #{} };")).toThrow(/Layer definitions are not allowed inside text blocks/);
     });
 
     it('rejects layer apply blocks inside text blocks', () => {
       expect(() => compile(`
-        define PathLayer('x') \${}
+        define PathLayer('x') #{}
         let t = &{ layer('x').apply { M 0 0 } };
       `)).toThrow(/Layer apply blocks are not allowed inside text blocks/);
     });
@@ -179,11 +179,11 @@ describe('TextBlock', () => {
 
     it('.styles returns a StyleBlockValue that can be merged', () => {
       const result = compile(`
-        let t = &{ text(0, 16)\`A\` } << \${ font-size: 24; };
+        let t = &{ text(0, 16)\`A\` } << #{ font-size: 24; };
         let s = t.styles;
         // Merge styles back to verify it's a real StyleBlockValue
         let t2 = &{ text(0, 16)\`B\` } << s;
-        define TextLayer('test') \${}
+        define TextLayer('test') #{}
         layer('test').apply {
           t2.drawTo(0, 0);
         }
@@ -199,7 +199,7 @@ describe('TextBlock', () => {
   describe('<< operator', () => {
     it('merges style block into TextBlockValue', () => {
       const vals = compileLogValues(`
-        let t = &{ text(0, 16)\`Hi\` } << \${ font-size: 24; };
+        let t = &{ text(0, 16)\`Hi\` } << #{ font-size: 24; };
         log(t);
       `);
       expect(vals[0]).toBe('TextBlock(1 elements)');
@@ -208,7 +208,7 @@ describe('TextBlock', () => {
     it('merges style block into ProjectedTextValue', () => {
       const vals = compileLogValues(`
         let t = &{ text(0, 16)\`Hi\` };
-        let p = t.project(10, 20) << \${ font-weight: bold; };
+        let p = t.project(10, 20) << #{ font-weight: bold; };
         log(p);
       `);
       expect(vals[0]).toBe('ProjectedText(10, 20, 1 elements)');
@@ -246,7 +246,7 @@ describe('TextBlock', () => {
   describe('.drawTo()', () => {
     it('emits text elements to a TextLayer', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         let t = &{ text(0, 16)\`Hello\` };
         layer('labels').apply {
           t.drawTo(50, 100);
@@ -261,7 +261,7 @@ describe('TextBlock', () => {
 
     it('applies rotation when provided', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         let t = &{ text(0, 16)\`Hello\` };
         layer('labels').apply {
           t.drawTo(50, 100, 45deg);
@@ -282,7 +282,7 @@ describe('TextBlock', () => {
 
     it('errors inside a PathLayer context', () => {
       expect(() => compile(`
-        define PathLayer('path') \${}
+        define PathLayer('path') #{}
         let t = &{ text(0, 16)\`Hello\` };
         layer('path').apply {
           t.drawTo(50, 100);
@@ -292,7 +292,7 @@ describe('TextBlock', () => {
 
     it('returns a ProjectedTextValue', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         let t = &{ text(0, 16)\`Hello\` };
         let projected = null;
         layer('labels').apply {
@@ -310,7 +310,7 @@ describe('TextBlock', () => {
   describe('.draw()', () => {
     it('emits text elements at projected position', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         let t = &{ text(0, 16)\`Hello\` };
         let p = t.project(50, 100);
         layer('labels').apply {
@@ -338,7 +338,7 @@ describe('TextBlock', () => {
   describe('ProjectedTextValue .drawTo()', () => {
     it('re-projects and emits to a new position', () => {
       const result = compile(`
-        define TextLayer('labels') \${}
+        define TextLayer('labels') #{}
         let t = &{ text(0, 16)\`Hello\` };
         let p = t.project(50, 100);
         layer('labels').apply {
@@ -407,7 +407,7 @@ describe('TextBlock', () => {
   describe('.boundingBox()', () => {
     it('returns an ObjectValue with x, y, width, height', () => {
       const result = compile(`
-        let t = &{ text(0, 16)\`Hello\` } << \${ font-size: 16; };
+        let t = &{ text(0, 16)\`Hello\` } << #{ font-size: 16; };
         let bb = t.boundingBox();
         log(bb.x);
         log(bb.y);
@@ -427,7 +427,7 @@ describe('TextBlock', () => {
 
     it('works on ProjectedTextValue', () => {
       const result = compile(`
-        let t = &{ text(0, 16)\`Hi\` } << \${ font-size: 20; };
+        let t = &{ text(0, 16)\`Hi\` } << #{ font-size: 20; };
         let p = t.project(100, 200);
         let bb = p.boundingBox();
         log(bb.x);
@@ -454,8 +454,8 @@ describe('TextBlock', () => {
 
     it('monospace text is wider per-character than sans-serif', () => {
       const result = compile(`
-        let sans = &{ text(0, 16)\`iii\` } << \${ font-size: 16; font-family: sans-serif; };
-        let mono = &{ text(0, 16)\`iii\` } << \${ font-size: 16; font-family: monospace; };
+        let sans = &{ text(0, 16)\`iii\` } << #{ font-size: 16; font-family: sans-serif; };
+        let mono = &{ text(0, 16)\`iii\` } << #{ font-size: 16; font-family: monospace; };
         log(sans.boundingBox().width);
         log(mono.boundingBox().width);
       `);
@@ -470,7 +470,7 @@ describe('TextBlock', () => {
         let t = &{
           text(0, 16)\`Top\`
           text(50, 48)\`Bottom\`
-        } << \${ font-size: 16; };
+        } << #{ font-size: 16; };
         let bb = t.boundingBox();
         log(bb.x);
         log(bb.y);
@@ -489,7 +489,7 @@ describe('TextBlock', () => {
   describe('.paddedBoundingBox()', () => {
     it('expands bbox by padding', () => {
       const result = compile(`
-        let t = &{ text(0, 16)\`Hi\` } << \${ font-size: 16; };
+        let t = &{ text(0, 16)\`Hi\` } << #{ font-size: 16; };
         let p = t.project(0, 0);
         let bb = p.boundingBox();
         let pbb = p.paddedBoundingBox(5, 10);
@@ -520,7 +520,7 @@ describe('TextBlock', () => {
   describe('.anchor()', () => {
     it('resolves TopLeft to bbox origin', () => {
       const result = compile(`
-        let t = &{ text(0, 16)\`X\` } << \${ font-size: 16; };
+        let t = &{ text(0, 16)\`X\` } << #{ font-size: 16; };
         let p = t.project(100, 200);
         let pt = p.anchor(BBoxAnchor.TopLeft);
         log(pt);
@@ -532,7 +532,7 @@ describe('TextBlock', () => {
 
     it('resolves Center to bbox center', () => {
       const result = compile(`
-        let t = &{ text(0, 16)\`XX\` } << \${ font-size: 16; };
+        let t = &{ text(0, 16)\`XX\` } << #{ font-size: 16; };
         let p = t.project(0, 0);
         let pt = p.anchor(BBoxAnchor.Center);
         log(pt.x);
@@ -561,7 +561,7 @@ describe('TextBlock', () => {
   describe('.polarProject()', () => {
     it('places text at angle 0 (right)', () => {
       const result = compile(`
-        let t = &{ text(0, 16)\`X\` } << \${ font-size: 16; };
+        let t = &{ text(0, 16)\`X\` } << #{ font-size: 16; };
         let p = t.polarProject(100, 100, 0, 50, BBoxAnchor.Center);
         log(p.origin);
       `);
@@ -572,7 +572,7 @@ describe('TextBlock', () => {
 
     it('produces a ProjectedTextValue', () => {
       const vals = compileLogValues(`
-        let t = &{ text(0, 16)\`X\` } << \${ font-size: 16; };
+        let t = &{ text(0, 16)\`X\` } << #{ font-size: 16; };
         let p = t.polarProject(100, 100, 0, 50, BBoxAnchor.TopLeft);
         log(p);
       `);
@@ -581,7 +581,7 @@ describe('TextBlock', () => {
 
     it('works on TextBlockValue (not just projected)', () => {
       const vals = compileLogValues(`
-        let t = &{ text(0, 16)\`Test\` } << \${ font-size: 16; };
+        let t = &{ text(0, 16)\`Test\` } << #{ font-size: 16; };
         let p = t.polarProject(0, 0, 90deg, 50, BBoxAnchor.Center);
         log(p);
       `);
@@ -595,8 +595,8 @@ describe('TextBlock', () => {
   describe('.intersects()', () => {
     it('detects overlap between two ProjectedTextValues', () => {
       const vals = compileLogValues(`
-        let t1 = &{ text(0, 16)\`Hello World\` } << \${ font-size: 16; };
-        let t2 = &{ text(0, 16)\`Overlap\` } << \${ font-size: 16; };
+        let t1 = &{ text(0, 16)\`Hello World\` } << #{ font-size: 16; };
+        let t2 = &{ text(0, 16)\`Overlap\` } << #{ font-size: 16; };
         let p1 = t1.project(0, 0);
         let p2 = t2.project(5, 5);
         log(p1.intersects(p2));
@@ -606,8 +606,8 @@ describe('TextBlock', () => {
 
     it('returns false for non-overlapping texts', () => {
       const vals = compileLogValues(`
-        let t1 = &{ text(0, 16)\`A\` } << \${ font-size: 16; };
-        let t2 = &{ text(0, 16)\`B\` } << \${ font-size: 16; };
+        let t1 = &{ text(0, 16)\`A\` } << #{ font-size: 16; };
+        let t2 = &{ text(0, 16)\`B\` } << #{ font-size: 16; };
         let p1 = t1.project(0, 0);
         let p2 = t2.project(500, 500);
         log(p1.intersects(p2));
@@ -617,7 +617,7 @@ describe('TextBlock', () => {
 
     it('detects overlap with a bbox object', () => {
       const vals = compileLogValues(`
-        let t = &{ text(0, 16)\`Hello\` } << \${ font-size: 16; };
+        let t = &{ text(0, 16)\`Hello\` } << #{ font-size: 16; };
         let p = t.project(0, 0);
         let box = { x: 0, y: 0, width: 100, height: 100 };
         log(p.intersects(box));
@@ -627,7 +627,7 @@ describe('TextBlock', () => {
 
     it('returns false for non-overlapping bbox', () => {
       const vals = compileLogValues(`
-        let t = &{ text(0, 16)\`Hello\` } << \${ font-size: 16; };
+        let t = &{ text(0, 16)\`Hello\` } << #{ font-size: 16; };
         let p = t.project(0, 0);
         let box = { x: 1000, y: 1000, width: 10, height: 10 };
         log(p.intersects(box));
@@ -642,8 +642,8 @@ describe('TextBlock', () => {
   describe('.intersectionPoints()', () => {
     it('returns overlap corners for two overlapping texts', () => {
       const result = compile(`
-        let t1 = &{ text(0, 16)\`Hello World\` } << \${ font-size: 16; };
-        let t2 = &{ text(0, 16)\`Overlap\` } << \${ font-size: 16; };
+        let t1 = &{ text(0, 16)\`Hello World\` } << #{ font-size: 16; };
+        let t2 = &{ text(0, 16)\`Overlap\` } << #{ font-size: 16; };
         let p1 = t1.project(0, 0);
         let p2 = t2.project(5, 5);
         let pts = p1.intersectionPoints(p2);
@@ -656,8 +656,8 @@ describe('TextBlock', () => {
 
     it('returns empty array for non-overlapping texts', () => {
       const vals = compileLogValues(`
-        let t1 = &{ text(0, 16)\`A\` } << \${ font-size: 16; };
-        let t2 = &{ text(0, 16)\`B\` } << \${ font-size: 16; };
+        let t1 = &{ text(0, 16)\`A\` } << #{ font-size: 16; };
+        let t2 = &{ text(0, 16)\`B\` } << #{ font-size: 16; };
         let p1 = t1.project(0, 0);
         let p2 = t2.project(500, 500);
         log(p1.intersectionPoints(p2).length);
@@ -693,11 +693,11 @@ describe('TextBlock', () => {
   describe('integration', () => {
     it('draws multi-element text block with block-level styles', () => {
       const result = compile(`
-        define TextLayer('labels') \${ font-size: 14; }
+        define TextLayer('labels') #{ font-size: 14; }
         let label = &{
           text(0, 14)\`Title\`
           text(0, 30)\`Subtitle\`
-        } << \${ font-size: 14; fill: #333; };
+        } << #{ font-size: 14; fill: #333; };
         layer('labels').apply {
           label.drawTo(50, 50);
         }
@@ -713,7 +713,7 @@ describe('TextBlock', () => {
 
     it('uses text block with tspan children', () => {
       const result = compile(`
-        define TextLayer('t') \${}
+        define TextLayer('t') #{}
         let label = &{
           text(0, 16) {
             tspan()\`bold \`
@@ -733,8 +733,8 @@ describe('TextBlock', () => {
     it('measures then positions to avoid overlap', () => {
       // Simulate a layout scenario where we check intersection before placing
       const vals = compileLogValues(`
-        let t1 = &{ text(0, 16)\`Label A\` } << \${ font-size: 16; };
-        let t2 = &{ text(0, 16)\`Label B\` } << \${ font-size: 16; };
+        let t1 = &{ text(0, 16)\`Label A\` } << #{ font-size: 16; };
+        let t2 = &{ text(0, 16)\`Label B\` } << #{ font-size: 16; };
 
         let p1 = t1.project(0, 0);
         let bb1 = p1.boundingBox();
@@ -763,7 +763,7 @@ describe('TextBlock', () => {
 
     it('returns a PathBlockValue with commands from a simple TextBlock', () => {
       const result = compile(`
-        let t = &{ text(0, 20)\`A\` } << \${ font-family: Inter; font-size: 24; };
+        let t = &{ text(0, 20)\`A\` } << #{ font-family: Inter; font-size: 24; };
         let pb = t.toPathBlock();
         log(pb);
       `, { fonts: fontRegistry });
@@ -773,8 +773,8 @@ describe('TextBlock', () => {
 
     it('produces drawable PathBlock output', () => {
       const result = compile(`
-        define PathLayer('text') \${ fill: #000; stroke: none; }
-        let t = &{ text(0, 20)\`Hi\` } << \${ font-family: Inter; font-size: 24; };
+        define PathLayer('text') #{ fill: #000; stroke: none; }
+        let t = &{ text(0, 20)\`Hi\` } << #{ font-family: Inter; font-size: 24; };
         let pb = t.toPathBlock();
         layer('text').apply { pb.drawTo(10, 10); }
       `, { fonts: fontRegistry });
@@ -788,7 +788,7 @@ describe('TextBlock', () => {
         let t = &{
           text(0, 20)\`Top\`
           text(0, 40)\`Bottom\`
-        } << \${ font-family: Inter; font-size: 16; };
+        } << #{ font-family: Inter; font-size: 16; };
         let pb = t.toPathBlock();
         log(pb);
       `, { fonts: fontRegistry });
@@ -805,7 +805,7 @@ describe('TextBlock', () => {
             tspan()\`A\`
             tspan(10, 5)\`B\`
           }
-        } << \${ font-family: Inter; font-size: 24; };
+        } << #{ font-family: Inter; font-size: 24; };
         let pb = t.toPathBlock();
         log(pb);
       `, { fonts: fontRegistry });
@@ -817,8 +817,8 @@ describe('TextBlock', () => {
     it('applies letter-spacing', () => {
       // Wider spacing should not change command count but would affect positions
       const result = compile(`
-        let t1 = &{ text(0, 20)\`AB\` } << \${ font-family: Inter; font-size: 24; };
-        let t2 = &{ text(0, 20)\`AB\` } << \${ font-family: Inter; font-size: 24; letter-spacing: 20; };
+        let t1 = &{ text(0, 20)\`AB\` } << #{ font-family: Inter; font-size: 24; };
+        let t2 = &{ text(0, 20)\`AB\` } << #{ font-family: Inter; font-size: 24; letter-spacing: 20; };
         let pb1 = t1.toPathBlock();
         let pb2 = t2.toPathBlock();
         log(pb1);
@@ -840,7 +840,7 @@ describe('TextBlock', () => {
             tspan()\`A\`
             tspan()\`B\`
           }
-        } << \${ font-family: Inter; font-size: 16; };
+        } << #{ font-family: Inter; font-size: 16; };
         let pb = t.toPathBlock();
         log(pb);
       `, { fonts: fontRegistry });
@@ -851,28 +851,28 @@ describe('TextBlock', () => {
 
     it('errors when no font registry is available', () => {
       expect(() => compile(`
-        let t = &{ text(0, 20)\`A\` } << \${ font-family: Inter; font-size: 24; };
+        let t = &{ text(0, 20)\`A\` } << #{ font-family: Inter; font-size: 24; };
         t.toPathBlock();
       `)).toThrow(/requires fonts to be loaded/);
     });
 
     it('errors when font is not loaded', () => {
       expect(() => compile(`
-        let t = &{ text(0, 20)\`A\` } << \${ font-family: UnknownFont; font-size: 24; };
+        let t = &{ text(0, 20)\`A\` } << #{ font-family: UnknownFont; font-size: 24; };
         t.toPathBlock();
       `, { fonts: fontRegistry })).toThrow(/font 'UnknownFont' not loaded/);
     });
 
     it('errors when font-family is missing from styles', () => {
       expect(() => compile(`
-        let t = &{ text(0, 20)\`A\` } << \${ font-size: 24; };
+        let t = &{ text(0, 20)\`A\` } << #{ font-size: 24; };
         t.toPathBlock();
       `, { fonts: fontRegistry })).toThrow(/requires font-family to be set/);
     });
 
     it('returns empty PathBlock for empty TextBlock', () => {
       const result = compile(`
-        let t = &{} << \${ font-family: Inter; font-size: 24; };
+        let t = &{} << #{ font-family: Inter; font-size: 24; };
         let pb = t.toPathBlock();
         log(pb);
       `, { fonts: fontRegistry });
@@ -881,8 +881,8 @@ describe('TextBlock', () => {
 
     it('handles space characters by advancing cursor without outline commands', () => {
       const result = compile(`
-        let t1 = &{ text(0, 20)\`A B\` } << \${ font-family: Inter; font-size: 24; };
-        let t2 = &{ text(0, 20)\`AB\` } << \${ font-family: Inter; font-size: 24; };
+        let t1 = &{ text(0, 20)\`A B\` } << #{ font-family: Inter; font-size: 24; };
+        let t2 = &{ text(0, 20)\`AB\` } << #{ font-family: Inter; font-size: 24; };
         let pb1 = t1.toPathBlock();
         let pb2 = t2.toPathBlock();
         log(pb1);
@@ -896,7 +896,7 @@ describe('TextBlock', () => {
 
     it('rejects arguments', () => {
       expect(() => compile(`
-        let t = &{ text(0, 20)\`A\` } << \${ font-family: Inter; font-size: 24; };
+        let t = &{ text(0, 20)\`A\` } << #{ font-family: Inter; font-size: 24; };
         t.toPathBlock(42);
       `, { fonts: fontRegistry })).toThrow(/expects 0 arguments/);
     });
@@ -1118,7 +1118,7 @@ let z = 3;\` };
 
     it('errors on layer name collision', () => {
       expect(() => compile(`
-        define PathLayer('snip') \${}
+        define PathLayer('snip') #{}
         let code = &{ text(0, 0)\`hello\` };
         code.toCodeSnippetBlock('snip');
       `)).toThrow(/layer name 'snip' already exists/);
@@ -1170,7 +1170,7 @@ describe('switch inside text bodies', () => {
   // text(x, y) { switch (...) { ... } } inside a TextLayer apply block.
   function textChildren(level: string): unknown[] {
     const result = compile(`
-      define default TextLayer('t') \${ font-size: 12; }
+      define default TextLayer('t') #{ font-size: 12; }
       let level = ${level};
       layer('t').apply {
         text(0, 0) {
@@ -1199,7 +1199,7 @@ describe('switch inside text bodies', () => {
 
   it('a case body may hold several text items', () => {
     const result = compile(`
-      define default TextLayer('t') \${}
+      define default TextLayer('t') #{}
       let kind = "b";
       layer('t').apply {
         text(0, 0) {
@@ -1218,7 +1218,7 @@ describe('switch inside text bodies', () => {
 
   it('bindings from a destructuring case are visible in the template', () => {
     const result = compile(`
-      define default TextLayer('t') \${}
+      define default TextLayer('t') #{}
       let p = Point(3, 4);
       layer('t').apply {
         text(0, 0) {
@@ -1235,7 +1235,7 @@ describe('switch inside text bodies', () => {
   it('case bindings are not visible after the switch in a text body', () => {
     expect(() =>
       compile(`
-        define default TextLayer('t') \${}
+        define default TextLayer('t') #{}
         let p = Point(3, 4);
         layer('t').apply {
           text(0, 0) {
@@ -1249,7 +1249,7 @@ describe('switch inside text bodies', () => {
 
   it('switch nested in a text for loop, with continue and break targeting the loop', () => {
     const result = compile(`
-      define default TextLayer('t') \${}
+      define default TextLayer('t') #{}
       layer('t').apply {
         text(0, 0) {
           for (i in 0..5) {
@@ -1268,7 +1268,7 @@ describe('switch inside text bodies', () => {
 
   it('switch nested in a text if', () => {
     const result = compile(`
-      define default TextLayer('t') \${}
+      define default TextLayer('t') #{}
       let ok = true;
       let n = 1;
       layer('t').apply {
@@ -1298,7 +1298,7 @@ describe('switch inside text bodies', () => {
 
   it('a &{ } switch draws the selected text element to a TextLayer', () => {
     const result = compile(`
-      define TextLayer('labels') \${}
+      define TextLayer('labels') #{}
       let kind = "zzz";
       let tb = &{
         switch (kind) {

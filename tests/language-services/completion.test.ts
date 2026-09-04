@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { StringTextDocument } from '../../src/language-services/document';
-import { getCompletions, getStyleValueKeywordRun, isStylePropertyNamePosition } from '../../src/language-services/completion';
+import {
+  getCompletions,
+  getStyleValueKeywordRun,
+  isStylePropertyNamePosition,
+} from '../../src/language-services/completion';
 import type { CompletionItem } from '../../src/language-services/completion';
 
 function complete(source: string, line: number, character: number): CompletionItem[] {
@@ -103,17 +107,23 @@ describe('getCompletions', () => {
       expect(names).toContain('easeOut');
       expect(names).toContain('easeInOut');
       const hashRange = items.find((i) => i.label === 'hashRange');
-      expect(hashRange!.detail).toBe('hashRange(n, min, max, seed?) — Deterministic hash of integer n to [min, max); angle-preserving (min, max)');
+      expect(hashRange!.detail).toBe(
+        'hashRange(n, min, max, seed?) — Deterministic hash of integer n to [min, max); angle-preserving (min, max)',
+      );
       expect(hashRange!.insertText).toBe('hashRange(${1:n}, ${2:min}, ${3:max})$0');
       const bump = items.find((i) => i.label === 'bump');
-      expect(bump!.detail).toBe('bump(t, center, spread) — Raised-cosine kernel: 1 at center, easing to 0 at center ± spread');
+      expect(bump!.detail).toBe(
+        'bump(t, center, spread) — Raised-cosine kernel: 1 at center, easing to 0 at center ± spread',
+      );
     });
 
     it('offers ease with generated detail and snippet', () => {
       const items = completeAtEnd('let e = ea');
       const item = items.find((i) => i.label === 'ease');
       expect(item).toBeDefined();
-      expect(item!.detail).toBe('ease(curve, t) — Apply a named Easing curve to t; curve is an Easing member or its string');
+      expect(item!.detail).toBe(
+        'ease(curve, t) — Apply a named Easing curve to t; curve is an Easing member or its string',
+      );
       // The generator quotes string-typed parameters; Easing.X also works there.
       expect(item!.insertText).toBe("ease('${1:curve}', ${2:t})$0");
     });
@@ -141,7 +151,9 @@ describe('getCompletions', () => {
       const items = completeAtEnd('cubicB');
       const item = items.find((i) => i.label === 'cubicBezier');
       expect(item).toBeDefined();
-      expect(item!.detail).toBe('cubicBezier(x1, y1, x2, y2, t) — CSS cubic-bezier timing curve; y handles may overshoot');
+      expect(item!.detail).toBe(
+        'cubicBezier(x1, y1, x2, y2, t) — CSS cubic-bezier timing curve; y handles may overshoot',
+      );
       expect(item!.insertText).toBe('cubicBezier(${1:x1}, ${2:y1}, ${3:x2}, ${4:y2}, ${5:t})$0');
     });
 
@@ -149,7 +161,9 @@ describe('getCompletions', () => {
       const items = completeAtEnd('noi');
       const noise = items.find((i) => i.label === 'noise');
       expect(noise).toBeDefined();
-      expect(noise!.detail).toBe('noise(x, seed?) — 1D value noise: smooth deterministic wobble of continuous x, [0, 1)');
+      expect(noise!.detail).toBe(
+        'noise(x, seed?) — 1D value noise: smooth deterministic wobble of continuous x, [0, 1)',
+      );
       expect(noise!.insertText).toBe('noise(${1:x})$0');
       const noise2 = items.find((i) => i.label === 'noise2');
       expect(noise2).toBeDefined();
@@ -416,7 +430,7 @@ describe('getCompletions', () => {
       const literalItems = completeAtEnd('let obj = { ');
       expect(labels(literalItems)).not.toContain('rows');
       // apply { — block body: keywords must still appear
-      const applyItems = completeAtEnd("define PathLayer('p') ${}\nlayer('p').apply {\n");
+      const applyItems = completeAtEnd("define PathLayer('p') #{}\nlayer('p').apply {\n");
       expect(labels(applyItems)).toContain('let');
     });
 
@@ -556,9 +570,18 @@ describe('getCompletions', () => {
       const items = completeAtEnd('');
       const names = labels(items);
       for (const enumName of [
-        'Easing', 'Interpolation', 'SpreadMethod', 'GradientUnits',
-        'Direction', 'ConicSpread', 'InnerFill', 'TopoMethod',
-        'BBoxAnchor', 'GridPatternType', 'HexagonOrientation', 'VerticalAnchor',
+        'Easing',
+        'Interpolation',
+        'SpreadMethod',
+        'GradientUnits',
+        'Direction',
+        'ConicSpread',
+        'InnerFill',
+        'TopoMethod',
+        'BBoxAnchor',
+        'GridPatternType',
+        'HexagonOrientation',
+        'VerticalAnchor',
       ]) {
         expect(names).toContain(enumName);
       }
@@ -679,7 +702,9 @@ describe('getCompletions', () => {
     });
 
     it('offers VertexHandle members (fillet/chamfer + x/y/point/label) after pb.vertex(...)', () => {
-      const items = completeAtEnd("let shape = @{\n  M 0 0\n  L 100 0 as endpoint('corner')\n};\nshape.vertex('corner').");
+      const items = completeAtEnd(
+        "let shape = @{\n  M 0 0\n  L 100 0 as endpoint('corner')\n};\nshape.vertex('corner').",
+      );
       const names = labels(items);
       expect(names).toContain('fillet');
       expect(names).toContain('chamfer');
@@ -731,7 +756,7 @@ describe('getCompletions', () => {
 
   describe('style block completions', () => {
     it('offers style properties inside ${ }', () => {
-      const items = completeAtEnd("define PathLayer('main') ${ ");
+      const items = completeAtEnd("define PathLayer('main') #{ ");
       const names = labels(items);
       expect(names).toContain('stroke');
       expect(names).toContain('fill');
@@ -749,7 +774,6 @@ describe('getCompletions', () => {
       expect(names).not.toContain('fill');
     });
 
-
     it('offers user color variables in style value position (user bug 2026-04-11)', () => {
       // In a style block value position (after `:`), the engine should
       // return user-defined variables — not more style property names.
@@ -757,12 +781,12 @@ describe('getCompletions', () => {
       // to parse strictly, so analyzeScopes() can see the let declarations
       // above the style block.
       const source =
-        "let bgColor = Color('#ff6b6b');\n" +       // line 0
-        "let textColor = Color('#2f2f2f');\n" +     // line 1
-        "let bg = PathLayer('bg') \${\n" +          // line 2
-        '  fill: bgColor;\n' +                      // line 3
-        '  stroke: bgColor;\n' +                    // line 4
-        '};';                                       // line 5
+        "let bgColor = Color('#ff6b6b');\n" + // line 0
+        "let textColor = Color('#2f2f2f');\n" + // line 1
+        "let bg = PathLayer('bg') #{\n" + // line 2
+        '  fill: bgColor;\n' + // line 3
+        '  stroke: bgColor;\n' + // line 4
+        '};'; // line 5
       // Cursor at line 3, character 8 — right after `  fill: ` (before
       // the `bgColor` that the user is typing).
       const items = complete(source, 3, 8);
@@ -785,10 +809,10 @@ describe('getCompletions', () => {
       // next line's content.
       const source =
         "let bgColor = Color('#ff6b6b');\n" + // line 0
-        "let bg = PathLayer('bg') \${\n" +    // line 1
-        '  fill: bgColor;\n' +                // line 2
-        '  stroke: bgColor;\n' +              // line 3
-        '};';                                 // line 4
+        "let bg = PathLayer('bg') #{\n" + // line 1
+        '  fill: bgColor;\n' + // line 2
+        '  stroke: bgColor;\n' + // line 3
+        '};'; // line 4
       // Cursor at line 3, character 2 — right after `  ` (indent) and
       // before `stroke`. We're in property-name position.
       const items = complete(source, 3, 2);
@@ -831,7 +855,7 @@ describe('getCompletions', () => {
 
   describe('method return type completions', () => {
     it('offers BoundingBox members after .boundingBox()', () => {
-      const items = completeAtEnd("let s = @{ h 60 v 60 };\ns.boundingBox().");
+      const items = completeAtEnd('let s = @{ h 60 v 60 };\ns.boundingBox().');
       const names = labels(items);
       expect(names).toContain('x');
       expect(names).toContain('y');
@@ -840,14 +864,14 @@ describe('getCompletions', () => {
     });
 
     it('infers BoundingBox from variable assignment', () => {
-      const items = completeAtEnd("let s = @{ h 60 };\nlet bb = s.boundingBox();\nbb.");
+      const items = completeAtEnd('let s = @{ h 60 };\nlet bb = s.boundingBox();\nbb.');
       const names = labels(items);
       expect(names).toContain('x');
       expect(names).toContain('width');
     });
 
     it('offers Point members after .get()', () => {
-      const items = completeAtEnd("let s = @{ h 60 v 60 };\ns.get(0.5).");
+      const items = completeAtEnd('let s = @{ h 60 v 60 };\ns.get(0.5).');
       const names = labels(items);
       expect(names).toContain('x');
       expect(names).toContain('y');
@@ -898,7 +922,7 @@ describe('getCompletions', () => {
       // new line. The scope/type inference must survive the intervening
       // incomplete statement at the bottom of the buffer.
       const source =
-        "let bg = PathLayer('bg') ${ fill: '#f00'; stroke: none; };\n" +
+        "let bg = PathLayer('bg') #{ fill: '#f00'; stroke: none; };\n" +
         'bg.apply {\n' +
         '  rect(0, 0, 600, 600);\n' +
         '}\n' +
@@ -916,7 +940,7 @@ describe('getCompletions', () => {
       // multiple lines. Verify inferType's regex still matches across
       // newlines between `PathLayer(` and the dot access.
       const source =
-        "let bg = PathLayer('bg') \${\n" +
+        "let bg = PathLayer('bg') #{\n" +
         "  fill: '#ff6b6b';\n" +
         '  stroke: none;\n' +
         '};\n' +
@@ -1089,22 +1113,39 @@ describe('getCompletions', () => {
     });
   });
 
-  describe('style-block snippet via $ in expression position', () => {
-    it('$ after = offers ${ ... } style block', () => {
-      const items = completeAtEnd('let foo = $');
-      const styleBlock = items.find((i) => i.label === '${...}' && i.detail.includes('Style block'));
+  describe('style-block snippet via # in expression position', () => {
+    it('# after = offers #{ ... } style block', () => {
+      const items = completeAtEnd('let foo = #');
+      const styleBlock = items.find((i) => i.label === '#{...}' && i.detail.includes('Style block'));
       expect(styleBlock).toBeDefined();
-      expect(styleBlock!.insertText).toBe('${\n\t$0\n}');
+      expect(styleBlock!.insertText).toBe('#{\n\t$0\n}');
     });
 
-    it('$ after ( offers style block', () => {
-      const items = completeAtEnd('foo($');
-      expect(items.find((i) => i.label === '${...}' && i.detail.includes('Style block'))).toBeDefined();
+    it('# after ( offers style block', () => {
+      const items = completeAtEnd('foo(#');
+      expect(items.find((i) => i.label === '#{...}' && i.detail.includes('Style block'))).toBeDefined();
     });
 
-    it('$ at statement start does NOT offer style block (declaration snippets instead)', () => {
-      const items = completeAtEnd('$');
-      expect(items.find((i) => i.label === '${...}' && i.detail.includes('Style block'))).toBeUndefined();
+    it('# at statement start offers declaration snippets, not the style block', () => {
+      const items = completeAtEnd('#');
+      expect(items.find((i) => i.label === '#{...}' && i.detail.includes('Style block'))).toBeUndefined();
+      expect(items.map((i) => i.label)).toContain('PathLayer');
+    });
+
+    it('# right after a layer constructor offers the style block', () => {
+      const items = completeAtEnd("let l = PathLayer('a') #");
+      expect(items.find((i) => i.label === '#{...}' && i.detail.includes('Style block'))).toBeDefined();
+      expect(completeAtEnd('circle(5) #').find((i) => i.label === '#{...}')).toBeUndefined();
+    });
+
+    it('# inside a style value offers nothing (it starts a hex color)', () => {
+      const items = completeAtEnd('let s = #{ fill: #');
+      expect(items.find((i) => i.label === '#{...}')).toBeUndefined();
+    });
+
+    it('$ in expression position no longer offers the style block', () => {
+      const items = completeAtEnd('let foo = $');
+      expect(items.find((i) => i.detail?.includes('Style block'))).toBeUndefined();
     });
   });
 
@@ -1126,7 +1167,7 @@ describe('getCompletions', () => {
     });
 
     it('regression: real style block still gets style props', () => {
-      const names = labels(completeAtEnd("define PathLayer('a') ${\n  "));
+      const names = labels(completeAtEnd("define PathLayer('a') #{\n  "));
       expect(names).toContain('stroke');
       expect(names).toContain('fill');
     });
@@ -1287,7 +1328,18 @@ describe('getCompletions', () => {
     it('offers the defs constructors at top level with binding-block snippets', () => {
       const items = completeAtEnd('');
       const names = labels(items);
-      for (const ctor of ['Mask', 'ClipPath', 'LinearGradient', 'RadialGradient', 'ConicGradient', 'MeshGradient', 'FreeformGradient', 'TopoGradient', 'Pattern', 'Marker']) {
+      for (const ctor of [
+        'Mask',
+        'ClipPath',
+        'LinearGradient',
+        'RadialGradient',
+        'ConicGradient',
+        'MeshGradient',
+        'FreeformGradient',
+        'TopoGradient',
+        'Pattern',
+        'Marker',
+      ]) {
         expect(names).toContain(ctor);
       }
       const marker = items.find((i) => i.label === 'Marker');
@@ -1327,13 +1379,13 @@ describe('getCompletions', () => {
 
   describe('style property-name prefix filtering (hyphen-aware)', () => {
     it('narrows to stroke-* properties for a hyphenated prefix', () => {
-      const names = labels(completeAtEnd('let s = ${ stroke-w'));
+      const names = labels(completeAtEnd('let s = #{ stroke-w'));
       expect(names).toContain('stroke-width');
       expect(names).not.toContain('fill');
     });
 
     it('still offers all properties with no prefix', () => {
-      const names = labels(completeAtEnd('let s = ${ '));
+      const names = labels(completeAtEnd('let s = #{ '));
       expect(names).toContain('stroke-width');
       expect(names).toContain('fill');
     });
@@ -1341,7 +1393,7 @@ describe('getCompletions', () => {
 
   describe('style property-name declaration templates', () => {
     it('property names insert `name: $0;` with the cursor in value position', () => {
-      const items = completeAtEnd('let s = ${ stroke-w');
+      const items = completeAtEnd('let s = #{ stroke-w');
       const sw = items.find((i) => i.label === 'stroke-width');
       expect(sw).toBeDefined();
       expect(sw!.isSnippet).toBe(true);
@@ -1350,7 +1402,7 @@ describe('getCompletions', () => {
 
     it('inserts just the name when a colon already follows the cursor', () => {
       // Cursor sits after `stroke-w`, before the existing `: 2;`.
-      const source = 'let s = ${ stroke-w: 2; };';
+      const source = 'let s = #{ stroke-w: 2; };';
       const cursor = source.indexOf(': 2;');
       const items = complete(source, 0, cursor);
       const sw = items.find((i) => i.label === 'stroke-width');
@@ -1362,24 +1414,24 @@ describe('getCompletions', () => {
 
   describe('style value-position suggestions', () => {
     it('offers the property-specific enumerated values right after the colon', () => {
-      const names = labels(completeAtEnd('let s = ${ stroke-linecap: '));
+      const names = labels(completeAtEnd('let s = #{ stroke-linecap: '));
       expect(names).toEqual(expect.arrayContaining(['butt', 'round', 'square']));
     });
 
     it('filters hyphenated value keywords by the full run', () => {
-      const names = labels(completeAtEnd('let s = ${ text-decoration: line-t'));
+      const names = labels(completeAtEnd('let s = #{ text-decoration: line-t'));
       expect(names).toContain('line-through');
       expect(names).not.toContain('underline');
     });
 
     it('does not leak enumerated values across properties', () => {
-      const names = labels(completeAtEnd('let s = ${ stroke-width: '));
+      const names = labels(completeAtEnd('let s = #{ stroke-width: '));
       expect(names).not.toContain('butt');
       expect(names).not.toContain('evenodd');
     });
 
     it('offers none/currentColor/context-* for stroke, deduped against generic keywords', () => {
-      const items = completeAtEnd('let s = ${ stroke: ');
+      const items = completeAtEnd('let s = #{ stroke: ');
       const noneEntries = items.filter((i) => i.label === 'none');
       expect(noneEntries).toHaveLength(1);
       const names = labels(items);
@@ -1389,16 +1441,16 @@ describe('getCompletions', () => {
     it('still offers user variables in value position (well-formed block)', () => {
       // collected while the style block is still unterminated (pre-existing
       // limitation, independent of value suggestions).
-      const source = 'let accent = oklch(0.7 0.1 250);\nlet s = ${ stroke:  };';
+      const source = 'let accent = oklch(0.7 0.1 250);\nlet s = #{ stroke:  };';
       const cursor = source.indexOf(' };') + 1;
       const items = complete(source, 1, cursor - source.indexOf('\n') - 1);
       expect(labels(items)).toContain('accent');
     });
 
     it('getStyleValueKeywordRun returns the keyword run only for keyword-like values', () => {
-      const src1 = 'let s = ${ text-decoration: line-t';
+      const src1 = 'let s = #{ text-decoration: line-t';
       expect(getStyleValueKeywordRun(src1, src1.length)).toBe('line-t');
-      const src2 = 'let s = ${ stroke-dasharray: 4 2';
+      const src2 = 'let s = #{ stroke-dasharray: 4 2';
       expect(getStyleValueKeywordRun(src2, src2.length)).toBeNull();
       const src3 = 'let x = a-b';
       expect(getStyleValueKeywordRun(src3, src3.length)).toBeNull();
@@ -1440,7 +1492,7 @@ describe('query-API chains rooted in layer() calls', () => {
 
 describe('group-label All queries', () => {
   it('offers the All variants alongside the singular queries', () => {
-    const items = completeAtEnd("let shape = @{\n  M 0 0\n};\nshape.");
+    const items = completeAtEnd('let shape = @{\n  M 0 0\n};\nshape.');
     const names = items.map((i) => i.label);
     expect(names).toContain('segmentAll');
     expect(names).toContain('pointAll');
@@ -1470,14 +1522,18 @@ describe('variableOffset builder completions', () => {
   });
 
   it('offers the compound builder methods (caps, 5-arg stop) on go. inside a compoundVariableOffset block', () => {
-    const items = completeAtEnd('let spine = @{ M 0 0 L 100 0 };\nlet rib = spine.compoundVariableOffset() {|go, pb|\n  go.');
+    const items = completeAtEnd(
+      'let spine = @{ M 0 0 L 100 0 };\nlet rib = spine.compoundVariableOffset() {|go, pb|\n  go.',
+    );
     const names = items.map((i) => i.label);
     expect(names).toContain('startCap');
     expect(names).toContain('endCap');
     expect(names).not.toContain('startTangent');
     const stop = items.find((i) => i.label === 'stop');
     expect(stop!.detail).toContain('two-profile stop');
-    expect(stop!.insertText).toBe('stop(${1:time}, ${2:offset1}, ${3:CurveContinuity.G2}, ${4:offset2}, ${5:CurveContinuity.G2})$0');
+    expect(stop!.insertText).toBe(
+      'stop(${1:time}, ${2:offset1}, ${3:CurveContinuity.G2}, ${4:offset2}, ${5:CurveContinuity.G2})$0',
+    );
   });
 
   it('types the second block param (the spine) as PathBlock', () => {
@@ -1489,18 +1545,24 @@ describe('variableOffset builder completions', () => {
 
   it('types << worker-lambda params exactly like trailing-block params', () => {
     // The << bridge: a lambda literal applied as a worker has an owning call.
-    const goItems = completeAtEnd('let spine = @{ M 0 0 L 100 0 };\nlet halo = spine.variableOffset() << {|go, pb|\n  go.');
+    const goItems = completeAtEnd(
+      'let spine = @{ M 0 0 L 100 0 };\nlet halo = spine.variableOffset() << {|go, pb|\n  go.',
+    );
     const goNames = goItems.map((i) => i.label);
     expect(goNames).toContain('stop');
     expect(goNames).toContain('startTangent');
     const stop = goItems.find((i) => i.label === 'stop');
     expect(stop!.detail).toContain('Place an offset stop along the spine');
-    const pbItems = completeAtEnd('let spine = @{ M 0 0 L 100 0 };\nlet halo = spine.compoundVariableOffset() << {|go, pb|\n  pb.');
+    const pbItems = completeAtEnd(
+      'let spine = @{ M 0 0 L 100 0 };\nlet halo = spine.compoundVariableOffset() << {|go, pb|\n  pb.',
+    );
     expect(pbItems.map((i) => i.label)).toContain('boundingBox');
   });
 
   it('types array-element << worker params via the receiver', () => {
-    const items = completeAtEnd("let glyphs = PathBlock.fromGlyph('AB', ${ font-family: 'B'; });\nlet moved = glyphs.map() << {|glyph|\n  glyph.");
+    const items = completeAtEnd(
+      "let glyphs = PathBlock.fromGlyph('AB', #{ font-family: 'B'; });\nlet moved = glyphs.map() << {|glyph|\n  glyph.",
+    );
     const names = items.map((i) => i.label);
     expect(names).toContain('contours');
     expect(names).toContain('drawTo');
@@ -1508,7 +1570,9 @@ describe('variableOffset builder completions', () => {
 
   it('types the result of a << worker application as the completed call', () => {
     // let rib = spine.variableOffset() << mk → PathBlock members on rib.
-    const items = completeAtEnd('let mk = {|go, pb| go.stop(0, 5, CurveContinuity.G1); };\nlet spine = @{ M 0 0 L 100 0 };\nlet rib = spine.variableOffset() << mk;\nrib.');
+    const items = completeAtEnd(
+      'let mk = {|go, pb| go.stop(0, 5, CurveContinuity.G1); };\nlet spine = @{ M 0 0 L 100 0 };\nlet rib = spine.variableOffset() << mk;\nrib.',
+    );
     const names = items.map((i) => i.label);
     expect(names).toContain('draw');
     expect(names).toContain('boundingBox');
@@ -1518,7 +1582,7 @@ describe('variableOffset builder completions', () => {
 describe('AST-based receiver typing (destructured loops over method-returned arrays)', () => {
   it('offers PathBlock members on a destructured loop element over PathBlock.fromGlyph', () => {
     const items = completeAtEnd(
-      "let glyphs = PathBlock.fromGlyph('AB', ${ font-family: 'B'; });\nfor ([glyph, gIndex] in glyphs) {\n  glyph.",
+      "let glyphs = PathBlock.fromGlyph('AB', #{ font-family: 'B'; });\nfor ([glyph, gIndex] in glyphs) {\n  glyph.",
     );
     const names = items.map((i) => i.label);
     expect(names).toContain('contours');
@@ -1529,7 +1593,7 @@ describe('AST-based receiver typing (destructured loops over method-returned arr
 
   it('offers PathBlock members on a loop element over glyph.contours', () => {
     const items = completeAtEnd(
-      "let glyphs = PathBlock.fromGlyph('AB', ${ font-family: 'B'; });\nfor ([glyph, gIndex] in glyphs) {\n  for ([contour, cIndex] in glyph.contours) {\n    contour.",
+      "let glyphs = PathBlock.fromGlyph('AB', #{ font-family: 'B'; });\nfor ([glyph, gIndex] in glyphs) {\n  for ([contour, cIndex] in glyph.contours) {\n    contour.",
     );
     const names = items.map((i) => i.label);
     expect(names).toContain('variableOffset');
@@ -1560,7 +1624,7 @@ describe('style property/value coverage matrix', () => {
   // exactly their STYLE_PROPERTY_VALUES entries, open-domain properties
   // offer keywords + user variables, and no property offers statement
   // keywords or declaration-shaped binding-block snippets.
-  const nameItems = completeAtEnd("define PathLayer('m') ${ ");
+  const nameItems = completeAtEnd("define PathLayer('m') #{ ");
   const nameLabels = labels(nameItems);
 
   it('offers every known style property in name position', () => {
@@ -1568,7 +1632,15 @@ describe('style property/value coverage matrix', () => {
       expect(nameLabels, `property '${label}' missing in name position`).toContain(label);
     }
     // The seven properties added for the 2026-07-25 audit
-    for (const label of ['filter', 'mask', 'clip-path', 'stroke-dashoffset', 'color', 'mix-blend-mode', 'paint-order']) {
+    for (const label of [
+      'filter',
+      'mask',
+      'clip-path',
+      'stroke-dashoffset',
+      'color',
+      'mix-blend-mode',
+      'paint-order',
+    ]) {
       expect(nameLabels, `property '${label}' missing in name position`).toContain(label);
     }
   });
@@ -1576,7 +1648,7 @@ describe('style property/value coverage matrix', () => {
   describe('value position per property', () => {
     for (const [prop, values] of Object.entries(STYLE_PROPERTY_VALUES)) {
       it(`offers the enumerated/snippet values for '${prop}' and no statement keywords`, () => {
-        const items = completeAtEnd(`define PathLayer('m') \${ ${prop}: `);
+        const items = completeAtEnd(`define PathLayer('m') #{ ${prop}: `);
         const names = labels(items);
         for (const v of values) {
           expect(names, `value '${v.label}' missing for '${prop}'`).toContain(v.label);
@@ -1586,14 +1658,16 @@ describe('style property/value coverage matrix', () => {
         // Declaration-shaped constructor snippets (binding blocks) must never
         // be inserted in value position.
         for (const item of items) {
-          expect(item.insertText ?? '', `binding-block snippet '${item.label}' offered for '${prop}'`).not.toContain('{|');
+          expect(item.insertText ?? '', `binding-block snippet '${item.label}' offered for '${prop}'`).not.toContain(
+            '{|',
+          );
         }
       });
     }
   });
 
   it('offers filter function snippets with space-separated (CSS-correct) placeholders', () => {
-    const items = completeAtEnd("define PathLayer('m') ${ filter: ");
+    const items = completeAtEnd("define PathLayer('m') #{ filter: ");
     const drop = items.find((i) => i.label === 'drop-shadow');
     expect(drop).toBeDefined();
     expect(drop!.isSnippet).toBe(true);
@@ -1606,7 +1680,7 @@ describe('style property/value coverage matrix', () => {
   it('carries units in length/angle placeholders so the snippet compiles as-is', () => {
     // The evaluator rejects a unitless length or angle, so a snippet without a
     // unit would insert code that fails to compile.
-    const items = completeAtEnd("define PathLayer('m') ${ filter: ");
+    const items = completeAtEnd("define PathLayer('m') #{ filter: ");
     expect(items.find((i) => i.label === 'blur')!.insertText).toBe('blur(${1:4}px)');
     expect(items.find((i) => i.label === 'hue-rotate')!.insertText).toBe('hue-rotate(${1:90}deg)');
     // Unitless amounts stay unitless — a unit there is an error.
@@ -1614,7 +1688,7 @@ describe('style property/value coverage matrix', () => {
   });
 
   it('derives filter function completions from the sanitizer allow-list (bidirectional)', () => {
-    const items = completeAtEnd("define PathLayer('m') ${ filter: ");
+    const items = completeAtEnd("define PathLayer('m') #{ filter: ");
     const names = new Set(labels(items));
     for (const fn of CSS_FILTER_FUNCTION_NAMES) {
       expect(names, `sanitizer-allowed filter fn '${fn}' has no completion`).toContain(fn);
@@ -1625,7 +1699,7 @@ describe('style property/value coverage matrix', () => {
     const source =
       'let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };\n' +
       'let unrelated = 42;\n' +
-      "let l = PathLayer('a') ${\n" +
+      "let l = PathLayer('a') #{\n" +
       '  filter: \n' +
       '};';
     const items = complete(source, 3, 10);
@@ -1639,11 +1713,7 @@ describe('style property/value coverage matrix', () => {
   });
 
   it('offers Mask-typed variables with the ref detail after mask:', () => {
-    const source =
-      "let m = Mask('cut');\n" +
-      "let l = PathLayer('a') ${\n" +
-      '  mask: \n' +
-      '};';
+    const source = "let m = Mask('cut');\n" + "let l = PathLayer('a') #{\n" + '  mask: \n' + '};';
     const items = complete(source, 2, 8);
     const m = items.find((i) => i.label === 'm');
     expect(m).toBeDefined();
@@ -1653,56 +1723,58 @@ describe('style property/value coverage matrix', () => {
 
 describe('bare ${} interpolation in style values (context detection)', () => {
   it('an unclosed ${ in value position suppresses style completions', () => {
-    const src = 'let cu = 4;\nlet s = ${ stroke-width: ${cu';
+    const src = 'let cu = 4;\nlet s = #{ stroke-width: ${cu';
     expect(isStylePropertyNamePosition(src, src.length)).toBe(false);
     expect(getStyleValueKeywordRun(src, src.length)).toBe(null);
   });
 
   it('a balanced interp is transparent to property-name context', () => {
     // After `${w};` the next declaration starts — property-name position.
-    const src = 'let w = 2;\nlet s = ${ stroke-width: ${w}; st';
+    const src = 'let w = 2;\nlet s = #{ stroke-width: ${w}; st';
     expect(isStylePropertyNamePosition(src, src.length)).toBe(true);
   });
 
   it('value-keyword runs still work after a balanced interp declaration', () => {
-    const src = 'let w = 2;\nlet s = ${ stroke-width: ${w}; stroke-linecap: rou';
+    const src = 'let w = 2;\nlet s = #{ stroke-width: ${w}; stroke-linecap: rou';
     expect(getStyleValueKeywordRun(src, src.length)).toBe('rou');
   });
 });
 
 describe('expression completions inside style-value interpolations', () => {
   it('bare interp offers in-scope variables', () => {
-    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = ${ stroke-width: ${cu'));
+    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = #{ stroke-width: ${cu'));
     expect(names).toContain('cutoff');
     expect(names).not.toContain('stroke-width');
   });
 
   it('bare interp resolves member chains', () => {
-    const names = labels(completeAtEnd('let p = Point(10, 20);\nlet s = ${ stroke: ${p.di'));
+    const names = labels(completeAtEnd('let p = Point(10, 20);\nlet s = #{ stroke: ${p.di'));
     expect(names).toContain('distanceTo');
     expect(names).not.toContain('Direction');
   });
 
   it('bare interp resolves PathBlock methods', () => {
-    const names = labels(completeAtEnd('let shape = @{\n  M 0 0\n  L 100 0\n};\nlet s = ${ stroke-width: ${shape.cham'));
+    const names = labels(
+      completeAtEnd('let shape = @{\n  M 0 0\n  L 100 0\n};\nlet s = #{ stroke-width: ${shape.cham'),
+    );
     expect(names).toContain('chamfer');
     expect(names).toContain('chamferAtVertex');
   });
 
   it('bare interp offers stdlib inside nested calls', () => {
-    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = ${ stroke-width: ${calc(cu'));
+    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = #{ stroke-width: ${calc(cu'));
     expect(names).toContain('cutoff');
     expect(names).toContain('cubic');
   });
 
   it('a second interp in the same declaration behaves identically', () => {
-    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = ${ stroke-dasharray: ${cutoff} ${cu'));
+    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = #{ stroke-dasharray: ${cutoff} ${cu'));
     expect(names).toContain('cutoff');
     expect(names).not.toContain('stroke-dasharray');
   });
 
   it('regression: NO style property names at a bare interp opener', () => {
-    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = ${ stroke-width: ${'));
+    const names = labels(completeAtEnd('let cutoff = 4;\nlet s = #{ stroke-width: ${'));
     expect(names).not.toContain('stroke');
     expect(names).not.toContain('stroke-width');
     expect(names).toContain('cutoff');
@@ -1715,18 +1787,18 @@ describe('expression completions inside style-value interpolations', () => {
   });
 
   it('backtick interp in a style value resolves member chains', () => {
-    const names = labels(completeAtEnd('let p = Point(10, 20);\nlet s = ${ stroke: `${p.di'));
+    const names = labels(completeAtEnd('let p = Point(10, 20);\nlet s = #{ stroke: `${p.di'));
     expect(names).toContain('distanceTo');
   });
 
   it('property-name context resumes after a balanced interp', () => {
-    const names = labels(completeAtEnd('let w = 2;\nlet s = ${ stroke-width: ${w}; st'));
+    const names = labels(completeAtEnd('let w = 2;\nlet s = #{ stroke-width: ${w}; st'));
     expect(names).toContain('stroke-linecap');
     expect(names).toContain('stroke-dasharray');
   });
 
   it('typing $ in a style VALUE offers the interpolation snippet, not the style-block snippet', () => {
-    const items = completeAtEnd('let s = ${ stroke: $');
+    const items = completeAtEnd('let s = #{ stroke: $');
     const snip = items.find((i) => i.label === '${...}');
     expect(snip).toBeDefined();
     expect(snip!.insertText).toContain('expr');

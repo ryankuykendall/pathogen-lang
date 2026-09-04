@@ -332,7 +332,7 @@ let gridH = 150;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers — each pattern in a different hue
@@ -341,10 +341,10 @@ let dotColor = gridColor.hueShift(90);
 let intColor = gridColor.hueShift(180);
 let partColor = gridColor.hueShift(270);
 
-let shapeLayer = PathLayer('shape') ${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
-let dotLayer = PathLayer('dot') ${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
-let intLayer = PathLayer('int') ${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
-let partLayer = PathLayer('part') ${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let shapeLayer = PathLayer('shape') #{ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') #{ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') #{ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') #{ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
 
 // Top-left: Shape
 shapeLayer.apply {
@@ -367,7 +367,7 @@ partLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -399,7 +399,7 @@ let gridH = 150;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers
@@ -408,10 +408,10 @@ let dotColor = gridColor.hueShift(90);
 let intColor = gridColor.hueShift(180);
 let partColor = gridColor.hueShift(270);
 
-let shapeLayer = PathLayer('shape') ${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
-let dotLayer = PathLayer('dot') ${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
-let intLayer = PathLayer('int') ${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
-let partLayer = PathLayer('part') ${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let shapeLayer = PathLayer('shape') #{ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') #{ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') #{ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') #{ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
 
 // Top-left: Shape
 shapeLayer.apply {
@@ -434,7 +434,7 @@ partLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -485,7 +485,7 @@ let gridH = 150;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers
@@ -494,10 +494,10 @@ let dotColor = gridColor.hueShift(90);
 let intColor = gridColor.hueShift(180);
 let partColor = gridColor.hueShift(270);
 
-let shapeLayer = PathLayer('shape') ${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
-let dotLayer = PathLayer('dot') ${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
-let intLayer = PathLayer('int') ${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
-let partLayer = PathLayer('part') ${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let shapeLayer = PathLayer('shape') #{ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') #{ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') #{ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') #{ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
 
 // Top-left: Shape
 shapeLayer.apply {
@@ -520,7 +520,7 @@ partLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -550,15 +550,15 @@ let gridH = 140;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 200); }
 
 // Grid layers
 let flatColor = gridColor;
 let pointyColor = gridColor.hueShift(120);
 
-let flatLayer = PathLayer('flat') ${ stroke: flatColor; stroke-width: 0.4; fill: none; };
-let pointyLayer = PathLayer('pointy') ${ stroke: pointyColor; stroke-width: 0.4; fill: none; };
+let flatLayer = PathLayer('flat') #{ stroke: flatColor; stroke-width: 0.4; fill: none; };
+let pointyLayer = PathLayer('pointy') #{ stroke: pointyColor; stroke-width: 0.4; fill: none; };
 
 // Left: Flat-top (Edge)
 flatLayer.apply {
@@ -571,7 +571,7 @@ pointyLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;
@@ -626,11 +626,11 @@ let gridColor = Color(CSSVar('--grid-color', #5577aa));
 let bgColor = Color(CSSVar('--bg-color', #0f172a));
 
 // Background
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // Layer 1: Rotated partial grid as background texture
-let gridLayer = PathLayer('grid') ${ stroke: gridColor; stroke-width: 0.3; fill: none; stroke-linecap: round; };
+let gridLayer = PathLayer('grid') #{ stroke: gridColor; stroke-width: 0.3; fill: none; stroke-linecap: round; };
 gridLayer.ctx.transform.rotate.set(0.08pi);
 gridLayer.apply {
   squareGrid(GridPatternType.Partial, -40, -40, 480, 480, 16);
@@ -638,20 +638,20 @@ gridLayer.apply {
 
 // Layer 2: Hex grid overlay with shape pattern
 let accentColor = gridColor.lighten(30%);
-let hexLayer = PathLayer('hex') ${ stroke: accentColor; stroke-width: 0.5; fill: none; };
+let hexLayer = PathLayer('hex') #{ stroke: accentColor; stroke-width: 0.5; fill: none; };
 hexLayer.apply {
   hexagonGrid(GridPatternType.Shape, 60, 60, 280, 280, 30);
 }
 
 // Layer 3: Triangle intersection marks at center
 let triColor = gridColor.hueShift(180).lighten(20%);
-let triLayer = PathLayer('tri') ${ stroke: triColor; stroke-width: 0.6; fill: none; stroke-linecap: round; };
+let triLayer = PathLayer('tri') #{ stroke: triColor; stroke-width: 0.6; fill: none; stroke-linecap: round; };
 triLayer.apply {
   triangleGrid(GridPatternType.Intersection, 120, 120, 160, 160, 25);
 }
 
 // Labels
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: #64748b;

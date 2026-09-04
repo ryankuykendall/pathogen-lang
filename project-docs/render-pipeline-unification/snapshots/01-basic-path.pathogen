@@ -1,6 +1,6 @@
 // Baseline: single-layer path, no defs. Tests bare minimum CLI output shape.
 
-define PathLayer('line') ${
+define PathLayer('line') #{
   stroke: Color('#333333');
   stroke-width: 2;
   fill: none;

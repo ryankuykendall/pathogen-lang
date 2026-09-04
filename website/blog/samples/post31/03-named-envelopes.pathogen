@@ -51,7 +51,7 @@ let base = oklch(0.55 0.18 260);
 
 fn drawRow(name, ribbon, py, hueOffset) {
   let rowColor = base.hueShift(hueOffset);
-  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  let rowLayer = PathLayer(`row-${name}`) #{ fill: rowColor; stroke: none; opacity: 0.9; };
   rowLayer.apply {
     M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
     ribbon.draw();
@@ -63,7 +63,7 @@ drawRow('taper',    strokeWithEnvelopes(spine, 48, taper1,    taper2,    CurveCo
 drawRow('bulge',    strokeWithEnvelopes(spine, 48, bulged1,   bulged2,   CurveContinuity.G1, taperCap), 355, 120);
 drawRow('wave',     strokeWithEnvelopes(spine, 96, wave1,     wave2,     CurveContinuity.G1, taperCap), 490, 180);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;

@@ -1,7 +1,7 @@
 define ViewBox(0, 0, 640, 240);
 // EmbossFilter — strength sweep. Brighter highlights at higher specularConstant.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(90% 0.02 80);
   stroke: none;
 };
@@ -30,22 +30,22 @@ let f4 = EmbossFilter() {|f|
   f.strength = 1.5;
 };
 
-let d1 = PathLayer('d1') ${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') ${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') ${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') ${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f4;
@@ -64,7 +64,7 @@ d4.apply {
   circle(560, 100, 50);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -75,7 +75,7 @@ l1.apply {
   text(80, 200)`strength = 0.3`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -86,7 +86,7 @@ l2.apply {
   text(240, 200)`strength = 0.6`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -97,7 +97,7 @@ l3.apply {
   text(400, 200)`strength = 1.0`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;

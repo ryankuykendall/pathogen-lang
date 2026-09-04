@@ -1,4 +1,10 @@
-import { parse, detectMissingSemicolon, describeCommandShadowing } from '../parser';
+import {
+  parse,
+  detectMissingSemicolon,
+  describeCommandShadowing,
+  isLegacyStyleOpenerError,
+  LEGACY_STYLE_OPENER_MESSAGE,
+} from '../parser';
 import { evaluate } from '../evaluator';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 
@@ -36,7 +42,7 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
       const lezerLine = lezerError.range.start.line;
       const isCascade = diagnostics.some((d) => {
         const diagLine = d.range.start.line;
-        return lezerLine === diagLine || (lezerLine === diagLine + 1);
+        return lezerLine === diagLine || lezerLine === diagLine + 1;
       });
       if (isCascade) continue;
       diagnostics.push(lezerError);
@@ -142,9 +148,16 @@ function findLezerErrors(source: string, document: TextDocument): Diagnostic[] {
   const cursor = tree.cursor();
   const errors: Diagnostic[] = [];
   const seenLines = new Set<number>();
+  // A legacy `${` opener throws the parser off for the whole block
+  // (`stroke-width` reads as `stroke - width`, every `;` is unexpected);
+  // one diagnostic at the opener says everything, so the cascade inside the
+  // block is suppressed up to its closing brace.
+  let suppressUntil = -1;
 
   do {
+    if (cursor.type.isError && cursor.from < suppressUntil) continue;
     if (cursor.type.isError && cursor.from < source.length) {
+      if (isLegacyStyleOpenerError(source, cursor.node)) suppressUntil = legacyBlockEnd(source, cursor.from);
       const { message, line, character } = describeErrorWithPosition(cursor.node, source, document);
       // Deduplicate: one error per line
       if (!seenLines.has(line)) {
@@ -160,6 +173,63 @@ function findLezerErrors(source: string, document: TextDocument): Diagnostic[] {
   } while (cursor.next());
 
   return errors;
+}
+
+/**
+ * Offset just past the `}` that closes the legacy block opened at `from`.
+ * Braces inside quoted strings and backtick templates don't count (a value
+ * like `content: "a}b";` must not end the suppression early).
+ */
+function legacyBlockEnd(source: string, from: number): number {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = from + 1; i < source.length; i++) {
+    const ch = source[i];
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = null;
+      else if (ch === '\n' && quote !== '`') quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+    else if (ch === '{') depth++;
+    else if (ch === '}' && --depth === 0) return i + 1;
+  }
+  return source.length;
+}
+
+/** One parse's worth of legacy openers (the first one's cascade can hide later ones). */
+function legacyOpenersInOneParse(text: string): number[] {
+  const batch: number[] = [];
+  let suppressUntil = -1;
+  lezerParser.parse(text).iterate({
+    enter(node) {
+      if (!node.type.isError || node.from < suppressUntil) return;
+      if (isLegacyStyleOpenerError(text, node.node)) {
+        batch.push(node.from);
+        suppressUntil = legacyBlockEnd(text, node.from);
+      }
+    },
+  });
+  return batch;
+}
+
+/**
+ * Every legacy `${` style-block opener in `source`, as offsets of the `$`.
+ * Used by the "convert all" code action; iterate to a fixpoint because the
+ * first opener's cascade can hide later ones from a single parse.
+ */
+export function findLegacyStyleOpeners(source: string): number[] {
+  const found: number[] = [];
+  let text = source;
+  for (let round = 0; round < 8; round++) {
+    const batch = legacyOpenersInOneParse(text);
+    if (batch.length === 0) break;
+    found.push(...batch);
+    // `$` → `#` is a same-length edit, so offsets stay valid across rounds.
+    for (const o of batch) text = `${text.slice(0, o)}#${text.slice(o + 1)}`;
+  }
+  return found.sort((a, b) => a - b);
 }
 
 /**
@@ -191,11 +261,18 @@ function describeErrorWithPosition(
 
 /** Every CST node the switch grammar produces (path and text forms). */
 const SWITCH_FAMILY_NODES = new Set([
-  'SwitchStatement', 'TextSwitchStatement',
-  'CaseClause', 'TextCaseClause',
-  'DefaultClause', 'TextDefaultClause',
-  'CasePattern', 'RangePattern', 'WhereGuard',
-  'SwitchExpression', 'CaseArm', 'DefaultArm',
+  'SwitchStatement',
+  'TextSwitchStatement',
+  'CaseClause',
+  'TextCaseClause',
+  'DefaultClause',
+  'TextDefaultClause',
+  'CasePattern',
+  'RangePattern',
+  'WhereGuard',
+  'SwitchExpression',
+  'CaseArm',
+  'DefaultArm',
 ]);
 
 const ARM_SEMICOLON_MESSAGE = 'A switch expression arm holds a single expression: case value { expr }';
@@ -227,6 +304,7 @@ function describeMissingCaseHead(errorNode: import('@lezer/common').SyntaxNode):
 }
 
 function describeError(errorNode: import('@lezer/common').SyntaxNode, source: string): string {
+  if (isLegacyStyleOpenerError(source, errorNode)) return LEGACY_STYLE_OPENER_MESSAGE;
   const parent = errorNode.parent;
   const prev = errorNode.prevSibling;
   const next = errorNode.nextSibling;
@@ -266,8 +344,7 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
   if (parentName === 'TrailingBlock') {
     // Error before the closing '|' (or right after the opening one) is a
     // parameter-list problem: {|a b| ...}, {|a,| ...}, {|1| ...}
-    const inParamList = nextName === '|' || prevName === '|' ||
-      (prevName === 'VariableName' && next?.name === '|');
+    const inParamList = nextName === '|' || prevName === '|' || (prevName === 'VariableName' && next?.name === '|');
     if (errText && inParamList) {
       return `Unexpected '${errText}' in block parameters — parameters are names separated by commas: {|a, b| ... }`;
     }
@@ -320,7 +397,7 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
     // Fallback with semicolon heuristic
     const semi = detectMissingSemicolon(source, errorNode.from);
     if (semi) return semi.message;
-    return "Invalid let declaration";
+    return 'Invalid let declaration';
   }
 
   // ── Unclosed / mismatched blocks ──
@@ -334,14 +411,14 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
   // ── for loop issues ──
   if (parentName === 'ForLoop' || parentName === 'ForEachLoop') {
     if (errText === '{') return "Expected ')' before '{'";
-    if (!errText) return "Incomplete for loop";
+    if (!errText) return 'Incomplete for loop';
     return `Unexpected '${errText}' in for loop`;
   }
 
   // ── if statement issues ──
   if (parentName === 'IfStatement') {
     if (errText === '{') return "Expected ')' before '{'";
-    if (!errText) return "Incomplete if statement";
+    if (!errText) return 'Incomplete if statement';
     return `Unexpected '${errText}' in if statement`;
   }
 
@@ -398,13 +475,13 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
   // ── Function definition issues ──
   if (parentName === 'FunctionDefinition') {
     if (prevName === ')' && !errText) return "Expected '{' for function body";
-    if (!errText) return "Incomplete function definition";
+    if (!errText) return 'Incomplete function definition';
     return `Unexpected '${errText}' in function definition`;
   }
 
   // ── Enum issues ──
   if (parentName === 'EnumDefinition') {
-    return errText ? `Unexpected '${errText}' in enum` : "Incomplete enum definition";
+    return errText ? `Unexpected '${errText}' in enum` : 'Incomplete enum definition';
   }
 
   // ── Unexpected token with text ──
@@ -484,9 +561,10 @@ function makeRange(
 ): { start: { line: number; character: number }; end: { line: number; character: number } } {
   const clampedLine = Math.max(0, Math.min(line, document.lineCount - 1));
   const lineStart = document.offsetAt({ line: clampedLine, character: 0 });
-  const lineEnd = clampedLine + 1 < document.lineCount
-    ? document.offsetAt({ line: clampedLine + 1, character: 0 }) - 1
-    : document.getText().length;
+  const lineEnd =
+    clampedLine + 1 < document.lineCount
+      ? document.offsetAt({ line: clampedLine + 1, character: 0 }) - 1
+      : document.getText().length;
   const lineLength = lineEnd - lineStart;
 
   return {

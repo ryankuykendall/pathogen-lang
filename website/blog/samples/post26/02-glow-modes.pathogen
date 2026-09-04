@@ -1,7 +1,7 @@
 define ViewBox(0, 0, 400, 220);
 // GlowMode.Outer vs GlowMode.Inner on the same disc.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(25% 0.04 270);
   stroke: none;
 };
@@ -24,12 +24,12 @@ let f_inner = GlowFilter() {|f|
   f.opacity = 0.85;
 };
 
-let d_outer = PathLayer('outer') ${
+let d_outer = PathLayer('outer') #{
   fill: oklch(60% 0.20 240);
   stroke: none;
   filter: f_outer;
 };
-let d_inner = PathLayer('inner') ${
+let d_inner = PathLayer('inner') #{
   fill: oklch(60% 0.20 240);
   stroke: none;
   filter: f_inner;
@@ -42,7 +42,7 @@ d_inner.apply {
   circle(290, 90, 50);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -53,7 +53,7 @@ l1.apply {
   text(110, 180)`GlowMode.Outer`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;

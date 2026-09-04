@@ -3,7 +3,7 @@
 
 let rect = @{ m 0 0 l 200 0 l 0 200 l -200 0 z };
 let mask = Mask('m1');
-mask.append(rect, ${ fill: Color('#ffffff'); });
+mask.append(rect, #{ fill: Color('#ffffff'); });
 
 let frame = @{ m 10 10 l 180 0 l 0 180 l -180 0 z };
 let clip = ClipPath('c1');
@@ -15,12 +15,12 @@ let g = LinearGradient('g1', 0, 0, 1, 0) {|g|
 };
 
 let dot = @{ circle(5, 5, 2); };
-let pat = Pattern('p1', 0, 0, 10, 10) {|p| p.append(dot, ${ fill: Color('#333333'); }); };
+let pat = Pattern('p1', 0, 0, 10, 10) {|p| p.append(dot, #{ fill: Color('#333333'); }); };
 
 let arrow = @{ m 0 0 l 8 4 l -8 4 z };
-let mk = Marker('mk1', 8, 8) {|m| m.append(arrow, ${ fill: Color('#333333'); }); };
+let mk = Marker('mk1', 8, 8) {|m| m.append(arrow, #{ fill: Color('#333333'); }); };
 
-define PathLayer('line') ${
+define PathLayer('line') #{
   fill: g;
   stroke: Color('#222222');
   stroke-width: 2;

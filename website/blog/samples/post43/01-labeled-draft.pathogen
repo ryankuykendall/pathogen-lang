@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 260);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,75 +12,75 @@ layer('bg').apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') ${};
-let panel = PathLayer('panel') ${
+let scene = GroupLayer('scene') #{};
+let panel = PathLayer('panel') #{
   fill: #e7dfd0;
   stroke: #64748b;
   stroke-width: 1;
 };
-let neckRun = PathLayer('neck-run') ${
+let neckRun = PathLayer('neck-run') #{
   stroke: #2dd4bf;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let shoulderRun = PathLayer('shoulder-run') ${
+let shoulderRun = PathLayer('shoulder-run') #{
   stroke: #3b82f6;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let armholeRun = PathLayer('armhole-run') ${
+let armholeRun = PathLayer('armhole-run') #{
   stroke: #c084fc;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let sideRun = PathLayer('side-run') ${
+let sideRun = PathLayer('side-run') #{
   stroke: #f59e0b;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let hemRun = PathLayer('hem-run') ${
+let hemRun = PathLayer('hem-run') #{
   stroke: #fb7185;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let frontRun = PathLayer('front-run') ${
+let frontRun = PathLayer('front-run') #{
   stroke: #94a3b8;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
   stroke-dasharray: 6 4;
 };
-let legendNeck = TextLayer('legend-neck') ${
+let legendNeck = TextLayer('legend-neck') #{
   font-family: monospace;
   font-size: 9;
   fill: #2dd4bf;
 };
-let legendShoulder = TextLayer('legend-shoulder') ${
+let legendShoulder = TextLayer('legend-shoulder') #{
   font-family: monospace;
   font-size: 9;
   fill: #3b82f6;
 };
-let legendArmhole = TextLayer('legend-armhole') ${
+let legendArmhole = TextLayer('legend-armhole') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;
 };
-let legendSide = TextLayer('legend-side') ${
+let legendSide = TextLayer('legend-side') #{
   font-family: monospace;
   font-size: 9;
   fill: #f59e0b;
 };
-let legendHem = TextLayer('legend-hem') ${
+let legendHem = TextLayer('legend-hem') #{
   font-family: monospace;
   font-size: 9;
   fill: #fb7185;
 };
-let legendFold = TextLayer('legend-fold') ${
+let legendFold = TextLayer('legend-fold') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;

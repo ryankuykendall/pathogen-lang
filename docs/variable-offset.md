@@ -168,10 +168,10 @@ Add `anchor` to the spine's own placement and the curve registers exactly, whate
 
 ```
 @font "Baumans" 400;
-let glyphStyles = ${ font-family: "Baumans"; font-size: 120; };
+let glyphStyles = #{ font-family: "Baumans"; font-size: 120; };
 let glyphSet = PathBlock.fromGlyph('So', glyphStyles);
-let glyphLayer = PathLayer('glyphs') ${ fill: none; stroke: #999; };
-let ribbonLayer = PathLayer('ribbon') ${ fill: #c00; stroke: none; };
+let glyphLayer = PathLayer('glyphs') #{ fill: none; stroke: #999; };
+let ribbonLayer = PathLayer('ribbon') #{ fill: #c00; stroke: none; };
 
 let x = 20;
 let y = 120;

@@ -1,18 +1,18 @@
 // Struct destructuring demo — every destructurable built-in in one drawing.
 define ViewBox(0, 0, 200, 200);
 
-define PathLayer('rings') ${
+define PathLayer('rings') #{
   stroke: oklch(0.55 0.18 260);
   stroke-width: 2;
   fill: none;
 }
 
-define PathLayer('dots') ${
+define PathLayer('dots') #{
   stroke: none;
   fill: oklch(0.6 0.2 20);
 }
 
-let labels = TextLayer('labels') ${ font-size: 8; fill: oklch(0.35 0.05 260); };
+let labels = TextLayer('labels') #{ font-size: 8; fill: oklch(0.35 0.05 260); };
 
 // Point: destructure x/y and draw around them
 let center = Point(100, 100);

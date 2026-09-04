@@ -28,5 +28,5 @@ let topo = TopoGradient('terrain', 400, 300) {|g|
 topo.baseColor = Color('#1a5276');  // Deep ocean blue
 topo.easing = 'smoothstep';
 
-define PathLayer('bg') ${ fill: topo; }
+define PathLayer('bg') #{ fill: topo; }
 layer('bg').apply { rect(0, 0, 400, 300); }

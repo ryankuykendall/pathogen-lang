@@ -6,14 +6,14 @@ let sq = @{ h 60 v 60 h -60 z };
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 520, 280); }
 
 // ═══════════════════════════════════════
 // Step 1: Two overlapping squares (input)
 // ═══════════════════════════════════════
 
-let s1_orig = PathLayer('s1-orig') ${
+let s1_orig = PathLayer('s1-orig') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -24,7 +24,7 @@ s1_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let s1_label = TextLayer('s1-label') ${
+let s1_label = TextLayer('s1-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -34,7 +34,7 @@ s1_label.apply {
   text(42, 115)`Overlapping squares`
 }
 
-let s1_num = TextLayer('s1-num') ${
+let s1_num = TextLayer('s1-num') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -44,14 +44,14 @@ s1_num.apply {
   text(42, 130)`step 1: input`
 }
 
-let g_step1 = GroupLayer('g-step1') ${ translate-x: 30; translate-y: 60; };
+let g_step1 = GroupLayer('g-step1') #{ translate-x: 30; translate-y: 60; };
 g_step1.append(s1_orig, s1_label, s1_num);
 
 // ═══════════════════════════════════════
 // Step 2: Union result
 // ═══════════════════════════════════════
 
-let s2_orig = PathLayer('s2-orig') ${
+let s2_orig = PathLayer('s2-orig') #{
   stroke: Color('#94a3b830');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -62,7 +62,7 @@ s2_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let s2_result = PathLayer('s2-result') ${
+let s2_result = PathLayer('s2-result') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: Color('#3b82f615');
@@ -72,7 +72,7 @@ s2_result.apply {
   u.drawTo(0, 0);
 }
 
-let s2_label = TextLayer('s2-label') ${
+let s2_label = TextLayer('s2-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -82,7 +82,7 @@ s2_label.apply {
   text(42, 115)`.union()`
 }
 
-let s2_num = TextLayer('s2-num') ${
+let s2_num = TextLayer('s2-num') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -92,14 +92,14 @@ s2_num.apply {
   text(42, 130)`step 2: combine`
 }
 
-let g_step2 = GroupLayer('g-step2') ${ translate-x: 195; translate-y: 60; };
+let g_step2 = GroupLayer('g-step2') #{ translate-x: 195; translate-y: 60; };
 g_step2.append(s2_orig, s2_result, s2_label, s2_num);
 
 // ═══════════════════════════════════════
 // Step 3: Union + fillet
 // ═══════════════════════════════════════
 
-let s3_orig = PathLayer('s3-orig') ${
+let s3_orig = PathLayer('s3-orig') #{
   stroke: Color('#94a3b830');
   stroke-width: 1;
   stroke-dasharray: "4 3";
@@ -110,7 +110,7 @@ s3_orig.apply {
   sq.drawTo(25, 25);
 }
 
-let s3_result = PathLayer('s3-result') ${
+let s3_result = PathLayer('s3-result') #{
   stroke: Color('#8b5cf6');
   stroke-width: 2;
   fill: Color('#8b5cf615');
@@ -121,7 +121,7 @@ s3_result.apply {
   rounded.drawTo(0, 0);
 }
 
-let s3_label = TextLayer('s3-label') ${
+let s3_label = TextLayer('s3-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -131,7 +131,7 @@ s3_label.apply {
   text(42, 115)`.union().fillet(8)`
 }
 
-let s3_num = TextLayer('s3-num') ${
+let s3_num = TextLayer('s3-num') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -141,14 +141,14 @@ s3_num.apply {
   text(42, 130)`step 3: round`
 }
 
-let g_step3 = GroupLayer('g-step3') ${ translate-x: 370; translate-y: 60; };
+let g_step3 = GroupLayer('g-step3') #{ translate-x: 370; translate-y: 60; };
 g_step3.append(s3_orig, s3_result, s3_label, s3_num);
 
 // ═══════════════════════════════════════
 // Arrow connectors (absolute positions)
 // ═══════════════════════════════════════
 
-let arrows = PathLayer('arrows') ${
+let arrows = PathLayer('arrows') #{
   stroke: Color('#475569');
   stroke-width: 1.5;
   fill: Color('#475569');
@@ -166,7 +166,7 @@ arrows.apply {
 // Code block (absolute positions)
 // ═══════════════════════════════════════
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -178,7 +178,7 @@ code.apply {
   text(30, 250)`rounded.drawTo(x, y)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -189,7 +189,7 @@ kw.apply {
   text(30, 236)`let`
 }
 
-let code_note = TextLayer('code-note') ${
+let code_note = TextLayer('code-note') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -201,7 +201,7 @@ code_note.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -211,7 +211,7 @@ title.apply {
   text(30, 28)`Chaining: Boolean + Fillet`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');

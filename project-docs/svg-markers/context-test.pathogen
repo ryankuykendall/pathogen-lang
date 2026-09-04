@@ -5,10 +5,10 @@ let arrow = @{
 };
 
 let m = Marker('arrow', 10, 10) {|mk|
-  mk.append(arrow, ${ fill: context-stroke; stroke: none; });
+  mk.append(arrow, #{ fill: context-stroke; stroke: none; });
 };
 
-define PathLayer('line') ${
+define PathLayer('line') #{
   stroke: Color('#e63946');
   stroke-width: 3;
   fill: none;

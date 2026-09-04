@@ -26,7 +26,7 @@ let footer_h = 60;
 
 // ─── Background ────────────────────────────────────────────────────
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, total_w, total_h); }
 
 // ─── Palette (12 colors for ENCYCLOPEDIA's 12 letters) ─────────────
@@ -63,29 +63,29 @@ let state_labels = ["multi-color", ".union()", ".difference()"];
 let multi_layers = [];
 for (ci in 0..11) {
   let nm = `multi-${ci}`;
-  let ml = PathLayer(nm) ${ stroke: pal_strokes[ci]; stroke-width: 0.6; fill: pal_fills[ci]; };
+  let ml = PathLayer(nm) #{ stroke: pal_strokes[ci]; stroke-width: 0.6; fill: pal_fills[ci]; };
   multi_layers.push(ml);
 }
 
-let union_layer = PathLayer('union') ${ fill: union_color; stroke: none; };
-let plate_layer = PathLayer('plate') ${ fill: plate_color; stroke: none; };
-let diff_layer  = PathLayer('diff')  ${ fill: plate_color; stroke: none; };
+let union_layer = PathLayer('union') #{ fill: union_color; stroke: none; };
+let plate_layer = PathLayer('plate') #{ fill: plate_color; stroke: none; };
+let diff_layer  = PathLayer('diff')  #{ fill: plate_color; stroke: none; };
 
 // ─── Title ─────────────────────────────────────────────────────────
 
-let title_layer = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 16; fill: text_color; text-anchor: start; };
+let title_layer = TextLayer('title') #{ font-family: system-ui, sans-serif; font-size: 16; fill: text_color; text-anchor: start; };
 layer('title').apply {
   text(20, 24)`Boolean Operations Failure-Mode Stress Matrix — ENCYCLOPEDIA × 4 caps × 11 tracking × 3 states × 3 fonts`
 }
 
-let subtitle_layer = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 10; fill: muted; text-anchor: start; };
+let subtitle_layer = TextLayer('subtitle') #{ font-family: system-ui, sans-serif; font-size: 10; fill: muted; text-anchor: start; };
 layer('subtitle').apply {
   text(20, 40)`Cells: row = font × caps, col = state × tracking. Tight tracking (0.2 left) stresses adjacent-glyph union.`
 }
 
 // ─── Column headers (state × tracking) ─────────────────────────────
 
-let col_header_layer = TextLayer('col-headers') ${ font-family: monospace; font-size: 8; fill: faint; text-anchor: middle; };
+let col_header_layer = TextLayer('col-headers') #{ font-family: monospace; font-size: 8; fill: faint; text-anchor: middle; };
 layer('col-headers').apply {
   for (state_idx in 0..2) {
     for (tr_idx in 0..10) {
@@ -99,7 +99,7 @@ layer('col-headers').apply {
 
 // ─── Row headers (font × caps) ─────────────────────────────────────
 
-let row_header_layer = TextLayer('row-headers') ${ font-family: monospace; font-size: 8; fill: faint; text-anchor: end; };
+let row_header_layer = TextLayer('row-headers') #{ font-family: monospace; font-size: 8; fill: faint; text-anchor: end; };
 layer('row-headers').apply {
   for (font_idx in 0..2) {
     for (cap_idx in 0..3) {
@@ -112,7 +112,7 @@ layer('row-headers').apply {
 
 // ─── Cell-grid lines ───────────────────────────────────────────────
 
-let grid_layer = PathLayer('grid') ${ stroke: Color('#1e293b'); stroke-width: 0.5; fill: none; };
+let grid_layer = PathLayer('grid') #{ stroke: Color('#1e293b'); stroke-width: 0.5; fill: none; };
 layer('grid').apply {
   // Vertical lines between columns
   for (col_idx in 0..33) {
@@ -129,7 +129,7 @@ layer('grid').apply {
   M calc(header_w + 22 * cell_w) header_h v calc(12 * cell_h)
 }
 
-let state_divider_layer = PathLayer('state-dividers') ${ stroke: Color('#334155'); stroke-width: 1; fill: none; };
+let state_divider_layer = PathLayer('state-dividers') #{ stroke: Color('#334155'); stroke-width: 1; fill: none; };
 layer('state-dividers').apply {
   M calc(header_w + 11 * cell_w) header_h v calc(12 * cell_h)
   M calc(header_w + 22 * cell_w) header_h v calc(12 * cell_h)
@@ -138,7 +138,7 @@ layer('state-dividers').apply {
 // ─── Cell rendering — three styles per font ────────────────────────
 
 // Bebas Neue rows (font_idx = 0)
-let styles_bebas = ${ font-family: BebasNeue-Regular; font-size: font_size; };
+let styles_bebas = #{ font-family: BebasNeue-Regular; font-size: font_size; };
 
 for (cap_idx_b in 0..3) {
   let row_idx_b = cap_idx_b;
@@ -204,7 +204,7 @@ for (cap_idx_b in 0..3) {
 }
 
 // Raleway rows (font_idx = 1)
-let styles_raleway = ${ font-family: Raleway-ExtraLight; font-size: font_size; };
+let styles_raleway = #{ font-family: Raleway-ExtraLight; font-size: font_size; };
 
 for (cap_idx_r in 0..3) {
   let row_idx_r = calc(4 + cap_idx_r);
@@ -264,7 +264,7 @@ for (cap_idx_r in 0..3) {
 }
 
 // Libre Baskerville rows (font_idx = 2)
-let styles_libre = ${ font-family: LibreBaskerville-Bold; font-size: font_size; };
+let styles_libre = #{ font-family: LibreBaskerville-Bold; font-size: font_size; };
 
 for (cap_idx_l in 0..3) {
   let row_idx_l = calc(8 + cap_idx_l);
@@ -325,7 +325,7 @@ for (cap_idx_l in 0..3) {
 
 // ─── Footer note ────────────────────────────────────────────────────
 
-let footer_layer = TextLayer('footer') ${ font-family: monospace; font-size: 9; fill: muted; text-anchor: start; };
+let footer_layer = TextLayer('footer') #{ font-family: monospace; font-size: 9; fill: muted; text-anchor: start; };
 layer('footer').apply {
   text(20, calc(total_h - 24))`Failure modes to look for: diagonal-close notch in adjacent glyphs (.union, t≤0.5), missing serif features (.diff, Libre Bask), spurious holes (.diff, tight tracking), thin-stroke misclassification (.union, Raleway 200).`
 }

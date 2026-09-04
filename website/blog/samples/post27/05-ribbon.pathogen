@@ -14,35 +14,35 @@ let amber = Color('#e0a725');
 let red = Color('#e63946');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('ribbonSym') ${
+define PathLayer('ribbonSym') #{
   fill: blue;
   fill-opacity: 0.45;
   stroke: blue;
   stroke-width: 1.5;
 }
-define PathLayer('ribbonAsym') ${
+define PathLayer('ribbonAsym') #{
   fill: amber;
   fill-opacity: 0.45;
   stroke: amber;
   stroke-width: 1.5;
 }
-define PathLayer('ribbonBand') ${
+define PathLayer('ribbonBand') #{
   fill: red;
   fill-opacity: 0.38;
   stroke: red;
   stroke-width: 1.5;
 }
-define PathLayer('rail') ${
+define PathLayer('rail') #{
   stroke: fg_muted;
   stroke-width: 1;
   fill: none;
   stroke-dasharray: "3 4";
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;

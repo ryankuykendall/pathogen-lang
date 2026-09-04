@@ -327,12 +327,12 @@ fn sinFract(i) {
   return s - floor(s);
 }
 
-let folk = PathLayer('sin-fract') ${
+let folk = PathLayer('sin-fract') #{
   fill: oklch(0.6 0.15 20);
   stroke: none;
   opacity: 0.85;
 };
-let builtin = PathLayer('hash01') ${
+let builtin = PathLayer('hash01') #{
   fill: oklch(0.55 0.18 260);
   stroke: none;
   opacity: 0.85;
@@ -349,7 +349,7 @@ builtin.apply {
   }
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -362,7 +362,7 @@ labels.apply {
 
 //-- Value-axis ticks: vertical position IS the hash output, 0 at the top
 //-- of each band, 1 at the bottom.
-let ticks = TextLayer('value-ticks') ${
+let ticks = TextLayer('value-ticks') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: #666;
@@ -375,7 +375,7 @@ ticks.apply {
   text(372, 207)`1`
 }
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(folk, builtin, labels, ticks);
 </code>
   <img src="/blog/samples/post32/01-two-hashes.svg" alt="72 indices through both hashes. Visually interchangeable — the difference is contractual, not aesthetic. The bottom row is bit-specified on every engine; the top row inherits Math.sin's engine-dependence." loading="lazy">
@@ -431,7 +431,7 @@ for (haloIndex in 16..1) {
   let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
-  let haloLayer = PathLayer(`halo-${haloIndex}`) ${
+  let haloLayer = PathLayer(`halo-${haloIndex}`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;
@@ -485,7 +485,7 @@ fn plotCurve(curveLayer, envFn) {
   }
 }
 
-let axis = PathLayer('axis') ${ fill: none; stroke: #bbb; stroke-width: 1; };
+let axis = PathLayer('axis') #{ fill: none; stroke: #bbb; stroke-width: 1; };
 axis.apply {
   M plotX plotY
   L calc(plotX + plotW) plotY
@@ -493,7 +493,7 @@ axis.apply {
 
 //-- Reference line at value 1.0 — bump's peak and the plateau's flat top
 //-- both touch it exactly, which is what makes them composable kernels.
-let unitLine = PathLayer('unit-line') ${
+let unitLine = PathLayer('unit-line') #{
   fill: none;
   stroke: #555;
   stroke-width: 0.75;
@@ -503,7 +503,7 @@ unitLine.apply {
   M plotX calc(plotY - plotH)
   L calc(plotX + plotW) calc(plotY - plotH)
 }
-let unitLabel = TextLayer('unit-label') ${
+let unitLabel = TextLayer('unit-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #777;
@@ -511,9 +511,9 @@ let unitLabel = TextLayer('unit-label') ${
 };
 unitLabel.apply { text(56, 73)`1.0` }
 
-let hillLayer = PathLayer('env-bump') ${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
-let plateauLayer = PathLayer('env-plateau') ${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
-let rampLayer = PathLayer('env-ease') ${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+let hillLayer = PathLayer('env-bump') #{ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+let plateauLayer = PathLayer('env-plateau') #{ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+let rampLayer = PathLayer('env-ease') #{ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
 
 plotCurve(hillLayer, hill);
 plotCurve(plateauLayer, plateau);
@@ -531,13 +531,13 @@ let ribbon = spine.compoundVariableOffset() {|vo, pb|
   }
   vo.endCap(Cap.tapered(2, CurveContinuity.G0));
 };
-let strokeLayer = PathLayer('shaped-stroke') ${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+let strokeLayer = PathLayer('shaped-stroke') #{ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
 strokeLayer.apply {
   M calc(plotX + ribbon.anchor.x) calc(240 + ribbon.anchor.y)
   ribbon.draw();
 }
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -552,26 +552,26 @@ labels.apply {
 }
 
 //-- Legend: line samples drawn with each curve's real stroke + dashes.
-let swatchHill = PathLayer('swatch-bump') ${ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
+let swatchHill = PathLayer('swatch-bump') #{ fill: none; stroke: oklch(0.55 0.18 260); stroke-width: 2; };
 swatchHill.apply { M 252 27 L 268 27 }
-let legendHill = TextLayer('legend-bump') ${
+let legendHill = TextLayer('legend-bump') #{
   font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.72 0.15 260);
 };
 legendHill.apply { text(274, 30)`bump()` }
-let swatchPlateau = PathLayer('swatch-plateau') ${ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
+let swatchPlateau = PathLayer('swatch-plateau') #{ fill: none; stroke: oklch(0.62 0.16 160); stroke-width: 1.25; stroke-dasharray: 2 4; };
 swatchPlateau.apply { M 252 41 L 268 41 }
-let legendPlateau = TextLayer('legend-plateau') ${
+let legendPlateau = TextLayer('legend-plateau') #{
   font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: oklch(0.62 0.16 160);
 };
 legendPlateau.apply { text(274, 44)`smoothstep window` }
-let swatchRamp = PathLayer('swatch-ease') ${ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
+let swatchRamp = PathLayer('swatch-ease') #{ fill: none; stroke: #b0b0b0; stroke-width: 1.25; stroke-dasharray: 5 3; };
 swatchRamp.apply { M 252 55 L 268 55 }
-let legendRamp = TextLayer('legend-ease') ${
+let legendRamp = TextLayer('legend-ease') #{
   font-family: system-ui, sans-serif; font-size: 10; text-anchor: start; fill: #b0b0b0;
 };
 legendRamp.apply { text(274, 58)`easeInOut()` }
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(axis, unitLine, unitLabel, hillLayer, plateauLayer, rampLayer,
              strokeLayer, labels, swatchHill, legendHill, swatchPlateau,
              legendPlateau, swatchRamp, legendRamp);
@@ -613,15 +613,15 @@ fn texturedStroke(strokeLayer, y, freq) {
   }
 }
 
-let slow = PathLayer('freq-3') ${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
-let mid = PathLayer('freq-6') ${ fill: oklch(0.58 0.17 220); stroke: none; opacity: 0.9; };
-let fast = PathLayer('freq-12') ${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.9; };
+let slow = PathLayer('freq-3') #{ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+let mid = PathLayer('freq-6') #{ fill: oklch(0.58 0.17 220); stroke: none; opacity: 0.9; };
+let fast = PathLayer('freq-12') #{ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.9; };
 
 texturedStroke(slow, 55, 3);
 texturedStroke(mid, 130, 6);
 texturedStroke(fast, 205, 12);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -633,7 +633,7 @@ labels.apply {
   text(40, 176)`noise(t * 12) — chattering`
 }
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(slow, mid, fast, labels);
 </code>
   <img src="/blog/samples/post32/04-noise-stroke.svg" alt="The same noise stream at three input scales. noise(t * 2) is one slow swell; noise(t * 11) chatters. Frequency is just multiplication — no new API." loading="lazy">
@@ -684,7 +684,7 @@ for (haloIndex in 16..1) {
   let halo = spine.compoundVariableOffset() &lt;&lt; mk;
 
   let haloColor = base.hueShift(calc(haloIndex * -6));
-  let haloLayer = PathLayer(`halo-${haloIndex}`) ${
+  let haloLayer = PathLayer(`halo-${haloIndex}`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;

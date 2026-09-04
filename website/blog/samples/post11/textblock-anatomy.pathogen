@@ -3,10 +3,10 @@ define ViewBox(0, 0, 600, 340);
 
 // ─── Background ─────────────────────────────────────────────────────
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 340); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -18,7 +18,7 @@ grid.apply {
 
 // ─── Define a TextBlock at relative coordinates ─────────────────────
 
-let mono_styles = ${ font-family: monospace; font-size: 11; };
+let mono_styles = #{ font-family: monospace; font-size: 11; };
 
 let card = &{
   text(0, 14)`Server Node`
@@ -31,13 +31,13 @@ let bb = card.boundingBox();
 
 // ─── Card 1: First placement ────────────────────────────────────────
 
-let g1 = GroupLayer('card1') ${ translate-x: 80; translate-y: 100; };
+let g1 = GroupLayer('card1') #{ translate-x: 80; translate-y: 100; };
 
-let demo1 = TextLayer('demo1') ${ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
+let demo1 = TextLayer('demo1') #{ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
 demo1.apply { card.drawTo(0, 0); }
 
 // Bounding box overlay
-let bb1_layer = PathLayer('bb1') ${
+let bb1_layer = PathLayer('bb1') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -46,7 +46,7 @@ let bb1_layer = PathLayer('bb1') ${
 bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
-let cross1 = PathLayer('cross1') ${
+let cross1 = PathLayer('cross1') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -66,13 +66,13 @@ g1.append(demo1, bb1_layer, cross1);
 
 // ─── Card 2: Second placement ───────────────────────────────────────
 
-let g2 = GroupLayer('card2') ${ translate-x: 360; translate-y: 180; };
+let g2 = GroupLayer('card2') #{ translate-x: 360; translate-y: 180; };
 
-let demo2 = TextLayer('demo2') ${ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
+let demo2 = TextLayer('demo2') #{ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
 demo2.apply { card.drawTo(0, 0); }
 
 // Bounding box overlay
-let bb2_layer = PathLayer('bb2') ${
+let bb2_layer = PathLayer('bb2') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -81,7 +81,7 @@ let bb2_layer = PathLayer('bb2') ${
 bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
-let cross2 = PathLayer('cross2') ${
+let cross2 = PathLayer('cross2') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -100,9 +100,9 @@ g2.append(demo2, bb2_layer, cross2);
 
 // ─── Leader lines and connection arrow ──────────────────────────────
 
-let leader_group = GroupLayer('leaders-group') ${};
+let leader_group = GroupLayer('leaders-group') #{};
 
-let leaders = PathLayer('leaders') ${
+let leaders = PathLayer('leaders') #{
   fill: none;
   stroke: Color('#475569');
   stroke-width: 0.5;
@@ -117,7 +117,7 @@ leaders.apply {
 }
 
 // Arrowhead at connection endpoint
-let arrow_layer = PathLayer('arrow') ${
+let arrow_layer = PathLayer('arrow') #{
   fill: Color('#818cf8');
   stroke: none;
 };
@@ -129,9 +129,9 @@ leader_group.append(leaders, arrow_layer);
 
 // ─── Annotations ────────────────────────────────────────────────────
 
-let anno_group = GroupLayer('anno-group') ${};
+let anno_group = GroupLayer('anno-group') #{};
 
-let anno = TextLayer('anno') ${
+let anno = TextLayer('anno') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -147,9 +147,9 @@ anno_group.append(anno);
 
 // ─── Code block (top-right) ─────────────────────────────────────────
 
-let code_group = GroupLayer('code-block') ${ translate-x: 400; translate-y: 22; };
+let code_group = GroupLayer('code-block') #{ translate-x: 400; translate-y: 22; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -165,7 +165,7 @@ code.apply {
   text(0, 92)`card.drawTo(360, 180)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -179,9 +179,9 @@ code_group.append(code, kw);
 
 // ─── Title ──────────────────────────────────────────────────────────
 
-let title_group = GroupLayer('title-group') ${};
+let title_group = GroupLayer('title-group') #{};
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -195,16 +195,16 @@ title_group.append(title);
 
 // ─── Legend ──────────────────────────────────────────────────────────
 
-let legend_group = GroupLayer('legend-group') ${ translate-x: 400; translate-y: 300; };
+let legend_group = GroupLayer('legend-group') #{ translate-x: 400; translate-y: 300; };
 
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
-let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
-let leg_b = PathLayer('leg-b') ${ fill: Color('#f59e0b'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_b = PathLayer('leg-b') #{ fill: Color('#f59e0b'); stroke: none; };
 
 leg_o.apply { rect(0, 0, 8, 8); }
 leg_b.apply { rect(0, 14, 8, 8); }

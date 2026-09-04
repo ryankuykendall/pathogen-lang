@@ -355,7 +355,7 @@ round caps at the punch diameter and the seam becomes a row of holes.</p>
 
 define ViewBox(0, 0, 480, 170);
 
-let leather = PathLayer('leather') ${
+let leather = PathLayer('leather') #{
   fill: #7c5335;
   stroke: none;
 };
@@ -363,17 +363,17 @@ layer('leather').apply {
   rect(0, 0, 480, 170);
 }
 
-let scene = GroupLayer('scene') ${};
-let seamGhost = PathLayer('seam-ghost') ${
+let scene = GroupLayer('scene') #{};
+let seamGhost = PathLayer('seam-ghost') #{
   stroke: #00000040;
   stroke-width: 1;
   fill: none;
 };
-let holes = PathLayer('holes') ${
+let holes = PathLayer('holes') #{
   fill: #f8fafc;
   stroke: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #f1e9dd;
@@ -388,13 +388,13 @@ seamGhost.apply {
   M 70 92 seam.draw()
 }
 
-let pricks = seam.dash(${
+let pricks = seam.dash(#{
   stroke-dasharray: 0.01 16;
 });
 
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
 for (prick in seamHoles) {
-  let dot = prick.path.outline(${
+  let dot = prick.path.outline(#{
     stroke-width: 5;
     stroke-linecap: round;
   });
@@ -422,7 +422,7 @@ by half the remainder, and the margins agree at both ends.</p>
 
 define ViewBox(0, 0, 480, 200);
 
-let leather = PathLayer('leather') ${
+let leather = PathLayer('leather') #{
   fill: #7c5335;
   stroke: none;
 };
@@ -430,17 +430,17 @@ layer('leather').apply {
   rect(0, 0, 480, 200);
 }
 
-let scene = GroupLayer('scene') ${};
-let seamGhost = PathLayer('seam-ghost') ${
+let scene = GroupLayer('scene') #{};
+let seamGhost = PathLayer('seam-ghost') #{
   stroke: #00000040;
   stroke-width: 1;
   fill: none;
 };
-let holes = PathLayer('holes') ${
+let holes = PathLayer('holes') #{
   fill: #f8fafc;
   stroke: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #f1e9dd;
@@ -456,13 +456,13 @@ fn punchRow(anchorY, offsetValue) {
   seamGhost.apply {
     M 70 anchorY seam.draw()
   }
-  let pricks = seam.dash(${
+  let pricks = seam.dash(#{
     stroke-dasharray: 0.01 ${pitch};
     stroke-dashoffset: ${offsetValue};
   });
   let rowHoles = pricks.filter() {|prick| prick.kind == 'dash'};
   for (prick in rowHoles) {
-    let dot = prick.path.outline(${
+    let dot = prick.path.outline(#{
       stroke-width: 5;
       stroke-linecap: round;
     });
@@ -514,7 +514,7 @@ differ if you tried.</p>
 
 define ViewBox(0, 0, 480, 330);
 
-let bench = PathLayer('bench') ${
+let bench = PathLayer('bench') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -522,17 +522,17 @@ layer('bench').apply {
   rect(0, 0, 480, 330);
 }
 
-let scene = GroupLayer('scene') ${};
-let pieces = PathLayer('pieces') ${
+let scene = GroupLayer('scene') #{};
+let pieces = PathLayer('pieces') #{
   fill: #7c5335;
   stroke: #3f2a17;
   stroke-width: 1.5;
 };
-let holes = PathLayer('holes') ${
+let holes = PathLayer('holes') #{
   fill: #f8fafc;
   stroke: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #d6c9b8;
@@ -572,14 +572,14 @@ pieces.apply {
 let pitch = 20;
 let leftover = calc(seamEdge.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
-let pricks = seamEdge.dash(${
+let pricks = seamEdge.dash(#{
   stroke-dasharray: 0.01 ${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
 let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
 
 for (prick in seamHoles) {
-  let dot = prick.path.outline(${
+  let dot = prick.path.outline(#{
     stroke-width: 4.5;
     stroke-linecap: round;
   });
@@ -624,7 +624,7 @@ beneath shows through each one.</p>
 
 define ViewBox(0, 0, 480, 320);
 
-let bench = PathLayer('bench') ${
+let bench = PathLayer('bench') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -632,23 +632,23 @@ bench.apply {
   rect(0, 0, 480, 320);
 }
 
-let scene = GroupLayer('scene') ${};
-let backPanel = PathLayer('back-panel') ${
+let scene = GroupLayer('scene') #{};
+let backPanel = PathLayer('back-panel') #{
   fill: #2e2018;
   stroke: #3f2a17;
   stroke-width: 1.5;
 };
-let pocket = PathLayer('pocket') ${
+let pocket = PathLayer('pocket') #{
   fill: #7c5335;
   stroke: #3f2a17;
   stroke-width: 1.5;
 };
-let guides = PathLayer('guides') ${
+let guides = PathLayer('guides') #{
   stroke: #00000035;
   stroke-width: 1;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #d6c9b8;
@@ -696,7 +696,7 @@ let seamU = stitchLine.fillet(8);
 // give up one hole and split a whole extra pitch across the ends.
 let leftover = calc(seamU.length % pitch);
 let endMargin = calc((leftover + pitch) / 2);
-let pricks = seamU.dash(${
+let pricks = seamU.dash(#{
   stroke-dasharray: 0.01 ${pitch};
   stroke-dashoffset: calc(0 - endMargin);
 });
@@ -704,7 +704,7 @@ let seamHoles = pricks.filter() {|prick| prick.kind == 'dash'};
 
 let punched = pocketShape;
 for (prick in seamHoles) {
-  let hole = prick.path.outline(${
+  let hole = prick.path.outline(#{
     stroke-width: 4.5;
     stroke-linecap: round;
   });

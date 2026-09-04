@@ -3,7 +3,7 @@ define ViewBox(0, 0, 600, 320);
 // The screenshot shows the height bracket line and 'h = 12' text
 // overlapping with the '10' at the end of 'font-size: 10'.
 
-let styles = ${ font-size: 10; font-family: monospace; };
+let styles = #{ font-size: 10; font-family: monospace; };
 let t = &{ text(0, 10)`font-size: 10` } << styles;
 let bb = t.boundingBox();
 
@@ -51,7 +51,7 @@ log("bracket serifs span x:", calc(bracket_x - 3), "to", calc(bracket_x + 3));
 
 // Check the h-label vs the text projected as a rect
 let t_proj = t.project(x0, y_s);
-let h_label = &{ text(0, 8)`h = ${round(bb.height)}` } << ${ font-size: 8; font-family: monospace; };
+let h_label = &{ text(0, 8)`h = ${round(bb.height)}` } << #{ font-size: 8; font-family: monospace; };
 let h_proj = h_label.project(h_label_x, calc(y_s + bb.y + bb.height / 2 + 3));
 log("");
 log("h-label bbox:", h_proj.boundingBox().x, h_proj.boundingBox().y, h_proj.boundingBox().width, h_proj.boundingBox().height);

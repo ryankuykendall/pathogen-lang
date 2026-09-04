@@ -10,7 +10,7 @@ const BASE = 'http://localhost:3000';
 const REPRO = `define ViewBox(0, 0, 800, 200);
 let fontFamily = "Baumans";
 @font fontFamily;
-let fontStyles = \${
+let fontStyles = #{
   fill: #cccc0066;
   font-family: fontFamily;
   font-size: 16;

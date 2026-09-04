@@ -6,17 +6,17 @@ define ViewBox(0, 0, 600, 300);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 600, 300); }
 
 // ─── Glyph layout with advance widths ────────────────────────────
 
 let word = "PATHOGEN";
-let styles = ${ font-family: "Bebas Neue"; font-size: 64; };
+let styles = #{ font-family: "Bebas Neue"; font-size: 64; };
 let glyphs = PathBlock.fromGlyph(word, styles);
 
 // Place glyphs using advance width accumulation
-let glyph_layer = PathLayer('glyphs') ${
+let glyph_layer = PathLayer('glyphs') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -34,7 +34,7 @@ layer('glyphs').apply {
 
 // --- Baseline and advance width markers ---
 
-let markers = PathLayer('markers') ${
+let markers = PathLayer('markers') #{
   stroke: Color('#f59e0b');
   stroke-width: 0.75;
   fill: none;
@@ -46,7 +46,7 @@ layer('markers').apply {
 }
 
 // Advance width ticks
-let ticks = PathLayer('ticks') ${
+let ticks = PathLayer('ticks') #{
   stroke: Color('#f59e0b60');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -65,10 +65,10 @@ layer('ticks').apply {
 // --- Second row: Inconsolata (monospace) ---
 
 let word2 = "PATHOGEN";
-let styles2 = ${ font-family: Inconsolata; font-size: 48; };
+let styles2 = #{ font-family: Inconsolata; font-size: 48; };
 let glyphs2 = PathBlock.fromGlyph(word2, styles2);
 
-let glyph_layer2 = PathLayer('glyphs2') ${
+let glyph_layer2 = PathLayer('glyphs2') #{
   fill: Color('#22c55e');
   stroke: none;
 };
@@ -84,7 +84,7 @@ layer('glyphs2').apply {
 }
 
 // Baseline 2
-let markers2 = PathLayer('markers2') ${
+let markers2 = PathLayer('markers2') #{
   stroke: Color('#22c55e');
   stroke-width: 0.75;
   fill: none;
@@ -95,7 +95,7 @@ layer('markers2').apply {
 
 // --- Font labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -108,7 +108,7 @@ layer('labels').apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -118,9 +118,9 @@ layer('title').apply { text(30, 30)`Glyph Layout with Advance Widths` }
 
 // --- Code snippet ---
 
-let code_group = GroupLayer('code-block') ${ translate-x: 350; translate-y: 20; };
+let code_group = GroupLayer('code-block') #{ translate-x: 350; translate-y: 20; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -134,7 +134,7 @@ layer('code').apply {
   text(0, 48)`}`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#c084fc');

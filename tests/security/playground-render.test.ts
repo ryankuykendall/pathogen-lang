@@ -70,7 +70,7 @@ function assertCleanDom(svg: SVGElement): void {
 describe('Security · playground render', () => {
   it('clean source produces a clean DOM tree', () => {
     const svg = mountCompiled(`
-      define PathLayer('main') \${ fill: "#e63946"; stroke-width: 2; }
+      define PathLayer('main') #{ fill: "#e63946"; stroke-width: 2; }
       layer('main').apply { M 0 0 L 100 0 L 100 100 Z }
     `);
     assertCleanDom(svg);
@@ -83,7 +83,7 @@ describe('Security · playground render', () => {
   it('Color(CSSVar(...)) with valid name produces a clean <style> @property block (serialized)', () => {
     const result = compile(`
       let brand = Color(CSSVar('--brand', Color('#e63946')));
-      define PathLayer('main') \${ stroke: brand; }
+      define PathLayer('main') #{ stroke: brand; }
       layer('main').apply { M 0 0 L 100 0 }
     `);
     const svg = toSvgString(buildSvgTree(result));
@@ -104,7 +104,7 @@ describe('Security · playground render', () => {
         gr.stop(0, Color('#000000'));
         gr.stop(1, Color('#ffffff'));
       };
-      define PathLayer('main') \${ fill: g; }
+      define PathLayer('main') #{ fill: g; }
       layer('main').apply { M 0 0 L 100 0 L 100 100 Z }
     `);
     assertCleanDom(svg);

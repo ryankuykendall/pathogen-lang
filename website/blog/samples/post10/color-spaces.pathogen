@@ -6,14 +6,14 @@ define ViewBox(0, 0, 560, 340);
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 560, 340); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -23,7 +23,7 @@ title.apply {
   text(30, 30)`CSS Color Function Literals`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -62,14 +62,14 @@ let sw = 40;
 let sh = 40;
 let sr = 4;
 
-let space_label = TextLayer('space-label') ${
+let space_label = TextLayer('space-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #e2e8f0;
   text-anchor: start;
 };
 
-let code_label = TextLayer('code-label') ${
+let code_label = TextLayer('code-label') #{
   font-family: monospace;
   font-size: 8;
   fill: #94a3b8;
@@ -83,7 +83,7 @@ for ([color, i] in colors) {
   let y = calc(sy + row * row_h);
 
   // Swatch
-  let swatch = PathLayer(`cs_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`cs_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(x, y, sw, sh, sr); }
 
   // Space name
@@ -101,7 +101,7 @@ for ([color, i] in colors) {
 // Convergence annotation
 // ═══════════════════════════════════════
 
-let arrow_label = TextLayer('arrow-label') ${
+let arrow_label = TextLayer('arrow-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: #38bdf8;
@@ -111,7 +111,7 @@ arrow_label.apply {
   text(280, 312)`All converge → OKLCH internally`
 }
 
-let arrow_line = PathLayer('arrow-line') ${
+let arrow_line = PathLayer('arrow-line') #{
   stroke: #38bdf8;
   stroke-width: 1;
   fill: none;

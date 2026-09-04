@@ -53,8 +53,8 @@ let cachedRanges: OffsetRange[] = [];
  */
 export function getStyleRefRanges(source: string): OffsetRange[] {
   if (source === cachedSource) return cachedRanges;
-  // Cheap guard: no style block (or template) opener → nothing to resolve.
-  if (!source.includes('${')) {
+  // Cheap guard: no style-block opener → nothing to resolve.
+  if (!source.includes('#{')) {
     cachedSource = source;
     cachedRanges = [];
     return cachedRanges;

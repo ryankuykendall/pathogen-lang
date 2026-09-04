@@ -10,10 +10,10 @@ let pan = MotionBlurFilter() {|f|
   f.samples = 16;
 };
 
-define PathLayer('bg') ${ fill: oklch(96% 0.01 250); }
+define PathLayer('bg') #{ fill: oklch(96% 0.01 250); }
 layer('bg').apply { rect(0, 0, 240, 160); }
 
-define PathLayer('puck') ${
+define PathLayer('puck') #{
   fill: oklch(55% 0.21 25);
   filter: pan;
 }

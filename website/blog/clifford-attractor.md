@@ -73,7 +73,7 @@ Pathogen's `for` loop supports up to 32,000 iterations per loop (a safety limit 
 But first, an optimization. Each `circle()` call generates two SVG arc commands — for 10,000 circles, that's 30,000 path commands and roughly 800KB of SVG data. Instead, we can render each point as a zero-length line segment: `M x y l 0 0`. With `stroke-linecap: round` set on the layer, SVG renders this as a circular dot. Two commands per point instead of three, cutting the SVG output nearly in half.
 
 ```pathogen
-define default PathLayer('attractor') ${
+define default PathLayer('attractor') #{
   stroke: oklch(0.55 0.18 260);
   stroke-width: 1.0;
   stroke-linecap: round;
@@ -106,14 +106,14 @@ A single-color attractor is striking, but color can reveal the attractor's tempo
 The idea: split 10,000 iterations into 5 chunks of 2,000 each. Each chunk renders to a different layer with a different color from a palette. Early iterations (exploring the attractor's outline) get one color; later iterations (filling in the dense interior) get another.
 
 ```pathogen
-let baseStyles = ${
+let baseStyles = #{
   stroke-width: 1;
   stroke-linecap: round;
   fill: none;
 };
 let colors = Color.palette(Color('#1e40af'), Color('#f97316'), 5);
 let layers = colors.map {|c, i|
-  return PathLayer(`color-${i}`) ${ stroke: c; } << baseStyles;
+  return PathLayer(`color-${i}`) #{ stroke: c; } << baseStyles;
 };
 ```
 

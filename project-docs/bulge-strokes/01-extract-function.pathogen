@@ -43,7 +43,7 @@ let px = 80;
 let taperCap = Cap.tapered(2, CurveContinuity.G0);
 
 //-- A dashed guide layer shows the spine each ribbon rides on.
-let guide = PathLayer('spine-guide') ${
+let guide = PathLayer('spine-guide') #{
   fill: none;
   stroke: #999;
   stroke-width: 0.75;
@@ -65,14 +65,14 @@ fn drawRow(rowLayer, ribbon, py) {
 let straddle = strokeFromPathBlock(spine, 48, 0.5, 0.35,
                                    0.5, 9, -0.5, -9,
                                    CurveContinuity.G1, taperCap);
-let row1 = PathLayer('row-straddle') ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.85; };
+let row1 = PathLayer('row-straddle') #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.85; };
 drawRow(row1, straddle, 90);
 
 //-- Row 2: asymmetric — profile 1 swells hard, profile 2 barely moves.
 let nib = strokeFromPathBlock(spine, 48, 0.35, 0.3,
                               0.3, 12, -0.3, -3,
                               CurveContinuity.G1, taperCap);
-let row2 = PathLayer('row-nib') ${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
+let row2 = PathLayer('row-nib') #{ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.85; };
 drawRow(row2, nib, 250);
 
 //-- Row 3: SAME-SIGN offsets — the band detaches and floats above the spine.
@@ -80,10 +80,10 @@ drawRow(row2, nib, 250);
 let band = strokeFromPathBlock(spine, 48, 0.6, 0.3,
                                2, 8, 0.5, 3,
                                CurveContinuity.G1, taperCap);
-let row3 = PathLayer('row-band') ${ fill: oklch(0.62 0.16 20); stroke: none; opacity: 0.85; };
+let row3 = PathLayer('row-band') #{ fill: oklch(0.62 0.16 20); stroke: none; opacity: 0.85; };
 drawRow(row3, band, 410);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;

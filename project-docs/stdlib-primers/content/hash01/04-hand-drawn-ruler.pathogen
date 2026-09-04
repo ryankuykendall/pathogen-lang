@@ -5,7 +5,7 @@
 
 define ViewBox(0, 0, 400, 150);
 
-let rigid = PathLayer('machine') ${ stroke: oklch(0.65 0.02 260); stroke-width: 1.2; fill: none; };
+let rigid = PathLayer('machine') #{ stroke: oklch(0.65 0.02 260); stroke-width: 1.2; fill: none; };
 rigid.apply {
   M 20 48 L 380 48
   for (i in 0..35) {
@@ -14,7 +14,7 @@ rigid.apply {
   }
 }
 
-let loose = PathLayer('hand-drawn') ${ stroke: oklch(0.75 0.12 60); stroke-width: 1.2; fill: none; };
+let loose = PathLayer('hand-drawn') #{ stroke: oklch(0.75 0.12 60); stroke-width: 1.2; fill: none; };
 loose.apply {
   M 20 115 L 380 115
   for (i in 0..35) {

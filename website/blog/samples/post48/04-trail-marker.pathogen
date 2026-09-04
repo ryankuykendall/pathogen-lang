@@ -3,7 +3,7 @@
 
 define ViewBox(0, 0, 480, 300);
 
-let table = PathLayer('table') ${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -11,18 +11,18 @@ layer('table').apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') ${};
-let mylar = PathLayer('mylar') ${
+let scene = GroupLayer('scene') #{};
+let mylar = PathLayer('mylar') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let registration = PathLayer('registration') ${
+let registration = PathLayer('registration') #{
   stroke: #64748b;
   stroke-width: 1.5;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -46,7 +46,7 @@ let bandWidth = 26;
 let bridgeWidth = 14;
 let cutLength = calc(ringCenter.length / 4 - bridgeWidth);
 // Shift back half a segment: bridges off the cardinals.
-let ringPieces = ringCenter.dash(${
+let ringPieces = ringCenter.dash(#{
   stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
@@ -67,7 +67,7 @@ let arrow = @{
 let cutSegments = ringPieces.filter() {|piece| piece.kind == 'dash'};
 let stencil = sheet.difference(arrow);
 for (segment in cutSegments) {
-  let aperture = segment.path.outline(${
+  let aperture = segment.path.outline(#{
     stroke-width: ${bandWidth};
     stroke-linecap: butt;
   });

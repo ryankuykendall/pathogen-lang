@@ -161,7 +161,7 @@ let sameByPi = c.hueShift(0.5pi);    // 90° — π/2 radians
 // A hue wheel in nine swatches — the 2pi literal makes this an angle
 let c = Color('#e63946');
 for (i in 1..9) {
-  let swatch = PathLayer(`shift-${i}`) ${
+  let swatch = PathLayer(`shift-${i}`) #{
     stroke: none;
     fill: c.hueShift(calc(i / 9 * 2pi));
   };
@@ -255,7 +255,7 @@ Harmony methods return arrays, so use `for-each` to iterate:
 ```
 let c = Color('#e63946');
 for ([color, i] in c.triadic()) {
-  define PathLayer(`p${i}`) ${ fill: color; stroke: none; }
+  define PathLayer(`p${i}`) #{ fill: color; stroke: none; }
   layer(`p${i}`).apply { circle(calc(50 + i * 60), 100, 25) }
 }
 ```
@@ -314,20 +314,20 @@ let rampAlpha    = rampMid.alpha(0.5);
 // Layers
 // ═══════════════════════════════════════════════════════════
 
-define PathLayer('connectors') ${
+define PathLayer('connectors') #{
   stroke: #999;
   stroke-width: 1;
   fill: none;
 }
 
-define TextLayer('section-labels') ${
+define TextLayer('section-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   font-weight: bold;
   fill: #555;
 }
 
-define TextLayer('labels') ${
+define TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: #777;
@@ -351,7 +351,7 @@ let row1 = [base, lighter, darker, vivid, muted];
 let row1names = ['base', 'lighten', 'darken', 'saturate', 'desat'];
 for ([color, i] in row1) {
   let x = calc(sx + i * sp);
-  define PathLayer(`t0r1_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`t0r1_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`t0r1_${i}`).apply { roundRect(calc(x - sw / 2), calc(50 - sh / 2), sw, sh, sr) }
 }
 
@@ -360,7 +360,7 @@ let row2 = [shifted, comp, semi, mixed, accent];
 let row2names = ['hueShift', 'compl.', 'alpha', 'mix', 'accent'];
 for ([color, i] in row2) {
   let x = calc(sx + i * sp);
-  define PathLayer(`t0r2_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`t0r2_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`t0r2_${i}`).apply { roundRect(calc(x - sw / 2), calc(115 - sh / 2), sw, sh, sr) }
 }
 
@@ -406,7 +406,7 @@ let hsr = 5;
 // Row 3: analogous
 for ([color, i] in analog) {
   let x = calc(hsx + i * hsp);
-  define PathLayer(`analog_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`analog_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`analog_${i}`).apply {
     roundRect(calc(x - hsw / 2), calc(220 - hsh / 2), hsw, hsh, hsr)
   }
@@ -415,7 +415,7 @@ for ([color, i] in analog) {
 // Row 4: triadic
 for ([color, i] in triad) {
   let x = calc(hsx + i * hsp);
-  define PathLayer(`triad_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`triad_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`triad_${i}`).apply {
     roundRect(calc(x - hsw / 2), calc(275 - hsh / 2), hsw, hsh, hsr)
   }
@@ -424,7 +424,7 @@ for ([color, i] in triad) {
 // Row 5: tetradic
 for ([color, i] in tetrad) {
   let x = calc(hsx + i * hsp);
-  define PathLayer(`tetrad_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`tetrad_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`tetrad_${i}`).apply {
     roundRect(calc(x - hsw / 2), calc(330 - hsh / 2), hsw, hsh, hsr)
   }
@@ -433,14 +433,14 @@ for ([color, i] in tetrad) {
 // Row 6: splitComplementary
 for ([color, i] in split) {
   let x = calc(hsx + i * hsp);
-  define PathLayer(`split_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`split_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`split_${i}`).apply {
     roundRect(calc(x - hsw / 2), calc(385 - hsh / 2), hsw, hsh, hsr)
   }
 }
 
 // Harmony row labels
-define TextLayer('hlabels') ${
+define TextLayer('hlabels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -469,7 +469,7 @@ layer('section-labels').apply {
 // Row 7: lightness ramp
 for ([color, i] in ramp) {
   let x = calc(hsx + i * hsp);
-  define PathLayer(`ramp_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`ramp_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`ramp_${i}`).apply {
     roundRect(calc(x - hsw / 2), calc(470 - hsh / 2), hsw, hsh, hsr)
   }
@@ -478,7 +478,7 @@ for ([color, i] in ramp) {
 // Row 8: interpolation
 for ([color, i] in interp) {
   let x = calc(hsx + i * hsp);
-  define PathLayer(`interp_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`interp_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`interp_${i}`).apply {
     roundRect(calc(x - hsw / 2), calc(525 - hsh / 2), hsw, hsh, hsr)
   }
@@ -508,7 +508,7 @@ let dsx = 260;
 let dsp = 70;
 
 // Row 9: triadic[1] → lighten, darken, saturate
-define PathLayer('tri1_parent') ${ fill: tri1; stroke: #666; stroke-width: 1; }
+define PathLayer('tri1_parent') #{ fill: tri1; stroke: #666; stroke-width: 1; }
 layer('tri1_parent').apply {
   roundRect(calc(hsx - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr)
 }
@@ -517,14 +517,14 @@ let derived1 = [tri1Light, tri1Dark, tri1Vivid];
 let derived1names = ['lighten', 'darken', 'saturate'];
 for ([color, i] in derived1) {
   let x = calc(dsx + i * dsp);
-  define PathLayer(`d1_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`d1_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`d1_${i}`).apply {
     roundRect(calc(x - hsw / 2), calc(605 - hsh / 2), hsw, hsh, hsr)
   }
 }
 
 // Row 10: ramp[2] → hueShift, complement, alpha
-define PathLayer('ramp2_parent') ${ fill: rampMid; stroke: #666; stroke-width: 1; }
+define PathLayer('ramp2_parent') #{ fill: rampMid; stroke: #666; stroke-width: 1; }
 layer('ramp2_parent').apply {
   roundRect(calc(hsx - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr)
 }
@@ -533,7 +533,7 @@ let derived2 = [rampShifted, rampComp, rampAlpha];
 let derived2names = ['hueShift', 'compl.', 'alpha'];
 for ([color, i] in derived2) {
   let x = calc(dsx + i * dsp);
-  define PathLayer(`d2_${i}`) ${ fill: color; stroke: #ccc; stroke-width: 0.5; }
+  define PathLayer(`d2_${i}`) #{ fill: color; stroke: #ccc; stroke-width: 0.5; }
   layer(`d2_${i}`).apply {
     roundRect(calc(x - hsw / 2), calc(660 - hsh / 2), hsw, hsh, hsr)
   }
@@ -669,7 +669,7 @@ Colors auto-convert to CSS strings when used in style blocks:
 let primary = Color('#e63946');
 let light = primary.lighten(0.2);
 
-layer PathLayer('main') ${
+layer PathLayer('main') #{
   stroke: primary;
   fill: light;
 }

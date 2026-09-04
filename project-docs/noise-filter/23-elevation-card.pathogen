@@ -6,8 +6,8 @@ let card = ElevationShadowFilter() {|f|
   f.color = oklch(20% 0.04 280);
 };
 
-define PathLayer('surface') ${ fill: oklch(94% 0.01 80); stroke: none; }
+define PathLayer('surface') #{ fill: oklch(94% 0.01 80); stroke: none; }
 layer('surface').apply { rect(0, 0, 200, 200); }
 
-define PathLayer('card') ${ fill: white; stroke: none; filter: card; }
+define PathLayer('card') #{ fill: white; stroke: none; filter: card; }
 layer('card').apply { roundRect(40, 60, 120, 80, 10); }

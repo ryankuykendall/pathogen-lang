@@ -30,19 +30,19 @@ let stroke_fg = Color('#f0e8c8').alpha(0.25);
 // Group scaffolding — root diagram + one group per section
 // ─────────────────────────────────────────────────────────────────
 
-define GroupLayer('diagram') ${}
-define GroupLayer('header') ${}
-define GroupLayer('section-1') ${}
-define GroupLayer('section-2') ${}
-define GroupLayer('section-3') ${}
-define GroupLayer('section-5') ${}
-define GroupLayer('section-7') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('header') #{}
+define GroupLayer('section-1') #{}
+define GroupLayer('section-2') #{}
+define GroupLayer('section-3') #{}
+define GroupLayer('section-5') #{}
+define GroupLayer('section-7') #{}
 
 // ─────────────────────────────────────────────────────────────────
 // Background + title
 // ─────────────────────────────────────────────────────────────────
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -51,7 +51,7 @@ bg.apply {
 }
 layer('diagram').append(layer('bg'));
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 15;
   font-weight: 600;
@@ -62,7 +62,7 @@ title.apply {
   text(30, 30)`OKLCH palette-building schematic`;
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: fg_muted;
@@ -140,7 +140,7 @@ let pipe_h = 52;
 // 1. Choose originals — six anchor hues
 // ─────────────────────────────────────────────────────────────────
 
-let s1_title = TextLayer('s1-title') ${
+let s1_title = TextLayer('s1-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -151,7 +151,7 @@ s1_title.apply {
   text(30, 88)`1. Choose originals`;
 }
 
-let s1_sub = TextLayer('s1-sub') ${
+let s1_sub = TextLayer('s1-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: fg_muted;
@@ -166,7 +166,7 @@ layer('section-1').append(layer('s1-title'), layer('s1-sub'));
 for ([c, i] in anchors) {
   let x = calc(pipe_start_x + i * (pipe_w + pipe_gap));
   let tile_name = `a_${i}`;
-  let tile = PathLayer(tile_name) ${
+  let tile = PathLayer(tile_name) #{
     fill: c;
     stroke: stroke_fg;
     stroke-width: 0.5;
@@ -181,7 +181,7 @@ for ([c, i] in anchors) {
   layer('section-1').append(layer(tile_name));
 }
 
-let anchor_name_layer = TextLayer('anchor-names') ${
+let anchor_name_layer = TextLayer('anchor-names') #{
   font-family: monospace;
   font-size: 8;
   fill: fg_muted;
@@ -194,7 +194,7 @@ for ([name, i] in anchor_names) {
   }
 }
 
-let anchor_hue_layer = TextLayer('anchor-hues') ${
+let anchor_hue_layer = TextLayer('anchor-hues') #{
   font-family: monospace;
   font-size: 8;
   fill: fg_dim;
@@ -214,7 +214,7 @@ layer('diagram').append(layer('section-1'));
 // 2. Normalize luminance — ramp[4] pins absolute L = 0.55
 // ─────────────────────────────────────────────────────────────────
 
-let s2_title = TextLayer('s2-title') ${
+let s2_title = TextLayer('s2-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -225,7 +225,7 @@ s2_title.apply {
   text(30, 198)`2. Normalize luminance`;
 }
 
-let s2_sub = TextLayer('s2-sub') ${
+let s2_sub = TextLayer('s2-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: fg_muted;
@@ -241,7 +241,7 @@ for ([r, i] in ramps) {
   let x = calc(pipe_start_x + i * (pipe_w + pipe_gap));
   let c = r[4];
   let tile_name = `n_${i}`;
-  let tile = PathLayer(tile_name) ${
+  let tile = PathLayer(tile_name) #{
     fill: c;
     stroke: stroke_fg;
     stroke-width: 0.5;
@@ -262,7 +262,7 @@ layer('diagram').append(layer('section-2'));
 // 3. Increase luminance — ramp[6] pins absolute L = 0.75
 // ─────────────────────────────────────────────────────────────────
 
-let s3_title = TextLayer('s3-title') ${
+let s3_title = TextLayer('s3-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -273,7 +273,7 @@ s3_title.apply {
   text(30, 296)`3. Increase luminance`;
 }
 
-let s3_sub = TextLayer('s3-sub') ${
+let s3_sub = TextLayer('s3-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: fg_muted;
@@ -289,7 +289,7 @@ for ([r, i] in ramps) {
   let x = calc(pipe_start_x + i * (pipe_w + pipe_gap));
   let c = r[6];
   let tile_name = `l_${i}`;
-  let tile = PathLayer(tile_name) ${
+  let tile = PathLayer(tile_name) #{
     fill: c;
     stroke: stroke_fg;
     stroke-width: 0.5;
@@ -310,7 +310,7 @@ layer('diagram').append(layer('section-3'));
 // 5. Build ramps — Color.palette(anchor, 9)
 // ─────────────────────────────────────────────────────────────────
 
-let s5_title = TextLayer('s5-title') ${
+let s5_title = TextLayer('s5-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -321,7 +321,7 @@ s5_title.apply {
   text(30, 394)`5. Build ramps`;
 }
 
-let s5_sub = TextLayer('s5-sub') ${
+let s5_sub = TextLayer('s5-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: fg_muted;
@@ -352,7 +352,7 @@ let stop_labels = [
   '900',
 ];
 
-let grid_col_label = TextLayer('grid-col') ${
+let grid_col_label = TextLayer('grid-col') #{
   font-family: monospace;
   font-size: 8;
   fill: fg_dim;
@@ -365,7 +365,7 @@ for ([lbl, i] in stop_labels) {
   }
 }
 
-let grid_row_label = TextLayer('grid-row') ${
+let grid_row_label = TextLayer('grid-row') #{
   font-family: monospace;
   font-size: 9;
   fill: fg_muted;
@@ -383,7 +383,7 @@ for ([r, ri] in ramps) {
   for ([c, ci] in r) {
     let cell_x = calc(grid_start_x + ci * (grid_cell_w + grid_cell_gap));
     let cell_name = `g_${ri}_${ci}`;
-    let cell = PathLayer(cell_name) ${
+    let cell = PathLayer(cell_name) #{
       fill: c;
       stroke: stroke_fg;
       stroke-width: 0.3;
@@ -403,7 +403,7 @@ for ([r, ri] in ramps) {
 layer('section-5').append(layer('grid-col'), layer('grid-row'));
 
 // Caption about chroma — lives inside section-5
-let caption = TextLayer('caption') ${
+let caption = TextLayer('caption') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   font-style: italic;
@@ -421,7 +421,7 @@ layer('diagram').append(layer('section-5'));
 // 7. WCAG contrasts — stated as targets (live values set the verdict)
 // ─────────────────────────────────────────────────────────────────
 
-let s7_title = TextLayer('s7-title') ${
+let s7_title = TextLayer('s7-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -432,7 +432,7 @@ s7_title.apply {
   text(30, 640)`7. WCAG contrasts`;
 }
 
-let s7_sub = TextLayer('s7-sub') ${
+let s7_sub = TextLayer('s7-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: fg_muted;
@@ -450,14 +450,14 @@ let wcag_pair_gap = 25;
 let wcag_y = 662;
 let wcag_tile = 32;
 
-let wcag_label = TextLayer('wcag-label') ${
+let wcag_label = TextLayer('wcag-label') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   font-weight: 600;
   fill: fg_auto;
   text-anchor: start;
 };
-let wcag_sub = TextLayer('wcag-sub') ${
+let wcag_sub = TextLayer('wcag-sub') #{
   font-family: monospace;
   font-size: 8;
   fill: fg_muted;
@@ -469,7 +469,7 @@ let wcag_sub = TextLayer('wcag-sub') ${
 
 // Callout 1 · green[2] vs white — target AA large
 let pair1_x = wcag_pair_start_x;
-let tile_a1 = PathLayer('wa1') ${
+let tile_a1 = PathLayer('wa1') #{
   fill: ramp_green[2];
   stroke: stroke_fg;
   stroke-width: 0.5;
@@ -481,7 +481,7 @@ tile_a1.apply {
       wcag_tile,
       4);
 }
-let tile_b1 = PathLayer('wb1') ${
+let tile_b1 = PathLayer('wb1') #{
   fill: #ffffff;
   stroke: stroke_fg;
   stroke-width: 0.5;
@@ -502,7 +502,7 @@ wcag_sub.apply {
 
 // Callout 2 · blue[0] vs blue[7] — target AAA large
 let pair2_x = calc(wcag_pair_start_x + wcag_pair_w + wcag_pair_gap);
-let tile_a2 = PathLayer('wa2') ${
+let tile_a2 = PathLayer('wa2') #{
   fill: ramp_blue[0];
   stroke: stroke_fg;
   stroke-width: 0.5;
@@ -514,7 +514,7 @@ tile_a2.apply {
       wcag_tile,
       4);
 }
-let tile_b2 = PathLayer('wb2') ${
+let tile_b2 = PathLayer('wb2') #{
   fill: ramp_blue[7];
   stroke: stroke_fg;
   stroke-width: 0.5;
@@ -535,7 +535,7 @@ wcag_sub.apply {
 
 // Callout 3 · purple[1] vs purple[7] — target AAA large
 let pair3_x = calc(wcag_pair_start_x + 2 * (wcag_pair_w + wcag_pair_gap));
-let tile_a3 = PathLayer('wa3') ${
+let tile_a3 = PathLayer('wa3') #{
   fill: ramp_purple[1];
   stroke: stroke_fg;
   stroke-width: 0.5;
@@ -547,7 +547,7 @@ tile_a3.apply {
       wcag_tile,
       4);
 }
-let tile_b3 = PathLayer('wb3') ${
+let tile_b3 = PathLayer('wb3') #{
   fill: ramp_purple[7];
   stroke: stroke_fg;
   stroke-width: 0.5;

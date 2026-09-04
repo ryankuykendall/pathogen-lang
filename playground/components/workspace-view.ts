@@ -267,6 +267,7 @@ export class WorkspaceView extends HTMLElement {
   get editorPane(): HTMLElement & {
     code: string;
     initialCode: string;
+    replaceDocument: (text: string) => void;
     highlightError: (line: number, col: number) => void;
     clearError: () => void;
   } {
@@ -404,6 +405,7 @@ export class WorkspaceView extends HTMLElement {
       const initialCode = applyURLState(urlState, store) || defaultCode;
       this.editorPane.initialCode = initialCode;
       store.set('code', initialCode);
+      this.offerLegacyStyleOpenerMigration(initialCode);
       // Don't initialize autosave for URL-state workspaces (they're not persisted)
     }
     // Load workspace from API if ID is provided and not 'new'
@@ -487,6 +489,7 @@ export class WorkspaceView extends HTMLElement {
 
       // Set editor code
       this.editorPane.initialCode = workspace.code;
+      this.offerLegacyStyleOpenerMigration(workspace.code);
 
       // Update URL with slug if not already present
       this.updateUrlWithSlug(workspace.id, workspace.slug);
@@ -1201,6 +1204,47 @@ export class WorkspaceView extends HTMLElement {
         compilationError: displayError,
       });
     }
+  }
+
+  /**
+   * Code that still opens style blocks with the pre-2026-09 `${` (an old
+   * share link, an import, a workspace the KV migration has not reached)
+   * gets a persistent toast with a one-click convert. Nothing is rewritten
+   * silently: the user applies it, so autosave never writes an edit they
+   * did not make. Openers are found by the parser (iterated to a fixpoint),
+   * never by a text scan, so interpolations are untouched.
+   */
+  offerLegacyStyleOpenerMigration(code: string): void {
+    const find = window.PathogenLang?.findLegacyStyleOpeners;
+    if (typeof find !== 'function') return;
+    const count = find(code).length;
+    if (count === 0) return;
+    document.dispatchEvent(
+      new CustomEvent('show-toast', {
+        detail: {
+          type: 'error',
+          title: 'This code uses the old ${ style-block syntax',
+          message: `${count} style block${count === 1 ? '' : 's'} open with \${ — style blocks now open with #{. Interpolations are unaffected.`,
+          duration: 0,
+          action: {
+            label: 'Convert all',
+            onSelect: () => {
+              const current = this.editorPane.code;
+              const offsets = find(current);
+              if (offsets.length === 0) return;
+              let text = current;
+              for (const o of [...offsets].sort((a, b) => b - a)) text = `${text.slice(0, o)}#${text.slice(o + 1)}`;
+              // One undoable transaction; the editor's update listener then
+              // fires `code-change`, which drives the store, autosave, and
+              // the recompile exactly as a typed edit would.
+              this.editorPane.replaceDocument(text);
+            },
+          },
+        },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   showError(message: string): string {

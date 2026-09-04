@@ -157,7 +157,7 @@ A flow field is a 2D grid where each cell stores a direction; visualizing it dra
 define ViewBox(0, 0, 200, 200);
 
 let arrowMarker = Marker('arrowhead', 10, 10) {|m|
-  m.append(@{ m 0 0 l 10 5 l -10 5 z }, ${ fill: context-stroke; });
+  m.append(@{ m 0 0 l 10 5 l -10 5 z }, #{ fill: context-stroke; });
 };
 
 let arrowPB = @{ m 0 0 m -3 0 h 6 };
@@ -168,7 +168,7 @@ let field = Grid(20, 20, { xDim: 10, yDim: 10, outOfBounds: 'wrap' }) {|g|
   };
 };
 
-define PathLayer('flow-vectors') ${
+define PathLayer('flow-vectors') #{
   stroke-width: 0.2;
   stroke: Color('#0c0');
   marker-end: arrowMarker;

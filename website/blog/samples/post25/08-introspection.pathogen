@@ -13,7 +13,7 @@ log('amount:', grain.amount);
 log('blend: ', grain.blend);
 log('seed:  ', grain.seed);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -21,7 +21,7 @@ bg.apply {
   rect(0, 0, 400, 200);
 }
 
-let disc = PathLayer('disc') ${
+let disc = PathLayer('disc') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: grain;

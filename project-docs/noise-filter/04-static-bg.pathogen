@@ -7,7 +7,7 @@ let snow = NoiseFilter() {|f|
 };
 
 // Dark background
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: oklch(18% 0.02 270);
   stroke: none;
   filter: snow;
@@ -15,7 +15,7 @@ define PathLayer('bg') ${
 layer('bg').apply { rect(0, 0, 200, 200); }
 
 // Glow rectangle over the static
-define PathLayer('crt') ${
+define PathLayer('crt') #{
   fill: oklch(70% 0.20 150);
   fill-opacity: 0.15;
   stroke: none;

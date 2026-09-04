@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 400, 210);
 
-let sky = PathLayer('sky') ${ fill: oklch(0.24 0.05 275); stroke: none; };
+let sky = PathLayer('sky') #{ fill: oklch(0.24 0.05 275); stroke: none; };
 sky.apply {
   rect(15, 15, 370, 175);
 }
@@ -15,7 +15,7 @@ for (i in 0..25) {
   let h = hashRange(i, 35, 125);
   let shade = Color(0.36 + hashRange(i, 0, 0.1, 2), 0.03, 275);
   if (x + w < 382) {
-    let tower = PathLayer(`tower-${i}`) ${ fill: shade; stroke: none; };
+    let tower = PathLayer(`tower-${i}`) #{ fill: shade; stroke: none; };
     tower.apply {
       rect(x, calc(190 - h), w, h);
     }

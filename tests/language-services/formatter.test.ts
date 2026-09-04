@@ -197,26 +197,26 @@ describe('formatDocument', () => {
   // --- Section 5: Style blocks ---
   describe('style blocks', () => {
     it('formats empty style block inline', () => {
-      const result = format('let x = PathLayer(\'bg\') ${};');
-      expect(result).toContain('${}');
+      const result = format('let x = PathLayer(\'bg\') #{};');
+      expect(result).toContain('#{}');
     });
 
     it('formats single-property style block as multi-line', () => {
-      const result = format('let x = PathLayer(\'bg\') ${ fill: #000; };');
-      expect(result).toContain('${\n');
+      const result = format('let x = PathLayer(\'bg\') #{ fill: #000; };');
+      expect(result).toContain('#{\n');
       expect(result).toContain('  fill: #000;\n');
       expect(result).toContain('}');
     });
 
     it('formats multi-property style block with one per line', () => {
-      const result = format('let x = PathLayer(\'bg\') ${ fill: #000; stroke: none; };');
+      const result = format('let x = PathLayer(\'bg\') #{ fill: #000; stroke: none; };');
       expect(result).toContain('  fill: #000;');
       expect(result).toContain('  stroke: none;');
     });
 
     it('formats style block in define statement', () => {
-      const result = format("define PathLayer('main') ${ stroke: #000; fill: none; }");
-      expect(result).toContain('${\n');
+      const result = format("define PathLayer('main') #{ stroke: #000; fill: none; }");
+      expect(result).toContain('#{\n');
       expect(result).toContain('  stroke: #000;');
       expect(result).toContain('  fill: none;');
     });
@@ -435,14 +435,14 @@ describe('formatDocument', () => {
   // --- Section 14: Layer definitions ---
   describe('layer definitions', () => {
     it('formats define with multi-line style block', () => {
-      const result = format("define PathLayer('main') ${ stroke: #000; fill: none; }");
-      expect(result).toContain("define PathLayer('main') ${\n");
+      const result = format("define PathLayer('main') #{ stroke: #000; fill: none; }");
+      expect(result).toContain("define PathLayer('main') #{\n");
       expect(result).toContain('  stroke: #000;');
       expect(result).toContain('  fill: none;');
     });
 
     it('formats define default layer', () => {
-      const result = format("define default PathLayer('main') ${ stroke: #000; }");
+      const result = format("define default PathLayer('main') #{ stroke: #000; }");
       expect(result).toContain('define default PathLayer');
     });
   });

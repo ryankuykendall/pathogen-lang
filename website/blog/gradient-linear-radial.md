@@ -25,7 +25,7 @@ let sky = LinearGradient('sky', 0, 0, 0, 1) {|g|
 The constructor takes an ID string and four coordinates: `x1, y1, x2, y2`. Color stops are added inside the initialization block using `g.stop(position, color)`, where position is a value between 0 and 1. Once defined, assign the gradient to a layer's `fill` property:
 
 ```pathogen
-let sky_layer = PathLayer('sky-fill') ${ fill: sky; stroke: none; };
+let sky_layer = PathLayer('sky-fill') #{ fill: sky; stroke: none; };
 sky_layer.apply { rect(0, 0, 400, 300) }
 ```
 

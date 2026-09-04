@@ -3,13 +3,13 @@
 
 let arrow = @{ m 0 0 l 10 5 l -10 5 z };
 let m = Marker('arrow-big', 20, 20) {|m|
-  m.append(arrow, ${ fill: context-stroke; });
+  m.append(arrow, #{ fill: context-stroke; });
 };
 m.markerUnits = MarkerUnits.UserSpaceOnUse;
 m.orient = MarkerOrient.AutoStartReverse;
 m.preserveAspectRatio = MarkerPreserveAspectRatio.XMinYMinSlice;
 
-define PathLayer('line') ${
+define PathLayer('line') #{
   stroke: Color('#2a9d8f');
   stroke-width: 4;
   fill: none;

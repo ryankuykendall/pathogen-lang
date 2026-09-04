@@ -5,7 +5,7 @@
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -13,41 +13,41 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') ${};
-let panelLayer = PathLayer('panels') ${
+let scene = GroupLayer('scene') #{};
+let panelLayer = PathLayer('panels') #{
   fill: #e7dfd0;
   stroke: none;
 };
-let cutLayer = PathLayer('cut-line') ${
+let cutLayer = PathLayer('cut-line') #{
   stroke: #ef4444;
   stroke-width: 2;
   fill: none;
 };
-let mountainLayer = PathLayer('mountain-folds') ${
+let mountainLayer = PathLayer('mountain-folds') #{
   stroke: #334155;
   stroke-width: 1.5;
   fill: none;
   stroke-dasharray: 7 3 1.5 3;
 };
-let valleyLayer = PathLayer('valley-folds') ${
+let valleyLayer = PathLayer('valley-folds') #{
   stroke: #475569;
   stroke-width: 1.5;
   fill: none;
   stroke-dasharray: 5 4;
 };
-let cutCaption = TextLayer('cut-caption') ${
+let cutCaption = TextLayer('cut-caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #f87171;
   text-anchor: middle;
 };
-let mountainCaption = TextLayer('mountain-caption') ${
+let mountainCaption = TextLayer('mountain-caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let valleyCaption = TextLayer('valley-caption') ${
+let valleyCaption = TextLayer('valley-caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;

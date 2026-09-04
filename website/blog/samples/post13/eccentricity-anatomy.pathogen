@@ -2,23 +2,23 @@ define ViewBox(0, 0, 460, 270);
 // clippedQuadSpline anatomy — virtual shared CP and lerped actual CPs
 
 // --- Background ---
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 460, 270); }
 
-let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..13) { M 0 calc(i * 20) h 460 }
   for (j in 0..23) { M calc(j * 20) 0 v 270 }
 }
 
 // Title — top, clear of geometry
-define TextLayer('title') ${ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
+define TextLayer('title') #{ font-size: 11; fill: #f59e0b; font-family: system-ui, sans-serif; }
 layer('title').apply {
   text(30, 26)`Single segment (t = 0.6) — CPs pulled 60% toward shared CP`
 }
 
 // === Diagram group ===
-define GroupLayer('diagram') ${ translate-x: 0; translate-y: 0; }
+define GroupLayer('diagram') #{ translate-x: 0; translate-y: 0; }
 
 let sx = 70;
 let sy = 180;
@@ -34,7 +34,7 @@ let cp2x = calc(lerp(ex, sharedX, t));
 let cp2y = calc(lerp(ey, sharedY, t));
 
 // Arms from endpoints to virtual shared CP
-define PathLayer('arms') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5; stroke-dasharray: 3 3; }
+define PathLayer('arms') #{ fill: none; stroke: #f59e0b; stroke-width: 1.5; stroke-dasharray: 3 3; }
 layer('diagram').append(layer('arms'));
 layer('arms').apply {
   M sx sy L sharedX sharedY
@@ -42,7 +42,7 @@ layer('arms').apply {
 }
 
 // Virtual shared CP diamond
-define PathLayer('virtual') ${ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
+define PathLayer('virtual') #{ fill: none; stroke: #f59e0b; stroke-width: 1.5; }
 layer('diagram').append(layer('virtual'));
 layer('virtual').apply {
   M sharedX calc(sharedY - 6)
@@ -52,31 +52,31 @@ layer('virtual').apply {
 }
 
 // Actual CPs (lerped)
-define PathLayer('cp1') ${ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
-define PathLayer('cp2') ${ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
+define PathLayer('cp1') #{ fill: #ef4444; stroke: #7f1d1d; stroke-width: 1; }
+define PathLayer('cp2') #{ fill: #22c55e; stroke: #14532d; stroke-width: 1; }
 layer('diagram').append(layer('cp1'), layer('cp2'));
 layer('cp1').apply { circle(cp1x, cp1y, 5); }
 layer('cp2').apply { circle(cp2x, cp2y, 5); }
 
 // Lines from endpoints to actual CPs
-define PathLayer('cp1-arm') ${ fill: none; stroke: #ef4444; stroke-width: 1.5; }
-define PathLayer('cp2-arm') ${ fill: none; stroke: #22c55e; stroke-width: 1.5; }
+define PathLayer('cp1-arm') #{ fill: none; stroke: #ef4444; stroke-width: 1.5; }
+define PathLayer('cp2-arm') #{ fill: none; stroke: #22c55e; stroke-width: 1.5; }
 layer('diagram').append(layer('cp1-arm'), layer('cp2-arm'));
 layer('cp1-arm').apply { M sx sy L cp1x cp1y }
 layer('cp2-arm').apply { M ex ey L cp2x cp2y }
 
 // The resulting cubic curve
-define PathLayer('curve') ${ fill: none; stroke: #8b5cf6; stroke-width: 3; }
+define PathLayer('curve') #{ fill: none; stroke: #8b5cf6; stroke-width: 3; }
 layer('diagram').append(layer('curve'));
 layer('curve').apply { M sx sy C cp1x cp1y cp2x cp2y ex ey }
 
 // Quadratic reference (t=1.0)
-define PathLayer('quad-ref') ${ fill: none; stroke: #475569; stroke-width: 1; stroke-dasharray: 4 4; }
+define PathLayer('quad-ref') #{ fill: none; stroke: #475569; stroke-width: 1; stroke-dasharray: 4 4; }
 layer('diagram').append(layer('quad-ref'));
 layer('quad-ref').apply { M sx sy Q sharedX sharedY ex ey }
 
 // Endpoints
-define PathLayer('endpoints') ${ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5; }
+define PathLayer('endpoints') #{ fill: #8b5cf6; stroke: #3b0764; stroke-width: 1.5; }
 layer('diagram').append(layer('endpoints'));
 layer('endpoints').apply {
   circle(sx, sy, 5);
@@ -84,7 +84,7 @@ layer('endpoints').apply {
 }
 
 // Labels — positioned with clearance from geometry
-define TextLayer('labels') ${ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
+define TextLayer('labels') #{ font-size: 10; fill: #cbd5e1; font-family: system-ui, sans-serif; }
 layer('diagram').append(layer('labels'));
 layer('labels').apply {
   text(calc(sharedX + 10), calc(sharedY - 4))`virtual shared CP`
@@ -95,9 +95,9 @@ layer('labels').apply {
 }
 
 // === Formula group — right side ===
-define GroupLayer('formula-group') ${ translate-x: 340; translate-y: 55; }
+define GroupLayer('formula-group') #{ translate-x: 340; translate-y: 55; }
 
-define TextLayer('formula') ${ font-size: 10; fill: #94a3b8; font-family: monospace; }
+define TextLayer('formula') #{ font-size: 10; fill: #94a3b8; font-family: monospace; }
 layer('formula-group').append(layer('formula'));
 layer('formula').apply {
   text(0, 10)`CP1 = lerp(start,`
@@ -107,7 +107,7 @@ layer('formula').apply {
 }
 
 // Reference note — bottom with safe margin
-define TextLayer('ref-note') ${ font-size: 9; fill: #475569; font-family: system-ui, sans-serif; }
+define TextLayer('ref-note') #{ font-size: 9; fill: #475569; font-family: system-ui, sans-serif; }
 layer('ref-note').apply {
   text(130, 250)`dashed gray: quadratic reference (t = 1.0)`
 }

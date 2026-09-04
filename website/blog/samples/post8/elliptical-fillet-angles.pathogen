@@ -3,25 +3,25 @@ define ViewBox(0, 0, 700, 380);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 700, 380); }
 
 // --- Layers ---
 
-let original = PathLayer('original') ${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b840');
   stroke-width: 1;
   stroke-dasharray: "4 3";
   fill: none;
 };
 
-let filleted = PathLayer('filleted') ${
+let filleted = PathLayer('filleted') #{
   stroke: Color('#8b5cf6');
   stroke-width: 2;
   fill: Color('#8b5cf615');
 };
 
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -83,7 +83,7 @@ for (i in 0..3) {
 
 // --- Angle labels ---
 
-let angle_labels = TextLayer('angle-labels') ${
+let angle_labels = TextLayer('angle-labels') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -104,15 +104,15 @@ angle_labels.apply {
 
 // --- Legend ---
 
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
-let leg_o = PathLayer('leg-o') ${ fill: Color('#94a3b8'); stroke: none; };
-let leg_f = PathLayer('leg-f') ${ fill: Color('#8b5cf6'); stroke: none; };
-let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#94a3b8'); stroke: none; };
+let leg_f = PathLayer('leg-f') #{ fill: Color('#8b5cf6'); stroke: none; };
+let leg_v = PathLayer('leg-v') #{ fill: Color('#ef4444'); stroke: none; };
 
 leg_o.apply { rect(560, 20, 8, 8); }
 leg_f.apply { rect(560, 34, 8, 8); }
@@ -126,7 +126,7 @@ leg.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -139,7 +139,7 @@ code.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -149,7 +149,7 @@ title.apply {
   text(30, 32)`Elliptical Fillet at Various Angles`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');

@@ -52,7 +52,7 @@ function wideProgram(layers: number): string {
     '',
     `for (i in 0..${layers}) {`,
     // eslint-disable-next-line no-template-curly-in-string -- Pathogen interpolation, not a JS template
-    '  let wideLayer = PathLayer(`wide${i}`) << ${ stroke: oklch(0.6 0.12 200); stroke-width: 0.5; fill: oklch(0.9 0.05 80); };',
+    '  let wideLayer = PathLayer(`wide${i}`) << #{ stroke: oklch(0.6 0.12 200); stroke-width: 0.5; fill: oklch(0.9 0.05 80); };',
     '  wideLayer.apply {',
     '    circle(40 + (i % 140) * 14, 40 + floor(i / 140) * 14, 5);',
     '  }',

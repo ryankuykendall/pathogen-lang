@@ -6,8 +6,8 @@ let floating = ElevationShadowFilter() {|f|
   f.color = oklch(20% 0.04 280);
 };
 
-define PathLayer('surface') ${ fill: oklch(94% 0.01 80); stroke: none; }
+define PathLayer('surface') #{ fill: oklch(94% 0.01 80); stroke: none; }
 layer('surface').apply { rect(0, 0, 200, 200); }
 
-define PathLayer('chip') ${ fill: oklch(70% 0.18 30); stroke: none; filter: floating; }
+define PathLayer('chip') #{ fill: oklch(70% 0.18 30); stroke: none; filter: floating; }
 layer('chip').apply { roundRect(50, 60, 100, 60, 14); }

@@ -39,7 +39,7 @@ function encodeState(code: string): string {
 
 const VARIABLE_PROGRAM = `define ViewBox(0, 0, 200, 200);
 let fontFamily = "Noto Sans";
-let fontStyles = \${ font-family: fontFamily; font-size: 16; font-weight: 900; };
+let fontStyles = #{ font-family: fontFamily; font-size: 16; font-weight: 900; };
 let textLayer = TextLayer('with-noto-sans') << fontStyles;
 textLayer.apply {
   text(25, 40)\`Variable font check\`

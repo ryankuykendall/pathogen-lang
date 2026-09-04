@@ -323,7 +323,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('converts single character to PathBlock array', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("A", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph("A", #{ font-family: Inter; font-size: 48; });
        log(glyphs.length);`,
       { fonts: registry },
     );
@@ -335,7 +335,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('converts multiple characters to array of PathBlocks', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("Hi", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph("Hi", #{ font-family: Inter; font-size: 48; });
        log(glyphs.length);`,
       { fonts: registry },
     );
@@ -345,7 +345,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('each glyph has advanceWidth property', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("A", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph("A", #{ font-family: Inter; font-size: 48; });
        log(glyphs[0].advanceWidth);`,
       { fonts: registry },
     );
@@ -356,7 +356,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('glyphs can be drawn with drawTo', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("I", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph("I", #{ font-family: Inter; font-size: 48; });
        glyphs[0].drawTo(100, 100);`,
       { fonts: registry },
     );
@@ -367,7 +367,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('space character returns empty PathBlock with advanceWidth', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph(" ", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph(" ", #{ font-family: Inter; font-size: 48; });
        log(glyphs[0].advanceWidth);
        log(glyphs[0].subPathCount);`,
       { fonts: registry },
@@ -380,7 +380,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('contours property decomposes multi-contour glyphs', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("O", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph("O", #{ font-family: Inter; font-size: 48; });
        let contours = glyphs[0].contours;
        log(contours.length);`,
       { fonts: registry },
@@ -392,7 +392,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('glyphs record their source character, whitespace flag, and emptiness', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("A b", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph("A b", #{ font-family: Inter; font-size: 48; });
        log(glyphs[0].char);
        log(glyphs[0].isWhitespace);
        log(glyphs[0].isEmpty);
@@ -426,7 +426,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('throws without font registry', () => {
     expect(() =>
       compile(
-        'let g = PathBlock.fromGlyph("A", ${ font-family: Inter; font-size: 48; });',
+        'let g = PathBlock.fromGlyph("A", #{ font-family: Inter; font-size: 48; });',
       ),
     ).toThrow('requires font data');
   });
@@ -434,7 +434,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('throws for missing font family', () => {
     expect(() =>
       compile(
-        'let g = PathBlock.fromGlyph("A", ${ font-family: NotLoaded; font-size: 48; });',
+        'let g = PathBlock.fromGlyph("A", #{ font-family: NotLoaded; font-size: 48; });',
         { fonts: registry },
       ),
     ).toThrow("Font 'NotLoaded' not found");
@@ -443,7 +443,7 @@ describe('PathBlock.fromGlyph()', () => {
   it('throws without font-family in style block', () => {
     expect(() =>
       compile(
-        'let g = PathBlock.fromGlyph("A", ${ font-size: 48; });',
+        'let g = PathBlock.fromGlyph("A", #{ font-size: 48; });',
         { fonts: registry },
       ),
     ).toThrow('requires font-family');
@@ -505,7 +505,7 @@ describe('fromGlyph character classes', () => {
   it('glyphs expose the classifications and codePoint end-to-end', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("A \u00A0\u3000\\t\\n\u0301", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph("A \u00A0\u3000\\t\\n\u0301", #{ font-family: Inter; font-size: 48; });
        for (g in glyphs) {
          log(\`\${g.codePoint} \${g.isSpace} \${g.isTab} \${g.isNewline} \${g.isMark} \${g.isWhitespace}\`);
        }`,
@@ -528,7 +528,7 @@ describe('fromGlyph character classes', () => {
   it('codePoint returns the full code point for astral characters', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("😀", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph("😀", #{ font-family: Inter; font-size: 48; });
        log(glyphs.length);
        log(glyphs[0].codePoint);`,
       { fonts: registry },
@@ -544,7 +544,7 @@ describe('fromGlyph character classes', () => {
     // isNewline resets the cursor to the margin one lineHeight down.
     const result = compile(
       `@font "Inter";
-       let styles = \${ font-family: Inter; font-size: 48; };
+       let styles = #{ font-family: Inter; font-size: 48; };
        let glyphs = PathBlock.fromGlyph("Hello\\nworld", styles);
 
        let marginX = 10;
@@ -573,7 +573,7 @@ describe('fromGlyph character classes', () => {
   it('docs tracking example: decomposed é yields a mark glyph with codePoint 769', () => {
     const result = compile(
       `@font "Inter";
-       let styles = \${ font-family: Inter; font-size: 48; };
+       let styles = #{ font-family: Inter; font-size: 48; };
        let glyphs = PathBlock.fromGlyph("é", styles);
        log(glyphs[1].isMark);
        log(glyphs[1].codePoint);`,
@@ -601,7 +601,7 @@ describe('missing glyph reporting', () => {
   it('reports characters the font cannot render and warns', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("A한B", \${ font-family: Inter; font-size: 48; });
+       let glyphs = PathBlock.fromGlyph("A한B", #{ font-family: Inter; font-size: 48; });
        log(glyphs.length);`,
       { fonts: registry },
     );
@@ -617,7 +617,7 @@ describe('missing glyph reporting', () => {
   it('omits missingGlyphs when everything is covered', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("AB c", \${ font-family: Inter; font-size: 48; });`,
+       let glyphs = PathBlock.fromGlyph("AB c", #{ font-family: Inter; font-size: 48; });`,
       { fonts: registry },
     );
     expect(result.missingGlyphs).toBeUndefined();
@@ -627,7 +627,7 @@ describe('missing glyph reporting', () => {
   it('deduplicates repeated missing characters', () => {
     const result = compile(
       `@font "Inter";
-       let glyphs = PathBlock.fromGlyph("한한한", \${ font-family: Inter; font-size: 48; });`,
+       let glyphs = PathBlock.fromGlyph("한한한", #{ font-family: Inter; font-size: 48; });`,
       { fonts: registry },
     );
     expect(result.missingGlyphs).toEqual([{ family: 'Inter', weight: 400, chars: ['한'] }]);
@@ -636,7 +636,7 @@ describe('missing glyph reporting', () => {
   it('toPathBlock() records missing glyphs too', () => {
     const result = compile(
       `@font "Inter";
-       let tb = &{ text(0, 16)\`A한\` } << \${ font-family: Inter; font-size: 48; };
+       let tb = &{ text(0, 16)\`A한\` } << #{ font-family: Inter; font-size: 48; };
        let pb = tb.toPathBlock();`,
       { fonts: registry },
     );
@@ -655,7 +655,7 @@ describe('Font-enhanced text metrics', () => {
   });
 
   it('text bounding box uses precise metrics when font is available', () => {
-    const source = '@font "Inter";\nlet tb = &{ text(0, 16)`Hello` } << ${ font-family: Inter; font-size: 48; };\nlet bb = tb.boundingBox();\nlog(bb.width);';
+    const source = '@font "Inter";\nlet tb = &{ text(0, 16)`Hello` } << #{ font-family: Inter; font-size: 48; };\nlet bb = tb.boundingBox();\nlog(bb.width);';
     const withFont = compile(source, { fonts: registry });
     const withoutFont = compile(source);
     // Both should produce widths, but they should differ (precise vs estimated)

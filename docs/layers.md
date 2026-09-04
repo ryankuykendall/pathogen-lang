@@ -9,7 +9,7 @@ See also [`define ViewBox`](#viewbox-viewbox) for declaring the SVG viewBox — 
 Use `define` to create a named layer with a style block:
 
 ```
-define PathLayer('outline') ${
+define PathLayer('outline') #{
   stroke: #cc0000;
   stroke-width: 3;
   fill: none;
@@ -18,14 +18,14 @@ define PathLayer('outline') ${
 
 Layer names must be unique strings. The style block uses CSS/SVG property syntax — any SVG presentation attribute works (`stroke`, `fill`, `opacity`, `stroke-dasharray`, etc.).
 
-> **Breaking change:** Style blocks now use `${ }` syntax instead of `{ }`. Update existing layer definitions: `{ stroke: red; }` → `${ stroke: red; }`.
+> **Breaking change (2026-09):** Style blocks open with `#{ }`. The older `${ }` opener is gone — `${ … }` is now only ever an interpolation, inside backtick templates and inside style values. A legacy `${` in block position is a parse error that names the fix (`Style blocks open with '#{ … }'`), and the playground and VS Code offer a one-click *Convert all legacy `${` style blocks* action. Update existing code: `${ stroke: red; }` → `#{ stroke: red; }`.
 
 ### Default Layer
 
 Every program has exactly **one** default layer — the layer that receives all bare path commands (commands outside any `layer().apply` block). You don't create it; it always exists. `define default PathLayer('name')` simply **names and styles** that one layer:
 
 ```
-define default PathLayer('main') ${
+define default PathLayer('main') #{
   stroke: #333;
   stroke-width: 2;
   fill: none;
@@ -45,12 +45,12 @@ If you never write `define default PathLayer`, the default layer is still there:
 Use `layer('name').apply { ... }` to send commands to a specific layer:
 
 ```
-define PathLayer('grid') ${
+define PathLayer('grid') #{
   stroke: #ddd;
   stroke-width: 0.5;
 }
 
-define default PathLayer('shape') ${
+define default PathLayer('shape') #{
   stroke: #333;
   stroke-width: 2;
   fill: none;
@@ -78,8 +78,8 @@ Z
 Each layer has its own pen position. Commands in one layer don't affect another layer's `ctx`:
 
 ```
-define default PathLayer('a') ${ stroke: red; }
-define PathLayer('b') ${ stroke: blue; }
+define default PathLayer('a') #{ stroke: red; }
+define PathLayer('b') #{ stroke: blue; }
 
 M 100 100    // layer 'a' position: (100, 100)
 
@@ -96,7 +96,7 @@ L 200 200
 Path commands inside `apply { }` blocks can carry [`as segment(...)` / `as endpoint(...)` labels](#segment-labels-segment-labels-corner-suffixes). A labeled layer answers geometry queries by name from anywhere:
 
 ```
-let pl = PathLayer('outline') ${ stroke: #333; fill: none; };
+let pl = PathLayer('outline') #{ stroke: #333; fill: none; };
 pl.apply {
   M 10 10
   h 60 as segment('top');
@@ -114,8 +114,8 @@ let c = layer('outline').point('corner');    // Point(70, 50)
 Use `layer('name').ctx` to read a layer's pen state from anywhere:
 
 ```
-define default PathLayer('main') ${ stroke: #333; }
-define PathLayer('markers') ${ stroke: red; fill: red; }
+define default PathLayer('main') #{ stroke: #333; }
+define PathLayer('markers') #{ stroke: red; fill: red; }
 
 M 50 50
 L 150 80
@@ -145,7 +145,7 @@ Layer names can be **any expression** — a variable, a template literal, an arr
 
 ```
 let target = 'overlay'
-define PathLayer(target) ${ stroke: blue; }
+define PathLayer(target) #{ stroke: blue; }
 
 layer(target).apply {
   M 0 0 L 100 100
@@ -171,7 +171,7 @@ Layers can also be created as first-class values using `PathLayer()` and `TextLa
 ### Constructor Expression
 
 ```
-let myLayer = PathLayer('unique-name') ${ stroke: red; fill: none; };
+let myLayer = PathLayer('unique-name') #{ stroke: red; fill: none; };
 myLayer.apply { M 0 0 L 100 100 }
 ```
 
@@ -188,7 +188,7 @@ The `<<` operator on a layer reference merges styles in place and returns the re
 
 ```
 let l = PathLayer('outline');
-l << ${ stroke: red; } << ${ fill: blue; };
+l << #{ stroke: red; } << #{ fill: blue; };
 l.apply { M 0 0 L 100 100 }
 // l.styles: stroke: red, fill: blue
 ```
@@ -198,20 +198,20 @@ l.apply { M 0 0 L 100 100 }
 Read or replace a layer's styles via the `.styles` property:
 
 ```
-let l = PathLayer('outline') ${ stroke: red; };
+let l = PathLayer('outline') #{ stroke: red; };
 
 // Read: returns a StyleBlockValue copy
 let s = l.styles;
 log(s.stroke)  // "red"
 
 // Write: replaces all styles
-l.styles = l.styles << ${ fill: blue; };
+l.styles = l.styles << #{ fill: blue; };
 ```
 
 ### TextLayer Constructor
 
 ```
-let labels = TextLayer('labels') ${ font-size: 14; font-family: monospace; };
+let labels = TextLayer('labels') #{ font-size: 14; font-family: monospace; };
 labels.apply { text(50, 45)`Start` }
 ```
 
@@ -230,8 +230,8 @@ Dynamic layers support the same properties as `layer()` references:
 Both approaches work together. The `define` syntax supports the `default` modifier; dynamic constructors do not:
 
 ```
-define default PathLayer('main') ${ stroke: #333; fill: none; }
-let overlay = PathLayer('overlay') ${ stroke: red; };
+define default PathLayer('main') #{ stroke: #333; fill: none; }
+let overlay = PathLayer('overlay') #{ stroke: red; };
 
 M 10 10 L 90 90          // goes to 'main' (default)
 overlay.apply { M 50 50 L 60 60 }
@@ -262,7 +262,7 @@ Style properties map directly to SVG presentation attributes. Common properties:
 Each property is a semicolon-terminated declaration:
 
 ```
-define PathLayer('dashed') ${
+define PathLayer('dashed') #{
   stroke: #0066cc;
   stroke-width: 2;
   stroke-dasharray: 8 4;
@@ -327,19 +327,19 @@ A multi-layer illustration with a background grid, main shape, and annotation ma
 
 ```
 // Layer definitions
-define PathLayer('grid') ${
+define PathLayer('grid') #{
   stroke: #e0e0e0;
   stroke-width: 0.5;
 }
 
-define default PathLayer('shape') ${
+define default PathLayer('shape') #{
   stroke: #333333;
   stroke-width: 2;
   fill: none;
   stroke-linejoin: round;
 }
 
-define PathLayer('points') ${
+define PathLayer('points') #{
   stroke: #cc0000;
   fill: #cc0000;
 }
@@ -384,7 +384,7 @@ TextLayers produce SVG `<text>` elements instead of `<path>` elements.
 ### Defining a TextLayer
 
 ```
-define TextLayer('labels') ${
+define TextLayer('labels') #{
   font-size: 14;
   font-family: monospace;
   fill: #333;
@@ -493,7 +493,7 @@ Style blocks are first-class values that can be stored in variables, merged, and
 ### Style Block Literals
 
 ```
-let styles = ${
+let styles = #{
   stroke-dasharray: 0.01 20;
   stroke-linecap: round;
   stroke-width: 8.4;
@@ -505,8 +505,8 @@ let styles = ${
 The `<<` operator merges two style blocks, with the right side overriding the left:
 
 ```
-let base = ${ stroke: red; stroke-width: 2; };
-let merged = base << ${ stroke-width: 4; fill: blue; };
+let base = #{ stroke: red; stroke-width: 2; };
+let merged = base << #{ stroke-width: 4; fill: blue; };
 // merged has: stroke: red, stroke-width: 4, fill: blue
 ```
 
@@ -515,7 +515,7 @@ let merged = base << ${ stroke-width: 4; fill: blue; };
 Use dot notation with camelCase to read kebab-case properties:
 
 ```
-let styles = ${ stroke-width: 4; };
+let styles = #{ stroke-width: 4; };
 let sw = styles.strokeWidth;  // reads 'stroke-width' → "4"
 ```
 
@@ -524,7 +524,7 @@ let sw = styles.strokeWidth;  // reads 'stroke-width' → "4"
 Style block values are try-evaluated: if a value parses and evaluates as an expression, its result is used. Otherwise the raw string is kept:
 
 ```
-let dynamic = ${
+let dynamic = #{
   font-size: calc(12 + 15);       // evaluates to "27"
   stroke-width: randomRange(2, 8); // evaluates to a random number
   stroke: rgb(232, 74, 166);       // kept as raw string
@@ -541,7 +541,7 @@ let family = "Noto Sans";
 let size = 16;
 let cell = 12;
 
-let textStyles = ${
+let textStyles = #{
   font-family: family;               // resolves to "Noto Sans"
   font-size: ${size * 2};            // interpolates to "32"
   stroke-dasharray: ${cell} ${cell}; // one interpolation per list token
@@ -557,7 +557,7 @@ An interpolation doesn't have to span the whole value — a `${...}` fragment ca
 ```
 let amount = randomRange(1.1, 2.2);
 
-define PathLayer('soft') ${
+define PathLayer('soft') #{
   fill: hotpink;
   filter: blur(${amount}px);   // splices to e.g. "blur(1.63px)"
 };
@@ -580,7 +580,7 @@ A bare identifier works as a function argument when the variable holds a number 
 
 ```
 let level = 1.4;
-define PathLayer('bright') ${ filter: brightness(level); };
+define PathLayer('bright') #{ filter: brightness(level); };
 ```
 
 **Substitution is not unit-aware, and the compiler checks the result.** A numeric variable substitutes as a bare number, so `filter: blur(amount);` would emit `blur(4)` — a unitless length, which is invalid CSS. Rather than emit a declaration the browser silently drops, Pathogen rejects it:
@@ -599,8 +599,8 @@ Interpolation is a convenience, not an escape hatch: every interpolated result �
 Layer definitions accept any expression that evaluates to a style block:
 
 ```
-let baseStyles = ${ stroke: red; stroke-width: 2; };
-define PathLayer('main') baseStyles << ${ fill: none; }
+let baseStyles = #{ stroke: red; stroke-width: 2; };
+define PathLayer('main') baseStyles << #{ fill: none; }
 ```
 
 ### Per-Element Styles on Text and Tspan
@@ -608,11 +608,11 @@ define PathLayer('main') baseStyles << ${ fill: none; }
 Pass style blocks as the 4th argument to `text()` or `tspan()`:
 
 ```
-let bold = ${ font-weight: bold; };
+let bold = #{ font-weight: bold; };
 layer('labels').apply {
   text(10, 20, 0, bold)`Hello`
   text(50, 80) {
-    tspan(0, 0, 0, ${ fill: red; })`colored`
+    tspan(0, 0, 0, #{ fill: red; })`colored`
   }
 }
 ```
@@ -624,7 +624,7 @@ Apply SVG matrix transformations (translate, rotate, scale) at the layer level. 
 ### Translate
 
 ```
-define PathLayer('shape') ${ stroke: #333; fill: none; }
+define PathLayer('shape') #{ stroke: #333; fill: none; }
 
 layer('shape').ctx.transform.translate.set(50, 50)
 
@@ -706,7 +706,7 @@ layer('shape').ctx.transform.scale.set(2, 2)
 Style blocks support individual transform properties as an alternative to `transform: ...` or the imperative API. These work on PathLayer, GroupLayer, and TextLayer:
 
 ```
-define PathLayer('p') ${
+define PathLayer('p') #{
   translate-x: 50;
   translate-y: 100;
   scale-x: 2;
@@ -719,21 +719,21 @@ define PathLayer('p') ${
 Shorthands for translate and scale accept comma-separated values:
 
 ```
-define PathLayer('p') ${ translate: 50, 100; scale: 2, 3; }
+define PathLayer('p') #{ translate: 50, 100; scale: 2, 3; }
 // Output: transform="translate(50, 100) scale(2, 3)"
 ```
 
 Single-value `scale` uses the same value for both axes:
 
 ```
-define PathLayer('p') ${ scale: 2; }
+define PathLayer('p') #{ scale: 2; }
 // Output: transform="scale(2, 2)"
 ```
 
 The `rotate` value is an expression in radians (angle units like `deg` and `pi` work normally):
 
 ```
-define PathLayer('p') ${ rotate: 45deg; }
+define PathLayer('p') #{ rotate: 45deg; }
 // Output: transform="rotate(45)"
 ```
 
@@ -746,8 +746,8 @@ Convenience properties are removed from the output styles — they only affect t
 Each layer has independent transforms — setting a transform on one layer does not affect others:
 
 ```
-define PathLayer('a') ${ stroke: red; }
-define PathLayer('b') ${ stroke: blue; }
+define PathLayer('a') #{ stroke: red; }
+define PathLayer('b') #{ stroke: blue; }
 
 layer('a').ctx.transform.translate.set(10, 10)
 layer('b').ctx.transform.scale.set(2, 2)
@@ -762,10 +762,10 @@ GroupLayers map to SVG `<g>` elements and organize child layers via `.append()`.
 
 ```
 // Define a group with styles
-let panel = GroupLayer('panel') ${ opacity: 0.8; };
+let panel = GroupLayer('panel') #{ opacity: 0.8; };
 
 // Or with define (cannot be default)
-define GroupLayer('panel') ${ opacity: 0.8; }
+define GroupLayer('panel') #{ opacity: 0.8; }
 ```
 
 GroupLayers **cannot** be the default layer — `define default GroupLayer(...)` is an error.
@@ -775,11 +775,11 @@ GroupLayers **cannot** be the default layer — `define default GroupLayer(...)`
 Use `.append(ref1, ref2, ...)` to add layers as children of a group. All arguments must be layer references:
 
 ```
-let panel = GroupLayer('panel') ${};
-let bg = PathLayer('bg') ${ fill: #eee; };
+let panel = GroupLayer('panel') #{};
+let bg = PathLayer('bg') #{ fill: #eee; };
 bg.apply { rect(0, 0, 200, 200) }
 
-let label = TextLayer('label') ${ font-size: 14; fill: #333; };
+let label = TextLayer('label') #{ font-size: 14; fill: #333; };
 label.apply { text(10, 20)`Panel Title` }
 
 // Append children to group
@@ -801,12 +801,12 @@ Appended layers are removed from the top-level output and rendered inside the gr
 Groups can contain other groups, up to a maximum nesting depth of 10:
 
 ```
-let inner = GroupLayer('inner') ${};
-let child = PathLayer('child') ${};
+let inner = GroupLayer('inner') #{};
+let child = PathLayer('child') #{};
 child.apply { M 5 5 }
 inner.append(child)
 
-let outer = GroupLayer('outer') ${};
+let outer = GroupLayer('outer') #{};
 outer.append(inner)
 ```
 
@@ -816,7 +816,7 @@ GroupLayers support both style block transforms and imperative transforms:
 
 ```
 // Style block transform
-let panel = GroupLayer('panel') ${ transform: translate(50, 100); };
+let panel = GroupLayer('panel') #{ transform: translate(50, 100); };
 
 // Imperative transform
 panel.ctx.transform.rotate.set(0.785)
@@ -830,9 +830,9 @@ When both are present, the style block transform takes precedence.
 Appending a layer that already belongs to another group moves it. A warning log is emitted:
 
 ```
-let g1 = GroupLayer('g1') ${};
-let g2 = GroupLayer('g2') ${};
-let child = PathLayer('child') ${};
+let g1 = GroupLayer('g1') #{};
+let g2 = GroupLayer('g2') #{};
+let child = PathLayer('child') #{};
 g1.append(child)  // child is in g1
 g2.append(child)  // child moves to g2, warning logged
 ```

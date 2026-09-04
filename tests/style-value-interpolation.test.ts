@@ -22,7 +22,7 @@ describe('bare ${} interpolation in style values', () => {
     const styles = styleOf(
       `
       let capName = 'round';
-      let l = PathLayer('a') ${'${'} fill: red; stroke-linecap: ${'${'}capName}; };
+      let l = PathLayer('a') #{ fill: red; stroke-linecap: ${'${'}capName}; };
       l.apply { M 0 0 h 10 }
       `,
       'a',
@@ -32,11 +32,11 @@ describe('bare ${} interpolation in style values', () => {
 
   it('is equivalent to the backtick form', () => {
     const bare = styleOf(
-      `let w = 2.5; let l = PathLayer('a') ${'${'} fill: red; stroke-width: ${'${'}w * 2}; }; l.apply { M 0 0 h 10 }`,
+      `let w = 2.5; let l = PathLayer('a') #{ fill: red; stroke-width: ${'${'}w * 2}; }; l.apply { M 0 0 h 10 }`,
       'a',
     );
     const ticked = styleOf(
-      'let w = 2.5; let l = PathLayer(\'a\') ${ fill: red; stroke-width: `${w * 2}`; }; l.apply { M 0 0 h 10 }',
+      'let w = 2.5; let l = PathLayer(\'a\') #{ fill: red; stroke-width: `${w * 2}`; }; l.apply { M 0 0 h 10 }',
       'a',
     );
     expect(bare['stroke-width']).toBe(ticked['stroke-width']);
@@ -47,7 +47,7 @@ describe('bare ${} interpolation in style values', () => {
     const styles = styleOf(
       `
       let cell = 12;
-      let l = PathLayer('a') ${'${'} fill: red; stroke-dasharray: ${'${'}cell} ${'${'}cell}; };
+      let l = PathLayer('a') #{ fill: red; stroke-dasharray: ${'${'}cell} ${'${'}cell}; };
       l.apply { M 0 0 h 10 }
       `,
       'a',
@@ -59,7 +59,7 @@ describe('bare ${} interpolation in style values', () => {
     const styles = styleOf(
       `
       let pitch = 16;
-      let l = PathLayer('a') ${'${'} fill: red; stroke-dasharray: 0.01 ${'${'}pitch}; };
+      let l = PathLayer('a') #{ fill: red; stroke-dasharray: 0.01 ${'${'}pitch}; };
       l.apply { M 0 0 h 10 }
       `,
       'a',
@@ -71,7 +71,7 @@ describe('bare ${} interpolation in style values', () => {
     const styles = styleOf(
       `
       let softness = 1.5;
-      let l = PathLayer('a') ${'${'} fill: red; filter: blur(${'${'}softness}px); };
+      let l = PathLayer('a') #{ fill: red; filter: blur(${'${'}softness}px); };
       l.apply { M 0 0 h 10 }
       `,
       'a',
@@ -83,7 +83,7 @@ describe('bare ${} interpolation in style values', () => {
     const result = compile(`
       let cell = 20;
       let wave = @{ h 100 };
-      let pieces = wave.dash(${'${'} stroke-dasharray: ${'${'}cell} ${'${'}cell}; });
+      let pieces = wave.dash(#{ stroke-dasharray: ${'${'}cell} ${'${'}cell}; });
       log(pieces.length);
       log(pieces[0].path.length);
     `);
@@ -99,7 +99,7 @@ describe('bare ${} interpolation in style values', () => {
       compile(
         `
         let x = 9;
-        let l = TextLayer('a') ${'${'} font-family: "${'${'}x}"; };
+        let l = TextLayer('a') #{ font-family: "${'${'}x}"; };
         l.apply { text(20, 20)\`hi\` }
         `,
       ),
@@ -113,7 +113,7 @@ describe('bare ${} interpolation in style values', () => {
       compile(
         `
         let x = 9;
-        let l = TextLayer('a') ${'${'} font-family: '${'${'}x}'; };
+        let l = TextLayer('a') #{ font-family: '${'${'}x}'; };
         l.apply { text(20, 20)\`hi\` }
         `,
       ),
@@ -124,7 +124,7 @@ describe('bare ${} interpolation in style values', () => {
     const styles = styleOf(
       `
       fn pick(o) { return o.v; }
-      let l = PathLayer('a') ${'${'} fill: red; stroke-width: ${'${'} pick({v: 3}) }; };
+      let l = PathLayer('a') #{ fill: red; stroke-width: ${'${'} pick({v: 3}) }; };
       l.apply { M 0 0 h 10 }
       `,
       'a',
@@ -141,7 +141,7 @@ describe('bare ${} interpolation in style values', () => {
       compile(
         `
         fn pick(o) { return o.v; }
-        let l = PathLayer('a') ${'${'} fill: red; stroke-width: \`${'${'} pick({v: 4}) }\`; };
+        let l = PathLayer('a') #{ fill: red; stroke-width: \`${'${'} pick({v: 4}) }\`; };
         l.apply { M 0 0 h 10 }
         `,
       ),
@@ -150,7 +150,7 @@ describe('bare ${} interpolation in style values', () => {
 
   it('values without ${} are untouched', () => {
     const styles = styleOf(
-      `let l = PathLayer('a') ${'${'} fill: red; stroke-dasharray: 4 2; }; l.apply { M 0 0 h 10 }`,
+      `let l = PathLayer('a') #{ fill: red; stroke-dasharray: 4 2; }; l.apply { M 0 0 h 10 }`,
       'a',
     );
     expect(styles['stroke-dasharray']).toBe('4 2');
@@ -159,7 +159,7 @@ describe('bare ${} interpolation in style values', () => {
 
   it('splices template fragments fused to units inside a filter value', () => {
     const src = `let softness = 1.5;
-define PathLayer('a') ${'${'} filter: blur(\`${'${'}softness}\`px) brightness(\`${'${'}1.2}\`); }
+define PathLayer('a') #{ filter: blur(\`${'${'}softness}\`px) brightness(\`${'${'}1.2}\`); }
 layer('a').apply { M 0 0 }`;
     const layer = compile(src).layers.find((l) => l.name === 'a')!;
     expect(layer.styles.filter).toBe('blur(1.5px) brightness(1.2)');

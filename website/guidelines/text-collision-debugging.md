@@ -11,7 +11,7 @@ The `<<` style block passed to `.boundingBox()` must include all properties that
 **Wrong** — missing font-family causes underestimation:
 
 ```pathogen
-let label = &{ text(0, 10)`Hello World` } << ${ font-size: 16; };
+let label = &{ text(0, 10)`Hello World` } << #{ font-size: 16; };
 let bb = label.boundingBox();  // width ≈ 87px (sans-serif estimate)
 // Actual monospace rendering: ~125px — 30% wider
 ```
@@ -19,7 +19,7 @@ let bb = label.boundingBox();  // width ≈ 87px (sans-serif estimate)
 **Correct** — font-family matches the rendering TextLayer:
 
 ```pathogen
-let label = &{ text(0, 10)`Hello World` } << ${ font-size: 16; font-family: monospace; };
+let label = &{ text(0, 10)`Hello World` } << #{ font-size: 16; font-family: monospace; };
 let bb = label.boundingBox();  // width ≈ 125px (matches rendered output)
 ```
 
@@ -64,7 +64,7 @@ Pad the rectangle by a few pixels on each side to account for stroke width.
 Cross-reference [Code Example Guidelines](./code-example-guidelines.md) §9. GroupLayers scope intersection checks to O(k) per group instead of N² across the entire canvas.
 
 ```
-GroupLayer('row-10')  ${ translate-x: 60; translate-y: 100; }
+GroupLayer('row-10')  #{ translate-x: 60; translate-y: 100; }
   ├── TextLayer('t1')        — the label text
   ├── PathLayer('bb1')       — bounding box overlay
   ├── PathLayer('hd1')       — height bracket line

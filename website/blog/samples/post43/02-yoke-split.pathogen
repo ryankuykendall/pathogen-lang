@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 280);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,31 +12,31 @@ layer('bg').apply {
   rect(0, 0, 480, 280);
 }
 
-let scene = GroupLayer('scene') ${};
-let panel = PathLayer('panel') ${
+let scene = GroupLayer('scene') #{};
+let panel = PathLayer('panel') #{
   fill: #e7dfd0;
   stroke: #64748b;
   stroke-width: 1;
 };
-let neckRun = PathLayer('neck-run') ${
+let neckRun = PathLayer('neck-run') #{
   stroke: #2dd4bf;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let hemRun = PathLayer('hem-run') ${
+let hemRun = PathLayer('hem-run') #{
   stroke: #fb7185;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let leaders = PathLayer('leaders') ${
+let leaders = PathLayer('leaders') #{
   stroke: #475569;
   stroke-width: 1;
   stroke-dasharray: 2 3;
   fill: none;
 };
-let captions = TextLayer('captions') ${
+let captions = TextLayer('captions') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;

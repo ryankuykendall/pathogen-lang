@@ -334,12 +334,12 @@ heights.</p>
 
 define ViewBox(0, 0, 400, 190);
 
-let axis = PathLayer('axis') ${ stroke: oklch(0.5 0.02 260); stroke-width: 1; fill: none; };
+let axis = PathLayer('axis') #{ stroke: oklch(0.5 0.02 260); stroke-width: 1; fill: none; };
 axis.apply {
   M 40 95 L 380 95
 }
 
-let ticks = TextLayer('ticks') ${
+let ticks = TextLayer('ticks') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -351,7 +351,7 @@ ticks.apply {
   text(34, 146)`−1`
 }
 
-let dots = PathLayer('dots') ${ fill: oklch(0.62 0.16 260); stroke: none; };
+let dots = PathLayer('dots') #{ fill: oklch(0.62 0.16 260); stroke: none; };
 dots.apply {
   for (i in 0..47) {
     circle(calc(44 + i * 7), calc(95 - hash11(i) * 43), 2);
@@ -374,7 +374,7 @@ by <code>hash11(i, 1) * 4</code>.</p>
 
 define ViewBox(0, 0, 400, 170);
 
-let machine = PathLayer('machine-set') ${ stroke: oklch(0.7 0.03 260); stroke-width: 7; fill: none; };
+let machine = PathLayer('machine-set') #{ stroke: oklch(0.7 0.03 260); stroke-width: 7; fill: none; };
 machine.apply {
   for (i in 0..25) {
     M calc(28 + i * 13.5) 62
@@ -382,7 +382,7 @@ machine.apply {
   }
 }
 
-let hand = PathLayer('hand-set') ${ stroke: oklch(0.75 0.12 60); stroke-width: 7; fill: none; };
+let hand = PathLayer('hand-set') #{ stroke: oklch(0.75 0.12 60); stroke-width: 7; fill: none; };
 hand.apply {
   for (i in 0..25) {
     let drop = calc(hash11(i) * 5);
@@ -409,7 +409,7 @@ with every dot offset by <code>(hash11(idx) * j, hash11(idx, 1) * j)</code> — 
 define ViewBox(0, 0, 400, 132);
 
 fn jitteredGrid(name, x0, j) {
-  let g = PathLayer(name) ${ fill: oklch(0.68 0.13 200); stroke: none; };
+  let g = PathLayer(name) #{ fill: oklch(0.68 0.13 200); stroke: none; };
   g.apply {
     for (row in 0..5) {
       for (col in 0..9) {
@@ -426,7 +426,7 @@ jitteredGrid('rigid', 28, 0);
 jitteredGrid('relaxed', 153, 2);
 jitteredGrid('scattered', 278, 5);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -476,7 +476,7 @@ fn ribbon(name, y0, wobble) {
   };
   let spine = @{ l 330 0 };
   let rib = spine.compoundVariableOffset() &lt;&lt; mk;
-  let band = PathLayer(name) ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  let band = PathLayer(name) #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
   band.apply {
     M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
     rib.draw();
@@ -507,7 +507,7 @@ every pass wobbles its own way.</p>
 define ViewBox(0, 0, 400, 260);
 
 fn ring(name, r, seed) {
-  let g = PathLayer(name) ${ stroke: oklch(0.6 0.11 280); stroke-width: 1; fill: none; opacity: 0.65; };
+  let g = PathLayer(name) #{ stroke: oklch(0.6 0.11 280); stroke-width: 1; fill: none; opacity: 0.65; };
   g.apply {
     let r0 = calc(r * (1 + hash11(0, seed) * 0.07));
     M calc(200 + r0) 130

@@ -19,6 +19,8 @@ export interface ToastDetail {
   message?: string;
   image?: string;
   duration?: number;
+  /** Optional call-to-action; selecting it runs the handler and dismisses the toast. */
+  action?: { label: string; onSelect: () => void };
 }
 
 const DEFAULT_DURATION = 4500;
@@ -110,6 +112,21 @@ const styles = `
     -webkit-box-orient: vertical;
   }
 
+  .action {
+    align-self: flex-start;
+    margin-top: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.85em;
+    cursor: pointer;
+  }
+  .action:hover {
+    background: rgba(127, 127, 127, 0.15);
+  }
   .dismiss {
     background: transparent;
     border: none;
@@ -194,6 +211,16 @@ export class AppToast extends HTMLElement {
       msg.className = 'message';
       msg.textContent = opts.message;
       body.appendChild(msg);
+    }
+    if (opts.action) {
+      const act = document.createElement('button');
+      act.className = 'action';
+      act.textContent = opts.action.label;
+      act.addEventListener('click', () => {
+        opts.action!.onSelect();
+        this._dismiss(toast);
+      });
+      body.appendChild(act);
     }
     toast.appendChild(body);
 

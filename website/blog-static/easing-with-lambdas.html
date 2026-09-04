@@ -383,19 +383,19 @@ let plotH = 90;
 let gap = 14;
 let baseline = 150;
 
-let boxes = PathLayer('boxes') ${
+let boxes = PathLayer('boxes') #{
   stroke: oklch(0.82 0.02 260);
   stroke-width: 0.5;
   stroke-dasharray: 3 4;
   fill: none;
 };
-let lines = PathLayer('curves') ${
+let lines = PathLayer('curves') #{
   stroke: oklch(0.58 0.19 350);
   stroke-width: 1.5;
   stroke-linejoin: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   letter-spacing: 0.5;
@@ -458,7 +458,7 @@ let right = 360;
 let blue = Color(0.55, 0.16, 260);
 let pink = Color(0.62, 0.19, 350);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   letter-spacing: 0.5;
@@ -470,7 +470,7 @@ labels.apply {
   text(left, 113)`fill = blue.mix(pink, smooth(t)) · r = lerp(2, 5, smooth(t))`;
 }
 
-let plain = PathLayer('plain') ${
+let plain = PathLayer('plain') #{
   fill: oklch(0.55 0.16 260);
   stroke: none;
 };
@@ -481,12 +481,12 @@ plain.apply {
   }
 }
 
-let eased = GroupLayer('eased') ${};
+let eased = GroupLayer('eased') #{};
 for (i in 0..8) {
   let t = i / 8;
   let along = smooth(t);
   let tint = blue.mix(pink, along);
-  let dot = PathLayer(`eased-${i}`) ${
+  let dot = PathLayer(`eased-${i}`) #{
     fill: tint;
     stroke: none;
   };
@@ -539,18 +539,18 @@ let captions = [
   'amplitude = 18 * smoothstep(0, 0.35, t) * smoothstep(1, 0.65, t)',
 ];
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   letter-spacing: 0.5;
   fill: oklch(0.45 0.02 260);
 };
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 
 for (row in 0..2) {
   let mid = 58 + row * 76;
   let amplitude = envelopes[row];
-  let guide = PathLayer(`baseline-${row}`) ${
+  let guide = PathLayer(`baseline-${row}`) #{
     stroke: oklch(0.82 0.02 260);
     stroke-width: 0.5;
     stroke-dasharray: 3 4;
@@ -560,7 +560,7 @@ for (row in 0..2) {
     M left mid
     L calc(left + width) mid
   }
-  let wave = PathLayer(`wave-${row}`) ${
+  let wave = PathLayer(`wave-${row}`) #{
     stroke: oklch(0.58 0.19 350);
     stroke-width: 1.5;
     stroke-linejoin: round;
@@ -611,19 +611,19 @@ let rowNames = [
   '4 half-cycles',
 ];
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   letter-spacing: 0.5;
   fill: #8a93a6;
 };
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 
 for (halfCycles in 1..4) {
   let top = 32 + (halfCycles - 1) * 60;
   let bottom = top + 36;
   let wave = {|t| lerp(bottom, top, t) - amplitude * sin(PI() * halfCycles * t)};
-  let guide = PathLayer(`guide-${halfCycles}`) ${
+  let guide = PathLayer(`guide-${halfCycles}`) #{
     stroke: oklch(0.82 0.02 260);
     stroke-width: 0.5;
     stroke-dasharray: 3 4;
@@ -633,7 +633,7 @@ for (halfCycles in 1..4) {
     M left bottom
     L right top
   }
-  let trace = PathLayer(`wave-${halfCycles}`) ${
+  let trace = PathLayer(`wave-${halfCycles}`) #{
     stroke: oklch(0.58 0.19 350);
     stroke-width: 1.5;
     stroke-linejoin: round;
@@ -703,13 +703,13 @@ let left = 40;
 let width = 320;
 let mark = 300;
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   letter-spacing: 0.5;
   fill: #8a93a6;
 };
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 
 let wavesMade = [
   gentle,
@@ -725,7 +725,7 @@ let names = [
 for (row in 0..2) {
   let mid = 46 + row * 52;
   let wave = wavesMade[row];
-  let guide = PathLayer(`baseline-${row}`) ${
+  let guide = PathLayer(`baseline-${row}`) #{
     stroke: oklch(0.82 0.02 260);
     stroke-width: 0.5;
     stroke-dasharray: 3 4;
@@ -735,7 +735,7 @@ for (row in 0..2) {
     M left mid
     L calc(left + width) mid
   }
-  let trace = PathLayer(`wave-${row}`) ${
+  let trace = PathLayer(`wave-${row}`) #{
     stroke: oklch(0.58 0.19 350);
     stroke-width: 1.5;
     stroke-linejoin: round;
@@ -757,7 +757,7 @@ for (row in 0..2) {
 labels.apply {
   text(left, 196)`makeEase(0.34, 1.56, 0.64, 1): past the mark, then back`;
 }
-let tick = PathLayer('mark') ${
+let tick = PathLayer('mark') #{
   stroke: oklch(0.82 0.02 260);
   stroke-width: 0.5;
   stroke-dasharray: 3 4;
@@ -767,7 +767,7 @@ tick.apply {
   M calc(left + mark) 204
   L calc(left + mark) 228
 }
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   fill: none;
   stroke: oklch(0.55 0.16 260);
   stroke-width: 1;
@@ -819,14 +819,14 @@ let envelope = {|t| smoothstep(0, 0.3, t) * smoothstep(1, 0.7, t)};
 let blue = Color(0.5, 0.15, 260);
 let pink = Color(0.65, 0.19, 350);
 
-let plume = GroupLayer('plume') ${};
+let plume = GroupLayer('plume') #{};
 for (strandIndex in 0..11) {
   let strandT = strandIndex / 11;
   let tipY = lerp(210, 50, spread(strandT));
   let halfCycles = 1 + strandIndex % 3;
   let amplitude = 10 + 6 * (strandIndex % 2);
   let tint = blue.mix(pink, strandT);
-  let strand = PathLayer(`strand-${strandIndex}`) ${
+  let strand = PathLayer(`strand-${strandIndex}`) #{
     stroke: tint;
     stroke-width: 1.25;
     stroke-linecap: round;
@@ -845,7 +845,7 @@ for (strandIndex in 0..11) {
   plume.append(strand);
 }
 
-let seed = PathLayer('seed') ${
+let seed = PathLayer('seed') #{
   fill: oklch(0.35 0.02 260);
   stroke: none;
 };

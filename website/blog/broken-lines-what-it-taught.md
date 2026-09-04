@@ -146,6 +146,11 @@ literals whole. The irony ran deep: `${` is literally how a style
 block *opens*, yet it was the one thing that couldn't appear bare
 inside one.
 
+> **Editor's note, September 2026:** that irony was the last straw. Style
+> blocks now open with `#{ … }`; `${ … }` is interpolation and nothing
+> else. The samples on this page were migrated mechanically — every
+> `${` that opened a block became `#{`, every `${` inside a value stayed.
+
 The fix gives the bare interpolation its own token beside the opaque
 content — the scanner now hands `${...}` spans through intact, the
 value parser treats their insides as expression territory, and both

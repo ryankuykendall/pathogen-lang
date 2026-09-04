@@ -40,13 +40,13 @@ let c_i_75 = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.7
 let c_i_100 = '#457b9d';
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') ${}
-define GroupLayer('wheel') ${}
-define GroupLayer('chords') ${}
-define GroupLayer('strips') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('wheel') #{}
+define GroupLayer('chords') #{}
+define GroupLayer('strips') #{}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -55,7 +55,7 @@ bg.apply {
 }
 
 // ─── Masthead ───────────────────────────────────────────────
-let eyebrow = TextLayer('eyebrow') ${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -86,62 +86,62 @@ let r_hub = 50;
 let seg_span = 0.5236;
 // π/6
 
-let w0 = PathLayer('w-0') ${
+let w0 = PathLayer('w-0') #{
   fill: 'oklch(0.70 0.16 0)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w1 = PathLayer('w-1') ${
+let w1 = PathLayer('w-1') #{
   fill: 'oklch(0.70 0.16 30)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w2 = PathLayer('w-2') ${
+let w2 = PathLayer('w-2') #{
   fill: 'oklch(0.70 0.16 60)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w3 = PathLayer('w-3') ${
+let w3 = PathLayer('w-3') #{
   fill: 'oklch(0.70 0.16 90)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w4 = PathLayer('w-4') ${
+let w4 = PathLayer('w-4') #{
   fill: 'oklch(0.70 0.16 120)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w5 = PathLayer('w-5') ${
+let w5 = PathLayer('w-5') #{
   fill: 'oklch(0.70 0.16 150)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w6 = PathLayer('w-6') ${
+let w6 = PathLayer('w-6') #{
   fill: 'oklch(0.70 0.16 180)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w7 = PathLayer('w-7') ${
+let w7 = PathLayer('w-7') #{
   fill: 'oklch(0.70 0.16 210)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w8 = PathLayer('w-8') ${
+let w8 = PathLayer('w-8') #{
   fill: 'oklch(0.70 0.16 240)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w9 = PathLayer('w-9') ${
+let w9 = PathLayer('w-9') #{
   fill: 'oklch(0.70 0.16 270)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w10 = PathLayer('w-10') ${
+let w10 = PathLayer('w-10') #{
   fill: 'oklch(0.70 0.16 300)';
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let w11 = PathLayer('w-11') ${
+let w11 = PathLayer('w-11') #{
   fill: 'oklch(0.70 0.16 330)';
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -178,7 +178,7 @@ for (i in 0..11) {
 }
 
 // ─── Frame + hub ─────────────────────────────────────────────
-let frame = PathLayer('frame') ${
+let frame = PathLayer('frame') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -187,7 +187,7 @@ frame.apply {
   circle(cx, cy, r_frame);
 }
 
-let hub = PathLayer('hub') ${
+let hub = PathLayer('hub') #{
   fill: bg_color;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -196,7 +196,7 @@ hub.apply {
   circle(cx, cy, r_hub);
 }
 
-let hub_title = TextLayer('hub-title') ${
+let hub_title = TextLayer('hub-title') #{
   font-family: font;
   font-size: 14;
   font-weight: 700;
@@ -208,7 +208,7 @@ hub_title.apply {
   text(cx, calc(cy - 2))`OKLCH`;
 }
 
-let hub_sub = TextLayer('hub-sub') ${
+let hub_sub = TextLayer('hub-sub') #{
   font-family: font;
   font-size: 8;
   letter-spacing: 0.8;
@@ -230,7 +230,7 @@ layer('wheel').append(layer('frame'),
 // sits on each vertex.
 
 // Analogous: chord = short line from −30° to +30°
-let ana_chord = PathLayer('ana-chord') ${
+let ana_chord = PathLayer('ana-chord') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 1;
@@ -242,7 +242,7 @@ ana_chord.apply {
 }
 
 // Triadic: equilateral triangle, base at north
-let tri_chord = PathLayer('tri-chord') ${
+let tri_chord = PathLayer('tri-chord') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.7;
@@ -256,7 +256,7 @@ tri_chord.apply {
 }
 
 // Tetradic: square, base at north
-let tet_chord = PathLayer('tet-chord') ${
+let tet_chord = PathLayer('tet-chord') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 0.7;
@@ -271,7 +271,7 @@ tet_chord.apply {
 }
 
 // Split-comp: Y from base to +150° and +210° (= −150°)
-let sc_chord = PathLayer('sc-chord') ${
+let sc_chord = PathLayer('sc-chord') #{
   fill: none;
   stroke: fg_auto;
   stroke-width: 1;
@@ -296,52 +296,52 @@ layer('chords').append(layer('ana-chord'),
 //         0 (tet+90), π/2 (tet+180), π (tet+270),
 //         π/3 (sc+150), 2π/3 (sc+210)
 
-let vertex_base = PathLayer('v-base') ${
+let vertex_base = PathLayer('v-base') #{
   fill: c_base;
   stroke: fg_auto;
   stroke-width: 1;
 };
-let vertex_am30 = PathLayer('v-ana-m30') ${
+let vertex_am30 = PathLayer('v-ana-m30') #{
   fill: c_ana_m30;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_ap30 = PathLayer('v-ana-p30') ${
+let vertex_ap30 = PathLayer('v-ana-p30') #{
   fill: c_ana_p30;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tp120 = PathLayer('v-tri-p120') ${
+let vertex_tp120 = PathLayer('v-tri-p120') #{
   fill: c_tri_p120;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tm120 = PathLayer('v-tri-m120') ${
+let vertex_tm120 = PathLayer('v-tri-m120') #{
   fill: c_tri_m120;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tep90 = PathLayer('v-tet-p90') ${
+let vertex_tep90 = PathLayer('v-tet-p90') #{
   fill: c_tet_p90;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tep180 = PathLayer('v-tet-p180') ${
+let vertex_tep180 = PathLayer('v-tet-p180') #{
   fill: c_tet_p180;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_tep270 = PathLayer('v-tet-p270') ${
+let vertex_tep270 = PathLayer('v-tet-p270') #{
   fill: c_tet_p270;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_scp150 = PathLayer('v-sc-p150') ${
+let vertex_scp150 = PathLayer('v-sc-p150') #{
   fill: c_sc_p150;
   stroke: fg_hair;
   stroke-width: 0.5;
 };
-let vertex_scp210 = PathLayer('v-sc-p210') ${
+let vertex_scp210 = PathLayer('v-sc-p210') #{
   fill: c_sc_p210;
   stroke: fg_hair;
   stroke-width: 0.5;
@@ -395,7 +395,7 @@ layer('chords').append(layer('v-base'),
 // Strip 2: interpolate at y=445..495
 // 5 chips per strip, full-width.
 
-let strip_label_layer = TextLayer('strip-label') ${
+let strip_label_layer = TextLayer('strip-label') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -421,7 +421,7 @@ let l_colors = [
 ];
 for ([col, i] in l_colors) {
   let cx_i = calc(chip_x0 + i * (chip_w + chip_gap));
-  let sw = PathLayer(`l-${i}`) ${
+  let sw = PathLayer(`l-${i}`) #{
     fill: col;
     stroke: fg_hair;
     stroke-width: 0.5;
@@ -449,7 +449,7 @@ let i_colors = [
 ];
 for ([col, i] in i_colors) {
   let cx_i = calc(chip_x0 + i * (chip_w + chip_gap));
-  let sw = PathLayer(`i-${i}`) ${
+  let sw = PathLayer(`i-${i}`) #{
     fill: col;
     stroke: fg_hair;
     stroke-width: 0.5;
@@ -465,7 +465,7 @@ for ([col, i] in i_colors) {
 }
 
 // Strip sub labels — small value markers at bottom of each strip
-let strip_sub_layer = TextLayer('strip-sub') ${
+let strip_sub_layer = TextLayer('strip-sub') #{
   font-family: font;
   font-size: 6;
   letter-spacing: 0.5;
@@ -501,7 +501,7 @@ for ([s, i] in i_subs) {
 
 // ─── Chord legend (bottom) ──────────────────────────────────
 let legend_y = 535;
-let legend = TextLayer('legend') ${
+let legend = TextLayer('legend') #{
   font-family: font;
   font-size: 6;
   font-weight: 700;

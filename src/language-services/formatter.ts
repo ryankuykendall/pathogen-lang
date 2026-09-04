@@ -782,11 +782,11 @@ function formatExpression(expr: Expression, depth: number, indent: string, sourc
       return `{\n${props.join('\n')}\n${close}}`;
     }
     case 'StyleBlockLiteral': {
-      if (expr.properties.length === 0) return '${}';
+      if (expr.properties.length === 0) return '#{}';
       const inner = indent.repeat(depth + 1);
       const close = indent.repeat(depth);
       const props = expr.properties.map((p) => `${inner}${p.name}: ${p.value};`);
-      return `\${\n${props.join('\n')}\n${close}}`;
+      return `#{\n${props.join('\n')}\n${close}}`;
     }
     case 'LayerConstructorExpression': {
       const name = formatExpression(expr.name, depth, indent, source);

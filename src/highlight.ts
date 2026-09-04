@@ -22,7 +22,7 @@ export { lezerParser };
 
 // Editor parser: same outer parser with the inner style-block grammar
 // mounted over StyleContent (parseMixed) — structured highlighting inside
-// `${ ... }`. Small LR table; watch dist/highlight.global.js size.
+// `#{ ... }`. Small LR table; watch dist/highlight.global.js size.
 export { editorParser } from './parser/editor-parser';
 import { editorParser } from './parser/editor-parser';
 

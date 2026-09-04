@@ -137,7 +137,7 @@ describe('Gradients', () => {
           g.stop(0, Color('#000'));
           g.stop(1, Color('#fff'));
         };
-        define PathLayer('test') \${ fill: g; }
+        define PathLayer('test') #{ fill: g; }
         layer('test').apply { M 0 0 L 100 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('url(#myfill)');
@@ -149,7 +149,7 @@ describe('Gradients', () => {
           g.stop(0, Color('#000'));
           g.stop(1, Color('#fff'));
         };
-        define PathLayer('test') \${ stroke: g; }
+        define PathLayer('test') #{ stroke: g; }
         layer('test').apply { M 0 0 L 100 0 }
       `);
       expect(result.layers[0].styles.stroke).toBe('url(#mystroke)');
@@ -641,7 +641,7 @@ describe('Gradients', () => {
       const result = compile(`
         let dot = @{ circle(10, 10, 3); };
         let p = Pattern('dots', 0, 0, 20, 20) {|p|
-          p.append(dot, \${ fill: Color('#e63946'); });
+          p.append(dot, #{ fill: Color('#e63946'); });
         };
       `);
       expect(result.patterns).toHaveLength(1);
@@ -667,7 +667,7 @@ describe('Gradients', () => {
       const result = compile(`
         let dot = @{ circle(5, 5, 2); };
         let p = Pattern('p1', 0, 0, 10, 10) {|p|
-          p.append(dot, \${ fill: Color('#ff0000'); stroke: Color('#000000'); });
+          p.append(dot, #{ fill: Color('#ff0000'); stroke: Color('#000000'); });
         };
       `);
       expect(result.patterns[0].elements[0].styles).toHaveProperty('fill');
@@ -701,7 +701,7 @@ describe('Gradients', () => {
       const result = compile(`
         let line = @{ m 0 0 l 50 50 };
         let p = Pattern('grid', 0, 0, 50, 50) {|p|
-          p.append(line, \${ fill: none; stroke: Color('#ccc'); });
+          p.append(line, #{ fill: none; stroke: Color('#ccc'); });
         };
       `);
       const pat = result.patterns[0];
@@ -717,7 +717,7 @@ describe('Gradients', () => {
       const result = compile(`
         let dot = @{ circle(5, 5, 3); };
         let p = Pattern('p1', 0, 0, 10, 10) {|p|
-          p.append(dot, \${ fill: Color('#f00'); });
+          p.append(dot, #{ fill: Color('#f00'); });
         };
       `);
       const el = result.patterns[0].elements[0];
@@ -730,10 +730,10 @@ describe('Gradients', () => {
       const result = compile(`
         let dot = @{ circle(10, 10, 3); };
         let p = Pattern('dots', 0, 0, 20, 20) {|p|
-          p.append(dot, \${ fill: Color('#e63946'); });
+          p.append(dot, #{ fill: Color('#e63946'); });
         };
         p.patternUnits = 'userSpaceOnUse';
-        define PathLayer('bg') \${ fill: p; stroke: none; }
+        define PathLayer('bg') #{ fill: p; stroke: none; }
         layer('bg').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
       `);
       const bgLayer = result.layers.find((l) => l.name === 'bg');
@@ -994,7 +994,7 @@ describe('Gradients', () => {
           g.stop(0.66, Color('#264653'));
           g.stop(1, Color('#e63946'));
         };
-        define PathLayer('bg') \${ fill: g; stroke: none; }
+        define PathLayer('bg') #{ fill: g; stroke: none; }
         layer('bg').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
       `);
       const bgLayer = result.layers.find((l) => l.name === 'bg');
@@ -1757,7 +1757,7 @@ describe('Gradients', () => {
         let g = MeshGradient('mg', 100, 100, 2, 2) {|g|
           g.colorAll(Color('#ff0000'));
         };
-        define PathLayer('bg') \${ fill: g; }
+        define PathLayer('bg') #{ fill: g; }
         layer('bg').apply { rect(0, 0, 100, 100); }
       `);
       expect(result.layers[0].styles.fill).toBe('url(#mg)');
@@ -2013,7 +2013,7 @@ describe('Gradients', () => {
           g.point(50, 50, Color('#000'));
           g.point(150, 50, Color('#fff'));
         };
-        define PathLayer('bg') \${ fill: g; }
+        define PathLayer('bg') #{ fill: g; }
         layer('bg').apply { rect(0, 0, 200, 100); }
       `);
       expect(result.layers[0].styles.fill).toBe('url(#fg)');
@@ -2676,7 +2676,7 @@ describe('Gradients', () => {
         let topo = TopoGradient('terrain', 400, 300) {|g|
           g.contour(s.project(200, 150), 0.5, Color('#27ae60'));
         };
-        define PathLayer('bg') \${ fill: topo; }
+        define PathLayer('bg') #{ fill: topo; }
         layer('bg').apply { rect(0, 0, 400, 300); }
       `);
       expect(result.layers[0].styles?.fill).toBe('url(#terrain)');

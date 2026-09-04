@@ -7,7 +7,12 @@ import {
   STYLE_PROPERTY_COMPLETIONS,
   STYLE_PROPERTY_VALUES,
 } from './completion-data-static';
-import { CONSTRUCTOR_RETURN_TYPES, ENUM_COMPLETIONS, STDLIB_COMPLETIONS, TYPE_MEMBERS } from './completion-data.generated';
+import {
+  CONSTRUCTOR_RETURN_TYPES,
+  ENUM_COMPLETIONS,
+  STDLIB_COMPLETIONS,
+  TYPE_MEMBERS,
+} from './completion-data.generated';
 import { inferObjectProperties, regexNameResolver, resolveMemberAccess } from './member-resolution';
 import { analyzeScopes } from './scope-analysis';
 import { inferRhsType } from './type-inference';
@@ -135,29 +140,35 @@ export function getCompletions(document: TextDocument, position: Position): Comp
     }
   }
 
-  // Trailing `$` outside of style/backtick contexts. Two routings:
+  // Trailing `#` outside a style block. Two routings:
   //   • At statement start  → declaration snippets (let, PathLayer, TextLayer)
-  //   • In expression value → style-block snippet (`${ … }`)
-  // The expression case covers `let foo = $` where the user is reaching for
+  //   • In expression value → style-block snippet (`#{ … }`)
+  // The expression case covers `let foo = #` where the user is reaching for
   // an inline style block — we surface the balanced-brace snippet so they
-  // don't have to remember the exact `${ }` syntax.
-  if (textBefore.endsWith('$')) {
+  // don't have to remember the exact `#{ }` syntax. Inside a style block a
+  // `#` is the start of a hex color, so nothing is offered there.
+  if (textBefore.endsWith('#')) {
     const before = textBefore.slice(0, -1);
-    if (isAtStatementStart(before)) {
-      return DECLARATION_SNIPPETS.map(toCompletionItem);
-    }
-    // Inside a style VALUE, `$` starts an interpolation, not a nested style
-    // block — offer the ${expr} snippet (same label, different template).
-    const blankedBefore = blankBalancedInterps(before);
-    if (isInsideStyleBlock(blankedBefore) && !isStylePropertyNameContext(blankedBefore)) {
-      return [toCompletionItem(INTERPOLATION_SNIPPET)];
-    }
-    if (isInExpressionPosition(before)) {
-      return [toCompletionItem(STYLE_BLOCK_SNIPPET)];
+    if (!isInsideStyleBlock(blankBalancedInterps(before))) {
+      if (isAtStatementStart(before)) {
+        return DECLARATION_SNIPPETS.map(toCompletionItem);
+      }
+      if (isInExpressionPosition(before) || isAfterLayerConstructor(before)) {
+        return [toCompletionItem(STYLE_BLOCK_SNIPPET)];
+      }
     }
   }
 
-  // Check if we're inside a style block ${ ... }. Style blocks have two
+  // Trailing `$` inside a style VALUE starts an interpolation — offer the
+  // ${expr} snippet. (Backtick templates are handled by their own branch.)
+  if (textBefore.endsWith('$')) {
+    const blankedBefore = blankBalancedInterps(textBefore.slice(0, -1));
+    if (isInsideStyleBlock(blankedBefore) && !isStylePropertyNameContext(blankedBefore)) {
+      return [toCompletionItem(INTERPOLATION_SNIPPET)];
+    }
+  }
+
+  // Check if we're inside a style block #{ ... }. Style blocks have two
   // completion contexts:
   //   1. Property-name position (before `:`)  → offer CSS property names
   //   2. Value position (after `:`, before `;` or `}`)  → offer user-defined
@@ -296,7 +307,9 @@ export function getCompletions(document: TextDocument, position: Position): Comp
         kind: decl.kind === 'function' ? 'function' : 'variable',
         detail: isRefTyped
           ? `${declType} — renders as url(#id)`
-          : decl.kind === 'function' ? `fn ${decl.name}(...)` : `${decl.kind}: ${decl.name}`,
+          : decl.kind === 'function'
+            ? `fn ${decl.name}(...)`
+            : `${decl.kind}: ${decl.name}`,
         sortText: sortKey(isRefTyped ? 95 : userDeclBoost, decl.name),
       });
     }
@@ -333,22 +346,19 @@ const STYLE_VALUE_KEYWORDS: CompletionEntry[] = [
 // --- Helpers ---
 
 /**
- * Blank out balanced bare `${...}` interpolation spans that occur AFTER the
- * last style-block opener, so the backward context scanners below don't
- * mistake an interp's braces for block/entry boundaries. An UNCLOSED
- * trailing `${` is left in place — callers treat that as expression
- * context and suppress style completions.
+ * Blank out balanced `${...}` interpolation spans so the backward context
+ * scanners below don't mistake an interp's braces for block/entry
+ * boundaries. An UNCLOSED trailing `${` is left in place — callers treat
+ * that as expression context and suppress style completions. (`${` is only
+ * ever an interpolation now; the style-block opener is `#{`.)
  */
 function blankBalancedInterps(textBefore: string): string {
-  const opener = textBefore.lastIndexOf('${');
-  if (opener < 0) return textBefore;
+  if (!textBefore.includes('${')) return textBefore;
   let out = '';
   let i = 0;
   while (i < textBefore.length) {
-    if (textBefore[i] === '$' && textBefore[i + 1] === '{' && i !== opener) {
-      // Potential interp start (never the style-block opener itself when it
-      // is the LAST `${` — that one is handled by the scanners). Find a
-      // balanced close on one nesting level.
+    if (textBefore[i] === '$' && textBefore[i + 1] === '{') {
+      // Interp start. Find a balanced close on one nesting level.
       let j = i + 2;
       let depth = 1;
       while (j < textBefore.length && depth > 0) {
@@ -375,12 +385,12 @@ function isInsideOpenInterp(textBefore: string): boolean {
   const blanked = blankBalancedInterps(textBefore);
   const lastOpen = blanked.lastIndexOf('${');
   if (lastOpen < 0) return false;
-  // The style-block opener itself doesn't count — an interp opener must
-  // have a `:` between the block opener and it, with no `;`/`}` after.
+  // An interp opener must have a `:` between the enclosing block's `#{` and
+  // it, with no `;`/`}` after.
   const between = blanked.slice(lastOpen + 2);
   if (between.includes('}')) return false;
   const before = blanked.slice(0, lastOpen);
-  const blockOpen = before.lastIndexOf('${');
+  const blockOpen = before.lastIndexOf('#{');
   if (blockOpen < 0) return false;
   const decl = before.slice(blockOpen + 2);
   const lastColon = Math.max(decl.lastIndexOf(':'));
@@ -390,11 +400,11 @@ function isInsideOpenInterp(textBefore: string): boolean {
 }
 
 function isInsideStyleBlock(textBefore: string): boolean {
-  // Find the last ${ and check if there's a matching } after it
+  // Find the last #{ and check if there's a matching } after it
   let depth = 0;
   for (let i = textBefore.length - 1; i >= 0; i--) {
     if (textBefore[i] === '}') depth++;
-    if (textBefore[i] === '{' && i > 0 && textBefore[i - 1] === '$') {
+    if (textBefore[i] === '{' && i > 0 && textBefore[i - 1] === '#') {
       if (depth === 0) return true;
       depth--;
     }
@@ -406,7 +416,7 @@ function isInsideStyleBlock(textBefore: string): boolean {
  * Given that we're inside a style block, determine whether the cursor is
  * in a property-name position (before `:`) vs a value position (after `:`,
  * before `;` or the closing `}`). Walks backward from the cursor to the
- * nearest statement boundary (`;`, `${`, or end of current style entry).
+ * nearest statement boundary (`;`, `#{`, or end of current style entry).
  * If a `:` is encountered first, we're in a value position; otherwise a
  * property-name position.
  */
@@ -415,7 +425,7 @@ function isStylePropertyNameContext(textBefore: string): boolean {
     const ch = textBefore[i];
     // Entry terminators and style-block opener both reset to property context.
     if (ch === ';' || ch === '}') return true;
-    if (ch === '{' && i > 0 && textBefore[i - 1] === '$') return true;
+    if (ch === '{' && i > 0 && textBefore[i - 1] === '#') return true;
     // A colon before any terminator means we're in the value position.
     if (ch === ':') return false;
   }
@@ -424,7 +434,7 @@ function isStylePropertyNameContext(textBefore: string): boolean {
 
 /**
  * True when the cursor sits in style-block property-name position
- * (`${ stroke-w… }` before the `:`). Editor integrations use this to widen
+ * (`#{ stroke-w… }` before the `:`). Editor integrations use this to widen
  * their word/replacement range to include hyphens — CSS property names are
  * hyphenated, but general identifier patterns treat `-` as a boundary, which
  * makes accepting `stroke-width` after typing `stroke-w` double the prefix.
@@ -530,8 +540,8 @@ function isAtStatementStart(textBefore: string): boolean {
 /**
  * Returns true if `textBefore` ends in a position where a new expression
  * value may begin: after `=`, `(`, `,`, `[`, `+`, `-`, `*`, `/`, or `:`
- * (with optional whitespace). Used to surface the `${ … }` style-block
- * snippet on `$` keystroke in expression context.
+ * (with optional whitespace). Used to surface the `#{ … }` style-block
+ * snippet on `#` keystroke in expression context.
  */
 function isInExpressionPosition(textBefore: string): boolean {
   let i = textBefore.length - 1;
@@ -549,6 +559,14 @@ function isInExpressionPosition(textBefore: string): boolean {
     ch === '/' ||
     ch === ':'
   );
+}
+
+/**
+ * `PathLayer('a') #` — the constructor form takes its style block right after
+ * the closing paren, which isInExpressionPosition does not cover.
+ */
+function isAfterLayerConstructor(textBefore: string): boolean {
+  return /\b(PathLayer|TextLayer|GroupLayer)\s*\([^()]*\)\s*$/.test(textBefore);
 }
 
 /**

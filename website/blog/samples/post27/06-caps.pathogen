@@ -7,17 +7,17 @@ let fg_muted = Color('#0d1638').alpha(0.6);
 let blue = Color(CSSVar('--ribbon-color', #457b9d));
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('ribbon') ${
+define PathLayer('ribbon') #{
   fill: blue;
   fill-opacity: 0.45;
   stroke: blue;
   stroke-width: 1.5;
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;

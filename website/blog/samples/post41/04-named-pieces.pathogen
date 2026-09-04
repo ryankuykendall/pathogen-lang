@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 215);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,30 +12,30 @@ layer('bg').apply {
   rect(0, 0, 480, 215);
 }
 
-let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let roofLayer = PathLayer('roof-runs') ${
+let roofLayer = PathLayer('roof-runs') #{
   stroke: #2dd4bf;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let baseLayer = PathLayer('base-runs') ${
+let baseLayer = PathLayer('base-runs') #{
   stroke: #c084fc;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let roofCount = TextLayer('roof-count') ${
+let roofCount = TextLayer('roof-count') #{
   font-family: monospace;
   font-size: 9;
   fill: #2dd4bf;
 };
-let baseCount = TextLayer('base-count') ${
+let baseCount = TextLayer('base-count') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;

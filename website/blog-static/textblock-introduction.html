@@ -318,10 +318,10 @@ code.hljs {
 
 // ─── Background ─────────────────────────────────────────────────────
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 340); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -333,7 +333,7 @@ grid.apply {
 
 // ─── Define a TextBlock at relative coordinates ─────────────────────
 
-let mono_styles = ${ font-family: monospace; font-size: 11; };
+let mono_styles = #{ font-family: monospace; font-size: 11; };
 
 let card = &amp;{
   text(0, 14)`Server Node`
@@ -346,13 +346,13 @@ let bb = card.boundingBox();
 
 // ─── Card 1: First placement ────────────────────────────────────────
 
-let g1 = GroupLayer('card1') ${ translate-x: 80; translate-y: 100; };
+let g1 = GroupLayer('card1') #{ translate-x: 80; translate-y: 100; };
 
-let demo1 = TextLayer('demo1') ${ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
+let demo1 = TextLayer('demo1') #{ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
 demo1.apply { card.drawTo(0, 0); }
 
 // Bounding box overlay
-let bb1_layer = PathLayer('bb1') ${
+let bb1_layer = PathLayer('bb1') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -361,7 +361,7 @@ let bb1_layer = PathLayer('bb1') ${
 bb1_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
-let cross1 = PathLayer('cross1') ${
+let cross1 = PathLayer('cross1') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -381,13 +381,13 @@ g1.append(demo1, bb1_layer, cross1);
 
 // ─── Card 2: Second placement ───────────────────────────────────────
 
-let g2 = GroupLayer('card2') ${ translate-x: 360; translate-y: 180; };
+let g2 = GroupLayer('card2') #{ translate-x: 360; translate-y: 180; };
 
-let demo2 = TextLayer('demo2') ${ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
+let demo2 = TextLayer('demo2') #{ font-family: monospace; font-size: 11; fill: Color('#e2e8f0'); };
 demo2.apply { card.drawTo(0, 0); }
 
 // Bounding box overlay
-let bb2_layer = PathLayer('bb2') ${
+let bb2_layer = PathLayer('bb2') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -396,7 +396,7 @@ let bb2_layer = PathLayer('bb2') ${
 bb2_layer.apply { rect(bb.x, bb.y, bb.width, bb.height); }
 
 // Origin crosshair
-let cross2 = PathLayer('cross2') ${
+let cross2 = PathLayer('cross2') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -415,9 +415,9 @@ g2.append(demo2, bb2_layer, cross2);
 
 // ─── Leader lines and connection arrow ──────────────────────────────
 
-let leader_group = GroupLayer('leaders-group') ${};
+let leader_group = GroupLayer('leaders-group') #{};
 
-let leaders = PathLayer('leaders') ${
+let leaders = PathLayer('leaders') #{
   fill: none;
   stroke: Color('#475569');
   stroke-width: 0.5;
@@ -432,7 +432,7 @@ leaders.apply {
 }
 
 // Arrowhead at connection endpoint
-let arrow_layer = PathLayer('arrow') ${
+let arrow_layer = PathLayer('arrow') #{
   fill: Color('#818cf8');
   stroke: none;
 };
@@ -444,9 +444,9 @@ leader_group.append(leaders, arrow_layer);
 
 // ─── Annotations ────────────────────────────────────────────────────
 
-let anno_group = GroupLayer('anno-group') ${};
+let anno_group = GroupLayer('anno-group') #{};
 
-let anno = TextLayer('anno') ${
+let anno = TextLayer('anno') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -462,9 +462,9 @@ anno_group.append(anno);
 
 // ─── Code block (top-right) ─────────────────────────────────────────
 
-let code_group = GroupLayer('code-block') ${ translate-x: 400; translate-y: 22; };
+let code_group = GroupLayer('code-block') #{ translate-x: 400; translate-y: 22; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -480,7 +480,7 @@ code.apply {
   text(0, 92)`card.drawTo(360, 180)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -494,9 +494,9 @@ code_group.append(code, kw);
 
 // ─── Title ──────────────────────────────────────────────────────────
 
-let title_group = GroupLayer('title-group') ${};
+let title_group = GroupLayer('title-group') #{};
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -510,16 +510,16 @@ title_group.append(title);
 
 // ─── Legend ──────────────────────────────────────────────────────────
 
-let legend_group = GroupLayer('legend-group') ${ translate-x: 400; translate-y: 300; };
+let legend_group = GroupLayer('legend-group') #{ translate-x: 400; translate-y: 300; };
 
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
-let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
-let leg_b = PathLayer('leg-b') ${ fill: Color('#f59e0b'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_b = PathLayer('leg-b') #{ fill: Color('#f59e0b'); stroke: none; };
 
 leg_o.apply { rect(0, 0, 8, 8); }
 leg_b.apply { rect(0, 14, 8, 8); }
@@ -551,7 +551,7 @@ legend_group.append(leg_o, leg_b, leg);
 <li><strong><code>.polarProject(cx, cy, angle, distance, anchor)</code></strong> — project along a polar vector with anchor alignment. We&#39;ll cover this in detail below.</li>
 </ul>
 <p>TextBlocks emit to TextLayers, which are the text counterpart to PathLayers. You define one with <code>define TextLayer(&#39;name&#39;) ${ styles }</code> and activate it with <code>layer(&#39;name&#39;).apply { ... }</code>:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) ${ <span class="pr">font-size</span>: <span class="num">12</span>; <span class="pr">fill</span>: <span class="str">#333</span>; }
+<pre><code class="hljs language-pathogen"><span class="kw">define</span> <span class="tp">TextLayer</span>(<span class="str">'labels'</span>) #{ <span class="pr">font-size</span>: <span class="num">12</span>; <span class="pr">fill</span>: <span class="str">#333</span>; }
 
 <span class="kw">layer</span>(<span class="str">'labels'</span>).<span class="kw">apply</span> {
   <span class="id">label</span>.<span class="id">drawTo</span>(<span class="num">50</span>, <span class="num">100</span>);
@@ -565,11 +565,11 @@ legend_group.append(leg_o, leg_b, leg);
   <span class="kw">text</span>(<span class="num">0</span>, <span class="num">44</span>)`MEM: 1.2G`
 };
 
-<span class="kw">let</span> <span class="id">styled</span> = <span class="id">info</span> &lt;&lt; ${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
+<span class="kw">let</span> <span class="id">styled</span> = <span class="id">info</span> &lt;&lt; #{ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 </code></pre><p>The power here is that <code>info</code> remains unstyled. You can merge different styles into the same TextBlock to produce different presentations — and the bounding box adapts to each one:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">mono_sm</span> = ${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">10</span>; };
-<span class="kw">let</span> <span class="id">mono_lg</span> = ${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">14</span>; };
-<span class="kw">let</span> <span class="id">sans</span>    = ${ <span class="pr">font-family</span>: <span class="id">sans-serif</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">mono_sm</span> = #{ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">10</span>; };
+<span class="kw">let</span> <span class="id">mono_lg</span> = #{ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">14</span>; };
+<span class="kw">let</span> <span class="id">sans</span>    = #{ <span class="pr">font-family</span>: <span class="id">sans-serif</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 
 <span class="kw">let</span> <span class="id">bb1</span> = (<span class="id">info</span> &lt;&lt; <span class="id">mono_sm</span>).<span class="id">boundingBox</span>();  <span class="cm">// compact</span>
 <span class="kw">let</span> <span class="id">bb2</span> = (<span class="id">info</span> &lt;&lt; <span class="id">mono_lg</span>).<span class="id">boundingBox</span>();  <span class="cm">// wider, taller</span>
@@ -582,10 +582,10 @@ legend_group.append(leg_o, leg_b, leg);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 300); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -605,28 +605,28 @@ let info = &amp;{
 
 // --- Three style variations ---
 
-let mono_sm = ${ font-family: monospace; font-size: 10; };
-let mono_lg = ${ font-family: monospace; font-size: 14; };
-let sans = ${ font-family: system-ui, sans-serif; font-size: 12; };
+let mono_sm = #{ font-family: monospace; font-size: 10; };
+let mono_lg = #{ font-family: monospace; font-size: 14; };
+let sans = #{ font-family: system-ui, sans-serif; font-size: 12; };
 
 // --- Shared annotation style for .intersects() checks ---
 
-let anno_styles = ${ font-family: monospace; font-size: 8; };
+let anno_styles = #{ font-family: monospace; font-size: 8; };
 
 // ─── Variant 1: mono 10px ────────────────────────────────────────
 
-let g1 = GroupLayer('variant1') ${ translate-x: 30; translate-y: 70; };
+let g1 = GroupLayer('variant1') #{ translate-x: 30; translate-y: 70; };
 
-let v1_text = TextLayer('v1-text') ${ font-family: monospace; font-size: 10; fill: Color('#22c55e'); };
+let v1_text = TextLayer('v1-text') #{ font-family: monospace; font-size: 10; fill: Color('#22c55e'); };
 v1_text.apply { (info &lt;&lt; mono_sm).drawTo(0, 0); }
 
 let styled1 = info &lt;&lt; mono_sm;
 let bb1 = styled1.boundingBox();
 
-let v1_bbox = PathLayer('v1-bbox') ${ fill: none; stroke: Color('#22c55e40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
+let v1_bbox = PathLayer('v1-bbox') #{ fill: none; stroke: Color('#22c55e40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
 v1_bbox.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
-let v1_label = TextLayer('v1-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
+let v1_label = TextLayer('v1-label') #{ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v1_label.apply { text(0, -10)`mono 10px` }
 
 g1.append(v1_text, v1_bbox, v1_label);
@@ -641,18 +641,18 @@ if (v1_label_proj.intersects(v1_bbox_rect)) { log("WARN: v1 label intersects bbo
 
 // ─── Variant 2: mono 14px ────────────────────────────────────────
 
-let g2 = GroupLayer('variant2') ${ translate-x: 210; translate-y: 70; };
+let g2 = GroupLayer('variant2') #{ translate-x: 210; translate-y: 70; };
 
-let v2_text = TextLayer('v2-text') ${ font-family: monospace; font-size: 14; fill: Color('#3b82f6'); };
+let v2_text = TextLayer('v2-text') #{ font-family: monospace; font-size: 14; fill: Color('#3b82f6'); };
 v2_text.apply { (info &lt;&lt; mono_lg).drawTo(0, 0); }
 
 let styled2 = info &lt;&lt; mono_lg;
 let bb2 = styled2.boundingBox();
 
-let v2_bbox = PathLayer('v2-bbox') ${ fill: none; stroke: Color('#3b82f640'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
+let v2_bbox = PathLayer('v2-bbox') #{ fill: none; stroke: Color('#3b82f640'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
 v2_bbox.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
-let v2_label = TextLayer('v2-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
+let v2_label = TextLayer('v2-label') #{ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v2_label.apply { text(0, -10)`mono 14px` }
 
 g2.append(v2_text, v2_bbox, v2_label);
@@ -667,18 +667,18 @@ if (v2_label_proj.intersects(v2_bbox_rect)) { log("WARN: v2 label intersects bbo
 
 // ─── Variant 3: sans-serif 12px ─────────────────────────────────
 
-let g3 = GroupLayer('variant3') ${ translate-x: 420; translate-y: 70; };
+let g3 = GroupLayer('variant3') #{ translate-x: 420; translate-y: 70; };
 
-let v3_text = TextLayer('v3-text') ${ font-family: system-ui, sans-serif; font-size: 12; fill: Color('#f59e0b'); };
+let v3_text = TextLayer('v3-text') #{ font-family: system-ui, sans-serif; font-size: 12; fill: Color('#f59e0b'); };
 v3_text.apply { (info &lt;&lt; sans).drawTo(0, 0); }
 
 let styled3 = info &lt;&lt; sans;
 let bb3 = styled3.boundingBox();
 
-let v3_bbox = PathLayer('v3-bbox') ${ fill: none; stroke: Color('#f59e0b40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
+let v3_bbox = PathLayer('v3-bbox') #{ fill: none; stroke: Color('#f59e0b40'); stroke-width: 0.75; stroke-dasharray: "3 2"; };
 v3_bbox.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
-let v3_label = TextLayer('v3-label') ${ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
+let v3_label = TextLayer('v3-label') #{ font-family: monospace; font-size: 8; fill: Color('#64748b'); text-anchor: start; };
 v3_label.apply { text(0, -10)`sans-serif 12px` }
 
 g3.append(v3_text, v3_bbox, v3_label);
@@ -693,9 +693,9 @@ if (v3_label_proj.intersects(v3_bbox_rect)) { log("WARN: v3 label intersects bbo
 
 // ─── Code block ─────────────────────────────────────────────────
 
-let g4 = GroupLayer('code-block') ${ translate-x: 30; translate-y: 190; };
+let g4 = GroupLayer('code-block') #{ translate-x: 30; translate-y: 190; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -708,7 +708,7 @@ code.apply {
   text(0, 44)`(info &lt;&lt; sans).drawTo(430, 100)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -719,7 +719,7 @@ g4.append(code);
 
 // --- Title (top-level) ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -731,7 +731,7 @@ title.apply {
 
 // --- Subtitle (top-level) ---
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -743,7 +743,7 @@ subtitle.apply {
 
 // --- Size annotations (top-level) ---
 
-let dims = TextLayer('dims') ${
+let dims = TextLayer('dims') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#475569');
@@ -760,7 +760,7 @@ dims.apply {
 <p>The dimension annotations at the bottom of each variant confirm what the code reports: same content, different measurements. A monospace 10px version is compact; monospace 14px is proportionally larger; sans-serif 12px has different character widths entirely. The <code>&lt;&lt;</code> operator and <code>.boundingBox()</code> handle all of this transparently.</p>
 <h2>Measuring Before You Place</h2>
 <p>The central insight of TextBlock is that you can measure text <em>before</em> deciding where to put it. The <a href="/docs#text-block-methods"><code>.boundingBox()</code></a> method returns an object with <code>x</code>, <code>y</code>, <code>width</code>, and <code>height</code> — the estimated bounding rectangle of all text elements in the block. Using the <code>&lt;&lt;</code> operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Hello World` } &lt;&lt; ${ <span class="pr">font-size</span>: <span class="num">14</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Hello World` } &lt;&lt; #{ <span class="pr">font-size</span>: <span class="num">14</span>; };
 <span class="kw">let</span> <span class="id">bb</span> = <span class="id">label</span>.<span class="id">boundingBox</span>();
 <span class="id">log</span>(<span class="id">bb</span>.<span class="id">width</span>);   <span class="cm">// estimated pixel width</span>
 <span class="id">log</span>(<span class="id">bb</span>.<span class="id">height</span>);  <span class="cm">// fontSize * 1.2 (line height)</span>
@@ -790,10 +790,10 @@ dims.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 360); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -809,33 +809,33 @@ let dim_above = 14;
 let dim_label_above = 6;
 let bracket_right = 16;
 let h_label_gap = 8;
-let anno_styles = ${ font-size: 8; font-family: monospace; };
+let anno_styles = #{ font-size: 8; font-family: monospace; };
 
 // ─── Row 1: font-size 10 ─────────────────────────────────────────
 
-let t1 = &amp;{ text(0, 10)`font-size: 10` } &lt;&lt; ${ font-size: 10; font-family: monospace; };
+let t1 = &amp;{ text(0, 10)`font-size: 10` } &lt;&lt; #{ font-size: 10; font-family: monospace; };
 let bb1 = t1.boundingBox();
 
-let g1 = GroupLayer('row-10') ${ translate-x: 60; translate-y: 100; };
+let g1 = GroupLayer('row-10') #{ translate-x: 60; translate-y: 100; };
 
-let t1_layer = TextLayer('t1') ${ font-family: monospace; font-size: 10; fill: Color('#e2e8f0'); };
+let t1_layer = TextLayer('t1') #{ font-family: monospace; font-size: 10; fill: Color('#e2e8f0'); };
 t1_layer.apply { t1.drawTo(0, 0); }
 
-let bb1_layer = PathLayer('bb1') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
+let bb1_layer = PathLayer('bb1') #{ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
 bb1_layer.apply { rect(bb1.x, bb1.y, bb1.width, bb1.height); }
 
 let wy1 = calc(bb1.y - dim_above);
-let wd1 = PathLayer('wd1') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
+let wd1 = PathLayer('wd1') #{ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
 wd1.apply { M 0 wy1 h bb1.width  M 0 calc(wy1 - 3) v 6  M bb1.width calc(wy1 - 3) v 6 }
 
-let wl1 = TextLayer('wl1') ${ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
+let wl1 = TextLayer('wl1') #{ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
 wl1.apply { text(calc(bb1.width / 2), calc(wy1 - dim_label_above))`w = ${round(bb1.width)}` }
 
 let hx1 = calc(bb1.width + bracket_right);
-let hd1 = PathLayer('hd1') ${ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
+let hd1 = PathLayer('hd1') #{ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
 hd1.apply { M hx1 bb1.y v bb1.height  M calc(hx1 - 3) bb1.y h 6  M calc(hx1 - 3) calc(bb1.y + bb1.height) h 6 }
 
-let hl1 = TextLayer('hl1') ${ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
+let hl1 = TextLayer('hl1') #{ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
 hl1.apply { text(calc(hx1 + h_label_gap), calc(bb1.y + bb1.height / 2 + 3))`h = ${round(bb1.height)}` }
 
 g1.append(t1_layer, bb1_layer, wd1, wl1, hd1, hl1);
@@ -848,29 +848,29 @@ if (hl1_proj.intersects({ x: calc(hx1 - 3), y: bb1.y, width: 6, height: bb1.heig
 
 // ─── Row 2: font-size 16 ─────────────────────────────────────────
 
-let t2 = &amp;{ text(0, 16)`font-size: 16` } &lt;&lt; ${ font-size: 16; font-family: monospace; };
+let t2 = &amp;{ text(0, 16)`font-size: 16` } &lt;&lt; #{ font-size: 16; font-family: monospace; };
 let bb2 = t2.boundingBox();
 
-let g2 = GroupLayer('row-16') ${ translate-x: 60; translate-y: 195; };
+let g2 = GroupLayer('row-16') #{ translate-x: 60; translate-y: 195; };
 
-let t2_layer = TextLayer('t2') ${ font-family: monospace; font-size: 16; fill: Color('#e2e8f0'); };
+let t2_layer = TextLayer('t2') #{ font-family: monospace; font-size: 16; fill: Color('#e2e8f0'); };
 t2_layer.apply { t2.drawTo(0, 0); }
 
-let bb2_layer = PathLayer('bb2') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
+let bb2_layer = PathLayer('bb2') #{ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
 bb2_layer.apply { rect(bb2.x, bb2.y, bb2.width, bb2.height); }
 
 let wy2 = calc(bb2.y - dim_above);
-let wd2 = PathLayer('wd2') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
+let wd2 = PathLayer('wd2') #{ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
 wd2.apply { M 0 wy2 h bb2.width  M 0 calc(wy2 - 3) v 6  M bb2.width calc(wy2 - 3) v 6 }
 
-let wl2 = TextLayer('wl2') ${ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
+let wl2 = TextLayer('wl2') #{ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
 wl2.apply { text(calc(bb2.width / 2), calc(wy2 - dim_label_above))`w = ${round(bb2.width * 10) / 10}` }
 
 let hx2 = calc(bb2.width + bracket_right);
-let hd2 = PathLayer('hd2') ${ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
+let hd2 = PathLayer('hd2') #{ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
 hd2.apply { M hx2 bb2.y v bb2.height  M calc(hx2 - 3) bb2.y h 6  M calc(hx2 - 3) calc(bb2.y + bb2.height) h 6 }
 
-let hl2 = TextLayer('hl2') ${ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
+let hl2 = TextLayer('hl2') #{ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
 hl2.apply { text(calc(hx2 + h_label_gap), calc(bb2.y + bb2.height / 2 + 3))`h = ${round(bb2.height * 10) / 10}` }
 
 g2.append(t2_layer, bb2_layer, wd2, wl2, hd2, hl2);
@@ -881,29 +881,29 @@ if (hl2_proj.intersects(t2_proj)) { log("WARN: row-16 h-label intersects text");
 
 // ─── Row 3: font-size 24 ─────────────────────────────────────────
 
-let t3 = &amp;{ text(0, 24)`font-size: 24` } &lt;&lt; ${ font-size: 24; font-family: monospace; };
+let t3 = &amp;{ text(0, 24)`font-size: 24` } &lt;&lt; #{ font-size: 24; font-family: monospace; };
 let bb3 = t3.boundingBox();
 
-let g3 = GroupLayer('row-24') ${ translate-x: 60; translate-y: 300; };
+let g3 = GroupLayer('row-24') #{ translate-x: 60; translate-y: 300; };
 
-let t3_layer = TextLayer('t3') ${ font-family: monospace; font-size: 24; fill: Color('#e2e8f0'); };
+let t3_layer = TextLayer('t3') #{ font-family: monospace; font-size: 24; fill: Color('#e2e8f0'); };
 t3_layer.apply { t3.drawTo(0, 0); }
 
-let bb3_layer = PathLayer('bb3') ${ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
+let bb3_layer = PathLayer('bb3') #{ fill: Color('#3b82f610'); stroke: Color('#3b82f6'); stroke-width: 1; };
 bb3_layer.apply { rect(bb3.x, bb3.y, bb3.width, bb3.height); }
 
 let wy3 = calc(bb3.y - dim_above);
-let wd3 = PathLayer('wd3') ${ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
+let wd3 = PathLayer('wd3') #{ stroke: Color('#f59e0b'); stroke-width: 0.75; fill: none; };
 wd3.apply { M 0 wy3 h bb3.width  M 0 calc(wy3 - 3) v 6  M bb3.width calc(wy3 - 3) v 6 }
 
-let wl3 = TextLayer('wl3') ${ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
+let wl3 = TextLayer('wl3') #{ font-family: monospace; font-size: 8; fill: Color('#f59e0b'); text-anchor: middle; };
 wl3.apply { text(calc(bb3.width / 2), calc(wy3 - dim_label_above))`w = ${round(bb3.width * 10) / 10}` }
 
 let hx3 = calc(bb3.width + bracket_right);
-let hd3 = PathLayer('hd3') ${ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
+let hd3 = PathLayer('hd3') #{ stroke: Color('#22c55e'); stroke-width: 0.75; fill: none; };
 hd3.apply { M hx3 bb3.y v bb3.height  M calc(hx3 - 3) bb3.y h 6  M calc(hx3 - 3) calc(bb3.y + bb3.height) h 6 }
 
-let hl3 = TextLayer('hl3') ${ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
+let hl3 = TextLayer('hl3') #{ font-family: monospace; font-size: 8; fill: Color('#22c55e'); text-anchor: start; };
 hl3.apply { text(calc(hx3 + h_label_gap), calc(bb3.y + bb3.height / 2 + 3))`h = ${round(bb3.height * 10) / 10}` }
 
 g3.append(t3_layer, bb3_layer, wd3, wl3, hd3, hl3);
@@ -914,9 +914,9 @@ if (hl3_proj.intersects(t3_proj)) { log("WARN: row-24 h-label intersects text");
 
 // ─── Code block (top-right) ──────────────────────────────────────
 
-let code_group = GroupLayer('code-group') ${ translate-x: 360; translate-y: 80; };
+let code_group = GroupLayer('code-group') #{ translate-x: 360; translate-y: 80; };
 
-let code = TextLayer('code') ${ font-family: monospace; font-size: 9; fill: Color('#94a3b8'); text-anchor: start; };
+let code = TextLayer('code') #{ font-family: monospace; font-size: 9; fill: Color('#94a3b8'); text-anchor: start; };
 code.apply {
   text(0, 0)`let label = &amp;{`
   text(12, 12)`text(0, 24) ...`
@@ -926,7 +926,7 @@ code.apply {
   text(0, 76)`// bb.height = fontSize * 1.2`
 }
 
-let kw = TextLayer('kw') ${ font-family: monospace; font-size: 9; fill: Color('#c084fc'); text-anchor: start; };
+let kw = TextLayer('kw') #{ font-family: monospace; font-size: 9; fill: Color('#c084fc'); text-anchor: start; };
 kw.apply {
   text(0, 0)`let`
   text(0, 44)`let`
@@ -936,10 +936,10 @@ code_group.append(code, kw);
 
 // ─── Title ───────────────────────────────────────────────────────
 
-let title = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 14; fill: Color('#e2e8f0'); text-anchor: start; };
+let title = TextLayer('title') #{ font-family: system-ui, sans-serif; font-size: 14; fill: Color('#e2e8f0'); text-anchor: start; };
 title.apply { text(30, 30)`Measure Before You Place` }
 
-let subtitle = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 9; fill: Color('#64748b'); text-anchor: start; };
+let subtitle = TextLayer('subtitle') #{ font-family: system-ui, sans-serif; font-size: 9; fill: Color('#64748b'); text-anchor: start; };
 subtitle.apply { text(30, 44)`.boundingBox() returns { x, y, width, height }` }
 </code>
   <img src="/blog/samples/post11/bbox-measurement.svg" alt="Bounding box measurement at font sizes 10, 16, and 24 — width and height scale with the text" loading="lazy">
@@ -947,7 +947,7 @@ subtitle.apply { text(30, 44)`.boundingBox() returns { x, y, width, height }` }
 <h2>Polar Projection with BBoxAnchor</h2>
 <p>Placing labels around a shape — node diagrams, compass roses, radial charts — is one of the most common annotation patterns in technical SVGs. The naive approach is to compute <code>x</code> and <code>y</code> offsets by hand, adjusting for text width and height at each position. A label to the right of a circle needs <code>x = centerX + radius + gap</code>; a label above needs <code>y = centerY - radius - textHeight</code>. Each direction requires different math, and every label with different content needs a different width offset. This is tedious, error-prone, and breaks the moment the text content or font size changes.</p>
 <p><a href="/docs#text-block-polar-projection"><code>.polarProject()</code></a> replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Node A` } &lt;&lt; ${ <span class="pr">font-size</span>: <span class="num">14</span>; };
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">label</span> = &amp;{ <span class="kw">text</span>(<span class="num">0</span>, <span class="num">14</span>)`Node A` } &lt;&lt; #{ <span class="pr">font-size</span>: <span class="num">14</span>; };
 
 <span class="cm">// Place 80px from center at 45 degrees, anchored at center-left</span>
 <span class="kw">let</span> <span class="id">placed</span> = <span class="id">label</span>.<span class="id">polarProject</span>(<span class="num">100</span>, <span class="num">100</span>, <span class="num">45deg</span>, <span class="num">80</span>, <span class="id">BBoxAnchor</span>.<span class="id">Left</span>);
@@ -965,12 +965,12 @@ BBoxAnchor.BottomLeft   BBoxAnchor.Bottom   BBoxAnchor.BottomRight
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 500, 500); }
 
 // --- Title (top-level) ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -982,7 +982,7 @@ title.apply {
 
 // --- Annotations (top-level) ---
 
-let anno = TextLayer('anno') ${
+let anno = TextLayer('anno') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -995,10 +995,10 @@ anno.apply {
 
 // ─── Compass group ── hexagon + center + guide + radials + dots + labels ───
 
-let compass = GroupLayer('compass') ${ translate-x: 250; translate-y: 250; };
+let compass = GroupLayer('compass') #{ translate-x: 250; translate-y: 250; };
 
 // Central hexagon (coordinates relative to group origin)
-let hex = PathLayer('hex') ${
+let hex = PathLayer('hex') #{
   fill: Color('#3b82f615');
   stroke: Color('#3b82f6');
   stroke-width: 2;
@@ -1006,14 +1006,14 @@ let hex = PathLayer('hex') ${
 hex.apply { polygon(0, 0, 80, 6); }
 
 // Center marker
-let center_dot = PathLayer('center-dot') ${
+let center_dot = PathLayer('center-dot') #{
   fill: Color('#22c55e');
   stroke: none;
 };
 center_dot.apply { circle(0, 0, 3); }
 
 // Guide circle
-let guide = PathLayer('guide') ${
+let guide = PathLayer('guide') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "3 4";
@@ -1022,7 +1022,7 @@ let guide = PathLayer('guide') ${
 guide.apply { circle(0, 0, 140); }
 
 // Radial lines from hex edge to guide circle
-let radials = PathLayer('radials') ${
+let radials = PathLayer('radials') #{
   stroke: Color('#475569');
   stroke-width: 0.5;
   fill: none;
@@ -1039,7 +1039,7 @@ radials.apply {
 }
 
 // Anchor dots ON the guide circle (r=140)
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   fill: Color('#f59e0b');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -1066,9 +1066,9 @@ let anchors = [
   BBoxAnchor.BottomRight,
 ];
 
-let label_styles = ${ font-family: monospace; font-size: 11; };
+let label_styles = #{ font-family: monospace; font-size: 11; };
 
-define TextLayer('labels') ${
+define TextLayer('labels') #{
   font-family: monospace;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -1107,9 +1107,9 @@ compass.append(hex, center_dot, guide, radials, dots, layer('labels'));
 
 // ─── Code block group ── code snippet at top-left ────────────────────
 
-let code_group = GroupLayer('code-block') ${ translate-x: 30; translate-y: 22; };
+let code_group = GroupLayer('code-block') #{ translate-x: 30; translate-y: 22; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -1124,7 +1124,7 @@ code.apply {
   text(0, 68)`)`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#64748b');
@@ -1196,12 +1196,12 @@ code_group.append(code, kw);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: Color('#334155');
   stroke-width: 1;
   fill: none;
@@ -1221,7 +1221,7 @@ let points = [
   { x: 210, y: 140, name: "theta" },
 ];
 
-let label_styles = ${ font-family: monospace; font-size: 9; };
+let label_styles = #{ font-family: monospace; font-size: 9; };
 let dot_r = 3.5;
 let label_dist = 10;
 
@@ -1241,9 +1241,9 @@ let try_anchors = [
 // LEFT PANEL — Naive: all labels offset to the right (shows collisions)
 // ═══════════════════════════════════════════════════════════════════
 
-let left = GroupLayer('left-panel') ${ translate-x: 10; translate-y: 0; };
+let left = GroupLayer('left-panel') #{ translate-x: 10; translate-y: 0; };
 
-let left_title = TextLayer('l-title') ${
+let left_title = TextLayer('l-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -1251,7 +1251,7 @@ let left_title = TextLayer('l-title') ${
 };
 left_title.apply { text(140, 42)`Naive Placement` }
 
-let left_sub = TextLayer('l-sub') ${
+let left_sub = TextLayer('l-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#ef4444');
@@ -1260,7 +1260,7 @@ let left_sub = TextLayer('l-sub') ${
 left_sub.apply { text(140, 54)`fixed offset — labels collide` }
 
 // Dots
-let l_dots = PathLayer('l-dots') ${
+let l_dots = PathLayer('l-dots') #{
   fill: Color('#3b82f6');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -1270,7 +1270,7 @@ l_dots.apply {
 }
 
 // Labels — all placed to the right (naive)
-let l_labels = TextLayer('l-labels') ${
+let l_labels = TextLayer('l-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -1297,7 +1297,7 @@ l_labels.apply {
 }
 
 // Collision markers — red boxes around overlapping labels
-let l_collision_boxes = PathLayer('l-collisions') ${
+let l_collision_boxes = PathLayer('l-collisions') #{
   fill: Color('#ef444410');
   stroke: Color('#ef4444');
   stroke-width: 1;
@@ -1333,9 +1333,9 @@ log("Naive placement: ", naive_collisions, " collisions detected");
 // RIGHT PANEL — Smart: .polarProject() tries 8 angles per label
 // ═══════════════════════════════════════════════════════════════════
 
-let right = GroupLayer('right-panel') ${ translate-x: 300; translate-y: 0; };
+let right = GroupLayer('right-panel') #{ translate-x: 300; translate-y: 0; };
 
-let right_title = TextLayer('r-title') ${
+let right_title = TextLayer('r-title') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: Color('#e2e8f0');
@@ -1343,7 +1343,7 @@ let right_title = TextLayer('r-title') ${
 };
 right_title.apply { text(140, 42)`Smart Placement` }
 
-let right_sub = TextLayer('r-sub') ${
+let right_sub = TextLayer('r-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#22c55e');
@@ -1352,7 +1352,7 @@ let right_sub = TextLayer('r-sub') ${
 right_sub.apply { text(140, 54)`polarProject tries 8 angles` }
 
 // Dots
-let r_dots = PathLayer('r-dots') ${
+let r_dots = PathLayer('r-dots') #{
   fill: Color('#3b82f6');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -1362,7 +1362,7 @@ r_dots.apply {
 }
 
 // Labels — smart placement using polarProject with collision avoidance
-let r_labels = TextLayer('r-labels') ${
+let r_labels = TextLayer('r-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#e2e8f0');
@@ -1372,7 +1372,7 @@ let smart_placed = [];
 let smart_bboxes = [];
 
 // Leader lines from dot to label anchor point
-let r_leaders = PathLayer('r-leaders') ${
+let r_leaders = PathLayer('r-leaders') #{
   stroke: Color('#47556950');
   stroke-width: 0.5;
   fill: none;
@@ -1422,7 +1422,7 @@ r_labels.apply {
 }
 
 // Draw green bboxes around smartly placed labels
-let r_ok_rects = PathLayer('r-ok') ${
+let r_ok_rects = PathLayer('r-ok') #{
   fill: Color('#22c55e08');
   stroke: Color('#22c55e');
   stroke-width: 0.75;
@@ -1468,7 +1468,7 @@ log("Smart placement: ", smart_collisions, " collisions (0 expected)");
 // Shared: Title + Code block
 // ═══════════════════════════════════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -1477,9 +1477,9 @@ let title = TextLayer('title') ${
 title.apply { text(300, 385)`Label Placement: Naive vs polarProject()` }
 
 // Code snippet
-let code_group = GroupLayer('code-block') ${ translate-x: 330; translate-y: 270; };
+let code_group = GroupLayer('code-block') #{ translate-x: 330; translate-y: 270; };
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -1496,7 +1496,7 @@ code.apply {
   text(0, 70)`}`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#c084fc');
@@ -1510,15 +1510,15 @@ kw.apply {
 code_group.append(code, kw);
 
 // Legend
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 7;
   fill: Color('#64748b');
   text-anchor: start;
 };
-let leg_red = PathLayer('leg-red') ${ fill: Color('#ef4444'); stroke: none; };
-let leg_green = PathLayer('leg-green') ${ fill: Color('#22c55e'); stroke: none; };
-let leg_blue = PathLayer('leg-blue') ${ fill: Color('#3b82f6'); stroke: none; };
+let leg_red = PathLayer('leg-red') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_green = PathLayer('leg-green') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_blue = PathLayer('leg-blue') #{ fill: Color('#3b82f6'); stroke: none; };
 
 leg_red.apply { rect(20, 370, 6, 6); }
 leg_green.apply { rect(20, 380, 6, 6); }
@@ -1556,12 +1556,12 @@ leg.apply {
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: Color('#334155');
   stroke-width: 1;
   fill: none;
@@ -1570,7 +1570,7 @@ divider.apply { M 300 40 v 320 }
 
 // --- Title (top-level, not in a panel) ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -1582,7 +1582,7 @@ title.apply {
 
 // --- Guide circles (top-level) ---
 
-let guides = PathLayer('guides') ${
+let guides = PathLayer('guides') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -1597,10 +1597,10 @@ guides.apply {
 // LEFT PANEL — Manual positioning with hardcoded magic-number offsets
 // ═══════════════════════════════════════════════════════════════════
 
-let left_panel = GroupLayer('left-panel') ${ translate-x: 0; translate-y: 0; };
+let left_panel = GroupLayer('left-panel') #{ translate-x: 0; translate-y: 0; };
 
 // Section heading
-let left_title = TextLayer('left-title') ${
+let left_title = TextLayer('left-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -1608,7 +1608,7 @@ let left_title = TextLayer('left-title') ${
 };
 left_title.apply { text(150, 50)`Manual Offsets` }
 
-let left_sub = TextLayer('left-sub') ${
+let left_sub = TextLayer('left-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#ef4444');
@@ -1617,7 +1617,7 @@ let left_sub = TextLayer('left-sub') ${
 left_sub.apply { text(150, 64)`fragile, breaks with font changes` }
 
 // Hex shape
-let hex_left = PathLayer('hex-l') ${
+let hex_left = PathLayer('hex-l') #{
   fill: Color('#3b82f615');
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
@@ -1625,7 +1625,7 @@ let hex_left = PathLayer('hex-l') ${
 hex_left.apply { polygon(150, 210, 55, 6); }
 
 // Manual labels — hardcoded positions with magic numbers
-let manual_labels = TextLayer('manual') ${
+let manual_labels = TextLayer('manual') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -1643,7 +1643,7 @@ manual_labels.apply {
 
 // Red annotations showing the hardcoded offset math
 // Positioned along radial lines, further out from labels to avoid overlap
-let offset_anno = TextLayer('offsets') ${
+let offset_anno = TextLayer('offsets') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#ef4444');
@@ -1662,8 +1662,8 @@ offset_anno.apply {
 
 // --- Collision checks for left panel ---
 
-let mono_styles = ${ font-family: monospace; font-size: 10; };
-let anno_styles = ${ font-family: monospace; font-size: 7; };
+let mono_styles = #{ font-family: monospace; font-size: 10; };
+let anno_styles = #{ font-family: monospace; font-size: 7; };
 
 // Top label vs top annotation
 let l_top_label = (&amp;{ text(0, 10)`Top` } &lt;&lt; mono_styles).project(133, 138);
@@ -1691,10 +1691,10 @@ left_panel.append(left_title, left_sub, hex_left, manual_labels, offset_anno);
 // RIGHT PANEL — polarProject with BBoxAnchor (automatic alignment)
 // ═══════════════════════════════════════════════════════════════════
 
-let right_panel = GroupLayer('right-panel') ${ translate-x: 0; translate-y: 0; };
+let right_panel = GroupLayer('right-panel') #{ translate-x: 0; translate-y: 0; };
 
 // Section heading
-let right_title = TextLayer('right-title') ${
+let right_title = TextLayer('right-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -1702,7 +1702,7 @@ let right_title = TextLayer('right-title') ${
 };
 right_title.apply { text(450, 50)`polarProject()` }
 
-let right_sub = TextLayer('right-sub') ${
+let right_sub = TextLayer('right-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#22c55e');
@@ -1711,7 +1711,7 @@ let right_sub = TextLayer('right-sub') ${
 right_sub.apply { text(450, 64)`adapts to any text or font size` }
 
 // Hex shape
-let hex_right = PathLayer('hex-r') ${
+let hex_right = PathLayer('hex-r') #{
   fill: Color('#3b82f615');
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
@@ -1719,14 +1719,14 @@ let hex_right = PathLayer('hex-r') ${
 hex_right.apply { polygon(450, 210, 55, 6); }
 
 // Polar-projected labels
-let styles = ${ font-family: monospace; font-size: 10; };
+let styles = #{ font-family: monospace; font-size: 10; };
 
 let top_label = &amp;{ text(0, 10)`Top` } &lt;&lt; styles;
 let right_label = &amp;{ text(0, 10)`Right` } &lt;&lt; styles;
 let bottom_label = &amp;{ text(0, 10)`Bottom` } &lt;&lt; styles;
 let left_label = &amp;{ text(0, 10)`Left` } &lt;&lt; styles;
 
-let polar_labels = TextLayer('polar') ${
+let polar_labels = TextLayer('polar') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -1747,7 +1747,7 @@ polar_labels.apply {
 
 // Green annotations showing BBoxAnchor names
 // Placed further along the radial than the labels, with offset to avoid overlap
-let anchor_anno = TextLayer('anchors') ${
+let anchor_anno = TextLayer('anchors') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#22c55e');
@@ -1798,7 +1798,7 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 };
 
 <span class="cm">// 2. Style — merge font and color properties</span>
-<span class="kw">let</span> <span class="id">styled</span> = <span class="id">label</span> &lt;&lt; ${ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
+<span class="kw">let</span> <span class="id">styled</span> = <span class="id">label</span> &lt;&lt; #{ <span class="pr">font-family</span>: <span class="id">monospace</span>; <span class="pr">font-size</span>: <span class="num">12</span>; };
 
 <span class="cm">// 3. Measure — get bounding box before placing</span>
 <span class="kw">let</span> <span class="id">bb</span> = <span class="id">styled</span>.<span class="id">boundingBox</span>();

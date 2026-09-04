@@ -306,29 +306,29 @@ let bg_grad = LinearGradient('bg-g', 0, 0, 0, 1) {|g|
   g.stop(1, Color('#12121f'));
 };
 
-let bg = PathLayer('bg') ${ fill: bg_grad; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bg_grad; stroke: none; };
 bg.apply { rect(0, 0, 700, 250); }
 
 // --- Stage boxes (5 pipeline stages) ---
 
-let box1 = PathLayer('box1') ${ fill: #1a3a3a; stroke: #2a9d8f; stroke-width: 1.5; };
+let box1 = PathLayer('box1') #{ fill: #1a3a3a; stroke: #2a9d8f; stroke-width: 1.5; };
 box1.apply { roundRect(15, 60, 115, 55, 6); }
 
-let box2 = PathLayer('box2') ${ fill: #2a1a4a; stroke: #7c3aed; stroke-width: 1.5; };
+let box2 = PathLayer('box2') #{ fill: #2a1a4a; stroke: #7c3aed; stroke-width: 1.5; };
 box2.apply { roundRect(160, 60, 115, 55, 6); }
 
-let box3 = PathLayer('box3') ${ fill: #4a1a2a; stroke: #f72585; stroke-width: 1.5; };
+let box3 = PathLayer('box3') #{ fill: #4a1a2a; stroke: #f72585; stroke-width: 1.5; };
 box3.apply { roundRect(305, 60, 115, 55, 6); }
 
-let box4 = PathLayer('box4') ${ fill: #3a3a1a; stroke: #e9c46a; stroke-width: 1.5; };
+let box4 = PathLayer('box4') #{ fill: #3a3a1a; stroke: #e9c46a; stroke-width: 1.5; };
 box4.apply { roundRect(450, 60, 115, 55, 6); }
 
-let box5 = PathLayer('box5') ${ fill: #1a2a4a; stroke: #4361ee; stroke-width: 1.5; };
+let box5 = PathLayer('box5') #{ fill: #1a2a4a; stroke: #4361ee; stroke-width: 1.5; };
 box5.apply { roundRect(595, 60, 90, 55, 6); }
 
 // --- Arrow lines ---
 
-let arrows = PathLayer('arrows') ${ fill: none; stroke: #555; stroke-width: 1.5; };
+let arrows = PathLayer('arrows') #{ fill: none; stroke: #555; stroke-width: 1.5; };
 arrows.apply {
   M 130 87 L 157 87
   M 275 87 L 302 87
@@ -338,7 +338,7 @@ arrows.apply {
 
 // --- Arrow heads ---
 
-let heads = PathLayer('heads') ${ fill: #555; stroke: none; };
+let heads = PathLayer('heads') #{ fill: #555; stroke: none; };
 heads.apply {
   M 155 82 L 160 87 L 155 92 Z
   M 300 82 L 305 87 L 300 92 Z
@@ -348,7 +348,7 @@ heads.apply {
 
 // --- Box labels ---
 
-let box_labels = TextLayer('box-labels') ${
+let box_labels = TextLayer('box-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #eee;
@@ -368,7 +368,7 @@ box_labels.apply {
 
 // --- Detail labels below each box ---
 
-let details = TextLayer('details') ${
+let details = TextLayer('details') #{
   font-family: monospace;
   font-size: 7;
   fill: #666;
@@ -394,7 +394,7 @@ details.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #888;
@@ -404,7 +404,7 @@ title.apply {
   text(350, 200)`The Gradient Compilation Pipeline`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -416,7 +416,7 @@ subtitle.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, details, title, subtitle);
 </code>
   <img src="/blog/samples/post5/pipeline-flow.svg" alt="Five stages: source, compiler, GPU renderer, SVG output, blog embed" loading="lazy">
@@ -435,7 +435,7 @@ scene.append(bg, box1, box2, box3, box4, box5, arrows, heads, box_labels, detail
 </ol>
 <h2>GroupLayer</h2>
 <p>The demos in this series use <code>GroupLayer</code> extensively for scene composition. <code>GroupLayer</code> maps to SVG&#39;s <code>&lt;g&gt;</code> element — it groups child layers into a logical unit that can be positioned, styled, and nested.</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">card</span> = <span class="tp">GroupLayer</span>(<span class="str">'card-1'</span>) ${
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">card</span> = <span class="tp">GroupLayer</span>(<span class="str">'card-1'</span>) #{
   <span class="pr">translate-x</span>: <span class="num">20</span>;
   <span class="pr">translate-y</span>: <span class="num">25</span>;
 };
@@ -492,20 +492,20 @@ topo_fill.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 600, 320); }
 
 // --- Card 1: Linear (left) ---
 
-let card1 = GroupLayer('card-1') ${
+let card1 = GroupLayer('card-1') #{
   translate-x: 20;
   translate-y: 25;
 };
 
-let c1_fill = PathLayer('c1-fill') ${ fill: warm; stroke: #444; stroke-width: 1; };
+let c1_fill = PathLayer('c1-fill') #{ fill: warm; stroke: #444; stroke-width: 1; };
 c1_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
-let c1_label = TextLayer('c1-label') ${
+let c1_label = TextLayer('c1-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -514,7 +514,7 @@ let c1_label = TextLayer('c1-label') ${
 };
 c1_label.apply { text(85, 160)`LinearGradient` }
 
-let c1_tag = TextLayer('c1-tag') ${
+let c1_tag = TextLayer('c1-tag') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -526,15 +526,15 @@ card1.append(c1_fill, c1_label, c1_tag);
 
 // --- Card 2: Radial (center) ---
 
-let card2 = GroupLayer('card-2') ${
+let card2 = GroupLayer('card-2') #{
   translate-x: 215;
   translate-y: 25;
 };
 
-let c2_fill = PathLayer('c2-fill') ${ fill: cool; stroke: #444; stroke-width: 1; };
+let c2_fill = PathLayer('c2-fill') #{ fill: cool; stroke: #444; stroke-width: 1; };
 c2_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
-let c2_label = TextLayer('c2-label') ${
+let c2_label = TextLayer('c2-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -543,7 +543,7 @@ let c2_label = TextLayer('c2-label') ${
 };
 c2_label.apply { text(85, 160)`RadialGradient` }
 
-let c2_tag = TextLayer('c2-tag') ${
+let c2_tag = TextLayer('c2-tag') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -555,15 +555,15 @@ card2.append(c2_fill, c2_label, c2_tag);
 
 // --- Card 3: Topo (right) ---
 
-let card3 = GroupLayer('card-3') ${
+let card3 = GroupLayer('card-3') #{
   translate-x: 410;
   translate-y: 25;
 };
 
-let c3_fill = PathLayer('c3-fill') ${ fill: topo_fill; stroke: #444; stroke-width: 1; };
+let c3_fill = PathLayer('c3-fill') #{ fill: topo_fill; stroke: #444; stroke-width: 1; };
 c3_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
-let c3_label = TextLayer('c3-label') ${
+let c3_label = TextLayer('c3-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -572,7 +572,7 @@ let c3_label = TextLayer('c3-label') ${
 };
 c3_label.apply { text(85, 160)`TopoGradient` }
 
-let c3_tag = TextLayer('c3-tag') ${
+let c3_tag = TextLayer('c3-tag') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -584,7 +584,7 @@ card3.append(c3_fill, c3_label, c3_tag);
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -594,7 +594,7 @@ title.apply {
   text(300, 265)`GroupLayer — Card Layout with translate`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -606,7 +606,7 @@ subtitle.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, card1, card2, card3, title, subtitle);
 </code>
   <img src="/blog/samples/post5/grouplayer-cards.svg" alt="Three cards positioned with GroupLayer translate — mixing native and GPU gradients" loading="lazy">
@@ -726,32 +726,32 @@ g_topo.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 580, 400); }
 
 // --- Panels (2 rows × 3 columns) ---
 
-let p1 = PathLayer('p-lin') ${ fill: g_lin; stroke: #444; stroke-width: 1; };
+let p1 = PathLayer('p-lin') #{ fill: g_lin; stroke: #444; stroke-width: 1; };
 p1.apply { roundRect(20, 20, 160, 120, 6); }
 
-let p2 = PathLayer('p-rad') ${ fill: g_rad; stroke: #444; stroke-width: 1; };
+let p2 = PathLayer('p-rad') #{ fill: g_rad; stroke: #444; stroke-width: 1; };
 p2.apply { roundRect(210, 20, 160, 120, 6); }
 
-let p3 = PathLayer('p-con') ${ fill: g_con; stroke: #444; stroke-width: 1; };
+let p3 = PathLayer('p-con') #{ fill: g_con; stroke: #444; stroke-width: 1; };
 p3.apply { roundRect(400, 20, 160, 120, 6); }
 
-let p4 = PathLayer('p-mesh') ${ fill: g_mesh; stroke: #444; stroke-width: 1; };
+let p4 = PathLayer('p-mesh') #{ fill: g_mesh; stroke: #444; stroke-width: 1; };
 p4.apply { roundRect(20, 210, 160, 120, 6); }
 
-let p5 = PathLayer('p-free') ${ fill: g_free; stroke: #444; stroke-width: 1; };
+let p5 = PathLayer('p-free') #{ fill: g_free; stroke: #444; stroke-width: 1; };
 p5.apply { roundRect(210, 210, 160, 120, 6); }
 
-let p6 = PathLayer('p-topo') ${ fill: g_topo; stroke: #444; stroke-width: 1; };
+let p6 = PathLayer('p-topo') #{ fill: g_topo; stroke: #444; stroke-width: 1; };
 p6.apply { roundRect(400, 210, 160, 120, 6); }
 
 // --- Labels ---
 
-let names = TextLayer('names') ${
+let names = TextLayer('names') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -767,7 +767,7 @@ names.apply {
   text(480, 345)`Topo`
 }
 
-let tags = TextLayer('tags') ${
+let tags = TextLayer('tags') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -784,7 +784,7 @@ tags.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #999;
@@ -796,7 +796,7 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title);
 </code>
   <img src="/blog/samples/post5/gradient-gallery.svg" alt="The complete Pathogen gradient system — six types, one language" loading="lazy">

@@ -6,7 +6,7 @@
 define ViewBox(0, 0, 400, 260);
 
 fn ring(name, r, seed) {
-  let g = PathLayer(name) ${ stroke: oklch(0.6 0.11 280); stroke-width: 1; fill: none; opacity: 0.65; };
+  let g = PathLayer(name) #{ stroke: oklch(0.6 0.11 280); stroke-width: 1; fill: none; opacity: 0.65; };
   g.apply {
     let r0 = calc(r * (1 + hash11(0, seed) * 0.07));
     M calc(200 + r0) 130

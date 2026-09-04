@@ -11,12 +11,12 @@ let pent = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 520, 340); }
 
 // --- Divider ---
 
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: Color('#334155');
   stroke-width: 1;
   stroke-dasharray: "6 4";
@@ -28,7 +28,7 @@ divider.apply {
 
 // --- Manual approach (left) ---
 
-let manual_shapes = PathLayer('manual-shapes') ${
+let manual_shapes = PathLayer('manual-shapes') #{
   fill: Color('#f59e0b20');
   stroke: Color('#f59e0b');
   stroke-width: 1.5;
@@ -52,7 +52,7 @@ manual_shapes.apply {
 }
 
 // Cursor markers for manual approach
-let cursors = PathLayer('cursors') ${
+let cursors = PathLayer('cursors') #{
   stroke: Color('#22c55e');
   stroke-width: 1;
   fill: none;
@@ -69,7 +69,7 @@ cursors.apply {
 
 // --- drawTo approach (right) ---
 
-let drawto_shapes = PathLayer('drawto-shapes') ${
+let drawto_shapes = PathLayer('drawto-shapes') #{
   fill: Color('#8b5cf620');
   stroke: Color('#8b5cf6');
   stroke-width: 1.5;
@@ -87,7 +87,7 @@ drawto_shapes.apply {
 
 // --- Code annotations ---
 
-let code_manual = TextLayer('code-manual') ${
+let code_manual = TextLayer('code-manual') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -100,7 +100,7 @@ code_manual.apply {
   text(45, 293)`pent.draw()`
 }
 
-let code_drawto = TextLayer('code-drawto') ${
+let code_drawto = TextLayer('code-drawto') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -113,7 +113,7 @@ code_drawto.apply {
 
 // --- Highlight keywords ---
 
-let kw_manual = TextLayer('kw-manual') ${
+let kw_manual = TextLayer('kw-manual') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#f59e0b');
@@ -124,7 +124,7 @@ kw_manual.apply {
   text(45, 280)`M`
 }
 
-let kw_drawto = TextLayer('kw-drawto') ${
+let kw_drawto = TextLayer('kw-drawto') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#8b5cf6');
@@ -137,7 +137,7 @@ kw_drawto.apply {
 
 // --- Step counts ---
 
-let steps = TextLayer('steps') ${
+let steps = TextLayer('steps') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -150,7 +150,7 @@ steps.apply {
 
 // --- Section headers ---
 
-let headers = TextLayer('headers') ${
+let headers = TextLayer('headers') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -163,7 +163,7 @@ headers.apply {
 
 // --- Section badges ---
 
-let badge_manual = PathLayer('badge-manual') ${
+let badge_manual = PathLayer('badge-manual') #{
   fill: Color('#f59e0b18');
   stroke: Color('#f59e0b');
   stroke-width: 0.5;
@@ -172,7 +172,7 @@ badge_manual.apply {
   roundRect(55, 50, 150, 22, 4);
 }
 
-let badge_drawto = PathLayer('badge-drawto') ${
+let badge_drawto = PathLayer('badge-drawto') #{
   fill: Color('#8b5cf618');
   stroke: Color('#8b5cf6');
   stroke-width: 0.5;
@@ -183,7 +183,7 @@ badge_drawto.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');

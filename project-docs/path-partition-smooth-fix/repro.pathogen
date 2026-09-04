@@ -8,7 +8,7 @@
 // circles. After the fix, every circle should sit on the red dashed curve.
 
 define ViewBox(0, 0, 8000, 8000);
-define default PathLayer('main-path-layer') ${
+define default PathLayer('main-path-layer') #{
   fill: #bbb;
   stroke: #222;
   stroke-width: 1;
@@ -23,7 +23,7 @@ let primaryPath2 = @{
   v 400
 };
 
-let primaryPathLayer = PathLayer('primary') ${
+let primaryPathLayer = PathLayer('primary') #{
   stroke: #ed0000;
   stroke-width: 8;
   stroke-linecap: round;
@@ -37,7 +37,7 @@ primaryPathLayer.apply {
 
 let primaryPathPoints = projection.partition(400);
 
-let offsetPointsLayer = PathLayer('offset-points') ${
+let offsetPointsLayer = PathLayer('offset-points') #{
   stroke: #00000044;
   fill: #00000022;
   stroke-width: 1;

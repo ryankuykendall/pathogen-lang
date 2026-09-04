@@ -325,7 +325,7 @@ and the marker kind is compared up to three times per marker:</p>
 <p><mini-workspace code-open caption="Two rows of markers drawn by an if / else if chain. Every branch repeats the comparison against kind, and a reader has to check each one to be sure they all compare the same thing.">
   <code>define ViewBox(0, 0, 320, 150);
 
-define default PathLayer('marks') ${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -378,7 +378,7 @@ members read as a list:</p>
 <p><mini-workspace code-open caption="The same markers, dispatched by switch. One case each for Dot, Ring, and Box; Spark names no case and falls to default. The render is identical to the chain above.">
   <code>define ViewBox(0, 0, 320, 150);
 
-define default PathLayer('marks') ${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -459,7 +459,7 @@ so a quadrant test is one line per quadrant:</p>
 <p><mini-workspace code-open caption="Twenty-four spokes. Each spoke's length comes from a switch over its heading with half-open angle ranges, so 90deg belongs to exactly one quadrant. The dot at each tip is sized by a second switch over the spoke index, mixing an inclusive range, a half-open one, and two open-ended ones.">
   <code>define ViewBox(0, 0, 200, 200);
 
-define default PathLayer('marks') ${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -526,7 +526,7 @@ down:</p>
 <p><mini-workspace code-open caption="Five values in one array: three Points and two plain arrays. Points above the diagonal get a ring, points on or below it a box, and the arrays dispatch on their length. Nothing here compares with ==; every case is a shape test.">
   <code>define ViewBox(0, 0, 200, 200);
 
-define default PathLayer('marks') ${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -603,7 +603,7 @@ arguments:</p>
 <p><mini-workspace code-open caption="The size and the vertical lift of each marker are switch expressions dropped into a let; the shape itself is a switch statement. The underline's right end is a switch inside calc() in a path argument, so the box gets a wider bar without a separate branch.">
   <code>define ViewBox(0, 0, 320, 110);
 
-define default PathLayer('marks') ${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -675,7 +675,7 @@ geometry beside it come from the same value with the same ranges:</p>
 <p><mini-workspace code-open caption="Four scores, shown in the labels. Inside each text body a switch picks the tspan word; outside it a switch expression picks the bar width. The two switches share the 40 and 75 boundaries, so the word and the bar can never disagree.">
   <code>define ViewBox(0, 0, 240, 140);
 
-define default PathLayer('marks') ${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;
@@ -683,7 +683,7 @@ define default PathLayer('marks') ${
 
 // Inside a text body the case bodies hold text, so a label and its bar
 // come from the same score with the same ranges.
-define TextLayer('labels') ${
+define TextLayer('labels') #{
   font-size: 14;
   font-family: monospace;
   fill: #8a93a6;

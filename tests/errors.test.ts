@@ -89,14 +89,14 @@ describe('Parse errors', () => {
       // The old regex silently dropped a `;`-less last declaration; it is now
       // a hard compile error with a position.
       expect(() =>
-        compile("define PathLayer('a') ${ fill: none; stroke-width: 3 }\nlayer('a').apply { M 0 0 L 10 10 }"),
+        compile("define PathLayer('a') #{ fill: none; stroke-width: 3 }\nlayer('a').apply { M 0 0 L 10 10 }"),
       ).toThrow(/Missing ';'/);
     });
 
     it('style declaration missing its colon', () => {
-      expect(() =>
-        compile("define PathLayer('a') ${ fill none; }\nlayer('a').apply { M 0 0 L 10 10 }"),
-      ).toThrow(/Missing ':'/);
+      expect(() => compile("define PathLayer('a') #{ fill none; }\nlayer('a').apply { M 0 0 L 10 10 }")).toThrow(
+        /Missing ':'/,
+      );
     });
   });
 
@@ -310,9 +310,7 @@ describe('Array errors', () => {
   });
 
   it('filter without a block or worker throws', () => {
-    expect(() => compilePath('let r = [1].filter();')).toThrow(
-      /filter\(\) requires a trailing block or a << worker/i,
-    );
+    expect(() => compilePath('let r = [1].filter();')).toThrow(/filter\(\) requires a trailing block or a << worker/i);
   });
 
   it('filter with an argument besides the callback throws', () => {
@@ -328,9 +326,7 @@ describe('Array errors', () => {
   });
 
   it('unknown array property still throws with method hint', () => {
-    expect(() => compilePath('let list = [1]; M list.middle 0')).toThrow(
-      /Property 'middle' does not exist on array/i,
-    );
+    expect(() => compilePath('let list = [1]; M list.middle 0')).toThrow(/Property 'middle' does not exist on array/i);
   });
 
   it('mutation during iteration reports the exact message with the slice hint', () => {
@@ -581,11 +577,11 @@ describe('Edge cases', () => {
 
   describe('style block errors', () => {
     it('throws when using << with non-style-block left operand', () => {
-      expect(() => compile('let x = 5 << \${ stroke: red; };')).toThrow();
+      expect(() => compile('let x = 5 << #{ stroke: red; };')).toThrow();
     });
 
     it('throws when using << with non-style-block right operand', () => {
-      expect(() => compile('let s = \${ stroke: red; }; let x = s << 5;')).toThrow();
+      expect(() => compile('let s = #{ stroke: red; }; let x = s << 5;')).toThrow();
     });
 
     it('throws when layer definition style is not a style block', () => {
@@ -601,7 +597,7 @@ describe('Edge cases', () => {
     it('throws when accessing non-existent property on style block', () => {
       expect(() =>
         compile(`
-        let s = \${ stroke: red; };
+        let s = #{ stroke: red; };
         let x = s.nonExistent;
       `),
       ).toThrow();
@@ -631,7 +627,9 @@ describe('Method call error locations', () => {
   });
 
   it('unknown Point method includes line and column', () => {
-    expect(() => compilePath('let pt = Point(1, 2);\npt.foo();')).toThrow(/^Line 2, col 1:.*Unknown Point method: foo$/);
+    expect(() => compilePath('let pt = Point(1, 2);\npt.foo();')).toThrow(
+      /^Line 2, col 1:.*Unknown Point method: foo$/,
+    );
   });
 
   it('unknown string method includes line and column', () => {
@@ -658,7 +656,7 @@ describe('Void function calls', () => {
 
   it('void function in layer apply block does not throw', () => {
     const result = compile(`
-      define PathLayer('main') \${ stroke: black; }
+      define PathLayer('main') #{ stroke: black; }
       fn doNothing() { let x = 1; }
       layer('main').apply {
         doNothing();
@@ -713,28 +711,38 @@ let x = arr['oops'];`;
     });
 
     it('throws on get() out of bounds', () => {
-      expect(() => compile('let g = Grid(2, 3, {}); g.get(5, 0);')).toThrow(/Grid\.get\(5, 0\) out of bounds for 2×3 grid/);
+      expect(() => compile('let g = Grid(2, 3, {}); g.get(5, 0);')).toThrow(
+        /Grid\.get\(5, 0\) out of bounds for 2×3 grid/,
+      );
     });
 
     it('throws on set() out of bounds', () => {
-      expect(() => compile('let g = Grid(2, 3, {}); g.set(0, 10, 1);')).toThrow(/Grid\.set\(0, 10\) out of bounds for 2×3 grid/);
+      expect(() => compile('let g = Grid(2, 3, {}); g.set(0, 10, 1);')).toThrow(
+        /Grid\.set\(0, 10\) out of bounds for 2×3 grid/,
+      );
     });
 
     it('throws on invalid outOfBounds option', () => {
-      expect(() => compile("let g = Grid(2, 2, { outOfBounds: 'bounce' });")).toThrow(/outOfBounds must be 'clamp', 'wrap', or 'null'/);
+      expect(() => compile("let g = Grid(2, 2, { outOfBounds: 'bounce' });")).toThrow(
+        /outOfBounds must be 'clamp', 'wrap', or 'null'/,
+      );
     });
 
     it('throws on invalid interpolation option', () => {
-      expect(() => compile("let g = Grid(2, 2, { interpolation: 'cubic' });")).toThrow(/interpolation must be 'nearest' or 'bilinear'/);
+      expect(() => compile("let g = Grid(2, 2, { interpolation: 'cubic' });")).toThrow(
+        /interpolation must be 'nearest' or 'bilinear'/,
+      );
     });
 
     it('throws on sampleBilinear with non-numeric, non-Point cells', () => {
-      expect(() => compile(`
+      expect(() =>
+        compile(`
         let g = Grid(2, 2, { xDim: 10, yDim: 10 }) {|grid|
           grid.set(0, 0, 'a'); grid.set(0, 1, 'b'); grid.set(1, 0, 'c'); grid.set(1, 1, 'd');
         };
         g.sampleBilinear(10, 10);
-      `)).toThrow(/sampleBilinear\(\) requires cells to be numbers or Points/);
+      `),
+      ).toThrow(/sampleBilinear\(\) requires cells to be numbers or Points/);
     });
   });
 });
@@ -754,9 +762,7 @@ describe('break and continue placement errors', () => {
   });
 
   it('errors on break in a fn body even when the fn is defined inside a loop', () => {
-    expect(() => compile('for (i in 0..5) { fn f() { break; } }')).toThrow(
-      /'break' is only valid inside a for loop/,
-    );
+    expect(() => compile('for (i in 0..5) { fn f() { break; } }')).toThrow(/'break' is only valid inside a for loop/);
   });
 
   it('errors on continue in a lambda body inside a loop', () => {
@@ -766,9 +772,9 @@ describe('break and continue placement errors', () => {
   });
 
   it('errors on break inside an apply block inside a loop (apply is a boundary)', () => {
-    expect(() =>
-      compile(`let gl = PathLayer('g');\nfor (i in 0..5) { gl.apply { break; } }`),
-    ).toThrow(/'break' is only valid inside a for loop/);
+    expect(() => compile(`let gl = PathLayer('g');\nfor (i in 0..5) { gl.apply { break; } }`)).toThrow(
+      /'break' is only valid inside a for loop/,
+    );
   });
 
   it('errors on continue inside a path block inside a loop', () => {
@@ -778,9 +784,9 @@ describe('break and continue placement errors', () => {
   });
 
   it('errors on break in a Grid callback inside a loop', () => {
-    expect(() =>
-      compile('let g = Grid(2, 2);\nfor (i in 0..2) { g.fill {|x, y| break; }; }'),
-    ).toThrow(/'break' is only valid inside a for loop/);
+    expect(() => compile('let g = Grid(2, 2);\nfor (i in 0..2) { g.fill {|x, y| break; }; }')).toThrow(
+      /'break' is only valid inside a for loop/,
+    );
   });
 
   it('errors on break inside a switch case with no enclosing loop (with line/column)', () => {
@@ -876,5 +882,31 @@ describe('reserved unit-suffix names: pi, deg, rad (binding coverage matrix)', (
   it('Angle member properties .pi/.deg/.rad stay legal (member position, not identifiers)', () => {
     const result = compile('let a = 90deg;\nM 0 0\nL calc(a.pi * 100) calc(a.deg)');
     expect(result.layers[0].data).toBe('M 0 0 L 50 90');
+  });
+});
+
+describe('legacy style-block opener', () => {
+  it('compile() names the fix instead of a generic parse error', () => {
+    expect(() => compile('let s = ${ fill: red; };')).toThrow(
+      "Parse error at line 1, column 9: Style blocks open with '#{ … }' — '${ … }' is only template interpolation now. Change this '${' to '#{'",
+    );
+  });
+
+  it('is reported by compile() for the constructor form and ahead of an unrelated earlier error (editor parity)', () => {
+    expect(() => compile("let pl = PathLayer('outline') ${ stroke: red; };")).toThrow(
+      /column 31: Style blocks open with '#\{ … \}'/,
+    );
+    expect(() => compile('let x = 10\nM 0 0\nL 10 10\nlet s = ${ fill: red; };')).toThrow(
+      /line 4, column 9: Style blocks open with/,
+    );
+  });
+
+  it('a bare # is a parse error, not a swallowed path argument', () => {
+    expect(() => compile('M 0 0 #\nL 10 10')).toThrow(/Parse error/);
+  });
+
+  it('a style block right after a path command line still parses', () => {
+    const result = compile('M 0 0 L 10 10\nlet s = #{ fill: red; };\nlet c = #ff0000;\nL 20 20');
+    expect(result.layers[0].data).toBe('M 0 0 L 10 10 L 20 20');
   });
 });

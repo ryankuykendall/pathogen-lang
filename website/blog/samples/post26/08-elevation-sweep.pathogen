@@ -2,7 +2,7 @@ define ViewBox(0, 0, 720, 240);
 // ElevationShadowFilter — one knob, six elevations.
 // 0 = flat. 2 = resting. 4 = card. 8 = lifted. 16 = floating. 24 = max.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -35,32 +35,32 @@ let f24 = ElevationShadowFilter() {|f|
   f.color = oklch(20% 0.04 280);
 };
 
-let c0 = PathLayer('c0') ${
+let c0 = PathLayer('c0') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f0;
 };
-let c2 = PathLayer('c2') ${
+let c2 = PathLayer('c2') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f2;
 };
-let c4 = PathLayer('c4') ${
+let c4 = PathLayer('c4') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f4;
 };
-let c8 = PathLayer('c8') ${
+let c8 = PathLayer('c8') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f8;
 };
-let c16 = PathLayer('c16') ${
+let c16 = PathLayer('c16') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f16;
 };
-let c24 = PathLayer('c24') ${
+let c24 = PathLayer('c24') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f24;
@@ -109,7 +109,7 @@ c24.apply {
       8);
 }
 
-let l0 = TextLayer('l0') ${
+let l0 = TextLayer('l0') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -120,7 +120,7 @@ l0.apply {
   text(62, 200)`elevation = 0`;
 }
 
-let l2t = TextLayer('l2') ${
+let l2t = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -131,7 +131,7 @@ l2t.apply {
   text(177, 200)`elevation = 2`;
 }
 
-let l4t = TextLayer('l4') ${
+let l4t = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -142,7 +142,7 @@ l4t.apply {
   text(292, 200)`elevation = 4`;
 }
 
-let l8t = TextLayer('l8') ${
+let l8t = TextLayer('l8') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -153,7 +153,7 @@ l8t.apply {
   text(407, 200)`elevation = 8`;
 }
 
-let l16 = TextLayer('l16') ${
+let l16 = TextLayer('l16') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -164,7 +164,7 @@ l16.apply {
   text(522, 200)`elevation = 16`;
 }
 
-let l24 = TextLayer('l24') ${
+let l24 = TextLayer('l24') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;

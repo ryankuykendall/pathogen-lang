@@ -42,20 +42,20 @@ deformed.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #111118; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111118; stroke: none; };
 bg.apply { rect(0, 0, 500, 400); }
 
 // --- Mesh fills ---
 
-let left = PathLayer('left') ${ fill: uniform; stroke: #333; stroke-width: 1; };
+let left = PathLayer('left') #{ fill: uniform; stroke: #333; stroke-width: 1; };
 left.apply { roundRect(30, 50, 200, 280, 6); }
 
-let right = PathLayer('right') ${ fill: deformed; stroke: #333; stroke-width: 1; };
+let right = PathLayer('right') #{ fill: deformed; stroke: #333; stroke-width: 1; };
 right.apply { roundRect(270, 50, 200, 280, 6); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #ddd;
@@ -67,7 +67,7 @@ labels.apply {
   text(370, 36)`Deformed Grid`
 }
 
-let desc = TextLayer('desc') ${
+let desc = TextLayer('desc') #{
   font-family: monospace;
   font-size: 9;
   fill: #666;
@@ -78,7 +78,7 @@ desc.apply {
   text(370, 348)`same colors + .translate()`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -90,11 +90,11 @@ title.apply {
 
 // --- Scene ---
 
-let left_group = GroupLayer('left-group') ${};
+let left_group = GroupLayer('left-group') #{};
 left_group.append(left);
 
-let right_group = GroupLayer('right-group') ${};
+let right_group = GroupLayer('right-group') #{};
 right_group.append(right);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left_group, right_group, labels, desc, title);

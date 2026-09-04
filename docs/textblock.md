@@ -11,7 +11,7 @@ TextBlock parallels PathBlock: both follow the pattern **compose -> measure -> p
 let label = &{
   text(0, 14)`Title`
   text(0, 30)`Subtitle`
-} << ${ font-size: 14; fill: #333; };
+} << #{ font-size: 14; fill: #333; };
 
 // Measure before placing
 let bb = label.boundingBox();
@@ -20,7 +20,7 @@ let bb = label.boundingBox();
 let placed = label.project(50, 100);
 
 // Draw to a TextLayer
-define TextLayer('labels') ${}
+define TextLayer('labels') #{}
 layer('labels').apply {
   placed.draw();
 }
@@ -108,7 +108,7 @@ Created by `.project()`, `.drawTo()`, `.polarProject()`, or `.translate()`. Cont
 Use the `<<` operator to merge styles into a TextBlock:
 
 ```pathogen
-let t = &{ text(0, 16)`Hello` } << ${ font-size: 24; fill: #333; };
+let t = &{ text(0, 16)`Hello` } << #{ font-size: 24; fill: #333; };
 ```
 
 This sets block-level styles that apply to all elements unless overridden by element-level styles.
@@ -146,7 +146,7 @@ Font metrics respect:
 Place text along a polar vector with anchor alignment:
 
 ```pathogen
-let label = &{ text(0, 14)`Node A` } << ${ font-size: 14; };
+let label = &{ text(0, 14)`Node A` } << #{ font-size: 14; };
 
 // Place label 80px from center at 45 degrees, anchored at center-left
 let placed = label.polarProject(100, 100, 45deg, 80, BBoxAnchor.Left);
@@ -159,8 +159,8 @@ The anchor determines which point of the text's bounding box is placed at the ta
 Check if text bounding boxes overlap to avoid label collisions:
 
 ```pathogen
-let label1 = (&{ text(0, 14)`First` } << ${ font-size: 14; }).project(50, 50);
-let label2 = (&{ text(0, 14)`Second` } << ${ font-size: 14; }).project(55, 55);
+let label1 = (&{ text(0, 14)`First` } << #{ font-size: 14; }).project(50, 50);
+let label2 = (&{ text(0, 14)`Second` } << #{ font-size: 14; }).project(55, 55);
 
 if (label1.intersects(label2)) {
   // Labels overlap — adjust position
@@ -190,11 +190,11 @@ This is different from `PathBlock.fromGlyph()`, which returns an array of per-ch
 let tb = &{
   text(0, 20)`Hello`
   text(0, 40)`World`
-} << ${ font-family: Baumans-Regular; font-size: 24; };
+} << #{ font-family: Baumans-Regular; font-size: 24; };
 
 let pb = tb.toPathBlock();
 
-define PathLayer('text-as-path') ${ fill: #333; stroke: none; }
+define PathLayer('text-as-path') #{ fill: #333; stroke: none; }
 layer('text-as-path').apply {
   pb.drawTo(20, 20);
 }
@@ -247,7 +247,7 @@ layer('main').apply {
 };
 
 let snippet = code.toCodeSnippetBlock('my-snippet', 10, 12);
-snippet << ${ translate-x: 400; translate-y: 100; };
+snippet << #{ translate-x: 400; translate-y: 100; };
 ```
 
 ### Escaping `${` in Code Text
@@ -287,14 +287,14 @@ The code text is automatically normalized: common leading whitespace is removed 
 ### Label placement around a shape
 
 ```pathogen
-define PathLayer('shape') ${ stroke: #333; fill: none; }
-define TextLayer('labels') ${ font-size: 12; fill: #666; }
+define PathLayer('shape') #{ stroke: #333; fill: none; }
+define TextLayer('labels') #{ font-size: 12; fill: #666; }
 
 let shape = @{ l 80 0 l 0 60 l -80 0 z };
 
 // Place labels at compass positions around the shape
-let top = &{ text(0, 12)`Top` } << ${ font-size: 12; };
-let right = &{ text(0, 12)`Right` } << ${ font-size: 12; };
+let top = &{ text(0, 12)`Top` } << #{ font-size: 12; };
+let right = &{ text(0, 12)`Right` } << #{ font-size: 12; };
 
 layer('shape').apply { shape.drawTo(60, 70); }
 
@@ -307,7 +307,7 @@ layer('labels').apply {
 ### Dynamic labels with collision avoidance
 
 ```pathogen
-define TextLayer('labels') ${ font-size: 11; }
+define TextLayer('labels') #{ font-size: 11; }
 
 let points = [
   { x: 50, y: 50, name: "A" },
@@ -318,7 +318,7 @@ let points = [
 let placed = [];
 layer('labels').apply {
   for (pt in points) {
-    let label = &{ text(0, 11)`${pt.name}` } << ${ font-size: 11; };
+    let label = &{ text(0, 11)`${pt.name}` } << #{ font-size: 11; };
     let proj = label.project(pt.x + 5, pt.y);
 
     // Check against all previously placed labels

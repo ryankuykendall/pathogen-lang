@@ -20,18 +20,18 @@ let ring = @{
 };
 
 let arrowMarker = Marker('arrow', 10, 10) {|m|
-  m.append(arrow, ${ fill: context-stroke; });
+  m.append(arrow, #{ fill: context-stroke; });
 };
 
 let dotMarker = Marker('dot', 10, 10) {|m|
-  m.append(dot, ${ fill: context-stroke; });
+  m.append(dot, #{ fill: context-stroke; });
 };
 
 let ringMarker = Marker('ring', 10, 10) {|m|
-  m.append(ring, ${ fill: Color('#fff'); stroke: context-stroke; stroke-width: 1.5; });
+  m.append(ring, #{ fill: Color('#fff'); stroke: context-stroke; stroke-width: 1.5; });
 };
 
-define PathLayer('path1') ${
+define PathLayer('path1') #{
   stroke: Color('#2a9d8f');
   stroke-width: 3;
   fill: none;
@@ -40,7 +40,7 @@ define PathLayer('path1') ${
   marker-end: arrowMarker;
 }
 
-define PathLayer('path2') ${
+define PathLayer('path2') #{
   stroke: Color('#e76f51');
   stroke-width: 3;
   fill: none;

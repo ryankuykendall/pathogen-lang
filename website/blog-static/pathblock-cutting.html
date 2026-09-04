@@ -331,7 +331,7 @@ contrast but not required.</p>
 // Left: the pieces drawn at the same position — the shape reassembles.
 // Right: the same pieces pushed apart to show the cut.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -339,30 +339,30 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') ${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.5;
   fill: none;
 };
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 4 4;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let knifeLabel = TextLayer('knife-label') ${
+let knifeLabel = TextLayer('knife-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #ef4444;
@@ -430,7 +430,7 @@ knifeLabel.apply {
 
 @font "Playfair Display" 700;
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -438,30 +438,30 @@ layer('bg').apply {
   rect(0, 0, 620, 290);
 }
 
-let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') ${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
 };
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 4 4;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let knifeLabel = TextLayer('knife-label') ${
+let knifeLabel = TextLayer('knife-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #ef4444;
@@ -473,7 +473,7 @@ scene.append(pieceLayer,
     labels,
     knifeLabel);
 
-let styles = ${
+let styles = #{
   font-family: "Playfair Display";
   font-weight: 700;
   font-size: 200;
@@ -555,7 +555,7 @@ knifeLabel.apply {
 // Right: the knife misses the hole — a lens comes off, and the hole rides
 // along inside the big remaining piece.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -563,30 +563,30 @@ layer('bg').apply {
   rect(0, 0, 520, 250);
 }
 
-let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') ${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
 };
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 4 4;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let knifeLabel = TextLayer('knife-label') ${
+let knifeLabel = TextLayer('knife-label') #{
   font-family: monospace;
   font-size: 9;
   fill: #ef4444;
@@ -667,7 +667,7 @@ knifeLabel.apply {
 // A closed cutter loop is a cookie cutter: it stamps the region inside it
 // out of the shape. The stamped disk lifts away; the plate keeps the hole.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -675,23 +675,23 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let plateLayer = PathLayer('plate') ${
+let scene = GroupLayer('scene') #{};
+let plateLayer = PathLayer('plate') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let cookieLayer = PathLayer('cookie') ${
+let cookieLayer = PathLayer('cookie') #{
   fill: #f59e0b;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let knifeLayer = PathLayer('knife') ${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 1.2;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -748,7 +748,7 @@ labels.apply {
 // no healing, since there's no interior to close. Nine vertical strokes
 // turn one long wave into alternating-color dashes.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -756,26 +756,26 @@ layer('bg').apply {
   rect(0, 0, 480, 170);
 }
 
-let scene = GroupLayer('scene') ${};
-let warm = PathLayer('warm') ${
+let scene = GroupLayer('scene') #{};
+let warm = PathLayer('warm') #{
   stroke: #f59e0b;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let cool = PathLayer('cool') ${
+let cool = PathLayer('cool') #{
   stroke: #3b82f6;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let knifeLayer = PathLayer('knife') ${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 0.75;
   fill: none;
   opacity: 0.55;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -845,7 +845,7 @@ labels.apply {
 
 @font "Baumans";
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -853,25 +853,25 @@ layer('bg').apply {
   rect(0, 0, 960, 170);
 }
 
-let wordmark = GroupLayer('wordmark') ${};
-let shard0 = PathLayer('shard0') ${
+let wordmark = GroupLayer('wordmark') #{};
+let shard0 = PathLayer('shard0') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard1 = PathLayer('shard1') ${
+let shard1 = PathLayer('shard1') #{
   fill: #a78bfa;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard2 = PathLayer('shard2') ${
+let shard2 = PathLayer('shard2') #{
   fill: #f59e0b;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
 wordmark.append(shard0, shard1, shard2);
 
-let styles = ${
+let styles = #{
   font-family: Baumans;
   font-size: 120;
 };

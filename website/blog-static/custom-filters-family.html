@@ -303,7 +303,7 @@ code.hljs {
   <code>define ViewBox(0, 0, 600, 400);
 // Six filters, one shape per cell — the family portrait.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -338,32 +338,32 @@ let f_inner = InnerShadowFilter() {|f|
 };
 let f_pixelate = PixelateFilter(12, 12, 6);
 
-let d1 = PathLayer('d1') ${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_grain;
 };
-let d2 = PathLayer('d2') ${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_glow;
 };
-let d3 = PathLayer('d3') ${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_emboss;
 };
-let d4 = PathLayer('d4') ${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_elevation;
 };
-let d5 = PathLayer('d5') ${
+let d5 = PathLayer('d5') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_inner;
 };
-let d6 = PathLayer('d6') ${
+let d6 = PathLayer('d6') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_pixelate;
@@ -388,7 +388,7 @@ d6.apply {
   circle(500, 270, 50);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -399,7 +399,7 @@ l1.apply {
   text(100, 175)`Grain`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -410,7 +410,7 @@ l2.apply {
   text(300, 175)`Glow`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -421,7 +421,7 @@ l3.apply {
   text(500, 175)`Emboss`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -432,7 +432,7 @@ l4.apply {
   text(100, 360)`Elevation`;
 }
 
-let l5 = TextLayer('l5') ${
+let l5 = TextLayer('l5') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -443,7 +443,7 @@ l5.apply {
   text(300, 360)`Inner Shadow`;
 }
 
-let l6 = TextLayer('l6') ${
+let l6 = TextLayer('l6') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -464,7 +464,7 @@ l6.apply {
   <code>define ViewBox(0, 0, 400, 220);
 // GlowMode.Outer vs GlowMode.Inner on the same disc.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(25% 0.04 270);
   stroke: none;
 };
@@ -487,12 +487,12 @@ let f_inner = GlowFilter() {|f|
   f.opacity = 0.85;
 };
 
-let d_outer = PathLayer('outer') ${
+let d_outer = PathLayer('outer') #{
   fill: oklch(60% 0.20 240);
   stroke: none;
   filter: f_outer;
 };
-let d_inner = PathLayer('inner') ${
+let d_inner = PathLayer('inner') #{
   fill: oklch(60% 0.20 240);
   stroke: none;
   filter: f_inner;
@@ -505,7 +505,7 @@ d_inner.apply {
   circle(290, 90, 50);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -516,7 +516,7 @@ l1.apply {
   text(110, 180)`GlowMode.Outer`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -535,7 +535,7 @@ l2.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // GlowFilter outer — radius sweep. Larger radius = wider, softer halo.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(20% 0.04 270);
   stroke: none;
 };
@@ -568,22 +568,22 @@ let f4 = GlowFilter() {|f|
   f.opacity = 0.9;
 };
 
-let d1 = PathLayer('d1') ${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') ${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') ${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') ${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f4;
@@ -602,7 +602,7 @@ d4.apply {
   circle(560, 100, 40);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -613,7 +613,7 @@ l1.apply {
   text(80, 200)`radius =  2`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -624,7 +624,7 @@ l2.apply {
   text(240, 200)`radius =  6`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -635,7 +635,7 @@ l3.apply {
   text(400, 200)`radius = 12`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -652,7 +652,7 @@ l4.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // GlowFilter outer — opacity sweep at constant radius.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(20% 0.04 270);
   stroke: none;
 };
@@ -685,22 +685,22 @@ let f4 = GlowFilter() {|f|
   f.opacity = 0.9;
 };
 
-let d1 = PathLayer('d1') ${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') ${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') ${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') ${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f4;
@@ -719,7 +719,7 @@ d4.apply {
   circle(560, 100, 40);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -730,7 +730,7 @@ l1.apply {
   text(80, 200)`opacity = 0.3`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -741,7 +741,7 @@ l2.apply {
   text(240, 200)`opacity = 0.5`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -752,7 +752,7 @@ l3.apply {
   text(400, 200)`opacity = 0.7`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -784,7 +784,7 @@ l4.apply {
   <code>define ViewBox(0, 0, 720, 240);
 // EmbossFilter — light azimuth sweep. The highlight tracks the light source.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(90% 0.02 80);
   stroke: none;
 };
@@ -823,32 +823,32 @@ let f6 = EmbossFilter() {|f|
   f.strength = 1;
 };
 
-let d1 = PathLayer('d1') ${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') ${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') ${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') ${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f4;
 };
-let d5 = PathLayer('d5') ${
+let d5 = PathLayer('d5') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f5;
 };
-let d6 = PathLayer('d6') ${
+let d6 = PathLayer('d6') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f6;
@@ -873,7 +873,7 @@ d6.apply {
   circle(660, 100, 38);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -884,7 +884,7 @@ l1.apply {
   text(60, 195)`45°`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -895,7 +895,7 @@ l2.apply {
   text(180, 195)`90°`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -906,7 +906,7 @@ l3.apply {
   text(300, 195)`135°`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -917,7 +917,7 @@ l4.apply {
   text(420, 195)`180°`;
 }
 
-let l5 = TextLayer('l5') ${
+let l5 = TextLayer('l5') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -928,7 +928,7 @@ l5.apply {
   text(540, 195)`225°`;
 }
 
-let l6 = TextLayer('l6') ${
+let l6 = TextLayer('l6') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -947,7 +947,7 @@ l6.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // EmbossFilter — depth sweep at constant angle. Higher depth = more pronounced bevel.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(90% 0.02 80);
   stroke: none;
 };
@@ -976,22 +976,22 @@ let f4 = EmbossFilter() {|f|
   f.strength = 1;
 };
 
-let d1 = PathLayer('d1') ${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') ${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') ${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') ${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f4;
@@ -1010,7 +1010,7 @@ d4.apply {
   circle(560, 100, 50);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1021,7 +1021,7 @@ l1.apply {
   text(80, 200)`depth = 1`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1032,7 +1032,7 @@ l2.apply {
   text(240, 200)`depth = 2`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1043,7 +1043,7 @@ l3.apply {
   text(400, 200)`depth = 4`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1062,7 +1062,7 @@ l4.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // EmbossFilter — strength sweep. Brighter highlights at higher specularConstant.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(90% 0.02 80);
   stroke: none;
 };
@@ -1091,22 +1091,22 @@ let f4 = EmbossFilter() {|f|
   f.strength = 1.5;
 };
 
-let d1 = PathLayer('d1') ${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') ${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') ${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') ${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.18 60);
   stroke: none;
   filter: f4;
@@ -1125,7 +1125,7 @@ d4.apply {
   circle(560, 100, 50);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1136,7 +1136,7 @@ l1.apply {
   text(80, 200)`strength = 0.3`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1147,7 +1147,7 @@ l2.apply {
   text(240, 200)`strength = 0.6`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1158,7 +1158,7 @@ l3.apply {
   text(400, 200)`strength = 1.0`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1181,7 +1181,7 @@ l4.apply {
 // ElevationShadowFilter — one knob, six elevations.
 // 0 = flat. 2 = resting. 4 = card. 8 = lifted. 16 = floating. 24 = max.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -1214,32 +1214,32 @@ let f24 = ElevationShadowFilter() {|f|
   f.color = oklch(20% 0.04 280);
 };
 
-let c0 = PathLayer('c0') ${
+let c0 = PathLayer('c0') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f0;
 };
-let c2 = PathLayer('c2') ${
+let c2 = PathLayer('c2') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f2;
 };
-let c4 = PathLayer('c4') ${
+let c4 = PathLayer('c4') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f4;
 };
-let c8 = PathLayer('c8') ${
+let c8 = PathLayer('c8') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f8;
 };
-let c16 = PathLayer('c16') ${
+let c16 = PathLayer('c16') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f16;
 };
-let c24 = PathLayer('c24') ${
+let c24 = PathLayer('c24') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f24;
@@ -1288,7 +1288,7 @@ c24.apply {
       8);
 }
 
-let l0 = TextLayer('l0') ${
+let l0 = TextLayer('l0') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -1299,7 +1299,7 @@ l0.apply {
   text(62, 200)`elevation = 0`;
 }
 
-let l2t = TextLayer('l2') ${
+let l2t = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -1310,7 +1310,7 @@ l2t.apply {
   text(177, 200)`elevation = 2`;
 }
 
-let l4t = TextLayer('l4') ${
+let l4t = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -1321,7 +1321,7 @@ l4t.apply {
   text(292, 200)`elevation = 4`;
 }
 
-let l8t = TextLayer('l8') ${
+let l8t = TextLayer('l8') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -1332,7 +1332,7 @@ l8t.apply {
   text(407, 200)`elevation = 8`;
 }
 
-let l16 = TextLayer('l16') ${
+let l16 = TextLayer('l16') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -1343,7 +1343,7 @@ l16.apply {
   text(522, 200)`elevation = 16`;
 }
 
-let l24 = TextLayer('l24') ${
+let l24 = TextLayer('l24') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -1364,7 +1364,7 @@ l24.apply {
 // ElevationShadowFilter — tightness sweep at fixed elevation=6.
 // 0.5 = tighter, crisper depth. 1.0 = Material default. 2.0 = wider, hazier.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -1388,17 +1388,17 @@ let f3 = ElevationShadowFilter() {|f|
   f.color = oklch(20% 0.04 280);
 };
 
-let c1 = PathLayer('c1') ${
+let c1 = PathLayer('c1') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f1;
 };
-let c2 = PathLayer('c2') ${
+let c2 = PathLayer('c2') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f2;
 };
-let c3 = PathLayer('c3') ${
+let c3 = PathLayer('c3') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: f3;
@@ -1426,7 +1426,7 @@ c3.apply {
       8);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1437,7 +1437,7 @@ l1.apply {
   text(90, 200)`tightness = 0.5`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1448,7 +1448,7 @@ l2.apply {
   text(270, 200)`tightness = 1.0`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1469,7 +1469,7 @@ l3.apply {
 // Left: native CSS `drop-shadow(0 6px 12px black)` — a single shadow.
 // Right: ElevationShadowFilter at elevation=6 — three layered shadows tuned for physical depth.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -1482,7 +1482,7 @@ let elev = ElevationShadowFilter() {|f|
   f.color = oklch(15% 0.04 280);
 };
 
-let c_native = PathLayer('native') ${
+let c_native = PathLayer('native') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: drop-shadow(0 6px 12px rgba(20, 21, 31, 0.4));
@@ -1495,7 +1495,7 @@ c_native.apply {
       10);
 }
 
-let c_pathogen = PathLayer('pathogen') ${
+let c_pathogen = PathLayer('pathogen') #{
   fill: oklch(95% 0.01 80);
   stroke: none;
   filter: elev;
@@ -1508,7 +1508,7 @@ c_pathogen.apply {
       10);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -1519,7 +1519,7 @@ l1.apply {
   text(90, 200)`drop-shadow()`;
 }
 
-let l1b = TextLayer('l1b') ${
+let l1b = TextLayer('l1b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -1530,7 +1530,7 @@ l1b.apply {
   text(90, 215)`single layer`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -1541,7 +1541,7 @@ l2.apply {
   text(310, 200)`ElevationShadowFilter`;
 }
 
-let l2b = TextLayer('l2b') ${
+let l2b = TextLayer('l2b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -1562,7 +1562,7 @@ l2b.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // InnerShadowFilter — blur sweep. Crisper to softer pressed-in edge.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -1595,22 +1595,22 @@ let f4 = InnerShadowFilter() {|f|
   f.opacity = 0.55;
 };
 
-let c1 = PathLayer('c1') ${
+let c1 = PathLayer('c1') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f1;
 };
-let c2 = PathLayer('c2') ${
+let c2 = PathLayer('c2') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f2;
 };
-let c3 = PathLayer('c3') ${
+let c3 = PathLayer('c3') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f3;
 };
-let c4 = PathLayer('c4') ${
+let c4 = PathLayer('c4') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f4;
@@ -1645,7 +1645,7 @@ c4.apply {
       10);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1656,7 +1656,7 @@ l1.apply {
   text(85, 200)`blur = 2`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1667,7 +1667,7 @@ l2.apply {
   text(245, 200)`blur = 4`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1678,7 +1678,7 @@ l3.apply {
   text(405, 200)`blur = 8`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -1699,7 +1699,7 @@ l4.apply {
 // InnerShadowFilter — 8 offset directions around a clock face.
 // The shadow falls toward (offsetX, offsetY); light comes from the opposite side.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -1765,42 +1765,42 @@ let f_nw = InnerShadowFilter() {|f|
   f.opacity = 0.6;
 };
 
-let mk_n = PathLayer('n') ${
+let mk_n = PathLayer('n') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_n;
 };
-let mk_ne = PathLayer('ne') ${
+let mk_ne = PathLayer('ne') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_ne;
 };
-let mk_e = PathLayer('e') ${
+let mk_e = PathLayer('e') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_e;
 };
-let mk_se = PathLayer('se') ${
+let mk_se = PathLayer('se') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_se;
 };
-let mk_s = PathLayer('s') ${
+let mk_s = PathLayer('s') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_s;
 };
-let mk_sw = PathLayer('sw') ${
+let mk_sw = PathLayer('sw') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_sw;
 };
-let mk_w = PathLayer('w') ${
+let mk_w = PathLayer('w') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_w;
 };
-let mk_nw = PathLayer('nw') ${
+let mk_nw = PathLayer('nw') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_nw;
@@ -1831,7 +1831,7 @@ mk_se.apply {
   circle(360, 360, 50);
 }
 
-let label_nw = TextLayer('lnw') ${
+let label_nw = TextLayer('lnw') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -1842,7 +1842,7 @@ label_nw.apply {
   text(120, 183)`(-4, -4)`;
 }
 
-let label_n = TextLayer('ln') ${
+let label_n = TextLayer('ln') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -1853,7 +1853,7 @@ label_n.apply {
   text(240, 183)`(0, -5)`;
 }
 
-let label_ne = TextLayer('lne') ${
+let label_ne = TextLayer('lne') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -1864,7 +1864,7 @@ label_ne.apply {
   text(360, 183)`(4, -4)`;
 }
 
-let label_w = TextLayer('lw') ${
+let label_w = TextLayer('lw') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -1875,7 +1875,7 @@ label_w.apply {
   text(120, 303)`(-5, 0)`;
 }
 
-let label_e = TextLayer('le') ${
+let label_e = TextLayer('le') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -1886,7 +1886,7 @@ label_e.apply {
   text(360, 303)`(5, 0)`;
 }
 
-let label_sw = TextLayer('lsw') ${
+let label_sw = TextLayer('lsw') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -1897,7 +1897,7 @@ label_sw.apply {
   text(120, 435)`(-4, 4)`;
 }
 
-let label_s = TextLayer('ls') ${
+let label_s = TextLayer('ls') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -1908,7 +1908,7 @@ label_s.apply {
   text(240, 435)`(0, 5)`;
 }
 
-let label_se = TextLayer('lse') ${
+let label_se = TextLayer('lse') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -1919,7 +1919,7 @@ label_se.apply {
   text(360, 435)`(4, 4)`;
 }
 
-let caption = TextLayer('caption') ${
+let caption = TextLayer('caption') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 700;
@@ -1953,7 +1953,7 @@ caption.apply {
   <code>define ViewBox(0, 0, 640, 240);
 // PixelateFilter — block size sweep. radius = width / 2 keeps blocks touching.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -1966,22 +1966,22 @@ let f2 = PixelateFilter(8, 8, 4);
 let f3 = PixelateFilter(16, 16, 8);
 let f4 = PixelateFilter(32, 32, 16);
 
-let d1 = PathLayer('d1') ${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f1;
 };
-let d2 = PathLayer('d2') ${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f2;
 };
-let d3 = PathLayer('d3') ${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f3;
 };
-let d4 = PathLayer('d4') ${
+let d4 = PathLayer('d4') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f4;
@@ -2000,7 +2000,7 @@ d4.apply {
   circle(560, 100, 55);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -2011,7 +2011,7 @@ l1.apply {
   text(80, 200)`(4, 4, 2)`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -2022,7 +2022,7 @@ l2.apply {
   text(240, 200)`(8, 8, 4)`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -2033,7 +2033,7 @@ l3.apply {
   text(400, 200)`(16, 16, 8)`;
 }
 
-let l4 = TextLayer('l4') ${
+let l4 = TextLayer('l4') #{
   font-family: sans-serif;
   font-size: 13;
   font-weight: 600;
@@ -2044,7 +2044,7 @@ l4.apply {
   text(560, 200)`(32, 32, 16)`;
 }
 
-let lcap = TextLayer('lcap') ${
+let lcap = TextLayer('lcap') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 400;
@@ -2064,7 +2064,7 @@ lcap.apply {
 // PixelateFilter — three radius regimes at fixed block size width=height=16.
 // radius &lt; 8: gaps between blocks. radius = 8: blocks touch. radius &gt; 8: overlap.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(95% 0.02 80);
   stroke: none;
 };
@@ -2076,17 +2076,17 @@ let f_gap = PixelateFilter(16, 16, 4);
 let f_touch = PixelateFilter(16, 16, 8);
 let f_overlap = PixelateFilter(16, 16, 12);
 
-let d1 = PathLayer('d1') ${
+let d1 = PathLayer('d1') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_gap;
 };
-let d2 = PathLayer('d2') ${
+let d2 = PathLayer('d2') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_touch;
 };
-let d3 = PathLayer('d3') ${
+let d3 = PathLayer('d3') #{
   fill: oklch(70% 0.20 30);
   stroke: none;
   filter: f_overlap;
@@ -2102,7 +2102,7 @@ d3.apply {
   circle(450, 100, 55);
 }
 
-let l1 = TextLayer('l1') ${
+let l1 = TextLayer('l1') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -2113,7 +2113,7 @@ l1.apply {
   text(90, 195)`radius = 4`;
 }
 
-let l1b = TextLayer('l1b') ${
+let l1b = TextLayer('l1b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -2124,7 +2124,7 @@ l1b.apply {
   text(90, 212)`gaps between blocks`;
 }
 
-let l2 = TextLayer('l2') ${
+let l2 = TextLayer('l2') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -2135,7 +2135,7 @@ l2.apply {
   text(270, 195)`radius = 8`;
 }
 
-let l2b = TextLayer('l2b') ${
+let l2b = TextLayer('l2b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -2146,7 +2146,7 @@ l2b.apply {
   text(270, 212)`blocks just touch (= width / 2)`;
 }
 
-let l3 = TextLayer('l3') ${
+let l3 = TextLayer('l3') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;
@@ -2157,7 +2157,7 @@ l3.apply {
   text(450, 195)`radius = 12`;
 }
 
-let l3b = TextLayer('l3b') ${
+let l3b = TextLayer('l3b') #{
   font-family: sans-serif;
   font-size: 10;
   font-weight: 400;
@@ -2179,7 +2179,7 @@ l3b.apply {
 // Stacking custom filters via GroupLayer: outer Elevation + inner Inner Shadow.
 // Two filters, one card — raised above its surface, recessed on its top edge.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -2200,7 +2200,7 @@ let press = InnerShadowFilter() {|f|
 };
 
 // Inner layer carries the inner shadow.
-let inner = PathLayer('inner') ${
+let inner = PathLayer('inner') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: press;
@@ -2214,12 +2214,12 @@ inner.apply {
 }
 
 // Outer group carries the elevation shadow.
-let chip = GroupLayer('chip') ${
+let chip = GroupLayer('chip') #{
   filter: lift;
 };
 chip.append(inner);
 
-let label = TextLayer('label') ${
+let label = TextLayer('label') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;

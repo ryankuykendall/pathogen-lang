@@ -28,8 +28,8 @@ ringsL.method = 'laplace';
 ringsL.iterations = 300;
 ringsL.baseColor = Color('#1a1a2e');
 
-define PathLayer('ringsD_bg') ${ fill: ringsD; }
-define PathLayer('ringsL_bg') ${ fill: ringsL; }
+define PathLayer('ringsD_bg') #{ fill: ringsD; }
+define PathLayer('ringsL_bg') #{ fill: ringsL; }
 
 layer('ringsD_bg').apply { M 0 200 h 2048 v 2048 h -2048 Z }
 layer('ringsL_bg').apply { M 2200 200 h 2048 v 2048 h -2048 Z }
@@ -59,8 +59,8 @@ ovalL.iterations = 300;
 ovalL.baseColor = Color('#2c3e50');
 ovalL.easing = 'smoothstep';
 
-define PathLayer('ovalD_bg') ${ fill: ovalD; }
-define PathLayer('ovalL_bg') ${ fill: ovalL; }
+define PathLayer('ovalD_bg') #{ fill: ovalD; }
+define PathLayer('ovalL_bg') #{ fill: ovalL; }
 
 layer('ovalD_bg').apply { M 0 2450 h 2048 v 2048 h -2048 Z }
 layer('ovalL_bg').apply { M 2200 2450 h 2048 v 2048 h -2048 Z }
@@ -90,8 +90,8 @@ twinL.method = 'laplace';
 twinL.iterations = 400;
 twinL.baseColor = Color('#0d1b2a');
 
-define PathLayer('twinD_bg') ${ fill: twinD; }
-define PathLayer('twinL_bg') ${ fill: twinL; }
+define PathLayer('twinD_bg') #{ fill: twinD; }
+define PathLayer('twinL_bg') #{ fill: twinL; }
 
 layer('twinD_bg').apply { M 0 4700 h 2048 v 2048 h -2048 Z }
 layer('twinL_bg').apply { M 2200 4700 h 2048 v 2048 h -2048 Z }
@@ -121,8 +121,8 @@ rectL.iterations = 300;
 rectL.baseColor = Color('#1a1a2e');
 rectL.easing = 'ease-in-out';
 
-define PathLayer('rectD_bg') ${ fill: rectD; }
-define PathLayer('rectL_bg') ${ fill: rectL; }
+define PathLayer('rectD_bg') #{ fill: rectD; }
+define PathLayer('rectL_bg') #{ fill: rectL; }
 
 layer('rectD_bg').apply { M 0 6950 h 2048 v 2048 h -2048 Z }
 layer('rectL_bg').apply { M 2200 6950 h 2048 v 2048 h -2048 Z }
@@ -150,8 +150,8 @@ roundL.method = 'laplace';
 roundL.iterations = 300;
 roundL.baseColor = Color('#2c3e50');
 
-define PathLayer('roundD_bg') ${ fill: roundD; }
-define PathLayer('roundL_bg') ${ fill: roundL; }
+define PathLayer('roundD_bg') #{ fill: roundD; }
+define PathLayer('roundL_bg') #{ fill: roundL; }
 
 layer('roundD_bg').apply { M 0 9200 h 2048 v 2048 h -2048 Z }
 layer('roundL_bg').apply { M 2200 9200 h 2048 v 2048 h -2048 Z }

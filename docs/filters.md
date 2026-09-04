@@ -23,7 +23,7 @@ let grain = NoiseFilter() {|f|
   f.style = NoiseFilterStyle.Grain;
 };
 
-define PathLayer('portrait') ${
+define PathLayer('portrait') #{
   fill: oklch(70% 0.18 30);
   filter: grain;
 }
@@ -154,7 +154,7 @@ let glow = GlowFilter() {|f|
   f.opacity = 0.8;
 };
 
-define PathLayer('star') ${
+define PathLayer('star') #{
   fill: oklch(70% 0.20 30);
   filter: glow;
 }
@@ -206,7 +206,7 @@ let emboss = EmbossFilter() {|f|
   f.strength = 1.0;
 };
 
-define PathLayer('badge') ${
+define PathLayer('badge') #{
   fill: oklch(75% 0.15 60);
   filter: emboss;
 }
@@ -254,7 +254,7 @@ let card = ElevationShadowFilter() {|f|
   f.color = oklch(20% 0.02 280);
 };
 
-define PathLayer('card') ${
+define PathLayer('card') #{
   fill: white;
   filter: card;
 }
@@ -326,7 +326,7 @@ let press = InnerShadowFilter() {|f|
   f.opacity = 0.5;
 };
 
-define PathLayer('button') ${
+define PathLayer('button') #{
   fill: oklch(80% 0.06 230);
   filter: press;
 }
@@ -374,7 +374,7 @@ The final `feComposite SourceAlpha in` step clips the shadow to the original sil
 // Positional form (canonical):
 let pix = PixelateFilter(12, 12, 6);
 
-define PathLayer('portrait') ${
+define PathLayer('portrait') #{
   fill: oklch(70% 0.18 30);
   filter: pix;
 }
@@ -435,7 +435,7 @@ let smear = MotionBlurFilter() {|f|
   f.samples = 12;
 };
 
-define PathLayer('car') ${
+define PathLayer('car') #{
   fill: oklch(60% 0.2 250);
   filter: smear;
 }
@@ -585,7 +585,7 @@ Reference a filter the same way you reference a gradient or marker — by assign
 ```
 let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
 
-define PathLayer('disc') ${
+define PathLayer('disc') #{
   fill: oklch(80% 0.15 50);
   filter: grain;            // → filter="url(#auto-id)"
 }
@@ -602,13 +602,13 @@ A single `filter:` declaration accepts **either** a `NoiseFilter` value **or** a
 ```
 let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
 
-let inner = PathLayer('inner') ${
+let inner = PathLayer('inner') #{
   fill: hotpink;
   filter: grain;
 };
 layer('inner').apply { circle(100, 100, 60); }
 
-let halo = GroupLayer('halo') ${ filter: blur(2px); };
+let halo = GroupLayer('halo') #{ filter: blur(2px); };
 halo.append(inner);
 ```
 
@@ -620,10 +620,10 @@ Native filter arguments can be dynamic. A bare variable substitutes where the fu
 let level = randomRange(1.1, 1.4);
 let softness = randomRange(1, 3);
 
-let art = PathLayer('art') ${ fill: hotpink; };
+let art = PathLayer('art') #{ fill: hotpink; };
 layer('art').apply { circle(100, 100, 60); }
 
-let shimmer = GroupLayer('shimmer') ${
+let shimmer = GroupLayer('shimmer') #{
   filter: brightness(level) blur(${softness}px);
 };
 shimmer.append(art);
@@ -647,7 +647,7 @@ let grainy = NoiseFilter() {|f|
   f.amount = 0.6;
 };
 
-define PathLayer('panel') ${ fill: sky; filter: grainy; }
+define PathLayer('panel') #{ fill: sky; filter: grainy; }
 layer('panel').apply { rect(0, 0, 200, 200); }
 ```
 
@@ -665,7 +665,7 @@ let grainy = NoiseFilter() {|f|
   f.amount = 0.55;
 };
 
-define PathLayer('orb') ${ fill: glow; filter: grainy; }
+define PathLayer('orb') #{ fill: glow; filter: grainy; }
 layer('orb').apply { rect(0, 0, 200, 200); }
 ```
 
@@ -684,7 +684,7 @@ let grainy = NoiseFilter() {|f|
   f.contrast = 1.4;
 };
 
-define PathLayer('wheel') ${ fill: wheel; filter: grainy; }
+define PathLayer('wheel') #{ fill: wheel; filter: grainy; }
 layer('wheel').apply { circle(100, 100, 90); }
 ```
 
@@ -701,7 +701,7 @@ For the default Grain filter on a path:
 ```
 let grain = NoiseFilter() {|f| f.style = NoiseFilterStyle.Grain; };
 
-define PathLayer('disc') ${ fill: oklch(70% 0.18 30); filter: grain; }
+define PathLayer('disc') #{ fill: oklch(70% 0.18 30); filter: grain; }
 layer('disc').apply { circle(100, 100, 80); }
 ```
 

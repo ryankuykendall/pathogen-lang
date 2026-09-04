@@ -8,7 +8,7 @@
 
 define ViewBox(0, 0, 200, 200);
 
-define default PathLayer('background') ${
+define default PathLayer('background') #{
   fill: Color('#fafafa');
 }
 
@@ -20,7 +20,7 @@ let arrow = @{
 };
 
 let arrowMarker = Marker('arrowhead', 10, 10) {|m|
-  m.append(arrow, ${ fill: context-stroke; });
+  m.append(arrow, #{ fill: context-stroke; });
 };
 
 let arrowPB = @{
@@ -37,7 +37,7 @@ let field = Grid(20, 20, { xDim: 10, yDim: 10, outOfBounds: 'wrap' }) {|g|
   };
 };
 
-define PathLayer('flow-vectors') ${
+define PathLayer('flow-vectors') #{
   stroke-width: 0.2;
   stroke: Color('#0c0');
   marker-end: arrowMarker;

@@ -1,12 +1,12 @@
 // E-only: dump just the E glyph from Playfair Display Bold
 @font "../../fonts/Playfair_Display/PlayfairDisplay-Bold.ttf"
 
-let styles = ${ font-family: PlayfairDisplay-Bold; font-size: 22; };
+let styles = #{ font-family: PlayfairDisplay-Bold; font-size: 22; };
 let glyphs = PathBlock.fromGlyph("E", styles);
 let g0 = glyphs[0];
 
-let bg = PathLayer('bg') ${ fill: '#fefce8'; stroke: none; };
+let bg = PathLayer('bg') #{ fill: '#fefce8'; stroke: none; };
 layer('bg').apply { rect(0, 0, 400, 200); }
 
-let glyph_layer = PathLayer('glyph') ${ fill: '#1e3a8a80'; stroke: '#06b6d4'; stroke-width: 0.3; };
+let glyph_layer = PathLayer('glyph') #{ fill: '#1e3a8a80'; stroke: '#06b6d4'; stroke-width: 0.3; };
 layer('glyph').apply { g0.drawTo(80, 140); }

@@ -47,20 +47,20 @@ topo_fill.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 600, 320); }
 
 // --- Card 1: Linear (left) ---
 
-let card1 = GroupLayer('card-1') ${
+let card1 = GroupLayer('card-1') #{
   translate-x: 20;
   translate-y: 25;
 };
 
-let c1_fill = PathLayer('c1-fill') ${ fill: warm; stroke: #444; stroke-width: 1; };
+let c1_fill = PathLayer('c1-fill') #{ fill: warm; stroke: #444; stroke-width: 1; };
 c1_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
-let c1_label = TextLayer('c1-label') ${
+let c1_label = TextLayer('c1-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -69,7 +69,7 @@ let c1_label = TextLayer('c1-label') ${
 };
 c1_label.apply { text(85, 160)`LinearGradient` }
 
-let c1_tag = TextLayer('c1-tag') ${
+let c1_tag = TextLayer('c1-tag') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -81,15 +81,15 @@ card1.append(c1_fill, c1_label, c1_tag);
 
 // --- Card 2: Radial (center) ---
 
-let card2 = GroupLayer('card-2') ${
+let card2 = GroupLayer('card-2') #{
   translate-x: 215;
   translate-y: 25;
 };
 
-let c2_fill = PathLayer('c2-fill') ${ fill: cool; stroke: #444; stroke-width: 1; };
+let c2_fill = PathLayer('c2-fill') #{ fill: cool; stroke: #444; stroke-width: 1; };
 c2_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
-let c2_label = TextLayer('c2-label') ${
+let c2_label = TextLayer('c2-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -98,7 +98,7 @@ let c2_label = TextLayer('c2-label') ${
 };
 c2_label.apply { text(85, 160)`RadialGradient` }
 
-let c2_tag = TextLayer('c2-tag') ${
+let c2_tag = TextLayer('c2-tag') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -110,15 +110,15 @@ card2.append(c2_fill, c2_label, c2_tag);
 
 // --- Card 3: Topo (right) ---
 
-let card3 = GroupLayer('card-3') ${
+let card3 = GroupLayer('card-3') #{
   translate-x: 410;
   translate-y: 25;
 };
 
-let c3_fill = PathLayer('c3-fill') ${ fill: topo_fill; stroke: #444; stroke-width: 1; };
+let c3_fill = PathLayer('c3-fill') #{ fill: topo_fill; stroke: #444; stroke-width: 1; };
 c3_fill.apply { roundRect(0, 0, 170, 140, 8); }
 
-let c3_label = TextLayer('c3-label') ${
+let c3_label = TextLayer('c3-label') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -127,7 +127,7 @@ let c3_label = TextLayer('c3-label') ${
 };
 c3_label.apply { text(85, 160)`TopoGradient` }
 
-let c3_tag = TextLayer('c3-tag') ${
+let c3_tag = TextLayer('c3-tag') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -139,7 +139,7 @@ card3.append(c3_fill, c3_label, c3_tag);
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #999;
@@ -149,7 +149,7 @@ title.apply {
   text(300, 265)`GroupLayer — Card Layout with translate`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: monospace;
   font-size: 9;
   fill: #555;
@@ -161,5 +161,5 @@ subtitle.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, card1, card2, card3, title, subtitle);

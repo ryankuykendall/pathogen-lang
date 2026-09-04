@@ -313,7 +313,7 @@ h -60;
 };
 </code></pre><p><mini-workspace code-open caption="Same rounded corner — hand-assembled tangent arc on the left, `with fillet(15)` on the right">
   <code>define ViewBox(0, 0, 240, 120);
-define default PathLayer('shapes') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define default PathLayer('shapes') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
 
 // BEFORE: rounding a corner by hand means re-computing both edge
 // lengths and threading a tangent arc between them.
@@ -347,8 +347,8 @@ suffixed.drawTo(150, 25);
 </code></pre><p><code>&#39;lid&#39;</code> names the top edge. That name survives everything that happens to the path — fillets trimming it, projection moving it — and it answers questions:</p>
 <p><mini-workspace code-open caption="`card.segment('lid').partition(6)` — decorating evenly along one named edge">
   <code>define ViewBox(0, 0, 240, 140);
-define default PathLayer('card') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
-define PathLayer('studs') ${ fill: #7c3aed; }
+define default PathLayer('card') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('studs') #{ fill: #7c3aed; }
 
 // Name the lid while drawing it...
 let card = @{
@@ -373,8 +373,8 @@ layer('studs').apply {
 <p>Vertices work the same way. <code>as endpoint(&#39;name&#39;)</code> names the point a command lands on, and <code>point(&#39;name&#39;)</code> retrieves it — an anchor that follows the geometry instead of a hand-computed coordinate:</p>
 <p><mini-workspace code-open caption="Bolt heads anchored to named corners — `placed.point('mount-east')` instead of coordinates">
   <code>define ViewBox(0, 0, 240, 140);
-define default PathLayer('bracket') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
-define PathLayer('bolts') ${ fill: none; stroke: #0d9488; stroke-width: 2.5; }
+define default PathLayer('bracket') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('bolts') #{ fill: none; stroke: #0d9488; stroke-width: 2.5; }
 
 // Name the two mounting corners as the bracket is drawn.
 let bracket = @{
@@ -419,7 +419,7 @@ layer('bolts').apply {
 <span class="kw">let</span> <span class="id">notched</span> = <span class="id">tab</span>(<span class="num">true</span>).<span class="id">vertex</span>(<span class="str">'spout'</span>).<span class="id">fillet</span>(<span class="num">12</span>);
 </code></pre><p><mini-workspace code-open caption="The notch adds three commands before the corner — `vertex('spout')` rounds the same joint in both variants">
   <code>define ViewBox(0, 0, 240, 130);
-define default PathLayer('tabs') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define default PathLayer('tabs') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
 
 // Index-based: filletAtVertex(1, 12) rounds "the second corner" — until an
 // edit inserts a notch earlier in the path and every index shifts.
@@ -468,8 +468,8 @@ notched.drawTo(135, 35);
 }
 </code></pre><p><mini-workspace code-open caption="One shared name, five teeth — `segmentAll('tooth')` returns the group; each tip decorated without tracking a single index">
   <code>define ViewBox(0, 0, 240, 140);
-define default PathLayer('comb') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
-define PathLayer('tips') ${ fill: #db2777; }
+define default PathLayer('comb') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
+define PathLayer('tips') #{ fill: #db2777; }
 
 // One name, five teeth. Labels don't have to be unique — a shared name
 // forms a GROUP, so loops need no index bookkeeping at all.
@@ -495,8 +495,8 @@ layer('tips').apply {
 <p>The quiet structural win: layers built with <code>apply { }</code> used to be write-only. You could route commands into them, but a layer could never tell you anything about its own geometry. Labels change that — <code>layer(&#39;name&#39;).segment(...)</code>, <code>.point(...)</code>, and <code>.vertex(...)</code> read named geometry back out of any path layer:</p>
 <p><mini-workspace code-open caption="A ticks layer cross-hatching a named stretch of the road layer — one layer reading another's geometry by name">
   <code>define ViewBox(0, 0, 240, 140);
-define PathLayer('road') ${ stroke: #334155; stroke-width: 3; fill: none; }
-define PathLayer('ticks') ${ stroke: #f59e0b; stroke-width: 2; fill: none; }
+define PathLayer('road') #{ stroke: #334155; stroke-width: 3; fill: none; }
+define PathLayer('ticks') #{ stroke: #f59e0b; stroke-width: 2; fill: none; }
 
 // A layer built with apply {} used to be write-only: you could add to it,
 // but never ask it anything. Labels make layers queryable.

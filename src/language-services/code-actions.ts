@@ -1,4 +1,6 @@
+import { LEGACY_STYLE_OPENER_MESSAGE } from '../parser';
 import { stdlib, contextAwareFunctions } from '../stdlib';
+import { findLegacyStyleOpeners } from './diagnostics';
 import { analyzeScopes } from './scope-analysis';
 
 import type { TextDocument } from './document';
@@ -24,11 +26,30 @@ export interface TextEdit {
 const ALL_KNOWN_NAMES = new Set([
   ...Object.keys(stdlib),
   ...contextAwareFunctions,
-  'ctx', 'Object', 'Color', 'PathBlock', 'Point', 'PolarVector', 'Cycler', 'CSSVar',
-  'PathLayer', 'TextLayer', 'GroupLayer',
-  'Easing', 'Interpolation', 'SpreadMethod', 'GradientUnits', 'Direction',
-  'ConicSpread', 'InnerFill', 'TopoMethod', 'BBoxAnchor', 'GridPatternType',
-  'true', 'false', 'null',
+  'ctx',
+  'Object',
+  'Color',
+  'PathBlock',
+  'Point',
+  'PolarVector',
+  'Cycler',
+  'CSSVar',
+  'PathLayer',
+  'TextLayer',
+  'GroupLayer',
+  'Easing',
+  'Interpolation',
+  'SpreadMethod',
+  'GradientUnits',
+  'Direction',
+  'ConicSpread',
+  'InnerFill',
+  'TopoMethod',
+  'BBoxAnchor',
+  'GridPatternType',
+  'true',
+  'false',
+  'null',
 ]);
 
 /**
@@ -36,8 +57,19 @@ const ALL_KNOWN_NAMES = new Set([
  */
 export function getCodeActions(document: TextDocument, _range: Range, diagnostics: Diagnostic[]): CodeAction[] {
   const actions: CodeAction[] = [];
+  let offeredConvertAll = false;
 
   for (const diag of diagnostics) {
+    // Legacy `${` style-block opener — change this one, or every one at once
+    if (diag.message === LEGACY_STYLE_OPENER_MESSAGE) {
+      actions.push(legacyStyleOpenerFix(diag));
+      if (!offeredConvertAll) {
+        const all = convertAllLegacyStyleOpeners(document);
+        if (all) actions.push(all);
+        offeredConvertAll = true;
+      }
+    }
+
     // Missing semicolon fix
     if (diag.message.includes("Missing ';'")) {
       const fix = missingSemicolonFix(document, diag);
@@ -144,11 +176,14 @@ export function getRefactorActions(document: TextDocument, range: Range): CodeAc
     const params = freeVars.join(', ');
 
     // Build the function definition
-    const bodyLines = selectedText.split('\n').map((l) => {
-      // Re-indent body to one level
-      const stripped = l.replace(/^\s*/, '');
-      return stripped ? `  ${stripped}` : '';
-    }).filter(Boolean);
+    const bodyLines = selectedText
+      .split('\n')
+      .map((l) => {
+        // Re-indent body to one level
+        const stripped = l.replace(/^\s*/, '');
+        return stripped ? `  ${stripped}` : '';
+      })
+      .filter(Boolean);
     const fnBody = bodyLines.join('\n');
 
     // Insert function before the current block, and replace selection with call
@@ -231,9 +266,33 @@ function suggestVariableName(expr: string): string {
  * literals, and stdlib / context-aware function names.
  */
 export const RESERVED_IDENTIFIERS: ReadonlySet<string> = new Set([
-  'let', 'for', 'if', 'else', 'fn', 'return', 'define', 'default', 'enum', 'in',
-  'break', 'continue', 'switch', 'case', 'where', 'with', 'as', 'ViewBox',
-  'true', 'false', 'null', 'calc', 'log', 'text', 'tspan', 'layer', 'apply',
+  'let',
+  'for',
+  'if',
+  'else',
+  'fn',
+  'return',
+  'define',
+  'default',
+  'enum',
+  'in',
+  'break',
+  'continue',
+  'switch',
+  'case',
+  'where',
+  'with',
+  'as',
+  'ViewBox',
+  'true',
+  'false',
+  'null',
+  'calc',
+  'log',
+  'text',
+  'tspan',
+  'layer',
+  'apply',
   ...Object.keys(stdlib),
   ...contextAwareFunctions,
 ]);
@@ -257,9 +316,11 @@ function findFreeVariables(selectedText: string, fullSource: string, range: Rang
   const beforeSelection = fullSource.split('\n').slice(0, range.start.line).join('\n');
   const freeVars: string[] = [];
   for (const id of identifiers) {
-    if (new RegExp(`\\blet\\s+${escapeRegex(id)}\\b`).test(beforeSelection) ||
-        new RegExp(`\\bfn\\s+${escapeRegex(id)}\\b`).test(beforeSelection) ||
-        new RegExp(`\\bfor\\s*\\(\\s*${escapeRegex(id)}\\b`).test(beforeSelection)) {
+    if (
+      new RegExp(`\\blet\\s+${escapeRegex(id)}\\b`).test(beforeSelection) ||
+      new RegExp(`\\bfn\\s+${escapeRegex(id)}\\b`).test(beforeSelection) ||
+      new RegExp(`\\bfor\\s*\\(\\s*${escapeRegex(id)}\\b`).test(beforeSelection)
+    ) {
       freeVars.push(id);
     }
   }
@@ -337,6 +398,48 @@ function getTextInRange(lines: string[], range: Range): string {
   return result.join('\n');
 }
 
+/** Quick fix: replace the `$` of one legacy `${` opener with `#`. */
+function legacyStyleOpenerFix(diag: Diagnostic): CodeAction {
+  const { line, character } = diag.range.start;
+  return {
+    title: "Change '${' to '#{'",
+    kind: 'quickfix',
+    diagnostics: [diag],
+    edit: {
+      changes: [
+        {
+          range: { start: { line, character }, end: { line, character: character + 1 } },
+          newText: '#',
+        },
+      ],
+    },
+  };
+}
+
+/**
+ * Quick fix: replace every legacy `${` opener in the document. Openers are
+ * found by the parser (iterated to a fixpoint in findLegacyStyleOpeners),
+ * never by a text scan, so interpolations are untouched.
+ */
+function convertAllLegacyStyleOpeners(document: TextDocument): CodeAction | null {
+  const offsets = findLegacyStyleOpeners(document.getText());
+  if (offsets.length === 0) return null;
+  return {
+    title: `Convert all legacy '\${' style blocks to '#{' (${offsets.length})`,
+    kind: 'quickfix',
+    diagnostics: [],
+    edit: {
+      changes: offsets.map((offset) => {
+        const pos = document.positionAt(offset);
+        return {
+          range: { start: pos, end: { line: pos.line, character: pos.character + 1 } },
+          newText: '#',
+        };
+      }),
+    },
+  };
+}
+
 /**
  * Quick fix: add missing semicolon at the end of the diagnostic line.
  */
@@ -354,13 +457,15 @@ function missingSemicolonFix(document: TextDocument, diag: Diagnostic): CodeActi
     kind: 'quickfix',
     diagnostics: [diag],
     edit: {
-      changes: [{
-        range: {
-          start: { line, character: endChar },
-          end: { line, character: endChar },
+      changes: [
+        {
+          range: {
+            start: { line, character: endChar },
+            end: { line, character: endChar },
+          },
+          newText: ';',
         },
-        newText: ';',
-      }],
+      ],
     },
   };
 }
@@ -396,13 +501,15 @@ function undefinedVariableFixes(document: TextDocument, diag: Diagnostic, name: 
       kind: 'quickfix',
       diagnostics: [diag],
       edit: {
-        changes: [{
-          range: {
-            start: { line, character: match.index },
-            end: { line, character: match.index + name.length },
+        changes: [
+          {
+            range: {
+              start: { line, character: match.index },
+              end: { line, character: match.index + name.length },
+            },
+            newText: suggestion,
           },
-          newText: suggestion,
-        }],
+        ],
       },
     });
   }
@@ -445,8 +552,8 @@ function levenshtein(a: string, b: string): number {
     for (let j = 1; j <= a.length; j++) {
       const cost = b[i - 1] === a[j - 1] ? 0 : 1;
       matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1,     // deletion
-        matrix[i][j - 1] + 1,     // insertion
+        matrix[i - 1][j] + 1, // deletion
+        matrix[i][j - 1] + 1, // insertion
         matrix[i - 1][j - 1] + cost, // substitution
       );
     }

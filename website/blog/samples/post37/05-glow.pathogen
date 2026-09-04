@@ -25,7 +25,7 @@ for (k in 12..1) {
   let halo = spine.compoundVariableOffset() << mk;
 
   let haloColor = base.hueShift(calc(k * -6));
-  let haloLayer = PathLayer(`halo-${k}`) ${
+  let haloLayer = PathLayer(`halo-${k}`) #{
     fill: haloColor;
     stroke: none;
     opacity: 0.25;

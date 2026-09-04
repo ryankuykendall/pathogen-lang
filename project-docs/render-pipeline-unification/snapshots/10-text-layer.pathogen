@@ -1,6 +1,6 @@
 // Text layer. Tests <text> emission in a multi-layer program.
 
-define TextLayer('label') ${
+define TextLayer('label') #{
   font-family: 'Inter';
   font-size: 16;
   fill: Color('#222222');

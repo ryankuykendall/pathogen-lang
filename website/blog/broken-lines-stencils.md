@@ -52,12 +52,12 @@ guaranteeing the geometry stays cuttable:
 
 ```pathogen
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
-let pieces = centerline.dash(${
+let pieces = centerline.dash(#{
   stroke-dasharray: ${cutLength} ${bridgeWidth};
   dash-seam: merge;
 });
 for (segment in pieces.filter {|piece| piece.kind == 'dash'}) {
-  stencil = stencil.difference(segment.path.outline(${
+  stencil = stencil.difference(segment.path.outline(#{
     stroke-width: ${bandWidth};
   }));
 }

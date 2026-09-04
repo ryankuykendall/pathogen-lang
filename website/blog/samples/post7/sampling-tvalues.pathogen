@@ -8,12 +8,12 @@ let curve = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 520, 300); }
 
 // --- The curve ---
 
-let path = PathLayer('path') ${
+let path = PathLayer('path') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: none;
@@ -27,7 +27,7 @@ path.apply {
 let proj = curve.project(60, 150);
 let pts = proj.partition(8);
 
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -40,7 +40,7 @@ dots.apply {
 
 // --- t-value labels (positioned relative to actual points) ---
 
-let tvals = TextLayer('tvals') ${
+let tvals = TextLayer('tvals') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#fca5a5');
@@ -72,7 +72,7 @@ tvals.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -83,7 +83,7 @@ code.apply {
   text(30, 276)`// → 9 points at t = 0, 0.125, 0.25, ... 1.0`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -95,7 +95,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -105,7 +105,7 @@ title.apply {
   text(30, 28)`partition(8) — Even Distribution`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');

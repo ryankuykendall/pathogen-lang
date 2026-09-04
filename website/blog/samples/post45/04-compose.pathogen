@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,17 +12,17 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') ${};
-let gaps = PathLayer('gaps') ${
+let scene = GroupLayer('scene') #{};
+let gaps = PathLayer('gaps') #{
   stroke: #94a3b840;
   stroke-width: 1.5;
   fill: none;
 };
-let swellingDashes = PathLayer('swelling-dashes') ${
+let swellingDashes = PathLayer('swelling-dashes') #{
   fill: #f59e0b;
   stroke: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -35,7 +35,7 @@ let wave = @{
   c 40 -65 80 -65 120 0
 };
 
-let pieces = wave.dash(${
+let pieces = wave.dash(#{
   stroke-dasharray: 24 22;
 });
 
@@ -45,7 +45,7 @@ for (piece in pieces) {
       M 60 120 piece.path.draw()
     }
   } else {
-    let swollen = piece.path.outline(${
+    let swollen = piece.path.outline(#{
       stroke-width: calc(3 + piece.t0 * 16);
       stroke-linecap: round;
       stroke-linejoin: round;

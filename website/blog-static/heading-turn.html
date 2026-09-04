@@ -320,10 +320,10 @@ h 0.01            <span class="cm">// invisible line to set heading rightward</s
 // heading() and turn() — tangent context without path commands
 
 // --- Background ---
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 540, 220); }
 
-let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..11) { M 0 calc(i * 20) h 540 }
   for (j in 0..27) { M calc(j * 20) 0 v 220 }
@@ -336,7 +336,7 @@ let codeRowY = 130;
 let labelY = 28;
 
 // === Layout group ===
-define GroupLayer('layout') ${ translate-x: 0; translate-y: 0; }
+define GroupLayer('layout') #{ translate-x: 0; translate-y: 0; }
 
 // --- Build each shape as a PathBlock, center via boundingBox ---
 
@@ -414,12 +414,12 @@ for ([shape, idx] in shapes) {
 
   // --- Group for this example ---
   let gName = `g${idx}`;
-  define GroupLayer(gName) ${ translate-x: 0; translate-y: 0; }
+  define GroupLayer(gName) #{ translate-x: 0; translate-y: 0; }
   layer('layout').append(layer(gName));
 
   // --- Label ---
   let tlName = `l${idx}`;
-  define TextLayer(tlName) ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+  define TextLayer(tlName) #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   let labelX = calc(cx - shape.label.length * 3.3);
   layer(tlName).apply { text(labelX, labelY)`${shape.label}` }
@@ -428,7 +428,7 @@ for ([shape, idx] in shapes) {
   let drawX = calc(cx - shape.bb.x - shape.bb.width / 2);
   let drawY = calc(shapeRowY - shape.bb.y - shape.bb.height / 2);
   let plName = `p${idx}`;
-  define PathLayer(plName) ${ fill: none; stroke: shape.col; stroke-width: 2.5; }
+  define PathLayer(plName) #{ fill: none; stroke: shape.col; stroke-width: 2.5; }
   layer(gName).append(layer(plName));
   layer(plName).apply { shape.pb.drawTo(drawX, drawY); }
 
@@ -436,7 +436,7 @@ for ([shape, idx] in shapes) {
   let snippet = codeTexts[idx].toCodeSnippetBlock(snippetNames[idx], 8, 6);
   // Center the snippet horizontally under the shape
   let snippetBB = snippet.ctx.transform;
-  snippet &lt;&lt; ${ translate-x: calc(cx - 55); translate-y: codeRowY; };
+  snippet &lt;&lt; #{ translate-x: calc(cx - 55); translate-y: codeRowY; };
   layer(gName).append(snippet);
 }
 </code>
@@ -468,10 +468,10 @@ for ([shape, idx] in shapes) {
 // Regular polygons via heading + turn + tangentLine/tangentArc
 
 // --- Background ---
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 680, 400); }
 
-let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..20) { M 0 calc(i * 20) h 680 }
   for (j in 0..34) { M calc(j * 20) 0 v 400 }
@@ -520,9 +520,9 @@ let sides = [3, 4, 5, 6, 7, 8, 9, 10];
 let spacing = 80;
 
 // === Row 1: Sharp polygons ===
-define GroupLayer('sharp-row') ${ translate-x: 0; translate-y: 20; }
+define GroupLayer('sharp-row') #{ translate-x: 0; translate-y: 20; }
 
-define TextLayer('r1-title') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+define TextLayer('r1-title') #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('sharp-row').append(layer('r1-title'));
 layer('r1-title').apply { text(20, 14)`Sharp corners — heading + tangentLine + turn` }
 
@@ -541,26 +541,26 @@ for (idx in 0..7) {
   let drawY = calc(72 - bb.y - bb.height / 2);
 
   let gName = `sg${n}`;
-  define GroupLayer(gName) ${ translate-x: 0; translate-y: 0; }
+  define GroupLayer(gName) #{ translate-x: 0; translate-y: 0; }
   layer('sharp-row').append(layer(gName));
 
   let lName = `s${n}`;
-  define PathLayer(lName) ${ fill: none; stroke: col; stroke-width: 2; }
+  define PathLayer(lName) #{ fill: none; stroke: col; stroke-width: 2; }
   layer(gName).append(layer(lName));
   layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   // Center label under the shape
   let labelX = calc(cx - name.length * 2.7);
   let tlName = `s${n}-l`;
-  define TextLayer(tlName) ${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
+  define TextLayer(tlName) #{ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   layer(tlName).apply { text(labelX, 112)`${name}` }
 }
 
 // === Row 2: Rounded polygons ===
-define GroupLayer('round-row') ${ translate-x: 0; translate-y: 190; }
+define GroupLayer('round-row') #{ translate-x: 0; translate-y: 190; }
 
-define TextLayer('r2-title') ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+define TextLayer('r2-title') #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
 layer('round-row').append(layer('r2-title'));
 layer('r2-title').apply { text(20, 14)`Rounded corners — tangentLine + tangentArc` }
 
@@ -578,23 +578,23 @@ for (idx in 0..7) {
   let drawY = calc(72 - bb.y - bb.height / 2);
 
   let gName = `rg${n}`;
-  define GroupLayer(gName) ${ translate-x: 0; translate-y: 0; }
+  define GroupLayer(gName) #{ translate-x: 0; translate-y: 0; }
   layer('round-row').append(layer(gName));
 
   let lName = `r${n}`;
-  define PathLayer(lName) ${ fill: none; stroke: col; stroke-width: 2; }
+  define PathLayer(lName) #{ fill: none; stroke: col; stroke-width: 2; }
   layer(gName).append(layer(lName));
   layer(lName).apply { pb.drawTo(drawX, drawY); }
 
   let labelX = calc(cx - name.length * 2.7);
   let tlName = `r${n}-l`;
-  define TextLayer(tlName) ${ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
+  define TextLayer(tlName) #{ font-size: 9; fill: #64748b; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   layer(tlName).apply { text(labelX, 112)`${name}` }
 }
 
 // --- Caption ---
-define TextLayer('caption') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('caption') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('caption').apply {
   text(20, 382)`All shapes built with heading(), turn(), tangentLine(), and tangentArc().`
 }

@@ -62,7 +62,7 @@ Once you have a TextBlock, you need to place it. There are three positioning met
 TextBlocks emit to TextLayers, which are the text counterpart to PathLayers. You define one with `define TextLayer('name') ${ styles }` and activate it with `layer('name').apply { ... }`:
 
 ```pathogen
-define TextLayer('labels') ${ font-size: 12; fill: #333; }
+define TextLayer('labels') #{ font-size: 12; fill: #333; }
 
 layer('labels').apply {
   label.drawTo(50, 100);
@@ -82,15 +82,15 @@ let info = &{
   text(0, 44)`MEM: 1.2G`
 };
 
-let styled = info << ${ font-family: monospace; font-size: 12; };
+let styled = info << #{ font-family: monospace; font-size: 12; };
 ```
 
 The power here is that `info` remains unstyled. You can merge different styles into the same TextBlock to produce different presentations — and the bounding box adapts to each one:
 
 ```pathogen
-let mono_sm = ${ font-family: monospace; font-size: 10; };
-let mono_lg = ${ font-family: monospace; font-size: 14; };
-let sans    = ${ font-family: sans-serif; font-size: 12; };
+let mono_sm = #{ font-family: monospace; font-size: 10; };
+let mono_lg = #{ font-family: monospace; font-size: 14; };
+let sans    = #{ font-family: sans-serif; font-size: 12; };
 
 let bb1 = (info << mono_sm).boundingBox();  // compact
 let bb2 = (info << mono_lg).boundingBox();  // wider, taller
@@ -110,7 +110,7 @@ The dimension annotations at the bottom of each variant confirm what the code re
 The central insight of TextBlock is that you can measure text *before* deciding where to put it. The [`.boundingBox()`](/docs#text-block-methods) method returns an object with `x`, `y`, `width`, and `height` — the estimated bounding rectangle of all text elements in the block. Using the `<<` operator introduced above, you style a TextBlock before measuring so the metrics reflect the actual font configuration:
 
 ```pathogen
-let label = &{ text(0, 14)`Hello World` } << ${ font-size: 14; };
+let label = &{ text(0, 14)`Hello World` } << #{ font-size: 14; };
 let bb = label.boundingBox();
 log(bb.width);   // estimated pixel width
 log(bb.height);  // fontSize * 1.2 (line height)
@@ -147,7 +147,7 @@ Placing labels around a shape — node diagrams, compass roses, radial charts �
 [`.polarProject()`](/docs#text-block-polar-projection) replaces all of that with two clean ideas: polar coordinates for direction and distance, and anchor alignment for text positioning.
 
 ```pathogen
-let label = &{ text(0, 14)`Node A` } << ${ font-size: 14; };
+let label = &{ text(0, 14)`Node A` } << #{ font-size: 14; };
 
 // Place 80px from center at 45 degrees, anchored at center-left
 let placed = label.polarProject(100, 100, 45deg, 80, BBoxAnchor.Left);
@@ -292,7 +292,7 @@ let label = &{
 };
 
 // 2. Style — merge font and color properties
-let styled = label << ${ font-family: monospace; font-size: 12; };
+let styled = label << #{ font-family: monospace; font-size: 12; };
 
 // 3. Measure — get bounding box before placing
 let bb = styled.boundingBox();

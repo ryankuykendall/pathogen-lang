@@ -26,18 +26,18 @@ let projC = shapeB.project(calc(panelX1 + 300), calc(panelY1 + 10));
 let hitAC = projA.intersects(projC);
 
 // Draw overlapping pair
-let layerA = PathLayer('box-a') ${ fill: #4a90d9; fill-opacity: 0.35; stroke: #4a90d9; stroke-width: 2; };
+let layerA = PathLayer('box-a') #{ fill: #4a90d9; fill-opacity: 0.35; stroke: #4a90d9; stroke-width: 2; };
 layerA.;;;;;;;;;;;;;;;;;;;;apply { rect(panelX1, panelY1, boxW, boxH); }
 
-let layerB = PathLayer('box-b') ${ fill: #d94a4a; fill-opacity: 0.35; stroke: #d94a4a; stroke-width: 2; };
+let layerB = PathLayer('box-b') #{ fill: #d94a4a; fill-opacity: 0.35; stroke: #d94a4a; stroke-width: 2; };
 layerB.apply { rect(calc(panelX1 + 90), calc(panelY1 + 50), 80, 60); }
 
 // Draw non-overlapping shape
-let layerC = PathLayer('box-c') ${ fill: #5ab55a; fill-opacity: 0.35; stroke: #5ab55a; stroke-width: 2; };
+let layerC = PathLayer('box-c') #{ fill: #5ab55a; fill-opacity: 0.35; stroke: #5ab55a; stroke-width: 2; };
 layerC.apply { rect(calc(panelX1 + 300), calc(panelY1 + 10), 80, 60); }
 
 // Labels
-let labels = TextLayer('labels') ${ font-size: 13; fill: #333; text-anchor: middle; };
+let labels = TextLayer('labels') #{ font-size: 13; fill: #333; text-anchor: middle; };
 labels.apply {
   text(calc(panelX1 + boxW / 2), calc(panelY1 - 10))`Box A`
   text(calc(panelX1 + 90 + 40), calc(panelY1 + 50 - 10))`Box B`
@@ -45,10 +45,10 @@ labels.apply {
 }
 
 // Result indicators
-let resultLabels = TextLayer('result-labels') ${ font-size: 12; text-anchor: middle; };
+let resultLabels = TextLayer('result-labels') #{ font-size: 12; text-anchor: middle; };
 
 // Overlap result — green for true, red for false
-let resultOverlap = TextLayer('result-overlap') ${
+let resultOverlap = TextLayer('result-overlap') #{
   font-size: 14;
   fill: #2d8a2d;
   text-anchor: middle;
@@ -58,7 +58,7 @@ resultOverlap.apply {
   text(calc(panelX1 + 100), calc(panelY1 + boxH + 35))`A.intersects(B) → ${hitAB}`
 }
 
-let resultNoOverlap = TextLayer('result-no-overlap') ${
+let resultNoOverlap = TextLayer('result-no-overlap') #{
   font-size: 14;
   fill: #c44;
   text-anchor: middle;
@@ -69,7 +69,7 @@ resultNoOverlap.apply {
 }
 
 // --- Panel 1 title ---
-let title1 = TextLayer('title-1') ${ font-size: 16; fill: #222; font-weight: 700; text-anchor: start; };
+let title1 = TextLayer('title-1') #{ font-size: 16; fill: #222; font-weight: 700; text-anchor: start; };
 title1.apply {
   text(panelX1, 30)`.intersects() — AABB Overlap Test`
 }
@@ -90,17 +90,17 @@ let projDiag = diagLine.project(calc(panelX2), calc(panelY2 + 20));
 let crossPts = projBox2.intersectionPoints(projDiag);
 
 // Draw the box
-let layer2Box = PathLayer('panel2-box') ${ fill: #4a90d9; fill-opacity: 0.2; stroke: #4a90d9; stroke-width: 2; };
+let layer2Box = PathLayer('panel2-box') #{ fill: #4a90d9; fill-opacity: 0.2; stroke: #4a90d9; stroke-width: 2; };
 layer2Box.apply { rect(calc(panelX2 + 40), panelY2, boxW, boxH); }
 
 // Draw the diagonal line
-let layer2Line = PathLayer('panel2-line') ${ fill: none; stroke: #d94a4a; stroke-width: 2; stroke-dasharray: 6 3; };
+let layer2Line = PathLayer('panel2-line') #{ fill: none; stroke: #d94a4a; stroke-width: 2; stroke-dasharray: 6 3; };
 layer2Line.apply {
   line(panelX2, calc(panelY2 + 20), calc(panelX2 + 200), calc(panelY2 + 140))
 }
 
 // Draw crossing points as circles
-let layer2Pts = PathLayer('panel2-points') ${ fill: #e8a735; stroke: #b07818; stroke-width: 1.5; };
+let layer2Pts = PathLayer('panel2-points') #{ fill: #e8a735; stroke: #b07818; stroke-width: 1.5; };
 layer2Pts.apply {
   for (pt in crossPts) {
     circle(pt.x, pt.y, 5)
@@ -108,7 +108,7 @@ layer2Pts.apply {
 }
 
 // Label crossing points with coordinates
-let ptLabels = TextLayer('pt-labels') ${ font-size: 11; fill: #8b6914; text-anchor: start; };
+let ptLabels = TextLayer('pt-labels') #{ font-size: 11; fill: #8b6914; text-anchor: start; };
 ptLabels.apply {
   for (pt in crossPts) {
     text(calc(pt.x + 8), calc(pt.y + 4))`(${pt.x}, ${pt.y})`
@@ -116,18 +116,18 @@ ptLabels.apply {
 }
 
 // Label the box and line so the relationship is clear
-let p2BoxLabel = TextLayer('p2-box-label') ${ font-size: 12; fill: #4a90d9; text-anchor: middle; };
+let p2BoxLabel = TextLayer('p2-box-label') #{ font-size: 12; fill: #4a90d9; text-anchor: middle; };
 p2BoxLabel.apply {
   text(calc(panelX2 + 40 + boxW / 2), calc(panelY2 - 8))`projBox (bbox tested)`
 }
 
-let p2LineLabel = TextLayer('p2-line-label') ${ font-size: 12; fill: #d94a4a; text-anchor: start; };
+let p2LineLabel = TextLayer('p2-line-label') #{ font-size: 12; fill: #d94a4a; text-anchor: start; };
 p2LineLabel.apply {
   text(calc(panelX2 + 205), calc(panelY2 + 135))`diagLine`
 }
 
 // Count label
-let countLabel = TextLayer('count-label') ${
+let countLabel = TextLayer('count-label') #{
   font-size: 14;
   fill: #555;
   text-anchor: start;
@@ -138,7 +138,7 @@ countLabel.apply {
 }
 
 // --- Panel 2 title ---
-let title2 = TextLayer('title-2') ${ font-size: 16; fill: #222; font-weight: 700; text-anchor: start; };
+let title2 = TextLayer('title-2') #{ font-size: 16; fill: #222; font-weight: 700; text-anchor: start; };
 title2.apply {
   text(panelX2, calc(panelY2 - 20))`.intersectionPoints() — Crossing Detection`
 }
@@ -154,15 +154,15 @@ let testRect = {x: calc(panelX3 + 60), y: calc(panelY3 + 40), width: 120, height
 let hitRect = proj3.intersects(testRect);
 
 // Draw the PathBlock
-let layer3Shape = PathLayer('panel3-shape') ${ fill: #8e6ac8; fill-opacity: 0.3; stroke: #8e6ac8; stroke-width: 2; };
+let layer3Shape = PathLayer('panel3-shape') #{ fill: #8e6ac8; fill-opacity: 0.3; stroke: #8e6ac8; stroke-width: 2; };
 layer3Shape.apply { rect(panelX3, panelY3, 100, 80); }
 
 // Draw the test rectangle
-let layer3Rect = PathLayer('panel3-rect') ${ fill: none; stroke: #e8a735; stroke-width: 2; stroke-dasharray: 4 3; };
+let layer3Rect = PathLayer('panel3-rect') #{ fill: none; stroke: #e8a735; stroke-width: 2; stroke-dasharray: 4 3; };
 layer3Rect.apply { rect(testRect.x, testRect.y, testRect.width, testRect.height); }
 
 // Result
-let result3 = TextLayer('result-3') ${
+let result3 = TextLayer('result-3') #{
   font-size: 13;
   fill: #2d8a2d;
   text-anchor: middle;
@@ -172,20 +172,20 @@ result3.apply {
   text(calc(panelX3 + 90), calc(panelY3 + 80 + 50))`intersects({...}) → ${hitRect}`
 }
 
-let label3a = TextLayer('label-3a') ${ font-size: 12; fill: #8e6ac8; text-anchor: middle; };
+let label3a = TextLayer('label-3a') #{ font-size: 12; fill: #8e6ac8; text-anchor: middle; };
 label3a.apply { text(calc(panelX3 + 50), calc(panelY3 - 8))`PathBlock` }
 
-let label3b = TextLayer('label-3b') ${ font-size: 12; fill: #b07818; text-anchor: middle; };
+let label3b = TextLayer('label-3b') #{ font-size: 12; fill: #b07818; text-anchor: middle; };
 label3b.apply { text(calc(panelX3 + 60 + 60), calc(panelY3 + 40 - 8))`{x,y,w,h} object` }
 
 // --- Main title ---
-let mainTitle = TextLayer('main-title') ${ font-size: 11; fill: #999; text-anchor: end; };
+let mainTitle = TextLayer('main-title') #{ font-size: 11; fill: #999; text-anchor: end; };
 mainTitle.apply {
   text(500, 393)`PathBlock .intersects() / .intersectionPoints()`
 }
 
 // --- Scene ---
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(
   layerA, layerB, layerC,
   layer2Box, layer2Line, layer2Pts,

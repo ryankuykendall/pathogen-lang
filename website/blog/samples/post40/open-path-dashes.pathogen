@@ -3,7 +3,7 @@ define ViewBox(0, 0, 480, 170);
 // no healing, since there's no interior to close. Nine vertical strokes
 // turn one long wave into alternating-color dashes.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -11,26 +11,26 @@ layer('bg').apply {
   rect(0, 0, 480, 170);
 }
 
-let scene = GroupLayer('scene') ${};
-let warm = PathLayer('warm') ${
+let scene = GroupLayer('scene') #{};
+let warm = PathLayer('warm') #{
   stroke: #f59e0b;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let cool = PathLayer('cool') ${
+let cool = PathLayer('cool') #{
   stroke: #3b82f6;
   stroke-width: 5;
   fill: none;
   stroke-linecap: round;
 };
-let knifeLayer = PathLayer('knife') ${
+let knifeLayer = PathLayer('knife') #{
   stroke: #ef4444;
   stroke-width: 0.75;
   fill: none;
   opacity: 0.55;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;

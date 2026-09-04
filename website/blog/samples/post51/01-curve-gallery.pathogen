@@ -34,19 +34,19 @@ let plotH = 90;
 let gap = 14;
 let baseline = 150;
 
-let boxes = PathLayer('boxes') ${
+let boxes = PathLayer('boxes') #{
   stroke: oklch(0.82 0.02 260);
   stroke-width: 0.5;
   stroke-dasharray: 3 4;
   fill: none;
 };
-let lines = PathLayer('curves') ${
+let lines = PathLayer('curves') #{
   stroke: oklch(0.58 0.19 350);
   stroke-width: 1.5;
   stroke-linejoin: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   letter-spacing: 0.5;

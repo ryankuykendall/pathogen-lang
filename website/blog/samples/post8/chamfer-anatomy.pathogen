@@ -6,10 +6,10 @@ let corner = @{ h 100 v 80 };
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 480, 340); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -27,7 +27,7 @@ grid.apply {
 
 // --- Original corner (dashed) ---
 
-let original = PathLayer('original') ${
+let original = PathLayer('original') #{
   stroke: Color('#94a3b8');
   stroke-width: 1.5;
   stroke-dasharray: "6 4";
@@ -41,7 +41,7 @@ original.apply {
 
 // --- Chamfer line (result) ---
 
-let chamfer_line = PathLayer('chamfer') ${
+let chamfer_line = PathLayer('chamfer') #{
   stroke: Color('#3b82f6');
   stroke-width: 2.5;
   fill: none;
@@ -57,7 +57,7 @@ chamfer_line.apply {
 
 // --- Vertex dot ---
 
-let vertex_dot = PathLayer('vertex-dot') ${
+let vertex_dot = PathLayer('vertex-dot') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -68,7 +68,7 @@ vertex_dot.apply {
 
 // --- Trim points ---
 
-let trim_dots = PathLayer('trim-dots') ${
+let trim_dots = PathLayer('trim-dots') #{
   fill: Color('#22c55e');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -80,7 +80,7 @@ trim_dots.apply {
 
 // --- Dimension lines ---
 
-let dims = PathLayer('dims') ${
+let dims = PathLayer('dims') #{
   stroke: Color('#f59e0b');
   stroke-width: 1;
   fill: none;
@@ -99,7 +99,7 @@ dims.apply {
 
 // --- Dimension arrows ---
 
-let dim_arrows = PathLayer('dim-arrows') ${
+let dim_arrows = PathLayer('dim-arrows') #{
   fill: Color('#f59e0b');
   stroke: none;
 };
@@ -114,7 +114,7 @@ dim_arrows.apply {
 
 // --- Removed corner (hatched area) ---
 
-let removed = PathLayer('removed') ${
+let removed = PathLayer('removed') #{
   fill: Color('#ef444415');
   stroke: Color('#ef444440');
   stroke-width: 1;
@@ -125,7 +125,7 @@ removed.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') ${
+let leaders = PathLayer('leaders') #{
   stroke: Color('#475569');
   stroke-width: 0.5;
   fill: none;
@@ -139,7 +139,7 @@ leaders.apply {
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -151,7 +151,7 @@ labels.apply {
   text(315, 142)`chamfer line`
 }
 
-let labels_left = TextLayer('labels-left') ${
+let labels_left = TextLayer('labels-left') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -163,7 +163,7 @@ labels_left.apply {
 
 // --- Dimension labels ---
 
-let dim_labels = TextLayer('dim-labels') ${
+let dim_labels = TextLayer('dim-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#f59e0b');
@@ -176,7 +176,7 @@ dim_labels.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -189,7 +189,7 @@ code.apply {
   text(30, 306)`// If d1 == d2: symmetric chamfer`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -198,18 +198,18 @@ let kw = TextLayer('kw') ${
 
 // --- Legend ---
 
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
 
-let leg_o = PathLayer('leg-orig') ${ fill: Color('#94a3b8'); stroke: none; };
-let leg_c = PathLayer('leg-cham') ${ fill: Color('#3b82f6'); stroke: none; };
-let leg_v = PathLayer('leg-vert') ${ fill: Color('#ef4444'); stroke: none; };
-let leg_t = PathLayer('leg-trim') ${ fill: Color('#22c55e'); stroke: none; };
-let leg_r = PathLayer('leg-rem') ${ fill: Color('#ef444440'); stroke: none; };
+let leg_o = PathLayer('leg-orig') #{ fill: Color('#94a3b8'); stroke: none; };
+let leg_c = PathLayer('leg-cham') #{ fill: Color('#3b82f6'); stroke: none; };
+let leg_v = PathLayer('leg-vert') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_t = PathLayer('leg-trim') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_r = PathLayer('leg-rem') #{ fill: Color('#ef444440'); stroke: none; };
 
 leg_o.apply { rect(310, 256, 8, 8); }
 leg_c.apply { rect(310, 270, 8, 8); }
@@ -227,7 +227,7 @@ leg.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -237,7 +237,7 @@ title.apply {
   text(30, 28)`Chamfer Anatomy`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');

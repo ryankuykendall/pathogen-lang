@@ -10,15 +10,15 @@ let leaderColor = Color('#b0a898');
 let kwColor = Color('#3b82f6');
 let paramColor = Color('#8b5cf6');
 
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 560, 400); }
 
 // ============================================================
 // Group 1: Title
 // ============================================================
-define GroupLayer('title-group') ${ translate-x: 0; translate-y: 0; }
+define GroupLayer('title-group') #{ translate-x: 0; translate-y: 0; }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-size: 13;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -33,7 +33,7 @@ title.apply {
 // ============================================================
 // Group 2: Wedge diagram with annotations
 // ============================================================
-define GroupLayer('diagram') ${ translate-x: 30; translate-y: 50; }
+define GroupLayer('diagram') #{ translate-x: 30; translate-y: 50; }
 
 let cx = 130;
 let cy = 155;
@@ -43,7 +43,7 @@ let fromA = rad(-50);
 let toA = rad(35);
 
 // Reference circles (dashed)
-let guides = PathLayer('guides') ${ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
+let guides = PathLayer('guides') #{ fill: none; stroke: guideColor; stroke-width: 0.6; stroke-dasharray: 4 3; };
 layer('diagram').append(guides);
 guides.apply {
   circle(cx, cy, innerR);
@@ -51,7 +51,7 @@ guides.apply {
 }
 
 // Sharp corners (ghost)
-let sharpLayer = PathLayer('sharp') ${ fill: barColor; stroke: none; opacity: 0.2; };
+let sharpLayer = PathLayer('sharp') #{ fill: barColor; stroke: none; opacity: 0.2; };
 layer('diagram').append(sharpLayer);
 sharpLayer.apply {
   M cx cy
@@ -59,7 +59,7 @@ sharpLayer.apply {
 }
 
 // Rounded corners
-let roundLayer = PathLayer('rounded') ${ fill: barColor; stroke: none; };
+let roundLayer = PathLayer('rounded') #{ fill: barColor; stroke: none; };
 layer('diagram').append(roundLayer);
 roundLayer.apply {
   M cx cy
@@ -67,23 +67,23 @@ roundLayer.apply {
 }
 
 // --- Annotation layers ---
-let dots = PathLayer('dots') ${ fill: annotColor; stroke: none; };
-let leaders = PathLayer('leaders') ${ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
-let arcs = PathLayer('arcs') ${ fill: none; stroke: annotColor; stroke-width: 0.8; };
-let ticks = PathLayer('ticks') ${ fill: none; stroke: annotColor; stroke-width: 0.7; };
-let labelsMid = TextLayer('labels-mid') ${
+let dots = PathLayer('dots') #{ fill: annotColor; stroke: none; };
+let leaders = PathLayer('leaders') #{ fill: none; stroke: leaderColor; stroke-width: 0.5; stroke-dasharray: 2 2; };
+let arcs = PathLayer('arcs') #{ fill: none; stroke: annotColor; stroke-width: 0.8; };
+let ticks = PathLayer('ticks') #{ fill: none; stroke: annotColor; stroke-width: 0.7; };
+let labelsMid = TextLayer('labels-mid') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
   text-anchor: middle;
 };
-let labelsStart = TextLayer('labels-start') ${
+let labelsStart = TextLayer('labels-start') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
   text-anchor: start;
 };
-let labelsEnd = TextLayer('labels-end') ${
+let labelsEnd = TextLayer('labels-end') #{
   font-size: 9;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -166,9 +166,9 @@ guides.apply { M cx cy L calc(cx + arcR + 3) cy }
 // ============================================================
 // Group 3: Stdlib function call (code)
 // ============================================================
-define GroupLayer('code-group') ${ translate-x: 350; translate-y: 50; }
+define GroupLayer('code-group') #{ translate-x: 350; translate-y: 50; }
 
-let headerLabel = TextLayer('header') ${
+let headerLabel = TextLayer('header') #{
   font-size: 10;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -178,7 +178,7 @@ let headerLabel = TextLayer('header') ${
 layer('code-group').append(headerLabel);
 headerLabel.apply { text(0, 10)`stdlib function call:` }
 
-let codeLayer = TextLayer('code') ${
+let codeLayer = TextLayer('code') #{
   font-size: 9.5;
   fill: annotColor;
   font-family: monospace, monospace;
@@ -186,9 +186,9 @@ let codeLayer = TextLayer('code') ${
 };
 layer('code-group').append(codeLayer);
 
-let kwStyle = ${ fill: kwColor; };
-let paramStyle = ${ fill: paramColor; };
-let plainStyle = ${ fill: annotColor; };
+let kwStyle = #{ fill: kwColor; };
+let paramStyle = #{ fill: paramColor; };
+let plainStyle = #{ fill: annotColor; };
 
 codeLayer.apply {
   text(0, 32) {
@@ -220,9 +220,9 @@ codeLayer.apply {
 // ============================================================
 // Group 4: Graceful degradation + corner callout
 // ============================================================
-define GroupLayer('notes-group') ${ translate-x: 350; translate-y: 195; }
+define GroupLayer('notes-group') #{ translate-x: 350; translate-y: 195; }
 
-let notesHeader = TextLayer('notes-header') ${
+let notesHeader = TextLayer('notes-header') #{
   font-size: 10;
   fill: textColor;
   font-family: system-ui, sans-serif;
@@ -232,7 +232,7 @@ let notesHeader = TextLayer('notes-header') ${
 layer('notes-group').append(notesHeader);
 notesHeader.apply { text(0, 10)`Graceful degradation:` }
 
-let notesCode = TextLayer('notes-code') ${
+let notesCode = TextLayer('notes-code') #{
   font-size: 9.5;
   fill: Color('#6b7280');
   font-family: monospace, monospace;
@@ -246,7 +246,7 @@ notesCode.apply {
   text(0, 78)`// No M — composable in @{}`
 }
 
-let accentLabels = TextLayer('accent') ${
+let accentLabels = TextLayer('accent') #{
   font-size: 9;
   fill: barColor;
   font-family: system-ui, sans-serif;

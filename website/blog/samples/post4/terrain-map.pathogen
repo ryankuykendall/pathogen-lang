@@ -51,28 +51,28 @@ topo.interpolation = 'oklch';
 
 // --- Layers ---
 
-let bg = PathLayer('bg') ${ fill: topo; stroke: none; };
+let bg = PathLayer('bg') #{ fill: topo; stroke: none; };
 bg.apply { rect(0, 0, 500, 400); }
 
 // --- Elevation legend ---
 
-let legend_bg = PathLayer('legend-bg') ${ fill: #00000066; stroke: none; };
+let legend_bg = PathLayer('legend-bg') #{ fill: #00000066; stroke: none; };
 legend_bg.apply { roundRect(350, 270, 135, 110, 4); }
 
-let s1 = PathLayer('s1') ${ fill: #1a5276; stroke: #444; stroke-width: 0.5; };
+let s1 = PathLayer('s1') #{ fill: #1a5276; stroke: #444; stroke-width: 0.5; };
 s1.apply { rect(360, 280, 14, 10); }
-let s2 = PathLayer('s2') ${ fill: #c2b280; stroke: #444; stroke-width: 0.5; };
+let s2 = PathLayer('s2') #{ fill: #c2b280; stroke: #444; stroke-width: 0.5; };
 s2.apply { rect(360, 296, 14, 10); }
-let s3 = PathLayer('s3') ${ fill: #8fbc8f; stroke: #444; stroke-width: 0.5; };
+let s3 = PathLayer('s3') #{ fill: #8fbc8f; stroke: #444; stroke-width: 0.5; };
 s3.apply { rect(360, 312, 14, 10); }
-let s4 = PathLayer('s4') ${ fill: #228b22; stroke: #444; stroke-width: 0.5; };
+let s4 = PathLayer('s4') #{ fill: #228b22; stroke: #444; stroke-width: 0.5; };
 s4.apply { rect(360, 328, 14, 10); }
-let s5 = PathLayer('s5') ${ fill: #8b6914; stroke: #444; stroke-width: 0.5; };
+let s5 = PathLayer('s5') #{ fill: #8b6914; stroke: #444; stroke-width: 0.5; };
 s5.apply { rect(360, 344, 14, 10); }
-let s6 = PathLayer('s6') ${ fill: #dcdcdc; stroke: #444; stroke-width: 0.5; };
+let s6 = PathLayer('s6') #{ fill: #dcdcdc; stroke: #444; stroke-width: 0.5; };
 s6.apply { rect(360, 360, 14, 10); }
 
-let legend = TextLayer('legend') ${
+let legend = TextLayer('legend') #{
   font-family: monospace;
   font-size: 8;
   fill: #ccc;
@@ -87,7 +87,7 @@ legend.apply {
   text(380, 369)`0.92 summit`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #aaa;
@@ -99,8 +99,8 @@ title.apply {
 
 // --- Scene ---
 
-let legend_group = GroupLayer('legend-group') ${};
+let legend_group = GroupLayer('legend-group') #{};
 legend_group.append(legend_bg, s1, s2, s3, s4, s5, s6, legend);
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, legend_group, title);

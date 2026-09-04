@@ -12,7 +12,7 @@ let cream  = Color(CSSVar('--cream', '#f4f1de'));
 // ── Pattern: polka-dot tile ──────────────────────────
 let dot = @{ circle(5, 5, 1.8); };
 let polka = Pattern('polka', 0, 0, 10, 10) {|p|
-  p.append(dot, ${ fill: deep; opacity: 0.15; });
+  p.append(dot, #{ fill: deep; opacity: 0.15; });
 };
 polka.patternUnits = 'userSpaceOnUse';
 
@@ -53,31 +53,31 @@ spot.spread = 'transparent';
 // ═══════════════════════════════════════════════════════
 
 // Background
-define PathLayer('bg') ${ fill: cream; stroke: none; }
+define PathLayer('bg') #{ fill: cream; stroke: none; }
 layer('bg').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
 
 // Pattern overlay
-define PathLayer('dots') ${ fill: polka; stroke: none; }
+define PathLayer('dots') #{ fill: polka; stroke: none; }
 layer('dots').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
 
 // ── Color wheel (left) ──────────────────────────────
-define PathLayer('wheel-fill') ${ fill: wheel; stroke: none; }
+define PathLayer('wheel-fill') #{ fill: wheel; stroke: none; }
 layer('wheel-fill').apply { circle(50, 65, 35); }
 
-define PathLayer('wheel-hole') ${ fill: cream; stroke: none; }
+define PathLayer('wheel-hole') #{ fill: cream; stroke: none; }
 layer('wheel-hole').apply { circle(50, 65, 18); }
 
-define PathLayer('wheel-rim') ${ fill: none; stroke: deep; stroke-width: 1; }
+define PathLayer('wheel-rim') #{ fill: none; stroke: deep; stroke-width: 1; }
 layer('wheel-rim').apply { circle(50, 65, 35); }
 
 // ── Gauge (right) ───────────────────────────────────
-define PathLayer('gauge-fill') ${ fill: gauge; stroke: none; }
+define PathLayer('gauge-fill') #{ fill: gauge; stroke: none; }
 layer('gauge-fill').apply { circle(150, 65, 35); }
 
-define PathLayer('gauge-hole') ${ fill: cream; stroke: none; }
+define PathLayer('gauge-hole') #{ fill: cream; stroke: none; }
 layer('gauge-hole').apply { circle(150, 65, 18); }
 
-define PathLayer('gauge-rim') ${ fill: none; stroke: deep; stroke-width: 1; }
+define PathLayer('gauge-rim') #{ fill: none; stroke: deep; stroke-width: 1; }
 layer('gauge-rim').apply { circle(150, 65, 35); }
 
 // ── Dynamic tick marks around gauge ──────────────────
@@ -91,7 +91,7 @@ for ([val, i] in ticks) {
   let y2 = calc(65  + 38 * sin(a_rad));
 
   let name = `tick-${i}`;
-  define PathLayer(name) ${ stroke: deep; stroke-width: 1.5; stroke-linecap: round; }
+  define PathLayer(name) #{ stroke: deep; stroke-width: 1.5; stroke-linecap: round; }
   layer(name).apply { M x1 y1 L x2 y2 }
 }
 
@@ -99,24 +99,24 @@ for ([val, i] in ticks) {
 let needle_angle = calc((135 + 270 * 0.7) * 3.14159265 / 180);
 let nx = calc(150 + 26 * cos(needle_angle));
 let ny = calc(65  + 26 * sin(needle_angle));
-define PathLayer('needle') ${ stroke: hot; stroke-width: 2; stroke-linecap: round; }
+define PathLayer('needle') #{ stroke: hot; stroke-width: 2; stroke-linecap: round; }
 layer('needle').apply { M 150 65 L nx ny }
 
 // ── Spotlight disc (bottom center) ───────────────────
-define PathLayer('spot-bg') ${ fill: deep; stroke: none; }
+define PathLayer('spot-bg') #{ fill: deep; stroke: none; }
 layer('spot-bg').apply { circle(100, 155, 25); }
 
-define PathLayer('spot-fill') ${ fill: spot; stroke: none; }
+define PathLayer('spot-fill') #{ fill: spot; stroke: none; }
 layer('spot-fill').apply { circle(100, 155, 25); }
 
-define PathLayer('spot-rim') ${ fill: none; stroke: cool; stroke-width: 0.5; }
+define PathLayer('spot-rim') #{ fill: none; stroke: cool; stroke-width: 0.5; }
 layer('spot-rim').apply { circle(100, 155, 25); }
 
 // ── Dynamic decorative dots along bottom ─────────────
 let dot_positions = [25, 50, 150, 175];
 for ([xpos, i] in dot_positions) {
   let dname = `deco-${i}`;
-  define PathLayer(dname) ${ fill: hot; stroke: none; opacity: 0.5; }
+  define PathLayer(dname) #{ fill: hot; stroke: none; opacity: 0.5; }
   layer(dname).apply { circle(xpos, 155, 2.5); }
 }
 
@@ -124,7 +124,7 @@ for ([xpos, i] in dot_positions) {
 //  Labels
 // ═══════════════════════════════════════════════════════
 
-define TextLayer('labels') ${ font-size: 8; fill: deep; font-family: sans-serif; text-anchor: middle; }
+define TextLayer('labels') #{ font-size: 8; fill: deep; font-family: sans-serif; text-anchor: middle; }
 layer('labels').apply {
   text(50, 16)`Conic Gradient`
   text(50, 24)`OKLCh · full sweep`
@@ -133,7 +133,7 @@ layer('labels').apply {
   text(100, 192)`Spotlight (30° band)`
 }
 
-define TextLayer('footer') ${ font-size: 7; fill: deep; font-family: sans-serif; text-anchor: start; }
+define TextLayer('footer') #{ font-size: 7; fill: deep; font-family: sans-serif; text-anchor: start; }
 layer('footer').apply {
   text(5, 198)`Pattern fill · Reactive CSSVar colors · Dynamic layers`
 }

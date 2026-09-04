@@ -160,59 +160,59 @@ describe('rename inside style-block values', () => {
   }
 
   it('renames a variable referenced inside drop-shadow()', () => {
-    const src = 'let c = #f00;\nlet s = ${ filter: drop-shadow(1px 1px c); };';
+    const src = 'let c = #f00;\nlet s = #{ filter: drop-shadow(1px 1px c); };';
     const edits = rename(src, 0, 4, 'shadow');
     expect(edits).toHaveLength(2);
     expect(applyEdits(src, edits)).toBe(
-      'let shadow = #f00;\nlet s = ${ filter: drop-shadow(1px 1px shadow); };',
+      'let shadow = #f00;\nlet s = #{ filter: drop-shadow(1px 1px shadow); };',
     );
   });
 
   it('renames a member-head reference', () => {
-    const src = 'let c = #f00;\nlet s = ${ fill: c.alpha(40%); };';
+    const src = 'let c = #f00;\nlet s = #{ fill: c.alpha(40%); };';
     expect(applyEdits(src, rename(src, 0, 4, 'base'))).toBe(
-      'let base = #f00;\nlet s = ${ fill: base.alpha(40%); };',
+      'let base = #f00;\nlet s = #{ fill: base.alpha(40%); };',
     );
   });
 
   it('renames inside a template interpolation value', () => {
-    const src = "let family = 'Inter';\nlet s = ${ font-family: `${family}`; };";
+    const src = "let family = 'Inter';\nlet s = #{ font-family: `${family}`; };";
     expect(applyEdits(src, rename(src, 0, 6, 'font'))).toBe(
-      "let font = 'Inter';\nlet s = ${ font-family: `${font}`; };",
+      "let font = 'Inter';\nlet s = #{ font-family: `${font}`; };",
     );
   });
 
   it('handles declaration and style-value reference on the SAME line', () => {
-    const src = 'let c = #f00; let s = ${ stroke: c; };';
+    const src = 'let c = #f00; let s = #{ stroke: c; };';
     const edits = rename(src, 0, 4, 'col');
-    expect(applyEdits(src, edits)).toBe('let col = #f00; let s = ${ stroke: col; };');
+    expect(applyEdits(src, edits)).toBe('let col = #f00; let s = #{ stroke: col; };');
   });
 
   it('renames multiple style-value references on one line distinctly', () => {
-    const src = 'let c = #f00;\nlet s = ${ filter: drop-shadow(1px 1px c) drop-shadow(2px 2px c); };';
+    const src = 'let c = #f00;\nlet s = #{ filter: drop-shadow(1px 1px c) drop-shadow(2px 2px c); };';
     const edits = rename(src, 0, 4, 'x');
     expect(edits).toHaveLength(3);
     expect(applyEdits(src, edits)).toBe(
-      'let x = #f00;\nlet s = ${ filter: drop-shadow(1px 1px x) drop-shadow(2px 2px x); };',
+      'let x = #f00;\nlet s = #{ filter: drop-shadow(1px 1px x) drop-shadow(2px 2px x); };',
     );
   });
 
   it('rename initiated FROM a style-value reference works', () => {
-    const src = 'let c = #f00;\nlet s = ${ stroke: c; };';
+    const src = 'let c = #f00;\nlet s = #{ stroke: c; };';
     // Cursor on the `c` inside the style block (line 1, char 19)
     const edits = rename(src, 1, 19, 'col');
-    expect(applyEdits(src, edits)).toBe('let col = #f00;\nlet s = ${ stroke: col; };');
+    expect(applyEdits(src, edits)).toBe('let col = #f00;\nlet s = #{ stroke: col; };');
   });
 
   it('prepareRename works on a style-value reference', () => {
-    const src = 'let c = #f00;\nlet s = ${ stroke: c; };';
+    const src = 'let c = #f00;\nlet s = #{ stroke: c; };';
     const result = prepare(src, 1, 19);
     expect(result).not.toBeNull();
     expect(result!.placeholder).toBe('c');
   });
 
   it('does not rename an undeclared CSS keyword', () => {
-    const src = 'let s = ${ stroke-linejoin: round; };';
+    const src = 'let s = #{ stroke-linejoin: round; };';
     expect(prepare(src, 0, 30)).toBeNull();
   });
 });

@@ -60,7 +60,7 @@ export const LANGUAGE_FEATURES: readonly LanguageFeature[] = [
     fn: 'getCompletions',
     vscodeCapability: 'completionProvider',
     // `:` opens value-position suggestions inside style blocks.
-    lspTriggerCharacters: ['.', '$', '@', '&', ':'],
+    lspTriggerCharacters: ['.', '$', '#', '@', '&', ':'],
     playgroundRequired: true,
   },
   {

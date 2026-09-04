@@ -18,7 +18,7 @@ const OUT_DIR = join(process.cwd(), 'project-docs', 'pdf-export', 'verify');
 
 const MAIN_SOURCE = `define ViewBox(0, 0, 800, 500);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: #14101c;
 }
 
@@ -26,7 +26,7 @@ layer('background').apply {
   rect(0, 0, 800, 500);
 }
 
-define PathLayer('rings') \${
+define PathLayer('rings') #{
   stroke: #f7b56e;
   stroke-width: 3;
   fill: #b384e0;
@@ -37,11 +37,11 @@ layer('rings').apply {
   circle(200, 300, 80);
 }
 
-define TextLayer('labels') \${}
+define TextLayer('labels') #{}
 
 let title = &{
   text(0, 36)\`Aurora Waves\`
-} << \${ font-size: 36; font-family: Raleway; fill: #f6e9da; };
+} << #{ font-size: 36; font-family: Raleway; fill: #f6e9da; };
 
 layer('labels').apply {
   title.project(40, 40).draw();
@@ -52,7 +52,7 @@ layer('labels').apply {
 // sRGB hex or every fill silently renders black (found via a real user export).
 const OKLCH_SOURCE = `define ViewBox(0, 0, 400, 300);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: oklch(0.25 0.05 300);
   stroke: none;
 }
@@ -61,7 +61,7 @@ layer('background').apply {
   rect(0, 0, 400, 300);
 }
 
-define PathLayer('dots') \${
+define PathLayer('dots') #{
   fill: oklch(0.75 0.15 340);
   stroke: oklch(0.85 0.1 90);
   stroke-width: 2;
@@ -79,7 +79,7 @@ layer('dots').apply {
 // (measured; integer coordinates compress to ~0.7M and DON'T trip it).
 const COMPLEX_SOURCE = `define ViewBox(0, 0, 800, 500);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: #ffffff;
   stroke: none;
 }
@@ -88,7 +88,7 @@ layer('background').apply {
   rect(0, 0, 800, 500);
 }
 
-define PathLayer('field') \${
+define PathLayer('field') #{
   stroke: #445566;
   stroke-width: 0.3;
   fill: none;
@@ -105,7 +105,7 @@ layer('field').apply {
 // 8192px cap (the data-URL image path blew the regex stack at this size).
 const BIG_CANVAS_SOURCE = `define ViewBox(0, 0, 8200, 10000);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: #ddd;
   stroke: none;
 }
@@ -114,7 +114,7 @@ layer('background').apply {
   rect(0, 0, 8200, 10000);
 }
 
-define PathLayer('rings') \${
+define PathLayer('rings') #{
   stroke: #222222;
   stroke-width: 12;
   fill: none;
@@ -131,7 +131,7 @@ layer('rings').apply {
 // Vector remains the default) for the Detail decimation + Precision checks.
 const DENSE_SOURCE = `define ViewBox(0, 0, 800, 500);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: #ffffff;
   stroke: none;
 }
@@ -140,7 +140,7 @@ layer('background').apply {
   rect(0, 0, 800, 500);
 }
 
-define PathLayer('dense') \${
+define PathLayer('dense') #{
   stroke: #333333;
   stroke-width: 0.5;
   fill: none;
@@ -159,10 +159,10 @@ let arrow = @{
 };
 
 let arrowMarker = Marker('arrowhead', 10, 10) {|m|
-  m.append(arrow, \${ fill: #333333; });
+  m.append(arrow, #{ fill: #333333; });
 };
 
-define PathLayer('pointer') \${
+define PathLayer('pointer') #{
   stroke: #333333;
   stroke-width: 2;
   fill: none;
@@ -176,7 +176,7 @@ layer('pointer').apply {
 
 const MASK_SOURCE = `define ViewBox(0, 0, 200, 200);
 
-define default PathLayer('background') \${
+define default PathLayer('background') #{
   fill: #ffffff;
 }
 
@@ -188,10 +188,10 @@ let fullRect = @{ m 0 0 l 200 0 l 0 200 l -200 0 z };
 let circleShape = @{ m 100 50 a 50 50 0 1 1 0 100 a 50 50 0 1 1 0 -100 };
 
 let m = Mask('circle-reveal');
-m.append(fullRect, \${ fill: black; });
-m.append(circleShape, \${ fill: white; });
+m.append(fullRect, #{ fill: black; });
+m.append(circleShape, #{ fill: white; });
 
-define PathLayer('drawing') \${ mask: m.id; stroke: #333333; stroke-width: 2; }
+define PathLayer('drawing') #{ mask: m.id; stroke: #333333; stroke-width: 2; }
 layer('drawing').apply {
   for (i in 0..20) {
     M 0 calc(i * 10)

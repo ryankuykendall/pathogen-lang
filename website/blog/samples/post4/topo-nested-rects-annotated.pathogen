@@ -61,47 +61,47 @@ topo.interpolation = 'oklch';
 
 // ========== LEFT PANEL: Rendered Gradient ==========
 
-let bg = PathLayer('bg') ${ fill: #111; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #111; stroke: none; };
 bg.apply { rect(0, 0, 840, 420); }
 
-let left_fill = PathLayer('left-fill') ${ fill: topo; stroke: #333; stroke-width: 1; };
+let left_fill = PathLayer('left-fill') #{ fill: topo; stroke: #333; stroke-width: 1; };
 left_fill.apply { roundRect(10, 10, 400, 400, 6); }
 
 // ========== RIGHT PANEL: Contour Schematic ==========
 
-let schema_border = PathLayer('schema-border') ${ fill: none; stroke: #333; stroke-width: 1; };
+let schema_border = PathLayer('schema-border') #{ fill: none; stroke: #333; stroke-width: 1; };
 schema_border.apply { roundRect(430, 10, 400, 400, 6); }
 
 // Schematic: same shapes drawn at +430 x offset (center ≈ 630, 200)
 // M positions mirror the gradient projections offset into right panel
 
-let outline1 = PathLayer('outline1') ${ fill: none; stroke: #888; stroke-width: 1.2; };
+let outline1 = PathLayer('outline1') #{ fill: none; stroke: #888; stroke-width: 1.2; };
 outline1.apply { M 639 189 r1.draw() }
 
-let outline2 = PathLayer('outline2') ${ fill: none; stroke: #aaa; stroke-width: 1.2; };
+let outline2 = PathLayer('outline2') #{ fill: none; stroke: #aaa; stroke-width: 1.2; };
 outline2.apply { M 639 190 r2.draw() }
 
-let outline3 = PathLayer('outline3') ${ fill: none; stroke: #ccc; stroke-width: 1.2; };
+let outline3 = PathLayer('outline3') #{ fill: none; stroke: #ccc; stroke-width: 1.2; };
 outline3.apply { M 637 193 r3.draw() }
 
-let outline4 = PathLayer('outline4') ${ fill: none; stroke: #eee; stroke-width: 1.2; };
+let outline4 = PathLayer('outline4') #{ fill: none; stroke: #eee; stroke-width: 1.2; };
 outline4.apply { M 633 200 r4.draw() }
 
 // --- Paint chips (25% larger: 15x13) + elevation labels ---
 
-let chip1 = PathLayer('chip1') ${ fill: #264653; stroke: #555; stroke-width: 0.5; };
+let chip1 = PathLayer('chip1') #{ fill: #264653; stroke: #555; stroke-width: 0.5; };
 chip1.apply { rect(770, 145, 15, 13); }
 
-let chip2 = PathLayer('chip2') ${ fill: #2a9d8f; stroke: #555; stroke-width: 0.5; };
+let chip2 = PathLayer('chip2') #{ fill: #2a9d8f; stroke: #555; stroke-width: 0.5; };
 chip2.apply { rect(770, 190, 15, 13); }
 
-let chip3 = PathLayer('chip3') ${ fill: #e9c46a; stroke: #555; stroke-width: 0.5; };
+let chip3 = PathLayer('chip3') #{ fill: #e9c46a; stroke: #555; stroke-width: 0.5; };
 chip3.apply { rect(770, 235, 15, 13); }
 
-let chip4 = PathLayer('chip4') ${ fill: #e76f51; stroke: #555; stroke-width: 0.5; };
+let chip4 = PathLayer('chip4') #{ fill: #e76f51; stroke: #555; stroke-width: 0.5; };
 chip4.apply { rect(770, 280, 15, 13); }
 
-let elev_labels = TextLayer('elev-labels') ${
+let elev_labels = TextLayer('elev-labels') #{
   font-family: monospace;
   font-size: 11;
   fill: #bbb;
@@ -117,7 +117,7 @@ elev_labels.apply {
 // --- Leader lines (from chip left edge to shape right edge) ---
 // Endpoints computed from rotated vertex positions in schematic space
 
-let leaders = PathLayer('leaders') ${ fill: none; stroke: #555; stroke-width: 0.7; };
+let leaders = PathLayer('leaders') #{ fill: none; stroke: #555; stroke-width: 0.7; };
 leaders.apply {
   M 770 152 l -37 23
   M 770 197 l -80 -2
@@ -127,7 +127,7 @@ leaders.apply {
 
 // --- Panel labels ---
 
-let panel_labels = TextLayer('panel-labels') ${
+let panel_labels = TextLayer('panel-labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -140,5 +140,5 @@ panel_labels.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, left_fill, schema_border, outline1, outline2, outline3, outline4, chip1, chip2, chip3, chip4, elev_labels, leaders, panel_labels);

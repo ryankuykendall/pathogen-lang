@@ -25,11 +25,11 @@ let m_complement = Color(CSSVar('--demo-color', #e63946)).hueShift(180);
 let m_alpha = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') ${}
-define GroupLayer('cards') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('cards') #{}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -38,7 +38,7 @@ bg.apply {
 }
 
 // ─── Eyebrow (top-left) ─────────────────────────────────────
-let eyebrow = TextLayer('eyebrow') ${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -107,7 +107,7 @@ let methods = [
 ];
 
 // ─── Card styles ────────────────────────────────────────────
-let card_name = TextLayer('card-name') ${
+let card_name = TextLayer('card-name') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -115,7 +115,7 @@ let card_name = TextLayer('card-name') ${
   fill: fg_auto;
   text-anchor: start;
 };
-let card_value = TextLayer('card-value') ${
+let card_value = TextLayer('card-value') #{
   font-family: font;
   font-size: 6;
   letter-spacing: 0.5;
@@ -131,7 +131,7 @@ for ([m, i] in methods) {
   let y_t = calc(y0 + row_i * (row_h + gap));
 
   let swatch_name = `swatch-${i}`;
-  let sw = PathLayer(swatch_name) ${
+  let sw = PathLayer(swatch_name) #{
     fill: m[1];
     stroke: fg_hair;
     stroke-width: 0.5;

@@ -11,29 +11,29 @@ let red = Color(CSSVar('--band-inner', #e63946));
 let amber = Color(CSSVar('--band-middle', #e0a725));
 let blue = Color(CSSVar('--band-outer', #457b9d));
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('bandOuter') ${
+define PathLayer('bandOuter') #{
   fill: blue;
   fill-opacity: 0.30;
   stroke: blue;
   stroke-width: 0.5;
 }
-define PathLayer('bandMiddle') ${
+define PathLayer('bandMiddle') #{
   fill: amber;
   fill-opacity: 0.38;
   stroke: amber;
   stroke-width: 0.5;
 }
-define PathLayer('bandInner') ${
+define PathLayer('bandInner') #{
   fill: red;
   fill-opacity: 0.32;
   stroke: red;
   stroke-width: 0.5;
 }
-define PathLayer('glyph') ${
+define PathLayer('glyph') #{
   fill: fg;
 }
 
@@ -41,7 +41,7 @@ layer('bg').apply {
   rect(0, 0, 520, 440);
 }
 
-let styles = ${
+let styles = #{
   font-family: Baumans-Regular;
   font-size: 300;
 };

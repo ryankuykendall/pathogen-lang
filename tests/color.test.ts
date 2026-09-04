@@ -705,7 +705,7 @@ describe('Color type', () => {
       const result = compile(`
         let orangish = #d19a66;
         for (i in 1..9) {
-          let shiftLayer = PathLayer(\`shift-\${i}\`) \${
+          let shiftLayer = PathLayer(\`shift-\${i}\`) #{
             stroke: none;
             fill: orangish.hueShift(calc(i / 9 * 2pi));
           };
@@ -754,7 +754,7 @@ describe('Color type', () => {
     it('auto-converts Color in style block', () => {
       const result = compile(
         "let primary = Color('#e63946');\n" +
-          "define PathLayer('main') ${ stroke: primary; }\n" +
+          "define PathLayer('main') #{ stroke: primary; }\n" +
           "layer('main').apply { M 0 0 L 100 100 }",
       );
       const mainLayer = result.layers.find((l) => l.name === 'main');
@@ -764,7 +764,7 @@ describe('Color type', () => {
     it('auto-converts manipulated Color in style block', () => {
       const result = compile(
         "let c = Color('#ff0000').alpha(0.5);\n" +
-          "define PathLayer('main') ${ stroke: c; }\n" +
+          "define PathLayer('main') #{ stroke: c; }\n" +
           "layer('main').apply { M 0 0 L 100 100 }",
       );
       const mainLayer = result.layers.find((l) => l.name === 'main');
@@ -773,7 +773,7 @@ describe('Color type', () => {
 
     it('resolves rgba().lighten() directly in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: rgba(0, 0, 200, 1).lighten(0.2); }
+        define PathLayer('a') #{ stroke: rgba(0, 0, 200, 1).lighten(0.2); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -783,7 +783,7 @@ describe('Color type', () => {
 
     it('resolves parenthesized rgba().lighten(%) in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: (rgba(0, 0, 200, 1).lighten(20%)); }
+        define PathLayer('a') #{ stroke: (rgba(0, 0, 200, 1).lighten(20%)); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -794,7 +794,7 @@ describe('Color type', () => {
 
     it('resolves hsl().darken() in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: hsl(200, 100%, 50%).darken(0.1); }
+        define PathLayer('a') #{ stroke: hsl(200, 100%, 50%).darken(0.1); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -804,7 +804,7 @@ describe('Color type', () => {
 
     it('resolves oklch().hueShift() in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: oklch(0.6 0.15 200).hueShift(30); }
+        define PathLayer('a') #{ stroke: oklch(0.6 0.15 200).hueShift(30); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -814,7 +814,7 @@ describe('Color type', () => {
 
     it('resolves oklab().alpha() in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: oklab(0.5 0.1 -0.1).alpha(0.8); }
+        define PathLayer('a') #{ stroke: oklab(0.5 0.1 -0.1).alpha(0.8); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -824,7 +824,7 @@ describe('Color type', () => {
 
     it('resolves hwb().lighten() in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: hwb(200 10% 20%).lighten(0.1); }
+        define PathLayer('a') #{ stroke: hwb(200 10% 20%).lighten(0.1); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -834,7 +834,7 @@ describe('Color type', () => {
 
     it('resolves lab().darken() in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: lab(50 20 -30).darken(0.1); }
+        define PathLayer('a') #{ stroke: lab(50 20 -30).darken(0.1); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -844,7 +844,7 @@ describe('Color type', () => {
 
     it('resolves lch().alpha() in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: lch(50 30 200).alpha(0.7); }
+        define PathLayer('a') #{ stroke: lch(50 30 200).alpha(0.7); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -854,7 +854,7 @@ describe('Color type', () => {
 
     it('resolves rgba().alpha() with sub-1 alpha in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: rgba(0, 0, 200, 1).alpha(0.5); }
+        define PathLayer('a') #{ stroke: rgba(0, 0, 200, 1).alpha(0.5); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -864,7 +864,7 @@ describe('Color type', () => {
 
     it('resolves chained methods in style block', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke: rgba(0, 0, 200, 1).lighten(50%).alpha(0.6); }
+        define PathLayer('a') #{ stroke: rgba(0, 0, 200, 1).lighten(50%).alpha(0.6); }
         layer('a').apply { M 0 0 L 100 100 }
       `);
       const stroke = result.layers[0].styles.stroke;
@@ -1298,7 +1298,7 @@ describe('Color type', () => {
     it('emits light-dark() in style blocks', () => {
       const result = compile(`
         let c = Color.lightDark(Color('#333'), Color('#eee'));
-        define PathLayer('a') \${ fill: c; }
+        define PathLayer('a') #{ fill: c; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('light-dark(#333333, #eeeeee)');
@@ -1310,7 +1310,7 @@ describe('Color type', () => {
           Color(CSSVar('--fg-light', '#333')),
           Color(CSSVar('--fg-dark', '#eee'))
         );
-        define PathLayer('a') \${ fill: c; }
+        define PathLayer('a') #{ fill: c; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('light-dark(var(--fg-light, #333), var(--fg-dark, #eee))');
@@ -1322,7 +1322,7 @@ describe('Color type', () => {
           Color(CSSVar('--fg-light', '#333')),
           Color('#eee')
         );
-        define PathLayer('a') \${ fill: c; }
+        define PathLayer('a') #{ fill: c; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('light-dark(var(--fg-light, #333), #eeeeee)');

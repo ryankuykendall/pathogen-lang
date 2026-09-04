@@ -1,7 +1,7 @@
 // compoundVariableOffset demo — a closed variable-width ribbon (two G2 profiles)
 // with a round start cap and a smooth tapered end cap.
 define ViewBox(-14, -30, 130, 60);
-define PathLayer('ribbon') ${ fill: #93c5fd; stroke: #2563eb; stroke-width: 1; };
+define PathLayer('ribbon') #{ fill: #93c5fd; stroke: #2563eb; stroke-width: 1; };
 
 let spine = @{ h 100 };
 

@@ -13,7 +13,7 @@ let grainy = NoiseFilter() {|f|
   f.amount = 0.6;
 };
 
-define PathLayer('sky') ${
+define PathLayer('sky') #{
   fill: sunset;
   stroke: none;
   filter: grainy;

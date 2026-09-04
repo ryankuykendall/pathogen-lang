@@ -1,6 +1,6 @@
 // Canonical source for the EmbossFilter Generated SVG Output section in
 // docs/filters.md. If you change this file, update the doc accordingly.
-define PathLayer('bg') ${ fill: oklch(88% 0.02 70); stroke: none; }
+define PathLayer('bg') #{ fill: oklch(88% 0.02 70); stroke: none; }
 layer('bg').apply { rect(0, 0, 200, 200); }
 
 let emboss = EmbossFilter() {|f|
@@ -9,5 +9,5 @@ let emboss = EmbossFilter() {|f|
   f.strength = 1.0;
 };
 
-define PathLayer('badge') ${ fill: oklch(75% 0.15 60); filter: emboss; }
+define PathLayer('badge') #{ fill: oklch(75% 0.15 60); filter: emboss; }
 layer('badge').apply { circle(100, 100, 60); }

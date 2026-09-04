@@ -46,7 +46,7 @@ export const KEYWORD_COMPLETIONS: CompletionEntry[] = [
   { label: 'null', kind: 'constant', detail: 'Null value', boost: 2 },
 ];
 
-// --- Style properties (for inside ${ } blocks) ---
+// --- Style properties (for inside #{ } blocks) ---
 
 // Raw entries; the export below adds a `name: $0;` template to each so
 // accepting a property name lands the cursor in value position with the
@@ -385,15 +385,15 @@ export const INTERPOLATION_SNIPPET: CompletionEntry = {
   isSnippet: true,
 };
 
-// --- Style-block snippet (offered when typing $ in expression position) ---
-// Provides a balanced `${  }` literal for `let foo = $` style use.
+// --- Style-block snippet (offered when typing # in expression position) ---
+// Provides a balanced `#{  }` literal for `let foo = #` style use.
 
 export const STYLE_BLOCK_SNIPPET: CompletionEntry = {
-  label: '${...}',
+  label: '#{...}',
   kind: 'snippet',
   detail: 'Style block — inline style declarations',
   boost: 14,
-  insertText: '${\n\t$0\n}',
+  insertText: '#{\n\t$0\n}',
   isSnippet: true,
 };
 

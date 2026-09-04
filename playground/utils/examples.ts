@@ -5,7 +5,7 @@
 // migration produce identical starting points. Declared at the top of the
 // file because every template below interpolates it via `${emptyBoilerplate}`.
 export const emptyBoilerplate = `define ViewBox(0, 0, 200, 200);
-define default PathLayer('main-path-layer') \${
+define default PathLayer('main-path-layer') #{
   fill: #bbb;
   stroke: #222;
   stroke-width: 1;

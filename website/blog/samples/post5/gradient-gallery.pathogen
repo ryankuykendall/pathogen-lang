@@ -79,32 +79,32 @@ g_topo.interpolation = 'oklch';
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.apply { rect(0, 0, 580, 400); }
 
 // --- Panels (2 rows × 3 columns) ---
 
-let p1 = PathLayer('p-lin') ${ fill: g_lin; stroke: #444; stroke-width: 1; };
+let p1 = PathLayer('p-lin') #{ fill: g_lin; stroke: #444; stroke-width: 1; };
 p1.apply { roundRect(20, 20, 160, 120, 6); }
 
-let p2 = PathLayer('p-rad') ${ fill: g_rad; stroke: #444; stroke-width: 1; };
+let p2 = PathLayer('p-rad') #{ fill: g_rad; stroke: #444; stroke-width: 1; };
 p2.apply { roundRect(210, 20, 160, 120, 6); }
 
-let p3 = PathLayer('p-con') ${ fill: g_con; stroke: #444; stroke-width: 1; };
+let p3 = PathLayer('p-con') #{ fill: g_con; stroke: #444; stroke-width: 1; };
 p3.apply { roundRect(400, 20, 160, 120, 6); }
 
-let p4 = PathLayer('p-mesh') ${ fill: g_mesh; stroke: #444; stroke-width: 1; };
+let p4 = PathLayer('p-mesh') #{ fill: g_mesh; stroke: #444; stroke-width: 1; };
 p4.apply { roundRect(20, 210, 160, 120, 6); }
 
-let p5 = PathLayer('p-free') ${ fill: g_free; stroke: #444; stroke-width: 1; };
+let p5 = PathLayer('p-free') #{ fill: g_free; stroke: #444; stroke-width: 1; };
 p5.apply { roundRect(210, 210, 160, 120, 6); }
 
-let p6 = PathLayer('p-topo') ${ fill: g_topo; stroke: #444; stroke-width: 1; };
+let p6 = PathLayer('p-topo') #{ fill: g_topo; stroke: #444; stroke-width: 1; };
 p6.apply { roundRect(400, 210, 160, 120, 6); }
 
 // --- Labels ---
 
-let names = TextLayer('names') ${
+let names = TextLayer('names') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #ddd;
@@ -120,7 +120,7 @@ names.apply {
   text(480, 345)`Topo`
 }
 
-let tags = TextLayer('tags') ${
+let tags = TextLayer('tags') #{
   font-family: monospace;
   font-size: 8;
   fill: #666;
@@ -137,7 +137,7 @@ tags.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: #999;
@@ -149,5 +149,5 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, p1, p2, p3, p4, p5, p6, names, tags, title);

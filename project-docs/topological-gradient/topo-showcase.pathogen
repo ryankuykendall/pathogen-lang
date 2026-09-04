@@ -70,25 +70,25 @@ let p3x = 490;
 let py  = 60;
 
 // One fill layer per gradient
-define PathLayer('fill1') ${ fill: volcano; stroke: none; }
-define PathLayer('fill2') ${ fill: ovalTerrain; stroke: none; }
-define PathLayer('fill3') ${ fill: peaks; stroke: none; }
+define PathLayer('fill1') #{ fill: volcano; stroke: none; }
+define PathLayer('fill2') #{ fill: ovalTerrain; stroke: none; }
+define PathLayer('fill3') #{ fill: peaks; stroke: none; }
 
 // Shared overlay layers
-define PathLayer('contours') ${
+define PathLayer('contours') #{
   stroke: rgba(255, 255, 255, 0.55);
   stroke-width: 1;
   fill: none;
   stroke-dasharray: 5 3;
 }
 
-define PathLayer('frames') ${
+define PathLayer('frames') #{
   stroke: #bbb;
   stroke-width: 1;
   fill: none;
 }
 
-define PathLayer('leaders') ${
+define PathLayer('leaders') #{
   stroke: rgba(255, 255, 255, 0.4);
   stroke-width: 0.5;
   fill: none;
@@ -96,7 +96,7 @@ define PathLayer('leaders') ${
 }
 
 // Text layers
-define TextLayer('title') ${
+define TextLayer('title') #{
   font-size: 18;
   font-weight: bold;
   fill: #222;
@@ -104,7 +104,7 @@ define TextLayer('title') ${
   text-anchor: middle;
 }
 
-define TextLayer('ptitle') ${
+define TextLayer('ptitle') #{
   font-size: 12;
   font-weight: bold;
   fill: #333;
@@ -112,29 +112,29 @@ define TextLayer('ptitle') ${
   text-anchor: middle;
 }
 
-define TextLayer('elev') ${
+define TextLayer('elev') #{
   font-size: 8;
   fill: rgba(255, 255, 255, 0.85);
   font-family: monospace;
 }
 
-define TextLayer('info') ${
+define TextLayer('info') #{
   font-size: 9;
   fill: #666;
   font-family: monospace;
 }
 
-define TextLayer('notes') ${
+define TextLayer('notes') #{
   font-size: 10;
   fill: #555;
   font-family: system-ui, sans-serif;
 }
 
 // Color swatch layers for legend
-define PathLayer('sw0') ${ fill: #264653; stroke: #aaa; stroke-width: 0.5; }
-define PathLayer('sw1') ${ fill: #f4d35e; stroke: #aaa; stroke-width: 0.5; }
-define PathLayer('sw2') ${ fill: #45b764; stroke: #aaa; stroke-width: 0.5; }
-define PathLayer('sw3') ${ fill: #c0392b; stroke: #aaa; stroke-width: 0.5; }
+define PathLayer('sw0') #{ fill: #264653; stroke: #aaa; stroke-width: 0.5; }
+define PathLayer('sw1') #{ fill: #f4d35e; stroke: #aaa; stroke-width: 0.5; }
+define PathLayer('sw2') #{ fill: #45b764; stroke: #aaa; stroke-width: 0.5; }
+define PathLayer('sw3') #{ fill: #c0392b; stroke: #aaa; stroke-width: 0.5; }
 
 
 // ─── 3. Draw everything ─────────────────────────────────────

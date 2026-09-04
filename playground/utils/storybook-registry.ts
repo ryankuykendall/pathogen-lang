@@ -56,11 +56,11 @@ export const componentRegistry: ComponentSpec[] = [
         name: 'Color Formats',
         props: {
           code: `// Color formats demo
-define PathLayer('hex') \${ stroke: #e63946; fill: #a8dadc; }
-define PathLayer('rgb') \${ stroke: rgb(230, 57, 70); fill: rgba(168, 218, 220, 0.8); }
-define PathLayer('hsl') \${ stroke: hsl(355, 78%, 56%); fill: hsla(184, 40%, 76%, 0.8); }
-define PathLayer('oklch') \${ stroke: oklch(0.55 0.2 27); fill: oklch(0.85 0.05 195); }
-define PathLayer('oklab') \${ stroke: oklab(0.55 0.15 0.05); fill: oklab(0.85 -0.04 -0.02); }
+define PathLayer('hex') #{ stroke: #e63946; fill: #a8dadc; }
+define PathLayer('rgb') #{ stroke: rgb(230, 57, 70); fill: rgba(168, 218, 220, 0.8); }
+define PathLayer('hsl') #{ stroke: hsl(355, 78%, 56%); fill: hsla(184, 40%, 76%, 0.8); }
+define PathLayer('oklch') #{ stroke: oklch(0.55 0.2 27); fill: oklch(0.85 0.05 195); }
+define PathLayer('oklab') #{ stroke: oklab(0.55 0.15 0.05); fill: oklab(0.85 -0.04 -0.02); }
 
 // Color() constructor calls
 let primary = Color('#e63946');
@@ -1341,13 +1341,13 @@ circle(cx, cy, r)`;
       // --dot-color so the color chips in the mini-workspace chrome can
       // recolor the embedded SVG at runtime.
       const varsCode = `// Background, ring, and dot colors are CSS-var driven
-let bg = PathLayer('bg') \${ fill: var(--bg-color, #f1faee); stroke: none; };
+let bg = PathLayer('bg') #{ fill: var(--bg-color, #f1faee); stroke: none; };
 bg.apply { rect(0, 0, 200, 200); }
 
-let ring = PathLayer('ring') \${ stroke: var(--ring-color, #e63946); stroke-width: 6; fill: none; };
+let ring = PathLayer('ring') #{ stroke: var(--ring-color, #e63946); stroke-width: 6; fill: none; };
 ring.apply { circle(100, 100, 60); }
 
-let dot = PathLayer('dot') \${ fill: var(--dot-color, #1d3557); stroke: none; };
+let dot = PathLayer('dot') #{ fill: var(--dot-color, #1d3557); stroke: none; };
 dot.apply { circle(100, 100, 14); }`;
       const varsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
   <rect width="200" height="200" fill="var(--bg-color, #f1faee)"/>

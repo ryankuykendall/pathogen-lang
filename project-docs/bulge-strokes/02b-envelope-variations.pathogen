@@ -63,7 +63,7 @@ let px = 80;
 let taperCap = Cap.tapered(2, CurveContinuity.G0);
 let base = oklch(0.55 0.18 260);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -72,7 +72,7 @@ let labels = TextLayer('labels') ${
 
 fn drawRow(name, ribbon, py, hueOffset) {
   let rowColor = base.hueShift(hueOffset);
-  let rowLayer = PathLayer(`row-${name}`) ${ fill: rowColor; stroke: none; opacity: 0.9; };
+  let rowLayer = PathLayer(`row-${name}`) #{ fill: rowColor; stroke: none; opacity: 0.9; };
   rowLayer.apply {
     M calc(px + ribbon.anchor.x) calc(py + ribbon.anchor.y)
     ribbon.draw();

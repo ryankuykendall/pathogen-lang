@@ -3,7 +3,7 @@ import { parse } from './parser';
 
 import type { CompileResult } from './evaluator';
 
-export { parse, parseWithComments, parseLezer, lezerParser } from './parser';
+export { LEGACY_STYLE_OPENER_MESSAGE, lezerParser, parse, parseLezer, parseWithComments } from './parser';
 export { editorParser, styleParser } from './parser/editor-parser';
 export { resolveFontDirectives } from './parser/font-directives';
 export type { ResolvedFontDirective, FontDirectiveError } from './parser/font-directives';
@@ -15,21 +15,8 @@ export { buildEasingWgsl, EASING_CURVES, EASING_ORDER, EASING_SPECS, easingModeI
 export type { EasingCurveSpec } from './stdlib/easing-curves';
 export { generateSvg } from './svg-generator';
 export type { SvgGeneratorOptions } from './svg-generator';
-export {
-  buildDefs,
-  buildLayers,
-  buildSingleLayer,
-  buildSvgTree,
-  mountInto,
-  toSvgString,
-} from './render';
-export type {
-  BuildDefsOptions,
-  BuildLayersOptions,
-  BuildTreeOptions,
-  VNode,
-  VNodeChild,
-} from './render';
+export { buildDefs, buildLayers, buildSingleLayer, buildSvgTree, mountInto, toSvgString } from './render';
+export type { BuildDefsOptions, BuildLayersOptions, BuildTreeOptions, VNode, VNodeChild } from './render';
 export { createFontRegistry, addFont, getFont as getFontFromRegistry, ensureOpentype } from './evaluator/font-provider';
 
 export type {
@@ -133,8 +120,60 @@ export type { DecimateResult } from './evaluator/path-decimate';
 export { commandsToAbsoluteD, parsePathDataExpanded } from './evaluator/path-data';
 
 // Language Services — shared intelligence layer for VS Code extension and playground
-export { StringTextDocument, DiagnosticSeverity, getDiagnostics, getDocumentSymbols, SymbolKind, analyzeScopes, getCompletions, isStylePropertyNamePosition, getStyleValueKeywordRun, getHoverInfo, getDefinition, getReferences, getSignatureHelp, prepareRename, getRenameEdits, getSemanticTokens, encodeSemanticTokens, TOKEN_TYPES, TOKEN_MODIFIERS, formatDocument, getCodeActions, getRefactorActions, getCodeLenses, getInlayHints, InlayHintKind } from './language-services';
-export type { TextDocument, Diagnostic, Position, Range, DocumentSymbol, ScopeInfo, Scope, Declaration, Reference, DeclarationKind, CompletionItem, HoverInfo, Location, SignatureHelp, SignatureInformation, ParameterInformation, TextEdit, PrepareRenameResult, SemanticToken, FormatEdit, FormatOptions as DocumentFormatOptions, CodeAction, CodeLens, InlayHint } from './language-services';
+export {
+  StringTextDocument,
+  DiagnosticSeverity,
+  getDiagnostics,
+  findLegacyStyleOpeners,
+  getDocumentSymbols,
+  SymbolKind,
+  analyzeScopes,
+  getCompletions,
+  isStylePropertyNamePosition,
+  getStyleValueKeywordRun,
+  getHoverInfo,
+  getDefinition,
+  getReferences,
+  getSignatureHelp,
+  prepareRename,
+  getRenameEdits,
+  getSemanticTokens,
+  encodeSemanticTokens,
+  TOKEN_TYPES,
+  TOKEN_MODIFIERS,
+  formatDocument,
+  getCodeActions,
+  getRefactorActions,
+  getCodeLenses,
+  getInlayHints,
+  InlayHintKind,
+} from './language-services';
+export type {
+  TextDocument,
+  Diagnostic,
+  Position,
+  Range,
+  DocumentSymbol,
+  ScopeInfo,
+  Scope,
+  Declaration,
+  Reference,
+  DeclarationKind,
+  CompletionItem,
+  HoverInfo,
+  Location,
+  SignatureHelp,
+  SignatureInformation,
+  ParameterInformation,
+  TextEdit,
+  PrepareRenameResult,
+  SemanticToken,
+  FormatEdit,
+  FormatOptions as DocumentFormatOptions,
+  CodeAction,
+  CodeLens,
+  InlayHint,
+} from './language-services';
 
 /**
  * Options for compile and compileWithContext

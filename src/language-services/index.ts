@@ -8,7 +8,7 @@ export { StringTextDocument } from './document';
 export type { TextDocument } from './document';
 export { DiagnosticSeverity } from './types';
 export type { Diagnostic, Position, Range } from './types';
-export { getDiagnostics } from './diagnostics';
+export { findLegacyStyleOpeners, getDiagnostics } from './diagnostics';
 export { getDocumentSymbols, SymbolKind } from './symbols';
 export type { DocumentSymbol } from './symbols';
 export { analyzeScopes } from './scope-analysis';

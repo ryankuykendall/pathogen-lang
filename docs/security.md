@@ -38,22 +38,22 @@ What's **rejected**:
 
 ```pathogen
 # Rejected: url() with any argument
-define PathLayer('a') ${ background-image: "url(https://evil.example/log)"; }
+define PathLayer('a') #{ background-image: "url(https://evil.example/log)"; }
 
 # Rejected: var() — use CSSVar() instead
-define PathLayer('a') ${ fill: "var(--brand)"; }
+define PathLayer('a') #{ fill: "var(--brand)"; }
 
 # Rejected: calc() in style values
 define PathLayer('a') ${ stroke-width: "calc(2px + 1em)"; }
 
 # Rejected: image-set, image, src, expression, attr
-define PathLayer('a') ${ background-image: "image-set('foo.png' 1x)"; }
+define PathLayer('a') #{ background-image: "image-set('foo.png' 1x)"; }
 
 # Rejected: CSS escape sequences
-define PathLayer('a') ${ fill: "\\75\\72\\6c(...)"; }
+define PathLayer('a') #{ fill: "\\75\\72\\6c(...)"; }
 
 # Rejected: CSS comments in values
-define PathLayer('a') ${ fill: "/* comment */ red"; }
+define PathLayer('a') #{ fill: "/* comment */ red"; }
 ```
 
 If your design needs CSS variables, use Pathogen's `CSSVar()` constructor — see the [CSSVar docs](#css-var-cssvar-type). The compiler will emit a properly-formed `var(--name, fallback)` reference for you.

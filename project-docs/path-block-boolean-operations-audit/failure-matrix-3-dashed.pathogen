@@ -53,30 +53,30 @@ let grid_color = Color('#e7e5d0');
 
 // ─── Background ────────────────────────────────────────────────────
 
-let bg = PathLayer('bg') ${ fill: bg_color; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bg_color; stroke: none; };
 layer('bg').apply { rect(0, 0, total_w, total_h); }
 
 // ─── Diagnostic layers — declared in paint order ───────────────────
 // Both fills first (so strokes paint on top of all fills), then both strokes.
 
-let underlay_fill_layer = PathLayer('underlay-fill') ${
+let underlay_fill_layer = PathLayer('underlay-fill') #{
   fill: underlay_fill_color;
   stroke: none;
 };
 
-let union_fill_layer = PathLayer('union-fill') ${
+let union_fill_layer = PathLayer('union-fill') #{
   fill: union_fill_color;
   stroke: none;
 };
 
-let underlay_stroke_layer = PathLayer('underlay-stroke') ${
+let underlay_stroke_layer = PathLayer('underlay-stroke') #{
   fill: none;
   stroke: underlay_stroke_color;
   stroke-width: stroke_w;
   stroke-dasharray: 2 2;
 };
 
-let union_stroke_layer = PathLayer('union-stroke') ${
+let union_stroke_layer = PathLayer('union-stroke') #{
   fill: none;
   stroke: union_stroke_color;
   stroke-width: stroke_w;
@@ -94,19 +94,19 @@ let tracking_values = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
 
 // ─── Title / subtitle ──────────────────────────────────────────────
 
-let title_layer = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 16; fill: title_color; text-anchor: start; };
+let title_layer = TextLayer('title') #{ font-family: system-ui, sans-serif; font-size: 16; fill: title_color; text-anchor: start; };
 layer('title').apply {
   text(20, 26)`Boolean .union() Failure Matrix v3 DASHED — 5-color diagnostic`
 }
 
-let subtitle_layer = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 10; fill: footer_color; text-anchor: start; };
+let subtitle_layer = TextLayer('subtitle') #{ font-family: system-ui, sans-serif; font-size: 10; fill: footer_color; text-anchor: start; };
 layer('subtitle').apply {
   text(20, 44)`Underlay = orange (raw glyphs). Union = blue. Strokes: dark-red dashed = underlay boundary, cyan solid = union boundary.`
 }
 
 // ─── Column headers ────────────────────────────────────────────────
 
-let col_header_layer = TextLayer('col-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: middle; };
+let col_header_layer = TextLayer('col-headers') #{ font-family: monospace; font-size: 9; fill: header_color; text-anchor: middle; };
 layer('col-headers').apply {
   for (tr_idx in 0..7) {
     let cx = calc(header_w + tr_idx * cell_w + cell_w / 2);
@@ -117,7 +117,7 @@ layer('col-headers').apply {
 
 // ─── Row headers ───────────────────────────────────────────────────
 
-let row_header_layer = TextLayer('row-headers') ${ font-family: monospace; font-size: 9; fill: header_color; text-anchor: end; };
+let row_header_layer = TextLayer('row-headers') #{ font-family: monospace; font-size: 9; fill: header_color; text-anchor: end; };
 layer('row-headers').apply {
   for (font_idx in 0..2) {
     for (cap_idx in 0..3) {
@@ -130,7 +130,7 @@ layer('row-headers').apply {
 
 // ─── Grid ──────────────────────────────────────────────────────────
 
-let grid_layer = PathLayer('grid') ${ stroke: grid_color; stroke-width: 0.5; fill: none; };
+let grid_layer = PathLayer('grid') #{ stroke: grid_color; stroke-width: 0.5; fill: none; };
 layer('grid').apply {
   for (col_idx in 0..8) {
     let gx = calc(header_w + col_idx * cell_w);
@@ -145,7 +145,7 @@ layer('grid').apply {
 // ─── Cell rendering — per-font block (each draws into 4 layers) ────
 
 // Bebas Neue
-let styles_bebas = ${ font-family: BebasNeue-Regular; font-size: font_size; };
+let styles_bebas = #{ font-family: BebasNeue-Regular; font-size: font_size; };
 
 for (cap_idx_b in 0..3) {
   let row_idx_b = cap_idx_b;
@@ -189,7 +189,7 @@ for (cap_idx_b in 0..3) {
 }
 
 // Raleway
-let styles_raleway = ${ font-family: Raleway-ExtraLight; font-size: font_size; };
+let styles_raleway = #{ font-family: Raleway-ExtraLight; font-size: font_size; };
 
 for (cap_idx_r in 0..3) {
   let row_idx_r = calc(4 + cap_idx_r);
@@ -232,7 +232,7 @@ for (cap_idx_r in 0..3) {
 }
 
 // Libre Baskerville
-let styles_libre = ${ font-family: LibreBaskerville-Bold; font-size: font_size; };
+let styles_libre = #{ font-family: LibreBaskerville-Bold; font-size: font_size; };
 
 for (cap_idx_l in 0..3) {
   let row_idx_l = calc(8 + cap_idx_l);
@@ -276,7 +276,7 @@ for (cap_idx_l in 0..3) {
 
 // ─── Footer ────────────────────────────────────────────────────────
 
-let footer_layer = TextLayer('footer') ${ font-family: monospace; font-size: 9; fill: footer_color; text-anchor: start; };
+let footer_layer = TextLayer('footer') #{ font-family: monospace; font-size: 9; fill: footer_color; text-anchor: start; };
 layer('footer').apply {
   text(20, calc(total_h - 24))`Read: pale-orange = MISSING from union | pale-blue = SPURIOUS in union | dark-red line inside blue = boundary disagreement | cyan line inside orange = same | both strokes coincident = MATCH.`
 }

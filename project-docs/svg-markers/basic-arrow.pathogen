@@ -8,10 +8,10 @@ let arrow = @{
 };
 
 let arrowMarker = Marker('arrowhead', 10, 10) {|m|
-  m.append(arrow, ${ fill: Color('#333'); });
+  m.append(arrow, #{ fill: Color('#333'); });
 };
 
-define PathLayer('line') ${
+define PathLayer('line') #{
   stroke: Color('#333');
   stroke-width: 3;
   fill: none;

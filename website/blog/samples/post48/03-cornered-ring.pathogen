@@ -5,7 +5,7 @@
 
 define ViewBox(0, 0, 480, 250);
 
-let table = PathLayer('table') ${
+let table = PathLayer('table') #{
   fill: #1c1917;
   stroke: none;
 };
@@ -13,13 +13,13 @@ layer('table').apply {
   rect(0, 0, 480, 250);
 }
 
-let scene = GroupLayer('scene') ${};
-let mylar = PathLayer('mylar') ${
+let scene = GroupLayer('scene') #{};
+let mylar = PathLayer('mylar') #{
   fill: #d9e2ec;
   stroke: #94a3b8;
   stroke-width: 1;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -47,7 +47,7 @@ let bridgeCount = 6;
 
 let cutLength = calc(centerline.length / bridgeCount - bridgeWidth);
 // Shift back half a segment: bridges off the corners.
-let pieces = centerline.dash(${
+let pieces = centerline.dash(#{
   stroke-dasharray: ${cutLength} ${bridgeWidth};
   stroke-dashoffset: calc(0 - cutLength / 2);
   dash-seam: merge;
@@ -59,7 +59,7 @@ for (segment in cutSegments) {
   // stroke-linejoin is inert here: the roundRect centerline is already
   // tangent-continuous, so there is no corner for a join to act on —
   // the band's rounded corners are concentric OFFSETS of the fillets.
-  let aperture = segment.path.outline(${
+  let aperture = segment.path.outline(#{
     stroke-width: ${bandWidth};
     stroke-linecap: butt;
     stroke-linejoin: round;

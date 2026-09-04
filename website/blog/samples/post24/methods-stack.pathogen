@@ -25,12 +25,12 @@ let m_complement = Color(CSSVar('--demo-color', #e63946)).hueShift(180);
 let m_alpha = Color(CSSVar('--demo-color', #e63946)).alpha(0.5);
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') ${}
-define GroupLayer('masthead') ${}
-define GroupLayer('rows') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('masthead') #{}
+define GroupLayer('rows') #{}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -40,7 +40,7 @@ bg.apply {
 layer('diagram').append(layer('bg'));
 
 // ─── Masthead ───────────────────────────────────────────────
-let eyebrow = TextLayer('eyebrow') ${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -52,7 +52,7 @@ eyebrow.apply {
   text(15, 26)`OKLCH  /  01 — MANIPULATION`;
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: font;
   font-size: 38;
   font-weight: 200;
@@ -64,7 +64,7 @@ title.apply {
   text(15, 66)`Color Methods`;
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: font;
   font-size: 10;
   font-style: italic;
@@ -123,7 +123,7 @@ let methods = [
 ];
 
 // ─── Row styles ─────────────────────────────────────────────
-let row_name_layer = TextLayer('row-name') ${
+let row_name_layer = TextLayer('row-name') #{
   font-family: font;
   font-size: 10;
   font-weight: 700;
@@ -131,7 +131,7 @@ let row_name_layer = TextLayer('row-name') ${
   fill: fg_auto;
   text-anchor: start;
 };
-let row_value_layer = TextLayer('row-value') ${
+let row_value_layer = TextLayer('row-value') #{
   font-family: font;
   font-size: 8;
   letter-spacing: 0.5;
@@ -150,7 +150,7 @@ for ([m, i] in methods) {
   let y_bot = calc(y_top + row_h);
 
   // Pill swatch — left
-  let sw = PathLayer(`sw-${i}`) ${
+  let sw = PathLayer(`sw-${i}`) #{
     fill: m[1];
     stroke: fg_hair;
     stroke-width: 0.5;
@@ -176,7 +176,7 @@ for ([m, i] in methods) {
 
   // Divider below row (except last)
   if (i < 7) {
-    let divider = PathLayer(`div-${i}`) ${
+    let divider = PathLayer(`div-${i}`) #{
       fill: none;
       stroke: fg_hair;
       stroke-width: 0.5;

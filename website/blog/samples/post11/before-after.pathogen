@@ -4,12 +4,12 @@ define ViewBox(0, 0, 600, 400);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 400); }
 
 // --- Divider ---
 
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: Color('#334155');
   stroke-width: 1;
   fill: none;
@@ -18,7 +18,7 @@ divider.apply { M 300 40 v 320 }
 
 // --- Title (top-level, not in a panel) ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -30,7 +30,7 @@ title.apply {
 
 // --- Guide circles (top-level) ---
 
-let guides = PathLayer('guides') ${
+let guides = PathLayer('guides') #{
   stroke: Color('#334155');
   stroke-width: 0.5;
   stroke-dasharray: "2 3";
@@ -45,10 +45,10 @@ guides.apply {
 // LEFT PANEL — Manual positioning with hardcoded magic-number offsets
 // ═══════════════════════════════════════════════════════════════════
 
-let left_panel = GroupLayer('left-panel') ${ translate-x: 0; translate-y: 0; };
+let left_panel = GroupLayer('left-panel') #{ translate-x: 0; translate-y: 0; };
 
 // Section heading
-let left_title = TextLayer('left-title') ${
+let left_title = TextLayer('left-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -56,7 +56,7 @@ let left_title = TextLayer('left-title') ${
 };
 left_title.apply { text(150, 50)`Manual Offsets` }
 
-let left_sub = TextLayer('left-sub') ${
+let left_sub = TextLayer('left-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#ef4444');
@@ -65,7 +65,7 @@ let left_sub = TextLayer('left-sub') ${
 left_sub.apply { text(150, 64)`fragile, breaks with font changes` }
 
 // Hex shape
-let hex_left = PathLayer('hex-l') ${
+let hex_left = PathLayer('hex-l') #{
   fill: Color('#3b82f615');
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
@@ -73,7 +73,7 @@ let hex_left = PathLayer('hex-l') ${
 hex_left.apply { polygon(150, 210, 55, 6); }
 
 // Manual labels — hardcoded positions with magic numbers
-let manual_labels = TextLayer('manual') ${
+let manual_labels = TextLayer('manual') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -91,7 +91,7 @@ manual_labels.apply {
 
 // Red annotations showing the hardcoded offset math
 // Positioned along radial lines, further out from labels to avoid overlap
-let offset_anno = TextLayer('offsets') ${
+let offset_anno = TextLayer('offsets') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#ef4444');
@@ -110,8 +110,8 @@ offset_anno.apply {
 
 // --- Collision checks for left panel ---
 
-let mono_styles = ${ font-family: monospace; font-size: 10; };
-let anno_styles = ${ font-family: monospace; font-size: 7; };
+let mono_styles = #{ font-family: monospace; font-size: 10; };
+let anno_styles = #{ font-family: monospace; font-size: 7; };
 
 // Top label vs top annotation
 let l_top_label = (&{ text(0, 10)`Top` } << mono_styles).project(133, 138);
@@ -139,10 +139,10 @@ left_panel.append(left_title, left_sub, hex_left, manual_labels, offset_anno);
 // RIGHT PANEL — polarProject with BBoxAnchor (automatic alignment)
 // ═══════════════════════════════════════════════════════════════════
 
-let right_panel = GroupLayer('right-panel') ${ translate-x: 0; translate-y: 0; };
+let right_panel = GroupLayer('right-panel') #{ translate-x: 0; translate-y: 0; };
 
 // Section heading
-let right_title = TextLayer('right-title') ${
+let right_title = TextLayer('right-title') #{
   font-family: system-ui, sans-serif;
   font-size: 12;
   fill: Color('#e2e8f0');
@@ -150,7 +150,7 @@ let right_title = TextLayer('right-title') ${
 };
 right_title.apply { text(450, 50)`polarProject()` }
 
-let right_sub = TextLayer('right-sub') ${
+let right_sub = TextLayer('right-sub') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#22c55e');
@@ -159,7 +159,7 @@ let right_sub = TextLayer('right-sub') ${
 right_sub.apply { text(450, 64)`adapts to any text or font size` }
 
 // Hex shape
-let hex_right = PathLayer('hex-r') ${
+let hex_right = PathLayer('hex-r') #{
   fill: Color('#3b82f615');
   stroke: Color('#3b82f6');
   stroke-width: 1.5;
@@ -167,14 +167,14 @@ let hex_right = PathLayer('hex-r') ${
 hex_right.apply { polygon(450, 210, 55, 6); }
 
 // Polar-projected labels
-let styles = ${ font-family: monospace; font-size: 10; };
+let styles = #{ font-family: monospace; font-size: 10; };
 
 let top_label = &{ text(0, 10)`Top` } << styles;
 let right_label = &{ text(0, 10)`Right` } << styles;
 let bottom_label = &{ text(0, 10)`Bottom` } << styles;
 let left_label = &{ text(0, 10)`Left` } << styles;
 
-let polar_labels = TextLayer('polar') ${
+let polar_labels = TextLayer('polar') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -195,7 +195,7 @@ polar_labels.apply {
 
 // Green annotations showing BBoxAnchor names
 // Placed further along the radial than the labels, with offset to avoid overlap
-let anchor_anno = TextLayer('anchors') ${
+let anchor_anno = TextLayer('anchors') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#22c55e');

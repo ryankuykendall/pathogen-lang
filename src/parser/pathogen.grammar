@@ -508,7 +508,7 @@ VariableName { Identifier }
   RangeOp { ".." }
   HalfOpenRangeOp { "..<" }
 
-  styleBlockOpen { "$" "{" }
+  styleBlockOpen { "#" "{" }
   pathBlockOpen { "@" "{" }
   textBlockOpen { "&" "{" }
 
@@ -565,7 +565,6 @@ VariableName { Identifier }
   @precedence { "==", "!=" }
   @precedence { "<=", ">=", "<<" }
   @precedence { fontDirectiveKw, pathBlockOpen }
-  @precedence { styleBlockOpen, templateInterpStart }
   @precedence { Number, "." }
   @precedence { BooleanLiteral, NullLiteral, LayerType, CSSColorLiteral, Identifier }
   @precedence { StyleInterp, StyleContent }

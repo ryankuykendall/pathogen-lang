@@ -5,7 +5,7 @@ define ViewBox(0, 0, 660, 400);
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 layer('bg').apply { rect(0, 0, 660, 400); }
 
 // --- Contour color palette (12 colors for 12 contours) ---
@@ -30,10 +30,10 @@ let word = "Bingo!";
 
 // ─── LEFT COLUMN ─────────────────────────────────────────────────
 
-let g_left = GroupLayer('left-col') ${ translate-x: 30; translate-y: 0; };
+let g_left = GroupLayer('left-col') #{ translate-x: 30; translate-y: 0; };
 
 // Title
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -41,7 +41,7 @@ let title = TextLayer('title') ${
 };
 layer('title').apply { text(0, 30)`Contour Decomposition` }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -50,10 +50,10 @@ let subtitle = TextLayer('subtitle') ${
 layer('subtitle').apply { text(0, 44)`.contours splits glyphs into individual PathBlocks` }
 
 // Assembled word — size to fit within ~290px column
-let asm_styles = ${ font-family: "Raleway"; font-weight: 700; font-size: 72; };
+let asm_styles = #{ font-family: "Raleway"; font-weight: 700; font-size: 72; };
 let asm_glyphs = PathBlock.fromGlyph(word, asm_styles);
 
-let asm_layer = PathLayer('assembled') ${
+let asm_layer = PathLayer('assembled') #{
   fill: Color('#3b82f6');
   stroke: none;
 };
@@ -66,7 +66,7 @@ layer('assembled').apply {
   }
 }
 
-let asm_label = TextLayer('asm-label') ${
+let asm_label = TextLayer('asm-label') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -78,9 +78,9 @@ g_left.append(title, subtitle, asm_layer, asm_label);
 
 // ─── Decomposed contours — smaller size to fit all 6 letters ────
 
-let g_decomp = GroupLayer('decomposed') ${ translate-x: 30; translate-y: 176; };
+let g_decomp = GroupLayer('decomposed') #{ translate-x: 30; translate-y: 176; };
 
-let dec_styles = ${ font-family: "Raleway"; font-weight: 700; font-size: 56; };
+let dec_styles = #{ font-family: "Raleway"; font-weight: 700; font-size: 56; };
 let dec_glyphs = PathBlock.fromGlyph(word, dec_styles);
 
 let letter_gap = 6;
@@ -97,9 +97,9 @@ let dec_y = 70;
 
 // --- B: 3 contours (outer + 2 holes) ---
 let contours_B = dec_glyphs[0].contours;
-let cB0 = PathLayer('cB0') ${ fill: fills[0]; stroke: colors[0]; stroke-width: 1.5; };
-let cB1 = PathLayer('cB1') ${ fill: fills[1]; stroke: colors[1]; stroke-width: 1.5; };
-let cB2 = PathLayer('cB2') ${ fill: fills[2]; stroke: colors[2]; stroke-width: 1.5; };
+let cB0 = PathLayer('cB0') #{ fill: fills[0]; stroke: colors[0]; stroke-width: 1.5; };
+let cB1 = PathLayer('cB1') #{ fill: fills[1]; stroke: colors[1]; stroke-width: 1.5; };
+let cB2 = PathLayer('cB2') #{ fill: fills[2]; stroke: colors[2]; stroke-width: 1.5; };
 layer('cB0').apply { contours_B[0].drawTo(x_B, dec_y); }
 layer('cB1').apply { contours_B[1].drawTo(x_B, dec_y); }
 layer('cB2').apply { contours_B[2].drawTo(x_B, dec_y); }
@@ -107,38 +107,38 @@ g_decomp.append(cB0, cB1, cB2);
 
 // --- i: 2 contours (body + dot) ---
 let contours_i = dec_glyphs[1].contours;
-let ci0 = PathLayer('ci0') ${ fill: fills[3]; stroke: colors[3]; stroke-width: 1.5; };
-let ci1 = PathLayer('ci1') ${ fill: fills[4]; stroke: colors[4]; stroke-width: 1.5; };
+let ci0 = PathLayer('ci0') #{ fill: fills[3]; stroke: colors[3]; stroke-width: 1.5; };
+let ci1 = PathLayer('ci1') #{ fill: fills[4]; stroke: colors[4]; stroke-width: 1.5; };
 layer('ci0').apply { contours_i[0].drawTo(x_i, dec_y); }
 layer('ci1').apply { contours_i[1].drawTo(x_i, dec_y); }
 g_decomp.append(ci0, ci1);
 
 // --- n: 1 contour ---
 let contours_n = dec_glyphs[2].contours;
-let cn0 = PathLayer('cn0') ${ fill: fills[5]; stroke: colors[5]; stroke-width: 1.5; };
+let cn0 = PathLayer('cn0') #{ fill: fills[5]; stroke: colors[5]; stroke-width: 1.5; };
 layer('cn0').apply { contours_n[0].drawTo(x_n, dec_y); }
 g_decomp.append(cn0);
 
 // --- g: 2 contours (body + tail) ---
 let contours_g = dec_glyphs[3].contours;
-let cg0 = PathLayer('cg0') ${ fill: fills[6]; stroke: colors[6]; stroke-width: 1.5; };
-let cg1 = PathLayer('cg1') ${ fill: fills[7]; stroke: colors[7]; stroke-width: 1.5; };
+let cg0 = PathLayer('cg0') #{ fill: fills[6]; stroke: colors[6]; stroke-width: 1.5; };
+let cg1 = PathLayer('cg1') #{ fill: fills[7]; stroke: colors[7]; stroke-width: 1.5; };
 layer('cg0').apply { contours_g[0].drawTo(x_g, dec_y); }
 layer('cg1').apply { contours_g[1].drawTo(x_g, dec_y); }
 g_decomp.append(cg0, cg1);
 
 // --- o: 2 contours (outer + hole) ---
 let contours_o = dec_glyphs[4].contours;
-let co0 = PathLayer('co0') ${ fill: fills[8]; stroke: colors[8]; stroke-width: 1.5; };
-let co1 = PathLayer('co1') ${ fill: fills[9]; stroke: colors[9]; stroke-width: 1.5; };
+let co0 = PathLayer('co0') #{ fill: fills[8]; stroke: colors[8]; stroke-width: 1.5; };
+let co1 = PathLayer('co1') #{ fill: fills[9]; stroke: colors[9]; stroke-width: 1.5; };
 layer('co0').apply { contours_o[0].drawTo(x_o, dec_y); }
 layer('co1').apply { contours_o[1].drawTo(x_o, dec_y); }
 g_decomp.append(co0, co1);
 
 // --- !: 2 contours (body + dot) ---
 let contours_ex = dec_glyphs[5].contours;
-let cex0 = PathLayer('cex0') ${ fill: fills[10]; stroke: colors[10]; stroke-width: 1.5; };
-let cex1 = PathLayer('cex1') ${ fill: fills[11]; stroke: colors[11]; stroke-width: 1.5; };
+let cex0 = PathLayer('cex0') #{ fill: fills[10]; stroke: colors[10]; stroke-width: 1.5; };
+let cex1 = PathLayer('cex1') #{ fill: fills[11]; stroke: colors[11]; stroke-width: 1.5; };
 layer('cex0').apply { contours_ex[0].drawTo(x_ex, dec_y); }
 layer('cex1').apply { contours_ex[1].drawTo(x_ex, dec_y); }
 g_decomp.append(cex0, cex1);
@@ -149,13 +149,13 @@ let char_labels = ["B", "i", "n", "g", "o", "!"];
 let char_counts = ["3", "2", "1", "2", "2", "2"];
 let x_positions = [x_B, x_i, x_n, x_g, x_o, x_ex];
 
-let lbl_layer = TextLayer('char-labels') ${
+let lbl_layer = TextLayer('char-labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
   text-anchor: middle;
 };
-let cnt_layer = TextLayer('char-counts') ${
+let cnt_layer = TextLayer('char-counts') #{
   font-family: monospace;
   font-size: 7;
   fill: Color('#64748b');
@@ -183,7 +183,7 @@ layer('char-counts').apply {
 g_decomp.append(lbl_layer, cnt_layer);
 
 // Decomposed section footer
-let dec_footer = TextLayer('dec-footer') ${
+let dec_footer = TextLayer('dec-footer') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -194,10 +194,10 @@ g_decomp.append(dec_footer);
 
 // ─── RIGHT COLUMN ────────────────────────────────────────────────
 
-let g_right = GroupLayer('right-col') ${ translate-x: 360; translate-y: 0; };
+let g_right = GroupLayer('right-col') #{ translate-x: 360; translate-y: 0; };
 
 // Contour Color Key title
-let leg_title = TextLayer('leg-title') ${
+let leg_title = TextLayer('leg-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -209,18 +209,18 @@ layer('leg-title').apply { text(0, 30)`Contour Color Key` }
 let leg_top = 44;
 let leg_h = 14;
 
-let ld0 = PathLayer('ld0') ${ fill: colors[0]; stroke: none; };
-let ld1 = PathLayer('ld1') ${ fill: colors[1]; stroke: none; };
-let ld2 = PathLayer('ld2') ${ fill: colors[2]; stroke: none; };
-let ld3 = PathLayer('ld3') ${ fill: colors[3]; stroke: none; };
-let ld4 = PathLayer('ld4') ${ fill: colors[4]; stroke: none; };
-let ld5 = PathLayer('ld5') ${ fill: colors[5]; stroke: none; };
-let ld6 = PathLayer('ld6') ${ fill: colors[6]; stroke: none; };
-let ld7 = PathLayer('ld7') ${ fill: colors[7]; stroke: none; };
-let ld8 = PathLayer('ld8') ${ fill: colors[8]; stroke: none; };
-let ld9 = PathLayer('ld9') ${ fill: colors[9]; stroke: none; };
-let ld10 = PathLayer('ld10') ${ fill: colors[10]; stroke: none; };
-let ld11 = PathLayer('ld11') ${ fill: colors[11]; stroke: none; };
+let ld0 = PathLayer('ld0') #{ fill: colors[0]; stroke: none; };
+let ld1 = PathLayer('ld1') #{ fill: colors[1]; stroke: none; };
+let ld2 = PathLayer('ld2') #{ fill: colors[2]; stroke: none; };
+let ld3 = PathLayer('ld3') #{ fill: colors[3]; stroke: none; };
+let ld4 = PathLayer('ld4') #{ fill: colors[4]; stroke: none; };
+let ld5 = PathLayer('ld5') #{ fill: colors[5]; stroke: none; };
+let ld6 = PathLayer('ld6') #{ fill: colors[6]; stroke: none; };
+let ld7 = PathLayer('ld7') #{ fill: colors[7]; stroke: none; };
+let ld8 = PathLayer('ld8') #{ fill: colors[8]; stroke: none; };
+let ld9 = PathLayer('ld9') #{ fill: colors[9]; stroke: none; };
+let ld10 = PathLayer('ld10') #{ fill: colors[10]; stroke: none; };
+let ld11 = PathLayer('ld11') #{ fill: colors[11]; stroke: none; };
 
 layer('ld0').apply { rect(0, leg_top, 8, 8); }
 layer('ld1').apply { rect(0, calc(leg_top + leg_h), 8, 8); }
@@ -235,7 +235,7 @@ layer('ld9').apply { rect(0, calc(leg_top + leg_h * 9), 8, 8); }
 layer('ld10').apply { rect(0, calc(leg_top + leg_h * 10), 8, 8); }
 layer('ld11').apply { rect(0, calc(leg_top + leg_h * 11), 8, 8); }
 
-let leg_text = TextLayer('leg-text') ${
+let leg_text = TextLayer('leg-text') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -262,7 +262,7 @@ g_right.append(leg_title, ld0, ld1, ld2, ld3, ld4, ld5, ld6, ld7, ld8, ld9, ld10
 // Code snippet — well below the legend
 let code_top = calc(leg_top + leg_h * 12 + 30);
 
-let code_title = TextLayer('code-title') ${
+let code_title = TextLayer('code-title') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -270,7 +270,7 @@ let code_title = TextLayer('code-title') ${
 };
 layer('code-title').apply { text(0, code_top)`Usage` }
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#94a3b8');
@@ -285,7 +285,7 @@ layer('code').apply {
   text(0, calc(cl + 54))`}`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#c084fc');
@@ -301,7 +301,7 @@ g_right.append(code_title, code, kw);
 
 // ─── Divider ─────────────────────────────────────────────────────
 
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: Color('#1e293b');
   stroke-width: 1;
   fill: none;

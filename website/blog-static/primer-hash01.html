@@ -351,7 +351,7 @@ same 48 questions from two <em>separate</em> loops. The third row asks
 
 define ViewBox(0, 0, 400, 210);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;
@@ -363,9 +363,9 @@ labels.apply {
   text(22, 152)`randomRange(0, 1) — different every compile`
 }
 
-let rowA = PathLayer('hash-first-ask') ${ fill: oklch(0.62 0.16 260); stroke: none; };
-let rowB = PathLayer('hash-second-ask') ${ fill: oklch(0.62 0.16 260); stroke: none; };
-let rowC = PathLayer('random-every-time') ${ fill: oklch(0.6 0.15 20); stroke: none; };
+let rowA = PathLayer('hash-first-ask') #{ fill: oklch(0.62 0.16 260); stroke: none; };
+let rowB = PathLayer('hash-second-ask') #{ fill: oklch(0.62 0.16 260); stroke: none; };
+let rowC = PathLayer('random-every-time') #{ fill: oklch(0.6 0.15 20); stroke: none; };
 
 rowA.apply {
   for (i in 0..47) {
@@ -383,7 +383,7 @@ rowC.apply {
   }
 }
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(labels, rowA, rowB, rowC);
 </code>
   <img src="/blog/samples/post33/01-ask-twice.svg" alt="Three rows of 48 dots: two separate hash01 loops (blue), one randomRange loop (red)." loading="lazy">
@@ -405,12 +405,12 @@ one loop counter.</p>
 
 define ViewBox(0, 0, 400, 220);
 
-let backdrop = PathLayer('night') ${ fill: oklch(0.22 0.04 275); stroke: none; };
+let backdrop = PathLayer('night') #{ fill: oklch(0.22 0.04 275); stroke: none; };
 backdrop.apply {
   rect(15, 15, 370, 190);
 }
 
-let stars = PathLayer('stars') ${ fill: oklch(0.92 0.03 260); stroke: none; };
+let stars = PathLayer('stars') #{ fill: oklch(0.92 0.03 260); stroke: none; };
 stars.apply {
   for (i in 0..139) {
     circle(calc(22 + hash01(i) * 356),
@@ -442,7 +442,7 @@ for (row in 0..7) {
     let L = 0.5 + hash01(idx) * 0.3;
     let H = 200 + hash01(idx, 1) * 130;
     let c = Color(L, 0.11, H);
-    let cell = PathLayer(`cell-${idx}`) ${ fill: c; stroke: none; };
+    let cell = PathLayer(`cell-${idx}`) #{ fill: c; stroke: none; };
     cell.apply {
       roundRect(calc(20 + col * 26), calc(20 + row * 26), 22, 22, 5);
     }
@@ -467,7 +467,7 @@ by small hashed amounts.</p>
 
 define ViewBox(0, 0, 400, 150);
 
-let rigid = PathLayer('machine') ${ stroke: oklch(0.65 0.02 260); stroke-width: 1.2; fill: none; };
+let rigid = PathLayer('machine') #{ stroke: oklch(0.65 0.02 260); stroke-width: 1.2; fill: none; };
 rigid.apply {
   M 20 48 L 380 48
   for (i in 0..35) {
@@ -476,7 +476,7 @@ rigid.apply {
   }
 }
 
-let loose = PathLayer('hand-drawn') ${ stroke: oklch(0.75 0.12 60); stroke-width: 1.2; fill: none; };
+let loose = PathLayer('hand-drawn') #{ stroke: oklch(0.75 0.12 60); stroke-width: 1.2; fill: none; };
 loose.apply {
   M 20 115 L 380 115
   for (i in 0..35) {
@@ -507,7 +507,7 @@ composed into a finished little landscape.</p>
 
 define ViewBox(0, 128, 400, 132);
 
-let ground = PathLayer('ground') ${ fill: oklch(0.32 0.06 145); stroke: none; };
+let ground = PathLayer('ground') #{ fill: oklch(0.32 0.06 145); stroke: none; };
 ground.apply {
   rect(15, 228, 370, 17);
 }
@@ -517,7 +517,7 @@ fn blade(i) {
   let h = 25 + hash01(i, 1) * 55;
   let lean = hash01(i, 2) * 30 - 15;
   let c = Color(0.52 + hash01(i, 3) * 0.18, 0.13, 135 + hash01(i, 3) * 30);
-  let g = PathLayer(`blade-${i}`) ${ stroke: c; stroke-width: 1.6; fill: none; };
+  let g = PathLayer(`blade-${i}`) #{ stroke: c; stroke-width: 1.6; fill: none; };
   g.apply {
     M x 230
     q calc(lean * 0.3) calc(0 - h * 0.6) lean calc(0 - h)
@@ -528,7 +528,7 @@ for (i in 0..89) {
   blade(i);
 }
 
-let heads = PathLayer('seed-heads') ${ fill: oklch(0.8 0.1 85); stroke: none; };
+let heads = PathLayer('seed-heads') #{ fill: oklch(0.8 0.1 85); stroke: none; };
 heads.apply {
   for (k in 0..11) {
     let hx = 30 + hash01(k, 10) * 340;

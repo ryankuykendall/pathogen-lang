@@ -5,12 +5,12 @@
 
 define ViewBox(0, 0, 400, 220);
 
-let backdrop = PathLayer('night') ${ fill: oklch(0.22 0.04 275); stroke: none; };
+let backdrop = PathLayer('night') #{ fill: oklch(0.22 0.04 275); stroke: none; };
 backdrop.apply {
   rect(15, 15, 370, 190);
 }
 
-let stars = PathLayer('stars') ${ fill: oklch(0.92 0.03 260); stroke: none; };
+let stars = PathLayer('stars') #{ fill: oklch(0.92 0.03 260); stroke: none; };
 stars.apply {
   for (i in 0..139) {
     circle(calc(22 + hash01(i) * 356),

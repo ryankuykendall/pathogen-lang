@@ -7,7 +7,7 @@ define ViewBox(0, 0, 960, 170);
 
 @font "Baumans";
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -15,25 +15,25 @@ layer('bg').apply {
   rect(0, 0, 960, 170);
 }
 
-let wordmark = GroupLayer('wordmark') ${};
-let shard0 = PathLayer('shard0') ${
+let wordmark = GroupLayer('wordmark') #{};
+let shard0 = PathLayer('shard0') #{
   fill: #3b82f6;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard1 = PathLayer('shard1') ${
+let shard1 = PathLayer('shard1') #{
   fill: #a78bfa;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let shard2 = PathLayer('shard2') ${
+let shard2 = PathLayer('shard2') #{
   fill: #f59e0b;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
 wordmark.append(shard0, shard1, shard2);
 
-let styles = ${
+let styles = #{
   font-family: Baumans;
   font-size: 120;
 };

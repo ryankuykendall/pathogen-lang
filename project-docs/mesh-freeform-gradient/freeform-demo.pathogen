@@ -8,5 +8,5 @@ let nebula = FreeformGradient('nebula', 400, 300) {|grad|
 nebula.falloff = 2.5;
 nebula.interpolation = 'oklch';
 
-define PathLayer('bg') ${ fill: nebula; stroke: none; }
+define PathLayer('bg') #{ fill: nebula; stroke: none; }
 layer('bg').apply { rect(0, 0, 400, 300); }

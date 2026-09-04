@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 210);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,23 +12,23 @@ layer('bg').apply {
   rect(0, 0, 480, 210);
 }
 
-let scene = GroupLayer('scene') ${};
-let startDots = PathLayer('start-dots') ${
+let scene = GroupLayer('scene') #{};
+let startDots = PathLayer('start-dots') #{
   fill: #f59e0b;
   stroke: none;
 };
-let rings = PathLayer('rings') ${
+let rings = PathLayer('rings') #{
   stroke: #94a3b850;
   stroke-width: 1;
   fill: none;
 };
-let marchers = PathLayer('marchers') ${
+let marchers = PathLayer('marchers') #{
   stroke: #38bdf8;
   stroke-width: 5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
@@ -62,7 +62,7 @@ for ([phase, columnIndex] in phases) {
     M anchorX 92 ring.draw()
   }
   let anchored = ring.startAt(phase);
-  let pieces = anchored.dash(${
+  let pieces = anchored.dash(#{
     stroke-dasharray: 24 17;
   });
   for (piece in pieces) {

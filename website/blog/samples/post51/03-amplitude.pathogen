@@ -24,18 +24,18 @@ let captions = [
   'amplitude = 18 * smoothstep(0, 0.35, t) * smoothstep(1, 0.65, t)',
 ];
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   letter-spacing: 0.5;
   fill: oklch(0.45 0.02 260);
 };
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 
 for (row in 0..2) {
   let mid = 58 + row * 76;
   let amplitude = envelopes[row];
-  let guide = PathLayer(`baseline-${row}`) ${
+  let guide = PathLayer(`baseline-${row}`) #{
     stroke: oklch(0.82 0.02 260);
     stroke-width: 0.5;
     stroke-dasharray: 3 4;
@@ -45,7 +45,7 @@ for (row in 0..2) {
     M left mid
     L calc(left + width) mid
   }
-  let wave = PathLayer(`wave-${row}`) ${
+  let wave = PathLayer(`wave-${row}`) #{
     stroke: oklch(0.58 0.19 350);
     stroke-width: 1.5;
     stroke-linejoin: round;

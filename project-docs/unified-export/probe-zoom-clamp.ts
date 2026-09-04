@@ -11,7 +11,7 @@ const OUT = join(process.cwd(), 'project-docs', 'unified-export', 'verify');
 
 const SOURCE = `define ViewBox(0, 0, 800, 200);
 
-define default PathLayer('bg') \${
+define default PathLayer('bg') #{
   fill: #f5f5f5;
   stroke: none;
 }
@@ -21,7 +21,7 @@ layer('bg').apply {
 }
 
 // Long enough listing that the legend card is taller than the canvas
-define PathLayer('weave') \${
+define PathLayer('weave') #{
   stroke: #22222d;
   stroke-width: 0.4;
   fill: #ffffaa;

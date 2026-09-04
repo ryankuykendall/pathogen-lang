@@ -39,7 +39,7 @@ describe('CSSVar type', () => {
 
     it('accepts numeric fallback by stringifying', () => {
       const result = compile(`
-        define PathLayer('a') \${ stroke-width: CSSVar('--w', 42); }
+        define PathLayer('a') #{ stroke-width: CSSVar('--w', 42); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles['stroke-width']).toBe('var(--w, 42)');
@@ -91,7 +91,7 @@ describe('CSSVar type', () => {
     it('auto-converts in style block stroke', () => {
       const result = compile(`
         let fg = CSSVar("--foreground", "#333");
-        define PathLayer('main') \${ stroke: fg; }
+        define PathLayer('main') #{ stroke: fg; }
         layer('main').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'var(--foreground, #333)' });
@@ -99,7 +99,7 @@ describe('CSSVar type', () => {
 
     it('auto-converts inline CSSVar in style block', () => {
       const result = compile(`
-        define PathLayer('main') \${ fill: CSSVar("--fill", "none"); }
+        define PathLayer('main') #{ fill: CSSVar("--fill", "none"); }
         layer('main').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers[0].styles).toEqual({ fill: 'var(--fill, none)' });
@@ -108,7 +108,7 @@ describe('CSSVar type', () => {
     it('auto-converts CSSVar without fallback in style block', () => {
       const result = compile(`
         let c = CSSVar("--stroke-color");
-        define PathLayer('main') \${ stroke: c; }
+        define PathLayer('main') #{ stroke: c; }
         layer('main').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'var(--stroke-color)' });
@@ -151,7 +151,7 @@ describe('CSSVar type', () => {
       const result = compile(`
         let brand = Color("#e63946");
         let fg = CSSVar("--primary", brand);
-        define PathLayer('main') \${ stroke: fg; }
+        define PathLayer('main') #{ stroke: fg; }
         layer('main').apply { M 0 0 L 10 10 }
       `);
       expect(result.layers[0].styles).toEqual({ stroke: 'var(--primary, #e63946)' });
@@ -160,7 +160,7 @@ describe('CSSVar type', () => {
     it('Color(CSSVar(...)) preserves var() in direct style use', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c; }
+        define PathLayer('a') #{ fill: c; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toMatch(/^var\(--base, #[0-9a-f]{6}\)$/);
@@ -177,7 +177,7 @@ describe('CSSVar type', () => {
     it('lighten() outputs oklch(from var(...) calc(l + n) c h)', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.lighten(0.2); }
+        define PathLayer('a') #{ fill: c.lighten(0.2); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) calc(l + 0.2) c h)');
@@ -186,7 +186,7 @@ describe('CSSVar type', () => {
     it('darken() outputs oklch(from var(...) calc(l - n) c h)', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.darken(0.15); }
+        define PathLayer('a') #{ fill: c.darken(0.15); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) calc(l - 0.15) c h)');
@@ -195,7 +195,7 @@ describe('CSSVar type', () => {
     it('saturate() outputs oklch(from var(...) l calc(c * f) h)', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.saturate(1.5); }
+        define PathLayer('a') #{ fill: c.saturate(1.5); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l calc(c * 1.5) h)');
@@ -204,7 +204,7 @@ describe('CSSVar type', () => {
     it('desaturate() outputs oklch(from var(...) l calc(c * f) h)', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.desaturate(0.3); }
+        define PathLayer('a') #{ fill: c.desaturate(0.3); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l calc(c * 0.3) h)');
@@ -213,7 +213,7 @@ describe('CSSVar type', () => {
     it('alpha() outputs oklch(from var(...) l c h / a)', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.alpha(0.5); }
+        define PathLayer('a') #{ fill: c.alpha(0.5); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c h / 0.5)');
@@ -222,7 +222,7 @@ describe('CSSVar type', () => {
     it('hueShift() outputs oklch(from var(...) l c calc(h + d))', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.hueShift(90); }
+        define PathLayer('a') #{ fill: c.hueShift(90); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
@@ -231,7 +231,7 @@ describe('CSSVar type', () => {
     it('hueShift(90deg) emits degrees in the CSS hue expression', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.hueShift(90deg); }
+        define PathLayer('a') #{ fill: c.hueShift(90deg); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 90))');
@@ -240,7 +240,7 @@ describe('CSSVar type', () => {
     it('complement() outputs oklch(from var(...) l c calc(h + 180))', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.complement(); }
+        define PathLayer('a') #{ fill: c.complement(); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('oklch(from var(--base, #cc6683) l c calc(h + 180))');
@@ -250,7 +250,7 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
         let target = Color('#457b9d');
-        define PathLayer('a') \${ fill: c.mix(target, 0.5); }
+        define PathLayer('a') #{ fill: c.mix(target, 0.5); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('color-mix(in oklch, var(--base, #cc6683), #457b9d 50%)');
@@ -260,7 +260,7 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c1 = Color(CSSVar('--base', '#cc6683'));
         let c2 = Color(CSSVar('--target', '#457b9d'));
-        define PathLayer('a') \${ fill: c1.mix(c2, 0.3); }
+        define PathLayer('a') #{ fill: c1.mix(c2, 0.3); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe(
@@ -271,7 +271,7 @@ describe('CSSVar type', () => {
     it('chaining nests CSS expressions', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
-        define PathLayer('a') \${ fill: c.lighten(0.2).hueShift(90); }
+        define PathLayer('a') #{ fill: c.lighten(0.2).hueShift(90); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe(
@@ -282,7 +282,7 @@ describe('CSSVar type', () => {
     it('non-CSSVar Colors still produce baked values', () => {
       const result = compile(`
         let c = Color('#cc6683');
-        define PathLayer('a') \${ fill: c.lighten(0.2); }
+        define PathLayer('a') #{ fill: c.lighten(0.2); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toMatch(/^#[0-9a-f]{6}$/);
@@ -292,7 +292,7 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c1 = Color(CSSVar('--a', '#cc6683'));
         let c2 = Color(CSSVar('--b', '#457b9d'));
-        define PathLayer('a') \${ fill: Color.mix(c1, c2, 0.5); }
+        define PathLayer('a') #{ fill: Color.mix(c1, c2, 0.5); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('color-mix(in oklch, var(--a, #cc6683), var(--b, #457b9d) 50%)');
@@ -302,7 +302,7 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c1 = Color(CSSVar('--a', '#cc6683'));
         let c2 = Color('#457b9d');
-        define PathLayer('a') \${ fill: Color.mix(c1, c2, 0.5); }
+        define PathLayer('a') #{ fill: Color.mix(c1, c2, 0.5); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toBe('color-mix(in oklch, var(--a, #cc6683), #457b9d 50%)');
@@ -312,7 +312,7 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c1 = Color('#cc6683');
         let c2 = Color('#457b9d');
-        define PathLayer('a') \${ fill: Color.mix(c1, c2, 0.5); }
+        define PathLayer('a') #{ fill: Color.mix(c1, c2, 0.5); }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toMatch(/^#[0-9a-f]{6}$/);
@@ -326,9 +326,9 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
         let colors = c.analogous();
-        define PathLayer('a') \${ fill: colors[0]; }
-        define PathLayer('b') \${ fill: colors[1]; }
-        define PathLayer('c') \${ fill: colors[2]; }
+        define PathLayer('a') #{ fill: colors[0]; }
+        define PathLayer('b') #{ fill: colors[1]; }
+        define PathLayer('c') #{ fill: colors[2]; }
         layer('a').apply { M 0 0 }
         layer('b').apply { M 0 0 }
         layer('c').apply { M 0 0 }
@@ -342,8 +342,8 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
         let colors = c.triadic();
-        define PathLayer('a') \${ fill: colors[1]; }
-        define PathLayer('b') \${ fill: colors[2]; }
+        define PathLayer('a') #{ fill: colors[1]; }
+        define PathLayer('b') #{ fill: colors[2]; }
         layer('a').apply { M 0 0 }
         layer('b').apply { M 0 0 }
       `);
@@ -355,8 +355,8 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
         let colors = c.tetradic();
-        define PathLayer('a') \${ fill: colors[0]; }
-        define PathLayer('b') \${ fill: colors[1]; }
+        define PathLayer('a') #{ fill: colors[0]; }
+        define PathLayer('b') #{ fill: colors[1]; }
         layer('a').apply { M 0 0 }
         layer('b').apply { M 0 0 }
       `);
@@ -368,8 +368,8 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
         let colors = c.splitComplementary();
-        define PathLayer('a') \${ fill: colors[1]; }
-        define PathLayer('b') \${ fill: colors[2]; }
+        define PathLayer('a') #{ fill: colors[1]; }
+        define PathLayer('b') #{ fill: colors[2]; }
         layer('a').apply { M 0 0 }
         layer('b').apply { M 0 0 }
       `);
@@ -381,7 +381,7 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c = Color('#cc6683');
         let colors = c.triadic();
-        define PathLayer('a') \${ fill: colors[1]; }
+        define PathLayer('a') #{ fill: colors[1]; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toMatch(/^#[0-9a-f]{6}$/);
@@ -395,9 +395,9 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#cc6683'));
         let p = Color.palette(c, 3);
-        define PathLayer('a') \${ fill: p[0]; }
-        define PathLayer('b') \${ fill: p[1]; }
-        define PathLayer('c') \${ fill: p[2]; }
+        define PathLayer('a') #{ fill: p[0]; }
+        define PathLayer('b') #{ fill: p[1]; }
+        define PathLayer('c') #{ fill: p[2]; }
         layer('a').apply { M 0 0 }
         layer('b').apply { M 0 0 }
         layer('c').apply { M 0 0 }
@@ -412,9 +412,9 @@ describe('CSSVar type', () => {
         let c1 = Color(CSSVar('--a', '#cc6683'));
         let c2 = Color(CSSVar('--b', '#457b9d'));
         let p = Color.palette(c1, c2, 3);
-        define PathLayer('a') \${ fill: p[0]; }
-        define PathLayer('b') \${ fill: p[1]; }
-        define PathLayer('c') \${ fill: p[2]; }
+        define PathLayer('a') #{ fill: p[0]; }
+        define PathLayer('b') #{ fill: p[1]; }
+        define PathLayer('c') #{ fill: p[2]; }
         layer('a').apply { M 0 0 }
         layer('b').apply { M 0 0 }
         layer('c').apply { M 0 0 }
@@ -428,7 +428,7 @@ describe('CSSVar type', () => {
       const result = compile(`
         let c = Color('#cc6683');
         let p = Color.palette(c, 3);
-        define PathLayer('a') \${ fill: p[0]; }
+        define PathLayer('a') #{ fill: p[0]; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.layers[0].styles.fill).toMatch(/^#[0-9a-f]{6}$/);
@@ -441,7 +441,7 @@ describe('CSSVar type', () => {
     it('collects @property from Color(CSSVar(...))', () => {
       const result = compile(`
         let c = Color(CSSVar('--base', '#e63946'));
-        define PathLayer('a') \${ fill: c; }
+        define PathLayer('a') #{ fill: c; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.cssProperties).toHaveLength(1);
@@ -479,7 +479,7 @@ describe('CSSVar type', () => {
     it('plain CSSVar (not in Color) does not produce @property', () => {
       const result = compile(`
         let v = CSSVar('--width', 2);
-        define PathLayer('a') \${ stroke-width: v; }
+        define PathLayer('a') #{ stroke-width: v; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.cssProperties).toHaveLength(0);
@@ -488,7 +488,7 @@ describe('CSSVar type', () => {
     it('empty when no CSSVars used', () => {
       const result = compile(`
         let c = Color('#e63946');
-        define PathLayer('a') \${ fill: c; }
+        define PathLayer('a') #{ fill: c; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.cssProperties).toHaveLength(0);
@@ -497,7 +497,7 @@ describe('CSSVar type', () => {
     it('available through compileWithContext', () => {
       const result = compileWithContext(`
         let c = Color(CSSVar('--base', '#e63946'));
-        define PathLayer('a') \${ fill: c; }
+        define PathLayer('a') #{ fill: c; }
         layer('a').apply { M 0 0 }
       `);
       expect(result.cssProperties).toHaveLength(1);

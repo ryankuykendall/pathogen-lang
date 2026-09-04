@@ -52,7 +52,7 @@ let g = LinearGradient('sunset', 0, 0, 1, 0) {|g|
   g.stop(1, Color('#2a9d8f'));
 };
 
-define PathLayer('bg') ${ fill: g; stroke: none; }
+define PathLayer('bg') #{ fill: g; stroke: none; }
 
 layer('bg').apply {
   M 0 0 L 200 0 L 200 200 L 0 200 Z
@@ -149,7 +149,7 @@ Create a tiling pattern with an ID, position, and tile dimensions:
 ```
 let dot = @{ circle(10, 10, 3) };
 let dots = Pattern('dots', 0, 0, 20, 20) {|p|
-  p.append(dot, ${ fill: Color('#e63946'); });
+  p.append(dot, #{ fill: Color('#e63946'); });
 };
 dots.patternUnits = 'userSpaceOnUse';
 ```
@@ -166,7 +166,7 @@ Use `.append(pathBlock, styles?)` inside the trailing block to add path elements
 ```
 let line = @{ m 0 0 l 20 20 };
 let hatch = Pattern('hatch', 0, 0, 20, 20) {|p|
-  p.append(line, ${ stroke: Color('#999'); stroke-width: 1; });
+  p.append(line, #{ stroke: Color('#999'); stroke-width: 1; });
 };
 ```
 
@@ -183,7 +183,7 @@ let hatch = Pattern('hatch', 0, 0, 20, 20) {|p|
 Reference a pattern in `fill` or `stroke` style properties, just like gradients:
 
 ```
-define PathLayer('bg') ${ fill: dots; stroke: none; }
+define PathLayer('bg') #{ fill: dots; stroke: none; }
 layer('bg').apply { M 0 0 L 200 0 L 200 200 L 0 200 Z }
 ```
 
@@ -505,8 +505,8 @@ let cool = RadialGradient('cool', 0.5, 0.5, 0.5) {|g|
 };
 
 // Use in layer styles
-define PathLayer('bg') ${ fill: warm; stroke: none; }
-define PathLayer('circle') ${ fill: cool; stroke: none; }
+define PathLayer('bg') #{ fill: warm; stroke: none; }
+define PathLayer('circle') #{ fill: cool; stroke: none; }
 
 layer('bg').apply {
   M 0 0 L 200 0 L 200 200 L 0 200 Z
@@ -594,7 +594,7 @@ let m = MeshGradient('heat', 200, 200, 3, 3) {|g|
   g.getPoint(1, 1).color = Color('#f4a261');
 };
 
-define PathLayer('bg') ${ fill: m; stroke: none; }
+define PathLayer('bg') #{ fill: m; stroke: none; }
 layer('bg').apply {
   M 0 0 L 200 0 L 200 200 L 0 200 Z
 }
@@ -662,7 +662,7 @@ let nebula = FreeformGradient('nebula', 300, 300) {|g|
 };
 nebula.falloff = 3.0;
 
-define PathLayer('bg') ${ fill: nebula; stroke: none; }
+define PathLayer('bg') #{ fill: nebula; stroke: none; }
 layer('bg').apply {
   M 0 0 L 300 0 L 300 300 L 0 300 Z
 }
@@ -760,7 +760,7 @@ let topo = TopoGradient('terrain', 400, 300) {|g|
 topo.baseColor = Color('#1a5276');
 topo.easing = 'smoothstep';
 
-define PathLayer('bg') ${ fill: topo; }
+define PathLayer('bg') #{ fill: topo; }
 layer('bg').apply { rect(0, 0, 400, 300) }
 ```
 

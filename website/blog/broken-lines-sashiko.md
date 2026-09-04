@@ -102,7 +102,7 @@ dashes, place them at the line's anchor:
 
 ```pathogen
 fn sew(seam, anchorX, anchorY, bit) {
-  let stitches = seam.dash(${
+  let stitches = seam.dash(#{
     stroke-dasharray: ${cell} ${cell};
     stroke-dashoffset: calc(bit * cell);
   });

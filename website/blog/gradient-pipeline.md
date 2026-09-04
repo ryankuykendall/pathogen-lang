@@ -30,7 +30,7 @@ The compilation pipeline has five stages. Source code enters on the left. An int
 The demos in this series use `GroupLayer` extensively for scene composition. `GroupLayer` maps to SVG's `<g>` element — it groups child layers into a logical unit that can be positioned, styled, and nested.
 
 ```pathogen
-let card = GroupLayer('card-1') ${
+let card = GroupLayer('card-1') #{
   translate-x: 20;
   translate-y: 25;
 };

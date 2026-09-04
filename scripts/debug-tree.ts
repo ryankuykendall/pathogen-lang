@@ -1,6 +1,6 @@
 import { parser } from '../src/parser/pathogen.generated.ts';
 
-const src = "let l = PathLayer('x') ${ stroke: red; };";
+const src = "let l = PathLayer('x') #{ stroke: red; };";
 const tree = parser.parse(src);
 const cursor = tree.cursor();
 function walk(d: number) {

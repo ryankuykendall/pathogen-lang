@@ -49,68 +49,68 @@ let complement_grad = LinearGradient('complement', 0, 0, 0, 1) {|g|
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: surface; stroke: none; };
+let bg = PathLayer('bg') #{ fill: surface; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // --- Ambient glow behind the card ---
 
-let glow = PathLayer('glow') ${ fill: glow_grad; stroke: none; opacity: 0.5; };
+let glow = PathLayer('glow') #{ fill: glow_grad; stroke: none; opacity: 0.5; };
 glow.apply { circle(200, 200, 180); closePath(); }
 
 // --- Hero card with primary gradient ---
 
-let card = PathLayer('card') ${ fill: hero_grad; stroke: none; };
+let card = PathLayer('card') #{ fill: hero_grad; stroke: none; };
 card.apply { roundRect(40, 60, 200, 140, 12); }
 
-let card_border = PathLayer('card-border') ${ fill: none; stroke: primary_light; stroke-width: 1; opacity: 0.4; };
+let card_border = PathLayer('card-border') #{ fill: none; stroke: primary_light; stroke-width: 1; opacity: 0.4; };
 card_border.apply { roundRect(40, 60, 200, 140, 12); }
 
 // --- Accent bar ---
 
-let bar = PathLayer('bar') ${ fill: accent_grad; stroke: none; };
+let bar = PathLayer('bar') #{ fill: accent_grad; stroke: none; };
 bar.apply { roundRect(40, 220, 320, 8, 4); }
 
 // --- Badge circles ---
 
-let b1 = PathLayer('badge1') ${ fill: badge_grad; stroke: none; };
+let b1 = PathLayer('badge1') #{ fill: badge_grad; stroke: none; };
 b1.apply { circle(300, 100, 35); closePath(); }
 
-let b2 = PathLayer('badge2') ${ fill: badge_grad; stroke: none; opacity: 0.6; };
+let b2 = PathLayer('badge2') #{ fill: badge_grad; stroke: none; opacity: 0.6; };
 b2.apply { circle(340, 155, 20); closePath(); }
 
 // --- Complement sidebar ---
 
-let sidebar = PathLayer('sidebar') ${ fill: complement_grad; stroke: none; };
+let sidebar = PathLayer('sidebar') #{ fill: complement_grad; stroke: none; };
 sidebar.apply { roundRect(40, 250, 50, 120, 8); }
 
 // --- Small reactive chips ---
 
-let chip1 = PathLayer('chip1') ${ fill: primary; stroke: none; };
+let chip1 = PathLayer('chip1') #{ fill: primary; stroke: none; };
 chip1.apply { roundRect(110, 260, 80, 28, 14); }
 
-let chip2 = PathLayer('chip2') ${ fill: accent; stroke: none; };
+let chip2 = PathLayer('chip2') #{ fill: accent; stroke: none; };
 chip2.apply { roundRect(200, 260, 80, 28, 14); }
 
-let chip3 = PathLayer('chip3') ${ fill: complement; stroke: none; };
+let chip3 = PathLayer('chip3') #{ fill: complement; stroke: none; };
 chip3.apply { roundRect(290, 260, 80, 28, 14); }
 
 // --- Progress bars using derived colors ---
 
-let track = PathLayer('track') ${ fill: primary_dark; stroke: none; opacity: 0.4; };
+let track = PathLayer('track') #{ fill: primary_dark; stroke: none; opacity: 0.4; };
 track.apply { roundRect(110, 310, 260, 8, 4); }
 
-let fill_bar = PathLayer('fill-bar') ${ fill: hero_grad; stroke: none; };
+let fill_bar = PathLayer('fill-bar') #{ fill: hero_grad; stroke: none; };
 fill_bar.apply { roundRect(110, 310, 180, 8, 4); }
 
-let track2 = PathLayer('track2') ${ fill: primary_dark; stroke: none; opacity: 0.4; };
+let track2 = PathLayer('track2') #{ fill: primary_dark; stroke: none; opacity: 0.4; };
 track2.apply { roundRect(110, 335, 260, 8, 4); }
 
-let fill_bar2 = PathLayer('fill-bar2') ${ fill: accent_grad; stroke: none; };
+let fill_bar2 = PathLayer('fill-bar2') #{ fill: accent_grad; stroke: none; };
 fill_bar2.apply { roundRect(110, 335, 130, 8, 4); }
 
 // --- Labels ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -124,7 +124,7 @@ labels.apply {
   text(305, 282)`complement`
 }
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 15;
   fill: #ccc;
@@ -137,5 +137,5 @@ title.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, glow, card, card_border, bar, b1, b2, sidebar, chip1, chip2, chip3, track, fill_bar, track2, fill_bar2, labels, title);

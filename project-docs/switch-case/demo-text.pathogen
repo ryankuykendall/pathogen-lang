@@ -2,7 +2,7 @@ define ViewBox(0, 0, 240, 140);
 
 // Switch inside text bodies: the label for each row is chosen by a
 // range pattern over its score; the bar beside it is chosen the same way.
-define TextLayer('labels') ${
+define TextLayer('labels') #{
   font-size: 14;
   font-family: monospace;
   fill: #333;

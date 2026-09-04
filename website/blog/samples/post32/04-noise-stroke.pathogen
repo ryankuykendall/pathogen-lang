@@ -27,15 +27,15 @@ fn texturedStroke(strokeLayer, y, freq) {
   }
 }
 
-let slow = PathLayer('freq-3') ${ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
-let mid = PathLayer('freq-6') ${ fill: oklch(0.58 0.17 220); stroke: none; opacity: 0.9; };
-let fast = PathLayer('freq-12') ${ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.9; };
+let slow = PathLayer('freq-3') #{ fill: oklch(0.55 0.18 260); stroke: none; opacity: 0.9; };
+let mid = PathLayer('freq-6') #{ fill: oklch(0.58 0.17 220); stroke: none; opacity: 0.9; };
+let fast = PathLayer('freq-12') #{ fill: oklch(0.62 0.16 160); stroke: none; opacity: 0.9; };
 
 texturedStroke(slow, 55, 3);
 texturedStroke(mid, 130, 6);
 texturedStroke(fast, 205, 12);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #888;
@@ -47,5 +47,5 @@ labels.apply {
   text(40, 176)`noise(t * 12) — chattering`
 }
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(slow, mid, fast, labels);

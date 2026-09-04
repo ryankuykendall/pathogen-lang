@@ -134,10 +134,10 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
 
     // Find the word being typed. `[@&$\w.]*` captures plain identifiers
     // (`cir`), member-access prefixes (`bg.app`), and leading-symbol prefixes
-    // (`@font`, `&{`, `$`) that surface block-start and declaration snippets.
+    // (`@font`, `&{`, `#`, `$`) that surface block-start, style-block, and interpolation snippets.
     // We reject zero-length non-explicit matches so that punctuation keystrokes
     // (e.g. `;`) don't trigger the completion popup for no reason.
-    const word = context.matchBefore(hyphenAware ? /[-\w]*/ : /[@&$\w.]*/);
+    const word = context.matchBefore(hyphenAware ? /[-\w]*/ : /[@&$#\w.]*/);
     if (!word || (word.from === word.to && !context.explicit)) return null;
 
     const doc = new StringTextDocument(source);
@@ -174,7 +174,7 @@ export function makeSharedCompletionSource(snippetFn?: CmSnippetFn) {
             }
           : {}),
       })),
-      validFor: hyphenAware ? /^[-\w]*$/ : /^[@&$\w.]*$/,
+      validFor: hyphenAware ? /^[-\w]*$/ : /^[@&$#\w.]*$/,
     };
   };
 }

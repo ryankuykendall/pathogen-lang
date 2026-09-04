@@ -13,10 +13,10 @@ let arrow = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 600, 380); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -34,7 +34,7 @@ grid.apply {
 
 // --- Shape ---
 
-let shape = PathLayer('shape') ${
+let shape = PathLayer('shape') #{
   fill: Color('#3b82f618');
   stroke: Color('#3b82f6');
   stroke-width: 2;
@@ -49,7 +49,7 @@ shape.apply {
 
 // --- Bounding box overlay ---
 
-let bbox = PathLayer('bbox') ${
+let bbox = PathLayer('bbox') #{
   fill: none;
   stroke: Color('#f59e0b');
   stroke-width: 1;
@@ -62,7 +62,7 @@ bbox.apply {
 
 // --- Vertex dots ---
 
-let vdots = PathLayer('vdots') ${
+let vdots = PathLayer('vdots') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -79,7 +79,7 @@ vdots.apply {
 
 // --- Origin crosshair ---
 
-let origin_mark = PathLayer('origin-mark') ${
+let origin_mark = PathLayer('origin-mark') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -91,7 +91,7 @@ origin_mark.apply {
 
 // --- Direction indicators along edges ---
 
-let dir_arrows = PathLayer('dir-arrows') ${
+let dir_arrows = PathLayer('dir-arrows') #{
   fill: Color('#818cf8');
   stroke: none;
 };
@@ -106,7 +106,7 @@ dir_arrows.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') ${
+let leaders = PathLayer('leaders') #{
   fill: none;
   stroke: Color('#475569');
   stroke-width: 0.5;
@@ -126,7 +126,7 @@ leaders.apply {
 
 // --- Vertex index labels ---
 
-let vidx = TextLayer('vidx') ${
+let vidx = TextLayer('vidx') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#fca5a5');
@@ -144,7 +144,7 @@ vidx.apply {
 
 // --- Property callouts ---
 
-let props = TextLayer('props') ${
+let props = TextLayer('props') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -163,7 +163,7 @@ props.apply {
 
 // --- Subdued property type labels ---
 
-let type_labels = TextLayer('types') ${
+let type_labels = TextLayer('types') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -177,7 +177,7 @@ type_labels.apply {
 
 // --- Direction label ---
 
-let dir_label = TextLayer('dir-label') ${
+let dir_label = TextLayer('dir-label') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#818cf8');
@@ -189,7 +189,7 @@ dir_label.apply {
 
 // --- Code block (top-left) ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#94a3b8');
@@ -206,7 +206,7 @@ code.apply {
 
 // --- Syntax highlight: keywords ---
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#c084fc');
@@ -218,7 +218,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 15;
   fill: Color('#e2e8f0');
@@ -228,7 +228,7 @@ title.apply {
   text(30, 30)`PathBlock Anatomy`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -240,18 +240,18 @@ subtitle.apply {
 
 // --- Legend ---
 
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
 
-let leg_s = PathLayer('leg-s') ${ fill: Color('#3b82f6'); stroke: none; };
-let leg_b = PathLayer('leg-b') ${ fill: Color('#f59e0b'); stroke: none; };
-let leg_v = PathLayer('leg-v') ${ fill: Color('#ef4444'); stroke: none; };
-let leg_o = PathLayer('leg-o') ${ fill: Color('#22c55e'); stroke: none; };
-let leg_d = PathLayer('leg-d') ${ fill: Color('#818cf8'); stroke: none; };
+let leg_s = PathLayer('leg-s') #{ fill: Color('#3b82f6'); stroke: none; };
+let leg_b = PathLayer('leg-b') #{ fill: Color('#f59e0b'); stroke: none; };
+let leg_v = PathLayer('leg-v') #{ fill: Color('#ef4444'); stroke: none; };
+let leg_o = PathLayer('leg-o') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_d = PathLayer('leg-d') #{ fill: Color('#818cf8'); stroke: none; };
 
 leg_s.apply { rect(30, 335, 8, 8); }
 leg_b.apply { rect(30, 349, 8, 8); }

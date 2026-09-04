@@ -372,7 +372,7 @@ amber with the idiom above.</p>
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -380,25 +380,25 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let seamLayer = PathLayer('seams') ${
+let seamLayer = PathLayer('seams') #{
   stroke: #f59e0b;
   stroke-width: 2.5;
   fill: none;
   stroke-linecap: round;
 };
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 4 4;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -477,7 +477,7 @@ asking which knife made it.</p>
 
 define ViewBox(0, 0, 480, 220);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -485,41 +485,41 @@ layer('bg').apply {
   rect(0, 0, 480, 220);
 }
 
-let scene = GroupLayer('scene') ${};
-let panelLayer = PathLayer('panels') ${
+let scene = GroupLayer('scene') #{};
+let panelLayer = PathLayer('panels') #{
   fill: #e7dfd0;
   stroke: none;
 };
-let cutLayer = PathLayer('cut-line') ${
+let cutLayer = PathLayer('cut-line') #{
   stroke: #ef4444;
   stroke-width: 2;
   fill: none;
 };
-let mountainLayer = PathLayer('mountain-folds') ${
+let mountainLayer = PathLayer('mountain-folds') #{
   stroke: #334155;
   stroke-width: 1.5;
   fill: none;
   stroke-dasharray: 7 3 1.5 3;
 };
-let valleyLayer = PathLayer('valley-folds') ${
+let valleyLayer = PathLayer('valley-folds') #{
   stroke: #475569;
   stroke-width: 1.5;
   fill: none;
   stroke-dasharray: 5 4;
 };
-let cutCaption = TextLayer('cut-caption') ${
+let cutCaption = TextLayer('cut-caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #f87171;
   text-anchor: middle;
 };
-let mountainCaption = TextLayer('mountain-caption') ${
+let mountainCaption = TextLayer('mountain-caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
   text-anchor: middle;
 };
-let valleyCaption = TextLayer('valley-caption') ${
+let valleyCaption = TextLayer('valley-caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -618,7 +618,7 @@ of the way; the outer boundary, which was never cut, stays clean.</p>
 
 define ViewBox(0, 0, 480, 240);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -626,18 +626,18 @@ layer('bg').apply {
   rect(0, 0, 480, 240);
 }
 
-let scene = GroupLayer('scene') ${};
-let tabLayer = PathLayer('tabs') ${
+let scene = GroupLayer('scene') #{};
+let tabLayer = PathLayer('tabs') #{
   fill: #cbbfa3;
   stroke: #ef4444;
   stroke-width: 1.5;
 };
-let pieceLayer = PathLayer('pieces') ${
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -719,7 +719,7 @@ counts its roof, the base piece its base.</p>
 
 define ViewBox(0, 0, 480, 215);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -727,30 +727,30 @@ layer('bg').apply {
   rect(0, 0, 480, 215);
 }
 
-let scene = GroupLayer('scene') ${};
-let pieceLayer = PathLayer('pieces') ${
+let scene = GroupLayer('scene') #{};
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let roofLayer = PathLayer('roof-runs') ${
+let roofLayer = PathLayer('roof-runs') #{
   stroke: #2dd4bf;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let baseLayer = PathLayer('base-runs') ${
+let baseLayer = PathLayer('base-runs') #{
   stroke: #c084fc;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let roofCount = TextLayer('roof-count') ${
+let roofCount = TextLayer('roof-count') #{
   font-family: monospace;
   font-size: 9;
   fill: #2dd4bf;
 };
-let baseCount = TextLayer('base-count') ${
+let baseCount = TextLayer('base-count') #{
   font-family: monospace;
   font-size: 9;
   fill: #c084fc;
@@ -827,7 +827,7 @@ seams amber, so mating edges face each other across the gaps.</p>
 
 define ViewBox(0, 0, 480, 260);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -835,25 +835,25 @@ layer('bg').apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') ${};
-let ghost = PathLayer('ghost') ${
+let scene = GroupLayer('scene') #{};
+let ghost = PathLayer('ghost') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 3 4;
   fill: none;
 };
-let pieceLayer = PathLayer('pieces') ${
+let pieceLayer = PathLayer('pieces') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let seamLayer = PathLayer('seams') ${
+let seamLayer = PathLayer('seams') #{
   stroke: #f59e0b;
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
@@ -930,7 +930,7 @@ back in.</p>
 
 define ViewBox(0, 0, 480, 300);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -938,43 +938,43 @@ layer('bg').apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') ${};
-let ghost = PathLayer('ghost') ${
+let scene = GroupLayer('scene') #{};
+let ghost = PathLayer('ghost') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 3 4;
   fill: none;
 };
-let tabLayer = PathLayer('tabs') ${
+let tabLayer = PathLayer('tabs') #{
   fill: #cbbfa3;
   stroke: #ef4444;
   stroke-width: 1.2;
 };
-let wedgeLayer = PathLayer('wedges') ${
+let wedgeLayer = PathLayer('wedges') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let foldLayer = PathLayer('folds') ${
+let foldLayer = PathLayer('folds') #{
   stroke: #475569;
   stroke-width: 1.4;
   fill: none;
   stroke-dasharray: 4 3;
 };
-let numbers = TextLayer('numbers') ${
+let numbers = TextLayer('numbers') #{
   font-family: monospace;
   font-size: 10;
   fill: #0f172a;
   text-anchor: middle;
 };
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: middle;
   letter-spacing: 3;
 };
-let caption = TextLayer('caption') ${
+let caption = TextLayer('caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;

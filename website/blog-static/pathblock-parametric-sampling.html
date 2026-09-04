@@ -332,10 +332,10 @@ let curve = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 560, 360); }
 
-let grid = PathLayer('grid') ${
+let grid = PathLayer('grid') #{
   stroke: Color('#1e293b');
   stroke-width: 0.5;
   fill: none;
@@ -353,7 +353,7 @@ grid.apply {
 
 // --- The curve ---
 
-let path = PathLayer('path') ${
+let path = PathLayer('path') #{
   stroke: Color('#3b82f6');
   stroke-width: 2.5;
   fill: none;
@@ -371,7 +371,7 @@ let norm = proj.normal(0.4);
 
 // --- Sample point dot ---
 
-let sample_dot = PathLayer('sample-dot') ${
+let sample_dot = PathLayer('sample-dot') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 2;
@@ -382,7 +382,7 @@ sample_dot.apply {
 
 // --- Tangent line ---
 
-let tangent = PathLayer('tangent') ${
+let tangent = PathLayer('tangent') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -393,7 +393,7 @@ tangent.apply {
 }
 
 // Tangent direction arrow
-let tan_arrow = PathLayer('tan-arrow') ${
+let tan_arrow = PathLayer('tan-arrow') #{
   fill: Color('#22c55e');
   stroke: none;
 };
@@ -411,7 +411,7 @@ tan_arrow.apply {
 
 // --- Normal line ---
 
-let normal = PathLayer('normal') ${
+let normal = PathLayer('normal') #{
   stroke: Color('#f59e0b');
   stroke-width: 1.5;
   fill: none;
@@ -436,7 +436,7 @@ normal.apply {
 
 // --- t=0 and t=1 endpoint markers ---
 
-let endpoints = PathLayer('endpoints') ${
+let endpoints = PathLayer('endpoints') #{
   fill: Color('#94a3b8');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -448,7 +448,7 @@ endpoints.apply {
 
 // --- Leader lines ---
 
-let leaders = PathLayer('leaders') ${
+let leaders = PathLayer('leaders') #{
   fill: none;
   stroke: Color('#475569');
   stroke-width: 0.5;
@@ -472,7 +472,7 @@ leaders.apply {
 
 // --- Endpoint labels ---
 
-let ep_labels = TextLayer('ep-labels') ${
+let ep_labels = TextLayer('ep-labels') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -485,7 +485,7 @@ ep_labels.apply {
 
 // --- Method callout labels ---
 
-let method_labels = TextLayer('method-labels') ${
+let method_labels = TextLayer('method-labels') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#e2e8f0');
@@ -496,7 +496,7 @@ method_labels.apply {
   text(370, 269)`→ Point`
 }
 
-let tangent_label = TextLayer('tangent-label') ${
+let tangent_label = TextLayer('tangent-label') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#22c55e');
@@ -507,7 +507,7 @@ tangent_label.apply {
   text(315, 89)`→ { point, angle }`
 }
 
-let normal_label = TextLayer('normal-label') ${
+let normal_label = TextLayer('normal-label') #{
   font-family: monospace;
   font-size: 10;
   fill: Color('#f59e0b');
@@ -520,17 +520,17 @@ normal_label.apply {
 
 // --- Legend ---
 
-let leg = TextLayer('legend') ${
+let leg = TextLayer('legend') #{
   font-family: system-ui, sans-serif;
   font-size: 8;
   fill: Color('#64748b');
   text-anchor: start;
 };
 
-let leg_c = PathLayer('leg-curve') ${ fill: Color('#3b82f6'); stroke: none; };
-let leg_t = PathLayer('leg-tan') ${ fill: Color('#22c55e'); stroke: none; };
-let leg_n = PathLayer('leg-norm') ${ fill: Color('#f59e0b'); stroke: none; };
-let leg_p = PathLayer('leg-pt') ${ fill: Color('#ef4444'); stroke: none; };
+let leg_c = PathLayer('leg-curve') #{ fill: Color('#3b82f6'); stroke: none; };
+let leg_t = PathLayer('leg-tan') #{ fill: Color('#22c55e'); stroke: none; };
+let leg_n = PathLayer('leg-norm') #{ fill: Color('#f59e0b'); stroke: none; };
+let leg_p = PathLayer('leg-pt') #{ fill: Color('#ef4444'); stroke: none; };
 
 leg_c.apply { rect(370, 310, 8, 8); }
 leg_t.apply { rect(370, 324, 8, 8); }
@@ -546,7 +546,7 @@ leg.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: Color('#e2e8f0');
@@ -556,7 +556,7 @@ title.apply {
   text(30, 328)`Parametric Sampling`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: Color('#64748b');
@@ -589,18 +589,18 @@ let curve = @{
   c 0 120 -200 120 -200 0
 };
 
-let path = PathLayer('path') ${
+let path = PathLayer('path') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: none;
 };
 
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   fill: Color('#ef4444');
   stroke: none;
 };
 
-let tangents = PathLayer('tangents') ${
+let tangents = PathLayer('tangents') #{
   stroke: Color('#22c55e');
   stroke-width: 1.5;
   fill: none;
@@ -680,12 +680,12 @@ let curve = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 520, 300); }
 
 // --- The curve ---
 
-let path = PathLayer('path') ${
+let path = PathLayer('path') #{
   stroke: Color('#3b82f6');
   stroke-width: 2;
   fill: none;
@@ -699,7 +699,7 @@ path.apply {
 let proj = curve.project(60, 150);
 let pts = proj.partition(8);
 
-let dots = PathLayer('dots') ${
+let dots = PathLayer('dots') #{
   fill: Color('#ef4444');
   stroke: Color('#0f172a');
   stroke-width: 1.5;
@@ -712,7 +712,7 @@ dots.apply {
 
 // --- t-value labels (positioned relative to actual points) ---
 
-let tvals = TextLayer('tvals') ${
+let tvals = TextLayer('tvals') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#fca5a5');
@@ -744,7 +744,7 @@ tvals.apply {
 
 // --- Code ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -755,7 +755,7 @@ code.apply {
   text(30, 276)`// → 9 points at t = 0, 0.125, 0.25, ... 1.0`
 }
 
-let kw = TextLayer('kw') ${
+let kw = TextLayer('kw') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#c084fc');
@@ -767,7 +767,7 @@ kw.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -777,7 +777,7 @@ title.apply {
   text(30, 28)`partition(8) — Even Distribution`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -802,24 +802,24 @@ let road = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 540, 320); }
 
 // --- Layers ---
 
-let roadLayer = PathLayer('road') ${
+let roadLayer = PathLayer('road') #{
   stroke: Color('#475569');
   stroke-width: 4;
   fill: none;
 };
 
-let posts = PathLayer('posts') ${
+let posts = PathLayer('posts') #{
   stroke: Color('#854d0e');
   stroke-width: 2;
   fill: none;
 };
 
-let rails = PathLayer('rails') ${
+let rails = PathLayer('rails') #{
   stroke: Color('#a16207');
   stroke-width: 1;
   fill: none;
@@ -863,7 +863,7 @@ rails.apply {
 
 // --- Post base dots ---
 
-let base_dots = PathLayer('base-dots') ${
+let base_dots = PathLayer('base-dots') #{
   fill: Color('#854d0e');
   stroke: none;
 };
@@ -875,7 +875,7 @@ base_dots.apply {
 
 // --- Annotations ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -887,21 +887,21 @@ labels.apply {
   text(360, 56)`rails: connecting adjacent posts`
 }
 
-let label_dots = PathLayer('label-dots') ${
+let label_dots = PathLayer('label-dots') #{
   fill: none;
   stroke-width: 1.5;
 };
 
-let ld1 = PathLayer('ld1') ${ fill: none; stroke: Color('#475569'); stroke-width: 3; };
-let ld2 = PathLayer('ld2') ${ fill: none; stroke: Color('#854d0e'); stroke-width: 3; };
-let ld3 = PathLayer('ld3') ${ fill: none; stroke: Color('#a16207'); stroke-width: 3; };
+let ld1 = PathLayer('ld1') #{ fill: none; stroke: Color('#475569'); stroke-width: 3; };
+let ld2 = PathLayer('ld2') #{ fill: none; stroke: Color('#854d0e'); stroke-width: 3; };
+let ld3 = PathLayer('ld3') #{ fill: none; stroke: Color('#a16207'); stroke-width: 3; };
 ld1.apply { M 350 24 h 6 }
 ld2.apply { M 350 38 h 6 }
 ld3.apply { M 350 52 h 6 }
 
 // --- Code annotation ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -912,7 +912,7 @@ code.apply {
   text(30, 286)`let norm = proj.normal(p.t);`
 }
 
-let code_comment = TextLayer('code-comment') ${
+let code_comment = TextLayer('code-comment') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -924,7 +924,7 @@ code_comment.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -934,7 +934,7 @@ title.apply {
   text(30, 28)`Fence Along a Curve`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');

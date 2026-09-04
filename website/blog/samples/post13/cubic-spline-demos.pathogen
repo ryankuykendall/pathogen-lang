@@ -2,27 +2,27 @@ define ViewBox(0, 0, 460, 145);
 // Three cubicSpline examples: S-curve, sine wave, closed loop
 
 // --- Background ---
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 460, 145); }
 
-let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..7) { M 0 calc(i * 20) h 460 }
   for (j in 0..23) { M calc(j * 20) 0 v 145 }
 }
 
 // === Layout group ===
-define GroupLayer('layout') ${ translate-x: 0; translate-y: 0; }
+define GroupLayer('layout') #{ translate-x: 0; translate-y: 0; }
 
 // --- S-curve group ---
-define GroupLayer('s-curve-group') ${ translate-x: 15; translate-y: 8; }
+define GroupLayer('s-curve-group') #{ translate-x: 15; translate-y: 8; }
 layer('layout').append(layer('s-curve-group'));
 
-define TextLayer('s-label') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('s-label') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('s-curve-group').append(layer('s-label'));
 layer('s-label').apply { text(27, 20)`S-curve` }
 
-define PathLayer('s-curve') ${ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
+define PathLayer('s-curve') #{ fill: none; stroke: #3b82f6; stroke-width: 2.5; }
 layer('s-curve-group').append(layer('s-curve'));
 layer('s-curve').apply {
   cubicSpline([
@@ -33,14 +33,14 @@ layer('s-curve').apply {
 }
 
 // --- Sine wave group ---
-define GroupLayer('sine-group') ${ translate-x: 145; translate-y: 8; }
+define GroupLayer('sine-group') #{ translate-x: 145; translate-y: 8; }
 layer('layout').append(layer('sine-group'));
 
-define TextLayer('sine-label') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('sine-label') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('sine-group').append(layer('sine-label'));
 layer('sine-label').apply { text(27, 20)`Sine wave` }
 
-define PathLayer('sine') ${ fill: none; stroke: #ef4444; stroke-width: 2.5; }
+define PathLayer('sine') #{ fill: none; stroke: #ef4444; stroke-width: 2.5; }
 layer('sine-group').append(layer('sine'));
 layer('sine').apply {
   cubicSpline([
@@ -53,14 +53,14 @@ layer('sine').apply {
 }
 
 // --- Closed loop group ---
-define GroupLayer('loop-group') ${ translate-x: 280; translate-y: 8; }
+define GroupLayer('loop-group') #{ translate-x: 280; translate-y: 8; }
 layer('layout').append(layer('loop-group'));
 
-define TextLayer('loop-label') ${ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
+define TextLayer('loop-label') #{ font-size: 10; fill: #94a3b8; font-family: system-ui, sans-serif; }
 layer('loop-group').append(layer('loop-label'));
 layer('loop-label').apply { text(38, 20)`Closed loop` }
 
-define PathLayer('loop') ${ fill: rgba(34, 197, 94, 0.1); stroke: #22c55e; stroke-width: 2.5; }
+define PathLayer('loop') #{ fill: rgba(34, 197, 94, 0.1); stroke: #22c55e; stroke-width: 2.5; }
 layer('loop-group').append(layer('loop'));
 layer('loop').apply {
   cubicSpline([

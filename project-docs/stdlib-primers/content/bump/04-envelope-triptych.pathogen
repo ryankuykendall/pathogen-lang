@@ -20,7 +20,7 @@ fn ribbon(name, y0, kind) {
   };
   let spine = @{ l 330 0 };
   let rib = spine.compoundVariableOffset() << mk;
-  let band = PathLayer(name) ${ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
+  let band = PathLayer(name) #{ fill: oklch(0.62 0.16 260); stroke: none; opacity: 0.9; };
   band.apply {
     M calc(35 + rib.anchor.x) calc(y0 + rib.anchor.y)
     rib.draw();
@@ -31,7 +31,7 @@ ribbon('plain-bump', 48, 0);
 ribbon('bump-squared', 118, 1);
 ribbon('two-bump-sum', 188, 2);
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #888;

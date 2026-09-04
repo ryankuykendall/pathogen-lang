@@ -2,7 +2,7 @@ define ViewBox(0, 0, 400, 240);
 // Stacking custom filters via GroupLayer: outer Elevation + inner Inner Shadow.
 // Two filters, one card — raised above its surface, recessed on its top edge.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -23,7 +23,7 @@ let press = InnerShadowFilter() {|f|
 };
 
 // Inner layer carries the inner shadow.
-let inner = PathLayer('inner') ${
+let inner = PathLayer('inner') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: press;
@@ -37,12 +37,12 @@ inner.apply {
 }
 
 // Outer group carries the elevation shadow.
-let chip = GroupLayer('chip') ${
+let chip = GroupLayer('chip') #{
   filter: lift;
 };
 chip.append(inner);
 
-let label = TextLayer('label') ${
+let label = TextLayer('label') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 600;

@@ -44,12 +44,12 @@ let c_i_75 = Color(CSSVar('--harmony-color', #e63946)).mix(Color('#457b9d'), 0.7
 let c_i_100 = '#457b9d';
 
 // ─── Group layers ───────────────────────────────────────────
-define GroupLayer('diagram') ${}
-define GroupLayer('masthead') ${}
-define GroupLayer('matrix') ${}
+define GroupLayer('diagram') #{}
+define GroupLayer('masthead') #{}
+define GroupLayer('matrix') #{}
 
 // ─── Background ─────────────────────────────────────────────
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 };
@@ -58,7 +58,7 @@ bg.apply {
 }
 
 // ─── Masthead ───────────────────────────────────────────────
-let eyebrow = TextLayer('eyebrow') ${
+let eyebrow = TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -70,7 +70,7 @@ eyebrow.apply {
   text(16, 26)`OKLCH  /  02 — HARMONIES & PALETTES`;
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: font;
   font-size: 10;
   font-style: italic;
@@ -102,7 +102,7 @@ let sw_w = 70;
 let sw_h = 42;
 
 // ─── Row styles ─────────────────────────────────────────────
-let row_label_layer = TextLayer('row-label') ${
+let row_label_layer = TextLayer('row-label') #{
   font-family: font;
   font-size: 10;
   font-weight: 700;
@@ -110,7 +110,7 @@ let row_label_layer = TextLayer('row-label') ${
   fill: fg_auto;
   text-anchor: start;
 };
-let col_sub_layer = TextLayer('col-sub') ${
+let col_sub_layer = TextLayer('col-sub') #{
   font-family: font;
   font-size: 6;
   letter-spacing: 0.5;
@@ -259,7 +259,7 @@ for ([row, ri] in rows) {
   let cells = row[1];
   for ([cell, ci] in cells) {
     let x = col_x[ci];
-    let sw = PathLayer(`sw-${ri}-${ci}`) ${
+    let sw = PathLayer(`sw-${ri}-${ci}`) #{
       fill: cell[0];
       stroke: fg_hair;
       stroke-width: 0.5;
@@ -281,7 +281,7 @@ for ([row, ri] in rows) {
 
 
 // Divider between harmony rows (0..3) and palette rows (4..5)
-let divider = PathLayer('divider') ${
+let divider = PathLayer('divider') #{
   fill: none;
   stroke: fg_hair;
   stroke-width: 0.5;

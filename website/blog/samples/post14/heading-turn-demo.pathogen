@@ -2,10 +2,10 @@ define ViewBox(0, 0, 540, 220);
 // heading() and turn() — tangent context without path commands
 
 // --- Background ---
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 540, 220); }
 
-let grid = PathLayer('grid') ${ stroke: #1e293b; stroke-width: 0.5; fill: none; };
+let grid = PathLayer('grid') #{ stroke: #1e293b; stroke-width: 0.5; fill: none; };
 grid.apply {
   for (i in 0..11) { M 0 calc(i * 20) h 540 }
   for (j in 0..27) { M calc(j * 20) 0 v 220 }
@@ -18,7 +18,7 @@ let codeRowY = 130;
 let labelY = 28;
 
 // === Layout group ===
-define GroupLayer('layout') ${ translate-x: 0; translate-y: 0; }
+define GroupLayer('layout') #{ translate-x: 0; translate-y: 0; }
 
 // --- Build each shape as a PathBlock, center via boundingBox ---
 
@@ -96,12 +96,12 @@ for ([shape, idx] in shapes) {
 
   // --- Group for this example ---
   let gName = `g${idx}`;
-  define GroupLayer(gName) ${ translate-x: 0; translate-y: 0; }
+  define GroupLayer(gName) #{ translate-x: 0; translate-y: 0; }
   layer('layout').append(layer(gName));
 
   // --- Label ---
   let tlName = `l${idx}`;
-  define TextLayer(tlName) ${ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
+  define TextLayer(tlName) #{ font-size: 11; fill: #e2e8f0; font-family: system-ui, sans-serif; }
   layer(gName).append(layer(tlName));
   let labelX = calc(cx - shape.label.length * 3.3);
   layer(tlName).apply { text(labelX, labelY)`${shape.label}` }
@@ -110,7 +110,7 @@ for ([shape, idx] in shapes) {
   let drawX = calc(cx - shape.bb.x - shape.bb.width / 2);
   let drawY = calc(shapeRowY - shape.bb.y - shape.bb.height / 2);
   let plName = `p${idx}`;
-  define PathLayer(plName) ${ fill: none; stroke: shape.col; stroke-width: 2.5; }
+  define PathLayer(plName) #{ fill: none; stroke: shape.col; stroke-width: 2.5; }
   layer(gName).append(layer(plName));
   layer(plName).apply { shape.pb.drawTo(drawX, drawY); }
 
@@ -118,6 +118,6 @@ for ([shape, idx] in shapes) {
   let snippet = codeTexts[idx].toCodeSnippetBlock(snippetNames[idx], 8, 6);
   // Center the snippet horizontally under the shape
   let snippetBB = snippet.ctx.transform;
-  snippet << ${ translate-x: calc(cx - 55); translate-y: codeRowY; };
+  snippet << #{ translate-x: calc(cx - 55); translate-y: codeRowY; };
   layer(gName).append(snippet);
 }

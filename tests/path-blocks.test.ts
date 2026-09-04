@@ -204,7 +204,7 @@ describe('Path Blocks', () => {
 
     it('works with layers', () => {
       const result = compile(
-        "define default PathLayer('main') ${ stroke: black; }\n" +
+        "define default PathLayer('main') #{ stroke: black; }\n" +
           'let p = @{ v 20 h 20 };\n' +
           'M 10 10\n' +
           'p.draw()',
@@ -589,14 +589,14 @@ l 5 0`);
     });
 
     it('rejects layer definitions inside path block', () => {
-      expect(() => compilePath("let p = @{ define PathLayer('x') ${ stroke: red; } };")).toThrow(
+      expect(() => compilePath("let p = @{ define PathLayer('x') #{ stroke: red; } };")).toThrow(
         /Layer definitions.*not allowed.*path blocks/,
       );
     });
 
     it('rejects layer apply blocks inside path block', () => {
       expect(() =>
-        compilePath("define PathLayer('x') ${ stroke: red; }\nlet p = @{ layer('x').apply { v 10 } };"),
+        compilePath("define PathLayer('x') #{ stroke: red; }\nlet p = @{ layer('x').apply { v 10 } };"),
       ).toThrow(/Layer apply blocks.*not allowed.*path blocks/);
     });
 
@@ -2297,8 +2297,8 @@ M 0 0`);
 
       it('style block merge still works (regression)', () => {
         const result = compile(`
-          let base = \${ stroke: red; stroke-width: 2; };
-          let extra = \${ fill: blue; };
+          let base = #{ stroke: red; stroke-width: 2; };
+          let extra = #{ fill: blue; };
           let merged = calc(base << extra);
           log(merged.fill);
         `);
@@ -2309,7 +2309,7 @@ M 0 0`);
         expect(() =>
           compile(`
           let p = @{ h 50 };
-          let s = \${ stroke: red; };
+          let s = #{ stroke: red; };
           let x = calc(p << s);
         `),
         ).toThrow(/matching operand types/);
@@ -3641,7 +3641,7 @@ describe('truthful startPoint survives the transform-method family (review-criti
 
   it('layer segment queries report the inked start, not the pre-call cursor', () => {
     const result = compile(`
-      define default PathLayer('main') \${}
+      define default PathLayer('main') #{}
       M 10 10
       circle(50, 50, 20) as segment('c1');
       let seg = layer('main').segment('c1');
@@ -3670,7 +3670,7 @@ describe('truthful startPoint survives the transform-method family (review-criti
 
   it('drawTo after a layer-segment query anchors the ink at the target', () => {
     const { layers } = compile(`
-      define default PathLayer('main') \${}
+      define default PathLayer('main') #{}
       M 10 10
       circle(50, 50, 20) as segment('c1');
       let seg = layer('main').segment('c1');

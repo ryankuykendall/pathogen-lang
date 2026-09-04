@@ -8,7 +8,7 @@ define ViewBox(0, 0, 240, 160);
 let {width, height} = viewbox;
 
 @font "/System/Library/Fonts/Supplemental/Georgia.ttf";
-let styles = ${
+let styles = #{
   font-family: Georgia;
   font-size: 120;
 };
@@ -23,12 +23,12 @@ let cutPB = @{
   l 90 -24
 };
 
-let pieceLayer = PathLayer(`pieces`) ${
+let pieceLayer = PathLayer(`pieces`) #{
   fill: #9db8ec;
   stroke: #223;
   stroke-width: 1;
 };
-let cutLayer = PathLayer(`cuts`) ${
+let cutLayer = PathLayer(`cuts`) #{
   stroke: #c00;
   stroke-width: 0.5;
 };

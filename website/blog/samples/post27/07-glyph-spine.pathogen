@@ -11,20 +11,20 @@ let fg_muted = Color('#0d1638').alpha(0.6);
 let blue = Color(CSSVar('--stroke-color', #457b9d));
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('flourish') ${
+define PathLayer('flourish') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('glyph') ${
+define PathLayer('glyph') #{
   fill: fg;
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -36,7 +36,7 @@ layer('bg').apply {
   rect(0, 0, 520, 400);
 }
 
-let styles = ${
+let styles = #{
   font-family: Baumans-Regular;
   font-size: 300;
 };

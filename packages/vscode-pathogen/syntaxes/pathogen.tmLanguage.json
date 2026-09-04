@@ -179,9 +179,9 @@
       ]
     },
     "style-block": {
-      "comment": "Style block: ${ property: value; ... }",
+      "comment": "Style block: #{ property: value; ... }",
       "name": "meta.style-block.pathogen",
-      "begin": "(\\$)(\\{)",
+      "begin": "(#)(\\{)",
       "end": "\\}",
       "beginCaptures": {
         "1": {

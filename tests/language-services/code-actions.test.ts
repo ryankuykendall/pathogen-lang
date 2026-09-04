@@ -88,3 +88,59 @@ describe('command-letter shadowing quick fix', () => {
     expect(edit.range.end).toEqual({ line: 2, character: 3 });
   });
 });
+
+describe('legacy style-block opener quick fixes', () => {
+  const O = '${';
+
+  function applyEdits(
+    source: string,
+    changes: { range: { start: { line: number; character: number } }; newText: string }[],
+  ): string {
+    const doc = new StringTextDocument(source);
+    const offsets = changes.map((c) => doc.offsetAt(c.range.start)).sort((a, b) => b - a);
+    let text = source;
+    for (const o of offsets) text = text.slice(0, o) + '#' + text.slice(o + 1);
+    return text;
+  }
+
+  it('offers a one-character fix at the opener', () => {
+    const actions = actionsFor(`let s = ${O} fill: red; };`);
+    const fix = actions.find((a) => a.title === "Change '${' to '#{'");
+    expect(fix).toBeDefined();
+    expect(fix!.edit.changes).toEqual([
+      { range: { start: { line: 0, character: 8 }, end: { line: 0, character: 9 } }, newText: '#' },
+    ]);
+  });
+
+  it('finds constructor-form openers, which recovery wraps in a synthesized block node', () => {
+    const src = `define default PathLayer('a') ${O} stroke: red; }\nlet pl = PathLayer('outline') ${O} stroke: #333; fill: none; };`;
+    const all = actionsFor(src).find((a) => a.title.startsWith('Convert all legacy'));
+    expect(all).toBeDefined();
+    expect(all!.title).toContain('(2)');
+    expect(applyEdits(src, all!.edit.changes)).toBe(
+      "define default PathLayer('a') #{ stroke: red; }\nlet pl = PathLayer('outline') #{ stroke: #333; fill: none; };",
+    );
+  });
+
+  it('offers a convert-all action that reaches blocks hidden behind the first cascade and leaves interpolations alone', () => {
+    const src = [
+      'let w = 2;',
+      `let a = ${O} fill: red; };`,
+      `let b = ${O} stroke: blue; stroke-width: ${O}w}; };`,
+      `let t = \`x ${O}w}\`;`,
+      `define PathLayer('p') ${O} stroke: red; }`,
+    ].join('\n');
+    const all = actionsFor(src).find((a) => a.title.startsWith('Convert all legacy'));
+    expect(all).toBeDefined();
+    expect(all!.title).toContain('(3)');
+    expect(applyEdits(src, all!.edit.changes)).toBe(
+      [
+        'let w = 2;',
+        'let a = #{ fill: red; };',
+        `let b = #{ stroke: blue; stroke-width: ${O}w}; };`,
+        `let t = \`x ${O}w}\`;`,
+        "define PathLayer('p') #{ stroke: red; }",
+      ].join('\n'),
+    );
+  });
+});

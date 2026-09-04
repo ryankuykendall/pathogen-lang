@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 260);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,30 +12,30 @@ layer('bg').apply {
   rect(0, 0, 480, 260);
 }
 
-let scene = GroupLayer('scene') ${};
-let frame = PathLayer('frame') ${
+let scene = GroupLayer('scene') #{};
+let frame = PathLayer('frame') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 1.5;
 };
-let sillRun = PathLayer('sill-run') ${
+let sillRun = PathLayer('sill-run') #{
   stroke: #f59e0b;
   stroke-width: 3.5;
   fill: none;
   stroke-linecap: round;
 };
-let lightRun = PathLayer('light-run') ${
+let lightRun = PathLayer('light-run') #{
   stroke: #2dd4bf;
   stroke-width: 3.5;
   fill: none;
   stroke-linecap: round;
 };
-let legendSill = TextLayer('legend-sill') ${
+let legendSill = TextLayer('legend-sill') #{
   font-family: monospace;
   font-size: 9;
   fill: #f59e0b;
 };
-let legendLight = TextLayer('legend-light') ${
+let legendLight = TextLayer('legend-light') #{
   font-family: monospace;
   font-size: 9;
   fill: #2dd4bf;

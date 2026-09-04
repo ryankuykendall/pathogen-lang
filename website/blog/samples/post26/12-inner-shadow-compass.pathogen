@@ -2,7 +2,7 @@ define ViewBox(0, 0, 480, 480);
 // InnerShadowFilter — 8 offset directions around a clock face.
 // The shadow falls toward (offsetX, offsetY); light comes from the opposite side.
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: oklch(94% 0.01 80);
   stroke: none;
 };
@@ -68,42 +68,42 @@ let f_nw = InnerShadowFilter() {|f|
   f.opacity = 0.6;
 };
 
-let mk_n = PathLayer('n') ${
+let mk_n = PathLayer('n') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_n;
 };
-let mk_ne = PathLayer('ne') ${
+let mk_ne = PathLayer('ne') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_ne;
 };
-let mk_e = PathLayer('e') ${
+let mk_e = PathLayer('e') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_e;
 };
-let mk_se = PathLayer('se') ${
+let mk_se = PathLayer('se') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_se;
 };
-let mk_s = PathLayer('s') ${
+let mk_s = PathLayer('s') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_s;
 };
-let mk_sw = PathLayer('sw') ${
+let mk_sw = PathLayer('sw') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_sw;
 };
-let mk_w = PathLayer('w') ${
+let mk_w = PathLayer('w') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_w;
 };
-let mk_nw = PathLayer('nw') ${
+let mk_nw = PathLayer('nw') #{
   fill: oklch(80% 0.06 230);
   stroke: none;
   filter: f_nw;
@@ -134,7 +134,7 @@ mk_se.apply {
   circle(360, 360, 50);
 }
 
-let label_nw = TextLayer('lnw') ${
+let label_nw = TextLayer('lnw') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -145,7 +145,7 @@ label_nw.apply {
   text(120, 183)`(-4, -4)`;
 }
 
-let label_n = TextLayer('ln') ${
+let label_n = TextLayer('ln') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -156,7 +156,7 @@ label_n.apply {
   text(240, 183)`(0, -5)`;
 }
 
-let label_ne = TextLayer('lne') ${
+let label_ne = TextLayer('lne') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -167,7 +167,7 @@ label_ne.apply {
   text(360, 183)`(4, -4)`;
 }
 
-let label_w = TextLayer('lw') ${
+let label_w = TextLayer('lw') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -178,7 +178,7 @@ label_w.apply {
   text(120, 303)`(-5, 0)`;
 }
 
-let label_e = TextLayer('le') ${
+let label_e = TextLayer('le') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -189,7 +189,7 @@ label_e.apply {
   text(360, 303)`(5, 0)`;
 }
 
-let label_sw = TextLayer('lsw') ${
+let label_sw = TextLayer('lsw') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -200,7 +200,7 @@ label_sw.apply {
   text(120, 435)`(-4, 4)`;
 }
 
-let label_s = TextLayer('ls') ${
+let label_s = TextLayer('ls') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -211,7 +211,7 @@ label_s.apply {
   text(240, 435)`(0, 5)`;
 }
 
-let label_se = TextLayer('lse') ${
+let label_se = TextLayer('lse') #{
   font-family: sans-serif;
   font-size: 11;
   font-weight: 600;
@@ -222,7 +222,7 @@ label_se.apply {
   text(360, 435)`(4, 4)`;
 }
 
-let caption = TextLayer('caption') ${
+let caption = TextLayer('caption') #{
   font-family: sans-serif;
   font-size: 12;
   font-weight: 700;

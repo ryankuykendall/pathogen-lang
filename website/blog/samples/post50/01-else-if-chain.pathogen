@@ -1,6 +1,6 @@
 define ViewBox(0, 0, 320, 150);
 
-define default PathLayer('marks') ${
+define default PathLayer('marks') #{
   fill: none;
   stroke: #c0518e;
   stroke-width: 2;

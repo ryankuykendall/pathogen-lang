@@ -49,7 +49,7 @@ topo.baseColor = Color('#1a5276');
 topo.easing = ${easing};
 topo.method = '${method}';
 ${method === 'laplace' ? 'topo.iterations = 120;' : ''}
-define PathLayer('bg') \${ fill: topo; }
+define PathLayer('bg') #{ fill: topo; }
 layer('bg').apply { rect(0, 0, 300, 200); }
 `;
 }

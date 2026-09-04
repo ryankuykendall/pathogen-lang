@@ -6,14 +6,14 @@ define ViewBox(0, 0, 520, 300);
 // Background
 // ═══════════════════════════════════════
 
-let bg = PathLayer('bg') ${ fill: #0f172a; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0f172a; stroke: none; };
 bg.apply { rect(0, 0, 520, 300); }
 
 // ═══════════════════════════════════════
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 14;
   fill: #e2e8f0;
@@ -23,7 +23,7 @@ title.apply {
   text(30, 30)`The Percent Suffix`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #64748b;
@@ -80,14 +80,14 @@ let sw = 54;
 let sh = 40;
 let sr = 4;
 
-let row_label = TextLayer('row-label') ${
+let row_label = TextLayer('row-label') #{
   font-family: system-ui, sans-serif;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: end;
 };
 
-let sw_label = TextLayer('sw-label') ${
+let sw_label = TextLayer('sw-label') #{
   font-family: monospace;
   font-size: 8;
   fill: #64748b;
@@ -104,7 +104,7 @@ row_label.apply {
 
 for ([color, i] in tints) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`t_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`t_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row1_y, sw, sh, sr); }
 }
 
@@ -124,7 +124,7 @@ row_label.apply {
 
 for ([color, i] in shades) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`d_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`d_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row2_y, sw, sh, sr); }
 }
 
@@ -145,13 +145,13 @@ row_label.apply {
 // White background behind alpha row so opacity gradient is visible
 for ([_, i] in alphas) {
   let x = calc(sx + i * sp - sw / 2);
-  let checker = PathLayer(`ck_${i}`) ${ fill: #ffffff; stroke: none; };
+  let checker = PathLayer(`ck_${i}`) #{ fill: #ffffff; stroke: none; };
   checker.apply { roundRect(x, row3_y, sw, sh, sr); }
 }
 
 for ([color, i] in alphas) {
   let x = calc(sx + i * sp);
-  let swatch = PathLayer(`a_${i}`) ${ fill: color; stroke: #475569; stroke-width: 1; };
+  let swatch = PathLayer(`a_${i}`) #{ fill: color; stroke: #475569; stroke-width: 1; };
   swatch.apply { roundRect(calc(x - sw / 2), row3_y, sw, sh, sr); }
 }
 
@@ -165,7 +165,7 @@ sw_label.apply {
 // Base indicator
 // ═══════════════════════════════════════
 
-let base_ind = TextLayer('base-ind') ${
+let base_ind = TextLayer('base-ind') #{
   font-family: monospace;
   font-size: 9;
   fill: #38bdf8;

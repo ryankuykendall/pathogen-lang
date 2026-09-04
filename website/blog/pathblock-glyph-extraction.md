@@ -49,7 +49,7 @@ A single `@font` declaration serves double duty: it makes the font available for
 ```pathogen
 @font "Inter";
 
-let styles = ${ font-family: Inter; font-size: 48; };
+let styles = #{ font-family: Inter; font-size: 48; };
 let glyphs = PathBlock.fromGlyph("Hello", styles);
 
 log(glyphs.length);    // 5 — one PathBlock per character
@@ -62,7 +62,7 @@ Each glyph PathBlock is a full PathBlock value with all the standard properties 
 ```pathogen
 @font "Inter";
 
-let glyphs = PathBlock.fromGlyph("A", ${ font-family: Inter; font-size: 72; });
+let glyphs = PathBlock.fromGlyph("A", #{ font-family: Inter; font-size: 72; });
 
 // Draw the glyph
 glyphs[0].drawTo(50, 100)
@@ -87,7 +87,7 @@ Every glyph PathBlock from `fromGlyph()` carries an [`.advanceWidth`](/docs#path
 
 ```pathogen
 @font "Bebas Neue";
-let styles = ${ font-family: BebasNeue-Regular; font-size: 64; };
+let styles = #{ font-family: BebasNeue-Regular; font-size: 64; };
 let glyphs = PathBlock.fromGlyph("PATHOGEN", styles);
 
 let cursor_x = 60;
@@ -116,7 +116,7 @@ The [`.contours`](/docs#path-blocks-contours) property splits a glyph PathBlock 
 
 ```pathogen
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 48; };
+let styles = #{ font-family: Inter; font-size: 48; };
 let glyphs = PathBlock.fromGlyph("O", styles);
 
 let contours = glyphs[0].contours;
@@ -127,7 +127,7 @@ Each contour is a closed PathBlock with all standard properties and methods. You
 
 ```pathogen
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 48; };
+let styles = #{ font-family: Inter; font-size: 48; };
 let glyphs = PathBlock.fromGlyph("B", styles);
 
 let contours = glyphs[0].contours;
@@ -147,7 +147,7 @@ To draw each contour with a different fill, iterate over the array and assign co
 
 ```pathogen
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 56; };
+let styles = #{ font-family: Inter; font-size: 56; };
 let glyphs = PathBlock.fromGlyph("B", styles);
 
 let colors = [Color('#3b82f6'), Color('#22c55e'), Color('#f59e0b')];
@@ -156,7 +156,7 @@ let fills  = [Color('#3b82f630'), Color('#22c55e30'), Color('#f59e0b30')];
 let contours = glyphs[0].contours;
 let ci = 0;
 for (c in contours) {
-  let layer = PathLayer('c' + ci) ${
+  let layer = PathLayer('c' + ci) #{
     fill: fills[ci];
     stroke: colors[ci];
     stroke-width: 1.5;
@@ -305,7 +305,7 @@ Here's the full pipeline from font declaration to rendered output — the workfl
 ```pathogen
 // 1. Load the font
 @font "Inter";
-let styles = ${ font-family: Inter; font-size: 64; };
+let styles = #{ font-family: Inter; font-size: 64; };
 
 // 2. Extract glyphs
 let glyphs = PathBlock.fromGlyph("HELLO", styles);

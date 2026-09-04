@@ -10,7 +10,7 @@ let gridH = 150;
 let pad = 20;
 
 // Background
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 400, 400); }
 
 // Grid layers
@@ -19,10 +19,10 @@ let dotColor = gridColor.hueShift(90);
 let intColor = gridColor.hueShift(180);
 let partColor = gridColor.hueShift(270);
 
-let shapeLayer = PathLayer('shape') ${ stroke: shapeColor; stroke-width: 0.3; fill: none; };
-let dotLayer = PathLayer('dot') ${ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
-let intLayer = PathLayer('int') ${ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
-let partLayer = PathLayer('part') ${ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let shapeLayer = PathLayer('shape') #{ stroke: shapeColor; stroke-width: 0.3; fill: none; };
+let dotLayer = PathLayer('dot') #{ stroke: dotColor; stroke-width: 0.3; fill: dotColor; };
+let intLayer = PathLayer('int') #{ stroke: intColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
+let partLayer = PathLayer('part') #{ stroke: partColor; stroke-width: 0.4; fill: none; stroke-linecap: round; };
 
 // Top-left: Shape
 shapeLayer.apply {
@@ -45,7 +45,7 @@ partLayer.apply {
 }
 
 // Labels
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 11;
   fill: #94a3b8;

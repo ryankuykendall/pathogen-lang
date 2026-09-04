@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 200);
 
-let leather = PathLayer('leather') ${
+let leather = PathLayer('leather') #{
   fill: #7c5335;
   stroke: none;
 };
@@ -12,17 +12,17 @@ layer('leather').apply {
   rect(0, 0, 480, 200);
 }
 
-let scene = GroupLayer('scene') ${};
-let seamGhost = PathLayer('seam-ghost') ${
+let scene = GroupLayer('scene') #{};
+let seamGhost = PathLayer('seam-ghost') #{
   stroke: #00000040;
   stroke-width: 1;
   fill: none;
 };
-let holes = PathLayer('holes') ${
+let holes = PathLayer('holes') #{
   fill: #f8fafc;
   stroke: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #f1e9dd;
@@ -38,13 +38,13 @@ fn punchRow(anchorY, offsetValue) {
   seamGhost.apply {
     M 70 anchorY seam.draw()
   }
-  let pricks = seam.dash(${
+  let pricks = seam.dash(#{
     stroke-dasharray: 0.01 ${pitch};
     stroke-dashoffset: ${offsetValue};
   });
   let rowHoles = pricks.filter() {|prick| prick.kind == 'dash'};
   for (prick in rowHoles) {
-    let dot = prick.path.outline(${
+    let dot = prick.path.outline(#{
       stroke-width: 5;
       stroke-linecap: round;
     });

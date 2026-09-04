@@ -1,6 +1,6 @@
 // Canonical source for the GlowFilter Generated SVG Output section in
 // docs/filters.md. If you change this file, update the doc accordingly.
-define PathLayer('bg') ${ fill: oklch(18% 0.02 270); stroke: none; }
+define PathLayer('bg') #{ fill: oklch(18% 0.02 270); stroke: none; }
 layer('bg').apply { rect(0, 0, 200, 200); }
 
 let glow = GlowFilter() {|f|
@@ -9,5 +9,5 @@ let glow = GlowFilter() {|f|
   f.radius = 8;
 };
 
-define PathLayer('star') ${ fill: oklch(70% 0.20 30); filter: glow; }
+define PathLayer('star') #{ fill: oklch(70% 0.20 30); filter: glow; }
 layer('star').apply { star(100, 100, 50, 22, 5); }

@@ -1,7 +1,7 @@
 // Explicit seed → deterministic noise. Both filters use seed = 42, so
 // the noise pattern is identical across both circles.
 
-define PathLayer('bg') ${ fill: oklch(20% 0.02 270); stroke: none; }
+define PathLayer('bg') #{ fill: oklch(20% 0.02 270); stroke: none; }
 layer('bg').apply { rect(0, 0, 200, 200); }
 
 let a = NoiseFilter() {|f|
@@ -16,14 +16,14 @@ let b = NoiseFilter() {|f|
   f.seed = 42;
 };
 
-define PathLayer('left') ${
+define PathLayer('left') #{
   fill: oklch(70% 0.10 200);
   stroke: none;
   filter: a;
 }
 layer('left').apply { rect(20, 60, 80, 80); }
 
-define PathLayer('right') ${
+define PathLayer('right') #{
   fill: oklch(70% 0.10 200);
   stroke: none;
   filter: b;

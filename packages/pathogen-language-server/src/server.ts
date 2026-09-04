@@ -80,7 +80,7 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
       textDocumentSync: TextDocumentSyncKind.Full,
       documentSymbolProvider: true,
       completionProvider: {
-        triggerCharacters: ['.', '$', '@', '&', ':'],
+        triggerCharacters: ['.', '$', '#', '@', '&', ':'],
       },
       hoverProvider: true,
       definitionProvider: true,

@@ -89,7 +89,7 @@ Placing labels around a radial chart is the trickiest part. Each label must be:
 Doing this manually requires separate TextLayers for left and right hemispheres, manual `cos`/`sin` positioning, angle normalization for hemisphere detection, and a font-size-dependent y-offset for vertical centering. The new `.radialProject()` method on [TextBlock](/blog/textblock-introduction) handles all of this in one call:
 
 ```pathogen
-let label = &{ text(0, 0)`${d.name}` } << ${ font-size: 11; };
+let label = &{ text(0, 0)`${d.name}` } << #{ font-size: 11; };
 catLabels.apply {
   label.radialProject(cx, cy, midAngle, labelR,
     'start', 1, VerticalAnchor.Midline).draw()

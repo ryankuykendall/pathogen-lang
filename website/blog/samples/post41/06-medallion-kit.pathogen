@@ -5,7 +5,7 @@
 
 define ViewBox(0, 0, 480, 300);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -13,43 +13,43 @@ layer('bg').apply {
   rect(0, 0, 480, 300);
 }
 
-let scene = GroupLayer('scene') ${};
-let ghost = PathLayer('ghost') ${
+let scene = GroupLayer('scene') #{};
+let ghost = PathLayer('ghost') #{
   stroke: #334155;
   stroke-width: 1;
   stroke-dasharray: 3 4;
   fill: none;
 };
-let tabLayer = PathLayer('tabs') ${
+let tabLayer = PathLayer('tabs') #{
   fill: #cbbfa3;
   stroke: #ef4444;
   stroke-width: 1.2;
 };
-let wedgeLayer = PathLayer('wedges') ${
+let wedgeLayer = PathLayer('wedges') #{
   fill: #e7dfd0;
   stroke: #0f172a;
   stroke-width: 2;
 };
-let foldLayer = PathLayer('folds') ${
+let foldLayer = PathLayer('folds') #{
   stroke: #475569;
   stroke-width: 1.4;
   fill: none;
   stroke-dasharray: 4 3;
 };
-let numbers = TextLayer('numbers') ${
+let numbers = TextLayer('numbers') #{
   font-family: monospace;
   font-size: 10;
   fill: #0f172a;
   text-anchor: middle;
 };
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: monospace;
   font-size: 10;
   fill: #94a3b8;
   text-anchor: middle;
   letter-spacing: 3;
 };
-let caption = TextLayer('caption') ${
+let caption = TextLayer('caption') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;

@@ -17,32 +17,32 @@ let c_violet = Color('#8b5cf6');
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: c_bg; stroke: none; };
+let bg = PathLayer('bg') #{ fill: c_bg; stroke: none; };
 bg.;;;;;;;;;;;;;;;;;;;;apply { rect(0, 0, 800, 400); }
 
 // ═══════════════════════════════════════
 // Panel 1: Simple toPathBlock conversion
 // ═══════════════════════════════════════
 
-let g_panel1 = GroupLayer('panel1') ${ translate-x: 30; translate-y: 60; };
+let g_panel1 = GroupLayer('panel1') #{ translate-x: 30; translate-y: 60; };
 
 // Create TextBlock with styled text
 let tb1 = &{
   text(0, 40)`PATHOGEN`
-} << ${ font-family: BebasNeue-Regular; font-size: 48; };
+} << #{ font-family: BebasNeue-Regular; font-size: 48; };
 
 // Convert to PathBlock — glyph outlines become vector paths
 let pb1 = tb1.toPathBlock();
 
 // Draw with fill
-let p1_fill = PathLayer('p1-fill') ${ fill: c_blue; stroke: none; };
+let p1_fill = PathLayer('p1-fill') #{ fill: c_blue; stroke: none; };
 p1_fill.apply { pb1.drawTo(0, 0); }
 
 // Draw with stroke overlay to show outlines
-let p1_stroke = PathLayer('p1-stroke') ${ fill: none; stroke: c_text; stroke-width: 0.5; opacity: 0.3; };
+let p1_stroke = PathLayer('p1-stroke') #{ fill: none; stroke: c_text; stroke-width: 0.5; opacity: 0.3; };
 p1_stroke.apply { pb1.drawTo(0, 0); }
 
-let p1_label = TextLayer('p1-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
+let p1_label = TextLayer('p1-label') #{ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p1_label.apply {
   text(0, 65)`TextBlock → .toPathBlock() → PathLayer`
   text(0, 78)`Font: Bebas Neue · 48px · fill + outline overlay`
@@ -54,21 +54,21 @@ g_panel1.append(p1_fill, p1_stroke, p1_label);
 // Panel 2: Multi-element vertical layout
 // ═══════════════════════════════════════
 
-let g_panel2 = GroupLayer('panel2') ${ translate-x: 30; translate-y: 180; };
+let g_panel2 = GroupLayer('panel2') #{ translate-x: 30; translate-y: 180; };
 
 // Multi-line TextBlock
 let tb2 = &{
   text(0, 28)`HELLO`
   text(0, 56)`WORLD`
-} << ${ font-family: Baumans-Regular; font-size: 28; };
+} << #{ font-family: Baumans-Regular; font-size: 28; };
 
 let pb2 = tb2.toPathBlock();
 
 // Draw filled
-let p2_fill = PathLayer('p2-fill') ${ fill: c_green; stroke: none; };
+let p2_fill = PathLayer('p2-fill') #{ fill: c_green; stroke: none; };
 p2_fill.apply { pb2.drawTo(0, 0); }
 
-let p2_label = TextLayer('p2-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
+let p2_label = TextLayer('p2-label') #{ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p2_label.apply {
   text(0, 78)`Multi-element TextBlock preserved`
   text(0, 91)`Font: Baumans · 28px · 2 text lines`
@@ -80,28 +80,28 @@ g_panel2.append(p2_fill, p2_label);
 // Panel 3: PathBlock transforms on text
 // ═══════════════════════════════════════
 
-let g_panel3 = GroupLayer('panel3') ${ translate-x: 250; translate-y: 180; };
+let g_panel3 = GroupLayer('panel3') #{ translate-x: 250; translate-y: 180; };
 
 // Convert text to path and apply PathBlock transforms
 let tb3 = &{
   text(0, 36)`ROTATE`
-} << ${ font-family: BebasNeue-Regular; font-size: 36; };
+} << #{ font-family: BebasNeue-Regular; font-size: 36; };
 
 let pb3 = tb3.toPathBlock();
 
 // Draw at three different scales/positions
-let p3a = PathLayer('p3-normal') ${ fill: c_amber; stroke: none; };
+let p3a = PathLayer('p3-normal') #{ fill: c_amber; stroke: none; };
 p3a.apply { pb3.drawTo(0, 0); }
 
 let pb3_scaled = pb3.scale(0.6, 0.6);
-let p3b = PathLayer('p3-scaled') ${ fill: c_rose; stroke: none; };
+let p3b = PathLayer('p3-scaled') #{ fill: c_rose; stroke: none; };
 p3b.apply { pb3_scaled.drawTo(0, 50); }
 
 let pb3_mirrored = pb3.mirror(0);
-let p3c = PathLayer('p3-mirrored') ${ fill: c_violet; stroke: none; };
+let p3c = PathLayer('p3-mirrored') #{ fill: c_violet; stroke: none; };
 p3c.apply { pb3_mirrored.drawTo(0, 95); }
 
-let p3_label = TextLayer('p3-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
+let p3_label = TextLayer('p3-label') #{ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p3_label.apply {
   text(130, 10)`original (amber)`
   text(130, 55)`scaled 0.6× (rose)`
@@ -114,33 +114,33 @@ g_panel3.append(p3a, p3b, p3c, p3_label);
 // Panel 4: Letter-spacing comparison
 // ═══════════════════════════════════════
 
-let g_panel4 = GroupLayer('panel4') ${ translate-x: 500; translate-y: 60; };
+let g_panel4 = GroupLayer('panel4') #{ translate-x: 500; translate-y: 60; };
 
 let tb4a = &{
   text(0, 30)`SPACING`
-} << ${ font-family: BebasNeue-Regular; font-size: 30; };
+} << #{ font-family: BebasNeue-Regular; font-size: 30; };
 let pb4a = tb4a.toPathBlock();
 
 let tb4b = &{
   text(0, 30)`SPACING`
-} << ${ font-family: BebasNeue-Regular; font-size: 30; letter-spacing: 6; };
+} << #{ font-family: BebasNeue-Regular; font-size: 30; letter-spacing: 6; };
 let pb4b = tb4b.toPathBlock();
 
 let tb4c = &{
   text(0, 30)`SPACING`
-} << ${ font-family: BebasNeue-Regular; font-size: 30; letter-spacing: 12; };
+} << #{ font-family: BebasNeue-Regular; font-size: 30; letter-spacing: 12; };
 let pb4c = tb4c.toPathBlock();
 
-let p4a = PathLayer('p4a') ${ fill: c_blue; stroke: none; };
+let p4a = PathLayer('p4a') #{ fill: c_blue; stroke: none; };
 p4a.apply { pb4a.drawTo(0, 0); }
 
-let p4b = PathLayer('p4b') ${ fill: c_green; stroke: none; };
+let p4b = PathLayer('p4b') #{ fill: c_green; stroke: none; };
 p4b.apply { pb4b.drawTo(0, 40); }
 
-let p4c = PathLayer('p4c') ${ fill: c_amber; stroke: none; };
+let p4c = PathLayer('p4c') #{ fill: c_amber; stroke: none; };
 p4c.apply { pb4c.drawTo(0, 80); }
 
-let p4_label = TextLayer('p4-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
+let p4_label = TextLayer('p4-label') #{ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p4_label.apply {
   text(0, 135)`letter-spacing: 0 / 6 / 12`
 }
@@ -151,27 +151,27 @@ g_panel4.append(p4a, p4b, p4c, p4_label);
 // Panel 5: Two fonts side by side
 // ═══════════════════════════════════════
 
-let g_panel5 = GroupLayer('panel5') ${ translate-x: 500; translate-y: 210; };
+let g_panel5 = GroupLayer('panel5') #{ translate-x: 500; translate-y: 210; };
 
 // Bebas Neue text
 let tb5a = &{
   text(0, 30)`BEBAS`
-} << ${ font-family: BebasNeue-Regular; font-size: 28; };
+} << #{ font-family: BebasNeue-Regular; font-size: 28; };
 let pb5a = tb5a.toPathBlock();
 
 // Baumans text
 let tb5b = &{
   text(0, 30)`BAUMANS`
-} << ${ font-family: Baumans-Regular; font-size: 28; };
+} << #{ font-family: Baumans-Regular; font-size: 28; };
 let pb5b = tb5b.toPathBlock();
 
-let p5a = PathLayer('p5-bebas') ${ fill: c_rose; stroke: none; };
+let p5a = PathLayer('p5-bebas') #{ fill: c_rose; stroke: none; };
 p5a.apply { pb5a.drawTo(0, 0); }
 
-let p5b = PathLayer('p5-baumans') ${ fill: c_violet; stroke: none; };
+let p5b = PathLayer('p5-baumans') #{ fill: c_violet; stroke: none; };
 p5b.apply { pb5b.drawTo(0, 40); }
 
-let p5_label = TextLayer('p5-label') ${ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
+let p5_label = TextLayer('p5-label') #{ font-family: monospace; font-size: 9; fill: c_muted; text-anchor: start; };
 p5_label.apply {
   text(0, 90)`Two fonts, each converted to PathBlock`
   text(0, 103)`Bebas Neue (rose) · Baumans (violet)`
@@ -183,17 +183,17 @@ g_panel5.append(p5a, p5b, p5_label);
 // Title
 // ═══════════════════════════════════════
 
-let title = TextLayer('title') ${ font-family: system-ui, sans-serif; font-size: 15; fill: c_text; text-anchor: start; };
+let title = TextLayer('title') #{ font-family: system-ui, sans-serif; font-size: 15; fill: c_text; text-anchor: start; };
 title.apply { text(30, 35)`TextBlock.toPathBlock() — Text as Vector Geometry` }
 
-let subtitle = TextLayer('subtitle') ${ font-family: system-ui, sans-serif; font-size: 10; fill: c_muted; text-anchor: start; };
+let subtitle = TextLayer('subtitle') #{ font-family: system-ui, sans-serif; font-size: 10; fill: c_muted; text-anchor: start; };
 subtitle.apply { text(30, 50)`Flatten glyph outlines into PathBlock for fill, stroke, transforms, and boolean operations` }
 
 // ═══════════════════════════════════════
 // Divider lines
 // ═══════════════════════════════════════
 
-let dividers = PathLayer('dividers') ${ stroke: Color('#334155'); stroke-width: 0.5; fill: none; };
+let dividers = PathLayer('dividers') #{ stroke: Color('#334155'); stroke-width: 0.5; fill: none; };
 dividers.apply {
   // Horizontal divider between rows
   M 30 170 h 740

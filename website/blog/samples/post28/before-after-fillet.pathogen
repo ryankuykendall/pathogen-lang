@@ -1,5 +1,5 @@
 define ViewBox(0, 0, 240, 120);
-define default PathLayer('shapes') ${ stroke: #334155; stroke-width: 2.5; fill: none; }
+define default PathLayer('shapes') #{ stroke: #334155; stroke-width: 2.5; fill: none; }
 
 // BEFORE: rounding a corner by hand means re-computing both edge
 // lengths and threading a tangent arc between them.

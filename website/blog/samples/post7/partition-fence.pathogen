@@ -8,24 +8,24 @@ let road = @{
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: Color('#0f172a'); stroke: none; };
+let bg = PathLayer('bg') #{ fill: Color('#0f172a'); stroke: none; };
 bg.apply { rect(0, 0, 540, 320); }
 
 // --- Layers ---
 
-let roadLayer = PathLayer('road') ${
+let roadLayer = PathLayer('road') #{
   stroke: Color('#475569');
   stroke-width: 4;
   fill: none;
 };
 
-let posts = PathLayer('posts') ${
+let posts = PathLayer('posts') #{
   stroke: Color('#854d0e');
   stroke-width: 2;
   fill: none;
 };
 
-let rails = PathLayer('rails') ${
+let rails = PathLayer('rails') #{
   stroke: Color('#a16207');
   stroke-width: 1;
   fill: none;
@@ -69,7 +69,7 @@ rails.apply {
 
 // --- Post base dots ---
 
-let base_dots = PathLayer('base-dots') ${
+let base_dots = PathLayer('base-dots') #{
   fill: Color('#854d0e');
   stroke: none;
 };
@@ -81,7 +81,7 @@ base_dots.apply {
 
 // --- Annotations ---
 
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');
@@ -93,21 +93,21 @@ labels.apply {
   text(360, 56)`rails: connecting adjacent posts`
 }
 
-let label_dots = PathLayer('label-dots') ${
+let label_dots = PathLayer('label-dots') #{
   fill: none;
   stroke-width: 1.5;
 };
 
-let ld1 = PathLayer('ld1') ${ fill: none; stroke: Color('#475569'); stroke-width: 3; };
-let ld2 = PathLayer('ld2') ${ fill: none; stroke: Color('#854d0e'); stroke-width: 3; };
-let ld3 = PathLayer('ld3') ${ fill: none; stroke: Color('#a16207'); stroke-width: 3; };
+let ld1 = PathLayer('ld1') #{ fill: none; stroke: Color('#475569'); stroke-width: 3; };
+let ld2 = PathLayer('ld2') #{ fill: none; stroke: Color('#854d0e'); stroke-width: 3; };
+let ld3 = PathLayer('ld3') #{ fill: none; stroke: Color('#a16207'); stroke-width: 3; };
 ld1.apply { M 350 24 h 6 }
 ld2.apply { M 350 38 h 6 }
 ld3.apply { M 350 52 h 6 }
 
 // --- Code annotation ---
 
-let code = TextLayer('code') ${
+let code = TextLayer('code') #{
   font-family: monospace;
   font-size: 9;
   fill: Color('#94a3b8');
@@ -118,7 +118,7 @@ code.apply {
   text(30, 286)`let norm = proj.normal(p.t);`
 }
 
-let code_comment = TextLayer('code-comment') ${
+let code_comment = TextLayer('code-comment') #{
   font-family: monospace;
   font-size: 8;
   fill: Color('#64748b');
@@ -130,7 +130,7 @@ code_comment.apply {
 
 // --- Title ---
 
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-family: system-ui, sans-serif;
   font-size: 13;
   fill: Color('#e2e8f0');
@@ -140,7 +140,7 @@ title.apply {
   text(30, 28)`Fence Along a Curve`
 }
 
-let subtitle = TextLayer('subtitle') ${
+let subtitle = TextLayer('subtitle') #{
   font-family: system-ui, sans-serif;
   font-size: 9;
   fill: Color('#64748b');

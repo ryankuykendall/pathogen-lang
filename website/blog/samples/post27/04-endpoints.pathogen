@@ -11,28 +11,28 @@ let blue = Color('#457b9d');
 let red = Color('#e63946');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('spine') ${
+define PathLayer('spine') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
 }
-define PathLayer('a') ${
+define PathLayer('a') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('b') ${
+define PathLayer('b') #{
   stroke: red;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;

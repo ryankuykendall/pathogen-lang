@@ -399,7 +399,7 @@ describe('expression-bodied lambdas', () => {
   it('member access and comparisons work as expression bodies', () => {
     expect(logValue(`
       let wave = @{ h 100 };
-      let pieces = wave.dash(\${ stroke-dasharray: 20 10; });
+      let pieces = wave.dash(#{ stroke-dasharray: 20 10; });
       let inked = pieces.filter {|piece| piece.kind == 'dash'};
       log(inked.length);
       M 0 0;

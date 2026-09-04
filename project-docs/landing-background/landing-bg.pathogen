@@ -30,12 +30,12 @@ wheel_outer.to = 0.375pi;
 
 // --- Background ---
 
-let bg = PathLayer('bg') ${ fill: #0e0e18; stroke: none; };
+let bg = PathLayer('bg') #{ fill: #0e0e18; stroke: none; };
 bg.;;;;;;;;;;;;;;;;;;;;apply { rect(0, 0, width, height); }
 
 // --- Outer ring (donut) ---
 
-let ring = PathLayer('ring') ${
+let ring = PathLayer('ring') #{
   fill: wheel_outer;
   stroke: wheel_outer;
   stroke-width: 1;
@@ -47,5 +47,5 @@ ring.apply {
 
 // --- Scene ---
 
-let scene = GroupLayer('scene') ${};
+let scene = GroupLayer('scene') #{};
 scene.append(bg, ring)

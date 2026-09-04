@@ -315,28 +315,28 @@ let fg_hair = Color('#0d1638').alpha(0.28);
 let blue = Color(CSSVar('--stroke-color', #457b9d));
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('spine') ${
+define PathLayer('spine') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
 }
-define PathLayer('uniform') ${
+define PathLayer('uniform') #{
   stroke: fg_muted;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('variable') ${
+define PathLayer('variable') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -401,37 +401,37 @@ let blue = Color(CSSVar('--stroke-color', #457b9d));
 let red = Color('#e63946');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('rail') ${
+define PathLayer('rail') #{
   stroke: fg_muted;
   stroke-width: 1.5;
   fill: none;
 }
-define PathLayer('normals') ${
+define PathLayer('normals') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
   stroke-dasharray: "3 4";
 }
-define PathLayer('curve') ${
+define PathLayer('curve') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('knots') ${
+define PathLayer('knots') #{
   fill: red;
   stroke: none;
 }
-define PathLayer('leaders') ${
+define PathLayer('leaders') #{
   stroke: fg_hair;
   stroke-width: 0.5;
   fill: none;
 }
-define TextLayer('anno') ${
+define TextLayer('anno') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -526,47 +526,47 @@ let amber = Color('#e0a725');
 let blue = Color('#457b9d');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('spine') ${
+define PathLayer('spine') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
 }
-define PathLayer('g0') ${
+define PathLayer('g0') #{
   stroke: red;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g1') ${
+define PathLayer('g1') #{
   stroke: amber;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g2') ${
+define PathLayer('g2') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g1thin') ${
+define PathLayer('g1thin') #{
   stroke: amber;
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('g2dash') ${
+define PathLayer('g2dash') #{
   stroke: blue;
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
   stroke-dasharray: "3 4";
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -662,28 +662,28 @@ let blue = Color('#457b9d');
 let red = Color('#e63946');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('spine') ${
+define PathLayer('spine') #{
   stroke: fg_hair;
   stroke-width: 1;
   fill: none;
 }
-define PathLayer('a') ${
+define PathLayer('a') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('b') ${
+define PathLayer('b') #{
   stroke: red;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -761,35 +761,35 @@ let amber = Color('#e0a725');
 let red = Color('#e63946');
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('ribbonSym') ${
+define PathLayer('ribbonSym') #{
   fill: blue;
   fill-opacity: 0.45;
   stroke: blue;
   stroke-width: 1.5;
 }
-define PathLayer('ribbonAsym') ${
+define PathLayer('ribbonAsym') #{
   fill: amber;
   fill-opacity: 0.45;
   stroke: amber;
   stroke-width: 1.5;
 }
-define PathLayer('ribbonBand') ${
+define PathLayer('ribbonBand') #{
   fill: red;
   fill-opacity: 0.38;
   stroke: red;
   stroke-width: 1.5;
 }
-define PathLayer('rail') ${
+define PathLayer('rail') #{
   stroke: fg_muted;
   stroke-width: 1;
   fill: none;
   stroke-dasharray: "3 4";
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -934,17 +934,17 @@ let fg_muted = Color('#0d1638').alpha(0.6);
 let blue = Color(CSSVar('--ribbon-color', #457b9d));
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('ribbon') ${
+define PathLayer('ribbon') #{
   fill: blue;
   fill-opacity: 0.45;
   stroke: blue;
   stroke-width: 1.5;
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -1038,20 +1038,20 @@ let fg_muted = Color('#0d1638').alpha(0.6);
 let blue = Color(CSSVar('--stroke-color', #457b9d));
 let font = 'Helvetica, Arial, sans-serif';
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('flourish') ${
+define PathLayer('flourish') #{
   stroke: blue;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 }
-define PathLayer('glyph') ${
+define PathLayer('glyph') #{
   fill: fg;
 }
-define TextLayer('eyebrow') ${
+define TextLayer('eyebrow') #{
   font-family: font;
   font-size: 8;
   font-weight: 700;
@@ -1063,7 +1063,7 @@ layer('bg').apply {
   rect(0, 0, 520, 400);
 }
 
-let styles = ${
+let styles = #{
   font-family: Baumans-Regular;
   font-size: 300;
 };
@@ -1111,29 +1111,29 @@ let red = Color(CSSVar('--band-inner', #e63946));
 let amber = Color(CSSVar('--band-middle', #e0a725));
 let blue = Color(CSSVar('--band-outer', #457b9d));
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('bandOuter') ${
+define PathLayer('bandOuter') #{
   fill: blue;
   fill-opacity: 0.30;
   stroke: blue;
   stroke-width: 0.5;
 }
-define PathLayer('bandMiddle') ${
+define PathLayer('bandMiddle') #{
   fill: amber;
   fill-opacity: 0.38;
   stroke: amber;
   stroke-width: 0.5;
 }
-define PathLayer('bandInner') ${
+define PathLayer('bandInner') #{
   fill: red;
   fill-opacity: 0.32;
   stroke: red;
   stroke-width: 0.5;
 }
-define PathLayer('glyph') ${
+define PathLayer('glyph') #{
   fill: fg;
 }
 
@@ -1141,7 +1141,7 @@ layer('bg').apply {
   rect(0, 0, 520, 440);
 }
 
-let styles = ${
+let styles = #{
   font-family: Baumans-Regular;
   font-size: 300;
 };
@@ -1210,29 +1210,29 @@ let red = Color(CSSVar('--band-inner', #e63946));
 let amber = Color(CSSVar('--band-middle', #e0a725));
 let blue = Color(CSSVar('--band-outer', #457b9d));
 
-define PathLayer('bg') ${
+define PathLayer('bg') #{
   fill: bg_color;
   stroke: none;
 }
-define PathLayer('bandOuter') ${
+define PathLayer('bandOuter') #{
   fill: blue;
   fill-opacity: 0.30;
   stroke: blue;
   stroke-width: 0.4;
 }
-define PathLayer('bandMiddle') ${
+define PathLayer('bandMiddle') #{
   fill: amber;
   fill-opacity: 0.38;
   stroke: amber;
   stroke-width: 0.4;
 }
-define PathLayer('bandInner') ${
+define PathLayer('bandInner') #{
   fill: red;
   fill-opacity: 0.32;
   stroke: red;
   stroke-width: 0.4;
 }
-define PathLayer('glyphs') ${
+define PathLayer('glyphs') #{
   fill: fg;
 }
 
@@ -1240,7 +1240,7 @@ layer('bg').apply {
   rect(0, 0, 620, 280);
 }
 
-let styles = ${
+let styles = #{
   font-family: Baumans-Regular;
   font-size: 120;
 };

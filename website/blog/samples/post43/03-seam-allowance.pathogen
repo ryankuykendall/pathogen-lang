@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 230);
 
-let bg = PathLayer('bg') ${
+let bg = PathLayer('bg') #{
   fill: #0f172a;
   stroke: none;
 };
@@ -12,35 +12,35 @@ layer('bg').apply {
   rect(0, 0, 480, 230);
 }
 
-let scene = GroupLayer('scene') ${};
-let panel = PathLayer('panel') ${
+let scene = GroupLayer('scene') #{};
+let panel = PathLayer('panel') #{
   fill: #e7dfd0;
   stroke: #64748b;
   stroke-width: 1.2;
   stroke-dasharray: 4 3;
 };
-let allowance = PathLayer('allowance') ${
+let allowance = PathLayer('allowance') #{
   stroke: #ef4444;
   stroke-width: 1.6;
   fill: none;
 };
-let sideRun = PathLayer('side-run') ${
+let sideRun = PathLayer('side-run') #{
   stroke: #f59e0b;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
 };
-let legendCut = TextLayer('legend-cut') ${
+let legendCut = TextLayer('legend-cut') #{
   font-family: monospace;
   font-size: 9;
   fill: #f87171;
 };
-let legendStitch = TextLayer('legend-stitch') ${
+let legendStitch = TextLayer('legend-stitch') #{
   font-family: monospace;
   font-size: 9;
   fill: #94a3b8;
 };
-let legendSide = TextLayer('legend-side') ${
+let legendSide = TextLayer('legend-side') #{
   font-family: monospace;
   font-size: 9;
   fill: #f59e0b;

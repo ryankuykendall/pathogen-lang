@@ -105,33 +105,33 @@ rounded.interpolation = 'oklch';
 
 // ─── 2. Define all layers ────────────────────────────────────
 
-define PathLayer('fill1') ${ fill: volcano; stroke: none; }
-define PathLayer('fill2') ${ fill: ovalTerrain; stroke: none; }
-define PathLayer('fill3') ${ fill: peaks; stroke: none; }
-define PathLayer('fill4') ${ fill: boxes; stroke: none; }
-define PathLayer('fill5') ${ fill: rounded; stroke: none; }
+define PathLayer('fill1') #{ fill: volcano; stroke: none; }
+define PathLayer('fill2') #{ fill: ovalTerrain; stroke: none; }
+define PathLayer('fill3') #{ fill: peaks; stroke: none; }
+define PathLayer('fill4') #{ fill: boxes; stroke: none; }
+define PathLayer('fill5') #{ fill: rounded; stroke: none; }
 
-define PathLayer('contours') ${
+define PathLayer('contours') #{
   stroke: rgba(255, 255, 255, 0.5);
   stroke-width: 4;
   fill: none;
   stroke-dasharray: 24 14;
 }
 
-define PathLayer('frames') ${
+define PathLayer('frames') #{
   stroke: #bbb;
   stroke-width: 3;
   fill: none;
 }
 
-define PathLayer('leaders') ${
+define PathLayer('leaders') #{
   stroke: rgba(255, 255, 255, 0.45);
   stroke-width: 2;
   fill: none;
   stroke-dasharray: 10 8;
 }
 
-define TextLayer('title') ${
+define TextLayer('title') #{
   font-size: 72;
   font-weight: bold;
   fill: #222;
@@ -139,7 +139,7 @@ define TextLayer('title') ${
   text-anchor: middle;
 }
 
-define TextLayer('ptitle') ${
+define TextLayer('ptitle') #{
   font-size: 44;
   font-weight: bold;
   fill: #333;
@@ -147,27 +147,27 @@ define TextLayer('ptitle') ${
   text-anchor: middle;
 }
 
-define TextLayer('elev') ${
+define TextLayer('elev') #{
   font-size: 34;
   fill: rgba(255, 255, 255, 0.9);
   font-family: monospace;
   font-weight: bold;
 }
 
-define TextLayer('elevDark') ${
+define TextLayer('elevDark') #{
   font-size: 34;
   fill: rgba(0, 0, 0, 0.6);
   font-family: monospace;
   font-weight: bold;
 }
 
-define TextLayer('info') ${
+define TextLayer('info') #{
   font-size: 34;
   fill: #666;
   font-family: monospace;
 }
 
-define TextLayer('notes') ${
+define TextLayer('notes') #{
   font-size: 34;
   fill: #555;
   font-family: system-ui, sans-serif;

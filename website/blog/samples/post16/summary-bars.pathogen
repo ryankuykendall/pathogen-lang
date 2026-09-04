@@ -7,7 +7,7 @@ let accentColor = Color(CSSVar('--bar-all', #cc3333));
 let textColor = Color('#2f2f2f');
 let subtleColor = Color('#9ca3af');
 
-let bg = PathLayer('bg') ${ fill: bgColor; stroke: none; };
+let bg = PathLayer('bg') #{ fill: bgColor; stroke: none; };
 bg.apply { rect(0, 0, 450, 280); }
 
 // === Data ===
@@ -28,7 +28,7 @@ let barSpacing = 32;
 let maxVal = 12;
 
 // === Title ===
-let title = TextLayer('title') ${
+let title = TextLayer('title') #{
   font-size: 14;
   fill: textColor;
   font-family: Georgia, serif;
@@ -40,20 +40,20 @@ title.apply {
 }
 
 // === Draw bars ===
-let bars = PathLayer('bars') ${ fill: barColor; stroke: none; };
-let barLabels = TextLayer('labels') ${
+let bars = PathLayer('bars') #{ fill: barColor; stroke: none; };
+let barLabels = TextLayer('labels') #{
   font-size: 11;
   fill: textColor;
   font-family: system-ui, sans-serif;
   text-anchor: end;
 };
-let barValues = TextLayer('values') ${
+let barValues = TextLayer('values') #{
   font-size: 10;
   fill: subtleColor;
   font-family: system-ui, sans-serif;
   text-anchor: start;
 };
-let rankLabels = TextLayer('ranks') ${
+let rankLabels = TextLayer('ranks') #{
   font-size: 10;
   fill: accentColor;
   font-family: system-ui, sans-serif;
@@ -79,7 +79,7 @@ for ([item, idx] in top5) {
 }
 
 // === Footnote ===
-let foot = TextLayer('footnote') ${
+let foot = TextLayer('footnote') #{
   font-size: 8;
   fill: subtleColor;
   font-family: system-ui, sans-serif;
@@ -90,5 +90,5 @@ foot.apply {
   text(30, 258)`The same reusable functions power both the radial chart and this summary view.`
 }
 
-let g = GroupLayer('all') ${};
+let g = GroupLayer('all') #{};
 g.append(bg, bars, barLabels, barValues, rankLabels, title, foot);

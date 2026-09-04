@@ -4,7 +4,7 @@
 
 define ViewBox(0, 0, 480, 170);
 
-let fabric = PathLayer('fabric') ${
+let fabric = PathLayer('fabric') #{
   fill: #1e3a5f;
   stroke: none;
 };
@@ -12,20 +12,20 @@ fabric.apply {
   rect(0, 0, 480, 170);
 }
 
-let scene = GroupLayer('scene') ${};
-let underside = PathLayer('underside') ${
+let scene = GroupLayer('scene') #{};
+let underside = PathLayer('underside') #{
   stroke: #64748b;
   stroke-width: 3;
   stroke-linecap: round;
   fill: none;
 };
-let topThread = PathLayer('top-thread') ${
+let topThread = PathLayer('top-thread') #{
   stroke: #f1f5f9;
   stroke-width: 3.5;
   stroke-linecap: round;
   fill: none;
 };
-let labels = TextLayer('labels') ${
+let labels = TextLayer('labels') #{
   font-family: monospace;
   font-size: 10;
   fill: #cbd5e1;
@@ -38,7 +38,7 @@ let seam = @{
   h 371
 };
 
-let stitches = seam.dash(${
+let stitches = seam.dash(#{
   stroke-dasharray: 14 7;
 });
 

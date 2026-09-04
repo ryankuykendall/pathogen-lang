@@ -12,7 +12,7 @@ let cssEase = {|t| cubicBezier(0.25, 0.1, 0.25, 1, t)};
 let expoOut = {|t| cubicBezier(0.16, 1, 0.3, 1, t)};
 let backInOut = {|t| cubicBezier(0.68, -0.6, 0.32, 1.6, t)};
 
-let rails = PathLayer('rails') ${ stroke: #d0d0d8; stroke-width: 1; fill: none; };
+let rails = PathLayer('rails') #{ stroke: #d0d0d8; stroke-width: 1; fill: none; };
 rails.apply {
   M left 22
   L left 258
@@ -20,7 +20,7 @@ rails.apply {
   L calc(left + width) 258
 }
 
-let labels = TextLayer('labels') ${ font-family: system-ui, sans-serif; font-size: 10; fill: #666; };
+let labels = TextLayer('labels') #{ font-family: system-ui, sans-serif; font-size: 10; fill: #666; };
 labels.apply {
   text(left, 32)`linear: t`
   text(left, 72)`easeInOut(t): quadratic`
@@ -30,7 +30,7 @@ labels.apply {
   text(left, 232)`cubicBezier(0.68, -0.6, 0.32, 1.6, t): back in-out, overshoots the rails`
 }
 
-let dots = PathLayer('dots') ${ fill: #c0518e; stroke: none; };
+let dots = PathLayer('dots') #{ fill: #c0518e; stroke: none; };
 dots.apply {
   for (i in 0..12) {
     let t = i / 12;
