@@ -3,10 +3,19 @@ import { createServer } from 'node:http';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { compile, parse, createFontRegistry, addFont, ensureOpentype, generateSvg, resolveFontDirectives } from '.';
+import {
+  addFont,
+  compile,
+  createFontRegistry,
+  ensureOpentype,
+  generateSvg,
+  parse,
+  resolveFontDirectives,
+  toJsonDocument,
+} from '.';
 import type { SvgGeneratorOptions } from './svg-generator';
 
-import type { CompileResult, CompileOptions, FontRegistry, LogEntry } from '.';
+import type { CompileOptions, CompileResult, CompileWarning, FontRegistry, LogEntry } from '.';
 
 interface CliOptions {
   svgOutput?: string;
@@ -22,6 +31,8 @@ interface CliOptions {
   printLogs?: boolean;
   logFile?: string;
   includeMetadata?: boolean;
+  json?: boolean;
+  pngOutput?: string;
 }
 
 function printUsage() {
@@ -40,6 +51,14 @@ Options:
   --src=<file>                   Input source file
   -o, --output <file>            Write path output to file
   --output-svg-file=<file>       Output as complete SVG file
+  --png=<file>                   Rasterize the compiled SVG to a PNG at the
+                                 viewBox size × --scale (needs the puppeteer
+                                 dev dependency). Composes with --render-gpu.
+  --json                         Print one JSON document: every layer's path
+                                 data, styles, and source records, the defs,
+                                 logs, warnings, and the command trace.
+                                 Combines with -o; not with --output-svg-file,
+                                 --render-gpu, or --png.
   --viewBox=<box>                SVG viewBox (default: "0 0 200 200").
                                  Overridden when the source has a
                                  'define ViewBox(...)' statement.
@@ -430,6 +449,18 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
 
     if (arg === '--include-metadata') {
       options.includeMetadata = true;
+      i++;
+      continue;
+    }
+
+    if (arg === '--json') {
+      options.json = true;
+      i++;
+      continue;
+    }
+
+    if (arg.startsWith('--png=')) {
+      options.pngOutput = arg.split('=').slice(1).join('=');
       i++;
       continue;
     }
@@ -835,11 +866,62 @@ function formatLogEntry(entry: LogEntry): string {
 function outputLogs(logs: LogEntry[], options: CliOptions): void {
   if (options.printLogs && logs.length > 0) {
     for (const entry of logs) {
+      // Warnings are printed by outputWarnings with their file:line:col; skip
+      // their `[warn]` log mirror here so nothing prints twice.
+      if (entry.severity === 'warn') continue;
       process.stderr.write(formatLogEntry(entry) + '\n');
     }
   }
   if (options.logFile) {
     writeFileSync(options.logFile, JSON.stringify(logs, null, 2));
+  }
+}
+
+/**
+ * Rasterize an SVG string to a PNG at the program's viewBox size times
+ * `scale`, on a white background, via headless Chrome. Puppeteer is a dev
+ * dependency of this repo, not of the published package, so it is loaded
+ * lazily with a clear error when absent.
+ */
+async function renderPng(svg: string, pngPath: string, scale: number): Promise<{ width: number; height: number }> {
+  let puppeteer: typeof import('puppeteer'); // eslint-disable-line @typescript-eslint/consistent-type-imports
+  try {
+    puppeteer = await import('puppeteer');
+  } catch {
+    throw new Error('--png requires puppeteer. Install it with: npm install --save-dev puppeteer');
+  }
+  const vb = /viewBox="([^"]+)"/.exec(svg);
+  const [, , w, h] = (vb ? vb[1] : '0 0 200 200').split(/\s+/).map(Number);
+  const width = Math.max(1, Math.ceil(w));
+  const height = Math.max(1, Math.ceil(h));
+  // chrome-headless-shell: the classic screenshot renderer. The new headless
+  // mode's captureScreenshot can stall indefinitely on a stalled compositor
+  // (seen on macOS with the display asleep); the shell has no such dependency.
+  const browser = await puppeteer.launch({ headless: 'shell', args: ['--no-sandbox'] });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width, height, deviceScaleFactor: scale });
+    // The generated SVG already carries width/height from --width/--height;
+    // replace them rather than relying on duplicate-attribute parsing.
+    const sized = svg.replace(/<svg\b[^>]*>/, (openTag) =>
+      openTag.replace(/\s(?:width|height)="[^"]*"/g, '').replace(/^<svg/, `<svg width="${width}" height="${height}" `),
+    );
+    await page.setContent(`<html><body style="margin:0;background:#fff">${sized}</body></html>`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await page.screenshot({ path: pngPath, clip: { x: 0, y: 0, width, height } });
+  } finally {
+    await browser.close();
+  }
+  return { width: width * scale, height: height * scale };
+}
+
+/** Compiler warnings always go to stderr, one per line, in `file:line:col: warning: message` form. */
+function outputWarnings(warnings: CompileWarning[], sourceFile: string | undefined): void {
+  const where = sourceFile ?? '<inline>';
+  for (const w of warnings) {
+    const pos = w.line != null ? `:${w.line}${w.column != null ? `:${w.column}` : ''}` : '';
+    process.stderr.write(`${where}${pos}: warning: ${w.message}\n`);
   }
 }
 
@@ -855,22 +937,48 @@ async function main() {
 
   try {
     const fontRegistry = await loadFontsFromDirectives(source, sourceFile);
+    if (options.json && (options.svgOutput || options.renderGpu || options.pngOutput)) {
+      console.error('Error: --json cannot be combined with --output-svg-file, --render-gpu, or --png');
+      process.exit(1);
+    }
     const compileOptions: CompileOptions = {
       ...(options.toFixed != null ? { toFixed: options.toFixed } : {}),
       ...(fontRegistry ? { fonts: fontRegistry } : {}),
+      ...(options.json ? { trace: true } : {}),
     };
     const result = compile(source, Object.keys(compileOptions).length > 0 ? compileOptions : undefined);
     outputLogs(result.logs, options);
+    outputWarnings(result.warnings, sourceFile);
     const defaultPath = result.layers[0]?.data ?? '';
 
-    // Output as SVG file
+    // --json: the structured document instead of path data
+    if (options.json) {
+      const doc = `${JSON.stringify(toJsonDocument(result), null, 2)}\n`;
+      if (outputFile) {
+        writeFileSync(outputFile, doc);
+        console.log(`JSON written to: ${outputFile}`);
+      } else {
+        process.stdout.write(doc);
+      }
+      return;
+    }
+
+    const pngScale = options.scale || 2;
+    const writePng = async (svg: string): Promise<void> => {
+      if (!options.pngOutput) return;
+      const { width, height } = await renderPng(svg, options.pngOutput, pngScale);
+      console.log(`PNG written to: ${options.pngOutput} (${width}×${height})`);
+    };
+
+    // Output as SVG file (and optionally a PNG of it)
     if (options.svgOutput) {
       if (options.renderGpu) {
         renderGpuSvg(result, options)
-          .then((svg) => {
+          .then(async (svg) => {
             writeFileSync(options.svgOutput!, svg);
             console.log(`SVG written to: ${options.svgOutput} (GPU rendered)`);
             console.log(`Path data: ${defaultPath}`);
+            await writePng(svg);
           })
           .catch((err) => {
             console.error(`Error: ${err.message}`);
@@ -882,6 +990,22 @@ async function main() {
       writeFileSync(options.svgOutput, svg);
       console.log(`SVG written to: ${options.svgOutput}`);
       console.log(`Path data: ${defaultPath}`);
+      writePng(svg).catch((err) => {
+        console.error(`Error: ${err.message}`);
+        process.exit(1);
+      });
+      return;
+    }
+
+    // --png alone: rasterize the in-memory SVG
+    if (options.pngOutput) {
+      const svgPromise = options.renderGpu
+        ? renderGpuSvg(result, options)
+        : Promise.resolve(generateSvgFromCli(result, options));
+      svgPromise.then(writePng).catch((err) => {
+        console.error(`Error: ${err.message}`);
+        process.exit(1);
+      });
       return;
     }
 

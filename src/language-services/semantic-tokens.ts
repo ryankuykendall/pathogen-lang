@@ -1,3 +1,4 @@
+import { STATEMENT_BUILTINS } from '../evaluator/constructor-registry';
 import { stdlib, contextAwareFunctions } from '../stdlib';
 import { analyzeScopes } from './scope-analysis';
 import {
@@ -44,7 +45,7 @@ export interface SemanticToken {
   modifiers: number;  // bitmask of TOKEN_MODIFIERS
 }
 
-const STDLIB_NAMES = new Set([...Object.keys(stdlib), ...contextAwareFunctions]);
+const STDLIB_NAMES = new Set([...Object.keys(stdlib), ...contextAwareFunctions, ...STATEMENT_BUILTINS]);
 
 // Derive constructor/type names from generated completion data (not hardcoded)
 // TYPE_MEMBERS keys that start with uppercase are constructable types

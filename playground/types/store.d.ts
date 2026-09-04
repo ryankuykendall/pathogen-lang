@@ -4,6 +4,7 @@ import type {
   FilterOutput,
   GradientOutput,
   LayerOutput,
+  CompileWarning,
   LogEntry,
   MarkerOutput,
   MaskOutput,
@@ -55,6 +56,7 @@ export interface StoreState {
   // Compilation results
   pathData: string;
   logs: LogEntry[];
+  warnings: CompileWarning[];
   error: string | null;
   layers: LayerOutput[];
   masks: MaskOutput[];

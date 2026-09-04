@@ -1838,3 +1838,19 @@ describe('getCompletions switch keywords', () => {
     expect(names).not.toContain('case');
   });
 });
+
+describe('statement builtins and ln()', () => {
+  it('completes log, assert, and ln as functions with their snippets', () => {
+    const items = completeAtEnd('l');
+    const log = items.find((i) => i.label === 'log');
+    expect(log).toBeDefined();
+    expect(log!.insertText).toBe('log(${1:value});$0');
+    expect(log!.detail).toContain('statement');
+    const ln = completeAtEnd('let y = l').find((i) => i.label === 'ln');
+    expect(ln).toBeDefined();
+    expect(ln!.detail).toContain('Natural logarithm');
+    const assert = completeAtEnd('a').find((i) => i.label === 'assert');
+    expect(assert).toBeDefined();
+    expect(assert!.insertText).toBe("assert(${1:condition}, '${2:message}');$0");
+  });
+});

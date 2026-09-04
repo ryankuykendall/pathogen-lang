@@ -21,6 +21,30 @@ export interface LogPart {
 export interface LogEntry {
   line: number | null;
   parts: LogPart[];
+  severity?: 'warn';
+}
+
+export type WarningCode = 'corner-op' | 'cut' | 'annotation-transfer' | 'font-glyph' | 'gradient';
+
+export interface CompileWarning {
+  code: WarningCode;
+  message: string;
+  line?: number;
+  column?: number;
+}
+
+export interface PathRecordOutput {
+  loc?: { line: number; column: number; offset: number };
+  label?: string;
+  raw: string;
+  commandCount: number;
+}
+
+export interface CommandTraceEntry {
+  command: string;
+  args: number[];
+  start: { x: number; y: number };
+  end: { x: number; y: number };
 }
 
 export type LayerStyle = Record<string, string>;
@@ -41,6 +65,8 @@ export interface LayerOutput {
   name: string;
   type: 'path' | 'text' | 'fragment' | 'group';
   data: string;
+  records?: PathRecordOutput[];
+  commands?: CommandTraceEntry[];
   textElements?: TextElement[];
   fragmentDefs?: string;
   fragmentVisuals?: string;
@@ -243,6 +269,8 @@ export interface CompileResult {
   filters: FilterOutput[];
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
+  warnings: CompileWarning[];
+  commands?: CommandTraceEntry[];
   calledStdlibFunctions: string[];
   // Engine-provided (unlike the host-attached font fields below): characters
   // no registered font variant could render. compiler-worker.ts uses this to
@@ -304,6 +332,8 @@ export interface EvaluateWithContextResult {
   path: string;
   context: unknown;
   logs: LogEntry[];
+  warnings: CompileWarning[];
+  commands?: CommandTraceEntry[];
   calledStdlibFunctions: string[];
   layers: LayerOutput[];
   masks: MaskOutput[];

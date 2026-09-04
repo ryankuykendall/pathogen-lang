@@ -140,6 +140,7 @@ export class CodeEditorPane extends HTMLElement {
   private _languageExtensions: ReturnType<typeof buildLanguageExtensions> | null;
 
   private _pendingError: { line: number; column: number } | null;
+  private _pendingWarnings: Array<{ line: number; column: number }>;
   private _themeUnsubscribe: (() => void) | null;
 
   constructor() {
@@ -152,6 +153,7 @@ export class CodeEditorPane extends HTMLElement {
     this._errorHighlight = null;
     this._languageExtensions = null;
     this._pendingError = null;
+    this._pendingWarnings = [];
     this._themeUnsubscribe = null;
   }
 
@@ -365,8 +367,9 @@ export class CodeEditorPane extends HTMLElement {
     // Focus the editor
     this._editor.focus();
 
-    // Apply any error highlight that arrived before the editor was ready
+    // Apply any error or warning highlight that arrived before the editor was ready
     this._applyPendingError();
+    if (this._pendingWarnings.length > 0) this.highlightWarnings(this._pendingWarnings);
 
     this.dispatchEvent(
       new CustomEvent('editor-ready', {
@@ -419,8 +422,23 @@ export class CodeEditorPane extends HTMLElement {
     this._errorHighlight.setErrors(this._editor, errors);
   }
 
+  /** Compiler warnings: same field as errors, rendered with the cm-warning-* classes. */
+  highlightWarnings(warnings: Array<{ line: number; column: number }>): void {
+    this._pendingWarnings = warnings;
+    if (!this._editor || !this._errorHighlight) return;
+    if (warnings.length === 0) {
+      this._errorHighlight.clearError(this._editor);
+      return;
+    }
+    this._errorHighlight.setErrors(
+      this._editor,
+      warnings.map((w) => ({ line: w.line, column: w.column, severity: 'warning' as const })),
+    );
+  }
+
   clearError(): void {
     this._pendingError = null;
+    this._pendingWarnings = [];
     if (!this._editor || !this._errorHighlight) return;
     this._errorHighlight.clearError(this._editor);
   }

@@ -160,19 +160,21 @@ stay ahead of sources), then run the sample validation script on all sample
 directories:
 
 ```bash
-npx tsx scripts/validate-samples.ts website/blog/samples/postN/
+npm run validate:samples -- website/blog/samples/postN/   # one post
+npm run validate:samples                                   # every post
 ```
 
-This uses Puppeteer to load each compiled SVG, extract pixel-accurate `getBoundingClientRect()` for every element, and check:
+This uses Puppeteer to load each compiled SVG (run `npm run compile:samples` first), extract pixel-accurate `getBoundingClientRect()` for every element, and check:
 
-1. **Margin compliance** — all elements ≥15px from viewBox edges
+1. **Margin compliance** — all content ≥15px from viewBox edges (`--margin <px>` overrides)
 2. **Text-text collisions** — no overlapping text elements
-3. **Text-geometry collisions** — no text overlapping path/shape geometry
-4. **GroupLayer usage** — warns if >3 layers but no GroupLayer organization
-5. **ViewBox consistency** — the source's `define ViewBox(...)` matches the compiled SVG
-6. **Formatting** — source must be formatter-clean (`npm run format:samples`); unformatted sources soft-wrap badly in the mini-workspace code panel
+3. **Text-geometry collisions** — no text overlapping ≥15% of its area with path/shape geometry
+4. **Geometry-geometry collisions** — no shape covering ≥15% of a code-snippet block's background
+5. **GroupLayer usage** — warns if >3 layers but no GroupLayer organization
+6. **Dead space** — content must fill at least half the viewBox height
+7. **Formatting** — source must be formatter-clean (`npm run format:samples`); unformatted sources soft-wrap badly in the mini-workspace code panel
 
-The script also generates **PNG previews** in `postN/previews/` for use during agentic review.
+The script also generates **PNG previews** in `postN/previews/` for use during agentic review. For a single file outside the pipeline, `npx tsx src/cli.ts f.pathogen --output-svg-file=f.svg --png=f.png` does the same; the full authoring method is `project-docs/developer-experience/pathogen-debugging-playbook.md`.
 
 Fix all warnings before proceeding. This is currently a soft gate (warnings only). If visual issues continue to reach agentic review unfixed, escalate to a hard gate by using `--strict`.
 

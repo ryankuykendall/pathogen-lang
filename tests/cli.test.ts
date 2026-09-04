@@ -781,3 +781,79 @@ describe('unknown options', () => {
     expect(result.stdout).toBe('');
   });
 });
+
+describe('warnings on stderr', () => {
+  const PROGRAM = 'let plate = @{ h 40 v 40 h -40 z };\nlet soft = plate.fillet(30);\nM 10 10\nsoft.draw();';
+
+  it('prints file:line:col: warning: message and exits 0', () => {
+    const result = runCli(['-e', PROGRAM]);
+    expect(result.status).toBe(0);
+    expect(result.stderr).toMatch(/^<inline>:2:12: warning: Fillet radius clamped at vertex \d+/m);
+    expect(result.stdout.trim().startsWith('M 10 10')).toBe(true);
+  });
+
+  it('does not print the [warn] log mirror twice under --print-logs', () => {
+    const result = runCli(['-e', PROGRAM, '--print-logs']);
+    expect(result.stderr).not.toContain('[warn]');
+    expect(result.stderr).toContain('warning: Fillet radius clamped');
+  });
+
+  it('keeps the mirror in --log-file output', () => {
+    const logFile = join(TMP_DIR, 'warn-logs.json');
+    if (existsSync(logFile)) unlinkSync(logFile);
+    runCli(['-e', PROGRAM, `--log-file=${logFile}`]);
+    const content = JSON.parse(readFileSync(logFile, 'utf-8'));
+    expect(content[0].severity).toBe('warn');
+    expect(content[0].parts[0].value).toMatch(/^\[warn\] Fillet radius clamped/);
+    unlinkSync(logFile);
+  });
+});
+
+describe('--json', () => {
+  const PROGRAM =
+    "define PathLayer('lid') #{ stroke: red; }\nlayer('lid').apply {\n  M 10 10\n  h 40 as segment('top')\n}\nlog(\"done\");";
+
+  it('prints one JSON document with layers, records, commands, logs, and warnings', () => {
+    const result = runCli(['-e', PROGRAM, '--json']);
+    expect(result.status).toBe(0);
+    const doc = JSON.parse(result.stdout);
+    const lid = doc.layers.find((l: { name: string }) => l.name === 'lid');
+    expect(lid.d).toBe('M 10 10 h 40');
+    expect(lid.records[1]).toMatchObject({ label: 'top', raw: 'h 40', commandCount: 1, loc: { line: 4, column: 3 } });
+    expect(lid.commands).toHaveLength(2);
+    expect(doc.logs[0].parts[0].value).toBe('done');
+    expect(doc.warnings).toEqual([]);
+    expect(Object.keys(doc.defs)).toEqual(['masks', 'clipPaths', 'gradients', 'patterns', 'markers', 'filters']);
+  });
+
+  it('writes to -o and refuses --output-svg-file', () => {
+    const outFile = join(TMP_DIR, 'result.json');
+    if (existsSync(outFile)) unlinkSync(outFile);
+    const ok = runCli(['-e', 'M 0 0', '--json', '-o', outFile]);
+    expect(ok.status).toBe(0);
+    expect(JSON.parse(readFileSync(outFile, 'utf-8')).layers[0].d).toBe('M 0 0');
+    unlinkSync(outFile);
+    const bad = runCli(['-e', 'M 0 0', '--json', `--output-svg-file=${join(TMP_DIR, 'x.svg')}`]);
+    expect(bad.status).not.toBe(0);
+    expect(bad.stderr).toContain('--json cannot be combined');
+    const png = runCli(['-e', 'M 0 0', '--json', `--png=${join(TMP_DIR, 'x.png')}`]);
+    expect(png.status).toBe(1);
+    expect(png.stderr).toContain('--json cannot be combined');
+  });
+});
+
+describe('--png', () => {
+  it('rasterizes the compiled SVG to a PNG at viewBox size × scale', () => {
+    const png = join(TMP_DIR, 'out.png');
+    if (existsSync(png)) unlinkSync(png);
+    const result = runCli(['-e', 'define ViewBox(0, 0, 40, 30);\ncircle(20, 15, 10);', `--png=${png}`, '--scale=1']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('PNG written to');
+    const bytes = readFileSync(png);
+    // PNG signature, then IHDR width/height big-endian at bytes 16..23
+    expect(bytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    expect(bytes.readUInt32BE(16)).toBe(40);
+    expect(bytes.readUInt32BE(20)).toBe(30);
+    unlinkSync(png);
+  });
+});

@@ -63,6 +63,24 @@ pathogen-lang --src=input.svgx --output-svg-file=output.svg
 
 This creates a ready-to-use SVG file that can be opened in any browser or image viewer.
 
+### Output as PNG
+
+```bash
+pathogen-lang --src=input.pathogen --output-svg-file=out.svg --png=out.png
+pathogen-lang --src=input.pathogen --png=out.png --scale=2
+```
+
+Rasterizes the compiled SVG in a headless browser at the program's viewBox size, multiplied by `--scale` (1–4, default 2). Requires the `puppeteer` dev dependency; the CLI exits with an error naming it if it is missing. Composes with `--render-gpu` for programs that use GPU-rasterized gradients.
+
+### Output as JSON
+
+```bash
+pathogen-lang --src=input.pathogen --json
+pathogen-lang --src=input.pathogen --json -o result.json
+```
+
+Prints one JSON document with every layer's path data, styles, and per-fragment source records, the defs, CSS properties, logs, warnings, the stdlib functions the program called, any missing glyphs, and the full command trace. See [Structured Output](#debug-structured-output). `--json` cannot be combined with `--output-svg-file`, `--render-gpu`, or `--png`.
+
 ## Log Output
 
 Pathogen programs can use `log()` to produce diagnostic output. By default, the CLI discards log entries. Two flags expose them:
@@ -170,7 +188,9 @@ pathogen-lang -v
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Error (parse error, file not found, unknown option, etc.) |
+| 1 | Error (parse error, failed assertion, file not found, unknown option, `--png` without puppeteer, etc.) |
+
+Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file:line:col: warning: message` and do not change the exit code.
 
 ## File Extensions
 

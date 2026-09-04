@@ -102,7 +102,20 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
   // are language-services false positives, not real user errors. Filter
   // them out so they don't mask the host's authoritative result.
   try {
-    evaluate(ast);
+    const result = evaluate(ast);
+    // Non-fatal compiler warnings become Warning diagnostics on their line;
+    // ones without a source line (font aggregates) have nowhere to point.
+    for (const w of result.warnings) {
+      if (w.line == null) continue;
+      const line = w.line - 1;
+      const character = Math.max(0, (w.column ?? 1) - 1);
+      diagnostics.push({
+        range: makeRange(line, character, document),
+        severity: DiagnosticSeverity.Warning,
+        message: w.message,
+        source: 'pathogen-evaluator',
+      });
+    }
   } catch (err) {
     const message = (err as Error).message;
     if (isFontAvailabilityError(message)) {

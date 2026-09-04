@@ -46,12 +46,14 @@ These return **plain numbers**, not [Angle values](#syntax-angle-units) — hand
 | Function | Description |
 |----------|-------------|
 | `exp(x)` | e raised to power x |
-| `log(x)` | Natural logarithm |
+| `ln(x)` | Natural logarithm |
 | `log10(x)` | Base-10 logarithm |
 | `log2(x)` | Base-2 logarithm |
 | `pow(x, y)` | x raised to power y |
 | `sqrt(x)` | Square root |
 | `cbrt(x)` | Cube root |
+
+`log(...)` is not a math function — it is the console-logging statement (see [Debug & Console](#debug-log-function)). Using it as a value is a compile error that points at `ln()`.
 
 ### Rounding
 

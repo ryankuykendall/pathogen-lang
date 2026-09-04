@@ -153,6 +153,10 @@ export class LogEntry extends HTMLElement {
     const logEntry = this._data;
     let partsHTML = '';
 
+    const isWarn = logEntry.severity === 'warn';
+    this.classList.toggle('warn', isWarn);
+    if (isWarn) partsHTML += `<span class="chip" title="Compiler warning">warn</span>`;
+
     // Add line prefix if present
     if (logEntry.line !== null) {
       partsHTML += `<span class="line">Line ${logEntry.line}:</span>`;
@@ -197,6 +201,22 @@ export class LogEntry extends HTMLElement {
           display: block;
           padding: 8px 0;
           border-bottom: 1px solid #333;
+        }
+        :host(.warn) {
+          background: rgba(250, 204, 21, 0.08);
+        }
+        .chip {
+          display: inline-block;
+          margin-right: 6px;
+          padding: 0 6px;
+          border-radius: 3px;
+          background: #b45309;
+          color: #fff7ed;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          vertical-align: middle;
         }
 
         :host(:last-child) {

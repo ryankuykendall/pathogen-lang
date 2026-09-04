@@ -15,7 +15,15 @@ export { buildEasingWgsl, EASING_CURVES, EASING_ORDER, EASING_SPECS, easingModeI
 export type { EasingCurveSpec } from './stdlib/easing-curves';
 export { generateSvg } from './svg-generator';
 export type { SvgGeneratorOptions } from './svg-generator';
-export { buildDefs, buildLayers, buildSingleLayer, buildSvgTree, mountInto, toSvgString } from './render';
+export {
+  buildDefs,
+  buildLayers,
+  buildSingleLayer,
+  buildSvgTree,
+  mountInto,
+  toJsonDocument,
+  toSvgString,
+} from './render';
 export type { BuildDefsOptions, BuildLayersOptions, BuildTreeOptions, VNode, VNodeChild } from './render';
 export { createFontRegistry, addFont, getFont as getFontFromRegistry, ensureOpentype } from './evaluator/font-provider';
 
@@ -54,7 +62,9 @@ export type {
   ClipPathValue,
   ColorValue,
   CommandHistoryEntry,
+  CommandTraceEntry,
   CompileResult,
+  CompileWarning,
   CSSPropertyDeclaration,
   CSSVarValue,
   EvaluateWithContextOptions,
@@ -77,6 +87,7 @@ export type {
   PathBlockCommand,
   PathBlockValue,
   PathRecord,
+  PathRecordOutput,
   PathStore,
   PathCommandMeta,
   RecordedCornerOp,
@@ -95,6 +106,7 @@ export type {
   TextChild,
   TextElement,
   TextLayerState,
+  WarningCode,
 } from './evaluator';
 export {
   isBooleanValue,
@@ -183,6 +195,12 @@ export interface CompileOptions {
   toFixed?: number;
   /** Font registry with loaded font data for precise metrics and glyph extraction */
   fonts?: import('./evaluator/types').FontRegistry;
+  /**
+   * Keep provenance in the result: per-fragment `records` and the executed
+   * `commands` on every path layer, plus the default layer's `commands` on
+   * the result. Off by default so per-keystroke compiles stay small.
+   */
+  trace?: boolean;
 }
 
 /**
@@ -206,7 +224,7 @@ export interface CompileOptions {
  */
 export function compile(source: string, options?: CompileOptions): CompileResult {
   const ast = parse(source);
-  return evaluate(ast, options as { toFixed?: number; fonts?: import('./evaluator/types').FontRegistry });
+  return evaluate(ast, options);
 }
 
 /**
@@ -215,6 +233,8 @@ export function compile(source: string, options?: CompileOptions): CompileResult
 export interface CompileWithContextOptions {
   /** Whether to track command history (default: false for performance) */
   trackHistory?: boolean;
+  /** Keep per-fragment records and per-layer command histories in the result (implies trackHistory). */
+  trace?: boolean;
   /** Fixed decimal precision for number formatting (0-20) */
   toFixed?: number;
   /** Font registry with loaded font data for precise metrics and glyph extraction */

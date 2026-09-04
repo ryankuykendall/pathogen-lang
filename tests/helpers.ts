@@ -146,3 +146,48 @@ export function expectSVGPathCommandSequence(
     }
   }
 }
+
+/** The structural shape shared by PathBlockCommand, CommandTraceEntry, and `.commands` entries. */
+export interface CommandLike {
+  command: string;
+  args: number[];
+}
+
+/**
+ * Assert a structured command list — `compile(src, { trace: true }).commands`,
+ * a layer's `commands`, `compileWithContext(...).context.commands`, or a
+ * PathBlockValue's `commands` — matches the expected sequence with float
+ * tolerance. Pass a whole result / context object and its `commands` array
+ * is used.
+ */
+export function expectCommandSequence(
+  input: CommandLike[] | { commands?: CommandLike[] },
+  expected: [string, ...number[]][],
+  options?: { precision?: number },
+): void {
+  const commands = Array.isArray(input) ? input : (input.commands ?? []);
+  const precision = options?.precision ?? 10;
+  const tolerance = 10 ** -precision;
+  const fmt = (c: CommandLike) => `${c.command} ${c.args.join(' ')}`.trim();
+  const expectedCmds: CommandLike[] = expected.map(([command, ...args]) => ({ command, args }));
+  const full = () =>
+    `\n  Full expected: ${expectedCmds.map(fmt).join('  ')}\n  Full received: ${commands.map(fmt).join('  ')}`;
+
+  expect(commands.length, `Expected ${expectedCmds.length} commands but got ${commands.length}.${full()}`).toBe(
+    expectedCmds.length,
+  );
+  for (let i = 0; i < expectedCmds.length; i++) {
+    const exp = expectedCmds[i];
+    const got = commands[i];
+    if (exp.command !== got.command || exp.args.length !== got.args.length) {
+      throw new Error(`Command mismatch at index ${i}:\n  Expected: ${fmt(exp)}\n  Received: ${fmt(got)}${full()}`);
+    }
+    for (let j = 0; j < exp.args.length; j++) {
+      if (Math.abs(exp.args[j] - got.args[j]) > tolerance) {
+        throw new Error(
+          `Command mismatch at index ${i}, arg ${j}:\n  Expected: ${fmt(exp)}\n  Received: ${fmt(got)}${full()}`,
+        );
+      }
+    }
+  }
+}

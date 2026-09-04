@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractSVGCommands, expectSVGPathCommandSequence, parseSVGPath, svgPath } from './helpers';
+import {
+  expectCommandSequence,
+  expectSVGPathCommandSequence,
+  extractSVGCommands,
+  parseSVGPath,
+  svgPath,
+} from './helpers';
 
 describe('Test Utilities', () => {
   describe('parseSVGPath', () => {
@@ -220,5 +226,51 @@ describe('Test Utilities', () => {
         }).toThrow();
       });
     });
+  });
+});
+
+describe('expectCommandSequence', () => {
+  const cmds = [
+    { command: 'M', args: [10, 10] },
+    { command: 'l', args: [5.00000001, 0] },
+  ];
+
+  it('accepts a matching structured sequence within tolerance', () => {
+    expect(() =>
+      expectCommandSequence(
+        cmds,
+        [
+          ['M', 10, 10],
+          ['l', 5, 0],
+        ],
+        { precision: 6 },
+      ),
+    ).not.toThrow();
+    expect(() =>
+      expectCommandSequence(
+        { commands: cmds },
+        [
+          ['M', 10, 10],
+          ['l', 5, 0],
+        ],
+        { precision: 6 },
+      ),
+    ).not.toThrow();
+  });
+
+  it('reports the mismatching index, command, and full sequences', () => {
+    expect(() =>
+      expectCommandSequence(cmds, [
+        ['M', 10, 10],
+        ['h', 5],
+      ]),
+    ).toThrow(/mismatch at index 1:[\s\S]*Expected: h 5[\s\S]*Received: l 5.00000001 0/);
+    expect(() =>
+      expectCommandSequence(cmds, [
+        ['M', 10, 10],
+        ['l', 5, 0],
+      ]),
+    ).toThrow(/index 1, arg 0/);
+    expect(() => expectCommandSequence(cmds, [['M', 10, 10]])).toThrow(/Expected 1 commands but got 2/);
   });
 });

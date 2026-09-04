@@ -1,5 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { Command } from 'commander';
@@ -8,10 +9,7 @@ import puppeteer from 'puppeteer';
 import { StringTextDocument } from '../src/language-services/document';
 import { formatDocument } from '../src/language-services/formatter';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = join(__dirname, '..');
-
-// Margin requirement (px in SVG coordinate space)
+// Margin requirement (px in SVG coordinate space); overridable with --margin
 const MARGIN_PX = 15;
 
 // ---------------------------------------------------------------------------
@@ -35,7 +33,14 @@ interface ViewBox {
 }
 
 interface Warning {
-  type: 'margin' | 'text-text-collision' | 'text-geometry-collision' | 'geometry-geometry-collision' | 'dead-space' | 'grouplayer' | 'viewbox';
+  type:
+    | 'margin'
+    | 'text-text-collision'
+    | 'text-geometry-collision'
+    | 'geometry-geometry-collision'
+    | 'dead-space'
+    | 'grouplayer'
+    | 'formatting';
   message: string;
 }
 
@@ -106,6 +111,8 @@ function runChecks(
   viewBox: ViewBox,
   sourceHasGroupLayer: boolean,
   sourceLayerCount: number,
+
+  marginPx: number = MARGIN_PX,
 ): Warning[] {
   const warnings: Warning[] = [];
 
@@ -125,10 +132,10 @@ function runChecks(
     const bottom = (viewBox.y + viewBox.height) - (b.y + b.height);
 
     const violations: string[] = [];
-    if (top < MARGIN_PX) violations.push(`top: ${top.toFixed(1)}px`);
-    if (left < MARGIN_PX) violations.push(`left: ${left.toFixed(1)}px`);
-    if (right < MARGIN_PX) violations.push(`right: ${right.toFixed(1)}px`);
-    if (bottom < MARGIN_PX) violations.push(`bottom: ${bottom.toFixed(1)}px`);
+    if (top < marginPx) violations.push(`top: ${top.toFixed(1)}px`);
+    if (left < marginPx) violations.push(`left: ${left.toFixed(1)}px`);
+    if (right < marginPx) violations.push(`right: ${right.toFixed(1)}px`);
+    if (bottom < marginPx) violations.push(`bottom: ${bottom.toFixed(1)}px`);
 
     if (violations.length > 0) {
       const label = el.textContent
@@ -136,7 +143,7 @@ function runChecks(
         : `<${el.tagName}>${el.id ? '#' + el.id : ''}`;
       warnings.push({
         type: 'margin',
-        message: `${label} violates ${MARGIN_PX}px margin — ${violations.join(', ')}`,
+        message: `${label} violates ${marginPx}px margin — ${violations.join(', ')}`,
       });
     }
   }
@@ -246,7 +253,7 @@ program
     'Generates PNG previews for agentic review. ' +
     'Currently a soft gate (warnings only). Add --strict to exit non-zero on any warning.',
   )
-  .argument('<dir>', 'Directory containing .pathogen and .svg sample files')
+  .argument('[dir]', 'Directory of compiled samples, or a parent of per-post directories', 'website/blog/samples')
   .option('--strict', 'Exit with code 1 if any warnings are found')
   .option('--margin <px>', 'Margin requirement in px', String(MARGIN_PX))
   .action(async (dir: string, opts: { strict?: boolean; margin?: string }) => {
@@ -258,14 +265,47 @@ program
       process.exit(1);
     }
 
-    // Find all .svg files (compiled samples)
+    // A directory of compiled samples, or a parent whose subdirectories are
+    // (npm run validate:samples with no argument sweeps every post).
     const svgFiles = readdirSync(sampleDir)
       .filter((f) => f.endsWith('.svg'))
       .sort();
-
-    if (svgFiles.length === 0) {
-      console.error(`No .svg files found in ${sampleDir}`);
+    const subDirs =
+      svgFiles.length === 0
+        ? readdirSync(sampleDir)
+            .filter(
+              (f) =>
+                f !== 'previews' &&
+                statSync(join(sampleDir, f)).isDirectory() &&
+                readdirSync(join(sampleDir, f)).some((g) => g.endsWith('.svg')),
+            )
+            .sort()
+        : [];
+    if (svgFiles.length === 0 && subDirs.length === 0) {
+      console.error(`No .svg files found in ${sampleDir} (run npm run compile:samples first)`);
       process.exit(1);
+    }
+    if (subDirs.length > 0) {
+      let total = 0;
+      for (const sub of subDirs) {
+        const run = spawnSync(
+          'npx',
+          [
+            'tsx',
+            fileURLToPath(import.meta.url),
+            join(sampleDir, sub),
+            '--margin',
+            String(margin),
+            ...(opts.strict ? ['--strict'] : []),
+          ],
+          {
+            stdio: 'inherit',
+          },
+        );
+        if (run.status !== 0) total++;
+      }
+      if (total > 0) process.exit(1);
+      return;
     }
 
     // Create previews directory
@@ -279,7 +319,9 @@ program
     console.log();
 
     // Launch Puppeteer
-    const browser = await puppeteer.launch({ headless: true });
+    // chrome-headless-shell: see renderPng in src/cli.ts — the new headless
+    // mode's screenshots can stall on a sleeping display.
+    const browser = await puppeteer.launch({ headless: 'shell' });
     const page = await browser.newPage();
 
     const results: FileResult[] = [];
@@ -413,7 +455,7 @@ program
       });
 
       // Run validation checks
-      const warnings = runChecks(elements, viewBox, sourceHasGroupLayer, sourceLayerCount);
+      const warnings = runChecks(elements, viewBox, sourceHasGroupLayer, sourceLayerCount, margin);
 
       // 6. Formatting check — required before review/publication
       if (needsFormatting) {

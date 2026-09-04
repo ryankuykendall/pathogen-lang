@@ -45,6 +45,15 @@ export const VALUE_CONSTRUCTORS = ['Point', 'PolarVector', 'Cycler', 'CSSVar', '
 /** Layer constructors. */
 export const LAYER_CONSTRUCTORS = ['PathLayer', 'TextLayer', 'GroupLayer'] as const;
 
+/**
+ * Statement-form builtins: called for their effect, never for a value.
+ * Dispatched by evaluateStatementBuiltin from statement position
+ * (`log("x");`, `assert(w < 120);`); reaching one in value position is an
+ * error. Kept apart from the constructors so scope analysis and type
+ * inference don't treat them as types.
+ */
+export const STATEMENT_BUILTINS = ['log', 'assert'] as const;
+
 /** Every constructor the evaluator dispatches outside the stdlib registry. */
 export const EVALUATOR_CONSTRUCTORS = [
   ...DEFS_CONSTRUCTORS,

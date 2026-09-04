@@ -125,6 +125,7 @@ export const store = createStore({
   // Compilation results
   pathData: '',
   logs: [],
+  warnings: [], // CompileWarning[] from last compilation
   error: null,
   layers: [], // Array of LayerOutput from last compilation
   masks: [], // Array of MaskOutput from last compilation

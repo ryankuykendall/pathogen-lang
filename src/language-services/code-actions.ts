@@ -1,3 +1,4 @@
+import { STATEMENT_BUILTINS } from '../evaluator/constructor-registry';
 import { LEGACY_STYLE_OPENER_MESSAGE } from '../parser';
 import { stdlib, contextAwareFunctions } from '../stdlib';
 import { findLegacyStyleOpeners } from './diagnostics';
@@ -26,6 +27,7 @@ export interface TextEdit {
 const ALL_KNOWN_NAMES = new Set([
   ...Object.keys(stdlib),
   ...contextAwareFunctions,
+  ...STATEMENT_BUILTINS,
   'ctx',
   'Object',
   'Color',

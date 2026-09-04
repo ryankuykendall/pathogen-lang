@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-04 (debuggability: warnings, --json, assert, ln, --png)
+
+### Added
+
+#### Core
+
+- **Compiler warnings are first-class.** `CompileResult.warnings` (and the playground's `compileWithContext` result) lists every non-fatal problem the evaluator worked around — a clamped or skipped fillet / chamfer / elliptical fillet, a `cut()` stroke that separated nothing, labels dropped in a path block, a degenerate gradient, a font with missing glyphs — as `{ code, message, line, column }`. The 22 sites that used to push `'[warn] …'` strings into `logs` with no line now route through one `warn()` helper, and the corner-op sites carry the call's (or the `with` clause's) position. The `[warn]` log entry is kept as a mirror (now with the line and `severity: 'warn'`). Surfaces: the CLI prints `file:line:col: warning: message` to stderr (exit code unchanged; the mirror is skipped under `--print-logs` so nothing prints twice), the playground console shows a **warn** chip and the editor a yellow squiggle, VS Code gets a warning diagnostic. Documented in `docs/debug.md` → Warnings.
+- **`assert(condition, message?)`** — a statement that stops compilation with `Line N, col M: assertion failed: <message>` (the condition's source text when no message is given). Works everywhere a statement does, including `&{ }` text blocks and constructor callbacks.
+- **`ln(x)`** is the natural logarithm. **`log(...)` is now logging only.** It used to double as `Math.log` whenever its single argument was a number literal or a stdlib call — `log(sqrt(9))` printed nothing and, in statement position, leaked `1.0986…` into the path data. Using `log(...)` as a value is a compile error that names `ln()`. Statement builtins live in `STATEMENT_BUILTINS` (`src/evaluator/constructor-registry.ts`) so completions, hover, signature help, scope analysis, and the drift guard all know them.
+- **`compile(src, { trace: true })`** keeps provenance: each path layer gets `records` (`loc`, `label`, `raw`, `commandCount` per emitted fragment) and `commands` (the executed history of that layer's context with the cursor before and after each command); the result gets the default layer's `commands`. Off by default.
+- **PathBlock `.d` and `.commands`** — the relative path data the block emits when drawn at the origin, and every executed command as `{ command, args, start, end }`; a ProjectedPath answers `.d` in absolute coordinates. `log(block)` now previews the first commands (`PathBlock(4 commands: h 40 v 40 h -40 z)`).
+
+#### CLI
+
+- **`--json`** prints one JSON document — every layer's `d`, styles, `records`, and `commands`, the defs, CSS properties, logs, warnings, and the default-layer command trace (`toJsonDocument()` in the library). Combines with `-o`; exclusive with `--output-svg-file` / `--render-gpu` / `--png`.
+- **`--png=<file>`** rasterizes the compiled SVG at viewBox size × `--scale` on a white background (chrome-headless-shell via the puppeteer dev dependency, with a clear error when absent — the new headless mode's screenshots can stall on a sleeping display, the shell's cannot); composes with `--output-svg-file` and `--render-gpu`.
+
+#### Development
+
+- `npm run validate:samples [-- <dir>]` — the sample validator finally has a script entry; with no argument it sweeps every post under `website/blog/samples`. `--margin` now actually applies (it was parsed and ignored), and the warning type union matches what the script emits. `website/blog/CLAUDE.md` lists the real seven checks (it documented six, one of which never existed).
+- `expectCommandSequence()` in `tests/helpers.ts` asserts a structured command list (`trace` output, a layer's `commands`, `context.commands`, a block's `commands`) with float tolerance; `tests/CLAUDE.md` decision tree gains entry 2b.
+- **Agent playbook**: `project-docs/developer-experience/pathogen-debugging-playbook.md` — the warnings → `--json` → `--png` loop, how to read the output, assertions as guardrails, the language and tooling traps from prior cycles, three-surface verification, sample style. Referenced from `.claude/CLAUDE.md`, `src/CLAUDE.md`, `scripts/CLAUDE.md`, and the blog playbook.
+
+### Fixed
+
+#### Playground
+
+- The store's `logs` key was never written (the console pane was assigned directly), so "Copy Debug Info" always reported `(no log output)`. Logs and warnings now flow through the store and the capture gains a Warnings section.
+
 ## [0.8.0] - 2026-09-03 (style blocks open with `#{`)
 
 ### Changed

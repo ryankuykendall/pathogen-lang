@@ -3,7 +3,7 @@ import { parser as styleParser } from '../parser/style.generated';
 import { parseExpressionAtOffset } from '../parser/lezer-expression';
 import { stdlib, contextAwareFunctions } from '../stdlib';
 import { CALLBACK_METHODS } from '../callback-methods';
-import { EVALUATOR_CONSTRUCTORS } from '../evaluator/constructor-registry';
+import { EVALUATOR_CONSTRUCTORS, STATEMENT_BUILTINS } from '../evaluator/constructor-registry';
 import { BUILTIN_ENUMS as RUNTIME_ENUMS } from '../evaluator/builtin-enums';
 
 import type { TextDocument } from './document';
@@ -34,7 +34,7 @@ const BUILTIN_ENUMS = new Set(Object.keys(RUNTIME_ENUMS));
 
 const BUILTIN_CONSTRUCTORS = new Set<string>(EVALUATOR_CONSTRUCTORS);
 
-const STDLIB_NAMES = new Set([...Object.keys(stdlib), ...contextAwareFunctions]);
+const STDLIB_NAMES = new Set([...Object.keys(stdlib), ...contextAwareFunctions, ...STATEMENT_BUILTINS]);
 
 const BUILTIN_GLOBALS = new Set(['ctx', 'viewbox', 'PI', 'E', 'TAU', 'Infinity', 'NaN']);
 

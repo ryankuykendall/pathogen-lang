@@ -181,16 +181,22 @@ function cloneForFinalize(commands: PathBlockCommand[]): PathBlockCommand[] {
  * Returns changed:false (input untouched) when no ops are recorded — the
  * zero-op path is identity by construction, preserving byte-exact emit.
  */
+/** A finalization warning, located at the `with` clause that recorded the op. */
+export interface CornerOpWarning {
+  message: string;
+  loc?: SourceLocation;
+}
+
 export function applyRecordedCornerOps(commands: PathBlockCommand[]): {
   commands: PathBlockCommand[];
-  warnings: string[];
+  warnings: CornerOpWarning[];
   changed: boolean;
 } {
   if (!commands.some((c) => c.meta?.endVertex?.cornerOp)) {
     return { commands, warnings: [], changed: false };
   }
 
-  const warnings: string[] = [];
+  const warnings: CornerOpWarning[] = [];
   const working = cloneForFinalize(commands);
 
   // Split into subpaths at move boundaries (applyCornerOperations drops moves
@@ -442,7 +448,7 @@ export function findEndpointCommand(commands: PathBlockCommand[], label: string)
   return null;
 }
 
-function finalizeSubpath(sub: PathBlockCommand[], warnings: string[]): PathBlockCommand[] {
+function finalizeSubpath(sub: PathBlockCommand[], warnings: CornerOpWarning[]): PathBlockCommand[] {
   const moves: PathBlockCommand[] = [];
   let body = sub;
   while (body.length > 0 && isMoveCmd(body[0].command)) {
@@ -467,7 +473,10 @@ function finalizeSubpath(sub: PathBlockCommand[], warnings: string[]): PathBlock
     // corner-op appliers use (shared with vertex-handle queries).
     const pos = locateCornerPos(body, opCmd);
     if (pos === -1) {
-      warnings.push(`${op.kind} skipped: no corner at the annotated vertex (collinear edges or terminal command)`);
+      warnings.push({
+        message: `${op.kind} skipped: no corner at the annotated vertex (collinear edges or terminal command)`,
+        ...(op.loc ? { loc: op.loc } : {}),
+      });
       continue;
     }
 
@@ -479,7 +488,7 @@ function finalizeSubpath(sub: PathBlockCommand[], warnings: string[]): PathBlock
     } else {
       res = ellipticalFilletCommands(body, op.args[0], op.args[1], op.args[2] ?? 0, [pos]);
     }
-    warnings.push(...res.warnings);
+    warnings.push(...res.warnings.map((message) => ({ message, ...(op.loc ? { loc: op.loc } : {}) })));
     body = res.commands;
   }
 

@@ -45,7 +45,7 @@ export const mathFunctions = {
 
   // Exponential and logarithmic
   exp: Math.exp,
-  log: Math.log,
+  ln: Math.log,
   log10: Math.log10,
   log2: Math.log2,
   pow: (base: number, exp: number) => base ** exp,

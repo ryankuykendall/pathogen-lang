@@ -30,6 +30,11 @@ Every assertion must answer: "What contract is being verified?" If the assertion
    ```ts
    expectSVGPathCommandSequence(result, [['M', 50, 100], ['A', 50, 50, 0, 1, 1, 150, 100]], { precision: 4 });
    ```
+   2b. **Executed-command validation** — when the question is what the evaluator ran, not how it serialized (loops, layers, path blocks): compile with `{ trace: true }` and assert the structured trace, which also carries the cursor before and after each command:
+   ```ts
+   const result = compile(src, { trace: true });
+   expectCommandSequence(result.layers[0], [['M', 10, 10], ['h', 40]], { precision: 6 });
+   ```
 
 3. **Matcher-based validation** — when using custom matchers:
    ```ts
@@ -134,4 +139,6 @@ Defined in `tests/helpers.ts`:
 - `parseSVGPath(d)` — Parse d-string into `ParsedCommand[]`
 - `svgPath(d)` — Alias for `parseSVGPath`
 - `extractSVGCommands(d)` — Alias for `parseSVGPath`
-- `expectSVGPathCommandSequence(result, expected, options?)` — Assert command sequence with precision
+- `extractSVGElements(content, tag)` — Attribute maps of every `<tag …>` in an SVG string
+- `expectSVGPathCommandSequence(result, expected, options?)` — Assert a d-string's command sequence with precision
+- `expectCommandSequence(commandsOrResult, expected, options?)` — Same assertion over a STRUCTURED command list: `compile(src, { trace: true }).commands`, a layer's `commands`, `compileWithContext(src).context.commands`, or a PathBlock's `commands`. Prefer it over parsing the d-string when the test is about what executed rather than what was serialized.

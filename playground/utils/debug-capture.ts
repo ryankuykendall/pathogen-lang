@@ -18,6 +18,7 @@ export function buildDebugCapture(): string {
   const layers = (state.layers || []) as LayerOutput[];
   const layerVisibility = (state.layerVisibility || {}) as Record<string, boolean>;
   const logs = (state.logs || []) as LogEntry[];
+  const warnings = (state.warnings || []) as { code: string; message: string; line?: number; column?: number }[];
   const calledFunctions = (state.calledStdlibFunctions || []).join(', ') || 'none';
 
   // Build layers table
@@ -66,6 +67,12 @@ export function buildDebugCapture(): string {
     logOutput = '(no log output)\n';
   }
 
+  const warningLines = warnings.map((w) => {
+    const where = w.line != null ? ` line ${w.line}${w.column != null ? `:${w.column}` : ''}` : '';
+    return `- [${w.code}]${where} ${w.message}`;
+  });
+  const warningOutput = warnings.length > 0 ? `${warningLines.join('\n')}\n` : '(no warnings)\n';
+
   return `# Debug Capture
 
 **Timestamp:** ${timestamp}
@@ -87,6 +94,8 @@ ${code}
 ## Layers
 ${layersTable}
 ${layerDetails}
+## Warnings
+${warningOutput}
 ## Log Output
 \`\`\`
 ${logOutput}\`\`\`

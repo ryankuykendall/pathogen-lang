@@ -90,7 +90,7 @@
       }
     },
     "keyword": {
-      "match": "\\b(let|for|in|if|else|fn|return|break|continue|switch|case|where|define|default|layer|apply|text|tspan|enum|log|ViewBox|with|as)\\b",
+      "match": "\\b(let|for|in|if|else|fn|return|break|continue|switch|case|where|define|default|layer|apply|text|tspan|enum|log|assert|ViewBox|with|as)\\b",
       "name": "keyword.control.pathogen"
     },
     "boolean-null": {

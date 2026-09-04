@@ -277,7 +277,7 @@ describe('Evaluator', () => {
       });
 
       it('evaluates log (natural)', () => {
-        expect(compilePath('M calc(log(1)) 0')).toBe('M 0 0');
+        expect(compilePath('M calc(ln(1)) 0')).toBe('M 0 0');
       });
 
       it('evaluates log10', () => {

@@ -792,8 +792,8 @@ describe('TextBlock', () => {
         let pb = t.toPathBlock();
         log(pb);
       `, { fonts: fontRegistry });
-      // PathBlock(N commands) where N > 0
-      const match = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands\)/);
+      // PathBlock(N commands: …) where N > 0
+      const match = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands?(?::|\))/);
       expect(match).not.toBeNull();
       expect(parseInt(match![1], 10)).toBeGreaterThan(0);
     });
@@ -809,7 +809,7 @@ describe('TextBlock', () => {
         let pb = t.toPathBlock();
         log(pb);
       `, { fonts: fontRegistry });
-      const match = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands\)/);
+      const match = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands?(?::|\))/);
       expect(match).not.toBeNull();
       expect(parseInt(match![1], 10)).toBeGreaterThan(0);
     });
@@ -824,8 +824,8 @@ describe('TextBlock', () => {
         log(pb1);
         log(pb2);
       `, { fonts: fontRegistry });
-      const match1 = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands\)/);
-      const match2 = result.logs[1].parts[0].value.match(/PathBlock\((\d+) commands\)/);
+      const match1 = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands?(?::|\))/);
+      const match2 = result.logs[1].parts[0].value.match(/PathBlock\((\d+) commands?(?::|\))/);
       const count1 = parseInt(match1![1], 10);
       const count2 = parseInt(match2![1], 10);
       // Same number of commands (same glyphs) regardless of spacing
@@ -844,7 +844,7 @@ describe('TextBlock', () => {
         let pb = t.toPathBlock();
         log(pb);
       `, { fonts: fontRegistry });
-      const match = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands\)/);
+      const match = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands?(?::|\))/);
       expect(match).not.toBeNull();
       expect(parseInt(match![1], 10)).toBeGreaterThan(0);
     });
@@ -888,8 +888,8 @@ describe('TextBlock', () => {
         log(pb1);
         log(pb2);
       `, { fonts: fontRegistry });
-      const match1 = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands\)/);
-      const match2 = result.logs[1].parts[0].value.match(/PathBlock\((\d+) commands\)/);
+      const match1 = result.logs[0].parts[0].value.match(/PathBlock\((\d+) commands?(?::|\))/);
+      const match2 = result.logs[1].parts[0].value.match(/PathBlock\((\d+) commands?(?::|\))/);
       // Space doesn't add outline commands
       expect(parseInt(match1![1], 10)).toBe(parseInt(match2![1], 10));
     });

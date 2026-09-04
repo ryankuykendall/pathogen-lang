@@ -1,6 +1,7 @@
 import { parseExpression as expressionParserFn } from '../parser/lezer-expression';
 const expressionParser = { parse: (input: string) => { const v = expressionParserFn(input); return { status: v !== null, value: v }; } };
 import { contextAwareFunctions, stdlib } from '../stdlib';
+import { STATEMENT_BUILTINS } from './constructor-registry';
 import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
 import { CALLBACK_METHODS } from '../callback-methods';
 import { arrayMutationError, isArrayLocked, lockArray, unlockArray } from './iteration-lock';
@@ -91,13 +92,18 @@ import { normalizeCodeText, tokenizeLine, getTokenColor } from './code-snippet';
 import type { PathContext, TransformState } from './context';
 import type { OKLCH } from '../color';
 import type {
+  AngleValue,
   ArrayValue,
   BooleanValue,
+  CapNamespace,
+  CapValue,
   ClipPathOutput,
   ClipPathValue,
   ColorNamespace,
   ColorValue,
+  CommandTraceEntry,
   CompileResult,
+  CompileWarning,
   CSSPropertyDeclaration,
   CSSVarValue,
   CyclerValue,
@@ -107,13 +113,9 @@ import type {
   FilterOutput,
   FilterValue,
   FontRegistry,
+  FragmentLayerState,
   GlowFilterValue,
   GlowModeName,
-  InnerShadowFilterValue,
-  PixelateFilterValue,
-  MotionBlurFilterValue,
-  MotionBlurTypeName,
-  FragmentLayerState,
   GradientOutput,
   GradientStop,
   GradientValue,
@@ -121,6 +123,7 @@ import type {
   GridOutOfBoundsMode,
   GridValue,
   GroupLayerState,
+  InnerShadowFilterValue,
   LayerOutput,
   LayerReference,
   LayerState,
@@ -132,6 +135,8 @@ import type {
   MaskOutput,
   MaskValue,
   MeshPointValue,
+  MotionBlurFilterValue,
+  MotionBlurTypeName,
   NoiseFilterStyleName,
   NoiseFilterValue,
   ObjectNamespace,
@@ -140,14 +145,14 @@ import type {
   PathBlockNamespace,
   PathBlockValue,
   PathLayerState,
+  PathRecordOutput,
   PathSegment,
+  PathStore,
   PatternOutput,
   PatternValue,
+  PixelateFilterValue,
   PointValue,
   PolarVectorValue,
-  CapValue,
-  CapNamespace,
-  VariableOffsetBuilderValue,
   ProjectedPathValue,
   ProjectedTextValue,
   Scope,
@@ -160,9 +165,9 @@ import type {
   TextLayerState,
   UserFunction,
   Value,
-  AngleValue,
-  PathStore,
+  VariableOffsetBuilderValue,
   VertexHandleValue,
+  WarningCode,
 } from './types';
 import type {
   ArrayDestructuringPattern,
@@ -189,6 +194,10 @@ import type {
 
 // Re-export all types from the dedicated types module
 export type {
+  CommandTraceEntry,
+  CompileWarning,
+  PathRecordOutput,
+  WarningCode,
   ArrayValue,
   BooleanValue,
   ClipPathOutput,
@@ -286,7 +295,7 @@ import {
   storeToPathData,
   derivedMeta,
 } from './segments';
-import { serializeRelativeAndTrack } from './path-data';
+import { commandsToRelativeD, serializeRelativeAndTrack } from './path-data';
 import { tryResolveCSSFunctionArgs as sharedTryResolveCSSFunctionArgs } from './css-function-resolve';
 import { spliceTemplateFragments } from '../css-value-utils';
 
@@ -819,6 +828,34 @@ function formatError(message: string, line?: number, column?: number): string {
 
 function getLine(node: unknown): number | undefined {
   return (node as { loc?: { line: number } })?.loc?.line;
+}
+
+/**
+ * Record a compiler warning: a non-fatal problem the evaluator worked around.
+ * Pushes the structured entry (CLI stderr, editor diagnostics, --json) AND a
+ * `[warn] …` log mirror carrying the same line, so the console and
+ * --log-file keep everything in one stream.
+ */
+function warn(
+  evalState: EvaluationState | undefined,
+  code: WarningCode,
+  message: string,
+  loc?: { line?: number; column?: number } | null,
+): void {
+  if (!evalState) return;
+  const line = loc?.line;
+  const column = loc?.column;
+  evalState.warnings.push({
+    code,
+    message,
+    ...(line != null ? { line } : {}),
+    ...(column != null ? { column } : {}),
+  });
+  evalState.logs.push({
+    line: line ?? null,
+    severity: 'warn',
+    parts: [{ type: 'string', value: `[warn] ${message}` }],
+  });
 }
 
 function getCol(node: unknown): number | undefined {
@@ -1895,7 +1932,7 @@ function evaluateLayerConstructor(expr: LayerConstructorExpression, scope: Scope
       layerType: 'PathLayer',
       isDefault: false,
       styles,
-      pathContext: createPathContext(),
+      pathContext: createPathContext({ trackHistory: !!scope.evalState.trace }),
       accum: createPathStore(),
       transformState: createTransformState(),
     };
@@ -1926,6 +1963,8 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
   const blockEvalState: EvaluationState & { _insidePathBlock: boolean } = {
     pathContext: blockContext,
     logs: scope.evalState?.logs ?? [],
+    warnings: scope.evalState?.warnings ?? [],
+    trace: scope.evalState?.trace,
     calledStdlibFunctions: scope.evalState?.calledStdlibFunctions ?? new Set(),
     layers: new Map(), // Empty — layer definitions not allowed
     layerOrder: [],
@@ -1987,22 +2026,19 @@ function evaluatePathBlockExpression(expr: PathBlockExpression, scope: Scope): P
       if (recordCommands[i].meta !== undefined) commands[i].meta = recordCommands[i].meta;
     }
   } else if (recordCommands.some((c) => c.meta !== undefined)) {
-    scope.evalState?.logs.push({
-      line: null,
-      parts: [
-        {
-          type: 'string',
-          value: `[warn] path block annotation transfer skipped: ${recordCommands.length} recorded vs ${commands.length} tracked commands — labels/corner ops in this block were dropped`,
-        },
-      ],
-    });
+    warn(
+      scope.evalState,
+      'annotation-transfer',
+      `path block annotation transfer skipped: ${recordCommands.length} recorded vs ${commands.length} tracked commands — labels/corner ops in this block were dropped`,
+      expr.loc,
+    );
   }
 
   // Apply recorded corner ops at finalization (identity: authored records keep
   // their annotations; the finalized commands carry propagated labels).
   const finalized = applyRecordedCornerOps(commands);
   for (const w of finalized.warnings) {
-    scope.evalState?.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+    warn(scope.evalState, 'corner-op', w.message, w.loc ?? expr.loc);
   }
 
   return {
@@ -2051,6 +2087,8 @@ function evaluateTextBlockExpression(expr: TextBlockExpression, scope: Scope): T
   const blockEvalState: EvaluationState & { _insideTextBlock: boolean } = {
     pathContext: scope.evalState?.pathContext ?? createPathContext({}),
     logs: scope.evalState?.logs ?? [],
+    warnings: scope.evalState?.warnings ?? [],
+    trace: scope.evalState?.trace,
     calledStdlibFunctions: scope.evalState?.calledStdlibFunctions ?? new Set(),
     layers: new Map(), // Empty — layer definitions not allowed
     layerOrder: [],
@@ -2105,6 +2143,11 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
       throw new Error(formatError('Layer apply blocks are not allowed inside text blocks', getLine(stmt)));
     }
     if (stmt.type === 'PathCommand') {
+      const builtinCall = asStatementBuiltinCall(stmt);
+      if (builtinCall) {
+        evaluateStatementBuiltin(builtinCall, scope);
+        continue;
+      }
       throw new Error(formatError('Path commands are not allowed inside text blocks', getLine(stmt)));
     }
     if (stmt.type === 'ViewBoxDefinition') {
@@ -3040,9 +3083,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         const chamResult = chamferCommands(obj.commands, cd1, cd2, null);
         for (const w of chamResult.warnings) {
-          if (scope.evalState) {
-            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
-          }
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildPathBlockFromCommands(chamResult.commands, { x: 0, y: 0 });
       }
@@ -3060,9 +3101,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         const cvResult = chamferCommands(obj.commands, cvD1, cvD2, [cvIdx]);
         for (const w of cvResult.warnings) {
-          if (scope.evalState) {
-            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
-          }
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildPathBlockFromCommands(cvResult.commands, { x: 0, y: 0 });
       }
@@ -3073,9 +3112,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (typeof fRadius !== 'number') throw mError('fillet() radius must be a number');
         const fResult = filletCommands(obj.commands, fRadius, null);
         for (const w of fResult.warnings) {
-          if (scope.evalState) {
-            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
-          }
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildPathBlockFromCommands(fResult.commands, { x: 0, y: 0 });
       }
@@ -3088,9 +3125,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (typeof fvRadius !== 'number') throw mError('filletAtVertex() radius must be a number');
         const fvResult = filletCommands(obj.commands, fvRadius, [fvIdx]);
         for (const w of fvResult.warnings) {
-          if (scope.evalState) {
-            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
-          }
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildPathBlockFromCommands(fvResult.commands, { x: 0, y: 0 });
       }
@@ -3108,9 +3143,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         const efResult = ellipticalFilletCommands(obj.commands, efRx, efRy, efRot, null);
         for (const w of efResult.warnings) {
-          if (scope.evalState) {
-            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
-          }
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildPathBlockFromCommands(efResult.commands, { x: 0, y: 0 });
       }
@@ -3130,9 +3163,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         const efvResult = ellipticalFilletCommands(obj.commands, efvRx, efvRy, efvRot, [efvIdx]);
         for (const w of efvResult.warnings) {
-          if (scope.evalState) {
-            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
-          }
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildPathBlockFromCommands(efvResult.commands, { x: 0, y: 0 });
       }
@@ -3172,9 +3203,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const cutWarnings: string[] = [];
         const pieceCmds = pathCut(obj.commands, cutterCmds, cutWarnings);
         for (const w of cutWarnings) {
-          if (scope.evalState) {
-            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
-          }
+          warn(scope.evalState, 'cut', w, { line: mLine, column: mCol });
         }
         return {
           type: 'ArrayValue' as const,
@@ -3675,7 +3704,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         const chamResult = chamferCommands(obj.commands, cd1, cd2, null);
         for (const w of chamResult.warnings) {
-          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildProjectedPathFromCommands(chamResult.commands, obj);
       }
@@ -3693,7 +3722,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         const cvResult = chamferCommands(obj.commands, cvD1, cvD2, [cvIdx]);
         for (const w of cvResult.warnings) {
-          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildProjectedPathFromCommands(cvResult.commands, obj);
       }
@@ -3704,7 +3733,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (typeof fRadius !== 'number') throw mError('fillet() radius must be a number');
         const fResult = filletCommands(obj.commands, fRadius, null);
         for (const w of fResult.warnings) {
-          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildProjectedPathFromCommands(fResult.commands, obj);
       }
@@ -3717,7 +3746,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (typeof fvRadius !== 'number') throw mError('filletAtVertex() radius must be a number');
         const fvResult = filletCommands(obj.commands, fvRadius, [fvIdx]);
         for (const w of fvResult.warnings) {
-          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildProjectedPathFromCommands(fvResult.commands, obj);
       }
@@ -3735,7 +3764,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         const efResult = ellipticalFilletCommands(obj.commands, efRx, efRy, efRot, null);
         for (const w of efResult.warnings) {
-          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildProjectedPathFromCommands(efResult.commands, obj);
       }
@@ -3755,7 +3784,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         }
         const efvResult = ellipticalFilletCommands(obj.commands, efvRx, efvRy, efvRot, [efvIdx]);
         for (const w of efvResult.warnings) {
-          if (scope.evalState) scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildProjectedPathFromCommands(efvResult.commands, obj);
       }
@@ -3794,9 +3823,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const cutWarnings: string[] = [];
         const pieceCmds = pathCut(obj.commands, cutterCmds, cutWarnings);
         for (const w of cutWarnings) {
-          if (scope.evalState) {
-            scope.evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
-          }
+          warn(scope.evalState, 'cut', w, { line: mLine, column: mCol });
         }
         return {
           type: 'ArrayValue' as const,
@@ -3901,7 +3928,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         else if (expr.method === 'chamfer') res = chamferCommands(src.commands, nums[0], nums[1] ?? nums[0], [handle.cornerIndex]);
         else res = ellipticalFilletCommands(src.commands, nums[0], nums[1], nums[2] ?? 0, [handle.cornerIndex]);
         for (const w of res.warnings) {
-          scope.evalState?.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+          warn(scope.evalState, 'corner-op', w, { line: mLine, column: mCol });
         }
         return buildPathBlockFromCommands(res.commands, { x: 0, y: 0 });
       }
@@ -5928,7 +5955,10 @@ function formatValueForDisplay(val: Value): string {
     return `ViewBox(${formatNum(val.originX)}, ${formatNum(val.originY)}, ${formatNum(val.width)}, ${formatNum(val.height)})`;
   }
   if (isPathBlockValue(val)) {
-    return `PathBlock(${val.commands.length} commands)`;
+    // Show the first few commands so a logged block is recognizable.
+    const preview = commandsToRelativeD(val.commands.slice(0, 6), { bridgeOriginGap: true });
+    const more = val.commands.length > 6 ? ' …' : '';
+    return `PathBlock(${val.commands.length} command${val.commands.length === 1 ? '' : 's'}${preview ? `: ${preview}${more}` : ''})`;
   }
   if (isVertexHandleValue(val)) {
     return `VertexHandle('${val.label}' at ${formatNum(val.point.x)}, ${formatNum(val.point.y)})`;
@@ -6008,6 +6038,22 @@ function evaluateTemplateLiteral(tl: TemplateLiteral, scope: Scope): string {
     .join('');
 }
 
+/** `{ command, args, start, end }` structs for `.commands` / `.subPathCommands`. */
+function commandRecordsValue(commands: PathBlockCommand[]): Value {
+  return {
+    type: 'ArrayValue' as const,
+    elements: commands.map((cmd) => ({
+      type: 'ObjectValue' as const,
+      properties: new Map<string, Value>([
+        ['command', cmd.command],
+        ['args', { type: 'ArrayValue' as const, elements: cmd.args as Value[] }],
+        ['start', { type: 'PointValue' as const, x: cmd.start.x, y: cmd.start.y }],
+        ['end', { type: 'PointValue' as const, x: cmd.end.x, y: cmd.end.y }],
+      ]),
+    })),
+  };
+}
+
 function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   const obj = evaluateExpression(expr.object, scope);
 
@@ -6042,18 +6088,12 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'subPathCount':
         return countSubPaths(obj.commands);
       case 'subPathCommands':
-        return {
-          type: 'ArrayValue' as const,
-          elements: obj.commands.map((cmd) => ({
-            type: 'ObjectValue' as const,
-            properties: new Map<string, Value>([
-              ['command', cmd.command],
-              ['args', { type: 'ArrayValue' as const, elements: cmd.args as Value[] }],
-              ['start', { type: 'PointValue' as const, x: cmd.start.x, y: cmd.start.y }],
-              ['end', { type: 'PointValue' as const, x: cmd.end.x, y: cmd.end.y }],
-            ]),
-          })),
-        };
+      case 'commands':
+        return commandRecordsValue(obj.commands);
+      case 'd':
+        // The relative path data the block emits when drawn at the origin —
+        // exactly what .draw() writes before placement.
+        return commandsToRelativeD(obj.commands, { bridgeOriginGap: true });
       case 'startPoint':
         return { type: 'PointValue' as const, x: obj.startPoint.x, y: obj.startPoint.y };
       case 'endPoint':
@@ -6156,18 +6196,16 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
       case 'subPathCount':
         return countSubPaths(obj.commands);
       case 'subPathCommands':
-        return {
-          type: 'ArrayValue' as const,
-          elements: obj.commands.map((cmd) => ({
-            type: 'ObjectValue' as const,
-            properties: new Map<string, Value>([
-              ['command', cmd.command],
-              ['args', { type: 'ArrayValue' as const, elements: cmd.args as Value[] }],
-              ['start', { type: 'PointValue' as const, x: cmd.start.x, y: cmd.start.y }],
-              ['end', { type: 'PointValue' as const, x: cmd.end.x, y: cmd.end.y }],
-            ]),
-          })),
-        };
+      case 'commands':
+        return commandRecordsValue(obj.commands);
+      case 'd': {
+        // Absolute path data: a ProjectedPath already lives in world space,
+        // so it starts with an explicit move to its first point.
+        const abs = commandsToAbsoluteD(obj.commands);
+        const first = obj.commands[0];
+        if (!first || first.command === 'M' || first.command === 'm') return abs;
+        return `M ${formatNum(obj.startPoint.x)} ${formatNum(obj.startPoint.y)}${abs ? ` ${abs}` : ''}`;
+      }
       case 'startPoint':
         return { type: 'PointValue' as const, x: obj.startPoint.x, y: obj.startPoint.y };
       case 'endPoint':
@@ -6559,127 +6597,147 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
   throw new Error(`Cannot access property '${expr.property}' on non-object value`);
 }
 
-// Check if an expression looks like it's intended for math log (natural logarithm)
-function isMathLogCandidate(arg: Expression): boolean {
-  // Plain number literal without unit (like log(1), log(2.5)) → math log
-  if (arg.type === 'NumberLiteral' && !arg.unit) {
-    return true;
-  }
-  // Function call to known math functions that return numbers → math log
-  // e.g., log(E()), log(sqrt(2))
-  if (arg.type === 'FunctionCall' && arg.name in stdlib) {
-    return true;
-  }
-  // Everything else (90deg, ctx.position.x, variables, expressions) → debug log
-  return false;
+const STATEMENT_BUILTIN_SET: ReadonlySet<string> = new Set(STATEMENT_BUILTINS);
+
+function isStatementBuiltinName(name: string): name is (typeof STATEMENT_BUILTINS)[number] {
+  return STATEMENT_BUILTIN_SET.has(name);
 }
 
-function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
-  // Special handling for log() function - distinguish between debug log and math log
-  // Math log: single arg that is a plain number or math function call (log(1), log(E()))
-  // Debug log: everything else (log(ctx), log(90deg), log("msg"), log(x, y))
-  if (call.name === 'log' && scope.evalState) {
-    // Only use math log for clear math-log-like calls
-    if (call.args.length === 1 && isMathLogCandidate(call.args[0])) {
-      const argValue = evaluateExpression(call.args[0], scope);
-      if (typeof argValue === 'number') {
-        // It's a numeric value - use math log (natural logarithm)
-        const fn = stdlib[call.name as keyof typeof stdlib];
-        if (fn && typeof fn === 'function') {
-          return (fn as (x: number) => number)(argValue);
-        }
-      }
+const STATEMENT_BUILTIN_VALUE_ERROR: Record<(typeof STATEMENT_BUILTINS)[number], string> = {
+  log: 'log() records a message and has no value — use ln(x) for the natural logarithm',
+  assert: 'assert() is a statement and has no value',
+};
+
+/** A `PathCommand` statement that is really a bare `log(...)` / `assert(...)` call. */
+function asStatementBuiltinCall(stmt: Statement): FunctionCall | null {
+  if (stmt.type !== 'PathCommand' || stmt.command !== '' || stmt.args.length !== 1) return null;
+  const arg = stmt.args[0];
+  return arg.type === 'FunctionCall' && isStatementBuiltinName(arg.name) ? arg : null;
+}
+
+/**
+ * Run a statement builtin. `log(...)` records its arguments as a log entry;
+ * `assert(cond, message?)` stops compilation with a positioned error when
+ * the condition is falsy. Neither produces a value or path output.
+ */
+function evaluateStatementBuiltin(call: FunctionCall, scope: Scope): void {
+  if (!scope.evalState) return;
+  if (call.name === 'assert') {
+    if (call.args.length < 1 || call.args.length > 2) {
+      throw new Error(
+        formatError(`assert() expects 1 or 2 arguments, got ${call.args.length}`, getLine(call), getCol(call)),
+      );
     }
+    const condition = evaluateExpression(call.args[0], scope);
+    if (isTruthy(condition)) return;
+    let message: string;
+    if (call.args.length === 2) {
+      const raw = evaluateExpression(call.args[1], scope);
+      message = typeof raw === 'string' ? raw : formatValueForDisplay(raw);
+    } else {
+      // The condition's own source text, minus one pair of outer parentheses
+      // that expressionToSource adds around a binary expression.
+      message = expressionToSource(call.args[0]).replace(/^\((.*)\)$/s, '$1');
+    }
+    throw new Error(formatError(`assertion failed: ${message}`, getLine(call), getCol(call)));
+  }
+  // Debug log handling
+  const lineNumber = call.loc?.line ?? null;
+  const parts: LogPart[] = [];
 
-    // Debug log handling
-    const lineNumber = call.loc?.line ?? null;
-    const parts: LogPart[] = [];
+  for (const arg of call.args) {
+    const value = evaluateExpression(arg, scope);
 
-    for (const arg of call.args) {
-      const value = evaluateExpression(arg, scope);
+    // String literals are displayed directly without a label
+    if (arg.type === 'StringLiteral') {
+      parts.push({
+        type: 'string',
+        value: arg.value,
+      });
+    } else {
+      // Non-string expressions get a label showing what was logged
+      const label = expressionToSource(arg);
+      let stringValue: string;
 
-      // String literals are displayed directly without a label
-      if (arg.type === 'StringLiteral') {
-        parts.push({
-          type: 'string',
-          value: arg.value,
-        });
-      } else {
-        // Non-string expressions get a label showing what was logged
-        const label = expressionToSource(arg);
-        let stringValue: string;
-
-        if (value === null) {
-          stringValue = 'null';
-        } else if (isBooleanValue(value)) {
+      if (value === null) {
+        stringValue = 'null';
+      } else if (isBooleanValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isAngleValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isPointValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isPolarVectorValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (typeof value === 'object' && 'type' in value && value.type === 'ViewBoxStructValue') {
+        stringValue = formatValueForDisplay(value);
+      } else if (isObjectValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isArrayValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isPathBlockValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isProjectedPathValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isVertexHandleValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isCyclerValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isMaskValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isClipPathValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isPatternValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isMarkerValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isGradientValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isColorValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isCSSVarValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isTextBlockValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (isProjectedTextValue(value)) {
+        stringValue = formatValueForDisplay(value);
+      } else if (typeof value === 'object' && value !== null && 'type' in value) {
+        const typed = value as { type: string; value?: unknown };
+        if (typed.type === 'ContextObject' && typed.value) {
+          stringValue = JSON.stringify(typed.value, null, 2);
+        } else if (typed.type === 'PathSegment') {
+          stringValue = (typed as PathSegment).value;
+        } else if (typed.type === 'UserFunction') {
           stringValue = formatValueForDisplay(value);
-        } else if (isAngleValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isPointValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isPolarVectorValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (typeof value === 'object' && 'type' in value && value.type === 'ViewBoxStructValue') {
-          stringValue = formatValueForDisplay(value);
-        } else if (isObjectValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isArrayValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isPathBlockValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isProjectedPathValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isVertexHandleValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isCyclerValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isMaskValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isClipPathValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isPatternValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isMarkerValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isGradientValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isColorValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isCSSVarValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isTextBlockValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (isProjectedTextValue(value)) {
-          stringValue = formatValueForDisplay(value);
-        } else if (typeof value === 'object' && value !== null && 'type' in value) {
-          const typed = value as { type: string; value?: unknown };
-          if (typed.type === 'ContextObject' && typed.value) {
-            stringValue = JSON.stringify(typed.value, null, 2);
-          } else if (typed.type === 'PathSegment') {
-            stringValue = (typed as PathSegment).value;
-          } else if (typed.type === 'UserFunction') {
-            stringValue = formatValueForDisplay(value);
-          } else {
-            stringValue = String(value);
-          }
-        } else if (typeof value === 'number') {
-          stringValue = String(value);
-        } else if (typeof value === 'string') {
-          stringValue = value;
         } else {
           stringValue = String(value);
         }
-
-        parts.push({
-          type: 'value',
-          label,
-          value: stringValue,
-        });
+      } else if (typeof value === 'number') {
+        stringValue = String(value);
+      } else if (typeof value === 'string') {
+        stringValue = value;
+      } else {
+        stringValue = String(value);
       }
-    }
 
-    scope.evalState.logs.push({ line: lineNumber, parts });
-    return { type: 'PathSegment' as const, value: '' }; // Empty path segment
+      parts.push({
+        type: 'value',
+        label,
+        value: stringValue,
+      });
+    }
+  }
+
+  scope.evalState.logs.push({ line: lineNumber, parts });
+}
+
+function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
+  // log() / assert() are statements: they only run from statement position
+  // (see evaluateStatementBuiltin). Reaching one here means it was used as a
+  // value — `let y = log(3);`, `calc(log(x))` — which used to silently pick
+  // the natural logarithm for number-shaped arguments and leak the result.
+  if (isStatementBuiltinName(call.name) && scope.evalState) {
+    throw new Error(formatError(STATEMENT_BUILTIN_VALUE_ERROR[call.name], getLine(call), getCol(call)));
   }
 
   // Handle layer() function — returns a LayerReference
@@ -8969,6 +9027,12 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
     }
 
     case 'PathCommand': {
+      // Bare log(...) / assert(...) statements: run for their effect, emit nothing.
+      const builtinCall = asStatementBuiltinCall(stmt);
+      if (builtinCall) {
+        evaluateStatementBuiltin(builtinCall, scope);
+        return;
+      }
       // Method call statements: evaluate for side effects, emit path if PathWithResult
       if (stmt.command === '' && stmt.args.length === 1 && stmt.args[0].type === 'MethodCallExpression') {
         const methodResult = evaluateMethodCall(stmt.args[0], scope);
@@ -9152,7 +9216,9 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         layerType: 'PathLayer',
         isDefault: stmt.isDefault,
         styles,
-        pathContext: stmt.isDefault ? scope.evalState.pathContext : createPathContext(),
+        pathContext: stmt.isDefault
+          ? scope.evalState.pathContext
+          : createPathContext({ trackHistory: !!scope.evalState.trace }),
         accum: stmt.isDefault ? (scope.evalState.rootAccum ?? accum) : createPathStore(),
         transformState: stmt.isDefault ? scope.evalState.transformState : createTransformState(),
       };
@@ -9744,10 +9810,12 @@ function evaluateStatements(stmts: Statement[], scope: Scope): string {
   // Corner ops recorded inside this body (e.g. a user function) finalize here,
   // since the joined string is this store's only output channel.
   const finalized = applyRecordedCornerOps(accum.records.flatMap((r) => r.commands));
-  if (!finalized.changed) return storeToPathData(accum);
+  // Warnings first: a skipped op (no corner at that vertex) changes nothing
+  // but must still be reported.
   for (const w of finalized.warnings) {
-    scope.evalState?.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+    warn(scope.evalState, 'corner-op', w.message, w.loc);
   }
+  if (!finalized.changed) return storeToPathData(accum);
   return commandsToPathData(finalized.commands);
 }
 
@@ -9791,13 +9859,33 @@ function expandOklchStops(stops: GradientStop[], stepsPerUnit: number): { offset
  * Emit a store's path data, applying any recorded corner ops at finalization.
  * Zero-op stores (all pre-existing programs) take the byte-exact raw join.
  */
+/** Per-fragment provenance for `trace: true` output. */
+function storeToRecordsOutput(store: PathStore): PathRecordOutput[] {
+  return store.records.map((r) => ({
+    ...(r.loc ? { loc: r.loc } : {}),
+    ...(r.label !== undefined ? { label: r.label } : {}),
+    raw: r.raw,
+    commandCount: r.commands.length,
+  }));
+}
+
+/** Trace fields for a path layer: records + that context's command history. */
+function traceFields(
+  store: PathStore,
+  context: PathContext,
+  evalState: EvaluationState,
+): Pick<LayerOutput, 'records' | 'commands'> {
+  if (!evalState.trace) return {};
+  return { records: storeToRecordsOutput(store), commands: context.commands.map((c) => ({ ...c, args: [...c.args] })) };
+}
+
 function storeToFinalizedData(store: PathStore, evalState: EvaluationState): string {
   const flat = store.records.flatMap((r) => r.commands);
   const finalized = applyRecordedCornerOps(flat);
-  if (!finalized.changed) return storeToPathData(store);
   for (const w of finalized.warnings) {
-    evalState.logs.push({ line: null, parts: [{ type: 'string', value: `[warn] ${w}` }] });
+    warn(evalState, 'corner-op', w.message, w.loc);
   }
+  if (!finalized.changed) return storeToPathData(store);
   return commandsToPathData(finalized.commands);
 }
 
@@ -9811,6 +9899,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
       name: 'default',
       type: 'path',
       data: storeToFinalizedData(mainAccum, evalState),
+      ...traceFields(mainAccum, evalState.pathContext, evalState),
       styles: {},
       isDefault: true,
       transform,
@@ -9825,6 +9914,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
         name: 'default',
         type: 'path',
         data: mainContent,
+        ...traceFields(mainAccum, evalState.pathContext, evalState),
         styles: {},
         isDefault: true,
         transform,
@@ -9985,6 +10075,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
         name: layer.name,
         type: 'path',
         data: storeToFinalizedData(pathLayer.accum, evalState),
+        ...traceFields(pathLayer.accum, pathLayer.pathContext, evalState),
         styles: pathStyles,
         isDefault: layer.isDefault,
         transform,
@@ -10064,15 +10155,11 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
       }
       // Warn if conic gradient has CSSVar stops — they are baked at compile time
       if (resolvedStops.some((s) => s.color.startsWith('var('))) {
-        evalState.logs.push({
-          line: null,
-          parts: [
-            {
-              type: 'string',
-              value: `Warning: Conic gradient '${grad.id}' has CSSVar stops — CSS variable changes won't update conic gradients (rasterized at compile time).`,
-            },
-          ],
-        });
+        warn(
+          evalState,
+          'gradient',
+          `Conic gradient '${grad.id}' has CSSVar stops — CSS variable changes won't update conic gradients (rasterized at compile time).`,
+        );
       }
       // Preserve oklch on stops for rendering.
       // For CSSVar stops, extract the fallback color from var(--name, fallback)
@@ -10113,15 +10200,11 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
       }));
       // Warn if freeform gradient has fewer than 2 points
       if ((grad.freeformPoints ?? []).length < 2) {
-        evalState.logs.push({
-          line: null,
-          parts: [
-            {
-              type: 'string',
-              value: `Warning: FreeformGradient '${grad.id}' has fewer than 2 points — gradient will be empty or uniform.`,
-            },
-          ],
-        });
+        warn(
+          evalState,
+          'gradient',
+          `FreeformGradient '${grad.id}' has fewer than 2 points — gradient will be empty or uniform.`,
+        );
       }
     }
     // Topo-specific output
@@ -10157,12 +10240,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
       output.stopsWithOklch = rampStops;
       // Warnings
       if ((grad.topoContours ?? []).length < 1) {
-        evalState.logs.push({
-          line: null,
-          parts: [
-            { type: 'string', value: `Warning: TopoGradient '${grad.id}' has no contours — gradient will be uniform.` },
-          ],
-        });
+        warn(evalState, 'gradient', `TopoGradient '${grad.id}' has no contours — gradient will be uniform.`);
       }
     }
     gradients.push(output);
@@ -10305,7 +10383,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
     evalState.missingGlyphs,
   );
   for (const warning of missingGlyphWarnings) {
-    evalState.logs.push({ line: null, parts: [{ type: 'string', value: warning }] });
+    warn(evalState, 'font-glyph', warning.replace(/^\[warn\] /, ''));
   }
 
   return {
@@ -10318,6 +10396,8 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
     filters,
     cssProperties,
     logs: evalState.logs,
+    warnings: evalState.warnings,
+    ...(evalState.trace ? { commands: evalState.pathContext.commands.map((c) => ({ ...c, args: [...c.args] })) } : {}),
     calledStdlibFunctions: Array.from(evalState.calledStdlibFunctions),
     ...(missingGlyphs.length > 0 ? { missingGlyphs } : {}),
     viewBox: evalState.viewBox
@@ -10331,15 +10411,20 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
   };
 }
 
-export function evaluate(program: Program, options?: { toFixed?: number; fonts?: FontRegistry }): CompileResult {
+export function evaluate(
+  program: Program,
+  options?: { toFixed?: number; fonts?: FontRegistry; trace?: boolean },
+): CompileResult {
   setNumberFormat(options?.toFixed);
   try {
-    const pathContext = createPathContext();
+    const pathContext = createPathContext({ trackHistory: !!options?.trace });
     const logs: LogEntry[] = [];
     const transformState = createTransformState();
     const evalState: EvaluationState = {
       pathContext,
       logs,
+      warnings: [],
+      trace: !!options?.trace,
       calledStdlibFunctions: new Set(),
       layers: new Map(),
       layerOrder: [],
@@ -10384,6 +10469,9 @@ export interface EvaluateWithContextResult {
   path: string;
   context: PathContext & { heading?: number };
   logs: LogEntry[];
+  warnings: CompileWarning[];
+  /** Default-layer command history; `trace: true` only. */
+  commands?: CommandTraceEntry[];
   calledStdlibFunctions: string[]; // Stdlib function names invoked during evaluation
   layers: LayerOutput[];
   masks: MaskOutput[];
@@ -10403,6 +10491,8 @@ export interface EvaluateWithContextResult {
 export interface EvaluateWithContextOptions {
   /** Whether to track command history (default: false for performance) */
   trackHistory?: boolean;
+  /** Keep per-fragment records and per-layer command histories in the result (implies trackHistory). */
+  trace?: boolean;
   /** Fixed decimal precision for number formatting */
   toFixed?: number;
   /** Font registry with loaded font data for precise metrics and glyph extraction */
@@ -10419,13 +10509,15 @@ export function evaluateWithContext(
 ): EvaluateWithContextResult {
   setNumberFormat(options.toFixed);
   try {
-    const pathContext = createPathContext({ trackHistory: options.trackHistory ?? false });
+    const pathContext = createPathContext({ trackHistory: (options.trackHistory ?? false) || !!options.trace });
     const logs: LogEntry[] = [];
     const calledStdlibFunctions = new Set<string>();
     const transformState = createTransformState();
     const evalState: EvaluationState = {
       pathContext,
       logs,
+      warnings: [],
+      trace: !!options.trace,
       calledStdlibFunctions,
       layers: new Map(),
       layerOrder: [],
@@ -10477,6 +10569,8 @@ export function evaluateWithContext(
       logs,
       calledStdlibFunctions: Array.from(calledStdlibFunctions),
       layers: compileResult.layers,
+      warnings: compileResult.warnings,
+      ...(compileResult.commands ? { commands: compileResult.commands } : {}),
       masks: compileResult.masks,
       clipPaths: compileResult.clipPaths,
       gradients: compileResult.gradients,

@@ -78,6 +78,19 @@
   background-color: rgba(255, 80, 80, 0.12);
 }
 
+#editor-container .cm-warning-line {
+  background-color: rgba(234, 179, 8, 0.1);
+}
+
+#editor-container .cm-warning-char {
+  text-decoration: underline wavy var(--warning-text, #b45309);
+  text-decoration-skip-ink: none;
+}
+
+:host-context([data-theme="dark"]) #editor-container .cm-warning-line {
+  background-color: rgba(250, 204, 21, 0.12);
+}
+
 /* Hover tooltip styles */
 .cm-hover-tooltip {
   font-family: var(--font-mono, monospace);

@@ -132,6 +132,7 @@ Build → end-to-end install verify → test all advertised features → full te
 - **Targeted tests**: Run specific test files during development (e.g., `npx vitest run tests/layers.test.ts`); full suite before commit
 - **Build gate**: `npm run build` is required after any `src/` change before playground testing
 - **Doc-first exploration**: When planning compiler features, explore `docs/` in parallel with `src/` since doc-first is the workflow
+- **Debugging samples**: before hand-inspecting SVG output, read [`project-docs/developer-experience/pathogen-debugging-playbook.md`](project-docs/developer-experience/pathogen-debugging-playbook.md). The loop is `npx tsx src/cli.ts file --json` (warnings and per-fragment records first), then `--output-svg-file` + `--png` and Read the PNG; `assert()` pins invariants; `npm run validate:samples` gates published samples. The playbook also lists the language and tooling traps that cost prior sessions.
 
 ## Agents
 

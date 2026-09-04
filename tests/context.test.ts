@@ -359,7 +359,7 @@ describe('Path Context Tracking', () => {
     });
 
     it('plain number stays unchanged', () => {
-      // Use a variable to force debug log (plain log(1.5) is treated as math log)
+      // log() always logs; a variable argument gets a label, a literal would not
       const result = compileWithContext(`
         M 100 100
         let x = 1.5;

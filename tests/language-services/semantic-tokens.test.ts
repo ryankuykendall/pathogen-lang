@@ -188,3 +188,12 @@ describe('builtin coloring derived from the runtime registries', () => {
     expect(typeOf(tokens('let b = BlendMode.Multiply;').find((t) => t.character === 8)!)).toBe('type');
   });
 });
+
+describe('statement builtins', () => {
+  it('log and assert are function tokens, not unresolved identifiers', () => {
+    const src = 'let w = 5;\nlog(w);\nassert(w < 10, "narrow");\nM 0 0';
+    const fnTokens = tokensByType(src, 'function');
+    expect(fnTokens.some((t) => t.line === 1 && t.character === 0)).toBe(true);
+    expect(fnTokens.some((t) => t.line === 2 && t.character === 0)).toBe(true);
+  });
+});

@@ -14,5 +14,6 @@ export { buildDefs, type BuildDefsOptions } from './build-defs';
 export { buildLayers, buildSingleLayer, type BuildLayersOptions } from './build-layers';
 export { buildSvgTree, type BuildTreeOptions } from './build-tree';
 export { escapeXml, toSvgString } from './serialize';
+export { toJsonDocument, type JsonDocument, type JsonLayer } from './json-document';
 export { mountInto } from './mount';
 export { h, isRawText, isVNode, raw, type RawText, type VNode, type VNodeChild } from './types';

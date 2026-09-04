@@ -430,13 +430,22 @@ export declare function hash11(n: number, seed?: number): number;
 export declare function hashRange(n: number, min: number, max: number, seed?: number): number;
 
 // =============================================================================
+// Statement builtins (see src/evaluator/constructor-registry.ts STATEMENT_BUILTINS)
+// =============================================================================
+
+/** log(...values) — Print values to the console; a statement with no value @boost 8 @snippet log(${1:value});$0 */
+export declare function log(value: unknown, ...more: unknown[]): void;
+/** assert(condition, message?) — Stop compilation with an error when the condition is false; a statement @boost 6 @snippet assert(${1:condition}, '${2:message}');$0 */
+export declare function assert(condition: boolean, message?: string): void;
+
+// =============================================================================
 // Stdlib: Exp/Log
 // =============================================================================
 
 /** exp(x) — e^x @boost 6 */
 export declare function exp(x: number): number;
-/** log(...) — Natural log or debug log @boost 8 */
-export declare function log(x: number): number;
+/** ln(x) — Natural logarithm @boost 6 */
+export declare function ln(x: number): number;
 /** log10(x) — Base-10 log @boost 6 */
 export declare function log10(x: number): number;
 /** log2(x) — Base-2 log @boost 6 */
@@ -728,6 +737,18 @@ export interface PathogenString {
   empty(): boolean;
 }
 
+/** @type PathCommandRecord */
+export interface PathogenPathCommandRecord {
+  /** Command letter as executed (case preserved) */
+  readonly command: string;
+  /** Numeric arguments */
+  readonly args: PathogenArray<number>;
+  /** Cursor before the command */
+  readonly start: PathogenPoint;
+  /** Cursor after the command */
+  readonly end: PathogenPoint;
+}
+
 /** @type PathBlock */
 export interface PathogenPathBlock {
   // Properties
@@ -738,7 +759,11 @@ export interface PathogenPathBlock {
   /** Number of subpaths */
   readonly subPathCount: number;
   /** Array of command objects */
-  readonly subPathCommands: PathogenArray;
+  readonly subPathCommands: PathogenArray<PathogenPathCommandRecord>;
+  /** Every executed command as { command, args, start, end } */
+  readonly commands: PathogenArray<PathogenPathCommandRecord>;
+  /** Relative path data as .draw() emits it at the origin */
+  readonly d: string;
   /** First point */
   readonly startPoint: PathogenPoint;
   /** Last point */
@@ -1135,7 +1160,11 @@ export interface PathogenProjectedPath {
   /** Number of subpaths */
   readonly subPathCount: number;
   /** Array of command objects */
-  readonly subPathCommands: PathogenArray;
+  readonly subPathCommands: PathogenArray<PathogenPathCommandRecord>;
+  /** Every executed command as { command, args, start, end } */
+  readonly commands: PathogenArray<PathogenPathCommandRecord>;
+  /** Absolute path data of the projected commands */
+  readonly d: string;
   /** First point (absolute) */
   readonly startPoint: PathogenPoint;
   /** Last point (absolute) */

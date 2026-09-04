@@ -680,6 +680,30 @@ export interface StyleBlockValue {
 export interface LogEntry {
   line: number | null;
   parts: LogPart[];
+  /** Set on the log mirror of a compiler warning (see CompileWarning). */
+  severity?: 'warn';
+}
+
+/** What kind of situation a compiler warning reports. */
+export type WarningCode =
+  | 'corner-op' // fillet / chamfer / ellipticalFillet clamped or skipped
+  | 'cut' // cut() stroke that did not separate anything
+  | 'annotation-transfer' // labels / corner ops dropped in a path block
+  | 'font-glyph' // characters with no glyph in the loaded font
+  | 'gradient'; // gradient definition that will render degenerate
+
+/**
+ * A non-fatal problem the compiler worked around. Surfaces on the CLI's
+ * stderr, in the playground console, and as an editor warning diagnostic;
+ * also mirrored into `logs` as a `[warn] …` entry with `severity: 'warn'`.
+ */
+export interface CompileWarning {
+  code: WarningCode;
+  message: string;
+  /** 1-based source line, when the warning can be tied to a statement. */
+  line?: number;
+  /** 1-based source column. */
+  column?: number;
 }
 
 /**
@@ -771,10 +795,36 @@ export interface TransformPropertyReference {
 // Layer output types
 // ---------------------------------------------------------------------------
 
+/**
+ * Where a fragment of a path layer's data came from. Present on path layers
+ * only when compiling with `trace: true`.
+ */
+export interface PathRecordOutput {
+  /** Source location of the emitting statement, when known. */
+  loc?: SourceLocation;
+  /** `as segment('…')` label, when the statement carried one. */
+  label?: string;
+  /** The authored fragment as emitted (corner ops apply at finalization). */
+  raw: string;
+  commandCount: number;
+}
+
+/** One executed path command with the cursor before and after it. */
+export interface CommandTraceEntry {
+  command: string;
+  args: number[];
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+}
+
 export interface LayerOutput {
   name: string;
   type: 'path' | 'text' | 'fragment' | 'group';
   data: string; // Path: d-attribute. Text: concatenated plain text. Fragment/Group: empty.
+  /** Per-fragment provenance; path layers, `trace: true` only. */
+  records?: PathRecordOutput[];
+  /** Executed command history of this layer's context; path layers, `trace: true` only. */
+  commands?: CommandTraceEntry[];
   textElements?: TextElement[]; // Only present when type === 'text'
   fragmentDefs?: string; // Only present when type === 'fragment'
   fragmentVisuals?: string; // Only present when type === 'fragment'
@@ -978,8 +1028,12 @@ export interface CompileResult {
   filters: FilterOutput[];
   cssProperties: CSSPropertyDeclaration[];
   logs: LogEntry[];
+  /** Non-fatal problems the compiler worked around, with source lines where known. */
+  warnings: CompileWarning[];
   calledStdlibFunctions: string[];
   viewBox?: ViewBoxValue;
+  /** Executed command history of the default layer's context; `trace: true` only. */
+  commands?: CommandTraceEntry[];
   /**
    * Characters that had no glyph in any registered variant of the font they
    * were rendered with. Hosts use this to fetch additional Google Fonts
@@ -1045,6 +1099,9 @@ export interface UserFunction {
 export interface EvaluationState {
   pathContext: PathContext;
   logs: LogEntry[];
+  warnings: CompileWarning[];
+  /** Keep per-fragment records and command histories for the result (compile `trace` option). */
+  trace?: boolean;
   calledStdlibFunctions: Set<string>; // Stdlib function names invoked during evaluation
   layers: Map<string, LayerState>; // Layer definitions by name
   layerOrder: string[]; // Definition order for z-index

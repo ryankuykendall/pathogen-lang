@@ -1,9 +1,11 @@
 // CodeMirror 6 error highlight extension — marks error lines and character positions
-// Supports multiple simultaneous error highlights
+// Supports multiple simultaneous error highlights; a position may carry
+// severity 'warning' to render with the cm-warning-* classes instead.
 
 interface ErrorPosition {
   line: number;
   column: number;
+  severity?: 'error' | 'warning';
 }
 
 interface ErrorState {
@@ -58,13 +60,13 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
   const clearErrorEffect = StateEffect.define<null>();
 
   // Build decorations for a single error position
-  function buildDecosForPosition(doc: { lines: number; line(n: number): { from: number; to: number; length: number }; sliceString(from: number, to: number): string }, line: number, column: number, decos: unknown[]): void {
+  function buildDecosForPosition(doc: { lines: number; line(n: number): { from: number; to: number; length: number }; sliceString(from: number, to: number): string }, line: number, column: number, decos: unknown[], severity: 'error' | 'warning' = 'error'): void {
     if (line < 1 || line > doc.lines) return;
 
     const lineObj = doc.line(line);
 
     // Line highlight
-    decos.push(Decoration.line({ class: 'cm-error-line' }).range(lineObj.from));
+    decos.push(Decoration.line({ class: `cm-${severity}-line` }).range(lineObj.from));
 
     // Character/token mark — clamp column to line length, scan for word boundary
     const col = Math.max(1, Math.min(column, lineObj.length));
@@ -79,7 +81,7 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
     // Fall back to single char if no word found
     const effectiveTo = charTo > charFrom ? charTo : Math.min(charFrom + 1, lineObj.to);
     if (charFrom < effectiveTo) {
-      decos.push(Decoration.mark({ class: 'cm-error-char' }).range(charFrom, effectiveTo));
+      decos.push(Decoration.mark({ class: `cm-${severity}-char` }).range(charFrom, effectiveTo));
     }
   }
 
@@ -87,8 +89,8 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
   function buildDecorations(doc: Parameters<typeof buildDecosForPosition>[0], errors: ErrorPosition[]): unknown {
     if (errors.length === 0) return Decoration.none;
     const decos: unknown[] = [];
-    for (const { line, column } of errors) {
-      buildDecosForPosition(doc, line, column, decos);
+    for (const { line, column, severity } of errors) {
+      buildDecosForPosition(doc, line, column, decos, severity);
     }
     return decos.length > 0 ? Decoration.set(decos, true) : Decoration.none;
   }

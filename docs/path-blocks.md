@@ -112,10 +112,12 @@ let proj = shape.project(10, 10);
 | `startPoint` | `Point` | The **first inked point** — where drawing begins. `Point(0, 0)` for blocks that start drawing immediately; a block that opens with `m` moves reports where the ink actually lands, so `get(0)` always agrees with `startPoint` |
 | `endPoint` | `Point` | Final cursor position (relative to origin) |
 | `isEmpty` | `boolean` | `true` when the block contains no path commands — e.g. a space glyph from `fromGlyph`, or `subPath(t, t)` |
+| `d` | `string` | The relative path data the block emits when drawn at the origin — exactly what `.draw()` writes, before placement |
+| `commands` | `object[]` | Every executed command as `{ command, args, start, end }` (the same shape as `subPathCommands` entries, for the whole block) |
 
 ### ProjectedPath
 
-Same properties as PathBlock but with absolute coordinates.
+Same properties as PathBlock but with absolute coordinates; `d` is absolute path data.
 
 ### subPathCommands entries
 

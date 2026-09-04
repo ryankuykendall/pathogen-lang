@@ -71,6 +71,7 @@
     "compile:samples": "tsx scripts/compile-samples.ts",
     "format:pathogen": "tsx scripts/format-pathogen.ts",
     "format:samples": "tsx scripts/format-samples.ts",
+    "validate:samples": "tsx scripts/validate-samples.ts",
     "check-links": "tsx scripts/check-links.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -1,6 +1,6 @@
 # Text Collision Debugging
 
-Prescriptive rules for diagnosing and preventing text-vs-element collisions in diagrams built with TextBlock and PathLayer.
+Prescriptive rules for diagnosing and preventing text-vs-element collisions in diagrams built with TextBlock and PathLayer. For the wider loop (warnings → `--json` records → `--png` → validator), see `project-docs/developer-experience/pathogen-debugging-playbook.md`.
 
 ---
 

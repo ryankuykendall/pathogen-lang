@@ -5,6 +5,7 @@ import {
   DEFS_CONSTRUCTORS,
   FILTER_CONSTRUCTORS,
   LAYER_CONSTRUCTORS,
+  STATEMENT_BUILTINS,
   VALUE_CONSTRUCTORS,
 } from '../src/evaluator/constructor-registry';
 
@@ -57,6 +58,10 @@ const CANONICAL: Record<string, string> = {
   PathLayer: `let bg = PathLayer('reg-bg');\nbg.apply {\n  M 0 0 L 10 10\n}`,
   TextLayer: `let t = TextLayer('reg-text');\nM 0 0`,
   GroupLayer: `let grp = GroupLayer('reg-group');\nM 0 0`,
+
+  // Statement builtins
+  log: 'log("registry");\nM 0 0',
+  assert: 'assert(1 < 2, "registry");\nM 0 0',
 };
 
 const ALL_GROUPS: [string, readonly string[]][] = [
@@ -64,6 +69,7 @@ const ALL_GROUPS: [string, readonly string[]][] = [
   ['filters', FILTER_CONSTRUCTORS],
   ['values', VALUE_CONSTRUCTORS],
   ['layers', LAYER_CONSTRUCTORS],
+  ['statements', STATEMENT_BUILTINS],
 ];
 
 describe('constructor registry — behavioral verification against the evaluator', () => {

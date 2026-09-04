@@ -269,6 +269,8 @@ export class WorkspaceView extends HTMLElement {
     initialCode: string;
     replaceDocument: (text: string) => void;
     highlightError: (line: number, col: number) => void;
+    highlightErrors: (errors: { line: number; column: number }[]) => void;
+    highlightWarnings: (warnings: { line: number; column: number }[]) => void;
     clearError: () => void;
   } {
     return this.shadowRoot!.querySelector('code-editor-pane') as any;
@@ -1137,7 +1139,14 @@ export class WorkspaceView extends HTMLElement {
       this.previewPane.hideLoading();
       this.previewPane.setStale(false);
       this.consolePane.logs = result.logs || [];
+      store.set('logs', result.logs || []);
+      store.set('warnings', result.warnings || []);
       this.hideError();
+      this.editorPane.highlightWarnings(
+        (result.warnings || []).flatMap((w: { line?: number; column?: number }) =>
+          w.line != null ? [{ line: w.line, column: w.column ?? 1 }] : [],
+        ),
+      );
       perfSpan('store-updates', () => {
         store.set('fontWarnings', [
           ...formatFontSubstitutions(result.fontSubstitutions || []),

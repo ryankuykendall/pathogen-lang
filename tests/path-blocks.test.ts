@@ -3735,3 +3735,43 @@ l 5 0`;
     expect(compile(src).layers[0].data).toBe('M 10 10 m 50 0 l 0 50 l -50 0');
   });
 });
+
+describe('introspection: d, commands, and log() display', () => {
+  const BOX = 'let box = @{\n  h 40\n  v 40\n  h -40\n  z\n};';
+
+  it('.d is the relative data .draw() emits at the origin', () => {
+    const result = compile(`${BOX}\nlog(box.d);\nM 0 0\nbox.draw();`);
+    expect(result.logs[0].parts[0].value).toBe('h 40 v 40 h -40 z');
+    expect(result.layers[0].data).toBe('M 0 0 h 40 v 40 h -40 z');
+  });
+
+  it('.d bridges an off-origin start the same way .draw() does', () => {
+    const result = compile('let ring = @{\n  circle(0, 0, 10);\n};\nlog(ring.d);\nM 50 50\nring.draw();');
+    const d = result.logs[0].parts[0].value;
+    expect(d.startsWith('m -10 0 a 10 10')).toBe(true);
+    expect(result.layers[0].data).toBe(`M 50 50 ${d}`);
+  });
+
+  it('.commands lists every executed command with cursor positions', () => {
+    const result = compile(`${BOX}\nlog(box.commands.length);\nlog(box.commands[1]);`);
+    expect(result.logs[0].parts[0].value).toBe('4');
+    expect(result.logs[1].parts[0].value).toBe('{command: v, args: [40], start: Point(40, 0), end: Point(40, 40)}');
+  });
+
+  it('a ProjectedPath answers .d in absolute coordinates and .commands in world space', () => {
+    const result = compile(
+      `${BOX}\nlet placed = box.project(100, 50);\nlog(placed.d);\nlog(placed.commands[0].start);`,
+    );
+    expect(result.logs[0].parts[0].value).toBe('M 100 50 H 140 V 90 H 100 Z');
+    expect(result.logs[1].parts[0].value).toBe('Point(100, 50)');
+  });
+
+  it('log(block) previews the first commands', () => {
+    const result = compile(
+      `${BOX}\nlog(box);\nlet long = @{\n  h 1\n  h 2\n  h 3\n  h 4\n  h 5\n  h 6\n  h 7\n};\nlog(long);\nlog(@{ h 5 });`,
+    );
+    expect(result.logs[0].parts[0].value).toBe('PathBlock(4 commands: h 40 v 40 h -40 z)');
+    expect(result.logs[1].parts[0].value).toBe('PathBlock(7 commands: h 1 h 2 h 3 h 4 h 5 h 6 …)');
+    expect(result.logs[2].parts[0].value).toBe('PathBlock(1 command: h 5)');
+  });
+});

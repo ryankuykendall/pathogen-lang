@@ -612,6 +612,9 @@ describe('missing glyph reporting', () => {
     expect(warn).toBeDefined();
     expect(warn!.parts[0].value).toContain("Font 'Inter' (weight 400)");
     expect(warn!.parts[0].value).toContain('한');
+    // the structured warning carries the same text (minus the mirror prefix) and no line
+    expect(result.warnings).toEqual([{ code: 'font-glyph', message: warn!.parts[0].value.replace(/^\[warn\] /, '') }]);
+    expect(warn!.severity).toBe('warn');
   });
 
   it('omits missingGlyphs when everything is covered', () => {

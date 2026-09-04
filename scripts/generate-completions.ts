@@ -10,6 +10,7 @@ import {
   VALUE_CONSTRUCTORS,
   LAYER_CONSTRUCTORS,
   EVALUATOR_CONSTRUCTORS,
+  STATEMENT_BUILTINS,
 } from '../src/evaluator/constructor-registry';
 import {
   loadApiFile,
@@ -56,6 +57,9 @@ function crossCheck(
   for (const name of EVALUATOR_CONSTRUCTORS) {
     if (!declaredFunctions.has(name)) missingFromDecl.push(name);
   }
+  for (const name of STATEMENT_BUILTINS) {
+    if (!declaredFunctions.has(name)) missingFromDecl.push(name);
+  }
 
   if (missingFromDecl.length > 0) {
     problems.push(
@@ -71,6 +75,7 @@ function crossCheck(
     ...LAYER_CONSTRUCTORS,
     ...FILTER_CONSTRUCTORS,
     ...DEFS_CONSTRUCTORS,
+    ...STATEMENT_BUILTINS,
   ]);
   const extraDecl: string[] = [];
   for (const name of declaredFunctions) {
