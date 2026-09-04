@@ -2,10 +2,9 @@ import { matchFunctionNotation, splitTopLevel } from '../css-value-utils';
 import type { Expression } from '../parser/ast';
 
 /**
- * Evaluator hooks for {@link tryResolveCSSFunctionArgs}. Both evaluators
- * (index.ts and annotated.ts) have their own expression-evaluation loops but
- * identical Value shapes, so the shared resolver is parameterized by them
- * rather than importing either evaluator (which would be circular).
+ * Evaluator hooks for {@link tryResolveCSSFunctionArgs}. The resolver is
+ * parameterized by the evaluator's expression loop rather than importing
+ * evaluator/index.ts (which would be circular).
  */
 export interface CSSFunctionArgHooks {
   /** Parse a token as a standalone expression; null if it doesn't parse. */

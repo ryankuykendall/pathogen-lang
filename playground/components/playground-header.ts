@@ -36,7 +36,7 @@ export class PlaygroundHeader extends HTMLElement {
 
   subscribeToStore(): void {
     this._unsubscribe = store.subscribe(
-      ['annotatedOpen', 'consoleOpen', 'saveStatus', 'saveError', 'workspaceId', 'compilationStatus'],
+      ['consoleOpen', 'saveStatus', 'saveError', 'workspaceId', 'compilationStatus'],
       () => {
         this.updateToggleStates();
         this.updateSaveStatus();
@@ -49,12 +49,8 @@ export class PlaygroundHeader extends HTMLElement {
   }
 
   updateToggleStates(): void {
-    const annotatedToggle = this.shadowRoot!.querySelector('#annotated-toggle');
     const consoleToggle = this.shadowRoot!.querySelector('#console-toggle');
 
-    if (annotatedToggle) {
-      annotatedToggle.classList.toggle('active', store.get('annotatedOpen') as boolean);
-    }
     if (consoleToggle) {
       consoleToggle.classList.toggle('active', store.get('consoleOpen') as boolean);
     }
@@ -143,12 +139,6 @@ export class PlaygroundHeader extends HTMLElement {
     // Copy workspace
     this.shadowRoot!.querySelector('#copy-workspace')?.addEventListener('click', () => {
       this.copyWorkspace();
-    });
-
-    // Annotated toggle
-    this.shadowRoot!.querySelector('#annotated-toggle')?.addEventListener('click', () => {
-      store.set('annotatedOpen', !(store.get('annotatedOpen') as boolean));
-      this.dispatchEvent(new CustomEvent('toggle-annotated', { bubbles: true, composed: true }));
     });
 
     // Console toggle
@@ -331,10 +321,6 @@ export class PlaygroundHeader extends HTMLElement {
 
       <div class="header-content">
         <div class="header-left">
-          <button id="annotated-toggle" class="toggle-btn" title="Show annotated output">
-            <span class="toggle-icon">&#9654;</span>
-            Annotated
-          </button>
           <button id="console-toggle" class="toggle-btn" title="Show console output">
             <span class="toggle-icon">&#9654;</span>
             Console

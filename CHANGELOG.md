@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-03 (retire the annotated evaluator)
+
+### Removed
+
+#### Core
+
+- **The annotated evaluator is gone.** `compileAnnotated()`, `evaluateAnnotated()`, `formatAnnotated()`, the `AnnotatedLine` / `AnnotatedOutput` / `FormatOptions` types, the CLI's `--annotated` flag, and the worker's `compileAnnotated` message type are removed. The annotated path was a second, parallel evaluator (`src/evaluator/annotated.ts`, 6,611 lines) whose original job — verifying output through interleaved comments and call traces — the language itself long outgrew, while every feature and bug fix still paid a parity tax to keep it in sync (45 of the 52 evaluator commits since June also touched it, and a recurring class of review-critical "annotated parity" bugs came with them: its own `sort()`, its own `styleValueToCSS`, two independent template formatters, a module-level `pendingFlow` flag, and a still-open `buildAnnotatedResult` re-origin divergence). There is now one evaluator. The shared helper modules that were extracted to keep the two in step (`value-semantics.ts`, `switch-match.ts`, `struct-properties.ts`, `css-function-resolve.ts`, `iteration-lock.ts`) stay as the single home of each rule. `value-semantics.ts` and `switch-match.ts` now take the real `Value` type and `UserFunction.closure` is a `Scope` (the `unknown` typing only existed because the two evaluators declared separate unions); `struct-properties.ts` and `iteration-lock.ts` keep structural `unknown` inputs by design, since they act as type guards.
+- Every gap that existed only in annotated mode closes with it: `cut()`, `variableOffset()` / `compoundVariableOffset()`, `with` clauses, `ctx.transform`, Mask / ClipPath / MeshGradient / FreeformGradient, and the stdlib-block and text-in-`if` divergences.
+
+#### Playground
+
+- The **Annotated** pane and its header / breadcrumb toggles are removed. Older share links that carry the pane's `ao` URL-state key still load (the key is read and ignored). "Copy Debug Info" keeps the layers table, per-layer path data, and log output; the Annotated Output section is dropped.
+
+#### Documentation
+
+- `docs/cli.md` loses its "Annotated Output" section; the "not supported in `--annotated`" caveats in `docs/path-blocks.md`, `docs/variable-offset.md`, and the Cutting Paths blog post are gone with the mode.
+
+### Changed
+
+#### Core
+
+- **The CLI rejects unknown options.** A dash-prefixed argument no branch recognizes now exits 1 with `Error: Unknown option '--x'. Run with --help for the list of options.` instead of being silently skipped — so a script still passing the retired `--annotated` fails loudly rather than emitting plain path output.
+
+#### Development
+
+- Tests that pinned main-evaluator behaviour only by equality with annotated output are re-homed as direct `compile()` assertions (`tests/path-blocks.test.ts` pinned derived-path output for `offset()` joins, `ProjectedPath.draw()`, and `rotate()`; `tests/textblock.test.ts` text-in-`if`; `tests/style-value-interpolation.test.ts` fragment splicing; `tests/struct-properties.test.ts` value-checks through `compile()`). `tests/annotated.test.ts` and the scattered annotated-parity `describe` blocks are deleted.
+- `src/CLAUDE.md`, `.claude/CLAUDE.md`, and `project-docs/developer-experience/cross-system-feature-lifecycle.md` no longer list `evaluator/annotated.ts` as a required edit site. Paper trail in `project-docs/retire-annotated/`.
+
 ## [0.8.0] - 2026-09-03 (named easing family: ease() + 21 new Easing members, shared with gradients)
 
 ### Added

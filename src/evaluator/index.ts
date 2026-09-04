@@ -7819,7 +7819,7 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
 
     // Lambdas resolve free names against their captured definition scope
     // (lexical); named fns resolve against the caller's scope (dynamic).
-    const fnScope = createScope((userFn.closure as Scope | undefined) ?? scope);
+    const fnScope = createScope(userFn.closure ?? scope);
     userFn.params.forEach((param, i) => {
       setVariable(fnScope, param, args[i]);
     });
@@ -7879,12 +7879,10 @@ function resolveCallbackBlock(
         ),
       );
     }
-    // closure is typed unknown on UserFunction (parallel evaluator Scope
-    // types); values in this evaluator always hold this evaluator's Scope.
     return {
       params: worker.params,
       body: worker.body,
-      closure: worker.closure as Scope | undefined,
+      closure: worker.closure,
       leadingArgs,
       extraArgs: leadingArgs.length,
     };
@@ -8665,7 +8663,7 @@ function bindDestructuringPattern(
 function switchHost(caseScope: Scope, stmt: { loc?: SourceLocation }): MatchHost {
   return {
     evaluate: (expr) => evaluateExpression(expr, caseScope),
-    bind: (pattern, value) => bindDestructuringPattern(pattern, value as Value, caseScope, getLine(stmt)),
+    bind: (pattern, value) => bindDestructuringPattern(pattern, value, caseScope, getLine(stmt)),
     fail: (message) => {
       throw new Error(formatError(message, getLine(stmt)));
     },
@@ -8712,8 +8710,7 @@ function evaluateGridCellBody(
 }
 
 /** Applies to the EVALUATED string, so computed labels are validated per
- *  iteration. Pure rule lives in segments.ts (labelNameError) so the
- *  annotated evaluator enforces the identical contract (F2 parity). */
+ *  iteration. Pure rule lives in segments.ts (labelNameError). */
 function validateLabelName(value: string, kind: 'segment' | 'endpoint', line: number | undefined): void {
   const err = labelNameError(value, kind);
   if (err) throw new Error(formatError(err, line));
@@ -10498,6 +10495,3 @@ export function evaluateWithContext(
 // Re-export types from context module
 export type { CommandHistoryEntry, PathContext, Point, TransformState } from './context';
 
-// Re-export annotated evaluator and formatter
-export { evaluateAnnotated, type AnnotatedLine, type AnnotatedOutput } from './annotated';
-export { formatAnnotated, type FormatOptions } from './formatter';

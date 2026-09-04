@@ -75,7 +75,7 @@ h1 code {
   gap: 12px;
 }
 
-/* Toggle buttons (Annotated, Console) */
+/* Toggle buttons (Console) */
 .toggle-btn {
   display: flex;
   align-items: center;

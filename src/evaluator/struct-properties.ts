@@ -7,20 +7,20 @@ import type { AngleValue, ColorValue, ContextObject, GridValue, MeshPointValue, 
  * Shared property registry for built-in struct values.
  *
  * Single source of truth for the data properties of Point, PolarVector, Grid,
- * MeshPoint, Color, ViewBox, and context objects — used by BOTH evaluators (index.ts and
- * annotated.ts) for member access and object destructuring. Properties are read
+ * MeshPoint, Color, ViewBox, and context objects — used by the evaluator
+ * for member access and object destructuring. Properties are read
  * lazily via `get()` so reading one never computes the others; `keys()` exists
  * for rest-pattern enumeration and is not called on the member-access hot path.
  *
- * The module returns data and never throws for unknown keys — each evaluator
- * raises its own error with its own formatting. The main evaluator's
+ * The module returns data and never throws for unknown keys — the caller
+ * raises its own error with its own formatting. The evaluator's
  * ContextObject `transform` special case (TransformReference synthesis from
  * `_transformState`) intentionally stays in index.ts.
  *
- * Values are typed `unknown` because the two evaluators declare separate (but
- * structurally overlapping) Value unions; each caller casts the result into
- * its own union. `get()` is only ever invoked with the value its descriptor
- * was looked up for, after `has()` returned true.
+ * Descriptor inputs are typed `unknown` because `getStructDescriptor` is the
+ * type guard: callers probe arbitrary values with it. `get()` is only ever
+ * invoked with the value its descriptor was looked up for, after `has()`
+ * returned true.
  */
 
 type Getter = (value: unknown) => Value;
@@ -98,7 +98,7 @@ function convertContextProperty(key: string, raw: unknown): Value {
     return { type: 'ContextObject' as const, value: raw as Record<string, unknown> };
   }
   // Unreachable today (context objects only hold numbers/objects/arrays); a
-  // plain Error here loses the evaluators' line-number wrapping if that ever
+  // plain Error here loses the evaluator's line-number wrapping if that ever
   // changes — mirror of the pre-refactor fallback in member access.
   throw new Error(`Cannot access property '${key}' of type ${typeof raw}`);
 }

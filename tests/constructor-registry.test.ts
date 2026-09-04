@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compile, compileAnnotated } from '../src';
+import { compile } from '../src';
 import {
   DEFS_CONSTRUCTORS,
   FILTER_CONSTRUCTORS,
@@ -78,12 +78,8 @@ describe('constructor registry — behavioral verification against the evaluator
   for (const [group, names] of ALL_GROUPS) {
     describe(group, () => {
       for (const name of names) {
-        it(`${name}() dispatches in the main evaluator`, () => {
+        it(`${name}() dispatches in the evaluator`, () => {
           expect(() => compile(CANONICAL[name])).not.toThrow();
-        });
-
-        it(`${name}() dispatches in the annotated evaluator`, () => {
-          expect(() => compileAnnotated(CANONICAL[name])).not.toThrow();
         });
       }
     });

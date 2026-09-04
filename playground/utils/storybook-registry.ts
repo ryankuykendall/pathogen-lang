@@ -435,52 +435,6 @@ layer('hex').apply { circle(60, 100, 40) }`,
 
   // === Editor Support ===
   {
-    id: 'annotated-pane',
-    name: 'Annotated Output',
-    category: 'Editor',
-    description: 'Read-only display showing annotated path output',
-    stories: [
-      {
-        name: 'With Content',
-        props: {
-          isOpen: true,
-          content:
-            '// Generated SVG Path\nM 50 100  // Move to start\nA 50 50 0 1 1 150 100  // Arc to right\nA 50 50 0 1 1 50 100   // Arc back to start',
-        },
-      },
-      {
-        name: 'Empty',
-        props: { isOpen: true, content: '' },
-      },
-    ],
-    controls: [
-      { name: 'isOpen', type: 'toggle', label: 'Open', default: true },
-      { name: 'content', type: 'textarea', label: 'Content', default: 'M 50 100\nL 100 50\nL 150 100\nZ' },
-    ],
-    render: (container, props, controls) => {
-      const pane = document.createElement('annotated-pane');
-      pane.style.height = '250px';
-      pane.style.width = '100%';
-      pane.style.border = '1px solid var(--border-color, #ddd)';
-      container.appendChild(pane);
-
-      // Set content before opening (so editor initializes with content)
-      (pane as unknown as { _content: unknown })._content = props.content || '';
-
-      if (props.isOpen) {
-        (pane as unknown as { open: () => void }).open();
-      }
-
-      controls.on('isOpen', (value) => {
-        if (value) (pane as unknown as { open: () => void }).open();
-        else (pane as unknown as { close: () => void }).close();
-      });
-      controls.on('content', (value) => {
-        (pane as unknown as { content: unknown }).content = value;
-      });
-    },
-  },
-  {
     id: 'playground-header',
     name: 'Playground Header',
     category: 'Editor',
@@ -488,19 +442,19 @@ layer('hex').apply { circle(60, 100, 40) }`,
     stories: [
       {
         name: 'Default',
-        props: { fileName: null, isModified: false, annotatedOpen: false, consoleOpen: false },
+        props: { fileName: null, isModified: false, consoleOpen: false },
       },
       {
         name: 'With File',
-        props: { fileName: 'my-drawing.svg', isModified: false, annotatedOpen: false, consoleOpen: false },
+        props: { fileName: 'my-drawing.svg', isModified: false, consoleOpen: false },
       },
       {
         name: 'Modified',
-        props: { fileName: 'my-drawing.svg', isModified: true, annotatedOpen: false, consoleOpen: false },
+        props: { fileName: 'my-drawing.svg', isModified: true, consoleOpen: false },
       },
       {
         name: 'Panes Open',
-        props: { fileName: null, isModified: false, annotatedOpen: true, consoleOpen: true },
+        props: { fileName: null, isModified: false, consoleOpen: true },
       },
       {
         // The compiling chip carries an elapsed clock; 754000 ms renders as 12:34.
@@ -508,7 +462,6 @@ layer('hex').apply { circle(60, 100, 40) }`,
         props: {
           fileName: 'slow-drawing.svg',
           isModified: false,
-          annotatedOpen: false,
           consoleOpen: false,
           compilationStatus: 'compiling',
           compilationElapsedMs: 754_000,
@@ -518,7 +471,6 @@ layer('hex').apply { circle(60, 100, 40) }`,
     controls: [
       { name: 'fileName', type: 'text', label: 'File Name', default: '' },
       { name: 'isModified', type: 'toggle', label: 'Modified', default: false },
-      { name: 'annotatedOpen', type: 'toggle', label: 'Annotated Open', default: false },
       { name: 'consoleOpen', type: 'toggle', label: 'Console Open', default: false },
     ],
     render: (container, props, controls) => {
@@ -527,7 +479,6 @@ layer('hex').apply { circle(60, 100, 40) }`,
         (store as any).update({
           currentFileName: (props.fileName as string) || null,
           isModified: (props.isModified as boolean) || false,
-          annotatedOpen: (props.annotatedOpen as boolean) || false,
           consoleOpen: (props.consoleOpen as boolean) || false,
           compilationStatus: (props.compilationStatus as string) || 'idle',
           compilationElapsedMs: (props.compilationElapsedMs as number) || 0,
@@ -543,9 +494,6 @@ layer('hex').apply { circle(60, 100, 40) }`,
         });
         controls.on('isModified', (value) => {
           store.set('isModified', value);
-        });
-        controls.on('annotatedOpen', (value) => {
-          store.set('annotatedOpen', value);
         });
         controls.on('consoleOpen', (value) => {
           store.set('consoleOpen', value);

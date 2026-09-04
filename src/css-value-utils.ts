@@ -1,5 +1,5 @@
 /**
- * Shared CSS-value string utilities used by the parser and both evaluators.
+ * Shared CSS-value string utilities used by the parser and the evaluator.
  * Replaces three ad-hoc `fn(args)` regexes (non-nesting `[^)]*` / greedy `(.+)`
  * captures that mishandle nested parens) and two byte-identical top-level
  * splitters with one balanced, paren-aware implementation.

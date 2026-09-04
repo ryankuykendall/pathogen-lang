@@ -873,8 +873,6 @@ let exclusive = a.project(50, 50).xor(b.project(70, 50));
 
 Where the [set operations](#path-blocks-boolean-operations) combine two closed shapes, `cut()` slices one shape along cut lines — like drawing a knife across it — and hands back the resulting pieces. Each piece is a complete PathBlock, healed shut along the lines that cut it (a cut *open* path is the exception: its pieces stay open fragments).
 
-> **Debug mode:** `cut()` is not yet supported in the CLI's `--annotated` debug mode. It works normally everywhere else — CLI compilation, the playground, and the VS Code preview.
-
 ### `cut(cutter)` → array of PathBlock
 
 Cuts the path along every stroke of `cutter` and returns the pieces. The cutter may be a single PathBlock or ProjectedPath, **or an array of them** — every knife in the array cuts, exactly as if their strokes lived in one block. Arrays make cutters compositional: build knives in a loop and hand the whole set to one `cut()` call.

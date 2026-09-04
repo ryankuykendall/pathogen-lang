@@ -1,5 +1,5 @@
 // Angle-preserving stdlib contract — the single source of truth consumed by
-// both evaluators' stdlib dispatch (like callback-methods.ts). A function
+// the evaluator's stdlib dispatch (like callback-methods.ts). A function
 // listed here passes angle-ness through: when any of its value-carrying
 // argument slots receives an AngleValue, the numeric result is re-wrapped as
 // an AngleValue (unit taken from the first such argument). Functions NOT

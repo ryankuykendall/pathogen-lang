@@ -1,10 +1,8 @@
 /**
  * Built-in enum definitions — constant map of enum name → member name → string value.
- * Single source of truth for both evaluators (the annotated evaluator's former
- * hand-copied subset had drifted: BBoxAnchor, GridPatternType, HexagonOrientation,
- * VerticalAnchor, NoiseFilterStyle, NoiseFilterScale, GlowMode, MotionBlurType,
- * and BlendMode were missing there, so e.g. `BlendMode.Multiply` failed to
- * resolve in annotated mode).
+ * Single source of truth for the evaluator, the language services, and the
+ * generated completion data (a hand-copied subset once drifted here; never
+ * duplicate this table).
  */
 import { easingEnumMembers } from '../stdlib/easing-curves';
 

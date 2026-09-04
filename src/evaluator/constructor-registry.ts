@@ -1,5 +1,5 @@
 /**
- * Names of the constructor functions implemented in the evaluators' call
+ * Names of the constructor functions implemented in the evaluator's call
  * dispatch (evaluator/index.ts evaluateFunctionCall) rather than the stdlib
  * registry. Grouped by what the constructed value is.
  *

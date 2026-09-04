@@ -7,8 +7,8 @@
  * the binding funnel (setVariable) and the Identifier-reference sites,
  * deliberately NOT in lookupVariable, which also resolves call targets.
  *
- * Shared by both evaluators (which otherwise share almost nothing) so
- * the rule can never diverge between compile() and compileAnnotated().
+ * Kept as a standalone module so the binding sites and the reference
+ * sites enforce one rule.
  */
 
 export const RESERVED_UNIT_NAMES: ReadonlySet<string> = new Set(['pi', 'deg', 'rad']);

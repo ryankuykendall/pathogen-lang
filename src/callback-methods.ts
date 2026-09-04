@@ -1,7 +1,6 @@
 // Methods whose callback may be applied with the `<<` worker operator
-// (arr.map() << f). Single source of truth, imported by both evaluators
-// (src/evaluator/index.ts, src/evaluator/annotated.ts) and the
-// language-services typing bridge.
+// (arr.map() << f). Single source of truth, imported by the evaluator
+// (src/evaluator/index.ts) and the language-services typing bridge.
 //
 // INVARIANT: any method with one of these names, on any receiver, becomes
 // <<-interceptable when written without a trailing block. Adding a method

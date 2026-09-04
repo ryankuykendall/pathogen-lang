@@ -19,7 +19,7 @@ import { isKnownGoogleFont } from '../utils/google-fonts.js';
 
 declare const window: Window & { PathogenLang?: Record<string, Function> };
 
-type CompilationType = 'compile' | 'compileAnnotated' | 'compileWithContext';
+type CompilationType = 'compile' | 'compileWithContext';
 
 let worker: Worker | null = null;
 let requestId: number = 0;
@@ -200,8 +200,6 @@ async function fallbackSync(
   switch (type) {
     case 'compile':
       return lib.compile(source, compileOptions);
-    case 'compileAnnotated':
-      return lib.compileAnnotated(source);
     case 'compileWithContext':
       return lib.compileWithContext(source, compileOptions);
     default:
@@ -379,21 +377,6 @@ export async function compile(
 }
 
 /**
- * Compile source code to annotated output
- * @param source - The source code
- * @param compilationId - Current compilation ID
- * @param isStale - Function to check staleness
- * @returns Promise resolving to annotated compilation result
- */
-export function compileAnnotated(
-  source: string,
-  compilationId: number,
-  isStale: ((id: number) => boolean) | undefined,
-): Promise<unknown> {
-  return sendRequest('compileAnnotated', source, compilationId, isStale);
-}
-
-/**
  * Compile source code with context tracking
  * @param source - The source code
  * @param compilationId - Current compilation ID
@@ -553,7 +536,6 @@ export function isWorkerAvailable(): boolean {
 
 export default {
   compile,
-  compileAnnotated,
   compileWithContext,
   terminateWorker,
   isWorkerAvailable,

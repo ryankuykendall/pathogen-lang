@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compile, compileAnnotated, parse } from '../src';
+import { compile, parse } from '../src';
 import { compilePath, parseSVGPath } from './helpers';
 
 describe('Path Blocks', () => {
@@ -671,48 +671,6 @@ l 5 0`);
       `);
       // p1.length is 20, so p2 does h 20 → endPoint (20, 0)
       expect(result.logs[0].parts[0].value).toBe('Point(20, 0)');
-    });
-  });
-
-  describe('annotated output', () => {
-    it('handles path block definition silently', () => {
-      const output = compileAnnotated('let p = @{ v 20 h 20 };');
-      // Path block definition should not produce output
-      expect(output.trim()).toBe('');
-    });
-
-    it('shows draw() output with function call annotation', () => {
-      const output = compileAnnotated(`
-        let p = @{ v 20 h 20 };
-        M 10 10
-        p.draw()
-      `);
-      expect(output).toContain('M 10 10');
-      expect(output).toContain('//--- p.draw() called from line');
-      expect(output).toContain('  v 20');
-      expect(output).toContain('  h 20');
-    });
-
-    it('shows draw() annotation in for loops', () => {
-      const output = compileAnnotated(`
-        let shape = @{ v 10 h 10 v -10 z };
-        for (i in 0..1) {
-          M calc(i * 20) 0
-          shape.draw()
-        }
-      `);
-      expect(output).toContain('//--- shape.draw() called from line');
-      expect(output).toContain('v 10');
-    });
-
-    it('shows draw() annotation in let assignments', () => {
-      const output = compileAnnotated(`
-        let shape = @{ v 20 h 20 };
-        M 10 10
-        let proj = shape.draw();
-      `);
-      expect(output).toContain('//--- shape.draw() called from line');
-      expect(output).toContain('v 20');
     });
   });
 
@@ -1481,8 +1439,8 @@ l 5 0`);
         expect(() => compile('let p = @{ h 50 }; p.centerPoint(1);')).toThrow(/0 arguments/);
       });
 
-      it('works in annotated mode for PathBlock and ProjectedPath', () => {
-        const output = compileAnnotated(`
+      it('PathBlock and ProjectedPath centers both feed path arguments', () => {
+        const result = compile(`
           let p = @{ h 100 v 20 };
           let c = p.centerPoint();
           M calc(c.x) calc(c.y)
@@ -1490,8 +1448,7 @@ l 5 0`);
           let pc = proj.centerPoint();
           M calc(pc.x) calc(pc.y)
         `);
-        expect(output).toContain('M 50 10');
-        expect(output).toContain('M 60 30');
+        expect(result.layers[0].data).toBe('M 50 10 M 60 30');
       });
     });
 
@@ -2523,7 +2480,7 @@ M 0 0`);
       expect(parseFloat(result.logs[2].parts[0].value)).toBeCloseTo(1, 10);
     });
 
-    it('partition t works in annotated mode', () => {
+    it('partition t is 0 at the first sample and 1 at the last', () => {
       const result = compile(`
         let p = @{ h 100 };
         let pts = p.partition(2);
@@ -2770,16 +2727,6 @@ M 0 0`);
       const endY = parseFloat(result.logs[3].parts[0].value);
       expect(endX).toBeCloseTo(25, 0);
       expect(endY).toBeCloseTo(-25, 0);
-    });
-
-    it('subPath works in annotated mode', () => {
-      const result = compileAnnotated(`
-        let p = @{ h 100 };
-        let sub = p.subPath(0, 0.5);
-        M 10 10
-        sub.draw()
-      `);
-      expect(result).toContain('M 10 10');
     });
 
     it('subPath on path with z (closePath)', () => {
@@ -3730,5 +3677,61 @@ describe('truthful startPoint survives the transform-method family (review-criti
       seg.drawTo(100, 100);
     `);
     expect(layers[0].data).toContain('M 100 100');
+  });
+});
+
+// Pinned main-evaluator geometry that used to be asserted only by equality
+// with the (now removed) annotated evaluator.
+describe('pinned derived-path output (formerly annotated parity)', () => {
+  const round3 = (str: string) => str.replace(/-?\d+\.\d+/g, (m) => Number(m).toFixed(3));
+
+  it.each([
+    ['round', 'M 50 50 l 40 0 a 6 6 0 0 1 4.243 10.243 l -30 30'],
+    ['miter', 'M 50 50 l 40 0 l 4.243 10.243 l -30 30'],
+    ['bevel', 'M 50 50 l 40 0 l 4.243 10.243 l -30 30'],
+  ])('offset() with %s joins on an open bracket', (join, expected) => {
+    const src = `let bracket = @{
+  h 40
+  l -30 30
+};
+let ring = bracket.offset(6, { join: '${join}' });
+ring.drawTo(50, 50);`;
+    expect(round3(compile(src).layers[0].data)).toBe(expected);
+  });
+
+  it('multi-contour union draw() keeps world coordinates', () => {
+    const src = `let left = @{
+  h 40
+  v 40
+  h -40
+  z
+};
+let right = @{
+  h 40
+  v 40
+  h -40
+  z
+};
+let merged = left.union(right.project(60, 0));
+let placed = merged.project(150, 28);
+placed.draw();`;
+    expect(compile(src).layers[0].data).toBe('M 150 28 h 40 v 40 h -40 z h 40 v 40 h -40 z');
+  });
+
+  it('in-place ProjectedPath draw() continues the cursor for following commands', () => {
+    const src = `let plate = @{
+  h 140
+  v 100
+  c 10 -20 30 -20 40 -40
+};
+let placed = plate.project(30, 40);
+placed.draw();
+l 5 0`;
+    expect(compile(src).layers[0].data).toBe('M 30 40 h 140 v 100 c 10 -20 30 -20 40 -40 l 5 0');
+  });
+
+  it('rotate() about a point re-origins the block before drawTo()', () => {
+    const src = 'let p = @{ h 50 v 50 };\nlet r = p.rotate(0.5pi, Point(25, 25));\nr.drawTo(10, 10);';
+    expect(compile(src).layers[0].data).toBe('M 10 10 m 50 0 l 0 50 l -50 0');
   });
 });

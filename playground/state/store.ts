@@ -124,7 +124,6 @@ export const store = createStore({
 
   // Compilation results
   pathData: '',
-  annotatedOutput: '',
   logs: [],
   error: null,
   layers: [], // Array of LayerOutput from last compilation
@@ -174,7 +173,6 @@ export const store = createStore({
   panY: 0,
 
   // Pane visibility
-  annotatedOpen: false,
   consoleOpen: false,
   docsOpen: false,
   inspectorOpen: false,

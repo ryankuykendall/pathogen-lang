@@ -1,9 +1,9 @@
 /**
- * Single shared SVG path-data module for both evaluators.
+ * Single shared SVG path-data module for the evaluator and the render pipeline.
  *
- * Replaces the three near-duplicate regex tokenizers (segments.ts NUMBER_REGEX
- * / commandRegex, annotated.ts parseAndTrackPathString, annotated.ts
- * emitPathString) and the two diverging commandsToRelativeD serializers with
+ * Replaces the near-duplicate regex tokenizers that used to live in
+ * segments.ts (NUMBER_REGEX / commandRegex) and the retired annotated
+ * evaluator, and the two diverging commandsToRelativeD serializers, with
  * one cursor-based tokenizer and one cursor-aware serializer.
  *
  * `serializeRelativeAndTrack` removes the serialize→reparse round-trip that
@@ -117,7 +117,7 @@ export function tokenizePathData(d: string): RawPathCommand[] {
   return commands;
 }
 
-/** Display-only split preserving raw arg text (annotated emitPathString). */
+/** Display-only split preserving raw arg text (no numeric round-trip). */
 export function splitPathCommands(d: string): { command: string; argsText: string }[] {
   const out: { command: string; argsText: string }[] = [];
   let i = 0;
@@ -282,7 +282,7 @@ export function commandsToRelativeD(commands: PathBlockCommand[], opts: Relative
 // ── Arbitrary d input → normalized commands → absolute d ────────────────
 //
 // Additive support for the export-time optimization passes (precision
-// trimming, decimation). Nothing here is used by the evaluators' own
+// trimming, decimation). Nothing here is used by the evaluator's own
 // serialization, whose byte-locked defaults are unchanged.
 
 /** Args consumed per command-letter group (SVG grammar). */

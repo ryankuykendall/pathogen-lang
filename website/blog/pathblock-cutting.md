@@ -66,7 +66,6 @@ Naming the sharp edges now, before the pretty pictures:
 - **Dead-end strokes.** As above — a stroke that stops inside solid material leaves that region whole. `cut()` never invents geometry to finish your stroke for you.
 - **Almost-touching endpoints are forgiven.** If a stroke's endpoint lands *on* the boundary — or within about half a unit of it at typical drawing scales — it snaps onto the boundary and the cut completes there, like a T-junction. The same forgiveness applies to strokes passing through a corner vertex.
 - **Grazes and edge-riders.** A stroke that only touches the boundary tangentially, or runs along an edge without crossing it, doesn't cut.
-- **`--annotated` debug mode doesn't support `cut()` yet.** The CLI's annotated output reports a clear error; everything else — normal CLI compilation, the playground, the VS Code preview — works.
 - **Piece order is deterministic but unspecified.** The same program always produces the same array, but don't assume which index is which piece — inspect pieces (`boundingBox()`, [`subPathCount`](/docs#path-blocks-pathblock)) or just iterate.
 
 The full contract lives in the [Cutting Paths documentation](/docs#path-blocks-cutting-paths).

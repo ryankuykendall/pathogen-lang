@@ -15,7 +15,6 @@ import '../app-breadcrumb.js';
 import '../app-header.js';
 import '../code-editor-pane.js';
 import '../console-pane.js';
-import '../annotated-pane.js';
 import '../docs-panel.js';
 import '../playground-footer.js';
 import '../playground-header.js';

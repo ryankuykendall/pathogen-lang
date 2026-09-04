@@ -1,6 +1,6 @@
 // App Breadcrumb — secondary navigation
-// Left: breadcrumb trail. Right (workspace view only): annotated/console
-// toggles, Copy Code, save status, and the overflow menu containing
+// Left: breadcrumb trail. Right (workspace view only): the console
+// toggle, Copy Code, save status, and the overflow menu containing
 // Export / Format Document / Copy URL / Copy Workspace / Copy SVG /
 // Copy Debug Info / Set Thumbnail and (when signed in)
 // Publish/Unpublish workspace.
@@ -86,7 +86,6 @@ class AppBreadcrumb extends HTMLElement {
         'workspaceRereviewPending',
         'workspaceOwnerId',
         'currentUser',
-        'annotatedOpen',
         'consoleOpen',
         'saveStatus',
         'saveError',
@@ -351,7 +350,6 @@ class AppBreadcrumb extends HTMLElement {
     const currentView = store.get('currentView') as string;
     const config = viewConfig[currentView] || viewConfig.landing;
     const isWorkspaceView = currentView === 'workspace';
-    const annotatedOpen = store.get('annotatedOpen') as boolean;
     const consoleOpen = store.get('consoleOpen') as boolean;
 
     const calledStdlib = (store.get('calledStdlibFunctions') || []) as string[];
@@ -408,7 +406,6 @@ class AppBreadcrumb extends HTMLElement {
                   : ''
               }
               <div class="toggle-bar">
-                <button id="annotated-toggle" class="toggle-btn ${annotatedOpen ? 'active' : ''}" title="Show annotated output">Annotated</button>
                 <button id="console-toggle" class="toggle-btn ${consoleOpen ? 'active' : ''}" title="Show console output">Console</button>
               </div>
               <button id="copy-code" class="secondary-btn" title="Copy code to clipboard">
@@ -441,12 +438,7 @@ class AppBreadcrumb extends HTMLElement {
       });
     });
 
-    // Annotated / Console toggles
-    this.shadowRoot!.querySelector('#annotated-toggle')?.addEventListener('click', () => {
-      store.set('annotatedOpen', !store.get('annotatedOpen'));
-      this.dispatchEvent(new CustomEvent('toggle-annotated', { bubbles: true, composed: true }));
-    });
-
+    // Console toggle
     this.shadowRoot!.querySelector('#console-toggle')?.addEventListener('click', () => {
       store.set('consoleOpen', !store.get('consoleOpen'));
       this.dispatchEvent(new CustomEvent('toggle-console', { bubbles: true, composed: true }));

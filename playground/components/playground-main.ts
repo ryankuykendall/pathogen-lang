@@ -49,18 +49,6 @@ export class PlaygroundMain extends HTMLElement {
           transition: flex 0.3s ease;
         }
 
-        ::slotted(annotated-pane) {
-          flex: 0 0 0;
-          min-width: 0;
-          border-right: 1px solid var(--border-color, #ddd);
-          overflow: hidden;
-          transition: flex-basis 0.3s ease;
-        }
-
-        ::slotted(annotated-pane.open) {
-          flex: 1 1 0;
-        }
-
         ::slotted(console-pane) {
           flex: 0 0 0;
           min-width: 0;
@@ -104,15 +92,6 @@ export class PlaygroundMain extends HTMLElement {
             border-right: none;
             border-bottom: 1px solid var(--border-color, #ddd);
             min-height: 300px;
-          }
-
-          ::slotted(annotated-pane) {
-            border-right: none;
-            border-bottom: 1px solid var(--border-color, #ddd);
-          }
-
-          ::slotted(annotated-pane.open) {
-            flex: 0 0 200px;
           }
 
           ::slotted(console-pane) {

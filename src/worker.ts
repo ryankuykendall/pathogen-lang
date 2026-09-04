@@ -1,7 +1,7 @@
 // Web Worker entry point for async compilation
 // Offloads interpreter execution from main thread
 
-import { compile, compileAnnotated, compileWithContext, createFontRegistry, addFont } from '.';
+import { compile, compileWithContext, createFontRegistry, addFont } from '.';
 
 import type { CompileOptions, FontRegistry } from '.';
 
@@ -16,7 +16,7 @@ export interface FontBuffer {
 
 export interface WorkerRequest {
   id: number;
-  type: 'compile' | 'compileAnnotated' | 'compileWithContext';
+  type: 'compile' | 'compileWithContext';
   source: string;
   options?: CompileOptions;
   fontBuffers?: FontBuffer[];
@@ -24,7 +24,7 @@ export interface WorkerRequest {
 
 export interface WorkerResponse {
   id: number;
-  type: 'compile' | 'compileAnnotated' | 'compileWithContext';
+  type: 'compile' | 'compileWithContext';
   success: boolean;
   result?: unknown;
   error?: string;
@@ -60,9 +60,6 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
     switch (type) {
       case 'compile':
         result = compile(source, compileOpts);
-        break;
-      case 'compileAnnotated':
-        result = compileAnnotated(source);
         break;
       case 'compileWithContext':
         result = compileWithContext(source, compileOpts);

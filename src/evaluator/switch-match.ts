@@ -1,7 +1,6 @@
-// `switch` clause matching, shared by both evaluators. Each evaluator
-// supplies a MatchHost that closes over its own expression evaluation,
-// destructuring binder, and error formatting; everything about which
-// clause matches lives here exactly once.
+// `switch` clause matching. The evaluator supplies a MatchHost that closes
+// over its expression evaluation, destructuring binder, and error
+// formatting; everything about which clause matches lives here exactly once.
 
 import type {
   ArrayDestructuringPattern,
@@ -15,25 +14,25 @@ import type {
 import { getStructDescriptor } from './struct-properties';
 import { isTruthy, toNumber, valuesEqual } from './value-semantics';
 
+import type { ArrayValue, ObjectValue, Value } from './types';
+
 export interface MatchHost {
   /** Evaluate an expression in the case scope (bindings already visible). */
-  evaluate(expr: Expression): unknown;
+  evaluate(expr: Expression): Value;
   /** Bind a destructuring pattern in the case scope (the existing binder). */
-  bind(pattern: ArrayDestructuringPattern | ObjectDestructuringPattern, value: unknown): void;
+  bind(pattern: ArrayDestructuringPattern | ObjectDestructuringPattern, value: Value): void;
   /** Throw an evaluator-formatted error carrying the switch's line. */
   fail(message: string): never;
 }
 
 type DestructuringPattern = ArrayDestructuringPattern | ObjectDestructuringPattern;
 
-// Values are `unknown` here because index.ts and annotated.ts declare
-// separate (structurally identical) Value unions; the checks are structural.
-function isArrayLike(v: unknown): v is { type: 'ArrayValue'; elements: unknown[] } {
-  return typeof v === 'object' && v !== null && 'type' in v && (v as { type: unknown }).type === 'ArrayValue';
+function isArrayLike(v: Value): v is ArrayValue {
+  return typeof v === 'object' && v !== null && 'type' in v && v.type === 'ArrayValue';
 }
 
-function isObjectLike(v: unknown): v is { type: 'ObjectValue'; properties: Map<string, unknown> } {
-  return typeof v === 'object' && v !== null && 'type' in v && (v as { type: unknown }).type === 'ObjectValue';
+function isObjectLike(v: Value): v is ObjectValue {
+  return typeof v === 'object' && v !== null && 'type' in v && v.type === 'ObjectValue';
 }
 
 /**
@@ -42,7 +41,7 @@ function isObjectLike(v: unknown): v is { type: 'ObjectValue'; properties: Map<s
  * An object pattern needs a plain object or a built-in struct (Point, Color,
  * Grid, …) that has every named property.
  */
-export function destructuringShapeMatches(pattern: DestructuringPattern, value: unknown): boolean {
+export function destructuringShapeMatches(pattern: DestructuringPattern, value: Value): boolean {
   if (pattern.type === 'ArrayDestructuringPattern') {
     if (!isArrayLike(value)) return false;
     const len = value.elements.length;
@@ -57,7 +56,7 @@ export function destructuringShapeMatches(pattern: DestructuringPattern, value: 
 }
 
 /** Does one pattern match? Binds destructured names on success. */
-export function patternMatches(pattern: CasePattern, scrutinee: unknown, host: MatchHost): boolean {
+export function patternMatches(pattern: CasePattern, scrutinee: Value, host: MatchHost): boolean {
   switch (pattern.type) {
     case 'ValuePattern':
       return valuesEqual(scrutinee, host.evaluate(pattern.value)) === true;
@@ -92,7 +91,7 @@ export function patternMatches(pattern: CasePattern, scrutinee: unknown, host: M
  */
 export function caseMatches(
   clause: { patterns: CasePattern[]; guard: Expression | null },
-  scrutinee: unknown,
+  scrutinee: Value,
   host: MatchHost,
 ): boolean {
   if (!clause.patterns.some((p) => patternMatches(p, scrutinee, host))) return false;
@@ -107,7 +106,7 @@ export function caseMatches(
  */
 export function selectSwitchClause<S>(
   stmt: SwitchStatement,
-  scrutinee: unknown,
+  scrutinee: Value,
   createCaseScope: () => S,
   hostFor: (caseScope: S) => MatchHost,
 ): { body: Statement[]; scope: S } | null {
@@ -127,7 +126,7 @@ export function selectSwitchClause<S>(
  */
 export function selectSwitchArm<S>(
   expr: SwitchExpression,
-  scrutinee: unknown,
+  scrutinee: Value,
   createArmScope: () => S,
   hostFor: (armScope: S) => MatchHost,
 ): { value: Expression; scope: S } {

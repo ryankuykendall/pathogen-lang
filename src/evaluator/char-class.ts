@@ -1,7 +1,7 @@
 /**
  * Character classification for fromGlyph() glyph provenance.
  *
- * Single source of truth for both evaluators (index.ts and annotated.ts),
+ * Single source of truth for the evaluator and the language services,
  * including isWhitespace itself. The three whitespace classifiers partition
  * isWhitespaceChar exactly: every whitespace character satisfies exactly one
  * of isSpaceChar/isTabChar/isNewlineChar, and non-whitespace characters
@@ -38,7 +38,7 @@ export function isMarkChar(char: string): boolean {
   return MARK_RE.test(char);
 }
 
-// Property-name → predicate map used by both evaluators' PathBlock member
+// Property-name → predicate map used by the evaluator's PathBlock member
 // dispatch; keeps the boolean class cases exhaustive by construction.
 export const CHAR_CLASS_PREDICATES = {
   isSpace: isSpaceChar,

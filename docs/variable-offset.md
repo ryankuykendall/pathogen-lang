@@ -220,8 +220,6 @@ The compiler rejects:
 
 Self-intersecting output is **not** an error: if dense stops or extreme offsets make the curve cross itself, Pathogen emits the true curve as-is rather than silently reshaping your geometry.
 
-> **Debug mode:** `variableOffset()` and `compoundVariableOffset()` are not yet supported in the CLI's `--annotated` debug mode. They work normally everywhere else — CLI compilation, the playground, and the VS Code preview.
-
 ## Related
 
 - [Path Blocks](#path-blocks-path-blocks) — the `@{ }` blocks and methods (`offset`, `partition`, `boundingBox`, `get`/`tangent`/`normal`) this builds on

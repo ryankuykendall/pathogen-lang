@@ -1,5 +1,5 @@
-import { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated } from './evaluator';
-import { parse, parseWithComments } from './parser';
+import { evaluate, evaluateWithContext } from './evaluator';
+import { parse } from './parser';
 
 import type { CompileResult } from './evaluator';
 
@@ -9,7 +9,7 @@ export { resolveFontDirectives } from './parser/font-directives';
 export type { ResolvedFontDirective, FontDirectiveError } from './parser/font-directives';
 export { highlightPathogenTokens } from './highlight';
 export type { HighlightToken } from './highlight';
-export { evaluate, evaluateAnnotated, evaluateWithContext, formatAnnotated, BUILTIN_ENUMS } from './evaluator';
+export { evaluate, evaluateWithContext, BUILTIN_ENUMS } from './evaluator';
 export { stdlib } from './stdlib';
 export { buildEasingWgsl, EASING_CURVES, EASING_ORDER, EASING_SPECS, easingModeIndex } from './stdlib/easing-curves';
 export type { EasingCurveSpec } from './stdlib/easing-curves';
@@ -61,8 +61,6 @@ export type {
   TspanStatement,
 } from './parser/ast';
 export type {
-  AnnotatedLine,
-  AnnotatedOutput,
   ArrayValue,
   BooleanValue,
   ClipPathOutput,
@@ -127,7 +125,6 @@ export {
   isSVGFragmentValue,
   isTextBlockValue,
 } from './evaluator';
-export type { FormatOptions } from './evaluator/formatter';
 
 // Export-time path optimization passes (playground Export with Legend)
 export { trimPathDataPrecision } from './evaluator/path-precision';
@@ -171,30 +168,6 @@ export interface CompileOptions {
 export function compile(source: string, options?: CompileOptions): CompileResult {
   const ast = parse(source);
   return evaluate(ast, options as { toFixed?: number; fonts?: import('./evaluator/types').FontRegistry });
-}
-
-/**
- * Compile extended SVG path syntax to annotated output.
- * Preserves comments, shows loop iterations, and annotates function calls.
- *
- * @param source - The extended SVG path source code
- * @returns Formatted annotated output string
- *
- * @example
- * ```ts
- * import { compileAnnotated } from 'pathogen-lang';
- *
- * const output = compileAnnotated(`
- *   // Draw points
- *   for (i in 0..3) { M i 0 }
- * `);
- * // Returns formatted output with comments and loop annotations
- * ```
- */
-export function compileAnnotated(source: string): string {
-  const { program, comments } = parseWithComments(source);
-  const annotated = evaluateAnnotated(program, comments);
-  return formatAnnotated(annotated);
 }
 
 /**

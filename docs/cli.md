@@ -109,105 +109,6 @@ Both flags can be combined:
 pathogen-lang --src=debug.pathogen --print-logs --log-file=logs.json --output-svg-file=out.svg
 ```
 
-## Annotated Output
-
-Use `--annotated` to get a human-readable debug output that shows:
-- Original comments preserved in place
-- Loop iterations with line numbers
-- Function call annotations with expanded output
-- Each path command on its own line
-
-This is useful for debugging complex path generation or understanding how your code produces its output.
-
-### Basic Usage
-
-```bash
-pathogen-lang -e 'for (i in 0..3) { M i 0 }' --annotated
-```
-
-Output:
-```
-//--- for (i in 0..3) from line 1
-  //--- iteration 0
-  M 0 0
-  //--- iteration 1
-  M 1 0
-  //--- iteration 2
-  M 2 0
-  //--- iteration 3
-  M 3 0
-```
-
-### With Comments
-
-```bash
-pathogen-lang -e '// Draw points
-for (i in 0..3) { M i 0 }' --annotated
-```
-
-Output:
-```
-// Draw points
-
-//--- for (i in 0..3) from line 2
-  //--- iteration 0
-  M 0 0
-  //--- iteration 1
-  M 1 0
-  //--- iteration 2
-  M 2 0
-  //--- iteration 3
-  M 3 0
-```
-
-### Loop Truncation
-
-Long loops (>10 iterations) are automatically truncated to show the first 3 and last 3 iterations:
-
-```bash
-pathogen-lang -e 'for (i in 0..100) { M i 0 }' --annotated
-```
-
-Output:
-```
-//--- for (i in 0..100) from line 1
-  //--- iteration 0
-  M 0 0
-  //--- iteration 1
-  M 1 0
-  //--- iteration 2
-  M 2 0
-  ... 95 more iterations ...
-  //--- iteration 98
-  M 98 0
-  //--- iteration 99
-  M 99 0
-  //--- iteration 100
-  M 100 0
-```
-
-### Function Call Annotations
-
-Function calls show their name, arguments, and expanded output:
-
-```bash
-pathogen-lang -e 'circle(50, 50, 25)' --annotated
-```
-
-Output:
-```
-//--- circle(50, 50, 25) called from line 1
-  M 25 50
-  A 25 25 0 1 1 75 50
-  A 25 25 0 1 1 25 50
-```
-
-### Save to File
-
-```bash
-pathogen-lang --src=complex.svgx --annotated -o debug-output.txt
-```
-
 ## SVG Styling Options
 
 When using `--output-svg-file`, you can customize the appearance:
@@ -269,7 +170,7 @@ pathogen-lang -v
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Error (parse error, file not found, etc.) |
+| 1 | Error (parse error, file not found, unknown option, etc.) |
 
 ## File Extensions
 

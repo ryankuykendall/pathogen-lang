@@ -109,23 +109,22 @@ The keyword lists below are hand-maintained and used to drift silently. `tests/k
 5. `src/parser/ast.ts` — Add the AST node type and register it in `Node`, `Statement`, and (if it can appear in text bodies) `TextBodyItem`
 6. `src/parser/ast-builder.ts` — Handle the CST node in `buildStatement` (an unhandled node is silently dropped) and, for text bodies, in `buildTextBodyItem`
 7. `src/evaluator/index.ts` — `evaluateStatementToAccum` plus the two text walkers (`evaluateTextBlockBody` for `&{ }`, `evaluateTextBody` for `text(){ }`)
-8. `src/evaluator/annotated.ts` — BOTH dispatchers (`evaluateStatementPlain`, `evaluateStatementAnnotated`) plus its two text walkers; honor `pendingFlow`
-9. `tests/parser.test.ts` + `tests/evaluator.test.ts` + `tests/annotated.test.ts` (parity) — Add tests
-10. `src/parser/highlight.ts` — Add to `KEYWORD_NODE_NAMES` and the structural `t.controlKeyword` line (CodeMirror highlighting)
-11. `src/highlight.ts` — Add to `NODE_CLASS` (docs/blog fences, export legend, PDF)
-12. `src/language-services/completion-data-static.ts` — Add to `KEYWORD_COMPLETIONS` (hand-written; `completion-data.generated.ts` is stdlib only)
-13. `src/language-services/hover.ts` — Add to `KEYWORD_HOVER`
-14. `src/language-services/rename.ts` `NON_RENAMEABLE` and `src/language-services/code-actions.ts` `RESERVED_IDENTIFIERS`
-15. `src/language-services/diagnostics.ts` — Contextual `describeError` messages for the new node names
-16. `src/language-services/formatter.ts` — A printer case is mandatory: `formatStatement`'s default branch prints nothing, which deletes the statement on format
-17. `src/language-services/scope-analysis.ts` and `inlay-hints.ts` — Walk the new node's expressions and bodies (an unwalked body silently loses hints, references, and rename inside it)
-18. `src/language-services/symbols.ts` — Only if the construct should appear in the outline (conditionals deliberately don't)
-19. `src/evaluator/code-snippet.ts` `KEYWORDS` — Thumbnail/social-card highlighter
-20. `packages/vscode-pathogen/syntaxes/pathogen.tmLanguage.json` — Add to the TextMate keyword pattern
-21. `packages/vscode-pathogen/snippets/pathogen.code-snippets` and `playground/utils/codemirror-setup.ts` — Add snippets if templatable
-22. `CHANGELOG.md` — Include a compatibility note: every `kw<>` keyword is a reserved word and can no longer be a variable name
-23. `npm run build` to rebuild dist/
-24. **Playground:** keyword completions flow automatically through the shared `getCompletions` call in `playground/utils/cm-language-services.ts`. No playground-side wiring required.
+8. `tests/parser.test.ts` + `tests/evaluator.test.ts` — Add tests
+9. `src/parser/highlight.ts` — Add to `KEYWORD_NODE_NAMES` and the structural `t.controlKeyword` line (CodeMirror highlighting)
+10. `src/highlight.ts` — Add to `NODE_CLASS` (docs/blog fences, export legend, PDF)
+11. `src/language-services/completion-data-static.ts` — Add to `KEYWORD_COMPLETIONS` (hand-written; `completion-data.generated.ts` is stdlib only)
+12. `src/language-services/hover.ts` — Add to `KEYWORD_HOVER`
+13. `src/language-services/rename.ts` `NON_RENAMEABLE` and `src/language-services/code-actions.ts` `RESERVED_IDENTIFIERS`
+14. `src/language-services/diagnostics.ts` — Contextual `describeError` messages for the new node names
+15. `src/language-services/formatter.ts` — A printer case is mandatory: `formatStatement`'s default branch prints nothing, which deletes the statement on format
+16. `src/language-services/scope-analysis.ts` and `inlay-hints.ts` — Walk the new node's expressions and bodies (an unwalked body silently loses hints, references, and rename inside it)
+17. `src/language-services/symbols.ts` — Only if the construct should appear in the outline (conditionals deliberately don't)
+18. `src/evaluator/code-snippet.ts` `KEYWORDS` — Thumbnail/social-card highlighter
+19. `packages/vscode-pathogen/syntaxes/pathogen.tmLanguage.json` — Add to the TextMate keyword pattern
+20. `packages/vscode-pathogen/snippets/pathogen.code-snippets` and `playground/utils/codemirror-setup.ts` — Add snippets if templatable
+21. `CHANGELOG.md` — Include a compatibility note: every `kw<>` keyword is a reserved word and can no longer be a variable name
+22. `npm run build` to rebuild dist/
+23. **Playground:** keyword completions flow automatically through the shared `getCompletions` call in `playground/utils/cm-language-services.ts`. No playground-side wiring required.
 
 ### Adding a New Stdlib Function
 
@@ -179,38 +178,37 @@ Applies when adding a paint-server- or defs-like constructor that produces a nam
 
 **This is the checklist most at risk of silent drift between the three user-facing surfaces.** Each of the CLI, playground, and VS Code extension has its own render path; compiling correctly in the shared engine is only step 1 of 3. Follow every step below — especially the five-file playground chain (steps 11–15) and the VS Code preview step (step 16) — or the feature will work in the CLI but produce a blank/missing result in the other two surfaces.
 
-**Shared engine (steps 1–10):**
+**Shared engine (steps 1–9):**
 
 1. **`docs/<feature>.md` (new file) + register in `scripts/build-docs.ts` `DOC_FILES`** — docs first. Include: constructor signature, `.append()` / `.stop()` / equivalent method signatures, default attribute values, mutable properties table (with enum names), usage in styles (`fill`, `stroke`, `marker-start`, etc.), `context-stroke` / `context-fill` if applicable, generated SVG output, errors table.
 2. `src/evaluator/types.ts` — Add `<Feature>Value` interface with all attributes.
 3. `src/evaluator/index.ts` — Implement constructor, methods, property assignment with enum validation. If it resolves to `url(#id)` in styles, register the style-property name(s) in `URL_REF_PROPERTIES`. Register the defs map on `evalState` and include it in the duplicate-ID check. When serializing to `CompileResult`, add the output to the `result.<feature>s` array (e.g. `result.markers`).
-4. `src/evaluator/annotated.ts` — Parallel annotated output support.
-5. `src/api-surface.ts` — Register constructor + any new enums in the type registry.
-6. `src/language-services/completion-data-static.ts` — Add constructor and member completions.
-7. `src/language-services/scope-analysis.ts`, `inlay-hints.ts` — Recognize the constructor in scopes / parameter hints as needed.
-8. `tests/<feature>.test.ts` — Behavior, property mutation, error messages.
-9. Add the new output type to the library's `CompileResult` / `LayerOutput` types so downstream consumers (CLI, playground, VS Code) see it.
-10. `npm run build && npm run build:docs` — verify `dist/` rebuilds and the docs page compiles.
+4. `src/api-surface.ts` — Register constructor + any new enums in the type registry.
+5. `src/language-services/completion-data-static.ts` — Add constructor and member completions.
+6. `src/language-services/scope-analysis.ts`, `inlay-hints.ts` — Recognize the constructor in scopes / parameter hints as needed.
+7. `tests/<feature>.test.ts` — Behavior, property mutation, error messages.
+8. Add the new output type to the library's `CompileResult` / `LayerOutput` types so downstream consumers (CLI, playground, VS Code) see it.
+9. `npm run build && npm run build:docs` — verify `dist/` rebuilds and the docs page compiles.
 
-**Surface 1 — CLI render path (step 11):**
+**Surface 1 — CLI render path (step 10):**
 
-11. `src/svg-generator.ts` — Emit the SVG `<defs>` element with correct attributes and child paths. Follow the existing pattern used for `result.masks`, `result.clipPaths`, `result.gradients`, `result.patterns`. Elide attributes that match SVG defaults (matches the evaluator's elision — see `result.markers` precedent).
+10. `src/svg-generator.ts` — Emit the SVG `<defs>` element with correct attributes and child paths. Follow the existing pattern used for `result.masks`, `result.clipPaths`, `result.gradients`, `result.patterns`. Elide attributes that match SVG defaults (matches the evaluator's elision — see `result.markers` precedent).
 
-**Surface 2 — Playground render path (steps 12–16, the five-file chain):**
+**Surface 2 — Playground render path (steps 11–15, the five-file chain):**
 
-12. `playground/types/compiler.d.ts` — Add `<Feature>Output` type; extend `CompileResult` with `<feature>s: <Feature>Output[]`.
-13. `playground/types/store.d.ts` — Add `<feature>s` field to the store state type.
-14. `playground/state/store.ts` — Add `<feature>s: []` initializer to the default state.
-15. `playground/components/workspace-view.ts` — Forward `result.<feature>s || []` from the compile result into the preview pane payload (follow the existing `result.masks || []` precedent).
-16. `playground/components/svg-preview-pane.ts` — Add `<Feature>Def` interface mirroring the compile-result shape; extend `DefsData` with the new field; add a loop in the defs-injection section that creates a `<feature>` element per entry, populates its attributes, appends child `<path>` (or equivalent) elements, and appends the whole thing to `defsEl`. Include the new attribute in the cleanup selector on the line that clears previous-compilation defs.
+11. `playground/types/compiler.d.ts` — Add `<Feature>Output` type; extend `CompileResult` with `<feature>s: <Feature>Output[]`.
+12. `playground/types/store.d.ts` — Add `<feature>s` field to the store state type.
+13. `playground/state/store.ts` — Add `<feature>s: []` initializer to the default state.
+14. `playground/components/workspace-view.ts` — Forward `result.<feature>s || []` from the compile result into the preview pane payload (follow the existing `result.masks || []` precedent).
+15. `playground/components/svg-preview-pane.ts` — Add `<Feature>Def` interface mirroring the compile-result shape; extend `DefsData` with the new field; add a loop in the defs-injection section that creates a `<feature>` element per entry, populates its attributes, appends child `<path>` (or equivalent) elements, and appends the whole thing to `defsEl`. Include the new attribute in the cleanup selector on the line that clears previous-compilation defs.
 
-**Surface 3 — VS Code render path (step 17):**
+**Surface 3 — VS Code render path (step 16):**
 
-17. `packages/vscode-pathogen/src/preview.ts` — When the preview is functional (currently stub; see `packages/vscode-pathogen/CLAUDE.md` Readiness Status), ensure it consumes `result.<feature>s` and renders via `src/svg-generator.ts`. If the preview is still a stub, file the TODO in the extension's Readiness Status but do **not** declare the feature shipped until this surface is wired.
+16. `packages/vscode-pathogen/src/preview.ts` — When the preview is functional (currently stub; see `packages/vscode-pathogen/CLAUDE.md` Readiness Status), ensure it consumes `result.<feature>s` and renders via `src/svg-generator.ts`. If the preview is still a stub, file the TODO in the extension's Readiness Status but do **not** declare the feature shipped until this surface is wired.
 
 **Internal (optional, not a substitute for the above):**
 
-18. `project-docs/<feature>/` — demo `.pathogen` files. **Not a substitute for any of the above.** These are internal artifacts only.
+17. `project-docs/<feature>/` — demo `.pathogen` files. **Not a substitute for any of the above.** These are internal artifacts only.
 
 **Before declaring done**, follow the Post-Change Verification Checklist below — specifically the three-surface parity diff.
 

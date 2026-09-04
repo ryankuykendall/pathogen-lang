@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { compile, compileAnnotated } from '../src';
+import { compile } from '../src';
 import { getStructDescriptor } from '../src/evaluator/struct-properties';
 
 import type { Value } from '../src/evaluator/types';
 
 /**
  * Drift guard: for every property the struct descriptor exposes, destructuring
- * and member access must produce identical results in BOTH evaluators. The
- * descriptor is the single source of truth — this test pins the equivalence
- * mechanically so new properties are covered automatically. Numeric properties
- * are additionally value-checked through the annotated evaluator by routing
- * them into path output.
+ * and member access must produce identical results. The descriptor is the
+ * single source of truth — this test pins the equivalence mechanically so new
+ * properties are covered automatically. Numeric properties are additionally
+ * value-checked by routing them into path output.
  */
 
 interface StructCase {
@@ -106,20 +105,18 @@ describe('struct-properties drift guard', () => {
       }
 
       for (const key of numericKeys) {
-        it(`'${key}' has annotated-evaluator parity with member access`, () => {
-          const viaDestructuring = compileAnnotated(`${setup}\nlet { ${key}: d } = v;\nM d 0`);
-          const viaMember = compileAnnotated(`${setup}\nlet d = v.${key};\nM d 0`);
-          expect(viaDestructuring).toContain('M ');
+        it(`'${key}' feeds a path argument identically via destructuring and member access`, () => {
+          const viaDestructuring = compile(`${setup}\nlet { ${key}: d } = v;\nM d 0`).layers[0].data;
+          const viaMember = compile(`${setup}\nlet d = v.${key};\nM d 0`).layers[0].data;
+          expect(viaDestructuring).toMatch(/^M -?[\d.e+-]+ 0$/);
           // Both routes must emit the identical M command with the real value
-          const mLine = (s: string) => s.split('\n').find((l) => l.trim().startsWith('M '));
-          expect(mLine(viaDestructuring)).toBeDefined();
-          expect(mLine(viaDestructuring)).toBe(mLine(viaMember));
+          expect(viaDestructuring).toBe(viaMember);
         });
       }
 
-      it('destructuring all properties works in the annotated evaluator', () => {
+      it('destructuring all properties at once works', () => {
         const pattern = keys.map((k, i) => `${k}: d${i}`).join(', ');
-        expect(() => compileAnnotated(`${setup}\nlet { ${pattern} } = v;`)).not.toThrow();
+        expect(() => compile(`${setup}\nlet { ${pattern} } = v;`)).not.toThrow();
       });
     });
   }

@@ -1343,3 +1343,28 @@ describe('switch inside text bodies', () => {
     expect(vals[0]).toBe('4');
   });
 });
+
+describe('text statements nested in if inside a text block', () => {
+  it('text inside if-inside-for is kept (elementCount counts it)', () => {
+    const src = `let tb = &{
+  for (i in 0..2) {
+    if (i > 0) {
+      text(calc(i * 10), 0)\`n\${i}\`;
+    }
+  }
+};
+M calc(tb.elementCount * 10) 0`;
+    expect(compile(src).layers[0].data).toBe('M 20 0');
+  });
+
+  it('text inside a bare if is kept', () => {
+    const src = `let show = 1;
+let tb = &{
+  if (show > 0) {
+    text(10, 0)\`hello\`;
+  }
+};
+M calc(tb.elementCount * 10) 0`;
+    expect(compile(src).layers[0].data).toBe('M 10 0');
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compile, compileAnnotated } from '../src/index';
+import { compile } from '../src/index';
 import { compilePath } from './helpers';
 
 /**
@@ -113,49 +113,5 @@ describe('path round-trip: drawTo()', () => {
     `);
     expect(result.layers[0].data).toBe('M 0 0 h 1e-7');
     expect(result.logs[0].parts[0].value).toBe('1e-7');
-  });
-});
-
-describe('path round-trip: annotated-mode divergences (locked; convergence on formatNum + origin bridge is a deferred, deliberate follow-up)', () => {
-  it('CHARACTERIZATION: annotated draw() does NOT bridge the origin gap and rounds via toFixed(4)', () => {
-    // annotated.ts has its own naive commandsToRelativeD: no bridgeOriginGap
-    // (the `m 5 0` bridge from the normal evaluator is absent — the filleted
-    // shape starts at the wrong point relative to the cursor) and numbers are
-    // toFixed(4)-trimmed (`5` instead of `5.000000000000001`). Both are
-    // existing divergences from the normal evaluator, locked here so Phase 1's
-    // adoption of the shared serializer changes them only deliberately.
-    const output = compileAnnotated(`
-      let box = @{ h 60 v 40 h -60 z };
-      let f = box.fillet(5);
-      M 10 10
-      f.draw()
-    `);
-    // Byte-locked: note the missing `m 5 0` bridge after the header line, and
-    // `5` where the normal evaluator emits `5.000000000000001`.
-    expect(output).toBe(
-      'M 10 10\n//--- f.draw() called from line 5\n  l 50 0\n  a 5 5 0 0 1 5 5\n  l 0 30\n' +
-        '  a 5 5 0 0 1 -5 5\n  l -50 0\n  a 5 5 0 0 1 -5 -5\n  l 0 -30\n  a 5 5 0 0 1 5 -5\n  z',
-    );
-  });
-
-  it('CHARACTERIZATION: annotated drawTo() rounds M coords with toFixed(4)', () => {
-    const output = compileAnnotated(`
-      let p = @{ h 10.123456789 };
-      p.drawTo(1.234567891, 2);
-    `);
-    expect(output).toContain('M 1.2346 2');
-    expect(output).toContain('h 10.1235');
-  });
-
-  it('annotated ProjectedPath drawTo re-projects with toFixed(4) M coords', () => {
-    const output = compileAnnotated(`
-let p = @{ h 10 v 5 };
-let proj = p.drawTo(0, 0);
-proj.drawTo(100.123456789, 100);
-`);
-    expect(output).toBe(
-      '//--- p.drawTo(0, 0) called from line 3\n  M 0 0\n  h 10\n  v 5\n' +
-        '//--- proj.drawTo(100.123456789, 100) called from line 4\n  M 100.1235 100\n  h 10\n  v 5',
-    );
   });
 });

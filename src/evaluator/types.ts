@@ -1035,10 +1035,7 @@ export interface UserFunction {
   // Lambdas capture their definition scope (lexical/closure semantics).
   // Named fns leave this undefined and resolve free names in the caller's
   // scope (dynamic scoping) — the historical behavior, kept deliberately.
-  // Typed as unknown because the two evaluators (index.ts / annotated.ts)
-  // have parallel Scope types; each casts back to its own Scope at the two
-  // places it reads this. A lambda value never crosses evaluators at runtime.
-  closure?: unknown;
+  closure?: Scope;
   isLambda?: true;
 }
 

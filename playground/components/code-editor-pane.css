@@ -22,7 +22,7 @@
 /* Wide-desktop caps: past a 16" MacBook Pro (1728px logical) the 50/50 split
    wastes preview space, so the editor stops growing at 80ch, stepping up on
    larger desktop displays. max-width (not a fixed basis) so the pane still
-   shrinks when the annotated/console panes open. The ch unit must resolve
+   shrinks when the console pane opens. The ch unit must resolve
    against the editor's actual metrics (Inconsolata 14px, ~7px advance), not
    the inherited sans font — hence the font declaration on the same rule.
    Nothing visible inherits it: the pane's only child is #editor-container

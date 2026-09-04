@@ -18,7 +18,6 @@ export function buildDebugCapture(): string {
   const layers = (state.layers || []) as LayerOutput[];
   const layerVisibility = (state.layerVisibility || {}) as Record<string, boolean>;
   const logs = (state.logs || []) as LogEntry[];
-  const annotatedOutput = state.annotatedOutput || 'Not available \u2014 open Annotated pane to capture';
   const calledFunctions = (state.calledStdlibFunctions || []).join(', ') || 'none';
 
   // Build layers table
@@ -91,11 +90,6 @@ ${layerDetails}
 ## Log Output
 \`\`\`
 ${logOutput}\`\`\`
-
-## Annotated Output
-\`\`\`
-${annotatedOutput}
-\`\`\`
 
 ## Canvas Settings
 - Width: ${state.width}, Height: ${state.height}

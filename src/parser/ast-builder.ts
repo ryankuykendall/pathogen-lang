@@ -182,8 +182,7 @@ export function buildAST(tree: Tree, source: string): Program {
 }
 
 /**
- * Build a Program with comments interleaved in the body.
- * Used by compileAnnotated() — replaces the old parseWithComments().
+ * Build a Program with comments interleaved in the body (parseWithComments).
  */
 export function buildASTWithComments(tree: Tree, source: string): { program: Program; comments: Comment[] } {
   // Save/zero/restore — see buildAST for why (re-entrancy via parseExpressionString)

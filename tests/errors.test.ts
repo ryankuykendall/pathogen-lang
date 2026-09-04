@@ -857,15 +857,6 @@ describe('reserved unit-suffix names: pi, deg, rad (binding coverage matrix)', (
     }
   }
 
-  it('rejects the names in annotated mode too (no F2-style divergence)', async () => {
-    const { compileAnnotated } = await import('../src');
-    for (const name of NAMES) {
-      expect(() => compileAnnotated(`let ${name} = 1;`)).toThrow(/reserved.*unit suffix/s);
-      expect(() => compileAnnotated(`for (${name} in 0..2) { M 0 0 }`)).toThrow(/reserved.*unit suffix/s);
-      expect(() => compileAnnotated(`fn ${name}(len) { h calc(len) }`)).toThrow(/reserved.*unit suffix/s);
-    }
-  });
-
   it('standalone reference errors name the suffix rule, per name', () => {
     expect(() => compile('M 0 0\nL calc(pi) 40')).toThrow(/unit suffix.*0\.5pi.*PI\(\)/s);
     expect(() => compile('M 0 0\nL calc(deg) 40')).toThrow(/unit suffix.*90deg.*deg\(/s);
@@ -875,12 +866,6 @@ describe('reserved unit-suffix names: pi, deg, rad (binding coverage matrix)', (
 
   it('standalone reference in bare path-argument position errors too', () => {
     expect(() => compile('M 0 0\nh deg')).toThrow(/unit suffix/);
-  });
-
-  it('annotated mode rejects standalone references identically', async () => {
-    const { compileAnnotated } = await import('../src');
-    expect(() => compileAnnotated('M 0 0\nL calc(pi) 40')).toThrow(/unit suffix/);
-    expect(() => compileAnnotated('let x = deg;')).toThrow(/unit suffix/);
   });
 
   it('call position and suffix position stay legal', () => {

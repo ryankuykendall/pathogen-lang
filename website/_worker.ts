@@ -1193,7 +1193,7 @@ async function renderHomepage(request: Request, env: Env, _url: URL): Promise<Re
         <a class="dev-tool" href="https://www.npmjs.com/package/pathogen-lang" target="_blank" rel="noopener">
           <p class="tool-eyebrow">${cliIcon}<span>CLI · Node</span></p>
           <h3 class="tool-title">Compile anywhere.</h3>
-          <p class="tool-body">Pipe stdin, eval inline, or compile a file. Output as a path string, a full SVG, or an annotated debug view.</p>
+          <p class="tool-body">Pipe stdin, eval inline, or compile a file. Output as a path string or a complete SVG file.</p>
           <div class="tool-cmd"><span class="prompt">$</span> <span class="cmd">npm install</span> -g pathogen-lang</div>
         </a>
 

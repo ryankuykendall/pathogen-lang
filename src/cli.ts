@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { compile, compileAnnotated, parse, createFontRegistry, addFont, ensureOpentype, generateSvg, resolveFontDirectives } from '.';
+import { compile, parse, createFontRegistry, addFont, ensureOpentype, generateSvg, resolveFontDirectives } from '.';
 import type { SvgGeneratorOptions } from './svg-generator';
 
 import type { CompileResult, CompileOptions, FontRegistry, LogEntry } from '.';
@@ -16,7 +16,6 @@ interface CliOptions {
   stroke?: string;
   fill?: string;
   strokeWidth?: string;
-  annotated?: boolean;
   toFixed?: number;
   renderGpu?: boolean;
   scale?: number;
@@ -41,7 +40,6 @@ Options:
   --src=<file>                   Input source file
   -o, --output <file>            Write path output to file
   --output-svg-file=<file>       Output as complete SVG file
-  --annotated                    Output annotated/debug format with comments
   --viewBox=<box>                SVG viewBox (default: "0 0 200 200").
                                  Overridden when the source has a
                                  'define ViewBox(...)' statement.
@@ -400,12 +398,6 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
       continue;
     }
 
-    if (arg === '--annotated') {
-      options.annotated = true;
-      i++;
-      continue;
-    }
-
     if (arg === '--print-logs') {
       options.printLogs = true;
       i++;
@@ -465,6 +457,12 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
         console.error(`Error: Could not read file '${arg}'`);
         process.exit(1);
       }
+    } else {
+      // A dash-prefixed argument no branch above recognized. Failing here
+      // (rather than ignoring it) keeps a mistyped or retired flag such as
+      // --annotated from silently producing the default output.
+      console.error(`Error: Unknown option '${arg}'. Run with --help for the list of options.`);
+      process.exit(1);
     }
     i++;
   }
@@ -856,20 +854,6 @@ async function main() {
   const { source, options, outputFile, sourceFile } = parseArgs(args);
 
   try {
-    // Annotated output mode
-    if (options.annotated) {
-      const annotatedOutput = compileAnnotated(source);
-
-      if (outputFile) {
-        writeFileSync(outputFile, annotatedOutput);
-        console.log(`Annotated output written to: ${outputFile}`);
-        return;
-      }
-
-      console.log(annotatedOutput);
-      return;
-    }
-
     const fontRegistry = await loadFontsFromDirectives(source, sourceFile);
     const compileOptions: CompileOptions = {
       ...(options.toFixed != null ? { toFixed: options.toFixed } : {}),

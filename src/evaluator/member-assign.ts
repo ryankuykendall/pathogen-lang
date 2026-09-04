@@ -12,12 +12,11 @@ function isColorValue(value: unknown): value is ColorValue {
 }
 
 /**
- * Member-assignment (`obj.prop = value`) validation semantics shared by both
- * evaluators, so the annotated evaluator rejects exactly what normal
- * compilation rejects. Target types are structural — only the fields each
- * function touches — because the evaluators' local value shapes differ in
- * unrelated fields. `fail` lets each evaluator wrap the message in its own
- * formatError/getLine plumbing.
+ * Member-assignment (`obj.prop = value`) validation semantics, kept apart
+ * from the evaluator so the rules read as one list. Target types are
+ * structural — only the fields each function touches — so this module has
+ * no dependency on the evaluator's Value union. `fail` lets the caller wrap
+ * the message in its own formatError/getLine plumbing.
  */
 
 /**
@@ -48,7 +47,7 @@ export interface GradientAssignTarget {
 }
 
 /**
- * Gradient property-assignment semantics shared by both evaluators.
+ * Gradient property-assignment semantics (kept beside the other member-assignment rules).
  * `valueExpr` is the source expression of the assigned value — needed for the
  * ConicGradient from/to angle-unit enforcement, which is a property of how the
  * value is written, not of its runtime number.

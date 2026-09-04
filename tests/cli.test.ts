@@ -375,46 +375,6 @@ describe('CLI', () => {
     });
   });
 
-  describe('annotated output', () => {
-    it('outputs annotated format with --annotated flag', () => {
-      const result = runCli(['-e', 'for (i in 0..3) { M i 0 }', '--annotated']);
-      expect(result.stdout).toContain('//--- for (i in 0..3)');
-      expect(result.stdout).toContain('//--- iteration 0');
-      expect(result.stdout).toContain('//--- iteration 1');
-    });
-
-    it('preserves comments in annotated output', () => {
-      const result = runCli(['-e', '// Test comment\nM 0 0', '--annotated']);
-      expect(result.stdout).toContain('// Test comment');
-      expect(result.stdout).toContain('M 0 0');
-    });
-
-    it('shows function call annotations', () => {
-      const result = runCli(['-e', 'circle(50, 50, 25);', '--annotated']);
-      expect(result.stdout).toContain('//--- circle(50, 50, 25)');
-    });
-
-    it('truncates long loops in annotated output', () => {
-      const result = runCli(['-e', 'for (i in 0..20) { M i 0 }', '--annotated']);
-      expect(result.stdout).toContain('//--- iteration 0');
-      expect(result.stdout).toContain('more iterations');
-      expect(result.stdout).toContain('//--- iteration 19');
-    });
-
-    it('writes annotated output to file with -o', () => {
-      const outputFile = join(TMP_DIR, 'annotated-output.txt');
-      if (existsSync(outputFile)) unlinkSync(outputFile);
-
-      runCli(['-e', 'for (i in 0..3) { M i 0 }', '--annotated', '-o', outputFile]);
-      expect(existsSync(outputFile)).toBe(true);
-
-      const content = readFileSync(outputFile, 'utf-8');
-      expect(content).toContain('//--- for (i in 0..3)');
-
-      unlinkSync(outputFile);
-    });
-  });
-
   describe('--to-fixed option', () => {
     it('rounds decimals with --to-fixed=2', () => {
       const result = runCli(['-e', 'let x1 = calc(10 / 3); let x2 = calc(20 / 7); M x1 x2', '--to-fixed=2']);
@@ -810,5 +770,14 @@ g[0].draw()
 
       unlinkSync(inputFile);
     });
+  });
+});
+
+describe('unknown options', () => {
+  it('rejects an unrecognized flag instead of silently ignoring it', () => {
+    const result = runCli(['-e', 'M 0 0', '--annotated']);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Unknown option '--annotated'");
+    expect(result.stdout).toBe('');
   });
 });

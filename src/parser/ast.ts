@@ -1,13 +1,14 @@
 // AST Node Types for pathogen-lang
 
-// Source location for annotated output
+// Source location (1-based line/column plus absolute offset)
 export interface SourceLocation {
   line: number;
   column: number;
   offset: number;
 }
 
-// Comment node for preserving comments in annotated output
+// Comment node — statement-position comments survive into the AST so the
+// formatter can re-emit them; the evaluator ignores them.
 export interface Comment {
   type: 'Comment';
   text: string;

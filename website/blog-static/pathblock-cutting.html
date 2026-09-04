@@ -542,7 +542,6 @@ knifeLabel.apply {
 <li><strong>Dead-end strokes.</strong> As above — a stroke that stops inside solid material leaves that region whole. <code>cut()</code> never invents geometry to finish your stroke for you.</li>
 <li><strong>Almost-touching endpoints are forgiven.</strong> If a stroke&#39;s endpoint lands <em>on</em> the boundary — or within about half a unit of it at typical drawing scales — it snaps onto the boundary and the cut completes there, like a T-junction. The same forgiveness applies to strokes passing through a corner vertex.</li>
 <li><strong>Grazes and edge-riders.</strong> A stroke that only touches the boundary tangentially, or runs along an edge without crossing it, doesn&#39;t cut.</li>
-<li><strong><code>--annotated</code> debug mode doesn&#39;t support <code>cut()</code> yet.</strong> The CLI&#39;s annotated output reports a clear error; everything else — normal CLI compilation, the playground, the VS Code preview — works.</li>
 <li><strong>Piece order is deterministic but unspecified.</strong> The same program always produces the same array, but don&#39;t assume which index is which piece — inspect pieces (<code>boundingBox()</code>, <a href="/docs#path-blocks-pathblock"><code>subPathCount</code></a>) or just iterate.</li>
 </ul>
 <p>The full contract lives in the <a href="/docs#path-blocks-cutting-paths">Cutting Paths documentation</a>.</p>

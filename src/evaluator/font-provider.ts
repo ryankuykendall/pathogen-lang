@@ -377,7 +377,7 @@ const MISSING_GLYPH_WARN_LIMIT = 20;
 
 /**
  * Convert the recorded misses into the CompileResult report plus one [warn]
- * log line per family:weight group. Shared by both evaluators' result
+ * log line per family:weight group. Shared by the evaluator's result
  * assembly so the wording can't drift.
  */
 export function buildMissingGlyphReports(

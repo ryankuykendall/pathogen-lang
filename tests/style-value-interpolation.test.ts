@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compile, compileAnnotated } from '../src';
+import { compile } from '../src';
 
 /**
  * Bare `${expr}` interpolation in style-block VALUES (Broken Lines friction
@@ -157,17 +157,11 @@ describe('bare ${} interpolation in style values', () => {
     expect(styles['fill']).toBe('red');
   });
 
-  it('annotated evaluator parity', () => {
-    const src = `
-      let cell = 12;
-      let capName = 'round';
-      let l = PathLayer('a') ${'${'}
-        fill: red;
-        stroke-linecap: ${'${'}capName};
-        stroke-dasharray: ${'${'}cell} ${'${'}cell};
-      };
-      l.apply { M 0 0 h 10 }
-    `;
-    expect(() => compileAnnotated(src)).not.toThrow();
+  it('splices template fragments fused to units inside a filter value', () => {
+    const src = `let softness = 1.5;
+define PathLayer('a') ${'${'} filter: blur(\`${'${'}softness}\`px) brightness(\`${'${'}1.2}\`); }
+layer('a').apply { M 0 0 }`;
+    const layer = compile(src).layers.find((l) => l.name === 'a')!;
+    expect(layer.styles.filter).toBe('blur(1.5px) brightness(1.2)');
   });
 });

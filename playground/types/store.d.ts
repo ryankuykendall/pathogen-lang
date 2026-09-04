@@ -54,7 +54,6 @@ export interface StoreState {
 
   // Compilation results
   pathData: string;
-  annotatedOutput: string;
   logs: LogEntry[];
   error: string | null;
   layers: LayerOutput[];
@@ -98,7 +97,6 @@ export interface StoreState {
   panY: number;
 
   // Pane visibility
-  annotatedOpen: boolean;
   consoleOpen: boolean;
   docsOpen: boolean;
   inspectorOpen: boolean;

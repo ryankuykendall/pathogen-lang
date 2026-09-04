@@ -6,7 +6,6 @@ import { defaultCode, examples } from '../utils/examples.js';
 
 // Import all sub-components
 import './code-editor-pane.js';
-import './annotated-pane.js';
 import './console-pane.js';
 import './docs-panel.js';
 import './inspector-panel.js';
@@ -60,8 +59,6 @@ export class WorkspaceView extends HTMLElement {
   private _handleCopySvg: (() => void) | null = null;
 
   private _handleFormatDocument: (() => void) | null = null;
-
-  private _handleToggleAnnotated: (() => void) | null = null;
 
   private _handleToggleConsole: (() => void) | null = null;
 
@@ -289,10 +286,6 @@ export class WorkspaceView extends HTMLElement {
     return this.shadowRoot!.querySelector('svg-preview-pane') as any;
   }
 
-  get annotatedPane(): HTMLElement & { open: () => void; toggle: () => void; isOpen: boolean; content: string } {
-    return this.shadowRoot!.querySelector('annotated-pane') as any;
-  }
-
   get consolePane(): HTMLElement & { open: () => void; toggle: () => void; logs: unknown[] } {
     return this.shadowRoot!.querySelector('console-pane') as any;
   }
@@ -445,9 +438,6 @@ export class WorkspaceView extends HTMLElement {
     }
 
     // Initialize panes based on store state
-    if (store.get('annotatedOpen') as boolean) {
-      this.annotatedPane.open();
-    }
     if (store.get('consoleOpen') as boolean) {
       this.consolePane.open();
     }
@@ -594,7 +584,6 @@ export class WorkspaceView extends HTMLElement {
     // Precision changes from footer (requires recompilation)
     this.shadowRoot!.addEventListener('precision-change', () => {
       this.updatePreview();
-      this.updateAnnotatedOutput();
 
       // Save preferences to backend (width/height now live in source via define ViewBox)
       const preferences = {
@@ -655,16 +644,6 @@ export class WorkspaceView extends HTMLElement {
       }
     };
     document.addEventListener('copy-svg', this._handleCopySvg);
-
-    this._handleToggleAnnotated = (): void => {
-      if (store.get('currentView') === 'workspace') {
-        this.annotatedPane.toggle();
-        if (this.annotatedPane.isOpen) {
-          this.updateAnnotatedOutput();
-        }
-      }
-    };
-    document.addEventListener('toggle-annotated', this._handleToggleAnnotated);
 
     this._handleToggleConsole = (): void => {
       if (store.get('currentView') === 'workspace') {
@@ -736,7 +715,6 @@ export class WorkspaceView extends HTMLElement {
     this._handleRefreshPreview = (): void => {
       if (store.get('currentView') === 'workspace') {
         this.updatePreview();
-        this.updateAnnotatedOutput();
       }
     };
     document.addEventListener('refresh-preview', this._handleRefreshPreview);
@@ -926,7 +904,6 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleFormatDocument) document.removeEventListener('format-document', this._handleFormatDocument);
     if (this._handleCopyCode) document.removeEventListener('copy-code', this._handleCopyCode);
     if (this._handleCopySvg) document.removeEventListener('copy-svg', this._handleCopySvg);
-    if (this._handleToggleAnnotated) document.removeEventListener('toggle-annotated', this._handleToggleAnnotated);
     if (this._handleToggleConsole) document.removeEventListener('toggle-console', this._handleToggleConsole);
     if (this._handleToggleInspector) document.removeEventListener('toggle-inspector', this._handleToggleInspector);
     if (this._handleFullscreenChange) document.removeEventListener('fullscreen-change', this._handleFullscreenChange);
@@ -1058,7 +1035,6 @@ export class WorkspaceView extends HTMLElement {
 
     this._debounceTimer = setTimeout(() => {
       this.updatePreview();
-      this.updateAnnotatedOutput();
     }, delay);
   }
 
@@ -1227,32 +1203,6 @@ export class WorkspaceView extends HTMLElement {
     }
   }
 
-  async updateAnnotatedOutput(): Promise<void> {
-    if (!this.annotatedPane.isOpen) return;
-
-    const code = (store.get('code') as string) || this.editorPane.code;
-    const compilationId = store.get('compilationId') as number;
-
-    // Check if this compilation is stale
-    const isStale = (id: number): boolean => store.get('compilationId') !== id;
-
-    try {
-      const annotated = await compilerWorker.compileAnnotated(code, compilationId, isStale);
-
-      // Don't update if stale
-      if (isStale(compilationId)) return;
-
-      this.annotatedPane.content = annotated as string;
-      store.set('annotatedOutput', annotated as string);
-    } catch (e: any) {
-      // Don't update if stale
-      if (e.message === 'Stale result') return;
-      if (isStale(compilationId)) return;
-
-      this.annotatedPane.content = `// Error: ${e.message}`;
-    }
-  }
-
   showError(message: string): string {
     // Try structured diagnostics via getDiagnostics first
     const { StringTextDocument, getDiagnostics } = window.PathogenLang;
@@ -1411,7 +1361,6 @@ export class WorkspaceView extends HTMLElement {
 
       <playground-main>
         <code-editor-pane></code-editor-pane>
-        <annotated-pane></annotated-pane>
         <console-pane></console-pane>
         <svg-preview-pane></svg-preview-pane>
         <inspector-panel></inspector-panel>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compile, compileAnnotated } from '../src';
+import { compile } from '../src';
 import { compilePath } from './helpers';
 
 /**
@@ -818,32 +818,5 @@ describe('ProjectedPath receivers', () => {
     `);
     expect(num(logs[0])).toBeCloseTo(110, 3);
     expect(num(logs[1])).toBeCloseTo(20, 3);
-  });
-});
-
-describe('annotated evaluator parity', () => {
-  it('dash(), outline(), and startAt() all evaluate under compileAnnotated', () => {
-    const src = `
-      let p = @{ h 100 v 100 h -100 z };
-      let pieces = p.dash(${'${'} stroke-dasharray: 50 50; });
-      let solid = pieces[0].path.outline(${'${'} stroke-width: 10; stroke-linecap: round; });
-      let rotated = p.startAt(25%);
-      M 0 0
-      solid.draw();
-      M 0 0
-      rotated.draw();
-    `;
-    expect(() => compileAnnotated(src)).not.toThrow();
-  });
-
-  it('annotated and main evaluators agree on dash piece counts', () => {
-    const src = `
-      let p = @{ h 100 };
-      let pieces = p.dash(${'${'} stroke-dasharray: 10 10; });
-      log(pieces.length);
-    `;
-    const main = compile(src);
-    expect(String(main.logs[0].parts[0].value)).toBe('10');
-    expect(() => compileAnnotated(src)).not.toThrow();
   });
 });

@@ -1,11 +1,11 @@
 // Iteration plan for `for (i in start..end)` and `for (i in start..<end)`,
-// shared by every range-loop site in both evaluators (statement bodies and
+// shared by every range-loop site in the evaluator (statement bodies and
 // the text-body walkers) so the inclusive/half-open rule lives once.
 
 export interface RangePlan {
   /** true when counting up (start <= end); a half-open empty range counts as ascending. */
   ascending: boolean;
-  /** Exact number of iterations the loop will run (used for the iteration-limit guard and annotated truncation). */
+  /** Exact number of iterations the loop will run (used for the iteration-limit guard). */
   iterations: number;
   /** +1 or -1 */
   step: 1 | -1;

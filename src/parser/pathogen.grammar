@@ -460,8 +460,8 @@ VariableName { Identifier }
 @skip { whitespace | LineComment }
 
 // LineComment is skipped (not preserved in tree). Comment nodes in statements
-// are preserved for the annotated view. Both use "//" syntax — the parser
-// tries Comment first (in statement position), LineComment handles the rest.
+// are preserved so the formatter can re-emit them. Both use "//" syntax — the
+// parser tries Comment first (in statement position), LineComment handles the rest.
 
 @tokens {
   whitespace { @whitespace+ }

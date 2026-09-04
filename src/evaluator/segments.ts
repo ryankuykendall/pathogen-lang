@@ -1,5 +1,5 @@
 /**
- * Shared structured-path-record machinery for both evaluators.
+ * Structured-path-record machinery shared by the evaluator and the render pipeline.
  *
  * A PathStore pairs the byte-exact string fragments that the emit path joins
  * into `LayerOutput.data` with the structured commands behind them. During
@@ -294,9 +294,8 @@ export function findLabeledRun(commands: PathBlockCommand[], label: string): Pat
 }
 
 /** Identifier-shaped label names keep all punctuation free for the
- *  query language. Pure core shared by BOTH evaluators (F2 parity —
- *  annotated must reject the same names compile() rejects); the
- *  callers wrap with their own line formatting. Returns the error
+ *  query language. Pure core: the callers wrap with their own line
+ *  formatting. Returns the error
  *  message, or null when the name is valid. */
 const LABEL_IDENT = /^[A-Za-z][A-Za-z0-9_-]*$/;
 
@@ -493,6 +492,6 @@ export function commandsToPathData(commands: PathBlockCommand[]): string {
 }
 
 // Path-string parsing moved to the shared path-data module (single
-// cursor-based tokenizer for both evaluators); re-exported here so existing
+// cursor-based tokenizer); re-exported here so existing
 // importers keep working.
 export { parsePathStringAt, parsePathStringToCommands } from './path-data';

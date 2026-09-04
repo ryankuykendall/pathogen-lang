@@ -9,7 +9,7 @@
  * precision, forever.
  *
  * Used by the playground's Export with Legend "Precision" option; purely
- * additive — the evaluators' own full-precision serialization is untouched.
+ * additive — the evaluator's own full-precision serialization is untouched.
  */
 import { commandsToAbsoluteD, parsePathDataExpanded } from './path-data';
 

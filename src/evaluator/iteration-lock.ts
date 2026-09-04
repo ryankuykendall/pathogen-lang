@@ -1,9 +1,7 @@
 // Iteration lock for arrays: while .map/.filter/.reduce/.sort or a for-each
 // loop iterates an array, mutating it (push/pop/shift/unshift, arr[i] = x)
-// throws. Shared by both evaluators — their ArrayValue types are separate
-// declarations (annotated.ts must keep its own Value union, see the comment
-// near annotated.ts's local type block) but structurally identical, so this
-// module works on the structural shape only.
+// throws. This module works on the structural shape only so it has no
+// dependency on the evaluator's Value union.
 //
 // The lock is a COUNTER, not a boolean: nested read-only iteration of the
 // same array (arr.filter {|x| ... arr.map {...} ...}) is legal, and each

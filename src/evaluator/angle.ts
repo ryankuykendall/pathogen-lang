@@ -4,7 +4,7 @@ import { ANGLE_PRESERVING_ARGS } from '../stdlib/angle-preserving';
 import type { AngleValue } from './types';
 
 /**
- * First-class Angle value helpers, shared by both evaluators (like
+ * First-class Angle value helpers, shared by the evaluator and the stdlib (like
  * struct-properties.ts and member-assign.ts). Radians are the canonical
  * measure; the written unit survives only for display.
  */
@@ -42,7 +42,7 @@ export function radiansToTurnsSnapped(radians: number): number {
 
 /**
  * Display an Angle in its unit: 90deg, 0.5pi, 1.5708rad, 0.25turns.
- * Used by template literals and log() in both evaluators.
+ * Used by template literals and log().
  */
 export function formatAngleForDisplay(a: AngleValue): string {
   if (a.unit === 'deg') return `${formatNum(radiansToDegreesSnapped(a.radians))}deg`;
@@ -57,7 +57,7 @@ export function formatAngleForDisplay(a: AngleValue): string {
  * re-wrapping the numeric result as an AngleValue when the function is
  * angle-preserving (see stdlib/angle-preserving.ts) and an Angle flowed into
  * one of its value-carrying slots. The display unit comes from the first such
- * Angle argument. Shared by both evaluators' stdlib dispatch.
+ * Angle argument. Used by the evaluator's stdlib dispatch.
  */
 export function callStdlibPreservingAngles(
   name: string,

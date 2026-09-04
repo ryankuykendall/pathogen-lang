@@ -14,7 +14,7 @@ interface URLState {
   ge?: boolean;
   gc?: string;
   gs?: number;
-  ao?: boolean;
+  ao?: boolean; // legacy: annotated pane (removed); still accepted on read
   co?: boolean;
   zoom?: number;
   panX?: number;
@@ -38,7 +38,6 @@ export function encodeState(state: Record<string, unknown>): string {
     ge: state.gridEnabled as boolean,
     gc: state.gridColor as string,
     gs: state.gridSize as number,
-    ao: state.annotatedOpen as boolean,
     co: state.consoleOpen as boolean,
     zoom: state.zoomLevel as number,
     panX: state.panX as number,
@@ -85,7 +84,7 @@ export function applyURLState(urlState: URLState | null, store: Storelike): stri
   if (urlState.ge !== undefined) updates.gridEnabled = urlState.ge;
   if (urlState.gc) updates.gridColor = urlState.gc;
   if (urlState.gs) updates.gridSize = urlState.gs;
-  if (urlState.ao) updates.annotatedOpen = urlState.ao;
+  // `ao` (annotated pane open) survives in older share links; tolerated and ignored.
   if (urlState.co) updates.consoleOpen = urlState.co;
   if (urlState.zoom) updates.zoomLevel = urlState.zoom;
   if (urlState.panX) updates.panX = urlState.panX;

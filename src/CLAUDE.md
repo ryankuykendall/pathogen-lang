@@ -1,6 +1,6 @@
 # Compiler & CLI
 
-TypeScript compiler that parses extended SVG path syntax and evaluates it to SVG path strings, multi-layer output, text elements, and annotated debug output.
+TypeScript compiler that parses extended SVG path syntax and evaluates it to SVG path strings, multi-layer output, and text elements.
 
 ## Source Structure
 
@@ -34,17 +34,15 @@ src/
 │   ├── code-actions.ts           # getCodeActions (quick fixes for diagnostics)
 │   └── inlay-hints.ts            # getInlayHints (parameter names, type hints)
 ├── evaluator/
-│   ├── index.ts       # Main evaluator → SVG path strings, layers, text
-│   ├── annotated.ts   # Annotated output with comments & loop annotations
+│   ├── index.ts       # Evaluator → SVG path strings, layers, text
 │   ├── context.ts     # Path context tracking (position, subpath start, command history)
-│   ├── format.ts      # Number formatting utilities (toFixed)
-│   └── formatter.ts   # Annotated output formatting
+│   └── format.ts      # Number formatting utilities (toFixed)
 ├── stdlib/
 │   ├── index.ts       # Combined exports + contextAwareFunctions set
 │   ├── math.ts        # Math/trig/interpolation functions
 │   └── path.ts        # Path helpers (circle, rect, polygon, star, etc.)
-├── cli.ts             # CLI entry point (file, stdin, inline, --output-svg-file, --annotated)
-├── index.ts           # Library exports (compile, compileAnnotated, compileWithContext)
+├── cli.ts             # CLI entry point (file, stdin, inline, --output-svg-file, --print-logs)
+├── index.ts           # Library exports (compile, compileWithContext)
 └── worker.ts          # Web Worker entry point for async compilation
 ```
 
@@ -56,7 +54,6 @@ tests/
 ├── parser.test.ts                  # Parser unit tests
 ├── evaluator.test.ts               # Evaluator/integration tests
 ├── layers.test.ts                  # Multi-layer system tests
-├── annotated.test.ts               # Annotated output tests
 ├── context.test.ts                 # Path context tracking tests
 ├── errors.test.ts                  # Error handling tests
 ├── cli.test.ts                     # CLI integration tests
@@ -111,12 +108,13 @@ Shared intelligence layer (`src/language-services/`) consumed by both the VS Cod
 
 Provides: diagnostics, document symbols, scope analysis, completion, hover, go-to-definition, find-references, signature help, rename, semantic tokens, formatting, code actions, inlay hints. See `src/language-services/CLAUDE.md` for module details and sync requirements.
 
-### Evaluator (4-file split)
+### Evaluator (3-file split)
 
-- **`index.ts`** — Main evaluator. Walks AST, maintains scope chain, evaluates expressions, produces SVG path strings. Supports multi-layer output (path layers + text layers), `log()` function, and user-defined functions. Has safeguards: max 32,000 loop iterations, rejects Infinity/NaN in loop bounds.
-- **`annotated.ts`** — Parallel evaluator that produces annotated output preserving comments, showing loop iterations, and annotating function calls. Used by `compileAnnotated()`.
+- **`index.ts`** — The evaluator. Walks AST, maintains scope chain, evaluates expressions, produces SVG path strings. Supports multi-layer output (path layers + text layers), `log()` function, and user-defined functions. Has safeguards: max 32,000 loop iterations, rejects Infinity/NaN in loop bounds.
 - **`context.ts`** — Path context tracking. Maintains current pen position, subpath start point, and optional command history. Powers `ctx.position`, `ctx.start`, and context-aware stdlib functions.
-- **`format.ts`** / **`formatter.ts`** — Number formatting (toFixed) and annotated output formatting.
+- **`format.ts`** — Number formatting (toFixed).
+
+There is ONE evaluator. The parallel "annotated" evaluator was retired on 2026-09-03 (see `project-docs/retire-annotated/`); shared helper modules (`value-semantics.ts`, `switch-match.ts`, `struct-properties.ts`, `css-function-resolve.ts`, …) stay as the single home of each rule.
 
 ### Layers
 
@@ -146,7 +144,6 @@ Context-aware functions receive the current path context and can read pen positi
 | ---------------------------- | ------------------------------------------------------------------ |
 | Add new syntax               | `parser/pathogen.grammar`, `parser/ast.ts`, `parser/ast-builder.ts` |
 | Add runtime behavior         | `evaluator/index.ts`                                               |
-| Add annotated output support | `evaluator/annotated.ts`                                           |
 | Add context tracking         | `evaluator/context.ts`                                             |
 | Add layer features           | `evaluator/index.ts`, `parser/ast.ts`, `parser/pathogen.grammar`   |
 | Add stdlib function          | `stdlib/math.ts` or `stdlib/path.ts`, `stdlib/index.ts`            |
@@ -168,7 +165,6 @@ pathogen-lang -                Read from stdin
 pathogen-lang -e <code>        Compile inline code
 pathogen-lang --src=<file>     Compile a file (explicit flag)
 
---annotated                        Output annotated/debug format with comments
 --print-logs                       Print log() output to stderr
 --log-file=<file>                  Write structured log data as JSON to file
 --to-fixed=<N>                     Round decimals to N digits (0-20)
@@ -187,7 +183,6 @@ pathogen-lang --src=<file>     Compile a file (explicit flag)
 ```ts
 // Compilation
 compile(source, options?)          // → CompileResult { layers, logs, calledFunctions }
-compileAnnotated(source)           // → formatted annotated string
 compileWithContext(source, opts?)   // → { path, layers, context, logs }
 
 // Parsing
@@ -227,7 +222,6 @@ analyzeScopes(document)            // → ScopeInfo { root, declarations, refere
    - Syntax → `tests/parser.test.ts`
    - Behavior → `tests/evaluator.test.ts`
    - Layers → `tests/layers.test.ts`
-   - Annotated output → `tests/annotated.test.ts`
    - Context tracking → `tests/context.test.ts`
    - Error handling → `tests/errors.test.ts`
    - CLI → `tests/cli.test.ts`
