@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-05 (dependency upgrade pass)
+
+The first deliberate upgrade pass over `package.json` (root, `api/`, `packages/`). Every bump landed as its own commit with a named gate, so `git bisect` can isolate a regression to one dependency. Baseline and final state are identical on every gate: 131 test files / 5482 tests / 1 todo, root `tsc` error list (80 pre-existing) and playground `tsc` error list (7 pre-existing) byte-identical, `npm run build`, `build:website`, `build:vscode` and `npm ci` green.
+
+### Changed
+
+#### Development
+
+- **Runtime pinned to Node 24.** New `.node-version` (read by Cloudflare Pages, nvm, fnm), `deploy-api.yml` moves from Node 22 to 24, `@types/node` 20 → 24, and `package.json` declares `engines.node >=22.12`. Watch the first Pages deploy after this lands — it is the first build on Node 24.
+- **TypeScript 5.9 → 6.0.3** in the root, the language server and the VS Code extension. 6.0 is the last JavaScript-based TypeScript and turns every 7.0 deprecation into an error, which forced three config changes: root `tsconfig.json` now declares `types: ["node"]` (6.0 no longer auto-includes `@types/*`) and `lib: ["ES2022", "DOM", "DOM.Iterable"]` (the pan-zoom controller, zoom pill and `render/mount.ts` always used DOM types that previously leaked in through auto-included typings); both `packages/*/tsconfig.json` move from `module: commonjs` + `moduleResolution: node` (node10, now an error) to `module: nodenext`, which still emits CommonJS because neither package is `"type": "module"`; `tsup.config.ts` passes `ignoreDeprecations: "6.0"` to the declaration step only, because tsup 8.5.1's dts bundler injects the deprecated `baseUrl` option. **TypeScript 7 is held**: its `typescript` package exports only a version stub (the compiler API moved to `typescript/unstable/*`), which tsup's dts step, typescript-eslint (peer `<6.1.0`) and `scripts/lib/legacy-style-opener.ts` all still need.
+- **Vitest 1.6 → 4.1.11** with `@vitest/coverage-v8` 4.1.11 (brings Vite 8). Every documented breaking change from 2.0 through 4.x was checked against the suite; none applied, zero test or config edits, wall time 39 s → 33 s. **Vitest 5.0.0 is held**: it shipped 2026-09-03, raises the Node floor to 22.12, changes the matcher augmentation shape to `Matchers<R, T>` and defaults `clearMocks` to true — revisit after 5.0.x patches.
+- **marked 15 → 18** (with `marked-highlight` 2.2.4). Docs output is byte-identical; two blog pages lost the blank line marked used to emit after a raw `<img>` block (v18 trims trailing blank lines from block tokens), which is insignificant whitespace between block elements. `scripts/build-docs.ts` now renders each document with its own `Marked` instance instead of stacking a `use({ renderer })` call per document on the global singleton.
+- **Commander 14 → 15** (ESM-only), **Puppeteer 24 → 25** (ESM-only), **Concurrently 9 → 10** — all Node ≥22 packages, covered by the Node 24 pin. Four scripts that still passed the long-removed `headless: 'new'` string through an `as any` cast now use `headless: true`.
+- **ts-morph 27 → 28** — `npm run check:completions` regenerates `completion-data.generated.ts` byte-identically.
+- **vscode-languageserver / vscode-languageclient 9 → 10** (LSP 3.18); `engines.vscode` and `@types/vscode` move from `^1.85.0` to `^1.91.0` as the client requires. The server's code-action handler normalizes the widened `Diagnostic.message` (`string | MarkupContent`) back to the plain string our language-services type carries.
+- **Lint toolchain**: eslint 9.39.5, `@eslint/js` 9.39.5, `@eslint/compat` 2.1.1, `eslint-config-airbnb-extended` 3.2.0 (pulls eslint-plugin-n 18, import-x 4.17, typescript-eslint 8.69), `eslint-plugin-prettier` 5.5.6, `globals` 17.12, Prettier 3.9.6. Lint is not enforced in this repo; the problem count moved 5654 → 5777 on a clean checkout, entirely from typescript-eslint detecting more unnecessary type assertions (177 → 306), Prettier 3.9 formatting preferences (+11) and import-x flagging `@types/vscode` (+2). **ESLint 10 is held** because `eslint-config-airbnb-extended` peers `eslint ^9`.
+- **Patch/minor**: `@lezer/common` 1.5.2, `@lezer/lr` 1.4.10, `@types/opentype.js` 1.3.10, `@webgpu/types` 0.1.72, jsdom 29.1.1, highlight.js 11.12, esbuild 0.27.7 (staying on the 0.27 line tsup pins; 0.28 held), wrangler 4.129 in both the root and `api/` (the root range was a stale `^4.69.0`), `hdr-color-input` 0.4.4 (the shadow `button.trigger` the playground reaches into still exists — checked headlessly with 8 upgraded chips), `svg2pdf.js` 2.8.1 (the data-URI regex vendor patch still applies exactly once), `vscode-languageserver-textdocument` 1.0.14, tsx 4.23.
+- **opentype.js stays at 1.3.4.** 2.0.0 was attempted and reverted: its text shaper runs the `ccmp` GSUB step unconditionally with no feature gate or error handling, so any font whose `ccmp` uses a chaining-context lookup (Inter, in our fixtures) makes `Font.getPath` / `getAdvanceWidth` throw `substFormat: 2 is not yet supported` — 15 font tests failed. Upstream issue #627 (open since 2023) covers the same error class. Revisit when a 2.x release gates or catches that step; 2.0's fixes for hostile fonts (CFF subroutine recursion, circular composite glyphs, hinting-VM loops) are the reason to keep trying.
+
+### Fixed
+
+#### Core
+
+- **The published CLI could never render a PNG.** tsup inlines devDependencies, so the CLI's lazy `import('puppeteer')` became a code-split CommonJS chunk that died with `Dynamic require of "http" is not supported`, and `--png` / `--render-gpu` reported "requires puppeteer" even with Puppeteer installed — only `npx tsx src/cli.ts` ever worked. `puppeteer` and `esbuild` are now external to the CLI bundle and resolve from the caller's install; the built CLI renders the same PNG and byte-identical SVG as the tsx path, WebGPU path included.
+
+#### Development
+
+- `npx eslint .` no longer aborts with "You have used a rule which requires type information" — the `.mjs` probe scripts under `scripts/` and `project-docs/` sit outside every tsconfig project and are now ignored, so lint runs to completion again.
+- `scripts/build-vscode-extension.ts` installed the language server's runtime dependencies into the `.vsix` at `@latest`, so the bundle could ship a different major than the server was compiled against. It now installs the ranges the server's `package.json` declares.
+
 ## [0.8.1] - 2026-09-05 (many-warnings hardening)
 
 ### Changed
