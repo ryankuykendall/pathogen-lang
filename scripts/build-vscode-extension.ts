@@ -68,10 +68,12 @@ fs.copyFileSync(
 );
 
 // Install language server runtime deps first (vscode-languageserver, vscode-languageserver-textdocument)
+// at the exact ranges the server's package.json declares — not @latest — so the
+// bundled runtime matches the types the server was compiled against.
 const serverPkg = JSON.parse(fs.readFileSync(path.join(SERVER_DIR, 'package.json'), 'utf-8'));
-const serverDeps = Object.keys(serverPkg.dependencies || {}).filter((d) => d !== 'pathogen-lang');
+const serverDeps = Object.entries<string>(serverPkg.dependencies || {}).filter(([d]) => d !== 'pathogen-lang');
 if (serverDeps.length > 0) {
-  run(`npm install --prefix "${BUNDLED_SERVER_DIR}" ${serverDeps.map((d) => `${d}@latest`).join(' ')} --omit=dev --no-save 2>/dev/null || true`);
+  run(`npm install --prefix "${BUNDLED_SERVER_DIR}" ${serverDeps.map(([d, range]) => `"${d}@${range}"`).join(' ')} --omit=dev --no-save 2>/dev/null || true`);
 }
 
 // Now replace the pathogen-lang symlink (created by npm workspace) with real files

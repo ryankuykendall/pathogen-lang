@@ -430,7 +430,8 @@ connection.onCodeAction((params) => {
   const diagnostics = (params.context.diagnostics || []).map((d) => ({
     range: d.range,
     severity: (d.severity as number) ?? 1,
-    message: d.message,
+    // LSP 3.18 allows MarkupContent messages; language-services diagnostics are plain strings.
+    message: typeof d.message === 'string' ? d.message : d.message.value,
     source: d.source ?? 'pathogen',
   }));
   const quickFixes = getCodeActions(doc, params.range, diagnostics);
