@@ -11,7 +11,7 @@ import { siteHeaderHtml } from '../playground/utils/site-header-template.js';
 import bash from 'highlight.js/lib/languages/bash';
 import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
-import { marked } from 'marked';
+import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import { pathogenCodeCssDark, pathogenCodeCssLight } from './pathogen-code-css';
 
@@ -28,37 +28,33 @@ const OUTPUT_FILE = join(ROOT, 'playground', 'utils', 'docs-content.js');
 const STATIC_DOCS_DIR = join(ROOT, 'website', 'docs-static');
 const HLJS_STYLES_DIR = join(ROOT, 'node_modules', 'highlight.js', 'styles');
 
-// Configure marked with syntax highlighting
-marked.use(
-  markedHighlight({
-    emptyLangClass: 'hljs',
-    langPrefix: 'hljs language-',
-    highlight(code: string, lang: string) {
-      // Use auto-detection for unlabeled code blocks (most of our DSL examples)
-      if (!lang || lang === '') {
-        // Try to detect if it looks like our DSL (has path commands or keywords)
-        const looksLikeDSL = /^(let |fn |for |if |M |L |H |V |C |Q |A |Z |circle|rect|polygon|star)/m.test(code);
-        if (looksLikeDSL) {
-          // Highlight as JavaScript (close enough for our DSL)
-          return hljs.highlight(code, { language: 'javascript', ignoreIllegals: true }).value;
-        }
-        // For other unlabeled blocks, try auto-detection
-        return hljs.highlightAuto(code).value;
+// Syntax-highlighting extension shared by every per-document Marked instance
+// (see the per-document loop below). Stateless, so one object can be reused.
+const highlightExtension = markedHighlight({
+  emptyLangClass: 'hljs',
+  langPrefix: 'hljs language-',
+  highlight(code: string, lang: string) {
+    // Use auto-detection for unlabeled code blocks (most of our DSL examples)
+    if (!lang || lang === '') {
+      // Try to detect if it looks like our DSL (has path commands or keywords)
+      const looksLikeDSL = /^(let |fn |for |if |M |L |H |V |C |Q |A |Z |circle|rect|polygon|star)/m.test(code);
+      if (looksLikeDSL) {
+        // Highlight as JavaScript (close enough for our DSL)
+        return hljs.highlight(code, { language: 'javascript', ignoreIllegals: true }).value;
       }
-      // Use specified language if available
-      if (hljs.getLanguage(lang)) {
-        return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
-      }
-      // Fallback to auto-detection
+      // For other unlabeled blocks, try auto-detection
       return hljs.highlightAuto(code).value;
-    },
-  }),
-);
-
-marked.setOptions({
-  gfm: true,
-  breaks: false,
+    }
+    // Use specified language if available
+    if (hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+    }
+    // Fallback to auto-detection
+    return hljs.highlightAuto(code).value;
+  },
 });
+
+const MARKED_OPTIONS = { gfm: true, breaks: false } as const;
 
 // Decode common HTML entities to plain text
 function decodeEntities(text: string): string {
@@ -168,7 +164,11 @@ async function buildDocs(): Promise<void> {
         },
       };
 
-      const html = marked.use({ renderer }).parse(markdown) as string;
+      // A fresh Marked instance per document: the heading renderer closes over
+      // this document's slug set, so it must not accumulate on a shared
+      // singleton (marked chains `use()` calls — the old global `marked.use`
+      // inside this loop stacked one renderer per document).
+      const html = new Marked(highlightExtension, { ...MARKED_OPTIONS, renderer }).parse(markdown) as string;
       exports[exportName] = html;
 
       // Extract section title from the first h1 heading
