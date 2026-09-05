@@ -290,9 +290,7 @@ code.hljs {
         <p class="post-meta"><time datetime="2026-04-10">April 10, 2026</time></p>
       </header>
       <div class="blog-content">
-        <img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
-
-<p>A programming language lives or dies by its developer experience. You can have the most expressive syntax in the world, but if the editor doesn&#39;t help you write it — if completions are wrong, errors are confusing, and there&#39;s no way to see what you&#39;re building — adoption stalls.</p>
+        <img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy"><p>A programming language lives or dies by its developer experience. You can have the most expressive syntax in the world, but if the editor doesn&#39;t help you write it — if completions are wrong, errors are confusing, and there&#39;s no way to see what you&#39;re building — adoption stalls.</p>
 <p>This post documents how we built a complete VS Code extension for the <a href="/docs">Pathogen language</a>, from parser migration through a 10-phase developer experience effort. Whether you&#39;re writing Pathogen code and want to understand the tools available to you, or you&#39;re building your own language server and want to learn from the implementation, here&#39;s what we built and what we learned.</p>
 <blockquote>
 <p><strong>Try it now:</strong> The Pathogen playground is available at <a href="/">pedestal.design/pathogen</a> with the same language intelligence described here. The VS Code extension source is in <code>packages/vscode-pathogen/</code> in the repository.</p>
@@ -520,9 +518,7 @@ consumerSubs.apply {
 <p>The completion engine evolved through three phases, each addressing real user frustrations.</p>
 <h3>Type-aware completions</h3>
 <p>Typing <code>bg.</code> after defining a <a href="/docs#layers-defining-layers">PathLayer</a> should show <code>apply</code>, <code>name</code>, <code>styles</code>, and <code>ctx</code>. The completion engine uses lightweight regex-based type inference to determine that <code>bg</code> is a PathLayer, then looks up the member set from generated completion data.</p>
-<img src="/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy">
-
-<p>This extends to every type in the language. <a href="/blog/color-literals"><code>Color(&#39;#ff0000&#39;).</code></a> shows 21 methods and properties — <code>lighten</code>, <code>darken</code>, <code>alpha</code>, <code>hueShift</code>, <code>css</code>, <code>hex</code>, and more. Method return types chain correctly: <code>shape.boundingBox().</code> shows <code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>.</p>
+<img src="/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy"><p>This extends to every type in the language. <a href="/blog/color-literals"><code>Color(&#39;#ff0000&#39;).</code></a> shows 21 methods and properties — <code>lighten</code>, <code>darken</code>, <code>alpha</code>, <code>hueShift</code>, <code>css</code>, <code>hex</code>, and more. Method return types chain correctly: <code>shape.boundingBox().</code> shows <code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>.</p>
 <h3>Generated completion data</h3>
 <p>Rather than manually maintaining lists of stdlib functions and their signatures, we use <code>ts-morph</code> to extract completion data from TypeScript interface declarations in <code>src/pathogen-api.ts</code>. A generation script produces <code>completion-data.generated.ts</code> with every function signature, type member set, and enum value. When the language API changes, we regenerate with <code>npm run generate:completions</code> — no manual synchronization, and a CI check catches drift.</p>
 <h3>Type flow analysis</h3>

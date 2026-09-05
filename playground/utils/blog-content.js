@@ -31267,9 +31267,7 @@ layer('glyphs').apply {
 `,
   'unified-export': `<p>There&#39;s a moment in every generative piece where the browser stops being enough. The composition is done, the palette has settled, and now you want the thing itself — a file you can send, post, composite, or carry to a print shop. Today we&#39;re shipping the workflow for that moment: a single <strong>Export</strong> dialog that takes any workspace to SVG, PNG, or print-ready PDF.</p>
 <p>Open it from the workspace&#39;s overflow menu (⋮ → <strong>Export</strong>) or press <strong>Ctrl/Cmd+Shift+E</strong>. Everything about the dialog follows one rule: <em>the preview is the file</em>. What you see — the artwork, the optional legend, the small attribution line — is exactly what lands on disk.</p>
-<img src="/blog/unified-export-modal.png" alt="The Export dialog: format toggle at the top left, live preview of the artwork with a small Created in pathogen.studio line in its corner" loading="lazy">
-
-<h2>Three formats</h2>
+<img src="/blog/unified-export-modal.png" alt="The Export dialog: format toggle at the top left, live preview of the artwork with a small Created in pathogen.studio line in its corner" loading="lazy"><h2>Three formats</h2>
 <p>The first decision is the format, and it&#39;s the first control in the dialog:</p>
 <ul>
 <li><strong>SVG — vector file.</strong> Fully self-contained: the fonts used by the legend and attribution line are embedded as data URIs, so the file renders identically offline, in any browser, with no substitutions. This is the format for the web, for further editing, and for re-import into design tools.</li>
@@ -31279,11 +31277,7 @@ layer('glyphs').apply {
 <h2>The legend</h2>
 <p>Flip on <strong>Include legend</strong> and the export gains a caption card: title, creator, date, description, and the full Pathogen source that produced the artwork. Drag it anywhere over the piece; drag its corner to resize; enable <strong>Snap</strong> for grid-aligned placement.</p>
 <p>The source listing is <strong>syntax highlighted</strong> by default. The legend card uses Pathogen&#39;s print palette — the same token colors you see across pathogen.studio, tuned for the card&#39;s white background — and the colors are baked into the file as literal fills. That detail matters more than it sounds: it means the highlighted code survives every format identically. In the SVG it&#39;s colored text, in the PNG it&#39;s colored pixels, and in the PDF it&#39;s colored <em>vector outlines</em> — the same keywords in the same purple, whether you&#39;re zooming a browser or holding a poster.</p>
-<img src="/blog/unified-export-legend-detail.png" alt="Close-up of an exported legend card: keywords in purple, layer constructors in magenta, numbers in coral, color values in green, comments in gray" loading="lazy">
-
-<img src="/blog/unified-export-legend.png" alt="Export dialog with the legend enabled: the caption card carries the title, creator, date, description, and syntax-highlighted Pathogen source" loading="lazy">
-
-<p>A legend turns an export into an artifact that explains itself. The piece and the program that made it travel together — pin it to a wall and the source is right there, readable, in color.</p>
+<img src="/blog/unified-export-legend-detail.png" alt="Close-up of an exported legend card: keywords in purple, layer constructors in magenta, numbers in coral, color values in green, comments in gray" loading="lazy"><img src="/blog/unified-export-legend.png" alt="Export dialog with the legend enabled: the caption card carries the title, creator, date, description, and syntax-highlighted Pathogen source" loading="lazy"><p>A legend turns an export into an artifact that explains itself. The piece and the program that made it travel together — pin it to a wall and the source is right there, readable, in color.</p>
 <h2>A quiet signature</h2>
 <p>Every export carries a small <em>Created in pathogen.studio</em> line. With the legend on, it&#39;s the card&#39;s footer. With the legend off, it sits in the artwork&#39;s bottom-right corner — a mid-slate chosen to sit on the artwork without competing with it. It appears in the live preview, so its placement is never a surprise, and like everything else it&#39;s real vector: in the PDF, the wordmark is outlined glyphs, not a font reference.</p>
 <h2>Sized for the print counter</h2>
@@ -31296,9 +31290,7 @@ layer('glyphs').apply {
 <li><strong>Vector or raster artwork.</strong> Simple pieces stay exact vector geometry. Dense generative work — hundreds of thousands of segments — defaults to a 300 DPI raster that previews and prints reliably, while the legend and every piece of text stay vector either way. A <strong>Precision</strong> control trims coordinate decimals, and a <strong>Detail</strong> control culls segments smaller than a printed dot — smaller, faster files with no visible change.</li>
 </ul>
 <p>The full details — sizing modes, margins, the cover sheet, what stays vector — are in <a href="/docs#exporting-exporting-your-work">the export documentation</a>.</p>
-<img src="/blog/unified-export-png.png" alt="PNG settings: scale presets with a computed-dimensions summary and a transparent background option" loading="lazy">
-
-<h2>Try it</h2>
+<img src="/blog/unified-export-png.png" alt="PNG settings: scale presets with a computed-dimensions summary and a transparent background option" loading="lazy"><h2>Try it</h2>
 <p>The piece in the screenshots is below — open the source, riff on the rings, then take it to the Export dialog and watch the legend set its own title.</p>
 <p><mini-workspace code-open caption="Meridian Bloom — six rings of petals and a Baumans title, drawn as glyph outlines.">
   <code>@font "../../../../fonts/Baumans/Baumans-Regular.ttf";
@@ -31373,9 +31365,7 @@ layer('title').apply {
 </mini-workspace></p>
 <p>Export lives in every workspace today at <a href="https://pathogen.studio">pathogen.studio</a>. Make something, then take it with you.</p>
 `,
-  'vscode-developer-experience': `<img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy">
-
-<p>A programming language lives or dies by its developer experience. You can have the most expressive syntax in the world, but if the editor doesn&#39;t help you write it — if completions are wrong, errors are confusing, and there&#39;s no way to see what you&#39;re building — adoption stalls.</p>
+  'vscode-developer-experience': `<img src="/blog/vscode-hero.png" alt="Pathogen VS Code extension showing code editor with inlay hints and code lens on the left, live preview panel with layer inspector on the right" loading="lazy"><p>A programming language lives or dies by its developer experience. You can have the most expressive syntax in the world, but if the editor doesn&#39;t help you write it — if completions are wrong, errors are confusing, and there&#39;s no way to see what you&#39;re building — adoption stalls.</p>
 <p>This post documents how we built a complete VS Code extension for the <a href="/docs">Pathogen language</a>, from parser migration through a 10-phase developer experience effort. Whether you&#39;re writing Pathogen code and want to understand the tools available to you, or you&#39;re building your own language server and want to learn from the implementation, here&#39;s what we built and what we learned.</p>
 <blockquote>
 <p><strong>Try it now:</strong> The Pathogen playground is available at <a href="/">pedestal.design/pathogen</a> with the same language intelligence described here. The VS Code extension source is in <code>packages/vscode-pathogen/</code> in the repository.</p>
@@ -31603,9 +31593,7 @@ consumerSubs.apply {
 <p>The completion engine evolved through three phases, each addressing real user frustrations.</p>
 <h3>Type-aware completions</h3>
 <p>Typing <code>bg.</code> after defining a <a href="/docs#layers-defining-layers">PathLayer</a> should show <code>apply</code>, <code>name</code>, <code>styles</code>, and <code>ctx</code>. The completion engine uses lightweight regex-based type inference to determine that <code>bg</code> is a PathLayer, then looks up the member set from generated completion data.</p>
-<img src="/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy">
-
-<p>This extends to every type in the language. <a href="/blog/color-literals"><code>Color(&#39;#ff0000&#39;).</code></a> shows 21 methods and properties — <code>lighten</code>, <code>darken</code>, <code>alpha</code>, <code>hueShift</code>, <code>css</code>, <code>hex</code>, and more. Method return types chain correctly: <code>shape.boundingBox().</code> shows <code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>.</p>
+<img src="/blog/vscode-completions.png" alt="VS Code completion popup showing PathLayer members: apply, ctx, name, styles" loading="lazy"><p>This extends to every type in the language. <a href="/blog/color-literals"><code>Color(&#39;#ff0000&#39;).</code></a> shows 21 methods and properties — <code>lighten</code>, <code>darken</code>, <code>alpha</code>, <code>hueShift</code>, <code>css</code>, <code>hex</code>, and more. Method return types chain correctly: <code>shape.boundingBox().</code> shows <code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>.</p>
 <h3>Generated completion data</h3>
 <p>Rather than manually maintaining lists of stdlib functions and their signatures, we use <code>ts-morph</code> to extract completion data from TypeScript interface declarations in <code>src/pathogen-api.ts</code>. A generation script produces <code>completion-data.generated.ts</code> with every function signature, type member set, and enum value. When the language API changes, we regenerate with <code>npm run generate:completions</code> — no manual synchronization, and a CI check catches drift.</p>
 <h3>Type flow analysis</h3>
