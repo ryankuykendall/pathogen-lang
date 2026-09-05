@@ -50,3 +50,6 @@ npm-debug.log*
 .claude/CLAUDE.local.md
 CLAUDE.local.md
 .claude/scheduled_tasks.lock
+
+# Pre-images written by scripts/migrate-style-opener-kv.ts (contain workspace source)
+.kv-backups/
