@@ -4,7 +4,7 @@
 import puppeteer from 'puppeteer';
 
 async function main(): Promise<void> {
-  const browser = await puppeteer.launch({ headless: 'new' as unknown as boolean });
+  const browser = await puppeteer.launch({ headless: true });
   try {
     const page = await browser.newPage();
     const errors: string[] = [];

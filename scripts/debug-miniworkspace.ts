@@ -4,7 +4,7 @@
 import puppeteer from 'puppeteer';
 
 async function main(): Promise<void> {
-  const browser = await puppeteer.launch({ headless: 'new' as any });
+  const browser = await puppeteer.launch({ headless: true });
   try {
     const page = await browser.newPage();
     page.setDefaultTimeout(15_000);

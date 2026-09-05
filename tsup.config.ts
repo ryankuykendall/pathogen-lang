@@ -18,10 +18,19 @@ export default defineConfig([
     sourcemap: true,
   },
   // CLI build
+  //
+  // puppeteer and esbuild are devDependencies that src/cli.ts loads lazily
+  // (`await import('puppeteer')` for --png / --render-gpu, `import('esbuild')`
+  // for the --render-gpu dev server). tsup inlines devDependencies by default,
+  // and the inlined CJS chunk fails at runtime with "Dynamic require of 'http'
+  // is not supported", so the shipped CLI could never render a PNG. Keep them
+  // external: they resolve from the caller's installed packages when present,
+  // and the existing "requires puppeteer" error stays the fallback when not.
   {
     entry: ['src/cli.ts'],
     format: ['esm'],
     sourcemap: true,
+    external: ['puppeteer', 'esbuild'],
     banner: {
       js: '#!/usr/bin/env node',
     },

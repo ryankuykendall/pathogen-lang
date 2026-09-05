@@ -55,7 +55,7 @@ async function probe(page: any): Promise<any> {
 }
 
 async function main(): Promise<void> {
-  const browser = await puppeteer.launch({ headless: 'new' as any });
+  const browser = await puppeteer.launch({ headless: true });
   let ok = true;
   try {
     const page = await browser.newPage();
