@@ -1142,11 +1142,17 @@ export class WorkspaceView extends HTMLElement {
       store.set('logs', result.logs || []);
       store.set('warnings', result.warnings || []);
       this.hideError();
-      this.editorPane.highlightWarnings(
-        (result.warnings || []).flatMap((w: { line?: number; column?: number }) =>
-          w.line != null ? [{ line: w.line, column: w.column ?? 1 }] : [],
-        ),
-      );
+      try {
+        this.editorPane.highlightWarnings(
+          (result.warnings || []).flatMap((w: { line?: number; column?: number }) =>
+            w.line != null ? [{ line: w.line, column: w.column ?? 1 }] : [],
+          ),
+        );
+      } catch (highlightErr) {
+        // The squiggle is cosmetic. A decoration failure must never surface
+        // as a compile error or stop the layers/defs from reaching the store.
+        console.warn('Warning highlight failed:', highlightErr);
+      }
       perfSpan('store-updates', () => {
         store.set('fontWarnings', [
           ...formatFontSubstitutions(result.fontSubstitutions || []),

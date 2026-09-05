@@ -2,10 +2,35 @@
 // Supports multiple simultaneous error highlights; a position may carry
 // severity 'warning' to render with the cm-warning-* classes instead.
 
-interface ErrorPosition {
+export interface ErrorPosition {
   line: number;
   column: number;
   severity?: 'error' | 'warning';
+}
+
+/**
+ * Upper bound on distinct positions decorated per pass. Every position costs
+ * a line decoration plus a mark, and CodeMirror nests one <span> per mark
+ * that covers the same text, then recurses through the nesting. A program
+ * that emits thousands of warnings at one call site (a fillet applied to
+ * every glyph contour) produced thousands of identical marks on one token
+ * and overflowed the call stack (field report, 2026-09-05). Positions are
+ * therefore deduplicated and capped before any decoration is built.
+ */
+export const MAX_HIGHLIGHT_POSITIONS = 200;
+
+/** Distinct (line, column, severity) positions in first-seen order, at most `max`. */
+export function dedupeHighlightPositions(positions: ErrorPosition[], max = MAX_HIGHLIGHT_POSITIONS): ErrorPosition[] {
+  const seen = new Set<string>();
+  const out: ErrorPosition[] = [];
+  for (const p of positions) {
+    const key = `${p.line}:${p.column}:${p.severity ?? 'error'}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(p);
+    if (out.length >= max) break;
+  }
+  return out;
 }
 
 interface ErrorState {
@@ -89,7 +114,7 @@ export function errorHighlightExtension(cmStateModule: CmStateModule, cmViewModu
   function buildDecorations(doc: Parameters<typeof buildDecosForPosition>[0], errors: ErrorPosition[]): unknown {
     if (errors.length === 0) return Decoration.none;
     const decos: unknown[] = [];
-    for (const { line, column, severity } of errors) {
+    for (const { line, column, severity } of dedupeHighlightPositions(errors)) {
       buildDecosForPosition(doc, line, column, decos, severity);
     }
     return decos.length > 0 ? Decoration.set(decos, true) : Decoration.none;

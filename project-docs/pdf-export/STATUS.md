@@ -1,5 +1,25 @@
 # Print-Ready PDF Export — Status
 
+## 2026-09-05 — Field report: vector mode + rasterized gradient ⇒ stack overflow
+
+**Ryan:** vector-mode PDF export of a larger project fails with `Maximum call
+stack size exceeded`, with or without Precision. Reproduced with
+`verify/huge-vector-repro.ts` (drives the modal like the harness but calls
+`_downloadPdf` directly so the stack comes back): a 1.4 MB single path and a
+4,000-layer scene both export fine (410 KB / 146 KB PDFs, decimation on or
+off); a 4000×4000 `ConicGradient` fill — a 41 MB `data:image/png` `<image>`
+inside the gradient's `<pattern>` — throws from `String.match` inside svg2pdf's
+`ImageNode.fetchImageData`. Its `dataUriRegex` ends in `((?:.|\s)*)$`: an
+alternation inside a repetition costs V8 one backtrack frame per character.
+Fix: `scripts/lib/vendor-patches.ts` rewrites the group to `([\s\S]*)` when
+`build-vendor.ts` bundles `pdf-export.js` (asserts exactly one application, so
+an svg2pdf upgrade cannot silently drop it); `tests/vendor-patches.test.ts`
+pins equivalence and a 40 MB payload. Follow-ups: jsPDF then decodes the
+PNG in-page (a 41 MB image is slow — a size-aware notice or automatic JPEG
+re-encode of gradient rasters before svg2pdf would help); an automatic
+raster fallback when the vector pass throws would stop any future svg2pdf
+failure from producing no file at all.
+
 ## 2026-08-19 (later) — Field report: minute-long UI lockup + invisible progress
 
 **Ryan's console (4× PNG, M2 Max):** `full-size draw failed verification at

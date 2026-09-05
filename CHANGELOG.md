@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-09-05 (many-warnings hardening)
+
+### Fixed
+
+#### Playground
+
+- **"Maximum call stack size exceeded" after a correct render.** A program that applied `fillet()` to every glyph contour emitted thousands of corner-op warnings at one call site. The editor squiggle added in 0.8.0 built one decoration per warning, so CodeMirror nested thousands of identical mark spans on one token and overflowed the stack while rendering them; the exception escaped the success path of `updatePreview`, was reported as a compile error, and left the layers panel empty even though the SVG had already rendered. Highlight positions are now deduplicated by (line, column, severity) and capped at `MAX_HIGHLIGHT_POSITIONS` (200) before any decoration is built, and a decoration failure can no longer masquerade as a compile error. Regression test: `tests/playground-error-highlight.test.ts`.
+- **Copy Debug Info** caps each section (layers, log output, warnings) at 200 rows and reports how many were left out, instead of producing a 10,000-line paste.
+- **Vector-mode PDF export of artwork with a rasterized gradient failed with "Maximum call stack size exceeded".** Conic/mesh/freeform/topo gradients reach the SVG as a `<pattern><image href="data:image/png;base64,…">`; a 4000×4000 conic fill is a 41 MB data URI. svg2pdf.js parses that href with a regex whose payload group is `((?:.|\s)*)` — an alternation inside a repetition, one backtrack frame per character — so V8 overflowed its regex stack inside `String.match` before the image was decoded. Precision and Detail settings never mattered because the failure precedes any path work. The vendor build (`scripts/build-vendor.ts`) now rewrites that group to the equivalent `([\s\S]*)` via `scripts/lib/vendor-patches.ts`, which fails the build loudly if a svg2pdf upgrade moves the anchor. Regression tests: `tests/vendor-patches.test.ts` (patch applies once, groups identical, 40 MB payload); browser repro: `project-docs/pdf-export/verify/huge-vector-repro.ts gradient 4000`.
+
 ## [0.8.0] - 2026-09-04 (debuggability: warnings, --json, assert, ln, --png)
 
 ### Added

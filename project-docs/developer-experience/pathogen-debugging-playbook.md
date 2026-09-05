@@ -123,6 +123,13 @@ assert(width < columnWidth, `caption is ${width} wide, column is ${columnWidth}`
   return costs a throw per cell.
 - Puppeteer on this machine never runs rAF or scroll events; verify those by
   direct invocation (`project_playground_puppeteer_gotchas` memory).
+- `Maximum call stack size exceeded` with a correct render, an error panel,
+  and an empty layers list means something AFTER the render threw (the
+  layers store is written last in `updatePreview`), not the compiler. Two
+  known sources: per-warning editor decorations (now deduped and capped) and
+  a vendored library regex on a multi-megabyte data URI (rasterized
+  gradients in vector PDF export; patched at vendor build time in
+  `scripts/lib/vendor-patches.ts`).
 - New-headless Chrome (`headless: true`) can hang forever in `screenshot()`
   when the display is asleep; `--png` and `validate-samples` launch
   `headless: 'shell'` for that reason. Reach for the shell in any new

@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import * as esbuild from 'esbuild';
 
+import { applyVendorPatches } from './lib/vendor-patches.js';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const VENDOR_OUT = join(ROOT, 'public', 'vendor');
@@ -73,6 +75,11 @@ export async function buildVendor(options: { watch?: boolean } = {}): Promise<vo
       console.log(`Watching ${vendor.name} for changes -> ${outfile}`);
     } else {
       await esbuild.build(buildOptions);
+      const patched = applyVendorPatches(vendor.name, await fs.readFile(outfile, 'utf8'));
+      if (patched.labels.length > 0) {
+        await fs.writeFile(outfile, patched.source);
+        for (const label of patched.labels) console.log(`  patched ${vendor.name}: ${label}`);
+      }
       const stat = await fs.stat(outfile);
       console.log(`Built vendor ${vendor.name} -> ${outfile} (${(stat.size / 1024).toFixed(1)} KB minified)`);
     }
@@ -80,8 +87,7 @@ export async function buildVendor(options: { watch?: boolean } = {}): Promise<vo
 }
 
 const isDirectExecution =
-  process.argv[1] &&
-  (process.argv[1].endsWith('build-vendor.ts') || process.argv[1].endsWith('build-vendor.js'));
+  process.argv[1] && (process.argv[1].endsWith('build-vendor.ts') || process.argv[1].endsWith('build-vendor.js'));
 
 if (isDirectExecution) {
   const program = new Command();

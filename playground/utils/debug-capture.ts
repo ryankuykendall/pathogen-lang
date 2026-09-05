@@ -1,6 +1,14 @@
 import { store } from '../state/store.js';
 import type { LayerOutput, LogEntry } from '../types/compiler.js';
 
+/**
+ * Per-section cap on captured rows. A program that fillets every glyph
+ * contour emitted ~5,000 warnings plus their log mirrors on 2026-09-05; the
+ * capture became a 10,000-line paste that nobody could read. Each section
+ * keeps its first rows and ends with a count of what was left out.
+ */
+export const CAPTURE_LINE_LIMIT = 200;
+
 export function buildDebugCapture(): string {
   const state = store.getAll();
 
@@ -25,7 +33,7 @@ export function buildDebugCapture(): string {
   let layersTable = '| # | Name | Type | Visible | Styles |\n|---|------|------|---------|--------|\n';
   let layerDetails = '';
 
-  for (let i = 0; i < layers.length; i++) {
+  for (let i = 0; i < Math.min(layers.length, CAPTURE_LINE_LIMIT); i++) {
     const layer = layers[i];
     const visible = layerVisibility[layer.name] !== false ? 'yes' : 'no';
     const styleEntries = Object.entries(layer.styles || {});
@@ -45,6 +53,12 @@ export function buildDebugCapture(): string {
     }
   }
 
+  if (layers.length > CAPTURE_LINE_LIMIT) {
+    const omitted = layers.length - CAPTURE_LINE_LIMIT;
+    layersTable += `| … | ${omitted} more layers (${layers.length} total) | | | |\n`;
+    layerDetails += `\n(… ${omitted} more layers not shown)\n`;
+  }
+
   if (layers.length === 0) {
     layersTable += '| - | (none) | - | - | - |\n';
     layerDetails = '\n(No layers produced)\n';
@@ -53,7 +67,7 @@ export function buildDebugCapture(): string {
   // Build log output
   let logOutput = '';
   if (logs.length > 0) {
-    for (const entry of logs) {
+    for (const entry of logs.slice(0, CAPTURE_LINE_LIMIT)) {
       const prefix = entry.line != null ? `[line ${entry.line}] ` : '';
       const parts = (entry.parts || [])
         .map((p: { label?: string; value: string }) => {
@@ -63,14 +77,20 @@ export function buildDebugCapture(): string {
         .join(' ');
       logOutput += `${prefix}${parts}\n`;
     }
+    if (logs.length > CAPTURE_LINE_LIMIT) {
+      logOutput += `… ${logs.length - CAPTURE_LINE_LIMIT} more (${logs.length} total)\n`;
+    }
   } else {
     logOutput = '(no log output)\n';
   }
 
-  const warningLines = warnings.map((w) => {
+  const warningLines = warnings.slice(0, CAPTURE_LINE_LIMIT).map((w) => {
     const where = w.line != null ? ` line ${w.line}${w.column != null ? `:${w.column}` : ''}` : '';
     return `- [${w.code}]${where} ${w.message}`;
   });
+  if (warnings.length > CAPTURE_LINE_LIMIT) {
+    warningLines.push(`- … ${warnings.length - CAPTURE_LINE_LIMIT} more (${warnings.length} total)`);
+  }
   const warningOutput = warnings.length > 0 ? `${warningLines.join('\n')}\n` : '(no warnings)\n';
 
   return `# Debug Capture

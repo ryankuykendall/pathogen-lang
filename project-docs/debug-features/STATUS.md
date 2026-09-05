@@ -40,6 +40,10 @@ Tests: `tests/statement-builtins.test.ts`, `tests/warnings.test.ts`, `tests/trac
 
 Found while re-verifying: the new headless Chrome mode's `captureScreenshot` stalled indefinitely (even for a plain `<p>`) with the display asleep; `chrome-headless-shell` (`headless: 'shell'`) rendered in 2 s. `renderPng` and the validator previews now use the shell (`verify/shot-probe*.mjs` are the probes).
 
+## Field report 2026-09-05 — many warnings at one site
+
+Reopening the *Ewert vs stroke-array tweaking* workspace (≈5,000 `corner-op` warnings, all at line 76:12) rendered correctly, then showed `Maximum call stack size exceeded` with no layers. Reproduced with `verify/many-warnings-e2e.mjs`: 300 fillet calls (1,200 warnings) produced 1,200 nested `.cm-warning-char` spans on one token; at 600 the page stopped answering the debugger for over a minute, and at 1,500 (6,000 warnings) the console logged `Failed to load CodeMirror: RangeError: Maximum call stack size exceeded` — the editor's own recursion over the nested marks. Cause: `highlightWarnings()` built one line + one mark decoration per warning. Fix: `dedupeHighlightPositions()` (dedupe by line/column/severity, cap `MAX_HIGHLIGHT_POSITIONS` = 200) inside the highlighter, a `try/catch` around the cosmetic highlight call in `updatePreview`, and a 200-row cap per section in the debug capture. Open: the console pane still renders one `log-entry` per warning mirror (thousands of custom elements); collapsing runs of identical warnings with a count is the follow-up.
+
 ## Not done / follow-ups
 
 - Editor-side provenance UI (hover a path segment → source line) — item 6 of the assessment, deferred.
