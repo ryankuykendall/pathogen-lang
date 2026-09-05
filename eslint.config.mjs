@@ -74,6 +74,10 @@ export default defineConfig([
       'tests/tmp/**',
       'vitest.config.ts',
       'tsup.config.ts',
+      // Internal probe/verify scripts — not part of any tsconfig project, and
+      // typed rules (n/no-sync) crash on .mjs files without parser services.
+      'project-docs/**',
+      'scripts/**/*.mjs',
     ],
   },
 
