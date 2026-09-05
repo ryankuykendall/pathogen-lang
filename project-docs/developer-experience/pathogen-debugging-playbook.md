@@ -18,7 +18,10 @@ npx tsx src/cli.ts scene.pathogen --output-svg-file=scene.svg --png=scene.png   
 
 1. **Read the warnings first.** `--json` puts every `warning` (code, message,
    line, column) at the top level; the CLI also prints them to stderr as
-   `file:line:col: warning: …`. A warning is the compiler telling you it did
+   `file:line:col: warning: …`. Warnings that differ only in numbers are
+   shown once per family with a count on every surface (stderr `… N more
+   like this`, console `×N`, VS Code `(×N similar)`); `--json` has every
+   instance. A warning is the compiler telling you it did
    something other than what you asked (a clamped fillet, a skipped corner op,
    a cut that separated nothing, a gradient with one point). Fix or accept each
    one before looking at pixels.

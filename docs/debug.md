@@ -4,7 +4,7 @@ Pathogen gives you four ways to see what a program is doing: `log()` messages, c
 
 ## Console Output
 
-In the playground, click the **Console** button in the header to open the console. It shows every `log()` message and every warning, each with the line it came from. The CLI prints logs to stderr with `--print-logs` (or writes them as JSON with `--log-file=<file>`) and always prints warnings to stderr.
+In the playground, click the **Console** button in the header to open the console. It shows every `log()` message and every warning, each with the line it came from. Warnings that differ only in their numbers (a vertex index, an effective radius) are shown once, at their first occurrence, with a count chip such as **×2,600**; click the chip to list up to 200 of the individual instances. The CLI prints logs to stderr with `--print-logs` (or writes them as JSON with `--log-file=<file>`) and always prints warnings to stderr.
 
 ## log() Function
 
@@ -73,9 +73,22 @@ Warnings never stop compilation. They appear:
 - in the playground console, marked with a **warn** chip, and as a yellow squiggle on the line in the editor;
 - in VS Code, as a warning diagnostic on the line;
 - on the CLI's stderr as `file:line:col: warning: message` (exit code stays 0);
-- in the structured result under `warnings`, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, or `gradient`.
+- in the structured result under `warnings`, one entry per instance, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, or `gradient`.
 
 A warning is also mirrored into the log stream as a `[warn] …` entry, so `--log-file` output keeps everything in one place.
+
+### Repeated warnings
+
+A fillet applied to every contour of a glyph can produce thousands of warnings from one line, differing only in the vertex index and the effective radius. Warnings that share a code, a source position, and a message with every number outside quotes removed belong to one **family**, and every surface shows a family once with its count:
+
+- the playground console shows the first instance with a **×N** chip; click it to list up to 200 instances;
+- VS Code shows one diagnostic per family, suffixed `(×N similar)`;
+- the CLI prints the first instance, then `  … N more like this`;
+- `--json` and `compile()`'s `warnings` keep every instance — nothing is collapsed there.
+
+Quoted names stay part of the family, digits included, so `TopoGradient 'surface1'` and `TopoGradient 'surface2'` are two families. Warnings that carry no source position (a gradient with too few points, a font missing glyphs) are never merged: each one names a different thing.
+
+The library exports the same grouping as `groupWarnings(warnings)` and `groupWarnLogEntries(logs)`.
 
 ## assert()
 

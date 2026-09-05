@@ -857,3 +857,40 @@ describe('--png', () => {
     unlinkSync(png);
   });
 });
+
+describe('warning grouping on stderr', () => {
+  // 50 fillet(30) calls on a 4-vertex plate: 4 warnings each, two families.
+  const LOOP =
+    'let plate = @{\n  h 40\n  v 40\n  h -40\n  z\n};\nfor (i in 1..50) {\n  let soft = plate.fillet(30);\n}\nM 10 10\nplate.draw();';
+
+  it('prints one line per family followed by a count of the rest', () => {
+    const result = runCli(['-e', LOOP]);
+    expect(result.status).toBe(0);
+    const warningLines = result.stderr.split('\n').filter((l) => l.includes(': warning: '));
+    expect(warningLines).toHaveLength(2);
+    expect(warningLines[0]).toMatch(/^<inline>:8:\d+: warning: Fillet radius clamped at vertex \d+/);
+    expect(warningLines[1]).toMatch(/^<inline>:8:\d+: warning: Fillet skipped at vertex \d+/);
+    expect(result.stderr.match(/  … 99 more like this/g)).toHaveLength(2);
+  });
+
+  it('--json keeps every instance', () => {
+    const result = runCli(['-e', LOOP, '--json']);
+    expect(result.status).toBe(0);
+    const doc = JSON.parse(result.stdout) as { warnings: unknown[] };
+    expect(doc.warnings).toHaveLength(200);
+  });
+
+  it('prints position-less warnings one per entity, never folded', () => {
+    const result = runCli([
+      '-e',
+      "let g1 = TopoGradient('surface1', 100, 100);\nlet g2 = TopoGradient('surface2', 100, 100);\nM 10 10 h 10",
+    ]);
+    expect(result.status).toBe(0);
+    const warningLines = result.stderr.split('\n').filter((l) => l.includes('has no contours'));
+    expect(warningLines).toEqual([
+      expect.stringMatching(/^<inline>: warning: TopoGradient 'surface1' has no contours/),
+      expect.stringMatching(/^<inline>: warning: TopoGradient 'surface2' has no contours/),
+    ]);
+    expect(result.stderr).not.toContain('more like this');
+  });
+});

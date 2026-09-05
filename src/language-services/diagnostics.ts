@@ -1,3 +1,5 @@
+import { evaluate } from '../evaluator';
+import { groupWarnings } from '../evaluator/warning-groups';
 import {
   parse,
   detectMissingSemicolon,
@@ -5,7 +7,6 @@ import {
   isLegacyStyleOpenerError,
   LEGACY_STYLE_OPENER_MESSAGE,
 } from '../parser';
-import { evaluate } from '../evaluator';
 import { parser as lezerParser } from '../parser/pathogen.generated';
 
 import type { TextDocument } from './document';
@@ -103,16 +104,20 @@ export function getDiagnostics(document: TextDocument): Diagnostic[] {
   // them out so they don't mask the host's authoritative result.
   try {
     const result = evaluate(ast);
-    // Non-fatal compiler warnings become Warning diagnostics on their line;
-    // ones without a source line (font aggregates) have nowhere to point.
-    for (const w of result.warnings) {
+    // Non-fatal compiler warnings become Warning diagnostics on their line —
+    // one per family (code + position + message with its numbers removed),
+    // carrying the count, so a fillet over every glyph contour is one entry in
+    // the Problems panel rather than thousands. Warnings without a source line
+    // (font aggregates) have nowhere to point.
+    for (const group of groupWarnings(result.warnings)) {
+      const w = group.first;
       if (w.line == null) continue;
       const line = w.line - 1;
       const character = Math.max(0, (w.column ?? 1) - 1);
       diagnostics.push({
         range: makeRange(line, character, document),
         severity: DiagnosticSeverity.Warning,
-        message: w.message,
+        message: group.count > 1 ? `${w.message} (×${group.count} similar)` : w.message,
         source: 'pathogen-evaluator',
       });
     }

@@ -24,6 +24,15 @@ export interface LogEntry {
   severity?: 'warn';
 }
 
+/** A group of warning log mirrors sharing a family (see the library's groupWarnLogEntries). */
+export interface LogGroup {
+  count: number;
+  instances: LogEntry[];
+}
+
+/** Console row from the library's groupWarnLogEntries(): a plain entry or a family group. */
+export type LogRow = { kind: 'entry'; entry: LogEntry } | { kind: 'group'; first: LogEntry; count: number; instances: LogEntry[] };
+
 export type WarningCode = 'corner-op' | 'cut' | 'annotation-transfer' | 'font-glyph' | 'gradient';
 
 export interface CompileWarning {

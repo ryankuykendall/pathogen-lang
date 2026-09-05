@@ -129,6 +129,15 @@ export {
 export { trimPathDataPrecision } from './evaluator/path-precision';
 export { decimatePathData } from './evaluator/path-decimate';
 export type { DecimateResult } from './evaluator/path-decimate';
+
+// Warning grouping shared by the playground console, CLI stderr, LSP diagnostics, and debug capture
+export {
+  groupWarnings,
+  groupWarnLogEntries,
+  WARNING_GROUP_INSTANCE_LIMIT,
+  warningFamily,
+} from './evaluator/warning-groups';
+export type { LogRow, WarningGroup } from './evaluator/warning-groups';
 export { commandsToAbsoluteD, parsePathDataExpanded } from './evaluator/path-data';
 
 // Language Services — shared intelligence layer for VS Code extension and playground

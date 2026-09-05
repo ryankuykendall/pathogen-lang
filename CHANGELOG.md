@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.1] - 2026-09-05 (many-warnings hardening)
 
+### Changed
+
+#### Core
+
+- **Repeated warnings collapse to one row per family on every surface.** A family is the warning code, its source position, and the message with every number replaced by `#` (`Fillet radius clamped at vertex #: effective radius #`), so the thousands of near-identical corner-op warnings a glyph-filleting program emits from one call site become two rows instead of thousands. `groupWarnings()`, `groupWarnLogEntries()`, `warningFamily()`, and `WARNING_GROUP_INSTANCE_LIMIT` (200) are exported from the library (`src/evaluator/warning-groups.ts`). CLI stderr prints the first instance of each family followed by `  … N more like this`; `--json` and `CompileResult.warnings` still carry every instance. LSP diagnostics publish one `Warning` per family with `(×N similar)` appended. Tests: `tests/warning-groups.test.ts`, `tests/cli.test.ts`, `tests/warnings.test.ts`.
+
+#### Playground
+
+- **Console** shows one row per warning family at its first occurrence with a `×N` chip; clicking the chip lists up to 200 instances with a `… N more` trailer. Plain `log()` rows are unchanged. Test: `tests/playground-console-grouping.test.ts`; browser check: `project-docs/debug-features/verify/many-warnings-e2e.mjs` (6,000 warning mirrors → 2 rows).
+- **Copy Debug Info** lists warnings once per family with `(×N)` and no longer repeats the `[warn]` log mirrors under Log Output. Test: `tests/playground-debug-capture.test.ts`.
+
+#### Documentation
+
+- `docs/debug.md` gains a "Repeated warnings" section describing the grouping on each surface; `docs/cli.md` documents the stderr count line.
+
 ### Fixed
 
 #### Playground

@@ -190,7 +190,7 @@ pathogen-lang -v
 | 0 | Success |
 | 1 | Error (parse error, failed assertion, file not found, unknown option, `--png` without puppeteer, etc.) |
 
-Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file:line:col: warning: message` and do not change the exit code.
+Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file:line:col: warning: message`; when the same warning repeats from one site with only its numbers changing, the first instance is followed by `  … N more like this`. Warnings do not change the exit code, and `--json` lists every instance.
 
 ## File Extensions
 

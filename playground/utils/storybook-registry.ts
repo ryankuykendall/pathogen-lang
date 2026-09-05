@@ -364,6 +364,37 @@ layer('hex').apply { circle(60, 100, 40) }`,
         },
       },
       {
+        // Warning mirrors that differ only in numbers collapse into one row
+        // with a ×N chip (through window.PathogenLang.groupWarnLogEntries).
+        name: 'Repeated warnings',
+        props: {
+          isOpen: true,
+          logs: [
+            {
+              line: 7,
+              severity: 'warn',
+              parts: [{ type: 'string', value: '[warn] Fillet radius clamped at vertex 2: effective radius 10.00' }],
+            },
+            {
+              line: 7,
+              severity: 'warn',
+              parts: [{ type: 'string', value: '[warn] Fillet skipped at vertex 2: radius too large for edge length' }],
+            },
+            { line: 9, parts: [{ type: 'string', value: 'drawing plate' }] },
+            {
+              line: 7,
+              severity: 'warn',
+              parts: [{ type: 'string', value: '[warn] Fillet radius clamped at vertex 0: effective radius 6.53' }],
+            },
+            {
+              line: 7,
+              severity: 'warn',
+              parts: [{ type: 'string', value: '[warn] Fillet skipped at vertex 0: radius too large for edge length' }],
+            },
+          ],
+        },
+      },
+      {
         name: 'Empty',
         props: { isOpen: true, logs: [] },
       },
@@ -733,6 +764,38 @@ layer('hex').apply { circle(60, 100, 40) }`,
           },
         },
       },
+      {
+        // A family of warning mirrors: the first instance with a ×N chip that
+        // expands to the individual instances.
+        name: 'Warning Group',
+        props: {
+          data: {
+            line: 7,
+            severity: 'warn',
+            parts: [{ type: 'string', value: '[warn] Fillet radius clamped at vertex 2: effective radius 10.00' }],
+          },
+          group: {
+            count: 3,
+            instances: [
+              {
+                line: 7,
+                severity: 'warn',
+                parts: [{ type: 'string', value: '[warn] Fillet radius clamped at vertex 2: effective radius 10.00' }],
+              },
+              {
+                line: 7,
+                severity: 'warn',
+                parts: [{ type: 'string', value: '[warn] Fillet radius clamped at vertex 1: effective radius 8.25' }],
+              },
+              {
+                line: 7,
+                severity: 'warn',
+                parts: [{ type: 'string', value: '[warn] Fillet radius clamped at vertex 0: effective radius 6.53' }],
+              },
+            ],
+          },
+        },
+      },
     ],
     controls: [],
     render: (container, props) => {
@@ -741,8 +804,9 @@ layer('hex').apply { circle(60, 100, 40) }`,
       container.style.padding = '12px';
       container.style.borderRadius = '4px';
 
-      const entry = document.createElement('log-entry');
-      (entry as unknown as { data: unknown }).data = props.data;
+      const entry = document.createElement('log-entry') as HTMLElement & { data: unknown; group: unknown };
+      entry.data = props.data;
+      if (props.group) entry.group = props.group;
       container.appendChild(entry);
     },
   },

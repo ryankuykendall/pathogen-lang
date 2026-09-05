@@ -105,4 +105,19 @@ describe('compiler warnings', () => {
     expect(warnings[0].message).toMatch(/Fillet radius clamped/);
     expect(diags.some((d) => d.severity === DiagnosticSeverity.Error)).toBe(false);
   });
+
+  it('collapses repeated warnings into one diagnostic per family with a count', () => {
+    const diags = getDiagnostics(
+      new StringTextDocument(`${PLATE}\nfor (i in 1..50) {\n  let soft = plate.fillet(30);\n}\nM 10 10\nplate.draw();`),
+    );
+    const warnings = diags.filter((d) => d.severity === DiagnosticSeverity.Warning);
+    expect(warnings).toHaveLength(2);
+    expect(warnings[0].message).toMatch(
+      /^Fillet radius clamped at vertex \d+: effective radius [\d.]+ \(×100 similar\)$/,
+    );
+    expect(warnings[1].message).toMatch(
+      /^Fillet skipped at vertex \d+: radius too large for edge length \(×100 similar\)$/,
+    );
+    expect(warnings[0].range.start.line).toBe(7);
+  });
 });

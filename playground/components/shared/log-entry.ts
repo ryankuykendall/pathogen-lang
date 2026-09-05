@@ -1,14 +1,23 @@
 // Expandable log entry component for console output
 
-import type { LogEntry as LogEntryData, LogPart } from '../../types/compiler.js';
+import type { LogEntry as LogEntryData, LogGroup, LogPart } from '../../types/compiler.js';
+
+/**
+ * Fallback for `window.PathogenLang.WARNING_GROUP_INSTANCE_LIMIT` when the
+ * library global is absent (storybook, tests); a test pins the two equal.
+ */
+export const INSTANCE_LIMIT_FALLBACK = 200;
 
 export class LogEntry extends HTMLElement {
   private _data: LogEntryData | null;
+  /** Set when this row stands for a family of warning mirrors (count > 1). */
+  private _group: LogGroup | null;
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
     this._data = null;
+    this._group = null;
     this.shadowRoot!.addEventListener('click', (e: Event) => this.handleToggle(e));
   }
 
@@ -23,6 +32,42 @@ export class LogEntry extends HTMLElement {
 
   get data(): LogEntryData | null {
     return this._data;
+  }
+
+  set group(group: LogGroup | null) {
+    this._group = group && group.count > 1 ? group : null;
+    this.render();
+  }
+
+  get group(): LogGroup | null {
+    return this._group;
+  }
+
+  /** Message text of a warning mirror without its `[warn] ` prefix. */
+  private instanceText(entry: LogEntryData): string {
+    return entry.parts
+      .map((p) => p.value)
+      .join(' ')
+      .replace(/^\[warn\]\s*/, '');
+  }
+
+  /** Show/hide the family's instances, rendering them (capped) on first open. */
+  toggleInstances(): void {
+    const root = this.shadowRoot!;
+    const list = root.querySelector('.instances') as HTMLElement | null;
+    const button = root.querySelector('.count') as HTMLElement | null;
+    if (!list || !button || !this._group) return;
+    if (list.hidden && list.childElementCount === 0) {
+      const limit = window.PathogenLang?.WARNING_GROUP_INSTANCE_LIMIT ?? INSTANCE_LIMIT_FALLBACK;
+      const shown = this._group.instances.slice(0, limit);
+      let html = shown.map((e) => `<div class="instance">${this.escapeHtml(this.instanceText(e))}</div>`).join('');
+      const rest = this._group.instances.length - shown.length;
+      if (rest > 0) html += `<div class="more">… ${rest.toLocaleString('en-US')} more</div>`;
+      list.innerHTML = html;
+    }
+    list.hidden = !list.hidden;
+    button.classList.toggle('expanded', !list.hidden);
+    button.setAttribute('aria-expanded', String(!list.hidden));
   }
 
   // Escape HTML for safe display
@@ -137,6 +182,10 @@ export class LogEntry extends HTMLElement {
 
   handleToggle(e: Event): void {
     const target = e.target as HTMLElement;
+    if (target.closest('.count')) {
+      this.toggleInstances();
+      return;
+    }
     const toggle = target.closest('.toggle');
     if (!toggle) return;
 
@@ -156,6 +205,13 @@ export class LogEntry extends HTMLElement {
     const isWarn = logEntry.severity === 'warn';
     this.classList.toggle('warn', isWarn);
     if (isWarn) partsHTML += `<span class="chip" title="Compiler warning">warn</span>`;
+    const group = isWarn ? this._group : null;
+    if (group) {
+      const count = group.count.toLocaleString('en-US');
+      const where = logEntry.line !== null ? ' from this line' : '';
+      const label = `${count} warnings of this kind${where} — click to list them`;
+      partsHTML += `<button type="button" class="count" aria-expanded="false" aria-label="${label}" title="${label}">×${count}</button>`;
+    }
 
     // Add line prefix if present
     if (logEntry.line !== null) {
@@ -195,6 +251,8 @@ export class LogEntry extends HTMLElement {
       }
     }
 
+    if (group) partsHTML += `<div class="instances" hidden></div>`;
+
     this.shadowRoot!.innerHTML = `
       <style>
         :host {
@@ -204,6 +262,35 @@ export class LogEntry extends HTMLElement {
         }
         :host(.warn) {
           background: rgba(250, 204, 21, 0.08);
+        }
+        .count {
+          display: inline-block;
+          margin-right: 6px;
+          padding: 0 6px;
+          border: 1px solid #b45309;
+          border-radius: 3px;
+          background: transparent;
+          color: #fbbf24;
+          font: inherit;
+          font-size: 10px;
+          font-weight: 600;
+          line-height: 1.6;
+          cursor: pointer;
+          vertical-align: middle;
+        }
+        .count:hover,
+        .count.expanded {
+          background: rgba(180, 83, 9, 0.35);
+        }
+        .instances {
+          margin: 6px 0 0 16px;
+          padding-left: 8px;
+          border-left: 1px solid #444;
+        }
+        .instance {
+          color: #d4c58a;
+          padding: 1px 0;
+          font-size: 0.85em;
         }
         .chip {
           display: inline-block;

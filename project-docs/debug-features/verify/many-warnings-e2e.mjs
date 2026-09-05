@@ -37,5 +37,26 @@ for (let i = 0; i < 240; i++) {
   if (found.errVisible || found.warnChars > 0) break;
   await new Promise((r) => setTimeout(r, 500));
 }
-console.log(JSON.stringify({ reps, secs: Math.round((Date.now() - t0) / 1000), ...found, pageErrors: pageErrors.slice(0, 3), consoleErrors: consoleErrors.slice(0, 5) }));
+// Open the console pane: warning mirrors that differ only in numbers collapse
+// to one row per family with a ×N chip (expected: 2 rows at any rep count).
+await page.evaluate(`(() => {
+  const walk = (root, sel, out) => { for (const el of root.querySelectorAll('*')) { if (el.matches(sel)) out.push(el); if (el.shadowRoot) walk(el.shadowRoot, sel, out); } return out; };
+  walk(document, 'console-pane', [])[0]?.open();
+})()`);
+await new Promise((r) => setTimeout(r, 1000));
+const consoleProbe = `(() => {
+  const walk = (root, sel, out) => { for (const el of root.querySelectorAll('*')) { if (el.matches(sel)) out.push(el); if (el.shadowRoot) walk(el.shadowRoot, sel, out); } return out; };
+  const pane = walk(document, 'console-pane', [])[0];
+  if (!pane) return { pane: false };
+  const rows = Array.from(pane.shadowRoot.querySelectorAll('log-entry'));
+  const chips = rows.map((r) => r.shadowRoot?.querySelector('.count')?.textContent ?? null);
+  const text = rows.map((r) => (r.shadowRoot?.textContent ?? '').replace(/\\s+/g, ' ').trim().slice(0, 90));
+  const first = rows[0]?.shadowRoot?.querySelector('.count');
+  first?.click();
+  const instances = rows[0]?.shadowRoot?.querySelectorAll('.instance').length ?? 0;
+  const more = rows[0]?.shadowRoot?.querySelector('.more')?.textContent ?? null;
+  return { pane: true, rawLogs: pane.logs.length, rows: rows.length, chips, text, instances, more };
+})()`;
+const consoleFound = await page.evaluate(consoleProbe);
+console.log(JSON.stringify({ reps, secs: Math.round((Date.now() - t0) / 1000), ...found, console: consoleFound, pageErrors: pageErrors.slice(0, 3), consoleErrors: consoleErrors.slice(0, 5) }));
 await browser.close();

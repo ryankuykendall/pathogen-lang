@@ -13,6 +13,7 @@ import {
   resolveFontDirectives,
   toJsonDocument,
 } from '.';
+import { groupWarnings } from './evaluator/warning-groups';
 import type { SvgGeneratorOptions } from './svg-generator';
 
 import type { CompileOptions, CompileResult, CompileWarning, FontRegistry, LogEntry } from '.';
@@ -916,12 +917,21 @@ async function renderPng(svg: string, pngPath: string, scale: number): Promise<{
   return { width: width * scale, height: height * scale };
 }
 
-/** Compiler warnings always go to stderr, one per line, in `file:line:col: warning: message` form. */
+/**
+ * Compiler warnings always go to stderr in `file:line:col: warning: message`
+ * form — one line per family (code + position + message with its numbers
+ * removed), followed by `… N more like this` when the family repeats. The
+ * raw list is in `--json`.
+ */
 function outputWarnings(warnings: CompileWarning[], sourceFile: string | undefined): void {
   const where = sourceFile ?? '<inline>';
-  for (const w of warnings) {
+  for (const group of groupWarnings(warnings)) {
+    const w = group.first;
     const pos = w.line != null ? `:${w.line}${w.column != null ? `:${w.column}` : ''}` : '';
     process.stderr.write(`${where}${pos}: warning: ${w.message}\n`);
+    if (group.count > 1) {
+      process.stderr.write(`  … ${(group.count - 1).toLocaleString('en-US')} more like this\n`);
+    }
   }
 }
 

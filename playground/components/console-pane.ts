@@ -1,6 +1,6 @@
 // Console pane component for log output
 
-import type { LogEntry as LogEntryData } from '../types/compiler.js';
+import type { LogEntry as LogEntryData, LogGroup, LogRow } from '../types/compiler.js';
 import './shared/log-entry.js';
 import styles from './console-pane.css';
 
@@ -80,9 +80,22 @@ export class ConsolePane extends HTMLElement {
       emptyDiv.textContent = 'No log output';
       output.appendChild(emptyDiv);
     } else {
-      for (const logEntry of this._logs) {
-        const entry = document.createElement('log-entry') as HTMLElement & { data: LogEntryData };
-        entry.data = logEntry;
+      // Warning mirrors collapse to one row per family (line + message with its
+      // numbers removed) through the library; without it (storybook, tests)
+      // every entry is its own row.
+      const groupRows = window.PathogenLang?.groupWarnLogEntries;
+      const rows: LogRow[] = groupRows ? groupRows(this._logs) : this._logs.map((entry) => ({ kind: 'entry', entry }));
+      for (const row of rows) {
+        const entry = document.createElement('log-entry') as HTMLElement & {
+          data: LogEntryData;
+          group: LogGroup | null;
+        };
+        if (row.kind === 'group') {
+          entry.data = row.first;
+          entry.group = row.count > 1 ? { count: row.count, instances: row.instances } : null;
+        } else {
+          entry.data = row.entry;
+        }
         output.appendChild(entry);
       }
     }

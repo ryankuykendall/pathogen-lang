@@ -1,5 +1,5 @@
 import { store } from '../state/store.js';
-import type { LayerOutput, LogEntry } from '../types/compiler.js';
+import type { CompileWarning, LayerOutput, LogEntry } from '../types/compiler.js';
 
 /**
  * Per-section cap on captured rows. A program that fillets every glyph
@@ -26,7 +26,7 @@ export function buildDebugCapture(): string {
   const layers = (state.layers || []) as LayerOutput[];
   const layerVisibility = (state.layerVisibility || {}) as Record<string, boolean>;
   const logs = (state.logs || []) as LogEntry[];
-  const warnings = (state.warnings || []) as { code: string; message: string; line?: number; column?: number }[];
+  const warnings = (state.warnings || []) as CompileWarning[];
   const calledFunctions = (state.calledStdlibFunctions || []).join(', ') || 'none';
 
   // Build layers table
@@ -65,9 +65,12 @@ export function buildDebugCapture(): string {
   }
 
   // Build log output
+  // Warning mirrors are listed (grouped) under Warnings; keep only real log() output here.
+  const plainLogs = logs.filter((entry) => entry.severity !== 'warn');
+  const mirrored = logs.length - plainLogs.length;
   let logOutput = '';
-  if (logs.length > 0) {
-    for (const entry of logs.slice(0, CAPTURE_LINE_LIMIT)) {
+  if (plainLogs.length > 0) {
+    for (const entry of plainLogs.slice(0, CAPTURE_LINE_LIMIT)) {
       const prefix = entry.line != null ? `[line ${entry.line}] ` : '';
       const parts = (entry.parts || [])
         .map((p: { label?: string; value: string }) => {
@@ -77,19 +80,28 @@ export function buildDebugCapture(): string {
         .join(' ');
       logOutput += `${prefix}${parts}\n`;
     }
-    if (logs.length > CAPTURE_LINE_LIMIT) {
-      logOutput += `… ${logs.length - CAPTURE_LINE_LIMIT} more (${logs.length} total)\n`;
+    if (plainLogs.length > CAPTURE_LINE_LIMIT) {
+      logOutput += `… ${plainLogs.length - CAPTURE_LINE_LIMIT} more (${plainLogs.length} total)\n`;
     }
   } else {
     logOutput = '(no log output)\n';
   }
+  if (mirrored > 0) logOutput += `(${mirrored} warning mirror${mirrored === 1 ? '' : 's'} omitted — see Warnings)\n`;
 
-  const warningLines = warnings.slice(0, CAPTURE_LINE_LIMIT).map((w) => {
+  // One row per family (code + position + message with numbers removed), with
+  // its count — the same grouping the console, CLI, and LSP use.
+  const groupFn = window.PathogenLang?.groupWarnings;
+  const groups: { first: CompileWarning; count: number }[] = groupFn
+    ? groupFn(warnings)
+    : warnings.map((w) => ({ first: w, count: 1 }));
+  const warningLines = groups.slice(0, CAPTURE_LINE_LIMIT).map((g) => {
+    const w = g.first;
     const where = w.line != null ? ` line ${w.line}${w.column != null ? `:${w.column}` : ''}` : '';
-    return `- [${w.code}]${where} ${w.message}`;
+    const times = g.count > 1 ? ` (×${g.count.toLocaleString('en-US')})` : '';
+    return `- [${w.code}]${where} ${w.message}${times}`;
   });
-  if (warnings.length > CAPTURE_LINE_LIMIT) {
-    warningLines.push(`- … ${warnings.length - CAPTURE_LINE_LIMIT} more (${warnings.length} total)`);
+  if (groups.length > CAPTURE_LINE_LIMIT) {
+    warningLines.push(`- … ${groups.length - CAPTURE_LINE_LIMIT} more families (${warnings.length} warnings total)`);
   }
   const warningOutput = warnings.length > 0 ? `${warningLines.join('\n')}\n` : '(no warnings)\n';
 
