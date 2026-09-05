@@ -61,7 +61,9 @@
     "taskDefinitions": [
       {
         "type": "pathogen",
-        "required": ["file"],
+        "required": [
+          "file"
+        ],
         "properties": {
           "file": {
             "type": "string",
@@ -102,6 +104,6 @@
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
-    "typescript": "^5.3.0"
+    "typescript": "^6.0.3"
   }
 }

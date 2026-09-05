@@ -1,11 +1,19 @@
 import { defineConfig } from 'tsup';
 
+// tsup 8.5.1's declaration bundler injects `baseUrl` into the compiler options
+// it hands to TypeScript. TypeScript 6.0 reports every deprecated option as a
+// hard error (TS5101), so the .d.ts build dies before it starts. Our own
+// tsconfig has no deprecated options (plain `tsc --noEmit` is clean); this
+// silences only tsup's injected one, only for the dts step. Drop it once tsup
+// stops setting baseUrl.
+const dts = { compilerOptions: { ignoreDeprecations: '6.0' } };
+
 export default defineConfig([
   // Library builds
   {
     entry: ['src/index.ts'],
     format: ['esm', 'cjs'],
-    dts: true,
+    dts,
     sourcemap: true,
     clean: true,
   },
@@ -71,7 +79,7 @@ export default defineConfig([
   {
     entry: { 'pan-zoom': 'src/ui/pan-zoom.ts' },
     format: ['esm', 'cjs'],
-    dts: true,
+    dts,
     sourcemap: true,
   },
   {
