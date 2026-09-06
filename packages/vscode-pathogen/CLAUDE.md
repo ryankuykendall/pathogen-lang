@@ -114,7 +114,7 @@ Other items below are still open.
 
 ### Broken
 
-- [ ] **Language server does not activate when installed from .vsix** — The packaging pipeline bundles dependencies into `server/node_modules/`, but the language server process fails to start. The extension activates (preview command works) but no LSP features are available (no completions, hover, diagnostics, or formatting). Root cause: the server subprocess runs in its own Node process and may not resolve dependencies from the bundled path.
+- [ ] **Language server does not activate when installed from .vsix** — fix shipped 2026-09-06, awaiting in-editor confirmation. Verified root cause: the `.vsix` never contained `vscode-languageclient`. `vsce --no-dependencies` strips the extension's own module directory, and `scripts/build-vscode-extension.ts` tried to copy the client out of the *root* install, where it is not a dependency, so `activate()` could not construct a `LanguageClient` and the server was never spawned (the preview command, which needs no client, kept working — hence the earlier misdiagnosis of the server subprocess). The build script now writes a `server/package.json` listing every runtime dependency at its declared range — the server's, the extension's (`vscode-languageclient`), and the packages `dist/index.cjs` leaves external (derived by scanning the bundle) — runs one `npm install`, and refuses to package unless each of them resolves from the bundle. `extension.ts` reports a descriptive error if the client still cannot load. Checks that pass on the packaged layout: `vscode-languageclient/node` resolves from `server/node_modules`; the bundled `server/out/server.js` answers `initialize` over stdio with all 15 capabilities.
 
 ### Missing
 

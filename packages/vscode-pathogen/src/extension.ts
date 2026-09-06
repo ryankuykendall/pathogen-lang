@@ -16,21 +16,28 @@ export function activate(context: vscode.ExtensionContext): void {
   // Resolve vscode-languageclient from bundled server/node_modules
   // when installed from .vsix (vsce --no-dependencies strips the ext's own node_modules)
   let lc: any;
+  let loadError: unknown;
   try {
     lc = require('vscode-languageclient/node');
-  } catch {
-    // Fallback: resolve from bundled server/node_modules
+  } catch (err) {
+    // Fallback: resolve from the bundled server/node_modules (build-vscode-extension.ts
+    // installs vscode-languageclient there because vsce --no-dependencies strips
+    // the extension's own module directory).
     const bundledModules = path.join(context.extensionPath, 'server', 'node_modules');
-    if (fs.existsSync(bundledModules)) {
-      const serverRequire = nodeModule.createRequire(
-        path.join(bundledModules, '_resolve.js'),
-      );
+    try {
+      const serverRequire = nodeModule.createRequire(path.join(bundledModules, '_resolve.js'));
       lc = serverRequire('vscode-languageclient/node');
+    } catch (fallbackErr) {
+      loadError = fallbackErr ?? err;
     }
   }
 
   if (!lc) {
-    vscode.window.showErrorMessage('Pathogen: Could not load language client module.');
+    const detail = loadError instanceof Error ? loadError.message : String(loadError ?? 'unknown error');
+    vscode.window.showErrorMessage(
+      `Pathogen: could not load vscode-languageclient, so completions, hover and diagnostics are unavailable. ` +
+        `Rebuild the extension with \`npm run build:vscode:install\`. (${detail})`,
+    );
     return;
   }
 

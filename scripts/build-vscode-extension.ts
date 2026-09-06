@@ -6,7 +6,7 @@
  *   1. Build root library (npm run build)
  *   2. Build language server (tsc)
  *   3. Build extension (tsc)
- *   4. Bundle language server + library into extension/server/
+ *   4. Bundle language server + every runtime dependency into extension/server/
  *   5. Package with vsce
  *
  * Usage:
@@ -17,6 +17,7 @@
 
 import { execSync } from 'child_process';
 import * as fs from 'fs';
+import { builtinModules, createRequire } from 'module';
 import * as path from 'path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -61,115 +62,132 @@ fs.mkdirSync(BUNDLED_SERVER_DIR, { recursive: true });
 const serverOut = path.join(SERVER_DIR, 'out');
 fs.cpSync(serverOut, path.join(BUNDLED_SERVER_DIR, 'out'), { recursive: true });
 
-// Copy language server package.json (needed for Node module resolution)
-fs.copyFileSync(
-  path.join(SERVER_DIR, 'package.json'),
+// --- Runtime dependencies for the bundle -------------------------------------
+// vsce is run with --no-dependencies, which strips the extension's own module
+// directory, so EVERYTHING the extension host and the server subprocess
+// require at runtime must live under server/node_modules/. Three groups:
+//
+//   1. the language server's runtime deps (vscode-languageserver, …), at the
+//      ranges packages/pathogen-language-server/package.json declares;
+//   2. the extension's runtime deps (vscode-languageclient), at the ranges
+//      packages/vscode-pathogen/package.json declares — extension.ts falls back
+//      to server/node_modules when the top-level require fails;
+//   3. the packages the CJS library bundle (dist/index.cjs) leaves external —
+//      derived by scanning the bundle for bare require() specifiers, at the
+//      ranges the root package.json declares.
+//
+// One `npm install` resolves all of them (plus transitive deps such as
+// vscode-jsonrpc / semver / minimatch) into a single consistent tree. Earlier
+// versions of this script hand-copied directories out of the root install
+// and silently shipped without vscode-languageclient, which is why the .vsix
+// never started the language server.
+interface PackageManifest {
+  name?: string;
+  version?: string;
+  main?: string;
+  dependencies?: Record<string, string>;
+}
+const readJson = (p: string): PackageManifest => JSON.parse(fs.readFileSync(p, 'utf-8')) as PackageManifest;
+const serverPkg = readJson(path.join(SERVER_DIR, 'package.json'));
+const extPkg = readJson(path.join(EXT_DIR, 'package.json'));
+const rootPkg = readJson(path.join(ROOT, 'package.json'));
+
+const cjsBundle = fs.readFileSync(path.join(ROOT, 'dist', 'index.cjs'), 'utf-8');
+const nodeBuiltins = new Set(builtinModules.flatMap((b) => [b, `node:${b}`]));
+const cjsExternals = [...new Set([...cjsBundle.matchAll(/require\(["']([^"']+)["']\)/g)].map((m) => m[1]))]
+  .filter((spec) => !spec.startsWith('.') && !nodeBuiltins.has(spec))
+  // "@scope/name/sub" → "@scope/name"; "name/sub" → "name"
+  .map((spec) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]));
+
+const runtimeDeps: Record<string, string> = {};
+for (const [name, range] of Object.entries(serverPkg.dependencies || {})) {
+  if (name !== 'pathogen-lang') runtimeDeps[name] = range;
+}
+for (const [name, range] of Object.entries(extPkg.dependencies || {})) {
+  runtimeDeps[name] = range;
+}
+for (const name of cjsExternals) {
+  const range = rootPkg.dependencies?.[name];
+  if (!range) {
+    throw new Error(
+      `dist/index.cjs requires "${name}" but it is not in the root package.json dependencies — ` +
+        'add it there so the VS Code bundle can install it.',
+    );
+  }
+  runtimeDeps[name] = range;
+}
+
+// Minimal package.json for the bundle: Node's resolver needs `main`; npm needs
+// `dependencies`. pathogen-lang itself is written below from dist/index.cjs.
+fs.writeFileSync(
   path.join(BUNDLED_SERVER_DIR, 'package.json'),
+  JSON.stringify(
+    {
+      name: serverPkg.name,
+      version: serverPkg.version,
+      private: true,
+      main: serverPkg.main,
+      dependencies: runtimeDeps,
+    },
+    null,
+    2,
+  ),
 );
 
-// Install language server runtime deps first (vscode-languageserver, vscode-languageserver-textdocument)
-// at the exact ranges the server's package.json declares — not @latest — so the
-// bundled runtime matches the types the server was compiled against.
-const serverPkg = JSON.parse(fs.readFileSync(path.join(SERVER_DIR, 'package.json'), 'utf-8'));
-const serverDeps = Object.entries<string>(serverPkg.dependencies || {}).filter(([d]) => d !== 'pathogen-lang');
-if (serverDeps.length > 0) {
-  run(`npm install --prefix "${BUNDLED_SERVER_DIR}" ${serverDeps.map(([d, range]) => `"${d}@${range}"`).join(' ')} --omit=dev --no-save 2>/dev/null || true`);
+console.log(
+  `  Runtime deps: ${Object.entries(runtimeDeps)
+    .map(([n, r]) => `${n}@${r}`)
+    .join(', ')}`,
+);
+run('npm install --omit=dev --no-audit --no-fund --loglevel=error', BUNDLED_SERVER_DIR);
+
+// Now write pathogen-lang itself: the CJS entry the server requires
+const bundledModulesDir = path.join(BUNDLED_SERVER_DIR, 'node_modules');
+const bundledPathogenLang = path.join(bundledModulesDir, 'pathogen-lang');
+if (fs.existsSync(bundledPathogenLang)) {
+  fs.rmSync(bundledPathogenLang, { recursive: true, force: true });
 }
+fs.mkdirSync(path.join(bundledPathogenLang, 'dist'), { recursive: true });
+fs.copyFileSync(path.join(ROOT, 'dist', 'index.cjs'), path.join(bundledPathogenLang, 'dist', 'index.cjs'));
+fs.writeFileSync(
+  path.join(bundledPathogenLang, 'package.json'),
+  JSON.stringify({ name: 'pathogen-lang', version: rootPkg.version, main: './dist/index.cjs' }, null, 2),
+);
 
-// Now replace the pathogen-lang symlink (created by npm workspace) with real files
-const serverNodeModules = path.join(BUNDLED_SERVER_DIR, 'node_modules', 'pathogen-lang');
-// Remove symlink or existing directory
-if (fs.existsSync(serverNodeModules)) {
-  fs.rmSync(serverNodeModules, { recursive: true, force: true });
-}
-fs.mkdirSync(serverNodeModules, { recursive: true });
-
-// Copy CJS dist entry needed by the server
-const sveDistDir = path.join(serverNodeModules, 'dist');
-fs.mkdirSync(sveDistDir, { recursive: true });
-fs.copyFileSync(path.join(ROOT, 'dist', 'index.cjs'), path.join(sveDistDir, 'index.cjs'));
-
-// Write minimal package.json pointing to CJS entry
-fs.writeFileSync(path.join(serverNodeModules, 'package.json'), JSON.stringify({
-  name: 'pathogen-lang',
-  main: './dist/index.cjs',
-}, null, 2));
-
-// Copy external dependencies required by the CJS bundle (@lezer/*, opentype.js)
-const rootNM = path.join(ROOT, 'node_modules');
-const bundledNM = path.join(BUNDLED_SERVER_DIR, 'node_modules');
-const cjsExternalDeps = ['@lezer/lr', '@lezer/highlight', '@lezer/common', 'opentype.js'];
-for (const dep of cjsExternalDeps) {
-  const src = path.join(rootNM, dep);
-  const dest = path.join(bundledNM, dep);
-  if (fs.existsSync(dest)) {
-    fs.rmSync(dest, { recursive: true, force: true });
-  }
-  if (fs.existsSync(src)) {
-    const realSrc = fs.realpathSync(src);
-    fs.cpSync(realSrc, dest, { recursive: true });
-    console.log(`  Copied ${dep} (CJS external)`);
+// Verify every runtime dependency actually resolves from the bundle before packaging.
+const bundleRequire = createRequire(path.join(bundledModulesDir, '_resolve.js'));
+for (const name of [
+  ...Object.keys(runtimeDeps),
+  'pathogen-lang',
+  'vscode-languageclient/node',
+  'vscode-languageserver/node',
+]) {
+  try {
+    bundleRequire.resolve(name);
+  } catch (err) {
+    throw new Error(`Bundle is missing "${name}" — the .vsix would not activate. ${(err as Error).message}`);
   }
 }
-
-console.log(`  Bundled server to ${path.relative(ROOT, BUNDLED_SERVER_DIR)}`);
+console.log(
+  `  Bundled server + ${Object.keys(runtimeDeps).length} runtime deps to ${path.relative(ROOT, BUNDLED_SERVER_DIR)}`,
+);
 
 // Bundle compiler IIFE for the preview webview
 const COMPILER_DIR = path.join(EXT_DIR, 'compiler');
 if (fs.existsSync(COMPILER_DIR)) fs.rmSync(COMPILER_DIR, { recursive: true });
 fs.mkdirSync(COMPILER_DIR, { recursive: true });
-fs.copyFileSync(
-  path.join(ROOT, 'dist', 'index.global.js'),
-  path.join(COMPILER_DIR, 'index.global.js'),
-);
+fs.copyFileSync(path.join(ROOT, 'dist', 'index.global.js'), path.join(COMPILER_DIR, 'index.global.js'));
 // Shared pan/zoom controller bundle (window.PathogenPanZoom) for the webview.
-fs.copyFileSync(
-  path.join(ROOT, 'dist', 'pan-zoom.global.js'),
-  path.join(COMPILER_DIR, 'pan-zoom.global.js'),
-);
+fs.copyFileSync(path.join(ROOT, 'dist', 'pan-zoom.global.js'), path.join(COMPILER_DIR, 'pan-zoom.global.js'));
 console.log('  Bundled compiler + pan/zoom controller for preview webview');
 
-// Copy extension's runtime dependency (vscode-languageclient + transitive deps)
-// into server/node_modules which vsce --no-dependencies includes (it skips
-// the extension's own node_modules/ but includes server/ as a regular directory)
-step('5/6  Bundling extension runtime dependencies');
-const rootNodeModules = path.join(ROOT, 'node_modules');
-const bundledNodeModules = path.join(BUNDLED_SERVER_DIR, 'node_modules');
-const clientDeps = [
-  'vscode-languageclient',
-  'vscode-languageserver-protocol',
-  'vscode-languageserver-types',
-  'vscode-jsonrpc',
-  // Transitive dependencies of vscode-languageclient
-  'semver',
-  'minimatch',
-  'brace-expansion',
-  'balanced-match',
-  'concat-map',
-];
-for (const dep of clientDeps) {
-  const src = path.join(rootNodeModules, dep);
-  const dest = path.join(bundledNodeModules, dep);
-  if (fs.existsSync(dest)) {
-    fs.rmSync(dest, { recursive: true, force: true });
-  }
-  if (fs.existsSync(src)) {
-    const realSrc = fs.realpathSync(src);
-    fs.cpSync(realSrc, dest, { recursive: true });
-    console.log(`  Copied ${dep}`);
-  }
-}
-
-// --- Step 6: Package with vsce ---
-step('6/6  Packaging .vsix');
+// --- Step 5: Package with vsce ---
+step('5/5  Packaging .vsix');
 
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 const vsixPath = path.join(OUTPUT_DIR, 'vscode-pathogen.vsix');
 
-run(
-  `npx @vscode/vsce package --allow-missing-repository --no-dependencies --out "${vsixPath}"`,
-  EXT_DIR,
-);
+run(`npx @vscode/vsce package --allow-missing-repository --no-dependencies --out "${vsixPath}"`, EXT_DIR);
 
 const size = (fs.statSync(vsixPath).size / 1024).toFixed(1);
 console.log(`\n✓ Extension packaged: ${path.relative(ROOT, vsixPath)} (${size} KB)`);
