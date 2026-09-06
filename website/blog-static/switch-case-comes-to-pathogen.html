@@ -301,7 +301,7 @@ things. A marker kind picks a shape. An angle picks a quadrant. A score
 picks a label and a bar width. Until now, Pathogen spelled that moment as
 an <code>if</code> / <code>else if</code> chain that names the value on every branch. Now it
 has a <code>switch</code>:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">switch</span> (<span class="id">marker</span>) {
+<pre><code class="hljs language-pathogen"><span class="kw">switch</span>(<span class="id">marker</span>) {
   <span class="kw">case</span> <span class="str">"dot"</span>, <span class="str">"bullet"</span> {
     <span class="id">circle</span>(<span class="id">cx</span>, <span class="id">cy</span>, <span class="num">6</span>);
   }
@@ -414,7 +414,7 @@ for ([kinds, row] in rows) {
   let cy = 45 + row * 60;
   for ([kind, index] in kinds) {
     let cx = 40 + index * 60;
-    switch (kind) {
+    switch(kind) {
       case Marker.Dot {
         circle(cx, cy, 10);
       }
@@ -471,7 +471,7 @@ define default PathLayer('marks') #{
 for (i in 0..&lt;24) {
   let heading = i * 15deg;
   let len = 0;
-  switch (heading) {
+  switch(heading) {
     case 0deg..&lt;90deg {
       len = 70;
     }
@@ -489,7 +489,7 @@ for (i in 0..&lt;24) {
   L calc(100 + cos(heading) * len) calc(100 + sin(heading) * len)
 
   let dotRadius = 0;
-  switch (i) {
+  switch(i) {
     case ..&lt;6 {
       dotRadius = 5;
     }
@@ -552,7 +552,7 @@ let targets = [
 ];
 
 for (item in targets) {
-  switch (item) {
+  switch(item) {
     case { x, y } where x &gt; y {
       circle(x, y, 9);
       circle(x, y, 4);
@@ -590,12 +590,13 @@ run statements would leave the most common use on the table: picking a
 number. So a switch can also produce a value. Put one expression inside
 each pair of braces, end with <code>default</code>, and use the whole thing wherever
 an expression goes:</p>
-<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">radius</span> = <span class="kw">switch</span> (<span class="id">level</span>) {
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">radius</span> = <span class="kw">switch</span>(<span class="id">level</span>) {
   <span class="kw">case</span> <span class="num">1</span>, <span class="num">2</span> { <span class="num">4</span> }
   <span class="kw">case</span> <span class="num">3</span><span class="op">..&lt;</span><span class="num">7</span> { <span class="num">8</span> }
   <span class="kw">default</span> { <span class="num">12</span> }
 };
-</code></pre><p>Only the chosen arm&#39;s expression runs. <code>default</code> is required because the
+</code></pre><p>Only the chosen arm&#39;s expression runs, and a semicolon after it is fine
+(<code>case 1, 2 { 4; }</code> is the same arm). <code>default</code> is required because the
 expression must always produce something. It works on the right of
 <code>let</code>, in function arguments, inside a backtick template&#39;s <code>${ }</code>, and
 inside <code>calc()</code>, which is also how it goes into a path command&#39;s
@@ -629,18 +630,18 @@ let kinds = [
 
 for ([kind, index] in kinds) {
   let cx = 40 + index * 60;
-  let size = switch (kind) {
+  let size = switch(kind) {
     case Marker.Dot { 10 }
     case Marker.Ring { 16 }
     default { 12 }
   };
-  let lift = switch (index) {
+  let lift = switch(index) {
     case 0..&lt;2 { 0 }
     case 2..&lt;4 { -12 }
     default { 12 }
   };
   let cy = 52 + lift;
-  switch (kind) {
+  switch(kind) {
     case Marker.Dot {
       circle(cx, cy, size);
     }
@@ -660,7 +661,7 @@ for ([kind, index] in kinds) {
     }
   }
   M calc(cx - size) calc(78 + lift)
-  L calc(cx + switch (kind) {
+  L calc(cx + switch(kind) {
     case Marker.Box { size * 2 }
     default { size }
   }) calc(78 + lift)
@@ -701,7 +702,7 @@ for ([score, row] in scores) {
   layer('labels').apply {
     text(16, y) {
       `#${row + 1} (${score}): `
-      switch (score) {
+      switch(score) {
         case ..&lt;40 {
           tspan()`low`;
         }
@@ -714,7 +715,7 @@ for ([score, row] in scores) {
       }
     }
   }
-  let width = switch (score) {
+  let width = switch(score) {
     case ..&lt;40 { 24 }
     case 40..&lt;75 { 48 }
     default { 72 }

@@ -1469,13 +1469,13 @@ You can chain as many `else if` blocks as needed. Comparison results are numeric
 
 ## Switch Statements
 
-Match one value against a list of patterns with `switch`:
+Match one value against a list of patterns with `switch`. Write it like a call, `switch(value)`, with the parenthesis against the keyword:
 
 ```
 let kind = "square";
 
 // kind is "square", so this draws the rect
-switch (kind) {
+switch(kind) {
   case "circle" {
     circle(50, 50, 20);
   }
@@ -1501,7 +1501,7 @@ let shape = Shape.Square;
 let cols = 4;
 let column = 3;
 
-switch (shape) {
+switch(shape) {
   case Shape.Circle {
     circle(50, 50, 20);
   }
@@ -1510,7 +1510,7 @@ switch (shape) {
   }
 }
 
-switch (column) {
+switch(column) {
   case 0 {
     M 0 0 L 0 100
   }
@@ -1527,7 +1527,7 @@ List several patterns separated by commas to share one body:
 ```
 let kind = "dot";
 
-switch (kind) {
+switch(kind) {
   case "circle", "dot", "ring" {
     circle(50, 50, 20);
   }
@@ -1544,7 +1544,7 @@ switch (kind) {
 ```
 let t = 0.4;
 
-switch (t) {
+switch(t) {
   case 0..<0.25 {
     circle(25, 50, 5);
   }
@@ -1562,7 +1562,7 @@ Leave off a bound to make a range open-ended: `..<0` matches everything below ze
 ```
 let heading = 135deg;
 
-switch (heading) {
+switch(heading) {
   case 0deg..<90deg {
     M 50 50 L 100 0
   }
@@ -1584,7 +1584,7 @@ An object pattern matches any object or struct value that has every named proper
 ```
 let target = Point(30, 70);
 
-switch (target) {
+switch(target) {
   case {x, y} {
     M 0 0 L x y
   }
@@ -1592,7 +1592,7 @@ switch (target) {
 
 let stops = [10, 40, 90];
 
-switch (stops) {
+switch(stops) {
   case [] {
     circle(50, 50, 4);
   }
@@ -1616,7 +1616,7 @@ Add `where` and a condition after the pattern to narrow a match. The guard runs 
 ```
 let target = Point(30, 70);
 
-switch (target) {
+switch(target) {
   case {x, y} where x > y {
     M 0 0 L x y
   }
@@ -1638,7 +1638,7 @@ Each case body is a block with its own scope, like an `if` branch: a `let` insid
 
 ```
 for (i in 0..9) {
-  switch (i % 3) {
+  switch(i % 3) {
     case 0 {
       continue;
     }
@@ -1662,7 +1662,7 @@ Inside a `text(x, y) { }` body, case bodies hold text items — template literal
 let level = 4;
 
 text(10, 30) {
-  switch (level) {
+  switch(level) {
     case 1, 2 {
       `Low`
     }
@@ -1682,7 +1682,7 @@ A `switch` works inside a `&{ }` text block too, but a `&{ }` body holds ordinar
 let kind = "b";
 
 let block = &{
-  switch (kind) {
+  switch(kind) {
     case "a" {
       text(0, 16)`A`
     }
@@ -1700,13 +1700,13 @@ A `switch` can also produce a value. Put one expression inside each pair of brac
 ```
 let level = 4;
 
-let radius = switch (level) {
+let radius = switch(level) {
   case 1, 2 { 4 }
   case 3..<7 { 8 }
   default { 12 }
 };
 
-let label = switch (level) {
+let label = switch(level) {
   case ..<3 { "low" }
   case 3..<7 { "medium" }
   default { "high" }
@@ -1716,17 +1716,17 @@ circle(50, 50, radius);
 log(label);   // medium
 ```
 
-Each arm is a `case` clause and one expression. The clauses are the statement form's clauses: the same value, range, and destructuring patterns, comma alternatives, and `where` guards. A pattern's bindings are visible in that arm's expression (`case {x, y} { x + y }`). Only the chosen arm's expression runs. An arm holds exactly one expression, so there is no semicolon inside the braces, and omitting `default` is a parse error (`A switch expression needs a 'default' arm so it always produces a value`). A switch expression works on the right of `let`, in function arguments, in a backtick template's `${ }`, and inside `calc()`, which is also how it goes into a path command's arguments:
+Each arm is a `case` clause and one expression. The clauses are the statement form's clauses: the same value, range, and destructuring patterns, comma alternatives, and `where` guards. A pattern's bindings are visible in that arm's expression (`case {x, y} { x + y }`). Only the chosen arm's expression runs. An arm holds exactly one expression; a semicolon after it is allowed but not required, so `case 1 { 4; }` and `case 1 { 4 }` are the same arm (the formatter prints the second). Two expressions in one arm are a parse error, and so is omitting `default` (`A switch expression needs a 'default' arm so it always produces a value`). A switch expression works on the right of `let`, in function arguments, in a backtick template's `${ }`, and inside `calc()`, which is also how it goes into a path command's arguments:
 
 ```
 let target = Point(70, 30);
 
 M 0 0
-L calc(switch (target) { case {x, y} where x > y { x } default { 100 } }) 50
+L calc(switch(target) { case {x, y} where x > y { x } default { 100 } }) 50
 // L 70 50
 ```
 
-At the start of a statement, `switch` is always the statement form; to use the value, put the switch where a value is expected. Two places cannot hold one directly: a style value's `${ }` interpolation allows only one level of braces, and a bare path argument outside `calc()` accepts only simple values. In both, compute the value with `let` first.
+At the start of a statement, `switch` is always the statement form (a trailing `;` after its closing brace is tolerated); to use the value, put the switch where a value is expected. Two places cannot hold one directly: a style value's `${ }` interpolation allows only one level of braces, and a bare path argument outside `calc()` accepts only simple values. In both, compute the value with `let` first.
 
 ## Functions
 

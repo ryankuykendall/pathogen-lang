@@ -5757,6 +5757,34 @@ describe('array literals as path-argument call arguments', () => {
 });
 
 describe('switch expressions', () => {
+  it('gives the same value whether or not the arm expressions end in a semicolon', () => {
+    const program = (level: number, semi: string) =>
+      `let level = ${level}; let radius = switch(level) { case 1, 2 { 4${semi} } case 3..<7 { 8${semi} } default { 12${semi} } }; M radius 0`;
+    for (const level of [2, 4, 9]) {
+      expect(compilePath(program(level, ';'))).toBe(compilePath(program(level, '')));
+    }
+    expect(compilePath(program(4, ';'))).toBe('M 8 0');
+  });
+
+  it('accepts arm semicolons inside calc() in a path argument, on one line and across lines', () => {
+    expect(compilePath('let k = 1; M 0 0 L calc(switch(k) { case 1 { 5; } default { 7; } }) 9')).toBe('M 0 0 L 5 9');
+    expect(compilePath('let k = 2;\nM 0 0\nL calc(switch(k) {\n  case 1 { 5; }\n  case 2 { 6 }\n  default { 7; }\n}) 9\nlet w = 2;\nM w w')).toBe('M 0 0 L 6 9 M 2 2');
+  });
+
+  it('points an unclosed arm brace inside calc() at the mistake instead of the next statement', () => {
+    // The path-argument tokenizer consumes ; inside the braces it opened, so an
+    // unclosed arm must still end at the next statement keyword and report there.
+    const src = 'let k = 1;\nM 0 0\nL calc(switch(k) { case 1 { 5; default { 7 } }) 9\nlet w = 2;\nM w w';
+    expect(() => compile(src)).toThrow(
+      'Parse error at line 3, column 32: cannot parse the expression inside calc() — check for an unclosed brace or bracket',
+    );
+  });
+
+  it('runs a statement-position switch as a statement when a ; follows its closing brace', () => {
+    const result = compile('let k = 1; switch(k) { case 1 { log("one"); } default { log("other"); } }; log("after");');
+    expect(result.logs.map((l) => l.parts.map((p) => p.value).join(''))).toEqual(['one', 'after']);
+  });
+
   it('selects the first matching arm value, or the default', () => {
     const program = (level: number) =>
       `let level = ${level}; let radius = switch (level) { case 1, 2 { 4 } case 3..<7 { 8 } default { 12 } }; M radius 0`;

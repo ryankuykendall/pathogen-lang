@@ -26,7 +26,7 @@ for ([score, row] in scores) {
   layer('labels').apply {
     text(16, y) {
       `#${row + 1} (${score}): `
-      switch (score) {
+      switch(score) {
         case ..<40 {
           tspan()`low`;
         }
@@ -39,7 +39,7 @@ for ([score, row] in scores) {
       }
     }
   }
-  let width = switch (score) {
+  let width = switch(score) {
     case ..<40 { 24 }
     case 40..<75 { 48 }
     default { 72 }

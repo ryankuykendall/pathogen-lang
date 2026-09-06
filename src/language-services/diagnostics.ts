@@ -293,8 +293,6 @@ const SWITCH_FAMILY_NODES = new Set([
   'DefaultArm',
 ]);
 
-const ARM_SEMICOLON_MESSAGE = 'A switch expression arm holds a single expression: case value { expr }';
-
 const CASE_COLON_MESSAGE = "Case bodies use braces: case value { ... } (no ':' and no fallthrough)";
 const DEFAULT_COLON_MESSAGE = "Case bodies use braces: default { ... } (no ':' and no fallthrough)";
 
@@ -473,12 +471,11 @@ function describeError(errorNode: import('@lezer/common').SyntaxNode, source: st
     return `Unexpected '${errText}' in switch expression — expected 'case', 'default', or '}'`;
   }
   if (parentName === 'CaseArm' || parentName === 'DefaultArm') {
-    if (errText === ';') return ARM_SEMICOLON_MESSAGE;
     if (errText === ':') return parentName === 'CaseArm' ? CASE_COLON_MESSAGE : DEFAULT_COLON_MESSAGE;
     if (prevName === 'case' && parentName === 'CaseArm') return "Expected a pattern after 'case'";
     if (errText === '}' || (prevName === '{' && !errText)) return 'Expected an expression inside the arm';
     if (!errText) return "Expected '{' to open the arm";
-    return `Unexpected '${errText}' in switch expression arm — one expression per arm`;
+    return `Unexpected '${errText}' in switch expression arm — one expression per arm (a trailing ';' is fine)`;
   }
   // `case 1: …` — the ':' error node lands inside CasePattern, not CaseClause.
   if (parentName === 'CasePattern' || parentName === 'RangePattern') {

@@ -26,7 +26,7 @@ let targets = [
 ];
 
 for (item in targets) {
-  switch (item) {
+  switch(item) {
     case { x, y } where x > y {
       circle(x, y, 9);
       circle(x, y, 4);

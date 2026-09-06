@@ -36,7 +36,7 @@ for ([kinds, row] in rows) {
   let cy = 45 + row * 60;
   for ([kind, index] in kinds) {
     let cx = 40 + index * 60;
-    switch (kind) {
+    switch(kind) {
       case Marker.Dot {
         circle(cx, cy, 10);
       }

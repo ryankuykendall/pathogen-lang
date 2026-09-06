@@ -36,7 +36,7 @@ export const KEYWORD_COMPLETIONS: CompletionEntry[] = [
   { label: 'enum', kind: 'keyword', detail: 'Enum definition', boost: 6, insertText: 'enum ${1:Name} {\n\t${0}\n}', isSnippet: true },
   { label: 'text', kind: 'keyword', detail: 'Text element', boost: 6 },
   { label: 'tspan', kind: 'keyword', detail: 'Text span inside text block', boost: 4 },
-  { label: 'switch', kind: 'keyword', detail: 'Switch statement — match a value against case patterns', boost: 10, insertText: 'switch (${1:value}) {\n\tcase ${2:pattern} {\n\t\t$0\n\t}\n\tdefault {\n\t\t\n\t}\n}', isSnippet: true },
+  { label: 'switch', kind: 'keyword', detail: 'Switch statement — match a value against case patterns', boost: 10, insertText: 'switch(${1:value}) {\n\tcase ${2:pattern} {\n\t\t$0\n\t}\n\tdefault {\n\t\t\n\t}\n}', isSnippet: true },
   { label: 'case', kind: 'keyword', detail: 'Case clause — value, range (0..<10), or destructuring pattern', boost: 6, insertText: 'case ${1:pattern} {\n\t$0\n}', isSnippet: true },
   { label: 'default', kind: 'keyword', detail: 'Default clause of a switch (must be last)', boost: 4, insertText: 'default {\n\t$0\n}', isSnippet: true },
   { label: 'where', kind: 'keyword', detail: 'Guard condition on a case clause', boost: 4, insertText: 'where ${1:condition} ', isSnippet: true },

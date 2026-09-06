@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-06 (switch spelling and arm semicolons)
+
+### Changed
+
+#### Core
+
+- **`switch(value)` is the canonical spelling** — the parenthesis hugs the keyword, like a call. The parser still accepts `switch (value)`; the formatter (statement and expression forms), the completion and VS Code snippets, hover text, `docs/syntax.md`, and the switch/case blog post and samples now all print `switch(`.
+- **Switch-expression arms accept a trailing semicolon.** `case 1 { 4; }` and `case 1 { 4 }` are the same arm; the formatter prints the second. Grammar: the arm's `(";" ~armEnd)?` plus a matching marker after `ExpressionStatement`'s `;` resolve the shift/reduce this opens against a one-statement `Block`, and `SwitchStatement` gained an optional trailing `;` with `@dynamicPrecedence=1` so a statement-position `switch(x) { case 1 { f(); } default { g(); } };` stays the statement form (it used to be a `Missing ';'` parse error). The same `;` is accepted inside `calc()` in a path argument (the path-argument tokenizer now treats `;` inside a switch expression's braces as content) and after a switch inside a `text() { }` body. Two expressions in one arm still fail with `Unexpected '…' in switch expression arm — one expression per arm (a trailing ';' is fine)`; the old "holds a single expression" diagnostic is gone because nothing can trigger it. Tests: `tests/parser.test.ts`, `tests/evaluator.test.ts`, `tests/textblock.test.ts`, `tests/language-services/{formatter,diagnostics,completion}.test.ts`.
+
+### Fixed
+
+#### Core
+
+- **A `calc()` whose content does not parse now reports where.** It used to fall back to treating the whole text as a variable name and fail later with `Undefined variable: switch(k) { … }` at line 1, column 1. It now stops with `Parse error at line N, column M: cannot parse the expression inside calc() — check for an unclosed brace or bracket`, pointing at the first token the expression grammar rejects.
+
 ## [Unreleased] - 2026-09-05 (dependency upgrade pass)
 
 The first deliberate upgrade pass over `package.json` (root, `api/`, `packages/`). Every bump landed as its own commit with a named gate, so `git bisect` can isolate a regression to one dependency. Baseline and final state are identical on every gate: 131 test files / 5482 tests / 1 todo, root `tsc` error list (80 pre-existing) and playground `tsc` error list (7 pre-existing) byte-identical, `npm run build`, `build:website`, `build:vscode` and `npm ci` green.

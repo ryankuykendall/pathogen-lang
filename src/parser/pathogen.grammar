@@ -76,8 +76,13 @@ ElseClause {
 // (cover grammar) and the AST builder reinterprets them as destructuring
 // patterns — a dedicated destructure alternative here would be a
 // reduce/reduce conflict against the literal forms.
-SwitchStatement {
-  kw<"switch"> "(" expression ")" "{" (CaseClause | DefaultClause)* "}"
+//-- The optional trailing ";" pairs with the arms' optional ";" (see CaseArm):
+//-- `switch(x) { case 1 { f(); } default { g(); } };` parses both as this
+//-- statement and as an ExpressionStatement around a SwitchExpression; the
+//-- dynamic precedence makes the statement reading win, so a switch at the
+//-- start of a statement is always the statement form.
+SwitchStatement[@dynamicPrecedence=1] {
+  kw<"switch"> "(" expression ")" "{" (CaseClause | DefaultClause)* "}" ";"?
 }
 
 CaseClause {
@@ -183,7 +188,7 @@ TextIfStatement {
 }
 
 TextSwitchStatement {
-  kw<"switch"> "(" expression ")" "{" (TextCaseClause | TextDefaultClause)* "}"
+  kw<"switch"> "(" expression ")" "{" (TextCaseClause | TextDefaultClause)* "}" ";"?
 }
 
 TextCaseClause {
@@ -263,7 +268,7 @@ pathCmdZ[@name=PathCommandLetter] {
 }
 
 ExpressionStatement {
-  expression ("=" expression)? WithClause? AsClause? ";"
+  expression ("=" expression)? WithClause? AsClause? ";" ~armEnd
 }
 
 Block {
@@ -338,19 +343,25 @@ primaryExpression {
 
 //-- The expression form: one expression per arm and a mandatory default
 //-- arm. Making the default mandatory is what keeps this free of conflicts
-//-- with SwitchStatement — `switch (x) { }` can only be a statement, and a
+//-- with SwitchStatement — `switch(x) { }` can only be a statement, and a
 //-- non-empty body tells the two apart within two tokens (`{ red }` is not
 //-- a Block; `{ M 0 0 }` / `{ red; }` are not arms).
 SwitchExpression {
   kw<"switch"> "(" expression ")" "{" CaseArm* DefaultArm "}"
 }
 
+//-- The optional ";" after the arm's expression is a courtesy to hands that
+//-- end every line with one. In statement position it opens a real fork with
+//-- SwitchStatement (`{ f(); }` is also a one-statement Block); the ~armEnd
+//-- markers here and on ExpressionStatement let the GLR parser carry both
+//-- readings to the end of the switch, where SwitchStatement's dynamic
+//-- precedence settles it in favour of the statement.
 CaseArm {
-  kw<"case"> CasePattern ("," CasePattern)* WhereGuard? "{" expression "}"
+  kw<"case"> CasePattern ("," CasePattern)* WhereGuard? "{" expression (";" ~armEnd)? "}"
 }
 
 DefaultArm {
-  kw<"default"> "{" expression "}"
+  kw<"default"> "{" expression (";" ~armEnd)? "}"
 }
 
 LayerCallExpression {

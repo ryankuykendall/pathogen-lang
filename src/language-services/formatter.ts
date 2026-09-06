@@ -269,7 +269,7 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
         const body = formatStatements(stmt.defaultCase.body, depth + 2, indent, source);
         clauses.push(`${inner}default {\n${body}\n${inner}}`);
       }
-      return `${prefix}switch (${disc}) {\n${clauses.join('\n')}\n${prefix}}`;
+      return `${prefix}switch(${disc}) {\n${clauses.join('\n')}\n${prefix}}`;
     }
     default:
       return prefix;
@@ -294,6 +294,8 @@ function formatDestructuringPattern(pattern: ArrayDestructuringPattern | ObjectD
 
 // Always multi-line, one arm per line, arms indented one level past the
 // line the expression starts on (the closing brace lines up with that line).
+// `switch(` hugs its parenthesis like a call — the canonical spelling in the
+// docs — while `if (` / `for (` keep their space.
 function formatSwitchExpression(expr: SwitchExpression, depth: number, indent: string, source?: string): string {
   const disc = formatExpression(expr.discriminant, depth, indent, source);
   const inner = indent.repeat(depth + 1);
@@ -303,7 +305,7 @@ function formatSwitchExpression(expr: SwitchExpression, depth: number, indent: s
     return `${inner}case ${patterns}${guard} { ${formatExpression(arm.value, depth + 1, indent, source)} }`;
   });
   arms.push(`${inner}default { ${formatExpression(expr.defaultValue, depth + 1, indent, source)} }`);
-  return `switch (${disc}) {\n${arms.join('\n')}\n${indent.repeat(depth)}}`;
+  return `switch(${disc}) {\n${arms.join('\n')}\n${indent.repeat(depth)}}`;
 }
 
 function formatCasePattern(pattern: CasePattern, depth: number, indent: string, source?: string): string {

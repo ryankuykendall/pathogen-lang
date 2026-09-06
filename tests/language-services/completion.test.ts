@@ -1812,7 +1812,7 @@ describe('getCompletions switch keywords', () => {
     const byLabel = (label: string) => items.find((i) => i.label === label)!;
 
     const sw = byLabel('switch');
-    expect(sw.insertText).toBe('switch (${1:value}) {\n\tcase ${2:pattern} {\n\t\t$0\n\t}\n\tdefault {\n\t\t\n\t}\n}');
+    expect(sw.insertText).toBe('switch(${1:value}) {\n\tcase ${2:pattern} {\n\t\t$0\n\t}\n\tdefault {\n\t\t\n\t}\n}');
     expect(sw.detail).toBe('Switch statement — match a value against case patterns');
     expect(sw.isSnippet).toBe(true);
 

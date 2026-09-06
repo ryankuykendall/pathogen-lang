@@ -455,8 +455,8 @@ describe('switch expression diagnostics', () => {
   it.each([
     ['let f = switch (k) { case 1 { 5 } };', "A switch expression needs a 'default' arm so it always produces a value"],
     [
-      'let f = switch (k) { case 1 { 5; } default { 6 } };',
-      'A switch expression arm holds a single expression: case value { expr }',
+      'let f = switch (k) { case 1 { 5; 6 } default { 6 } };',
+      "Unexpected '6' in switch expression arm — one expression per arm (a trailing ';' is fine)",
     ],
     ['let f = switch (k) { case 1 { } default { 6 } };', 'Expected an expression inside the arm'],
     ['let f = switch (k) { default { 6 } case 1 { 5 } };', "'default' must be the last arm in a switch expression"],

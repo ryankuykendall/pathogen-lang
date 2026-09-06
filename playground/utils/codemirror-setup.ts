@@ -201,7 +201,7 @@ export const snippetTemplates: CompletionItem[] = [
     label: 'switch',
     type: 'keyword',
     info: 'switch statement - match a value against case patterns',
-    template: 'switch (value) {\n  case pattern {\n    \n  }\n  default {\n    \n  }\n}',
+    template: 'switch(value) {\n  case pattern {\n    \n  }\n  default {\n    \n  }\n}',
     cursorOffset: 8,
   },
   {

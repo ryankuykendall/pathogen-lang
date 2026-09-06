@@ -2435,6 +2435,36 @@ describe('ternary and comparison operators inside path-arg calc() (friction #18)
 });
 
 describe('switch expressions', () => {
+  it('accepts an optional semicolon after each arm expression and the call-style switch( spelling', () => {
+    const bare = parse('let r = switch(level) { case 1, 2 { 4 } default { 12 } };');
+    const withSemis = parse('let r = switch(level) {\n  case 1, 2 {\n    4;\n  }\n  default {\n    12;\n  }\n};');
+    const spaced = parse('let r = switch (level) { case 1, 2 { 4; } default { 12; } };');
+    const stripLoc = (node: unknown): unknown =>
+      Array.isArray(node)
+        ? node.map(stripLoc)
+        : node && typeof node === 'object'
+          ? Object.fromEntries(Object.entries(node).filter(([k]) => k !== 'loc').map(([k, v]) => [k, stripLoc(v)]))
+          : node;
+    expect(stripLoc(withSemis.body[0])).toEqual(stripLoc(bare.body[0]));
+    expect(stripLoc(spaced.body[0])).toEqual(stripLoc(bare.body[0]));
+    expect(bare.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      value: { type: 'SwitchExpression', arms: [{ value: { type: 'NumberLiteral', value: 4 } }], defaultValue: { type: 'NumberLiteral', value: 12 } },
+    });
+  });
+
+  it('reads a statement-position switch as the statement form even when its bodies end in ; and a ; follows the switch', () => {
+    const ast = parse('switch(k) { case 1 { f(); } default { g(); } };');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({ type: 'SwitchStatement' });
+    // Without the trailing ; the same source is the statement form too.
+    expect(parse('switch(k) { case 1 { f(); } default { g(); } }').body[0]).toMatchObject({ type: 'SwitchStatement' });
+  });
+
+  it('rejects two expressions in one arm', () => {
+    expect(() => parse('let r = switch(k) { case 1 { 4; 5 } default { 6 } };')).toThrow();
+  });
+
   it('parses a switch expression on the right of let with value, range, guard, and destructuring arms', () => {
     const ast = parse('let r = switch (level) { case 1, 2 { 4 } case 3..<7 where level > 0 { 8 } case {x, y} { x } default { 12 } };');
     expect(ast.body[0]).toMatchObject({
@@ -2512,7 +2542,7 @@ describe('switch expressions', () => {
 
   it('rejects a missing default arm, a statement inside an arm, and mismatched alternative bindings', () => {
     expect(() => parse('let f = switch (k) { case 1 { 5 } };')).toThrow(/Parse error/);
-    expect(() => parse('let f = switch (k) { case 1 { 5; } default { 6 } };')).toThrow(/Parse error/);
+    expect(() => parse('let f = switch (k) { case 1 { 5; 6 } default { 6 } };')).toThrow(/Parse error/);
     expect(() => parse('let f = switch (k) { case [px, py], [px] { px } default { 0 } };')).toThrow(
       "Parse error at line 1, column 37: Every pattern in a case must bind the same names (this one binds px, the first binds px, py)",
     );

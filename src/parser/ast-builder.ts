@@ -71,9 +71,14 @@ import type {
 } from './ast';
 
 // --- Expression parser reference (set by index.ts to break circular dependency) ---
-let _expressionParser: { parse(input: string): { status: boolean; value: any } } | null = null;
+interface ExpressionParser {
+  parse(input: string): { status: boolean; value: any };
+  /** Offset into `input` of the first syntax error, for callers that got `status: false`. */
+  errorOffset?(input: string): number | null;
+}
+let _expressionParser: ExpressionParser | null = null;
 
-export function setExpressionParser(parser: { parse(input: string): { status: boolean; value: any } }): void {
+export function setExpressionParser(parser: ExpressionParser): void {
   _expressionParser = parser;
 }
 
@@ -1239,8 +1244,16 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
           if (parenContent !== null) {
             // Parse the inner expression with location adjusted to source position
             const calcInnerOffset = baseOffset + pos + 1; // +1 for opening paren
-            const innerExpr = parseExpressionAt(parenContent, calcInnerOffset, source)
-              || { type: 'Identifier', name: parenContent } as Identifier;
+            const innerExpr = parseExpressionAt(parenContent, calcInnerOffset, source);
+            if (!innerExpr) {
+              // Point at the first thing the expression grammar rejects rather
+              // than treating the whole text as a variable name (which used to
+              // surface as "Undefined variable: switch(k) { … }" at 1:1).
+              const errLoc = offsetToLoc(calcInnerOffset + (_expressionParser?.errorOffset?.(parenContent) ?? 0), source);
+              throw new Error(
+                `Parse error at line ${errLoc.line}, column ${errLoc.column}: cannot parse the expression inside calc() — check for an unclosed brace or bracket`,
+              );
+            }
             args.push({ type: 'CalcExpression', expression: innerExpr } as CalcExpression);
             pos += parenContent.length + 2;
             continue;

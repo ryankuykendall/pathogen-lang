@@ -4,12 +4,13 @@ import { parser as lezerParser } from './pathogen.generated';
 import { buildAST, setExpressionParser } from './ast-builder';
 
 // Wire the Lezer-based expression parser into the AST builder
-import { parseExpression as lezerParseExpression } from './lezer-expression';
+import { parseExpression as lezerParseExpression, findExpressionErrorOffset } from './lezer-expression';
 setExpressionParser({
   parse: (input: string) => {
     const result = lezerParseExpression(input);
     return { status: result !== null, value: result };
   },
+  errorOffset: findExpressionErrorOffset,
 });
 
 export function detectMissingSemicolon(

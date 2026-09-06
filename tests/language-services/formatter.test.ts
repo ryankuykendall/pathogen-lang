@@ -481,7 +481,7 @@ describe('formatDocument', () => {
 
     it('round-trips a switch inside a text body with bare template and tspan items', () => {
       const result = format('text(16, y) {\n`#${row}: `\nswitch (score) {\ncase ..<40 {\ntspan()`low`\n}\ndefault {\n`high`\n}\n}\n}');
-      expect(result).toBe('text(16, y) {\n  `#${row}: `\n  switch (score) {\n    case ..<40 {\n      tspan()`low`;\n    }\n    default {\n      `high`\n    }\n  }\n}');
+      expect(result).toBe('text(16, y) {\n  `#${row}: `\n  switch(score) {\n    case ..<40 {\n      tspan()`low`;\n    }\n    default {\n      `high`\n    }\n  }\n}');
       expect(() => parse(result)).not.toThrow();
       expect(format(result)).toBe(result);
     });
@@ -702,7 +702,7 @@ describe('expression-bodied lambdas', () => {
 // --- Switch statements ---
 describe('formatDocument switch statements', () => {
   const canonical = [
-    'switch (kind) {',
+    'switch(kind) {',
     "  case 'circle' {",
     '    circle(0, 0, 5);',
     '  }',
@@ -762,7 +762,7 @@ describe('formatDocument switch statements', () => {
     const src = 'for (i in 0..3) {\nswitch (i) {\ncase 0 { M 0 0 }\ndefault { M i i }\n}\n}';
     const expected = [
       'for (i in 0..3) {',
-      '  switch (i) {',
+      '  switch(i) {',
       '    case 0 {',
       '      M 0 0',
       '    }',
@@ -780,7 +780,7 @@ describe('formatDocument switch statements', () => {
     const src = 'text(10, 30) {\nswitch (level) {\ncase 1, 2 { `Low` }\ncase 3..<7 { tspan()`Medium` }\ndefault { `High` }\n}\n}';
     const expected = [
       'text(10, 30) {',
-      '  switch (level) {',
+      '  switch(level) {',
       '    case 1, 2 {',
       '      `Low`',
       '    }',
@@ -822,13 +822,18 @@ describe('formatDocument switch statements', () => {
 describe('switch expressions', () => {
   it('prints one arm per line and round-trips patterns, guards, and destructuring', () => {
     const result = format('let r = switch (level) { case 1, 2 { 4 } case 3..<7 where level > 0 { 8 } case {x, y} { x } default { 12 } };');
-    expect(result).toBe('let r = switch (level) {\n  case 1, 2 { 4 }\n  case 3..<7 where level > 0 { 8 }\n  case { x, y } { x }\n  default { 12 }\n};');
+    expect(result).toBe('let r = switch(level) {\n  case 1, 2 { 4 }\n  case 3..<7 where level > 0 { 8 }\n  case { x, y } { x }\n  default { 12 }\n};');
     expect(format(result)).toBe(result);
+  });
+
+  it('normalizes `switch (` to `switch(` and drops the optional arm semicolons', () => {
+    const result = format('let r = switch (level) {\n  case 1, 2 { 4; }\n  default { 12; }\n};');
+    expect(result).toBe('let r = switch(level) {\n  case 1, 2 { 4 }\n  default { 12 }\n};');
   });
 
   it('keeps a switch expression inside calc() in a path argument', () => {
     const result = format('M 0 0\nL calc(switch (k) { case 1 { 5 } default { 7 } }) 9');
-    expect(result).toBe('M 0 0\nL calc(switch (k) {\n  case 1 { 5 }\n  default { 7 }\n}) 9');
+    expect(result).toBe('M 0 0\nL calc(switch(k) {\n  case 1 { 5 }\n  default { 7 }\n}) 9');
     expect(format(result)).toBe(result);
   });
 });

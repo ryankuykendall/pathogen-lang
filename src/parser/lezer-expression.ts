@@ -75,6 +75,22 @@ export function parseExpression(exprStr: string): Expression | null {
 }
 
 /**
+ * Offset (into `exprStr`) of the first syntax error the grammar reports for
+ * the expression, or null when it parses cleanly. Lets callers that receive
+ * `null` from parseExpression() point their error at the actual mistake.
+ */
+export function findExpressionErrorOffset(exprStr: string): number | null {
+  if (!exprStr.trim()) return 0;
+  const wrapped = `let _ = ${exprStr};`;
+  const tree = parser.parse(wrapped);
+  const cursor = tree.cursor();
+  do {
+    if (cursor.type.isError) return Math.max(0, Math.min(cursor.from - 8, exprStr.length));
+  } while (cursor.next());
+  return null;
+}
+
+/**
  * Parse an expression string and adjust all SourceLocations to be relative
  * to a position in the original source.
  */

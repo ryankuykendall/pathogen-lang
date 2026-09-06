@@ -37,12 +37,23 @@ const PATH_COMMANDS = new Set('MLHVCSQTAZmlhvcsqtaz'.split(''));
 // path-argument position only (contextual @extend keywords in the grammar).
 const CLAUSE_KEYWORDS = new Set(['with', 'as']);
 
+// Keywords that can only begin a statement, never appear inside a switch
+// expression's arm. Inside the braces this token opened (a switch expression
+// in calc()) a new line normally continues the expression — `case`, `default`,
+// a nested `switch`, an identifier — but one of these on a new line means an
+// arm's `{` was never closed, so the token ends there and the error lands next
+// to the mistake instead of pages later.
+const STATEMENT_ONLY_KEYWORDS = new Set([
+  'let', 'for', 'if', 'else', 'fn', 'return', 'define', 'apply', 'text', 'tspan', 'enum', 'log', 'break', 'continue',
+]);
+
 /**
  * External tokenizer that greedily consumes path command arguments.
  * Called by the Lezer parser after matching a path command letter.
  * Consumes: numbers, identifiers, booleans, calc() expressions,
  * member/index/call chains, color literals.
- * Stops at: keywords, path command letters, closing braces, semicolons, EOF.
+ * Stops at: keywords, path command letters, closing braces, semicolons, EOF
+ * (braces and semicolons inside a switch expression's arms within calc() are content).
  */
 export const pathArgsTokenizer = new ExternalTokenizer((input) => {
   let consumed = 0;
@@ -80,15 +91,20 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
 
       // Check if next token starts a new statement. Inside a switch
       // expression's braces a keyword on a new line (`case`, `default`) is
-      // expression content, so the check is skipped only there.
-      if (braceDepth === 0 && isAlpha(input.next)) {
+      // expression content, so only statement-only keywords end the token
+      // there (an arm's `{` that was never closed).
+      if (isAlpha(input.next)) {
         const word = peekWord(input);
-        if (KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word) || CLAUSE_KEYWORDS.has(word) || (word.length === 1 && PATH_COMMANDS.has(word))) {
-          break;
-        }
-        // Check if this identifier is followed by '=' (but not '==') — assignment statement
-        if (isAssignmentTarget(input, word.length)) {
-          break;
+        if (braceDepth > 0) {
+          if (STATEMENT_ONLY_KEYWORDS.has(word)) break;
+        } else {
+          if (KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word) || CLAUSE_KEYWORDS.has(word) || (word.length === 1 && PATH_COMMANDS.has(word))) {
+            break;
+          }
+          // Check if this identifier is followed by '=' (but not '==') — assignment statement
+          if (isAssignmentTarget(input, word.length)) {
+            break;
+          }
         }
       }
       if (input.next === 125 && braceDepth === 0) break; // '}' closes the enclosing block
@@ -100,9 +116,17 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       continue;
     }
 
-    // Semicolon → end of args. A closing brace ends the args unless it
-    // closes a brace this token opened (a switch expression inside calc()).
-    if (ch === 59) break; // ';'
+    // Semicolon → end of args, unless it sits inside a brace this token
+    // opened: a switch expression's arm inside calc() may end its expression
+    // with an optional ';' (`calc(switch(k) { case 1 { 5; } default { 7 } })`).
+    // A closing brace likewise ends the args unless it closes such a brace.
+    if (ch === 59) { // ';'
+      if (braceDepth === 0) break;
+      input.advance();
+      consumed++;
+      lastNonWS = consumed;
+      continue;
+    }
     if (ch === 125) { // '}'
       if (braceDepth > 0) {
         braceDepth--;

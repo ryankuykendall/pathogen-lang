@@ -17,7 +17,7 @@ an `if` / `else if` chain that names the value on every branch. Now it
 has a `switch`:
 
 ```pathogen
-switch (marker) {
+switch(marker) {
   case "dot", "bullet" {
     circle(cx, cy, 6);
   }
@@ -111,14 +111,15 @@ each pair of braces, end with `default`, and use the whole thing wherever
 an expression goes:
 
 ```pathogen
-let radius = switch (level) {
+let radius = switch(level) {
   case 1, 2 { 4 }
   case 3..<7 { 8 }
   default { 12 }
 };
 ```
 
-Only the chosen arm's expression runs. `default` is required because the
+Only the chosen arm's expression runs, and a semicolon after it is fine
+(`case 1, 2 { 4; }` is the same arm). `default` is required because the
 expression must always produce something. It works on the right of
 `let`, in function arguments, inside a backtick template's `${ }`, and
 inside `calc()`, which is also how it goes into a path command's

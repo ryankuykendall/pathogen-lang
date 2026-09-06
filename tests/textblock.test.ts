@@ -1189,6 +1189,22 @@ describe('switch inside text bodies', () => {
     expect(textChildren('2')).toEqual([{ type: 'run', text: 'Low' }]);
   });
 
+  it('tolerates a ; after the switch inside a text body, like the other text statements', () => {
+    const result = compile(`
+      define default TextLayer('t') #{ font-size: 12; }
+      let level = 2;
+      layer('t').apply {
+        text(0, 0) {
+          switch(level) {
+            case 1, 2 { \`Low\` }
+            default { \`High\` }
+          };
+        }
+      }
+    `);
+    expect(result.layers[0].textElements?.[0]?.children).toEqual([{ type: 'run', text: 'Low' }]);
+  });
+
   it('a range case emits the tspan', () => {
     expect(textChildren('3')).toEqual([{ type: 'tspan', text: 'Medium', content: undefined }]);
   });
