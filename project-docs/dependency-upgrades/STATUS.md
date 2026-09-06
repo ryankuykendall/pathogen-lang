@@ -20,11 +20,13 @@ Outcome and rationale per package: `CHANGELOG.md` → *[Unreleased] - 2026-09-05
 
 ```
 npm run build && npm run build:website && npm run build:vscode
-# Lockfile gate — Cloudflare Pages runs `npm clean-install` with the build image's npm (10.9.2 as of
-# 2026-09-06), not the npm bundled with the pinned Node. npm 11 drops top-level entries for optional
-# packages' peers (@emnapi/core, @emnapi/runtime) that npm 10 requires, so validate with both:
-#   git worktree add /tmp/wt HEAD && cd /tmp/wt && PUPPETEER_SKIP_DOWNLOAD=1 npx -y npm@10.9.2 ci --ignore-scripts --os=linux --cpu=x64
-# If it fails "Missing: … from lock file", regenerate with `npx -y npm@10.9.2 install --package-lock-only`.
+# Lockfile gate — Cloudflare Pages runs `npm clean-install` on linux-x64 with the npm named by
+# package.json's `packageManager` field (npm 11.6.2; without that field the v3 image keeps its
+# baked-in npm 10.9.2 even after installing Node 24, and NPM_VERSION is ignored — tested 2026-09-06
+# both via wrangler.toml [vars] and as a project variable). Keep `packageManager` in step with the
+# npm developers run, and validate the lockfile as the build sees it:
+#   git worktree add /tmp/wt HEAD && cd /tmp/wt && PUPPETEER_SKIP_DOWNLOAD=1 npm ci --ignore-scripts --os=linux --cpu=x64
+# Puppeteer's browser downloads are skipped on Pages by .puppeteerrc.cjs (keyed on CF_PAGES=1).
 npx vitest run                                   # 131 files / 5482 pass / 1 todo
 npx tsc --noEmit -p tsconfig.json  | grep -c "error TS"   # 80 pre-existing (44 in dead _legacyGenerateSvg)
 npx tsc -p playground/tsconfig.json | grep -c "error TS"  # 7 pre-existing

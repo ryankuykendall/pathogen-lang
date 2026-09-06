@@ -36,17 +36,6 @@ database_id = "2e2a60c3-a0c7-442d-b695-27e2b3bc7679"
 # live in api/wrangler.toml where the cookie is issued.
 
 [vars]
-# npm used by the Cloudflare Pages BUILD. Pages exports [vars] into the build
-# environment (the build log prints them under "Build environment variables"),
-# and the v3 build image otherwise keeps its baked-in npm 10.9.2 even after
-# installing the Node 24 that .node-version asks for. Lockfiles written by npm
-# 11 (what Node 24 bundles, and what every developer machine runs) omit
-# optional-peer entries that npm 10's clean-install then reports as "Missing …
-# from lock file" — see project-docs/dependency-upgrades/STATUS.md. Keeping the
-# build on the same major as development removes that drift. This also lands
-# as a (harmless, unused) runtime binding on the Pages Function.
-NPM_VERSION = "11"
-
 # Origin of the pathogen-api Worker. Used by SSR-rendered cards
 # (/explore, /featured, /u/:handle, /u/:handle/:slug) to build
 # cross-origin <img src> URLs for workspace thumbnails. Override in
