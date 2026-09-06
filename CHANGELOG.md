@@ -34,6 +34,7 @@ The first deliberate upgrade pass over `package.json` (root, `api/`, `packages/`
 
 - `npx eslint .` no longer aborts with "You have used a rule which requires type information" — the `.mjs` probe scripts under `scripts/` and `project-docs/` sit outside every tsconfig project and are now ignored, so lint runs to completion again.
 - `scripts/build-vscode-extension.ts` installed the language server's runtime dependencies into the `.vsix` at `@latest`, so the bundle could ship a different major than the server was compiled against. It now installs the ranges the server's `package.json` declares.
+- **The VS Code extension installed from a `.vsix` never started its language server** (no completions, hover, or diagnostics; the preview still worked). The package never contained `vscode-languageclient`: `vsce --no-dependencies` strips the extension's own module directory and the build script tried to copy the client from the root install, where it is not a dependency. The build now writes a `server/package.json` listing every runtime dependency at its declared range — the server's, the extension's, and the packages `dist/index.cjs` leaves external (derived by scanning the bundle) — installs them with one `npm install`, and refuses to package unless each resolves from the bundle. `extension.ts` reports a descriptive error if the client still cannot load instead of failing activation silently.
 
 ## [0.8.1] - 2026-09-05 (many-warnings hardening)
 
