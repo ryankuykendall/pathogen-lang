@@ -214,7 +214,16 @@ M mid.x mid.y               // position at midpoint
 
 ### `tangent(t)` → `{ point, angle }`
 
-Returns the point and tangent angle at fraction `t`. The angle is the direction of travel, as a plain number in radians.
+Returns the point and tangent angle at fraction `t`. The angle is the direction of travel, as a plain number in radians in the range **(−π, π]** — the range `atan2` returns — measured in screen space, where `y` grows downward:
+
+| Direction on screen | `angle` |
+|---|---|
+| right | `0` |
+| down | `0.5pi` |
+| left | `pi` |
+| up | `-0.5pi` |
+| down-left | `0.75pi` |
+| up-right | `-0.25pi` |
 
 ```
 let p = @{ v 50 h 100 };
@@ -223,15 +232,20 @@ log(tan.point);              // Point(0, 0)
 log(tan.angle);              // ~1.5708 (π/2, pointing down)
 ```
 
+Because nothing is ever reported above `pi`, a comparison or `switch` range such as `case 1.2pi..<1.8pi` can never match a tangent or normal angle. Write the upper half of the circle with negative values (`case -0.8pi..<-0.2pi` for up-facing), or pass the angle through [`normalizeAngle()`](#stdlib-angle-conversion) when you want a `0 … 2pi` view.
+
 ### `normal(t)` → `{ point, angle }`
 
-Returns the point and left-hand normal angle at fraction `t`. The normal angle equals the tangent angle minus π/2.
+Returns the point and left-hand normal angle at fraction `t`. The normal is the tangent turned a quarter turn to the right of travel (tangent angle minus π/2) and wrapped into the same **(−π, π]** range, so the table above applies to it too.
 
 ```
 let p = @{ h 100 };
 let n = p.normal(0.5);
 log(n.point);                // Point(50, 0)
 log(n.angle);                // ~-1.5708 (pointing up — left-hand normal of rightward path)
+
+let q = @{ l -100 -100 };
+log(q.normal(0.5).angle);    // ~2.3562 (0.75π, pointing down-left)
 ```
 
 **On cut and boolean results, the normal points away from the piece's material — guaranteed.** [`cut()`](#path-blocks-cutcutter-array-of-pathblock) and the [boolean operations](#path-blocks-boolean-operations) each canonicalize their result's winding so material always lies on the same side of the direction of travel, and the normal is a fixed rotation of that travel — so on any seam or boundary edge of a piece, `normal(t)` faces *out* of the piece: glue tabs, ticks, and offsets aimed along it point away from the material with no direction test needed. Two footnotes: on a **hole's** boundary, "away from the material" points *into* the hole (that is the outside of the material there); and on **hand-authored** paths there is no such guarantee — the normal is simply left-of-travel, and which side is "outside" depends on how you wound the path.

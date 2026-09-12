@@ -798,9 +798,9 @@ export interface PathogenPathBlock {
   drawTo(x: number, y: number): PathogenProjectedPath;
   /** get(t) — Sample point at t */
   get(t: number): PathogenPoint;
-  /** tangent(t) — Tangent angle at t */
+  /** tangent(t) — Point and direction of travel at t; angle in (−π, π] radians, y down (0 right, 0.5pi down, pi left, -0.5pi up) */
   tangent(t: number): { point: PathogenPoint; angle: number };
-  /** normal(t) — Normal angle at t */
+  /** normal(t) — Point and left-hand normal at t: tangent turned a quarter turn right, wrapped into (−π, π] like tangent(t) */
   normal(t: number): { point: PathogenPoint; angle: number };
   /** partition(n) — Split into segments */
   partition(n: number): PathogenArray;
@@ -1177,9 +1177,9 @@ export interface PathogenProjectedPath {
   drawTo(x: number, y: number): PathogenProjectedPath;
   /** get(t) — Sample point at t */
   get(t: number): PathogenPoint;
-  /** tangent(t) — Tangent angle at t */
+  /** tangent(t) — Point and direction of travel at t; angle in (−π, π] radians, y down (0 right, 0.5pi down, pi left, -0.5pi up) */
   tangent(t: number): { point: PathogenPoint; angle: number };
-  /** normal(t) — Normal angle at t */
+  /** normal(t) — Point and left-hand normal at t: tangent turned a quarter turn right, wrapped into (−π, π] like tangent(t) */
   normal(t: number): { point: PathogenPoint; angle: number };
   /** partition(n) — Split into segments */
   partition(n: number): PathogenArray;

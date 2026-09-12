@@ -1,7 +1,9 @@
-// tangent(t).angle is atan2 in [-pi, pi]; normal(t).angle is that value minus
-// a quarter turn and is NOT re-wrapped, so it spans (-1.5pi, 0.5pi] (up =
-// -0.5pi, left = -pi, bottom-left = -1.25pi). A switch range above 0.5pi never
-// matches. The range loop at the end measures both on arcs and lines. Outer TrueType contours are clockwise on
+// tangent(t).angle is atan2 in (-pi, pi]. Before ISSUE-020 (fixed 2026-09-12)
+// normal(t).angle was that value minus a quarter turn with NO re-wrap, so it
+// spanned (-1.5pi, 0.5pi] (bottom-left = -1.25pi); it is now wrapped into the
+// same (-pi, pi] as the tangent (bottom-left = 0.75pi, exactly left = +pi).
+// Either way "up" is -0.5pi and a switch range above pi never matches. The
+// range loop at the end measures both on arcs and lines. Outer TrueType contours are clockwise on
 // screen (positive shoelace in y-down) and their normals / positive offsets
 // point outward; counters are the reverse and a positive offset collapses them.
 define ViewBox(0, 0, 400, 400);

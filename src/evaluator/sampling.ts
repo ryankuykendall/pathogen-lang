@@ -137,6 +137,19 @@ export function calculateCommandLength(cmd: SamplingCmd): number {
   }
 }
 
+/**
+ * Wrap an angle into (−π, π], the range `Math.atan2` returns — so a value
+ * derived from a tangent (e.g. the normal, tangent − π/2) reports the same
+ * numbers a program would get from `atan2` for the same direction. Exactly
+ * left is +π, as for the tangent; nothing is ever reported above π.
+ */
+export function wrapToPi(angle: number): number {
+  const TWO_PI = 2 * Math.PI;
+  let a = angle - Math.floor((angle + Math.PI) / TWO_PI) * TWO_PI; // [−π, π)
+  if (a <= -Math.PI) a += TWO_PI; // exactly −π → +π (and guards fp noise just below −π)
+  return a;
+}
+
 export function calculatePathLength(commands: SamplingCmd[]): number {
   // Resolve smooth commands first so T/S contribute their true curve length
   // rather than a straight-line approximation (same reason sampling resolves).

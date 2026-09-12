@@ -793,6 +793,90 @@ l 5 0`);
         expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(0, 5);
       });
 
+      // ISSUE-020: the normal used to be tangent − π/2 with no wrap, so any
+      // normal facing the bottom-left quadrant came back below −π (down-left
+      // was −1.25π) and "exactly left" was −π while tangent() reports +π.
+      it('normal facing down-left is wrapped into (−π, π]: 0.75π, not −1.25π', () => {
+        const result = compile(`
+          let p = @{ l -100 -100 };
+          log(p.normal(0.5).angle);
+        `);
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(0.75 * Math.PI, 5);
+      });
+
+      it('normal pointing exactly left is +π, the same value tangent() reports for left', () => {
+        const result = compile(`
+          let up = @{ v -100 };
+          let left = @{ h -100 };
+          log(up.normal(0.5).angle, left.tangent(0.5).angle);
+        `);
+        expect(Number(result.logs[0].parts[0].value)).toBeCloseTo(Math.PI, 5);
+        expect(Number(result.logs[0].parts[1].value)).toBeCloseTo(Math.PI, 5);
+      });
+
+      it('normal and tangent angles stay within (−π, π] all the way around, both windings', () => {
+        const result = compile(`
+          let circleCw = @{
+            m 0 -100
+            a 100 100 0 0 1 100 100
+            a 100 100 0 0 1 -100 100
+            a 100 100 0 0 1 -100 -100
+            a 100 100 0 0 1 100 -100
+            z
+          };
+          let octagonCw = @{
+            m 0 -100
+            l 71 29
+            l 29 71
+            l -29 71
+            l -71 29
+            l -71 -29
+            l -29 -71
+            l 29 -71
+            z
+          };
+          for (shape in [circleCw, circleCw.reverse(), octagonCw, octagonCw.reverse()]) {
+            let nMin = 99;
+            let nMax = -99;
+            let tMin = 99;
+            let tMax = -99;
+            for (k in 0..<200) {
+              let time = calc((k + 0.5) / 200);
+              nMin = min(nMin, shape.normal(time).angle);
+              nMax = max(nMax, shape.normal(time).angle);
+              tMin = min(tMin, shape.tangent(time).angle);
+              tMax = max(tMax, shape.tangent(time).angle);
+            }
+            log(nMin, nMax, tMin, tMax);
+          }
+        `);
+        expect(result.logs).toHaveLength(4);
+        for (const entry of result.logs) {
+          const [nMin, nMax, tMin, tMax] = entry.parts.map((part) => Number(part.value));
+          expect(nMin).toBeGreaterThan(-Math.PI);
+          expect(nMax).toBeLessThanOrEqual(Math.PI);
+          expect(tMin).toBeGreaterThan(-Math.PI);
+          expect(tMax).toBeLessThanOrEqual(Math.PI);
+          // A closed loop faces every way round: the octagon's eight edge
+          // directions already span 1.75π, the circle nearly 2π.
+          expect(nMax - nMin).toBeGreaterThan(1.7 * Math.PI);
+          expect(tMax - tMin).toBeGreaterThan(1.7 * Math.PI);
+        }
+      });
+
+      it('a switch on a down-left normal matches the 0.6pi..<0.9pi arm and never a range above pi', () => {
+        const result = compile(`
+          let p = @{ l -100 -100 };
+          let verdict = switch(p.normal(0.5).angle) {
+            case 1.2pi..<1.8pi { 'impossible' }
+            case 0.6pi..<0.9pi { 'down-left' }
+            default { 'miss' }
+          };
+          log(verdict);
+        `);
+        expect(result.logs[0].parts[0].value).toBe('down-left');
+      });
+
       it('normal returns point and angle', () => {
         const result = compile(`
           let p = @{ h 100 };

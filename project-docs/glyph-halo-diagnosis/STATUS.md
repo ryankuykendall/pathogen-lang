@@ -106,13 +106,18 @@ findings (`probes/angle-proximity-vs-shade.pathogen`,
    total thickness constant (0.14 at every score) and shifts the bulge
    outward on the shadow side. The user chose to keep that (displaced-shadow
    look) rather than a thicker stroke.
-3. `tangent(t).angle` is atan2 in [−π, π], but `normal(t).angle` is that
-   value minus a quarter turn with no re-wrap, so it spans (−1.5π, 0.5π]
+3. `tangent(t).angle` is atan2 in (−π, π], but `normal(t).angle` was that
+   value minus a quarter turn with no re-wrap, so it spanned (−1.5π, 0.5π]
    (up = −0.5π, left = −π, bottom-left = −1.25π; measured 2026-09-12, first
-   reported here as "[−π, π]" and corrected). The halo builder's
-   `case 1.2pi..<1.8pi` never matched (dead flare). Fold first or use
-   `case -0.8pi..<-0.2pi`. Diagram: `normal-angle-and-winding.pathogen`
-   (bbwp `2026-09-12-07:44:13--glyph-halo-diagnosis--normal-angle-and-winding`). (ISSUE-020)
+   reported here as "[−π, π]" and corrected). **Fixed the same day
+   (ISSUE-020):** the normal is now wrapped into (−π, π] like the tangent
+   (bottom-left = 0.75π, exactly left = +π). The halo builder's
+   `case 1.2pi..<1.8pi` never matched and still cannot — nothing exceeds π
+   under either convention; the preserved programs in `programs/` keep that
+   arm as the historical record, the live spelling for up-facing normals is
+   `case -0.8pi..<-0.2pi`. Diagrams: `normal-angle-and-winding.pathogen`
+   (pre-fix record, bbwp `2026-09-12-07:44:13--…`) and
+   `normal-angle-and-winding-after-issue-020.pathogen` (current behaviour).
 
 Conventions measured: y-down, so the `0.75pi` direction is bottom-left and
 `1.75pi` top-right — consistent with "heavier away from a top-right light"
@@ -135,12 +140,13 @@ Fixed 2026-09-12 (see CHANGELOG, `../conic-parity/`, `scripts/debug-compile-canc
 - ISSUE-017 conic `innerRadius` / `spread` parity, the >32768-unit blank-render regression, GPU limits, docs, tests
 - the export-modal `willReadFrequently` readback warning
 
+- ISSUE-020 `normal(t).angle` wrapped into (−π, π); ranges documented
+
 Still open:
 
 - ISSUE-015 leading-moveto silent failure (warning + `M 0 0` prepend)
 - ISSUE-018 output budget warning, `records` retention, loop-cap mismatch
 - ISSUE-019 `variableOffset` family on `ProjectedPath`; transform-origin docs
-- ISSUE-020 `.angle` range documentation / wrap
 
 ## Techniques worth reusing
 

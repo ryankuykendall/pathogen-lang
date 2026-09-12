@@ -76,7 +76,7 @@ import {
   rotateStartCommands,
   totalDrawnLength,
 } from './stroke-geometry';
-import { calculatePathLength, partitionPath, samplePathAtFraction } from './sampling';
+import { calculatePathLength, partitionPath, samplePathAtFraction, wrapToPi } from './sampling';
 import {
   buildSimpleVariableOffset,
   buildCompoundVariableOffset,
@@ -2684,7 +2684,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           type: 'ObjectValue' as const,
           properties: new Map<string, Value>([
             ['point', { type: 'PointValue' as const, x: result.point.x, y: result.point.y }],
-            ['angle', result.tangent - Math.PI / 2],
+            ['angle', wrapToPi(result.tangent - Math.PI / 2)],
           ]),
         };
       }
@@ -3389,7 +3389,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           type: 'ObjectValue' as const,
           properties: new Map<string, Value>([
             ['point', { type: 'PointValue' as const, x: result.point.x, y: result.point.y }],
-            ['angle', result.tangent - Math.PI / 2],
+            ['angle', wrapToPi(result.tangent - Math.PI / 2)],
           ]),
         };
       }

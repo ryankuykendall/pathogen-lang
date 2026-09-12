@@ -1323,7 +1323,7 @@ log(a.toPi() == 0.5pi); // true — same angle, different label
 `calc(0.25 * 2pi)` (or `90deg`) and re-tag with `.toTurns()` when you want it
 displayed that way.
 
-**Where Angles come from.** Only angle-suffixed literals — plus `calc()` arithmetic over them and [angle-preserving standard-library functions](#stdlib-angle-preserving-functions) fed an Angle (`clamp(90deg, 0deg, 1pi)` is an Angle) — produce Angle values. Standard-library functions that *compute* an angle return **plain numbers in radians**: `atan2()`, `.angleTo()`, `tangent(t).angle`, `PolarVector.angle`, and [`deg()`/`rad()`](#stdlib-angle-conversion)/`mpi()`. That matters most for the degree-based color methods below, which read a bare number as **degrees** — write `c.hueShift(deg(p.angleTo(q)))`, not `c.hueShift(p.angleTo(q))`.
+**Where Angles come from.** Only angle-suffixed literals — plus `calc()` arithmetic over them and [angle-preserving standard-library functions](#stdlib-angle-preserving-functions) fed an Angle (`clamp(90deg, 0deg, 1pi)` is an Angle) — produce Angle values. Standard-library functions that *compute* an angle return **plain numbers in radians**: `atan2()`, `.angleTo()`, `tangent(t).angle`, `normal(t).angle`, `PolarVector.angle`, and [`deg()`/`rad()`](#stdlib-angle-conversion)/`mpi()`. The sampled ones (`atan2`, `.angleTo()`, `tangent(t)`, `normal(t)`) lie in `(−π, π]` — see [Parametric Sampling](#path-blocks-parametric-sampling) for the screen-space orientation table; `PolarVector.angle` and `ctx.heading` accumulate turns and are not wrapped. That matters most for the degree-based color methods below, which read a bare number as **degrees** — write `c.hueShift(deg(p.angleTo(q)))`, not `c.hueShift(p.angleTo(q))`.
 
 ### Angle Arithmetic
 

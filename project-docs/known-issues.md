@@ -678,11 +678,12 @@ Option 3. The warning is the fix for the user; the prepend is defense in depth f
 
 ## Fixed during the glyph-halo follow-up (2026-09-12)
 
-ISSUE-016 and ISSUE-017 were resolved together; their original entries are kept below the table for the trail. Evidence: `project-docs/conic-parity/`, `scripts/debug-compile-cancel-and-conic.ts` (23 browser checks), CHANGELOG 2026-09-12.
+ISSUE-016, ISSUE-017 and ISSUE-020 were resolved on the same day; their original entries are kept below the table for the trail. Evidence: `project-docs/conic-parity/`, `scripts/debug-compile-cancel-and-conic.ts` (23 browser checks), CHANGELOG 2026-09-12.
 
 | Issue | Fix |
 |-------|-----|
 | ISSUE-016 — the playground compile worker never cancelled; edits during a long compile queued more full compiles | `playground/services/compiler-worker.ts` refactored into `CompilerWorkerClient` with a dedicated `editorCompiler` (the shared instance still backs the publish precheck and admin views); `updatePreview` terminates the superseded compile before posting; Cancel control beside the `Compiling…` chip (breadcrumb + fullscreen chrome) with a `cancelled` status; typed `CompileCancelledError` never routes through `showError`; already-stale requests are refused before posting. No automatic termination by timer (user decision). Main-thread copy mitigations (former option 4) were not part of this pass. |
+| ISSUE-020 — `normal(t).angle` unwrapped (−1.5π … 0.5π), ranges undocumented | `wrapToPi` in `src/evaluator/sampling.ts` applied at both `case 'normal'` sites → (−π, π] like `tangent(t)` (exactly left = +π); `docs/path-blocks.md` orientation table + `switch`-range trap, `docs/syntax.md` producer list, hover strings; tests for the down-left quadrant, exactly-left parity and full-circle sweeps; after-diagram recompiled from real values. Noted, not fixed: `tangentArc` / `arcFromPolarOffset` return `ContextObject.angle` as `endAngle ± π/2` unwrapped, and `ctx.tangentAngle` is declared in `pathogen-api.ts` but never populated. |
 | ISSUE-017 — conic `innerRadius` / `spread` honoured only on WebGPU; gradients blank above 32768-unit viewBoxes | `src/conic-param.ts` ports the shader rules; `src/conic-renderer.ts` + `build-defs.ts` honour every property (annular sectors, blended-fill overlay/mask, spread over the full circle, ccw by reflection, linear-light mixing); the playground's Canvas 2D fallback draws the same wedges; `clampScale` floor removed (`raster-size.ts`), WebGPU renders wrapped in error scopes (`gpu-error-scopes.ts`), adapter limits requested (≤ 16384), cache keyed on post-clamp size + path, failures never cached, Pathogen-console notices for fallback/failure, `?gpu=off` / `PATHOGEN_GPU=off` switches; docs updated. Still approximate on the CLI: the blended inner fills use a five-stop radial gradient rather than per-pixel smoothstep. |
 
 ---
@@ -743,36 +744,6 @@ Offset the un-projected piece and place with `drawTo(origin + anchor)`.
 **Recommended Long-term Solution:**
 
 Both.
-
----
-
-## ISSUE-020: `normal(t).angle` is the tangent minus a quarter turn, unwrapped (−1.5π … 0.5π); `switch` ranges above 0.5π never match
-
-**Discovered:** 2026-09-11 (a halo builder's `case 1.2pi..<1.8pi` on `normal.angle` was dead code)
-
-**Severity:** Low
-
-**Description:**
-
-`tangent(t).angle` is an `atan2` value in [−π, π]. `normal(t).angle` is computed as `result.tangent - Math.PI / 2` with no re-wrap (`src/evaluator/index.ts:2687` and `:3392`), so it spans (−1.5π, 0.5π]: right = 0, down = 0.5π, **left = −π, up = −0.5π, bottom-left = −1.25π** (measured 2026-09-12 on arcs, quadratics and lines, both windings; `project-docs/glyph-halo-diagnosis/probes/angle-convention-and-winding.pathogen`). Only the lower-right quarter turn comes back positive. Users who assume `0..2pi` write `case 1.2pi..<1.8pi { … }` and the arm silently never fires; users who assume the atan2 range are also surprised in the lower-left quadrant. `docs/path-blocks.md` does not state either range. Circular-distance helpers that fold with `((a - b) % TAU() + TAU()) % TAU()` and periodic formulas (`cos(a - light)`) are unaffected; plain range comparisons are. Diagram: `project-docs/glyph-halo-diagnosis/normal-angle-and-winding.pathogen` (bbwp `2026-09-12-07:44:13--glyph-halo-diagnosis--normal-angle-and-winding`).
-
-**Impact:**
-
-Silent design bugs (no flare, no lighting weighting) that look like tuning problems.
-
-**Current Workarounds:**
-
-Fold first (`let a = ((n.angle % TAU()) + TAU()) % TAU();`) or use the negative range (`case -0.8pi..<-0.2pi`); prefer periodic formulas (`cos(a - light)`) for weighting.
-
-**Potential Solutions:**
-
-1. Wrap the normal angle into the same [−π, π] range as the tangent at both derivation sites (one `atan2(sin, cos)` or a fold), and document the range beside `normal(t)` / `tangent(t)` in `docs/path-blocks.md`, with the y-down orientation table (0 = right, 0.5π = down, ±π = left, −0.5π = up).
-2. Diagnostic: a `switch` on a value known to be an angle with a numeric range arm entirely outside [−π, π] could warn "this arm can never match an angle".
-3. Optional `.angle` normalization helper in the stdlib (`wrapAngle(a)` → [0, 2π)).
-
-**Recommended Long-term Solution:**
-
-1 now (the wrap is a one-line consistency fix plus a doc line; it changes raw values only in the lower-left quadrant); 3 if it comes up again; 2 only if the angle type carries through to `switch` cheaply.
 
 ---
 
@@ -842,6 +813,36 @@ Preview in a WebGPU-capable browser; treat CLI/VS Code conic output as approxima
 **Recommended Long-term Solution:**
 
 5 immediately (it is a regression for any large viewBox), then 1 + 4 (parity and honesty), then 2 and 3.
+
+---
+
+### ISSUE-020 (resolved 2026-09-12): `normal(t).angle` is the tangent minus a quarter turn, unwrapped (−1.5π … 0.5π); `switch` ranges above 0.5π never match
+
+**Discovered:** 2026-09-11 (a halo builder's `case 1.2pi..<1.8pi` on `normal.angle` was dead code)
+
+**Severity:** Low
+
+**Description:**
+
+`tangent(t).angle` is an `atan2` value in [−π, π]. `normal(t).angle` is computed as `result.tangent - Math.PI / 2` with no re-wrap (`src/evaluator/index.ts:2687` and `:3392`), so it spans (−1.5π, 0.5π]: right = 0, down = 0.5π, **left = −π, up = −0.5π, bottom-left = −1.25π** (measured 2026-09-12 on arcs, quadratics and lines, both windings; `project-docs/glyph-halo-diagnosis/probes/angle-convention-and-winding.pathogen`). Only the lower-right quarter turn comes back positive. Users who assume `0..2pi` write `case 1.2pi..<1.8pi { … }` and the arm silently never fires; users who assume the atan2 range are also surprised in the lower-left quadrant. `docs/path-blocks.md` does not state either range. Circular-distance helpers that fold with `((a - b) % TAU() + TAU()) % TAU()` and periodic formulas (`cos(a - light)`) are unaffected; plain range comparisons are. Diagram: `project-docs/glyph-halo-diagnosis/normal-angle-and-winding.pathogen` (bbwp `2026-09-12-07:44:13--glyph-halo-diagnosis--normal-angle-and-winding`).
+
+**Impact:**
+
+Silent design bugs (no flare, no lighting weighting) that look like tuning problems.
+
+**Current Workarounds:**
+
+Fold first (`let a = ((n.angle % TAU()) + TAU()) % TAU();`) or use the negative range (`case -0.8pi..<-0.2pi`); prefer periodic formulas (`cos(a - light)`) for weighting.
+
+**Potential Solutions:**
+
+1. Wrap the normal angle into the same [−π, π] range as the tangent at both derivation sites (one `atan2(sin, cos)` or a fold), and document the range beside `normal(t)` / `tangent(t)` in `docs/path-blocks.md`, with the y-down orientation table (0 = right, 0.5π = down, ±π = left, −0.5π = up).
+2. Diagnostic: a `switch` on a value known to be an angle with a numeric range arm entirely outside [−π, π] could warn "this arm can never match an angle".
+3. Optional `.angle` normalization helper in the stdlib (`wrapAngle(a)` → [0, 2π)).
+
+**Recommended Long-term Solution:**
+
+1 now (the wrap is a one-line consistency fix plus a doc line; it changes raw values only in the lower-left quadrant); 3 if it comes up again; 2 only if the angle type carries through to `switch` cheaply.
 
 ---
 

@@ -47,11 +47,11 @@ log(tan.point);   // Point(0, 0) — start of curve
 log(tan.angle);   // angle in radians — direction of travel
 ```
 
-[`.normal(t)`](/docs#path-blocks-normalt-point-angle) returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point "outward" from the curve:
+[`.normal(t)`](/docs#path-blocks-normalt-point-angle) returns the left-hand perpendicular — the tangent angle minus π/2, wrapped into the same (−π, π] range the tangent uses. This is useful for placing elements that should point "outward" from the curve:
 
 ```pathogen
 let n = curve.normal(0.5);
-// n.angle is tangent angle - π/2
+// n.angle is tangent angle - π/2, wrapped into (-π, π]
 // Use with cos/sin to offset perpendicular to the curve
 ```
 

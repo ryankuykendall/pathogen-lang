@@ -2,16 +2,11 @@ define ViewBox(0, 0, 1600, 1060);
 let { width, height } = viewbox;
 
 // ---------------------------------------------------------------------------
-// HISTORICAL RECORD — the pre-ISSUE-020 behaviour (compiler before 2026-09-12).
-// Do not recompile: the labels are real normal(t).angle values, which the
-// compiler now wraps into (-pi, pi], so a fresh render would contradict this
-// text. The 2026-09-12 bbwp in website/bbwp/ is the record; the current
-// behaviour is drawn by normal-angle-and-winding-after-issue-020.pathogen.
-//
-// Diagram: what normal(t).angle returned (the tangent's atan2 angle minus a
-// quarter turn, NOT re-wrapped, so -1.5pi … 0.5pi), why "up" is -0.5pi, and
-// how contour winding decides whether normals (and a positive offset) point
-// out or in. Every angle label on the two shapes was a real normal(t).angle.
+// Diagram — what normal(t).angle returns since ISSUE-020: wrapped into
+// (-pi, pi] like tangent(t).angle, why "up" is -0.5pi, and how contour
+// winding decides whether normals (and a positive offset) point out or in.
+// Every angle label on the two shapes is a real normal(t).angle straight from
+// the compiler. (normal-angle-and-winding.pathogen is the pre-fix record.)
 // ---------------------------------------------------------------------------
 
 let inkColor = oklch(0.32 0.03 260);
@@ -51,15 +46,14 @@ fn formatPi(angle) {
 let compassCenter = Point(290, 500);
 let compassRadius = 190;
 
-// Only the lower-right quarter (0 … 0.5π) comes back positive.
+// After the wrap: the lower half (screen-down) is 0 … π, the upper half −π … 0.
 let negativeRegion = PathLayer('negative-region') #{
   fill: upperHalfColor;
   stroke: none;
 };
 negativeRegion.apply {
-  M compassCenter.x compassCenter.y;
-  L compassCenter.x calc(compassCenter.y + compassRadius);
-  A compassRadius compassRadius 0 1 1 calc(compassCenter.x + compassRadius) compassCenter.y;
+  M calc(compassCenter.x - compassRadius) compassCenter.y;
+  A compassRadius compassRadius 0 0 1 calc(compassCenter.x + compassRadius) compassCenter.y;
   z
 }
 let positiveRegion = PathLayer('positive-region') #{
@@ -67,9 +61,8 @@ let positiveRegion = PathLayer('positive-region') #{
   stroke: none;
 };
 positiveRegion.apply {
-  M compassCenter.x compassCenter.y;
-  L calc(compassCenter.x + compassRadius) compassCenter.y;
-  A compassRadius compassRadius 0 0 1 compassCenter.x calc(compassCenter.y + compassRadius);
+  M calc(compassCenter.x + compassRadius) compassCenter.y;
+  A compassRadius compassRadius 0 0 1 calc(compassCenter.x - compassRadius) compassCenter.y;
   z
 }
 
@@ -93,7 +86,7 @@ let spokes = PathLayer('spokes') #{
   stroke-width: 3;
   marker-end: arrowMarker;
 };
-let spokeAngles = [0, 0.25pi, 0.5pi, -1.25pi, -1pi, -0.75pi, -0.5pi, -0.25pi];
+let spokeAngles = [0, 0.25pi, 0.5pi, 0.75pi, 1pi, -0.75pi, -0.5pi, -0.25pi];
 spokes.apply {
   for (spokeAngle in spokeAngles) {
     M compassCenter.x compassCenter.y;
@@ -111,8 +104,8 @@ compassLabels.apply {
   text(calc(compassCenter.x + compassRadius + 20), calc(compassCenter.y + 32))`0`
   text(calc(compassCenter.x + compassRadius * 0.72), calc(compassCenter.y + compassRadius * 0.72 + 34))`0.25π`
   text(calc(compassCenter.x - 74), calc(compassCenter.y + compassRadius + 40))`0.5π`
-  text(calc(compassCenter.x - compassRadius * 0.72 - 96), calc(compassCenter.y + compassRadius * 0.72 + 34))`−1.25π`
-  text(calc(compassCenter.x - compassRadius - 74), calc(compassCenter.y + 32))`−1π`
+  text(calc(compassCenter.x - compassRadius * 0.72 - 84), calc(compassCenter.y + compassRadius * 0.72 + 34))`0.75π`
+  text(calc(compassCenter.x - compassRadius - 74), calc(compassCenter.y + 32))`±π`
   text(calc(compassCenter.x - compassRadius * 0.72 - 96), calc(compassCenter.y - compassRadius * 0.72 - 14))`−0.75π`
   text(calc(compassCenter.x - 36), calc(compassCenter.y - compassRadius - 18))`−0.5π`
   text(calc(compassCenter.x + compassRadius * 0.72 + 4), calc(compassCenter.y - compassRadius * 0.72 - 14))`−0.25π`
@@ -126,14 +119,14 @@ let compassNotes = TextLayer('compass-notes') #{
   fill: inkColor;
 };
 compassNotes.apply {
-  text(40, 60)`Screen space: +x is right, +y is DOWN. tangent(t).angle is atan2(dy, dx), in −π … π.`
-  text(40, 92)`normal(t).angle is that tangent minus a quarter turn and is not re-wrapped: −1.5π … 0.5π.`
-  text(40, 124)`Only the lower-right quarter (tan) comes back positive. "Up" is −0.5π, "left" is −1π,`
-  text(40, 156)`bottom-left is −1.25π. Nothing is ever reported above 0.5π.`
-  text(40, 790)`case 1.2pi..<1.8pi   → can never match`
-  text(40, 822)`case -0.8pi..<-0.2pi → matches up-facing normals`
-  text(40, 870)`Periodic formulas do not care: cos(angle − light)`
-  text(40, 902)`or ((a − b) % TAU() + TAU()) % TAU() work as-is.`
+  text(40, 60)`Screen space: +x is right, +y is DOWN. tangent(t).angle is atan2(dy, dx), in −π … π,`
+  text(40, 92)`and normal(t).angle is wrapped into the same −π … π (before ISSUE-020 it ran −1.5π … 0.5π).`
+  text(40, 124)`The lower half (tan) comes back positive, 0 … π; the upper half (blue) negative, −π … 0.`
+  text(40, 156)`"Up" is still −0.5π, "left" is ±π, bottom-left is 0.75π. Nothing is ever reported above π.`
+  text(40, 790)`case 1.2pi..<1.8pi   → still never matches (nothing exceeds π)`
+  text(40, 822)`case -0.8pi..<-0.2pi → matches up-facing normals (unchanged)`
+  text(40, 854)`case 0.6pi..<0.9pi   → matches bottom-left (was −1.4π..−1.1π)`
+  text(40, 902)`Periodic formulas and fold-based helpers are unaffected either way.`
 }
 
 // ---------------------------------------------------------------------------
@@ -244,4 +237,6 @@ panelNotes.apply {
   text(640, 836)`other way: their normals point into the hole and a positive offset collapses it.`
   text(640, 880)`normal(t) is the travel direction turned a quarter turn to the right of travel —`
   text(640, 908)`flip the winding (.reverse()) and every normal flips with it.`
+  text(640, 956)`Compared with the pre-fix diagram only the bottom-left quadrant's labels`
+  text(640, 984)`changed sign (e.g. −1.17π became 0.83π); no direction moved.`
 }
