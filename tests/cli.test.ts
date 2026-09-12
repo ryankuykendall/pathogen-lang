@@ -647,6 +647,37 @@ describe('CLI', () => {
       unlinkSync(outputSvg);
     });
 
+    it('without --render-gpu, innerRadius and spread are honoured in the wedge output and nothing warns', () => {
+      const outputSvg = join(TMP_DIR, 'conic-inner-no-gpu.svg');
+      if (existsSync(outputSvg)) unlinkSync(outputSvg);
+
+      const inputFile = join(TMP_DIR, 'conic-inner-test.svgx');
+      writeFileSync(
+        inputFile,
+        `
+        let g = ConicGradient('ring', 100, 100) {|g|
+          g.stop(0, Color('red'));
+          g.stop(1, Color('blue'));
+        };
+        g.from = 0rad;
+        g.to = 0.5pi;
+        g.spread = 'transparent';
+        g.innerRadius = 30;
+        define PathLayer('p') #{ fill: g; }
+        layer('p').apply { rect(0, 0, 200, 200); }
+      `,
+      );
+      const result = runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
+      expect(result.stderr).not.toContain('ignored');
+      const content = readFileSync(outputSvg, 'utf-8');
+      // 90 one-degree annular sectors: each wedge carries the 30-unit inner arc.
+      expect((content.match(/ A 30 30 0 /g) ?? []).length).toBe(90);
+      expect((content.match(/<path d="M /g) ?? []).length).toBe(90);
+
+      unlinkSync(inputFile);
+      unlinkSync(outputSvg);
+    });
+
     it('linear-only source without --render-gpu produces native <linearGradient>', () => {
       const outputSvg = join(TMP_DIR, 'linear-test.svg');
       if (existsSync(outputSvg)) unlinkSync(outputSvg);

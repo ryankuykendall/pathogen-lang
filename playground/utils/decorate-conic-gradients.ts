@@ -4,13 +4,17 @@
 //
 // The shared renderer emits conic gradients as <pattern><image/></pattern>
 // when `useImageGradients` is true, with the <image> href set from the
-// GPU-gradient-service cache when available. If no GPU-rendered URL exists,
-// this module computes a Canvas 2D fallback using the browser's native
-// `createConicGradient` and data-URL-encodes the result.
+// GPU-gradient-service cache when available. If no URL exists (both the GPU
+// and Canvas 2D paths in the service failed, or the service was skipped),
+// this module renders the service's own Canvas 2D fallback at the same
+// clamped size and data-URL-encodes the result, and says so in the console.
 //
 // Lives in `playground/utils/` rather than `src/render/` because Canvas 2D
 // and `document.createElement` are browser-only APIs; the shared renderer
 // must also work in Node for the CLI.
+
+import { pushNotice, renderConicCanvas2D } from '../gpu/gradient-service.js';
+import { MAX_CANVAS_2D_DIM, rasterSize } from '../gpu/raster-size.js';
 
 import type { GradientOutput } from '../../src/evaluator/types';
 import type { VNode } from '../../src/render';
@@ -46,40 +50,22 @@ export function decorateConicGradientsWithCanvasFallback(
     const dataUrl = renderConicToDataUrl(grad, width, height);
     if (dataUrl) {
       image.attrs.href = dataUrl;
+      pushNotice(
+        `Gradient '${grad.id}' (conic) was rendered by the last-resort Canvas 2D path at mount time; innerRadius, innerFill and spread are approximated with 1° wedges.`,
+      );
     }
   }
 }
 
 function renderConicToDataUrl(grad: GradientOutput, w: number, h: number): string | null {
   try {
-    const scale = 2;
-    const canvas = document.createElement('canvas');
-    canvas.width = w * scale;
-    canvas.height = h * scale;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-
-    const fromAngle = grad.from ?? 0;
-    const toAngle = grad.to ?? fromAngle + 2 * Math.PI;
-    const cx = (grad.cx ?? 0) * scale;
-    const cy = (grad.cy ?? 0) * scale;
-    const conic = ctx.createConicGradient(fromAngle, cx, cy);
-
-    const stops = grad.stopsWithOklch || grad.stops;
-    const totalAngle = toAngle - fromAngle;
-    const fullRevolution = 2 * Math.PI;
-    for (const s of stops) {
-      const scaledOffset = (s.offset * totalAngle) / fullRevolution;
-      if (scaledOffset >= 0 && scaledOffset <= 1) {
-        conic.addColorStop(Math.min(1, Math.max(0, scaledOffset)), s.color);
-      }
-    }
-    ctx.fillStyle = conic;
-    ctx.fillRect(0, 0, w * scale, h * scale);
-    return canvas.toDataURL('image/png');
+    return renderConicCanvas2D(grad, w, h, rasterSize(w, h, 2, MAX_CANVAS_2D_DIM));
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn('Conic gradient canvas rendering failed:', e);
+    pushNotice(
+      `Gradient '${grad.id}' (conic) could not be rasterized by the last-resort Canvas 2D path (${e instanceof Error ? e.message : String(e)}); fills using it will render empty.`,
+    );
     return null;
   }
 }

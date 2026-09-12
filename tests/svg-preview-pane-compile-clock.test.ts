@@ -33,6 +33,52 @@ describe('svg-preview-pane compile clock chip', () => {
     expect(chip.classList.contains('compiling')).toBe(false);
   });
 
+  // ISSUE-016: the fullscreen chrome carries a Cancel control beside the chip.
+  // The pane never re-renders, so the button is toggled in place by the same
+  // painter that ticks the clock.
+  it('shows the Cancel control only while compiling and dispatches cancel-compile', async () => {
+    const { store } = await import('../playground/state/store.ts');
+    await import('../playground/components/svg-preview-pane.ts');
+    const el = document.createElement('svg-preview-pane');
+    document.body.appendChild(el);
+    const chrome = el.shadowRoot!.querySelector('#compilation-chrome') as HTMLElement;
+    const btn = el.shadowRoot!.querySelector('#cancel-compile-btn') as HTMLButtonElement;
+    expect(chrome).not.toBeNull();
+    expect(btn).not.toBeNull();
+    expect(btn.getAttribute('aria-label')).toBe('Cancel compile');
+    expect(chrome.classList.contains('hidden')).toBe(true);
+    expect(btn.hidden).toBe(true);
+
+    store.update({ compilationStatus: 'compiling', compilationElapsedMs: 1000 });
+    expect(chrome.classList.contains('hidden')).toBe(false);
+    expect(btn.hidden).toBe(false);
+
+    // Ticks patch in place: same nodes, button still shown.
+    store.set('compilationElapsedMs', 2000);
+    expect(el.shadowRoot!.querySelector('#cancel-compile-btn')).toBe(btn);
+    expect(btn.hidden).toBe(false);
+
+    const received: Event[] = [];
+    const listener = (e: Event) => received.push(e);
+    document.addEventListener('cancel-compile', listener);
+    try {
+      btn.click();
+    } finally {
+      document.removeEventListener('cancel-compile', listener);
+    }
+    expect(received).toHaveLength(1);
+    expect(received[0].bubbles).toBe(true);
+    expect(received[0].composed).toBe(true);
+
+    for (const status of ['rendering', 'completed', 'error', 'cancelled'] as const) {
+      store.set('compilationStatus', status);
+      expect(btn.hidden, `hidden while ${status}`).toBe(true);
+      expect(chrome.classList.contains('hidden'), `chip shown while ${status}`).toBe(false);
+    }
+    store.set('compilationStatus', 'idle');
+    expect(chrome.classList.contains('hidden')).toBe(true);
+  });
+
   it('shows the running clock when mounted mid-compile', async () => {
     const { store } = await import('../playground/state/store.ts');
     await import('../playground/components/svg-preview-pane.ts');

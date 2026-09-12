@@ -1,0 +1,17 @@
+define ViewBox(0, 0, 48000, 18600);
+let { width, height } = viewbox;
+let gradientStartColor = oklch(0.6280 0.2577 29.2);
+let gradientEndColor = oklch(0.8769 0.1796 93.1);
+let wheel = ConicGradient('wheel', -1200, height) {|g|
+  g.stop(0, gradientStartColor.alpha(92%));
+  g.stop(0.5, gradientStartColor.lighten(20%).alpha(80%));
+  g.stop(1, gradientEndColor.alpha(92%));
+  g.from = -0.5pi;
+  g.to = 0.05pi;
+  g.spread = 'transparent';
+  g.innerRadius = 1000;
+};
+define default PathLayer('paper') #{ fill: #fff; stroke: none; }
+rect(0, 0, width, height);
+let art = PathLayer('art') #{ fill: wheel; stroke: none; };
+art.apply { rect(0, 0, width, height); }

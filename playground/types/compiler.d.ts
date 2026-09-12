@@ -222,7 +222,7 @@ export interface GradientOutput {
   from?: number;
   to?: number;
   direction?: 'cw' | 'ccw';
-  spread?: string;
+  spread?: 'clamp' | 'repeat' | 'transparent';
   innerRadius?: number;
   innerFill?: string;
   stopsWithOklch?: { offset: number; color: string; oklch?: OKLCH }[];

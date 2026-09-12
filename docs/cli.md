@@ -72,6 +72,8 @@ pathogen-lang --src=input.pathogen --png=out.png --scale=2
 
 Rasterizes the compiled SVG in a headless browser at the program's viewBox size, multiplied by `--scale` (1–4, default 2). Requires the `puppeteer` dev dependency; the CLI exits with an error naming it if it is missing. Composes with `--render-gpu` for programs that use GPU-rasterized gradients.
 
+`--render-gpu` opens the playground's gradient renderer in that same headless browser. Set `PATHOGEN_GPU=off` in the environment to route it through the Canvas 2D fallback instead of WebGPU — the same switch as `?gpu=off` in the playground — when you want to see what a browser without WebGPU will draw.
+
 ### Output as JSON
 
 ```bash

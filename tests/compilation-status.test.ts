@@ -31,6 +31,7 @@ describe('compilationStatusView', () => {
     ['rendering', 'Rendering...', 'rendering'],
     ['completed', 'Ready', 'completed'],
     ['error', 'Error', 'error'],
+    ['cancelled', 'Cancelled', 'cancelled'],
   ] as const)('%s → "%s" / .%s', (status, text, className) => {
     expect(compilationStatusView(status)).toEqual({ text, className });
   });
@@ -40,6 +41,7 @@ describe('compilationStatusView', () => {
     expect(compilationStatusView('rendering', 61_000).text).toBe('Rendering...');
     expect(compilationStatusView('completed', 61_000).text).toBe('Ready');
     expect(compilationStatusView('error', 61_000).text).toBe('Error');
+    expect(compilationStatusView('cancelled', 61_000).text).toBe('Cancelled');
   });
 
   it.each([['idle'], [null], [''], ['bogus-status']])('hides for %j', (status) => {

@@ -90,20 +90,26 @@ export class TextureCache {
   }
 }
 
+/** Which renderer produced a cached texture; the two are not pixel-equivalent. */
+export type RenderPath = 'gpu' | '2d';
+
 /**
  * Create a cache key from gradient rendering parameters.
  * Excludes gradient ID so that structurally identical gradients share cached results.
+ * `w`/`h` must be the *post-clamp* texture size and `path` the renderer, so a
+ * GPU raster and a Canvas 2D raster of the same gradient never share a key.
  */
-export function hashGradient(grad: HashableGradient, w: number, h: number): string {
+export function hashGradient(grad: HashableGradient, w: number, h: number, path: RenderPath = 'gpu'): string {
   if (grad.type === 'mesh') {
     const grid = (grad.meshGrid || []).map((row) => row.map((p) => `${p.x},${p.y}:${p.color}`).join(';')).join('/');
-    return ['mesh', w, h, grad.meshWidth ?? 0, grad.meshHeight ?? 0, grad.interpolation ?? 'srgb', grid].join('|');
+    return ['mesh', path, w, h, grad.meshWidth ?? 0, grad.meshHeight ?? 0, grad.interpolation ?? 'srgb', grid].join('|');
   }
 
   if (grad.type === 'freeform') {
     const pts = (grad.freeformPoints || []).map((p) => `${p.x},${p.y}:${p.color}`).join(';');
     return [
       'freeform',
+      path,
       w,
       h,
       grad.freeformWidth ?? 0,
@@ -119,6 +125,7 @@ export function hashGradient(grad: HashableGradient, w: number, h: number): stri
     const stops = (grad.stopsWithOklch || []).map((s) => `${s.offset}:${s.color}`).join(',');
     return [
       'topo',
+      path,
       w,
       h,
       grad.topoWidth ?? 0,
@@ -136,6 +143,7 @@ export function hashGradient(grad: HashableGradient, w: number, h: number): stri
   const stops = (grad.stopsWithOklch || grad.stops || []).map((s) => `${s.offset}:${s.color}`).join(',');
   return [
     'conic',
+    path,
     w,
     h,
     grad.cx ?? 0,

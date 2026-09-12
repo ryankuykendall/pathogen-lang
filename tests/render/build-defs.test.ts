@@ -77,3 +77,90 @@ describe('buildDefs', () => {
     expect(buildDefs(result)).toEqual([]);
   });
 });
+
+describe('buildDefs — conic gradients', () => {
+  const conicSource = (extra: string): string => `
+      let g = ConicGradient('wheel', 100, 100) {|g|
+        g.stop(0, Color('#ff0000'));
+        g.stop(1, Color('#0000ff'));
+      };
+      g.from = 0rad;
+      g.to = 0.5pi;
+      ${extra}
+      define PathLayer('p') #{ fill: g; }
+      layer('p').apply { M 0 0 L 10 10 }
+    `;
+
+  it('wedge branch: a partial sweep with the default clamp fills the gap with the last stop', () => {
+    const nodes = buildDefs(compile(conicSource('')), { width: 200, height: 200 });
+    expect(nodes.map((n) => n.tag)).toEqual(['pattern']);
+    const paths = nodes[0].children;
+    expect(paths).toHaveLength(360);
+    expect(paths.slice(90).every((p) => p.attrs.fill === '#0000ff')).toBe(true);
+  });
+
+  it("wedge branch: spread 'transparent' leaves the gap unpainted", () => {
+    const nodes = buildDefs(compile(conicSource("g.spread = 'transparent';")), { width: 200, height: 200 });
+    expect(nodes[0].children).toHaveLength(90);
+  });
+
+  it('wedge branch: innerRadius with the default hard hole cuts annular sectors', () => {
+    const nodes = buildDefs(compile(conicSource('g.innerRadius = 30;')), { width: 200, height: 200 });
+    const d = nodes[0].children[0].attrs.d as string;
+    expect(d).toContain(' A 30 30 0 ');
+    expect(d.startsWith('M 100 100')).toBe(false);
+  });
+
+  it("wedge branch: innerFill 'center' adds a sibling radialGradient and a circle inside the pattern", () => {
+    const nodes = buildDefs(compile(conicSource("g.innerRadius = 30; g.innerFill = 'center';")), {
+      width: 200,
+      height: 200,
+    });
+    expect(nodes.map((n) => n.tag)).toEqual(['radialGradient', 'pattern']);
+    const grad = nodes[0];
+    expect(grad.attrs).toMatchObject({ id: 'wheel-inner-fill', gradientUnits: 'userSpaceOnUse', cx: '100', cy: '100', r: '30' });
+    expect(grad.children.map((s) => [s.attrs.offset, s.attrs['stop-color'], s.attrs['stop-opacity']])).toEqual([
+      ['0', '#ff0000', '1'],
+      ['0.25', '#ff0000', '0.8438'],
+      ['0.5', '#ff0000', '0.5'],
+      ['0.75', '#ff0000', '0.1563'],
+      ['1', '#ff0000', '0'],
+    ]);
+    const pattern = nodes[1];
+    const circle = pattern.children[pattern.children.length - 1];
+    expect(circle.tag).toBe('circle');
+    expect(circle.attrs).toEqual({ cx: '100', cy: '100', r: '30', fill: 'url(#wheel-inner-fill)' });
+  });
+
+  it("wedge branch: innerFill 'transparent-blend' masks the wedges with a luminance ramp", () => {
+    const nodes = buildDefs(compile(conicSource("g.innerRadius = 30; g.innerFill = 'transparent-blend';")), {
+      width: 200,
+      height: 200,
+    });
+    expect(nodes.map((n) => n.tag)).toEqual(['radialGradient', 'mask', 'pattern']);
+    expect(nodes[0].children.map((s) => s.attrs['stop-color'])).toEqual([
+      'rgb(0, 0, 0)',
+      'rgb(40, 40, 40)',
+      'rgb(128, 128, 128)',
+      'rgb(215, 215, 215)',
+      'rgb(255, 255, 255)',
+    ]);
+    expect(nodes[1].attrs.id).toBe('wheel-inner-mask');
+    const group = nodes[2].children[0];
+    expect(group.tag).toBe('g');
+    expect(group.attrs.mask).toBe('url(#wheel-inner-mask)');
+    expect(group.children).toHaveLength(360);
+  });
+
+  it('image branch: emits pattern+image, with href only when a URL is supplied', () => {
+    const result = compile(conicSource(''));
+    const without = buildDefs(result, { width: 200, height: 200, useImageGradients: true });
+    expect(without.map((n) => n.tag)).toEqual(['pattern']);
+    expect(without[0].children[0].tag).toBe('image');
+    expect(without[0].children[0].attrs.href).toBeUndefined();
+
+    const urls = new Map([['wheel', 'data:image/png;base64,AAAA']]);
+    const withUrl = buildDefs(result, { width: 200, height: 200, useImageGradients: true, gpuGradientUrls: urls });
+    expect(withUrl[0].children[0].attrs.href).toBe('data:image/png;base64,AAAA');
+  });
+});

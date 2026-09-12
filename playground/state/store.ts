@@ -143,7 +143,7 @@ export const store = createStore({
   exportSvgBytes: null,
 
   // Compilation status (for async worker)
-  compilationStatus: 'idle', // 'idle', 'compiling', 'rendering', 'completed', 'error'
+  compilationStatus: 'idle', // 'idle', 'compiling', 'rendering', 'completed', 'error', 'cancelled'
   compilationError: null,
   compilationId: 0, // Tracks current compilation for staleness detection
   // Whole-second quantized elapsed time of the in-flight compile. Ticked by

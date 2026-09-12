@@ -8,7 +8,7 @@
  * Phase 2's CLI byte-snapshots pass unchanged.
  */
 
-import { renderConicToWedges } from '../conic-renderer';
+import { renderConic } from '../conic-renderer';
 import { validateCSSIdent } from '../evaluator/sanitize';
 import type {
   CompileResult,
@@ -87,7 +87,7 @@ export function buildDefs(result: CompileResult, options: BuildDefsOptions = {})
     defs.push(buildClipPath(clip, emitData));
   }
   for (const grad of result.gradients) {
-    defs.push(buildGradient(grad, width, height, emitData, useImg, urls));
+    defs.push(...buildGradientDefs(grad, width, height, emitData, useImg, urls));
   }
   for (const pat of result.patterns ?? []) {
     defs.push(buildPattern(pat, emitData));
@@ -130,6 +130,104 @@ function buildClipPath(clip: ClipPathOutput, emitData: boolean): VNode {
   return h('clipPath', attrs, children);
 }
 
+/**
+ * A gradient normally emits one def. A conic gradient rendered as wedges with
+ * a blended `innerFill` also needs a sibling `<radialGradient>` (and, for
+ * `'transparent-blend'`, a `<mask>`) that its pattern content references, so
+ * the conic branch may return several nodes; they precede the `<pattern>`.
+ */
+function buildGradientDefs(
+  grad: GradientOutput,
+  svgW: number,
+  svgH: number,
+  emitData: boolean,
+  useImageGradients: boolean,
+  gpuGradientUrls: Map<string, string> | undefined,
+): VNode[] {
+  if (grad.type === 'conic' && !useImageGradients) {
+    return buildConicWedgeDefs(grad, svgW, svgH);
+  }
+  return [buildGradient(grad, svgW, svgH, emitData, useImageGradients, gpuGradientUrls)];
+}
+
+/**
+ * Wedge-path rendering of a conic gradient (CLI, VS Code preview, library):
+ * one `<path>` per ~1° slice inside a `<pattern>`, following the same rules as
+ * the playground's WebGPU shader (see `src/conic-param.ts`).
+ */
+function buildConicWedgeDefs(grad: GradientOutput, svgW: number, svgH: number): VNode[] {
+  const render = renderConic({
+    cx: grad.cx ?? svgW / 2,
+    cy: grad.cy ?? svgH / 2,
+    from: grad.from ?? 0,
+    to: grad.to ?? (grad.from ?? 0) + 2 * Math.PI,
+    direction: grad.direction ?? 'cw',
+    spread: grad.spread ?? 'clamp',
+    stops: grad.stopsWithOklch ?? grad.stops,
+    viewWidth: svgW,
+    viewHeight: svgH,
+    innerRadius: grad.innerRadius ?? 0,
+    innerFill: grad.innerFill,
+  });
+  const cx = String(grad.cx ?? svgW / 2);
+  const cy = String(grad.cy ?? svgH / 2);
+  const siblings: VNode[] = [];
+  let content: VNode[] = render.wedges.map((w) => h('path', { d: w.d, fill: w.fill }));
+
+  if (render.innerOverlay) {
+    const overlayId = `${grad.id}-inner-fill`;
+    siblings.push(
+      h(
+        'radialGradient',
+        { id: overlayId, gradientUnits: 'userSpaceOnUse', cx, cy, r: String(render.innerOverlay.radius) },
+        render.innerOverlay.stops.map((s) =>
+          h('stop', {
+            offset: String(s.offset),
+            'stop-color': render.innerOverlay!.color,
+            'stop-opacity': String(Number(s.opacity.toFixed(4))),
+          }),
+        ),
+      ),
+    );
+    content.push(h('circle', { cx, cy, r: String(render.innerOverlay.radius), fill: `url(#${overlayId})` }));
+  }
+
+  if (render.innerMask) {
+    const maskGradId = `${grad.id}-inner-mask-ramp`;
+    const maskId = `${grad.id}-inner-mask`;
+    siblings.push(
+      h(
+        'radialGradient',
+        { id: maskGradId, gradientUnits: 'userSpaceOnUse', cx, cy, r: String(render.innerMask.radius) },
+        render.innerMask.stops.map((s) => {
+          const level = Math.round(Number(s.luminance.toFixed(4)) * 255);
+          return h('stop', { offset: String(s.offset), 'stop-color': `rgb(${level}, ${level}, ${level})` });
+        }),
+      ),
+      h(
+        'mask',
+        { id: maskId, maskUnits: 'userSpaceOnUse', x: '0', y: '0', width: String(svgW), height: String(svgH) },
+        [h('rect', { x: '0', y: '0', width: String(svgW), height: String(svgH), fill: `url(#${maskGradId})` })],
+      ),
+    );
+    content = [h('g', { mask: `url(#${maskId})` }, content)];
+  }
+
+  const pattern = h(
+    'pattern',
+    {
+      id: grad.id,
+      x: '0',
+      y: '0',
+      width: String(svgW),
+      height: String(svgH),
+      patternUnits: 'userSpaceOnUse',
+    },
+    content,
+  );
+  return [...siblings, pattern];
+}
+
 function buildGradient(
   grad: GradientOutput,
   svgW: number,
@@ -138,9 +236,11 @@ function buildGradient(
   useImageGradients: boolean,
   gpuGradientUrls: Map<string, string> | undefined,
 ): VNode {
-  // Conic: either wedge paths (CLI fallback) or pattern+image (playground).
+  // Conic: pattern+image (playground). buildGradientDefs routes the wedge
+  // form to buildConicWedgeDefs before this is reached, because that form can
+  // emit sibling defs.
   if (grad.type === 'conic') {
-    if (useImageGradients) {
+    {
       const attrs: Record<string, string> = { id: grad.id };
       if (emitData) attrs['data-gradient-def'] = grad.id;
       attrs.x = '0';
@@ -159,30 +259,6 @@ function buildGradient(
       }
       return h('pattern', attrs, [h('image', imgAttrs)]);
     }
-    const wedges = renderConicToWedges(
-      grad.cx ?? 0,
-      grad.cy ?? 0,
-      grad.from ?? 0,
-      grad.to ?? 2 * Math.PI,
-      grad.direction ?? 'cw',
-      grad.spread ?? 'clamp',
-      grad.stopsWithOklch ?? grad.stops,
-      svgW,
-      svgH,
-    );
-    const children: VNode[] = wedges.map((w) => h('path', { d: w.d, fill: w.fill }));
-    return h(
-      'pattern',
-      {
-        id: grad.id,
-        x: '0',
-        y: '0',
-        width: String(svgW),
-        height: String(svgH),
-        patternUnits: 'userSpaceOnUse',
-      },
-      children,
-    );
   }
 
   // Mesh / Freeform / Topo: either CLI fallback rect or playground pattern+image.

@@ -287,9 +287,11 @@ reversed.direction = 'ccw';
 
 | Spread | Effect |
 |--------|--------|
-| `'clamp'` | Edge colors extend to fill remaining area |
-| `'repeat'` | Pattern tiles to fill remaining area |
-| `'transparent'` | Outside-arc area is empty (no wedges emitted) |
+| `'clamp'` | The last stop's color fills the remaining area (for a sweep that runs backwards, the first stop's) |
+| `'repeat'` | The stop list tiles around the rest of the circle |
+| `'transparent'` | The area outside the arc is left unpainted |
+
+All three surfaces honour every mode — see [Rendering](#gradients-rendering).
 
 ### Inner Radius
 
@@ -315,7 +317,7 @@ gauge.innerFill = 'center';             // first-stop color, blends outward
 gauge.innerFill = Color('#1a1a2e');     // custom color, blends outward
 ```
 
-This is useful for donut-style gauges and ring charts. Inner radius rendering requires WebGPU, which is only available in the playground. The CLI wedge-path renderer ignores `innerRadius` and emits a warning when it is set.
+This is useful for donut-style gauges and ring charts. The hard `'transparent'` hole is exact on every surface. The three blended fills are exact in the playground's WebGPU renderer and approximated elsewhere with a five-stop radial gradient that follows the same smoothstep curve — see [Rendering](#gradients-rendering).
 
 ```
 // Ring gauge with transparent center and partial sweep
@@ -332,12 +334,13 @@ ring.innerFill = 'transparent';  // donut hole
 
 ### Rendering
 
-Since SVG has no native conic gradient element, the output depends on the consumer:
+SVG has no native conic gradient element, so every surface rasterizes or approximates one and wraps the result in a `<pattern>` that `fill`/`stroke` reference through `url(#id)`, exactly like a native gradient. All three renderers follow the same rules for `from`, `to`, `direction`, `spread`, `innerRadius` and `innerFill`, so a program looks the same in each:
 
-- **CLI** (`--output-svg-file`): Wedge-path SVG approximation wrapped in `<pattern>`. Each ~1° slice is an individual `<path>` element with an interpolated fill color.
-- **Playground**: Canvas 2D `createConicGradient()` → rendered to a PNG image → injected as `<pattern><image/></pattern>` for higher quality.
+- **Playground, WebGPU** (Chrome 113+): a WGSL fragment shader renders the gradient to a bitmap that is injected as `<pattern><image/></pattern>`. This is the reference renderer; the blended `innerFill` modes are exact here.
+- **Playground, Canvas 2D** (Firefox, Safari, or WebGPU unavailable): `createConicGradient()` plus clipping, compositing and a radial overlay reproduce the same rules. The console reports when this fallback is used.
+- **CLI, VS Code preview and library consumers**: wedge-shaped `<path>` elements, one per ~1° slice, each filled with the color the shader would sample at the slice's middle (stops mix in gamma-encoded sRGB, as the shader and CSS gradients do). `innerRadius` cuts the wedges into annular sectors; a blended `innerFill` adds a radial-gradient disc (or mask) that follows the shader's smoothstep curve at five stops. Nothing is ignored and nothing warns.
 
-Both approaches are referenced via `url(#id)` in `fill`/`stroke`, identical to native gradients.
+**Bitmap resolution.** The playground renders at twice the viewBox size, then reduces that so the longer edge fits the largest texture the renderer allows: the GPU's maximum texture dimension (16384 on most desktop GPUs, 8192 at minimum) for WebGPU, 16384 for Canvas 2D. A 4000-unit-wide viewBox renders at 2 pixels per unit; a 48000-unit-wide one at about 0.34 pixels per unit on a 16384 GPU. Rendered bitmaps are cached, so a compile that does not change the gradient reuses the previous image.
 
 ### OKLCh Interpolation
 
@@ -354,7 +357,7 @@ smooth.steps = 15;
 
 ### Conic Gradient CSS Variable Limitation
 
-Conic gradients are rasterized at compile time (Canvas 2D in the playground, wedge-path approximation in the CLI). This means `Color(CSSVar(...))` stops in conic gradients are **baked out** — the fallback color is extracted and used directly in the rasterized output.
+Conic gradients are rasterized at compile time (a WebGPU or Canvas 2D bitmap in the playground, wedge paths in the CLI). This means `Color(CSSVar(...))` stops in conic gradients are **baked out** — the fallback color is extracted and used directly in the rasterized output.
 
 Unlike linear and radial gradients, which use native SVG elements with live `var()` references, conic gradients will **not** update when CSS custom properties change at runtime.
 
@@ -519,11 +522,11 @@ layer('circle').apply {
 
 ## Conic Gradient Rendering
 
-Conic gradients are rasterized to bitmap and injected as SVG `<pattern>` elements because SVG has no native conic gradient primitive.
+Conic gradients are rasterized to a bitmap (playground) or approximated with wedge paths (CLI, VS Code, library) and injected as SVG `<pattern>` elements, because SVG has no native conic gradient primitive. The three renderers share one set of rules for every property, including `innerRadius`, `innerFill` and `spread`; the playground's WebGPU shader is the reference and the others match it to within the approximations described under [Rendering](#gradients-rendering).
 
-**Playground (browser):** When WebGPU is available (Chrome 113+), all conic gradients render through a WGSL fragment shader. This enables `innerRadius`/`innerFill` and consistent quality. Rendered textures are cached — unchanged gradients skip re-rendering. When WebGPU is unavailable (Firefox, Safari), the playground falls back to Canvas 2D's `createConicGradient()`, which does not support `innerRadius` or `innerFill`.
+**Playground (browser):** WebGPU (Chrome 113+) renders through a WGSL fragment shader; when it is unavailable or fails, the playground falls back to Canvas 2D and says so in the console. Rendered textures are cached — unchanged gradients skip re-rendering. Add `?gpu=off` to the URL to force the Canvas 2D path when checking how a program will look in a browser without WebGPU.
 
-**CLI:** Conic gradients render as wedge-shaped SVG paths (pure math, no GPU). The `innerRadius` and `innerFill` properties are ignored with a warning.
+**CLI:** Conic gradients render as wedge-shaped SVG paths (pure math, no GPU), honouring the same properties.
 
 ## Mesh Gradient
 

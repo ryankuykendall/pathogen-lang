@@ -1688,25 +1688,22 @@ class ExportModal extends HTMLElement {
     const ctx = canvas.getContext('2d');
     if (!ctx) return fail();
     let fill: { r: number; g: number; b: number } | undefined;
-    let preFill: Uint8ClampedArray[] | undefined;
     if (opts.fillHex) {
       ctx.fillStyle = opts.fillHex;
       ctx.fillRect(0, 0, w, h);
       fill = hexToRgb(opts.fillHex);
-      // The pre-fill sample snapshot only feeds the precise (small-canvas)
-      // verification path; large GPU canvases use the downscale probe, so
-      // skip the 25 pipeline-syncing readbacks there.
-      if (w * h <= VERIFY_SCAN_MAX_PX) {
-        preFill = this._readSamples(ctx, w, h) ?? undefined;
-        if (!preFill) return fail();
-      }
+      // No pre-fill sample snapshot here: this canvas stays GPU-backed (see
+      // _attemptTiledRasterDraw for why), and every readback on it is a
+      // pipeline sync that Chrome flags with the willReadFrequently warning.
+      // Verification goes through the downscale probe, which compares the
+      // whole image against the fill color instead of 25 sample points.
     }
     try {
       ctx.drawImage(img, 0, 0, w, h);
     } catch {
       return fail();
     }
-    const verdict = this._verifyCanvasDraw(ctx, w, h, { mode: opts.mode, fill, preFill, expectInk: opts.expectInk });
+    const verdict = this._verifyCanvasDraw(ctx, w, h, { mode: opts.mode, fill, expectInk: opts.expectInk });
     return { canvas, verdict };
   }
 
@@ -1796,15 +1793,16 @@ class ExportModal extends HTMLElement {
 
   /**
    * Post-draw verification: context loss, then pixel-content classification.
-   * A discrete method so the E2E harness can inject failures by patching the
-   * prototype.
+   * A discrete method so failures can be injected by stubbing it.
    *
-   * Small or CPU-backed canvases get the precise path (sparse sample grid,
-   * banded full scan on suspicion). Large GPU-backed canvases are verified
-   * via a single downscale probe instead: banded getImageData on a big
-   * accelerated canvas forces repeated GPU pipeline syncs (observed locking
-   * the UI ~1 min on a 77 MP canvas), while one GPU-side downscale plus one
-   * small readback costs milliseconds.
+   * CPU-backed canvases (the tiled path, created with willReadFrequently) get
+   * the precise path: sparse sample grid, banded full scan on suspicion.
+   * GPU-backed canvases are always verified via a single downscale probe:
+   * every getImageData on an accelerated canvas forces a GPU pipeline sync
+   * (banded scans were observed locking the UI ~1 min on a 77 MP canvas, and
+   * Chrome flags even the 25-sample grid with its willReadFrequently
+   * warning), while one GPU-side downscale plus one readback from a
+   * CPU-backed probe costs milliseconds.
    */
   _verifyCanvasDraw(
     ctx: CanvasRenderingContext2D,
@@ -1819,7 +1817,7 @@ class ExportModal extends HTMLElement {
     },
   ): DrawVerdict {
     if (this._isContextLost(ctx)) return 'wiped';
-    if (!opts.cpuBacked && w * h > VERIFY_SCAN_MAX_PX) return this._probeVerifyCanvas(ctx, w, h, opts);
+    if (!opts.cpuBacked) return this._probeVerifyCanvas(ctx, w, h, opts);
     const samples = this._readSamples(ctx, w, h);
     if (!samples) return 'wiped';
     const verdict = classifyRasterSamples(samples, opts.mode, opts.preFill);
@@ -1861,7 +1859,8 @@ class ExportModal extends HTMLElement {
     const probe = document.createElement('canvas');
     probe.width = pw;
     probe.height = ph;
-    const pctx = probe.getContext('2d');
+    // The probe exists to be read back, so keep it in system memory.
+    const pctx = probe.getContext('2d', { willReadFrequently: true });
     if (!pctx) return 'wiped';
     let data: Uint8ClampedArray;
     try {

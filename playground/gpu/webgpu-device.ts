@@ -1,6 +1,16 @@
 // WebGPU Device Singleton
 // Lazy-initialized, with device-lost recovery
 
+import { DEFAULT_GPU_MAX_DIM } from './raster-size.js';
+
+/**
+ * Largest texture edge we ask the adapter for. Adapters commonly allow 16384,
+ * but a 16384-wide PNG readback is already tens of MB and seconds of
+ * main-thread `toDataURL`, so we do not go past it even where the hardware
+ * would.
+ */
+const REQUESTED_MAX_TEXTURE_DIM = 16384;
+
 let gpuDevice: GPUDevice | null = null;
 let gpuAdapter: GPUAdapter | null = null;
 let availabilityResult: boolean | null = null;
@@ -58,13 +68,29 @@ async function _createDevice(): Promise<GPUDevice | null> {
       if (!gpuAdapter) return null;
     }
 
-    gpuDevice = await gpuAdapter.requestDevice();
+    // Ask for the adapter's texture limit (capped, see above); the spec
+    // default is only 8192, which reduces large viewBoxes to a quarter of the
+    // resolution the hardware could give. Fall back to a plain request if the
+    // adapter rejects the limits (it must not exceed what it advertises).
+    const wanted = Math.min(gpuAdapter.limits.maxTextureDimension2D, REQUESTED_MAX_TEXTURE_DIM);
+    try {
+      gpuDevice = await gpuAdapter.requestDevice({ requiredLimits: { maxTextureDimension2D: wanted } });
+    } catch (limitErr: unknown) {
+      console.warn('[WebGPU] requestDevice with limits failed, retrying with defaults:', (limitErr as Error).message);
+      gpuDevice = await gpuAdapter.requestDevice();
+    }
 
     gpuDevice.lost.then((info: GPUDeviceLostInfo) => {
       console.warn('[WebGPU] Device lost:', info.message);
       gpuDevice = null;
       gpuAdapter = null;
       // Will re-initialize on next getDevice() call
+    });
+    // Anything that escapes a render's error scopes (compositor / swapchain
+    // messages) still shows up here instead of vanishing into DevTools.
+    gpuDevice.addEventListener('uncapturederror', (ev: Event) => {
+      const err = (ev as GPUUncapturedErrorEvent).error;
+      console.warn('[WebGPU] Uncaptured error:', err.message);
     });
 
     return gpuDevice;
@@ -73,6 +99,14 @@ async function _createDevice(): Promise<GPUDevice | null> {
     gpuDevice = null;
     return null;
   }
+}
+
+/**
+ * The largest texture edge the current device accepts, or WebGPU's default
+ * until a device exists. Raster sizes are clamped against this.
+ */
+export function getMaxTextureDimension2D(): number {
+  return gpuDevice?.limits.maxTextureDimension2D ?? DEFAULT_GPU_MAX_DIM;
 }
 
 /**

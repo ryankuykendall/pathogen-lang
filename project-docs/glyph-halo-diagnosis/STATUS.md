@@ -127,14 +127,20 @@ over all pieces, are indistinguishable from `boundingBox()` (all ~0.49 s;
 `probes/length-vs-bbox-cost.pathogen`). The bbox "hack" stand-ins in the
 program can be replaced when convenient.
 
-## Deferred (registered in `../known-issues.md`)
+## Follow-ups (registered in `../known-issues.md`)
+
+Fixed 2026-09-12 (see CHANGELOG, `../conic-parity/`, `scripts/debug-compile-cancel-and-conic.ts`):
+
+- ISSUE-016 compile worker cancel (Cancel control + cancel-on-supersede; main-thread copies not addressed)
+- ISSUE-017 conic `innerRadius` / `spread` parity, the >32768-unit blank-render regression, GPU limits, docs, tests
+- the export-modal `willReadFrequently` readback warning
+
+Still open:
 
 - ISSUE-015 leading-moveto silent failure (warning + `M 0 0` prepend)
-- ISSUE-016 compile worker cancel / watchdog / main-thread copies
-- ISSUE-017 conic `innerRadius` / `spread` parity, GPU limits, docs, tests
 - ISSUE-018 output budget warning, `records` retention, loop-cap mismatch
 - ISSUE-019 `variableOffset` family on `ProjectedPath`; transform-origin docs
-- ISSUE-020 `.angle` range documentation / diagnostic
+- ISSUE-020 `.angle` range documentation / wrap
 
 ## Techniques worth reusing
 

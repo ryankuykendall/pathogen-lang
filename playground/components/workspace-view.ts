@@ -18,7 +18,7 @@ import './edit-workspace-metadata-modal.js';
 import gpuGradientService from '../gpu/gradient-service.js';
 import { workspaceApi } from '../services/api.js';
 import { autosave, SaveStatus } from '../services/autosave.js';
-import compilerWorker from '../services/compiler-worker.js';
+import compilerWorker, { editorCompiler } from '../services/compiler-worker.js';
 import { formatFontSubstitutions } from '../services/font-loader.js';
 import thumbnailService from '../services/thumbnail-service.js';
 import tabCoordinator from '../services/tab-coordinator.js';
@@ -69,6 +69,8 @@ export class WorkspaceView extends HTMLElement {
   private _handleOpenExport: (() => void) | null = null;
 
   private _handleRefreshPreview: (() => void) | null = null;
+
+  private _handleCancelCompile: (() => void) | null = null;
 
   private _handleSetThumbnail: (() => void) | null = null;
 
@@ -151,8 +153,10 @@ export class WorkspaceView extends HTMLElement {
     tabCoordinator.close();
     // Clean up event listeners
     this.cleanupEventListeners();
-    // Stop the compile clock, then terminate the compiler worker
+    // Stop the compile clock, then terminate both compiler workers (the
+    // editor's own and the shared one other views use)
     this._compileTicker.stop();
+    editorCompiler.terminate();
     compilerWorker.terminateWorker();
     // Release GPU texture cache
     gpuGradientService.clearCache();
@@ -724,6 +728,15 @@ export class WorkspaceView extends HTMLElement {
     };
     document.addEventListener('refresh-preview', this._handleRefreshPreview);
 
+    // Cancel the running compile (the Cancel control beside the
+    // "Compiling..." chip, in the breadcrumb and the fullscreen chrome).
+    this._handleCancelCompile = (): void => {
+      if (store.get('currentView') === 'workspace') {
+        this.cancelCompile();
+      }
+    };
+    document.addEventListener('cancel-compile', this._handleCancelCompile);
+
     // Set thumbnail (crop modal)
     this._handleSetThumbnail = (): void => {
       if (store.get('currentView') === 'workspace') {
@@ -915,6 +928,7 @@ export class WorkspaceView extends HTMLElement {
     if (this._handleKeydown) document.removeEventListener('keydown', this._handleKeydown, true);
     if (this._handleOpenExport) document.removeEventListener('open-export', this._handleOpenExport);
     if (this._handleRefreshPreview) document.removeEventListener('refresh-preview', this._handleRefreshPreview);
+    if (this._handleCancelCompile) document.removeEventListener('cancel-compile', this._handleCancelCompile);
     if (this._handleCopyDebugInfo) document.removeEventListener('copy-debug-info', this._handleCopyDebugInfo);
     if (this._handleSetThumbnail) document.removeEventListener('set-thumbnail', this._handleSetThumbnail);
     if (this._handleRenameWorkspace) document.removeEventListener('rename-workspace', this._handleRenameWorkspace);
@@ -1059,6 +1073,15 @@ export class WorkspaceView extends HTMLElement {
     });
     this._compileTicker.start();
 
+    // This compile supersedes whatever the editor worker is still chewing on.
+    // Terminate it now rather than letting it finish, clone its result to the
+    // main thread, and only then be discarded as stale (ISSUE-016). The
+    // superseded updatePreview() sees a CompileCancelled rejection and
+    // returns without touching the UI (see the catch below).
+    if (editorCompiler.cancelInFlight('superseded')) {
+      console.log('[compiler-worker] cancelled superseded compile');
+    }
+
     // Check if this compilation is stale (newer one started)
     const isStale = (id: number): boolean => store.get('compilationId') !== id;
 
@@ -1067,7 +1090,7 @@ export class WorkspaceView extends HTMLElement {
       const toFixed = store.get('toFixed') as number | null;
       const compileOptions = toFixed != null ? { toFixed } : undefined;
       const result = (await perfSpanAsync('compile-roundtrip', async () =>
-        compilerWorker.compileWithContext(code, compilationId, isStale, compileOptions),
+        editorCompiler.compileWithContext(code, compilationId, isStale, compileOptions),
       )) as any;
       const compileTime = performance.now() - compileStart;
       console.log(`Compile time: ${compileTime.toFixed(2)}ms`);
@@ -1138,8 +1161,11 @@ export class WorkspaceView extends HTMLElement {
 
       this.previewPane.hideLoading();
       this.previewPane.setStale(false);
-      this.consolePane.logs = result.logs || [];
-      store.set('logs', result.logs || []);
+      // Gradient rasterization notices (Canvas 2D fallback, failed renders)
+      // join the compiler's own log entries so they show in the console pane.
+      const logs = [...(result.logs || []), ...gpuGradientService.takeNotices()];
+      this.consolePane.logs = logs;
+      store.set('logs', logs);
       store.set('warnings', result.warnings || []);
       this.hideError();
       try {
@@ -1197,6 +1223,12 @@ export class WorkspaceView extends HTMLElement {
         }
       }, 1500);
     } catch (e: any) {
+      // A cancelled compile (superseded by a newer one, cancelled by the
+      // user, or torn down with the worker) is not an error: whoever
+      // cancelled it already put the UI in the right state. Never route it
+      // through showError — that re-parses the document on the main thread
+      // and paints squiggles for a failure that didn't happen.
+      if (e?.name === 'CompileCancelled') return;
       // Don't update if stale (unless it's not a stale error)
       if (e.message === 'Stale result') return;
       if (isStale(compilationId)) return;
@@ -1219,6 +1251,36 @@ export class WorkspaceView extends HTMLElement {
         compilationError: displayError,
       });
     }
+  }
+
+  /**
+   * User-initiated cancel of the running compile (the Cancel control beside
+   * the "Compiling..." chip). Terminates the editor worker, so the rejected
+   * updatePreview() returns early via the CompileCancelled check in its
+   * catch. compilationId is bumped as well so a compile parked on a
+   * non-worker await (font fetch, glyph-subset refetch, GPU pre-render) is
+   * stale at its next check and can't resurface after the cancel. The last
+   * good render stays on screen, marked stale; the elapsed clock keeps its
+   * final value under the "Cancelled" chip.
+   */
+  cancelCompile(): void {
+    if (store.get('compilationStatus') !== 'compiling') return;
+
+    editorCompiler.cancelInFlight('user');
+    this._compileTicker.stop();
+    store.update({
+      compilationId: (store.get('compilationId') as number) + 1,
+      compilationStatus: 'cancelled',
+    });
+    this.previewPane.hideLoading();
+    this.previewPane.setStale(true);
+
+    // Auto-hide the cancelled status after a brief moment, like 'completed'
+    setTimeout(() => {
+      if (store.get('compilationStatus') === 'cancelled') {
+        store.set('compilationStatus', 'idle');
+      }
+    }, 1500);
   }
 
   /**

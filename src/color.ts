@@ -245,6 +245,56 @@ export function oklchToCSS(c: OKLCH): string {
   return oklchToHex(c);
 }
 
+/**
+ * Gamma-encoded sRGB with straight (non-premultiplied) alpha, each channel in
+ * [0, 1] — the bytes a canvas hands back divided by 255. This is the space the
+ * playground's WebGPU gradient shaders mix in (their stop colors are parsed
+ * through a canvas and uploaded as-is) and the space CSS gradients mix in by
+ * default; the CLI wedge renderer mixes here too so every surface agrees on
+ * intermediate colors.
+ */
+export type RGBA = [number, number, number, number];
+
+/**
+ * Parse any CSS color Pathogen can emit into gamma-encoded sRGB + alpha.
+ * Hex and named colors are read directly (no OKLCh round trip) and every
+ * channel is quantized to 8 bits, matching the canvas bytes the shader mixes.
+ */
+export function cssToRGBA(css: string): RGBA {
+  const trimmed = css.trim().toLowerCase();
+  const namedHex = NAMED_COLORS.get(trimmed);
+  const rgb = namedHex
+    ? hexToSRGB(namedHex)
+    : trimmed.startsWith('#')
+      ? hexToSRGB(trimmed)
+      : oklchToSRGB(parseColor(trimmed));
+  const q = (v: number): number => Math.round(clamp01(v) * 255) / 255;
+  return [q(rgb.r), q(rgb.g), q(rgb.b), clamp01(rgb.alpha)];
+}
+
+/** Gamma-encoded sRGB + alpha back to CSS: `#rrggbb` when opaque, `rgba()` otherwise. */
+export function rgbaToCSS(rgba: RGBA): string {
+  const alpha = clamp01(rgba[3]);
+  const srgb = { r: clamp01(rgba[0]), g: clamp01(rgba[1]), b: clamp01(rgba[2]), alpha: 1 };
+  if (alpha < 1) {
+    const r = Math.round(srgb.r * 255);
+    const g = Math.round(srgb.g * 255);
+    const b = Math.round(srgb.b * 255);
+    return `rgba(${r}, ${g}, ${b}, ${Math.round(alpha * 1000) / 1000})`;
+  }
+  return srgbToHex(srgb);
+}
+
+/** Straight-alpha mix, channel by channel — the same `mix()` the shaders apply to their uploaded bytes. */
+export function mixRGBA(a: RGBA, b: RGBA, t: number): RGBA {
+  return [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t,
+    a[3] + (b[3] - a[3]) * t,
+  ];
+}
+
 /** Returns #rrggbb (ignores alpha) */
 export function oklchToHex(c: OKLCH): string {
   return srgbToHex(oklchToSRGB(c));

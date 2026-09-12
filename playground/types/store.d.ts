@@ -70,7 +70,7 @@ export interface StoreState {
   defsVisibility: Record<string, boolean>;
 
   // Compilation status
-  compilationStatus: 'idle' | 'compiling' | 'rendering' | 'completed' | 'error';
+  compilationStatus: 'idle' | 'compiling' | 'rendering' | 'completed' | 'error' | 'cancelled';
   compilationError: string | null;
   compilationId: number;
   // Elapsed time of the in-flight compile, quantized to whole seconds. Ticked

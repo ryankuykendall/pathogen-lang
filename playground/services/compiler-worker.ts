@@ -1,5 +1,10 @@
 // Compiler Worker Manager
-// Manages Web Worker for async compilation with fallback to sync
+// Manages Web Workers for async compilation with fallback to sync.
+//
+// Two independent clients live here (see `sharedCompiler` / `editorCompiler`
+// at the bottom): the editor's per-keystroke compiles run on their own
+// worker so that superseding or cancelling them never rejects a compile
+// another caller (publish precheck, admin views) is waiting on.
 
 import {
   extractFontReferences,
@@ -21,129 +26,308 @@ declare const window: Window & { PathogenLang?: Record<string, Function> };
 
 type CompilationType = 'compile' | 'compileWithContext';
 
-let worker: Worker | null = null;
-let requestId: number = 0;
-const pendingRequests: Map<
-  number,
-  { resolve: Function; reject: Function; compilationId: number }
-> = new Map();
+/**
+ * Rejection value for a request that was cancelled before the worker
+ * answered: superseded by a newer compile, cancelled by the user, or torn
+ * down with the worker. Callers test `error.name === 'CompileCancelled'`
+ * rather than `instanceof` — the name survives bundling and clone boundaries.
+ */
+export class CompileCancelledError extends Error {
+  readonly reason: string;
+
+  constructor(reason: string) {
+    super(`Compile cancelled (${reason})`);
+    this.name = 'CompileCancelled';
+    this.reason = reason;
+  }
+}
+
+interface PendingRequest {
+  resolve: (result: unknown) => void;
+  reject: (error: Error) => void;
+  compilationId: number;
+}
 
 /**
- * Initialize the worker lazily
+ * One compiler worker plus its request bookkeeping. The worker is spawned
+ * lazily on the first request and respawned after `cancelInFlight()` /
+ * `terminate()`; nothing is lost on respawn because fonts travel with every
+ * request and the worker rebuilds its registry per message.
  */
-function initWorker(): Worker | null {
-  if (worker) return worker;
+export class CompilerWorkerClient {
+  readonly label: string;
 
-  try {
-    // Worker path is relative to the document's base URL
-    // The <base href="/pathogen-lang/"> tag in production makes this work correctly
-    // In dev (playground/index.html), we need the ../ prefix
-    // In production build, the base tag handles the path
-    const isDevPlayground = window.location.pathname.includes('/playground/');
-    const workerPath = isDevPlayground ? '../dist/worker.worker.js' : 'dist/worker.worker.js';
+  private worker: Worker | null = null;
 
-    worker = new Worker(workerPath);
+  // Monotonic across respawns so a reply from any worker generation can be
+  // matched unambiguously (and never collides with a newer request's id).
+  private requestId = 0;
 
-    worker.onmessage = (event: MessageEvent) => {
-      const { id, success, result, error } = event.data;
-      const pending = pendingRequests.get(id);
+  private readonly pendingRequests = new Map<number, PendingRequest>();
 
-      if (pending) {
-        pendingRequests.delete(id);
-        if (success) {
-          pending.resolve(result);
-        } else {
-          pending.reject(new Error(error));
+  constructor(options: { label: string }) {
+    this.label = options.label;
+  }
+
+  /** Number of requests posted to the worker and not yet answered. */
+  get pendingCount(): number {
+    return this.pendingRequests.size;
+  }
+
+  /**
+   * Initialize the worker lazily
+   */
+  private initWorker(): Worker | null {
+    if (this.worker) return this.worker;
+
+    try {
+      // Worker path is relative to the document's base URL
+      // The <base href="/pathogen-lang/"> tag in production makes this work correctly
+      // In dev (playground/index.html), we need the ../ prefix
+      // In production build, the base tag handles the path
+      const isDevPlayground = window.location.pathname.includes('/playground/');
+      const workerPath = isDevPlayground ? '../dist/worker.worker.js' : 'dist/worker.worker.js';
+
+      const w = new Worker(workerPath);
+      this.worker = w;
+
+      w.onmessage = (event: MessageEvent) => {
+        const { id, success, result, error } = event.data;
+        const pending = this.pendingRequests.get(id);
+
+        if (pending) {
+          this.pendingRequests.delete(id);
+          if (success) {
+            pending.resolve(result);
+          } else {
+            pending.reject(new Error(error));
+          }
         }
-      }
-    };
+      };
 
-    worker.onerror = (event: ErrorEvent) => {
-      console.error('Worker error:', event);
-      // Reject all pending requests
-      for (const [id, pending] of pendingRequests) {
-        pending.reject(new Error('Worker error'));
-        pendingRequests.delete(id);
-      }
-      // Reset worker so next call will try to reinitialize
-      terminateWorker();
-    };
+      w.onerror = (event: ErrorEvent) => {
+        console.error(`[compiler-worker:${this.label}] Worker error:`, event);
+        // A crashed worker is a failure, not a cancellation: reject with a
+        // plain Error so callers surface it instead of swallowing it the way
+        // they do a CompileCancelledError.
+        const detail = event?.message ? `: ${event.message}` : '';
+        this.rejectAllPending(new Error(`Worker error${detail}`));
+        // Drop the worker so the next request spawns a fresh one.
+        this.terminate();
+      };
 
-    return worker;
-  } catch (e) {
-    console.warn('Failed to initialize worker:', e);
-    return null;
+      return w;
+    } catch (e) {
+      console.warn(`[compiler-worker:${this.label}] Failed to initialize worker:`, e);
+      return null;
+    }
+  }
+
+  private rejectAllPending(error: Error): void {
+    // Snapshot + clear before rejecting: a rejection handler may issue a new
+    // request synchronously, and it must not be swept up in this pass.
+    const pending = [...this.pendingRequests.values()];
+    this.pendingRequests.clear();
+    for (const p of pending) p.reject(error);
+  }
+
+  /**
+   * Terminate the worker and clean up. Pending requests reject with
+   * `CompileCancelledError('terminated')`.
+   */
+  terminate(): void {
+    if (this.worker) {
+      this.worker.terminate();
+      this.worker = null;
+    }
+    this.rejectAllPending(new CompileCancelledError('terminated'));
+  }
+
+  /**
+   * Abort whatever the worker is computing right now. A Web Worker runs its
+   * messages serially and cannot be interrupted, so the only way to stop a
+   * compile is to terminate the worker; the next request respawns it.
+   *
+   * Returns true when something was actually cancelled. With nothing pending
+   * this is a no-op — no terminate, no respawn — so calling it before every
+   * compile is free in the common case.
+   */
+  cancelInFlight(reason: string): boolean {
+    if (this.pendingRequests.size === 0) return false;
+    if (this.worker) {
+      this.worker.terminate();
+      this.worker = null;
+    }
+    this.rejectAllPending(new CompileCancelledError(reason));
+    return true;
+  }
+
+  /**
+   * Send a compilation request to the worker, optionally with font buffers.
+   * Font buffers are transferred (zero-copy) to the worker.
+   */
+  private async sendRequest(
+    type: CompilationType,
+    source: string,
+    compilationId: number,
+    isStale: ((id: number) => boolean) | undefined,
+    options?: Record<string, unknown>,
+    fontBuffers?: FontBinaryEntry[],
+  ): Promise<unknown> {
+    // A request that is already stale (a newer compile started while the
+    // caller awaited font fetches or a recompile pass) would only queue
+    // wasted work behind the fresh one: refuse it before it reaches the worker.
+    if (isStale?.(compilationId)) {
+      throw new Error('Stale result');
+    }
+
+    const w = this.initWorker();
+
+    // Fall back to sync if worker unavailable. Font buffers must be threaded
+    // through the fallback too — silently dropping them here was the cause of
+    // a misleading "PathBlock.fromGlyph() requires font data" error when the
+    // worker failed to init (e.g. sandboxed-iframe context, CSP block).
+    if (!w) {
+      return fallbackSync(type, source, options, fontBuffers);
+    }
+
+    const id = ++this.requestId;
+
+    return new Promise((resolve, reject) => {
+      this.pendingRequests.set(id, {
+        resolve: (result: unknown) => {
+          // Check staleness before resolving
+          if (isStale?.(compilationId)) {
+            reject(new Error('Stale result'));
+          } else {
+            resolve(result);
+          }
+        },
+        reject,
+        compilationId,
+      });
+
+      const message: Record<string, unknown> = { id, type, source, options };
+      if (fontBuffers && fontBuffers.length > 0) {
+        // Clone each cached buffer before transferring. The font-loader cache
+        // (services/font-loader.ts) stores the ArrayBuffer reference; after
+        // postMessage detaches it, the next compile's postMessage would throw
+        // "ArrayBuffer at index 0 is already detached". Slicing yields a fresh
+        // buffer per request, leaving the cached copy intact.
+        const clonedEntries = fontBuffers.map((fb) => ({ ...fb, buffer: fb.buffer.slice(0) }));
+        message.fontBuffers = clonedEntries;
+        const transferables = clonedEntries.map((fb) => fb.buffer);
+        w.postMessage(message, transferables);
+      } else {
+        w.postMessage(message);
+      }
+    });
+  }
+
+  /**
+   * Compile source code to SVG path
+   * @param source - The source code
+   * @param compilationId - Current compilation ID
+   * @param isStale - Function to check staleness
+   * @param options - Compilation options (e.g. { toFixed: 2 })
+   * @returns Promise resolving to compilation result
+   */
+  async compile(
+    source: string,
+    compilationId: number,
+    isStale: ((id: number) => boolean) | undefined,
+    options?: Record<string, unknown>,
+  ): Promise<unknown> {
+    return this.compileAs('compile', source, compilationId, isStale, options);
+  }
+
+  /**
+   * Compile source code with context tracking
+   * @param source - The source code
+   * @param compilationId - Current compilation ID
+   * @param isStale - Function to check staleness
+   * @param options - Compilation options (e.g. { toFixed: 2 })
+   * @returns Promise resolving to context compilation result
+   */
+  async compileWithContext(
+    source: string,
+    compilationId: number,
+    isStale: ((id: number) => boolean) | undefined,
+    options?: Record<string, unknown>,
+  ): Promise<unknown> {
+    return this.compileAs('compileWithContext', source, compilationId, isStale, options);
+  }
+
+  private async compileAs(
+    type: CompilationType,
+    source: string,
+    compilationId: number,
+    isStale: ((id: number) => boolean) | undefined,
+    options?: Record<string, unknown>,
+  ): Promise<unknown> {
+    const { binaries, failures, substitutions, notices } = await resolveFontsForSource(source);
+    if (failures.length > 0) {
+      throw new Error(formatFontFailures(failures));
+    }
+    const withSubsets = appendCachedSubsetEntries(binaries);
+    const recompile = async (bins: FontBinaryEntry[]) =>
+      this.sendRequest(type, source, compilationId, isStale, options, bins);
+    const first = await recompile(withSubsets);
+    const glyphPass = await resolveMissingGlyphSubsets(first, recompile, withSubsets);
+    const post = await resolvePostCompileFonts(glyphPass.result, glyphPass.binaries);
+    return attachFontDiagnostics(glyphPass.result, post.binaries, [...substitutions, ...post.substitutions], notices);
+  }
+
+  /**
+   * Check if the worker is available
+   * @returns Whether a worker is available
+   */
+  isWorkerAvailable(): boolean {
+    return this.worker !== null || typeof Worker !== 'undefined';
   }
 }
 
 /**
- * Terminate the worker and clean up
+ * The compiler every non-editor caller uses (publish precheck, admin
+ * moderation + thumbnails). Never cancelled by editor activity.
  */
-export function terminateWorker(): void {
-  if (worker) {
-    worker.terminate();
-    worker = null;
-  }
-  // Reject any pending requests
-  for (const [id, pending] of pendingRequests) {
-    pending.reject(new Error('Worker terminated'));
-  }
-  pendingRequests.clear();
-}
+export const sharedCompiler = new CompilerWorkerClient({ label: 'shared' });
 
 /**
- * Send a compilation request to the worker, optionally with font buffers.
- * Font buffers are transferred (zero-copy) to the worker.
+ * The editor's compiler. Only `workspace-view.updatePreview` sends to it, so
+ * cancelling its in-flight work (a superseding keystroke, the Cancel button)
+ * can never reject a request another caller is awaiting.
  */
-async function sendRequest(
-  type: CompilationType,
+export const editorCompiler = new CompilerWorkerClient({ label: 'editor' });
+
+/** @see CompilerWorkerClient.compile — on the shared instance. */
+export async function compile(
   source: string,
   compilationId: number,
   isStale: ((id: number) => boolean) | undefined,
   options?: Record<string, unknown>,
-  fontBuffers?: FontBinaryEntry[],
 ): Promise<unknown> {
-  const w = initWorker();
+  return sharedCompiler.compile(source, compilationId, isStale, options);
+}
 
-  // Fall back to sync if worker unavailable. Font buffers must be threaded
-  // through the fallback too — silently dropping them here was the cause of
-  // a misleading "PathBlock.fromGlyph() requires font data" error when the
-  // worker failed to init (e.g. sandboxed-iframe context, CSP block).
-  if (!w) {
-    return fallbackSync(type, source, options, fontBuffers);
-  }
+/** @see CompilerWorkerClient.compileWithContext — on the shared instance. */
+export async function compileWithContext(
+  source: string,
+  compilationId: number,
+  isStale: ((id: number) => boolean) | undefined,
+  options?: Record<string, unknown>,
+): Promise<unknown> {
+  return sharedCompiler.compileWithContext(source, compilationId, isStale, options);
+}
 
-  const id = ++requestId;
+/** Terminate the shared worker and clean up. */
+export function terminateWorker(): void {
+  sharedCompiler.terminate();
+}
 
-  return new Promise((resolve, reject) => {
-    pendingRequests.set(id, {
-      resolve: (result: unknown) => {
-        // Check staleness before resolving
-        if (isStale && isStale(compilationId)) {
-          reject(new Error('Stale result'));
-        } else {
-          resolve(result);
-        }
-      },
-      reject,
-      compilationId,
-    });
-
-    const message: Record<string, unknown> = { id, type, source, options };
-    if (fontBuffers && fontBuffers.length > 0) {
-      // Clone each cached buffer before transferring. The font-loader cache
-      // (services/font-loader.ts) stores the ArrayBuffer reference; after
-      // postMessage detaches it, the next compile's postMessage would throw
-      // "ArrayBuffer at index 0 is already detached". Slicing yields a fresh
-      // buffer per request, leaving the cached copy intact.
-      const clonedEntries = fontBuffers.map((fb) => ({ ...fb, buffer: fb.buffer.slice(0) }));
-      message.fontBuffers = clonedEntries;
-      const transferables = clonedEntries.map((fb) => fb.buffer);
-      w.postMessage(message, transferables);
-    } else {
-      w.postMessage(message);
-    }
-  });
+/** Whether the shared worker is available. */
+export function isWorkerAvailable(): boolean {
+  return sharedCompiler.isWorkerAvailable();
 }
 
 let _fallbackWarned = false;
@@ -350,60 +534,6 @@ function formatFontFailures(failures: FontResolutionResult['failures']): string 
 }
 
 /**
- * Compile source code to SVG path
- * @param source - The source code
- * @param compilationId - Current compilation ID
- * @param isStale - Function to check staleness
- * @param options - Compilation options (e.g. { toFixed: 2 })
- * @returns Promise resolving to compilation result
- */
-export async function compile(
-  source: string,
-  compilationId: number,
-  isStale: ((id: number) => boolean) | undefined,
-  options?: Record<string, unknown>,
-): Promise<unknown> {
-  const { binaries, failures, substitutions, notices } = await resolveFontsForSource(source);
-  if (failures.length > 0) {
-    throw new Error(formatFontFailures(failures));
-  }
-  const withSubsets = appendCachedSubsetEntries(binaries);
-  const recompile = (bins: FontBinaryEntry[]) =>
-    sendRequest('compile', source, compilationId, isStale, options, bins);
-  const first = await recompile(withSubsets);
-  const glyphPass = await resolveMissingGlyphSubsets(first, recompile, withSubsets);
-  const post = await resolvePostCompileFonts(glyphPass.result, glyphPass.binaries);
-  return attachFontDiagnostics(glyphPass.result, post.binaries, [...substitutions, ...post.substitutions], notices);
-}
-
-/**
- * Compile source code with context tracking
- * @param source - The source code
- * @param compilationId - Current compilation ID
- * @param isStale - Function to check staleness
- * @param options - Compilation options (e.g. { toFixed: 2 })
- * @returns Promise resolving to context compilation result
- */
-export async function compileWithContext(
-  source: string,
-  compilationId: number,
-  isStale: ((id: number) => boolean) | undefined,
-  options?: Record<string, unknown>,
-): Promise<unknown> {
-  const { binaries, failures, substitutions, notices } = await resolveFontsForSource(source);
-  if (failures.length > 0) {
-    throw new Error(formatFontFailures(failures));
-  }
-  const withSubsets = appendCachedSubsetEntries(binaries);
-  const recompile = (bins: FontBinaryEntry[]) =>
-    sendRequest('compileWithContext', source, compilationId, isStale, options, bins);
-  const first = await recompile(withSubsets);
-  const glyphPass = await resolveMissingGlyphSubsets(first, recompile, withSubsets);
-  const post = await resolvePostCompileFonts(glyphPass.result, glyphPass.binaries);
-  return attachFontDiagnostics(glyphPass.result, post.binaries, [...substitutions, ...post.substitutions], notices);
-}
-
-/**
  * Include any previously fetched subset slices alongside the primary
  * binaries so steady-state compiles of a CJK program carry full coverage up
  * front and skip the missing-glyph recompile below.
@@ -524,14 +654,6 @@ function attachFontDiagnostics(
     r.fontNotices = notices;
   }
   return result;
-}
-
-/**
- * Check if the worker is available
- * @returns Whether a worker is available
- */
-export function isWorkerAvailable(): boolean {
-  return worker !== null || typeof Worker !== 'undefined';
 }
 
 export default {

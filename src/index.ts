@@ -14,6 +14,14 @@ export { stdlib } from './stdlib';
 export { buildEasingWgsl, EASING_CURVES, EASING_ORDER, EASING_SPECS, easingModeIndex } from './stdlib/easing-curves';
 export type { EasingCurveSpec } from './stdlib/easing-curves';
 export { generateSvg } from './svg-generator';
+// Conic gradient rules shared by every renderer (the playground's Canvas 2D
+// fallback draws the same wedges the CLI emits — see src/conic-param.ts).
+export { renderConic, renderConicToWedges, sampleConicRamp } from './conic-renderer';
+export type { ConicRender, ConicRenderSpec, ConicWedge, ConicStop } from './conic-renderer';
+export { conicParamForAngle, innerFillMode, INNER_BLEND_STOPS, smoothstep01 } from './conic-param';
+export type { ConicDirection, ConicSpread } from './conic-param';
+export { cssToRGBA, mixRGBA, rgbaToCSS } from './color';
+export type { RGBA } from './color';
 export type { SvgGeneratorOptions } from './svg-generator';
 export {
   buildDefs,

@@ -102,6 +102,8 @@ function generateSvgFromCli(result: CompileResult, options: CliOptions): string 
 }
 
 // The original generateSvg implementation has been extracted to src/svg-generator.ts.
+// This copy is UNREACHABLE (no callers) and kept only for reference; the live
+// conic wedge path is src/render/build-defs.ts `buildConicWedgeDefs`.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function _legacyGenerateSvg(result: CompileResult, options: CliOptions): string {
   const viewBox = options.viewBox || '0 0 200 200';
@@ -190,26 +192,23 @@ function _legacyGenerateSvg(result: CompileResult, options: CliOptions): string 
     if (grad.type === 'conic') {
       const svgW = parseInt(width, 10) || 200;
       const svgH = parseInt(height, 10) || 200;
-      const wedges = renderConicToWedges(
-        grad.cx ?? 0,
-        grad.cy ?? 0,
-        grad.from ?? 0,
-        grad.to ?? 2 * Math.PI,
-        grad.direction ?? 'cw',
-        grad.spread ?? 'clamp',
-        grad.stopsWithOklch ?? grad.stops,
-        svgW,
-        svgH,
-      );
+      const wedges = renderConicToWedges({
+        cx: grad.cx ?? svgW / 2,
+        cy: grad.cy ?? svgH / 2,
+        from: grad.from ?? 0,
+        to: grad.to ?? (grad.from ?? 0) + 2 * Math.PI,
+        direction: grad.direction ?? 'cw',
+        spread: grad.spread ?? 'clamp',
+        stops: grad.stopsWithOklch ?? grad.stops,
+        viewWidth: svgW,
+        viewHeight: svgH,
+        innerRadius: grad.innerRadius ?? 0,
+        innerFill: grad.innerFill,
+      });
       const children = wedges.map((w) => `    <path d="${w.d}" fill="${escapeXml(w.fill)}"/>`).join('\n');
       defsContent.push(
         `  <pattern id="${escapeXml(grad.id)}" x="0" y="0" width="${svgW}" height="${svgH}" patternUnits="userSpaceOnUse">\n${children}\n  </pattern>`,
       );
-      if ((grad.innerRadius ?? 0) > 0 || (grad.innerFill && grad.innerFill !== 'transparent')) {
-        console.warn(
-          '[pathogen-lang] innerRadius/innerFill on conic gradients requires WebGPU (playground only); ignored in CLI output',
-        );
-      }
       continue;
     }
 
@@ -638,7 +637,11 @@ async function renderGpuSvg(result: CompileResult, options: CliOptions): Promise
       (window as any).__PUPPETEER__ = true;
     });
 
-    await page.goto(`http://127.0.0.1:${port}/playground/bbwp.html`, {
+    // PATHOGEN_GPU=off renders through the playground's Canvas 2D fallback
+    // instead of WebGPU — the same `?gpu=off` switch the playground honours,
+    // for checking what a browser without WebGPU will show.
+    const gpuQuery = process.env.PATHOGEN_GPU === 'off' ? '?gpu=off' : '';
+    await page.goto(`http://127.0.0.1:${port}/playground/bbwp.html${gpuQuery}`, {
       waitUntil: 'networkidle0',
     });
 

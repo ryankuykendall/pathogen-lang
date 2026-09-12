@@ -676,70 +676,14 @@ Option 3. The warning is the fix for the user; the prepend is defense in depth f
 
 ---
 
-## ISSUE-016: The playground compile worker never cancels; edits during a long compile queue more full compiles
+## Fixed during the glyph-halo follow-up (2026-09-12)
 
-**Discovered:** 2026-09-09 (a 25-minute `Compiling…` on a heavy glyph-halo program)
+ISSUE-016 and ISSUE-017 were resolved together; their original entries are kept below the table for the trail. Evidence: `project-docs/conic-parity/`, `scripts/debug-compile-cancel-and-conic.ts` (23 browser checks), CHANGELOG 2026-09-12.
 
-**Severity:** Medium
-
-**Description:**
-
-`playground/services/compiler-worker.ts` posts each debounced compile to the same `Worker`. There is no `terminate()` on a newer compile (`terminateWorker()` is only called from `worker.onerror` and `disconnectedCallback`), no timeout in `sendRequest`, and the staleness check (`isStale(compilationId)`) runs in the `resolve` callback — **after** the worker has finished and the result has been structured-cloned to the main thread. Web Workers process messages serially, so every edit made while a long compile runs adds another full compile behind it, each of which is computed, cloned, and then discarded. The first compile of a Google Fonts family whose primary slice lacks the program's glyphs also runs the whole compile a second time (`resolveMissingGlyphSubsets`, up to 2 passes). The `Compiling… MM:SS` chip spans only the worker round-trip (`workspace-view.ts` `_compileTicker.start()` → `stop()` before `setLayersWithTiming`), so a long chip time is always the worker, never the DOM.
-
-**Impact:**
-
-A runaway program pins the tab with no cancellation path; the user's natural reaction (editing the program to make it lighter) makes the wait longer. The only escape is reloading the tab. On the main thread, a large result is then copied four times (store, preview DOM, minimap `d` copies, idle export-size `cloneNode` + serialize) with no size threshold, and `getBBox()` is forced once per path.
-
-**Current Workarounds:**
-
-Do not edit while a heavy compile is running; reload the tab to abort; iterate on heavy programs via the CLI (`npx tsx src/cli.ts - --print-logs < file`), where Node's heap is also raisable (`--max-old-space-size`), unlike Chrome's (pointer-compression cage, ~3.6 GB ceiling regardless of `--js-flags`, measured 2026-09-10).
-
-**Potential Solutions:**
-
-1. **Terminate and respawn the worker when a newer compile starts** (fonts are re-sent per request already, so respawn cost is the worker script load). Stale work stops immediately instead of after completion.
-2. **Watchdog**: terminate + surface an error after N seconds (configurable), with a "keep waiting" affordance.
-3. **Check staleness in the worker** before `postMessage` (send the latest compilationId to the worker via a side channel) to skip the clone of a stale result.
-4. Main-thread mitigations: skip the minimap copy / export-size estimate above a byte threshold; drop the per-path `getBBox()` loop or cap it.
-
-**Recommended Long-term Solution:**
-
-Option 1 now (small change, largest effect), option 2 as the safety net, option 4 as a separate pass.
-
----
-
-## ISSUE-017: Conic gradient `innerRadius` and `spread` are honoured only on the WebGPU path
-
-**Discovered:** 2026-09-09 (three-surface check of a `ConicGradient` with `innerRadius` and `spread: 'transparent'`), pre-existing
-
-**Severity:** Medium
-
-**Description:**
-
-- CLI / VS Code wedge renderer: `src/render/build-defs.ts` calls `renderConicToWedges(...)` without `innerRadius` (no parameter exists), and `src/conic-renderer.ts` receives `spread` as `_spread` and never reads it. `'clamp'`, `'repeat'` and `'transparent'` produce byte-identical output; the apparent transparency outside the sweep is incidental (no wedge is drawn there).
-- Playground Canvas 2D fallback (`playground/gpu/gradient-service.ts` `renderConicCanvas2D`): "innerRadius is NOT supported in Canvas 2D (silently ignored)"; `spread` is not applied either.
-- Related, same area: `webgpu-device.ts` calls `requestDevice()` with no `requiredLimits`, so `maxTextureDimension2D` is the spec default 8192 even on adapters that allow 16384 (a 22200×14800 viewBox rasterizes at 8192×5461, 0.37 px per unit). The texture-cache key hashes the **pre-clamp** size, so the GPU and Canvas paths store different-resolution rasters under one key. `playground/utils/decorate-conic-gradients.ts` (last-resort path) has no `clampScale` and would attempt `viewBox × 2` (1.3 Gpx for that viewBox). `docs/gradients.md` "Rendering" still says the playground uses Canvas 2D and omits WebGPU; the raster resolution formula and caps are undocumented; no test pins the formula or the 1°/wedge count.
-
-**Update 2026-09-12 — silent blank render above viewBox width 32768.** `clampScale()` (`gradient-service.ts:100-108`) floors the reduced scale at 0.25 "to avoid degenerate textures", so for `ViewBox(0, 0, 48000, 18600)` it computes 8192/48000 = 0.17, floors it to 0.25, and asks for a 12000×4650 texture — over the 8192 cap it just applied. Dawn rejects it (`Texture size … exceeded maximum texture size`, `Could not create the swapchain texture`, `IOSurface width (12000) exceeds maxTextureDimension2D (8192)`, then a cascade of `[Invalid Texture] is invalid due to a previous error`), but these are **uncaptured validation errors**: nothing throws, `renderConicWebGPU` continues on the invalid texture, `toDataURL` reads back a transparent PNG, the `catch` → `renderConicCanvas2D` fallback never fires, and the blank data URL is **cached** under the gradient's key. The user sees the gradient-filled layers as transparent (only their strokes) with no error in the Pathogen console. Any viewBox whose long edge exceeds 32768 units hits this; 22200 did not. Evidence: `project-docs/glyph-halo-diagnosis/` (Noto Sans Takri workspace, 2026-09-12 console).
-
-**Impact:**
-
-Violates three-surface parity: a wheel with `innerRadius = 1000` and `spread = 'transparent'` renders as designed in Chrome's playground and differently from the CLI, PDF export, VS Code preview and non-WebGPU browsers, with no warning. Above 32768 units of viewBox it does not render in the playground either (see update). Companion to ISSUE-009 (topo/mesh/freeform rasterize only in the playground).
-
-**Current Workarounds:**
-
-Preview in a WebGPU-capable browser; treat CLI/VS Code conic output as approximate.
-
-**Potential Solutions:**
-
-1. Pass `innerRadius` and honour `spread` in `renderConicToWedges` (inner radius = wedges become annular sectors; `repeat` = tile the stop list over the full circle; `transparent` = current behaviour, made explicit).
-2. Implement `innerRadius` in the Canvas 2D fallback via a destination-out disc.
-3. Request `maxTextureDimension2D` up to the adapter limit in `requestDevice`; hash the post-clamp size; add `clampScale` to the decorator.
-5. **Fix the clamp and make failure visible** (small, unblocks the 48000-wide case): drop the 0.25 floor in `clampScale` (or cap it at `maxDim / max(w, h)`), wrap each WebGPU render in `device.pushErrorScope('validation')` / `popErrorScope()` and throw on error so the Canvas 2D fallback actually runs and a blank result is never cached, and surface a Pathogen-console warning when a gradient falls back or fails.
-4. Document resolution + caps in `docs/gradients.md`; pin wedge count and raster formula with tests.
-
-**Recommended Long-term Solution:**
-
-5 immediately (it is a regression for any large viewBox), then 1 + 4 (parity and honesty), then 2 and 3.
+| Issue | Fix |
+|-------|-----|
+| ISSUE-016 — the playground compile worker never cancelled; edits during a long compile queued more full compiles | `playground/services/compiler-worker.ts` refactored into `CompilerWorkerClient` with a dedicated `editorCompiler` (the shared instance still backs the publish precheck and admin views); `updatePreview` terminates the superseded compile before posting; Cancel control beside the `Compiling…` chip (breadcrumb + fullscreen chrome) with a `cancelled` status; typed `CompileCancelledError` never routes through `showError`; already-stale requests are refused before posting. No automatic termination by timer (user decision). Main-thread copy mitigations (former option 4) were not part of this pass. |
+| ISSUE-017 — conic `innerRadius` / `spread` honoured only on WebGPU; gradients blank above 32768-unit viewBoxes | `src/conic-param.ts` ports the shader rules; `src/conic-renderer.ts` + `build-defs.ts` honour every property (annular sectors, blended-fill overlay/mask, spread over the full circle, ccw by reflection, linear-light mixing); the playground's Canvas 2D fallback draws the same wedges; `clampScale` floor removed (`raster-size.ts`), WebGPU renders wrapped in error scopes (`gpu-error-scopes.ts`), adapter limits requested (≤ 16384), cache keyed on post-clamp size + path, failures never cached, Pathogen-console notices for fallback/failure, `?gpu=off` / `PATHOGEN_GPU=off` switches; docs updated. Still approximate on the CLI: the blended inner fills use a five-stop radial gradient rather than per-pixel smoothstep. |
 
 ---
 
@@ -829,6 +773,75 @@ Fold first (`let a = ((n.angle % TAU()) + TAU()) % TAU();`) or use the negative 
 **Recommended Long-term Solution:**
 
 1 now (the wrap is a one-line consistency fix plus a doc line; it changes raw values only in the lower-left quadrant); 3 if it comes up again; 2 only if the angle type carries through to `switch` cheaply.
+
+---
+
+## Resolved entries (kept for the trail)
+
+### ISSUE-016 (resolved 2026-09-12): The playground compile worker never cancels; edits during a long compile queue more full compiles
+
+**Discovered:** 2026-09-09 (a 25-minute `Compiling…` on a heavy glyph-halo program)
+
+**Severity:** Medium
+
+**Description:**
+
+`playground/services/compiler-worker.ts` posts each debounced compile to the same `Worker`. There is no `terminate()` on a newer compile (`terminateWorker()` is only called from `worker.onerror` and `disconnectedCallback`), no timeout in `sendRequest`, and the staleness check (`isStale(compilationId)`) runs in the `resolve` callback — **after** the worker has finished and the result has been structured-cloned to the main thread. Web Workers process messages serially, so every edit made while a long compile runs adds another full compile behind it, each of which is computed, cloned, and then discarded. The first compile of a Google Fonts family whose primary slice lacks the program's glyphs also runs the whole compile a second time (`resolveMissingGlyphSubsets`, up to 2 passes). The `Compiling… MM:SS` chip spans only the worker round-trip (`workspace-view.ts` `_compileTicker.start()` → `stop()` before `setLayersWithTiming`), so a long chip time is always the worker, never the DOM.
+
+**Impact:**
+
+A runaway program pins the tab with no cancellation path; the user's natural reaction (editing the program to make it lighter) makes the wait longer. The only escape is reloading the tab. On the main thread, a large result is then copied four times (store, preview DOM, minimap `d` copies, idle export-size `cloneNode` + serialize) with no size threshold, and `getBBox()` is forced once per path.
+
+**Current Workarounds:**
+
+Do not edit while a heavy compile is running; reload the tab to abort; iterate on heavy programs via the CLI (`npx tsx src/cli.ts - --print-logs < file`), where Node's heap is also raisable (`--max-old-space-size`), unlike Chrome's (pointer-compression cage, ~3.6 GB ceiling regardless of `--js-flags`, measured 2026-09-10).
+
+**Potential Solutions:**
+
+1. **Terminate and respawn the worker when a newer compile starts** (fonts are re-sent per request already, so respawn cost is the worker script load). Stale work stops immediately instead of after completion.
+2. **Watchdog**: terminate + surface an error after N seconds (configurable), with a "keep waiting" affordance.
+3. **Check staleness in the worker** before `postMessage` (send the latest compilationId to the worker via a side channel) to skip the clone of a stale result.
+4. Main-thread mitigations: skip the minimap copy / export-size estimate above a byte threshold; drop the per-path `getBBox()` loop or cap it.
+
+**Recommended Long-term Solution:**
+
+Option 1 now (small change, largest effect), option 2 as the safety net, option 4 as a separate pass.
+
+---
+
+### ISSUE-017 (resolved 2026-09-12): Conic gradient `innerRadius` and `spread` are honoured only on the WebGPU path
+
+**Discovered:** 2026-09-09 (three-surface check of a `ConicGradient` with `innerRadius` and `spread: 'transparent'`), pre-existing
+
+**Severity:** Medium
+
+**Description:**
+
+- CLI / VS Code wedge renderer: `src/render/build-defs.ts` calls `renderConicToWedges(...)` without `innerRadius` (no parameter exists), and `src/conic-renderer.ts` receives `spread` as `_spread` and never reads it. `'clamp'`, `'repeat'` and `'transparent'` produce byte-identical output; the apparent transparency outside the sweep is incidental (no wedge is drawn there).
+- Playground Canvas 2D fallback (`playground/gpu/gradient-service.ts` `renderConicCanvas2D`): "innerRadius is NOT supported in Canvas 2D (silently ignored)"; `spread` is not applied either.
+- Related, same area: `webgpu-device.ts` calls `requestDevice()` with no `requiredLimits`, so `maxTextureDimension2D` is the spec default 8192 even on adapters that allow 16384 (a 22200×14800 viewBox rasterizes at 8192×5461, 0.37 px per unit). The texture-cache key hashes the **pre-clamp** size, so the GPU and Canvas paths store different-resolution rasters under one key. `playground/utils/decorate-conic-gradients.ts` (last-resort path) has no `clampScale` and would attempt `viewBox × 2` (1.3 Gpx for that viewBox). `docs/gradients.md` "Rendering" still says the playground uses Canvas 2D and omits WebGPU; the raster resolution formula and caps are undocumented; no test pins the formula or the 1°/wedge count.
+
+**Update 2026-09-12 — silent blank render above viewBox width 32768.** `clampScale()` (`gradient-service.ts:100-108`) floors the reduced scale at 0.25 "to avoid degenerate textures", so for `ViewBox(0, 0, 48000, 18600)` it computes 8192/48000 = 0.17, floors it to 0.25, and asks for a 12000×4650 texture — over the 8192 cap it just applied. Dawn rejects it (`Texture size … exceeded maximum texture size`, `Could not create the swapchain texture`, `IOSurface width (12000) exceeds maxTextureDimension2D (8192)`, then a cascade of `[Invalid Texture] is invalid due to a previous error`), but these are **uncaptured validation errors**: nothing throws, `renderConicWebGPU` continues on the invalid texture, `toDataURL` reads back a transparent PNG, the `catch` → `renderConicCanvas2D` fallback never fires, and the blank data URL is **cached** under the gradient's key. The user sees the gradient-filled layers as transparent (only their strokes) with no error in the Pathogen console. Any viewBox whose long edge exceeds 32768 units hits this; 22200 did not. Evidence: `project-docs/glyph-halo-diagnosis/` (Noto Sans Takri workspace, 2026-09-12 console).
+
+**Impact:**
+
+Violates three-surface parity: a wheel with `innerRadius = 1000` and `spread = 'transparent'` renders as designed in Chrome's playground and differently from the CLI, PDF export, VS Code preview and non-WebGPU browsers, with no warning. Above 32768 units of viewBox it does not render in the playground either (see update). Companion to ISSUE-009 (topo/mesh/freeform rasterize only in the playground).
+
+**Current Workarounds:**
+
+Preview in a WebGPU-capable browser; treat CLI/VS Code conic output as approximate.
+
+**Potential Solutions:**
+
+1. Pass `innerRadius` and honour `spread` in `renderConicToWedges` (inner radius = wedges become annular sectors; `repeat` = tile the stop list over the full circle; `transparent` = current behaviour, made explicit).
+2. Implement `innerRadius` in the Canvas 2D fallback via a destination-out disc.
+3. Request `maxTextureDimension2D` up to the adapter limit in `requestDevice`; hash the post-clamp size; add `clampScale` to the decorator.
+5. **Fix the clamp and make failure visible** (small, unblocks the 48000-wide case): drop the 0.25 floor in `clampScale` (or cap it at `maxDim / max(w, h)`), wrap each WebGPU render in `device.pushErrorScope('validation')` / `popErrorScope()` and throw on error so the Canvas 2D fallback actually runs and a blank result is never cached, and surface a Pathogen-console warning when a gradient falls back or fails.
+4. Document resolution + caps in `docs/gradients.md`; pin wedge count and raster formula with tests.
+
+**Recommended Long-term Solution:**
+
+5 immediately (it is a regression for any large viewBox), then 1 + 4 (parity and honesty), then 2 and 3.
 
 ---
 

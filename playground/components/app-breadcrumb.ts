@@ -354,6 +354,10 @@ class AppBreadcrumb extends HTMLElement {
 
     const calledStdlib = (store.get('calledStdlibFunctions') || []) as string[];
     const usesRandom = usesRandomValues(calledStdlib);
+    // The Cancel control lives only while a compile is in the worker. A
+    // status change re-renders (compilationStatus is in the subscription), so
+    // this is enough to show/hide it; the 1 Hz clock tick never re-renders.
+    const isCompiling = store.get('compilationStatus') === 'compiling';
 
     this.classList.toggle('hidden', !config.showBreadcrumb);
 
@@ -395,6 +399,11 @@ class AppBreadcrumb extends HTMLElement {
           <div class="workspace-controls-wrapper">
             <div class="controls-left">
               ${this.getCompilationStatusHtml()}
+              ${
+                isCompiling
+                  ? `<button id="cancel-compile-btn" class="cancel-compile-btn" aria-label="Cancel compile" title="Stop the running compile">Cancel</button>`
+                  : ''
+              }
               ${
                 usesRandom
                   ? `
@@ -453,6 +462,11 @@ class AppBreadcrumb extends HTMLElement {
     // Refresh button (only present when usesRandom)
     this.shadowRoot!.querySelector('#refresh-btn')?.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('refresh-preview', { bubbles: true, composed: true }));
+    });
+
+    // Cancel button (only present while compiling); workspace-view handles it
+    this.shadowRoot!.querySelector('#cancel-compile-btn')?.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('cancel-compile', { bubbles: true, composed: true }));
     });
 
     // Overflow menu kebab toggle

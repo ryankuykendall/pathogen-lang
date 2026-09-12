@@ -5,8 +5,10 @@
 // (fullscreen chrome), and playground-header (storybook). Follows the
 // fullscreen-toggle.ts style-string + helper pattern.
 //
-// The compiling chip carries an elapsed clock ("Compiling... MM:SS"). The
-// value comes from store.compilationElapsedMs, ticked once a second by
+// The compiling chip carries an elapsed clock ("Compiling... MM:SS") and a
+// Cancel control beside it (styled here as .cancel-compile-btn; each consumer
+// renders and wires the button itself, dispatching `cancel-compile`). The
+// clock value comes from store.compilationElapsedMs, ticked once a second by
 // workspace-view's compile ticker (utils/compile-ticker.ts); consumers just
 // paint what the store says.
 
@@ -42,6 +44,8 @@ export function compilationStatusView(status: string | null, elapsedMs = 0): Com
       return { text: 'Ready', className: 'completed' };
     case 'error':
       return { text: 'Error', className: 'error' };
+    case 'cancelled':
+      return { text: 'Cancelled', className: 'cancelled' };
     default:
       return { text: '', className: 'hidden' };
   }
@@ -88,6 +92,36 @@ export function compilationStatusStyles(): string {
       /* --error-text (not --error-color) pairs with --error-bg in both themes:
          dark --error-bg is a 0.6-alpha red, on which --error-color's #ef4444
          is red-on-red and illegible. */
+      color: var(--error-text, #721c24);
+    }
+
+    /* Neutral: a cancel is neither success nor failure. */
+    .compilation-status.cancelled {
+      background: var(--bg-tertiary, rgba(28, 23, 34, 0.05));
+      color: var(--text-secondary, #5a4f6a);
+    }
+
+    /* The Cancel control shown beside the compiling chip (breadcrumb and the
+       preview pane's fullscreen chrome). Same type scale as the chip; the
+       consumer decides where it sits. */
+    .cancel-compile-btn {
+      font-size: 0.75rem;
+      font-family: var(--font-mono, 'Inconsolata', monospace);
+      font-weight: 500;
+      line-height: 1;
+      padding: 4px 8px;
+      border: 1px solid var(--border-color, rgba(28, 23, 34, 0.10));
+      border-radius: var(--radius-sm, 4px);
+      background: transparent;
+      color: var(--text-secondary, #5a4f6a);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background var(--transition-base, 0.15s ease), color var(--transition-base, 0.15s ease);
+    }
+
+    .cancel-compile-btn:hover {
+      background: var(--error-bg, #f8d7da);
+      border-color: var(--error-color, #dc3545);
       color: var(--error-text, #721c24);
     }
 

@@ -44,4 +44,87 @@ describe('app-breadcrumb compile clock chip', () => {
     store.update({ compilationStatus: 'compiling', compilationElapsedMs: 5000 });
     expect(el.shadowRoot!.querySelector('#compilation-status')!.textContent).toBe('Compiling... 00:05');
   });
+
+  // ISSUE-016: the Cancel control beside the chip. It is part of render()
+  // (status changes re-render), never of the clock tick.
+  describe('Cancel control', () => {
+    it('exists only while compiling', async () => {
+      const { store } = await import('../playground/state/store.ts');
+      await import('../playground/components/app-breadcrumb.ts');
+      store.update({ currentView: 'workspace', compilationStatus: 'idle', compilationElapsedMs: 0 });
+
+      const el = document.createElement('app-breadcrumb');
+      document.body.appendChild(el);
+      const query = () => el.shadowRoot!.querySelector<HTMLButtonElement>('#cancel-compile-btn');
+      expect(query()).toBeNull();
+
+      store.set('compilationStatus', 'compiling');
+      const btn = query();
+      expect(btn).not.toBeNull();
+      expect(btn!.textContent.trim()).toBe('Cancel');
+      expect(btn!.getAttribute('aria-label')).toBe('Cancel compile');
+      expect(btn!.classList.contains('cancel-compile-btn')).toBe(true);
+      // Rendered in the controls cluster, right after the chip.
+      expect(btn!.closest('.controls-left')).not.toBeNull();
+      expect(btn!.previousElementSibling?.id).toBe('compilation-status');
+
+      for (const status of ['rendering', 'completed', 'error', 'cancelled', 'idle'] as const) {
+        store.set('compilationStatus', status);
+        expect(query(), `no Cancel while ${status}`).toBeNull();
+      }
+    });
+
+    it('dispatches a bubbling, composed cancel-compile event on click', async () => {
+      const { store } = await import('../playground/state/store.ts');
+      await import('../playground/components/app-breadcrumb.ts');
+      store.update({ currentView: 'workspace', compilationStatus: 'compiling', compilationElapsedMs: 0 });
+
+      const el = document.createElement('app-breadcrumb');
+      document.body.appendChild(el);
+
+      // workspace-view listens on document, so the event must escape the shadow root.
+      const received: Event[] = [];
+      const listener = (e: Event) => received.push(e);
+      document.addEventListener('cancel-compile', listener);
+      try {
+        el.shadowRoot!.querySelector<HTMLButtonElement>('#cancel-compile-btn')!.click();
+      } finally {
+        document.removeEventListener('cancel-compile', listener);
+      }
+      expect(received).toHaveLength(1);
+      expect(received[0].type).toBe('cancel-compile');
+      expect(received[0].bubbles).toBe(true);
+      expect(received[0].composed).toBe(true);
+    });
+
+    it('survives clock ticks without re-render: same chip node, one button, still wired', async () => {
+      const { store } = await import('../playground/state/store.ts');
+      await import('../playground/components/app-breadcrumb.ts');
+      store.update({ currentView: 'workspace', compilationStatus: 'compiling', compilationElapsedMs: 0 });
+
+      const el = document.createElement('app-breadcrumb');
+      document.body.appendChild(el);
+      const chip = el.shadowRoot!.querySelector('#compilation-status')!;
+      const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('#cancel-compile-btn')!;
+
+      store.set('compilationElapsedMs', 1000);
+      store.set('compilationElapsedMs', 2000);
+      expect(el.shadowRoot!.querySelector('#compilation-status')!.isSameNode(chip)).toBe(true);
+      expect(chip.textContent).toBe('Compiling... 00:02');
+      const buttons = el.shadowRoot!.querySelectorAll('#cancel-compile-btn, .cancel-compile-btn');
+      expect(buttons).toHaveLength(1);
+      expect(buttons[0].isSameNode(btn)).toBe(true);
+
+      // The listener bound at render time is still the one that fires: exactly once per click.
+      let count = 0;
+      const listener = () => count++;
+      document.addEventListener('cancel-compile', listener);
+      try {
+        btn.click();
+      } finally {
+        document.removeEventListener('cancel-compile', listener);
+      }
+      expect(count).toBe(1);
+    });
+  });
 });

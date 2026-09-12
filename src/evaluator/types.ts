@@ -294,7 +294,7 @@ export interface GradientValue {
   from?: number; // start angle in radians (default 0)
   to?: number; // end angle in radians (default from + 2*PI)
   direction?: 'cw' | 'ccw';
-  spread?: string; // 'clamp' | 'repeat' | 'transparent'
+  spread?: 'clamp' | 'repeat' | 'transparent';
   innerRadius?: number; // center plateau radius in px (default 0)
   innerFill?: 'transparent' | 'transparent-blend' | 'center' | ColorValue; // what fills inside innerRadius (default 'transparent')
   // Mesh-specific:
@@ -892,9 +892,9 @@ export interface GradientOutput {
   from?: number;
   to?: number; // radians
   direction?: 'cw' | 'ccw';
-  spread?: string;
+  spread?: 'clamp' | 'repeat' | 'transparent';
   innerRadius?: number;
-  innerFill?: string; // 'transparent' | 'center' | CSS color string
+  innerFill?: string; // 'transparent' | 'transparent-blend' | 'center' | CSS color string
   stopsWithOklch?: { offset: number; color: string; oklch?: OKLCH }[];
   // Mesh-specific:
   meshGrid?: { x: number; y: number; color: string }[][];

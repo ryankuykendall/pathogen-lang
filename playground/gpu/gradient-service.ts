@@ -8,7 +8,9 @@ import { COLOR_POINT_STRIDE, FREEFORM_PARAMS_SIZE } from './freeform-shader.js';
 import { getMeshPipeline } from './mesh-pipeline.js';
 import { MESH_PARAMS_SIZE, MESH_VERTEX_STRIDE } from './mesh-shader.js';
 import { flattenToSegments } from './svg-path-parser.js';
-import { hashGradient, TextureCache } from './texture-cache.js';
+import { withGpuErrorScopes } from './gpu-error-scopes.js';
+import { MAX_CANVAS_2D_DIM, rasterSize, type RasterSize } from './raster-size.js';
+import { hashGradient, TextureCache, type RenderPath } from './texture-cache.js';
 import { getTopoLaplacePipeline } from './topo-laplace-pipeline.js';
 import {
   LAPLACE_INIT_PARAMS_SIZE,
@@ -17,7 +19,7 @@ import {
 } from './topo-laplace-shader.js';
 import { getTopoPipeline } from './topo-pipeline.js';
 import { CONTOUR_HEADER_STRIDE, SEGMENT_STRIDE, TOPO_COLOR_STOP_STRIDE, TOPO_PARAMS_SIZE } from './topo-shader.js';
-import { destroyDevice, getDevice, isWebGPUAvailable } from './webgpu-device.js';
+import { destroyDevice, getDevice, getMaxTextureDimension2D, isWebGPUAvailable } from './webgpu-device.js';
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -87,35 +89,55 @@ function easingModeFor(name: string | undefined): number {
 }
 
 // ---------------------------------------------------------------------------
-// Texture size clamping
-// ---------------------------------------------------------------------------
-
-/** Maximum canvas dimension for Canvas 2D fallback to avoid memory exhaustion. */
-const MAX_CANVAS_2D_DIM = 16384;
-
-/**
- * Reduce the effective scale so both dimensions stay within maxDim.
- * Returns the clamped scale — always <= input scale, >= 0.25 to avoid degenerate textures.
- */
-function clampScale(w: number, h: number, scale: number, maxDim: number): number {
-  const maxNeeded = Math.max(w * scale, h * scale);
-  if (maxNeeded <= maxDim) return scale;
-  const clamped = maxDim / Math.max(w, h);
-  const result = Math.max(clamped, 0.25);
-  console.warn(
-    `[GradientService] Texture ${Math.round(w * scale)}×${Math.round(h * scale)} exceeds max ${maxDim}×${maxDim}, reducing scale from ${scale}× to ${result.toFixed(2)}×`,
-  );
-  return result;
-}
-
-// ---------------------------------------------------------------------------
 // Module state
 // ---------------------------------------------------------------------------
 
 const cache = new TextureCache(32);
 
 let _gpuAvailable: boolean | null = null;
+let _gpuForcedOff = false;
 let _initialized = false;
+let _initPromise: Promise<void> | null = null;
+
+/** GPU cache keys whose render failed this session — skip straight to Canvas 2D for them. */
+const gpuFailed = new Set<string>();
+/** Notice text remembered per 2D cache key, re-issued on cache hits so a fallback stays visible. */
+const noticeByKey = new Map<string, string>();
+
+/** One console line, shaped like the compiler's own `[warn]` log entries. */
+export interface GradientNotice {
+  line: null;
+  severity: 'warn';
+  parts: { type: 'string'; value: string }[];
+}
+const MAX_NOTICES = 64;
+const _notices: GradientNotice[] = [];
+
+/** Queue a warning for the Pathogen console (drained by `takeNotices`). */
+export function pushNotice(message: string): void {
+  if (_notices.length >= MAX_NOTICES) return;
+  _notices.push({ line: null, severity: 'warn', parts: [{ type: 'string', value: `[warn] ${message}` }] });
+}
+
+/** Return and clear the notices accumulated since the last call. */
+export function takeNotices(): GradientNotice[] {
+  return _notices.splice(0, _notices.length);
+}
+
+/**
+ * `?gpu=off` in the URL or `localStorage.pathogenForceCanvas2D = '1'` forces
+ * the Canvas 2D path — the way to check how a program renders in a browser
+ * without WebGPU, or to exercise the fallback while working on it.
+ */
+function canvas2DForced(): boolean {
+  try {
+    if (typeof location !== 'undefined' && new URLSearchParams(location.search).get('gpu') === 'off') return true;
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('pathogenForceCanvas2D') === '1') return true;
+  } catch {
+    // Storage or URL access can throw in sandboxed contexts; treat as not forced.
+  }
+  return false;
+}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -126,20 +148,172 @@ let _initialized = false;
  * Safe to call multiple times (no-op after first).
  */
 export async function init(): Promise<void> {
-  if (_initialized) return;
+  if (_initialized) return _initPromise ?? undefined;
   _initialized = true;
-  _gpuAvailable = await isWebGPUAvailable();
-  if (_gpuAvailable) {
-    console.log('[GradientService] WebGPU available — conic gradients will render via GPU');
-  } else {
-    console.log('[GradientService] WebGPU not available — falling back to Canvas 2D');
-  }
+  _initPromise = (async () => {
+    if (canvas2DForced()) {
+      _gpuAvailable = false;
+      _gpuForcedOff = true;
+      console.log('[GradientService] WebGPU disabled by ?gpu=off / localStorage.pathogenForceCanvas2D — using Canvas 2D');
+      return;
+    }
+    _gpuAvailable = await isWebGPUAvailable();
+    if (_gpuAvailable) {
+      // Create the device now so the first texture is keyed on its real limit.
+      await getDevice();
+      console.log(
+        `[GradientService] WebGPU available — gradients render via GPU (max texture ${getMaxTextureDimension2D()}px)`,
+      );
+    } else {
+      console.log('[GradientService] WebGPU not available — falling back to Canvas 2D');
+    }
+  })();
+  return _initPromise;
 }
 
 /** Whether WebGPU rendering is active. */
 export function isGPUActive(): boolean {
   return _gpuAvailable === true;
 }
+
+/** Human-readable family name for notices. */
+type GradientFamily = 'conic' | 'freeform' | 'mesh' | 'topo';
+
+interface FamilySpec {
+  family: GradientFamily;
+  /** Per-gradient raster extent in user units (mesh/freeform/topo carry their own). */
+  extent: (grad: GradientOutput, width: number, height: number) => [number, number];
+  gpu: (grad: GradientOutput, w: number, h: number, size: RasterSize) => Promise<string | null>;
+  cpu: (grad: GradientOutput, w: number, h: number, size: RasterSize) => string | null;
+  /** Properties the Canvas 2D path only approximates, named in the fallback notice. */
+  cpuCaveat?: string;
+}
+
+function describeError(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+/**
+ * Render every gradient of one family: cache lookup keyed on the post-clamp
+ * texture size and the path that produced it, WebGPU first (unless it already
+ * failed for this key), Canvas 2D on any thrown error, and a Pathogen-console
+ * notice whenever the fallback runs or both paths fail. A failed render is
+ * never cached, so a blank image can never be served twice.
+ */
+async function renderFamily(
+  spec: FamilySpec,
+  gradients: GradientOutput[],
+  width: number,
+  height: number,
+  scale: number,
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  const members = gradients.filter((g) => g.type === spec.family);
+  if (members.length === 0) return result;
+  await init();
+
+  for (const grad of members) {
+    const [gw, gh] = spec.extent(grad, width, height);
+    const gpuSize = rasterSize(gw, gh, scale, getMaxTextureDimension2D());
+    const cpuSize = rasterSize(gw, gh, scale, MAX_CANVAS_2D_DIM);
+    const gpuKey = hashGradient(grad, gpuSize.pw, gpuSize.ph, 'gpu');
+    const cpuKey = hashGradient(grad, cpuSize.pw, cpuSize.ph, '2d');
+    const tryGpu = _gpuAvailable === true && !gpuFailed.has(gpuKey);
+
+    if (tryGpu) {
+      const hit = cache.get(gpuKey);
+      if (hit) {
+        result.set(grad.id, hit);
+        continue;
+      }
+    }
+    const cpuHit = cache.get(cpuKey);
+    if (cpuHit) {
+      const remembered = noticeByKey.get(cpuKey);
+      if (remembered) pushNotice(remembered);
+      result.set(grad.id, cpuHit);
+      continue;
+    }
+
+    let dataUrl: string | null = null;
+    let path: RenderPath = '2d';
+    let gpuReason: string | null = null;
+
+    if (tryGpu) {
+      if (gpuSize.scale < scale) {
+        console.warn(
+          `[GradientService] ${spec.family} '${grad.id}': ${Math.round(gw * scale)}×${Math.round(gh * scale)} exceeds the ${getMaxTextureDimension2D()}px texture limit; rendering at ${gpuSize.pw}×${gpuSize.ph} (${gpuSize.scale.toFixed(3)}× per unit)`,
+        );
+      }
+      try {
+        dataUrl = await spec.gpu(grad, gw, gh, gpuSize);
+        if (dataUrl === null) throw new Error('renderer produced no image');
+        path = 'gpu';
+      } catch (e: unknown) {
+        gpuReason = describeError(e);
+        gpuFailed.add(gpuKey);
+        console.warn(`[GradientService] ${spec.family} '${grad.id}' WebGPU render failed, falling back to Canvas 2D:`, gpuReason);
+        dataUrl = null;
+      }
+    }
+
+    if (dataUrl === null) {
+      try {
+        dataUrl = spec.cpu(grad, gw, gh, cpuSize);
+      } catch (e: unknown) {
+        console.warn(`[GradientService] ${spec.family} '${grad.id}' Canvas 2D render failed:`, describeError(e));
+        dataUrl = null;
+      }
+      if (dataUrl === null) {
+        const why = gpuReason ? `WebGPU: ${gpuReason}; Canvas 2D also failed` : 'Canvas 2D failed';
+        pushNotice(`Gradient '${grad.id}' (${spec.family}) could not be rasterized (${why}); fills using it will render empty.`);
+        continue;
+      }
+      // Say so when WebGPU was expected (it failed) or deliberately switched
+      // off; a browser with no WebGPU at all gets no per-compile nag.
+      if (_gpuAvailable === true || _gpuForcedOff) {
+        const caveat = spec.cpuCaveat ? ` ${spec.cpuCaveat}` : '';
+        const why = gpuReason
+          ? `WebGPU failed: ${gpuReason}`
+          : 'WebGPU disabled by ?gpu=off / localStorage.pathogenForceCanvas2D';
+        const msg = `Gradient '${grad.id}' (${spec.family}) rendered with the Canvas 2D fallback — ${why}.${caveat}`;
+        noticeByKey.set(cpuKey, msg);
+        pushNotice(msg);
+      }
+    }
+
+    cache.set(path === 'gpu' ? gpuKey : cpuKey, dataUrl);
+    result.set(grad.id, dataUrl);
+  }
+
+  return result;
+}
+
+const CONIC_FAMILY: FamilySpec = {
+  family: 'conic',
+  extent: (_grad, width, height) => [width, height],
+  gpu: renderConicWebGPU,
+  cpu: renderConicCanvas2D,
+  cpuCaveat: 'Canvas 2D draws the same 1° wedges as the CLI, so innerRadius, innerFill and spread are approximated rather than shaded per pixel.',
+};
+const FREEFORM_FAMILY: FamilySpec = {
+  family: 'freeform',
+  extent: (grad, width, height) => [grad.freeformWidth || width, grad.freeformHeight || height],
+  gpu: renderFreeformWebGPU,
+  cpu: renderFreeformCanvas2D,
+};
+const MESH_FAMILY: FamilySpec = {
+  family: 'mesh',
+  extent: (grad, width, height) => [grad.meshWidth || width, grad.meshHeight || height],
+  gpu: renderMeshWebGPU,
+  cpu: renderMeshCanvas2D,
+};
+const TOPO_FAMILY: FamilySpec = {
+  family: 'topo',
+  extent: (grad, width, height) => [grad.topoWidth || width, grad.topoHeight || height],
+  gpu: renderTopoWebGPU,
+  cpu: renderTopoCanvas2D,
+};
 
 /**
  * Render all conic gradients from a compilation result.
@@ -151,37 +325,7 @@ export async function renderConicGradients(
   height: number,
   scale: number = 2,
 ): Promise<Map<string, string>> {
-  const result = new Map<string, string>();
-  const conics = gradients.filter((g) => g.type === 'conic');
-  if (conics.length === 0) return result;
-
-  for (const grad of conics) {
-    const key = hashGradient(grad, width * scale, height * scale);
-    const cached = cache.get(key);
-    if (cached) {
-      result.set(grad.id, cached);
-      continue;
-    }
-
-    let dataUrl: string | null = null;
-    if (_gpuAvailable) {
-      try {
-        dataUrl = await renderConicWebGPU(grad, width, height, scale);
-      } catch (e: unknown) {
-        console.warn('[GradientService] WebGPU render failed, falling back to Canvas 2D:', (e as Error).message);
-        dataUrl = renderConicCanvas2D(grad, width, height, scale);
-      }
-    } else {
-      dataUrl = renderConicCanvas2D(grad, width, height, scale);
-    }
-
-    if (dataUrl) {
-      cache.set(key, dataUrl);
-      result.set(grad.id, dataUrl);
-    }
-  }
-
-  return result;
+  return renderFamily(CONIC_FAMILY, gradients, width, height, scale);
 }
 
 /**
@@ -194,39 +338,7 @@ export async function renderFreeformGradients(
   height: number,
   scale: number = 2,
 ): Promise<Map<string, string>> {
-  const result = new Map<string, string>();
-  const freeforms = gradients.filter((g) => g.type === 'freeform');
-  if (freeforms.length === 0) return result;
-
-  for (const grad of freeforms) {
-    const gw = grad.freeformWidth || width;
-    const gh = grad.freeformHeight || height;
-    const key = hashGradient(grad, gw * scale, gh * scale);
-    const cached = cache.get(key);
-    if (cached) {
-      result.set(grad.id, cached);
-      continue;
-    }
-
-    let dataUrl: string | null = null;
-    if (_gpuAvailable) {
-      try {
-        dataUrl = await renderFreeformWebGPU(grad, gw, gh, scale);
-      } catch (e: unknown) {
-        console.warn('[GradientService] Freeform WebGPU render failed, falling back to Canvas 2D:', (e as Error).message);
-        dataUrl = renderFreeformCanvas2D(grad, gw, gh, scale);
-      }
-    } else {
-      dataUrl = renderFreeformCanvas2D(grad, gw, gh, scale);
-    }
-
-    if (dataUrl) {
-      cache.set(key, dataUrl);
-      result.set(grad.id, dataUrl);
-    }
-  }
-
-  return result;
+  return renderFamily(FREEFORM_FAMILY, gradients, width, height, scale);
 }
 
 /**
@@ -239,39 +351,7 @@ export async function renderMeshGradients(
   height: number,
   scale: number = 2,
 ): Promise<Map<string, string>> {
-  const result = new Map<string, string>();
-  const meshes = gradients.filter((g) => g.type === 'mesh');
-  if (meshes.length === 0) return result;
-
-  for (const grad of meshes) {
-    const gw = grad.meshWidth || width;
-    const gh = grad.meshHeight || height;
-    const key = hashGradient(grad, gw * scale, gh * scale);
-    const cached = cache.get(key);
-    if (cached) {
-      result.set(grad.id, cached);
-      continue;
-    }
-
-    let dataUrl: string | null = null;
-    if (_gpuAvailable) {
-      try {
-        dataUrl = await renderMeshWebGPU(grad, gw, gh, scale);
-      } catch (e: unknown) {
-        console.warn('[GradientService] Mesh WebGPU render failed, falling back to Canvas 2D:', (e as Error).message);
-        dataUrl = renderMeshCanvas2D(grad, gw, gh, scale);
-      }
-    } else {
-      dataUrl = renderMeshCanvas2D(grad, gw, gh, scale);
-    }
-
-    if (dataUrl) {
-      cache.set(key, dataUrl);
-      result.set(grad.id, dataUrl);
-    }
-  }
-
-  return result;
+  return renderFamily(MESH_FAMILY, gradients, width, height, scale);
 }
 
 /**
@@ -284,44 +364,22 @@ export async function renderTopoGradients(
   height: number,
   scale: number = 2,
 ): Promise<Map<string, string>> {
-  const result = new Map<string, string>();
-  const topos = gradients.filter((g) => g.type === 'topo');
-  if (topos.length === 0) return result;
-
-  for (const grad of topos) {
-    const gw = grad.topoWidth || width;
-    const gh = grad.topoHeight || height;
-    const key = hashGradient(grad, gw * scale, gh * scale);
-    const cached = cache.get(key);
-    if (cached) {
-      result.set(grad.id, cached);
-      continue;
-    }
-
-    let dataUrl: string | null = null;
-    if (_gpuAvailable) {
-      try {
-        dataUrl = await renderTopoWebGPU(grad, gw, gh, scale);
-      } catch (e: unknown) {
-        console.warn('[GradientService] Topo WebGPU render failed, falling back to Canvas 2D:', (e as Error).message);
-        dataUrl = renderTopoCanvas2D(grad, gw, gh, scale);
-      }
-    } else {
-      dataUrl = renderTopoCanvas2D(grad, gw, gh, scale);
-    }
-
-    if (dataUrl) {
-      cache.set(key, dataUrl);
-      result.set(grad.id, dataUrl);
-    }
-  }
-
-  return result;
+  return renderFamily(TOPO_FAMILY, gradients, width, height, scale);
 }
 
 /** Clear the texture cache. Call on cleanup / disconnectedCallback. */
 export function clearCache(): void {
   cache.clear();
+  gpuFailed.clear();
+  noticeByKey.clear();
+}
+
+/** Throw before touching the canvas when a texture cannot fit the device. */
+function assertWithinDeviceLimit(device: GPUDevice, pw: number, ph: number, label: string): void {
+  const limit = device.limits.maxTextureDimension2D;
+  if (pw > limit || ph > limit) {
+    throw new Error(`${label}: texture ${pw}×${ph} exceeds maxTextureDimension2D ${limit}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -331,138 +389,139 @@ export function clearCache(): void {
 /**
  * Render a single conic gradient via WebGPU.
  */
-async function renderConicWebGPU(grad: GradientOutput, w: number, h: number, scale: number): Promise<string> {
+async function renderConicWebGPU(grad: GradientOutput, w: number, h: number, size: RasterSize): Promise<string> {
   const pipelineResult = await getConicPipeline() as RenderPipelineResult | null;
   if (!pipelineResult) throw new Error('Pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
 
-  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
-  const pw = w * scale;
-  const ph = h * scale;
+  const { scale, pw, ph } = size;
+  assertWithinDeviceLimit(device, pw, ph, 'conic');
+  return withGpuErrorScopes(device, 'conic', () => {
 
-  // --- Canvas & texture ---
-  // Always use DOM canvas — OffscreenCanvas lacks toDataURL(), and blob URLs
-  // from createObjectURL don't render in SVG <image> elements in Shadow DOM.
-  const canvas = document.createElement('canvas');
-  canvas.width = pw;
-  canvas.height = ph;
-  const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
-  if (!context) throw new Error('Could not get webgpu context');
+    // --- Canvas & texture ---
+    // Always use DOM canvas — OffscreenCanvas lacks toDataURL(), and blob URLs
+    // from createObjectURL don't render in SVG <image> elements in Shadow DOM.
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+    if (!context) throw new Error('Could not get webgpu context');
 
-  context.configure({ device, format, alphaMode: 'premultiplied' });
+    context.configure({ device, format, alphaMode: 'premultiplied' });
 
-  // --- Uniform buffer (ConicParams, 64 bytes) ---
-  const fromAngle = grad.from ?? 0;
-  const toAngle = grad.to ?? fromAngle + 2 * Math.PI;
-  const innerRadius = (grad.innerRadius ?? 0) * scale;
-  const direction = grad.direction === 'ccw' ? -1.0 : 1.0;
+    // --- Uniform buffer (ConicParams, 64 bytes) ---
+    const fromAngle = grad.from ?? 0;
+    const toAngle = grad.to ?? fromAngle + 2 * Math.PI;
+    const innerRadius = (grad.innerRadius ?? 0) * scale;
+    const direction = grad.direction === 'ccw' ? -1.0 : 1.0;
 
-  // Spread: 0 = clamp, 1 = repeat, 2 = transparent
-  let spreadVal = 0.0;
-  if (grad.spread === 'repeat') spreadVal = 1.0;
-  else if (grad.spread === 'transparent') spreadVal = 2.0;
+    // Spread: 0 = clamp, 1 = repeat, 2 = transparent
+    let spreadVal = 0.0;
+    if (grad.spread === 'repeat') spreadVal = 1.0;
+    else if (grad.spread === 'transparent') spreadVal = 2.0;
 
-  // innerFill mode: 0 = transparent (hard), 1 = center (smooth), 2 = custom (smooth), 3 = transparent-blend (smooth)
-  const innerFill = grad.innerFill ?? 'transparent';
-  let innerFillMode = 0;
-  let innerFillRGBA = [0, 0, 0, 0];
-  if (innerFill === 'center') {
-    innerFillMode = 1;
-  } else if (innerFill === 'transparent-blend') {
-    innerFillMode = 3;
-  } else if (innerFill !== 'transparent') {
-    // CSS color string — parse to RGBA
-    innerFillMode = 2;
-    innerFillRGBA = cssColorToLinearRGBA(innerFill);
-  }
+    // innerFill mode: 0 = transparent (hard), 1 = center (smooth), 2 = custom (smooth), 3 = transparent-blend (smooth)
+    const innerFill = grad.innerFill ?? 'transparent';
+    let innerFillMode = 0;
+    let innerFillRGBA = [0, 0, 0, 0];
+    if (innerFill === 'center') {
+      innerFillMode = 1;
+    } else if (innerFill === 'transparent-blend') {
+      innerFillMode = 3;
+    } else if (innerFill !== 'transparent') {
+      // CSS color string — parse to RGBA
+      innerFillMode = 2;
+      innerFillRGBA = cssColorToRGBA(innerFill);
+    }
 
-  const uniformData = new ArrayBuffer(64);
-  const f32 = new Float32Array(uniformData);
-  const u32 = new Uint32Array(uniformData);
+    const uniformData = new ArrayBuffer(64);
+    const f32 = new Float32Array(uniformData);
+    const u32 = new Uint32Array(uniformData);
 
-  f32[0] = (grad.cx ?? w / 2) / w; // center.x in UV space [0,1]
-  f32[1] = (grad.cy ?? h / 2) / h; // center.y in UV space [0,1]
-  f32[2] = fromAngle;
-  f32[3] = toAngle;
-  f32[4] = innerRadius;
-  f32[5] = direction;
-  f32[6] = spreadVal;
-  u32[7] = innerFillMode; // inner_fill_mode
-  f32[8] = pw; // resolution.x
-  f32[9] = ph; // resolution.y
-  const stops = grad.stopsWithOklch || grad.stops || [];
-  u32[10] = stops.length; // stop_count
-  // u32[11] = _pad
-  f32[12] = innerFillRGBA[0]; // inner_fill_color.r
-  f32[13] = innerFillRGBA[1]; // inner_fill_color.g
-  f32[14] = innerFillRGBA[2]; // inner_fill_color.b
-  f32[15] = innerFillRGBA[3]; // inner_fill_color.a
+    f32[0] = (grad.cx ?? w / 2) / w; // center.x in UV space [0,1]
+    f32[1] = (grad.cy ?? h / 2) / h; // center.y in UV space [0,1]
+    f32[2] = fromAngle;
+    f32[3] = toAngle;
+    f32[4] = innerRadius;
+    f32[5] = direction;
+    f32[6] = spreadVal;
+    u32[7] = innerFillMode; // inner_fill_mode
+    f32[8] = pw; // resolution.x
+    f32[9] = ph; // resolution.y
+    const stops = grad.stopsWithOklch || grad.stops || [];
+    u32[10] = stops.length; // stop_count
+    // u32[11] = _pad
+    f32[12] = innerFillRGBA[0]; // inner_fill_color.r
+    f32[13] = innerFillRGBA[1]; // inner_fill_color.g
+    f32[14] = innerFillRGBA[2]; // inner_fill_color.b
+    f32[15] = innerFillRGBA[3]; // inner_fill_color.a
 
-  const uniformBuffer = device.createBuffer({
-    size: 64,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    const uniformBuffer = device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+    // --- Stops storage buffer ---
+    // Each ColorStop: 5 x f32 (offset, r, g, b, a) = 20 bytes, stride 20 (alignment 4)
+    const FLOATS_PER_STOP = 5;
+    const stopCount = Math.max(stops.length, 1); // At least 1 for valid buffer
+    const stopBufferSize = stopCount * FLOATS_PER_STOP * 4;
+    const stopData = new Float32Array(stopCount * FLOATS_PER_STOP);
+    for (let i = 0; i < stops.length; i++) {
+      const rgba = cssColorToRGBA(stops[i].color);
+      const base = i * FLOATS_PER_STOP;
+      stopData[base] = stops[i].offset;
+      stopData[base + 1] = rgba[0];
+      stopData[base + 2] = rgba[1];
+      stopData[base + 3] = rgba[2];
+      stopData[base + 4] = rgba[3];
+    }
+
+    const stopBuffer = device.createBuffer({
+      size: stopBufferSize,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(stopBuffer, 0, stopData);
+
+    // --- Bind group ---
+    const bindGroup = device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: uniformBuffer } },
+        { binding: 1, resource: { buffer: stopBuffer } },
+      ],
+    });
+
+    // --- Render pass ---
+    const textureView = context.getCurrentTexture().createView();
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: textureView,
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: 'clear' as const,
+          storeOp: 'store' as const,
+        },
+      ],
+    });
+
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.draw(3, 1, 0, 0); // Full-screen triangle
+    pass.end();
+    device.queue.submit([encoder.finish()]);
+
+    // --- Read back as data URL ---
+    const dataUrl = canvas.toDataURL('image/png');
+
+    // Cleanup GPU resources
+    uniformBuffer.destroy();
+    stopBuffer.destroy();
+
+    return dataUrl;
   });
-  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
-
-  // --- Stops storage buffer ---
-  // Each ColorStop: 5 x f32 (offset, r, g, b, a) = 20 bytes, stride 20 (alignment 4)
-  const FLOATS_PER_STOP = 5;
-  const stopCount = Math.max(stops.length, 1); // At least 1 for valid buffer
-  const stopBufferSize = stopCount * FLOATS_PER_STOP * 4;
-  const stopData = new Float32Array(stopCount * FLOATS_PER_STOP);
-  for (let i = 0; i < stops.length; i++) {
-    const rgba = cssColorToLinearRGBA(stops[i].color);
-    const base = i * FLOATS_PER_STOP;
-    stopData[base] = stops[i].offset;
-    stopData[base + 1] = rgba[0];
-    stopData[base + 2] = rgba[1];
-    stopData[base + 3] = rgba[2];
-    stopData[base + 4] = rgba[3];
-  }
-
-  const stopBuffer = device.createBuffer({
-    size: stopBufferSize,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(stopBuffer, 0, stopData);
-
-  // --- Bind group ---
-  const bindGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [
-      { binding: 0, resource: { buffer: uniformBuffer } },
-      { binding: 1, resource: { buffer: stopBuffer } },
-    ],
-  });
-
-  // --- Render pass ---
-  const textureView = context.getCurrentTexture().createView();
-  const encoder = device.createCommandEncoder();
-  const pass = encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        view: textureView,
-        clearValue: { r: 0, g: 0, b: 0, a: 0 },
-        loadOp: 'clear' as const,
-        storeOp: 'store' as const,
-      },
-    ],
-  });
-
-  pass.setPipeline(pipeline);
-  pass.setBindGroup(0, bindGroup);
-  pass.draw(3, 1, 0, 0); // Full-screen triangle
-  pass.end();
-  device.queue.submit([encoder.finish()]);
-
-  // --- Read back as data URL ---
-  const dataUrl = await canvasToDataURL(canvas);
-
-  // Cleanup GPU resources
-  uniformBuffer.destroy();
-  stopBuffer.destroy();
-
-  return dataUrl;
 }
 
 // ---------------------------------------------------------------------------
@@ -472,104 +531,105 @@ async function renderConicWebGPU(grad: GradientOutput, w: number, h: number, sca
 /**
  * Render a single freeform gradient via WebGPU.
  */
-async function renderFreeformWebGPU(grad: GradientOutput, w: number, h: number, scale: number): Promise<string> {
+async function renderFreeformWebGPU(grad: GradientOutput, w: number, h: number, size: RasterSize): Promise<string> {
   const pipelineResult = await getFreeformPipeline() as RenderPipelineResult | null;
   if (!pipelineResult) throw new Error('Freeform pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
 
-  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
-  const pw = w * scale;
-  const ph = h * scale;
+  const { scale, pw, ph } = size;
+  assertWithinDeviceLimit(device, pw, ph, 'freeform');
+  return withGpuErrorScopes(device, 'freeform', () => {
 
-  // --- Canvas & texture ---
-  // Always use DOM canvas — blob URLs don't render in SVG <image> in Shadow DOM
-  const canvas = document.createElement('canvas');
-  canvas.width = pw;
-  canvas.height = ph;
-  const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
-  if (!context) throw new Error('Could not get webgpu context');
+    // --- Canvas & texture ---
+    // Always use DOM canvas — blob URLs don't render in SVG <image> in Shadow DOM
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+    if (!context) throw new Error('Could not get webgpu context');
 
-  context.configure({ device, format, alphaMode: 'premultiplied' });
+    context.configure({ device, format, alphaMode: 'premultiplied' });
 
-  // --- Uniform buffer (FreeformParams, 32 bytes) ---
-  const points = grad.freeformPoints || [];
-  const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
+    // --- Uniform buffer (FreeformParams, 32 bytes) ---
+    const points = grad.freeformPoints || [];
+    const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
 
-  const uniformData = new ArrayBuffer(FREEFORM_PARAMS_SIZE);
-  const f32 = new Float32Array(uniformData);
-  const u32 = new Uint32Array(uniformData);
+    const uniformData = new ArrayBuffer(FREEFORM_PARAMS_SIZE);
+    const f32 = new Float32Array(uniformData);
+    const u32 = new Uint32Array(uniformData);
 
-  f32[0] = pw; // resolution.x
-  f32[1] = ph; // resolution.y
-  f32[2] = grad.freeformWidth || w; // grad_size.x
-  f32[3] = grad.freeformHeight || h; // grad_size.y
-  f32[4] = grad.falloff ?? 2.0; // falloff
-  u32[5] = points.length; // point_count
-  u32[6] = interpVal; // interpolation
-  // u32[7] = _pad
+    f32[0] = pw; // resolution.x
+    f32[1] = ph; // resolution.y
+    f32[2] = grad.freeformWidth || w; // grad_size.x
+    f32[3] = grad.freeformHeight || h; // grad_size.y
+    f32[4] = grad.falloff ?? 2.0; // falloff
+    u32[5] = points.length; // point_count
+    u32[6] = interpVal; // interpolation
+    // u32[7] = _pad
 
-  const uniformBuffer = device.createBuffer({
-    size: FREEFORM_PARAMS_SIZE,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    const uniformBuffer = device.createBuffer({
+      size: FREEFORM_PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+    // --- Points storage buffer ---
+    const FLOATS_PER_POINT = 6; // x, y, r, g, b, a
+    const pointCount = Math.max(points.length, 1);
+    const pointData = new Float32Array(pointCount * FLOATS_PER_POINT);
+    for (let i = 0; i < points.length; i++) {
+      const rgba = cssColorToRGBA(points[i].color);
+      const base = i * FLOATS_PER_POINT;
+      pointData[base] = points[i].x;
+      pointData[base + 1] = points[i].y;
+      pointData[base + 2] = rgba[0];
+      pointData[base + 3] = rgba[1];
+      pointData[base + 4] = rgba[2];
+      pointData[base + 5] = rgba[3];
+    }
+
+    const pointBuffer = device.createBuffer({
+      size: pointCount * FLOATS_PER_POINT * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(pointBuffer, 0, pointData);
+
+    // --- Bind group ---
+    const bindGroup = device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: uniformBuffer } },
+        { binding: 1, resource: { buffer: pointBuffer } },
+      ],
+    });
+
+    // --- Render pass ---
+    const textureView = context.getCurrentTexture().createView();
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: textureView,
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: 'clear' as const,
+          storeOp: 'store' as const,
+        },
+      ],
+    });
+
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.draw(3, 1, 0, 0);
+    pass.end();
+    device.queue.submit([encoder.finish()]);
+
+    const dataUrl = canvas.toDataURL('image/png');
+
+    uniformBuffer.destroy();
+    pointBuffer.destroy();
+
+    return dataUrl;
   });
-  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
-
-  // --- Points storage buffer ---
-  const FLOATS_PER_POINT = 6; // x, y, r, g, b, a
-  const pointCount = Math.max(points.length, 1);
-  const pointData = new Float32Array(pointCount * FLOATS_PER_POINT);
-  for (let i = 0; i < points.length; i++) {
-    const rgba = cssColorToLinearRGBA(points[i].color);
-    const base = i * FLOATS_PER_POINT;
-    pointData[base] = points[i].x;
-    pointData[base + 1] = points[i].y;
-    pointData[base + 2] = rgba[0];
-    pointData[base + 3] = rgba[1];
-    pointData[base + 4] = rgba[2];
-    pointData[base + 5] = rgba[3];
-  }
-
-  const pointBuffer = device.createBuffer({
-    size: pointCount * FLOATS_PER_POINT * 4,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(pointBuffer, 0, pointData);
-
-  // --- Bind group ---
-  const bindGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [
-      { binding: 0, resource: { buffer: uniformBuffer } },
-      { binding: 1, resource: { buffer: pointBuffer } },
-    ],
-  });
-
-  // --- Render pass ---
-  const textureView = context.getCurrentTexture().createView();
-  const encoder = device.createCommandEncoder();
-  const pass = encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        view: textureView,
-        clearValue: { r: 0, g: 0, b: 0, a: 0 },
-        loadOp: 'clear' as const,
-        storeOp: 'store' as const,
-      },
-    ],
-  });
-
-  pass.setPipeline(pipeline);
-  pass.setBindGroup(0, bindGroup);
-  pass.draw(3, 1, 0, 0);
-  pass.end();
-  device.queue.submit([encoder.finish()]);
-
-  const dataUrl = await canvasToDataURL(canvas);
-
-  uniformBuffer.destroy();
-  pointBuffer.destroy();
-
-  return dataUrl;
 }
 
 // ---------------------------------------------------------------------------
@@ -579,109 +639,110 @@ async function renderFreeformWebGPU(grad: GradientOutput, w: number, h: number, 
 /**
  * Render a single mesh gradient via WebGPU.
  */
-async function renderMeshWebGPU(grad: GradientOutput, w: number, h: number, scale: number): Promise<string> {
+async function renderMeshWebGPU(grad: GradientOutput, w: number, h: number, size: RasterSize): Promise<string> {
   const pipelineResult = await getMeshPipeline() as RenderPipelineResult | null;
   if (!pipelineResult) throw new Error('Mesh pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
 
-  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
-  const pw = w * scale;
-  const ph = h * scale;
+  const { scale, pw, ph } = size;
+  assertWithinDeviceLimit(device, pw, ph, 'mesh');
+  return withGpuErrorScopes(device, 'mesh', () => {
 
-  // --- Canvas & texture ---
-  // Always use DOM canvas — blob URLs don't render in SVG <image> in Shadow DOM
-  const canvas = document.createElement('canvas');
-  canvas.width = pw;
-  canvas.height = ph;
-  const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
-  if (!context) throw new Error('Could not get webgpu context');
+    // --- Canvas & texture ---
+    // Always use DOM canvas — blob URLs don't render in SVG <image> in Shadow DOM
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+    if (!context) throw new Error('Could not get webgpu context');
 
-  context.configure({ device, format, alphaMode: 'premultiplied' });
+    context.configure({ device, format, alphaMode: 'premultiplied' });
 
-  // --- Uniform buffer (MeshParams, 32 bytes) ---
-  const grid = grad.meshGrid || [];
-  const rows = grid.length;
-  const cols = rows > 0 ? grid[0].length : 0;
-  const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
+    // --- Uniform buffer (MeshParams, 32 bytes) ---
+    const grid = grad.meshGrid || [];
+    const rows = grid.length;
+    const cols = rows > 0 ? grid[0].length : 0;
+    const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
 
-  const uniformData = new ArrayBuffer(MESH_PARAMS_SIZE);
-  const f32 = new Float32Array(uniformData);
-  const u32 = new Uint32Array(uniformData);
+    const uniformData = new ArrayBuffer(MESH_PARAMS_SIZE);
+    const f32 = new Float32Array(uniformData);
+    const u32 = new Uint32Array(uniformData);
 
-  f32[0] = pw; // resolution.x
-  f32[1] = ph; // resolution.y
-  f32[2] = grad.meshWidth || w; // grad_size.x
-  f32[3] = grad.meshHeight || h; // grad_size.y
-  u32[4] = rows; // rows
-  u32[5] = cols; // cols
-  u32[6] = interpVal; // interpolation
-  // u32[7] = _pad
+    f32[0] = pw; // resolution.x
+    f32[1] = ph; // resolution.y
+    f32[2] = grad.meshWidth || w; // grad_size.x
+    f32[3] = grad.meshHeight || h; // grad_size.y
+    u32[4] = rows; // rows
+    u32[5] = cols; // cols
+    u32[6] = interpVal; // interpolation
+    // u32[7] = _pad
 
-  const uniformBuffer = device.createBuffer({
-    size: MESH_PARAMS_SIZE,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+    const uniformBuffer = device.createBuffer({
+      size: MESH_PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
-  // --- Vertices storage buffer (row-major) ---
-  const FLOATS_PER_VERTEX = 6; // x, y, r, g, b, a
-  const totalVertices = Math.max(rows * cols, 1);
-  const vertexData = new Float32Array(totalVertices * FLOATS_PER_VERTEX);
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const pt = grid[r][c];
-      const rgba = cssColorToLinearRGBA(pt.color);
-      const base = (r * cols + c) * FLOATS_PER_VERTEX;
-      vertexData[base] = pt.x;
-      vertexData[base + 1] = pt.y;
-      vertexData[base + 2] = rgba[0];
-      vertexData[base + 3] = rgba[1];
-      vertexData[base + 4] = rgba[2];
-      vertexData[base + 5] = rgba[3];
+    // --- Vertices storage buffer (row-major) ---
+    const FLOATS_PER_VERTEX = 6; // x, y, r, g, b, a
+    const totalVertices = Math.max(rows * cols, 1);
+    const vertexData = new Float32Array(totalVertices * FLOATS_PER_VERTEX);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const pt = grid[r][c];
+        const rgba = cssColorToRGBA(pt.color);
+        const base = (r * cols + c) * FLOATS_PER_VERTEX;
+        vertexData[base] = pt.x;
+        vertexData[base + 1] = pt.y;
+        vertexData[base + 2] = rgba[0];
+        vertexData[base + 3] = rgba[1];
+        vertexData[base + 4] = rgba[2];
+        vertexData[base + 5] = rgba[3];
+      }
     }
-  }
 
-  const vertexBuffer = device.createBuffer({
-    size: totalVertices * FLOATS_PER_VERTEX * 4,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    const vertexBuffer = device.createBuffer({
+      size: totalVertices * FLOATS_PER_VERTEX * 4,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(vertexBuffer, 0, vertexData);
+
+    // --- Bind group ---
+    const bindGroup = device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: uniformBuffer } },
+        { binding: 1, resource: { buffer: vertexBuffer } },
+      ],
+    });
+
+    // --- Render pass ---
+    const textureView = context.getCurrentTexture().createView();
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: textureView,
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: 'clear' as const,
+          storeOp: 'store' as const,
+        },
+      ],
+    });
+
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.draw(3, 1, 0, 0);
+    pass.end();
+    device.queue.submit([encoder.finish()]);
+
+    const dataUrl = canvas.toDataURL('image/png');
+
+    uniformBuffer.destroy();
+    vertexBuffer.destroy();
+
+    return dataUrl;
   });
-  device.queue.writeBuffer(vertexBuffer, 0, vertexData);
-
-  // --- Bind group ---
-  const bindGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [
-      { binding: 0, resource: { buffer: uniformBuffer } },
-      { binding: 1, resource: { buffer: vertexBuffer } },
-    ],
-  });
-
-  // --- Render pass ---
-  const textureView = context.getCurrentTexture().createView();
-  const encoder = device.createCommandEncoder();
-  const pass = encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        view: textureView,
-        clearValue: { r: 0, g: 0, b: 0, a: 0 },
-        loadOp: 'clear' as const,
-        storeOp: 'store' as const,
-      },
-    ],
-  });
-
-  pass.setPipeline(pipeline);
-  pass.setBindGroup(0, bindGroup);
-  pass.draw(3, 1, 0, 0);
-  pass.end();
-  device.queue.submit([encoder.finish()]);
-
-  const dataUrl = await canvasToDataURL(canvas);
-
-  uniformBuffer.destroy();
-  vertexBuffer.destroy();
-
-  return dataUrl;
 }
 
 // ---------------------------------------------------------------------------
@@ -691,11 +752,9 @@ async function renderMeshWebGPU(grad: GradientOutput, w: number, h: number, scal
 /**
  * Render a single freeform gradient via Canvas 2D (pixel-by-pixel IDW).
  */
-function renderFreeformCanvas2D(grad: GradientOutput, w: number, h: number, scale: number): string | null {
+function renderFreeformCanvas2D(grad: GradientOutput, w: number, h: number, size: RasterSize): string | null {
   try {
-    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
-    const pw = w * scale;
-    const ph = h * scale;
+    const { pw, ph } = size;
     // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
     const canvas = document.createElement('canvas');
     canvas.width = pw;
@@ -707,7 +766,7 @@ function renderFreeformCanvas2D(grad: GradientOutput, w: number, h: number, scal
     const points = (grad.freeformPoints || []).map((p) => ({
       x: p.x,
       y: p.y,
-      rgba: cssColorToLinearRGBA(p.color),
+      rgba: cssColorToRGBA(p.color),
     }));
 
     if (points.length === 0) return null;
@@ -757,18 +816,16 @@ function renderFreeformCanvas2D(grad: GradientOutput, w: number, h: number, scal
     return null;
   } catch (e: unknown) {
     console.warn('[GradientService] Freeform Canvas 2D fallback failed:', (e as Error).message);
-    return null;
+    throw e;
   }
 }
 
 /**
  * Render a single mesh gradient via Canvas 2D (pixel-by-pixel bilinear patches).
  */
-function renderMeshCanvas2D(grad: GradientOutput, w: number, h: number, scale: number): string | null {
+function renderMeshCanvas2D(grad: GradientOutput, w: number, h: number, size: RasterSize): string | null {
   try {
-    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
-    const pw = w * scale;
-    const ph = h * scale;
+    const { pw, ph } = size;
     // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
     const canvas = document.createElement('canvas');
     canvas.width = pw;
@@ -787,7 +844,7 @@ function renderMeshCanvas2D(grad: GradientOutput, w: number, h: number, scale: n
       row.map((p) => ({
         x: p.x,
         y: p.y,
-        rgba: cssColorToLinearRGBA(p.color),
+        rgba: cssColorToRGBA(p.color),
       })),
     );
 
@@ -859,7 +916,7 @@ function renderMeshCanvas2D(grad: GradientOutput, w: number, h: number, scale: n
     return null;
   } catch (e: unknown) {
     console.warn('[GradientService] Mesh Canvas 2D fallback failed:', (e as Error).message);
-    return null;
+    throw e;
   }
 }
 
@@ -937,50 +994,75 @@ function smoothstep(t: number): number {
 
 /**
  * Render a single conic gradient via Canvas 2D.
- * Same algorithm as svg-preview-pane.js inline rendering.
- * Note: innerRadius is NOT supported in Canvas 2D (silently ignored).
+ *
+ * Draws the same 1° wedges the CLI emits (`window.PathogenLang.renderConic`,
+ * the shared port of the shader's rules), so this fallback, the CLI and the
+ * VS Code preview agree exactly; only the WebGPU shader is smoother. The
+ * blended inner fills use the same five-stop radial curve the CLI emits as
+ * SVG — as an overlay for `'center'`/custom colors and as a destination-out
+ * erase for `'transparent-blend'`.
+ *
+ * Exported so the last-resort decorator can share it. Throws on failure.
  */
-function renderConicCanvas2D(grad: GradientOutput, w: number, h: number, scale: number): string | null {
-  try {
-    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
-    // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
-    const canvas = document.createElement('canvas');
-    canvas.width = w * scale;
-    canvas.height = h * scale;
+export function renderConicCanvas2D(grad: GradientOutput, w: number, h: number, size: RasterSize): string | null {
+  const { scale, pw, ph } = size;
+  const lib = window.PathogenLang;
+  const cx = grad.cx ?? w / 2;
+  const cy = grad.cy ?? h / 2;
+  const render = lib.renderConic({
+    cx,
+    cy,
+    from: grad.from ?? 0,
+    to: grad.to ?? (grad.from ?? 0) + 2 * Math.PI,
+    direction: grad.direction ?? 'cw',
+    spread: grad.spread ?? 'clamp',
+    stops: grad.stopsWithOklch || grad.stops || [],
+    viewWidth: w,
+    viewHeight: h,
+    innerRadius: grad.innerRadius ?? 0,
+    innerFill: grad.innerFill,
+  });
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
+  // Always use DOM canvas for 2D fallback — OffscreenCanvas lacks toDataURL()
+  const canvas = document.createElement('canvas');
+  canvas.width = pw;
+  canvas.height = ph;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Could not get a 2D context');
 
-    const fromAngle = grad.from ?? 0;
-    const toAngle = grad.to ?? fromAngle + 2 * Math.PI;
-    const cx = (grad.cx ?? 0) * scale;
-    const cy = (grad.cy ?? 0) * scale;
-    const conicGrad = ctx.createConicGradient(fromAngle, cx, cy);
-    const stops = grad.stopsWithOklch || grad.stops || [];
-    const totalAngle = toAngle - fromAngle;
-    const fullRevolution = 2 * Math.PI;
-
-    for (const s of stops) {
-      const scaledOffset = (s.offset * totalAngle) / fullRevolution;
-      if (scaledOffset >= 0 && scaledOffset <= 1) {
-        conicGrad.addColorStop(Math.min(1, Math.max(0, scaledOffset)), s.color);
-      }
-    }
-
-    ctx.fillStyle = conicGrad;
-    ctx.fillRect(0, 0, w * scale, h * scale);
-
-    // OffscreenCanvas doesn't have toDataURL — use sync path if available
-    if (canvas.toDataURL) {
-      return canvas.toDataURL('image/png');
-    }
-
-    // OffscreenCanvas: must return null here (async path handled by caller)
-    return null;
-  } catch (e: unknown) {
-    console.warn('[GradientService] Canvas 2D fallback failed:', (e as Error).message);
-    return null;
+  ctx.scale(scale, scale);
+  for (const wedge of render.wedges) {
+    ctx.fillStyle = wedge.fill;
+    ctx.fill(new Path2D(wedge.d));
   }
+
+  if (render.innerOverlay) {
+    const base = lib.cssToRGBA(render.innerOverlay.color);
+    const ramp = ctx.createRadialGradient(cx, cy, 0, cx, cy, render.innerOverlay.radius);
+    for (const stop of render.innerOverlay.stops) {
+      ramp.addColorStop(stop.offset, lib.rgbaToCSS([base[0], base[1], base[2], base[3] * stop.opacity]));
+    }
+    ctx.fillStyle = ramp;
+    ctx.beginPath();
+    ctx.arc(cx, cy, render.innerOverlay.radius, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+
+  if (render.innerMask) {
+    // Erase toward the center: the mask keeps `luminance`, so erase 1 − luminance.
+    const ramp = ctx.createRadialGradient(cx, cy, 0, cx, cy, render.innerMask.radius);
+    for (const stop of render.innerMask.stops) {
+      ramp.addColorStop(stop.offset, `rgba(0, 0, 0, ${Math.round((1 - stop.luminance) * 1000) / 1000})`);
+    }
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = ramp;
+    ctx.beginPath();
+    ctx.arc(cx, cy, render.innerMask.radius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  return canvas.toDataURL ? canvas.toDataURL('image/png') : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -994,166 +1076,167 @@ async function renderTopoWebGPU(
   grad: GradientOutput,
   w: number,
   h: number,
-  scale: number,
+  size: RasterSize,
 ): Promise<string | null> {
   if ((grad.topoMethod || 'distance') === 'laplace') {
-    return renderTopoLaplaceWebGPU(grad, w, h, scale);
+    return renderTopoLaplaceWebGPU(grad, w, h, size);
   }
   const pipelineResult = await getTopoPipeline() as RenderPipelineResult | null;
   if (!pipelineResult) throw new Error('Topo pipeline unavailable');
   const { device, pipeline, format } = pipelineResult;
 
-  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
-  const pw = w * scale;
-  const ph = h * scale;
+  const { scale, pw, ph } = size;
+  assertWithinDeviceLimit(device, pw, ph, 'topo');
+  return withGpuErrorScopes(device, 'topo', () => {
 
-  // --- Canvas & texture ---
-  const canvas = document.createElement('canvas');
-  canvas.width = pw;
-  canvas.height = ph;
-  const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
-  if (!context) throw new Error('Could not get webgpu context');
+    // --- Canvas & texture ---
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+    if (!context) throw new Error('Could not get webgpu context');
 
-  context.configure({ device, format, alphaMode: 'premultiplied' });
+    context.configure({ device, format, alphaMode: 'premultiplied' });
 
-  // --- Flatten contour paths to line segments ---
-  // Sort contours by elevation (lowest first) for smooth blending algorithm
-  const contours = [...(grad.topoContours || [])].sort((a, b) => a.elevation - b.elevation);
-  const stops = grad.stopsWithOklch || [];
-  const allSegments: Float32Array[] = []; // Float32Array segments per contour
-  const contourHeaders: ContourHeader[] = []; // { elevation, segmentStart, segmentCount }
-  let globalSegmentIdx = 0;
+    // --- Flatten contour paths to line segments ---
+    // Sort contours by elevation (lowest first) for smooth blending algorithm
+    const contours = [...(grad.topoContours || [])].sort((a, b) => a.elevation - b.elevation);
+    const stops = grad.stopsWithOklch || [];
+    const allSegments: Float32Array[] = []; // Float32Array segments per contour
+    const contourHeaders: ContourHeader[] = []; // { elevation, segmentStart, segmentCount }
+    let globalSegmentIdx = 0;
 
-  for (const c of contours) {
-    const segs = flattenToSegments(c.path, 8);
-    const segCount = segs.length / 4; // each segment = 4 floats
-    contourHeaders.push({
-      elevation: c.elevation,
-      segmentStart: globalSegmentIdx,
-      segmentCount: segCount,
+    for (const c of contours) {
+      const segs = flattenToSegments(c.path, 8);
+      const segCount = segs.length / 4; // each segment = 4 floats
+      contourHeaders.push({
+        elevation: c.elevation,
+        segmentStart: globalSegmentIdx,
+        segmentCount: segCount,
+      });
+      allSegments.push(segs);
+      globalSegmentIdx += segCount;
+    }
+
+    const totalSegments = Math.max(globalSegmentIdx, 1);
+
+    // --- Easing mode ---
+    const easingVal = easingModeFor(grad.topoEasing);
+    const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
+
+    // --- Uniform buffer (TopoParams, 32 bytes) ---
+    const uniformData = new ArrayBuffer(TOPO_PARAMS_SIZE);
+    const f32 = new Float32Array(uniformData);
+    const u32 = new Uint32Array(uniformData);
+
+    f32[0] = pw; // resolution.x
+    f32[1] = ph; // resolution.y
+    f32[2] = grad.topoWidth || w; // grad_size.x
+    f32[3] = grad.topoHeight || h; // grad_size.y
+    u32[4] = contours.length; // contour_count
+    u32[5] = stops.length; // stop_count
+    u32[6] = easingVal; // easing
+    u32[7] = interpVal; // interpolation
+
+    const uniformBuffer = device.createBuffer({
+      size: TOPO_PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    allSegments.push(segs);
-    globalSegmentIdx += segCount;
-  }
+    device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
-  const totalSegments = Math.max(globalSegmentIdx, 1);
+    // --- Contour headers storage buffer ---
+    const contourCount = Math.max(contours.length, 1);
+    const headerData = new ArrayBuffer(contourCount * CONTOUR_HEADER_STRIDE);
+    const headerF32 = new Float32Array(headerData);
+    const headerU32 = new Uint32Array(headerData);
 
-  // --- Easing mode ---
-  const easingVal = easingModeFor(grad.topoEasing);
-  const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
+    for (let i = 0; i < contourHeaders.length; i++) {
+      const base = i * 4; // 4 values per header (16 bytes / 4)
+      headerF32[base] = contourHeaders[i].elevation;
+      headerU32[base + 1] = contourHeaders[i].segmentStart;
+      headerU32[base + 2] = contourHeaders[i].segmentCount;
+      headerU32[base + 3] = 0; // padding
+    }
 
-  // --- Uniform buffer (TopoParams, 32 bytes) ---
-  const uniformData = new ArrayBuffer(TOPO_PARAMS_SIZE);
-  const f32 = new Float32Array(uniformData);
-  const u32 = new Uint32Array(uniformData);
+    const headerBuffer = device.createBuffer({
+      size: contourCount * CONTOUR_HEADER_STRIDE,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(headerBuffer, 0, headerData);
 
-  f32[0] = pw; // resolution.x
-  f32[1] = ph; // resolution.y
-  f32[2] = grad.topoWidth || w; // grad_size.x
-  f32[3] = grad.topoHeight || h; // grad_size.y
-  u32[4] = contours.length; // contour_count
-  u32[5] = stops.length; // stop_count
-  u32[6] = easingVal; // easing
-  u32[7] = interpVal; // interpolation
+    // --- Segments storage buffer ---
+    const segmentData = new Float32Array(totalSegments * 4);
+    let offset = 0;
+    for (const segs of allSegments) {
+      segmentData.set(segs, offset);
+      offset += segs.length;
+    }
 
-  const uniformBuffer = device.createBuffer({
-    size: TOPO_PARAMS_SIZE,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    const segmentBuffer = device.createBuffer({
+      size: totalSegments * SEGMENT_STRIDE,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(segmentBuffer, 0, segmentData);
+
+    // --- Color stops storage buffer ---
+    const stopCount = Math.max(stops.length, 1);
+    const stopData = new Float32Array(stopCount * 4);
+    for (let i = 0; i < stops.length; i++) {
+      const rgba = cssColorToRGBA(stops[i].color);
+      const base = i * 4;
+      stopData[base] = stops[i].offset;
+      stopData[base + 1] = rgba[0];
+      stopData[base + 2] = rgba[1];
+      stopData[base + 3] = rgba[2];
+    }
+
+    const stopBuffer = device.createBuffer({
+      size: stopCount * TOPO_COLOR_STOP_STRIDE,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(stopBuffer, 0, stopData);
+
+    // --- Bind group (4 entries) ---
+    const bindGroup = device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: uniformBuffer } },
+        { binding: 1, resource: { buffer: headerBuffer } },
+        { binding: 2, resource: { buffer: segmentBuffer } },
+        { binding: 3, resource: { buffer: stopBuffer } },
+      ],
+    });
+
+    // --- Render pass ---
+    const textureView = context.getCurrentTexture().createView();
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: textureView,
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: 'clear' as const,
+          storeOp: 'store' as const,
+        },
+      ],
+    });
+
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.draw(3, 1, 0, 0);
+    pass.end();
+    device.queue.submit([encoder.finish()]);
+
+    const dataUrl = canvas.toDataURL('image/png');
+
+    // Cleanup GPU resources
+    uniformBuffer.destroy();
+    headerBuffer.destroy();
+    segmentBuffer.destroy();
+    stopBuffer.destroy();
+
+    return dataUrl;
   });
-  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
-
-  // --- Contour headers storage buffer ---
-  const contourCount = Math.max(contours.length, 1);
-  const headerData = new ArrayBuffer(contourCount * CONTOUR_HEADER_STRIDE);
-  const headerF32 = new Float32Array(headerData);
-  const headerU32 = new Uint32Array(headerData);
-
-  for (let i = 0; i < contourHeaders.length; i++) {
-    const base = i * 4; // 4 values per header (16 bytes / 4)
-    headerF32[base] = contourHeaders[i].elevation;
-    headerU32[base + 1] = contourHeaders[i].segmentStart;
-    headerU32[base + 2] = contourHeaders[i].segmentCount;
-    headerU32[base + 3] = 0; // padding
-  }
-
-  const headerBuffer = device.createBuffer({
-    size: contourCount * CONTOUR_HEADER_STRIDE,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(headerBuffer, 0, headerData);
-
-  // --- Segments storage buffer ---
-  const segmentData = new Float32Array(totalSegments * 4);
-  let offset = 0;
-  for (const segs of allSegments) {
-    segmentData.set(segs, offset);
-    offset += segs.length;
-  }
-
-  const segmentBuffer = device.createBuffer({
-    size: totalSegments * SEGMENT_STRIDE,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(segmentBuffer, 0, segmentData);
-
-  // --- Color stops storage buffer ---
-  const stopCount = Math.max(stops.length, 1);
-  const stopData = new Float32Array(stopCount * 4);
-  for (let i = 0; i < stops.length; i++) {
-    const rgba = cssColorToLinearRGBA(stops[i].color);
-    const base = i * 4;
-    stopData[base] = stops[i].offset;
-    stopData[base + 1] = rgba[0];
-    stopData[base + 2] = rgba[1];
-    stopData[base + 3] = rgba[2];
-  }
-
-  const stopBuffer = device.createBuffer({
-    size: stopCount * TOPO_COLOR_STOP_STRIDE,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(stopBuffer, 0, stopData);
-
-  // --- Bind group (4 entries) ---
-  const bindGroup = device.createBindGroup({
-    layout: pipeline.getBindGroupLayout(0),
-    entries: [
-      { binding: 0, resource: { buffer: uniformBuffer } },
-      { binding: 1, resource: { buffer: headerBuffer } },
-      { binding: 2, resource: { buffer: segmentBuffer } },
-      { binding: 3, resource: { buffer: stopBuffer } },
-    ],
-  });
-
-  // --- Render pass ---
-  const textureView = context.getCurrentTexture().createView();
-  const encoder = device.createCommandEncoder();
-  const pass = encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        view: textureView,
-        clearValue: { r: 0, g: 0, b: 0, a: 0 },
-        loadOp: 'clear' as const,
-        storeOp: 'store' as const,
-      },
-    ],
-  });
-
-  pass.setPipeline(pipeline);
-  pass.setBindGroup(0, bindGroup);
-  pass.draw(3, 1, 0, 0);
-  pass.end();
-  device.queue.submit([encoder.finish()]);
-
-  const dataUrl = await canvasToDataURL(canvas);
-
-  // Cleanup GPU resources
-  uniformBuffer.destroy();
-  headerBuffer.destroy();
-  segmentBuffer.destroy();
-  stopBuffer.destroy();
-
-  return dataUrl;
 }
 
 // ---------------------------------------------------------------------------
@@ -1164,145 +1247,146 @@ async function renderTopoLaplaceWebGPU(
   grad: GradientOutput,
   w: number,
   h: number,
-  scale: number,
+  size: RasterSize,
 ): Promise<string | null> {
   const pipelineResult = await getTopoLaplacePipeline() as LaplacePipelineResult | null;
   if (!pipelineResult) throw new Error('Topo Laplace pipeline unavailable');
   const { device, renderPipeline, format } = pipelineResult;
 
-  scale = clampScale(w, h, scale, device.limits.maxTextureDimension2D);
-  const pw = w * scale;
-  const ph = h * scale;
-  const iterations = grad.topoIterations ?? 200;
+  const { scale, pw, ph } = size;
+  assertWithinDeviceLimit(device, pw, ph, 'topo-laplace');
+  return withGpuErrorScopes(device, 'topo-laplace', () => {
+    const iterations = grad.topoIterations ?? 200;
 
-  // --- Canvas & texture ---
-  const canvas = document.createElement('canvas');
-  canvas.width = pw;
-  canvas.height = ph;
-  const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
-  if (!context) throw new Error('Could not get webgpu context');
-  context.configure({ device, format, alphaMode: 'premultiplied' });
+    // --- Canvas & texture ---
+    const canvas = document.createElement('canvas');
+    canvas.width = pw;
+    canvas.height = ph;
+    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+    if (!context) throw new Error('Could not get webgpu context');
+    context.configure({ device, format, alphaMode: 'premultiplied' });
 
-  // --- Prepare contours ---
-  const contours: ParsedContour[] = [...(grad.topoContours || [])]
-    .sort((a, b) => a.elevation - b.elevation)
-    .map((c) => ({ elevation: c.elevation, path2d: new Path2D(c.path) }));
-  const stops = grad.stopsWithOklch || [];
-  if (stops.length === 0) return null;
+    // --- Prepare contours ---
+    const contours: ParsedContour[] = [...(grad.topoContours || [])]
+      .sort((a, b) => a.elevation - b.elevation)
+      .map((c) => ({ elevation: c.elevation, path2d: new Path2D(c.path) }));
+    const stops = grad.stopsWithOklch || [];
+    if (stops.length === 0) return null;
 
-  const easingVal = easingModeFor(grad.topoEasing);
-  const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
+    const easingVal = easingModeFor(grad.topoEasing);
+    const interpVal = (grad as GradientOutputExtended).interpolation === 'oklch' ? 1 : 0;
 
-  const gw = grad.topoWidth || w;
-  const gh = grad.topoHeight || h;
+    const gw = grad.topoWidth || w;
+    const gh = grad.topoHeight || h;
 
-  // --- CPU Gauss-Seidel + SOR at adaptive resolution ---
-  // Solve resolution adapts to iteration count: higher iterations -> finer grid
-  // At solve_dim S with optimal SOR, convergence needs ~S iterations
-  const maxDim = Math.max(gw, gh);
-  const solveDim = Math.min(maxDim, Math.max(16, Math.ceil(iterations * 0.9)));
-  const solveScale = solveDim / maxDim;
-  const sw = Math.max(16, Math.ceil(gw * solveScale));
-  const sh = Math.max(16, Math.ceil(gh * solveScale));
+    // --- CPU Gauss-Seidel + SOR at adaptive resolution ---
+    // Solve resolution adapts to iteration count: higher iterations -> finer grid
+    // At solve_dim S with optimal SOR, convergence needs ~S iterations
+    const maxDim = Math.max(gw, gh);
+    const solveDim = Math.min(maxDim, Math.max(16, Math.ceil(iterations * 0.9)));
+    const solveScale = solveDim / maxDim;
+    const sw = Math.max(16, Math.ceil(gw * solveScale));
+    const sh = Math.max(16, Math.ceil(gh * solveScale));
 
-  const spread = grad.topoBlend ?? 1.0;
-  const elevation = laplaceSolveCPU(contours, gw, gh, sw, sh, iterations, spread);
+    const spread = grad.topoBlend ?? 1.0;
+    const elevation = laplaceSolveCPU(contours, gw, gh, sw, sh, iterations, spread);
 
-  // --- Upload solved elevation to GPU texture ---
-  const elevationTex = device.createTexture({
-    size: [sw, sh],
-    format: 'r32float',
-    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+    // --- Upload solved elevation to GPU texture ---
+    const elevationTex = device.createTexture({
+      size: [sw, sh],
+      format: 'r32float',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+    });
+    // WebGPU requires bytesPerRow to be a multiple of 256
+    const bytesPerRow = Math.ceil((sw * 4) / 256) * 256;
+    const paddedData = new Uint8Array(bytesPerRow * sh);
+    const srcBytes = new Uint8Array(elevation.buffer);
+    for (let y = 0; y < sh; y++) {
+      paddedData.set(srcBytes.subarray(y * sw * 4, (y + 1) * sw * 4), y * bytesPerRow);
+    }
+    // The local webgpu.d.ts types dataLayout as GPUTexelCopyBufferInfo (which requires `buffer`),
+    // but the actual WebGPU spec uses GPUTexelCopyBufferLayout (offset, bytesPerRow, rowsPerImage)
+    // for writeTexture's dataLayout parameter. Cast to satisfy the local type definition.
+    device.queue.writeTexture(
+      { texture: elevationTex },
+      paddedData,
+      { bytesPerRow } as unknown as GPUTexelCopyBufferInfo,
+      { width: sw, height: sh },
+    );
+
+    // --- Render uniform buffer ---
+    const renderData = new ArrayBuffer(LAPLACE_RENDER_PARAMS_SIZE);
+    const renderF32 = new Float32Array(renderData);
+    const renderU32 = new Uint32Array(renderData);
+    renderF32[0] = pw;
+    renderF32[1] = ph;
+    renderU32[2] = stops.length;
+    renderU32[3] = easingVal;
+    renderU32[4] = interpVal;
+
+    const renderUniformBuffer = device.createBuffer({
+      size: LAPLACE_RENDER_PARAMS_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(renderUniformBuffer, 0, renderData);
+
+    // --- Color stops buffer ---
+    const stopCount = Math.max(stops.length, 1);
+    const stopData = new Float32Array(stopCount * 4);
+    for (let i = 0; i < stops.length; i++) {
+      const rgba = cssColorToRGBA(stops[i].color);
+      const base = i * 4;
+      stopData[base] = stops[i].offset;
+      stopData[base + 1] = rgba[0];
+      stopData[base + 2] = rgba[1];
+      stopData[base + 3] = rgba[2];
+    }
+
+    const stopBuffer = device.createBuffer({
+      size: stopCount * 16,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(stopBuffer, 0, stopData);
+
+    // --- Render bind group ---
+    const renderBindGroup = device.createBindGroup({
+      layout: renderPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: renderUniformBuffer } },
+        { binding: 1, resource: { buffer: stopBuffer } },
+        { binding: 2, resource: elevationTex.createView() },
+      ],
+    });
+
+    // --- Render pass (GPU does color mapping + bilinear upsample) ---
+    const encoder = device.createCommandEncoder();
+    const textureView = context.getCurrentTexture().createView();
+    const renderPass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: textureView,
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: 'clear' as const,
+          storeOp: 'store' as const,
+        },
+      ],
+    });
+    renderPass.setPipeline(renderPipeline);
+    renderPass.setBindGroup(0, renderBindGroup);
+    renderPass.draw(3, 1, 0, 0);
+    renderPass.end();
+
+    device.queue.submit([encoder.finish()]);
+
+    const dataUrl = canvas.toDataURL('image/png');
+
+    // Cleanup
+    renderUniformBuffer.destroy();
+    stopBuffer.destroy();
+    elevationTex.destroy();
+
+    return dataUrl;
   });
-  // WebGPU requires bytesPerRow to be a multiple of 256
-  const bytesPerRow = Math.ceil((sw * 4) / 256) * 256;
-  const paddedData = new Uint8Array(bytesPerRow * sh);
-  const srcBytes = new Uint8Array(elevation.buffer);
-  for (let y = 0; y < sh; y++) {
-    paddedData.set(srcBytes.subarray(y * sw * 4, (y + 1) * sw * 4), y * bytesPerRow);
-  }
-  // The local webgpu.d.ts types dataLayout as GPUTexelCopyBufferInfo (which requires `buffer`),
-  // but the actual WebGPU spec uses GPUTexelCopyBufferLayout (offset, bytesPerRow, rowsPerImage)
-  // for writeTexture's dataLayout parameter. Cast to satisfy the local type definition.
-  device.queue.writeTexture(
-    { texture: elevationTex },
-    paddedData,
-    { bytesPerRow } as unknown as GPUTexelCopyBufferInfo,
-    { width: sw, height: sh },
-  );
-
-  // --- Render uniform buffer ---
-  const renderData = new ArrayBuffer(LAPLACE_RENDER_PARAMS_SIZE);
-  const renderF32 = new Float32Array(renderData);
-  const renderU32 = new Uint32Array(renderData);
-  renderF32[0] = pw;
-  renderF32[1] = ph;
-  renderU32[2] = stops.length;
-  renderU32[3] = easingVal;
-  renderU32[4] = interpVal;
-
-  const renderUniformBuffer = device.createBuffer({
-    size: LAPLACE_RENDER_PARAMS_SIZE,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(renderUniformBuffer, 0, renderData);
-
-  // --- Color stops buffer ---
-  const stopCount = Math.max(stops.length, 1);
-  const stopData = new Float32Array(stopCount * 4);
-  for (let i = 0; i < stops.length; i++) {
-    const rgba = cssColorToLinearRGBA(stops[i].color);
-    const base = i * 4;
-    stopData[base] = stops[i].offset;
-    stopData[base + 1] = rgba[0];
-    stopData[base + 2] = rgba[1];
-    stopData[base + 3] = rgba[2];
-  }
-
-  const stopBuffer = device.createBuffer({
-    size: stopCount * 16,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(stopBuffer, 0, stopData);
-
-  // --- Render bind group ---
-  const renderBindGroup = device.createBindGroup({
-    layout: renderPipeline.getBindGroupLayout(0),
-    entries: [
-      { binding: 0, resource: { buffer: renderUniformBuffer } },
-      { binding: 1, resource: { buffer: stopBuffer } },
-      { binding: 2, resource: elevationTex.createView() },
-    ],
-  });
-
-  // --- Render pass (GPU does color mapping + bilinear upsample) ---
-  const encoder = device.createCommandEncoder();
-  const textureView = context.getCurrentTexture().createView();
-  const renderPass = encoder.beginRenderPass({
-    colorAttachments: [
-      {
-        view: textureView,
-        clearValue: { r: 0, g: 0, b: 0, a: 0 },
-        loadOp: 'clear' as const,
-        storeOp: 'store' as const,
-      },
-    ],
-  });
-  renderPass.setPipeline(renderPipeline);
-  renderPass.setBindGroup(0, renderBindGroup);
-  renderPass.draw(3, 1, 0, 0);
-  renderPass.end();
-
-  device.queue.submit([encoder.finish()]);
-
-  const dataUrl = await canvasToDataURL(canvas);
-
-  // Cleanup
-  renderUniformBuffer.destroy();
-  stopBuffer.destroy();
-  elevationTex.destroy();
-
-  return dataUrl;
 }
 
 // ---------------------------------------------------------------------------
@@ -1420,14 +1504,12 @@ function laplaceSolveCPU(
 /**
  * Render a single topo gradient via Canvas 2D (pixel-by-pixel SDF).
  */
-function renderTopoCanvas2D(grad: GradientOutput, w: number, h: number, scale: number): string | null {
+function renderTopoCanvas2D(grad: GradientOutput, w: number, h: number, size: RasterSize): string | null {
   if ((grad.topoMethod || 'distance') === 'laplace') {
-    return renderTopoLaplaceCanvas2D(grad, w, h, scale);
+    return renderTopoLaplaceCanvas2D(grad, w, h, size);
   }
   try {
-    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
-    const pw = w * scale;
-    const ph = h * scale;
+    const { pw, ph } = size;
     const canvas = document.createElement('canvas');
     canvas.width = pw;
     canvas.height = ph;
@@ -1446,7 +1528,7 @@ function renderTopoCanvas2D(grad: GradientOutput, w: number, h: number, scale: n
 
     const stops: ParsedColorStop[] = (grad.stopsWithOklch || []).map((s) => ({
       offset: s.offset,
-      rgba: cssColorToLinearRGBA(s.color),
+      rgba: cssColorToRGBA(s.color),
     }));
 
     if (stops.length === 0) return null;
@@ -1491,7 +1573,7 @@ function renderTopoCanvas2D(grad: GradientOutput, w: number, h: number, scale: n
     return canvas.toDataURL ? canvas.toDataURL('image/png') : null;
   } catch (e: unknown) {
     console.warn('[GradientService] Topo Canvas 2D fallback failed:', (e as Error).message);
-    return null;
+    throw e;
   }
 }
 
@@ -1499,11 +1581,9 @@ function renderTopoCanvas2D(grad: GradientOutput, w: number, h: number, scale: n
 // Topo Laplace Canvas 2D fallback — 4x downscale Jacobi + bilinear upsample
 // ---------------------------------------------------------------------------
 
-function renderTopoLaplaceCanvas2D(grad: GradientOutput, w: number, h: number, scale: number): string | null {
+function renderTopoLaplaceCanvas2D(grad: GradientOutput, w: number, h: number, size: RasterSize): string | null {
   try {
-    scale = clampScale(w, h, scale, MAX_CANVAS_2D_DIM);
-    const pw = w * scale;
-    const ph = h * scale;
+    const { pw, ph } = size;
     const canvas = document.createElement('canvas');
     canvas.width = pw;
     canvas.height = ph;
@@ -1518,7 +1598,7 @@ function renderTopoLaplaceCanvas2D(grad: GradientOutput, w: number, h: number, s
 
     const stops: ParsedColorStop[] = (grad.stopsWithOklch || []).map((s) => ({
       offset: s.offset,
-      rgba: cssColorToLinearRGBA(s.color),
+      rgba: cssColorToRGBA(s.color),
     }));
 
     if (stops.length === 0) return null;
@@ -1580,7 +1660,7 @@ function renderTopoLaplaceCanvas2D(grad: GradientOutput, w: number, h: number, s
     return canvas.toDataURL ? canvas.toDataURL('image/png') : null;
   } catch (e: unknown) {
     console.warn('[GradientService] Topo Laplace Canvas 2D fallback failed:', (e as Error).message);
-    return null;
+    throw e;
   }
 }
 
@@ -1655,7 +1735,13 @@ let _colorCtx: CanvasRenderingContext2D | null = null;
  * Parse any CSS color string to linear RGBA [0,1] values.
  * Uses the browser's CSS color parser via Canvas 2D fillStyle.
  */
-function cssColorToLinearRGBA(color: string): number[] {
+/**
+ * CSS color → [r, g, b, a] in [0, 1] as the canvas reports it: gamma-encoded
+ * sRGB with straight alpha, NOT linear light. The shaders mix these values
+ * as-is (the canvas formats are the non-sRGB variants), so this is the space
+ * `src/conic-renderer.ts` mixes in too.
+ */
+function cssColorToRGBA(color: string): number[] {
   if (!_colorCanvas) {
     _colorCanvas = document.createElement('canvas');
     _colorCanvas.width = 1;
@@ -1671,13 +1757,6 @@ function cssColorToLinearRGBA(color: string): number[] {
   return [data[0] / 255, data[1] / 255, data[2] / 255, data[3] / 255];
 }
 
-/**
- * Convert a canvas to a data URL (PNG).
- * All WebGPU render paths use DOM canvas, so toDataURL() is always available.
- */
-async function canvasToDataURL(canvas: HTMLCanvasElement): Promise<string> {
-  return canvas.toDataURL('image/png');
-}
 
 // ---------------------------------------------------------------------------
 // Extended GradientOutput type for runtime properties not in the type definition
@@ -1704,6 +1783,8 @@ export const gpuGradientService = {
   renderMeshGradients,
   renderTopoGradients,
   clearCache,
+  takeNotices,
+  pushNotice,
 };
 
 export default gpuGradientService;

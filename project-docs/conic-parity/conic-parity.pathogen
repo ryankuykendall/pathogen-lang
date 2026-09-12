@@ -1,0 +1,88 @@
+define ViewBox(0, 0, 900, 600);
+let { width, height } = viewbox;
+
+// Three-surface parity fixture for conic gradients (ISSUE-017).
+// Six tiles, each a 300×300 square filled with one gradient, so the CLI
+// wedge output, the playground WebGPU raster and the Canvas 2D fallback can
+// be laid side by side. Every gradient uses the same three stops.
+
+let stopA = oklch(0.62 0.26 29);
+let stopB = oklch(0.88 0.18 93);
+let stopC = oklch(0.55 0.20 250);
+
+fn threeStops(g) {
+  g.stop(0, stopA);
+  g.stop(0.5, stopB);
+  g.stop(1, stopC);
+}
+
+// 1. Full turn, clockwise, default spread — the baseline.
+let fullTurn = ConicGradient('full-turn', 150, 150) {|g|
+  threeStops(g);
+};
+
+// 2. Quarter sweep, transparent outside the arc.
+let quarterTransparent = ConicGradient('quarter-transparent', 450, 150) {|g|
+  threeStops(g);
+  g.from = -0.25pi;
+  g.to = 0.25pi;
+  g.spread = 'transparent';
+};
+
+// 3. Quarter sweep, clamp: the last stop fills the rest of the circle.
+let quarterClamp = ConicGradient('quarter-clamp', 750, 150) {|g|
+  threeStops(g);
+  g.from = -0.25pi;
+  g.to = 0.25pi;
+  g.spread = 'clamp';
+};
+
+// 4. Quarter sweep, repeat: the ramp tiles four times.
+let quarterRepeat = ConicGradient('quarter-repeat', 150, 450) {|g|
+  threeStops(g);
+  g.from = -0.25pi;
+  g.to = 0.25pi;
+  g.spread = 'repeat';
+};
+
+// 5. Counter-clockwise half turn with a hard donut hole.
+let ccwHole = ConicGradient('ccw-hole', 450, 450) {|g|
+  threeStops(g);
+  g.from = 0rad;
+  g.to = 1pi;
+  g.direction = 'ccw';
+  g.spread = 'transparent';
+  g.innerRadius = 60;
+};
+
+// 6. Full turn with a blended inner fill in a custom color.
+let blendedCenter = ConicGradient('blended-center', 750, 450) {|g|
+  threeStops(g);
+  g.innerRadius = 90;
+  g.innerFill = oklch(0.25 0.05 260);
+};
+
+define default PathLayer('paper') #{
+  fill: #fff;
+  stroke: none;
+}
+rect(0, 0, width, height);
+
+let tiles = [
+  { fill: fullTurn, x: 0, y: 0 },
+  { fill: quarterTransparent, x: 300, y: 0 },
+  { fill: quarterClamp, x: 600, y: 0 },
+  { fill: quarterRepeat, x: 0, y: 300 },
+  { fill: ccwHole, x: 300, y: 300 },
+  { fill: blendedCenter, x: 600, y: 300 },
+];
+for ([tile, index] in tiles) {
+  let tileLayer = PathLayer(`tile-${index}`) #{
+    fill: tile.fill;
+    stroke: oklch(0.3 0.02 260);
+    stroke-width: 2;
+  };
+  tileLayer.apply {
+    rect(calc(tile.x + 10), calc(tile.y + 10), 280, 280);
+  }
+}

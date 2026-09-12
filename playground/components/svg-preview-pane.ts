@@ -1097,6 +1097,11 @@ export class SvgPreviewPane extends HTMLElement {
     this.shadowRoot!.querySelector('#refresh-btn')?.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('refresh-preview', { bubbles: true, composed: true }));
     });
+    // Cancel beside the fullscreen status chip: same event as the breadcrumb's
+    // Cancel; workspace-view's document listener handles it.
+    this.shadowRoot!.querySelector('#cancel-compile-btn')?.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('cancel-compile', { bubbles: true, composed: true }));
+    });
   }
 
   private _applyUsesRandom(): void {
@@ -1107,12 +1112,18 @@ export class SvgPreviewPane extends HTMLElement {
   private _applyCompilationStatus(): void {
     const el = this.shadowRoot!.querySelector('#compilation-status') as HTMLElement | null;
     if (!el) return;
-    const { text, className } = compilationStatusView(
-      store.get('compilationStatus') as string | null,
-      store.get('compilationElapsedMs') as number,
-    );
+    const status = store.get('compilationStatus') as string | null;
+    const { text, className } = compilationStatusView(status, store.get('compilationElapsedMs') as number);
     el.textContent = text;
     el.className = `compilation-status ${className}`;
+    // The chip and its Cancel control share one top-center container; the
+    // container follows the chip's visibility, the button only shows while
+    // the compile is in the worker. Patched in place (this runs on every
+    // clock tick) — the pane never re-renders after connectedCallback.
+    const chrome = this.shadowRoot!.querySelector('#compilation-chrome') as HTMLElement | null;
+    chrome?.classList.toggle('hidden', className === 'hidden');
+    const cancelBtn = this.shadowRoot!.querySelector('#cancel-compile-btn') as HTMLButtonElement | null;
+    if (cancelBtn) cancelBtn.hidden = status !== 'compiling';
   }
 
   private _applyInspectorOpen(): void {
@@ -1393,21 +1404,34 @@ export class SvgPreviewPane extends HTMLElement {
         ${fullscreenStyles(120, 1)}
         ${compilationStatusStyles()}
 
-        /* Fullscreen-only status chip, top-center (breadcrumb owns normal
-           mode). Sized/colored by compilationStatusStyles(); positioned here. */
-        #compilation-status {
+        /* Fullscreen-only status chip + Cancel control, top-center (the
+           breadcrumb owns normal mode). Sized/colored by
+           compilationStatusStyles(); positioned here. The container follows
+           the chip's visibility (class toggled by _applyCompilationStatus). */
+        #compilation-chrome {
           display: none;
           position: absolute;
           top: 1rem;
           left: 50%;
           transform: translateX(-50%);
           z-index: 15;
+          align-items: center;
+          gap: 6px;
           pointer-events: none;
           white-space: nowrap;
         }
 
-        :host(.fullscreen) #compilation-status:not(.hidden) {
-          display: inline-block;
+        :host(.fullscreen) #compilation-chrome:not(.hidden) {
+          display: inline-flex;
+        }
+
+        #compilation-chrome .cancel-compile-btn {
+          pointer-events: auto;
+          background: var(--bg-elevated, #fff);
+        }
+
+        #compilation-chrome .cancel-compile-btn[hidden] {
+          display: none;
         }
 
         /* When the stale badge occupies top-center (compile errors leave a
@@ -1415,7 +1439,7 @@ export class SvgPreviewPane extends HTMLElement {
            2rem is a clearance allowance >= the badge's rendered height
            (~1.6rem: 0.75rem text + 0.3rem*2 padding + 1px borders) — revisit
            if #stale-badge's type or padding grows. */
-        #preview-container.stale ~ #compilation-status {
+        #preview-container.stale ~ #compilation-chrome {
           top: calc(0.75rem + 2rem + 0.5rem);
         }
       </style>
@@ -1451,7 +1475,10 @@ export class SvgPreviewPane extends HTMLElement {
         </div>
       </div>
 
-      <span id="compilation-status" class="compilation-status hidden"></span>
+      <div id="compilation-chrome" class="hidden">
+        <span id="compilation-status" class="compilation-status hidden"></span>
+        <button id="cancel-compile-btn" class="cancel-compile-btn" aria-label="Cancel compile" title="Stop the running compile" hidden>Cancel</button>
+      </div>
     `;
   }
 }
