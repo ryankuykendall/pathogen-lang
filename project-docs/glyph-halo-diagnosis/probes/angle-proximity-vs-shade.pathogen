@@ -1,0 +1,27 @@
+// The user's angleProximity is a correct circular distance (0 at the
+// reference, 1 half a turn away) and immune to the atan2 range thanks to the
+// double modulo. With reference 0.25pi, 0.75pi and 1.75pi both score 0.5; the
+// intended reference was -0.25pi (== 1.75pi). The cosine shade is the
+// periodic equivalent. The second loop shows the original lerp pair keeps the
+// expected total thickness constant (mass shifts outward instead).
+define ViewBox(0, 0, 200, 200);
+fn angleProximity(startDelta, angle) {
+  let delta = ((angle - startDelta) % TAU() + TAU()) % TAU();
+  let distance = min(delta, TAU() - delta);
+  return distance / PI();
+}
+fn shadeFrom(lightAngle, angle) {
+  return (1 - cos(angle - lightAngle)) / 2;
+}
+for (a in [0.75pi, 1.25pi, 1.75pi, 0.25pi, -0.25pi, -0.75pi]) {
+  log(`angle ${a}: prox(0.25pi)=${angleProximity(0.25pi, a)} prox(-0.25pi)=${angleProximity(-0.25pi, a)} shade(1.75pi)=${shadeFrom(1.75pi, a)}`);
+}
+for (s in [0, 0.5, 1]) {
+  let outerMaxCur = lerp(0.0925, 0.105, s);
+  let innerMinCur = lerp(0.0475, 0.035, s);
+  let meanCur = (0.075 + outerMaxCur) / 2 + (innerMinCur + 0.065) / 2;
+  let outerMaxNew = lerp(0.0925, 0.125, s);
+  let innerMinNew = lerp(0.035, 0.0475, s);
+  let meanNew = (0.075 + outerMaxNew) / 2 + (innerMinNew + 0.065) / 2;
+  log(`shade ${s}: mean thickness, original lerps = ${meanCur}   same-direction lerps = ${meanNew}`);
+}

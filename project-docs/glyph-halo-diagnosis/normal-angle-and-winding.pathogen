@@ -1,0 +1,241 @@
+define ViewBox(0, 0, 1600, 1060);
+let { width, height } = viewbox;
+
+// ---------------------------------------------------------------------------
+// Diagram: what normal(t).angle returns (the tangent's atan2 angle minus a
+// quarter turn, NOT re-wrapped, so -1.5pi … 0.5pi), why "up" is -0.5pi, and
+// how contour winding decides whether normals (and a positive offset) point
+// out or in. Every angle label on the two shapes is a real normal(t).angle.
+// ---------------------------------------------------------------------------
+
+let inkColor = oklch(0.32 0.03 260);
+let outwardColor = oklch(0.58 0.19 30);
+let inwardColor = oklch(0.52 0.16 250);
+let lowerHalfColor = oklch(0.85 0.09 80);
+let upperHalfColor = oklch(0.85 0.07 230);
+let offsetColor = oklch(0.55 0.14 145);
+let mutedColor = oklch(0.6 0.02 260);
+
+define default PathLayer('paper') #{
+  fill: #fff;
+  stroke: none;
+}
+rect(0, 0, width, height);
+
+let arrowHead = @{
+  m 0 0
+  l 12 5
+  l -12 5
+  z
+};
+let arrowMarker = Marker('arrow-head', 12, 10) {|m|
+  m.append(arrowHead, #{ fill: context-stroke; });
+};
+arrowMarker.refX = MarkerRefX.Right;
+arrowMarker.markerUnits = MarkerUnits.UserSpaceOnUse;
+
+fn formatPi(angle) {
+  let hundredths = round(angle / PI() * 100) / 100;
+  return `${hundredths}π`;
+}
+
+// ---------------------------------------------------------------------------
+// Panel A — the compass in y-down screen space
+// ---------------------------------------------------------------------------
+let compassCenter = Point(290, 500);
+let compassRadius = 190;
+
+// Only the lower-right quarter (0 … 0.5π) comes back positive.
+let negativeRegion = PathLayer('negative-region') #{
+  fill: upperHalfColor;
+  stroke: none;
+};
+negativeRegion.apply {
+  M compassCenter.x compassCenter.y;
+  L compassCenter.x calc(compassCenter.y + compassRadius);
+  A compassRadius compassRadius 0 1 1 calc(compassCenter.x + compassRadius) compassCenter.y;
+  z
+}
+let positiveRegion = PathLayer('positive-region') #{
+  fill: lowerHalfColor;
+  stroke: none;
+};
+positiveRegion.apply {
+  M compassCenter.x compassCenter.y;
+  L calc(compassCenter.x + compassRadius) compassCenter.y;
+  A compassRadius compassRadius 0 0 1 compassCenter.x calc(compassCenter.y + compassRadius);
+  z
+}
+
+let axes = PathLayer('axes') #{
+  fill: none;
+  stroke: mutedColor;
+  stroke-width: 2;
+  stroke-dasharray: 6 6;
+  marker-end: arrowMarker;
+};
+axes.apply {
+  M calc(compassCenter.x - compassRadius - 40) compassCenter.y;
+  L calc(compassCenter.x + compassRadius + 60) compassCenter.y;
+  M compassCenter.x calc(compassCenter.y - compassRadius - 40);
+  L compassCenter.x calc(compassCenter.y + compassRadius + 60);
+}
+
+let spokes = PathLayer('spokes') #{
+  fill: none;
+  stroke: inkColor;
+  stroke-width: 3;
+  marker-end: arrowMarker;
+};
+let spokeAngles = [0, 0.25pi, 0.5pi, -1.25pi, -1pi, -0.75pi, -0.5pi, -0.25pi];
+spokes.apply {
+  for (spokeAngle in spokeAngles) {
+    M compassCenter.x compassCenter.y;
+    L calc(compassCenter.x + cos(spokeAngle) * compassRadius) calc(compassCenter.y + sin(spokeAngle) * compassRadius);
+  }
+}
+
+let compassLabels = TextLayer('compass-labels') #{
+  font-family: sans-serif;
+  font-size: 22;
+  font-weight: 600;
+  fill: inkColor;
+};
+compassLabels.apply {
+  text(calc(compassCenter.x + compassRadius + 20), calc(compassCenter.y + 32))`0`
+  text(calc(compassCenter.x + compassRadius * 0.72), calc(compassCenter.y + compassRadius * 0.72 + 34))`0.25π`
+  text(calc(compassCenter.x - 74), calc(compassCenter.y + compassRadius + 40))`0.5π`
+  text(calc(compassCenter.x - compassRadius * 0.72 - 96), calc(compassCenter.y + compassRadius * 0.72 + 34))`−1.25π`
+  text(calc(compassCenter.x - compassRadius - 74), calc(compassCenter.y + 32))`−1π`
+  text(calc(compassCenter.x - compassRadius * 0.72 - 96), calc(compassCenter.y - compassRadius * 0.72 - 14))`−0.75π`
+  text(calc(compassCenter.x - 36), calc(compassCenter.y - compassRadius - 18))`−0.5π`
+  text(calc(compassCenter.x + compassRadius * 0.72 + 4), calc(compassCenter.y - compassRadius * 0.72 - 14))`−0.25π`
+  text(calc(compassCenter.x + compassRadius + 70), calc(compassCenter.y - 10))`+x`
+  text(calc(compassCenter.x + 16), calc(compassCenter.y + compassRadius + 70))`+y (down)`
+}
+
+let compassNotes = TextLayer('compass-notes') #{
+  font-family: sans-serif;
+  font-size: 19;
+  fill: inkColor;
+};
+compassNotes.apply {
+  text(40, 60)`Screen space: +x is right, +y is DOWN. tangent(t).angle is atan2(dy, dx), in −π … π.`
+  text(40, 92)`normal(t).angle is that tangent minus a quarter turn and is not re-wrapped: −1.5π … 0.5π.`
+  text(40, 124)`Only the lower-right quarter (tan) comes back positive. "Up" is −0.5π, "left" is −1π,`
+  text(40, 156)`bottom-left is −1.25π. Nothing is ever reported above 0.5π.`
+  text(40, 790)`case 1.2pi..<1.8pi   → can never match`
+  text(40, 822)`case -0.8pi..<-0.2pi → matches up-facing normals`
+  text(40, 870)`Periodic formulas do not care: cos(angle − light)`
+  text(40, 902)`or ((a − b) % TAU() + TAU()) % TAU() work as-is.`
+}
+
+// ---------------------------------------------------------------------------
+// Panels B and C — one rounded shape, two windings
+// ---------------------------------------------------------------------------
+let roundedShape = @{
+  m 0 60
+  q 0 -60 60 -60
+  l 160 0
+  q 60 0 60 60
+  l 0 140
+  q 0 60 -60 60
+  l -160 0
+  q -60 0 -60 -60
+  z
+};
+let clockwiseShape = roundedShape;
+let counterClockwiseShape = roundedShape.reverse();
+let offsetDistance = 34;
+
+fn drawWindingPanel(shape, originX, originY, normalColor, layerSuffix) {
+  let shapeLayer = PathLayer(`shape-${layerSuffix}`) #{
+    fill: oklch(0.96 0.01 260);
+    stroke: inkColor;
+    stroke-width: 4;
+  };
+  shapeLayer.apply {
+    shape.drawTo(originX, originY);
+  }
+
+  let offsetLayer = PathLayer(`offset-${layerSuffix}`) #{
+    fill: none;
+    stroke: offsetColor;
+    stroke-width: 3;
+    stroke-dasharray: 10 8;
+  };
+  offsetLayer.apply {
+    shape.offset(offsetDistance).drawTo(originX, originY);
+  }
+
+  // Travel direction: small arrowheads riding the tangent.
+  let travelLayer = PathLayer(`travel-${layerSuffix}`) #{
+    fill: inkColor;
+    stroke: none;
+  };
+  travelLayer.apply {
+    for (marker in shape.partition(12)) {
+      arrowHead.rotate(marker.angle).drawTo(calc(originX + marker.point.x + cos(marker.angle) * 6), calc(originY + marker.point.y + sin(marker.angle) * 5));
+    }
+  }
+
+  // Normals: real normal(t) calls, labelled with their real angle.
+  let normalLayer = PathLayer(`normals-${layerSuffix}`) #{
+    fill: none;
+    stroke: normalColor;
+    stroke-width: 3;
+    marker-end: arrowMarker;
+  };
+  let normalLength = 58;
+  let sampleTimes = [0.05, 0.19, 0.32, 0.44, 0.56, 0.69, 0.82, 0.94];
+  normalLayer.apply {
+    for (time in sampleTimes) {
+      let sample = shape.normal(time);
+      M calc(originX + sample.point.x) calc(originY + sample.point.y);
+      L calc(originX + sample.point.x + cos(sample.angle) * normalLength) calc(originY + sample.point.y + sin(sample.angle) * normalLength);
+    }
+  }
+  let normalLabels = TextLayer(`normal-labels-${layerSuffix}`) #{
+    font-family: sans-serif;
+    font-size: 17;
+    font-weight: 600;
+    fill: normalColor;
+  };
+  normalLabels.apply {
+    for (time in sampleTimes) {
+      let sample = shape.normal(time);
+      let labelX = calc(originX + sample.point.x + cos(sample.angle) * (normalLength + 14) - 22);
+      let labelY = calc(originY + sample.point.y + sin(sample.angle) * (normalLength + 14) + 6);
+      text(labelX, labelY)`${formatPi(sample.angle)}`
+    }
+  }
+}
+
+drawWindingPanel(clockwiseShape, 720, 360, outwardColor, 'cw');
+drawWindingPanel(counterClockwiseShape, 1220, 360, inwardColor, 'ccw');
+
+let panelTitles = TextLayer('panel-titles') #{
+  font-family: sans-serif;
+  font-size: 22;
+  font-weight: 700;
+  fill: inkColor;
+};
+panelTitles.apply {
+  text(640, 214)`Clockwise on screen`
+  text(1140, 214)`Counter-clockwise on screen`
+}
+let panelNotes = TextLayer('panel-notes') #{
+  font-family: sans-serif;
+  font-size: 18;
+  fill: inkColor;
+};
+panelNotes.apply {
+  text(640, 244)`normal(t) points OUT · offset(+34) grows (dashed)`
+  text(1140, 244)`normal(t) points IN · offset(+34) shrinks (dashed)`
+  text(640, 736)`Arrowheads on the outline show the direction of travel (t increasing).`
+  text(640, 780)`Font outlines: outer contours run clockwise on screen, so normal(t) and a`
+  text(640, 808)`positive offset face away from the ink. Counters (the hole of an O) run the`
+  text(640, 836)`other way: their normals point into the hole and a positive offset collapses it.`
+  text(640, 880)`normal(t) is the travel direction turned a quarter turn to the right of travel —`
+  text(640, 908)`flip the winding (.reverse()) and every normal flips with it.`
+}

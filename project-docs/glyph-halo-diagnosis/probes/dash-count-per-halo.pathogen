@@ -1,0 +1,67 @@
+// Counts dash pieces per halo for the as-written dash pattern. Stand-in font +
+// Latin text; the Syriac original has the same order of magnitude.
+define ViewBox(0, 0, 22200, 14800);
+let { width, height } = viewbox;
+
+define default PathLayer('base') #{
+  fill: #fff;
+  stroke: none;
+}
+rect(0, 0, width, height);
+
+let fontFamily = 'Baumans';
+@font fontFamily;
+let glyphStyles = #{
+  font-family: fontFamily;
+  font-size: 128;
+  font-weight: 400;
+};
+
+let theText = `Bogus`;
+let glyphs = PathBlock.fromGlyph(`${theText}`, glyphStyles);
+let totalDashes = 0;
+for ([glyph, gIndex] in glyphs) {
+  let conScale = randomRange(0.95, 4);
+  let contours = glyph.contours.map() {|con|
+    let recon = con;
+    for (ext in 1..13) {
+      let start = random() * 0.899;
+      let end = calc(start + 0.1);
+      let norm1 = con.normal(start);
+      let extWidth = randomRange(1.5, 18.0);
+      let extLength = randomRange(36, 72);
+      recon = recon.subPath(0, start) << @{
+        heading(norm1.angle);
+        tangentLine(extLength);
+        tangentArc(extWidth, 0.5pi);
+        tangentLine(extWidth);
+        tangentArc(extWidth, 0.5pi);
+        tangentLine(extLength);
+      } << recon.subPath(end, 1) << @{ z };
+    }
+    let reconCenter = recon.centerPoint();
+    return recon.fillet(16).scale(conScale, conScale).rotate(0, reconCenter);
+  };
+
+  for ([contour, cIndex] in contours) {
+    log("glyph", gIndex, "contour", cIndex, "scale", conScale, "cmds", contour.commands.length, "len", contour.length);
+    for (offsetBase in 8..1) {
+      let haloOffset = calc((gIndex + 1) * offsetBase * 0.12);
+      let halo = contour.variableOffset() {|vo, cpb|
+        let timeMax = round(calc(11 + offsetBase * 0.45));
+        for (position in 1..timeMax) {
+          let time = calc(position / timeMax);
+          let offset = randomRange(calc(haloOffset * 1.19), calc(haloOffset * 1.32));
+          vo.stop(time, offset, CurveContinuity.G1);
+        }
+      };
+      let haloDashArrayStyles = #{
+        stroke-dasharray: `${haloOffset * randomRange(0.75, 1.85)} ${haloOffset * 2.95} ${haloOffset * randomRange(0.35, 0.75)} ${haloOffset * 2.25}`;
+      };
+      let haloDashes = halo.dash(haloDashArrayStyles).filter() {|item| item.kind == 'dash'};
+      totalDashes = totalDashes + haloDashes.length;
+      log("  g", gIndex, "ob", offsetBase, "haloOffset", haloOffset, "haloCmds", halo.commands.length, "haloLen", halo.length, "dashes", haloDashes.length);
+    }
+  }
+}
+log("TOTAL dashes", totalDashes);

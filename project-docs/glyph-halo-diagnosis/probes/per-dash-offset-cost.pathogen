@@ -1,0 +1,55 @@
+// 200 dashes through compoundVariableOffset (17 stops + tapered G0 caps).
+// Change PEAK to 6 / 600 / 6000 / 20000: wall time does not move (~1 ms/dash),
+// because the offset is applied as two multiply-adds per stop.
+define ViewBox(0, 0, 22200, 14800);
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+fn strokeWithEnvelopes(pathBlock, steps, env1, env2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) {
+      let t = i / steps;
+      vo.stop(t, env1(t), continuity, env2(t), continuity);
+    }
+    vo.endCap(cap);
+  };
+}
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let fontFamily = 'Baumans';
+@font fontFamily;
+let glyphStyles = #{
+  font-family: fontFamily;
+  font-size: 128;
+  font-weight: 400;
+};
+let glyph = PathBlock.fromGlyph(`B`, glyphStyles)[0];
+let contour = glyph.contours[0].scale(2.5, 2.5);
+let haloOffset = 0.96;
+let halo = contour.variableOffset() {|vo, cpb|
+  for (position in 1..14) {
+    vo.stop(calc(position / 14), randomRange(calc(haloOffset * 1.19), calc(haloOffset * 1.32)), CurveContinuity.G1);
+  }
+};
+let haloDashes = halo.dash(#{
+  stroke-dasharray: `${haloOffset * 1.3} ${haloOffset * 2.95} ${haloOffset * 0.55} ${haloOffset * 2.25}`;
+}).filter() {|item| item.kind == 'dash'};
+
+let PEAK = 6;
+let psl = PathLayer('psl') #{ fill: #000; };
+let cmdTotal = 0;
+psl.apply {
+  for ([hDash, hIndex] in haloDashes) {
+    if (hIndex < 200) {
+      let peak = PEAK;
+      let center = randomRange(0.25, 0.75);
+      let envUp = {|t| return 0.5 + peak * bulge(t, center, 0.22); };
+      let envDn = {|t| return -(0.5 + peak * bulge(t, center, 0.22)); };
+      let dashStroke = strokeWithEnvelopes(hDash.path, 16, envUp, envDn, CurveContinuity.G1, taperCap);
+      cmdTotal = cmdTotal + dashStroke.commands.length;
+      dashStroke.drawTo(dashStroke.anchor.x, dashStroke.anchor.y);
+    }
+  }
+}
+log("dashes", haloDashes.length, "cmds per dash", calc(cmdTotal / 200));

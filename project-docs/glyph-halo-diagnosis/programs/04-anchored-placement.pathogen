@@ -1,0 +1,102 @@
+define ViewBox(0, 0, 22200, 14800);
+let { width, height } = viewbox;
+let gradientStartColor = oklch(0.6280 0.2577 29.2);
+let gradientEndColor = oklch(0.8769 0.1796 93.1);
+let wheel = ConicGradient("wheel", -1200, 14400) {|g|
+  g.stop(0, gradientStartColor.alpha(92%));
+  g.stop(0.5, gradientStartColor.lighten(20%).alpha(80%));
+  g.stop(0.6, gradientEndColor.lighten(20%).alpha(60%));
+  g.stop(0.65, gradientEndColor.lighten(20%).alpha(80%));
+  g.stop(0.8, gradientEndColor.lighten(10%).alpha(85%));
+  g.stop(1, gradientEndColor.alpha(92%));
+  g.from = -0.45pi; g.to = 0.05pi; g.spread = "transparent"; g.innerRadius = 1000;
+};
+fn bulge(t, center, spread) {
+  let d = clamp(abs(t - center) / spread, 0, 1);
+  return 0.5 * (1 + cos(mpi(d)));
+}
+fn strokeWithEnvelopes(pathBlock, steps, env1, env2, continuity, cap) {
+  return pathBlock.compoundVariableOffset() {|vo, pb|
+    vo.startCap(cap);
+    for (i in 0..steps) { let t = i / steps; vo.stop(t, env1(t), continuity, env2(t), continuity); }
+    vo.endCap(cap);
+  };
+}
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+define default PathLayer("base") #{ fill: #fff; stroke: none; }
+rect(0, 0, width, height);
+let mainPLFillColor = oklch(0.8002 0.2400 143.0 / 0.06).hueShift(0.2pi);
+let baseMainStyles = #{ fill: mainPLFillColor; stroke: mainPLFillColor.darken(84%).alpha(64%); stroke-width: 0.3; };
+let fontFamily = "Baumans";
+@font fontFamily;
+let glyphFontColor = oklch(0.6802 0.1531 0.8);
+let glyphStyles = #{ fill: glyphFontColor.alpha(28%); font-family: fontFamily; font-size: 128; font-weight: 400; stroke: glyphFontColor.alpha(72%); stroke-width: 2; };
+let theText = `Bogus`;
+let layerCounter = 1;
+let totalDashes = 0;
+let glyphs = PathBlock.fromGlyph(`${theText}`, glyphStyles);
+for ([glyph, gIndex] in glyphs) {
+  let contourSet = [];
+  let conScale = randomRange(0.95, 4);
+  let baseGlyphColor = mainPLFillColor.hueShift(0.25pi);
+  let contours = glyph.contours.map() {|con|
+    let recon = con;
+    for (ext in 1..13) {
+      let start = random() * 0.899; let end = calc(start + 0.1);
+      let norm1 = con.normal(start);
+      let extWidth = randomRange(1.5, 18.0); let extLength = randomRange(36, 72);
+      recon = recon.subPath(0, start) << @{
+        heading(norm1.angle); tangentLine(extLength); tangentArc(extWidth, 0.5pi);
+        tangentLine(extWidth); tangentArc(extWidth, 0.5pi); tangentLine(extLength);
+      } << recon.subPath(end, 1) << @{ z };
+    }
+    let reconCenter = recon.centerPoint();
+    return recon.fillet(16).scale(conScale, conScale).rotate(0, reconCenter);
+  };
+  for ([contour, cIndex] in contours) {
+    let leftOffset = calc((gIndex * 156) + 1540); let topOffset = calc((cIndex * 2440) + 2620);
+    contourSet.push({ contour, leftOffset, topOffset });
+    for (offsetBase in 72..60) {
+      let haloOffset = calc((gIndex + 1) * offsetBase * 0.12);
+      let halo = contour.variableOffset() {|vo, cpb|
+        let timeMax = round(calc(11 + offsetBase * 0.45));
+        for (position in 1..timeMax) {
+          let time = calc(position / timeMax);
+          let normal = contour.normal(time);
+          let offset = switch(normal.angle) {
+            case 1.40pi..<1.60pi { randomRange(calc(haloOffset * 10.49), calc(haloOffset * 15.75)) }
+            default { randomRange(calc(haloOffset * 1.19), calc(haloOffset * 1.32)) }
+          };
+          vo.stop(time, offset, CurveContinuity.G1);
+        }
+      };
+      let fillColor = baseGlyphColor.hueShift(calc(offsetBase * 0.005pi));
+      let pl = PathLayer(`pl-${layerCounter}-halo-fill`) << baseMainStyles << #{ fill: fillColor.lighten(32%).desaturate(calc(64 / haloOffset)); stroke: none; };
+      let psl = PathLayer(`pl-${layerCounter}-halo-stroke`) #{ fill: fillColor.darken(randomRange(0.57, 0.84)).alpha(72%); };
+      let dashUnit = max(haloOffset, 6); let haloDashArrayStyles = #{ stroke-dasharray: `${dashUnit * randomRange(0.75, 1.85)} ${dashUnit * 2.95} ${dashUnit * randomRange(0.35, 0.75)} ${dashUnit * 2.25}`; };
+      layerCounter = layerCounter + 1;
+      pl.apply { halo.drawTo(leftOffset, topOffset); z }
+      let haloDashes = halo.dash(haloDashArrayStyles).filter() {|item| item.kind == "dash"};
+      totalDashes = totalDashes + haloDashes.length;
+      psl.apply {
+        for ([hDash, hIndex] in haloDashes) {
+          let peak = clamp(calc(6 + hIndex * 0.05), 6, 24);
+          let center = randomRange(0.25, 0.75);
+          let envUp = {|t| return 0.5 + peak * bulge(t, center, 0.22); };
+          let envDn = {|t| return -(0.5 + peak * bulge(t, center, 0.22)); };
+          let dashStroke = strokeWithEnvelopes(hDash.path, 6, envUp, envDn, CurveContinuity.G1, taperCap);
+          dashStroke.drawTo(calc(leftOffset + dashStroke.anchor.x), calc(topOffset + dashStroke.anchor.y));
+        }
+      }
+    }
+  }
+  let glyphLayer = PathLayer(`gl-${gIndex}`) << glyphStyles << #{ fill: wheel; fill-rule: nonzero; stroke: gradientEndColor.darken(randomRange(0.65, 0.85)); stroke-width: randomRange(2.0, 4.5); };
+  glyphLayer.apply {
+    for (contourRef in contourSet) {
+      let { contour, leftOffset, topOffset } = contourRef;
+      let conCenter = contour.centerPoint();
+      contour.rotate(randomRange(-0.5pi, 0.5pi), conCenter).scale(1.2, 2.1).drawTo(leftOffset, topOffset);
+    }
+  }
+}
+log("TOTAL dashes", totalDashes);

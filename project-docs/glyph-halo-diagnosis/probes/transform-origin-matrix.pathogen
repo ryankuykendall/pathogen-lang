@@ -1,0 +1,25 @@
+// Which PathBlock transforms keep a piece's leading `m` (position in the
+// source's space) and which re-origin the result at its first point.
+// Measured 2026-09-09: keep → outline, scale, fillet; drop → offset,
+// variableOffset, compoundVariableOffset, subPath, reverse.
+define ViewBox(0, 0, 400, 400);
+let spine = @{
+  m 100 100
+  c 50 -30 150 -30 200 0
+  c 30 50 30 150 0 200
+  l -200 0
+  z
+};
+let halo = spine.variableOffset() {|vo, pb|
+  for (i in 1..6) { vo.stop(calc(i / 6), 5, CurveContinuity.G1); }
+};
+let piece = halo.dash(#{ stroke-dasharray: 40 20; }).filter() {|p| p.kind == 'dash'}[2].path;
+log("piece.d       ", piece.d.slice(0, 40));
+log("outline.d     ", piece.outline(#{ stroke-width: 4; }).d.slice(0, 40));
+log("scale.d       ", piece.scale(1, 1).d.slice(0, 40));
+log("fillet.d      ", piece.fillet(1).d.slice(0, 40));
+log("offset.d      ", piece.offset(3).d.slice(0, 40));
+log("varOffset.d   ", piece.variableOffset() {|vo, pb| vo.stop(0, 3, CurveContinuity.G1); vo.stop(1, 3, CurveContinuity.G1); }.d.slice(0, 40));
+log("compound.d    ", piece.compoundVariableOffset() {|vo, pb| vo.stop(0, 3, CurveContinuity.G1, -3, CurveContinuity.G1); vo.stop(1, 3, CurveContinuity.G1, -3, CurveContinuity.G1); }.d.slice(0, 40));
+log("subPath.d     ", piece.subPath(0, 0.5).d.slice(0, 40));
+log("reverse.d     ", piece.reverse().d.slice(0, 40));

@@ -1,0 +1,39 @@
+// Why `ribbon.draw()` as the first command of a layer produced d="c …" and
+// stacked every ribbon at the cursor, and how `anchor` + drawTo registers it.
+define ViewBox(0, 0, 2000, 2000);
+let taperCap = Cap.tapered(2, CurveContinuity.G0);
+let spine = @{
+  m 100 100
+  c 50 -30 150 -30 200 0
+  c 30 50 30 150 0 200
+  l -200 0
+  z
+};
+let halo = spine.variableOffset() {|vo, pb|
+  for (i in 1..6) { vo.stop(calc(i / 6), 5, CurveContinuity.G1); }
+};
+let pieces = halo.dash(#{ stroke-dasharray: 40 20; }).filter() {|p| p.kind == 'dash'};
+fn ribbonOf(pb) {
+  return pb.compoundVariableOffset() {|vo, x|
+    vo.startCap(taperCap);
+    for (i in 0..6) { let t = i / 6; vo.stop(t, 0.5, CurveContinuity.G1, -0.5, CurveContinuity.G1); }
+    vo.endCap(taperCap);
+  };
+}
+log("halo.d head        ", halo.d.slice(0, 40));          // starts with c — normalized, no leading m
+log("piece[2].d head    ", pieces[2].path.d.slice(0, 40)); // starts with m 87.6 75.3 — halo-space placement
+let r2 = ribbonOf(pieces[2].path);
+log("ribbon.d head      ", r2.d.slice(0, 40));            // starts with c again — placement dropped …
+log("ribbon.anchor      ", r2.anchor);                      // … but carried here (spine start + first offset)
+log("piece[2].startPoint", pieces[2].path.startPoint);
+
+let bad = PathLayer('draw-first') #{ fill: #000; };
+bad.apply { r2.draw(); }                                     // d="c …" — invalid SVG, layer invisible
+
+let good = PathLayer('anchored') #{ fill: #000; };
+good.apply {
+  for (piece in pieces) {
+    let r = ribbonOf(piece.path);
+    r.drawTo(calc(1000 + r.anchor.x), calc(1000 + r.anchor.y));   // d="M … c …", on its dash
+  }
+}

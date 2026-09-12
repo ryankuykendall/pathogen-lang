@@ -1,0 +1,22 @@
+# 03 dash unit floor 6 + peak bounded + 6 stops
+[line 102] TOTAL dashes totalDashes = 4065
+        4.35 real         4.71 user         0.25 sys
+           281083904  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               27620  page reclaims
+                 245  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                  94  messages sent
+                   5  messages received
+                   0  signals received
+                   0  voluntary context switches
+                4771  involuntary context switches
+          1460214285  instructions retired
+           588685771  cycles elapsed
+            40125952  peak memory footprint
+
+SVG bytes: 6584030

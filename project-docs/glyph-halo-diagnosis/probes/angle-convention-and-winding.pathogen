@@ -1,0 +1,67 @@
+// tangent(t).angle is atan2 in [-pi, pi]; normal(t).angle is that value minus
+// a quarter turn and is NOT re-wrapped, so it spans (-1.5pi, 0.5pi] (up =
+// -0.5pi, left = -pi, bottom-left = -1.25pi). A switch range above 0.5pi never
+// matches. The range loop at the end measures both on arcs and lines. Outer TrueType contours are clockwise on
+// screen (positive shoelace in y-down) and their normals / positive offsets
+// point outward; counters are the reverse and a positive offset collapses them.
+define ViewBox(0, 0, 400, 400);
+let up = @{ m 50 50 l 100 0 l 0 100 l -100 0 z }.normal(0.125);
+log("up-facing normal angle", up.angle, "object", up);
+log("switch raw   :", switch(up.angle) { case 1.2pi..<1.8pi { 'HIT' } default { 'miss (dead arm)' } });
+log("switch neg   :", switch(up.angle) { case -0.8pi..<-0.2pi { 'HIT' } default { 'miss' } });
+let folded = ((up.angle % TAU()) + TAU()) % TAU();
+log("switch folded:", switch(folded) { case 1.2pi..<1.8pi { 'HIT' } default { 'miss' } });
+
+fn shoelace(pb, n) {
+  let s = 0;
+  for (k in 0..<n) {
+    let a = pb.normal(calc(k / n)).point;
+    let b = pb.normal(calc(((k + 1) % n) / n)).point;
+    s = s + (a.x * b.y - b.x * a.y);
+  }
+  return s;
+}
+let fontFamily = 'Baumans';
+@font fontFamily;
+let styles = #{
+  font-family: fontFamily;
+  font-size: 128;
+  font-weight: 400;
+};
+for (ch in ['O', 'B', 'a', 'g']) {
+  let g = PathBlock.fromGlyph(ch, styles)[0];
+  for ([con, ci] in g.contours) {
+    let bb = con.boundingBox();
+    let halo = con.variableOffset() {|vo, pb| for (i in 0..8) { vo.stop(calc(i / 8), 20, CurveContinuity.G1); } };
+    let hb = halo.boundingBox();
+    log(`${ch} c${ci}: shoelace sign ${sign(shoelace(con, 64))} bbox ${round(bb.width)}x${round(bb.height)} offset+20 bbox ${round(hb.width)}x${round(hb.height)} ${hb.width > bb.width ? 'OUTWARD' : 'INWARD'}`);
+  }
+}
+
+// Range measurement on curves and lines, both windings.
+let circleCw = @{
+  m 0 -100
+  a 100 100 0 0 1 100 100
+  a 100 100 0 0 1 -100 100
+  a 100 100 0 0 1 -100 -100
+  a 100 100 0 0 1 100 -100
+  z
+};
+for (pair in [['circle cw', circleCw], ['circle ccw', circleCw.reverse()]]) {
+  let label = pair[0];
+  let shape = pair[1];
+  let nMin = 99;
+  let nMax = -99;
+  let tMin = 99;
+  let tMax = -99;
+  for (k in 0..<200) {
+    let time = calc((k + 0.5) / 200);
+    let n = shape.normal(time).angle;
+    let tg = shape.tangent(time).angle;
+    nMin = min(nMin, n);
+    nMax = max(nMax, n);
+    tMin = min(tMin, tg);
+    tMax = max(tMax, tg);
+  }
+  log(`${label}: normal.angle in [${round(nMin / PI() * 100) / 100}π, ${round(nMax / PI() * 100) / 100}π]  tangent.angle in [${round(tMin / PI() * 100) / 100}π, ${round(tMax / PI() * 100) / 100}π]`);
+}

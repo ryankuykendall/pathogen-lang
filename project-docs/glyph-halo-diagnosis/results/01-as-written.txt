@@ -1,0 +1,22 @@
+# 01 as written (Baumans stand-in), CLI via stdin, 2026-09-09
+[line 102] TOTAL dashes totalDashes = 30481
+       14.91 real        15.72 user         0.74 sys
+          1394786304  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               96907  page reclaims
+                 245  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                  94  messages sent
+                   3  messages received
+                   0  signals received
+                   2  voluntary context switches
+               15246  involuntary context switches
+          1636854275  instructions retired
+           620873535  cycles elapsed
+            38864256  peak memory footprint
+
+SVG bytes: 125792381

@@ -1,0 +1,43 @@
+// `.length` (16 samples per curve command, no cache) vs boundingBox() on a
+// 13-command halo, a ~65-command contour, and all dash pieces. Set MODE to
+// 'halo-length' | 'halo-bbox' | 'contour-length' | 'contour-bbox' |
+// 'pieces-length' | 'pieces-bbox' | 'none' and time the run; measured
+// 2026-09-11: every mode ~0.49 s, i.e. no measurable difference.
+define ViewBox(0, 0, 400, 400);
+let MODE = 'halo-length';
+let fontFamily = 'Baumans';
+@font fontFamily;
+let styles = #{
+  font-family: fontFamily;
+  font-size: 128;
+  font-weight: 400;
+};
+let con = PathBlock.fromGlyph(`B`, styles)[0].contours[0];
+let recon = con;
+for (ext in 1..13) {
+  let start = random() * 0.899;
+  let end = calc(start + 0.1);
+  let norm1 = con.normal(start);
+  let extWidth = randomRange(1.5, 18);
+  let extLength = randomRange(36, 72);
+  recon = recon.subPath(0, start) << @{
+    heading(norm1.angle);
+    tangentLine(extLength);
+    tangentArc(extWidth, 0.5pi);
+    tangentLine(extWidth);
+    tangentArc(extWidth, 0.5pi);
+    tangentLine(extLength);
+  } << recon.subPath(end, 1) << @{ z };
+}
+let contour = recon.fillet(16).scale(2.5, 2.5);
+let halo = contour.variableOffset() {|vo, pb| for (i in 1..14) { vo.stop(calc(i / 14), 12, CurveContinuity.G2); } };
+let pieces = halo.dash(#{ stroke-dasharray: 30 60 30 90; }).filter() {|p| p.kind == 'dash'};
+log("contour cmds", contour.commands.length, "halo cmds", halo.commands.length, "pieces", pieces.length);
+let acc = 0;
+if (MODE == 'halo-length')    { for (i in 0..<2000) { acc = acc + halo.length; } }
+if (MODE == 'halo-bbox')      { for (i in 0..<2000) { acc = acc + halo.boundingBox().width; } }
+if (MODE == 'contour-length') { for (i in 0..<2000) { acc = acc + contour.length; } }
+if (MODE == 'contour-bbox')   { for (i in 0..<2000) { acc = acc + contour.boundingBox().width; } }
+if (MODE == 'pieces-length')  { for (i in 0..<20) { for (p in pieces) { acc = acc + p.path.length; } } }
+if (MODE == 'pieces-bbox')    { for (i in 0..<20) { for (p in pieces) { acc = acc + p.path.boundingBox().width; } } }
+log("done", MODE, acc);

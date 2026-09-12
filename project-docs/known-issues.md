@@ -639,6 +639,199 @@ Option 1 when there is demand; the uniform layouts in `topo-shader.ts` and `topo
 
 ---
 
+## ISSUE-015: A layer whose path data has no leading moveto compiles silently and renders nothing
+
+**Discovered:** 2026-09-09 (glyph-halo diagnosis, `project-docs/glyph-halo-diagnosis/`)
+
+**Severity:** Medium
+
+**Description:**
+
+`draw()` emits a block's commands from the layer's current cursor. A block whose command list does not begin with `m` (a plain `@{ l 10 0 }`, or any `variableOffset` / `compoundVariableOffset` / `offset` / `subPath` / `reverse` result, all of which are normalized to their first point) drawn as the **first** command of a layer yields path data such as `d="c 0.9 2.0 …"` or `d="l 10 0 l 0 10"`. SVG requires path data to start with a moveto, so the browser drops the whole path and logs `<path> attribute d: Expected moveto path command ('M' or 'm')` — once when the preview mounts it (`src/render/mount.ts`) and once more when the minimap copies it. The CLI writes the same invalid `d` verbatim. No surface repairs it and the evaluator emits no warning.
+
+```
+let ribbon = spine.variableOffset() {|vo, pb| … };
+let L = PathLayer('halo-stroke') #{ fill: #000; };
+L.apply { ribbon.draw(); }          // d="c …" — invisible layer, console error only
+L.apply { ribbon.drawTo(x, y); }    // d="M x y c …" — renders
+```
+
+**Impact:**
+
+A whole layer disappears with no compile-time signal; the only explanation is in the browser console, and the CLI gives none. In the diagnosis this cost most of a day: 48 halo-stroke layers compiled cleanly and were invisible. Violates the "no silent failures" rule in `.claude/CLAUDE.md`.
+
+**Current Workarounds:**
+
+Use `drawTo(x, y)` (or an explicit `M`) for the first draw into a layer. For offset results that must register on their spine, `drawTo(originX + block.anchor.x, originY + block.anchor.y)` — see `docs/variable-offset.md` "Placement — origin normalization and `anchor`".
+
+**Potential Solutions:**
+
+1. **Evaluator warning** at the first inked command into an empty layer when it is not a moveto: name the layer, suggest `drawTo()` / `M`. Cheap; makes the failure visible in all three surfaces via the existing warning channel.
+2. **Prepend `M 0 0` in the shared renderer** (`src/render/`) so the layer renders at the origin instead of vanishing. Keeps CLI, playground and VS Code identical.
+3. Both: the warning explains, the prepend keeps the layer visible.
+
+**Recommended Long-term Solution:**
+
+Option 3. The warning is the fix for the user; the prepend is defense in depth for the surfaces.
+
+---
+
+## ISSUE-016: The playground compile worker never cancels; edits during a long compile queue more full compiles
+
+**Discovered:** 2026-09-09 (a 25-minute `Compiling…` on a heavy glyph-halo program)
+
+**Severity:** Medium
+
+**Description:**
+
+`playground/services/compiler-worker.ts` posts each debounced compile to the same `Worker`. There is no `terminate()` on a newer compile (`terminateWorker()` is only called from `worker.onerror` and `disconnectedCallback`), no timeout in `sendRequest`, and the staleness check (`isStale(compilationId)`) runs in the `resolve` callback — **after** the worker has finished and the result has been structured-cloned to the main thread. Web Workers process messages serially, so every edit made while a long compile runs adds another full compile behind it, each of which is computed, cloned, and then discarded. The first compile of a Google Fonts family whose primary slice lacks the program's glyphs also runs the whole compile a second time (`resolveMissingGlyphSubsets`, up to 2 passes). The `Compiling… MM:SS` chip spans only the worker round-trip (`workspace-view.ts` `_compileTicker.start()` → `stop()` before `setLayersWithTiming`), so a long chip time is always the worker, never the DOM.
+
+**Impact:**
+
+A runaway program pins the tab with no cancellation path; the user's natural reaction (editing the program to make it lighter) makes the wait longer. The only escape is reloading the tab. On the main thread, a large result is then copied four times (store, preview DOM, minimap `d` copies, idle export-size `cloneNode` + serialize) with no size threshold, and `getBBox()` is forced once per path.
+
+**Current Workarounds:**
+
+Do not edit while a heavy compile is running; reload the tab to abort; iterate on heavy programs via the CLI (`npx tsx src/cli.ts - --print-logs < file`), where Node's heap is also raisable (`--max-old-space-size`), unlike Chrome's (pointer-compression cage, ~3.6 GB ceiling regardless of `--js-flags`, measured 2026-09-10).
+
+**Potential Solutions:**
+
+1. **Terminate and respawn the worker when a newer compile starts** (fonts are re-sent per request already, so respawn cost is the worker script load). Stale work stops immediately instead of after completion.
+2. **Watchdog**: terminate + surface an error after N seconds (configurable), with a "keep waiting" affordance.
+3. **Check staleness in the worker** before `postMessage` (send the latest compilationId to the worker via a side channel) to skip the clone of a stale result.
+4. Main-thread mitigations: skip the minimap copy / export-size estimate above a byte threshold; drop the per-path `getBBox()` loop or cap it.
+
+**Recommended Long-term Solution:**
+
+Option 1 now (small change, largest effect), option 2 as the safety net, option 4 as a separate pass.
+
+---
+
+## ISSUE-017: Conic gradient `innerRadius` and `spread` are honoured only on the WebGPU path
+
+**Discovered:** 2026-09-09 (three-surface check of a `ConicGradient` with `innerRadius` and `spread: 'transparent'`), pre-existing
+
+**Severity:** Medium
+
+**Description:**
+
+- CLI / VS Code wedge renderer: `src/render/build-defs.ts` calls `renderConicToWedges(...)` without `innerRadius` (no parameter exists), and `src/conic-renderer.ts` receives `spread` as `_spread` and never reads it. `'clamp'`, `'repeat'` and `'transparent'` produce byte-identical output; the apparent transparency outside the sweep is incidental (no wedge is drawn there).
+- Playground Canvas 2D fallback (`playground/gpu/gradient-service.ts` `renderConicCanvas2D`): "innerRadius is NOT supported in Canvas 2D (silently ignored)"; `spread` is not applied either.
+- Related, same area: `webgpu-device.ts` calls `requestDevice()` with no `requiredLimits`, so `maxTextureDimension2D` is the spec default 8192 even on adapters that allow 16384 (a 22200×14800 viewBox rasterizes at 8192×5461, 0.37 px per unit). The texture-cache key hashes the **pre-clamp** size, so the GPU and Canvas paths store different-resolution rasters under one key. `playground/utils/decorate-conic-gradients.ts` (last-resort path) has no `clampScale` and would attempt `viewBox × 2` (1.3 Gpx for that viewBox). `docs/gradients.md` "Rendering" still says the playground uses Canvas 2D and omits WebGPU; the raster resolution formula and caps are undocumented; no test pins the formula or the 1°/wedge count.
+
+**Update 2026-09-12 — silent blank render above viewBox width 32768.** `clampScale()` (`gradient-service.ts:100-108`) floors the reduced scale at 0.25 "to avoid degenerate textures", so for `ViewBox(0, 0, 48000, 18600)` it computes 8192/48000 = 0.17, floors it to 0.25, and asks for a 12000×4650 texture — over the 8192 cap it just applied. Dawn rejects it (`Texture size … exceeded maximum texture size`, `Could not create the swapchain texture`, `IOSurface width (12000) exceeds maxTextureDimension2D (8192)`, then a cascade of `[Invalid Texture] is invalid due to a previous error`), but these are **uncaptured validation errors**: nothing throws, `renderConicWebGPU` continues on the invalid texture, `toDataURL` reads back a transparent PNG, the `catch` → `renderConicCanvas2D` fallback never fires, and the blank data URL is **cached** under the gradient's key. The user sees the gradient-filled layers as transparent (only their strokes) with no error in the Pathogen console. Any viewBox whose long edge exceeds 32768 units hits this; 22200 did not. Evidence: `project-docs/glyph-halo-diagnosis/` (Noto Sans Takri workspace, 2026-09-12 console).
+
+**Impact:**
+
+Violates three-surface parity: a wheel with `innerRadius = 1000` and `spread = 'transparent'` renders as designed in Chrome's playground and differently from the CLI, PDF export, VS Code preview and non-WebGPU browsers, with no warning. Above 32768 units of viewBox it does not render in the playground either (see update). Companion to ISSUE-009 (topo/mesh/freeform rasterize only in the playground).
+
+**Current Workarounds:**
+
+Preview in a WebGPU-capable browser; treat CLI/VS Code conic output as approximate.
+
+**Potential Solutions:**
+
+1. Pass `innerRadius` and honour `spread` in `renderConicToWedges` (inner radius = wedges become annular sectors; `repeat` = tile the stop list over the full circle; `transparent` = current behaviour, made explicit).
+2. Implement `innerRadius` in the Canvas 2D fallback via a destination-out disc.
+3. Request `maxTextureDimension2D` up to the adapter limit in `requestDevice`; hash the post-clamp size; add `clampScale` to the decorator.
+5. **Fix the clamp and make failure visible** (small, unblocks the 48000-wide case): drop the 0.25 floor in `clampScale` (or cap it at `maxDim / max(w, h)`), wrap each WebGPU render in `device.pushErrorScope('validation')` / `popErrorScope()` and throw on error so the Canvas 2D fallback actually runs and a blank result is never cached, and surface a Pathogen-console warning when a gradient falls back or fails.
+4. Document resolution + caps in `docs/gradients.md`; pin wedge count and raster formula with tests.
+
+**Recommended Long-term Solution:**
+
+5 immediately (it is a regression for any large viewBox), then 1 + 4 (parity and honesty), then 2 and 3.
+
+---
+
+## ISSUE-018: No program-wide output budget; per-fragment records retained with `trace` off
+
+**Discovered:** 2026-09-09 (a program emitting ~30k dash ribbons: 126 MB SVG, ~1.1 M commands, 1.4 GB peak heap in 15 s)
+
+**Severity:** Low
+
+**Description:**
+
+The only runaway guard is `MAX_DASH_PIECES = 20000` per `dash()` call (`src/evaluator/stroke-geometry.ts`), which throws rather than warns; 48 calls of 7,000 pieces pass it. Nothing counts total commands, layers, or output bytes, so a program can compile "successfully" into an SVG no browser can hold. Independently, `layerState.accum.records` (`src/evaluator/index.ts` ~2389) accumulates per-fragment records with a string per command for every layer regardless of the `trace` option, which is a large share of the peak heap. Also inconsistent: statement loops cap at 32,000 iterations, text-block loops at 10,000.
+
+**Impact:**
+
+Users hit the browser's limits (ISSUE-016) instead of a compiler message; peak memory is ~10× the output size.
+
+**Current Workarounds:**
+
+`log(pieces.length)` / `log(block.commands.length)` while tuning; measure with the CLI (`/usr/bin/time -l`).
+
+**Potential Solutions:**
+
+1. Warning-group entries when total dash pieces, emitted commands or estimated output bytes cross thresholds (name the layer/site).
+2. Skip `records` accumulation unless `trace` is set (or store compactly).
+3. Align the two loop caps.
+
+**Recommended Long-term Solution:**
+
+1 and 2; 3 opportunistically.
+
+---
+
+## ISSUE-019: `variableOffset` / `compoundVariableOffset` are not available on `ProjectedPath`
+
+**Discovered:** 2026-09-09
+
+**Severity:** Low
+
+**Description:**
+
+`dash()` and `outline()` exist on both `PathBlockValue` and `ProjectedPathValue` (pieces stay projected), but `variableOffset()` and `compoundVariableOffset()` throw `Unknown ProjectedPath method` on a projected path. So `halo.project(x, y).dash(…)` pieces cannot be offset in place; the only route is the `anchor` registration on un-projected pieces (ISSUE-015 workaround). Also: `offset`, `subPath`, `reverse` re-origin their result at its first point (dropping a piece's leading `m`) while `outline`, `scale`, `fillet` keep it — the matrix is measured in `project-docs/glyph-halo-diagnosis/STATUS.md`; only the offset family documents `anchor`.
+
+**Impact:**
+
+API asymmetry; users discover it by error message after building the pipeline.
+
+**Current Workarounds:**
+
+Offset the un-projected piece and place with `drawTo(origin + anchor)`.
+
+**Potential Solutions:**
+
+1. Add both methods to the ProjectedPath dispatch, returning a projected result (absolute placement preserved).
+2. Document which transforms keep a block's origin and which normalize (table in `docs/path-blocks.md`).
+
+**Recommended Long-term Solution:**
+
+Both.
+
+---
+
+## ISSUE-020: `normal(t).angle` is the tangent minus a quarter turn, unwrapped (−1.5π … 0.5π); `switch` ranges above 0.5π never match
+
+**Discovered:** 2026-09-11 (a halo builder's `case 1.2pi..<1.8pi` on `normal.angle` was dead code)
+
+**Severity:** Low
+
+**Description:**
+
+`tangent(t).angle` is an `atan2` value in [−π, π]. `normal(t).angle` is computed as `result.tangent - Math.PI / 2` with no re-wrap (`src/evaluator/index.ts:2687` and `:3392`), so it spans (−1.5π, 0.5π]: right = 0, down = 0.5π, **left = −π, up = −0.5π, bottom-left = −1.25π** (measured 2026-09-12 on arcs, quadratics and lines, both windings; `project-docs/glyph-halo-diagnosis/probes/angle-convention-and-winding.pathogen`). Only the lower-right quarter turn comes back positive. Users who assume `0..2pi` write `case 1.2pi..<1.8pi { … }` and the arm silently never fires; users who assume the atan2 range are also surprised in the lower-left quadrant. `docs/path-blocks.md` does not state either range. Circular-distance helpers that fold with `((a - b) % TAU() + TAU()) % TAU()` and periodic formulas (`cos(a - light)`) are unaffected; plain range comparisons are. Diagram: `project-docs/glyph-halo-diagnosis/normal-angle-and-winding.pathogen` (bbwp `2026-09-12-07:44:13--glyph-halo-diagnosis--normal-angle-and-winding`).
+
+**Impact:**
+
+Silent design bugs (no flare, no lighting weighting) that look like tuning problems.
+
+**Current Workarounds:**
+
+Fold first (`let a = ((n.angle % TAU()) + TAU()) % TAU();`) or use the negative range (`case -0.8pi..<-0.2pi`); prefer periodic formulas (`cos(a - light)`) for weighting.
+
+**Potential Solutions:**
+
+1. Wrap the normal angle into the same [−π, π] range as the tangent at both derivation sites (one `atan2(sin, cos)` or a fold), and document the range beside `normal(t)` / `tangent(t)` in `docs/path-blocks.md`, with the y-down orientation table (0 = right, 0.5π = down, ±π = left, −0.5π = up).
+2. Diagnostic: a `switch` on a value known to be an angle with a numeric range arm entirely outside [−π, π] could warn "this arm can never match an angle".
+3. Optional `.angle` normalization helper in the stdlib (`wrapAngle(a)` → [0, 2π)).
+
+**Recommended Long-term Solution:**
+
+1 now (the wrap is a one-line consistency fix plus a doc line; it changes raw values only in the lower-left quadrant); 3 if it comes up again; 2 only if the angle type carries through to `switch` cheaply.
+
+---
+
 ## Fixed during the easing work (2026-09-03)
 
 Logged for the trail; all pinned by tests.

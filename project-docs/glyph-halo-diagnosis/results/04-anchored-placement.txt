@@ -1,0 +1,22 @@
+# 04 anchored placement (72..60 range, clamp peak, drawTo(origin + anchor))
+[line 102] TOTAL dashes totalDashes = 5015
+        4.47 real         4.93 user         0.22 sys
+           346488832  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               31511  page reclaims
+                 247  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                  94  messages sent
+                   5  messages received
+                   0  signals received
+                   3  voluntary context switches
+                2553  involuntary context switches
+          1450768373  instructions retired
+           566558485  cycles elapsed
+            38454912  peak memory footprint
+
+layers: 162  bytes: 8535143  layers not starting with M/m: 0
