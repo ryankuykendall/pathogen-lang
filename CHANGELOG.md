@@ -36,6 +36,10 @@ Milestone 1 of the observable/reactive-paths track (`project-docs/observable-rea
 
 - **Labels survive `.draw()` / `.drawTo()` into the receiving layer.** The draw tracker built bare `{command, args, start, end}` records, so segment and endpoint labels authored inside a block were lost by the time they reached the layer store (they already survived onto the returned `ProjectedPath`). The tracker now carries derived meta (labels, seam and call identity; pending corner ops stripped as for every derived path), so `layer('x').segment('lid')` and `layer('x').query('endpoint(c)')` find geometry drawn from a labeled block. Emitted bytes are unchanged. Found by the pre-commit code review.
 
+#### Language services
+
+- **`apply { }` is no longer offered on GroupLayer.** The API declaration carried a snippet for a block the runtime rejects ("GroupLayer does not support apply blocks. Use .append() to add children"); completion now offers `append` only.
+
 ### Known issues
 
 - **ISSUE-021** (`project-docs/known-issues.md`): the arc-length approximation ignores the sweep flags, so a half-circle arc reports its chord and a `circle()` reports `4r` instead of `2πr`. Pre-existing; surfaced by `Call.block.length` during this work; deliberately left for its own change because fixing it moves `partition`/`get(t)` sample positions on affected paths.
