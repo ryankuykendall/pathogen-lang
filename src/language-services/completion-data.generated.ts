@@ -705,7 +705,6 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'ctx', kind: 'property', detail: 'Path context (position, heading, transform)', boost: 8 },
     ],
     methods: [
-      { label: 'apply', kind: 'function', detail: 'apply { } — Send commands to this layer', boost: 8, insertText: 'apply {\n\t$0\n}', isSnippet: true },
       { label: 'append', kind: 'function', detail: 'append(layer) — Add child layer', boost: 8, insertText: 'append(${1:layer})$0', isSnippet: true },
     ],
   },

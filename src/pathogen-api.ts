@@ -1112,8 +1112,7 @@ export interface PathogenGroupLayer {
   readonly styles: Value;
   /** Path context (position, heading, transform) */
   readonly ctx: PathContext;
-  /** apply { } — Send commands to this layer @snippet apply {\n\t$0\n} */
-  apply(): void;
+  // No apply(): GroupLayer rejects apply blocks at runtime ("use .append() to add children").
   /** append(layer) — Add child layer */
   append(layer: PathogenPathLayer | PathogenTextLayer | PathogenGroupLayer): void;
 }

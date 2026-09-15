@@ -1537,6 +1537,14 @@ describe('query-API chains rooted in layer() calls', () => {
   });
 });
 
+describe('GroupLayer completions', () => {
+  it('offers append but not apply, which GroupLayer rejects at runtime', () => {
+    const names = labels(completeAtEnd("let g = GroupLayer('g') #{ opacity: 1; };\ng."));
+    expect(names).toContain('append');
+    expect(names).not.toContain('apply');
+  });
+});
+
 describe('group-label All queries', () => {
   it('offers the All variants alongside the singular queries', () => {
     const items = completeAtEnd('let shape = @{\n  M 0 0\n};\nshape.');
