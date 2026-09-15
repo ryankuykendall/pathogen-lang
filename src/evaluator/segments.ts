@@ -7,7 +7,9 @@
  * output (byte parity by construction); the records are the queryable source
  * of truth for labels and geometry.
  */
-import type { PathBlockCommand, PathCommandMeta, PathRecord, PathStore, RecordedCornerOp } from './types';
+import { derivedMeta, normalizeMeta } from './path-data';
+
+import type { PathBlockCommand, PathRecord, PathStore, RecordedCornerOp } from './types';
 import type { SourceLocation } from '../parser/ast';
 import {
   chamferCommands,
@@ -26,6 +28,10 @@ export interface EvaluatedAnnotations {
 
 const isMove = (c: string) => c === 'm' || c === 'M';
 const isClose = (c: string) => c === 'z' || c === 'Z';
+
+// The meta rules live in path-data.ts (the draw tracker needs them and
+// segments.ts already imports path-data); re-exported here for existing callers.
+export { derivedMeta, normalizeMeta };
 
 /**
  * Attach evaluated `with` / `as` annotations to the most recently recorded
@@ -102,13 +108,23 @@ export function recordPath(
   store: PathStore,
   raw: string,
   commands: PathBlockCommand[],
-  extras?: { label?: string; loc?: SourceLocation },
+  extras?: { label?: string; loc?: SourceLocation; fn?: string },
 ): void {
   const record: PathRecord = { raw, commands };
   if (extras?.label !== undefined) record.label = extras.label;
   if (extras?.loc !== undefined) record.loc = extras.loc;
+  if (extras?.fn !== undefined) {
+    record.fn = extras.fn;
+    // Call identity rides on per-command meta (like labels) so it survives
+    // finalization clones, trims, and projection. Module-wide ids keep
+    // adjacent same-fn statements — and concatenated blocks — distinct.
+    const call = { fn: extras.fn, id: nextCallId++ };
+    for (const cmd of commands) cmd.meta = { ...cmd.meta, call };
+  }
   store.records.push(record);
 }
+
+let nextCallId = 1;
 
 /** Join a store's raw fragments into emit-ready path data. */
 export function storeToPathData(store: PathStore): string {
@@ -127,37 +143,7 @@ export function recordsFromCommands(commands: PathBlockCommand[]): PathRecord[] 
 const isMoveCmd = (c: string) => c === 'm' || c === 'M';
 const isCloseCmd = (c: string) => c === 'z' || c === 'Z';
 
-function normalizeMeta(meta: PathCommandMeta | undefined): PathCommandMeta | undefined {
-  if (!meta) return undefined;
-  const endVertex =
-    meta.endVertex && (meta.endVertex.label !== undefined || meta.endVertex.cornerOp !== undefined)
-      ? meta.endVertex
-      : undefined;
-  if (meta.segmentLabel === undefined && endVertex === undefined && meta.seamId === undefined) return undefined;
-  return {
-    ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}),
-    ...(endVertex ? { endVertex } : {}),
-    ...(meta.seamId !== undefined ? { seamId: meta.seamId } : {}),
-  };
-}
 
-/**
- * Meta for a DERIVED path (transform/boolean/cut result): labels carry, but
- * pending corner-op suffixes are consumed by the source block and must not
- * re-apply at the derived block's emit-time finalization — carrying them
- * would change the geometry of existing programs.
- */
-export function derivedMeta(meta: PathCommandMeta | undefined): PathCommandMeta | undefined {
-  if (!meta) return undefined;
-  const endVertexLabel = meta.endVertex?.label;
-  return normalizeMeta({
-    ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}),
-    ...(endVertexLabel !== undefined ? { endVertex: { label: endVertexLabel } } : {}),
-    // seamId is label-like identity, not a pending geometric op — it
-    // carries (the corner-op strip rationale doesn't apply).
-    ...(meta.seamId !== undefined ? { seamId: meta.seamId } : {}),
-  });
-}
 
 /** Shallow-clone commands with cloned meta so finalization never mutates the authored store. */
 function cloneForFinalize(commands: PathBlockCommand[]): PathBlockCommand[] {
@@ -201,7 +187,9 @@ export function applyRecordedCornerOps(commands: PathBlockCommand[]): {
 
   // Split into subpaths at move boundaries (applyCornerOperations drops moves
   // from its result, so each subpath is finalized independently and its moves
-  // re-attached).
+  // re-attached). Deliberately move-only: the SVG rule in subpaths.ts also
+  // starts a subpath after a `z` followed by drawing; changing this boundary
+  // would alter emit for `z`-then-draw programs carrying `with` ops.
   const subpaths: PathBlockCommand[][] = [];
   let current: PathBlockCommand[] = [];
   for (const cmd of working) {

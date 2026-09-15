@@ -747,6 +747,40 @@ Both.
 
 ---
 
+## ISSUE-021: Arc length ignores the sweep flags — any arc of a half circle or more reports its chord
+
+**Discovered:** 2026-09-14 (path-query milestone 1: `call(circle).block.length` returned 100 for a radius-25 circle)
+
+**Severity:** Medium
+
+**Description:**
+
+`approximateArcLength(rx, ry, start, end)` in `src/evaluator/sampling.ts` derives the arc angle from the chord alone (`2·asin(chord/2r)`) and never reads `largeArc` / `sweep`. Two consequences: an arc whose chord equals the diameter (a half circle) hits the `halfChord >= r` guard and returns the **chord** (`2r` instead of `πr`), and any `largeArc` arc reports the length of the *minor* arc. `circle()` emits two half-circle arcs, so:
+
+```
+let ring = @{ circle(0, 0, 25); };
+log(ring.length);      // 100 — should be 157.08 (2πr)
+```
+
+`calculateCommandLength` receives the full command (all seven arc args) and could compute the exact length through `arcEndpointToCenter` (`|deltaAngle| · r` for circular arcs; numeric integration for elliptical ones).
+
+**Impact:**
+
+`PathBlock.length` / `ProjectedPath.length`, the new `Command.length` / `Segment.length` / `Call.block.length`, `[length…]` query filters, and any arc-length parametrisation that sums command lengths (`partition`, `get(t)`, `subPath(t0, t1)`, `dash`) are skewed on paths containing half-circle or large arcs. Quarter arcs (the common fillet case) are correct.
+
+**Current Workarounds:**
+
+Measure circles analytically (`2 * PI * r`); prefer arcs under 180° (two quarter arcs instead of one half arc) when `.length`-driven layout matters.
+
+**Potential Solutions:**
+
+1. Compute the exact arc length in `calculateCommandLength` via `arcEndpointToCenter` (circular: exact; elliptical: Simpson/Gauss over the parameter range). Pros: fixes every consumer at once. Cons: changes `partition`/`get(t)` sample positions on affected paths — published samples that place things along circles must be re-rendered and eyeballed.
+2. Keep the approximation but honour `largeArc` (reflect the minor angle) and treat `halfChord ≈ r` as `π`. Pros: tiny diff. Cons: still approximate for ellipses.
+
+**Recommended Long-term Solution:**
+
+1, with a render-snapshot sweep of samples that use `partition`/`get` on arcs, in its own commit — deliberately not bundled into the query-language milestone (it would have silently moved geometry under an unrelated feature).
+
 ## Resolved entries (kept for the trail)
 
 ### ISSUE-016 (resolved 2026-09-12): The playground compile worker never cancels; edits during a long compile queue more full compiles

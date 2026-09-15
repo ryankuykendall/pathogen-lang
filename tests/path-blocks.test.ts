@@ -3839,7 +3839,7 @@ describe('introspection: d, commands, and log() display', () => {
   it('.commands lists every executed command with cursor positions', () => {
     const result = compile(`${BOX}\nlog(box.commands.length);\nlog(box.commands[1]);`);
     expect(result.logs[0].parts[0].value).toBe('4');
-    expect(result.logs[1].parts[0].value).toBe('{command: v, args: [40], start: Point(40, 0), end: Point(40, 40)}');
+    expect(result.logs[1].parts[0].value).toBe('Command(v 40: Point(40, 0) → Point(40, 40))');
   });
 
   it('a ProjectedPath answers .d in absolute coordinates and .commands in world space', () => {

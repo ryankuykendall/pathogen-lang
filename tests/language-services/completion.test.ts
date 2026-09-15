@@ -701,7 +701,7 @@ describe('getCompletions', () => {
       expect(segment?.insertText).toBe("segment('${1:name}')$0");
     });
 
-    it('offers VertexHandle members (fillet/chamfer + x/y/point/label) after pb.vertex(...)', () => {
+    it('offers Endpoint members (fillet/chamfer + x/y/point/label + command/next/turn) after pb.vertex(...)', () => {
       const items = completeAtEnd(
         "let shape = @{\n  M 0 0\n  L 100 0 as endpoint('corner')\n};\nshape.vertex('corner').",
       );
@@ -713,6 +713,51 @@ describe('getCompletions', () => {
       expect(names).toContain('y');
       expect(names).toContain('point');
       expect(names).toContain('label');
+      expect(names).toContain('command');
+      expect(names).toContain('next');
+      expect(names).toContain('turn');
+      expect(names).toContain('isJoint');
+    });
+
+    it('types query() results by the selector noun, parentheses in the selector included', () => {
+      const base = "let shape = @{\n  M 0 0\n  a 10 10 0 0 1 20 0\n};\n";
+      const arc = labels(completeAtEnd(`${base}shape.query('command(a)').`));
+      expect(arc).toContain('center');
+      expect(arc).toContain('rx');
+      expect(arc).toContain('block');
+      expect(arc).toContain('command');
+      const end = labels(completeAtEnd(`${base}shape.query('endpoint').`));
+      expect(end).toContain('turn');
+      expect(end).toContain('fillet');
+      const call = labels(completeAtEnd(`${base}shape.query('call(circle)').`));
+      expect(call).toContain('name');
+      expect(call).toContain('commands');
+      const seg = labels(completeAtEnd(`${base}shape.query('segment(rib) command').`));
+      expect(seg).toContain('center'); // rightmost compound wins: Command, not Segment
+      const sub = labels(completeAtEnd(`${base}shape.query('subpath(0)').`));
+      expect(sub).toContain('closed');
+      const layerEnd = labels(completeAtEnd("layer('a').query('endpoint(base)')."));
+      expect(layerEnd).toContain('isJoint');
+    });
+
+    it('offers array members after queryAll() and types loop elements by noun', () => {
+      const base = "let shape = @{\n  M 0 0\n  a 10 10 0 0 1 20 0\n};\n";
+      const arr = labels(completeAtEnd(`${base}shape.queryAll('command(a)').`));
+      expect(arr).toContain('map');
+      expect(arr).toContain('length');
+      const loop = labels(completeAtEnd(`${base}for (arc in shape.queryAll('command(a)')) {\n  arc.`));
+      expect(loop).toContain('center');
+      expect(loop).toContain('sweep');
+      const mapped = labels(completeAtEnd(`${base}let centers = shape.queryAll('command(a)').map {|arc|\n  arc.`));
+      expect(mapped).toContain('center');
+      const held = labels(completeAtEnd(`${base}let corner = shape.query('endpoint:last');\ncorner.`));
+      expect(held).toContain('turn');
+    });
+
+    it('.commands elements are Commands', () => {
+      const items = labels(completeAtEnd("let shape = @{\n  M 0 0\n  h 10\n};\nfor (cmd in shape.commands) {\n  cmd."));
+      expect(items).toContain('block');
+      expect(items).toContain('segment');
     });
 
     it('keeps segment() a PathBlock on a PathBlock receiver', () => {
@@ -1485,7 +1530,9 @@ describe('query-API chains rooted in layer() calls', () => {
     const { inferType } = await import('../../src/language-services/type-inference');
     expect(inferType('top', "let top = layer('a').segment('s');")).toBe('ProjectedPath');
     expect(inferType('pt', "let pt = layer('a').point('p');")).toBe('Point');
-    expect(inferType('vh', "let vh = layer('a').vertex('v');")).toBe('VertexHandle');
+    expect(inferType('vh', "let vh = layer('a').vertex('v');")).toBe('Endpoint');
+    // query() results are typed on the AST path; the legacy rule must at least not claim PathLayer
+    expect(inferType('q', "let q = layer('a').query('endpoint');")).not.toBe('PathLayer');
     expect(inferType('pl', "let pl = layer('a');")).toBe('PathLayer');
   });
 });

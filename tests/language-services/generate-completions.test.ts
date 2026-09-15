@@ -307,6 +307,11 @@ describe('extractTypeElementTypes', () => {
   it('shipped generated data carries the contours element type', () => {
     expect(TYPE_ELEMENT_TYPES.PathBlock.contours).toBe('PathBlock');
     expect(TYPE_ELEMENT_TYPES.PathBlock.vertices).toBe('Point');
+    // Path queries: the union return types are deliberately unparsed so the
+    // hand rule in query-noun-types.ts owns result typing; .commands elements are Commands.
+    expect(TYPE_ELEMENT_TYPES.PathBlock.queryAll).toBeUndefined();
+    expect(TYPE_ELEMENT_TYPES.PathBlock.commands).toBe('Command');
+    expect(TYPE_ELEMENT_TYPES.ProjectedPath.commands).toBe('Command');
   });
 });
 

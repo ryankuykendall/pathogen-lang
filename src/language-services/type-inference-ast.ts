@@ -20,6 +20,7 @@ import {
   TYPE_METHOD_RETURNS,
   TYPE_PROPERTY_TYPES,
 } from './completion-data.generated';
+import { queryResultType } from './query-noun-types';
 import { getMethodReturnType } from './type-inference';
 import { inferUnit } from '../evaluator/units';
 import { CALLBACK_METHODS } from '../callback-methods';
@@ -268,6 +269,12 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
     case 'MethodCallExpression': {
       const ns = namespaceOf(expr.object, scope);
       if (ns) return NAMESPACE_METHOD_RETURNS[ns]?.[expr.method]?.type ?? null;
+      // query(sel): the selector's noun names the result type (union return in
+      // pathogen-api.ts is deliberately unparsed by the generator).
+      if (expr.method === 'query' && expr.args[0]?.type === 'StringLiteral') {
+        return queryResultType(expr.args[0].value);
+      }
+      if (expr.method === 'queryAll') return 'array';
       const objType = inferExprType(expr.object, scope, visited);
       const perType = objType ? TYPE_METHOD_RETURNS[objType]?.[expr.method] : undefined;
       const returnType = perType ?? getMethodReturnType(expr.method);
@@ -316,6 +323,10 @@ export function inferExprElementType(expr: Expression, scope: Scope, seen?: Set<
     case 'MethodCallExpression': {
       const ns = namespaceOf(expr.object, scope);
       if (ns) return NAMESPACE_METHOD_RETURNS[ns]?.[expr.method]?.elementType ?? null;
+      // queryAll(sel): elements are typed by the selector's noun.
+      if (expr.method === 'queryAll' && expr.args[0]?.type === 'StringLiteral') {
+        return queryResultType(expr.args[0].value);
+      }
       const objType = inferExprType(expr.object, scope, visited);
       return objType ? (TYPE_ELEMENT_TYPES[objType]?.[expr.method] ?? null) : null;
     }

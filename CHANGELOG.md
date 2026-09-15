@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-14 (path queries: `query()` / `queryAll()`)
+
+Milestone 1 of the observable/reactive-paths track (`project-docs/observable-reactive-paths/`): a pull-model query language over path structure. Design trail and approved plan preserved in that folder; contract in `docs/path-queries.md`.
+
+### Added
+
+#### Core
+
+- **`query(selector)` / `queryAll(selector)` on `PathBlock`, `ProjectedPath`, and `layer('name')`.** One CSS-flavoured string grammar asks a path for things by kind, labels optional: `command(a)` every arc, `endpoint` every joint, `call(circle)` everything one statement emitted, `segment(rib)` a labeled run, `subpath(1..3)` pen-down runs by position. Nouns take their natural key in parentheses (letters or shape words `line cubic quadratic curve arc move close` for commands, the emitting function for calls, labels for segments and endpoints, index specs for subpaths); `[filters]` compare scalar properties (`x y length index absolute relative closed label cornerOp` and the SVG parameter names `x1 y1 x2 y2 rx ry rotation largeArc sweep`); `:first` / `:last` / `:nth(...)` take the language's own index spellings (`k`, `a..b`, `a..<b`, negatives from the end, comma lists); a space is the descendant combinator (`segment(rim) command`, `call(circle) endpoint`, `subpath(1) command:nth(0..2)`), with the rightmost noun as the result and `:nth` counting inside the scope. `query` errors on no match listing what the path has (querySelector); `queryAll` returns `[]` (querySelectorAll). A comma list must keep one noun so every result array has one element type. Queries answer finalized geometry. Implementation: `src/evaluator/path-query.ts` (parser + matcher + struct builders), `src/evaluator/subpaths.ts` (the SVG subpath rule). Tests: `tests/path-queries.test.ts`.
+- **Five result structs, with member access and destructuring:** `Command` (letter, `absolute`, `args`, `start`, `end`, `index`, `subpath`, `length`, `block`, labels, plus `cp1`/`cp2`, `cp`, and `rx ry rotation largeArc sweep center` on their kinds), `Call` (`name`, `commands`, `block`, `start`, `end`, `index`), `Endpoint` (`point x y label index command next turn isJoint` + the corner operations), `Segment`, and `Subpath`. Registered in `src/evaluator/struct-properties.ts`; `log()` prints them recognisably; `Object.keys/values/entries` accept built-in structs.
+- **Records remember the emitting call.** `recordPath` stamps `meta.call = { fn, id }` on every command of a statement that was a stdlib, method, or user-function call; `--json` / `trace` records carry `fn`. Boolean-op results do not carry call identity (documented).
+- **Editor support:** `query(...)` results are typed by the selector noun in completions, hover, loop variables, and `.map` block params (`src/language-services/query-noun-types.ts`; hooks in `type-inference-ast.ts` and `member-resolution.ts`, which now resolves `.query('command(a)').` despite the parentheses inside the string). `pathogen-api.ts` declares the five `@type`s; union return types stay deliberately unparsed by the generator (pinned in `generate-completions.test.ts`).
+
+#### Documentation
+
+- New page **Path Queries** (`docs/path-queries.md`, registered in `DOC_FILES`), laddered from "a dot on every corner" to filters, the combinator, ranges, and the `subpath` noun vs `.subPath(t0, t1)` method — two unrelated jobs behind one word. Cross-links from `path-blocks.md` (Command entries, `subPathCount`, `.subPath`, `.contours`), `segment-labels.md` (the legacy methods as shortcuts; `vertex()` → Endpoint), `layers.md`, and `debug.md` (`records[].fn`).
+
+### Changed
+
+#### Core
+
+- **`.commands` / `.subPathCommands` return `Command` structs** — the same values `queryAll('command')` returns. `command`, `args`, `start`, `end` keep their names; labels are no longer stripped. `log()` of an entry now reads `Command(v 40: Point(40, 0) → Point(40, 40))`.
+- **`VertexHandle` is now `Endpoint`.** `vertex('name')` / `vertexAll('name')` return the same struct `query('endpoint(name)')` does, grown with `index`, `command`, `next`, `turn`, `isJoint`; corner operations unchanged (PathBlock sources only; layer and projected endpoints still say "not supported yet"). Type name in hover/completions changes accordingly.
+- **One subpath rule.** `subPathCount`, `.contours`, and the `subpath` noun all split by the SVG rule: a subpath starts at every move, and at the first drawing command after a `z` with no move. Previously `subPathCount` split on moves only and `.contours` on `z` only; they now agree (glyph outlines are unaffected — every contour is `m … z`). The corner-op finalizer keeps its move-only split so emitted bytes never change.
+
+### Fixed
+
+#### Core
+
+- **Labels survive `.draw()` / `.drawTo()` into the receiving layer.** The draw tracker built bare `{command, args, start, end}` records, so segment and endpoint labels authored inside a block were lost by the time they reached the layer store (they already survived onto the returned `ProjectedPath`). The tracker now carries derived meta (labels, seam and call identity; pending corner ops stripped as for every derived path), so `layer('x').segment('lid')` and `layer('x').query('endpoint(c)')` find geometry drawn from a labeled block. Emitted bytes are unchanged. Found by the pre-commit code review.
+
+### Known issues
+
+- **ISSUE-021** (`project-docs/known-issues.md`): the arc-length approximation ignores the sweep flags, so a half-circle arc reports its chord and a `circle()` reports `4r` instead of `2πr`. Pre-existing; surfaced by `Call.block.length` during this work; deliberately left for its own change because fixing it moves `partition`/`get(t)` sample positions on affected paths.
+
 ## [Unreleased] - 2026-09-12 (cancellable compiles, conic gradient parity, normal angle range)
 
 Four fixes from the glyph-halo diagnosis (`project-docs/glyph-halo-diagnosis/`, `project-docs/known-issues.md` ISSUE-016 / ISSUE-017 / ISSUE-020). Verified end to end by `scripts/debug-compile-cancel-and-conic.ts` (23 browser checks) plus `project-docs/conic-parity/` renders of one fixture through the CLI wedges, the WebGPU shader and the Canvas 2D fallback.

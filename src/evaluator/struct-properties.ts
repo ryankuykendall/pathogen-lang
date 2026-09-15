@@ -1,7 +1,23 @@
 import { oklchToCSS, oklchToHex, oklchToHSLString, oklchToOKLCHString, oklchToRGBString } from '../color';
 import { radiansToDegreesSnapped, radiansToPiMultipleSnapped, radiansToTurnsSnapped } from './angle';
+import { callMembers, commandMembers, endpointMembers, segmentMembers, subpathMembers } from './path-query';
 
-import type { AngleValue, ColorValue, ContextObject, GridValue, MeshPointValue, PointValue, PolarVectorValue, Value, VertexHandleValue, ViewBoxStructValue } from './types';
+import type {
+  AngleValue,
+  CallValue,
+  ColorValue,
+  CommandValue,
+  ContextObject,
+  EndpointValue,
+  GridValue,
+  MeshPointValue,
+  PointValue,
+  PolarVectorValue,
+  SegmentValue,
+  SubpathValue,
+  Value,
+  ViewBoxStructValue,
+} from './types';
 
 /**
  * Shared property registry for built-in struct values.
@@ -115,12 +131,25 @@ const CONTEXT_OBJECT: StructDescriptor = {
   keys: (value) => Object.keys((value as ContextObject).value).filter((k) => k !== '_transformState'),
 };
 
-const VERTEX_HANDLE = staticDescriptor('VertexHandle', {
-  x: (v) => (v as VertexHandleValue).point.x,
-  y: (v) => (v as VertexHandleValue).point.y,
-  point: (v) => ({ type: 'PointValue', x: (v as VertexHandleValue).point.x, y: (v as VertexHandleValue).point.y }) as Value,
-  label: (v) => (v as VertexHandleValue).label,
-});
+/**
+ * Path-query result structs (Command, Endpoint, Call, Segment, Subpath): their
+ * members are computed lazily from the source geometry in path-query.ts, and
+ * Command's member set depends on its kind (arc / cubic / quadratic extras).
+ */
+function lazyDescriptor<T>(name: string, members: (value: T) => Record<string, () => Value>): StructDescriptor {
+  return {
+    name,
+    has: (value, key) => Object.hasOwn(members(value as T), key),
+    get: (value, key) => members(value as T)[key](),
+    keys: (value) => Object.keys(members(value as T)),
+  };
+}
+
+const COMMAND = lazyDescriptor<CommandValue>('Command', commandMembers);
+const ENDPOINT = lazyDescriptor<EndpointValue>('Endpoint', endpointMembers);
+const CALL = lazyDescriptor<CallValue>('Call', callMembers);
+const SEGMENT = lazyDescriptor<SegmentValue>('Segment', segmentMembers);
+const SUBPATH = lazyDescriptor<SubpathValue>('Subpath', subpathMembers);
 
 const ANGLE = staticDescriptor('Angle', {
   deg: (v) => radiansToDegreesSnapped((v as AngleValue).radians),
@@ -144,7 +173,11 @@ const DESCRIPTORS: Record<string, StructDescriptor> = {
   ColorValue: COLOR,
   AngleValue: ANGLE,
   ContextObject: CONTEXT_OBJECT,
-  VertexHandleValue: VERTEX_HANDLE,
+  EndpointValue: ENDPOINT,
+  CommandValue: COMMAND,
+  CallValue: CALL,
+  SegmentValue: SEGMENT,
+  SubpathValue: SUBPATH,
   ViewBoxStructValue: VIEW_BOX,
 };
 

@@ -20,6 +20,7 @@ import {
   TYPE_MEMBERS,
   TYPE_METHOD_RETURNS,
 } from './completion-data.generated';
+import { queryResultType } from './query-noun-types';
 import { escapeRegex, getMethodReturnType, inferBlockParamType, inferLoopVarType, inferType } from './type-inference';
 
 import type { CompletionEntry, MemberCompletionSet } from './completion-data-static';
@@ -63,6 +64,18 @@ export function resolveMemberAccess(
   resolveName?: NameTypeResolver,
 ): MemberAccessResolution | null {
   const resolver: NameTypeResolver = resolveName ?? ((name) => regexNameResolver(name, source));
+
+  // Member access on a query result: expr.query('...'). / expr.queryAll('...').
+  // The selector is a string literal that may itself contain parentheses
+  // (`query('command(a)')`), which defeats the `[^)]*` argument captures
+  // below — so resolve these first, by the selector's noun.
+  const queryChain = /\.(query|queryAll)\(\s*(['"`])([\s\S]*?)\2\s*\)\s*\.(\w*)$/.exec(textBefore);
+  if (queryChain) {
+    const typeName = queryChain[1] === 'query' ? queryResultType(queryChain[3]) : 'array';
+    if (typeName && typeName in TYPE_MEMBERS) {
+      return { typeName, members: TYPE_MEMBERS[typeName], memberPrefix: queryChain[4] };
+    }
+  }
 
   // Method call on expression: expr.method(...).
   // e.g., shape.boundingBox(). or Color('#f00').lighten(0.2).

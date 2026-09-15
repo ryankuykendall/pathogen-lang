@@ -107,30 +107,31 @@ let proj = shape.project(10, 10);
 |---|---|---|
 | `length` | `number` | Total arc-length of the path |
 | `vertices` | `Point[]` | Unique start/end points of each command segment |
-| `subPathCount` | `number` | Number of subpaths (separated by `m` commands) |
-| `subPathCommands` | `object[]` | Structured command list (see below) |
+| `subPathCount` | `number` | Number of subpaths — pen-down runs between moves, by the SVG rule (drawing after a `z` with no move starts a new one) |
+| `subPathCommands` | `Command[]` | Alias of `commands` (see below) |
 | `startPoint` | `Point` | The **first inked point** — where drawing begins. `Point(0, 0)` for blocks that start drawing immediately; a block that opens with `m` moves reports where the ink actually lands, so `get(0)` always agrees with `startPoint` |
 | `endPoint` | `Point` | Final cursor position (relative to origin) |
 | `isEmpty` | `boolean` | `true` when the block contains no path commands — e.g. a space glyph from `fromGlyph`, or `subPath(t, t)` |
 | `d` | `string` | The relative path data the block emits when drawn at the origin — exactly what `.draw()` writes, before placement |
-| `commands` | `object[]` | Every executed command as `{ command, args, start, end }` (the same shape as `subPathCommands` entries, for the whole block) |
+| `commands` | `Command[]` | Every executed command as a `Command` struct — the same values [`queryAll('command')`](#path-queries-path-queries) returns |
 
 ### ProjectedPath
 
 Same properties as PathBlock but with absolute coordinates; `d` is absolute path data.
 
-### subPathCommands entries
+### Command entries
 
-Each entry in `subPathCommands` is an object with:
+Each entry in `commands` / `subPathCommands` is a `Command` struct. The four members programs have always read are still there, and the struct carries more:
 
 ```
-{
-  command: "v",           // lowercase command letter
-  args: [20],             // numeric arguments
-  start: Point(0, 0),     // cursor before command
-  end: Point(0, 20)       // cursor after command
-}
+let cmd = box.commands[1];
+log(cmd.command, cmd.args);      // v [40]
+log(cmd.start, cmd.end);         // Point(40, 0) Point(40, 40)
+log(cmd.index, cmd.length);      // 1 40
+log(cmd.segment, cmd.endpoint);  // labels, or null
 ```
+
+Arc commands add `rx`, `ry`, `rotation`, `largeArc`, `sweep`, and `center`; curves add their control points. The full member table is in [Path Queries](#path-queries-command).
 
 ## Control Flow Inside Path Blocks
 
@@ -578,6 +579,8 @@ let big = arc.scale(3, 3);        // uniform: radii tripled
 ### `subPath(startT, endT)` → PathBlock
 
 Extracts the geometric portion of a path between two arc-length fractions. Both `startT` and `endT` must be between 0 and 1. Always returns a PathBlock (normalized to `(0, 0)` origin), even when called on a ProjectedPath.
+
+> Not to be confused with the `subpath` noun in [Path Queries](#path-queries-path-queries). That selects whole pen-down runs between moves — SVG subpaths — while `subPath(startT, endT)` slices any path by arc-length fraction.
 
 ```
 let p = @{ h 100 v 100 };
@@ -1480,7 +1483,7 @@ for (c in contours) {
 }
 ```
 
-Each contour is a closed PathBlock with all standard properties and methods.
+Each contour is a PathBlock with all standard properties and methods. Contours split by the SVG subpath rule — a new one starts at every move, and after a `z` when drawing continues without a move — so every glyph contour is closed.
 
 ### Non-Latin text and missing glyphs
 

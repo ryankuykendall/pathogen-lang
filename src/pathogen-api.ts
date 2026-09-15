@@ -737,16 +737,132 @@ export interface PathogenString {
   empty(): boolean;
 }
 
-/** @type PathCommandRecord */
-export interface PathogenPathCommandRecord {
-  /** Command letter as executed (case preserved) */
+// =============================================================================
+// Path query results — query(sel) / queryAll(sel) on PathBlock, ProjectedPath,
+// and layer references (docs: Path Queries). The noun of the selector's
+// rightmost compound names the result type; .commands elements are Commands.
+// =============================================================================
+
+/** @type Command */
+export interface PathogenCommand {
+  /** Command letter, lowercase */
   readonly command: string;
-  /** Numeric arguments */
+  /** Authored with an uppercase (absolute) letter — layer sources only; blocks and projections are always relative */
+  readonly absolute: boolean;
+  /** Numeric arguments as recorded */
   readonly args: PathogenArray<number>;
-  /** Cursor before the command */
+  /** Pen position before the command */
   readonly start: PathogenPoint;
-  /** Cursor after the command */
+  /** Pen position after the command */
   readonly end: PathogenPoint;
+  /** Position among the path's commands, 0-based */
+  readonly index: number;
+  /** Index of the subpath this command belongs to */
+  readonly subpath: number;
+  /** Arc length of the command */
+  readonly length: number;
+  /** The command on its own as a block (a ProjectedPath on layer and projected sources) */
+  readonly block: PathogenPathBlock;
+  /** Segment label carried by this command, or null */
+  readonly segment: string;
+  /** Endpoint label on this command's end, or null */
+  readonly endpoint: string;
+  /** First control point (cubic commands; s resolved to its implied point) */
+  readonly cp1: PathogenPoint;
+  /** Second control point (cubic commands) */
+  readonly cp2: PathogenPoint;
+  /** Control point (quadratic commands; t resolved to its implied point) */
+  readonly cp: PathogenPoint;
+  /** Arc x radius (arc commands) */
+  readonly rx: number;
+  /** Arc y radius (arc commands) */
+  readonly ry: number;
+  /** Arc x-axis rotation in degrees (arc commands) */
+  readonly rotation: number;
+  /** Arc large-arc flag (arc commands) */
+  readonly largeArc: boolean;
+  /** Arc sweep flag (arc commands) */
+  readonly sweep: boolean;
+  /** Computed arc center (arc commands) */
+  readonly center: PathogenPoint;
+}
+
+/** @type Call */
+export interface PathogenCall {
+  /** The stdlib function, method, or user function whose statement emitted this geometry */
+  readonly name: string;
+  /** Emitted commands, in order */
+  readonly commands: PathogenArray<PathogenCommand>;
+  /** The emitted geometry as one block (a ProjectedPath on layer and projected sources) */
+  readonly block: PathogenPathBlock;
+  /** Pen position before the statement */
+  readonly start: PathogenPoint;
+  /** Pen position after the statement */
+  readonly end: PathogenPoint;
+  /** Position among the path's calls */
+  readonly index: number;
+}
+
+/** @type Segment */
+export interface PathogenSegment {
+  /** The `as segment('...')` name */
+  readonly label: string;
+  /** The labeled run as one block — what segment('name') returns directly */
+  readonly block: PathogenPathBlock;
+  /** Its commands */
+  readonly commands: PathogenArray<PathogenCommand>;
+  /** Where the run starts */
+  readonly start: PathogenPoint;
+  /** Where the run ends */
+  readonly end: PathogenPoint;
+  /** Total arc length */
+  readonly length: number;
+  /** Run index within its label group */
+  readonly index: number;
+}
+
+/** @type Subpath */
+export interface PathogenSubpath {
+  /** Position among the path's subpaths */
+  readonly index: number;
+  /** Ends in z */
+  readonly closed: boolean;
+  /** The run as one block (a ProjectedPath on layer and projected sources) */
+  readonly block: PathogenPathBlock;
+  /** Its commands */
+  readonly commands: PathogenArray<PathogenCommand>;
+  /** Where the pen landed */
+  readonly start: PathogenPoint;
+  /** Where the pen finished */
+  readonly end: PathogenPoint;
+}
+
+/** @type Endpoint */
+export interface PathogenEndpoint {
+  /** X coordinate */
+  readonly x: number;
+  /** Y coordinate */
+  readonly y: number;
+  /** Where the command finished, as a Point */
+  readonly point: PathogenPoint;
+  /** The `as endpoint('...')` name, or null */
+  readonly label: string;
+  /** Position among the path's endpoints */
+  readonly index: number;
+  /** The command that ends here */
+  readonly command: PathogenCommand;
+  /** The command leaving this point (wraps to the first drawing command on a closed subpath), or null */
+  readonly next: PathogenCommand;
+  /** Signed change of direction at this point, wrapped to (−π, π] */
+  readonly turn: AngleValue;
+  /** A drawing command arrives and another leaves */
+  readonly isJoint: boolean;
+  /** fillet(radius) — Round this corner; returns a PathBlock */
+  fillet(radius: number): PathogenPathBlock;
+  /** chamfer(d1, d2?) — Bevel this corner; returns a PathBlock */
+  chamfer(d1: number, d2?: number): PathogenPathBlock;
+  /** ellipticalFillet(rx, ry, rotation?) — Elliptical round of this corner; returns a PathBlock */
+  ellipticalFillet(rx: number, ry: number, rotation?: AngleValue): PathogenPathBlock;
 }
 
 /** @type PathBlock */
@@ -758,10 +874,10 @@ export interface PathogenPathBlock {
   readonly vertices: PathogenArray<PathogenPoint>;
   /** Number of subpaths */
   readonly subPathCount: number;
-  /** Array of command objects */
-  readonly subPathCommands: PathogenArray<PathogenPathCommandRecord>;
-  /** Every executed command as { command, args, start, end } */
-  readonly commands: PathogenArray<PathogenPathCommandRecord>;
+  /** Command structs per subpath command (alias of commands) */
+  readonly subPathCommands: PathogenArray<PathogenCommand>;
+  /** Every executed command as a Command struct — the same values queryAll('command') returns */
+  readonly commands: PathogenArray<PathogenCommand>;
   /** Relative path data as .draw() emits it at the origin */
   readonly d: string;
   /** First point */
@@ -867,6 +983,14 @@ export interface PathogenPathBlock {
   /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces. Seams are labeled 'cut' — or 'cut.<name>' when the cutter edge was named as segment('name') */
   cut(cutter: PathogenPathBlock | PathogenProjectedPath | (PathogenPathBlock | PathogenProjectedPath)[]): PathogenArray<PathogenPathBlock>;
 
+  // Path queries — one grammar for commands, calls, endpoints, segments, and subpaths (docs: Path Queries)
+  /** query(selector) — First match of a path query. Nouns: command(a) · call(circle) · endpoint(label) · segment(label) · subpath(k); add [filters] and :first/:last/:nth(...); a space scopes the right side inside the left. Errors when nothing matches */
+  query(selector: string): PathogenCommand | PathogenCall | PathogenEndpoint | PathogenSegment | PathogenSubpath;
+  /** queryAll(selector) — Every match of a path query in authoring order; [] when nothing matches */
+  queryAll(
+    selector: string,
+  ): PathogenArray<PathogenCommand | PathogenCall | PathogenEndpoint | PathogenSegment | PathogenSubpath>;
+
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a PathBlock. Accepts pseudo-selectors (name:last, name:nth(k)) */
   segment(name: string): PathogenPathBlock;
@@ -876,10 +1000,10 @@ export interface PathogenPathBlock {
   point(name: string): PathogenPoint;
   /** pointAll(name) — Every labeled point matching name; returns an array of Points */
   pointAll(name: string): PathogenArray<PathogenPoint>;
-  /** vertex(name) — First labeled vertex matching name; returns a VertexHandle */
-  vertex(name: string): PathogenVertexHandle;
-  /** vertexAll(name) — Every labeled vertex matching name; returns an array of VertexHandles */
-  vertexAll(name: string): PathogenArray<PathogenVertexHandle>;
+  /** vertex(name) — First labeled vertex matching name; returns an Endpoint */
+  vertex(name: string): PathogenEndpoint;
+  /** vertexAll(name) — Every labeled vertex matching name; returns an array of Endpoints */
+  vertexAll(name: string): PathogenArray<PathogenEndpoint>;
 }
 
 /** @type VariableOffsetBuilder */
@@ -957,6 +1081,14 @@ export interface PathogenPathLayer {
   /** apply { } — Send path commands to this layer @snippet apply {\n\t$0\n} */
   apply(): void;
 
+  // Path queries — one grammar for commands, calls, endpoints, segments, and subpaths (docs: Path Queries)
+  /** query(selector) — First match of a path query. Nouns: command(a) · call(circle) · endpoint(label) · segment(label) · subpath(k); add [filters] and :first/:last/:nth(...); a space scopes the right side inside the left. Errors when nothing matches */
+  query(selector: string): PathogenCommand | PathogenCall | PathogenEndpoint | PathogenSegment | PathogenSubpath;
+  /** queryAll(selector) — Every match of a path query in authoring order; [] when nothing matches */
+  queryAll(
+    selector: string,
+  ): PathogenArray<PathogenCommand | PathogenCall | PathogenEndpoint | PathogenSegment | PathogenSubpath>;
+
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords). Accepts pseudo-selectors (name:last, name:nth(k)) */
   segment(name: string): PathogenProjectedPath;
@@ -966,10 +1098,10 @@ export interface PathogenPathLayer {
   point(name: string): PathogenPoint;
   /** pointAll(name) — Every labeled point matching name; returns an array of Points */
   pointAll(name: string): PathogenArray<PathogenPoint>;
-  /** vertex(name) — First labeled vertex matching name; returns a VertexHandle */
-  vertex(name: string): PathogenVertexHandle;
-  /** vertexAll(name) — Every labeled vertex matching name; returns an array of VertexHandles */
-  vertexAll(name: string): PathogenArray<PathogenVertexHandle>;
+  /** vertex(name) — First labeled vertex matching name; returns an Endpoint */
+  vertex(name: string): PathogenEndpoint;
+  /** vertexAll(name) — Every labeled vertex matching name; returns an array of Endpoints */
+  vertexAll(name: string): PathogenArray<PathogenEndpoint>;
 }
 
 /** @type GroupLayer */
@@ -1159,10 +1291,10 @@ export interface PathogenProjectedPath {
   readonly vertices: PathogenArray<PathogenPoint>;
   /** Number of subpaths */
   readonly subPathCount: number;
-  /** Array of command objects */
-  readonly subPathCommands: PathogenArray<PathogenPathCommandRecord>;
-  /** Every executed command as { command, args, start, end } */
-  readonly commands: PathogenArray<PathogenPathCommandRecord>;
+  /** Command structs per subpath command (alias of commands) */
+  readonly subPathCommands: PathogenArray<PathogenCommand>;
+  /** Every executed command as a Command struct — the same values queryAll('command') returns */
+  readonly commands: PathogenArray<PathogenCommand>;
   /** Absolute path data of the projected commands */
   readonly d: string;
   /** First point (absolute) */
@@ -1230,6 +1362,14 @@ export interface PathogenProjectedPath {
   /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces. Seams are labeled 'cut' — or 'cut.<name>' when the cutter edge was named as segment('name') */
   cut(cutter: PathogenPathBlock | PathogenProjectedPath | (PathogenPathBlock | PathogenProjectedPath)[]): PathogenArray<PathogenPathBlock>;
 
+  // Path queries — one grammar for commands, calls, endpoints, segments, and subpaths (docs: Path Queries)
+  /** query(selector) — First match of a path query. Nouns: command(a) · call(circle) · endpoint(label) · segment(label) · subpath(k); add [filters] and :first/:last/:nth(...); a space scopes the right side inside the left. Errors when nothing matches */
+  query(selector: string): PathogenCommand | PathogenCall | PathogenEndpoint | PathogenSegment | PathogenSubpath;
+  /** queryAll(selector) — Every match of a path query in authoring order; [] when nothing matches */
+  queryAll(
+    selector: string,
+  ): PathogenArray<PathogenCommand | PathogenCall | PathogenEndpoint | PathogenSegment | PathogenSubpath>;
+
   // Named queries — look up geometry labeled via `as segment('...')` / `as endpoint('...')`
   /** segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords). Accepts pseudo-selectors (name:last, name:nth(k)) */
   segment(name: string): PathogenProjectedPath;
@@ -1239,28 +1379,10 @@ export interface PathogenProjectedPath {
   point(name: string): PathogenPoint;
   /** pointAll(name) — Every labeled point matching name; returns an array of Points */
   pointAll(name: string): PathogenArray<PathogenPoint>;
-  /** vertex(name) — First labeled vertex matching name; returns a VertexHandle */
-  vertex(name: string): PathogenVertexHandle;
-  /** vertexAll(name) — Every labeled vertex matching name; returns an array of VertexHandles */
-  vertexAll(name: string): PathogenArray<PathogenVertexHandle>;
-}
-
-/** @type VertexHandle */
-export interface PathogenVertexHandle {
-  /** X coordinate */
-  readonly x: number;
-  /** Y coordinate */
-  readonly y: number;
-  /** Vertex position as a Point */
-  readonly point: PathogenPoint;
-  /** Label assigned via `as endpoint('...')` */
-  readonly label: string;
-  /** fillet(radius) — Round this corner; returns a PathBlock */
-  fillet(radius: number): PathogenPathBlock;
-  /** chamfer(d1, d2?) — Bevel this corner; returns a PathBlock */
-  chamfer(d1: number, d2?: number): PathogenPathBlock;
-  /** ellipticalFillet(rx, ry, rotation?) — Elliptical round of this corner; returns a PathBlock */
-  ellipticalFillet(rx: number, ry: number, rotation?: AngleValue): PathogenPathBlock;
+  /** vertex(name) — First labeled vertex matching name; returns an Endpoint */
+  vertex(name: string): PathogenEndpoint;
+  /** vertexAll(name) — Every labeled vertex matching name; returns an array of Endpoints */
+  vertexAll(name: string): PathogenArray<PathogenEndpoint>;
 }
 
 /** @type Mask */

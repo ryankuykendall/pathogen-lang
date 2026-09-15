@@ -134,7 +134,8 @@ prints one JSON document instead of path data:
       "d": "M 10 10 l 40 0 …",
       "styles": { "stroke": "#333" },
       "records": [
-        { "loc": { "line": 8, "column": 1 }, "label": "lid", "raw": "h 40", "commandCount": 1 }
+        { "loc": { "line": 8, "column": 1 }, "label": "lid", "raw": "h 40", "commandCount": 1 },
+        { "loc": { "line": 9, "column": 1 }, "fn": "circle", "raw": "M 30 50 a 20 20 0 1 1 40 0 a 20 20 0 1 1 -40 0", "commandCount": 3 }
       ]
     }
   ],
@@ -150,7 +151,7 @@ prints one JSON document instead of path data:
 
 Every `loc` also carries the character `offset` of the statement, and the document ends with `calledStdlibFunctions` (the stdlib names the program used) and, when a font could not render every character, `missingGlyphs`.
 
-Each layer's `records` say where every emitted fragment came from (`loc` is the source line and column, `label` is its `as segment('…')` name when it has one, `raw` is the authored fragment). `commands` is the full trace of executed path commands with the cursor before and after each one. `--json` can be combined with `-o <file>`; it cannot be combined with `--output-svg-file`.
+Each layer's `records` say where every emitted fragment came from (`loc` is the source line and column, `label` is its `as segment('…')` name when it has one, `fn` is the stdlib function, method, or user function when the statement was a call — what `call(fn)` [queries](#path-queries-path-queries) match — and `raw` is the authored fragment). `commands` is the full trace of executed path commands with the cursor before and after each one. `--json` can be combined with `-o <file>`; it cannot be combined with `--output-svg-file`.
 
 ### `trace` from the library
 

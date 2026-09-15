@@ -158,7 +158,7 @@ Corner suffixes do **not** rewrite the command as you write it. The operation is
 
 ## Querying Labels
 
-Labels exist to be looked up. A path with labels answers three questions by name, on both [`PathBlock`](#path-blocks-path-blocks) and `ProjectedPath` values:
+Labels exist to be looked up. A path with labels answers three questions by name, on both [`PathBlock`](#path-blocks-path-blocks) and `ProjectedPath` values. These are the label shortcuts; the general [`query()`](#path-queries-path-queries) grammar covers them and adds structural queries — every arc, every joint, everything a `circle()` drew — with no labels at all:
 
 | Query | Returns | Use for |
 |---|---|---|
@@ -166,8 +166,8 @@ Labels exist to be looked up. A path with labels answers three questions by name
 | `pb.segmentAll('name')` | array of `PathBlock` | **Every** segment sharing the name, in authoring order |
 | `pb.point('name')` | `Point` | The first named vertex — a `drawTo`/layout target |
 | `pb.pointAll('name')` | array of `Point` | Every vertex sharing the name |
-| `pb.vertex('name')` | vertex handle | Rounding or cutting the first named corner |
-| `pb.vertexAll('name')` | array of handles | Every corner sharing the name |
+| `pb.vertex('name')` | `Endpoint` | Rounding or cutting the first named corner |
+| `pb.vertexAll('name')` | array of `Endpoint` | Every corner sharing the name |
 
 The pairing follows the model you already know from the DOM: `segment` is `querySelector` (first match), `segmentAll` is `querySelectorAll` (all matches). Labels don't have to be unique — a name shared by several statements forms a **group**, which makes loops natural:
 
@@ -252,9 +252,9 @@ tab.drawTo(proj.point('hinge').x, proj.point('hinge').y);
 
 On a `ProjectedPath`, `point('name')` returns **absolute** coordinates; on an unprojected `PathBlock` the coordinates are relative to the block origin.
 
-### `vertex('name')` → vertex handle
+### `vertex('name')` → Endpoint
 
-Returns a handle for the named corner. The handle exposes `.fillet(radius)`, `.chamfer(distance)` / `.chamfer(d1, d2)`, and `.ellipticalFillet(rx, ry)`, each returning a new path with that corner operation applied — the name-based counterpart to [`filletAtVertex`](#path-blocks-filletatvertexindex-radius-pathblock-projectedpath) that never breaks when you add a command earlier in the path:
+Returns the named corner as an [`Endpoint`](#path-queries-endpoint) — the same struct `query('endpoint(name)')` returns, with `point`, `command`, `next`, and `turn`. It exposes `.fillet(radius)`, `.chamfer(distance)` / `.chamfer(d1, d2)`, and `.ellipticalFillet(rx, ry)`, each returning a new path with that corner operation applied — the name-based counterpart to [`filletAtVertex`](#path-blocks-filletatvertexindex-radius-pathblock-projectedpath) that never breaks when you add a command earlier in the path:
 
 ```
 let box = @{
@@ -339,4 +339,4 @@ Note that per-piece seam queries answer each interior seam **twice** — once fr
 - **Label-name validation.** A label that isn't identifier-shaped — punctuation, whitespace, a leading digit — is a compile error naming the rule, as is the reserved bare `'cut'`. The `cut.<name>` opt-in is segment-only; an endpoint label may not use it. Queries stay lenient: any string can be *queried* (unknown names behave as described below) — only authoring is validated.
 - **Pseudo-selector errors.** An unknown pseudo (`'rib:frist'`) or a chained pseudo (`'rib:first:atomic'`) errors listing the available set (`:atomic`, `:first`, `:last`, `:nth(k)`). A pseudo on a point/vertex query errors pointing at segment queries. `:nth(k)` out of range errors on the singular form (saying how many runs exist) and returns `[]` on the `All` form.
 - **Unknown labels.** A singular query for a name that was never defined — `pb.segment('nope')` — is an error that lists the labels the path actually has, so a typo tells you what was available. The `All` queries return an **empty array** instead of erroring, matching `querySelectorAll`, so `for (x in pb.segmentAll('maybe'))` is safe without a guard.
-- **Vertex corner ops: PathBlocks for now.** `vertex('name').fillet(...)` and its siblings apply on `PathBlock` and `ProjectedPath` sources. On a **layer** vertex handle they report that corner operations are not supported on layers yet — layer and projected `segment`/`point` queries work fully; only the vertex-handle corner operations are deferred.
+- **Endpoint corner ops: PathBlocks for now.** `vertex('name').fillet(...)` and its siblings apply on `PathBlock` sources. On a **layer** or **projected** Endpoint they report that corner operations are not supported yet — layer and projected `segment`/`point`/`query` results work fully; only the corner operations are deferred.

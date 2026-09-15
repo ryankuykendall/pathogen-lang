@@ -41,7 +41,11 @@ export type Value =
   | ObjectValue
   | ObjectNamespace
   | PathBlockValue
-  | VertexHandleValue
+  | EndpointValue
+  | CommandValue
+  | CallValue
+  | SegmentValue
+  | SubpathValue
   | PathBlockNamespace
   | ProjectedPathValue
   | CyclerValue
@@ -542,6 +546,10 @@ export interface PathCommandMeta {
    *  seam share one id, powering pieces.seams(). Carried through derived
    *  ops but only meaningful on fresh cut results. */
   seamId?: number;
+  /** Statement provenance for the `call(fn)` query noun: the stdlib fn, method,
+   *  or user fn whose statement emitted this command, plus a per-statement id so
+   *  adjacent same-fn statements stay distinct. Stamped by recordPath(). */
+  call?: { fn: string; id: number };
 }
 
 export interface PathBlockCommand {
@@ -562,6 +570,7 @@ export interface PathRecord {
   commands: PathBlockCommand[];
   label?: string; // segment label ('as segment(...)')
   loc?: SourceLocation; // source location of the emitting statement
+  fn?: string; // emitting stdlib fn / method / user fn name, when the statement was a call
 }
 
 /**
@@ -577,18 +586,68 @@ export interface PathStore {
  * Represents a path block value — a reusable, introspectable path definition in relative coordinates
  */
 /**
- * A named vertex handle returned by `.vertex('label')` — a structural handle
- * exposing corner operations, distinct from the plain Point that
- * `.point('label')` returns.
+ * The receiver a query ran on, plus the finalized commands it answered from.
+ * Every query result struct points back at one of these so its members can be
+ * computed lazily (struct-properties.ts) without copying geometry.
  */
-export interface VertexHandleValue {
-  type: 'VertexHandleValue';
-  sourceKind: 'pathblock' | 'projected' | 'layer';
-  /** The value the handle was created from (corner ops valid for pathblock sources only). */
-  source: Value;
+export interface QuerySource {
+  kind: 'pathblock' | 'projected' | 'layer';
+  /** PathBlockValue, ProjectedPathValue, or LayerReference. */
+  value: Value;
+  /** Finalized commands (corner ops applied) in the receiver's coordinate frame. */
+  commands: PathBlockCommand[];
+}
+
+/** One SVG command — the `command` query noun and the element type of `.commands`. */
+export interface CommandValue {
+  type: 'CommandValue';
+  source: QuerySource;
+  index: number; // position in source.commands
+}
+
+/** Everything one statement emitted — the `call` query noun. */
+export interface CallValue {
+  type: 'CallValue';
+  source: QuerySource;
+  fn: string;
+  from: number; // first command index (inclusive)
+  to: number; // last command index (exclusive)
+  index: number; // position among the path's calls
+}
+
+/** One labeled run — the `segment` query noun. */
+export interface SegmentValue {
+  type: 'SegmentValue';
+  source: QuerySource;
   label: string;
-  point: Point; // authored vertex position
-  cornerIndex: number; // resolved corner index in the source's command space (-1 if not a corner)
+  from: number;
+  to: number;
+  index: number; // run index within its label group
+}
+
+/** One pen-down run between moves (SVG rule) — the `subpath` query noun. */
+export interface SubpathValue {
+  type: 'SubpathValue';
+  source: QuerySource;
+  from: number;
+  to: number;
+  index: number;
+  closed: boolean;
+}
+
+/**
+ * Where one drawing command finishes — the `endpoint` query noun, and what the
+ * legacy `.vertex('label')` returns. Exposes corner operations (joints only).
+ */
+export interface EndpointValue {
+  type: 'EndpointValue';
+  source: QuerySource;
+  commandIndex: number; // the command that ends here
+  nextIndex: number | null; // the command leaving this point (wraps on closed subpaths)
+  index: number; // position among the path's endpoints
+  label: string | null;
+  point: Point; // finalized end, or the authored vertex for legacy vertex() handles
+  cornerIndex: number; // corner index in the source's command space (-1 if not a corner)
 }
 
 export interface PathBlockValue {
@@ -804,6 +863,8 @@ export interface PathRecordOutput {
   loc?: SourceLocation;
   /** `as segment('…')` label, when the statement carried one. */
   label?: string;
+  /** Emitting stdlib fn / method / user fn name, when the statement was a call. */
+  fn?: string;
   /** The authored fragment as emitted (corner ops apply at finalization). */
   raw: string;
   commandCount: number;

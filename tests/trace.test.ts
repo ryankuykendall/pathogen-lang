@@ -35,6 +35,14 @@ describe('trace output', () => {
     ]);
   });
 
+  it('records name the emitting function for call statements', () => {
+    const src = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  circle(30, 50, 20);\n  h 5\n}";
+    const result = compile(src, { trace: true });
+    const p = result.layers.find((l) => l.name === 'p')!;
+    expect(p.records!.map((r) => r.fn)).toEqual([undefined, 'circle', undefined]);
+    expect(p.records![1].commandCount).toBe(3);
+  });
+
   it('each path layer carries its own command history with cursor positions', () => {
     const result = compile(PROGRAM, { trace: true });
     const lid = result.layers.find((l) => l.name === 'lid')!;

@@ -12,9 +12,10 @@
  * tracked positions stay bit-identical to the old serialize-then-regex-reparse
  * pipeline by construction.
  */
-import type { PathBlockCommand } from './types';
 import { createPathContext, updateContextForCommand, type PathContext } from './context';
 import { formatNum } from './format';
+
+import type { PathBlockCommand, PathCommandMeta } from './types';
 
 // ── Tokenizer ──────────────────────────────────────────────────────────
 
@@ -198,7 +199,7 @@ export interface SerializeTrackOptions extends RelativeDOptions {
 function walkRelative(
   commands: PathBlockCommand[],
   opts: SerializeTrackOptions,
-  emit: (letter: string, formattedArgs: string[]) => void,
+  emit: (letter: string, formattedArgs: string[], source?: PathBlockCommand) => void,
 ): void {
   const fmt = opts.format ?? formatNum;
   let cursorX = opts.startCursor ? opts.startCursor.x : 0;
@@ -225,14 +226,14 @@ function walkRelative(
   for (const cmd of commands) {
     const c = cmd.command;
     if (c === 'z') {
-      emit('z', []);
+      emit('z', [], cmd);
       cursorX = subpathStartX;
       cursorY = subpathStartY;
     } else if (c === 'm') {
       // Move: relative displacement from the actual cursor position.
       const mx = cmd.end.x - cursorX;
       const my = cmd.end.y - cursorY;
-      emit('m', [fmt(mx), fmt(my)]);
+      emit('m', [fmt(mx), fmt(my)], cmd);
       cursorX = cmd.end.x;
       cursorY = cmd.end.y;
       subpathStartX = cmd.end.x;
@@ -241,26 +242,26 @@ function walkRelative(
       const dx = cmd.end.x - cmd.start.x;
       const dy = cmd.end.y - cmd.start.y;
       if (c === 'h') {
-        emit('h', [fmt(dx)]);
+        emit('h', [fmt(dx)], cmd);
       } else if (c === 'v') {
-        emit('v', [fmt(dy)]);
+        emit('v', [fmt(dy)], cmd);
       } else if (c === 'c') {
         const [dx1, dy1, dx2, dy2] = cmd.args;
-        emit('c', [fmt(dx1), fmt(dy1), fmt(dx2), fmt(dy2), fmt(dx), fmt(dy)]);
+        emit('c', [fmt(dx1), fmt(dy1), fmt(dx2), fmt(dy2), fmt(dx), fmt(dy)], cmd);
       } else if (c === 's') {
         const [dx2, dy2] = cmd.args;
-        emit('s', [fmt(dx2), fmt(dy2), fmt(dx), fmt(dy)]);
+        emit('s', [fmt(dx2), fmt(dy2), fmt(dx), fmt(dy)], cmd);
       } else if (c === 'q') {
         const [dx1, dy1] = cmd.args;
-        emit('q', [fmt(dx1), fmt(dy1), fmt(dx), fmt(dy)]);
+        emit('q', [fmt(dx1), fmt(dy1), fmt(dx), fmt(dy)], cmd);
       } else if (c === 't') {
-        emit('t', [fmt(dx), fmt(dy)]);
+        emit('t', [fmt(dx), fmt(dy)], cmd);
       } else if (c === 'a') {
         const [rx, ry, rotation, largeArc, sweep] = cmd.args;
-        emit('a', [fmt(rx), fmt(ry), fmt(rotation), fmt(largeArc), fmt(sweep), fmt(dx), fmt(dy)]);
+        emit('a', [fmt(rx), fmt(ry), fmt(rotation), fmt(largeArc), fmt(sweep), fmt(dx), fmt(dy)], cmd);
       } else {
         // l → relative line (and the historical catch-all for anything else)
-        emit(c, [fmt(dx), fmt(dy)]);
+        emit(c, [fmt(dx), fmt(dy)], cmd);
       }
       cursorX = cmd.end.x;
       cursorY = cmd.end.y;
@@ -491,12 +492,117 @@ export function serializeRelativeAndTrack(
 ): { d: string; tracked: PathBlockCommand[] } {
   const parts: string[] = [];
   const tracked: PathBlockCommand[] = [];
-  walkRelative(commands, opts, (letter, formattedArgs) => {
+  walkRelative(commands, opts, (letter, formattedArgs, source) => {
     parts.push(joinEmitted(letter, formattedArgs));
     const args = formattedArgs.map((s) => parseFloat(s));
     const start = { x: ctx.position.x, y: ctx.position.y };
     updateContextForCommand(ctx, letter, args);
-    tracked.push({ command: letter, args, start, end: { x: ctx.position.x, y: ctx.position.y } });
+    // Carry labels / seam / call identity into the receiving store so
+    // layer('x').segment('lid') finds geometry drawn from a labeled block;
+    // pending corner ops were consumed by the source block and are stripped.
+    const meta = source ? derivedMeta(source.meta) : undefined;
+    tracked.push({
+      command: letter,
+      args,
+      start,
+      end: { x: ctx.position.x, y: ctx.position.y },
+      ...(meta !== undefined ? { meta } : {}),
+    });
   });
   return { d: parts.join(' '), tracked };
+}
+
+// ---------------------------------------------------------------------------
+// Shared command/meta rules (single home; segments.ts re-exports the meta ones)
+// ---------------------------------------------------------------------------
+
+/**
+ * Normalize a raw path-context history entry to the PathBlockCommand invariant:
+ * command is lowercase, and positional args are relative to the command's start point.
+ *
+ * The context history preserves the original command character (so 'Q' stays 'Q') and
+ * stores args exactly as the source wrote them. For uppercase (absolute) originals, the
+ * args are absolute coordinates and must be converted to relative before the lowercased
+ * command is stored on the PathBlockValue.
+ *
+ * After the stdlib-to-relative refactor, shape helpers (circle, rect, roundRect, polygon,
+ * star, line, quadratic, cubic) emit absolute `M` + relative body, so this helper is a
+ * no-op for their body commands. It still runs meaningfully for:
+ *   - The initial absolute `M` those shapes emit (M → m: no arg read by the emitter, but
+ *     we normalize for interface consistency).
+ *   - Continuation helpers that stay uppercase: arc (A), moveTo (M), lineTo (L),
+ *     closePath (Z) — for these, commandsToRelativeD reads only non-positional args or
+ *     end/start deltas, but consistency of the interface still matters.
+ */
+export function normalizeToRelativeArgs(command: string, args: number[], start: { x: number; y: number }): number[] {
+  // Already lowercase: args are already relative
+  if (command === command.toLowerCase()) return [...args];
+  const sx = start.x;
+  const sy = start.y;
+  const c = command.toUpperCase();
+  switch (c) {
+    case 'M':
+    case 'L':
+    case 'T':
+      return [args[0] - sx, args[1] - sy];
+    case 'H':
+      return [args[0] - sx];
+    case 'V':
+      return [args[0] - sy];
+    case 'C':
+      return [args[0] - sx, args[1] - sy, args[2] - sx, args[3] - sy, args[4] - sx, args[5] - sy];
+    case 'S':
+    case 'Q':
+      return [args[0] - sx, args[1] - sy, args[2] - sx, args[3] - sy];
+    case 'A':
+      // rx, ry, rotation, large-arc, sweep are non-positional; only end (args[5], args[6]) is positional
+      return [args[0], args[1], args[2], args[3], args[4], args[5] - sx, args[6] - sy];
+    case 'Z':
+      return [];
+    default:
+      return [...args];
+  }
+}
+
+export function normalizeMeta(meta: PathCommandMeta | undefined): PathCommandMeta | undefined {
+  if (!meta) return undefined;
+  const endVertex =
+    meta.endVertex && (meta.endVertex.label !== undefined || meta.endVertex.cornerOp !== undefined)
+      ? meta.endVertex
+      : undefined;
+  if (
+    meta.segmentLabel === undefined &&
+    endVertex === undefined &&
+    meta.seamId === undefined &&
+    meta.call === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}),
+    ...(endVertex ? { endVertex } : {}),
+    ...(meta.seamId !== undefined ? { seamId: meta.seamId } : {}),
+    ...(meta.call !== undefined ? { call: meta.call } : {}),
+  };
+}
+
+/**
+ * Meta for a DERIVED path (transform/boolean/cut result): labels carry, but
+ * pending corner-op suffixes are consumed by the source block and must not
+ * re-apply at the derived block's emit-time finalization — carrying them
+ * would change the geometry of existing programs.
+ */
+export function derivedMeta(meta: PathCommandMeta | undefined): PathCommandMeta | undefined {
+  if (!meta) return undefined;
+  const endVertexLabel = meta.endVertex?.label;
+  return normalizeMeta({
+    ...(meta.segmentLabel !== undefined ? { segmentLabel: meta.segmentLabel } : {}),
+    ...(endVertexLabel !== undefined ? { endVertex: { label: endVertexLabel } } : {}),
+    // seamId is label-like identity, not a pending geometric op — it
+    // carries (the corner-op strip rationale doesn't apply).
+    ...(meta.seamId !== undefined ? { seamId: meta.seamId } : {}),
+    // call provenance is identity too — a transformed circle is still the
+    // circle statement's geometry.
+    ...(meta.call !== undefined ? { call: meta.call } : {}),
+  });
 }

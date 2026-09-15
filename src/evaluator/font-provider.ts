@@ -11,6 +11,8 @@
  * host environment (CLI, playground, tests) before compilation.
  */
 
+import { splitSubpathCommands } from './subpaths';
+
 import type { FontData, FontRegistry, PathBlockCommand } from './types';
 import type { Point } from './context';
 
@@ -410,23 +412,8 @@ export function buildMissingGlyphReports(
  * Each contour is a sequence of commands starting with 'm' and ending with 'z'.
  */
 export function splitContours(commands: PathBlockCommand[]): PathBlockCommand[][] {
-  if (commands.length === 0) return [];
-
-  const contours: PathBlockCommand[][] = [];
-  let current: PathBlockCommand[] = [];
-
-  for (const cmd of commands) {
-    current.push(cmd);
-    if (cmd.command === 'z') {
-      contours.push(current);
-      current = [];
-    }
-  }
-
-  // If there are trailing commands without z, include them
-  if (current.length > 0) {
-    contours.push(current);
-  }
-
-  return contours;
+  // One rule for contours, subpaths, and the `subpath` query noun: the SVG
+  // subpath rule in subpaths.ts. Glyph outlines always read `m … z`, so this
+  // matches the former z-split exactly for fonts.
+  return splitSubpathCommands(commands);
 }

@@ -3,6 +3,7 @@ const expressionParser = { parse: (input: string) => { const v = expressionParse
 import { contextAwareFunctions, stdlib } from '../stdlib';
 import { STATEMENT_BUILTINS } from './constructor-registry';
 import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
+import { splitSubpaths } from './subpaths';
 import { CALLBACK_METHODS } from '../callback-methods';
 import { arrayMutationError, isArrayLocked, lockArray, unlockArray } from './iteration-lock';
 import {
@@ -95,6 +96,7 @@ import type {
   AngleValue,
   ArrayValue,
   BooleanValue,
+  CallValue,
   CapNamespace,
   CapValue,
   ClipPathOutput,
@@ -102,6 +104,7 @@ import type {
   ColorNamespace,
   ColorValue,
   CommandTraceEntry,
+  CommandValue,
   CompileResult,
   CompileWarning,
   CSSPropertyDeclaration,
@@ -109,6 +112,7 @@ import type {
   CyclerValue,
   ElevationShadowFilterValue,
   EmbossFilterValue,
+  EndpointValue,
   EvaluationState,
   FilterOutput,
   FilterValue,
@@ -155,8 +159,11 @@ import type {
   PolarVectorValue,
   ProjectedPathValue,
   ProjectedTextValue,
+  QuerySource,
   Scope,
+  SegmentValue,
   StyleBlockValue,
+  SubpathValue,
   SVGFragmentValue,
   TextBlockElement,
   TextBlockValue,
@@ -166,7 +173,6 @@ import type {
   UserFunction,
   Value,
   VariableOffsetBuilderValue,
-  VertexHandleValue,
   WarningCode,
 } from './types';
 import type {
@@ -194,22 +200,28 @@ import type {
 
 // Re-export all types from the dedicated types module
 export type {
-  CommandTraceEntry,
-  CompileWarning,
-  PathRecordOutput,
-  WarningCode,
+  AngleValue,
   ArrayValue,
   BooleanValue,
+  CallValue,
+  CapNamespace,
+  CapValue,
   ClipPathOutput,
   ClipPathValue,
   ColorNamespace,
   ColorValue,
+  CommandTraceEntry,
+  CommandValue,
   CompileResult,
+  CompileWarning,
   ContextObject,
   CSSPropertyDeclaration,
   CSSVarValue,
   CyclerValue,
+  EndpointValue,
   EvaluationState,
+  FilterOutput,
+  FilterValue,
   FontData,
   FontRegistry,
   FragmentLayerState,
@@ -233,29 +245,32 @@ export type {
   MaskPathEntry,
   MaskValue,
   MeshPointValue,
-  FilterValue,
-  FilterOutput,
-  NoiseFilterValue,
   NoiseFilterStyleName,
+  NoiseFilterValue,
   ObjectNamespace,
   ObjectValue,
   PathBlockCommand,
   PathBlockNamespace,
   PathBlockValue,
+  PathCommandMeta,
   PathLayerState,
+  PathRecord,
+  PathRecordOutput,
   PathSegment,
+  PathStore,
   PathWithResult,
   PatternOutput,
   PatternValue,
   PointValue,
   PolarVectorValue,
-  CapValue,
-  CapNamespace,
-  VariableOffsetBuilderValue,
   ProjectedPathValue,
   ProjectedTextValue,
+  QuerySource,
+  RecordedCornerOp,
   Scope,
+  SegmentValue,
   StyleBlockValue,
+  SubpathValue,
   SVGFragmentValue,
   TextBlockElement,
   TextBlockValue,
@@ -267,12 +282,8 @@ export type {
   TransformReference,
   UserFunction,
   Value,
-  AngleValue,
-  PathRecord,
-  PathStore,
-  PathCommandMeta,
-  RecordedCornerOp,
-  VertexHandleValue,
+  VariableOffsetBuilderValue,
+  WarningCode,
 } from './types';
 import {
   applyAnnotationsToStore,
@@ -287,7 +298,6 @@ import {
   pseudoRangeError,
   queryLabeledRuns,
   rejectPseudoOnNonSegmentQuery,
-  locateCornerPos,
   recordPath,
   recordsFromCommands,
   parsePathStringAt,
@@ -295,7 +305,8 @@ import {
   storeToPathData,
   derivedMeta,
 } from './segments';
-import { commandsToRelativeD, serializeRelativeAndTrack } from './path-data';
+import { commandsToRelativeD, normalizeToRelativeArgs, serializeRelativeAndTrack } from './path-data';
+import { commandValues, endpointValue, runPathQuery, wrapCommands } from './path-query';
 import { tryResolveCSSFunctionArgs as sharedTryResolveCSSFunctionArgs } from './css-function-resolve';
 import { spliceTemplateFragments } from '../css-value-utils';
 
@@ -518,8 +529,24 @@ export function isProjectedPathValue(value: Value): value is ProjectedPathValue 
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'ProjectedPathValue';
 }
 
-export function isVertexHandleValue(value: Value): value is VertexHandleValue {
-  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'VertexHandleValue';
+export function isEndpointValue(value: Value): value is EndpointValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'EndpointValue';
+}
+
+export function isCommandValue(value: Value): value is CommandValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'CommandValue';
+}
+
+export function isCallValue(value: Value): value is CallValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'CallValue';
+}
+
+export function isSegmentValue(value: Value): value is SegmentValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SegmentValue';
+}
+
+export function isSubpathValue(value: Value): value is SubpathValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SubpathValue';
 }
 
 /** Error text for a failed label query, listing what the path actually has. */
@@ -541,6 +568,28 @@ function runSegmentQuery(
   } catch (e) {
     throw mError(e instanceof Error ? e.message : String(e));
   }
+}
+
+/** query()/queryAll() with parse and no-match errors rethrown through the call site's line-aware wrapper. */
+function runQueryMethod(
+  source: QuerySource,
+  method: 'query' | 'queryAll',
+  selector: string,
+  mError: (msg: string) => Error,
+): Value {
+  try {
+    return runPathQuery(source, method, selector);
+  } catch (e) {
+    throw mError(e instanceof Error ? e.message : String(e));
+  }
+}
+
+/** The fn/method name a statement's callee contributes to `call(fn)` queries. */
+function calleeName(expr: { type: string; name?: unknown; method?: unknown } | undefined): string | undefined {
+  if (!expr) return undefined;
+  if (expr.type === 'FunctionCall' && typeof expr.name === 'string') return expr.name;
+  if (expr.type === 'MethodCallExpression' && typeof expr.method === 'string') return expr.method;
+  return undefined;
 }
 
 export function isTextBlockValue(value: Value): value is TextBlockValue {
@@ -995,72 +1044,10 @@ function extractVertices(commands: PathBlockCommand[]): PointValue[] {
  * Count subpaths (separated by m commands after the first command)
  */
 function countSubPaths(commands: PathBlockCommand[]): number {
-  if (commands.length === 0) return 0;
-  let count = 1;
-  for (let i = 1; i < commands.length; i++) {
-    if (commands[i].command === 'm') count++;
-  }
-  return count;
+  // SVG rule, shared with .contours and the `subpath` query noun.
+  return splitSubpaths(commands).length;
 }
 
-/**
- * Normalize a raw path-context history entry to the PathBlockCommand invariant:
- * command is lowercase, and positional args are relative to the command's start point.
- *
- * The context history preserves the original command character (so 'Q' stays 'Q') and
- * stores args exactly as the source wrote them. For uppercase (absolute) originals, the
- * args are absolute coordinates and must be converted to relative before the lowercased
- * command is stored on the PathBlockValue.
- *
- * After the stdlib-to-relative refactor, shape helpers (circle, rect, roundRect, polygon,
- * star, line, quadratic, cubic) emit absolute `M` + relative body, so this helper is a
- * no-op for their body commands. It still runs meaningfully for:
- *   - The initial absolute `M` those shapes emit (M → m: no arg read by the emitter, but
- *     we normalize for interface consistency).
- *   - Continuation helpers that stay uppercase: arc (A), moveTo (M), lineTo (L),
- *     closePath (Z) — for these, commandsToRelativeD reads only non-positional args or
- *     end/start deltas, but consistency of the interface still matters.
- */
-function normalizeToRelativeArgs(
-  command: string,
-  args: number[],
-  start: { x: number; y: number },
-): number[] {
-  // Already lowercase: args are already relative
-  if (command === command.toLowerCase()) return [...args];
-  const sx = start.x;
-  const sy = start.y;
-  const c = command.toUpperCase();
-  switch (c) {
-    case 'M':
-    case 'L':
-    case 'T':
-      return [args[0] - sx, args[1] - sy];
-    case 'H':
-      return [args[0] - sx];
-    case 'V':
-      return [args[0] - sy];
-    case 'C':
-      return [
-        args[0] - sx, args[1] - sy,
-        args[2] - sx, args[3] - sy,
-        args[4] - sx, args[5] - sy,
-      ];
-    case 'S':
-    case 'Q':
-      return [
-        args[0] - sx, args[1] - sy,
-        args[2] - sx, args[3] - sy,
-      ];
-    case 'A':
-      // rx, ry, rotation, large-arc, sweep are non-positional; only end (args[5], args[6]) is positional
-      return [args[0], args[1], args[2], args[3], args[4], args[5] - sx, args[6] - sy];
-    case 'Z':
-      return [];
-    default:
-      return [...args];
-  }
-}
 
 /** Resolve cut()'s cutter argument: one PathBlock/ProjectedPath, or an
  *  array of them — array knives cut exactly as if their strokes lived in
@@ -2372,17 +2359,32 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
   // LayerReference methods: .append() for GroupLayer
   if (isLayerReference(obj)) {
     if (
-      expr.method === 'segment' || expr.method === 'segmentAll' ||
-      expr.method === 'point' || expr.method === 'pointAll' ||
-      expr.method === 'vertex' || expr.method === 'vertexAll'
+      expr.method === 'segment' ||
+      expr.method === 'segmentAll' ||
+      expr.method === 'point' ||
+      expr.method === 'pointAll' ||
+      expr.method === 'vertex' ||
+      expr.method === 'vertexAll' ||
+      expr.method === 'query' ||
+      expr.method === 'queryAll'
     ) {
       if (obj.layer.layerType !== 'PathLayer') {
         throw mError(`.${expr.method}() is only available on PathLayer references`);
       }
-      if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (name)`);
+      const isQuery = expr.method === 'query' || expr.method === 'queryAll';
+      if (expr.args.length !== 1) {
+        throw mError(`${expr.method}() expects 1 argument (${isQuery ? 'selector' : 'name'})`);
+      }
       const qName = evaluateExpression(expr.args[0], scope);
-      if (typeof qName !== 'string') throw mError(`${expr.method}() name must be a string`);
-      if (expr.method !== 'segment' && expr.method !== 'segmentAll') {
+      if (typeof qName !== 'string') {
+        throw mError(`${expr.method}() ${isQuery ? 'selector' : 'name'} must be a string`);
+      }
+      if (
+        expr.method === 'point' ||
+        expr.method === 'pointAll' ||
+        expr.method === 'vertex' ||
+        expr.method === 'vertexAll'
+      ) {
         try { rejectPseudoOnNonSegmentQuery(expr.method, qName); } catch (e) { throw mError((e as Error).message); }
       }
       const layerState = obj.layer as PathLayerState;
@@ -2391,23 +2393,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       // authored records keep their annotations for emit-time finalization).
       const fin = applyRecordedCornerOps(authoredFlat);
       const cmds = fin.commands;
+      const layerSource: QuerySource = { kind: 'layer', value: obj, commands: cmds };
 
+      if (expr.method === 'query' || expr.method === 'queryAll') {
+        return runQueryMethod(layerSource, expr.method, qName, mError);
+      }
       if (expr.method === 'segment' || expr.method === 'segmentAll') {
-        const buildLayerSegment = (run: PathBlockCommand[]): ProjectedPathValue => {
-          const copies = run.map((c) => ({
-            command: c.command,
-            args: [...c.args],
-            start: { ...c.start },
-            end: { ...c.end },
-            ...(c.meta !== undefined ? { meta: c.meta } : {}),
-          }));
-          return {
-            type: 'ProjectedPathValue' as const,
-            commands: copies,
-            startPoint: firstInkedPointOf(copies) ?? { ...copies[0].start },
-            endPoint: { ...copies[copies.length - 1].end },
-          };
-        };
+        const buildLayerSegment = (run: PathBlockCommand[]): ProjectedPathValue =>
+          wrapCommands(run, 'layer') as ProjectedPathValue;
         const q = runSegmentQuery(cmds, qName, mError);
         if (expr.method === 'segmentAll') {
           return { type: 'ArrayValue' as const, elements: q.runs.map(buildLayerSegment) };
@@ -2433,14 +2426,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       // Same pairing guard as the PathBlock site: never zip diverging lists.
       const authoredMatches = findEndpointCommands(authoredFlat, qName);
       const paired = authoredMatches.length === targets.length ? authoredMatches : null;
-      const buildLayerHandle = (target: PathBlockCommand, i: number): VertexHandleValue => ({
-        type: 'VertexHandleValue' as const,
-        sourceKind: 'layer' as const,
-        source: obj,
-        label: qName,
-        point: { x: (paired ? paired[i] : target).end.x, y: (paired ? paired[i] : target).end.y },
-        cornerIndex: locateCornerPos(cmds, target),
-      });
+      const buildLayerHandle = (target: PathBlockCommand, i: number): EndpointValue =>
+        endpointValue(layerSource, cmds.indexOf(target), {
+          label: qName,
+          point: { x: (paired ? paired[i] : target).end.x, y: (paired ? paired[i] : target).end.y },
+        });
       if (expr.method === 'vertexAll') {
         return { type: 'ArrayValue' as const, elements: targets.map(buildLayerHandle) };
       }
@@ -2708,28 +2698,21 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         };
       }
 
+      case 'query':
+      case 'queryAll': {
+        if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (selector)`);
+        const selector = evaluateExpression(expr.args[0], scope);
+        if (typeof selector !== 'string') throw mError(`${expr.method}() selector must be a string`);
+        return runQueryMethod({ kind: 'pathblock', value: obj, commands: obj.commands }, expr.method, selector, mError);
+      }
+
       case 'segment':
       case 'segmentAll': {
         if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (name)`);
         const segName = evaluateExpression(expr.args[0], scope);
         if (typeof segName !== 'string') throw mError(`${expr.method}() name must be a string`);
-        const buildSubBlock = (run: PathBlockCommand[]): PathBlockValue => {
-          const runStart = run[0].start;
-          const rebased = run.map((c) => ({
-            command: c.command,
-            args: [...c.args],
-            start: { x: c.start.x - runStart.x, y: c.start.y - runStart.y },
-            end: { x: c.end.x - runStart.x, y: c.end.y - runStart.y },
-            ...(c.meta !== undefined ? { meta: c.meta } : {}),
-          }));
-          return {
-            type: 'PathBlockValue' as const,
-            commands: rebased,
-            records: recordsFromCommands(rebased),
-            startPoint: firstInkedPointOf(rebased) ?? { x: 0, y: 0 },
-            endPoint: { x: rebased[rebased.length - 1].end.x, y: rebased[rebased.length - 1].end.y },
-          };
-        };
+        const buildSubBlock = (run: PathBlockCommand[]): PathBlockValue =>
+          wrapCommands(run, 'pathblock') as PathBlockValue;
         const q = runSegmentQuery(obj.commands, segName, mError);
         if (expr.method === 'segmentAll') {
           return { type: 'ArrayValue' as const, elements: q.runs.map(buildSubBlock) };
@@ -2775,16 +2758,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         // for every handle (correct commands, post-trim positions).
         const authoredMatches = findEndpointCommands(obj.records.flatMap((r) => r.commands), vName);
         const paired = authoredMatches.length === targets.length ? authoredMatches : null;
-        const buildHandle = (target: PathBlockCommand, i: number): VertexHandleValue => {
+        const blockSource: QuerySource = { kind: 'pathblock', value: obj, commands: obj.commands };
+        const buildHandle = (target: PathBlockCommand, i: number): EndpointValue => {
           const authoredCmd = paired ? paired[i] : target;
-          return {
-            type: 'VertexHandleValue' as const,
-            sourceKind: 'pathblock' as const,
-            source: obj,
+          return endpointValue(blockSource, obj.commands.indexOf(target), {
             label: vName,
             point: { x: authoredCmd.end.x, y: authoredCmd.end.y },
-            cornerIndex: locateCornerPos(obj.commands, target),
-          };
+          });
         };
         if (expr.method === 'vertexAll') {
           return { type: 'ArrayValue' as const, elements: targets.map(buildHandle) };
@@ -3413,26 +3393,21 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         };
       }
 
+      case 'query':
+      case 'queryAll': {
+        if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (selector)`);
+        const selector = evaluateExpression(expr.args[0], scope);
+        if (typeof selector !== 'string') throw mError(`${expr.method}() selector must be a string`);
+        return runQueryMethod({ kind: 'projected', value: obj, commands: obj.commands }, expr.method, selector, mError);
+      }
+
       case 'segment':
       case 'segmentAll': {
         if (expr.args.length !== 1) throw mError(`${expr.method}() expects 1 argument (name)`);
         const segName = evaluateExpression(expr.args[0], scope);
         if (typeof segName !== 'string') throw mError(`${expr.method}() name must be a string`);
-        const buildSubProjected = (run: PathBlockCommand[]): ProjectedPathValue => {
-          const copies = run.map((c) => ({
-            command: c.command,
-            args: [...c.args],
-            start: { ...c.start },
-            end: { ...c.end },
-            ...(c.meta !== undefined ? { meta: c.meta } : {}),
-          }));
-          return {
-            type: 'ProjectedPathValue' as const,
-            commands: copies,
-            startPoint: firstInkedPointOf(copies) ?? { ...copies[0].start },
-            endPoint: { ...copies[copies.length - 1].end },
-          };
-        };
+        const buildSubProjected = (run: PathBlockCommand[]): ProjectedPathValue =>
+          wrapCommands(run, 'projected') as ProjectedPathValue;
         const q = runSegmentQuery(obj.commands, segName, mError);
         if (expr.method === 'segmentAll') {
           return { type: 'ArrayValue' as const, elements: q.runs.map(buildSubProjected) };
@@ -3468,14 +3443,9 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (typeof vName !== 'string') throw mError(`${expr.method}() name must be a string`);
         try { rejectPseudoOnNonSegmentQuery(expr.method, vName); } catch (e) { throw mError((e as Error).message); }
         const targets = findEndpointCommands(obj.commands, vName);
-        const buildProjectedHandle = (target: PathBlockCommand): VertexHandleValue => ({
-          type: 'VertexHandleValue' as const,
-          sourceKind: 'projected' as const,
-          source: obj,
-          label: vName,
-          point: { x: target.end.x, y: target.end.y },
-          cornerIndex: locateCornerPos(obj.commands, target),
-        });
+        const projectedSource: QuerySource = { kind: 'projected', value: obj, commands: obj.commands };
+        const buildProjectedHandle = (target: PathBlockCommand): EndpointValue =>
+          endpointValue(projectedSource, obj.commands.indexOf(target), { label: vName });
         if (expr.method === 'vertexAll') {
           return { type: 'ArrayValue' as const, elements: targets.map(buildProjectedHandle) };
         }
@@ -3896,21 +3866,25 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     }
   }
 
-  // VertexHandleValue methods — corner ops on a named vertex
-  if (isVertexHandleValue(obj)) {
+  // EndpointValue methods — corner ops on a joint (query('endpoint(...)') results and legacy vertex() handles)
+  if (isEndpointValue(obj)) {
     const handle = obj;
     switch (expr.method) {
       case 'fillet':
       case 'chamfer':
       case 'ellipticalFillet': {
-        if (handle.sourceKind !== 'pathblock') {
-          const what = handle.sourceKind === 'layer' ? 'layer' : 'projected path';
+        if (handle.source.kind !== 'pathblock') {
+          const what = handle.source.kind === 'layer' ? 'layer' : 'projected path';
           throw mError(
-            `${expr.method}() on a ${what} vertex handle is not supported yet — corner ops via vertex handles work on PathBlock values`,
+            `${expr.method}() on a ${what} endpoint is not supported yet — corner ops via endpoints work on PathBlock values`,
           );
         }
+        const who =
+          handle.label !== null
+            ? `endpoint('${handle.label}')`
+            : `endpoint at ${formatNum(handle.point.x)}, ${formatNum(handle.point.y)}`;
         if (handle.cornerIndex === -1) {
-          throw mError(`vertex('${handle.label}') is not at a corner (collinear edges) — nothing to ${expr.method}`);
+          throw mError(`${who} is not at a corner (collinear edges) — nothing to ${expr.method}`);
         }
         const arity: Record<string, [number, number]> = { fillet: [1, 1], chamfer: [1, 2], ellipticalFillet: [2, 3] };
         const [min, max] = arity[expr.method];
@@ -3922,7 +3896,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           if (typeof v !== 'number' || !Number.isFinite(v)) throw mError(`${expr.method}() argument ${i + 1} must be a finite number`);
           return v;
         });
-        const src = handle.source as PathBlockValue;
+        const src = handle.source.value as PathBlockValue;
         let res: { commands: PathBlockCommand[]; warnings: string[] };
         if (expr.method === 'fillet') res = filletCommands(src.commands, nums[0], [handle.cornerIndex]);
         else if (expr.method === 'chamfer') res = chamferCommands(src.commands, nums[0], nums[1] ?? nums[0], [handle.cornerIndex]);
@@ -3933,7 +3907,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         return buildPathBlockFromCommands(res.commands, { x: 0, y: 0 });
       }
       default:
-        throw mError(`Unknown method '${expr.method}' on vertex handle`);
+        throw mError(`Unknown method '${expr.method}' on Endpoint`);
     }
   }
 
@@ -5422,14 +5396,28 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
     const args = expr.args.map((a) => evaluateExpression(a, scope));
     switch (expr.method) {
       case 'keys': {
+        // Built-in structs (Point, Command, Endpoint, …) answer through the shared registry.
+        const struct = args.length === 1 ? getStructDescriptor(args[0]) : null;
+        if (struct) return { type: 'ArrayValue', elements: struct.keys(args[0]) };
         if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.keys() expects 1 object argument');
         return { type: 'ArrayValue', elements: Array.from(args[0].properties.keys()) };
       }
       case 'values': {
+        const struct = args.length === 1 ? getStructDescriptor(args[0]) : null;
+        if (struct) return { type: 'ArrayValue', elements: struct.keys(args[0]).map((k) => struct.get(args[0], k)) };
         if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.values() expects 1 object argument');
         return { type: 'ArrayValue', elements: Array.from(args[0].properties.values()) };
       }
       case 'entries': {
+        const struct = args.length === 1 ? getStructDescriptor(args[0]) : null;
+        if (struct) {
+          return {
+            type: 'ArrayValue',
+            elements: struct
+              .keys(args[0])
+              .map((k) => ({ type: 'ArrayValue' as const, elements: [k, struct.get(args[0], k)] as Value[] })),
+          };
+        }
         if (args.length !== 1 || !isObjectValue(args[0])) throw mError('Object.entries() expects 1 object argument');
         const entries = Array.from(args[0].properties.entries()).map(([k, v]) => ({
           type: 'ArrayValue' as const,
@@ -5960,8 +5948,28 @@ function formatValueForDisplay(val: Value): string {
     const more = val.commands.length > 6 ? ' …' : '';
     return `PathBlock(${val.commands.length} command${val.commands.length === 1 ? '' : 's'}${preview ? `: ${preview}${more}` : ''})`;
   }
-  if (isVertexHandleValue(val)) {
-    return `VertexHandle('${val.label}' at ${formatNum(val.point.x)}, ${formatNum(val.point.y)})`;
+  if (isEndpointValue(val)) {
+    const at = `at ${formatNum(val.point.x)}, ${formatNum(val.point.y)}`;
+    return val.label !== null ? `Endpoint('${val.label}' ${at})` : `Endpoint(${at})`;
+  }
+  if (isCommandValue(val)) {
+    const cmd = val.source.commands[val.index];
+    const args = cmd.args.map((a) => formatNum(a)).join(' ');
+    const from = `Point(${formatNum(cmd.start.x)}, ${formatNum(cmd.start.y)})`;
+    const to = `Point(${formatNum(cmd.end.x)}, ${formatNum(cmd.end.y)})`;
+    return `Command(${cmd.command}${args ? ` ${args}` : ''}: ${from} → ${to})`;
+  }
+  if (isCallValue(val)) {
+    const n = val.to - val.from;
+    return `Call(${val.fn}: ${n} command${n === 1 ? '' : 's'})`;
+  }
+  if (isSegmentValue(val)) {
+    const n = val.to - val.from;
+    return `Segment('${val.label}': ${n} command${n === 1 ? '' : 's'})`;
+  }
+  if (isSubpathValue(val)) {
+    const n = val.to - val.from;
+    return `Subpath(${val.index}: ${n} command${n === 1 ? '' : 's'}, ${val.closed ? 'closed' : 'open'})`;
   }
   if (isProjectedPathValue(val)) {
     return `ProjectedPath(${formatNum(val.startPoint.x)}, ${formatNum(val.startPoint.y)} → ${formatNum(val.endPoint.x)}, ${formatNum(val.endPoint.y)})`;
@@ -6038,20 +6046,9 @@ function evaluateTemplateLiteral(tl: TemplateLiteral, scope: Scope): string {
     .join('');
 }
 
-/** `{ command, args, start, end }` structs for `.commands` / `.subPathCommands`. */
-function commandRecordsValue(commands: PathBlockCommand[]): Value {
-  return {
-    type: 'ArrayValue' as const,
-    elements: commands.map((cmd) => ({
-      type: 'ObjectValue' as const,
-      properties: new Map<string, Value>([
-        ['command', cmd.command],
-        ['args', { type: 'ArrayValue' as const, elements: cmd.args as Value[] }],
-        ['start', { type: 'PointValue' as const, x: cmd.start.x, y: cmd.start.y }],
-        ['end', { type: 'PointValue' as const, x: cmd.end.x, y: cmd.end.y }],
-      ]),
-    })),
-  };
+/** `.commands` / `.subPathCommands`: Command structs — the same values `queryAll('command')` returns. */
+function commandRecordsValue(source: QuerySource): Value {
+  return commandValues(source);
 }
 
 function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
@@ -6089,7 +6086,7 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return countSubPaths(obj.commands);
       case 'subPathCommands':
       case 'commands':
-        return commandRecordsValue(obj.commands);
+        return commandRecordsValue({ kind: 'pathblock', value: obj, commands: obj.commands });
       case 'd':
         // The relative path data the block emits when drawn at the origin —
         // exactly what .draw() writes before placement.
@@ -6197,7 +6194,7 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return countSubPaths(obj.commands);
       case 'subPathCommands':
       case 'commands':
-        return commandRecordsValue(obj.commands);
+        return commandRecordsValue({ kind: 'projected', value: obj, commands: obj.commands });
       case 'd': {
         // Absolute path data: a ProjectedPath already lives in world space,
         // so it starts with an explicit move to its first point.
@@ -6679,7 +6676,13 @@ function evaluateStatementBuiltin(call: FunctionCall, scope: Scope): void {
         stringValue = formatValueForDisplay(value);
       } else if (isProjectedPathValue(value)) {
         stringValue = formatValueForDisplay(value);
-      } else if (isVertexHandleValue(value)) {
+      } else if (
+        isEndpointValue(value) ||
+        isCommandValue(value) ||
+        isCallValue(value) ||
+        isSegmentValue(value) ||
+        isSubpathValue(value)
+      ) {
         stringValue = formatValueForDisplay(value);
       } else if (isCyclerValue(value)) {
         stringValue = formatValueForDisplay(value);
@@ -8860,7 +8863,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         const bindValue = (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') ? value.result : value;
         bindDestructuringPattern(stmt.pattern, bindValue, scope, getLine(stmt));
         if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult' && value.path) {
-          recordPath(accum, value.path, value.commands ?? [], { loc: stmt.loc });
+          recordPath(accum, value.path, value.commands ?? [], { loc: stmt.loc, fn: calleeName(stmt.value) });
         }
         return;
       }
@@ -8868,7 +8871,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
         const pwr = value;
         setVariable(scope, stmt.name, pwr.result);
-        if (pwr.path) recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc });
+        if (pwr.path) recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc, fn: calleeName(stmt.value) });
         return;
       }
       setVariable(scope, stmt.name, value);
@@ -8880,7 +8883,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathWithResult') {
         const pwr = value;
         updateVariable(scope, stmt.name, pwr.result, getLine(stmt));
-        if (pwr.path) recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc });
+        if (pwr.path) recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc, fn: calleeName(stmt.value) });
         return;
       }
       updateVariable(scope, stmt.name, value, getLine(stmt));
@@ -9048,7 +9051,7 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
             // `accum` is the default layer's accumulator at top level (it adopts the
             // top-level accum) and the active layer's inside an apply block, so a
             // single push routes correctly in all cases.
-            recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc });
+            recordPath(accum, pwr.path, pwr.commands ?? [], { loc: stmt.loc, fn: calleeName(stmt.args[0]) });
             const annotations = evaluatePathAnnotations(stmt, scope);
             if (annotations) {
               applyAnnotationsToStore(accum, annotations, (msg) => {
@@ -9084,7 +9087,10 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         // `accum` is the default layer's accumulator at top level (the default layer
         // adopts the top-level accum) and the active layer's accumulator inside an
         // apply block — a single push routes correctly in all cases.
-        recordPath(accum, result.text, result.commands, { loc: stmt.loc });
+        recordPath(accum, result.text, result.commands, {
+          loc: stmt.loc,
+          fn: stmt.command === '' ? calleeName(stmt.args[0]) : undefined,
+        });
         const annotations = evaluatePathAnnotations(stmt, scope);
         if (annotations) {
           applyAnnotationsToStore(accum, annotations, (msg) => {
@@ -9864,6 +9870,7 @@ function storeToRecordsOutput(store: PathStore): PathRecordOutput[] {
   return store.records.map((r) => ({
     ...(r.loc ? { loc: r.loc } : {}),
     ...(r.label !== undefined ? { label: r.label } : {}),
+    ...(r.fn !== undefined ? { fn: r.fn } : {}),
     raw: r.raw,
     commandCount: r.commands.length,
   }));

@@ -2046,7 +2046,7 @@ export function filletCommands(
  * For arcs: perpendicular to radius at endpoint (direction of travel).
  * For curves: direction from last control point to endpoint.
  */
-function getEdgeTangentAtEnd(cmd: TransformCmd): { dx: number; dy: number } {
+export function getEdgeTangentAtEnd(cmd: TransformCmd): { dx: number; dy: number } {
   const upper = cmd.command.toUpperCase();
   if (upper === 'A') {
     const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
@@ -2087,7 +2087,7 @@ function getEdgeTangentAtEnd(cmd: TransformCmd): { dx: number; dy: number } {
 /**
  * Compute the tangent direction (as dx, dy) at the START of a command.
  */
-function getEdgeTangentAtStart(cmd: TransformCmd): { dx: number; dy: number } {
+export function getEdgeTangentAtStart(cmd: TransformCmd): { dx: number; dy: number } {
   const upper = cmd.command.toUpperCase();
   if (upper === 'A') {
     const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;

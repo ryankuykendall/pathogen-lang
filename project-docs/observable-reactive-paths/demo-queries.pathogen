@@ -1,0 +1,53 @@
+// Path queries, milestone 1 demo: structural queries on a layer, no labels.
+// - dots at every joint of the tab outline (subpath 0)
+// - every arc's centre marked and spoked, including the two the circle() drew
+define ViewBox(0, 0, 260, 170);
+define PathLayer('shape') #{ stroke: #333; stroke-width: 2; fill: none; }
+define PathLayer('spokes') #{ stroke: #d33; stroke-width: 1; fill: none; }
+define PathLayer('centers') #{ fill: #d33; stroke: none; }
+define PathLayer('dots') #{ fill: #36c; stroke: none; }
+
+let tab = @{
+  h 80;
+  a 16 16 0 0 1 16 16;
+  v 40;
+  a 16 16 0 0 1 -16 16;
+  h -80;
+  z;
+};
+
+layer('shape').apply {
+  let placed = tab.drawTo(30, 40);
+  circle(200, 100, 28);
+}
+
+let outline = layer('shape');
+
+layer('spokes').apply {
+  for (arc in outline.queryAll('command(a)')) {
+    let from = arc.start;
+    let hub = arc.center;
+    let to = arc.end;
+    M from.x from.y;
+    L hub.x hub.y;
+    L to.x to.y;
+  }
+}
+
+layer('centers').apply {
+  for (arc in outline.queryAll('command(a)')) {
+    circle(arc.center.x, arc.center.y, 2);
+  }
+}
+
+layer('dots').apply {
+  for (corner in outline.queryAll('subpath(0) endpoint')) {
+    circle(corner.x, corner.y, 3);
+  }
+}
+
+log(outline.queryAll('command(a)').length, outline.queryAll('call').length);
+log(outline.query('call(circle)').block.length);
+for (corner in outline.queryAll('subpath(0) endpoint')) {
+  log(corner.index, corner.point, corner.turn.deg);
+}
