@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 230" width="480" height="230">
+  <style><![CDATA[
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #d0d7f0;
+    }
+  ]]></style>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 230 l -480 0 z" fill="var(--bg, #d0d7f0)" stroke="none" stroke-width="2"/>
+  <g data-layer-name="left" id="left" transform="translate(40, 70)">
+    <path data-layer-name="left-form" id="left-form" d="M 0 50 h 28 v 28 h -28 z M 44 32 h 46 v 46 h -46 z M 106 18 h 60 v 60 h -60 z" fill="none" stroke="#0d1638" stroke-width="1.5"/>
+    <text data-layer-name="left-eyebrow" id="left-eyebrow" x="0" y="-18" font-family="sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)" text-anchor="start">THREE SUBPATHS</text>
+    <text data-layer-name="left-note" id="left-note" x="0" y="100" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">edges of 28, 46 and 60</text>
+  </g>
+  <g data-layer-name="right" id="right" transform="translate(270, 70)">
+    <path data-layer-name="fills" id="fills" d="M 44 32 h 46 v 46 h -46 z M 106 18 h 60 v 60 h -60 z" fill="rgba(13, 22, 56, 0.1)" stroke="none" stroke-width="2"/>
+    <path data-layer-name="right-form" id="right-form" d="M 0 50 h 28 v 28 h -28 z M 44 32 h 46 v 46 h -46 z M 106 18 h 60 v 60 h -60 z" fill="none" stroke="#0d1638" stroke-width="1.5"/>
+    <path data-layer-name="long-edges" id="long-edges" d="M 44 32 h 46 M 90 32 v 46 M 90 78 h -46 M 44 78 z M 106 18 h 60 M 166 18 v 60 M 166 78 h -60 M 106 78 z" fill="none" stroke="#bd423a" stroke-width="3.5" stroke-linecap="round"/>
+    <path data-layer-name="last-three" id="last-three" d="M 163 78 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 103 78 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 103 18 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="#346ecd" stroke="none" stroke-width="2"/>
+    <text data-layer-name="right-eyebrow" id="right-eyebrow" x="0" y="-18" font-family="sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)" text-anchor="start">FILTERED, RANGED</text>
+    <text data-layer-name="right-note" id="right-note" x="0" y="100" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">[length&gt;40] · subpath(1..2) · nth(-3..-1)</text>
+  </g>
+  <path data-layer-name="divider" id="divider" d="M 240 45 L 240 200" fill="none" stroke="rgba(13, 22, 56, 0.22)" stroke-width="0.5"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"var(--bg, #d0d7f0)","stroke":"none"},"isDefault":false},{"name":"left","type":"group","styles":{},"isDefault":false,"transform":"translate(40, 70)","children":[{"name":"left-form","type":"path","styles":{"stroke":"#0d1638","stroke-width":"1.5","fill":"none"},"isDefault":false},{"name":"left-eyebrow","type":"text","styles":{"font-family":"sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)","text-anchor":"start"},"isDefault":false},{"name":"left-note","type":"text","styles":{"font-family":"sans-serif","font-size":"8","letter-spacing":"0.5","fill":"#0d1638","text-anchor":"start"},"isDefault":false}]},{"name":"right","type":"group","styles":{},"isDefault":false,"transform":"translate(270, 70)","children":[{"name":"fills","type":"path","styles":{"fill":"rgba(13, 22, 56, 0.1)","stroke":"none"},"isDefault":false},{"name":"right-form","type":"path","styles":{"stroke":"#0d1638","stroke-width":"1.5","fill":"none"},"isDefault":false},{"name":"long-edges","type":"path","styles":{"stroke":"#bd423a","stroke-width":"3.5","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"last-three","type":"path","styles":{"fill":"#346ecd","stroke":"none"},"isDefault":false},{"name":"right-eyebrow","type":"text","styles":{"font-family":"sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)","text-anchor":"start"},"isDefault":false},{"name":"right-note","type":"text","styles":{"font-family":"sans-serif","font-size":"8","letter-spacing":"0.5","fill":"#0d1638","text-anchor":"start"},"isDefault":false}]},{"name":"divider","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.22)","stroke-width":"0.5","fill":"none"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg","syntax":"<color>","inherits":true,"initialValue":"#d0d7f0"}],"viewBox":{"originX":0,"originY":0,"width":480,"height":230}}]]></script>
+</svg>

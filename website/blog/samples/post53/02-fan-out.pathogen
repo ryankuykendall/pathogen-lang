@@ -1,0 +1,145 @@
+//-- Fan-out. One subscription, two target layers: a dot on every joint and
+//-- its number beside it, from the ordinal the callback receives.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightLabels = TextLayer('right-labels') #{
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: accent;
+  text-anchor: middle;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    rightDots,
+    rightLabels,
+    rightEyebrow,
+    rightNote);
+
+// The callback's second parameter is the ordinal among this subscription's
+// matches; the label sits a fixed distance out along the joint's own turn.
+rightForm.subscribe('endpoint') {|corner, i|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+  // Outward at the joint: the incoming command's end tangent, turned half
+  // the corner's own turn, then a quarter turn off the path.
+  let heading = corner.command.block.tangent(1).angle;
+  let away = heading + corner.turn.rad / 2 - PI() / 2;
+  rightLabels.apply {
+    text(corner.x + cos(away) * 11, corner.y + sin(away) * 11 + 2.5)`${i}`;
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 112)`six joints, drawn in order`;
+}
+rightEyebrow.apply {
+  text(0, -18)`DOTS AND NUMBERS`;
+}
+rightNote.apply {
+  text(0, 112)`{|corner, i|} — one block, two layers`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}

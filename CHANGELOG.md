@@ -5,9 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-09-16 (friction fixes from the "Drawing Without Bookkeeping" samples)
+## [Unreleased] - 2026-09-16 (blog series "Drawing Without Bookkeeping", parts 1–2, and the friction fixes their samples exposed)
 
-Three evaluator bugs the first blog samples exposed, logged in `project-docs/observable-reactive-paths/FRICTION-LOG.md` (entries 12–14) and told in the posts' closing sections.
+Four evaluator bugs the first blog samples exposed, logged in `project-docs/observable-reactive-paths/FRICTION-LOG.md` (entries 12–15) and told in the posts' closing sections.
+
+### Added
+
+#### Documentation
+
+- **Blog series "Drawing Without Bookkeeping", parts 1 and 2.** Every sample is a form on the left and its annotated twin on the right, and the twin never re-types a coordinate the form already knows. Part 1, *Ask the Path* (`/blog/ask-the-path`, six samples in `website/blog/samples/post52/`), teaches `query()`/`queryAll()` noun by noun — every arc with its centre, labels through the same grammar, everything one `call` drew, filters and `:nth` ranges, and the `subpath` noun against the unrelated `.subPath()` method. Part 2, *Thinking and Drawing in Parallel* (`/blog/thinking-and-drawing-in-parallel`, `post53/`), teaches `subscribe()`: a subscription declared before the drawing, one block fanning out to two layers, windows and `unsubscribe()`, `:nth(-3..-1)` under a subscription, a second round annotating the annotations, and the closure caveat made visible. Both posts close with a working friction log; three domain posts follow. Review dispositions in `project-docs/observable-reactive-paths/reviews/`.
+- The older *Name Your Corners* post no longer calls its samples "live editors" (the code panel is read-only; the button opens a playground workspace).
 
 ### Fixed
 
@@ -16,6 +23,7 @@ Three evaluator bugs the first blog samples exposed, logged in `project-docs/obs
 - **The one-line `M x y block.draw()` idiom records what it draws.** The greedy path-argument tokenizer folds a following `block.draw()` into the preceding command's arguments; the block's commands were tracked against the live context *before* the command moved the pen, and the statement's structured record kept only the leading command. `layer('x').queryAll('endpoint')` on such a layer found nothing past the move, trace histories carried the wrong cursors, and `ctx.position` after the statement sat at the move rather than the block's end. The evaluator now snapshots the context before a command's arguments evaluate and, when the emitted text carries further commands, rewinds and replays the whole fragment in order; the record is named after the emitting call so `call(draw)` covers the statement. Emitted bytes unchanged.
 - **Blocks taken from a layer draw in place whatever case the layer was authored in.** The relative serializer compared command letters case-sensitively, so a run copied from a layer with an authored `M` (every `subpath(k)` block) or an uppercase `L` was emitted with the absolute letter and relative numbers. It compares and emits lowercase now.
 - **`subPath(t0, t1)` keeps the move between runs.** Moves were filtered out to measure arc length and never put back, so a slice spanning two runs spliced the second run onto the end of the first. A gap between fragments is now a relative move, and a `z` that would close to the slice's own start instead of the run's becomes the run's explicit closing line.
+- **A query block that begins with a move answers for its own run.** `Call.block`, `Segment.block` and `Subpath.block` on a run whose first command is a move were built with that move's recorded start — the pen position before it, which belongs to the previous statement — so `boundingBox()` reached back to the previous shape. The leading move is dropped when the block is wrapped; a lone move becomes a zero-length run at its own point.
 
 ## [Unreleased] - 2026-09-15 (subscriptions: `layer.subscribe(selector)`)
 

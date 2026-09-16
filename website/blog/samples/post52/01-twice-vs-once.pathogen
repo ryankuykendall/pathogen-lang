@@ -1,0 +1,139 @@
+//-- The contrast row. Left: a dot on every corner, each coordinate typed a
+//-- second time by hand. Right: the same picture from one query — the
+//-- annotation layer asks the form where its corners are.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: one tab, drawn identically in both panels ───────
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel: coordinates written twice ─────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftDots, leftEyebrow, leftNote);
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+// Every corner the tab has, typed again — and wrong the moment the tab changes.
+leftDots.apply {
+  circle(120, 0, 3);
+  circle(140, 20, 3);
+  circle(140, 70, 3);
+  circle(120, 90, 3);
+  circle(0, 90, 3);
+  circle(0, 0, 3);
+}
+leftEyebrow.apply {
+  text(0, -18)`WRITTEN TWICE`;
+}
+leftNote.apply {
+  text(0, 112)`six circles, six coordinates copied by hand`;
+}
+
+// ─── Right panel: asked once ───────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+// The form answers: one Endpoint per drawing command, in drawing order.
+rightDots.apply {
+  for (corner in rightForm.queryAll('endpoint')) {
+    circle(corner.x, corner.y, 3);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`ASKED ONCE`;
+}
+rightNote.apply {
+  text(0, 112)`one queryAll('endpoint'), zero coordinates`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}

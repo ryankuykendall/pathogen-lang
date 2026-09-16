@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 230" width="480" height="230">
+  <style><![CDATA[
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #d0d7f0;
+    }
+  ]]></style>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 230 l -480 0 z" fill="var(--bg, #d0d7f0)" stroke="none" stroke-width="2"/>
+  <g data-layer-name="left" id="left" transform="translate(40, 70)">
+    <path data-layer-name="left-form" id="left-form" d="M 26 50 a 44 44 0 1 1 88 0 a 44 44 0 1 1 -88 0 M 70 12 l 0 0 q 3 0 3 3 l 0 34 q 0 3 -3 3 l 0 0 q -3 0 -3 -3 l 0 -34 q 0 -3 3 -3 z M 63 50 a 7 7 0 1 1 14 0 a 7 7 0 1 1 -14 0 M 97 22 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="none" stroke="#0d1638" stroke-width="1.5"/>
+    <text data-layer-name="left-eyebrow" id="left-eyebrow" x="0" y="-18" font-family="sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)" text-anchor="start">FOUR STATEMENTS</text>
+    <text data-layer-name="left-note" id="left-note" x="0" y="116" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">bezel, pointer, cap, detent — four statements</text>
+  </g>
+  <g data-layer-name="right" id="right" transform="translate(270, 70)">
+    <path data-layer-name="right-form" id="right-form" d="M 26 50 a 44 44 0 1 1 88 0 a 44 44 0 1 1 -88 0 M 70 12 l 0 0 q 3 0 3 3 l 0 34 q 0 3 -3 3 l 0 0 q -3 0 -3 -3 l 0 -34 q 0 -3 3 -3 z M 63 50 a 7 7 0 1 1 14 0 a 7 7 0 1 1 -14 0 M 97 22 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="none" stroke="#0d1638" stroke-width="1.5"/>
+    <path data-layer-name="boxes" id="boxes" d="M 23 3 l 94 0 l 0 94 l -94 0 z M 64 9 l 12 0 l 0 46 l -12 0 z M 60 40 l 20 0 l 0 20 l -20 0 z M 94 16 l 12 0 l 0 12 l -12 0 z" fill="none" stroke="#008a96" stroke-width="0.75" stroke-dasharray="3 4"/>
+    <path data-layer-name="leaders" id="leaders" d="M 106 22 L 132 12 M 76 32 L 132 30 M 117 50 L 132 48 M 80 50 L 132 66" fill="none" stroke="#008a96" stroke-width="0.5"/>
+    <text data-layer-name="names" id="names" x="136" y="14.5" font-family="sans-serif" font-size="7" letter-spacing="0.8" fill="#008a96" text-anchor="start">3 circle</text>
+    <text data-layer-name="names" x="136" y="32.5" font-family="sans-serif" font-size="7" letter-spacing="0.8" fill="#008a96" text-anchor="start">1 roundRect</text>
+    <text data-layer-name="names" x="136" y="50.5" font-family="sans-serif" font-size="7" letter-spacing="0.8" fill="#008a96" text-anchor="start">0 circle</text>
+    <text data-layer-name="names" x="136" y="68.5" font-family="sans-serif" font-size="7" letter-spacing="0.8" fill="#008a96" text-anchor="start">2 circle</text>
+    <text data-layer-name="right-eyebrow" id="right-eyebrow" x="0" y="-18" font-family="sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)" text-anchor="start">CALL, ASKED</text>
+    <text data-layer-name="right-note" id="right-note" x="0" y="116" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">one box per statement, named</text>
+  </g>
+  <path data-layer-name="divider" id="divider" d="M 240 45 L 240 200" fill="none" stroke="rgba(13, 22, 56, 0.22)" stroke-width="0.5"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"var(--bg, #d0d7f0)","stroke":"none"},"isDefault":false},{"name":"left","type":"group","styles":{},"isDefault":false,"transform":"translate(40, 70)","children":[{"name":"left-form","type":"path","styles":{"stroke":"#0d1638","stroke-width":"1.5","fill":"none"},"isDefault":false},{"name":"left-eyebrow","type":"text","styles":{"font-family":"sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)","text-anchor":"start"},"isDefault":false},{"name":"left-note","type":"text","styles":{"font-family":"sans-serif","font-size":"8","letter-spacing":"0.5","fill":"#0d1638","text-anchor":"start"},"isDefault":false}]},{"name":"right","type":"group","styles":{},"isDefault":false,"transform":"translate(270, 70)","children":[{"name":"right-form","type":"path","styles":{"stroke":"#0d1638","stroke-width":"1.5","fill":"none"},"isDefault":false},{"name":"boxes","type":"path","styles":{"stroke":"#008a96","stroke-width":"0.75","stroke-dasharray":"3 4","fill":"none"},"isDefault":false},{"name":"leaders","type":"path","styles":{"stroke":"#008a96","stroke-width":"0.5","fill":"none"},"isDefault":false},{"name":"names","type":"text","styles":{"font-family":"sans-serif","font-size":"7","letter-spacing":"0.8","fill":"#008a96","text-anchor":"start"},"isDefault":false},{"name":"right-eyebrow","type":"text","styles":{"font-family":"sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)","text-anchor":"start"},"isDefault":false},{"name":"right-note","type":"text","styles":{"font-family":"sans-serif","font-size":"8","letter-spacing":"0.5","fill":"#0d1638","text-anchor":"start"},"isDefault":false}]},{"name":"divider","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.22)","stroke-width":"0.5","fill":"none"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg","syntax":"<color>","inherits":true,"initialValue":"#d0d7f0"}],"viewBox":{"originX":0,"originY":0,"width":480,"height":230}}]]></script>
+</svg>

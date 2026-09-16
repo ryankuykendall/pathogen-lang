@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 230" width="480" height="230">
+  <style><![CDATA[
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #d0d7f0;
+    }
+  ]]></style>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 230 l -480 0 z" fill="var(--bg, #d0d7f0)" stroke="none" stroke-width="2"/>
+  <g data-layer-name="left" id="left" transform="translate(50, 75)">
+    <path data-layer-name="left-form" id="left-form" d="M 0 0 h 120 a 20 20 0 0 1 20 20 v 50 a 20 20 0 0 1 -20 20 h -120 z" fill="none" stroke="#0d1638" stroke-width="1.5"/>
+    <text data-layer-name="left-eyebrow" id="left-eyebrow" x="0" y="-18" font-family="sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)" text-anchor="start">THE FORM</text>
+    <text data-layer-name="left-note" id="left-note" x="0" y="112" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">six joints, drawn in order</text>
+  </g>
+  <g data-layer-name="right" id="right" transform="translate(290, 75)">
+    <path data-layer-name="right-form" id="right-form" d="M 0 0 h 120 a 20 20 0 0 1 20 20 v 50 a 20 20 0 0 1 -20 20 h -120 z" fill="none" stroke="#0d1638" stroke-width="1.5"/>
+    <path data-layer-name="right-dots" id="right-dots" d="M 117 0 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 137 20 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 137 70 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 117 90 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M -3 90 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M -3 0 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="#346ecd" stroke="none" stroke-width="2"/>
+    <text data-layer-name="right-labels" id="right-labels" x="120" y="-8.5" font-family="sans-serif" font-size="7" font-weight="700" letter-spacing="0.8" fill="#346ecd" text-anchor="middle">0</text>
+    <text data-layer-name="right-labels" x="151" y="22.5" font-family="sans-serif" font-size="7" font-weight="700" letter-spacing="0.8" fill="#346ecd" text-anchor="middle">1</text>
+    <text data-layer-name="right-labels" x="151" y="72.5" font-family="sans-serif" font-size="7" font-weight="700" letter-spacing="0.8" fill="#346ecd" text-anchor="middle">2</text>
+    <text data-layer-name="right-labels" x="120" y="103.5" font-family="sans-serif" font-size="7" font-weight="700" letter-spacing="0.8" fill="#346ecd" text-anchor="middle">3</text>
+    <text data-layer-name="right-labels" x="-7.778174593052022" y="100.27817459305203" font-family="sans-serif" font-size="7" font-weight="700" letter-spacing="0.8" fill="#346ecd" text-anchor="middle">4</text>
+    <text data-layer-name="right-labels" x="-7.778174593052022" y="-5.278174593052023" font-family="sans-serif" font-size="7" font-weight="700" letter-spacing="0.8" fill="#346ecd" text-anchor="middle">5</text>
+    <text data-layer-name="right-eyebrow" id="right-eyebrow" x="0" y="-18" font-family="sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)" text-anchor="start">DOTS AND NUMBERS</text>
+    <text data-layer-name="right-note" id="right-note" x="0" y="112" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">{|corner, i|} — one block, two layers</text>
+  </g>
+  <path data-layer-name="divider" id="divider" d="M 240 45 L 240 200" fill="none" stroke="rgba(13, 22, 56, 0.22)" stroke-width="0.5"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"var(--bg, #d0d7f0)","stroke":"none"},"isDefault":false},{"name":"left","type":"group","styles":{},"isDefault":false,"transform":"translate(50, 75)","children":[{"name":"left-form","type":"path","styles":{"stroke":"#0d1638","stroke-width":"1.5","fill":"none"},"isDefault":false},{"name":"left-eyebrow","type":"text","styles":{"font-family":"sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)","text-anchor":"start"},"isDefault":false},{"name":"left-note","type":"text","styles":{"font-family":"sans-serif","font-size":"8","letter-spacing":"0.5","fill":"#0d1638","text-anchor":"start"},"isDefault":false}]},{"name":"right","type":"group","styles":{},"isDefault":false,"transform":"translate(290, 75)","children":[{"name":"right-form","type":"path","styles":{"stroke":"#0d1638","stroke-width":"1.5","fill":"none"},"isDefault":false},{"name":"right-dots","type":"path","styles":{"fill":"#346ecd","stroke":"none"},"isDefault":false},{"name":"right-labels","type":"text","styles":{"font-family":"sans-serif","font-size":"7","font-weight":"700","letter-spacing":"0.8","fill":"#346ecd","text-anchor":"middle"},"isDefault":false},{"name":"right-eyebrow","type":"text","styles":{"font-family":"sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)","text-anchor":"start"},"isDefault":false},{"name":"right-note","type":"text","styles":{"font-family":"sans-serif","font-size":"8","letter-spacing":"0.5","fill":"#0d1638","text-anchor":"start"},"isDefault":false}]},{"name":"divider","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.22)","stroke-width":"0.5","fill":"none"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg","syntax":"<color>","inherits":true,"initialValue":"#d0d7f0"}],"viewBox":{"originX":0,"originY":0,"width":480,"height":230}}]]></script>
+</svg>

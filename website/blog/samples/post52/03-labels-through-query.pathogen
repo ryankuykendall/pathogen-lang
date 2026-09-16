@@ -1,0 +1,158 @@
+//-- Labels through the same grammar. A comb labels every tooth `as segment`
+//-- and every root `as endpoint`. Right: `segment(tooth)` runs tinted, the
+//-- tips found by the combinator `segment(tooth) endpoint`, and the roots by
+//-- `endpoint(root)` — three questions, no indexes.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let runs = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: a comb, labelled where it is drawn ──────────────
+fn drawComb(target) {
+  target.apply {
+    M 0 70
+    for (i in 0..4) {
+      v -34 as segment('tooth');
+      v 34 as endpoint('root');
+      h 32
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linejoin: round;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawComb(leftForm);
+leftEyebrow.apply {
+  text(0, -18)`THE FORM, LABELLED`;
+}
+leftNote.apply {
+  text(0, 100)`as segment('tooth'), as endpoint('root')`;
+  text(0, 111)`five teeth, one name each`;
+}
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linejoin: round;
+};
+let teeth = PathLayer('teeth') #{
+  stroke: runs;
+  stroke-width: 4;
+  fill: none;
+  stroke-linecap: round;
+};
+let tips = PathLayer('tips') #{
+  fill: points;
+  stroke: none;
+};
+let roots = PathLayer('roots') #{
+  fill: bg_color;
+  stroke: points;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(teeth,
+    rightForm,
+    tips,
+    roots,
+    rightEyebrow,
+    rightNote);
+drawComb(rightForm);
+
+// segment(tooth): every labelled run, as a block you can draw in place.
+teeth.apply {
+  for (tooth in rightForm.queryAll('segment(tooth)')) {
+    tooth.block.draw();
+  }
+}
+// segment(tooth) endpoint: the joint at the end of each run — the tip.
+tips.apply {
+  for (tip in rightForm.queryAll('segment(tooth) endpoint')) {
+    circle(tip.x, tip.y, 3);
+  }
+}
+// endpoint(root): the labelled joints, by their own name.
+roots.apply {
+  for (root in rightForm.queryAll('endpoint(root)')) {
+    circle(root.x, root.y, 3);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`THREE QUESTIONS`;
+}
+rightNote.apply {
+  text(0, 100)`segment(tooth): the runs, tinted`;
+  text(0, 111)`segment(tooth) endpoint: the tips, solid`;
+  text(0, 122)`endpoint(root): the roots, ringed`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}

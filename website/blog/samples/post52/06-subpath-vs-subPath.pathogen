@@ -1,0 +1,190 @@
+//-- Same word, two jobs. One path with two pen-down runs. Middle: the
+//-- `subpath` noun selects those runs by the SVG rule, banded by index.
+//-- Right: the `.subPath(0.2, 0.7)` method slices the same path by
+//-- arc-length fraction, run boundaries ignored.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let runA_color = oklch(0.55 0.16 80);
+let runB_color = oklch(0.55 0.16 320);
+let sliced = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: a closed square, then an open curve ─────────────
+let shape = @{
+  h 40
+  v 54
+  h -40
+  z
+  m 56 54
+  c 14 -80 34 50 62 -50
+};
+
+fn eyebrowStyle() {
+  return #{
+    font-family: font;
+    font-size: 8;
+    font-weight: 700;
+    letter-spacing: 3;
+    fill: fg_muted;
+    text-anchor: start;
+  };
+}
+
+// ─── Left: the form ────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 22;
+  translate-y: 80;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') << eyebrowStyle();
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+leftForm.apply {
+  M 0 0 shape.draw()
+}
+leftEyebrow.apply {
+  text(0, -18)`ONE PATH`;
+}
+leftNote.apply {
+  text(0, 88)`a closed run, then an open curve`;
+}
+
+// ─── Middle: subpath, the noun ─────────────────────────────────
+let midPanel = GroupLayer('mid') #{
+  translate-x: 176;
+  translate-y: 80;
+};
+let midForm = PathLayer('mid-form') #{
+  stroke: fg_hair;
+  stroke-width: 1.5;
+  fill: none;
+};
+let runA = PathLayer('run-a') #{
+  stroke: runA_color;
+  stroke-width: 3;
+  fill: none;
+  stroke-linejoin: round;
+};
+let runB = PathLayer('run-b') #{
+  stroke: runB_color;
+  stroke-width: 3;
+  fill: none;
+};
+let midEyebrow = TextLayer('mid-eyebrow') << eyebrowStyle();
+let midNote = TextLayer('mid-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+midPanel.append(midForm,
+    runA,
+    runB,
+    midEyebrow,
+    midNote);
+midForm.apply {
+  M 0 0 shape.draw()
+}
+// subpath(0) and subpath(1): pen-down runs, delimited by the move.
+runA.apply {
+  midForm.query('subpath(0)').block.draw();
+}
+runB.apply {
+  midForm.query('subpath(1)').block.draw();
+}
+midEyebrow.apply {
+  text(0, -18)`THE NOUN`;
+}
+midNote.apply {
+  text(0, 88)`subpath(0), subpath(1)`;
+  text(0, 100)`two runs, by the SVG rule`;
+}
+
+// ─── Right: subPath(t0, t1), the method ────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 330;
+  translate-y: 80;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_hair;
+  stroke-width: 1.5;
+  fill: none;
+};
+let slice = PathLayer('slice') #{
+  stroke: sliced;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let rightEyebrow = TextLayer('right-eyebrow') << eyebrowStyle();
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, slice, rightEyebrow, rightNote);
+rightForm.apply {
+  M 0 0 shape.draw()
+}
+// .subPath(0.2, 0.7): twenty to seventy percent of the arc length, whatever
+// runs that crosses. The slice comes back re-based, so it is placed where it started.
+let placed = shape.project(0, 0);
+let piece = placed.subPath(0.2, 0.7);
+let pieceStart = placed.get(0.2);
+slice.apply {
+  piece.drawTo(pieceStart.x, pieceStart.y);
+}
+rightEyebrow.apply {
+  text(0, -18)`THE METHOD`;
+}
+rightNote.apply {
+  text(0, 88)`subPath(0.2, 0.7)`;
+  text(0, 100)`a slice by arc length`;
+}
+
+// ─── Dividers ──────────────────────────────────────────────────
+let dividerA = PathLayer('divider-a') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+let dividerB = PathLayer('divider-b') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+dividerA.apply {
+  M 163 45
+  L 163 200
+}
+dividerB.apply {
+  M 317 45
+  L 317 200
+}

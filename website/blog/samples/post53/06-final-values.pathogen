@@ -1,0 +1,140 @@
+//-- The closure caveat, made visible. A radius is changed after subscribing.
+//-- Left: a hand-written loop at the value the program had when it subscribed.
+//-- Right: the callback, which runs at program end and sees the final value.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+let radius = 3;
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftDots, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+// The callback reads `radius` when it runs, at the end of the program.
+rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, radius);
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+// A query, by contrast, runs right here — with radius still 3.
+leftDots.apply {
+  for (corner in leftForm.queryAll('endpoint')) {
+    circle(corner.x, corner.y, radius);
+  }
+}
+
+radius = 7;
+
+leftEyebrow.apply {
+  text(0, -18)`WHEN YOU ASKED`;
+}
+leftNote.apply {
+  text(0, 112)`queryAll now: radius is 3`;
+}
+rightEyebrow.apply {
+  text(0, -18)`WHEN IT RAN`;
+}
+rightNote.apply {
+  text(0, 112)`the callback ran last: radius is 7`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}

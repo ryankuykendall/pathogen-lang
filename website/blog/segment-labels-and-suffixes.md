@@ -136,4 +136,4 @@ Making this work took more than syntax. Both evaluators now track every emitted 
 
 That structured store is the foundation for what's next: labels give the compiler stable handles into path interiors, which opens the door to editing named segments in place, per-segment styling, and richer inspector tooling. The [docs page](/docs#segment-labels-syntax) covers the full syntax, the error catalogue, and the querying rules — everything in it compiles verbatim against this release.
 
-Every sample above is a live editor — change a radius, rename a label, add a command before a named corner and watch the queries follow. Or start from scratch in the [playground](/).
+Every sample above opens in the playground with one click — change a radius, rename a label, add a command before a named corner and watch the queries follow. Or start from scratch in the [playground](/).

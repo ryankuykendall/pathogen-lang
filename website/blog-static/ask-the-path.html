@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ask the Path — Pathogen Studio</title>
+  <meta name="description" content="query() and queryAll() ask a path for things by kind — every arc, every corner, everything one circle() drew — and hand back objects that know their own geometry.">
+  <link rel="canonical" href="https://pathogen.studio/blog/ask-the-path">
+  <meta property="og:title" content="Ask the Path — Pathogen Studio">
+  <meta property="og:description" content="query() and queryAll() ask a path for things by kind — every arc, every corner, everything one circle() drew — and hand back objects that know their own geometry.">
+  <meta property="og:url" content="https://pathogen.studio/blog/ask-the-path">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Ask the Path","description":"query() and queryAll() ask a path for things by kind — every arc, every corner, everything one circle() drew — and hand back objects that know their own geometry.","datePublished":"2026-09-16","url":"https://pathogen.studio/blog/ask-the-path","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Ask the Path</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Ask the Path</h1>
+        <p class="post-meta"><time datetime="2026-09-16">September 16, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 1 of 5 in Drawing Without Bookkeeping — a form on one side, its
+annotated twin on the other, and nothing copied between them.</em></p>
+<blockquote>
+<p><strong>Series: Drawing Without Bookkeeping</strong></p>
+<ol>
+<li><strong>Ask the Path</strong> (this post) — <code>query()</code> and <code>queryAll()</code></li>
+<li><a href="/blog/thinking-and-drawing-in-parallel">Thinking and Drawing in Parallel</a> — <code>subscribe()</code></li>
+<li>A four-bar linkage, dimensioned — coming</li>
+<li>A front panel with its drill schedule — coming</li>
+<li>A fretboard from one scale length — coming</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes <a href="/blog/pathblock-introduction">path block
+basics</a> — the <code>@{ }</code> sigil, <code>draw()</code>,
+<code>drawTo()</code> — and the <code>as segment(...)</code> / <code>as endpoint(...)</code> clauses from
+<a href="/blog/segment-labels-and-suffixes">Name Your Corners</a>. Labels are
+optional here: most of what follows needs none.</p>
+</blockquote>
+<p>Every sample in this series has the same shape. On the left, a <strong>form</strong>:
+the thing being drawn. On the right, its <strong>twin</strong>: the same form again
+with schematic information on top — dots, centres, boxes, tints. The
+rule is that the twin never repeats a coordinate. Whatever it knows about
+the form, it asked for.</p>
+<p>Here is the smallest version of that rule. A tab with two arcs, and a dot
+on every corner. The left panel types six coordinates a second time. The
+right panel asks:</p>
+<pre><code class="hljs language-pathogen"><span class="id">rightDots</span>.<span class="kw">apply</span> {
+  <span class="kw">for</span> (<span class="id">corner</span> <span class="kw">in</span> <span class="id">rightForm</span>.<span class="id">queryAll</span>(<span class="str">'endpoint'</span>)) {
+    <span class="id">circle</span>(<span class="id">corner</span>.<span class="id">x</span>, <span class="id">corner</span>.<span class="id">y</span>, <span class="num">3</span>);
+  }
+}
+</code></pre><p><mini-workspace code-open caption="Left: six circles, six coordinates copied by hand. Right: one queryAll('endpoint') — change the tab and the dots follow.">
+  <code>//-- The contrast row. Left: a dot on every corner, each coordinate typed a
+//-- second time by hand. Right: the same picture from one query — the
+//-- annotation layer asks the form where its corners are.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: one tab, drawn identically in both panels ───────
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel: coordinates written twice ─────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftDots, leftEyebrow, leftNote);
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+// Every corner the tab has, typed again — and wrong the moment the tab changes.
+leftDots.apply {
+  circle(120, 0, 3);
+  circle(140, 20, 3);
+  circle(140, 70, 3);
+  circle(120, 90, 3);
+  circle(0, 90, 3);
+  circle(0, 0, 3);
+}
+leftEyebrow.apply {
+  text(0, -18)`WRITTEN TWICE`;
+}
+leftNote.apply {
+  text(0, 112)`six circles, six coordinates copied by hand`;
+}
+
+// ─── Right panel: asked once ───────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+// The form answers: one Endpoint per drawing command, in drawing order.
+rightDots.apply {
+  for (corner in rightForm.queryAll('endpoint')) {
+    circle(corner.x, corner.y, 3);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`ASKED ONCE`;
+}
+rightNote.apply {
+  text(0, 112)`one queryAll('endpoint'), zero coordinates`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/01-twice-vs-once.svg" alt="Left: six circles, six coordinates copied by hand. Right: one queryAll('endpoint') — change the tab and the dots follow." loading="lazy">
+</mini-workspace></p>
+<p><code>queryAll</code> returns one <strong>Endpoint</strong> per drawing command, in drawing
+order. Each one knows its <code>x</code> and <code>y</code>, the command that ends there, the
+command that leaves, and the turn the path makes at that point. That is
+the whole idea: you ask a path for things by <em>kind</em>, and what comes back
+already knows its own geometry. The reference is the <a href="/docs#path-queries-path-queries">Path Queries
+docs</a>; this post is about what it
+unlocks.</p>
+<h2>Before you lean on it</h2>
+<p>The sharp edges first, so nothing below feels like a trick.</p>
+<ul>
+<li><strong>Queries answer finished geometry.</strong> A corner rounded by <code>with fillet</code>
+has already been rounded when you ask; the arc the fillet inserted is a
+real arc and <code>command(a)</code> will find it, and <code>endpoint(name)</code> on that
+corner answers the trimmed tangent point, not the joint you typed. The
+older <code>point(&#39;name&#39;)</code> keeps its documented preference for the sharp
+corner; <code>query</code> does not.</li>
+<li><strong><code>endpoint</code> skips pure moves.</strong> A move is where drawing starts, not
+where anything ends. A <code>z</code> that has length counts.</li>
+<li><strong>Coordinates come from the receiver.</strong> A <code>PathBlock</code> answers relative
+to its own origin; a layer, or the <code>ProjectedPath</code> that <code>drawTo()</code>
+returns (the block once it is placed on the page), answers in page
+coordinates. Every twin here asks the form where things are, so none
+of them re-types a coordinate the form already knows.</li>
+<li><strong><code>query</code> insists, <code>queryAll</code> doesn&#39;t.</strong> <code>query</code> returns one match and
+errors if there is none, listing what the path actually has, so a typo
+is caught where you wrote it. <code>queryAll</code> returns an array, empty if
+nothing matched, so it loops safely over things that might not exist.</li>
+<li><strong>Command letters are case-insensitive.</strong> Path blocks report lowercase
+relative commands whatever you typed, so <code>command(a)</code> and <code>command(A)</code>
+mean the same arcs.</li>
+</ul>
+<h2>Ask by kind</h2>
+<p>Five nouns cover everything a path is made of. Each takes, in
+parentheses, the natural way to name some of its kind:</p>
+<ul>
+<li><code>command(a)</code> — by letter, or by shape word: <code>line</code>, <code>arc</code>, <code>curve</code></li>
+<li><code>call(circle)</code> — by the function that emitted it</li>
+<li><code>segment(rib)</code> — by the label you gave the run</li>
+<li><code>endpoint(base)</code> — by the label you gave the joint</li>
+<li><code>subpath(1..2)</code> — by position</li>
+</ul>
+<p>Leave the parentheses off and you get all of them.</p>
+<p>The first noun is the one that makes labels optional. An arc command
+carries its radii and flags; the <code>Command</code> it returns adds the centre
+those imply.</p>
+<p><mini-workspace code-open caption="command(a) finds five arcs — the two drawn, the one the fillet inserted, and the circle's two halves — and each one knows its own centre.">
+  <code>//-- Every arc, no labels. Left: a tab with two drawn arcs, a corner rounded
+//-- by `with fillet`, and a circle. Right: the same form asked for
+//-- `command(a)` — each arc's centre marked and spoked, the fillet's arc and
+//-- the circle's two halves included.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form ──────────────────────────────────────────────────
+let tab = @{
+  h 100
+  a 18 18 0 0 1 18 18
+  v 50
+  a 18 18 0 0 1 -18 18
+  h -100
+  z with fillet(16)
+};
+
+fn drawForm(target) {
+  target.apply {
+    M 0 0 tab.draw()
+    circle(168, 43, 20);
+  }
+}
+
+// ─── Left panel: the form ──────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawForm(leftForm);
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 112)`two arcs drawn, one rounded in, a circle`;
+}
+
+// ─── Right panel: every arc, asked ─────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 260;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let spokes = PathLayer('spokes') #{
+  stroke: accent;
+  stroke-width: 0.75;
+  fill: none;
+};
+let centres = PathLayer('centres') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    spokes,
+    centres,
+    rightEyebrow,
+    rightNote);
+drawForm(rightForm);
+
+// An arc knows its own centre; the query hands back every arc there is —
+// including the one the fillet inserted after we typed the corner. Each
+// spoke runs from the arc's midpoint to its centre, so the two halves of
+// the circle stay countable even though they share one centre.
+let arcs = rightForm.queryAll('command(a)');
+spokes.apply {
+  for (arc in arcs) {
+    let mid = arc.block.get(0.5);
+    let hub = arc.center;
+    M mid.x mid.y
+    L hub.x hub.y
+  }
+}
+centres.apply {
+  for (arc in arcs) {
+    let mid = arc.block.get(0.5);
+    let hub = arc.center;
+    circle(mid.x, mid.y, 1.6);
+    circle(hub.x, hub.y, 2.2);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`COMMAND(A), ASKED`;
+}
+rightNote.apply {
+  text(0, 112)`${arcs.length} arcs found — the fillet's counted too`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/02-every-arc.svg" alt="command(a) finds five arcs — the two drawn, the one the fillet inserted, and the circle's two halves — and each one knows its own centre." loading="lazy">
+</mini-workspace></p>
+<p>Read the count on the right. Two arcs were typed. The <code>with fillet(16)</code>
+on the closing edge added a third when the path was finished, and
+<code>circle()</code> emits two half-circles, so the query reports five. Nothing
+was labelled; nothing was counted by hand. Each spoke runs from the arc&#39;s
+midpoint to <code>arc.center</code>, two things the same result knows — a result is
+a <em>struct</em>, a small object whose members you read with a dot.</p>
+<h2>Labels through the same grammar</h2>
+<p>Labels did not go anywhere. They are the argument to <code>segment</code> and
+<code>endpoint</code>, mirroring the way you wrote them: <code>as segment(&#39;tooth&#39;)</code> is
+asked back with <code>segment(tooth)</code>, <code>as endpoint(&#39;root&#39;)</code> with
+<code>endpoint(root)</code>. A space between two parts means <em>inside</em>: the right
+part is searched only within the left, exactly as a CSS descendant
+selector reads.</p>
+<p><mini-workspace code-open caption="segment(tooth) tints each labelled run; segment(tooth) endpoint finds the tip at the end of each run; endpoint(root) finds the joints by their own name.">
+  <code>//-- Labels through the same grammar. A comb labels every tooth `as segment`
+//-- and every root `as endpoint`. Right: `segment(tooth)` runs tinted, the
+//-- tips found by the combinator `segment(tooth) endpoint`, and the roots by
+//-- `endpoint(root)` — three questions, no indexes.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let runs = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: a comb, labelled where it is drawn ──────────────
+fn drawComb(target) {
+  target.apply {
+    M 0 70
+    for (i in 0..4) {
+      v -34 as segment('tooth');
+      v 34 as endpoint('root');
+      h 32
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linejoin: round;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawComb(leftForm);
+leftEyebrow.apply {
+  text(0, -18)`THE FORM, LABELLED`;
+}
+leftNote.apply {
+  text(0, 100)`as segment('tooth'), as endpoint('root')`;
+  text(0, 111)`five teeth, one name each`;
+}
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linejoin: round;
+};
+let teeth = PathLayer('teeth') #{
+  stroke: runs;
+  stroke-width: 4;
+  fill: none;
+  stroke-linecap: round;
+};
+let tips = PathLayer('tips') #{
+  fill: points;
+  stroke: none;
+};
+let roots = PathLayer('roots') #{
+  fill: bg_color;
+  stroke: points;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(teeth,
+    rightForm,
+    tips,
+    roots,
+    rightEyebrow,
+    rightNote);
+drawComb(rightForm);
+
+// segment(tooth): every labelled run, as a block you can draw in place.
+teeth.apply {
+  for (tooth in rightForm.queryAll('segment(tooth)')) {
+    tooth.block.draw();
+  }
+}
+// segment(tooth) endpoint: the joint at the end of each run — the tip.
+tips.apply {
+  for (tip in rightForm.queryAll('segment(tooth) endpoint')) {
+    circle(tip.x, tip.y, 3);
+  }
+}
+// endpoint(root): the labelled joints, by their own name.
+roots.apply {
+  for (root in rightForm.queryAll('endpoint(root)')) {
+    circle(root.x, root.y, 3);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`THREE QUESTIONS`;
+}
+rightNote.apply {
+  text(0, 100)`segment(tooth): the runs, tinted`;
+  text(0, 111)`segment(tooth) endpoint: the tips, solid`;
+  text(0, 122)`endpoint(root): the roots, ringed`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/03-labels-through-query.svg" alt="segment(tooth) tints each labelled run; segment(tooth) endpoint finds the tip at the end of each run; endpoint(root) finds the joints by their own name." loading="lazy">
+</mini-workspace></p>
+<p>The middle query is the one to notice. <code>segment(tooth) endpoint</code> is &quot;the
+joint at the end of each tooth,&quot; and it works because a <code>Segment</code> is a
+run of commands and an <code>Endpoint</code> belongs to the command it ends. No
+index, no offset, no counting teeth.</p>
+<h2>Everything one statement drew</h2>
+<p>Shape functions emit several commands at once: a <code>circle()</code> is a move and
+two arcs, a <code>roundRect()</code> is lines and quadratics. The <code>call</code> noun groups
+commands by the statement that produced them, which is usually the unit
+you were thinking in.</p>
+<p><mini-workspace code-open caption="queryAll('call') returns one Call per statement, each with the commands it emitted, a block to measure, and the name of the function that drew it.">
+  <code>//-- Everything one statement drew. Left: a control knob from four stdlib
+//-- calls. Right: `queryAll('call')` — one bounding box and one name per
+//-- statement, the unit a shape function emits.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 200);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: four calls ──────────────────────────────────────
+fn drawKnob(target) {
+  target.apply {
+    circle(70, 50, 44);
+    roundRect(67,
+        12,
+        6,
+        40,
+        3);
+    circle(70, 50, 7);
+    circle(100, 22, 3);
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 70;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawKnob(leftForm);
+leftEyebrow.apply {
+  text(0, -18)`FOUR STATEMENTS`;
+}
+leftNote.apply {
+  text(0, 116)`bezel, pointer, cap, detent — four statements`;
+}
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 70;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let boxes = PathLayer('boxes') #{
+  stroke: accent;
+  stroke-width: 0.75;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+let leaders = PathLayer('leaders') #{
+  stroke: accent;
+  stroke-width: 0.5;
+  fill: none;
+};
+let names = TextLayer('names') #{
+  font-family: font;
+  font-size: 7;
+  letter-spacing: 0.8;
+  fill: accent;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    boxes,
+    leaders,
+    names,
+    rightEyebrow,
+    rightNote);
+drawKnob(rightForm);
+
+// call: everything one statement emitted, with the function that emitted it.
+let calls = rightForm.queryAll('call');
+boxes.apply {
+  for (drawn in calls) {
+    let bounds = drawn.block.boundingBox();
+    rect(bounds.x - 3, bounds.y - 3, bounds.width + 6, bounds.height + 6);
+  }
+}
+// Names in a column beside the form. Rows follow each box's height (ties go
+// to the wider box), so no leader crosses another and each crosses only the
+// outline that contains it.
+let byHeight = calls.sort() {|a, b|
+  let boxA = a.block.boundingBox();
+  let boxB = b.block.boundingBox();
+  let dy = boxA.y + boxA.height / 2 - (boxB.y + boxB.height / 2);
+  if (abs(dy) &gt; 0.5) {
+    return dy;
+  }
+  return boxB.x + boxB.width - (boxA.x + boxA.width);
+};
+leaders.apply {
+  for ([drawn, row] in byHeight) {
+    let bounds = drawn.block.boundingBox();
+    let labelY = 12 + row * 18;
+    M calc(bounds.x + bounds.width + 3) calc(bounds.y + bounds.height / 2)
+    L 132 labelY
+  }
+}
+names.apply {
+  for ([drawn, row] in byHeight) {
+    let labelY = 12 + row * 18;
+    text(136, calc(labelY + 2.5))`${drawn.index} ${drawn.name}`;
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`CALL, ASKED`;
+}
+rightNote.apply {
+  text(0, 116)`one box per statement, named`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/04-what-a-call-drew.svg" alt="queryAll('call') returns one Call per statement, each with the commands it emitted, a block to measure, and the name of the function that drew it." loading="lazy">
+</mini-workspace></p>
+<p>Each <code>Call</code> carries <code>name</code>, its <code>commands</code>, and a <code>block</code> you can measure
+or redraw. The twin draws a box around every statement&#39;s bounding box
+and leads a label out to the side. <code>call(circle)</code> narrows to the three
+circles; <code>call(circle) command(a)</code> is their arcs. One rule to know: a
+call is the statement you wrote. A <code>circle()</code> inside a function you
+called is reachable as <code>call(myFn)</code>, not as <code>call(circle)</code>.</p>
+<h2>Filters, and ranges the language already knows</h2>
+<p>Square brackets test one scalar property of each match, with the
+comparison operators you expect. Position pseudo-selectors pick from
+whatever list the rest of the query built, and <code>:nth</code> takes the same
+spellings <code>for</code> loops and <code>.slice()</code> use: a single index, <code>a..b</code>,
+<code>a..&lt;b</code>, and negative numbers that count from the end.</p>
+<p><mini-workspace >
+  <code>//-- Filters and the language's own ranges. Three squares of three sizes.
+//-- Right: `command(line, close)[length&gt;40]` tinted, `subpath(1..2)` filled faintly,
+//-- and `endpoint:nth(-3..-1)` — the last three corners drawn — dotted.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let fg_faint = Color('#0d1638').alpha(0.1);
+let accent = oklch(0.55 0.16 27);
+let accent2 = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: three squares, three sizes ──────────────────────
+fn drawSquares(target) {
+  target.apply {
+    M 0 50
+    h 28
+    v 28
+    h -28
+    z
+    M 44 32
+    h 46
+    v 46
+    h -46
+    z
+    M 106 18
+    h 60
+    v 60
+    h -60
+    z
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 70;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawSquares(leftForm);
+leftEyebrow.apply {
+  text(0, -18)`THREE SUBPATHS`;
+}
+leftNote.apply {
+  text(0, 100)`edges of 28, 46 and 60`;
+}
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 70;
+};
+let fills = PathLayer('fills') #{
+  fill: fg_faint;
+  stroke: none;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let longEdges = PathLayer('long-edges') #{
+  stroke: accent;
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let lastThree = PathLayer('last-three') #{
+  fill: accent2;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(fills,
+    rightForm,
+    longEdges,
+    lastThree,
+    rightEyebrow,
+    rightNote);
+drawSquares(rightForm);
+
+// subpath(1..2): the second and third pen-down runs, as blocks — filled.
+fills.apply {
+  for (run in rightForm.queryAll('subpath(1..2)')) {
+    run.block.draw();
+  }
+}
+// command(line, close)[length&gt;40]: shape words combine, and the filter tests a
+// scalar property of each command — the closing edge counts when it has length.
+longEdges.apply {
+  for (edge in rightForm.queryAll('command(line, close)[length&gt;40]')) {
+    edge.block.draw();
+  }
+}
+// endpoint:nth(-3..-1): negative indexes count from the end, as in .slice().
+lastThree.apply {
+  for (corner in rightForm.queryAll('endpoint:nth(-3..-1)')) {
+    circle(corner.x, corner.y, 3);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`FILTERED, RANGED`;
+}
+rightNote.apply {
+  text(0, 100)`[length&gt;40] · subpath(1..2) · nth(-3..-1)`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/05-filters-and-ranges.svg" alt="SVG preview" loading="lazy">
+</mini-workspace></p>
+<p><code>:nth</code> counts inside whatever came before it. <code>subpath(1) command:nth(0)</code>
+is the first command <em>of that subpath</em>; <code>command:nth(0)</code> is the first
+command of the whole path. The <a href="/docs#path-queries-subpath-versus-commandnth">docs</a>
+walk through a three-square example if the distinction is not yet
+sitting right.</p>
+<h2>Same word, two jobs</h2>
+<p>There is a <code>subPath()</code> method on path blocks that predates all of this,
+and it does something different: it slices a path between two arc-length
+fractions. The <code>subpath</code> noun selects whole pen-down runs, the SVG
+notion: a run starts at every move, and again after a <code>z</code> if drawing
+continues without one. One word, two unrelated jobs, and both are useful.</p>
+<p><mini-workspace code-open caption="Middle: the subpath noun, one colour per run. Right: subPath(0.2, 0.7), a slice by arc length that crosses from the square into the curve — the move between them survives.">
+  <code>//-- Same word, two jobs. One path with two pen-down runs. Middle: the
+//-- `subpath` noun selects those runs by the SVG rule, banded by index.
+//-- Right: the `.subPath(0.2, 0.7)` method slices the same path by
+//-- arc-length fraction, run boundaries ignored.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let runA_color = oklch(0.55 0.16 80);
+let runB_color = oklch(0.55 0.16 320);
+let sliced = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: a closed square, then an open curve ─────────────
+let shape = @{
+  h 40
+  v 54
+  h -40
+  z
+  m 56 54
+  c 14 -80 34 50 62 -50
+};
+
+fn eyebrowStyle() {
+  return #{
+    font-family: font;
+    font-size: 8;
+    font-weight: 700;
+    letter-spacing: 3;
+    fill: fg_muted;
+    text-anchor: start;
+  };
+}
+
+// ─── Left: the form ────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 22;
+  translate-y: 80;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') &lt;&lt; eyebrowStyle();
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+leftForm.apply {
+  M 0 0 shape.draw()
+}
+leftEyebrow.apply {
+  text(0, -18)`ONE PATH`;
+}
+leftNote.apply {
+  text(0, 88)`a closed run, then an open curve`;
+}
+
+// ─── Middle: subpath, the noun ─────────────────────────────────
+let midPanel = GroupLayer('mid') #{
+  translate-x: 176;
+  translate-y: 80;
+};
+let midForm = PathLayer('mid-form') #{
+  stroke: fg_hair;
+  stroke-width: 1.5;
+  fill: none;
+};
+let runA = PathLayer('run-a') #{
+  stroke: runA_color;
+  stroke-width: 3;
+  fill: none;
+  stroke-linejoin: round;
+};
+let runB = PathLayer('run-b') #{
+  stroke: runB_color;
+  stroke-width: 3;
+  fill: none;
+};
+let midEyebrow = TextLayer('mid-eyebrow') &lt;&lt; eyebrowStyle();
+let midNote = TextLayer('mid-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+midPanel.append(midForm,
+    runA,
+    runB,
+    midEyebrow,
+    midNote);
+midForm.apply {
+  M 0 0 shape.draw()
+}
+// subpath(0) and subpath(1): pen-down runs, delimited by the move.
+runA.apply {
+  midForm.query('subpath(0)').block.draw();
+}
+runB.apply {
+  midForm.query('subpath(1)').block.draw();
+}
+midEyebrow.apply {
+  text(0, -18)`THE NOUN`;
+}
+midNote.apply {
+  text(0, 88)`subpath(0), subpath(1)`;
+  text(0, 100)`two runs, by the SVG rule`;
+}
+
+// ─── Right: subPath(t0, t1), the method ────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 330;
+  translate-y: 80;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_hair;
+  stroke-width: 1.5;
+  fill: none;
+};
+let slice = PathLayer('slice') #{
+  stroke: sliced;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let rightEyebrow = TextLayer('right-eyebrow') &lt;&lt; eyebrowStyle();
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, slice, rightEyebrow, rightNote);
+rightForm.apply {
+  M 0 0 shape.draw()
+}
+// .subPath(0.2, 0.7): twenty to seventy percent of the arc length, whatever
+// runs that crosses. The slice comes back re-based, so it is placed where it started.
+let placed = shape.project(0, 0);
+let piece = placed.subPath(0.2, 0.7);
+let pieceStart = placed.get(0.2);
+slice.apply {
+  piece.drawTo(pieceStart.x, pieceStart.y);
+}
+rightEyebrow.apply {
+  text(0, -18)`THE METHOD`;
+}
+rightNote.apply {
+  text(0, 88)`subPath(0.2, 0.7)`;
+  text(0, 100)`a slice by arc length`;
+}
+
+// ─── Dividers ──────────────────────────────────────────────────
+let dividerA = PathLayer('divider-a') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+let dividerB = PathLayer('divider-b') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+dividerA.apply {
+  M 163 45
+  L 163 200
+}
+dividerB.apply {
+  M 317 45
+  L 317 200
+}
+</code>
+  <img src="/blog/samples/post52/06-subpath-vs-subPath.svg" alt="Middle: the subpath noun, one colour per run. Right: subPath(0.2, 0.7), a slice by arc length that crosses from the square into the curve — the move between them survives." loading="lazy">
+</mini-workspace></p>
+<p>If you want a run, ask with the noun. If you want twenty to seventy
+percent of the ink, call the method.</p>
+<h2>What comes back</h2>
+<p>Every result is a struct: read members with <code>.</code>, or destructure with
+<code>let { x, y } = corner;</code>. <code>Command</code> has the command letter, <code>args</code>,
+<code>start</code> and <code>end</code>, <code>index</code>, <code>length</code>, a one-command <code>block</code>, its labels,
+and kind-specific members — <code>cp1</code> and <code>cp2</code> for cubics, <code>cp</code> for
+quadratics, <code>rx</code>, <code>ry</code>, <code>rotation</code>, <code>largeArc</code>, <code>sweep</code> and <code>center</code> for
+arcs. <code>Endpoint</code> has <code>point</code>, <code>label</code>, <code>command</code>, <code>next</code>, <code>turn</code> and
+<code>isJoint</code>, plus the corner operations the old vertex handle had. <code>Call</code>,
+<code>Segment</code> and <code>Subpath</code> each carry their commands and a block. The full
+tables are in <a href="/docs#path-queries-what-comes-back">What comes back</a>.</p>
+<p>Two consequences fall out. <code>PathBlock.commands</code> now returns the same
+<code>Command</code> struct, so a program that read <code>cmd.end</code> before keeps working
+and now also sees labels. And <code>segment()</code>, <code>point()</code> and <code>vertex()</code>, the
+label shortcuts from <a href="/blog/segment-labels-and-suffixes">Name Your Corners</a>,
+are unchanged — they are the shortest spelling when all you want is a
+labelled block or point, and the docs list <a href="/docs#path-queries-the-legacy-methods">what each is sugar
+for</a>.</p>
+<h2>What this project taught the language</h2>
+<p>One more thing this series is: a <strong>working friction log</strong>. Every sample
+was built against the real language, and where one exposed a bug or a
+missing piece, the fix went back into Pathogen before the post shipped.
+Each post grows this closing section to tell that story, ordered by the
+example that hit it.</p>
+<p><strong>The one-line draw idiom started recording what it draws.</strong> Every
+panel in this post draws its form with <code>M 0 0 tab.draw()</code> on one line,
+the spelling the formatter itself produces. The layer&#39;s emitted path was
+always right, but its structured record kept only the <code>M</code>, and the
+block&#39;s commands were tracked from the pen position <em>before</em> the move.
+So the first twin had no dots: <code>queryAll(&#39;endpoint&#39;)</code> found nothing past
+the move, and <code>ctx.position</code> after the statement sat at the move rather
+than the block&#39;s end. The evaluator now snapshots the context before a
+command&#39;s arguments evaluate and replays the whole emitted fragment in
+order when an argument drew something. <a href="/docs#path-queries-path-queries">Path
+Queries</a> and every layer query since
+depend on it.</p>
+<p><strong>A circle finally measures its circumference.</strong> The second sample&#39;s
+note originally read the circle&#39;s <code>length</code> back to prove the arc struct
+was real, and the number was <code>4r</code>. Arc length had always been taken from
+the chord alone, so a half circle counted as its diameter and a large arc
+as its minor complement. Arcs now go through the same endpoint-to-centre
+solver that gives <code>Command.center</code>: circular arcs exactly, elliptical
+ones by integrating the true speed. <code>partition()</code> and <code>get(t)</code> on a path
+that mixes lines with half circles weight the arc correctly for the first
+time. Published sample output was byte-identical before and after.</p>
+<p><strong>Blocks taken from a layer draw in place whatever case you typed.</strong>
+The faint <code>subpath(1..2)</code> fills in the fifth sample first landed nowhere
+near their squares. A run copied from a layer keeps the letters you
+authored, and the relative serializer compared them case-sensitively, so
+a run beginning with your <code>M</code> was emitted with an absolute letter and
+relative numbers. It compares lowercase now, which also fixes an
+uppercase <code>L</code> in a <code>segment()</code> drawn in place.</p>
+<p><strong><code>subPath()</code> keeps the move between runs.</strong> The sixth sample&#39;s slice
+crosses from the square into the curve, and the first render drew a
+straight line across the gap. Moves had been filtered out to measure arc
+length and never put back, so the second run&#39;s curve was spliced onto the
+end of the first run&#39;s <code>z</code>. A gap between fragments is now a move. And
+when a slice cuts a closed run short, its <code>z</code> now closes the run&#39;s real
+edge rather than snapping back to the slice&#39;s own start, which is what
+the right-hand panel shows.</p>
+<pre><code class="hljs language-pathogen"><span class="cm">// before: the slice ran the curve from where the z ended</span>
+l 0 34 h -40 z c 1.78 -10.19 3.66 -16.97 5.65 -21.26
+
+<span class="cm">// after: the close is a real edge, the move survives, the curve starts where it should</span>
+l 0 34 h -40 l 0 -54 m 56 54 c 1.78 -10.19 3.66 -16.97 5.65 -21.26
+</code></pre><p><strong>Two members had to dodge keywords.</strong> <code>fn</code> and <code>layer</code> are reserved
+words, so the obvious <code>call.fn</code> and <code>subscription.layer</code> cannot be
+parsed after a dot. The members are <code>Call.name</code> and, in the next post,
+<code>Subscription.source</code>. The docs say so where each struct is listed.</p>
+<p><strong>The design system and the style sanitizer disagreed about fonts.</strong> The
+example design system asks for a quoted font stack; the style-value
+allow-list rejects the quotes. Every sample here binds a bare
+<code>sans-serif</code>, as the published samples before it quietly did. One of the
+two documents is wrong, and that is logged rather than papered over.</p>
+<h2>Where to go next</h2>
+<p>Part 2 lets a layer answer these questions by itself: <code>subscribe</code> a
+selector to a layer and the twin&#39;s annotations are drawn for you once the
+program finishes, once per match, in drawing order, wherever in the
+program the drawing happened. The finished pieces start in part 3, where
+three projects put both to work: a linkage, a front panel, a fretboard.</p>
+<p>The reference is <a href="/docs#path-queries-path-queries">Path Queries</a>. Every
+sample above is live in one step: the code panel is read-only, but the
+&quot;Open in playground workspace&quot; button drops it into an editor where you
+can add a command, move a corner, change a radius, and watch the twin
+follow. Or start from a blank one in the <a href="/">playground</a>.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

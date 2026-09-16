@@ -317,9 +317,9 @@ code.hljs {
 <span class="kw">let</span> <span class="id">tan</span> = <span class="id">curve</span>.<span class="id">tangent</span>(<span class="num">0.0</span>);
 <span class="id">log</span>(<span class="id">tan</span>.<span class="id">point</span>);   <span class="cm">// Point(0, 0) — start of curve</span>
 <span class="id">log</span>(<span class="id">tan</span>.<span class="id">angle</span>);   <span class="cm">// angle in radians — direction of travel</span>
-</code></pre><p><a href="/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
+</code></pre><p><a href="/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2, wrapped into the same (−π, π] range the tangent uses. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
 <pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">n</span> = <span class="id">curve</span>.<span class="id">normal</span>(<span class="num">0.5</span>);
-<span class="cm">// n.angle is tangent angle - π/2</span>
+<span class="cm">// n.angle is tangent angle - π/2, wrapped into (-π, π]</span>
 <span class="cm">// Use with cos/sin to offset perpendicular to the curve</span>
 </code></pre><p>The anatomy diagram below visualizes all three queries at <code>t = 0.4</code> on a cubic Bézier. The red dot is <code>.get(0.4)</code>, the green arrow is <code>.tangent(0.4)</code>, and the yellow arrow is <code>.normal(0.4)</code> — the left-hand perpendicular.</p>
 <p><mini-workspace caption="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4">

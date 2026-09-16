@@ -1,0 +1,172 @@
+//-- Everything one statement drew. Left: a control knob from four stdlib
+//-- calls. Right: `queryAll('call')` — one bounding box and one name per
+//-- statement, the unit a shape function emits.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 200);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: four calls ──────────────────────────────────────
+fn drawKnob(target) {
+  target.apply {
+    circle(70, 50, 44);
+    roundRect(67,
+        12,
+        6,
+        40,
+        3);
+    circle(70, 50, 7);
+    circle(100, 22, 3);
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 70;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawKnob(leftForm);
+leftEyebrow.apply {
+  text(0, -18)`FOUR STATEMENTS`;
+}
+leftNote.apply {
+  text(0, 116)`bezel, pointer, cap, detent — four statements`;
+}
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 70;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let boxes = PathLayer('boxes') #{
+  stroke: accent;
+  stroke-width: 0.75;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+let leaders = PathLayer('leaders') #{
+  stroke: accent;
+  stroke-width: 0.5;
+  fill: none;
+};
+let names = TextLayer('names') #{
+  font-family: font;
+  font-size: 7;
+  letter-spacing: 0.8;
+  fill: accent;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    boxes,
+    leaders,
+    names,
+    rightEyebrow,
+    rightNote);
+drawKnob(rightForm);
+
+// call: everything one statement emitted, with the function that emitted it.
+let calls = rightForm.queryAll('call');
+boxes.apply {
+  for (drawn in calls) {
+    let bounds = drawn.block.boundingBox();
+    rect(bounds.x - 3, bounds.y - 3, bounds.width + 6, bounds.height + 6);
+  }
+}
+// Names in a column beside the form. Rows follow each box's height (ties go
+// to the wider box), so no leader crosses another and each crosses only the
+// outline that contains it.
+let byHeight = calls.sort() {|a, b|
+  let boxA = a.block.boundingBox();
+  let boxB = b.block.boundingBox();
+  let dy = boxA.y + boxA.height / 2 - (boxB.y + boxB.height / 2);
+  if (abs(dy) > 0.5) {
+    return dy;
+  }
+  return boxB.x + boxB.width - (boxA.x + boxA.width);
+};
+leaders.apply {
+  for ([drawn, row] in byHeight) {
+    let bounds = drawn.block.boundingBox();
+    let labelY = 12 + row * 18;
+    M calc(bounds.x + bounds.width + 3) calc(bounds.y + bounds.height / 2)
+    L 132 labelY
+  }
+}
+names.apply {
+  for ([drawn, row] in byHeight) {
+    let labelY = 12 + row * 18;
+    text(136, calc(labelY + 2.5))`${drawn.index} ${drawn.name}`;
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`CALL, ASKED`;
+}
+rightNote.apply {
+  text(0, 116)`one box per statement, named`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}

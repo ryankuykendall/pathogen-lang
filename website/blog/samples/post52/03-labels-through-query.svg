@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 230" width="480" height="230">
+  <style><![CDATA[
+    @property --bg {
+      syntax: "<color>";
+      inherits: true;
+      initial-value: #d0d7f0;
+    }
+  ]]></style>
+
+  <path data-layer-name="bg" id="bg" d="M 0 0 l 480 0 l 0 230 l -480 0 z" fill="var(--bg, #d0d7f0)" stroke="none" stroke-width="2"/>
+  <g data-layer-name="left" id="left" transform="translate(40, 75)">
+    <path data-layer-name="left-form" id="left-form" d="M 0 70 v -34 v 34 h 32 v -34 v 34 h 32 v -34 v 34 h 32 v -34 v 34 h 32 v -34 v 34 h 32" fill="none" stroke="#0d1638" stroke-width="1.5" stroke-linejoin="round"/>
+    <text data-layer-name="left-eyebrow" id="left-eyebrow" x="0" y="-18" font-family="sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)" text-anchor="start">THE FORM, LABELLED</text>
+    <text data-layer-name="left-note" id="left-note" x="0" y="100" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">as segment('tooth'), as endpoint('root')</text>
+    <text data-layer-name="left-note" x="0" y="111" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">five teeth, one name each</text>
+  </g>
+  <g data-layer-name="right" id="right" transform="translate(270, 75)">
+    <path data-layer-name="teeth" id="teeth" d="M 0 70 v -34 M 32 70 v -34 M 64 70 v -34 M 96 70 v -34 M 128 70 v -34" fill="none" stroke="#a16200" stroke-width="4" stroke-linecap="round"/>
+    <path data-layer-name="right-form" id="right-form" d="M 0 70 v -34 v 34 h 32 v -34 v 34 h 32 v -34 v 34 h 32 v -34 v 34 h 32 v -34 v 34 h 32" fill="none" stroke="#0d1638" stroke-width="1.5" stroke-linejoin="round"/>
+    <path data-layer-name="tips" id="tips" d="M -3 36 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 29 36 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 61 36 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 93 36 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 125 36 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="#346ecd" stroke="none" stroke-width="2"/>
+    <path data-layer-name="roots" id="roots" d="M -3 70 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 29 70 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 61 70 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 93 70 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 125 70 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="var(--bg, #d0d7f0)" stroke="#346ecd" stroke-width="1.5"/>
+    <text data-layer-name="right-eyebrow" id="right-eyebrow" x="0" y="-18" font-family="sans-serif" font-size="8" font-weight="700" letter-spacing="3" fill="rgba(13, 22, 56, 0.6)" text-anchor="start">THREE QUESTIONS</text>
+    <text data-layer-name="right-note" id="right-note" x="0" y="100" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">segment(tooth): the runs, tinted</text>
+    <text data-layer-name="right-note" x="0" y="111" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">segment(tooth) endpoint: the tips, solid</text>
+    <text data-layer-name="right-note" x="0" y="122" font-family="sans-serif" font-size="8" letter-spacing="0.5" fill="#0d1638" text-anchor="start">endpoint(root): the roots, ringed</text>
+  </g>
+  <path data-layer-name="divider" id="divider" d="M 240 45 L 240 200" fill="none" stroke="rgba(13, 22, 56, 0.22)" stroke-width="0.5"/>
+<script type="application/json" id="pathogen-metadata"><![CDATA[{"layers":[{"name":"bg","type":"path","styles":{"fill":"var(--bg, #d0d7f0)","stroke":"none"},"isDefault":false},{"name":"left","type":"group","styles":{},"isDefault":false,"transform":"translate(40, 75)","children":[{"name":"left-form","type":"path","styles":{"stroke":"#0d1638","stroke-width":"1.5","fill":"none","stroke-linejoin":"round"},"isDefault":false},{"name":"left-eyebrow","type":"text","styles":{"font-family":"sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)","text-anchor":"start"},"isDefault":false},{"name":"left-note","type":"text","styles":{"font-family":"sans-serif","font-size":"8","letter-spacing":"0.5","fill":"#0d1638","text-anchor":"start"},"isDefault":false}]},{"name":"right","type":"group","styles":{},"isDefault":false,"transform":"translate(270, 75)","children":[{"name":"teeth","type":"path","styles":{"stroke":"#a16200","stroke-width":"4","fill":"none","stroke-linecap":"round"},"isDefault":false},{"name":"right-form","type":"path","styles":{"stroke":"#0d1638","stroke-width":"1.5","fill":"none","stroke-linejoin":"round"},"isDefault":false},{"name":"tips","type":"path","styles":{"fill":"#346ecd","stroke":"none"},"isDefault":false},{"name":"roots","type":"path","styles":{"fill":"var(--bg, #d0d7f0)","stroke":"#346ecd","stroke-width":"1.5"},"isDefault":false},{"name":"right-eyebrow","type":"text","styles":{"font-family":"sans-serif","font-size":"8","font-weight":"700","letter-spacing":"3","fill":"rgba(13, 22, 56, 0.6)","text-anchor":"start"},"isDefault":false},{"name":"right-note","type":"text","styles":{"font-family":"sans-serif","font-size":"8","letter-spacing":"0.5","fill":"#0d1638","text-anchor":"start"},"isDefault":false}]},{"name":"divider","type":"path","styles":{"stroke":"rgba(13, 22, 56, 0.22)","stroke-width":"0.5","fill":"none"},"isDefault":false}],"masks":[],"clipPaths":[],"gradients":[],"cssProperties":[{"name":"--bg","syntax":"<color>","inherits":true,"initialValue":"#d0d7f0"}],"viewBox":{"originX":0,"originY":0,"width":480,"height":230}}]]></script>
+</svg>

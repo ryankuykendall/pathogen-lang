@@ -1,0 +1,153 @@
+//-- Every arc, no labels. Left: a tab with two drawn arcs, a corner rounded
+//-- by `with fillet`, and a circle. Right: the same form asked for
+//-- `command(a)` — each arc's centre marked and spoked, the fillet's arc and
+//-- the circle's two halves included.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form ──────────────────────────────────────────────────
+let tab = @{
+  h 100
+  a 18 18 0 0 1 18 18
+  v 50
+  a 18 18 0 0 1 -18 18
+  h -100
+  z with fillet(16)
+};
+
+fn drawForm(target) {
+  target.apply {
+    M 0 0 tab.draw()
+    circle(168, 43, 20);
+  }
+}
+
+// ─── Left panel: the form ──────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawForm(leftForm);
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 112)`two arcs drawn, one rounded in, a circle`;
+}
+
+// ─── Right panel: every arc, asked ─────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 260;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let spokes = PathLayer('spokes') #{
+  stroke: accent;
+  stroke-width: 0.75;
+  fill: none;
+};
+let centres = PathLayer('centres') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    spokes,
+    centres,
+    rightEyebrow,
+    rightNote);
+drawForm(rightForm);
+
+// An arc knows its own centre; the query hands back every arc there is —
+// including the one the fillet inserted after we typed the corner. Each
+// spoke runs from the arc's midpoint to its centre, so the two halves of
+// the circle stay countable even though they share one centre.
+let arcs = rightForm.queryAll('command(a)');
+spokes.apply {
+  for (arc in arcs) {
+    let mid = arc.block.get(0.5);
+    let hub = arc.center;
+    M mid.x mid.y
+    L hub.x hub.y
+  }
+}
+centres.apply {
+  for (arc in arcs) {
+    let mid = arc.block.get(0.5);
+    let hub = arc.center;
+    circle(mid.x, mid.y, 1.6);
+    circle(hub.x, hub.y, 2.2);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`COMMAND(A), ASKED`;
+}
+rightNote.apply {
+  text(0, 112)`${arcs.length} arcs found — the fillet's counted too`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}

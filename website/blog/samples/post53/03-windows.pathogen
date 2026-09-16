@@ -1,0 +1,129 @@
+//-- Windows. Two shapes drawn in two apply blocks. The subscription opens
+//-- before the first and is closed with unsubscribe() before the second, so
+//-- only the first shape's joints are annotated.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let square = @{
+  h 60
+  v 60
+  h -60
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 70;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 70;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+let corners = rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+
+leftForm.apply {
+  M 0 20 square.draw()
+  M 100 20 square.draw()
+}
+rightForm.apply {
+  M 0 20 square.draw()
+}
+// Closing the window: drawing after this point is not delivered.
+corners.unsubscribe();
+rightForm.apply {
+  M 100 20 square.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 112)`the same layer, drawn twice`;
+}
+rightEyebrow.apply {
+  text(0, -18)`ONE WINDOW`;
+}
+rightNote.apply {
+  text(0, 112)`subscribe · draw · unsubscribe · draw`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}

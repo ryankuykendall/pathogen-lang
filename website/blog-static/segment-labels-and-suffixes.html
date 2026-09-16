@@ -523,7 +523,7 @@ layer('ticks').apply {
 <h2>Under the hood, and what&#39;s next</h2>
 <p>Making this work took more than syntax. Both evaluators now track every emitted fragment as a <strong>structured record</strong> — the byte-exact output string paired with its commands, labels, and recorded corner ops — instead of an append-only string list. Zero-annotation programs emit byte-identical output to the previous release (our render snapshots enforce this), while annotated programs get finalization, label-preserving trims, and the query APIs on top of the same store.</p>
 <p>That structured store is the foundation for what&#39;s next: labels give the compiler stable handles into path interiors, which opens the door to editing named segments in place, per-segment styling, and richer inspector tooling. The <a href="/docs#segment-labels-syntax">docs page</a> covers the full syntax, the error catalogue, and the querying rules — everything in it compiles verbatim against this release.</p>
-<p>Every sample above is a live editor — change a radius, rename a label, add a command before a named corner and watch the queries follow. Or start from scratch in the <a href="/">playground</a>.</p>
+<p>Every sample above opens in the playground with one click — change a radius, rename a label, add a command before a named corner and watch the queries follow. Or start from scratch in the <a href="/">playground</a>.</p>
 
       </div>
     </article>

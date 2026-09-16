@@ -3,6 +3,23 @@
 
 export const blogIndex = [
   {
+    "slug": "thinking-and-drawing-in-parallel",
+    "title": "Thinking and Drawing in Parallel",
+    "date": "2026-09-17",
+    "description": "subscribe a selector to a layer and the annotations follow the drawing — the window, the ordering, the rounds, and the one closure caveat.",
+    "series": "Drawing Without Bookkeeping",
+    "seriesPart": 2
+  },
+  {
+    "slug": "ask-the-path",
+    "title": "Ask the Path",
+    "date": "2026-09-16",
+    "description": "query() and queryAll() ask a path for things by kind — every arc, every corner, everything one circle() drew — and hand back objects that know their own geometry.",
+    "series": "Drawing Without Bookkeeping",
+    "seriesPart": 1,
+    "seriesDescription": "Drawing and designing in parallel: a form on one side, its schematic twin on the other, nothing copied between them. Queries, subscriptions, then a linkage, a front panel and a fretboard."
+  },
+  {
     "slug": "easing-with-lambdas",
     "title": "Ease Once, Apply Everywhere: Easing with Lambdas",
     "date": "2026-09-07",
@@ -339,6 +356,1213 @@ export const blogIndex = [
 ];
 
 export const posts = {
+  'ask-the-path': `<p><em>Part 1 of 5 in Drawing Without Bookkeeping — a form on one side, its
+annotated twin on the other, and nothing copied between them.</em></p>
+<blockquote>
+<p><strong>Series: Drawing Without Bookkeeping</strong></p>
+<ol>
+<li><strong>Ask the Path</strong> (this post) — <code>query()</code> and <code>queryAll()</code></li>
+<li><a href="/blog/thinking-and-drawing-in-parallel">Thinking and Drawing in Parallel</a> — <code>subscribe()</code></li>
+<li>A four-bar linkage, dimensioned — coming</li>
+<li>A front panel with its drill schedule — coming</li>
+<li>A fretboard from one scale length — coming</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes <a href="/blog/pathblock-introduction">path block
+basics</a> — the <code>@{ }</code> sigil, <code>draw()</code>,
+<code>drawTo()</code> — and the <code>as segment(...)</code> / <code>as endpoint(...)</code> clauses from
+<a href="/blog/segment-labels-and-suffixes">Name Your Corners</a>. Labels are
+optional here: most of what follows needs none.</p>
+</blockquote>
+<p>Every sample in this series has the same shape. On the left, a <strong>form</strong>:
+the thing being drawn. On the right, its <strong>twin</strong>: the same form again
+with schematic information on top — dots, centres, boxes, tints. The
+rule is that the twin never repeats a coordinate. Whatever it knows about
+the form, it asked for.</p>
+<p>Here is the smallest version of that rule. A tab with two arcs, and a dot
+on every corner. The left panel types six coordinates a second time. The
+right panel asks:</p>
+<pre><code class="hljs language-pathogen"><span class="id">rightDots</span>.<span class="kw">apply</span> {
+  <span class="kw">for</span> (<span class="id">corner</span> <span class="kw">in</span> <span class="id">rightForm</span>.<span class="id">queryAll</span>(<span class="str">'endpoint'</span>)) {
+    <span class="id">circle</span>(<span class="id">corner</span>.<span class="id">x</span>, <span class="id">corner</span>.<span class="id">y</span>, <span class="num">3</span>);
+  }
+}
+</code></pre><p><mini-workspace code-open caption="Left: six circles, six coordinates copied by hand. Right: one queryAll('endpoint') — change the tab and the dots follow.">
+  <code>//-- The contrast row. Left: a dot on every corner, each coordinate typed a
+//-- second time by hand. Right: the same picture from one query — the
+//-- annotation layer asks the form where its corners are.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: one tab, drawn identically in both panels ───────
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel: coordinates written twice ─────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftDots, leftEyebrow, leftNote);
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+// Every corner the tab has, typed again — and wrong the moment the tab changes.
+leftDots.apply {
+  circle(120, 0, 3);
+  circle(140, 20, 3);
+  circle(140, 70, 3);
+  circle(120, 90, 3);
+  circle(0, 90, 3);
+  circle(0, 0, 3);
+}
+leftEyebrow.apply {
+  text(0, -18)\`WRITTEN TWICE\`;
+}
+leftNote.apply {
+  text(0, 112)\`six circles, six coordinates copied by hand\`;
+}
+
+// ─── Right panel: asked once ───────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+// The form answers: one Endpoint per drawing command, in drawing order.
+rightDots.apply {
+  for (corner in rightForm.queryAll('endpoint')) {
+    circle(corner.x, corner.y, 3);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)\`ASKED ONCE\`;
+}
+rightNote.apply {
+  text(0, 112)\`one queryAll('endpoint'), zero coordinates\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/01-twice-vs-once.svg" alt="Left: six circles, six coordinates copied by hand. Right: one queryAll('endpoint') — change the tab and the dots follow." loading="lazy">
+</mini-workspace></p>
+<p><code>queryAll</code> returns one <strong>Endpoint</strong> per drawing command, in drawing
+order. Each one knows its <code>x</code> and <code>y</code>, the command that ends there, the
+command that leaves, and the turn the path makes at that point. That is
+the whole idea: you ask a path for things by <em>kind</em>, and what comes back
+already knows its own geometry. The reference is the <a href="/docs#path-queries-path-queries">Path Queries
+docs</a>; this post is about what it
+unlocks.</p>
+<h2>Before you lean on it</h2>
+<p>The sharp edges first, so nothing below feels like a trick.</p>
+<ul>
+<li><strong>Queries answer finished geometry.</strong> A corner rounded by <code>with fillet</code>
+has already been rounded when you ask; the arc the fillet inserted is a
+real arc and <code>command(a)</code> will find it, and <code>endpoint(name)</code> on that
+corner answers the trimmed tangent point, not the joint you typed. The
+older <code>point(&#39;name&#39;)</code> keeps its documented preference for the sharp
+corner; <code>query</code> does not.</li>
+<li><strong><code>endpoint</code> skips pure moves.</strong> A move is where drawing starts, not
+where anything ends. A <code>z</code> that has length counts.</li>
+<li><strong>Coordinates come from the receiver.</strong> A <code>PathBlock</code> answers relative
+to its own origin; a layer, or the <code>ProjectedPath</code> that <code>drawTo()</code>
+returns (the block once it is placed on the page), answers in page
+coordinates. Every twin here asks the form where things are, so none
+of them re-types a coordinate the form already knows.</li>
+<li><strong><code>query</code> insists, <code>queryAll</code> doesn&#39;t.</strong> <code>query</code> returns one match and
+errors if there is none, listing what the path actually has, so a typo
+is caught where you wrote it. <code>queryAll</code> returns an array, empty if
+nothing matched, so it loops safely over things that might not exist.</li>
+<li><strong>Command letters are case-insensitive.</strong> Path blocks report lowercase
+relative commands whatever you typed, so <code>command(a)</code> and <code>command(A)</code>
+mean the same arcs.</li>
+</ul>
+<h2>Ask by kind</h2>
+<p>Five nouns cover everything a path is made of. Each takes, in
+parentheses, the natural way to name some of its kind:</p>
+<ul>
+<li><code>command(a)</code> — by letter, or by shape word: <code>line</code>, <code>arc</code>, <code>curve</code></li>
+<li><code>call(circle)</code> — by the function that emitted it</li>
+<li><code>segment(rib)</code> — by the label you gave the run</li>
+<li><code>endpoint(base)</code> — by the label you gave the joint</li>
+<li><code>subpath(1..2)</code> — by position</li>
+</ul>
+<p>Leave the parentheses off and you get all of them.</p>
+<p>The first noun is the one that makes labels optional. An arc command
+carries its radii and flags; the <code>Command</code> it returns adds the centre
+those imply.</p>
+<p><mini-workspace code-open caption="command(a) finds five arcs — the two drawn, the one the fillet inserted, and the circle's two halves — and each one knows its own centre.">
+  <code>//-- Every arc, no labels. Left: a tab with two drawn arcs, a corner rounded
+//-- by \`with fillet\`, and a circle. Right: the same form asked for
+//-- \`command(a)\` — each arc's centre marked and spoked, the fillet's arc and
+//-- the circle's two halves included.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form ──────────────────────────────────────────────────
+let tab = @{
+  h 100
+  a 18 18 0 0 1 18 18
+  v 50
+  a 18 18 0 0 1 -18 18
+  h -100
+  z with fillet(16)
+};
+
+fn drawForm(target) {
+  target.apply {
+    M 0 0 tab.draw()
+    circle(168, 43, 20);
+  }
+}
+
+// ─── Left panel: the form ──────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawForm(leftForm);
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 112)\`two arcs drawn, one rounded in, a circle\`;
+}
+
+// ─── Right panel: every arc, asked ─────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 260;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let spokes = PathLayer('spokes') #{
+  stroke: accent;
+  stroke-width: 0.75;
+  fill: none;
+};
+let centres = PathLayer('centres') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    spokes,
+    centres,
+    rightEyebrow,
+    rightNote);
+drawForm(rightForm);
+
+// An arc knows its own centre; the query hands back every arc there is —
+// including the one the fillet inserted after we typed the corner. Each
+// spoke runs from the arc's midpoint to its centre, so the two halves of
+// the circle stay countable even though they share one centre.
+let arcs = rightForm.queryAll('command(a)');
+spokes.apply {
+  for (arc in arcs) {
+    let mid = arc.block.get(0.5);
+    let hub = arc.center;
+    M mid.x mid.y
+    L hub.x hub.y
+  }
+}
+centres.apply {
+  for (arc in arcs) {
+    let mid = arc.block.get(0.5);
+    let hub = arc.center;
+    circle(mid.x, mid.y, 1.6);
+    circle(hub.x, hub.y, 2.2);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)\`COMMAND(A), ASKED\`;
+}
+rightNote.apply {
+  text(0, 112)\`\${arcs.length} arcs found — the fillet's counted too\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/02-every-arc.svg" alt="command(a) finds five arcs — the two drawn, the one the fillet inserted, and the circle's two halves — and each one knows its own centre." loading="lazy">
+</mini-workspace></p>
+<p>Read the count on the right. Two arcs were typed. The <code>with fillet(16)</code>
+on the closing edge added a third when the path was finished, and
+<code>circle()</code> emits two half-circles, so the query reports five. Nothing
+was labelled; nothing was counted by hand. Each spoke runs from the arc&#39;s
+midpoint to <code>arc.center</code>, two things the same result knows — a result is
+a <em>struct</em>, a small object whose members you read with a dot.</p>
+<h2>Labels through the same grammar</h2>
+<p>Labels did not go anywhere. They are the argument to <code>segment</code> and
+<code>endpoint</code>, mirroring the way you wrote them: <code>as segment(&#39;tooth&#39;)</code> is
+asked back with <code>segment(tooth)</code>, <code>as endpoint(&#39;root&#39;)</code> with
+<code>endpoint(root)</code>. A space between two parts means <em>inside</em>: the right
+part is searched only within the left, exactly as a CSS descendant
+selector reads.</p>
+<p><mini-workspace code-open caption="segment(tooth) tints each labelled run; segment(tooth) endpoint finds the tip at the end of each run; endpoint(root) finds the joints by their own name.">
+  <code>//-- Labels through the same grammar. A comb labels every tooth \`as segment\`
+//-- and every root \`as endpoint\`. Right: \`segment(tooth)\` runs tinted, the
+//-- tips found by the combinator \`segment(tooth) endpoint\`, and the roots by
+//-- \`endpoint(root)\` — three questions, no indexes.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let runs = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: a comb, labelled where it is drawn ──────────────
+fn drawComb(target) {
+  target.apply {
+    M 0 70
+    for (i in 0..4) {
+      v -34 as segment('tooth');
+      v 34 as endpoint('root');
+      h 32
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linejoin: round;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawComb(leftForm);
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM, LABELLED\`;
+}
+leftNote.apply {
+  text(0, 100)\`as segment('tooth'), as endpoint('root')\`;
+  text(0, 111)\`five teeth, one name each\`;
+}
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linejoin: round;
+};
+let teeth = PathLayer('teeth') #{
+  stroke: runs;
+  stroke-width: 4;
+  fill: none;
+  stroke-linecap: round;
+};
+let tips = PathLayer('tips') #{
+  fill: points;
+  stroke: none;
+};
+let roots = PathLayer('roots') #{
+  fill: bg_color;
+  stroke: points;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(teeth,
+    rightForm,
+    tips,
+    roots,
+    rightEyebrow,
+    rightNote);
+drawComb(rightForm);
+
+// segment(tooth): every labelled run, as a block you can draw in place.
+teeth.apply {
+  for (tooth in rightForm.queryAll('segment(tooth)')) {
+    tooth.block.draw();
+  }
+}
+// segment(tooth) endpoint: the joint at the end of each run — the tip.
+tips.apply {
+  for (tip in rightForm.queryAll('segment(tooth) endpoint')) {
+    circle(tip.x, tip.y, 3);
+  }
+}
+// endpoint(root): the labelled joints, by their own name.
+roots.apply {
+  for (root in rightForm.queryAll('endpoint(root)')) {
+    circle(root.x, root.y, 3);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)\`THREE QUESTIONS\`;
+}
+rightNote.apply {
+  text(0, 100)\`segment(tooth): the runs, tinted\`;
+  text(0, 111)\`segment(tooth) endpoint: the tips, solid\`;
+  text(0, 122)\`endpoint(root): the roots, ringed\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/03-labels-through-query.svg" alt="segment(tooth) tints each labelled run; segment(tooth) endpoint finds the tip at the end of each run; endpoint(root) finds the joints by their own name." loading="lazy">
+</mini-workspace></p>
+<p>The middle query is the one to notice. <code>segment(tooth) endpoint</code> is &quot;the
+joint at the end of each tooth,&quot; and it works because a <code>Segment</code> is a
+run of commands and an <code>Endpoint</code> belongs to the command it ends. No
+index, no offset, no counting teeth.</p>
+<h2>Everything one statement drew</h2>
+<p>Shape functions emit several commands at once: a <code>circle()</code> is a move and
+two arcs, a <code>roundRect()</code> is lines and quadratics. The <code>call</code> noun groups
+commands by the statement that produced them, which is usually the unit
+you were thinking in.</p>
+<p><mini-workspace code-open caption="queryAll('call') returns one Call per statement, each with the commands it emitted, a block to measure, and the name of the function that drew it.">
+  <code>//-- Everything one statement drew. Left: a control knob from four stdlib
+//-- calls. Right: \`queryAll('call')\` — one bounding box and one name per
+//-- statement, the unit a shape function emits.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 200);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: four calls ──────────────────────────────────────
+fn drawKnob(target) {
+  target.apply {
+    circle(70, 50, 44);
+    roundRect(67,
+        12,
+        6,
+        40,
+        3);
+    circle(70, 50, 7);
+    circle(100, 22, 3);
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 70;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawKnob(leftForm);
+leftEyebrow.apply {
+  text(0, -18)\`FOUR STATEMENTS\`;
+}
+leftNote.apply {
+  text(0, 116)\`bezel, pointer, cap, detent — four statements\`;
+}
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 70;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let boxes = PathLayer('boxes') #{
+  stroke: accent;
+  stroke-width: 0.75;
+  stroke-dasharray: 3 4;
+  fill: none;
+};
+let leaders = PathLayer('leaders') #{
+  stroke: accent;
+  stroke-width: 0.5;
+  fill: none;
+};
+let names = TextLayer('names') #{
+  font-family: font;
+  font-size: 7;
+  letter-spacing: 0.8;
+  fill: accent;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    boxes,
+    leaders,
+    names,
+    rightEyebrow,
+    rightNote);
+drawKnob(rightForm);
+
+// call: everything one statement emitted, with the function that emitted it.
+let calls = rightForm.queryAll('call');
+boxes.apply {
+  for (drawn in calls) {
+    let bounds = drawn.block.boundingBox();
+    rect(bounds.x - 3, bounds.y - 3, bounds.width + 6, bounds.height + 6);
+  }
+}
+// Names in a column beside the form. Rows follow each box's height (ties go
+// to the wider box), so no leader crosses another and each crosses only the
+// outline that contains it.
+let byHeight = calls.sort() {|a, b|
+  let boxA = a.block.boundingBox();
+  let boxB = b.block.boundingBox();
+  let dy = boxA.y + boxA.height / 2 - (boxB.y + boxB.height / 2);
+  if (abs(dy) &gt; 0.5) {
+    return dy;
+  }
+  return boxB.x + boxB.width - (boxA.x + boxA.width);
+};
+leaders.apply {
+  for ([drawn, row] in byHeight) {
+    let bounds = drawn.block.boundingBox();
+    let labelY = 12 + row * 18;
+    M calc(bounds.x + bounds.width + 3) calc(bounds.y + bounds.height / 2)
+    L 132 labelY
+  }
+}
+names.apply {
+  for ([drawn, row] in byHeight) {
+    let labelY = 12 + row * 18;
+    text(136, calc(labelY + 2.5))\`\${drawn.index} \${drawn.name}\`;
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)\`CALL, ASKED\`;
+}
+rightNote.apply {
+  text(0, 116)\`one box per statement, named\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/04-what-a-call-drew.svg" alt="queryAll('call') returns one Call per statement, each with the commands it emitted, a block to measure, and the name of the function that drew it." loading="lazy">
+</mini-workspace></p>
+<p>Each <code>Call</code> carries <code>name</code>, its <code>commands</code>, and a <code>block</code> you can measure
+or redraw. The twin draws a box around every statement&#39;s bounding box
+and leads a label out to the side. <code>call(circle)</code> narrows to the three
+circles; <code>call(circle) command(a)</code> is their arcs. One rule to know: a
+call is the statement you wrote. A <code>circle()</code> inside a function you
+called is reachable as <code>call(myFn)</code>, not as <code>call(circle)</code>.</p>
+<h2>Filters, and ranges the language already knows</h2>
+<p>Square brackets test one scalar property of each match, with the
+comparison operators you expect. Position pseudo-selectors pick from
+whatever list the rest of the query built, and <code>:nth</code> takes the same
+spellings <code>for</code> loops and <code>.slice()</code> use: a single index, <code>a..b</code>,
+<code>a..&lt;b</code>, and negative numbers that count from the end.</p>
+<p><mini-workspace >
+  <code>//-- Filters and the language's own ranges. Three squares of three sizes.
+//-- Right: \`command(line, close)[length&gt;40]\` tinted, \`subpath(1..2)\` filled faintly,
+//-- and \`endpoint:nth(-3..-1)\` — the last three corners drawn — dotted.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let fg_faint = Color('#0d1638').alpha(0.1);
+let accent = oklch(0.55 0.16 27);
+let accent2 = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: three squares, three sizes ──────────────────────
+fn drawSquares(target) {
+  target.apply {
+    M 0 50
+    h 28
+    v 28
+    h -28
+    z
+    M 44 32
+    h 46
+    v 46
+    h -46
+    z
+    M 106 18
+    h 60
+    v 60
+    h -60
+    z
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 70;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawSquares(leftForm);
+leftEyebrow.apply {
+  text(0, -18)\`THREE SUBPATHS\`;
+}
+leftNote.apply {
+  text(0, 100)\`edges of 28, 46 and 60\`;
+}
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 70;
+};
+let fills = PathLayer('fills') #{
+  fill: fg_faint;
+  stroke: none;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let longEdges = PathLayer('long-edges') #{
+  stroke: accent;
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let lastThree = PathLayer('last-three') #{
+  fill: accent2;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(fills,
+    rightForm,
+    longEdges,
+    lastThree,
+    rightEyebrow,
+    rightNote);
+drawSquares(rightForm);
+
+// subpath(1..2): the second and third pen-down runs, as blocks — filled.
+fills.apply {
+  for (run in rightForm.queryAll('subpath(1..2)')) {
+    run.block.draw();
+  }
+}
+// command(line, close)[length&gt;40]: shape words combine, and the filter tests a
+// scalar property of each command — the closing edge counts when it has length.
+longEdges.apply {
+  for (edge in rightForm.queryAll('command(line, close)[length&gt;40]')) {
+    edge.block.draw();
+  }
+}
+// endpoint:nth(-3..-1): negative indexes count from the end, as in .slice().
+lastThree.apply {
+  for (corner in rightForm.queryAll('endpoint:nth(-3..-1)')) {
+    circle(corner.x, corner.y, 3);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)\`FILTERED, RANGED\`;
+}
+rightNote.apply {
+  text(0, 100)\`[length&gt;40] · subpath(1..2) · nth(-3..-1)\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post52/05-filters-and-ranges.svg" alt="SVG preview" loading="lazy">
+</mini-workspace></p>
+<p><code>:nth</code> counts inside whatever came before it. <code>subpath(1) command:nth(0)</code>
+is the first command <em>of that subpath</em>; <code>command:nth(0)</code> is the first
+command of the whole path. The <a href="/docs#path-queries-subpath-versus-commandnth">docs</a>
+walk through a three-square example if the distinction is not yet
+sitting right.</p>
+<h2>Same word, two jobs</h2>
+<p>There is a <code>subPath()</code> method on path blocks that predates all of this,
+and it does something different: it slices a path between two arc-length
+fractions. The <code>subpath</code> noun selects whole pen-down runs, the SVG
+notion: a run starts at every move, and again after a <code>z</code> if drawing
+continues without one. One word, two unrelated jobs, and both are useful.</p>
+<p><mini-workspace code-open caption="Middle: the subpath noun, one colour per run. Right: subPath(0.2, 0.7), a slice by arc length that crosses from the square into the curve — the move between them survives.">
+  <code>//-- Same word, two jobs. One path with two pen-down runs. Middle: the
+//-- \`subpath\` noun selects those runs by the SVG rule, banded by index.
+//-- Right: the \`.subPath(0.2, 0.7)\` method slices the same path by
+//-- arc-length fraction, run boundaries ignored.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let runA_color = oklch(0.55 0.16 80);
+let runB_color = oklch(0.55 0.16 320);
+let sliced = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: a closed square, then an open curve ─────────────
+let shape = @{
+  h 40
+  v 54
+  h -40
+  z
+  m 56 54
+  c 14 -80 34 50 62 -50
+};
+
+fn eyebrowStyle() {
+  return #{
+    font-family: font;
+    font-size: 8;
+    font-weight: 700;
+    letter-spacing: 3;
+    fill: fg_muted;
+    text-anchor: start;
+  };
+}
+
+// ─── Left: the form ────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 22;
+  translate-y: 80;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') &lt;&lt; eyebrowStyle();
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+leftForm.apply {
+  M 0 0 shape.draw()
+}
+leftEyebrow.apply {
+  text(0, -18)\`ONE PATH\`;
+}
+leftNote.apply {
+  text(0, 88)\`a closed run, then an open curve\`;
+}
+
+// ─── Middle: subpath, the noun ─────────────────────────────────
+let midPanel = GroupLayer('mid') #{
+  translate-x: 176;
+  translate-y: 80;
+};
+let midForm = PathLayer('mid-form') #{
+  stroke: fg_hair;
+  stroke-width: 1.5;
+  fill: none;
+};
+let runA = PathLayer('run-a') #{
+  stroke: runA_color;
+  stroke-width: 3;
+  fill: none;
+  stroke-linejoin: round;
+};
+let runB = PathLayer('run-b') #{
+  stroke: runB_color;
+  stroke-width: 3;
+  fill: none;
+};
+let midEyebrow = TextLayer('mid-eyebrow') &lt;&lt; eyebrowStyle();
+let midNote = TextLayer('mid-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+midPanel.append(midForm,
+    runA,
+    runB,
+    midEyebrow,
+    midNote);
+midForm.apply {
+  M 0 0 shape.draw()
+}
+// subpath(0) and subpath(1): pen-down runs, delimited by the move.
+runA.apply {
+  midForm.query('subpath(0)').block.draw();
+}
+runB.apply {
+  midForm.query('subpath(1)').block.draw();
+}
+midEyebrow.apply {
+  text(0, -18)\`THE NOUN\`;
+}
+midNote.apply {
+  text(0, 88)\`subpath(0), subpath(1)\`;
+  text(0, 100)\`two runs, by the SVG rule\`;
+}
+
+// ─── Right: subPath(t0, t1), the method ────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 330;
+  translate-y: 80;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_hair;
+  stroke-width: 1.5;
+  fill: none;
+};
+let slice = PathLayer('slice') #{
+  stroke: sliced;
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+};
+let rightEyebrow = TextLayer('right-eyebrow') &lt;&lt; eyebrowStyle();
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, slice, rightEyebrow, rightNote);
+rightForm.apply {
+  M 0 0 shape.draw()
+}
+// .subPath(0.2, 0.7): twenty to seventy percent of the arc length, whatever
+// runs that crosses. The slice comes back re-based, so it is placed where it started.
+let placed = shape.project(0, 0);
+let piece = placed.subPath(0.2, 0.7);
+let pieceStart = placed.get(0.2);
+slice.apply {
+  piece.drawTo(pieceStart.x, pieceStart.y);
+}
+rightEyebrow.apply {
+  text(0, -18)\`THE METHOD\`;
+}
+rightNote.apply {
+  text(0, 88)\`subPath(0.2, 0.7)\`;
+  text(0, 100)\`a slice by arc length\`;
+}
+
+// ─── Dividers ──────────────────────────────────────────────────
+let dividerA = PathLayer('divider-a') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+let dividerB = PathLayer('divider-b') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+dividerA.apply {
+  M 163 45
+  L 163 200
+}
+dividerB.apply {
+  M 317 45
+  L 317 200
+}
+</code>
+  <img src="/blog/samples/post52/06-subpath-vs-subPath.svg" alt="Middle: the subpath noun, one colour per run. Right: subPath(0.2, 0.7), a slice by arc length that crosses from the square into the curve — the move between them survives." loading="lazy">
+</mini-workspace></p>
+<p>If you want a run, ask with the noun. If you want twenty to seventy
+percent of the ink, call the method.</p>
+<h2>What comes back</h2>
+<p>Every result is a struct: read members with <code>.</code>, or destructure with
+<code>let { x, y } = corner;</code>. <code>Command</code> has the command letter, <code>args</code>,
+<code>start</code> and <code>end</code>, <code>index</code>, <code>length</code>, a one-command <code>block</code>, its labels,
+and kind-specific members — <code>cp1</code> and <code>cp2</code> for cubics, <code>cp</code> for
+quadratics, <code>rx</code>, <code>ry</code>, <code>rotation</code>, <code>largeArc</code>, <code>sweep</code> and <code>center</code> for
+arcs. <code>Endpoint</code> has <code>point</code>, <code>label</code>, <code>command</code>, <code>next</code>, <code>turn</code> and
+<code>isJoint</code>, plus the corner operations the old vertex handle had. <code>Call</code>,
+<code>Segment</code> and <code>Subpath</code> each carry their commands and a block. The full
+tables are in <a href="/docs#path-queries-what-comes-back">What comes back</a>.</p>
+<p>Two consequences fall out. <code>PathBlock.commands</code> now returns the same
+<code>Command</code> struct, so a program that read <code>cmd.end</code> before keeps working
+and now also sees labels. And <code>segment()</code>, <code>point()</code> and <code>vertex()</code>, the
+label shortcuts from <a href="/blog/segment-labels-and-suffixes">Name Your Corners</a>,
+are unchanged — they are the shortest spelling when all you want is a
+labelled block or point, and the docs list <a href="/docs#path-queries-the-legacy-methods">what each is sugar
+for</a>.</p>
+<h2>What this project taught the language</h2>
+<p>One more thing this series is: a <strong>working friction log</strong>. Every sample
+was built against the real language, and where one exposed a bug or a
+missing piece, the fix went back into Pathogen before the post shipped.
+Each post grows this closing section to tell that story, ordered by the
+example that hit it.</p>
+<p><strong>The one-line draw idiom started recording what it draws.</strong> Every
+panel in this post draws its form with <code>M 0 0 tab.draw()</code> on one line,
+the spelling the formatter itself produces. The layer&#39;s emitted path was
+always right, but its structured record kept only the <code>M</code>, and the
+block&#39;s commands were tracked from the pen position <em>before</em> the move.
+So the first twin had no dots: <code>queryAll(&#39;endpoint&#39;)</code> found nothing past
+the move, and <code>ctx.position</code> after the statement sat at the move rather
+than the block&#39;s end. The evaluator now snapshots the context before a
+command&#39;s arguments evaluate and replays the whole emitted fragment in
+order when an argument drew something. <a href="/docs#path-queries-path-queries">Path
+Queries</a> and every layer query since
+depend on it.</p>
+<p><strong>A circle finally measures its circumference.</strong> The second sample&#39;s
+note originally read the circle&#39;s <code>length</code> back to prove the arc struct
+was real, and the number was <code>4r</code>. Arc length had always been taken from
+the chord alone, so a half circle counted as its diameter and a large arc
+as its minor complement. Arcs now go through the same endpoint-to-centre
+solver that gives <code>Command.center</code>: circular arcs exactly, elliptical
+ones by integrating the true speed. <code>partition()</code> and <code>get(t)</code> on a path
+that mixes lines with half circles weight the arc correctly for the first
+time. Published sample output was byte-identical before and after.</p>
+<p><strong>Blocks taken from a layer draw in place whatever case you typed.</strong>
+The faint <code>subpath(1..2)</code> fills in the fifth sample first landed nowhere
+near their squares. A run copied from a layer keeps the letters you
+authored, and the relative serializer compared them case-sensitively, so
+a run beginning with your <code>M</code> was emitted with an absolute letter and
+relative numbers. It compares lowercase now, which also fixes an
+uppercase <code>L</code> in a <code>segment()</code> drawn in place.</p>
+<p><strong><code>subPath()</code> keeps the move between runs.</strong> The sixth sample&#39;s slice
+crosses from the square into the curve, and the first render drew a
+straight line across the gap. Moves had been filtered out to measure arc
+length and never put back, so the second run&#39;s curve was spliced onto the
+end of the first run&#39;s <code>z</code>. A gap between fragments is now a move. And
+when a slice cuts a closed run short, its <code>z</code> now closes the run&#39;s real
+edge rather than snapping back to the slice&#39;s own start, which is what
+the right-hand panel shows.</p>
+<pre><code class="hljs language-pathogen"><span class="cm">// before: the slice ran the curve from where the z ended</span>
+l 0 34 h -40 z c 1.78 -10.19 3.66 -16.97 5.65 -21.26
+
+<span class="cm">// after: the close is a real edge, the move survives, the curve starts where it should</span>
+l 0 34 h -40 l 0 -54 m 56 54 c 1.78 -10.19 3.66 -16.97 5.65 -21.26
+</code></pre><p><strong>Two members had to dodge keywords.</strong> <code>fn</code> and <code>layer</code> are reserved
+words, so the obvious <code>call.fn</code> and <code>subscription.layer</code> cannot be
+parsed after a dot. The members are <code>Call.name</code> and, in the next post,
+<code>Subscription.source</code>. The docs say so where each struct is listed.</p>
+<p><strong>The design system and the style sanitizer disagreed about fonts.</strong> The
+example design system asks for a quoted font stack; the style-value
+allow-list rejects the quotes. Every sample here binds a bare
+<code>sans-serif</code>, as the published samples before it quietly did. One of the
+two documents is wrong, and that is logged rather than papered over.</p>
+<h2>Where to go next</h2>
+<p>Part 2 lets a layer answer these questions by itself: <code>subscribe</code> a
+selector to a layer and the twin&#39;s annotations are drawn for you once the
+program finishes, once per match, in drawing order, wherever in the
+program the drawing happened. The finished pieces start in part 3, where
+three projects put both to work: a linkage, a front panel, a fretboard.</p>
+<p>The reference is <a href="/docs#path-queries-path-queries">Path Queries</a>. Every
+sample above is live in one step: the code panel is read-only, but the
+&quot;Open in playground workspace&quot; button drops it into an editor where you
+can add a command, move a corner, change a radius, and watch the twin
+follow. Or start from a blank one in the <a href="/">playground</a>.</p>
+`,
   'broken-lines-leathercraft': `<p><em>Part 3 of 5 in Broken Lines — projects that treat the stroke not as
 paint, but as geometry you can hold.</em></p>
 <blockquote>
@@ -21092,9 +22316,9 @@ subtitle.apply {
 <span class="kw">let</span> <span class="id">tan</span> = <span class="id">curve</span>.<span class="id">tangent</span>(<span class="num">0.0</span>);
 <span class="id">log</span>(<span class="id">tan</span>.<span class="id">point</span>);   <span class="cm">// Point(0, 0) — start of curve</span>
 <span class="id">log</span>(<span class="id">tan</span>.<span class="id">angle</span>);   <span class="cm">// angle in radians — direction of travel</span>
-</code></pre><p><a href="/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
+</code></pre><p><a href="/docs#path-blocks-normalt-point-angle"><code>.normal(t)</code></a> returns the left-hand perpendicular — the tangent angle minus π/2, wrapped into the same (−π, π] range the tangent uses. This is useful for placing elements that should point &quot;outward&quot; from the curve:</p>
 <pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">n</span> = <span class="id">curve</span>.<span class="id">normal</span>(<span class="num">0.5</span>);
-<span class="cm">// n.angle is tangent angle - π/2</span>
+<span class="cm">// n.angle is tangent angle - π/2, wrapped into (-π, π]</span>
 <span class="cm">// Use with cos/sin to offset perpendicular to the curve</span>
 </code></pre><p>The anatomy diagram below visualizes all three queries at <code>t = 0.4</code> on a cubic Bézier. The red dot is <code>.get(0.4)</code>, the green arrow is <code>.tangent(0.4)</code>, and the yellow arrow is <code>.normal(0.4)</code> — the left-hand perpendicular.</p>
 <p><mini-workspace caption="Sampling anatomy — .get(), .tangent(), and .normal() visualized at t = 0.4">
@@ -27625,7 +28849,7 @@ layer('ticks').apply {
 <h2>Under the hood, and what&#39;s next</h2>
 <p>Making this work took more than syntax. Both evaluators now track every emitted fragment as a <strong>structured record</strong> — the byte-exact output string paired with its commands, labels, and recorded corner ops — instead of an append-only string list. Zero-annotation programs emit byte-identical output to the previous release (our render snapshots enforce this), while annotated programs get finalization, label-preserving trims, and the query APIs on top of the same store.</p>
 <p>That structured store is the foundation for what&#39;s next: labels give the compiler stable handles into path interiors, which opens the door to editing named segments in place, per-segment styling, and richer inspector tooling. The <a href="/docs#segment-labels-syntax">docs page</a> covers the full syntax, the error catalogue, and the querying rules — everything in it compiles verbatim against this release.</p>
-<p>Every sample above is a live editor — change a radius, rename a label, add a command before a named corner and watch the queries follow. Or start from scratch in the <a href="/">playground</a>.</p>
+<p>Every sample above opens in the playground with one click — change a radius, rename a label, add a command before a named corner and watch the queries follow. Or start from scratch in the <a href="/">playground</a>.</p>
 `,
   'seo-pages-cloudflare-workers-routing': `<h1>Adding SEO Pages to a CloudFlare Pages SPA: The Routing Sequel</h1>
 <h2>The Goal</h2>
@@ -31265,6 +32489,1016 @@ layer('glyphs').apply {
 <h2>Where to go next</h2>
 <p>Two methods, one idea: <strong>any path can be a rail for a variable-width stroke.</strong> Vary the distance for tapered edges; choose <code>G0</code>/<code>G1</code>/<code>G2</code> for the character of the joins; add a second profile for a filled ribbon; cap it; and point it at your own geometry — even your own type.</p>
 <p>The full reference lives in the <a href="/docs#variable-offset-variable-offset">Variable Offset docs</a>. Go make something that breathes.</p>
+`,
+  'thinking-and-drawing-in-parallel': `<p><em>Part 2 of 5 in Drawing Without Bookkeeping — a form on one side, its
+annotated twin on the other, and nothing copied between them.</em></p>
+<blockquote>
+<p><strong>Series: Drawing Without Bookkeeping</strong></p>
+<ol>
+<li><a href="/blog/ask-the-path">Ask the Path</a> — <code>query()</code> and <code>queryAll()</code></li>
+<li><strong>Thinking and Drawing in Parallel</strong> (this post) — <code>subscribe()</code></li>
+<li>A four-bar linkage, dimensioned — coming</li>
+<li>A front panel with its drill schedule — coming</li>
+<li>A fretboard from one scale length — coming</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes <a href="/blog/ask-the-path">Ask the Path</a>
+— the selector grammar and the structs it returns — and reuses its
+panel idiom without re-introducing it: a form layer on the left, a twin
+on the right, both drawing the same block. Lambdas and trailing blocks
+are covered in <a href="/blog/lambdas-come-to-pathogen">The Shape of a Stroke</a>.</p>
+</blockquote>
+<p>Part 1 asked a path questions after it was drawn. Asking removed the
+coordinates from the annotation and left the <em>ordering</em> in place.
+You drew, then you queried, then you drew the annotation, and the three
+had to stay in that order every time the program grew.</p>
+<p>A subscription is a query that runs itself. You hand a layer a selector
+and a block, and the compiler calls the block once per match. The calls
+come in the order the geometry was drawn, wherever in the program the
+drawing happened. The annotation is declared once, and it follows.</p>
+<pre><code class="hljs language-pathogen"><span class="id">rightForm</span>.<span class="id">subscribe</span>(<span class="str">'endpoint'</span>) {|<span class="id">corner</span>|
+  <span class="id">rightDots</span>.<span class="kw">apply</span> {
+    <span class="id">circle</span>(<span class="id">corner</span>.<span class="id">x</span>, <span class="id">corner</span>.<span class="id">y</span>, <span class="num">3</span>);
+  }
+};
+</code></pre><p><mini-workspace code-open caption="The subscription is registered before a single command is drawn. The dots arrive at program end, one per joint, in drawing order.">
+  <code>//-- Declared before the drawing. Left: the form. Right: a subscription on
+//-- the twin's own form layer, registered before a single command is drawn;
+//-- the dots arrive at program end, one per joint, in drawing order.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel: the form ──────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+
+// ─── Right panel: the twin subscribes before it draws ──────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+// The annotation is declared before the drawing exists. Nothing is matched
+// yet; at program end the callback runs once per joint, in drawing order.
+rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 112)\`drawn once, annotated nowhere\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`DECLARED FIRST\`;
+}
+rightNote.apply {
+  text(0, 112)\`the dots were declared before the tab\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/01-declared-first.svg" alt="The subscription is registered before a single command is drawn. The dots arrive at program end, one per joint, in drawing order." loading="lazy">
+</mini-workspace></p>
+<p>Everything that follows is about what &quot;runs itself&quot; means precisely,
+because the precision is where the useful behaviour comes from. The
+reference is the <a href="/docs#subscriptions-subscriptions">Subscriptions docs</a>.</p>
+<h2>When, exactly</h2>
+<p>Nothing is matched while you draw. The compiler keeps every layer in
+memory until the last statement has run, then works through the
+subscriptions. Each one runs its selector once over the finished
+geometry inside the stretch of drawing it is watching, its <strong>window</strong>,
+and the results are replayed in the order the geometry was drawn. Two
+subscriptions on different layers interleave the way the drawing did,
+and two on the same statement fire in the order they were registered.</p>
+<p>That timing has consequences worth stating before the pictures, in the
+spirit of <a href="/docs#subscriptions-things-to-know-first">the docs&#39; first section</a>:</p>
+<ul>
+<li><strong>A callback sees the finished picture.</strong> Corner operations are
+already applied; every <code>Endpoint</code> knows its <code>next</code> and <code>turn</code>; other
+layers are complete.</li>
+<li><strong>Variables hold their final values.</strong> The block is a closure, and it
+runs last. Change a variable after subscribing and the callback reads
+the changed value. The last sample makes this visible.</li>
+<li><strong>A callback may not draw into the layer it subscribed to.</strong> Drawing
+there is an error the moment it happens. Subscriptions annotate other
+layers.</li>
+<li><strong>Subscription output lands after everything drawn directly into the
+target.</strong> That moves where a dash pattern sits in its cycle and where
+markers land. Give annotations their own layer and it never matters.</li>
+<li><strong>Only drawing after the <code>subscribe</code> call is delivered.</strong> Query the
+layer for what came before.</li>
+<li><strong>Only path layers can be subscribed to.</strong> Text and group layers have
+no geometry to observe, so <code>subscribe</code> on one is an error. They are
+fine as targets: a callback writes into any layer it likes.</li>
+</ul>
+<h2>One block, two layers</h2>
+<p>The block receives up to three parameters: the match, its index among
+this subscription&#39;s matches starting at 0, and the subscription itself.
+Because the callback runs as ordinary top-level code, it can open <code>apply</code>
+blocks on as many layers as it likes, text layers included.</p>
+<pre><code class="hljs language-pathogen"><span class="id">rightForm</span>.<span class="id">subscribe</span>(<span class="str">'endpoint'</span>) {|<span class="id">corner</span>, <span class="id">i</span>, <span class="id">sub</span>|
+  <span class="cm">// corner: the match — i: its index, from 0 — sub: the subscription</span>
+};
+</code></pre><p><mini-workspace code-open caption="One subscription, two target layers: a dot on every joint and its number beside it, placed a fixed distance out along the joint's own turn.">
+  <code>//-- Fan-out. One subscription, two target layers: a dot on every joint and
+//-- its number beside it, from the ordinal the callback receives.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightLabels = TextLayer('right-labels') #{
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: accent;
+  text-anchor: middle;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    rightDots,
+    rightLabels,
+    rightEyebrow,
+    rightNote);
+
+// The callback's second parameter is the ordinal among this subscription's
+// matches; the label sits a fixed distance out along the joint's own turn.
+rightForm.subscribe('endpoint') {|corner, i|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+  // Outward at the joint: the incoming command's end tangent, turned half
+  // the corner's own turn, then a quarter turn off the path.
+  let heading = corner.command.block.tangent(1).angle;
+  let away = heading + corner.turn.rad / 2 - PI() / 2;
+  rightLabels.apply {
+    text(corner.x + cos(away) * 11, corner.y + sin(away) * 11 + 2.5)\`\${i}\`;
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 112)\`six joints, drawn in order\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`DOTS AND NUMBERS\`;
+}
+rightNote.apply {
+  text(0, 112)\`{|corner, i|} — one block, two layers\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/02-fan-out.svg" alt="One subscription, two target layers: a dot on every joint and its number beside it, placed a fixed distance out along the joint's own turn." loading="lazy">
+</mini-workspace></p>
+<p>The number is pushed away from the corner along a direction the match
+already knows: the incoming command&#39;s end tangent, turned by half the
+joint&#39;s own <code>turn</code>. That is the whole of the label-placement problem,
+answered by the struct rather than by a table of offsets. Parts 3 to 5
+lean on the same move.</p>
+<h2>Windows</h2>
+<p><code>subscribe</code> opens a window over the layer and <code>unsubscribe()</code> closes
+it. Drawing between the two calls is what gets delivered:</p>
+<p><mini-workspace code-open caption="Two squares on the same layer. The subscription is closed between them, so only the first is annotated.">
+  <code>//-- Windows. Two shapes drawn in two apply blocks. The subscription opens
+//-- before the first and is closed with unsubscribe() before the second, so
+//-- only the first shape's joints are annotated.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let square = @{
+  h 60
+  v 60
+  h -60
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 70;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 70;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+let corners = rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+
+leftForm.apply {
+  M 0 20 square.draw()
+  M 100 20 square.draw()
+}
+rightForm.apply {
+  M 0 20 square.draw()
+}
+// Closing the window: drawing after this point is not delivered.
+corners.unsubscribe();
+rightForm.apply {
+  M 100 20 square.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 112)\`the same layer, drawn twice\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`ONE WINDOW\`;
+}
+rightNote.apply {
+  text(0, 112)\`subscribe · draw · unsubscribe · draw\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/03-windows.svg" alt="Two squares on the same layer. The subscription is closed between them, so only the first is annotated." loading="lazy">
+</mini-workspace></p>
+<p>Inside a callback, <code>unsubscribe()</code> means something slightly different:
+the window is already fixed by then, so it cancels the matches that have
+not fired yet. A callback that stops after the third match reads
+<code>if (i &gt;= 2) { sub.unsubscribe(); }</code>.</p>
+<h2>Selectors that need the whole window</h2>
+<p>Position pseudo-selectors that count from the end, <code>:last</code> and negative
+<code>:nth</code>, cannot be answered until the window is complete. That is
+exactly when callbacks run, so they simply work:</p>
+<p><mini-workspace code-open caption="Left: every joint numbered in drawing order. Right: endpoint:nth(-3..-1) under a subscription — the selector runs once over the finished window before anything is delivered, so it marks joints 3, 4 and 5 and no others.">
+  <code>//-- Completion-only selectors. \`endpoint:nth(-3..-1)\` can only be answered
+//-- once the whole window is known — which is exactly when callbacks run.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: bg_color;
+  stroke: accent;
+  stroke-width: 1;
+};
+let leftNums = TextLayer('left-nums') #{
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: accent;
+  text-anchor: middle;
+};
+leftPanel.append(leftForm,
+    leftDots,
+    leftNums,
+    leftEyebrow,
+    leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+// The left panel numbers every joint in drawing order, so the right
+// panel's three can be checked against it.
+leftForm.subscribe('endpoint') {|corner, i|
+  leftDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+  let heading = corner.command.block.tangent(1).angle;
+  let away = heading + corner.turn.rad / 2 - PI() / 2;
+  leftNums.apply {
+    text(corner.x + cos(away) * 11, corner.y + sin(away) * 11 + 2.5)\`\${i}\`;
+  }
+};
+
+// Negative indexes count from the end of the window, as .slice() does. The
+// selector runs once over the finished window before anything fires.
+rightForm.subscribe('endpoint:nth(-3..-1)') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3.5);
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 112)\`six joints in drawing order\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`ENDPOINT:NTH(-3..-1)\`;
+}
+rightNote.apply {
+  text(0, 112)\`the whole window first, then delivery\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/04-last-three.svg" alt="Left: every joint numbered in drawing order. Right: endpoint:nth(-3..-1) under a subscription — the selector runs once over the finished window before anything is delivered, so it marks joints 3, 4 and 5 and no others." loading="lazy">
+</mini-workspace></p>
+<p>If subscriptions fired while you drew, this would be impossible; a
+&quot;last&quot; would keep moving. End-of-program delivery is what makes a
+completed window askable at all.</p>
+<h2>Annotations, annotated</h2>
+<p>A callback may draw into a layer that has subscriptions of its own.
+Those fire in a following round, and the rounds continue until no new
+drawing appears:</p>
+<p><mini-workspace code-open caption="Round one puts a dot on every joint. Round two: a subscription on the dots layer draws a ring around every circle() the first callback produced.">
+  <code>//-- Annotations, annotated. The dots layer has a subscription of its own:
+//-- every circle() the first callback drew gets a ring in a second round.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let accent2 = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftDots, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rings = PathLayer('rings') #{
+  stroke: accent2;
+  stroke-width: 1;
+  fill: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    rightDots,
+    rings,
+    rightEyebrow,
+    rightNote);
+
+// Round one: joints become dots.
+leftForm.subscribe('endpoint') {|corner|
+  leftDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+// Round two: the dots layer is a source too. Its callback fires after the
+// first round has drawn into it.
+rightDots.subscribe('call(circle)') {|dot|
+  let hub = dot.block.centerPoint();
+  rings.apply {
+    circle(hub.x, hub.y, 7);
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)\`ONE ROUND\`;
+}
+leftNote.apply {
+  text(0, 112)\`a subscription on the form\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`TWO ROUNDS\`;
+}
+rightNote.apply {
+  text(0, 112)\`a second subscription, on the dots\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/05-annotate-the-annotations.svg" alt="Round one puts a dot on every joint. Round two: a subscription on the dots layer draws a ring around every circle() the first callback produced." loading="lazy">
+</mini-workspace></p>
+<p>A loop that never settles stops after eight rounds and reports the chain
+it found, <code>shape → dots → shape</code> style. The self-write from the list
+above is the shortest such loop and is caught at once.</p>
+<h2>The caveat, made visible</h2>
+<p>The closure rule is the one thing here that can surprise, so it gets a
+picture. A radius is bound, a subscription reads it, the form is drawn,
+and then the radius changes:</p>
+<p><mini-workspace code-open caption="Left: a plain queryAll loop draws with the radius as it was at that line, 3. Right: the subscription's callback runs at program end and sees 7.">
+  <code>//-- The closure caveat, made visible. A radius is changed after subscribing.
+//-- Left: a hand-written loop at the value the program had when it subscribed.
+//-- Right: the callback, which runs at program end and sees the final value.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+let radius = 3;
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftDots, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+// The callback reads \`radius\` when it runs, at the end of the program.
+rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, radius);
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+// A query, by contrast, runs right here — with radius still 3.
+leftDots.apply {
+  for (corner in leftForm.queryAll('endpoint')) {
+    circle(corner.x, corner.y, radius);
+  }
+}
+
+radius = 7;
+
+leftEyebrow.apply {
+  text(0, -18)\`WHEN YOU ASKED\`;
+}
+leftNote.apply {
+  text(0, 112)\`queryAll now: radius is 3\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`WHEN IT RAN\`;
+}
+rightNote.apply {
+  text(0, 112)\`the callback ran last: radius is 7\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/06-final-values.svg" alt="Left: a plain queryAll loop draws with the radius as it was at that line, 3. Right: the subscription's callback runs at program end and sees 7." loading="lazy">
+</mini-workspace></p>
+<p>Bind what a callback needs before subscribing, or put it in the
+selector. If you need the value <em>as of a line</em>, that is what a query at
+that line is for.</p>
+<h2>The handle</h2>
+<p><code>subscribe</code> returns a <code>Subscription</code>. <code>source</code> and <code>selector</code> say what it
+watches. <code>active</code> is true while the window is open and nothing has
+cancelled it. <code>count</code> is how many matches have been delivered, which is
+the number you want inside a callback. <code>log(handle)</code> prints
+<code>Subscription(shape: &#39;endpoint&#39;, 4 delivered)</code>. The <a href="/docs#subscriptions-the-subscription-value">docs
+table</a> has the rest.</p>
+<h2>What this project taught the language</h2>
+<p>This series doubles as a working friction log (<a href="/blog/ask-the-path">part
+1</a> explains the convention). One entry this time,
+surfaced by the sample that draws rings around dots.</p>
+<p><strong>A run that begins with a move answers for its own geometry.</strong> The
+ring sample asks the dots layer for <code>call(circle)</code> and centres a ring on
+each block. Every <code>circle()</code> begins with a move, and that move&#39;s recorded
+start is the pen position <em>before</em> it, which belongs to the previous
+statement. The block&#39;s bounding box reached back to that point, so every
+ring sat halfway to the previous dot. A quieter version of the same error
+had put the boxes part 1 drew around each <code>call</code> at the panel origin.
+Blocks
+taken from a layer now begin where their move lands. The <a href="/docs#path-queries-what-comes-back">Path
+Queries</a> tables describe <code>block</code> as
+the run alone; it is now true.</p>
+<h2>Where to go next</h2>
+<p>The next three posts put both mechanisms to work on real drawings. A
+four-bar linkage has its pivots numbered and its links dimensioned. A
+front panel prints its own drill schedule. A fretboard places and labels
+every fret from one scale length.</p>
+<p>The reference is <a href="/docs#subscriptions-subscriptions">Subscriptions</a>.
+Every sample above opens in the playground with one click: move a
+subscribe call, add a statement after an unsubscribe, and watch what is
+and is not delivered.</p>
 `,
   'unified-export': `<p>There&#39;s a moment in every generative piece where the browser stops being enough. The composition is done, the palette has settled, and now you want the thing itself — a file you can send, post, composite, or carry to a print shop. Today we&#39;re shipping the workflow for that moment: a single <strong>Export</strong> dialog that takes any workspace to SVG, PNG, or print-ready PDF.</p>
 <p>Open it from the workspace&#39;s overflow menu (⋮ → <strong>Export</strong>) or press <strong>Ctrl/Cmd+Shift+E</strong>. Everything about the dialog follows one rule: <em>the preview is the file</em>. What you see — the artwork, the optional legend, the small attribution line — is exactly what lands on disk.</p>

@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thinking and Drawing in Parallel — Pathogen Studio</title>
+  <meta name="description" content="subscribe a selector to a layer and the annotations follow the drawing — the window, the ordering, the rounds, and the one closure caveat.">
+  <link rel="canonical" href="https://pathogen.studio/blog/thinking-and-drawing-in-parallel">
+  <meta property="og:title" content="Thinking and Drawing in Parallel — Pathogen Studio">
+  <meta property="og:description" content="subscribe a selector to a layer and the annotations follow the drawing — the window, the ordering, the rounds, and the one closure caveat.">
+  <meta property="og:url" content="https://pathogen.studio/blog/thinking-and-drawing-in-parallel">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Thinking and Drawing in Parallel","description":"subscribe a selector to a layer and the annotations follow the drawing — the window, the ordering, the rounds, and the one closure caveat.","datePublished":"2026-09-17","url":"https://pathogen.studio/blog/thinking-and-drawing-in-parallel","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">Thinking and Drawing in Parallel</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>Thinking and Drawing in Parallel</h1>
+        <p class="post-meta"><time datetime="2026-09-17">September 17, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 2 of 5 in Drawing Without Bookkeeping — a form on one side, its
+annotated twin on the other, and nothing copied between them.</em></p>
+<blockquote>
+<p><strong>Series: Drawing Without Bookkeeping</strong></p>
+<ol>
+<li><a href="/blog/ask-the-path">Ask the Path</a> — <code>query()</code> and <code>queryAll()</code></li>
+<li><strong>Thinking and Drawing in Parallel</strong> (this post) — <code>subscribe()</code></li>
+<li>A four-bar linkage, dimensioned — coming</li>
+<li>A front panel with its drill schedule — coming</li>
+<li>A fretboard from one scale length — coming</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes <a href="/blog/ask-the-path">Ask the Path</a>
+— the selector grammar and the structs it returns — and reuses its
+panel idiom without re-introducing it: a form layer on the left, a twin
+on the right, both drawing the same block. Lambdas and trailing blocks
+are covered in <a href="/blog/lambdas-come-to-pathogen">The Shape of a Stroke</a>.</p>
+</blockquote>
+<p>Part 1 asked a path questions after it was drawn. Asking removed the
+coordinates from the annotation and left the <em>ordering</em> in place.
+You drew, then you queried, then you drew the annotation, and the three
+had to stay in that order every time the program grew.</p>
+<p>A subscription is a query that runs itself. You hand a layer a selector
+and a block, and the compiler calls the block once per match. The calls
+come in the order the geometry was drawn, wherever in the program the
+drawing happened. The annotation is declared once, and it follows.</p>
+<pre><code class="hljs language-pathogen"><span class="id">rightForm</span>.<span class="id">subscribe</span>(<span class="str">'endpoint'</span>) {|<span class="id">corner</span>|
+  <span class="id">rightDots</span>.<span class="kw">apply</span> {
+    <span class="id">circle</span>(<span class="id">corner</span>.<span class="id">x</span>, <span class="id">corner</span>.<span class="id">y</span>, <span class="num">3</span>);
+  }
+};
+</code></pre><p><mini-workspace code-open caption="The subscription is registered before a single command is drawn. The dots arrive at program end, one per joint, in drawing order.">
+  <code>//-- Declared before the drawing. Left: the form. Right: a subscription on
+//-- the twin's own form layer, registered before a single command is drawn;
+//-- the dots arrive at program end, one per joint, in drawing order.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel: the form ──────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+
+// ─── Right panel: the twin subscribes before it draws ──────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+// The annotation is declared before the drawing exists. Nothing is matched
+// yet; at program end the callback runs once per joint, in drawing order.
+rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 112)`drawn once, annotated nowhere`;
+}
+rightEyebrow.apply {
+  text(0, -18)`DECLARED FIRST`;
+}
+rightNote.apply {
+  text(0, 112)`the dots were declared before the tab`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/01-declared-first.svg" alt="The subscription is registered before a single command is drawn. The dots arrive at program end, one per joint, in drawing order." loading="lazy">
+</mini-workspace></p>
+<p>Everything that follows is about what &quot;runs itself&quot; means precisely,
+because the precision is where the useful behaviour comes from. The
+reference is the <a href="/docs#subscriptions-subscriptions">Subscriptions docs</a>.</p>
+<h2>When, exactly</h2>
+<p>Nothing is matched while you draw. The compiler keeps every layer in
+memory until the last statement has run, then works through the
+subscriptions. Each one runs its selector once over the finished
+geometry inside the stretch of drawing it is watching, its <strong>window</strong>,
+and the results are replayed in the order the geometry was drawn. Two
+subscriptions on different layers interleave the way the drawing did,
+and two on the same statement fire in the order they were registered.</p>
+<p>That timing has consequences worth stating before the pictures, in the
+spirit of <a href="/docs#subscriptions-things-to-know-first">the docs&#39; first section</a>:</p>
+<ul>
+<li><strong>A callback sees the finished picture.</strong> Corner operations are
+already applied; every <code>Endpoint</code> knows its <code>next</code> and <code>turn</code>; other
+layers are complete.</li>
+<li><strong>Variables hold their final values.</strong> The block is a closure, and it
+runs last. Change a variable after subscribing and the callback reads
+the changed value. The last sample makes this visible.</li>
+<li><strong>A callback may not draw into the layer it subscribed to.</strong> Drawing
+there is an error the moment it happens. Subscriptions annotate other
+layers.</li>
+<li><strong>Subscription output lands after everything drawn directly into the
+target.</strong> That moves where a dash pattern sits in its cycle and where
+markers land. Give annotations their own layer and it never matters.</li>
+<li><strong>Only drawing after the <code>subscribe</code> call is delivered.</strong> Query the
+layer for what came before.</li>
+<li><strong>Only path layers can be subscribed to.</strong> Text and group layers have
+no geometry to observe, so <code>subscribe</code> on one is an error. They are
+fine as targets: a callback writes into any layer it likes.</li>
+</ul>
+<h2>One block, two layers</h2>
+<p>The block receives up to three parameters: the match, its index among
+this subscription&#39;s matches starting at 0, and the subscription itself.
+Because the callback runs as ordinary top-level code, it can open <code>apply</code>
+blocks on as many layers as it likes, text layers included.</p>
+<pre><code class="hljs language-pathogen"><span class="id">rightForm</span>.<span class="id">subscribe</span>(<span class="str">'endpoint'</span>) {|<span class="id">corner</span>, <span class="id">i</span>, <span class="id">sub</span>|
+  <span class="cm">// corner: the match — i: its index, from 0 — sub: the subscription</span>
+};
+</code></pre><p><mini-workspace code-open caption="One subscription, two target layers: a dot on every joint and its number beside it, placed a fixed distance out along the joint's own turn.">
+  <code>//-- Fan-out. One subscription, two target layers: a dot on every joint and
+//-- its number beside it, from the ordinal the callback receives.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightLabels = TextLayer('right-labels') #{
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: accent;
+  text-anchor: middle;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    rightDots,
+    rightLabels,
+    rightEyebrow,
+    rightNote);
+
+// The callback's second parameter is the ordinal among this subscription's
+// matches; the label sits a fixed distance out along the joint's own turn.
+rightForm.subscribe('endpoint') {|corner, i|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+  // Outward at the joint: the incoming command's end tangent, turned half
+  // the corner's own turn, then a quarter turn off the path.
+  let heading = corner.command.block.tangent(1).angle;
+  let away = heading + corner.turn.rad / 2 - PI() / 2;
+  rightLabels.apply {
+    text(corner.x + cos(away) * 11, corner.y + sin(away) * 11 + 2.5)`${i}`;
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 112)`six joints, drawn in order`;
+}
+rightEyebrow.apply {
+  text(0, -18)`DOTS AND NUMBERS`;
+}
+rightNote.apply {
+  text(0, 112)`{|corner, i|} — one block, two layers`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/02-fan-out.svg" alt="One subscription, two target layers: a dot on every joint and its number beside it, placed a fixed distance out along the joint's own turn." loading="lazy">
+</mini-workspace></p>
+<p>The number is pushed away from the corner along a direction the match
+already knows: the incoming command&#39;s end tangent, turned by half the
+joint&#39;s own <code>turn</code>. That is the whole of the label-placement problem,
+answered by the struct rather than by a table of offsets. Parts 3 to 5
+lean on the same move.</p>
+<h2>Windows</h2>
+<p><code>subscribe</code> opens a window over the layer and <code>unsubscribe()</code> closes
+it. Drawing between the two calls is what gets delivered:</p>
+<p><mini-workspace code-open caption="Two squares on the same layer. The subscription is closed between them, so only the first is annotated.">
+  <code>//-- Windows. Two shapes drawn in two apply blocks. The subscription opens
+//-- before the first and is closed with unsubscribe() before the second, so
+//-- only the first shape's joints are annotated.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let square = @{
+  h 60
+  v 60
+  h -60
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 70;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 70;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+let corners = rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+
+leftForm.apply {
+  M 0 20 square.draw()
+  M 100 20 square.draw()
+}
+rightForm.apply {
+  M 0 20 square.draw()
+}
+// Closing the window: drawing after this point is not delivered.
+corners.unsubscribe();
+rightForm.apply {
+  M 100 20 square.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 112)`the same layer, drawn twice`;
+}
+rightEyebrow.apply {
+  text(0, -18)`ONE WINDOW`;
+}
+rightNote.apply {
+  text(0, 112)`subscribe · draw · unsubscribe · draw`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/03-windows.svg" alt="Two squares on the same layer. The subscription is closed between them, so only the first is annotated." loading="lazy">
+</mini-workspace></p>
+<p>Inside a callback, <code>unsubscribe()</code> means something slightly different:
+the window is already fixed by then, so it cancels the matches that have
+not fired yet. A callback that stops after the third match reads
+<code>if (i &gt;= 2) { sub.unsubscribe(); }</code>.</p>
+<h2>Selectors that need the whole window</h2>
+<p>Position pseudo-selectors that count from the end, <code>:last</code> and negative
+<code>:nth</code>, cannot be answered until the window is complete. That is
+exactly when callbacks run, so they simply work:</p>
+<p><mini-workspace code-open caption="Left: every joint numbered in drawing order. Right: endpoint:nth(-3..-1) under a subscription — the selector runs once over the finished window before anything is delivered, so it marks joints 3, 4 and 5 and no others.">
+  <code>//-- Completion-only selectors. `endpoint:nth(-3..-1)` can only be answered
+//-- once the whole window is known — which is exactly when callbacks run.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: bg_color;
+  stroke: accent;
+  stroke-width: 1;
+};
+let leftNums = TextLayer('left-nums') #{
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: accent;
+  text-anchor: middle;
+};
+leftPanel.append(leftForm,
+    leftDots,
+    leftNums,
+    leftEyebrow,
+    leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+// The left panel numbers every joint in drawing order, so the right
+// panel's three can be checked against it.
+leftForm.subscribe('endpoint') {|corner, i|
+  leftDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+  let heading = corner.command.block.tangent(1).angle;
+  let away = heading + corner.turn.rad / 2 - PI() / 2;
+  leftNums.apply {
+    text(corner.x + cos(away) * 11, corner.y + sin(away) * 11 + 2.5)`${i}`;
+  }
+};
+
+// Negative indexes count from the end of the window, as .slice() does. The
+// selector runs once over the finished window before anything fires.
+rightForm.subscribe('endpoint:nth(-3..-1)') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3.5);
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 112)`six joints in drawing order`;
+}
+rightEyebrow.apply {
+  text(0, -18)`ENDPOINT:NTH(-3..-1)`;
+}
+rightNote.apply {
+  text(0, 112)`the whole window first, then delivery`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/04-last-three.svg" alt="Left: every joint numbered in drawing order. Right: endpoint:nth(-3..-1) under a subscription — the selector runs once over the finished window before anything is delivered, so it marks joints 3, 4 and 5 and no others." loading="lazy">
+</mini-workspace></p>
+<p>If subscriptions fired while you drew, this would be impossible; a
+&quot;last&quot; would keep moving. End-of-program delivery is what makes a
+completed window askable at all.</p>
+<h2>Annotations, annotated</h2>
+<p>A callback may draw into a layer that has subscriptions of its own.
+Those fire in a following round, and the rounds continue until no new
+drawing appears:</p>
+<p><mini-workspace code-open caption="Round one puts a dot on every joint. Round two: a subscription on the dots layer draws a ring around every circle() the first callback produced.">
+  <code>//-- Annotations, annotated. The dots layer has a subscription of its own:
+//-- every circle() the first callback drew gets a ring in a second round.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let accent2 = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftDots, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rings = PathLayer('rings') #{
+  stroke: accent2;
+  stroke-width: 1;
+  fill: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm,
+    rightDots,
+    rings,
+    rightEyebrow,
+    rightNote);
+
+// Round one: joints become dots.
+leftForm.subscribe('endpoint') {|corner|
+  leftDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+// Round two: the dots layer is a source too. Its callback fires after the
+// first round has drawn into it.
+rightDots.subscribe('call(circle)') {|dot|
+  let hub = dot.block.centerPoint();
+  rings.apply {
+    circle(hub.x, hub.y, 7);
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+
+leftEyebrow.apply {
+  text(0, -18)`ONE ROUND`;
+}
+leftNote.apply {
+  text(0, 112)`a subscription on the form`;
+}
+rightEyebrow.apply {
+  text(0, -18)`TWO ROUNDS`;
+}
+rightNote.apply {
+  text(0, 112)`a second subscription, on the dots`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/05-annotate-the-annotations.svg" alt="Round one puts a dot on every joint. Round two: a subscription on the dots layer draws a ring around every circle() the first callback produced." loading="lazy">
+</mini-workspace></p>
+<p>A loop that never settles stops after eight rounds and reports the chain
+it found, <code>shape → dots → shape</code> style. The self-write from the list
+above is the shortest such loop and is caught at once.</p>
+<h2>The caveat, made visible</h2>
+<p>The closure rule is the one thing here that can surprise, so it gets a
+picture. A radius is bound, a subscription reads it, the form is drawn,
+and then the radius changes:</p>
+<p><mini-workspace code-open caption="Left: a plain queryAll loop draws with the radius as it was at that line, 3. Right: the subscription's callback runs at program end and sees 7.">
+  <code>//-- The closure caveat, made visible. A radius is changed after subscribing.
+//-- Left: a hand-written loop at the value the program had when it subscribed.
+//-- Right: the callback, which runs at program end and sees the final value.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let accent = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+let tab = @{
+  h 120
+  a 20 20 0 0 1 20 20
+  v 50
+  a 20 20 0 0 1 -20 20
+  h -120
+  z
+};
+
+let radius = 3;
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 50;
+  translate-y: 75;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftDots = PathLayer('left-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftDots, leftEyebrow, leftNote);
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 290;
+  translate-y: 75;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: accent;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(rightForm, rightDots, rightEyebrow, rightNote);
+
+// The callback reads `radius` when it runs, at the end of the program.
+rightForm.subscribe('endpoint') {|corner|
+  rightDots.apply {
+    circle(corner.x, corner.y, radius);
+  }
+};
+
+leftForm.apply {
+  M 0 0 tab.draw()
+}
+rightForm.apply {
+  M 0 0 tab.draw()
+}
+// A query, by contrast, runs right here — with radius still 3.
+leftDots.apply {
+  for (corner in leftForm.queryAll('endpoint')) {
+    circle(corner.x, corner.y, radius);
+  }
+}
+
+radius = 7;
+
+leftEyebrow.apply {
+  text(0, -18)`WHEN YOU ASKED`;
+}
+leftNote.apply {
+  text(0, 112)`queryAll now: radius is 3`;
+}
+rightEyebrow.apply {
+  text(0, -18)`WHEN IT RAN`;
+}
+rightNote.apply {
+  text(0, 112)`the callback ran last: radius is 7`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
+</code>
+  <img src="/blog/samples/post53/06-final-values.svg" alt="Left: a plain queryAll loop draws with the radius as it was at that line, 3. Right: the subscription's callback runs at program end and sees 7." loading="lazy">
+</mini-workspace></p>
+<p>Bind what a callback needs before subscribing, or put it in the
+selector. If you need the value <em>as of a line</em>, that is what a query at
+that line is for.</p>
+<h2>The handle</h2>
+<p><code>subscribe</code> returns a <code>Subscription</code>. <code>source</code> and <code>selector</code> say what it
+watches. <code>active</code> is true while the window is open and nothing has
+cancelled it. <code>count</code> is how many matches have been delivered, which is
+the number you want inside a callback. <code>log(handle)</code> prints
+<code>Subscription(shape: &#39;endpoint&#39;, 4 delivered)</code>. The <a href="/docs#subscriptions-the-subscription-value">docs
+table</a> has the rest.</p>
+<h2>What this project taught the language</h2>
+<p>This series doubles as a working friction log (<a href="/blog/ask-the-path">part
+1</a> explains the convention). One entry this time,
+surfaced by the sample that draws rings around dots.</p>
+<p><strong>A run that begins with a move answers for its own geometry.</strong> The
+ring sample asks the dots layer for <code>call(circle)</code> and centres a ring on
+each block. Every <code>circle()</code> begins with a move, and that move&#39;s recorded
+start is the pen position <em>before</em> it, which belongs to the previous
+statement. The block&#39;s bounding box reached back to that point, so every
+ring sat halfway to the previous dot. A quieter version of the same error
+had put the boxes part 1 drew around each <code>call</code> at the panel origin.
+Blocks
+taken from a layer now begin where their move lands. The <a href="/docs#path-queries-what-comes-back">Path
+Queries</a> tables describe <code>block</code> as
+the run alone; it is now true.</p>
+<h2>Where to go next</h2>
+<p>The next three posts put both mechanisms to work on real drawings. A
+four-bar linkage has its pivots numbered and its links dimensioned. A
+front panel prints its own drill schedule. A fretboard places and labels
+every fret from one scale length.</p>
+<p>The reference is <a href="/docs#subscriptions-subscriptions">Subscriptions</a>.
+Every sample above opens in the playground with one click: move a
+subscribe call, add a statement after an unsubscribe, and watch what is
+and is not delivered.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

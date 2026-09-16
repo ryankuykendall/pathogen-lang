@@ -1,0 +1,162 @@
+//-- Filters and the language's own ranges. Three squares of three sizes.
+//-- Right: `command(line, close)[length>40]` tinted, `subpath(1..2)` filled faintly,
+//-- and `endpoint:nth(-3..-1)` — the last three corners drawn — dotted.
+
+define ViewBox(0, 0, 480, 230);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let fg_faint = Color('#0d1638').alpha(0.1);
+let accent = oklch(0.55 0.16 27);
+let accent2 = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 230);
+}
+
+// ─── The form: three squares, three sizes ──────────────────────
+fn drawSquares(target) {
+  target.apply {
+    M 0 50
+    h 28
+    v 28
+    h -28
+    z
+    M 44 32
+    h 46
+    v 46
+    h -46
+    z
+    M 106 18
+    h 60
+    v 60
+    h -60
+    z
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 70;
+};
+let leftForm = PathLayer('left-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftForm, leftEyebrow, leftNote);
+drawSquares(leftForm);
+leftEyebrow.apply {
+  text(0, -18)`THREE SUBPATHS`;
+}
+leftNote.apply {
+  text(0, 100)`edges of 28, 46 and 60`;
+}
+
+// ─── Right panel ───────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 70;
+};
+let fills = PathLayer('fills') #{
+  fill: fg_faint;
+  stroke: none;
+};
+let rightForm = PathLayer('right-form') #{
+  stroke: fg_auto;
+  stroke-width: 1.5;
+  fill: none;
+};
+let longEdges = PathLayer('long-edges') #{
+  stroke: accent;
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+};
+let lastThree = PathLayer('last-three') #{
+  fill: accent2;
+  stroke: none;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+rightPanel.append(fills,
+    rightForm,
+    longEdges,
+    lastThree,
+    rightEyebrow,
+    rightNote);
+drawSquares(rightForm);
+
+// subpath(1..2): the second and third pen-down runs, as blocks — filled.
+fills.apply {
+  for (run in rightForm.queryAll('subpath(1..2)')) {
+    run.block.draw();
+  }
+}
+// command(line, close)[length>40]: shape words combine, and the filter tests a
+// scalar property of each command — the closing edge counts when it has length.
+longEdges.apply {
+  for (edge in rightForm.queryAll('command(line, close)[length>40]')) {
+    edge.block.draw();
+  }
+}
+// endpoint:nth(-3..-1): negative indexes count from the end, as in .slice().
+lastThree.apply {
+  for (corner in rightForm.queryAll('endpoint:nth(-3..-1)')) {
+    circle(corner.x, corner.y, 3);
+  }
+}
+rightEyebrow.apply {
+  text(0, -18)`FILTERED, RANGED`;
+}
+rightNote.apply {
+  text(0, 100)`[length>40] · subpath(1..2) · nth(-3..-1)`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 45
+  L 240 200
+}
