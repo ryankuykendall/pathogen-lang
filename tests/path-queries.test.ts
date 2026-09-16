@@ -8,6 +8,12 @@ import { compile } from '../src';
  * from the authored geometry, never hardcoded from output.
  */
 
+function layerData(src: string, name: string): string {
+  const layer = compile(src).layers.find((l) => l.name === name);
+  if (!layer) throw new Error(`no layer ${name}`);
+  return layer.data;
+}
+
 /** Each log() line as a single space-joined string. */
 function logLines(src: string): string[] {
   const result = compile(src);
@@ -179,6 +185,17 @@ describe('path queries: command', () => {
     const src = "define PathLayer('p') #{ fill: none; }\nlet tab = @{\n  h 20;\n  v 10;\n};\nlayer('p').apply {\n  M 0 0 tab.draw()\n}\nlog(layer('p').queryAll('command').length, layer('p').queryAll('endpoint').length, layer('p').query('call(draw)').commands.length);";
     // call(draw) is the whole one-line statement: the move plus the block's two commands.
     expect(logLines(src)).toEqual(['3 2 3']);
+  });
+
+  it('blocks from layer queries draw in place, whatever case the layer was authored in', () => {
+    // A subpath run begins with the layer's own M; an uppercase L stays a relative line when drawn.
+    const src = [
+      "define PathLayer('l') #{ fill: none; }",
+      "define PathLayer('out') #{ fill: none; }",
+      "layer('l').apply {\n  M 0 50;\n  h 28;\n  z;\n  M 44 32;\n  L 90 32 as segment('e');\n  v 46;\n  z;\n}",
+      "layer('out').apply {\n  layer('l').query('subpath(1)').block.draw();\n  layer('l').segment('e').draw();\n}",
+    ].join('\n');
+    expect(layerData(src, 'out')).toBe('M 0 50 m 44 -18 l 46 0 v 46 z M 44 32 l 46 0');
   });
 
   it('.commands returns the same Command struct as queryAll(command)', () => {

@@ -224,7 +224,9 @@ function walkRelative(
     }
   }
   for (const cmd of commands) {
-    const c = cmd.command;
+    // Layer-sourced runs (segment(), query blocks) keep their authored case;
+    // the walk always emits relative letters, so compare and emit lowercase.
+    const c = cmd.command.toLowerCase();
     if (c === 'z') {
       emit('z', [], cmd);
       cursorX = subpathStartX;

@@ -74,3 +74,19 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     dots.** `rightForm.queryAll('endpoint')` returned nothing for a layer drawn
     with `M 0 0 tab.draw()`, while the same layer's SVG showed the whole tab.
     (post52/01-twice-vs-once.)
+
+13. **RESOLVED (blog series, 2026-09-16): blocks taken from a layer draw in
+    place whatever case the layer was authored in.** The relative serializer
+    compared command letters case-sensitively, so a run copied from a layer
+    with an authored `M` (every `subpath(k)` block) or an uppercase `L` fell
+    through to the catch-all and was emitted with the absolute letter and
+    relative numbers — `M 44 -18` for a move that should read `m 44 -18`.
+    Original: **The faint `subpath(1..2)` fills landed nowhere near their
+    squares.** (post52/05-filters-and-ranges.)
+
+14. **RESOLVED (blog series, 2026-09-16): `subPath(t0, t1)` keeps the move
+    between runs.** Moves are filtered out to measure arc length and were never
+    put back, so a slice spanning two runs spliced the second run's curve onto
+    the end of the first run's `z` — a diagonal stroke across the gap. A gap
+    between fragments is now emitted as a relative `m`. Original: **The
+    arc-length slice drew a line across the move.** (post52/06-subpath-vs-subPath.)

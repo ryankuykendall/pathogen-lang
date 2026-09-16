@@ -1643,6 +1643,43 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
 
   // Different commands: tail of start + full middle commands + head of end
   const result: TransformCmd[] = [];
+  // Moves were filtered out to measure arc length, so a slice that spans two
+  // runs (or the implicit reopen after a z) would otherwise splice its
+  // fragments into one continuous stroke. A gap between fragments is a move.
+  // A `z` inside a slice would close to the SLICE's subpath start when rendered,
+  // not to the run's; when those differ the close becomes an explicit line.
+  let sliceSubpathStart: Point | null = null;
+  const pushJoined = (incoming: TransformCmd): void => {
+    let cmd = incoming;
+    const prev = result[result.length - 1];
+    if (prev && (Math.abs(prev.end.x - cmd.start.x) > 1e-9 || Math.abs(prev.end.y - cmd.start.y) > 1e-9)) {
+      result.push({
+        command: 'm',
+        args: [cmd.start.x - prev.end.x, cmd.start.y - prev.end.y],
+        start: { ...prev.end },
+        end: { ...cmd.start },
+      });
+      sliceSubpathStart = { ...cmd.start };
+    }
+    if (sliceSubpathStart === null) sliceSubpathStart = { ...cmd.start };
+    if (cmd.command.toUpperCase() === 'Z') {
+      const closesElsewhere =
+        Math.abs(cmd.end.x - sliceSubpathStart.x) > 1e-9 || Math.abs(cmd.end.y - sliceSubpathStart.y) > 1e-9;
+      if (closesElsewhere) {
+        const dx = cmd.end.x - cmd.start.x;
+        const dy = cmd.end.y - cmd.start.y;
+        if (Math.abs(dx) < 1e-10 && Math.abs(dy) < 1e-10) return;
+        cmd = {
+          command: 'l',
+          args: [dx, dy],
+          start: { ...cmd.start },
+          end: { ...cmd.end },
+          ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
+        };
+      }
+    }
+    result.push(cmd);
+  };
 
   // Tail of start command
   if (startParamT < 1) {
@@ -1652,12 +1689,12 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
     const sdx = startTail.end.x - startTail.start.x;
     const sdy = startTail.end.y - startTail.start.y;
     const hasLength = startTail.args.length > 0 || Math.abs(sdx) > 1e-10 || Math.abs(sdy) > 1e-10;
-    if (hasLength) result.push(startTail);
+    if (hasLength) pushJoined(startTail);
   }
 
   // Full middle commands
   for (let i = startLoc.cmdIndex + 1; i < endLoc.cmdIndex; i++) {
-    result.push({
+    pushJoined({
       command: drawCmds[i].command,
       args: [...drawCmds[i].args],
       start: { ...drawCmds[i].start },
@@ -1678,7 +1715,7 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
     const edx = endHead.end.x - endHead.start.x;
     const edy = endHead.end.y - endHead.start.y;
     const hasLength = endHead.args.length > 0 || Math.abs(edx) > 1e-10 || Math.abs(edy) > 1e-10;
-    if (hasLength) result.push(endHead);
+    if (hasLength) pushJoined(endHead);
   }
 
   return result;

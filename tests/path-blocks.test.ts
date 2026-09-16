@@ -2577,6 +2577,16 @@ M 0 0`);
   });
 
   describe('subPath', () => {
+  it('keeps the move between runs when a slice spans two subpaths', () => {
+    // 0.2 sits on the square's right edge, 0.7 on the curve: the z, the move to
+    // the curve, and the curve's head must all survive — not a line across the gap.
+    const src =
+      'let shape = @{\n  h 40;\n  v 54;\n  h -40;\n  z;\n  m 56 54;\n  c 14 -80 34 50 62 -50;\n};\nlet piece = shape.project(0, 0).subPath(0.2, 0.7);\nlog(piece.d);';
+    const d = String(compile(src).logs[0].parts[0].value);
+    // The z would close to the slice's own start, so it becomes the run's real closing line.
+    expect(d).toMatch(/^l 0 [\d.]+ h -40 l 0 -54 m 56 54 c /);
+  });
+
     it('subPath(0, 1) returns approximately the original path', () => {
       const result = compile(`
         let p = @{ h 100 };
