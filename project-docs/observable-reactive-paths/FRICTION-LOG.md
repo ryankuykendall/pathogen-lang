@@ -90,3 +90,13 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     the end of the first run's `z` — a diagonal stroke across the gap. A gap
     between fragments is now emitted as a relative `m`. Original: **The
     arc-length slice drew a line across the move.** (post52/06-subpath-vs-subPath.)
+
+15. **RESOLVED (blog series, 2026-09-16): a run that begins with a move
+    answers for itself.** A `call(circle)` or `subpath(k)` block taken from a
+    layer started with the layer's own `M`, whose recorded `start` is the pen
+    position *before* it — a previous statement's geometry. `boundingBox()`
+    and `centerPoint()` on such a block reached back to that point, so a
+    ring meant to sit on a dot sat halfway to the previous dot, and the box
+    around a face's head began at the panel origin. The block builder now
+    makes a leading move zero-length. Original: **The rings landed between
+    the dots.** (post53/05-annotate-the-annotations; post52/04-what-a-call-drew.)

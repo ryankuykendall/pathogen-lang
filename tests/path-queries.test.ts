@@ -195,7 +195,8 @@ describe('path queries: command', () => {
       "layer('l').apply {\n  M 0 50;\n  h 28;\n  z;\n  M 44 32;\n  L 90 32 as segment('e');\n  v 46;\n  z;\n}",
       "layer('out').apply {\n  layer('l').query('subpath(1)').block.draw();\n  layer('l').segment('e').draw();\n}",
     ].join('\n');
-    expect(layerData(src, 'out')).toBe('M 0 50 m 44 -18 l 46 0 v 46 z M 44 32 l 46 0');
+    // The run's leading M is where the block starts, not a command it carries.
+    expect(layerData(src, 'out')).toBe('M 44 32 l 46 0 v 46 z M 44 32 l 46 0');
   });
 
   it('.commands returns the same Command struct as queryAll(command)', () => {
@@ -211,6 +212,12 @@ describe('path queries: call', () => {
       `${FACE_BLOCK}\nlog(face.queryAll('call').length);\nlet ring = face.query('call(circle)');\nlog(ring.name, ring.commands.length, ring.index);\nlog(face.query('call(rect)').index);\nlog(face.queryAll('call(circle) command(a)').length);`,
     );
     expect(lines).toEqual(['2', 'circle 3 0', '1', '2']);
+  });
+
+  it('a call block on a layer answers for the call alone, not the pen before it', () => {
+    // circle(50, 50, 10) begins with M 40 50; the pen before it was at (0, 0), which is not the circle's.
+    const src = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0;\n  h 1;\n  circle(50, 50, 10);\n}\nlet ring = layer('p').query('call(circle)');\nlet box = ring.block.boundingBox();\nlog(box.x, box.y, box.width, box.height);\nlog(ring.block.centerPoint());";
+    expect(logLines(src)).toEqual(['40 40 20 20', 'Point(50, 50)']);
   });
 
   it('call blocks measure the emitted geometry on a layer', () => {

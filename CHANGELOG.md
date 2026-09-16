@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-16 (friction fixes from the "Drawing Without Bookkeeping" samples)
+
+Three evaluator bugs the first blog samples exposed, logged in `project-docs/observable-reactive-paths/FRICTION-LOG.md` (entries 12–14) and told in the posts' closing sections.
+
+### Fixed
+
+#### Core
+
+- **The one-line `M x y block.draw()` idiom records what it draws.** The greedy path-argument tokenizer folds a following `block.draw()` into the preceding command's arguments; the block's commands were tracked against the live context *before* the command moved the pen, and the statement's structured record kept only the leading command. `layer('x').queryAll('endpoint')` on such a layer found nothing past the move, trace histories carried the wrong cursors, and `ctx.position` after the statement sat at the move rather than the block's end. The evaluator now snapshots the context before a command's arguments evaluate and, when the emitted text carries further commands, rewinds and replays the whole fragment in order; the record is named after the emitting call so `call(draw)` covers the statement. Emitted bytes unchanged.
+- **Blocks taken from a layer draw in place whatever case the layer was authored in.** The relative serializer compared command letters case-sensitively, so a run copied from a layer with an authored `M` (every `subpath(k)` block) or an uppercase `L` was emitted with the absolute letter and relative numbers. It compares and emits lowercase now.
+- **`subPath(t0, t1)` keeps the move between runs.** Moves were filtered out to measure arc length and never put back, so a slice spanning two runs spliced the second run onto the end of the first. A gap between fragments is now a relative move, and a `z` that would close to the slice's own start instead of the run's becomes the run's explicit closing line.
+
 ## [Unreleased] - 2026-09-15 (subscriptions: `layer.subscribe(selector)`)
 
 Milestone 2 of the observable/reactive-paths track (`project-docs/observable-reactive-paths/`, design trail in `discussion-02-push-model-proposal-v1.md`): a path query that runs itself. Contract in `docs/subscriptions.md`.

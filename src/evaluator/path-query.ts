@@ -741,9 +741,17 @@ function matchValue(source: QuerySource, m: Match): Value {
  * PathBlock sources (what segment() returns), page coordinates otherwise.
  */
 export function wrapCommands(run: PathBlockCommand[], kind: QuerySource['kind']): PathBlockValue | ProjectedPathValue {
+  // A run that begins with a move carries, in that move's `start`, the pen
+  // position before it — a previous statement's geometry, not this run's. A
+  // standalone block starts where that move lands, so the move is dropped
+  // (kept, zero-length, only when the run is nothing but a move); bounding
+  // boxes, centres and draw() anchors then answer for the run alone.
+  const first = run[0];
+  const leadingMove = first.command === 'm' || first.command === 'M';
+  const source = !leadingMove ? run : run.length > 1 ? run.slice(1) : [{ ...first, start: { ...first.end } }];
   if (kind === 'pathblock') {
-    const runStart = run[0].start;
-    const rebased = run.map((c) => ({
+    const runStart = source[0].start;
+    const rebased = source.map((c) => ({
       command: c.command,
       args: [...c.args],
       start: { x: c.start.x - runStart.x, y: c.start.y - runStart.y },
@@ -758,7 +766,7 @@ export function wrapCommands(run: PathBlockCommand[], kind: QuerySource['kind'])
       endPoint: { x: rebased[rebased.length - 1].end.x, y: rebased[rebased.length - 1].end.y },
     };
   }
-  const copies = run.map((c) => ({
+  const copies = source.map((c) => ({
     command: c.command,
     args: [...c.args],
     start: { ...c.start },
