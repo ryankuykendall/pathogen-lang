@@ -64,25 +64,36 @@ function approximateQuadraticBezierLength(p0: Point, p1: Point, p2: Point): numb
   return length;
 }
 
-function approximateArcLength(rx: number, ry: number, start: Point, end: Point): number {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const chordLength = Math.sqrt(dx * dx + dy * dy);
-
-  if (rx === ry && rx > 0) {
-    const r = rx;
-    const halfChord = chordLength / 2;
-    if (halfChord >= r) return chordLength;
-    const halfAngle = Math.asin(Math.min(halfChord / r, 1));
-    return 2 * halfAngle * r;
-  }
-
-  const avgR = (rx + ry) / 2;
-  if (avgR <= 0) return chordLength;
-  const halfChord = chordLength / 2;
-  if (halfChord >= avgR) return chordLength;
-  const halfAngle = Math.asin(Math.min(halfChord / avgR, 1));
-  return 2 * halfAngle * avgR;
+/**
+ * Exact length of an SVG arc command. The chord alone cannot tell a minor arc
+ * from its major complement or a half circle from its diameter (ISSUE-021), so
+ * the flags go through the endpoint-to-center solver: circular arcs are
+ * |sweep| · r, elliptical arcs integrate the speed of the parametrization
+ * (Simpson, 64 slices — well under 1e-6 relative error for any sweep).
+ * Degenerate arcs (coincident endpoints, zero radius) fall back to the chord.
+ */
+function arcCommandLength(
+  start: Point,
+  end: Point,
+  rx: number,
+  ry: number,
+  phi: number,
+  largeArcFlag: number,
+  sweepFlag: number,
+): number {
+  const chord = Math.hypot(end.x - start.x, end.y - start.y);
+  const c = arcEndpointToCenter(start.x, start.y, rx, ry, phi, largeArcFlag, sweepFlag, end.x, end.y);
+  if (!c) return chord;
+  const sweep = Math.abs(c.deltaAngle);
+  if (Math.abs(c.rx - c.ry) <= 1e-10) return sweep * c.rx;
+  const n = 64;
+  const h = sweep / n;
+  const speed = (theta: number) => Math.hypot(c.rx * Math.sin(theta), c.ry * Math.cos(theta));
+  const a0 = c.startAngle;
+  const dir = c.deltaAngle < 0 ? -1 : 1;
+  let sum = speed(a0) + speed(a0 + dir * sweep);
+  for (let i = 1; i < n; i++) sum += (i % 2 === 0 ? 2 : 4) * speed(a0 + dir * i * h);
+  return (h / 3) * sum;
 }
 
 export function calculateCommandLength(cmd: SamplingCmd): number {
@@ -128,8 +139,8 @@ export function calculateCommandLength(cmd: SamplingCmd): number {
     }
 
     case 'A': {
-      const [rx, ry] = cmd.args;
-      return approximateArcLength(rx, ry, cmd.start, cmd.end);
+      const [rx, ry, rotation, largeArcFlag, sweepFlag] = cmd.args;
+      return arcCommandLength(cmd.start, cmd.end, rx, ry, (rotation * Math.PI) / 180, largeArcFlag, sweepFlag);
     }
 
     default:

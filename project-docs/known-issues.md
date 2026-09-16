@@ -747,7 +747,9 @@ Both.
 
 ---
 
-## ISSUE-021: Arc length ignores the sweep flags — any arc of a half circle or more reports its chord
+## Resolved entries (kept for the trail)
+
+### ISSUE-021 (resolved 2026-09-15): Arc length ignored the sweep flags — any arc of a half circle or more reported its chord
 
 **Discovered:** 2026-09-14 (path-query milestone 1: `call(circle).block.length` returned 100 for a radius-25 circle)
 
@@ -781,7 +783,7 @@ Measure circles analytically (`2 * PI * r`); prefer arcs under 180° (two quarte
 
 1, with a render-snapshot sweep of samples that use `partition`/`get` on arcs, in its own commit — deliberately not bundled into the query-language milestone (it would have silently moved geometry under an unrelated feature).
 
-## Resolved entries (kept for the trail)
+**Resolution (2026-09-15):** `calculateCommandLength` now routes arcs through `arcEndpointToCenter`: circular arcs are `|sweep| · r` exactly, elliptical arcs integrate the parametrization speed (Simpson, 64 slices). `approximateArcLength` is gone. `render-snapshots` and every published-sample suite were unchanged by the fix; `get(t)` / `partition` on paths mixing lines with half-circle or large arcs now weight the arc correctly (pinned in `tests/arc-length.test.ts`).
 
 ### ISSUE-016 (resolved 2026-09-12): The playground compile worker never cancels; edits during a long compile queue more full compiles
 

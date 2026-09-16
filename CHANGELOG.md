@@ -24,6 +24,7 @@ Milestone 2 of the observable/reactive-paths track (`project-docs/observable-rea
 
 #### Core
 
+- **Arc length honours the flags (ISSUE-021).** `PathBlock.length`, `Command.length`, `[length]` filters, `get(t)`, `partition`, `subPath`, `dash` and the corner-op trims all measured arcs from the chord alone, so a half circle counted as its diameter (a `circle()` reported `4r`) and a large arc as its minor complement. Circular arcs are now exact (`|sweep| · r`) and elliptical arcs integrate the true speed. Published sample output is byte-identical; only paths mixing lines with half-circle or large arcs sample differently along `t`. Tests: `tests/arc-length.test.ts`.
 - **Command identity now survives every transform that rebuilds meta.** Corner-op trims, the closing line a `z` expands to, offset connectors, `subPath` fragments and the arc a fillet inserts rebuilt meta from a label whitelist, silently dropping `call` (and the new `record`) identity — so `call(lineTo)` could miss a filleted statement and a subscription would skip a trimmed edge. One helper (`identityMeta` in `src/evaluator/path-data.ts`) now carries seam, call and record identity at each site. Emitted bytes unchanged.
 
 ## [Unreleased] - 2026-09-14 (path queries: `query()` / `queryAll()`)
