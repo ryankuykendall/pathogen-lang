@@ -8,6 +8,28 @@ function approxEqual(a: number, b: number, epsilon = 0.0001): boolean {
 }
 
 describe('Path Context Tracking', () => {
+  describe('one-line draw idiom (M x y block.draw())', () => {
+    const TAB = 'let tab = @{\n  h 20;\n  v 10;\n};\n';
+
+    it('leaves the pen where the drawn block ends, not at the move', () => {
+      const result = compileWithContext(`${TAB}M 5 5\nh 3\nM 0 0 tab.draw()`);
+      expect(result.context.position).toEqual({ x: 20, y: 10 });
+    });
+
+    it('records every emitted command with the right cursor, in order', () => {
+      const result = compile(`${TAB}M 0 0 tab.draw()`, { trace: true });
+      const layer = result.layers[0];
+      expect(layer.records![0].commandCount).toBe(3);
+      const shape = layer.commands!.map((c) => [c.command, c.start.x, c.start.y, c.end.x, c.end.y]);
+      expect(shape).toEqual([
+        ['M', 0, 0, 0, 0],
+        ['h', 0, 0, 20, 0],
+        ['v', 20, 0, 20, 10],
+      ]);
+      expect(layer.data).toBe('M 0 0 h 20 v 10');
+    });
+  });
+
   describe('position tracking', () => {
     it('tracks position for M (absolute moveto)', () => {
       const result = compileWithContext('M 10 20');

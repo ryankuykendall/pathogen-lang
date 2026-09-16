@@ -36,12 +36,13 @@ describe('path round-trip: draw()', () => {
     expect(logs).toEqual(['25', '20']);
   });
 
-  it('CHARACTERIZATION: a bare draw() merges into the preceding path command, whose context update wins', () => {
+  it('a bare draw() folded into the preceding path command tracks in order: the pen ends where the block ends', () => {
     // The greedy path-args tokenizer folds `p.draw()` on the next line into the
-    // `M 20 20` statement's args. Arg evaluation runs draw() (which tracks the
-    // emitted path), but the enclosing M command then applies its OWN context
-    // update from its numeric args — clobbering the cursor back to (20, 20).
-    // Emission is unaffected; only ctx.position reflects the M target.
+    // `M 20 20` statement's args. Arg evaluation runs draw() before the M has
+    // moved the pen, so the evaluator rewinds the context and replays the whole
+    // emitted fragment in order (friction-log entry 12): emission is unchanged
+    // and ctx.position now agrees with it — the same answer the two-statement
+    // form above gives.
     const result = compile(`
       let p = @{ h 10 v 10 z h 5 };
       M 20 20
@@ -49,7 +50,7 @@ describe('path round-trip: draw()', () => {
       log(ctx.position.x); log(ctx.position.y);
     `);
     expect(result.layers[0].data).toBe('M 20 20 h 10 v 10 z h 5');
-    expect(result.logs.map((l) => l.parts[0].value)).toEqual(['20', '20']);
+    expect(result.logs.map((l) => l.parts[0].value)).toEqual(['25', '20']);
   });
 
   it('bridges the origin gap for path blocks whose first command starts off-origin (fillet)', () => {

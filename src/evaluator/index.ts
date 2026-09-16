@@ -11,7 +11,9 @@ import {
   contextToObject,
   createPathContext,
   createTransformState,
+  restoreContext,
   setLastTangent,
+  snapshotContext,
   transformStateToSvg,
   updateContextForCommand,
 } from './context';
@@ -8637,20 +8639,29 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
     return { text, commands };
   }
 
-  // Get string args for output
+  // Get string args for output. A path-emitting argument (`M x y block.draw()`)
+  // tracks its own commands against the live context WHILE the args evaluate —
+  // i.e. from the pen position before this command moves it — so snapshot first.
+  const before = scope.evalState ? snapshotContext(scope.evalState.pathContext) : null;
   const stringArgs = cmd.args.map((arg) => evaluatePathArg(arg, scope));
   const result = cmd.command + (stringArgs.length > 0 ? ` ${stringArgs.join(' ')}` : '');
 
   // Update path context if tracking is enabled
   let commands: PathBlockCommand[] = [];
   if (scope.evalState && cmd.command !== '') {
-    const numericArgs = getNumericArgs(cmd.args, scope);
     const ctx = scope.evalState.pathContext;
-    const start = { x: ctx.position.x, y: ctx.position.y };
-    updateContextForCommand(ctx, cmd.command, numericArgs);
-    commands = [
-      { command: cmd.command, args: numericArgs, start, end: { x: ctx.position.x, y: ctx.position.y } },
-    ];
+    if (before && /[MmLlHhVvCcSsQqTtAaZz]/.test(result.slice(1))) {
+      // The emitted text carries more commands than the letter we started
+      // with: rewind and replay the whole fragment in order, so the structured
+      // record, the command history, and the pen all agree with the bytes.
+      restoreContext(ctx, before);
+      commands = parsePathStringToCommands(result, ctx);
+    } else {
+      const numericArgs = getNumericArgs(cmd.args, scope);
+      const start = { x: ctx.position.x, y: ctx.position.y };
+      updateContextForCommand(ctx, cmd.command, numericArgs);
+      commands = [{ command: cmd.command, args: numericArgs, start, end: { x: ctx.position.x, y: ctx.position.y } }];
+    }
     updateCtxVariable(scope);
   }
 
@@ -9196,7 +9207,12 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
         // apply block — a single push routes correctly in all cases.
         recordPath(accum, result.text, result.commands, {
           loc: stmt.loc,
-          fn: stmt.command === '' ? calleeName(stmt.args[0]) : undefined,
+          // `circle(...)` names the statement; so does the block a one-line
+          // `M x y block.draw()` idiom draws — the whole fragment is one call.
+          fn:
+            stmt.command === ''
+              ? calleeName(stmt.args[0])
+              : calleeName(stmt.args.find((a) => a.type === 'FunctionCall' || a.type === 'MethodCallExpression')),
         });
         const annotations = evaluatePathAnnotations(stmt, scope);
         if (annotations) {

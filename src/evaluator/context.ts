@@ -56,6 +56,38 @@ export function createPathContext(options: PathContextOptions = {}): PathContext
   };
 }
 
+/** Everything a statement may need to rewind: pen, subpath start, tangents, history length. */
+export interface PathContextSnapshot {
+  position: Point;
+  start: Point;
+  lastTangent?: number;
+  lastQuadCP?: Point;
+  historyLength: number;
+}
+
+export function snapshotContext(ctx: PathContext): PathContextSnapshot {
+  return {
+    position: { x: ctx.position.x, y: ctx.position.y },
+    start: { x: ctx.start.x, y: ctx.start.y },
+    ...(ctx.lastTangent !== undefined ? { lastTangent: ctx.lastTangent } : {}),
+    ...(ctx._lastQuadCP ? { lastQuadCP: { x: ctx._lastQuadCP.x, y: ctx._lastQuadCP.y } } : {}),
+    historyLength: ctx.commands.length,
+  };
+}
+
+/** Rewind a context to a snapshot (drops any history recorded since). */
+export function restoreContext(ctx: PathContext, snap: PathContextSnapshot): void {
+  ctx.position = { x: snap.position.x, y: snap.position.y };
+  ctx.start = { x: snap.start.x, y: snap.start.y };
+  if (snap.lastTangent !== undefined) ctx.lastTangent = snap.lastTangent;
+  else delete ctx.lastTangent;
+  if (snap.lastQuadCP) ctx._lastQuadCP = { x: snap.lastQuadCP.x, y: snap.lastQuadCP.y };
+  else delete ctx._lastQuadCP;
+  if (ctx.commands.length > snap.historyLength) ctx.commands.length = snap.historyLength;
+  ctx._dirty = true;
+  ctx._cachedObject = null;
+}
+
 /**
  * Deep copy a Point
  */

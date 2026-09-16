@@ -175,6 +175,12 @@ describe('path queries: command', () => {
     expect(lines).toEqual(['3 0 2 4']);
   });
 
+  it('sees geometry drawn with the one-line M x y block.draw() idiom', () => {
+    const src = "define PathLayer('p') #{ fill: none; }\nlet tab = @{\n  h 20;\n  v 10;\n};\nlayer('p').apply {\n  M 0 0 tab.draw()\n}\nlog(layer('p').queryAll('command').length, layer('p').queryAll('endpoint').length, layer('p').query('call(draw)').commands.length);";
+    // call(draw) is the whole one-line statement: the move plus the block's two commands.
+    expect(logLines(src)).toEqual(['3 2 3']);
+  });
+
   it('.commands returns the same Command struct as queryAll(command)', () => {
     const src =
       "let p = @{\n  h 20 as segment('lid');\n  v 20;\n};\nlet first = p.commands[0];\nlog(first.command, first.segment, first.end);\nlog(p.commands.length == p.queryAll('command').length);\nlet { start, end } = p.commands[1];\nlog(start, end);\nlog(Object.keys(first).length > 4);";
