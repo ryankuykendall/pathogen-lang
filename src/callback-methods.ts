@@ -11,4 +11,5 @@ export const CALLBACK_METHODS: ReadonlySet<string> = new Set([
   'map', 'filter', 'reduce', 'sort', // array (map also Grid)
   'fill', 'forEach', // Grid
   'variableOffset', 'compoundVariableOffset', // PathBlock
+  'subscribe', // PathLayer references
 ]);

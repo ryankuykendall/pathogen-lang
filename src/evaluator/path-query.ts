@@ -609,29 +609,34 @@ function matchPassesFilter(env: QueryEnv, m: Match, f: QueryFilter): boolean {
   return false;
 }
 
-function evalCompound(env: QueryEnv, c: QueryCompound, scope: Set<number> | null): Match[] {
+type SubjectFilter = (from: number, to: number) => boolean;
+
+function evalCompound(env: QueryEnv, c: QueryCompound, scope: Set<number> | null, subject?: SubjectFilter): Match[] {
   let matches = candidates(env, c).filter((m) => inScope(m, scope));
   for (const f of c.filters) matches = matches.filter((m) => matchPassesFilter(env, m, f));
+  // A subscription window narrows the subject before position pseudos resolve.
+  if (subject) matches = matches.filter((m) => subject(m.from, m.to));
   if (c.pseudo) matches = resolveIndexSpecs(c.pseudo.specs, matches.length).map((k) => matches[k]);
   return matches;
 }
 
-function evalSelector(env: QueryEnv, s: QuerySelector): Match[] {
+function evalSelector(env: QueryEnv, s: QuerySelector, subject?: SubjectFilter): Match[] {
   let scope: Set<number> | null = null;
   let matches: Match[] = [];
-  for (const c of s.compounds) {
-    matches = evalCompound(env, c, scope);
+  const last = s.compounds.length - 1;
+  for (const [k, c] of s.compounds.entries()) {
+    matches = evalCompound(env, c, scope, k === last ? subject : undefined);
     scope = new Set<number>();
     for (const m of matches) for (let i = m.from; i < m.to; i++) scope.add(i);
   }
   return matches;
 }
 
-function runMatcher(env: QueryEnv, q: ParsedQuery): Match[] {
+function runMatcher(env: QueryEnv, q: ParsedQuery, subject?: SubjectFilter): Match[] {
   const seen = new Set<string>();
   const all: Match[] = [];
   for (const s of q.selectors) {
-    for (const m of evalSelector(env, s)) {
+    for (const m of evalSelector(env, s, subject)) {
       const key = `${m.from}:${m.to}:${m.label ?? ''}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -920,6 +925,38 @@ function noMatchMessage(env: QueryEnv, q: ParsedQuery): string {
     }
   }
   return `No match for '${q.raw}' — ${has}`;
+}
+
+/** One match of a selector with the identity subscriptions dedupe on. */
+export interface QueryHit {
+  value: Value;
+  /** Stable across rounds: noun + record sequence + offset within the record + span + label. */
+  key: string;
+  /** Global record sequence of the match's first command (null when unstamped). */
+  record: number | null;
+}
+
+/**
+ * Matches of a selector as hits, optionally narrowed to a subject window
+ * (subscriptions). Throws plain Errors like runPathQuery.
+ */
+export function matchPathQuery(source: QuerySource, raw: string, opts: { subject?: SubjectFilter } = {}): QueryHit[] {
+  const parsed = parsePathQuery(raw);
+  const env = envFor(source);
+  return runMatcher(env, parsed, opts.subject).map((m) => {
+    const seq = env.commands[m.from].meta?.record ?? null;
+    let offset = 0;
+    if (seq !== null) {
+      let j = m.from;
+      while (j > 0 && env.commands[j - 1].meta?.record === seq) j--;
+      offset = m.from - j;
+    }
+    return {
+      value: matchValue(source, m),
+      key: `${m.noun}:${seq ?? 'x'}:${offset}:${m.to - m.from}:${m.label ?? ''}`,
+      record: seq,
+    };
+  });
 }
 
 /**

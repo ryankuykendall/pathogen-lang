@@ -270,6 +270,10 @@ pseudo     := :first | :last | :nth( index-list )
 index-spec := int | int..int | int..<int         negatives count from the end
 ```
 
+## Subscriptions
+
+When the drawing is spread across the program and the annotation should simply follow it, hand the same selector to [`subscribe`](#subscriptions-subscriptions): the compiler runs the query at the end of the program and calls your block once per match, in drawing order.
+
 ## The legacy methods
 
 `segment`, `segmentAll`, `point`, `pointAll`, `vertex`, and `vertexAll` are the label-only shortcuts that predate `query`. They are unchanged, including the `:atomic` pseudo-selector, and are often the shortest spelling when all you want is a labeled block or point:

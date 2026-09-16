@@ -46,6 +46,7 @@ export type Value =
   | CallValue
   | SegmentValue
   | SubpathValue
+  | SubscriptionValue
   | PathBlockNamespace
   | ProjectedPathValue
   | CyclerValue
@@ -550,6 +551,9 @@ export interface PathCommandMeta {
    *  or user fn whose statement emitted this command, plus a per-statement id so
    *  adjacent same-fn statements stay distinct. Stamped by recordPath(). */
   call?: { fn: string; id: number };
+  /** Global record sequence of the statement that emitted this command (stamped by
+   *  recordPath; program order across layers). Subscriptions window on it. */
+  record?: number;
 }
 
 export interface PathBlockCommand {
@@ -596,6 +600,23 @@ export interface QuerySource {
   value: Value;
   /** Finalized commands (corner ops applied) in the receiver's coordinate frame. */
   commands: PathBlockCommand[];
+}
+
+/**
+ * A live `subscribe()` registration: a window over a layer's records plus the
+ * callback to run per match at program end (src/evaluator/subscriptions.ts).
+ */
+export interface SubscriptionValue {
+  type: 'SubscriptionValue';
+  layerName: string;
+  selector: string;
+  callback: { params: string[]; body: Statement[]; closure?: Scope };
+  windowStart: number; // global record sequence when subscribed
+  windowEnd: number | null; // set by a top-level unsubscribe()
+  cancelled: boolean; // set by unsubscribe() during delivery
+  count: number; // matches delivered so far
+  fired: Set<string>; // match keys delivered (later rounds only add new ones)
+  loc?: SourceLocation;
 }
 
 /** One SVG command — the `command` query noun and the element type of `.commands`. */
@@ -1180,6 +1201,8 @@ export interface EvaluationState {
   fontRegistry?: FontRegistry; // Loaded font data for precise metrics and glyph extraction
   missingGlyphs?: Map<string, Set<string>>; // "family:weight" → chars with no glyph in any variant
   viewBox?: ViewBoxValue & { loc?: SourceLocation }; // Resolved viewBox from `define ViewBox(...)`
+  subscriptions?: SubscriptionValue[]; // registration order; dispatched at program end
+  dispatching?: SubscriptionValue | null; // the subscription whose callback is running
 }
 
 export interface Scope {

@@ -109,7 +109,7 @@ let c = layer('outline').point('corner');    // Point(70, 50)
 
 `segment('name')` returns a `ProjectedPath` with the full sampling API (`get`, `tangent`, `partition`, `boundingBox`, ...); `point('name')` returns the labeled vertex as a Point. See [Segment Labels & Corner Suffixes](#segment-labels-segment-labels-corner-suffixes) for the label shortcuts.
 
-The general query methods work on layer references too, labels or not: `layer('outline').queryAll('endpoint')` is every joint the layer has drawn so far, `layer('outline').query('call(circle)')` is the first circle statement's geometry. Results are in page coordinates. See [Path Queries](#path-queries-path-queries).
+The general query methods work on layer references too, labels or not: `layer('outline').queryAll('endpoint')` is every joint the layer has drawn so far, `layer('outline').query('call(circle)')` is the first circle statement's geometry. Results are in page coordinates. See [Path Queries](#path-queries-path-queries). To have another layer follow this one's geometry automatically, see [Subscriptions](#subscriptions-subscriptions).
 
 ## Accessing Layer Context
 

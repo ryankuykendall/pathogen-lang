@@ -1,4 +1,5 @@
 import { formatNum } from './format';
+import { identityMeta } from './path-data';
 import {
   arcEndpointToCenter,
   arcPointFromCenter,
@@ -30,7 +31,13 @@ interface TransformCmd {
  */
 function inheritInsertMeta(incoming: TransformCmd, outgoing: TransformCmd): PathCommandMeta | undefined {
   const label = incoming.meta?.segmentLabel;
-  return label !== undefined && label === outgoing.meta?.segmentLabel ? { segmentLabel: label } : undefined;
+  // The inserted corner belongs to the joint; its identity (record, call, seam)
+  // follows the incoming edge so windows and call() queries still see it.
+  const meta: PathCommandMeta = {
+    ...identityMeta(incoming.meta),
+    ...(label !== undefined && label === outgoing.meta?.segmentLabel ? { segmentLabel: label } : {}),
+  };
+  return Object.keys(meta).length > 0 ? meta : undefined;
 }
 
 // ---- Shared utilities ----
@@ -221,8 +228,10 @@ export function reverseCommands(commands: TransformCmd[]): TransformCmd[] {
     let evSourceIdx = n - 2 - j;
     if (evSourceIdx < 0 && wasClosed) evSourceIdx = ((evSourceIdx % n) + n) % n;
     const ev = evSourceIdx >= 0 ? drawCommands[evSourceIdx].meta?.endVertex : undefined;
-    if (segLabel !== undefined || ev !== undefined) {
+    const identity = identityMeta(cmd.meta);
+    if (segLabel !== undefined || ev !== undefined || Object.keys(identity).length > 0) {
       newCmd.meta = {
+        ...identity,
         ...(segLabel !== undefined ? { segmentLabel: segLabel } : {}),
         ...(ev !== undefined ? { endVertex: { ...ev } } : {}),
       };
@@ -823,7 +832,11 @@ export function offsetCommands(
                 start: { ...trimmedEnd },
                 end: { ...trimmedStart },
               };
-              if (microLabel !== undefined) micro.meta = { segmentLabel: microLabel };
+              const microMeta = {
+                ...identityMeta(prev.srcMeta),
+                ...(microLabel !== undefined ? { segmentLabel: microLabel } : {}),
+              };
+              if (Object.keys(microMeta).length > 0) micro.meta = microMeta;
               connectors.set((j + 1) % pieces.length, micro);
             }
             continue;
@@ -849,7 +862,11 @@ export function offsetCommands(
       } else {
         connector = { command: 'l', args: [b.x - a.x, b.y - a.y], start: { ...a }, end: { ...b } };
       }
-      if (sharedLabel !== undefined) connector.meta = { segmentLabel: sharedLabel };
+      const connectorMeta = {
+        ...identityMeta(prev.srcMeta),
+        ...(sharedLabel !== undefined ? { segmentLabel: sharedLabel } : {}),
+      };
+      if (Object.keys(connectorMeta).length > 0) connector.meta = connectorMeta;
       connectors.set((j + 1) % pieces.length, connector);
     }
 
@@ -886,12 +903,12 @@ export function offsetCommands(
             // end-vertex annotation only the final one.
             const seg = piece.srcMeta.segmentLabel;
             const ev = lastOfPiece ? piece.srcMeta.endVertex : undefined;
-            const seamId = piece.srcMeta.seamId;
-            if (seg !== undefined || ev !== undefined || seamId !== undefined) {
+            const identity = identityMeta(piece.srcMeta);
+            if (seg !== undefined || ev !== undefined || Object.keys(identity).length > 0) {
               cmd.meta = {
+                ...identity,
                 ...(seg !== undefined ? { segmentLabel: seg } : {}),
                 ...(ev !== undefined ? { endVertex: { ...ev } } : {}),
-                ...(seamId !== undefined ? { seamId } : {}),
               };
             }
           }
@@ -1614,10 +1631,11 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
     if (cmd.meta !== undefined) {
       const keepEnd = endParamT >= 1 - 1e-12;
       const mid: PathCommandMeta = {
+        ...identityMeta(cmd.meta),
         ...(cmd.meta.segmentLabel !== undefined ? { segmentLabel: cmd.meta.segmentLabel } : {}),
         ...(keepEnd && cmd.meta.endVertex ? { endVertex: { ...cmd.meta.endVertex } } : {}),
       };
-      if (mid.segmentLabel !== undefined || mid.endVertex !== undefined) middle.meta = mid;
+      if (Object.keys(mid).length > 0) middle.meta = mid;
     }
 
     return [middle];
@@ -1651,8 +1669,12 @@ export function subPathCommands(commands: TransformCmd[], startT: number, endT: 
   // Head of end command
   if (endParamT > 0) {
     const [endHead] = splitCommandAtParametricT(drawCmds[endLoc.cmdIndex], endParamT);
-    const endSegLabel = drawCmds[endLoc.cmdIndex].meta?.segmentLabel;
-    if (endSegLabel !== undefined) endHead.meta = { segmentLabel: endSegLabel };
+    const endSrcMeta = drawCmds[endLoc.cmdIndex].meta;
+    const endHeadMeta = {
+      ...identityMeta(endSrcMeta),
+      ...(endSrcMeta?.segmentLabel !== undefined ? { segmentLabel: endSrcMeta.segmentLabel } : {}),
+    };
+    if (Object.keys(endHeadMeta).length > 0) endHead.meta = endHeadMeta;
     const edx = endHead.end.x - endHead.start.x;
     const edy = endHead.end.y - endHead.start.y;
     const hasLength = endHead.args.length > 0 || Math.abs(edx) > 1e-10 || Math.abs(edy) > 1e-10;
@@ -1749,11 +1771,16 @@ export function applyCornerOperations(
     const zdx = zCmd.end.x - zCmd.start.x;
     const zdy = zCmd.end.y - zCmd.start.y;
     if (Math.abs(zdx) > 1e-10 || Math.abs(zdy) > 1e-10) {
+      // The closing line is the z's geometry: carry its identity (record, call,
+      // seam) so queries and subscription windows still see it; labels stay
+      // with the zero-length z re-appended at the end.
+      const zIdentity = identityMeta(zCmd.meta);
       working.push({
         command: 'l',
         args: [zdx, zdy],
         start: { ...zCmd.start },
         end: { ...zCmd.end },
+        ...(Object.keys(zIdentity).length > 0 ? { meta: zIdentity } : {}),
       });
     }
   }
@@ -2138,11 +2165,16 @@ function applyFilletOperations(
     const zdx = zCmd.end.x - zCmd.start.x;
     const zdy = zCmd.end.y - zCmd.start.y;
     if (Math.abs(zdx) > 1e-10 || Math.abs(zdy) > 1e-10) {
+      // The closing line is the z's geometry: carry its identity (record, call,
+      // seam) so queries and subscription windows still see it; labels stay
+      // with the zero-length z re-appended at the end.
+      const zIdentity = identityMeta(zCmd.meta);
       working.push({
         command: 'l',
         args: [zdx, zdy],
         start: { ...zCmd.start },
         end: { ...zCmd.end },
+        ...(Object.keys(zIdentity).length > 0 ? { meta: zIdentity } : {}),
       });
     }
   }
@@ -2337,11 +2369,16 @@ function applyEllipticalFilletOperations(
     const zdx = zCmd.end.x - zCmd.start.x;
     const zdy = zCmd.end.y - zCmd.start.y;
     if (Math.abs(zdx) > 1e-10 || Math.abs(zdy) > 1e-10) {
+      // The closing line is the z's geometry: carry its identity (record, call,
+      // seam) so queries and subscription windows still see it; labels stay
+      // with the zero-length z re-appended at the end.
+      const zIdentity = identityMeta(zCmd.meta);
       working.push({
         command: 'l',
         args: [zdx, zdy],
         start: { ...zCmd.start },
         end: { ...zCmd.end },
+        ...(Object.keys(zIdentity).length > 0 ? { meta: zIdentity } : {}),
       });
     }
   }

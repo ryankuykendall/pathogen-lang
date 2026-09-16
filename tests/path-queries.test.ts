@@ -203,6 +203,12 @@ describe('path queries: call', () => {
     expect(logLines(src)).toEqual(['1 1']);
   });
 
+  it('call identity survives subPath() fragments on both cut commands', () => {
+    // subPath(0.1, 0.6) keeps the tail of the first arc and the head of the second; both stay the circle's.
+    const src = `${FACE_BLOCK}\nlet piece = face.subPath(0.1, 0.6);\nlog(piece.queryAll('call(circle)').length, piece.query('call(circle)').commands.length);`;
+    expect(logLines(src)).toEqual(['1 2']);
+  });
+
   it('literal commands are not calls', () => {
     expect(logLines("let p = @{\n  h 10;\n  v 10;\n};\nlog(p.queryAll('call').length);")).toEqual(['0']);
   });

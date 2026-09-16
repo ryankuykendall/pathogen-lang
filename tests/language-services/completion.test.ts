@@ -1537,6 +1537,25 @@ describe('query-API chains rooted in layer() calls', () => {
   });
 });
 
+describe('subscription completions', () => {
+  it('types the block params by selector noun, ordinal, and Subscription', () => {
+    const head = "define PathLayer('shape') #{ fill: none; }\n";
+    expect(labels(completeAtEnd(`${head}layer('shape').subscribe('endpoint') {|corner, i, sub|\n  corner.`))).toContain('turn');
+    expect(labels(completeAtEnd(`${head}layer('shape').subscribe('command(a)') {|arc, i, sub|\n  arc.`))).toContain('center');
+    expect(labels(completeAtEnd(`${head}layer('shape').subscribe('endpoint') {|corner, i, sub|\n  sub.`))).toContain('unsubscribe');
+  });
+
+  it('offers subscribe on layer references and Subscription members on the handle', () => {
+    const items = completeAtEnd("layer('a').");
+    const sub = items.find((i) => i.label === 'subscribe');
+    expect(sub?.isSnippet).toBe(true);
+    expect(sub?.insertText).toContain("subscribe('${1:endpoint}')");
+    const handle = labels(completeAtEnd("let corners = layer('a').subscribe('endpoint') {|corner| };\ncorners."));
+    expect(handle).toContain('unsubscribe');
+    expect(handle).toContain('active');
+  });
+});
+
 describe('GroupLayer completions', () => {
   it('offers append but not apply, which GroupLayer rejects at runtime', () => {
     const names = labels(completeAtEnd("let g = GroupLayer('g') #{ opacity: 1; };\ng."));

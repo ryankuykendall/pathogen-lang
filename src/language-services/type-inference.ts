@@ -142,12 +142,13 @@ export function inferType(name: string, source: string, seen?: Set<string>): str
   // the layer itself. Must be checked before the bare layer() rule below,
   // which would otherwise greedily match on the `layer(` prefix.
   const layerQuery = new RegExp(
-    `let\\s+${esc}\\s*=\\s*layer\\s*\\([^)]*\\)\\s*\\.\\s*(segmentAll|pointAll|vertexAll|queryAll|segment|point|vertex|query)\\s*\\(`,
+    `let\\s+${esc}\\s*=\\s*layer\\s*\\([^)]*\\)\\s*\\.\\s*(segmentAll|pointAll|vertexAll|queryAll|subscribe|segment|point|vertex|query)\\s*\\(`,
   ).exec(source);
   if (layerQuery) {
     // query() results are typed by the AST path (selector noun); here we only
     // keep the bare layer() rule below from claiming them as PathLayer.
     if (layerQuery[1] === 'query') return null;
+    if (layerQuery[1] === 'subscribe') return 'Subscription';
     if (layerQuery[1].endsWith('All')) return 'Array';
     return layerQuery[1] === 'segment' ? 'ProjectedPath' : layerQuery[1] === 'point' ? 'Point' : 'Endpoint';
   }

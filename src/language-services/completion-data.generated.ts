@@ -539,6 +539,17 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
 
     ],
   },
+  'Subscription': {
+    properties: [
+      { label: 'source', kind: 'property', detail: 'Source layer name', boost: 8 },
+      { label: 'selector', kind: 'property', detail: 'The selector as written', boost: 8 },
+      { label: 'active', kind: 'property', detail: 'The window is open and the subscription has not been cancelled', boost: 8 },
+      { label: 'count', kind: 'property', detail: 'Matches delivered so far (meaningful inside callbacks)', boost: 8 },
+    ],
+    methods: [
+      { label: 'unsubscribe', kind: 'function', detail: 'unsubscribe() — Close the window; during delivery, cancel the remaining matches', boost: 8, insertText: 'unsubscribe()$0', isSnippet: true },
+    ],
+  },
   'Endpoint': {
     properties: [
       { label: 'x', kind: 'property', detail: 'X coordinate', boost: 8 },
@@ -688,6 +699,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
     ],
     methods: [
       { label: 'apply', kind: 'function', detail: 'apply { } — Send path commands to this layer', boost: 8, insertText: 'apply {\n\t$0\n}', isSnippet: true },
+      { label: 'subscribe', kind: 'function', detail: 'subscribe(selector) {|match, i, sub| ...} — Run the block once per query match at program end, in drawing order (docs: Subscriptions); or subscribe(selector) << worker', boost: 8, insertText: 'subscribe(\'${1:endpoint}\') {|${2:match}, ${3:i}, ${4:sub}|\n\t$0\n}', isSnippet: true },
       { label: 'query', kind: 'function', detail: 'query(selector) — First match of a path query. Nouns: command(a) · call(circle) · endpoint(label) · segment(label) · subpath(k); add [filters] and :first/:last/:nth(...); a space scopes the right side inside the left. Errors when nothing matches', boost: 8, insertText: 'query(\'${1:selector}\')$0', isSnippet: true },
       { label: 'queryAll', kind: 'function', detail: 'queryAll(selector) — Every match of a path query in authoring order; [] when nothing matches', boost: 8, insertText: 'queryAll(\'${1:selector}\')$0', isSnippet: true },
       { label: 'segment', kind: 'function', detail: 'segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords). Accepts pseudo-selectors (name:last, name:nth(k))', boost: 8, insertText: 'segment(\'${1:name}\')$0', isSnippet: true },
@@ -1231,12 +1243,13 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'Point': { translate: 'Point', rotate: 'Point', lerp: 'Point', midpoint: 'Point', polarTranslate: 'Point' },
   'array': { map: 'array', filter: 'array', mapSlice: 'array', slice: 'array', reverse: 'array', sort: 'array', seams: 'array' },
   'string': { split: 'array', append: 'string', prepend: 'string', slice: 'string' },
+  'Subscription': { unsubscribe: 'Subscription' },
   'Endpoint': { fillet: 'PathBlock', chamfer: 'PathBlock', ellipticalFillet: 'PathBlock' },
   'PathBlock': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'PathBlock', centerPoint: 'Point', offset: 'PathBlock', variableOffset: 'PathBlock', compoundVariableOffset: 'PathBlock', mirror: 'PathBlock', scale: 'PathBlock', rotate: 'PathBlock', rotateAtVertexIndex: 'PathBlock', subPath: 'PathBlock', dash: 'array', outline: 'PathBlock', startAt: 'PathBlock', project: 'ProjectedPath', chamfer: 'PathBlock', chamferAtVertex: 'PathBlock', fillet: 'PathBlock', filletAtVertex: 'PathBlock', ellipticalFillet: 'PathBlock', ellipticalFilletAtVertex: 'PathBlock', union: 'PathBlock', difference: 'PathBlock', intersection: 'PathBlock', xor: 'PathBlock', intersectionPoints: 'array', cut: 'array', segment: 'PathBlock', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
   'VariableOffsetBuilder': { stop: 'VariableOffsetBuilder', startTangent: 'VariableOffsetBuilder', endTangent: 'VariableOffsetBuilder' },
   'CompoundVariableOffsetBuilder': { stop: 'CompoundVariableOffsetBuilder', startCap: 'CompoundVariableOffsetBuilder', endCap: 'CompoundVariableOffsetBuilder' },
   'PolarVector': { turn: 'PolarVector', scale: 'PolarVector', mirror: 'PolarVector' },
-  'PathLayer': { segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
+  'PathLayer': { subscribe: 'Subscription', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
   'ProjectedText': { translate: 'ProjectedText' },
   'ProjectedPath': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', centerPoint: 'Point', offset: 'ProjectedPath', mirror: 'ProjectedPath', rotate: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'ProjectedPath', dash: 'array', outline: 'ProjectedPath', startAt: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'ProjectedPath', difference: 'ProjectedPath', intersection: 'ProjectedPath', xor: 'ProjectedPath', cut: 'array', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
   'LinearGradient': { inherit: 'LinearGradient' },
@@ -1262,6 +1275,7 @@ export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
   'Call': { name: 'string', commands: 'array', block: 'PathBlock', start: 'Point', end: 'Point', index: 'number' },
   'Segment': { label: 'string', block: 'PathBlock', commands: 'array', start: 'Point', end: 'Point', length: 'number', index: 'number' },
   'Subpath': { index: 'number', closed: 'boolean', block: 'PathBlock', commands: 'array', start: 'Point', end: 'Point' },
+  'Subscription': { source: 'string', selector: 'string', active: 'boolean', count: 'number' },
   'Endpoint': { x: 'number', y: 'number', point: 'Point', label: 'string', index: 'number', command: 'Command', next: 'Command', isJoint: 'boolean' },
   'PathBlock': { length: 'number', vertices: 'array', subPathCount: 'number', subPathCommands: 'array', commands: 'array', d: 'string', startPoint: 'Point', endPoint: 'Point', advanceWidth: 'number', anchor: 'Point', contours: 'array', isEmpty: 'boolean', char: 'string', isWhitespace: 'boolean', isSpace: 'boolean', isTab: 'boolean', isNewline: 'boolean', isMark: 'boolean', codePoint: 'number' },
   'PolarVector': { angle: 'number', distance: 'number' },

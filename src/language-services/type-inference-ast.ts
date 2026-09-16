@@ -140,6 +140,17 @@ function inferBlockParam(
     return null;
   }
 
+  // subscribe(selector) {|match, i, sub|}: the match is typed by the selector noun
+  if (call.method === 'subscribe') {
+    if (index === 0) {
+      const selector = call.args[0];
+      return selector?.type === 'StringLiteral' ? queryResultType(selector.value) : null;
+    }
+    if (index === 1) return 'number';
+    if (index === 2) return 'Subscription';
+    return null;
+  }
+
   // Method trailing blocks typed via @blockparams metadata
   // (spine.variableOffset() {|go, pb|} → VariableOffsetBuilder, PathBlock)
   const receiverType = inferExprType(call.object, scope, seen);

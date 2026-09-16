@@ -113,6 +113,10 @@ export function recordPath(
   const record: PathRecord = { raw, commands };
   if (extras?.label !== undefined) record.label = extras.label;
   if (extras?.loc !== undefined) record.loc = extras.loc;
+  // Every command carries the global sequence of its statement so subscription
+  // windows can be resolved after finalization (clones and trims keep meta).
+  const seq = nextRecordSeq++;
+  for (const cmd of commands) cmd.meta = { ...cmd.meta, record: seq };
   if (extras?.fn !== undefined) {
     record.fn = extras.fn;
     // Call identity rides on per-command meta (like labels) so it survives
@@ -125,6 +129,12 @@ export function recordPath(
 }
 
 let nextCallId = 1;
+let nextRecordSeq = 1;
+
+/** The sequence the next recorded statement will receive — a subscription window edge. */
+export function peekRecordSeq(): number {
+  return nextRecordSeq;
+}
 
 /** Join a store's raw fragments into emit-ready path data. */
 export function storeToPathData(store: PathStore): string {

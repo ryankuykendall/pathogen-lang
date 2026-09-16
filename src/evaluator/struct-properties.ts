@@ -15,6 +15,7 @@ import type {
   PolarVectorValue,
   SegmentValue,
   SubpathValue,
+  SubscriptionValue,
   Value,
   ViewBoxStructValue,
 } from './types';
@@ -151,6 +152,17 @@ const CALL = lazyDescriptor<CallValue>('Call', callMembers);
 const SEGMENT = lazyDescriptor<SegmentValue>('Segment', segmentMembers);
 const SUBPATH = lazyDescriptor<SubpathValue>('Subpath', subpathMembers);
 
+const SUBSCRIPTION = staticDescriptor('Subscription', {
+  // `layer` is a keyword in Pathogen, so the member is `source`.
+  source: (v) => (v as SubscriptionValue).layerName,
+  selector: (v) => (v as SubscriptionValue).selector,
+  active: (v) => {
+    const s = v as SubscriptionValue;
+    return { type: 'BooleanValue', value: s.windowEnd === null && !s.cancelled ? 1 : 0 };
+  },
+  count: (v) => (v as SubscriptionValue).count,
+});
+
 const ANGLE = staticDescriptor('Angle', {
   deg: (v) => radiansToDegreesSnapped((v as AngleValue).radians),
   rad: (v) => (v as AngleValue).radians,
@@ -178,6 +190,7 @@ const DESCRIPTORS: Record<string, StructDescriptor> = {
   CallValue: CALL,
   SegmentValue: SEGMENT,
   SubpathValue: SUBPATH,
+  SubscriptionValue: SUBSCRIPTION,
   ViewBoxStructValue: VIEW_BOX,
 };
 

@@ -564,6 +564,22 @@ export function normalizeToRelativeArgs(command: string, args: number[], start: 
   }
 }
 
+/**
+ * The identity fields of a command's meta — seam, call, and record sequence —
+ * for transforms that rebuild meta from a label whitelist (corner-op trims,
+ * offset connectors, subPath fragments). Labels are the caller's business;
+ * identity always rides along, or `call(...)` queries and subscription windows
+ * silently lose the geometry.
+ */
+export function identityMeta(meta: PathCommandMeta | undefined): Partial<PathCommandMeta> {
+  if (!meta) return {};
+  return {
+    ...(meta.seamId !== undefined ? { seamId: meta.seamId } : {}),
+    ...(meta.call !== undefined ? { call: meta.call } : {}),
+    ...(meta.record !== undefined ? { record: meta.record } : {}),
+  };
+}
+
 export function normalizeMeta(meta: PathCommandMeta | undefined): PathCommandMeta | undefined {
   if (!meta) return undefined;
   const endVertex =
@@ -574,7 +590,8 @@ export function normalizeMeta(meta: PathCommandMeta | undefined): PathCommandMet
     meta.segmentLabel === undefined &&
     endVertex === undefined &&
     meta.seamId === undefined &&
-    meta.call === undefined
+    meta.call === undefined &&
+    meta.record === undefined
   ) {
     return undefined;
   }
@@ -583,6 +600,7 @@ export function normalizeMeta(meta: PathCommandMeta | undefined): PathCommandMet
     ...(endVertex ? { endVertex } : {}),
     ...(meta.seamId !== undefined ? { seamId: meta.seamId } : {}),
     ...(meta.call !== undefined ? { call: meta.call } : {}),
+    ...(meta.record !== undefined ? { record: meta.record } : {}),
   };
 }
 

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 170" width="260" height="170">
+
+  <path data-layer-name="shape" id="shape" d="M 30 40 h 80 a 16 16 0 0 1 16 16 v 40 a 16 16 0 0 1 -16 16 l -68 0 a 12 12 0 0 1 -12 -12 l 0 -60 z M 172 100 a 28 28 0 1 1 56 0 a 28 28 0 1 1 -56 0 M 170 30 h 40 v 20" fill="none" stroke="#333" stroke-width="2"/>
+  <path data-layer-name="spokes" id="spokes" d="M 110 40 L 110 56 L 126 56 M 126 96 L 110 96 L 110 112 M 42 112 L 42 100 L 30 100 M 172 100 L 200 100 L 228 100 M 228 100 L 200 100 L 172 100" fill="none" stroke="#d33" stroke-width="1"/>
+  <path data-layer-name="dots" id="dots" d="M 107 40 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 123 56 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 123 96 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 107 112 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 39 112 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 27 100 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 27 40 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 225 100 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 169 100 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="#36c" stroke="none" stroke-width="2"/>
+  <text data-layer-name="labels" id="labels" x="116" y="34" font-size="9" fill="#36c" font-family="sans-serif">0</text>
+  <text data-layer-name="labels" x="132" y="50" font-size="9" fill="#36c" font-family="sans-serif">1</text>
+  <text data-layer-name="labels" x="132" y="90" font-size="9" fill="#36c" font-family="sans-serif">2</text>
+  <text data-layer-name="labels" x="116" y="106" font-size="9" fill="#36c" font-family="sans-serif">3</text>
+  <text data-layer-name="labels" x="48" y="106" font-size="9" fill="#36c" font-family="sans-serif">4</text>
+  <text data-layer-name="labels" x="36" y="94" font-size="9" fill="#36c" font-family="sans-serif">5</text>
+  <text data-layer-name="labels" x="36" y="34" font-size="9" fill="#36c" font-family="sans-serif">6</text>
+  <text data-layer-name="labels" x="234" y="94" font-size="9" fill="#36c" font-family="sans-serif">7</text>
+  <text data-layer-name="labels" x="178" y="94" font-size="9" fill="#36c" font-family="sans-serif">8</text>
+</svg>

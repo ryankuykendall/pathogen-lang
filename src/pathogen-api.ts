@@ -837,6 +837,20 @@ export interface PathogenSubpath {
   readonly end: PathogenPoint;
 }
 
+/** @type Subscription */
+export interface PathogenSubscription {
+  /** Source layer name */
+  readonly source: string;
+  /** The selector as written */
+  readonly selector: string;
+  /** The window is open and the subscription has not been cancelled */
+  readonly active: boolean;
+  /** Matches delivered so far (meaningful inside callbacks) */
+  readonly count: number;
+  /** unsubscribe() — Close the window; during delivery, cancel the remaining matches */
+  unsubscribe(): PathogenSubscription;
+}
+
 /** @type Endpoint */
 export interface PathogenEndpoint {
   /** X coordinate */
@@ -1080,6 +1094,8 @@ export interface PathogenPathLayer {
   readonly ctx: PathContext;
   /** apply { } — Send path commands to this layer @snippet apply {\n\t$0\n} */
   apply(): void;
+  /** subscribe(selector) {|match, i, sub| ...} — Run the block once per query match at program end, in drawing order (docs: Subscriptions); or subscribe(selector) << worker @snippet subscribe('${1:endpoint}') {|${2:match}, ${3:i}, ${4:sub}|\n\t$0\n} */
+  subscribe(selector: string): PathogenSubscription;
 
   // Path queries — one grammar for commands, calls, endpoints, segments, and subpaths (docs: Path Queries)
   /** query(selector) — First match of a path query. Nouns: command(a) · call(circle) · endpoint(label) · segment(label) · subpath(k); add [filters] and :first/:last/:nth(...); a space scopes the right side inside the left. Errors when nothing matches */

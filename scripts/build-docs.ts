@@ -88,6 +88,7 @@ const DOC_FILES: Record<string, string> = {
   'path-blocks.md': 'pathBlocks',
   'segment-labels.md': 'segmentLabels',
   'path-queries.md': 'pathQueries',
+  'subscriptions.md': 'subscriptions',
   'variable-offset.md': 'variableOffset',
   'textblock.md': 'textBlock',
   'color.md': 'color',

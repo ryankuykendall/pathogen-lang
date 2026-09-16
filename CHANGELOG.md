@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-15 (subscriptions: `layer.subscribe(selector)`)
+
+Milestone 2 of the observable/reactive-paths track (`project-docs/observable-reactive-paths/`, design trail in `discussion-02-push-model-proposal-v1.md`): a path query that runs itself. Contract in `docs/subscriptions.md`.
+
+### Added
+
+#### Core
+
+- **`layer.subscribe(selector) {|match, i, sub| …}` on path layer references** (also `subscribe(selector) << worker`). Registers a window over the layer's records — `subscribe` opens it, `unsubscribe()` closes it — and at program end runs the selector once over the finalized geometry in that window (the milestone-1 matcher, so `:last` and `:nth(-3..-1)` deliver exactly the final items), then replays the global queue in program order, calling the block per match with the struct the selector's noun names, the ordinal among this subscription's matches, and the `Subscription` handle. Callbacks run as top-level code once the program has finished: apply blocks on other layers (path or text) are legal, bare path commands go to the default layer, variables hold their final values (documented caveat), and every result knows its `next`/`turn` because the source is complete. Records that callbacks produce feed subscriptions on the target layers in further rounds, capped at eight — a cycle errors naming the chain (`shape → dots → shape`) — and a callback that draws into its own source is an immediate error. `unsubscribe()` during delivery cancels the remaining matches. New value type `Subscription` (`source`, `selector`, `active`, `count`, `unsubscribe()`; `log()` prints `Subscription(shape: 'endpoint', 4 delivered)`). Implementation: `src/evaluator/subscriptions.ts` (dispatcher), `matchPathQuery` with a subject window in `src/evaluator/path-query.ts`, global record sequence `meta.record` stamped in `recordPath`. Tests: `tests/subscriptions.test.ts`.
+- **Editor support:** `subscribe` completes on layer references with a block snippet; the block's first param is typed by the selector noun, the second as number, the third as `Subscription`.
+
+#### Documentation
+
+- New page **Subscriptions** (`docs/subscriptions.md`, registered in `DOC_FILES`): the dot-on-every-corner program as a subscription, the things to know first (end-of-program dispatch, final variable values, no self-writes, output lands last, windows), when callbacks run, chains and cycles, where the drawing goes, the `Subscription` value, errors. Cross-linked from Path Queries and Layers.
+
+### Fixed
+
+#### Core
+
+- **Command identity now survives every transform that rebuilds meta.** Corner-op trims, the closing line a `z` expands to, offset connectors, `subPath` fragments and the arc a fillet inserts rebuilt meta from a label whitelist, silently dropping `call` (and the new `record`) identity — so `call(lineTo)` could miss a filleted statement and a subscription would skip a trimmed edge. One helper (`identityMeta` in `src/evaluator/path-data.ts`) now carries seam, call and record identity at each site. Emitted bytes unchanged.
+
 ## [Unreleased] - 2026-09-14 (path queries: `query()` / `queryAll()`)
 
 Milestone 1 of the observable/reactive-paths track (`project-docs/observable-reactive-paths/`): a pull-model query language over path structure. Design trail and approved plan preserved in that folder; contract in `docs/path-queries.md`.

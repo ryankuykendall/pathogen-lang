@@ -4,6 +4,7 @@ import { contextAwareFunctions, stdlib } from '../stdlib';
 import { STATEMENT_BUILTINS } from './constructor-registry';
 import { RESERVED_UNIT_NAMES, reservedNameBindingError, reservedNameReferenceError } from './reserved-names';
 import { splitSubpaths } from './subpaths';
+import { dispatchSubscriptions } from './subscriptions';
 import { CALLBACK_METHODS } from '../callback-methods';
 import { arrayMutationError, isArrayLocked, lockArray, unlockArray } from './iteration-lock';
 import {
@@ -164,6 +165,7 @@ import type {
   SegmentValue,
   StyleBlockValue,
   SubpathValue,
+  SubscriptionValue,
   SVGFragmentValue,
   TextBlockElement,
   TextBlockValue,
@@ -271,6 +273,7 @@ export type {
   SegmentValue,
   StyleBlockValue,
   SubpathValue,
+  SubscriptionValue,
   SVGFragmentValue,
   TextBlockElement,
   TextBlockValue,
@@ -295,6 +298,7 @@ import {
   findEndpointCommands,
   labelNameError,
   firstInkedPointOf,
+  peekRecordSeq,
   pseudoRangeError,
   queryLabeledRuns,
   rejectPseudoOnNonSegmentQuery,
@@ -306,7 +310,7 @@ import {
   derivedMeta,
 } from './segments';
 import { commandsToRelativeD, normalizeToRelativeArgs, serializeRelativeAndTrack } from './path-data';
-import { commandValues, endpointValue, runPathQuery, wrapCommands } from './path-query';
+import { commandValues, endpointValue, parsePathQuery, runPathQuery, wrapCommands } from './path-query';
 import { tryResolveCSSFunctionArgs as sharedTryResolveCSSFunctionArgs } from './css-function-resolve';
 import { spliceTemplateFragments } from '../css-value-utils';
 
@@ -547,6 +551,10 @@ export function isSegmentValue(value: Value): value is SegmentValue {
 
 export function isSubpathValue(value: Value): value is SubpathValue {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SubpathValue';
+}
+
+export function isSubscriptionValue(value: Value): value is SubscriptionValue {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'SubscriptionValue';
 }
 
 /** Error text for a failed label query, listing what the path actually has. */
@@ -855,6 +863,49 @@ function makeDefaultMotionBlurFilter(id: string): MotionBlurFilterValue {
  */
 class ReturnSignal {
   constructor(public value: Value) {}
+}
+
+/**
+ * Program end: deliver every subscription's matches (src/evaluator/subscriptions.ts).
+ * Callbacks run as top-level code — apply blocks are legal, bare commands go to
+ * the default layer — and errors name the subscription and the triggering statement.
+ */
+function runSubscriptionDispatch(scope: Scope, evalState: EvaluationState): void {
+  dispatchSubscriptions(evalState, {
+    finalizedCommands: (layer) => applyRecordedCornerOps(layer.accum.records.flatMap((r) => r.commands)).commands,
+    layerRef: (layer) => ({ type: 'LayerReference' as const, layer }),
+    fail: (message, loc) => new Error(formatError(message, loc?.line, loc?.column)),
+    invoke: (sub, match, ordinal, trigger) => {
+      const blockScope = createScope(sub.callback.closure ?? scope);
+      const params = sub.callback.params;
+      if (params.length > 0) setVariable(blockScope, params[0], match);
+      if (params.length > 1) setVariable(blockScope, params[1], ordinal);
+      if (params.length > 2) setVariable(blockScope, params[2], sub);
+      try {
+        for (const stmt of sub.callback.body) {
+          const flow = evaluateStatementToAccum(stmt, blockScope, evalState.rootAccum ?? createPathStore());
+          if (flow) throw loopFlowBoundaryError(flow);
+        }
+      } catch (e) {
+        if (e instanceof ReturnSignal) return;
+        // Keep the failing statement's own line as the location; name the
+        // triggering statement and the subscribe line in the message.
+        const raw = e instanceof Error ? e.message : String(e);
+        const inner = /^Line (\d+)(?:, col (\d+))?: ([\s\S]*)$/.exec(raw);
+        const line = inner ? Number(inner[1]) : sub.loc?.line;
+        const col = inner?.[2] !== undefined ? Number(inner[2]) : inner ? undefined : sub.loc?.column;
+        const msg = inner ? inner[3] : raw;
+        const where = `statement at line ${trigger?.line ?? '?'}, subscribed at line ${sub.loc?.line ?? '?'}`;
+        throw new Error(
+          formatError(
+            `Error in subscription on '${sub.layerName}', match ${ordinal + 1} (${where}): ${msg}`,
+            line,
+            col,
+          ),
+        );
+      }
+    },
+  });
 }
 
 function createScope(parent: Scope | null = null): Scope {
@@ -2437,6 +2488,43 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       if (targets.length === 0) throw mError(queryLabelError('endpoint', qName, cmds));
       return buildLayerHandle(targets[0], 0);
     }
+    if (expr.method === 'subscribe') {
+      if (obj.layer.layerType !== 'PathLayer') {
+        throw mError(`.subscribe() is only available on PathLayer references`);
+      }
+      const cb = resolveCallbackBlock(expr, scope, workerExpr);
+      if (!cb) {
+        throw mError(
+          "subscribe() requires a trailing block or a << worker: layer.subscribe('endpoint') {|match, i, sub| ... }",
+        );
+      }
+      if (cb.leadingArgs.length !== 1 || typeof cb.leadingArgs[0] !== 'string') {
+        throw mError('subscribe() expects 1 argument (a selector string) before the block');
+      }
+      const selector = cb.leadingArgs[0];
+      // Validate the selector now so a typo is reported at the subscribe line.
+      try {
+        parsePathQuery(selector);
+      } catch (e) {
+        throw mError(e instanceof Error ? e.message : String(e));
+      }
+      const sub: SubscriptionValue = {
+        type: 'SubscriptionValue',
+        layerName: obj.layer.name,
+        selector,
+        // A trailing block closes over the scope where subscribe() was called (a loop
+        // iteration's own scope included); a << worker brings its own closure.
+        callback: { params: cb.params, body: cb.body, closure: cb.closure ?? scope },
+        windowStart: peekRecordSeq(),
+        windowEnd: null,
+        cancelled: false,
+        count: 0,
+        fired: new Set<string>(),
+        ...(expr.loc ? { loc: expr.loc } : {}),
+      };
+      if (scope.evalState) (scope.evalState.subscriptions ??= []).push(sub);
+      return sub;
+    }
     if (expr.method === 'append') {
       if (obj.layer.layerType !== 'GroupLayer') {
         throw mError(`.append() is only available on GroupLayer references`);
@@ -3864,6 +3952,21 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       default:
         throw mError(`Unknown ProjectedPath method: ${expr.method}`);
     }
+  }
+
+  // SubscriptionValue methods
+  if (isSubscriptionValue(obj)) {
+    if (expr.method === 'unsubscribe') {
+      if (expr.args.length !== 0) throw mError('unsubscribe() expects 0 arguments');
+      if (scope.evalState?.dispatching) {
+        // During delivery the window is already fixed: cancel what has not fired.
+        obj.cancelled = true;
+      } else if (obj.windowEnd === null) {
+        obj.windowEnd = peekRecordSeq();
+      }
+      return obj;
+    }
+    throw mError(`Unknown method '${expr.method}' on Subscription`);
   }
 
   // EndpointValue methods — corner ops on a joint (query('endpoint(...)') results and legacy vertex() handles)
@@ -5971,6 +6074,9 @@ function formatValueForDisplay(val: Value): string {
     const n = val.to - val.from;
     return `Subpath(${val.index}: ${n} command${n === 1 ? '' : 's'}, ${val.closed ? 'closed' : 'open'})`;
   }
+  if (isSubscriptionValue(val)) {
+    return `Subscription(${val.layerName}: '${val.selector}', ${val.count} delivered)`;
+  }
   if (isProjectedPathValue(val)) {
     return `ProjectedPath(${formatNum(val.startPoint.x)}, ${formatNum(val.startPoint.y)} → ${formatNum(val.endPoint.x)}, ${formatNum(val.endPoint.y)})`;
   }
@@ -6681,7 +6787,8 @@ function evaluateStatementBuiltin(call: FunctionCall, scope: Scope): void {
         isCommandValue(value) ||
         isCallValue(value) ||
         isSegmentValue(value) ||
-        isSubpathValue(value)
+        isSubpathValue(value) ||
+        isSubscriptionValue(value)
       ) {
         stringValue = formatValueForDisplay(value);
       } else if (isCyclerValue(value)) {
@@ -10462,6 +10569,7 @@ export function evaluate(
     // Top level is a break/continue boundary (builder-enforced; defensive)
     const topFlow = evaluateStatementsToAccum(program.body, scope, accum);
     if (topFlow) throw loopFlowBoundaryError(topFlow);
+    runSubscriptionDispatch(scope, evalState);
 
     return buildCompileResult(accum, evalState);
   } finally {
@@ -10557,6 +10665,7 @@ export function evaluateWithContext(
     // Top level is a break/continue boundary (builder-enforced; defensive)
     const topFlow = evaluateStatementsToAccum(program.body, scope, accum);
     if (topFlow) throw loopFlowBoundaryError(topFlow);
+    runSubscriptionDispatch(scope, evalState);
 
     const compileResult = buildCompileResult(accum, evalState);
 

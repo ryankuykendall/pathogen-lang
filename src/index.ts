@@ -113,6 +113,7 @@ export type {
   SegmentValue,
   StyleBlockValue,
   SubpathValue,
+  SubscriptionValue,
   SVGFragmentValue,
   TextBlockElement,
   TextBlockValue,
