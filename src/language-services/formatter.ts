@@ -1,4 +1,5 @@
 import { parse, parseLezer } from '../parser';
+import type { Tree } from '@lezer/common';
 
 import type { TextDocument } from './document';
 import type { Range } from './types';
@@ -34,6 +35,20 @@ export interface FormatEdit {
  * Returns a single edit that replaces the entire document content.
  * Returns empty array if the source cannot be parsed.
  */
+/**
+ * True when the error-recovery parse skipped real text. A missing semicolon is a
+ * zero-length error node (an insertion, nothing lost); an unparseable region
+ * is an error node with extent, and the recovered AST does not contain it —
+ * formatting from that AST would write the file back without it.
+ */
+function recoveryDroppedText(tree: Tree): boolean {
+  const cursor = tree.cursor();
+  do {
+    if (cursor.type.isError && cursor.to > cursor.from) return true;
+  } while (cursor.next());
+  return false;
+}
+
 export function formatDocument(document: TextDocument, options?: FormatOptions): FormatEdit[] {
   const source = document.getText();
   const indent = options?.indent ?? '  ';
@@ -47,6 +62,9 @@ export function formatDocument(document: TextDocument, options?: FormatOptions):
     // work on code that has minor issues (like missing semicolons).
     try {
       const lezerResult = parseLezer(source);
+      // Never write back a recovered parse that lost code (a doubled
+      // `#{{ ... }}` once became an empty style block on format).
+      if (recoveryDroppedText(lezerResult.tree)) return [];
       ast = lezerResult.ast;
     } catch {
       return []; // Can't format at all

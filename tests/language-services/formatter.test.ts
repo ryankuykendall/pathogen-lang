@@ -837,3 +837,20 @@ describe('switch expressions', () => {
     expect(format(result)).toBe(result);
   });
 });
+
+describe('formatDocument never drops code', () => {
+  it('refuses to format a document whose recovered parse would lose an unparseable region', () => {
+    // A doubled `#{{ ... }}` parses (with recovery) as an empty style block; writing that
+    // back would delete the three declarations.
+    const src = "define ViewBox(0, 0, 100, 100);\nlet a1 = PathLayer('a') #{{\n  stroke: red;\n  fill: none;\n}};\na1.apply {\n  M 10 10\n  L 90 90\n}\n";
+    const doc = new StringTextDocument(src);
+    expect(formatDocument(doc)).toEqual([]);
+  });
+
+  it('still adds a missing semicolon, which is not a loss', () => {
+    const doc = new StringTextDocument('let x = 5\nlet y = 6;\n');
+    const edits = formatDocument(doc);
+    expect(edits).toHaveLength(1);
+    expect(edits[0].newText).toBe('let x = 5;\nlet y = 6;\n');
+  });
+});

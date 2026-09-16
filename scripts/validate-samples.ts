@@ -22,7 +22,11 @@ interface ElementInfo {
   className: string;
   textContent: string;
   snippetGroup: string; // empty if not in a snippet, otherwise a unique group ID
-  bbox: { x: number; y: number; width: number; height: number };
+  bbox: { x: number; y: number; width: number; height: number   /** Position in the extracted element list (pairs `hits` with geometry). */
+  index: number;
+  /** Text only: fraction of this text's area that lands on a geometry element's real stroke or fill, keyed by that element's index. */
+  hits?: Record<number, number>;
+};
 }
 
 interface ViewBox {
@@ -179,13 +183,17 @@ function runChecks(
     for (const geo of geometryElements) {
       if (geo.bbox.width === 0) continue;
       if (sameSnippet(text, geo)) continue;
-      const overlap = overlapArea(text.bbox, geo.bbox);
-      if (overlap / textArea >= OVERLAP_THRESHOLD) {
+      // The measured fraction (text area on the element's real stroke or fill)
+      // wins; the bounding-box overlap is the fallback when nothing was sampled.
+      const measured = text.hits?.[geo.index];
+      const fraction = measured !== undefined ? measured : overlapArea(text.bbox, geo.bbox) / textArea;
+      if (fraction >= OVERLAP_THRESHOLD) {
         const geoLabel = geo.id ? `<${geo.tagName}>#${geo.id}` : `<${geo.tagName}>`;
-        const pct = ((overlap / textArea) * 100).toFixed(0);
+        const pct = (fraction * 100).toFixed(0);
+        const how = measured !== undefined ? 'of text area on its stroke/fill' : 'of text area, by bounding box';
         warnings.push({
           type: 'text-geometry-collision',
-          message: `Text "${truncate(text.textContent)}" overlaps ${geoLabel} (${pct}% of text area)`,
+          message: `Text "${truncate(text.textContent)}" overlaps ${geoLabel} (${pct}% ${how})`,
         });
       }
     }
@@ -421,9 +429,13 @@ program
         const textEls = svg.querySelectorAll('text');
         const geoEls = svg.querySelectorAll('path, circle, ellipse, line, polyline, polygon, rect');
 
+        const nodes: Element[] = [];
+        const rects: DOMRect[] = [];
         for (const el of [...textEls, ...geoEls]) {
           const rect = el.getBoundingClientRect();
           if (rect.width === 0 && rect.height === 0) continue;
+          nodes.push(el);
+          rects.push(rect);
 
           // Find which snippet group this element belongs to (if any)
           let snippetGroup = '';
@@ -435,6 +447,7 @@ program
           }
 
           results.push({
+            index: results.length,
             tagName: el.tagName.toLowerCase(),
             id: el.id || '',
             className: el.getAttribute('class') || '',
@@ -449,6 +462,46 @@ program
               height: rect.height * scaleY,
             },
           });
+        }
+
+        // A bounding box says where a path *could* be; a linkage's hull or a
+        // sheet of dimension lines boxes every label inside it. Measure the
+        // text against the geometry's real stroke and fill instead: sample a
+        // grid over the text's rect and ask the element whether each point
+        // is on its stroke (at its stroke width) or inside its fill.
+        for (let i = 0; i < results.length; i++) {
+          if (results[i].tagName !== 'text') continue;
+          const tr = rects[i];
+          const hits: Record<number, number> = {};
+          for (let j = 0; j < results.length; j++) {
+            if (results[j].tagName === 'text') continue;
+            const gr = rects[j];
+            if (gr.right <= tr.left || gr.left >= tr.right || gr.bottom <= tr.top || gr.top >= tr.bottom) continue;
+            const el = nodes[j] as SVGGeometryElement;
+            if (typeof el.isPointInStroke !== 'function' || typeof el.getScreenCTM !== 'function') continue;
+            const cs = getComputedStyle(el);
+            const testStroke = cs.stroke !== 'none' && parseFloat(cs.strokeWidth) > 0;
+            const testFill = cs.fill !== 'none';
+            if (!testStroke && !testFill) continue;
+            const ctm = el.getScreenCTM();
+            if (!ctm) continue;
+            const inv = ctm.inverse();
+            const cols = Math.max(4, Math.min(32, Math.round(tr.width / 2)));
+            const rows = Math.max(3, Math.min(12, Math.round(tr.height / 2)));
+            let samples = 0;
+            let hit = 0;
+            for (let r = 0; r < rows; r++) {
+              for (let c = 0; c < cols; c++) {
+                const sx = tr.left + ((c + 0.5) / cols) * tr.width;
+                const sy = tr.top + ((r + 0.5) / rows) * tr.height;
+                const pt = new DOMPoint(sx, sy).matrixTransform(inv);
+                samples++;
+                if ((testStroke && el.isPointInStroke(pt)) || (testFill && el.isPointInFill(pt))) hit++;
+              }
+            }
+            hits[j] = samples > 0 ? hit / samples : 0;
+          }
+          results[i].hits = hits;
         }
 
         return results;

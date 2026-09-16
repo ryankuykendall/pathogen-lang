@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { Command } from 'commander';
 
 import { formatDocument } from '../src/language-services/formatter';
+import { getDiagnostics } from '../src/language-services/diagnostics';
+import { DiagnosticSeverity } from '../src/language-services/types';
 import { StringTextDocument } from '../src/language-services/document';
 
 function applyEdits(source: string, edits: { range: { start: { line: number; character: number }; end: { line: number; character: number } }; newText: string }[]): string {
@@ -12,15 +14,26 @@ function applyEdits(source: string, edits: { range: { start: { line: number; cha
   return edits[0].newText;
 }
 
-function formatFile(path: string): boolean {
+type Outcome = 'formatted' | 'unchanged' | { refused: string };
+
+function formatFile(path: string): Outcome {
   const source = readFileSync(path, 'utf-8');
   const doc = new StringTextDocument(source);
   const edits = formatDocument(doc);
-  if (edits.length === 0) return false;
+  if (edits.length === 0) {
+    // The formatter returns no edits both for a clean file and for one it
+    // refuses to touch (a parse error whose recovery would drop code).
+    // Tell the two apart, so a refusal never reads as "already formatted".
+    const error = getDiagnostics(doc).find((d) => d.severity === DiagnosticSeverity.Error);
+    if (error) {
+      return { refused: `parse error at line ${error.range.start.line + 1}: ${error.message}` };
+    }
+    return 'unchanged';
+  }
   const formatted = applyEdits(source, edits);
-  if (formatted === source) return false;
+  if (formatted === source) return 'unchanged';
   writeFileSync(path, formatted, 'utf-8');
-  return true;
+  return 'formatted';
 }
 
 const program = new Command();
@@ -45,12 +58,16 @@ program
     let failed = 0;
     for (const f of files) {
       try {
-        if (formatFile(f)) {
+        const outcome = formatFile(f);
+        if (outcome === 'formatted') {
           console.log(`  formatted  ${f}`);
           changed++;
-        } else {
+        } else if (outcome === 'unchanged') {
           console.log(`  unchanged  ${f}`);
           unchanged++;
+        } else {
+          console.log(`  REFUSED    ${f} — ${outcome.refused}`);
+          failed++;
         }
       } catch (e) {
         console.log(`  FAILED     ${f} — ${(e as Error).message}`);
@@ -58,5 +75,6 @@ program
       }
     }
     console.log(`\nDone: ${changed} formatted, ${unchanged} unchanged, ${failed} failed (${files.length} total).`);
+    if (failed > 0) process.exitCode = 1;
   });
 program.parse();
