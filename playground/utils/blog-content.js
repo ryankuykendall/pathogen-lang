@@ -3,6 +3,30 @@
 
 export const blogIndex = [
   {
+    "slug": "the-fretboard-is-a-formula",
+    "title": "The Fretboard Is a Formula",
+    "date": "2026-09-20",
+    "description": "A fretboard placed from one scale length by the twelfth root of two, and a twin that numbers the frets, prints their distances, and fans at the end.",
+    "series": "Drawing Without Bookkeeping",
+    "seriesPart": 5
+  },
+  {
+    "slug": "the-panel-prints-its-own-drill-schedule",
+    "title": "The Panel Prints Its Own Drill Schedule",
+    "date": "2026-09-19",
+    "description": "A Eurorack front panel drawn in millimetres, with HP as the only parameter, that numbers its holes and prints the drill schedule the shop needs.",
+    "series": "Drawing Without Bookkeeping",
+    "seriesPart": 4
+  },
+  {
+    "slug": "a-linkage-that-dimensions-itself",
+    "title": "A Linkage That Dimensions Itself",
+    "date": "2026-09-18",
+    "description": "A four-bar linkage drawn once, and a twin that names its pivots, dimensions its links and runs the Grashof test on numbers it asked for.",
+    "series": "Drawing Without Bookkeeping",
+    "seriesPart": 3
+  },
+  {
     "slug": "thinking-and-drawing-in-parallel",
     "title": "Thinking and Drawing in Parallel",
     "date": "2026-09-17",
@@ -356,6 +380,1735 @@ export const blogIndex = [
 ];
 
 export const posts = {
+  'a-linkage-that-dimensions-itself': `<p><em>Part 3 of 5 in Drawing Without Bookkeeping — a form on one side, its
+annotated twin on the other, and nothing copied between them.</em></p>
+<blockquote>
+<p><strong>Series: Drawing Without Bookkeeping</strong></p>
+<ol>
+<li><a href="/blog/ask-the-path">Ask the Path</a> — <code>query()</code> and <code>queryAll()</code></li>
+<li><a href="/blog/thinking-and-drawing-in-parallel">Thinking and Drawing in Parallel</a> — <code>subscribe()</code></li>
+<li><strong>A Linkage That Dimensions Itself</strong> (this post) — a four-bar linkage</li>
+<li><a href="/blog/the-panel-prints-its-own-drill-schedule">The Panel Prints Its Own Drill Schedule</a> — a Eurorack front panel</li>
+<li><a href="/blog/the-fretboard-is-a-formula">The Fretboard Is a Formula</a> — a fretboard from one scale length</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes the selector grammar from <a href="/blog/ask-the-path">Ask the
+Path</a> and the subscription model from <a href="/blog/thinking-and-drawing-in-parallel">Thinking and
+Drawing in Parallel</a>, and it
+reuses their panel idiom: a form on the left, a twin on the right, both
+drawing the same block. Labels are the <code>as segment(...)</code> and
+<code>as endpoint(...)</code> clauses from <a href="/blog/segment-labels-and-suffixes">Name Your
+Corners</a>.</p>
+</blockquote>
+<p>A four-bar linkage is four bars and four pivots. Two pivots are fixed to
+the <strong>ground</strong>; the <strong>crank</strong> turns about one of them, the <strong>rocker</strong>
+swings about the other, and the <strong>coupler</strong> joins the two moving ends.
+It is the first mechanism in every kinematics course and the drive
+behind windscreen wipers, bicycle brakes and a good share of robot
+grippers. The drawing a teacher or a robotics mentor hands out is not
+the linkage but the <em>dimensioned</em> linkage. Every pivot is named, every
+bar carries its length, the crank angle is marked, measured from the
+ground line, and the whole thing is checked against the one rule that
+says whether the shortest bar can turn all the way round.</p>
+<p>Today that drawing is made twice. The bars go in one tool, the callouts
+go on by hand, and the two part company the moment a link length
+changes. This post builds the linkage as a form and lets the twin
+annotate it entirely from what the form knows about itself. Four lengths
+and an angle at the top of every file are the whole design:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">ground</span> = <span class="num">120</span>;
+<span class="kw">let</span> <span class="id">crank</span> = <span class="num">35</span>;
+<span class="kw">let</span> <span class="id">coupler</span> = <span class="num">95</span>;
+<span class="kw">let</span> <span class="id">rocker</span> = <span class="num">70</span>;
+<span class="kw">let</span> <span class="id">crankAngle</span> = <span class="num">60deg</span>;
+</code></pre><p>Change any of them and everything on the right re-solves; the first
+sample below is the place to try it.</p>
+<h2>The form knows its own numbers</h2>
+<p>The form is a labelled path block. Each bar is a relative line, each bar
+is named <code>as segment</code>, and each bar ends at a pivot named <code>as endpoint</code>:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">return</span> @{
+  l toA.x toA.y as <span class="id">segment</span>(<span class="str">'crank'</span>), <span class="id">endpoint</span>(<span class="str">'A'</span>);
+  l toB.x toB.y as <span class="id">segment</span>(<span class="str">'coupler'</span>), <span class="id">endpoint</span>(<span class="str">'B'</span>);
+  l toO4.x toO4.y as <span class="id">segment</span>(<span class="str">'rocker'</span>), <span class="id">endpoint</span>(<span class="str">'O4'</span>);
+  z as <span class="id">segment</span>(<span class="str">'ground'</span>), <span class="id">endpoint</span>(<span class="str">'O2'</span>);
+};
+</code></pre><p>The pivot positions come from a small solver above it. The crank end is
+trigonometry; the coupler end is where the coupler&#39;s reach from that
+point meets the rocker&#39;s reach from its ground pivot, which the law of
+cosines settles in a few lines. The names <code>pinA</code> and <code>pinB</code> are not a
+stylistic choice: <code>A</code> alone is the arc command, and the friction log
+below has more to say about that.</p>
+<p><mini-workspace code-open caption="Left: the form, drawn from four numbers. Right: the same form asked for segment — one line per named bar, with the length the bar already knows.">
+  <code>//-- A four-bar linkage as a form: ground, crank, coupler, rocker, four
+//-- pivots. Right: the form already knows its links by name and length.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let dims = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (\`A\` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 100 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightTable = TextLayer('right-table') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: dims;
+  text-anchor: start;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightTable);
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+// The table is the form's own answer: one line per named link.
+let links = rightBars.queryAll('segment');
+rightTable.apply {
+  for ([link, i] in links) {
+    text(142, 66 + i * 11)\`\${link.label} \${round(link.commands[0].length)}\`;
+  }
+}
+
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 166)\`four links, four pivots, one crank angle\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`SEGMENT, ASKED\`;
+}
+rightNote.apply {
+  text(0, 166)\`\${links.length} links, named where they were drawn\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/01-bare-linkage.svg" alt="Left: the form, drawn from four numbers. Right: the same form asked for segment — one line per named bar, with the length the bar already knows." loading="lazy">
+</mini-workspace></p>
+<p>The right panel is the first annotation and the smallest: <code>queryAll(&#39;segment&#39;)</code>
+returns the four bars in drawing order, each with its label and its
+length, and a loop prints them level with the bars they describe.
+Nothing on the right knows the number 95; it asked.</p>
+<h2>Pivots, named where they were drawn</h2>
+<p>The pivot names came from the form, so the twin only has to put them
+somewhere sensible. A subscription on the twin&#39;s bars layer delivers
+each <code>Endpoint</code> with its label. The direction to push the name is the
+one from part 2: the incoming bar&#39;s end tangent, turned by half the
+joint&#39;s own <code>turn</code>, which points away from the bars whichever way the
+linkage bends.</p>
+<p><mini-workspace code-open caption="One subscription on endpoint: a dot at every pivot and its own label beside it, pushed outward along the joint's bisector. O2 and O4 are the fixed pivots, A and B ride the bars.">
+  <code>//-- Every pivot named by a subscription: the twin's form layer delivers
+//-- each joint, its label, and the direction that points away from the bars.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (\`A\` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 100 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: points;
+  stroke: none;
+};
+let rightNames = TextLayer('right-names') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: points;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightDots,
+    rightNames);
+
+// Declared before the form is drawn. The name is the label the form gave
+// the pivot; the direction is the incoming link's tangent turned by half
+// the joint's own turn — outward, whichever way the linkage bends.
+rightBars.subscribe('endpoint') {|pivot|
+  rightDots.apply {
+    circle(pivot.x, pivot.y, 2.5);
+  }
+  let heading = pivot.command.block.tangent(1).angle;
+  let away = heading + pivot.turn.rad / 2 - PI() / 2;
+  rightNames.apply {
+    text(pivot.x + cos(away) * 12, pivot.y + sin(away) * 12 + 3)\`\${pivot.label}\`;
+  }
+};
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 166)\`pivots drawn, not yet named\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`ENDPOINT, SUBSCRIBED\`;
+}
+rightNote.apply {
+  text(0, 166)\`O2 and O4 fixed, A and B moving\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/02-pivots-named.svg" alt="One subscription on endpoint: a dot at every pivot and its own label beside it, pushed outward along the joint's bisector. O2 and O4 are the fixed pivots, A and B ride the bars." loading="lazy">
+</mini-workspace></p>
+<h2>A dimension line, written once</h2>
+<p>A <strong>dimension line</strong> is the drafting convention for &quot;this is how long&quot;:
+a line parallel to the bar, an arrowhead at each end, short <strong>extension
+lines</strong> reaching toward the bar with a small gap, and the value beside
+it. The post writes one function for it, and the function takes a
+<code>Segment</code>, not coordinates:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">dimension</span>(<span class="id">link</span>, <span class="id">offset</span>) {
+  <span class="kw">let</span> <span class="id">bar</span> = <span class="id">link</span>.<span class="id">commands</span>[<span class="num">0</span>];
+  <span class="kw">let</span> <span class="id">barNormal</span> = <span class="id">link</span>.<span class="id">block</span>.<span class="id">normal</span>(<span class="num">0.5</span>);
+  ...
+}
+</code></pre><p>Everything the drawing needs is on that struct. The bar&#39;s <code>start</code> and
+<code>end</code> place the extension lines. Its <code>length</code> is the value. Its <code>label</code>
+is the caption. <code>link.block.normal(0.5)</code> gives the same side of every
+bar relative to travel, which for a loop drawn this way is the outside,
+so one call dimensions a bar that runs left, right, up or at 23 degrees.
+The arrowheads are one small block with its tip at the origin, rotated
+into place at each end.</p>
+<p><mini-workspace code-open caption="dimension(link, 12) called once per segment. The extension lines, the arrows and the value all come from the bar's own ends, length, label and normal — the offset is the only thing passed in.">
+  <code>//-- Dimension lines from the links themselves: each segment's ends, length,
+//-- label and outward normal draw its own extension lines, arrows and value.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let dims = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (\`A\` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// One arrowhead, drawn once with its tip at the origin, rotated into place.
+let tip = @{
+  l -7 -3
+  l 0 6
+  z
+};
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 120 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let extLines = PathLayer('ext-lines') #{
+  stroke: dims;
+  stroke-width: 0.5;
+  fill: none;
+};
+let dimLines = PathLayer('dim-lines') #{
+  stroke: dims;
+  stroke-width: 0.75;
+  fill: none;
+};
+let dimArrows = PathLayer('dim-arrows') #{
+  fill: dims;
+  stroke: none;
+};
+let dimText = TextLayer('dim-text') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: dims;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    extLines,
+    dimLines,
+    dimArrows,
+    dimText);
+
+
+// A dimension line for one link, from what the link already knows: its
+// ends, its length, its label, and its outward normal at the midpoint.
+fn dimension(link, offset) {
+  let bar = link.commands[0];
+  let barNormal = link.block.normal(0.5);
+  let nx = cos(barNormal.angle);
+  let ny = sin(barNormal.angle);
+  let from = bar.start;
+  let to = bar.end;
+  extLines.apply {
+    M calc(from.x + nx * (offset - 10)) calc(from.y + ny * (offset - 10))
+    L calc(from.x + nx * (offset + 4)) calc(from.y + ny * (offset + 4))
+    M calc(to.x + nx * (offset - 10)) calc(to.y + ny * (offset - 10))
+    L calc(to.x + nx * (offset + 4)) calc(to.y + ny * (offset + 4))
+  }
+  dimLines.apply {
+    M calc(from.x + nx * offset) calc(from.y + ny * offset)
+    L calc(to.x + nx * offset) calc(to.y + ny * offset)
+  }
+  let along = link.block.tangent(0.5).angle;
+  let head = tip.rotate(along);
+  let tail = tip.rotate(along + PI());
+  dimArrows.apply {
+    M calc(to.x + nx * offset) calc(to.y + ny * offset) head.draw()
+    M calc(from.x + nx * offset) calc(from.y + ny * offset) tail.draw()
+  }
+  // The label sits past the line; a sideways normal pushes it clear of it.
+  let mid = barNormal.point;
+  let clear = offset + 9 + 14 * abs(nx);
+  dimText.apply {
+    text(mid.x + nx * clear, mid.y + ny * clear + 3)\`\${link.label} \${round(bar.length)}\`;
+  }
+}
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+for (link in rightBars.queryAll('segment')) {
+  dimension(link, 12);
+}
+
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 166)\`no lengths written anywhere but the top\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`ONE FN, FOUR LINKS\`;
+}
+rightNote.apply {
+  text(0, 166)\`dimension(link, 12) for each segment\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/03-link-dimensions.svg" alt="dimension(link, 12) called once per segment. The extension lines, the arrows and the value all come from the bar's own ends, length, label and normal — the offset is the only thing passed in." loading="lazy">
+</mini-workspace></p>
+<h2>Two angles</h2>
+<p>The <strong>crank angle</strong> is measured at the crank&#39;s ground pivot, from the
+ground line to the crank. Both directions are on the pivot:
+<code>query(&#39;endpoint(O2)&#39;)</code> returns it, <code>next</code> is the bar that leaves and
+its start tangent is the crank&#39;s heading, <code>command</code> is the ground bar
+arriving and its end tangent, reversed, is the ground line. An arc from
+the one to the other, the short way round, is the textbook mark.</p>
+<p>The second angle is the one that decides whether the mechanism is any
+good. The <strong>transmission angle</strong> is the angle between the coupler and
+the rocker at pivot B. Force passes from one to the other through it,
+and when it drops toward zero the rocker binds instead of moving; a rule
+of thumb keeps it between 40 and 140 degrees, no more than 50 degrees
+away from square. The path already turns at B by some
+amount, and the transmission angle is what is left of a straight line
+after that turn.</p>
+<p><mini-workspace code-open caption="Left: the form. Right: the crank angle at O2 between the ground bar's heading and the crank's, and the transmission angle at B from the joint's turn — 79°, comfortably inside the 40°–140° rule of thumb.">
+  <code>//-- Two angles the form knows: the crank angle at O2, from the heading of
+//-- the link that leaves it, and the transmission angle at B, from its turn.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let angles = oklch(0.55 0.16 320);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (\`A\` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 100 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightArcs = PathLayer('right-arcs') #{
+  stroke: angles;
+  stroke-width: 1;
+  fill: none;
+};
+let rightAngles = TextLayer('right-angles') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: angles;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightArcs,
+    rightAngles);
+
+
+// An angle arc at a pivot between two headings, the short way round, with
+// the degrees on the bisector. Headings are radians on the screen.
+fn angleArc(center, radius, fromHeading, toHeading,
+    arcs, labels) {
+  let delta = toHeading - fromHeading;
+  if (delta &gt; PI()) {
+    delta = delta - 2 * PI();
+  }
+  if (delta &lt; -PI()) {
+    delta = delta + 2 * PI();
+  }
+  let sweep = 0;
+  if (delta &gt; 0) {
+    sweep = 1;
+  }
+  let startX = center.x + radius * cos(fromHeading);
+  let startY = center.y + radius * sin(fromHeading);
+  let endX = center.x + radius * cos(toHeading);
+  let endY = center.y + radius * sin(toHeading);
+  arcs.apply {
+    M startX startY
+    A radius radius 0 0 sweep endX endY
+  }
+  let mid = fromHeading + delta / 2;
+  labels.apply {
+    text(center.x + (radius + 10) * cos(mid), center.y + (radius + 10) * sin(mid) + 3)\`\${round(abs(deg(delta)))}°\`;
+  }
+}
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+// The crank angle: from the ground's direction to the crank's heading.
+let pivotO2 = rightBars.query('endpoint(O2)');
+// The ground arrives at O2 heading back along itself; reversed, that is the
+// ground line the crank angle is measured from.
+let groundOut = pivotO2.command.block.tangent(1).angle + PI();
+let crankHeading = pivotO2.next.block.tangent(0).angle;
+angleArc(pivotO2.point,
+    20,
+    groundOut,
+    crankHeading,
+    rightArcs,
+    rightAngles);
+
+// The transmission angle: what is left of a straight line at B after the
+// path turns from the coupler onto the rocker.
+let pivotB = rightBars.query('endpoint(B)');
+let couplerBack = pivotB.command.block.tangent(1).angle + PI();
+let rockerOut = pivotB.next.block.tangent(0).angle;
+angleArc(pivotB.point,
+    14,
+    couplerBack,
+    rockerOut,
+    rightArcs,
+    rightAngles);
+
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 166)\`crankAngle = 60deg, typed once\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`HEADING AND TURN\`;
+}
+rightNote.apply {
+  text(0, 166)\`transmission angle \${round(180 - abs(pivotB.turn.deg))}° — keep it 40°–140°\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/04-crank-angle.svg" alt="Left: the form. Right: the crank angle at O2 between the ground bar's heading and the crank's, and the transmission angle at B from the joint's turn — 79°, comfortably inside the 40°–140° rule of thumb." loading="lazy">
+</mini-workspace></p>
+<p>Both arcs come from one helper that takes a centre and two headings.
+The transmission angle is <code>180° − |turn|</code>, printed by the note without
+the arc ever being measured.</p>
+<h2>Five positions, no new code</h2>
+<p>This is the sample that argues for the whole series. A loop draws four
+more positions, 72 degrees apart, into a ghost layer, with the working
+position drawn on top. The annotation code is the subscription from
+part 2, narrowed to the two moving pivots and pointed at the ghost layer
+as well as the bars. Every moving pivot of every position gets its ring,
+and each ghost crank is labelled with the angle read from the bar that
+arrives at it.</p>
+<p><mini-workspace code-open caption="Four ghosts from one loop, the working position on top. The same endpoint subscription rings every moving pivot of every position; a query for endpoint(B) traces the arc B rides about O4.">
+  <code>//-- The same linkage at five crank angles, 72° apart. The annotation code does not
+//-- change: one subscription marks every moving pivot of every position, and
+//-- one query traces where B went.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let angles = oklch(0.55 0.16 320);
+let trail = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (\`A\` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let leftGhosts = PathLayer('left-ghosts') #{
+  stroke: fg_hair;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  fill: none;
+};
+leftPanel.append(leftBars,
+    leftPivots,
+    leftEyebrow,
+    leftNote,
+    leftGhosts);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightGhosts = PathLayer('right-ghosts') #{
+  stroke: fg_hair;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: bg_color;
+  stroke: points;
+  stroke-width: 1;
+};
+let rightTrace = PathLayer('right-trace') #{
+  stroke: trail;
+  stroke-width: 1.25;
+  stroke-dasharray: 3 3;
+  fill: none;
+};
+let rightAngles = TextLayer('right-angles') #{
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: angles;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightGhosts,
+    rightDots,
+    rightTrace,
+    rightAngles);
+
+// Every moving pivot of every position, whichever layer it lands on.
+fn markPivots(source) {
+  source.subscribe('endpoint(A), endpoint(B)') {|pivot|
+    rightDots.apply {
+      circle(pivot.x, pivot.y, 2.5);
+    }
+  };
+}
+markPivots(rightGhosts);
+markPivots(rightBars);
+
+// The crank angle beside each ghost's A, read from the crank that arrives there.
+rightGhosts.subscribe('endpoint(A)') {|pivot|
+  let heading = pivot.command.block.tangent(1).angle;
+  // Above A when the crank points up, below it when the crank points down:
+  // always on the empty side of the ghost.
+  let side = -1;
+  if (sin(heading) &gt; 0) {
+    side = 1;
+  }
+  // Screen headings wrap at ±180°; a crank angle counts 0..360 the other way.
+  let angle = -deg(heading);
+  if (angle &lt; 0) {
+    angle = angle + 360;
+  }
+  rightAngles.apply {
+    text(pivot.x + cos(heading) * 4, pivot.y + side * 10 + 2.5)\`\${round(angle)}°\`;
+  }
+};
+
+let positions = [
+  132deg,
+  204deg,
+  276deg,
+  348deg,
+];
+for (theta in positions) {
+  let ghost = linkageBlock(theta);
+  leftGhosts.apply {
+    M 40 100 ghost.draw()
+  }
+  rightGhosts.apply {
+    M 40 100 ghost.draw()
+  }
+}
+let form = linkageBlock(crankAngle);
+leftBars.apply {
+  M 40 100 form.draw()
+}
+rightBars.apply {
+  M 40 100 form.draw()
+}
+leftPivots.apply {
+  for (pivot in leftBars.queryAll('endpoint')) {
+    circle(pivot.x, pivot.y, 3.5);
+  }
+}
+rightPivots.apply {
+  for (pivot in rightBars.queryAll('endpoint(O2), endpoint(O4)')) {
+    circle(pivot.x, pivot.y, 3.5);
+  }
+}
+
+// Where B went: every B the ghosts drew, in crank-angle order.
+let path = rightGhosts.queryAll('endpoint(B)');
+let first = path[0];
+rightTrace.apply {
+  M first.x first.y
+  for (stop in path.slice(1)) {
+    L stop.x stop.y
+  }
+}
+
+leftEyebrow.apply {
+  text(0, -18)\`FIVE POSITIONS\`;
+}
+leftNote.apply {
+  text(0, 166)\`one loop over crank angles\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`SAME SUBSCRIPTIONS\`;
+}
+rightNote.apply {
+  text(0, 166)\`\${path.length} ghosts, one working position, no new code\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/05-five-positions.svg" alt="Four ghosts from one loop, the working position on top. The same endpoint subscription rings every moving pivot of every position; a query for endpoint(B) traces the arc B rides about O4." loading="lazy">
+</mini-workspace></p>
+<p>The dashed trace is a query, not a subscription: after the loop,
+<code>queryAll(&#39;endpoint(B)&#39;)</code> on the ghost layer returns every B in
+crank-angle order, and a polyline through them is the arc B rides about
+O4, the rocker&#39;s swing sampled four times. Add a fifth ghost to the
+loop and both the rings and the trace follow.</p>
+<h2>The worksheet</h2>
+<p>The finished figure puts everything on one twin: names, four dimension
+lines, both angles, and a verdict. The <strong>Grashof condition</strong> is the rule
+that says whether the shortest bar can rotate fully: the shortest plus
+the longest must not exceed the sum of the other two. The twin sorts the
+four lengths it queried and prints the test with its numbers.</p>
+<p><mini-workspace code-open caption="Every number on the right was asked of the form on the left. The note runs the Grashof test on the four queried lengths: 35 + 120 ≤ 165 holds, and since the shortest link is the crank, this is a crank-rocker and the crank turns all the way round.">
+  <code>//-- The worksheet figure: names, dimensions, both angles, and the Grashof
+//-- test — every number on the right asked of the form on the left.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let dims = oklch(0.55 0.16 80);
+let angles = oklch(0.55 0.16 320);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (\`A\` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// One arrowhead, drawn once with its tip at the origin, rotated into place.
+let tip = @{
+  l -7 -3
+  l 0 6
+  z
+};
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 120 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 264;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: points;
+  stroke: none;
+};
+let rightNames = TextLayer('right-names') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: points;
+  text-anchor: middle;
+};
+let extLines = PathLayer('ext-lines') #{
+  stroke: dims;
+  stroke-width: 0.5;
+  fill: none;
+};
+let dimLines = PathLayer('dim-lines') #{
+  stroke: dims;
+  stroke-width: 0.75;
+  fill: none;
+};
+let dimArrows = PathLayer('dim-arrows') #{
+  fill: dims;
+  stroke: none;
+};
+let dimText = TextLayer('dim-text') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: dims;
+  text-anchor: middle;
+};
+let rightArcs = PathLayer('right-arcs') #{
+  stroke: angles;
+  stroke-width: 1;
+  fill: none;
+};
+let rightAngles = TextLayer('right-angles') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: angles;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightDots,
+    rightNames,
+    extLines,
+    dimLines,
+    dimArrows,
+    dimText,
+    rightArcs,
+    rightAngles);
+
+
+// A dimension line for one link, from what the link already knows: its
+// ends, its length, its label, and its outward normal at the midpoint.
+fn dimension(link, offset) {
+  let bar = link.commands[0];
+  let barNormal = link.block.normal(0.5);
+  let nx = cos(barNormal.angle);
+  let ny = sin(barNormal.angle);
+  let from = bar.start;
+  let to = bar.end;
+  extLines.apply {
+    M calc(from.x + nx * (offset - 10)) calc(from.y + ny * (offset - 10))
+    L calc(from.x + nx * (offset + 4)) calc(from.y + ny * (offset + 4))
+    M calc(to.x + nx * (offset - 10)) calc(to.y + ny * (offset - 10))
+    L calc(to.x + nx * (offset + 4)) calc(to.y + ny * (offset + 4))
+  }
+  dimLines.apply {
+    M calc(from.x + nx * offset) calc(from.y + ny * offset)
+    L calc(to.x + nx * offset) calc(to.y + ny * offset)
+  }
+  let along = link.block.tangent(0.5).angle;
+  let head = tip.rotate(along);
+  let tail = tip.rotate(along + PI());
+  dimArrows.apply {
+    M calc(to.x + nx * offset) calc(to.y + ny * offset) head.draw()
+    M calc(from.x + nx * offset) calc(from.y + ny * offset) tail.draw()
+  }
+  // The label sits past the line; a sideways normal pushes it clear of it.
+  let mid = barNormal.point;
+  let clear = offset + 9 + 14 * abs(nx);
+  dimText.apply {
+    text(mid.x + nx * clear, mid.y + ny * clear + 3)\`\${round(bar.length)}\`;
+  }
+}
+
+
+// An angle arc at a pivot between two headings, the short way round, with
+// the degrees on the bisector. Headings are radians on the screen.
+fn angleArc(center, radius, fromHeading, toHeading,
+    arcs, labels) {
+  let delta = toHeading - fromHeading;
+  if (delta &gt; PI()) {
+    delta = delta - 2 * PI();
+  }
+  if (delta &lt; -PI()) {
+    delta = delta + 2 * PI();
+  }
+  let sweep = 0;
+  if (delta &gt; 0) {
+    sweep = 1;
+  }
+  let startX = center.x + radius * cos(fromHeading);
+  let startY = center.y + radius * sin(fromHeading);
+  let endX = center.x + radius * cos(toHeading);
+  let endY = center.y + radius * sin(toHeading);
+  arcs.apply {
+    M startX startY
+    A radius radius 0 0 sweep endX endY
+  }
+  let mid = fromHeading + delta / 2;
+  labels.apply {
+    text(center.x + (radius + 10) * cos(mid), center.y + (radius + 10) * sin(mid) + 3)\`\${round(abs(deg(delta)))}°\`;
+  }
+}
+
+rightBars.subscribe('endpoint') {|pivot|
+  rightDots.apply {
+    circle(pivot.x, pivot.y, 2.5);
+  }
+  let heading = pivot.command.block.tangent(1).angle;
+  let away = heading + pivot.turn.rad / 2 - PI() / 2;
+  rightNames.apply {
+    text(pivot.x + cos(away) * 11, pivot.y + sin(away) * 11 + 3)\`\${pivot.label}\`;
+  }
+};
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+let links = rightBars.queryAll('segment');
+for (link in links) {
+  dimension(link, 22);
+}
+
+let pivotO2 = rightBars.query('endpoint(O2)');
+// The ground arrives at O2 heading back along itself; reversed, that is the
+// ground line the crank angle is measured from.
+let groundOut = pivotO2.command.block.tangent(1).angle + PI();
+angleArc(pivotO2.point,
+    20,
+    groundOut,
+    pivotO2.next.block.tangent(0).angle,
+    rightArcs,
+    rightAngles);
+let pivotB = rightBars.query('endpoint(B)');
+angleArc(pivotB.point,
+    14,
+    pivotB.command.block.tangent(1).angle + PI(),
+    pivotB.next.block.tangent(0).angle,
+    rightArcs,
+    rightAngles);
+
+// Grashof: the shortest plus the longest link against the other two. When it
+// holds, the shortest link can turn full circle — here that link is the crank.
+let lengths = links.map() {|link| link.commands[0].length}.sort() {|lo, hi| lo - hi};
+let shortest = lengths[0];
+let longest = lengths[3];
+let others = lengths[1] + lengths[2];
+let kind = 'non-Grashof';
+if (shortest + longest &lt;= others) {
+  kind = 'Grashof';
+}
+
+leftEyebrow.apply {
+  text(0, -18)\`THE FORM\`;
+}
+leftNote.apply {
+  text(0, 166)\`ground \${ground} · crank \${crank} · coupler \${coupler} · rocker \${rocker}\`;
+}
+rightEyebrow.apply {
+  text(0, -18)\`THE WORKSHEET\`;
+}
+rightNote.apply {
+  text(0, 166)\`\${kind}: \${round(shortest)} + \${round(longest)} ≤ \${round(others)}\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/06-worksheet.svg" alt="Every number on the right was asked of the form on the left. The note runs the Grashof test on the four queried lengths: 35 + 120 ≤ 165 holds, and since the shortest link is the crank, this is a crank-rocker and the crank turns all the way round." loading="lazy">
+</mini-workspace></p>
+<p>Change <code>crank</code> to 60 at the top of the file. The pivots move, the
+dimension values change, the two angles re-solve, and the note reads
+<code>non-Grashof: 60 + 120 ≤ 165</code>, the test it just failed. That is the
+whole reason to build the drawing this way.</p>
+<h2>What this project taught the language</h2>
+<p>This series doubles as a working friction log (<a href="/blog/ask-the-path">part
+1</a> explains the convention). The linkage was the
+first form built as a labelled block and drawn twice, and it found more
+than the first two posts together.</p>
+<p><strong>Labels now travel with a drawn block.</strong> The form is a labelled <code>@{ }</code>
+block, drawn into each panel&#39;s bars layer with <code>M 16 100 form.draw()</code>,
+and the twin asks that layer for <code>endpoint(A)</code>. The first attempt
+answered &quot;available endpoint labels: none&quot;. The relative serializer had
+carried every label in the commands it tracked, but only the emitted
+text reached the layer&#39;s record, which re-parsed it from scratch. Part 1&#39;s
+comb never noticed because its labels were authored inside the layer&#39;s
+own apply block. The statement now keeps its arguments&#39; tracked commands
+and copies their labels back onto the parsed ones by position. <a href="/docs#segment-labels-segment-labels-corner-suffixes">Labels
+travel with their block</a>
+through <code>draw()</code> and <code>drawTo()</code> alike, and a block&#39;s corner operations
+are not applied a second time on the way in.</p>
+<p><strong><code>A</code> is the arc command.</strong> Every kinematics text names the moving
+pivots A and B, and <code>L A.x A.y</code> inside a block is a parse error, because
+in path-argument position a single letter that is a path command is the
+command. The same rule caught a test that named a lambda parameter <code>s</code>.
+So the pivots are <code>pinA</code> and <code>pinB</code> in code and <code>&#39;A&#39;</code> and <code>&#39;B&#39;</code> in their
+labels, and the first sample says so in a comment. Not a bug, but the
+domain post has to say it early.</p>
+<p><strong>There is no circle-meets-circle, and blocks are relative-only.</strong> The
+solver needs the point where the coupler&#39;s reach meets the rocker&#39;s
+reach; <code>intersectionPoints()</code> works on bounding boxes, so the samples
+use the law of cosines. A block also cannot be written from absolute
+pivots, so each bar is the step from the pivot before it. Both are
+documented; both are exactly the arithmetic the series promised to take
+away. A <code>Command.heading</code> member would also spare the samples
+<code>pivot.next.block.tangent(0).angle</code>.</p>
+<p><strong>Markers are per element, not per subpath.</strong> The first dimension lines
+used <code>marker-start</code> and <code>marker-end</code> for the arrowheads, and four lines
+in one layer got two arrows, at the first vertex of the first line and
+the last vertex of the last. The samples rotate one arrowhead block into
+place instead. A layer option that emits each subpath as its own element
+when markers are set is the language-side answer, and it is logged.</p>
+<p><strong>Two gates in the sample pipeline were wrong, and both are fixed.</strong> The
+first validation of this post&#39;s six figures reported 51 collisions,
+because the check compared each label with the bounding box of a whole
+path, and a label inside the linkage&#39;s hull overlaps the bars&#39; box. It
+now samples the label&#39;s rectangle against the geometry&#39;s real stroke
+and fill, and the same six figures report none. Then a slip in how the
+samples were generated left <code>#{{ … }}</code> around ten style blocks, and the
+formatter rewrote every one as <code>#{}</code> and reported success: it falls back
+to an error-recovery parse so a missing semicolon can still be
+formatted, and the recovered tree simply omitted the unparseable text.
+The playground and VS Code format through the same function. It now
+refuses when the recovery skipped real text. One more gate came out of
+the review: a label that strays across the panel divider is invisible to
+an area test, so the validator now flags any text crossing a hairline
+divider.</p>
+<h2>Where to go next</h2>
+<p>Part 4 leaves the classroom for the workbench. A Eurorack front panel
+prints its own drill schedule from <code>queryAll(&#39;call(circle)&#39;)</code>, the table
+of hole numbers, diameters and coordinates the panel shop needs.</p>
+<p>The reference pages are <a href="/docs#path-queries-path-queries">Path Queries</a>
+and <a href="/docs#subscriptions-subscriptions">Subscriptions</a>. Every sample
+above opens in the playground with one click: change a link length at
+the top and watch the worksheet re-solve.</p>
+`,
   'ask-the-path': `<p><em>Part 1 of 5 in Drawing Without Bookkeeping — a form on one side, its
 annotated twin on the other, and nothing copied between them.</em></p>
 <blockquote>
@@ -363,9 +2116,9 @@ annotated twin on the other, and nothing copied between them.</em></p>
 <ol>
 <li><strong>Ask the Path</strong> (this post) — <code>query()</code> and <code>queryAll()</code></li>
 <li><a href="/blog/thinking-and-drawing-in-parallel">Thinking and Drawing in Parallel</a> — <code>subscribe()</code></li>
-<li>A four-bar linkage, dimensioned — coming</li>
-<li>A front panel with its drill schedule — coming</li>
-<li>A fretboard from one scale length — coming</li>
+<li><a href="/blog/a-linkage-that-dimensions-itself">A Linkage That Dimensions Itself</a> — a four-bar linkage</li>
+<li><a href="/blog/the-panel-prints-its-own-drill-schedule">The Panel Prints Its Own Drill Schedule</a> — a Eurorack front panel</li>
+<li><a href="/blog/the-fretboard-is-a-formula">The Fretboard Is a Formula</a> — a fretboard from one scale length</li>
 </ol>
 </blockquote>
 <blockquote>
@@ -31052,6 +32805,3131 @@ right_panel.append(right_title, right_sub, hex_right, polar_labels, anchor_anno)
 <p>Text as geometry. That&#39;s where this is headed.</p>
 <p>Paste the collision-avoidance snippet into the <a href="/">playground</a> and change the data point positions — watch the labels redistribute automatically.</p>
 `,
+  'the-fretboard-is-a-formula': `<p><em>Part 5 of 5 in Drawing Without Bookkeeping — a form on one side, its
+annotated twin on the other, and nothing copied between them.</em></p>
+<blockquote>
+<p><strong>Series: Drawing Without Bookkeeping</strong></p>
+<ol>
+<li><a href="/blog/ask-the-path">Ask the Path</a> — <code>query()</code> and <code>queryAll()</code></li>
+<li><a href="/blog/thinking-and-drawing-in-parallel">Thinking and Drawing in Parallel</a> — <code>subscribe()</code></li>
+<li><a href="/blog/a-linkage-that-dimensions-itself">A Linkage That Dimensions Itself</a> — a four-bar linkage</li>
+<li><a href="/blog/the-panel-prints-its-own-drill-schedule">The Panel Prints Its Own Drill Schedule</a> — a Eurorack front panel</li>
+<li><strong>The Fretboard Is a Formula</strong> (this post) — a fretboard from one scale length</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes the selector grammar from <a href="/blog/ask-the-path">Ask the
+Path</a>, the subscription model from <a href="/blog/thinking-and-drawing-in-parallel">Thinking and
+Drawing in Parallel</a>, and the
+millimetre trick from <a href="/blog/the-panel-prints-its-own-drill-schedule">part 4</a>:
+a group layer carries the page position and scale, and everything
+inside it is drawn in real units. The fretboard is long and thin, so
+the twin sits below the form instead of beside it.</p>
+</blockquote>
+<p>A guitar&#39;s <strong>scale length</strong> is the vibrating length of an open string,
+from the <strong>nut</strong> at the headstock end to the <strong>saddle</strong> at the bridge;
+the saddle is then set a little past it for intonation, which is a
+separate problem. Every fret follows from the scale length. Fret <em>n</em>
+sits where the remaining string is <em>n</em> twelfths of an octave shorter,
+which is the scale length divided by the twelfth root of two, <em>n</em> times
+over. That root is about 1.0595, the step from one semitone to the next,
+and twelve of them double the pitch. What the division takes off the
+scale is the fret&#39;s distance from the nut:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">fretFrom</span>(<span class="id">scale</span>, <span class="id">n</span>) {
+  <span class="kw">return</span> <span class="id">scale</span> - <span class="id">scale</span> / <span class="id">pow</span>(<span class="num">2</span>, <span class="id">n</span> / <span class="num">12</span>);
+}
+</code></pre><p>That is the whole of equal temperament, and the whole of a fretboard
+template. Builders get the numbers from a web calculator and mark the
+board by hand. A <strong>fanned-fret</strong> or multi-scale instrument — a longer
+scale on the bass side than the treble — doubles the arithmetic and the
+chances of a slot in the wrong place. This post draws the board from the
+formula and lets the twin do the luthier&#39;s tables.</p>
+<h2>The form knows where the octave is</h2>
+<p>The form is a tapered outline and one slot per fret: a <code>for</code> loop over
+22 frets, each slot a line from the top edge to the bottom edge at the
+formula&#39;s <em>x</em>. The whole board is drawn in millimetres inside a scaled
+group, and the nut is at <em>x</em> = 0. Every slot&#39;s <em>x</em> is therefore its
+distance from the nut, with nothing to convert.</p>
+<p><mini-workspace code-open caption="Above: a 22-fret board for a 25.5-inch scale, 647.7 mm, tapering from 43 to 56 mm. Below: the slots layer asked for command(line) — 22 of them — and the twelfth, tinted, at half the scale length.">
+  <code>//-- A 22-fret fretboard drawn in millimetres from one scale length: the
+//-- taper and every slot follow from the twelfth root of two. Below: what
+//-- the slots layer can already say about itself.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return \`\${sign}\${whole}.\${pad}\${frac}\`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomOctave = PathLayer('bottom-octave') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomTable = TextLayer('bottom-table') #{
+  font-family: font;
+  font-size: 5.5;
+  font-weight: 700;
+  letter-spacing: 0.3;
+  fill: points;
+  text-anchor: start;
+};
+bottomPanel.append(bottomOutline, bottomSlots, bottomOctave, bottomTable);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+// Asked, not computed twice: the octave slot is the twelfth line, and
+// it sits at half the scale length.
+let frets = bottomSlots.queryAll('command(line)');
+let octave = bottomSlots.query('command(line):nth(11)');
+let last = bottomSlots.query('command(line):last');
+bottomOctave.apply {
+  octave.block.draw();
+}
+bottomTable.apply {
+  text(0, 68)\`\${frets.length} slots · octave at \${mm(octave.start.x)} mm, half of \${scaleLength} · fret \${frets.length} at \${mm(last.start.x)} mm\`;
+}
+
+topEyebrow.apply {
+  text(25, 48)\`THE FORM, 25.5 IN\`;
+}
+topNote.apply {
+  text(25, 134)\`scale 647.7 mm, 22 frets, 43 to 56 mm wide\`;
+}
+bottomEyebrow.apply {
+  text(25, 166)\`COMMAND(LINE), ASKED\`;
+}
+bottomNote.apply {
+  text(25, 282)\`the octave check, from the twelfth slot\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/01-bare-fretboard.svg" alt="Above: a 22-fret board for a 25.5-inch scale, 647.7 mm, tapering from 43 to 56 mm. Below: the slots layer asked for command(line) — 22 of them — and the twelfth, tinted, at half the scale length." loading="lazy">
+</mini-workspace></p>
+<p>The line under the second board is the octave check every luthier does
+by eye. <code>command(line):nth(11)</code> is the twelfth slot; its <code>block</code> is
+drawn back in gold and its <code>start.x</code> is 323.85, half of 647.7. Nothing
+computed it twice.</p>
+<h2>Numbered by ordinal</h2>
+<p>A subscription on <code>command(line)</code> delivers every slot in drawing order,
+and its second parameter is the ordinal among the matches. The fret
+number is that ordinal plus one, and the slot&#39;s own <code>start.x</code> is where
+it goes:</p>
+<pre><code class="hljs language-pathogen"><span class="id">slots</span>.<span class="id">subscribe</span>(<span class="str">'command(line)'</span>) {|<span class="id">fret</span>, <span class="id">i</span>|
+  <span class="id">numbers</span>.<span class="kw">apply</span> {
+    <span class="kw">text</span>(<span class="id">fret</span>.<span class="id">start</span>.<span class="id">x</span>, -<span class="num">2.5</span>)\`\${<span class="id">i</span> + <span class="num">1</span>}\`;
+  }
+};
+</code></pre><p><mini-workspace code-open caption="One subscription on the slots layer: the ordinal plus one, placed at each slot's own x above the board.">
+  <code>//-- Every fret numbered by a subscription on command(line): the slot's own
+//-- x places the number, and the subscription's ordinal is the fret.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return \`\${sign}\${whole}.\${pad}\${frac}\`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+bottomPanel.append(bottomOutline, bottomSlots, bottomNumbers);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)\`\${i + 1}\`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+topEyebrow.apply {
+  text(25, 48)\`THE FORM\`;
+}
+topNote.apply {
+  text(25, 134)\`22 slots, unnumbered\`;
+}
+bottomEyebrow.apply {
+  text(25, 166)\`COMMAND(LINE), SUBSCRIBED\`;
+}
+bottomNote.apply {
+  text(25, 282)\`the ordinal, plus one\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/02-frets-numbered.svg" alt="One subscription on the slots layer: the ordinal plus one, placed at each slot's own x above the board." loading="lazy">
+</mini-workspace></p>
+<h2>The distance column</h2>
+<p>The table a luthier wants is the distance of every slot from the nut, to
+a hundredth of a millimetre. It is the same subscription with a
+different callback, and the number is <code>fret.start.x</code> itself. The label
+hangs below its slot, turned a quarter turn at its anchor with the
+third argument of <code>text()</code>, so 22 of them fit under a board 430 pixels
+wide.</p>
+<p><mini-workspace code-open caption="Every slot's distance from the nut, read from the slot and printed under it to 0.01 mm. The labels are turned −90° about their own anchors.">
+  <code>//-- The luthier's table, printed under the board: each slot's distance from
+//-- the nut to a hundredth of a millimetre, read from the slot itself.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return \`\${sign}\${whole}.\${pad}\${frac}\`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+let bottomDistances = TextLayer('bottom-distances') #{
+  font-family: mono;
+  font-size: 5;
+  letter-spacing: 0;
+  fill: fg_muted;
+  text-anchor: end;
+};
+bottomPanel.append(bottomOutline, bottomSlots, bottomNumbers, bottomDistances);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)\`\${i + 1}\`;
+    }
+  };
+}
+// The distance from the nut is the slot's own x. The label hangs below
+// the board, turned a quarter turn at its anchor.
+fn distanceLabels(slots, labels) {
+  slots.subscribe('command(line)') {|fret|
+    labels.apply {
+      text(fret.start.x + 2, fret.end.y + 3, -90deg)\`\${mm(fret.start.x)}\`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+distanceLabels(bottomSlots, bottomDistances);
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+topEyebrow.apply {
+  text(25, 48)\`THE FORM\`;
+}
+topNote.apply {
+  text(25, 134)\`one formula, once\`;
+}
+bottomEyebrow.apply {
+  text(25, 166)\`DISTANCE FROM THE NUT\`;
+}
+bottomNote.apply {
+  text(25, 282)\`fret.start.x, to 0.01 mm, turned -90deg at its anchor\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/03-distance-column.svg" alt="Every slot's distance from the nut, read from the slot and printed under it to 0.01 mm. The labels are turned −90° about their own anchors." loading="lazy">
+</mini-workspace></p>
+<p>There is no <code>toFixed</code>, so the samples carry part 4&#39;s <code>mm()</code> helper,
+extended to two decimals and to negative numbers. Four lines became
+thirteen; the friction log has said so twice now.</p>
+<h2>Marker dots by range</h2>
+<p>Marker dots — the inlays on the face of the board that tell a player&#39;s
+hand where it is — sit at frets 3, 5, 7, 9, 12, 15, 17, 19 and 21, and
+the twelfth gets two. Two things about them are worth being precise
+about. The frets themselves are picked with one <code>:nth</code> list, and <code>:nth</code>
+counts from zero, so fret 3 is <code>:nth(2)</code>. A dot does not sit <em>on</em> its
+fret. It sits in the space before it, halfway back to the previous slot,
+on the board&#39;s centre line.</p>
+<p><mini-workspace code-open caption="command(line):nth(2, 4, 6, 8, 11, 14, 16, 18, 20) tints the nine marker frets. Each dot is placed halfway back to the previous slot, on the centre line the two slots' ends define; the twelfth gets two.">
+  <code>//-- Marker dots by range: the marker frets are picked with one :nth list
+//-- (0-based), and each dot sits in the space before its fret.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return \`\${sign}\${whole}.\${pad}\${frac}\`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomMarks = PathLayer('bottom-marks') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomDots = PathLayer('bottom-dots') #{
+  fill: points;
+  stroke: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+bottomPanel.append(bottomOutline,
+    bottomSlots,
+    bottomMarks,
+    bottomDots,
+    bottomNumbers);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)\`\${i + 1}\`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+// Frets 3, 5, 7, 9, 12, 15, 17, 19 and 21 — as :nth counts them, from 0.
+let markerFrets = [
+  3,
+  5,
+  7,
+  9,
+  12,
+  15,
+  17,
+  19,
+  21,
+];
+for (fret in bottomSlots.queryAll('command(line):nth(2, 4, 6, 8, 11, 14, 16, 18, 20)')) {
+  bottomMarks.apply {
+    fret.block.draw();
+  }
+}
+
+// A dot lives in the space before its fret: halfway back to the previous
+// slot, on the board's centre line. The twelfth gets two.
+let frets = bottomSlots.queryAll('command(line)');
+for (n in markerFrets) {
+  let here = frets[n - 1];
+  let before = frets[n - 2];
+  let x = (here.start.x + before.start.x) / 2;
+  let w = (here.end.y + before.end.y) / 2;
+  bottomDots.apply {
+    if (n == 12) {
+      circle(x, w / 3, 2.2);
+      circle(x, w * 2 / 3, 2.2);
+    } else {
+      circle(x, w / 2, 2.2);
+    }
+  }
+}
+
+topEyebrow.apply {
+  text(25, 48)\`THE FORM\`;
+}
+topNote.apply {
+  text(25, 134)\`no dots yet\`;
+}
+bottomEyebrow.apply {
+  text(25, 166)\`NTH, THEN THE SPACE BEFORE\`;
+}
+bottomNote.apply {
+  text(25, 282)\`:nth(2, 4, 6, 8, 11, 14, 16, 18, 20) · dots between\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/04-marker-dots.svg" alt="command(line):nth(2, 4, 6, 8, 11, 14, 16, 18, 20) tints the nine marker frets. Each dot is placed halfway back to the previous slot, on the centre line the two slots' ends define; the twelfth gets two." loading="lazy">
+</mini-workspace></p>
+<p>The tint is a query drawn back onto the board: each match&#39;s <code>block</code> is
+the slot on its own, and <code>fret.block.draw()</code> puts it down in place in
+a second colour. The dots need the slot before as well as the slot
+itself, so they come from the full list by fret number, which reads the
+way a luthier would say it. That leaves the nine frets written twice,
+once for <code>:nth</code> from zero and once from one, because <code>:nth</code> takes
+literal indices; the friction log has the note.</p>
+<h2>One scale length, or another</h2>
+<p>Change <code>scaleLength</code> and every slot, number and dot moves. The sample
+draws two boards to make the comparison visible: a 25.5-inch scale on
+top and a 24.75-inch scale below, the two most common choices, with the
+same subscriptions and the same dot function on both.</p>
+<p><mini-workspace code-open caption="647.7 mm above, 628.65 mm below. The octave slot, tinted on both boards, moves from 323.85 to 314.33 mm; every slot, number and dot moves with it. No annotation code changed.">
+  <code>//-- Change the scale length and every slot, number and dot moves. Above,
+//-- a 25.5-inch board; below, the same file's annotations on a 24.75-inch
+//-- board — 19 mm shorter at the octave, nothing else changed.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let second = oklch(0.55 0.16 320);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return \`\${sign}\${whole}.\${pad}\${frac}\`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let topNumbers = TextLayer('top-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+let topOctave = PathLayer('top-octave') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let topDots = PathLayer('top-dots') #{
+  fill: points;
+  stroke: none;
+};
+topPanel.append(topOutline,
+    topSlots,
+    topOctave,
+    topNumbers,
+    topDots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: second;
+  text-anchor: middle;
+};
+let bottomOctave = PathLayer('bottom-octave') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomDots = PathLayer('bottom-dots') #{
+  fill: second;
+  stroke: none;
+};
+bottomPanel.append(bottomOutline,
+    bottomSlots,
+    bottomOctave,
+    bottomNumbers,
+    bottomDots);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+let shorterScale = 628.65;
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)\`\${i + 1}\`;
+    }
+  };
+}
+
+fn markerDots(slots, dots) {
+  let frets = slots.queryAll('command(line)');
+  for (n in [
+    3,
+    5,
+    7,
+    9,
+    12,
+    15,
+    17,
+    19,
+    21,
+  ]) {
+    let here = frets[n - 1];
+    let before = frets[n - 2];
+    let x = (here.start.x + before.start.x) / 2;
+    let w = (here.end.y + before.end.y) / 2;
+    dots.apply {
+      if (n == 12) {
+        circle(x, w / 3, 2.2);
+        circle(x, w * 2 / 3, 2.2);
+      } else {
+        circle(x, w / 2, 2.2);
+      }
+    }
+  }
+}
+
+numberFrets(topSlots, topNumbers);
+numberFrets(bottomSlots, bottomNumbers);
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, shorterScale);
+markerDots(topSlots, topDots);
+markerDots(bottomSlots, bottomDots);
+
+let octaveLong = topSlots.query('command(line):nth(11)');
+let octaveShort = bottomSlots.query('command(line):nth(11)');
+topOctave.apply {
+  octaveLong.block.draw();
+}
+bottomOctave.apply {
+  octaveShort.block.draw();
+}
+
+topEyebrow.apply {
+  text(25, 48)\`25.5 IN · 647.7 MM\`;
+}
+topNote.apply {
+  text(25, 134)\`octave at \${mm(octaveLong.start.x)} mm\`;
+}
+bottomEyebrow.apply {
+  text(25, 166)\`24.75 IN · 628.65 MM\`;
+}
+bottomNote.apply {
+  text(25, 282)\`octave at \${mm(octaveShort.start.x)} mm — the same subscriptions, the same dots\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/05-scale-length-wiggle.svg" alt="647.7 mm above, 628.65 mm below. The octave slot, tinted on both boards, moves from 323.85 to 314.33 mm; every slot, number and dot moves with it. No annotation code changed." loading="lazy">
+</mini-workspace></p>
+<h2>The fanned finale</h2>
+<p>A fanned-fret board has two scale lengths, one for each edge, and one
+fret chosen to stand straight. Each slot runs from its bass-side
+position to its treble-side position, and the treble side is shifted so
+the chosen fret is perpendicular. The nut leans one way, the far end the
+other, and every slot in between leans a little differently.</p>
+<p><mini-workspace code-open caption="27 inches on the bass side, 25.5 on the treble, fret 7 straight. The same subscription numbers every leaning slot from its bass end; the first and last frets print their lean from their own tangents.">
+  <code>//-- A fanned-fret board: two scale lengths, 27 inches on the bass side and
+//-- 25.5 on the treble, with fret 7 perpendicular. Every slot leans a
+//-- little differently, and the same subscription numbers them all.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return \`\${sign}\${whole}.\${pad}\${frac}\`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.82;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.82;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomMarks = PathLayer('bottom-marks') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+let bottomLean = TextLayer('bottom-lean') #{
+  font-family: mono;
+  font-size: 5;
+  letter-spacing: 0;
+  fill: marks;
+  text-anchor: middle;
+};
+bottomPanel.append(bottomOutline,
+    bottomSlots,
+    bottomMarks,
+    bottomNumbers,
+    bottomLean);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+let bassScale = 685.8;
+let trebleScale = scaleLength;
+let perpendicularFret = 7;
+
+// Each fret runs from its bass-side position to its treble-side position.
+// The treble side is shifted so the chosen fret stands straight, and the
+// nut and the far end lean the opposite ways.
+fn drawFannedBoard(outline, slots) {
+  let shift = fretFrom(bassScale, perpendicularFret) - fretFrom(trebleScale, perpendicularFret);
+  let bassEnd = boardLengthFor(bassScale);
+  let trebleEnd = shift + boardLengthFor(trebleScale);
+  outline.apply {
+    M 0 0
+    L bassEnd 0
+    L trebleEnd endWidth
+    L shift nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let bassX = fretFrom(bassScale, n);
+      let trebleX = shift + fretFrom(trebleScale, n);
+      let w = widthAt(bassX, bassEnd);
+      M bassX 0
+      L trebleX w
+    }
+  }
+}
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)\`\${i + 1}\`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+
+drawFannedBoard(topOutline, topSlots);
+drawFannedBoard(bottomOutline, bottomSlots);
+
+// The straight fret, by position; the lean of the nut and the last fret,
+// from each slot's own tangent (a straight slot points due down: 90°).
+for (fret in bottomSlots.queryAll('command(line):nth(6)')) {
+  bottomMarks.apply {
+    fret.block.draw();
+  }
+}
+for (fret in bottomSlots.queryAll('command(line):nth(0, 21)')) {
+  let lean = deg(fret.block.tangent(0).angle) - 90;
+  bottomLean.apply {
+    text(fret.end.x, fret.end.y + 7)\`\${mm(lean)}°\`;
+  }
+}
+
+topEyebrow.apply {
+  text(25, 48)\`THE FORM, FANNED\`;
+}
+topNote.apply {
+  text(25, 134)\`bass 685.8 mm, treble 647.7 mm, fret 7 straight\`;
+}
+bottomEyebrow.apply {
+  text(25, 166)\`SAME SUBSCRIPTION, LEANING SLOTS\`;
+}
+bottomNote.apply {
+  text(25, 282)\`numbers from the slots' ends, leans from their tangents\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/06-fanned-finale.svg" alt="27 inches on the bass side, 25.5 on the treble, fret 7 straight. The same subscription numbers every leaning slot from its bass end; the first and last frets print their lean from their own tangents." loading="lazy">
+</mini-workspace></p>
+<p>The numbering did not change: a slot&#39;s <code>start</code> is still its bass end,
+whatever angle the slot runs at. The lean of a fret is a new question,
+and the struct answers it too. <code>fret.block.tangent(0).angle</code> is the
+direction the slot runs, in radians. A straight slot points due down,
+so the lean is <code>deg()</code> of that angle, less 90.</p>
+<h2>What this project taught the language</h2>
+<p>This series doubles as a working friction log (<a href="/blog/ask-the-path">part
+1</a> explains the convention). Two entries this time,
+and the first is a fix.</p>
+<p><strong>A text layer&#39;s transform now reaches its text.</strong> The distance column
+was first written as a text layer turned a quarter turn with
+<code>rotate: -0.5pi</code>, which the <a href="/docs#layers-transform-convenience-properties">layers
+reference</a> promises for
+text layers. Every label came out unrotated. The evaluator computed the
+transform and both emitters, the CLI&#39;s and the one the playground and
+VS Code share, dropped it for text layers while honouring it for paths
+and groups. Both now compose the layer&#39;s transform with a per-text
+rotation. The samples ended up using that per-text form instead,
+<code>text(x, y, -90deg)</code>, which turns each label about its own anchor and
+is the better tool for a column of them.</p>
+<p><strong><code>:nth</code> takes literal indices.</strong> The marker frets are written twice in
+the fourth sample, <code>[3, 5, 7, 9, …]</code> for the dots and <code>:nth(2, 4, 6, 8, …)</code> for the tint, and the two lists are kept in step by hand. A
+selector that accepted a list value, or an interpolated <code>:nth</code>, would
+collapse them into one. The same sample also shipped a wrong lean
+before <code>mm()</code> learned to keep a minus sign, which is the <code>toFixed</code>
+entry from part 4 coming due.</p>
+<h2>Where the series lands</h2>
+<p>Five posts, thirty samples, and one rule held throughout: the twin
+never repeats a coordinate. Queries ask a path for things by kind and
+get back structs that know their own geometry; subscriptions let the
+asking happen wherever the drawing does. A linkage dimensioned itself,
+a panel printed its own drill schedule, and a fretboard placed itself
+from a formula. The friction log along the way turned into seven
+evaluator fixes and two in the tooling, and a short list of things the
+language still wants:
+a circle-meets-circle helper, <code>toFixed</code>, per-subpath markers, a column
+primitive for text.</p>
+<p>The reference pages are <a href="/docs#path-queries-path-queries">Path Queries</a>
+and <a href="/docs#subscriptions-subscriptions">Subscriptions</a>. Every sample
+above opens in the playground with one click: change the scale length
+and watch the board re-solve.</p>
+`,
+  'the-panel-prints-its-own-drill-schedule': `<p><em>Part 4 of 5 in Drawing Without Bookkeeping — a form on one side, its
+annotated twin on the other, and nothing copied between them.</em></p>
+<blockquote>
+<p><strong>Series: Drawing Without Bookkeeping</strong></p>
+<ol>
+<li><a href="/blog/ask-the-path">Ask the Path</a> — <code>query()</code> and <code>queryAll()</code></li>
+<li><a href="/blog/thinking-and-drawing-in-parallel">Thinking and Drawing in Parallel</a> — <code>subscribe()</code></li>
+<li><a href="/blog/a-linkage-that-dimensions-itself">A Linkage That Dimensions Itself</a> — a four-bar linkage</li>
+<li><strong>The Panel Prints Its Own Drill Schedule</strong> (this post) — a Eurorack front panel</li>
+<li><a href="/blog/the-fretboard-is-a-formula">The Fretboard Is a Formula</a> — a fretboard from one scale length</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes the selector grammar from <a href="/blog/ask-the-path">Ask the
+Path</a>, the subscription model from <a href="/blog/thinking-and-drawing-in-parallel">Thinking and
+Drawing in Parallel</a>, and the
+<code>call</code> noun in particular: everything one statement drew, as one match.
+The panel idiom is the series&#39;: a form on the left, its twin on the
+right. Group layers and their <code>scale</code> are in the
+<a href="/docs#layers-transform-convenience-properties">layers reference</a>.</p>
+</blockquote>
+<p>A <strong>Eurorack</strong> module is a circuit behind a front panel, and the panel is
+a constraint grid. It is <strong>3U</strong> tall, three rack units, which the rail
+standard makes 128.5 mm. Its width is a whole number of <strong>HP</strong>, horizontal pitch, at
+5.08 mm each, less a hair of clearance. Two <strong>rail slots</strong> near the top
+and bottom edges take the mounting screws, at positions the standard
+fixes from the left edge; wide panels get a second pair. Then come the
+holes that matter to the circuit: jacks, pots, a LED. Builders keep these
+numbers in wiki tables and re-derive them per module.</p>
+<p>The one artifact the panel shop needs is the <strong>drill schedule</strong>: a table
+of hole numbers, diameters and centre coordinates, in millimetres. Today
+it is typed out by hand from the drawing, and it is wrong the moment a
+jack moves. This post draws the panel as a form and lets the twin print
+the schedule.</p>
+<h2>Drawn in millimetres</h2>
+<p>Every sample draws the panel in millimetres. A group layer carries the
+page position and a <code>scale</code> of 1.4, and everything inside it is authored
+in real units:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">rightPanel</span> = <span class="tp">GroupLayer</span>(<span class="str">'right'</span>) #{
+  <span class="pr">translate-x</span>: <span class="num">220</span>;
+  <span class="pr">translate-y</span>: <span class="num">40</span>;
+  <span class="pr">scale</span>: <span class="num">1.4</span>;
+};
+</code></pre><p>Layer records are kept in the layer&#39;s own coordinates, so a query on a
+layer inside that group answers in millimetres, and a text layer inside
+the group prints them without conversion. The schedule is true because
+nothing between the hole and the table ever multiplied by 1.4. Hole 1
+reports x = 15.1 in the schedule, which is millimetres across the panel.
+On the page that same hole sits 21.1 units from the panel&#39;s left edge,
+and no query ever sees that number.</p>
+<p>The form itself is short. One number at the top, <code>hp</code>, sets the width.
+A <code>slot()</code> function draws a rail slot where the standard puts it, and
+<code>drawHoles()</code> places every control on quarters of whatever the width
+turns out to be, each one a <code>circle()</code> call named where it is drawn:</p>
+<pre><code class="hljs language-pathogen"><span class="id">circle</span>(<span class="id">mid</span>, <span class="num">24</span>, <span class="num">3.5</span>) as <span class="id">segment</span>(<span class="str">'rate'</span>);
+<span class="id">circle</span>(<span class="id">left</span>, <span class="num">82</span>, <span class="num">3</span>) as <span class="id">segment</span>(<span class="str">'in'</span>);
+</code></pre><p>The third argument is a radius, so those are the ⌀7 hole a 9 mm pot
+needs and the ⌀6 a 3.5 mm jack needs; the LED is ⌀3.</p>
+<p><mini-workspace code-open caption="Left: a 6HP panel — outline, two rail slots, nine holes — from one number. Right: what the holes layer reports when asked for call(circle), call(slot) and segment, with the size the form was built from underneath.">
+  <code>//-- A 6HP Eurorack panel drawn in millimetres: the outline, the rail
+//-- slots, and every hole as a circle() call. Right: what the holes layer
+//-- can already say about itself.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The panel, in millimetres. HP is the parameter. ──────────
+let hp = 6;
+let height = 128.5;
+let unit = 5.08;
+let width = hp * unit - 0.3;
+
+// A rail slot: 5.5 × 3.2, centred where the rail standard wants it.
+fn slot(cx, cy) {
+  roundRect(cx - 2.75,
+      cy - 1.6,
+      5.5,
+      3.2,
+      1.6);
+}
+
+// Every hole the panel needs, named where it is drawn. Jacks are ⌀6,
+// pots ⌀7, the LED ⌀3; columns sit on quarters of whatever the width is.
+fn drawHoles(holes) {
+  let mid = width / 2;
+  let left = width / 4;
+  let right = width * 3 / 4;
+  holes.apply {
+    slot(7.5, 3);
+    slot(7.5, height - 3);
+    if (hp &gt;= 10) {
+      slot(width - 7.5, 3);
+      slot(width - 7.5, height - 3);
+    }
+    circle(mid, 24, 3.5) as segment('rate');
+    circle(mid, 48, 3.5) as segment('depth');
+    circle(mid, 64, 1.5) as segment('led');
+    circle(left, 82, 3) as segment('in');
+    circle(right, 82, 3) as segment('cv');
+    circle(left, 98, 3) as segment('out-a');
+    circle(right, 98, 3) as segment('out-b');
+    circle(left, 114, 3) as segment('sync');
+    circle(right, 114, 3) as segment('gate');
+  }
+}
+
+fn drawOutline(outline) {
+  outline.apply {
+    roundRect(0,
+        0,
+        width,
+        height,
+        1.5);
+  }
+}
+
+// One decimal, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let tenths = round(abs(value) * 10);
+  let whole = floor(tenths / 10);
+  return \`\${sign}\${whole}.\${tenths - whole * 10}\`;
+}
+
+// ─── Left panel: page position and scale, children in millimetres ──
+let leftPanel = GroupLayer('left') #{
+  translate-x: 80;
+  translate-y: 40;
+  scale: 1.4;
+};
+let leftOutline = PathLayer('left-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let leftHoles = PathLayer('left-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+leftPanel.append(leftOutline, leftHoles);
+// ─── Right panel: page position and scale, children in millimetres ──
+let rightPanel = GroupLayer('right') #{
+  translate-x: 220;
+  translate-y: 40;
+  scale: 1.4;
+};
+let rightOutline = PathLayer('right-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let rightHoles = PathLayer('right-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let rightTable = TextLayer('right-table') #{
+  font-family: font;
+  font-size: 5.5;
+  font-weight: 700;
+  letter-spacing: 0.3;
+  fill: points;
+  text-anchor: start;
+};
+rightPanel.append(rightOutline, rightHoles, rightTable);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+drawOutline(leftOutline);
+drawHoles(leftHoles);
+drawOutline(rightOutline);
+drawHoles(rightHoles);
+
+// Asked, not counted: the calls the holes layer recorded, by name.
+let holes = rightHoles.queryAll('call(circle)');
+let slots = rightHoles.queryAll('call(slot)');
+let named = rightHoles.queryAll('segment');
+rightTable.apply {
+  text(40, 24)\`\${holes.length} round holes\`;
+  text(40, 32)\`\${slots.length} rail slots\`;
+  text(40, 40)\`\${named.length} named controls\`;
+  text(40, 52)\`width \${mm(width)} mm\`;
+  text(40, 60)\`height \${height} mm\`;
+}
+
+leftEyebrow.apply {
+  text(80, 30)\`THE FORM, 6HP\`;
+}
+leftNote.apply {
+  text(80, 242)\`one number at the top: hp\`;
+}
+rightEyebrow.apply {
+  text(220, 30)\`CALL, ASKED\`;
+}
+rightNote.apply {
+  text(220, 242)\`every count is a query\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 190 30
+  L 190 235
+}
+</code>
+  <img src="/blog/samples/post55/01-bare-panel.svg" alt="Left: a 6HP panel — outline, two rail slots, nine holes — from one number. Right: what the holes layer reports when asked for call(circle), call(slot) and segment, with the size the form was built from underneath." loading="lazy">
+</mini-workspace></p>
+<p>Read the right panel&#39;s third line. The slots were drawn by a function
+called <code>slot</code>, and a <code>call</code> is the statement you wrote, so they answer
+to <code>call(slot)</code> and never get mixed in with the circles. That is the
+rule part 1 stated as a caveat, doing useful work. The circles sit
+inside <code>drawHoles()</code> too, and they still answer to <code>call(circle)</code>:
+statements written inside a layer&#39;s own <code>apply</code> block are that layer&#39;s
+calls, wherever the block was opened. It is the call inside <code>slot()</code>
+that is hidden behind the function&#39;s name.</p>
+<h2>Numbered in drawing order</h2>
+<p>A subscription on <code>call(circle)</code> delivers each hole as it was recorded.
+The callback gets the hole&#39;s block, and the block knows its centre and
+its bounding box, which is to say the hole&#39;s position and diameter:</p>
+<pre><code class="hljs language-pathogen"><span class="id">rightHoles</span>.<span class="id">subscribe</span>(<span class="str">'call(circle)'</span>) {|<span class="id">hole</span>, <span class="id">i</span>|
+  <span class="kw">let</span> <span class="id">centre</span> = <span class="id">hole</span>.<span class="id">block</span>.<span class="id">centerPoint</span>();
+  <span class="kw">let</span> <span class="id">r</span> = <span class="id">hole</span>.<span class="id">block</span>.<span class="id">boundingBox</span>().<span class="id">width</span> / <span class="num">2</span>;
+  ...
+};
+</code></pre><p><mini-workspace code-open caption="One subscription on call(circle): a centre cross through every hole and its number just outside the rim, in drawing order. The slots are not circles and are left alone.">
+  <code>//-- Every hole numbered and crossed by one subscription on call(circle):
+//-- the number just outside its rim, the cross on its centre, in drawing order.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The panel, in millimetres. HP is the parameter. ──────────
+let hp = 6;
+let height = 128.5;
+let unit = 5.08;
+let width = hp * unit - 0.3;
+
+// A rail slot: 5.5 × 3.2, centred where the rail standard wants it.
+fn slot(cx, cy) {
+  roundRect(cx - 2.75,
+      cy - 1.6,
+      5.5,
+      3.2,
+      1.6);
+}
+
+// Every hole the panel needs, named where it is drawn. Jacks are ⌀6,
+// pots ⌀7, the LED ⌀3; columns sit on quarters of whatever the width is.
+fn drawHoles(holes) {
+  let mid = width / 2;
+  let left = width / 4;
+  let right = width * 3 / 4;
+  holes.apply {
+    slot(7.5, 3);
+    slot(7.5, height - 3);
+    if (hp &gt;= 10) {
+      slot(width - 7.5, 3);
+      slot(width - 7.5, height - 3);
+    }
+    circle(mid, 24, 3.5) as segment('rate');
+    circle(mid, 48, 3.5) as segment('depth');
+    circle(mid, 64, 1.5) as segment('led');
+    circle(left, 82, 3) as segment('in');
+    circle(right, 82, 3) as segment('cv');
+    circle(left, 98, 3) as segment('out-a');
+    circle(right, 98, 3) as segment('out-b');
+    circle(left, 114, 3) as segment('sync');
+    circle(right, 114, 3) as segment('gate');
+  }
+}
+
+fn drawOutline(outline) {
+  outline.apply {
+    roundRect(0,
+        0,
+        width,
+        height,
+        1.5);
+  }
+}
+
+// One decimal, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let tenths = round(abs(value) * 10);
+  let whole = floor(tenths / 10);
+  return \`\${sign}\${whole}.\${tenths - whole * 10}\`;
+}
+
+// ─── Left panel: page position and scale, children in millimetres ──
+let leftPanel = GroupLayer('left') #{
+  translate-x: 80;
+  translate-y: 40;
+  scale: 1.4;
+};
+let leftOutline = PathLayer('left-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let leftHoles = PathLayer('left-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+leftPanel.append(leftOutline, leftHoles);
+// ─── Right panel: page position and scale, children in millimetres ──
+let rightPanel = GroupLayer('right') #{
+  translate-x: 220;
+  translate-y: 40;
+  scale: 1.4;
+};
+let rightOutline = PathLayer('right-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let rightHoles = PathLayer('right-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let rightCrosses = PathLayer('right-crosses') #{
+  stroke: points;
+  stroke-width: 0.35;
+  fill: none;
+};
+let rightNumbers = TextLayer('right-numbers') #{
+  font-family: font;
+  font-size: 3.6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: start;
+};
+rightPanel.append(rightOutline, rightHoles, rightCrosses, rightNumbers);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a hole is drawn: each circle() the twin's holes layer
+// records gets a centre cross and its number just outside its rim.
+rightHoles.subscribe('call(circle)') {|hole, i|
+  let centre = hole.block.centerPoint();
+  rightCrosses.apply {
+    M calc(centre.x - 1.2) centre.y
+    L calc(centre.x + 1.2) centre.y
+    M centre.x calc(centre.y - 1.2)
+    L centre.x calc(centre.y + 1.2)
+  }
+  let r = hole.block.boundingBox().width / 2;
+  rightNumbers.apply {
+    text(centre.x + r + 0.6, centre.y - r + 1.2)\`\${i + 1}\`;
+  }
+};
+
+drawOutline(leftOutline);
+drawHoles(leftHoles);
+drawOutline(rightOutline);
+drawHoles(rightHoles);
+
+leftEyebrow.apply {
+  text(80, 30)\`THE FORM\`;
+}
+leftNote.apply {
+  text(80, 242)\`nine holes, two slots\`;
+}
+rightEyebrow.apply {
+  text(220, 30)\`CALL(CIRCLE), SUBSCRIBED\`;
+}
+rightNote.apply {
+  text(220, 242)\`numbered in drawing order\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 190 30
+  L 190 235
+}
+</code>
+  <img src="/blog/samples/post55/02-holes-numbered.svg" alt="One subscription on call(circle): a centre cross through every hole and its number just outside the rim, in drawing order. The slots are not circles and are left alone." loading="lazy">
+</mini-workspace></p>
+<p>The variable is <code>centre</code> and not <code>c</code>, for the reason part 3 gave: in
+path-argument position, <code>c</code> is the cubic command.</p>
+<h2>The schedule</h2>
+<p>The schedule is a query over the same layer, printed as a table in a
+monospace text layer inside the group. Each row is the hole&#39;s number,
+its diameter from the block&#39;s bounding box, and its centre. The numbers
+are rounded to a tenth of a millimetre by a four-line <code>mm()</code> helper,
+because there is no <code>toFixed</code> yet, and the friction log says so.</p>
+<p><mini-workspace code-open caption="The drill schedule the panel shop needs: number, diameter, x and y for every hole, plus the slot count and the panel size, every value read from the holes layer in millimetres.">
+  <code>//-- The drill schedule the panel shop needs, printed by the panel: one row
+//-- per hole with its number, diameter and centre, all read from the form.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The panel, in millimetres. HP is the parameter. ──────────
+let hp = 6;
+let height = 128.5;
+let unit = 5.08;
+let width = hp * unit - 0.3;
+
+// A rail slot: 5.5 × 3.2, centred where the rail standard wants it.
+fn slot(cx, cy) {
+  roundRect(cx - 2.75,
+      cy - 1.6,
+      5.5,
+      3.2,
+      1.6);
+}
+
+// Every hole the panel needs, named where it is drawn. Jacks are ⌀6,
+// pots ⌀7, the LED ⌀3; columns sit on quarters of whatever the width is.
+fn drawHoles(holes) {
+  let mid = width / 2;
+  let left = width / 4;
+  let right = width * 3 / 4;
+  holes.apply {
+    slot(7.5, 3);
+    slot(7.5, height - 3);
+    if (hp &gt;= 10) {
+      slot(width - 7.5, 3);
+      slot(width - 7.5, height - 3);
+    }
+    circle(mid, 24, 3.5) as segment('rate');
+    circle(mid, 48, 3.5) as segment('depth');
+    circle(mid, 64, 1.5) as segment('led');
+    circle(left, 82, 3) as segment('in');
+    circle(right, 82, 3) as segment('cv');
+    circle(left, 98, 3) as segment('out-a');
+    circle(right, 98, 3) as segment('out-b');
+    circle(left, 114, 3) as segment('sync');
+    circle(right, 114, 3) as segment('gate');
+  }
+}
+
+fn drawOutline(outline) {
+  outline.apply {
+    roundRect(0,
+        0,
+        width,
+        height,
+        1.5);
+  }
+}
+
+// One decimal, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let tenths = round(abs(value) * 10);
+  let whole = floor(tenths / 10);
+  return \`\${sign}\${whole}.\${tenths - whole * 10}\`;
+}
+
+// ─── Left panel: page position and scale, children in millimetres ──
+let leftPanel = GroupLayer('left') #{
+  translate-x: 80;
+  translate-y: 40;
+  scale: 1.4;
+};
+let leftOutline = PathLayer('left-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let leftHoles = PathLayer('left-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+leftPanel.append(leftOutline, leftHoles);
+// ─── Right panel: page position and scale, children in millimetres ──
+let rightPanel = GroupLayer('right') #{
+  translate-x: 220;
+  translate-y: 40;
+  scale: 1.4;
+};
+let rightOutline = PathLayer('right-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let rightHoles = PathLayer('right-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let rightCrosses = PathLayer('right-crosses') #{
+  stroke: points;
+  stroke-width: 0.35;
+  fill: none;
+};
+let rightNumbers = TextLayer('right-numbers') #{
+  font-family: font;
+  font-size: 3.6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: start;
+};
+let rightColumns = TextLayer('right-columns') #{
+  font-family: mono;
+  font-size: 4.6;
+  letter-spacing: 0;
+  fill: fg_auto;
+  text-anchor: end;
+};
+let rightRows = TextLayer('right-rows') #{
+  font-family: mono;
+  font-size: 4.6;
+  letter-spacing: 0;
+  fill: fg_muted;
+  text-anchor: start;
+};
+rightPanel.append(rightOutline,
+    rightHoles,
+    rightCrosses,
+    rightNumbers,
+    rightColumns,
+    rightRows);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a hole is drawn: each circle() the twin's holes layer
+// records gets a centre cross and its number just outside its rim.
+rightHoles.subscribe('call(circle)') {|hole, i|
+  let centre = hole.block.centerPoint();
+  rightCrosses.apply {
+    M calc(centre.x - 1.2) centre.y
+    L calc(centre.x + 1.2) centre.y
+    M centre.x calc(centre.y - 1.2)
+    L centre.x calc(centre.y + 1.2)
+  }
+  let r = hole.block.boundingBox().width / 2;
+  rightNumbers.apply {
+    text(centre.x + r + 0.6, centre.y - r + 1.2)\`\${i + 1}\`;
+  }
+};
+// The drill schedule: one row per hole, in drawing order, every value read
+// from the hole's own block — its centre and its bounding box. The number
+// columns are end-anchored so the decimal points line up.
+fn schedule(source, col, rows, x0,
+    y0) {
+  let holes = source.queryAll('call(circle)');
+  col.apply {
+    text(x0 + 2, y0)\`#\`;
+    text(x0 + 13, y0)\`⌀\`;
+    text(x0 + 26, y0)\`x\`;
+    text(x0 + 42, y0)\`y\`;
+    for ([hole, i] in holes) {
+      let centre = hole.block.centerPoint();
+      let box = hole.block.boundingBox();
+      let y = y0 + 6 * (i + 1);
+      text(x0 + 2, y)\`\${i + 1}\`;
+      text(x0 + 13, y)\`\${mm(box.width)}\`;
+      text(x0 + 26, y)\`\${mm(centre.x)}\`;
+      text(x0 + 42, y)\`\${mm(centre.y)}\`;
+    }
+  }
+  let slots = source.queryAll('call(slot)');
+  let slotBox = source.query('call(slot)').block.boundingBox();
+  rows.apply {
+    text(x0, y0 + 6 * (holes.length + 2))\`\${slots.length} rail slots \${mm(slotBox.width)} × \${mm(slotBox.height)}\`;
+    text(x0, y0 + 6 * (holes.length + 3))\`\${holes.length} holes, \${hp}HP, \${mm(width)} × \${height}\`;
+  }
+}
+
+drawOutline(leftOutline);
+drawHoles(leftHoles);
+drawOutline(rightOutline);
+drawHoles(rightHoles);
+
+schedule(rightHoles,
+    rightColumns,
+    rightRows,
+    40,
+    8);
+
+leftEyebrow.apply {
+  text(80, 30)\`THE FORM\`;
+}
+leftNote.apply {
+  text(80, 242)\`drawn once, in millimetres\`;
+}
+rightEyebrow.apply {
+  text(220, 30)\`THE DRILL SCHEDULE\`;
+}
+rightNote.apply {
+  text(220, 242)\`#, ⌀, x, y — from each hole's block\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 190 30
+  L 190 235
+}
+</code>
+  <img src="/blog/samples/post55/03-drill-schedule.svg" alt="The drill schedule the panel shop needs: number, diameter, x and y for every hole, plus the slot count and the panel size, every value read from the holes layer in millimetres." loading="lazy">
+</mini-workspace></p>
+<p>Nothing in the table was typed, the slot size in the footer included:
+it is the bounding box of the first <code>call(slot)</code>. Move a jack in
+<code>drawHoles()</code> and its row follows; add a hole and the table grows by
+one.</p>
+<h2>The legend</h2>
+<p>The <strong>legend</strong> is the printing on the panel itself: a name under every
+control and a scale arc round every pot, the 270° sweep with a tick at
+each end and one at noon. The names came from the form, where every <code>circle()</code> was drawn
+<code>as segment(&#39;…&#39;)</code>, so the twin asks for <code>segment</code> and gets the label
+with the block. The pots are <code>segment(rate), segment(depth)</code>, and the
+arc&#39;s radius is the hole&#39;s own radius plus a margin.</p>
+<p><mini-workspace code-open caption="The legend layer: a name under every named control, and a scale arc with three ticks round each pot, both placed from the hole's centre and diameter.">
+  <code>//-- The legend a panel prints on itself: a name under every control and a
+//-- scale arc round every pot, placed from the holes the form already drew.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let legend = oklch(0.55 0.16 200);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The panel, in millimetres. HP is the parameter. ──────────
+let hp = 6;
+let height = 128.5;
+let unit = 5.08;
+let width = hp * unit - 0.3;
+
+// A rail slot: 5.5 × 3.2, centred where the rail standard wants it.
+fn slot(cx, cy) {
+  roundRect(cx - 2.75,
+      cy - 1.6,
+      5.5,
+      3.2,
+      1.6);
+}
+
+// Every hole the panel needs, named where it is drawn. Jacks are ⌀6,
+// pots ⌀7, the LED ⌀3; columns sit on quarters of whatever the width is.
+fn drawHoles(holes) {
+  let mid = width / 2;
+  let left = width / 4;
+  let right = width * 3 / 4;
+  holes.apply {
+    slot(7.5, 3);
+    slot(7.5, height - 3);
+    if (hp &gt;= 10) {
+      slot(width - 7.5, 3);
+      slot(width - 7.5, height - 3);
+    }
+    circle(mid, 24, 3.5) as segment('rate');
+    circle(mid, 48, 3.5) as segment('depth');
+    circle(mid, 64, 1.5) as segment('led');
+    circle(left, 82, 3) as segment('in');
+    circle(right, 82, 3) as segment('cv');
+    circle(left, 98, 3) as segment('out-a');
+    circle(right, 98, 3) as segment('out-b');
+    circle(left, 114, 3) as segment('sync');
+    circle(right, 114, 3) as segment('gate');
+  }
+}
+
+fn drawOutline(outline) {
+  outline.apply {
+    roundRect(0,
+        0,
+        width,
+        height,
+        1.5);
+  }
+}
+
+// One decimal, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let tenths = round(abs(value) * 10);
+  let whole = floor(tenths / 10);
+  return \`\${sign}\${whole}.\${tenths - whole * 10}\`;
+}
+
+// ─── Left panel: page position and scale, children in millimetres ──
+let leftPanel = GroupLayer('left') #{
+  translate-x: 80;
+  translate-y: 40;
+  scale: 1.4;
+};
+let leftOutline = PathLayer('left-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let leftHoles = PathLayer('left-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+leftPanel.append(leftOutline, leftHoles);
+// ─── Right panel: page position and scale, children in millimetres ──
+let rightPanel = GroupLayer('right') #{
+  translate-x: 220;
+  translate-y: 40;
+  scale: 1.4;
+};
+let rightOutline = PathLayer('right-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let rightHoles = PathLayer('right-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let rightArcs = PathLayer('right-arcs') #{
+  stroke: legend;
+  stroke-width: 0.4;
+  fill: none;
+};
+let rightLegend = TextLayer('right-legend') #{
+  font-family: font;
+  font-size: 3.6;
+  font-weight: 700;
+  letter-spacing: 0.3;
+  fill: legend;
+  text-anchor: middle;
+};
+rightPanel.append(rightOutline, rightHoles, rightArcs, rightLegend);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// A pot's scale: a 270° arc round the hole with a tick at each end and one
+// at noon. The arc's radius is the hole's plus a margin — both from the block.
+fn scaleArc(hole) {
+  let centre = hole.block.centerPoint();
+  let r = hole.block.boundingBox().width / 2 + 2.2;
+  let startX = centre.x + r * cos(135deg);
+  let startY = centre.y + r * sin(135deg);
+  let endX = centre.x + r * cos(45deg);
+  let endY = centre.y + r * sin(45deg);
+  rightArcs.apply {
+    M startX startY
+    A r r 0 1 1 endX endY
+    M startX startY
+    L calc(centre.x + (r + 1.2) * cos(135deg)) calc(centre.y + (r + 1.2) * sin(135deg))
+    M endX endY
+    L calc(centre.x + (r + 1.2) * cos(45deg)) calc(centre.y + (r + 1.2) * sin(45deg))
+    M centre.x calc(centre.y - r)
+    L centre.x calc(centre.y - r - 1.2)
+  }
+}
+
+drawOutline(leftOutline);
+drawHoles(leftHoles);
+drawOutline(rightOutline);
+drawHoles(rightHoles);
+
+// Names came from the form: every circle() was drawn \`as segment('…')\`.
+for (control in rightHoles.queryAll('segment')) {
+  let centre = control.block.centerPoint();
+  let r = control.block.boundingBox().width / 2;
+  rightLegend.apply {
+    text(centre.x, centre.y + r + 5.4)\`\${control.label}\`;
+  }
+}
+for (pot in rightHoles.queryAll('segment(rate), segment(depth)')) {
+  scaleArc(pot);
+}
+
+leftEyebrow.apply {
+  text(80, 30)\`THE FORM\`;
+}
+leftNote.apply {
+  text(80, 242)\`holes only\`;
+}
+rightEyebrow.apply {
+  text(220, 30)\`THE LEGEND\`;
+}
+rightNote.apply {
+  text(220, 242)\`names from segment, arcs from the pots\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 190 30
+  L 190 235
+}
+</code>
+  <img src="/blog/samples/post55/04-legend-layer.svg" alt="The legend layer: a name under every named control, and a scale arc with three ticks round each pot, both placed from the hole's centre and diameter." loading="lazy">
+</mini-workspace></p>
+<h2>HP is the parameter</h2>
+<p>Change <code>hp</code> from 6 to 10; nothing about the panel is touched. The page
+positions shift a little to fit the wider outline. The outline widens to
+50.5 mm and the two jack columns re-flow onto the wider quarters. From
+10 HP the sample adds a second pair of rail slots at the right edge, the
+way wide panels are usually mounted. The schedule prints the new
+coordinates.</p>
+<p><mini-workspace code-open caption="The same file at hp = 10: a wider outline, four rail slots, the columns re-flowed, and a schedule with the new coordinates and the new slot count. Nothing in the panel's own definition changed.">
+  <code>//-- HP is the parameter. The same file at 10HP: the outline widens, a second
+//-- pair of rail slots appears, the columns re-flow, and the schedule follows.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The panel, in millimetres. HP is the parameter. ──────────
+let hp = 10;
+let height = 128.5;
+let unit = 5.08;
+let width = hp * unit - 0.3;
+
+// A rail slot: 5.5 × 3.2, centred where the rail standard wants it.
+fn slot(cx, cy) {
+  roundRect(cx - 2.75,
+      cy - 1.6,
+      5.5,
+      3.2,
+      1.6);
+}
+
+// Every hole the panel needs, named where it is drawn. Jacks are ⌀6,
+// pots ⌀7, the LED ⌀3; columns sit on quarters of whatever the width is.
+fn drawHoles(holes) {
+  let mid = width / 2;
+  let left = width / 4;
+  let right = width * 3 / 4;
+  holes.apply {
+    slot(7.5, 3);
+    slot(7.5, height - 3);
+    if (hp &gt;= 10) {
+      slot(width - 7.5, 3);
+      slot(width - 7.5, height - 3);
+    }
+    circle(mid, 24, 3.5) as segment('rate');
+    circle(mid, 48, 3.5) as segment('depth');
+    circle(mid, 64, 1.5) as segment('led');
+    circle(left, 82, 3) as segment('in');
+    circle(right, 82, 3) as segment('cv');
+    circle(left, 98, 3) as segment('out-a');
+    circle(right, 98, 3) as segment('out-b');
+    circle(left, 114, 3) as segment('sync');
+    circle(right, 114, 3) as segment('gate');
+  }
+}
+
+fn drawOutline(outline) {
+  outline.apply {
+    roundRect(0,
+        0,
+        width,
+        height,
+        1.5);
+  }
+}
+
+// One decimal, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let tenths = round(abs(value) * 10);
+  let whole = floor(tenths / 10);
+  return \`\${sign}\${whole}.\${tenths - whole * 10}\`;
+}
+
+// ─── Left panel: page position and scale, children in millimetres ──
+let leftPanel = GroupLayer('left') #{
+  translate-x: 60;
+  translate-y: 40;
+  scale: 1.4;
+};
+let leftOutline = PathLayer('left-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let leftHoles = PathLayer('left-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+leftPanel.append(leftOutline, leftHoles);
+// ─── Right panel: page position and scale, children in millimetres ──
+let rightPanel = GroupLayer('right') #{
+  translate-x: 210;
+  translate-y: 40;
+  scale: 1.4;
+};
+let rightOutline = PathLayer('right-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let rightHoles = PathLayer('right-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let rightCrosses = PathLayer('right-crosses') #{
+  stroke: points;
+  stroke-width: 0.35;
+  fill: none;
+};
+let rightNumbers = TextLayer('right-numbers') #{
+  font-family: font;
+  font-size: 3.6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: start;
+};
+let rightColumns = TextLayer('right-columns') #{
+  font-family: mono;
+  font-size: 4.6;
+  letter-spacing: 0;
+  fill: fg_auto;
+  text-anchor: end;
+};
+let rightRows = TextLayer('right-rows') #{
+  font-family: mono;
+  font-size: 4.6;
+  letter-spacing: 0;
+  fill: fg_muted;
+  text-anchor: start;
+};
+rightPanel.append(rightOutline,
+    rightHoles,
+    rightCrosses,
+    rightNumbers,
+    rightColumns,
+    rightRows);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a hole is drawn: each circle() the twin's holes layer
+// records gets a centre cross and its number just outside its rim.
+rightHoles.subscribe('call(circle)') {|hole, i|
+  let centre = hole.block.centerPoint();
+  rightCrosses.apply {
+    M calc(centre.x - 1.2) centre.y
+    L calc(centre.x + 1.2) centre.y
+    M centre.x calc(centre.y - 1.2)
+    L centre.x calc(centre.y + 1.2)
+  }
+  let r = hole.block.boundingBox().width / 2;
+  rightNumbers.apply {
+    text(centre.x + r + 0.6, centre.y - r + 1.2)\`\${i + 1}\`;
+  }
+};
+// The drill schedule: one row per hole, in drawing order, every value read
+// from the hole's own block — its centre and its bounding box. The number
+// columns are end-anchored so the decimal points line up.
+fn schedule(source, col, rows, x0,
+    y0) {
+  let holes = source.queryAll('call(circle)');
+  col.apply {
+    text(x0 + 2, y0)\`#\`;
+    text(x0 + 13, y0)\`⌀\`;
+    text(x0 + 26, y0)\`x\`;
+    text(x0 + 42, y0)\`y\`;
+    for ([hole, i] in holes) {
+      let centre = hole.block.centerPoint();
+      let box = hole.block.boundingBox();
+      let y = y0 + 6 * (i + 1);
+      text(x0 + 2, y)\`\${i + 1}\`;
+      text(x0 + 13, y)\`\${mm(box.width)}\`;
+      text(x0 + 26, y)\`\${mm(centre.x)}\`;
+      text(x0 + 42, y)\`\${mm(centre.y)}\`;
+    }
+  }
+  let slots = source.queryAll('call(slot)');
+  let slotBox = source.query('call(slot)').block.boundingBox();
+  rows.apply {
+    text(x0, y0 + 6 * (holes.length + 2))\`\${slots.length} rail slots \${mm(slotBox.width)} × \${mm(slotBox.height)}\`;
+    text(x0, y0 + 6 * (holes.length + 3))\`\${holes.length} holes, \${hp}HP, \${mm(width)} × \${height}\`;
+  }
+}
+
+drawOutline(leftOutline);
+drawHoles(leftHoles);
+drawOutline(rightOutline);
+drawHoles(rightHoles);
+
+schedule(rightHoles,
+    rightColumns,
+    rightRows,
+    60,
+    8);
+
+leftEyebrow.apply {
+  text(60, 30)\`THE FORM, \${hp}HP\`;
+}
+leftNote.apply {
+  text(60, 242)\`hp = \${hp}: four slots now\`;
+}
+rightEyebrow.apply {
+  text(210, 30)\`THE SCHEDULE FOLLOWS\`;
+}
+rightNote.apply {
+  text(210, 242)\`nothing else in the file changed\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 190 30
+  L 190 235
+}
+</code>
+  <img src="/blog/samples/post55/05-hp-wiggle.svg" alt="The same file at hp = 10: a wider outline, four rail slots, the columns re-flowed, and a schedule with the new coordinates and the new slot count. Nothing in the panel's own definition changed." loading="lazy">
+</mini-workspace></p>
+<h2>The handoff</h2>
+<p>Two drawings from one source, side by side: the panel the builder sees,
+with its legend, and the drill drawing the panel shop gets, with its
+numbered holes and its schedule. The left panel is no longer the bare
+form. It is the form plus its legend, which is what the builder is
+handed.</p>
+<p><mini-workspace code-open caption="Left: the finished panel with its legend. Right: the drill drawing with numbered holes and the schedule. One form, two audiences, no copying.">
+  <code>//-- The handoff drawing: the panel with its legend on the left, the drill
+//-- drawing with numbered holes and the schedule on the right — one source.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let legend = oklch(0.55 0.16 200);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The panel, in millimetres. HP is the parameter. ──────────
+let hp = 6;
+let height = 128.5;
+let unit = 5.08;
+let width = hp * unit - 0.3;
+
+// A rail slot: 5.5 × 3.2, centred where the rail standard wants it.
+fn slot(cx, cy) {
+  roundRect(cx - 2.75,
+      cy - 1.6,
+      5.5,
+      3.2,
+      1.6);
+}
+
+// Every hole the panel needs, named where it is drawn. Jacks are ⌀6,
+// pots ⌀7, the LED ⌀3; columns sit on quarters of whatever the width is.
+fn drawHoles(holes) {
+  let mid = width / 2;
+  let left = width / 4;
+  let right = width * 3 / 4;
+  holes.apply {
+    slot(7.5, 3);
+    slot(7.5, height - 3);
+    if (hp &gt;= 10) {
+      slot(width - 7.5, 3);
+      slot(width - 7.5, height - 3);
+    }
+    circle(mid, 24, 3.5) as segment('rate');
+    circle(mid, 48, 3.5) as segment('depth');
+    circle(mid, 64, 1.5) as segment('led');
+    circle(left, 82, 3) as segment('in');
+    circle(right, 82, 3) as segment('cv');
+    circle(left, 98, 3) as segment('out-a');
+    circle(right, 98, 3) as segment('out-b');
+    circle(left, 114, 3) as segment('sync');
+    circle(right, 114, 3) as segment('gate');
+  }
+}
+
+fn drawOutline(outline) {
+  outline.apply {
+    roundRect(0,
+        0,
+        width,
+        height,
+        1.5);
+  }
+}
+
+// One decimal, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let tenths = round(abs(value) * 10);
+  let whole = floor(tenths / 10);
+  return \`\${sign}\${whole}.\${tenths - whole * 10}\`;
+}
+
+// ─── Left panel: page position and scale, children in millimetres ──
+let leftPanel = GroupLayer('left') #{
+  translate-x: 80;
+  translate-y: 40;
+  scale: 1.4;
+};
+let leftOutline = PathLayer('left-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let leftHoles = PathLayer('left-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let leftArcs = PathLayer('left-arcs') #{
+  stroke: legend;
+  stroke-width: 0.4;
+  fill: none;
+};
+let leftLegend = TextLayer('left-legend') #{
+  font-family: font;
+  font-size: 3.6;
+  font-weight: 700;
+  letter-spacing: 0.3;
+  fill: legend;
+  text-anchor: middle;
+};
+leftPanel.append(leftOutline, leftHoles, leftArcs, leftLegend);
+// ─── Right panel: page position and scale, children in millimetres ──
+let rightPanel = GroupLayer('right') #{
+  translate-x: 220;
+  translate-y: 40;
+  scale: 1.4;
+};
+let rightOutline = PathLayer('right-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let rightHoles = PathLayer('right-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let rightCrosses = PathLayer('right-crosses') #{
+  stroke: points;
+  stroke-width: 0.35;
+  fill: none;
+};
+let rightNumbers = TextLayer('right-numbers') #{
+  font-family: font;
+  font-size: 3.6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: start;
+};
+let rightColumns = TextLayer('right-columns') #{
+  font-family: mono;
+  font-size: 4.6;
+  letter-spacing: 0;
+  fill: fg_auto;
+  text-anchor: end;
+};
+let rightRows = TextLayer('right-rows') #{
+  font-family: mono;
+  font-size: 4.6;
+  letter-spacing: 0;
+  fill: fg_muted;
+  text-anchor: start;
+};
+rightPanel.append(rightOutline,
+    rightHoles,
+    rightCrosses,
+    rightNumbers,
+    rightColumns,
+    rightRows);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+fn scaleArc(hole, arcs) {
+  let centre = hole.block.centerPoint();
+  let r = hole.block.boundingBox().width / 2 + 2.2;
+  let startX = centre.x + r * cos(135deg);
+  let startY = centre.y + r * sin(135deg);
+  let endX = centre.x + r * cos(45deg);
+  let endY = centre.y + r * sin(45deg);
+  arcs.apply {
+    M startX startY
+    A r r 0 1 1 endX endY
+    M startX startY
+    L calc(centre.x + (r + 1.2) * cos(135deg)) calc(centre.y + (r + 1.2) * sin(135deg))
+    M endX endY
+    L calc(centre.x + (r + 1.2) * cos(45deg)) calc(centre.y + (r + 1.2) * sin(45deg))
+    M centre.x calc(centre.y - r)
+    L centre.x calc(centre.y - r - 1.2)
+  }
+}
+
+// Declared before a hole is drawn: each circle() the twin's holes layer
+// records gets a centre cross and its number just outside its rim.
+rightHoles.subscribe('call(circle)') {|hole, i|
+  let centre = hole.block.centerPoint();
+  rightCrosses.apply {
+    M calc(centre.x - 1.2) centre.y
+    L calc(centre.x + 1.2) centre.y
+    M centre.x calc(centre.y - 1.2)
+    L centre.x calc(centre.y + 1.2)
+  }
+  let r = hole.block.boundingBox().width / 2;
+  rightNumbers.apply {
+    text(centre.x + r + 0.6, centre.y - r + 1.2)\`\${i + 1}\`;
+  }
+};
+// The drill schedule: one row per hole, in drawing order, every value read
+// from the hole's own block — its centre and its bounding box. The number
+// columns are end-anchored so the decimal points line up.
+fn schedule(source, col, rows, x0,
+    y0) {
+  let holes = source.queryAll('call(circle)');
+  col.apply {
+    text(x0 + 2, y0)\`#\`;
+    text(x0 + 13, y0)\`⌀\`;
+    text(x0 + 26, y0)\`x\`;
+    text(x0 + 42, y0)\`y\`;
+    for ([hole, i] in holes) {
+      let centre = hole.block.centerPoint();
+      let box = hole.block.boundingBox();
+      let y = y0 + 6 * (i + 1);
+      text(x0 + 2, y)\`\${i + 1}\`;
+      text(x0 + 13, y)\`\${mm(box.width)}\`;
+      text(x0 + 26, y)\`\${mm(centre.x)}\`;
+      text(x0 + 42, y)\`\${mm(centre.y)}\`;
+    }
+  }
+  let slots = source.queryAll('call(slot)');
+  let slotBox = source.query('call(slot)').block.boundingBox();
+  rows.apply {
+    text(x0, y0 + 6 * (holes.length + 2))\`\${slots.length} rail slots \${mm(slotBox.width)} × \${mm(slotBox.height)}\`;
+    text(x0, y0 + 6 * (holes.length + 3))\`\${holes.length} holes, \${hp}HP, \${mm(width)} × \${height}\`;
+  }
+}
+
+drawOutline(leftOutline);
+drawHoles(leftHoles);
+drawOutline(rightOutline);
+drawHoles(rightHoles);
+
+// The legend on the finished panel; the schedule on the drill drawing.
+for (control in leftHoles.queryAll('segment')) {
+  let centre = control.block.centerPoint();
+  let r = control.block.boundingBox().width / 2;
+  leftLegend.apply {
+    text(centre.x, centre.y + r + 5.4)\`\${control.label}\`;
+  }
+}
+for (pot in leftHoles.queryAll('segment(rate), segment(depth)')) {
+  scaleArc(pot, leftArcs);
+}
+schedule(rightHoles,
+    rightColumns,
+    rightRows,
+    40,
+    8);
+
+leftEyebrow.apply {
+  text(80, 30)\`THE PANEL\`;
+}
+leftNote.apply {
+  text(80, 242)\`what the builder sees\`;
+}
+rightEyebrow.apply {
+  text(220, 30)\`THE DRILL DRAWING\`;
+}
+rightNote.apply {
+  text(220, 242)\`what the panel shop gets\`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 190 30
+  L 190 235
+}
+</code>
+  <img src="/blog/samples/post55/06-handoff.svg" alt="Left: the finished panel with its legend. Right: the drill drawing with numbered holes and the schedule. One form, two audiences, no copying." loading="lazy">
+</mini-workspace></p>
+<h2>What this project taught the language</h2>
+<p>This series doubles as a working friction log (<a href="/blog/ask-the-path">part
+1</a> explains the convention). The panel was gentler
+than the linkage: two entries, both about numbers as text.</p>
+<p><strong>There is no <code>toFixed</code>.</strong> A drill schedule wants <code>7.0</code>, not <code>7</code>, and
+<code>22.6</code>, not <code>22.60000000000001</code>. <code>round()</code> gives an integer, so the
+samples carry a nine-line <code>mm()</code> helper that rounds to tenths, keeps the
+sign, and glues the whole and the fraction back together. It is fine for
+one decimal and tedious for three, and its first draft was wrong for
+negative numbers, which part 5&#39;s fanned board found. A <code>toFixed(n)</code> on
+numbers, or a format argument on <code>text</code>, is the obvious addition.</p>
+<p><strong>A numeric column is two text layers.</strong> Text is anchored per layer,
+not per call, so a right-aligned column beside a left-aligned one means
+two layers. A footer that should be muted means a third. The schedule
+is one end-anchored layer for the numbers, so the decimal points line
+up, and one start-anchored layer for the footer, which is the friction
+in action. A <code>tab</code> or column primitive on text layers is the
+language-side answer, and it is logged.</p>
+<h2>Where to go next</h2>
+<p>Part 5 ends the series on the luthier&#39;s bench: a fretboard whose every
+slot is placed from one scale length by the twelfth root of two. The
+twin numbers the frets, prints their distances from the nut, and drops
+the marker dots by <code>:nth</code> range, then does it all again for a
+fanned-fret board with two scale lengths.</p>
+<p>The reference pages are <a href="/docs#path-queries-path-queries">Path Queries</a>
+and <a href="/docs#subscriptions-subscriptions">Subscriptions</a>. Every sample
+above opens in the playground with one click: change <code>hp</code> and watch the
+schedule follow.</p>
+`,
   'the-reliable-line': `<p><em>Part 3 of 3 in our series on variable-width strokes.</em></p>
 <blockquote>
 <p><strong>Series: Variable-Width Strokes</strong></p>
@@ -32497,9 +37375,9 @@ annotated twin on the other, and nothing copied between them.</em></p>
 <ol>
 <li><a href="/blog/ask-the-path">Ask the Path</a> — <code>query()</code> and <code>queryAll()</code></li>
 <li><strong>Thinking and Drawing in Parallel</strong> (this post) — <code>subscribe()</code></li>
-<li>A four-bar linkage, dimensioned — coming</li>
-<li>A front panel with its drill schedule — coming</li>
-<li>A fretboard from one scale length — coming</li>
+<li><a href="/blog/a-linkage-that-dimensions-itself">A Linkage That Dimensions Itself</a> — a four-bar linkage</li>
+<li><a href="/blog/the-panel-prints-its-own-drill-schedule">The Panel Prints Its Own Drill Schedule</a> — a Eurorack front panel</li>
+<li><a href="/blog/the-fretboard-is-a-formula">The Fretboard Is a Formula</a> — a fretboard from one scale length</li>
 </ol>
 </blockquote>
 <blockquote>

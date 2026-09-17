@@ -33,3 +33,11 @@ from unlabelled ones: same hue, ringed (`fill: bg_color; stroke: points`).
   read-only; the "Open in playground workspace" button drops the sample into an
   editor. Never "live editor".
 - "bookkeeping": series name only, plus at most one body use per post.
+
+
+## Panel geometry variants (added 2026-09-16, part 3 review item 20)
+
+- Parts 1–2: 480×230, two GroupLayers at translate (40–50, 70–80) and (270–290, 70–80), notes at y 100–122, divider `M 240 45 L 240 200`.
+- Dimensioned figures (part 3, post54): 480×260, translate-y 60, form origin at local (16, 100) or (16, 120) when dimension lines sit below, notes at y 166, divider 40–232. Dimension lines and extension lines need the extra height.
+- Millimetre forms (part 4, post55): 480×260, GroupLayers with `scale: 1.4` at (80, 40) and (220, 40); captions are page-level text layers at y 30 and 242; divider `M 190 30 L 190 235`.
+- Stacked boards (part 5, post56): 480×300, form above at translate-y 62 and twin below at 178, both `scale: 0.9` (0.82 for the fanned board), horizontal divider `M 25 150 L 455 150`, captions at y 48/134 and 166/282.

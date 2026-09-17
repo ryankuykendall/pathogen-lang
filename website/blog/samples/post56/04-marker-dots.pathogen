@@ -1,0 +1,239 @@
+//-- Marker dots by range: the marker frets are picked with one :nth list
+//-- (0-based), and each dot sits in the space before its fret.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value < 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac < 10) {
+    pad = '0';
+  }
+  return `${sign}${whole}.${pad}${frac}`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomMarks = PathLayer('bottom-marks') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomDots = PathLayer('bottom-dots') #{
+  fill: points;
+  stroke: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+bottomPanel.append(bottomOutline,
+    bottomSlots,
+    bottomMarks,
+    bottomDots,
+    bottomNumbers);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)`${i + 1}`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+// Frets 3, 5, 7, 9, 12, 15, 17, 19 and 21 — as :nth counts them, from 0.
+let markerFrets = [
+  3,
+  5,
+  7,
+  9,
+  12,
+  15,
+  17,
+  19,
+  21,
+];
+for (fret in bottomSlots.queryAll('command(line):nth(2, 4, 6, 8, 11, 14, 16, 18, 20)')) {
+  bottomMarks.apply {
+    fret.block.draw();
+  }
+}
+
+// A dot lives in the space before its fret: halfway back to the previous
+// slot, on the board's centre line. The twelfth gets two.
+let frets = bottomSlots.queryAll('command(line)');
+for (n in markerFrets) {
+  let here = frets[n - 1];
+  let before = frets[n - 2];
+  let x = (here.start.x + before.start.x) / 2;
+  let w = (here.end.y + before.end.y) / 2;
+  bottomDots.apply {
+    if (n == 12) {
+      circle(x, w / 3, 2.2);
+      circle(x, w * 2 / 3, 2.2);
+    } else {
+      circle(x, w / 2, 2.2);
+    }
+  }
+}
+
+topEyebrow.apply {
+  text(25, 48)`THE FORM`;
+}
+topNote.apply {
+  text(25, 134)`no dots yet`;
+}
+bottomEyebrow.apply {
+  text(25, 166)`NTH, THEN THE SPACE BEFORE`;
+}
+bottomNote.apply {
+  text(25, 282)`:nth(2, 4, 6, 8, 11, 14, 16, 18, 20) · dots between`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}

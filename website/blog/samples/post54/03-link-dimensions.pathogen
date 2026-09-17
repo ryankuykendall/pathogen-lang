@@ -1,0 +1,248 @@
+//-- Dimension lines from the links themselves: each segment's ends, length,
+//-- label and outward normal draw its own extension lines, arrows and value.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let dims = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// One arrowhead, drawn once with its tip at the origin, rotated into place.
+let tip = @{
+  l -7 -3
+  l 0 6
+  z
+};
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 120 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let extLines = PathLayer('ext-lines') #{
+  stroke: dims;
+  stroke-width: 0.5;
+  fill: none;
+};
+let dimLines = PathLayer('dim-lines') #{
+  stroke: dims;
+  stroke-width: 0.75;
+  fill: none;
+};
+let dimArrows = PathLayer('dim-arrows') #{
+  fill: dims;
+  stroke: none;
+};
+let dimText = TextLayer('dim-text') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: dims;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    extLines,
+    dimLines,
+    dimArrows,
+    dimText);
+
+
+// A dimension line for one link, from what the link already knows: its
+// ends, its length, its label, and its outward normal at the midpoint.
+fn dimension(link, offset) {
+  let bar = link.commands[0];
+  let barNormal = link.block.normal(0.5);
+  let nx = cos(barNormal.angle);
+  let ny = sin(barNormal.angle);
+  let from = bar.start;
+  let to = bar.end;
+  extLines.apply {
+    M calc(from.x + nx * (offset - 10)) calc(from.y + ny * (offset - 10))
+    L calc(from.x + nx * (offset + 4)) calc(from.y + ny * (offset + 4))
+    M calc(to.x + nx * (offset - 10)) calc(to.y + ny * (offset - 10))
+    L calc(to.x + nx * (offset + 4)) calc(to.y + ny * (offset + 4))
+  }
+  dimLines.apply {
+    M calc(from.x + nx * offset) calc(from.y + ny * offset)
+    L calc(to.x + nx * offset) calc(to.y + ny * offset)
+  }
+  let along = link.block.tangent(0.5).angle;
+  let head = tip.rotate(along);
+  let tail = tip.rotate(along + PI());
+  dimArrows.apply {
+    M calc(to.x + nx * offset) calc(to.y + ny * offset) head.draw()
+    M calc(from.x + nx * offset) calc(from.y + ny * offset) tail.draw()
+  }
+  // The label sits past the line; a sideways normal pushes it clear of it.
+  let mid = barNormal.point;
+  let clear = offset + 9 + 14 * abs(nx);
+  dimText.apply {
+    text(mid.x + nx * clear, mid.y + ny * clear + 3)`${link.label} ${round(bar.length)}`;
+  }
+}
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+for (link in rightBars.queryAll('segment')) {
+  dimension(link, 12);
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 166)`no lengths written anywhere but the top`;
+}
+rightEyebrow.apply {
+  text(0, -18)`ONE FN, FOUR LINKS`;
+}
+rightNote.apply {
+  text(0, 166)`dimension(link, 12) for each segment`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}

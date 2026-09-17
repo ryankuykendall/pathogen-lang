@@ -1,0 +1,351 @@
+//-- The worksheet figure: names, dimensions, both angles, and the Grashof
+//-- test — every number on the right asked of the form on the left.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let dims = oklch(0.55 0.16 80);
+let angles = oklch(0.55 0.16 320);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// One arrowhead, drawn once with its tip at the origin, rotated into place.
+let tip = @{
+  l -7 -3
+  l 0 6
+  z
+};
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 120 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 264;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: points;
+  stroke: none;
+};
+let rightNames = TextLayer('right-names') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: points;
+  text-anchor: middle;
+};
+let extLines = PathLayer('ext-lines') #{
+  stroke: dims;
+  stroke-width: 0.5;
+  fill: none;
+};
+let dimLines = PathLayer('dim-lines') #{
+  stroke: dims;
+  stroke-width: 0.75;
+  fill: none;
+};
+let dimArrows = PathLayer('dim-arrows') #{
+  fill: dims;
+  stroke: none;
+};
+let dimText = TextLayer('dim-text') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: dims;
+  text-anchor: middle;
+};
+let rightArcs = PathLayer('right-arcs') #{
+  stroke: angles;
+  stroke-width: 1;
+  fill: none;
+};
+let rightAngles = TextLayer('right-angles') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: angles;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightDots,
+    rightNames,
+    extLines,
+    dimLines,
+    dimArrows,
+    dimText,
+    rightArcs,
+    rightAngles);
+
+
+// A dimension line for one link, from what the link already knows: its
+// ends, its length, its label, and its outward normal at the midpoint.
+fn dimension(link, offset) {
+  let bar = link.commands[0];
+  let barNormal = link.block.normal(0.5);
+  let nx = cos(barNormal.angle);
+  let ny = sin(barNormal.angle);
+  let from = bar.start;
+  let to = bar.end;
+  extLines.apply {
+    M calc(from.x + nx * (offset - 10)) calc(from.y + ny * (offset - 10))
+    L calc(from.x + nx * (offset + 4)) calc(from.y + ny * (offset + 4))
+    M calc(to.x + nx * (offset - 10)) calc(to.y + ny * (offset - 10))
+    L calc(to.x + nx * (offset + 4)) calc(to.y + ny * (offset + 4))
+  }
+  dimLines.apply {
+    M calc(from.x + nx * offset) calc(from.y + ny * offset)
+    L calc(to.x + nx * offset) calc(to.y + ny * offset)
+  }
+  let along = link.block.tangent(0.5).angle;
+  let head = tip.rotate(along);
+  let tail = tip.rotate(along + PI());
+  dimArrows.apply {
+    M calc(to.x + nx * offset) calc(to.y + ny * offset) head.draw()
+    M calc(from.x + nx * offset) calc(from.y + ny * offset) tail.draw()
+  }
+  // The label sits past the line; a sideways normal pushes it clear of it.
+  let mid = barNormal.point;
+  let clear = offset + 9 + 14 * abs(nx);
+  dimText.apply {
+    text(mid.x + nx * clear, mid.y + ny * clear + 3)`${round(bar.length)}`;
+  }
+}
+
+
+// An angle arc at a pivot between two headings, the short way round, with
+// the degrees on the bisector. Headings are radians on the screen.
+fn angleArc(center, radius, fromHeading, toHeading,
+    arcs, labels) {
+  let delta = toHeading - fromHeading;
+  if (delta > PI()) {
+    delta = delta - 2 * PI();
+  }
+  if (delta < -PI()) {
+    delta = delta + 2 * PI();
+  }
+  let sweep = 0;
+  if (delta > 0) {
+    sweep = 1;
+  }
+  let startX = center.x + radius * cos(fromHeading);
+  let startY = center.y + radius * sin(fromHeading);
+  let endX = center.x + radius * cos(toHeading);
+  let endY = center.y + radius * sin(toHeading);
+  arcs.apply {
+    M startX startY
+    A radius radius 0 0 sweep endX endY
+  }
+  let mid = fromHeading + delta / 2;
+  labels.apply {
+    text(center.x + (radius + 10) * cos(mid), center.y + (radius + 10) * sin(mid) + 3)`${round(abs(deg(delta)))}°`;
+  }
+}
+
+rightBars.subscribe('endpoint') {|pivot|
+  rightDots.apply {
+    circle(pivot.x, pivot.y, 2.5);
+  }
+  let heading = pivot.command.block.tangent(1).angle;
+  let away = heading + pivot.turn.rad / 2 - PI() / 2;
+  rightNames.apply {
+    text(pivot.x + cos(away) * 11, pivot.y + sin(away) * 11 + 3)`${pivot.label}`;
+  }
+};
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+let links = rightBars.queryAll('segment');
+for (link in links) {
+  dimension(link, 22);
+}
+
+let pivotO2 = rightBars.query('endpoint(O2)');
+// The ground arrives at O2 heading back along itself; reversed, that is the
+// ground line the crank angle is measured from.
+let groundOut = pivotO2.command.block.tangent(1).angle + PI();
+angleArc(pivotO2.point,
+    20,
+    groundOut,
+    pivotO2.next.block.tangent(0).angle,
+    rightArcs,
+    rightAngles);
+let pivotB = rightBars.query('endpoint(B)');
+angleArc(pivotB.point,
+    14,
+    pivotB.command.block.tangent(1).angle + PI(),
+    pivotB.next.block.tangent(0).angle,
+    rightArcs,
+    rightAngles);
+
+// Grashof: the shortest plus the longest link against the other two. When it
+// holds, the shortest link can turn full circle — here that link is the crank.
+let lengths = links.map() {|link| link.commands[0].length}.sort() {|lo, hi| lo - hi};
+let shortest = lengths[0];
+let longest = lengths[3];
+let others = lengths[1] + lengths[2];
+let kind = 'non-Grashof';
+if (shortest + longest <= others) {
+  kind = 'Grashof';
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 166)`ground ${ground} · crank ${crank} · coupler ${coupler} · rocker ${rocker}`;
+}
+rightEyebrow.apply {
+  text(0, -18)`THE WORKSHEET`;
+}
+rightNote.apply {
+  text(0, 166)`${kind}: ${round(shortest)} + ${round(longest)} ≤ ${round(others)}`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}

@@ -14,9 +14,9 @@ annotated twin on the other, and nothing copied between them.*
 > **Series: Drawing Without Bookkeeping**
 > 1. **Ask the Path** (this post) — `query()` and `queryAll()`
 > 2. [Thinking and Drawing in Parallel](/blog/thinking-and-drawing-in-parallel) — `subscribe()`
-> 3. A four-bar linkage, dimensioned — coming
-> 4. A front panel with its drill schedule — coming
-> 5. A fretboard from one scale length — coming
+> 3. [A Linkage That Dimensions Itself](/blog/a-linkage-that-dimensions-itself) — a four-bar linkage
+> 4. [The Panel Prints Its Own Drill Schedule](/blog/the-panel-prints-its-own-drill-schedule) — a Eurorack front panel
+> 5. [The Fretboard Is a Formula](/blog/the-fretboard-is-a-formula) — a fretboard from one scale length
 
 > **Prerequisites:** This post assumes [path block
 > basics](/blog/pathblock-introduction) — the `@{ }` sigil, `draw()`,

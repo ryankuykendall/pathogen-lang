@@ -1,0 +1,246 @@
+//-- Two angles the form knows: the crank angle at O2, from the heading of
+//-- the link that leaves it, and the transmission angle at B, from its turn.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let angles = oklch(0.55 0.16 320);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 100 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightArcs = PathLayer('right-arcs') #{
+  stroke: angles;
+  stroke-width: 1;
+  fill: none;
+};
+let rightAngles = TextLayer('right-angles') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: angles;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightArcs,
+    rightAngles);
+
+
+// An angle arc at a pivot between two headings, the short way round, with
+// the degrees on the bisector. Headings are radians on the screen.
+fn angleArc(center, radius, fromHeading, toHeading,
+    arcs, labels) {
+  let delta = toHeading - fromHeading;
+  if (delta > PI()) {
+    delta = delta - 2 * PI();
+  }
+  if (delta < -PI()) {
+    delta = delta + 2 * PI();
+  }
+  let sweep = 0;
+  if (delta > 0) {
+    sweep = 1;
+  }
+  let startX = center.x + radius * cos(fromHeading);
+  let startY = center.y + radius * sin(fromHeading);
+  let endX = center.x + radius * cos(toHeading);
+  let endY = center.y + radius * sin(toHeading);
+  arcs.apply {
+    M startX startY
+    A radius radius 0 0 sweep endX endY
+  }
+  let mid = fromHeading + delta / 2;
+  labels.apply {
+    text(center.x + (radius + 10) * cos(mid), center.y + (radius + 10) * sin(mid) + 3)`${round(abs(deg(delta)))}°`;
+  }
+}
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+// The crank angle: from the ground's direction to the crank's heading.
+let pivotO2 = rightBars.query('endpoint(O2)');
+// The ground arrives at O2 heading back along itself; reversed, that is the
+// ground line the crank angle is measured from.
+let groundOut = pivotO2.command.block.tangent(1).angle + PI();
+let crankHeading = pivotO2.next.block.tangent(0).angle;
+angleArc(pivotO2.point,
+    20,
+    groundOut,
+    crankHeading,
+    rightArcs,
+    rightAngles);
+
+// The transmission angle: what is left of a straight line at B after the
+// path turns from the coupler onto the rocker.
+let pivotB = rightBars.query('endpoint(B)');
+let couplerBack = pivotB.command.block.tangent(1).angle + PI();
+let rockerOut = pivotB.next.block.tangent(0).angle;
+angleArc(pivotB.point,
+    14,
+    couplerBack,
+    rockerOut,
+    rightArcs,
+    rightAngles);
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 166)`crankAngle = 60deg, typed once`;
+}
+rightEyebrow.apply {
+  text(0, -18)`HEADING AND TURN`;
+}
+rightNote.apply {
+  text(0, 166)`transmission angle ${round(180 - abs(pivotB.turn.deg))}° — keep it 40°–140°`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}

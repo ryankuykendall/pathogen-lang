@@ -1,0 +1,304 @@
+//-- The handoff drawing: the panel with its legend on the left, the drill
+//-- drawing with numbered holes and the schedule on the right — one source.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let legend = oklch(0.55 0.16 200);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The panel, in millimetres. HP is the parameter. ──────────
+let hp = 6;
+let height = 128.5;
+let unit = 5.08;
+let width = hp * unit - 0.3;
+
+// A rail slot: 5.5 × 3.2, centred where the rail standard wants it.
+fn slot(cx, cy) {
+  roundRect(cx - 2.75,
+      cy - 1.6,
+      5.5,
+      3.2,
+      1.6);
+}
+
+// Every hole the panel needs, named where it is drawn. Jacks are ⌀6,
+// pots ⌀7, the LED ⌀3; columns sit on quarters of whatever the width is.
+fn drawHoles(holes) {
+  let mid = width / 2;
+  let left = width / 4;
+  let right = width * 3 / 4;
+  holes.apply {
+    slot(7.5, 3);
+    slot(7.5, height - 3);
+    if (hp >= 10) {
+      slot(width - 7.5, 3);
+      slot(width - 7.5, height - 3);
+    }
+    circle(mid, 24, 3.5) as segment('rate');
+    circle(mid, 48, 3.5) as segment('depth');
+    circle(mid, 64, 1.5) as segment('led');
+    circle(left, 82, 3) as segment('in');
+    circle(right, 82, 3) as segment('cv');
+    circle(left, 98, 3) as segment('out-a');
+    circle(right, 98, 3) as segment('out-b');
+    circle(left, 114, 3) as segment('sync');
+    circle(right, 114, 3) as segment('gate');
+  }
+}
+
+fn drawOutline(outline) {
+  outline.apply {
+    roundRect(0,
+        0,
+        width,
+        height,
+        1.5);
+  }
+}
+
+// One decimal, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value < 0) {
+    sign = '-';
+  }
+  let tenths = round(abs(value) * 10);
+  let whole = floor(tenths / 10);
+  return `${sign}${whole}.${tenths - whole * 10}`;
+}
+
+// ─── Left panel: page position and scale, children in millimetres ──
+let leftPanel = GroupLayer('left') #{
+  translate-x: 80;
+  translate-y: 40;
+  scale: 1.4;
+};
+let leftOutline = PathLayer('left-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let leftHoles = PathLayer('left-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let leftArcs = PathLayer('left-arcs') #{
+  stroke: legend;
+  stroke-width: 0.4;
+  fill: none;
+};
+let leftLegend = TextLayer('left-legend') #{
+  font-family: font;
+  font-size: 3.6;
+  font-weight: 700;
+  letter-spacing: 0.3;
+  fill: legend;
+  text-anchor: middle;
+};
+leftPanel.append(leftOutline, leftHoles, leftArcs, leftLegend);
+// ─── Right panel: page position and scale, children in millimetres ──
+let rightPanel = GroupLayer('right') #{
+  translate-x: 220;
+  translate-y: 40;
+  scale: 1.4;
+};
+let rightOutline = PathLayer('right-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let rightHoles = PathLayer('right-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let rightCrosses = PathLayer('right-crosses') #{
+  stroke: points;
+  stroke-width: 0.35;
+  fill: none;
+};
+let rightNumbers = TextLayer('right-numbers') #{
+  font-family: font;
+  font-size: 3.6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: start;
+};
+let rightColumns = TextLayer('right-columns') #{
+  font-family: mono;
+  font-size: 4.6;
+  letter-spacing: 0;
+  fill: fg_auto;
+  text-anchor: end;
+};
+let rightRows = TextLayer('right-rows') #{
+  font-family: mono;
+  font-size: 4.6;
+  letter-spacing: 0;
+  fill: fg_muted;
+  text-anchor: start;
+};
+rightPanel.append(rightOutline,
+    rightHoles,
+    rightCrosses,
+    rightNumbers,
+    rightColumns,
+    rightRows);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+fn scaleArc(hole, arcs) {
+  let centre = hole.block.centerPoint();
+  let r = hole.block.boundingBox().width / 2 + 2.2;
+  let startX = centre.x + r * cos(135deg);
+  let startY = centre.y + r * sin(135deg);
+  let endX = centre.x + r * cos(45deg);
+  let endY = centre.y + r * sin(45deg);
+  arcs.apply {
+    M startX startY
+    A r r 0 1 1 endX endY
+    M startX startY
+    L calc(centre.x + (r + 1.2) * cos(135deg)) calc(centre.y + (r + 1.2) * sin(135deg))
+    M endX endY
+    L calc(centre.x + (r + 1.2) * cos(45deg)) calc(centre.y + (r + 1.2) * sin(45deg))
+    M centre.x calc(centre.y - r)
+    L centre.x calc(centre.y - r - 1.2)
+  }
+}
+
+// Declared before a hole is drawn: each circle() the twin's holes layer
+// records gets a centre cross and its number just outside its rim.
+rightHoles.subscribe('call(circle)') {|hole, i|
+  let centre = hole.block.centerPoint();
+  rightCrosses.apply {
+    M calc(centre.x - 1.2) centre.y
+    L calc(centre.x + 1.2) centre.y
+    M centre.x calc(centre.y - 1.2)
+    L centre.x calc(centre.y + 1.2)
+  }
+  let r = hole.block.boundingBox().width / 2;
+  rightNumbers.apply {
+    text(centre.x + r + 0.6, centre.y - r + 1.2)`${i + 1}`;
+  }
+};
+// The drill schedule: one row per hole, in drawing order, every value read
+// from the hole's own block — its centre and its bounding box. The number
+// columns are end-anchored so the decimal points line up.
+fn schedule(source, col, rows, x0,
+    y0) {
+  let holes = source.queryAll('call(circle)');
+  col.apply {
+    text(x0 + 2, y0)`#`;
+    text(x0 + 13, y0)`⌀`;
+    text(x0 + 26, y0)`x`;
+    text(x0 + 42, y0)`y`;
+    for ([hole, i] in holes) {
+      let centre = hole.block.centerPoint();
+      let box = hole.block.boundingBox();
+      let y = y0 + 6 * (i + 1);
+      text(x0 + 2, y)`${i + 1}`;
+      text(x0 + 13, y)`${mm(box.width)}`;
+      text(x0 + 26, y)`${mm(centre.x)}`;
+      text(x0 + 42, y)`${mm(centre.y)}`;
+    }
+  }
+  let slots = source.queryAll('call(slot)');
+  let slotBox = source.query('call(slot)').block.boundingBox();
+  rows.apply {
+    text(x0, y0 + 6 * (holes.length + 2))`${slots.length} rail slots ${mm(slotBox.width)} × ${mm(slotBox.height)}`;
+    text(x0, y0 + 6 * (holes.length + 3))`${holes.length} holes, ${hp}HP, ${mm(width)} × ${height}`;
+  }
+}
+
+drawOutline(leftOutline);
+drawHoles(leftHoles);
+drawOutline(rightOutline);
+drawHoles(rightHoles);
+
+// The legend on the finished panel; the schedule on the drill drawing.
+for (control in leftHoles.queryAll('segment')) {
+  let centre = control.block.centerPoint();
+  let r = control.block.boundingBox().width / 2;
+  leftLegend.apply {
+    text(centre.x, centre.y + r + 5.4)`${control.label}`;
+  }
+}
+for (pot in leftHoles.queryAll('segment(rate), segment(depth)')) {
+  scaleArc(pot, leftArcs);
+}
+schedule(rightHoles,
+    rightColumns,
+    rightRows,
+    40,
+    8);
+
+leftEyebrow.apply {
+  text(80, 30)`THE PANEL`;
+}
+leftNote.apply {
+  text(80, 242)`what the builder sees`;
+}
+rightEyebrow.apply {
+  text(220, 30)`THE DRILL DRAWING`;
+}
+rightNote.apply {
+  text(220, 242)`what the panel shop gets`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 190 30
+  L 190 235
+}

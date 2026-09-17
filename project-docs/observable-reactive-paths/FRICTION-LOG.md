@@ -174,8 +174,10 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
 22. **No `toFixed`.** (post55) A drill schedule wants `7.0` and `22.6`, not `7` and
     `22.60000000000001`. `round()` returns an integer, so the panel samples carry a
     four-line `mm()` helper (round to tenths, split whole and fraction, glue with a
-    dot) — fine for one decimal, tedious for three, wrong for negatives. Candidate:
-    `toFixed(n)` on numbers, or a precision argument on `text` interpolation.
+    dot) — fine for one decimal, tedious for three, and its first draft was wrong for
+    negatives: part 5's fanned board printed a lean of −14.54° for −13.46° before the
+    helper learned to keep the sign (now nine lines in post55, thirteen in post56).
+    Candidate: `toFixed(n)` on numbers, or a precision argument on `text` interpolation.
 
 23. **Text anchoring is per layer, so a numeric table is several layers.** (post55)
     `text-anchor` lives in the TextLayer's style, so a right-aligned number column
@@ -202,3 +204,10 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     semicolon removed, every time. A minimal block with the same three lines at top
     level formats cleanly, so the trigger is the `return @{ … }` inside a `fn`. Cosmetic,
     but it is what readers see in the code panel. Open.
+
+26. **`:nth` takes literal indices only.** (post56/04) The marker frets are written
+    twice — `[3, 5, 7, 9, 12, 15, 17, 19, 21]` for the dots and `:nth(2, 4, 6, 8, 11, 14,
+    16, 18, 20)` for the tint — and kept in step by hand, in a series about not doing
+    that. A selector string built by interpolation may compile, but the post does not
+    lean on an unverified spelling. Candidate: `:nth` accepting a list value, or a
+    documented interpolated form.

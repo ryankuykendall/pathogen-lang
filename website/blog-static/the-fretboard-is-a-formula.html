@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Fretboard Is a Formula — Pathogen Studio</title>
+  <meta name="description" content="A fretboard placed from one scale length by the twelfth root of two, and a twin that numbers the frets, prints their distances, and fans at the end.">
+  <link rel="canonical" href="https://pathogen.studio/blog/the-fretboard-is-a-formula">
+  <meta property="og:title" content="The Fretboard Is a Formula — Pathogen Studio">
+  <meta property="og:description" content="A fretboard placed from one scale length by the twelfth root of two, and a twin that numbers the frets, prints their distances, and fans at the end.">
+  <meta property="og:url" content="https://pathogen.studio/blog/the-fretboard-is-a-formula">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"The Fretboard Is a Formula","description":"A fretboard placed from one scale length by the twelfth root of two, and a twin that numbers the frets, prints their distances, and fans at the end.","datePublished":"2026-09-20","url":"https://pathogen.studio/blog/the-fretboard-is-a-formula","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">The Fretboard Is a Formula</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>The Fretboard Is a Formula</h1>
+        <p class="post-meta"><time datetime="2026-09-20">September 20, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 5 of 5 in Drawing Without Bookkeeping — a form on one side, its
+annotated twin on the other, and nothing copied between them.</em></p>
+<blockquote>
+<p><strong>Series: Drawing Without Bookkeeping</strong></p>
+<ol>
+<li><a href="/blog/ask-the-path">Ask the Path</a> — <code>query()</code> and <code>queryAll()</code></li>
+<li><a href="/blog/thinking-and-drawing-in-parallel">Thinking and Drawing in Parallel</a> — <code>subscribe()</code></li>
+<li><a href="/blog/a-linkage-that-dimensions-itself">A Linkage That Dimensions Itself</a> — a four-bar linkage</li>
+<li><a href="/blog/the-panel-prints-its-own-drill-schedule">The Panel Prints Its Own Drill Schedule</a> — a Eurorack front panel</li>
+<li><strong>The Fretboard Is a Formula</strong> (this post) — a fretboard from one scale length</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes the selector grammar from <a href="/blog/ask-the-path">Ask the
+Path</a>, the subscription model from <a href="/blog/thinking-and-drawing-in-parallel">Thinking and
+Drawing in Parallel</a>, and the
+millimetre trick from <a href="/blog/the-panel-prints-its-own-drill-schedule">part 4</a>:
+a group layer carries the page position and scale, and everything
+inside it is drawn in real units. The fretboard is long and thin, so
+the twin sits below the form instead of beside it.</p>
+</blockquote>
+<p>A guitar&#39;s <strong>scale length</strong> is the vibrating length of an open string,
+from the <strong>nut</strong> at the headstock end to the <strong>saddle</strong> at the bridge;
+the saddle is then set a little past it for intonation, which is a
+separate problem. Every fret follows from the scale length. Fret <em>n</em>
+sits where the remaining string is <em>n</em> twelfths of an octave shorter,
+which is the scale length divided by the twelfth root of two, <em>n</em> times
+over. That root is about 1.0595, the step from one semitone to the next,
+and twelve of them double the pitch. What the division takes off the
+scale is the fret&#39;s distance from the nut:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">fretFrom</span>(<span class="id">scale</span>, <span class="id">n</span>) {
+  <span class="kw">return</span> <span class="id">scale</span> - <span class="id">scale</span> / <span class="id">pow</span>(<span class="num">2</span>, <span class="id">n</span> / <span class="num">12</span>);
+}
+</code></pre><p>That is the whole of equal temperament, and the whole of a fretboard
+template. Builders get the numbers from a web calculator and mark the
+board by hand. A <strong>fanned-fret</strong> or multi-scale instrument — a longer
+scale on the bass side than the treble — doubles the arithmetic and the
+chances of a slot in the wrong place. This post draws the board from the
+formula and lets the twin do the luthier&#39;s tables.</p>
+<h2>The form knows where the octave is</h2>
+<p>The form is a tapered outline and one slot per fret: a <code>for</code> loop over
+22 frets, each slot a line from the top edge to the bottom edge at the
+formula&#39;s <em>x</em>. The whole board is drawn in millimetres inside a scaled
+group, and the nut is at <em>x</em> = 0. Every slot&#39;s <em>x</em> is therefore its
+distance from the nut, with nothing to convert.</p>
+<p><mini-workspace code-open caption="Above: a 22-fret board for a 25.5-inch scale, 647.7 mm, tapering from 43 to 56 mm. Below: the slots layer asked for command(line) — 22 of them — and the twelfth, tinted, at half the scale length.">
+  <code>//-- A 22-fret fretboard drawn in millimetres from one scale length: the
+//-- taper and every slot follow from the twelfth root of two. Below: what
+//-- the slots layer can already say about itself.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return `${sign}${whole}.${pad}${frac}`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomOctave = PathLayer('bottom-octave') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomTable = TextLayer('bottom-table') #{
+  font-family: font;
+  font-size: 5.5;
+  font-weight: 700;
+  letter-spacing: 0.3;
+  fill: points;
+  text-anchor: start;
+};
+bottomPanel.append(bottomOutline, bottomSlots, bottomOctave, bottomTable);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+// Asked, not computed twice: the octave slot is the twelfth line, and
+// it sits at half the scale length.
+let frets = bottomSlots.queryAll('command(line)');
+let octave = bottomSlots.query('command(line):nth(11)');
+let last = bottomSlots.query('command(line):last');
+bottomOctave.apply {
+  octave.block.draw();
+}
+bottomTable.apply {
+  text(0, 68)`${frets.length} slots · octave at ${mm(octave.start.x)} mm, half of ${scaleLength} · fret ${frets.length} at ${mm(last.start.x)} mm`;
+}
+
+topEyebrow.apply {
+  text(25, 48)`THE FORM, 25.5 IN`;
+}
+topNote.apply {
+  text(25, 134)`scale 647.7 mm, 22 frets, 43 to 56 mm wide`;
+}
+bottomEyebrow.apply {
+  text(25, 166)`COMMAND(LINE), ASKED`;
+}
+bottomNote.apply {
+  text(25, 282)`the octave check, from the twelfth slot`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/01-bare-fretboard.svg" alt="Above: a 22-fret board for a 25.5-inch scale, 647.7 mm, tapering from 43 to 56 mm. Below: the slots layer asked for command(line) — 22 of them — and the twelfth, tinted, at half the scale length." loading="lazy">
+</mini-workspace></p>
+<p>The line under the second board is the octave check every luthier does
+by eye. <code>command(line):nth(11)</code> is the twelfth slot; its <code>block</code> is
+drawn back in gold and its <code>start.x</code> is 323.85, half of 647.7. Nothing
+computed it twice.</p>
+<h2>Numbered by ordinal</h2>
+<p>A subscription on <code>command(line)</code> delivers every slot in drawing order,
+and its second parameter is the ordinal among the matches. The fret
+number is that ordinal plus one, and the slot&#39;s own <code>start.x</code> is where
+it goes:</p>
+<pre><code class="hljs language-pathogen"><span class="id">slots</span>.<span class="id">subscribe</span>(<span class="str">'command(line)'</span>) {|<span class="id">fret</span>, <span class="id">i</span>|
+  <span class="id">numbers</span>.<span class="kw">apply</span> {
+    <span class="kw">text</span>(<span class="id">fret</span>.<span class="id">start</span>.<span class="id">x</span>, -<span class="num">2.5</span>)`${<span class="id">i</span> + <span class="num">1</span>}`;
+  }
+};
+</code></pre><p><mini-workspace code-open caption="One subscription on the slots layer: the ordinal plus one, placed at each slot's own x above the board.">
+  <code>//-- Every fret numbered by a subscription on command(line): the slot's own
+//-- x places the number, and the subscription's ordinal is the fret.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return `${sign}${whole}.${pad}${frac}`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+bottomPanel.append(bottomOutline, bottomSlots, bottomNumbers);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)`${i + 1}`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+topEyebrow.apply {
+  text(25, 48)`THE FORM`;
+}
+topNote.apply {
+  text(25, 134)`22 slots, unnumbered`;
+}
+bottomEyebrow.apply {
+  text(25, 166)`COMMAND(LINE), SUBSCRIBED`;
+}
+bottomNote.apply {
+  text(25, 282)`the ordinal, plus one`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/02-frets-numbered.svg" alt="One subscription on the slots layer: the ordinal plus one, placed at each slot's own x above the board." loading="lazy">
+</mini-workspace></p>
+<h2>The distance column</h2>
+<p>The table a luthier wants is the distance of every slot from the nut, to
+a hundredth of a millimetre. It is the same subscription with a
+different callback, and the number is <code>fret.start.x</code> itself. The label
+hangs below its slot, turned a quarter turn at its anchor with the
+third argument of <code>text()</code>, so 22 of them fit under a board 430 pixels
+wide.</p>
+<p><mini-workspace code-open caption="Every slot's distance from the nut, read from the slot and printed under it to 0.01 mm. The labels are turned −90° about their own anchors.">
+  <code>//-- The luthier's table, printed under the board: each slot's distance from
+//-- the nut to a hundredth of a millimetre, read from the slot itself.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return `${sign}${whole}.${pad}${frac}`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+let bottomDistances = TextLayer('bottom-distances') #{
+  font-family: mono;
+  font-size: 5;
+  letter-spacing: 0;
+  fill: fg_muted;
+  text-anchor: end;
+};
+bottomPanel.append(bottomOutline, bottomSlots, bottomNumbers, bottomDistances);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)`${i + 1}`;
+    }
+  };
+}
+// The distance from the nut is the slot's own x. The label hangs below
+// the board, turned a quarter turn at its anchor.
+fn distanceLabels(slots, labels) {
+  slots.subscribe('command(line)') {|fret|
+    labels.apply {
+      text(fret.start.x + 2, fret.end.y + 3, -90deg)`${mm(fret.start.x)}`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+distanceLabels(bottomSlots, bottomDistances);
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+topEyebrow.apply {
+  text(25, 48)`THE FORM`;
+}
+topNote.apply {
+  text(25, 134)`one formula, once`;
+}
+bottomEyebrow.apply {
+  text(25, 166)`DISTANCE FROM THE NUT`;
+}
+bottomNote.apply {
+  text(25, 282)`fret.start.x, to 0.01 mm, turned -90deg at its anchor`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/03-distance-column.svg" alt="Every slot's distance from the nut, read from the slot and printed under it to 0.01 mm. The labels are turned −90° about their own anchors." loading="lazy">
+</mini-workspace></p>
+<p>There is no <code>toFixed</code>, so the samples carry part 4&#39;s <code>mm()</code> helper,
+extended to two decimals and to negative numbers. Four lines became
+thirteen; the friction log has said so twice now.</p>
+<h2>Marker dots by range</h2>
+<p>Marker dots — the inlays on the face of the board that tell a player&#39;s
+hand where it is — sit at frets 3, 5, 7, 9, 12, 15, 17, 19 and 21, and
+the twelfth gets two. Two things about them are worth being precise
+about. The frets themselves are picked with one <code>:nth</code> list, and <code>:nth</code>
+counts from zero, so fret 3 is <code>:nth(2)</code>. A dot does not sit <em>on</em> its
+fret. It sits in the space before it, halfway back to the previous slot,
+on the board&#39;s centre line.</p>
+<p><mini-workspace code-open caption="command(line):nth(2, 4, 6, 8, 11, 14, 16, 18, 20) tints the nine marker frets. Each dot is placed halfway back to the previous slot, on the centre line the two slots' ends define; the twelfth gets two.">
+  <code>//-- Marker dots by range: the marker frets are picked with one :nth list
+//-- (0-based), and each dot sits in the space before its fret.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return `${sign}${whole}.${pad}${frac}`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomMarks = PathLayer('bottom-marks') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomDots = PathLayer('bottom-dots') #{
+  fill: points;
+  stroke: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+bottomPanel.append(bottomOutline,
+    bottomSlots,
+    bottomMarks,
+    bottomDots,
+    bottomNumbers);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)`${i + 1}`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+// Frets 3, 5, 7, 9, 12, 15, 17, 19 and 21 — as :nth counts them, from 0.
+let markerFrets = [
+  3,
+  5,
+  7,
+  9,
+  12,
+  15,
+  17,
+  19,
+  21,
+];
+for (fret in bottomSlots.queryAll('command(line):nth(2, 4, 6, 8, 11, 14, 16, 18, 20)')) {
+  bottomMarks.apply {
+    fret.block.draw();
+  }
+}
+
+// A dot lives in the space before its fret: halfway back to the previous
+// slot, on the board's centre line. The twelfth gets two.
+let frets = bottomSlots.queryAll('command(line)');
+for (n in markerFrets) {
+  let here = frets[n - 1];
+  let before = frets[n - 2];
+  let x = (here.start.x + before.start.x) / 2;
+  let w = (here.end.y + before.end.y) / 2;
+  bottomDots.apply {
+    if (n == 12) {
+      circle(x, w / 3, 2.2);
+      circle(x, w * 2 / 3, 2.2);
+    } else {
+      circle(x, w / 2, 2.2);
+    }
+  }
+}
+
+topEyebrow.apply {
+  text(25, 48)`THE FORM`;
+}
+topNote.apply {
+  text(25, 134)`no dots yet`;
+}
+bottomEyebrow.apply {
+  text(25, 166)`NTH, THEN THE SPACE BEFORE`;
+}
+bottomNote.apply {
+  text(25, 282)`:nth(2, 4, 6, 8, 11, 14, 16, 18, 20) · dots between`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/04-marker-dots.svg" alt="command(line):nth(2, 4, 6, 8, 11, 14, 16, 18, 20) tints the nine marker frets. Each dot is placed halfway back to the previous slot, on the centre line the two slots' ends define; the twelfth gets two." loading="lazy">
+</mini-workspace></p>
+<p>The tint is a query drawn back onto the board: each match&#39;s <code>block</code> is
+the slot on its own, and <code>fret.block.draw()</code> puts it down in place in
+a second colour. The dots need the slot before as well as the slot
+itself, so they come from the full list by fret number, which reads the
+way a luthier would say it. That leaves the nine frets written twice,
+once for <code>:nth</code> from zero and once from one, because <code>:nth</code> takes
+literal indices; the friction log has the note.</p>
+<h2>One scale length, or another</h2>
+<p>Change <code>scaleLength</code> and every slot, number and dot moves. The sample
+draws two boards to make the comparison visible: a 25.5-inch scale on
+top and a 24.75-inch scale below, the two most common choices, with the
+same subscriptions and the same dot function on both.</p>
+<p><mini-workspace code-open caption="647.7 mm above, 628.65 mm below. The octave slot, tinted on both boards, moves from 323.85 to 314.33 mm; every slot, number and dot moves with it. No annotation code changed.">
+  <code>//-- Change the scale length and every slot, number and dot moves. Above,
+//-- a 25.5-inch board; below, the same file's annotations on a 24.75-inch
+//-- board — 19 mm shorter at the octave, nothing else changed.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let second = oklch(0.55 0.16 320);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return `${sign}${whole}.${pad}${frac}`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let topNumbers = TextLayer('top-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+let topOctave = PathLayer('top-octave') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let topDots = PathLayer('top-dots') #{
+  fill: points;
+  stroke: none;
+};
+topPanel.append(topOutline,
+    topSlots,
+    topOctave,
+    topNumbers,
+    topDots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: second;
+  text-anchor: middle;
+};
+let bottomOctave = PathLayer('bottom-octave') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomDots = PathLayer('bottom-dots') #{
+  fill: second;
+  stroke: none;
+};
+bottomPanel.append(bottomOutline,
+    bottomSlots,
+    bottomOctave,
+    bottomNumbers,
+    bottomDots);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+let shorterScale = 628.65;
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)`${i + 1}`;
+    }
+  };
+}
+
+fn markerDots(slots, dots) {
+  let frets = slots.queryAll('command(line)');
+  for (n in [
+    3,
+    5,
+    7,
+    9,
+    12,
+    15,
+    17,
+    19,
+    21,
+  ]) {
+    let here = frets[n - 1];
+    let before = frets[n - 2];
+    let x = (here.start.x + before.start.x) / 2;
+    let w = (here.end.y + before.end.y) / 2;
+    dots.apply {
+      if (n == 12) {
+        circle(x, w / 3, 2.2);
+        circle(x, w * 2 / 3, 2.2);
+      } else {
+        circle(x, w / 2, 2.2);
+      }
+    }
+  }
+}
+
+numberFrets(topSlots, topNumbers);
+numberFrets(bottomSlots, bottomNumbers);
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, shorterScale);
+markerDots(topSlots, topDots);
+markerDots(bottomSlots, bottomDots);
+
+let octaveLong = topSlots.query('command(line):nth(11)');
+let octaveShort = bottomSlots.query('command(line):nth(11)');
+topOctave.apply {
+  octaveLong.block.draw();
+}
+bottomOctave.apply {
+  octaveShort.block.draw();
+}
+
+topEyebrow.apply {
+  text(25, 48)`25.5 IN · 647.7 MM`;
+}
+topNote.apply {
+  text(25, 134)`octave at ${mm(octaveLong.start.x)} mm`;
+}
+bottomEyebrow.apply {
+  text(25, 166)`24.75 IN · 628.65 MM`;
+}
+bottomNote.apply {
+  text(25, 282)`octave at ${mm(octaveShort.start.x)} mm — the same subscriptions, the same dots`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/05-scale-length-wiggle.svg" alt="647.7 mm above, 628.65 mm below. The octave slot, tinted on both boards, moves from 323.85 to 314.33 mm; every slot, number and dot moves with it. No annotation code changed." loading="lazy">
+</mini-workspace></p>
+<h2>The fanned finale</h2>
+<p>A fanned-fret board has two scale lengths, one for each edge, and one
+fret chosen to stand straight. Each slot runs from its bass-side
+position to its treble-side position, and the treble side is shifted so
+the chosen fret is perpendicular. The nut leans one way, the far end the
+other, and every slot in between leans a little differently.</p>
+<p><mini-workspace code-open caption="27 inches on the bass side, 25.5 on the treble, fret 7 straight. The same subscription numbers every leaning slot from its bass end; the first and last frets print their lean from their own tangents.">
+  <code>//-- A fanned-fret board: two scale lengths, 27 inches on the bass side and
+//-- 25.5 on the treble, with fret 7 perpendicular. Every slot leans a
+//-- little differently, and the same subscription numbers them all.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value &lt; 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac &lt; 10) {
+    pad = '0';
+  }
+  return `${sign}${whole}.${pad}${frac}`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.82;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.82;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomMarks = PathLayer('bottom-marks') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+let bottomLean = TextLayer('bottom-lean') #{
+  font-family: mono;
+  font-size: 5;
+  letter-spacing: 0;
+  fill: marks;
+  text-anchor: middle;
+};
+bottomPanel.append(bottomOutline,
+    bottomSlots,
+    bottomMarks,
+    bottomNumbers,
+    bottomLean);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+let bassScale = 685.8;
+let trebleScale = scaleLength;
+let perpendicularFret = 7;
+
+// Each fret runs from its bass-side position to its treble-side position.
+// The treble side is shifted so the chosen fret stands straight, and the
+// nut and the far end lean the opposite ways.
+fn drawFannedBoard(outline, slots) {
+  let shift = fretFrom(bassScale, perpendicularFret) - fretFrom(trebleScale, perpendicularFret);
+  let bassEnd = boardLengthFor(bassScale);
+  let trebleEnd = shift + boardLengthFor(trebleScale);
+  outline.apply {
+    M 0 0
+    L bassEnd 0
+    L trebleEnd endWidth
+    L shift nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let bassX = fretFrom(bassScale, n);
+      let trebleX = shift + fretFrom(trebleScale, n);
+      let w = widthAt(bassX, bassEnd);
+      M bassX 0
+      L trebleX w
+    }
+  }
+}
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)`${i + 1}`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+
+drawFannedBoard(topOutline, topSlots);
+drawFannedBoard(bottomOutline, bottomSlots);
+
+// The straight fret, by position; the lean of the nut and the last fret,
+// from each slot's own tangent (a straight slot points due down: 90°).
+for (fret in bottomSlots.queryAll('command(line):nth(6)')) {
+  bottomMarks.apply {
+    fret.block.draw();
+  }
+}
+for (fret in bottomSlots.queryAll('command(line):nth(0, 21)')) {
+  let lean = deg(fret.block.tangent(0).angle) - 90;
+  bottomLean.apply {
+    text(fret.end.x, fret.end.y + 7)`${mm(lean)}°`;
+  }
+}
+
+topEyebrow.apply {
+  text(25, 48)`THE FORM, FANNED`;
+}
+topNote.apply {
+  text(25, 134)`bass 685.8 mm, treble 647.7 mm, fret 7 straight`;
+}
+bottomEyebrow.apply {
+  text(25, 166)`SAME SUBSCRIPTION, LEANING SLOTS`;
+}
+bottomNote.apply {
+  text(25, 282)`numbers from the slots' ends, leans from their tangents`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}
+</code>
+  <img src="/blog/samples/post56/06-fanned-finale.svg" alt="27 inches on the bass side, 25.5 on the treble, fret 7 straight. The same subscription numbers every leaning slot from its bass end; the first and last frets print their lean from their own tangents." loading="lazy">
+</mini-workspace></p>
+<p>The numbering did not change: a slot&#39;s <code>start</code> is still its bass end,
+whatever angle the slot runs at. The lean of a fret is a new question,
+and the struct answers it too. <code>fret.block.tangent(0).angle</code> is the
+direction the slot runs, in radians. A straight slot points due down,
+so the lean is <code>deg()</code> of that angle, less 90.</p>
+<h2>What this project taught the language</h2>
+<p>This series doubles as a working friction log (<a href="/blog/ask-the-path">part
+1</a> explains the convention). Two entries this time,
+and the first is a fix.</p>
+<p><strong>A text layer&#39;s transform now reaches its text.</strong> The distance column
+was first written as a text layer turned a quarter turn with
+<code>rotate: -0.5pi</code>, which the <a href="/docs#layers-transform-convenience-properties">layers
+reference</a> promises for
+text layers. Every label came out unrotated. The evaluator computed the
+transform and both emitters, the CLI&#39;s and the one the playground and
+VS Code share, dropped it for text layers while honouring it for paths
+and groups. Both now compose the layer&#39;s transform with a per-text
+rotation. The samples ended up using that per-text form instead,
+<code>text(x, y, -90deg)</code>, which turns each label about its own anchor and
+is the better tool for a column of them.</p>
+<p><strong><code>:nth</code> takes literal indices.</strong> The marker frets are written twice in
+the fourth sample, <code>[3, 5, 7, 9, …]</code> for the dots and <code>:nth(2, 4, 6, 8, …)</code> for the tint, and the two lists are kept in step by hand. A
+selector that accepted a list value, or an interpolated <code>:nth</code>, would
+collapse them into one. The same sample also shipped a wrong lean
+before <code>mm()</code> learned to keep a minus sign, which is the <code>toFixed</code>
+entry from part 4 coming due.</p>
+<h2>Where the series lands</h2>
+<p>Five posts, thirty samples, and one rule held throughout: the twin
+never repeats a coordinate. Queries ask a path for things by kind and
+get back structs that know their own geometry; subscriptions let the
+asking happen wherever the drawing does. A linkage dimensioned itself,
+a panel printed its own drill schedule, and a fretboard placed itself
+from a formula. The friction log along the way turned into seven
+evaluator fixes and two in the tooling, and a short list of things the
+language still wants:
+a circle-meets-circle helper, <code>toFixed</code>, per-subpath markers, a column
+primitive for text.</p>
+<p>The reference pages are <a href="/docs#path-queries-path-queries">Path Queries</a>
+and <a href="/docs#subscriptions-subscriptions">Subscriptions</a>. Every sample
+above opens in the playground with one click: change the scale length
+and watch the board re-solve.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

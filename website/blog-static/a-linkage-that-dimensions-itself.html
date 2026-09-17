@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A Linkage That Dimensions Itself — Pathogen Studio</title>
+  <meta name="description" content="A four-bar linkage drawn once, and a twin that names its pivots, dimensions its links and runs the Grashof test on numbers it asked for.">
+  <link rel="canonical" href="https://pathogen.studio/blog/a-linkage-that-dimensions-itself">
+  <meta property="og:title" content="A Linkage That Dimensions Itself — Pathogen Studio">
+  <meta property="og:description" content="A four-bar linkage drawn once, and a twin that names its pivots, dimensions its links and runs the Grashof test on numbers it asked for.">
+  <meta property="og:url" content="https://pathogen.studio/blog/a-linkage-that-dimensions-itself">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baumans&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/theme.css">
+  <script>
+    // Flash prevention — apply saved theme before paint
+    (function(){var t=localStorage.getItem('pathogen-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-active-theme',t)}else{document.documentElement.setAttribute('data-active-theme',window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}})();
+  </script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"A Linkage That Dimensions Itself","description":"A four-bar linkage drawn once, and a twin that names its pivots, dimensions its links and runs the Grashof test on numbers it asked for.","datePublished":"2026-09-18","url":"https://pathogen.studio/blog/a-linkage-that-dimensions-itself","author":{"@type":"Organization","name":"Pedestal Design","url":"https://pathogen.studio"}}</script>
+  <style>
+    /* Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* body styles (font-family, background, color, atmospheric grain) are
+     * defined globally in /styles/theme.css. */
+
+    /* Site header is shared via /styles/site-header.css */
+    .site-header { position: sticky; top: 0; z-index: 50; }
+
+    /* Breadcrumb */
+    .breadcrumb-bar {
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      padding: 0.625rem 1rem;
+      min-height: 32px;
+    }
+    .breadcrumb {
+      display: flex; align-items: center;
+      font-size: 0.8125rem; color: var(--text-secondary, #666);
+      max-width: 800px; margin: 0 auto;
+    }
+    .breadcrumb-link {
+      color: var(--text-secondary, #666); text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .breadcrumb-link:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .breadcrumb-current { color: var(--text-primary, #1a1a2e); font-weight: 500; }
+    .breadcrumb .separator { margin: 0 0.5rem; color: var(--text-tertiary, #94a3b8); }
+
+    /* Blog content area */
+    .blog-main { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+
+    /* Content styling — mirrors docs content area */
+    .blog-content h2 { margin: 1.5rem 0 1rem; font-size: 1.25rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .blog-content h3 { margin: 1.5rem 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .blog-content h4 { margin: 1rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    .blog-content p { margin: 0 0 1rem; line-height: 1.6; }
+    code { font-family: 'Inconsolata', monospace; font-size: 0.875em; background: var(--bg-tertiary, #f0f1f2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+    pre { border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 0.875rem; line-height: 1.5; margin: 0 0 1rem; }
+    pre code { background: none; padding: 1rem; display: block; font-size: inherit; font-family: inherit; }
+    .blog-content ul, .blog-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    .blog-content li { margin-bottom: 0.5rem; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.875rem; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    th { font-weight: 600; background: var(--bg-secondary, #fff); }
+    td code { white-space: nowrap; }
+    hr { border: none; border-top: 1px solid var(--border-color, #e2e8f0); margin: 2rem 0; }
+    .blog-content a { color: var(--accent-color, #10b981); }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 8px; }
+    .blog-content blockquote { border-left: 3px solid var(--accent-color, #10b981); padding-left: 1rem; margin: 0 0 1rem; color: var(--text-secondary, #64748b); }
+    reactive-svg { display: block; margin: 1.5rem 0; }
+
+    /* Blog index cards */
+    .blog-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .blog-card {
+      display: block; padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-secondary, #fff);
+      text-decoration: none; color: inherit;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .blog-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      border-color: var(--accent-color, #10b981);
+    }
+    .blog-card h2, .blog-card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; border: none; padding: 0; }
+    .blog-card time, .blog-card-part { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); }
+    .blog-card p { margin: 0.5rem 0 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+
+    /* Series grouping on the index */
+    .blog-series {
+      display: flex; flex-direction: column; gap: 1rem;
+      padding: 1.5rem; border-radius: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-primary, #f8fafc);
+    }
+    .blog-series-header h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; border: none; padding: 0; }
+    .blog-series-eyebrow {
+      margin: 0 0 0.375rem; font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--accent-color, #10b981);
+    }
+    .blog-series-description { margin: 0; font-size: 0.9375rem; color: var(--text-secondary, #64748b); line-height: 1.5; }
+    .blog-series-spotlight { border-color: var(--accent-color, #10b981); background: var(--bg-secondary, #fff); }
+    .blog-series-pill {
+      display: inline-block; margin-bottom: 0.5rem; padding: 0.1875rem 0.625rem;
+      border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--bg-secondary, #fff); background: var(--accent-color, #10b981);
+    }
+    .blog-series-earlier-label { margin: 0 0 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b); }
+    .blog-series-earlier ol { margin: 0; padding-left: 1.375rem; display: flex; flex-direction: column; gap: 0.375rem; }
+    .blog-series-earlier li { font-size: 0.9375rem; line-height: 1.4; }
+    .blog-series-earlier a { color: inherit; text-decoration: none; }
+    .blog-series-earlier a:hover { color: var(--accent-color, #10b981); text-decoration: underline; }
+    .blog-series-earlier time { font-size: 0.8125rem; color: var(--text-tertiary, #94a3b8); margin-left: 0.375rem; }
+
+    /* Post header */
+    .post-header { margin-bottom: 2rem; }
+    .post-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .post-meta { font-size: 0.875rem; color: var(--text-secondary, #64748b); }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.875rem; color: var(--accent-color, #10b981); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Syntax highlighting */
+    pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*!
+  Theme: GitHub Dark
+  Description: Dark theme as seen on github.com
+  Author: github.com
+  Maintainer: @Hirse
+  Updated: 2021-05-15
+
+  Outdated base version: https://github.com/primer/github-syntax-dark
+  Current colors taken from GitHub's CSS
+*/
+.hljs {
+  color: #c9d1d9;
+  background: #0d1117
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  /* prettylights-syntax-keyword */
+  color: #ff7b72
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  /* prettylights-syntax-entity */
+  color: #d2a8ff
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  /* prettylights-syntax-constant */
+  color: #79c0ff
+}
+.hljs-regexp,
+.hljs-string,
+.hljs-meta .hljs-string {
+  /* prettylights-syntax-string */
+  color: #a5d6ff
+}
+.hljs-built_in,
+.hljs-symbol {
+  /* prettylights-syntax-variable */
+  color: #ffa657
+}
+.hljs-comment,
+.hljs-code,
+.hljs-formula {
+  /* prettylights-syntax-comment */
+  color: #8b949e
+}
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag,
+.hljs-selector-pseudo {
+  /* prettylights-syntax-entity-tag */
+  color: #7ee787
+}
+.hljs-subst {
+  /* prettylights-syntax-storage-modifier-import */
+  color: #c9d1d9
+}
+.hljs-section {
+  /* prettylights-syntax-markup-heading */
+  color: #1f6feb;
+  font-weight: bold
+}
+.hljs-bullet {
+  /* prettylights-syntax-markup-list */
+  color: #f2cc60
+}
+.hljs-emphasis {
+  /* prettylights-syntax-markup-italic */
+  color: #c9d1d9;
+  font-style: italic
+}
+.hljs-strong {
+  /* prettylights-syntax-markup-bold */
+  color: #c9d1d9;
+  font-weight: bold
+}
+.hljs-addition {
+  /* prettylights-syntax-markup-inserted */
+  color: #aff5b4;
+  background-color: #033a16
+}
+.hljs-deletion {
+  /* prettylights-syntax-markup-deleted */
+  color: #ffdcd7;
+  background-color: #67060c
+}
+.hljs-char.escape_,
+.hljs-link,
+.hljs-params,
+.hljs-property,
+.hljs-punctuation,
+.hljs-tag {
+  /* purposely ignored */
+  
+}
+    
+/* pathogen fence tokens (highlightPathogen classes) */
+.hljs .kw { color: #ff7b72; }
+.hljs .pr { color: #7ee787; }
+.hljs .fn { color: #d2a8ff; }
+.hljs .tp { color: #ffa657; }
+.hljs .num { color: #79c0ff; }
+.hljs .str { color: #a5d6ff; }
+.hljs .cm { color: #8b949e; font-style: italic; }
+.hljs .op { color: #ff7b72; }
+
+
+    @media (max-width: 768px) {
+      .blog-main { padding: 1.5rem 0.75rem; }
+      .blog-content pre { font-size: 0.8125rem; }
+      .blog-content table { display: block; overflow-x: auto; }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles/site-header.css">
+</head>
+<body>
+  <header class="site-header">
+  <div class="site-header-inner">
+    <a class="logo" href="/">
+      <span class="logo-main">Pathogen <em>Studio</em></span>
+      <span class="logo-sub">built on Pathogen v0.8.0</span>
+    </a>
+    <nav class="tabs-wrap" aria-label="Primary">
+          <a class="nav-link" href="/workspaces">Workspaces</a>
+          <a class="nav-link" href="/docs">Docs</a>
+          <a class="nav-link" href="/explore">Explore</a>
+          <a class="nav-link" href="/featured">Featured</a>
+          <a class="nav-link active" href="/blog">Blog</a>
+          <a class="nav-link" href="/preferences">Preferences</a>
+    </nav>
+    <div class="actions">
+      <theme-toggle></theme-toggle>
+      <account-menu></account-menu>
+    </div>
+  </div>
+</header>
+  <div class="breadcrumb-bar"><nav class="breadcrumb" aria-label="Breadcrumb"><a class="breadcrumb-link" href="/">Home</a><span class="separator">/</span><a class="breadcrumb-link" href="/blog">Blog</a><span class="separator">/</span><span class="breadcrumb-current">A Linkage That Dimensions Itself</span></nav></div>
+  <main class="blog-main">
+    <article>
+      <header class="post-header">
+        <h1>A Linkage That Dimensions Itself</h1>
+        <p class="post-meta"><time datetime="2026-09-18">September 18, 2026</time></p>
+      </header>
+      <div class="blog-content">
+        <p><em>Part 3 of 5 in Drawing Without Bookkeeping — a form on one side, its
+annotated twin on the other, and nothing copied between them.</em></p>
+<blockquote>
+<p><strong>Series: Drawing Without Bookkeeping</strong></p>
+<ol>
+<li><a href="/blog/ask-the-path">Ask the Path</a> — <code>query()</code> and <code>queryAll()</code></li>
+<li><a href="/blog/thinking-and-drawing-in-parallel">Thinking and Drawing in Parallel</a> — <code>subscribe()</code></li>
+<li><strong>A Linkage That Dimensions Itself</strong> (this post) — a four-bar linkage</li>
+<li><a href="/blog/the-panel-prints-its-own-drill-schedule">The Panel Prints Its Own Drill Schedule</a> — a Eurorack front panel</li>
+<li><a href="/blog/the-fretboard-is-a-formula">The Fretboard Is a Formula</a> — a fretboard from one scale length</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Prerequisites:</strong> This post assumes the selector grammar from <a href="/blog/ask-the-path">Ask the
+Path</a> and the subscription model from <a href="/blog/thinking-and-drawing-in-parallel">Thinking and
+Drawing in Parallel</a>, and it
+reuses their panel idiom: a form on the left, a twin on the right, both
+drawing the same block. Labels are the <code>as segment(...)</code> and
+<code>as endpoint(...)</code> clauses from <a href="/blog/segment-labels-and-suffixes">Name Your
+Corners</a>.</p>
+</blockquote>
+<p>A four-bar linkage is four bars and four pivots. Two pivots are fixed to
+the <strong>ground</strong>; the <strong>crank</strong> turns about one of them, the <strong>rocker</strong>
+swings about the other, and the <strong>coupler</strong> joins the two moving ends.
+It is the first mechanism in every kinematics course and the drive
+behind windscreen wipers, bicycle brakes and a good share of robot
+grippers. The drawing a teacher or a robotics mentor hands out is not
+the linkage but the <em>dimensioned</em> linkage. Every pivot is named, every
+bar carries its length, the crank angle is marked, measured from the
+ground line, and the whole thing is checked against the one rule that
+says whether the shortest bar can turn all the way round.</p>
+<p>Today that drawing is made twice. The bars go in one tool, the callouts
+go on by hand, and the two part company the moment a link length
+changes. This post builds the linkage as a form and lets the twin
+annotate it entirely from what the form knows about itself. Four lengths
+and an angle at the top of every file are the whole design:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">let</span> <span class="id">ground</span> = <span class="num">120</span>;
+<span class="kw">let</span> <span class="id">crank</span> = <span class="num">35</span>;
+<span class="kw">let</span> <span class="id">coupler</span> = <span class="num">95</span>;
+<span class="kw">let</span> <span class="id">rocker</span> = <span class="num">70</span>;
+<span class="kw">let</span> <span class="id">crankAngle</span> = <span class="num">60deg</span>;
+</code></pre><p>Change any of them and everything on the right re-solves; the first
+sample below is the place to try it.</p>
+<h2>The form knows its own numbers</h2>
+<p>The form is a labelled path block. Each bar is a relative line, each bar
+is named <code>as segment</code>, and each bar ends at a pivot named <code>as endpoint</code>:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">return</span> @{
+  l toA.x toA.y as <span class="id">segment</span>(<span class="str">'crank'</span>), <span class="id">endpoint</span>(<span class="str">'A'</span>);
+  l toB.x toB.y as <span class="id">segment</span>(<span class="str">'coupler'</span>), <span class="id">endpoint</span>(<span class="str">'B'</span>);
+  l toO4.x toO4.y as <span class="id">segment</span>(<span class="str">'rocker'</span>), <span class="id">endpoint</span>(<span class="str">'O4'</span>);
+  z as <span class="id">segment</span>(<span class="str">'ground'</span>), <span class="id">endpoint</span>(<span class="str">'O2'</span>);
+};
+</code></pre><p>The pivot positions come from a small solver above it. The crank end is
+trigonometry; the coupler end is where the coupler&#39;s reach from that
+point meets the rocker&#39;s reach from its ground pivot, which the law of
+cosines settles in a few lines. The names <code>pinA</code> and <code>pinB</code> are not a
+stylistic choice: <code>A</code> alone is the arc command, and the friction log
+below has more to say about that.</p>
+<p><mini-workspace code-open caption="Left: the form, drawn from four numbers. Right: the same form asked for segment — one line per named bar, with the length the bar already knows.">
+  <code>//-- A four-bar linkage as a form: ground, crank, coupler, rocker, four
+//-- pivots. Right: the form already knows its links by name and length.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let dims = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 100 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightTable = TextLayer('right-table') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: dims;
+  text-anchor: start;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightTable);
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+// The table is the form's own answer: one line per named link.
+let links = rightBars.queryAll('segment');
+rightTable.apply {
+  for ([link, i] in links) {
+    text(142, 66 + i * 11)`${link.label} ${round(link.commands[0].length)}`;
+  }
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 166)`four links, four pivots, one crank angle`;
+}
+rightEyebrow.apply {
+  text(0, -18)`SEGMENT, ASKED`;
+}
+rightNote.apply {
+  text(0, 166)`${links.length} links, named where they were drawn`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/01-bare-linkage.svg" alt="Left: the form, drawn from four numbers. Right: the same form asked for segment — one line per named bar, with the length the bar already knows." loading="lazy">
+</mini-workspace></p>
+<p>The right panel is the first annotation and the smallest: <code>queryAll(&#39;segment&#39;)</code>
+returns the four bars in drawing order, each with its label and its
+length, and a loop prints them level with the bars they describe.
+Nothing on the right knows the number 95; it asked.</p>
+<h2>Pivots, named where they were drawn</h2>
+<p>The pivot names came from the form, so the twin only has to put them
+somewhere sensible. A subscription on the twin&#39;s bars layer delivers
+each <code>Endpoint</code> with its label. The direction to push the name is the
+one from part 2: the incoming bar&#39;s end tangent, turned by half the
+joint&#39;s own <code>turn</code>, which points away from the bars whichever way the
+linkage bends.</p>
+<p><mini-workspace code-open caption="One subscription on endpoint: a dot at every pivot and its own label beside it, pushed outward along the joint's bisector. O2 and O4 are the fixed pivots, A and B ride the bars.">
+  <code>//-- Every pivot named by a subscription: the twin's form layer delivers
+//-- each joint, its label, and the direction that points away from the bars.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 100 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: points;
+  stroke: none;
+};
+let rightNames = TextLayer('right-names') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: points;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightDots,
+    rightNames);
+
+// Declared before the form is drawn. The name is the label the form gave
+// the pivot; the direction is the incoming link's tangent turned by half
+// the joint's own turn — outward, whichever way the linkage bends.
+rightBars.subscribe('endpoint') {|pivot|
+  rightDots.apply {
+    circle(pivot.x, pivot.y, 2.5);
+  }
+  let heading = pivot.command.block.tangent(1).angle;
+  let away = heading + pivot.turn.rad / 2 - PI() / 2;
+  rightNames.apply {
+    text(pivot.x + cos(away) * 12, pivot.y + sin(away) * 12 + 3)`${pivot.label}`;
+  }
+};
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 166)`pivots drawn, not yet named`;
+}
+rightEyebrow.apply {
+  text(0, -18)`ENDPOINT, SUBSCRIBED`;
+}
+rightNote.apply {
+  text(0, 166)`O2 and O4 fixed, A and B moving`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/02-pivots-named.svg" alt="One subscription on endpoint: a dot at every pivot and its own label beside it, pushed outward along the joint's bisector. O2 and O4 are the fixed pivots, A and B ride the bars." loading="lazy">
+</mini-workspace></p>
+<h2>A dimension line, written once</h2>
+<p>A <strong>dimension line</strong> is the drafting convention for &quot;this is how long&quot;:
+a line parallel to the bar, an arrowhead at each end, short <strong>extension
+lines</strong> reaching toward the bar with a small gap, and the value beside
+it. The post writes one function for it, and the function takes a
+<code>Segment</code>, not coordinates:</p>
+<pre><code class="hljs language-pathogen"><span class="kw">fn</span> <span class="id">dimension</span>(<span class="id">link</span>, <span class="id">offset</span>) {
+  <span class="kw">let</span> <span class="id">bar</span> = <span class="id">link</span>.<span class="id">commands</span>[<span class="num">0</span>];
+  <span class="kw">let</span> <span class="id">barNormal</span> = <span class="id">link</span>.<span class="id">block</span>.<span class="id">normal</span>(<span class="num">0.5</span>);
+  ...
+}
+</code></pre><p>Everything the drawing needs is on that struct. The bar&#39;s <code>start</code> and
+<code>end</code> place the extension lines. Its <code>length</code> is the value. Its <code>label</code>
+is the caption. <code>link.block.normal(0.5)</code> gives the same side of every
+bar relative to travel, which for a loop drawn this way is the outside,
+so one call dimensions a bar that runs left, right, up or at 23 degrees.
+The arrowheads are one small block with its tip at the origin, rotated
+into place at each end.</p>
+<p><mini-workspace code-open caption="dimension(link, 12) called once per segment. The extension lines, the arrows and the value all come from the bar's own ends, length, label and normal — the offset is the only thing passed in.">
+  <code>//-- Dimension lines from the links themselves: each segment's ends, length,
+//-- label and outward normal draw its own extension lines, arrows and value.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let dims = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// One arrowhead, drawn once with its tip at the origin, rotated into place.
+let tip = @{
+  l -7 -3
+  l 0 6
+  z
+};
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 120 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let extLines = PathLayer('ext-lines') #{
+  stroke: dims;
+  stroke-width: 0.5;
+  fill: none;
+};
+let dimLines = PathLayer('dim-lines') #{
+  stroke: dims;
+  stroke-width: 0.75;
+  fill: none;
+};
+let dimArrows = PathLayer('dim-arrows') #{
+  fill: dims;
+  stroke: none;
+};
+let dimText = TextLayer('dim-text') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: dims;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    extLines,
+    dimLines,
+    dimArrows,
+    dimText);
+
+
+// A dimension line for one link, from what the link already knows: its
+// ends, its length, its label, and its outward normal at the midpoint.
+fn dimension(link, offset) {
+  let bar = link.commands[0];
+  let barNormal = link.block.normal(0.5);
+  let nx = cos(barNormal.angle);
+  let ny = sin(barNormal.angle);
+  let from = bar.start;
+  let to = bar.end;
+  extLines.apply {
+    M calc(from.x + nx * (offset - 10)) calc(from.y + ny * (offset - 10))
+    L calc(from.x + nx * (offset + 4)) calc(from.y + ny * (offset + 4))
+    M calc(to.x + nx * (offset - 10)) calc(to.y + ny * (offset - 10))
+    L calc(to.x + nx * (offset + 4)) calc(to.y + ny * (offset + 4))
+  }
+  dimLines.apply {
+    M calc(from.x + nx * offset) calc(from.y + ny * offset)
+    L calc(to.x + nx * offset) calc(to.y + ny * offset)
+  }
+  let along = link.block.tangent(0.5).angle;
+  let head = tip.rotate(along);
+  let tail = tip.rotate(along + PI());
+  dimArrows.apply {
+    M calc(to.x + nx * offset) calc(to.y + ny * offset) head.draw()
+    M calc(from.x + nx * offset) calc(from.y + ny * offset) tail.draw()
+  }
+  // The label sits past the line; a sideways normal pushes it clear of it.
+  let mid = barNormal.point;
+  let clear = offset + 9 + 14 * abs(nx);
+  dimText.apply {
+    text(mid.x + nx * clear, mid.y + ny * clear + 3)`${link.label} ${round(bar.length)}`;
+  }
+}
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+for (link in rightBars.queryAll('segment')) {
+  dimension(link, 12);
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 166)`no lengths written anywhere but the top`;
+}
+rightEyebrow.apply {
+  text(0, -18)`ONE FN, FOUR LINKS`;
+}
+rightNote.apply {
+  text(0, 166)`dimension(link, 12) for each segment`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/03-link-dimensions.svg" alt="dimension(link, 12) called once per segment. The extension lines, the arrows and the value all come from the bar's own ends, length, label and normal — the offset is the only thing passed in." loading="lazy">
+</mini-workspace></p>
+<h2>Two angles</h2>
+<p>The <strong>crank angle</strong> is measured at the crank&#39;s ground pivot, from the
+ground line to the crank. Both directions are on the pivot:
+<code>query(&#39;endpoint(O2)&#39;)</code> returns it, <code>next</code> is the bar that leaves and
+its start tangent is the crank&#39;s heading, <code>command</code> is the ground bar
+arriving and its end tangent, reversed, is the ground line. An arc from
+the one to the other, the short way round, is the textbook mark.</p>
+<p>The second angle is the one that decides whether the mechanism is any
+good. The <strong>transmission angle</strong> is the angle between the coupler and
+the rocker at pivot B. Force passes from one to the other through it,
+and when it drops toward zero the rocker binds instead of moving; a rule
+of thumb keeps it between 40 and 140 degrees, no more than 50 degrees
+away from square. The path already turns at B by some
+amount, and the transmission angle is what is left of a straight line
+after that turn.</p>
+<p><mini-workspace code-open caption="Left: the form. Right: the crank angle at O2 between the ground bar's heading and the crank's, and the transmission angle at B from the joint's turn — 79°, comfortably inside the 40°–140° rule of thumb.">
+  <code>//-- Two angles the form knows: the crank angle at O2, from the heading of
+//-- the link that leaves it, and the transmission angle at B, from its turn.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let angles = oklch(0.55 0.16 320);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 100 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightArcs = PathLayer('right-arcs') #{
+  stroke: angles;
+  stroke-width: 1;
+  fill: none;
+};
+let rightAngles = TextLayer('right-angles') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: angles;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightArcs,
+    rightAngles);
+
+
+// An angle arc at a pivot between two headings, the short way round, with
+// the degrees on the bisector. Headings are radians on the screen.
+fn angleArc(center, radius, fromHeading, toHeading,
+    arcs, labels) {
+  let delta = toHeading - fromHeading;
+  if (delta &gt; PI()) {
+    delta = delta - 2 * PI();
+  }
+  if (delta &lt; -PI()) {
+    delta = delta + 2 * PI();
+  }
+  let sweep = 0;
+  if (delta &gt; 0) {
+    sweep = 1;
+  }
+  let startX = center.x + radius * cos(fromHeading);
+  let startY = center.y + radius * sin(fromHeading);
+  let endX = center.x + radius * cos(toHeading);
+  let endY = center.y + radius * sin(toHeading);
+  arcs.apply {
+    M startX startY
+    A radius radius 0 0 sweep endX endY
+  }
+  let mid = fromHeading + delta / 2;
+  labels.apply {
+    text(center.x + (radius + 10) * cos(mid), center.y + (radius + 10) * sin(mid) + 3)`${round(abs(deg(delta)))}°`;
+  }
+}
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+// The crank angle: from the ground's direction to the crank's heading.
+let pivotO2 = rightBars.query('endpoint(O2)');
+// The ground arrives at O2 heading back along itself; reversed, that is the
+// ground line the crank angle is measured from.
+let groundOut = pivotO2.command.block.tangent(1).angle + PI();
+let crankHeading = pivotO2.next.block.tangent(0).angle;
+angleArc(pivotO2.point,
+    20,
+    groundOut,
+    crankHeading,
+    rightArcs,
+    rightAngles);
+
+// The transmission angle: what is left of a straight line at B after the
+// path turns from the coupler onto the rocker.
+let pivotB = rightBars.query('endpoint(B)');
+let couplerBack = pivotB.command.block.tangent(1).angle + PI();
+let rockerOut = pivotB.next.block.tangent(0).angle;
+angleArc(pivotB.point,
+    14,
+    couplerBack,
+    rockerOut,
+    rightArcs,
+    rightAngles);
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 166)`crankAngle = 60deg, typed once`;
+}
+rightEyebrow.apply {
+  text(0, -18)`HEADING AND TURN`;
+}
+rightNote.apply {
+  text(0, 166)`transmission angle ${round(180 - abs(pivotB.turn.deg))}° — keep it 40°–140°`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/04-crank-angle.svg" alt="Left: the form. Right: the crank angle at O2 between the ground bar's heading and the crank's, and the transmission angle at B from the joint's turn — 79°, comfortably inside the 40°–140° rule of thumb." loading="lazy">
+</mini-workspace></p>
+<p>Both arcs come from one helper that takes a centre and two headings.
+The transmission angle is <code>180° − |turn|</code>, printed by the note without
+the arc ever being measured.</p>
+<h2>Five positions, no new code</h2>
+<p>This is the sample that argues for the whole series. A loop draws four
+more positions, 72 degrees apart, into a ghost layer, with the working
+position drawn on top. The annotation code is the subscription from
+part 2, narrowed to the two moving pivots and pointed at the ghost layer
+as well as the bars. Every moving pivot of every position gets its ring,
+and each ghost crank is labelled with the angle read from the bar that
+arrives at it.</p>
+<p><mini-workspace code-open caption="Four ghosts from one loop, the working position on top. The same endpoint subscription rings every moving pivot of every position; a query for endpoint(B) traces the arc B rides about O4.">
+  <code>//-- The same linkage at five crank angles, 72° apart. The annotation code does not
+//-- change: one subscription marks every moving pivot of every position, and
+//-- one query traces where B went.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let angles = oklch(0.55 0.16 320);
+let trail = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let leftGhosts = PathLayer('left-ghosts') #{
+  stroke: fg_hair;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  fill: none;
+};
+leftPanel.append(leftBars,
+    leftPivots,
+    leftEyebrow,
+    leftNote,
+    leftGhosts);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightGhosts = PathLayer('right-ghosts') #{
+  stroke: fg_hair;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: bg_color;
+  stroke: points;
+  stroke-width: 1;
+};
+let rightTrace = PathLayer('right-trace') #{
+  stroke: trail;
+  stroke-width: 1.25;
+  stroke-dasharray: 3 3;
+  fill: none;
+};
+let rightAngles = TextLayer('right-angles') #{
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: angles;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightGhosts,
+    rightDots,
+    rightTrace,
+    rightAngles);
+
+// Every moving pivot of every position, whichever layer it lands on.
+fn markPivots(source) {
+  source.subscribe('endpoint(A), endpoint(B)') {|pivot|
+    rightDots.apply {
+      circle(pivot.x, pivot.y, 2.5);
+    }
+  };
+}
+markPivots(rightGhosts);
+markPivots(rightBars);
+
+// The crank angle beside each ghost's A, read from the crank that arrives there.
+rightGhosts.subscribe('endpoint(A)') {|pivot|
+  let heading = pivot.command.block.tangent(1).angle;
+  // Above A when the crank points up, below it when the crank points down:
+  // always on the empty side of the ghost.
+  let side = -1;
+  if (sin(heading) &gt; 0) {
+    side = 1;
+  }
+  // Screen headings wrap at ±180°; a crank angle counts 0..360 the other way.
+  let angle = -deg(heading);
+  if (angle &lt; 0) {
+    angle = angle + 360;
+  }
+  rightAngles.apply {
+    text(pivot.x + cos(heading) * 4, pivot.y + side * 10 + 2.5)`${round(angle)}°`;
+  }
+};
+
+let positions = [
+  132deg,
+  204deg,
+  276deg,
+  348deg,
+];
+for (theta in positions) {
+  let ghost = linkageBlock(theta);
+  leftGhosts.apply {
+    M 40 100 ghost.draw()
+  }
+  rightGhosts.apply {
+    M 40 100 ghost.draw()
+  }
+}
+let form = linkageBlock(crankAngle);
+leftBars.apply {
+  M 40 100 form.draw()
+}
+rightBars.apply {
+  M 40 100 form.draw()
+}
+leftPivots.apply {
+  for (pivot in leftBars.queryAll('endpoint')) {
+    circle(pivot.x, pivot.y, 3.5);
+  }
+}
+rightPivots.apply {
+  for (pivot in rightBars.queryAll('endpoint(O2), endpoint(O4)')) {
+    circle(pivot.x, pivot.y, 3.5);
+  }
+}
+
+// Where B went: every B the ghosts drew, in crank-angle order.
+let path = rightGhosts.queryAll('endpoint(B)');
+let first = path[0];
+rightTrace.apply {
+  M first.x first.y
+  for (stop in path.slice(1)) {
+    L stop.x stop.y
+  }
+}
+
+leftEyebrow.apply {
+  text(0, -18)`FIVE POSITIONS`;
+}
+leftNote.apply {
+  text(0, 166)`one loop over crank angles`;
+}
+rightEyebrow.apply {
+  text(0, -18)`SAME SUBSCRIPTIONS`;
+}
+rightNote.apply {
+  text(0, 166)`${path.length} ghosts, one working position, no new code`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/05-five-positions.svg" alt="Four ghosts from one loop, the working position on top. The same endpoint subscription rings every moving pivot of every position; a query for endpoint(B) traces the arc B rides about O4." loading="lazy">
+</mini-workspace></p>
+<p>The dashed trace is a query, not a subscription: after the loop,
+<code>queryAll(&#39;endpoint(B)&#39;)</code> on the ghost layer returns every B in
+crank-angle order, and a polyline through them is the arc B rides about
+O4, the rocker&#39;s swing sampled four times. Add a fifth ghost to the
+loop and both the rings and the trace follow.</p>
+<h2>The worksheet</h2>
+<p>The finished figure puts everything on one twin: names, four dimension
+lines, both angles, and a verdict. The <strong>Grashof condition</strong> is the rule
+that says whether the shortest bar can rotate fully: the shortest plus
+the longest must not exceed the sum of the other two. The twin sorts the
+four lengths it queried and prints the test with its numbers.</p>
+<p><mini-workspace code-open caption="Every number on the right was asked of the form on the left. The note runs the Grashof test on the four queried lengths: 35 + 120 ≤ 165 holds, and since the shortest link is the crank, this is a crank-rocker and the crank turns all the way round.">
+  <code>//-- The worksheet figure: names, dimensions, both angles, and the Grashof
+//-- test — every number on the right asked of the form on the left.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let dims = oklch(0.55 0.16 80);
+let angles = oklch(0.55 0.16 320);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+
+
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+
+// One arrowhead, drawn once with its tip at the origin, rotated into place.
+let tip = @{
+  l -7 -3
+  l 0 6
+  z
+};
+
+// Draw the form into a panel: the bars, then a pivot ring at every joint
+// the bars report — the form asks itself where its pivots are.
+fn drawLinkage(bars, pivots, theta) {
+  let form = linkageBlock(theta);
+  bars.apply {
+    M 16 120 form.draw()
+  }
+  pivots.apply {
+    for (pivot in bars.queryAll('endpoint')) {
+      circle(pivot.x, pivot.y, 3.5);
+    }
+  }
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+leftPanel.append(leftBars, leftPivots, leftEyebrow, leftNote);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 264;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: points;
+  stroke: none;
+};
+let rightNames = TextLayer('right-names') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.8;
+  fill: points;
+  text-anchor: middle;
+};
+let extLines = PathLayer('ext-lines') #{
+  stroke: dims;
+  stroke-width: 0.5;
+  fill: none;
+};
+let dimLines = PathLayer('dim-lines') #{
+  stroke: dims;
+  stroke-width: 0.75;
+  fill: none;
+};
+let dimArrows = PathLayer('dim-arrows') #{
+  fill: dims;
+  stroke: none;
+};
+let dimText = TextLayer('dim-text') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: dims;
+  text-anchor: middle;
+};
+let rightArcs = PathLayer('right-arcs') #{
+  stroke: angles;
+  stroke-width: 1;
+  fill: none;
+};
+let rightAngles = TextLayer('right-angles') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: angles;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightDots,
+    rightNames,
+    extLines,
+    dimLines,
+    dimArrows,
+    dimText,
+    rightArcs,
+    rightAngles);
+
+
+// A dimension line for one link, from what the link already knows: its
+// ends, its length, its label, and its outward normal at the midpoint.
+fn dimension(link, offset) {
+  let bar = link.commands[0];
+  let barNormal = link.block.normal(0.5);
+  let nx = cos(barNormal.angle);
+  let ny = sin(barNormal.angle);
+  let from = bar.start;
+  let to = bar.end;
+  extLines.apply {
+    M calc(from.x + nx * (offset - 10)) calc(from.y + ny * (offset - 10))
+    L calc(from.x + nx * (offset + 4)) calc(from.y + ny * (offset + 4))
+    M calc(to.x + nx * (offset - 10)) calc(to.y + ny * (offset - 10))
+    L calc(to.x + nx * (offset + 4)) calc(to.y + ny * (offset + 4))
+  }
+  dimLines.apply {
+    M calc(from.x + nx * offset) calc(from.y + ny * offset)
+    L calc(to.x + nx * offset) calc(to.y + ny * offset)
+  }
+  let along = link.block.tangent(0.5).angle;
+  let head = tip.rotate(along);
+  let tail = tip.rotate(along + PI());
+  dimArrows.apply {
+    M calc(to.x + nx * offset) calc(to.y + ny * offset) head.draw()
+    M calc(from.x + nx * offset) calc(from.y + ny * offset) tail.draw()
+  }
+  // The label sits past the line; a sideways normal pushes it clear of it.
+  let mid = barNormal.point;
+  let clear = offset + 9 + 14 * abs(nx);
+  dimText.apply {
+    text(mid.x + nx * clear, mid.y + ny * clear + 3)`${round(bar.length)}`;
+  }
+}
+
+
+// An angle arc at a pivot between two headings, the short way round, with
+// the degrees on the bisector. Headings are radians on the screen.
+fn angleArc(center, radius, fromHeading, toHeading,
+    arcs, labels) {
+  let delta = toHeading - fromHeading;
+  if (delta &gt; PI()) {
+    delta = delta - 2 * PI();
+  }
+  if (delta &lt; -PI()) {
+    delta = delta + 2 * PI();
+  }
+  let sweep = 0;
+  if (delta &gt; 0) {
+    sweep = 1;
+  }
+  let startX = center.x + radius * cos(fromHeading);
+  let startY = center.y + radius * sin(fromHeading);
+  let endX = center.x + radius * cos(toHeading);
+  let endY = center.y + radius * sin(toHeading);
+  arcs.apply {
+    M startX startY
+    A radius radius 0 0 sweep endX endY
+  }
+  let mid = fromHeading + delta / 2;
+  labels.apply {
+    text(center.x + (radius + 10) * cos(mid), center.y + (radius + 10) * sin(mid) + 3)`${round(abs(deg(delta)))}°`;
+  }
+}
+
+rightBars.subscribe('endpoint') {|pivot|
+  rightDots.apply {
+    circle(pivot.x, pivot.y, 2.5);
+  }
+  let heading = pivot.command.block.tangent(1).angle;
+  let away = heading + pivot.turn.rad / 2 - PI() / 2;
+  rightNames.apply {
+    text(pivot.x + cos(away) * 11, pivot.y + sin(away) * 11 + 3)`${pivot.label}`;
+  }
+};
+
+drawLinkage(leftBars, leftPivots, crankAngle);
+drawLinkage(rightBars, rightPivots, crankAngle);
+
+let links = rightBars.queryAll('segment');
+for (link in links) {
+  dimension(link, 22);
+}
+
+let pivotO2 = rightBars.query('endpoint(O2)');
+// The ground arrives at O2 heading back along itself; reversed, that is the
+// ground line the crank angle is measured from.
+let groundOut = pivotO2.command.block.tangent(1).angle + PI();
+angleArc(pivotO2.point,
+    20,
+    groundOut,
+    pivotO2.next.block.tangent(0).angle,
+    rightArcs,
+    rightAngles);
+let pivotB = rightBars.query('endpoint(B)');
+angleArc(pivotB.point,
+    14,
+    pivotB.command.block.tangent(1).angle + PI(),
+    pivotB.next.block.tangent(0).angle,
+    rightArcs,
+    rightAngles);
+
+// Grashof: the shortest plus the longest link against the other two. When it
+// holds, the shortest link can turn full circle — here that link is the crank.
+let lengths = links.map() {|link| link.commands[0].length}.sort() {|lo, hi| lo - hi};
+let shortest = lengths[0];
+let longest = lengths[3];
+let others = lengths[1] + lengths[2];
+let kind = 'non-Grashof';
+if (shortest + longest &lt;= others) {
+  kind = 'Grashof';
+}
+
+leftEyebrow.apply {
+  text(0, -18)`THE FORM`;
+}
+leftNote.apply {
+  text(0, 166)`ground ${ground} · crank ${crank} · coupler ${coupler} · rocker ${rocker}`;
+}
+rightEyebrow.apply {
+  text(0, -18)`THE WORKSHEET`;
+}
+rightNote.apply {
+  text(0, 166)`${kind}: ${round(shortest)} + ${round(longest)} ≤ ${round(others)}`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
+</code>
+  <img src="/blog/samples/post54/06-worksheet.svg" alt="Every number on the right was asked of the form on the left. The note runs the Grashof test on the four queried lengths: 35 + 120 ≤ 165 holds, and since the shortest link is the crank, this is a crank-rocker and the crank turns all the way round." loading="lazy">
+</mini-workspace></p>
+<p>Change <code>crank</code> to 60 at the top of the file. The pivots move, the
+dimension values change, the two angles re-solve, and the note reads
+<code>non-Grashof: 60 + 120 ≤ 165</code>, the test it just failed. That is the
+whole reason to build the drawing this way.</p>
+<h2>What this project taught the language</h2>
+<p>This series doubles as a working friction log (<a href="/blog/ask-the-path">part
+1</a> explains the convention). The linkage was the
+first form built as a labelled block and drawn twice, and it found more
+than the first two posts together.</p>
+<p><strong>Labels now travel with a drawn block.</strong> The form is a labelled <code>@{ }</code>
+block, drawn into each panel&#39;s bars layer with <code>M 16 100 form.draw()</code>,
+and the twin asks that layer for <code>endpoint(A)</code>. The first attempt
+answered &quot;available endpoint labels: none&quot;. The relative serializer had
+carried every label in the commands it tracked, but only the emitted
+text reached the layer&#39;s record, which re-parsed it from scratch. Part 1&#39;s
+comb never noticed because its labels were authored inside the layer&#39;s
+own apply block. The statement now keeps its arguments&#39; tracked commands
+and copies their labels back onto the parsed ones by position. <a href="/docs#segment-labels-segment-labels-corner-suffixes">Labels
+travel with their block</a>
+through <code>draw()</code> and <code>drawTo()</code> alike, and a block&#39;s corner operations
+are not applied a second time on the way in.</p>
+<p><strong><code>A</code> is the arc command.</strong> Every kinematics text names the moving
+pivots A and B, and <code>L A.x A.y</code> inside a block is a parse error, because
+in path-argument position a single letter that is a path command is the
+command. The same rule caught a test that named a lambda parameter <code>s</code>.
+So the pivots are <code>pinA</code> and <code>pinB</code> in code and <code>&#39;A&#39;</code> and <code>&#39;B&#39;</code> in their
+labels, and the first sample says so in a comment. Not a bug, but the
+domain post has to say it early.</p>
+<p><strong>There is no circle-meets-circle, and blocks are relative-only.</strong> The
+solver needs the point where the coupler&#39;s reach meets the rocker&#39;s
+reach; <code>intersectionPoints()</code> works on bounding boxes, so the samples
+use the law of cosines. A block also cannot be written from absolute
+pivots, so each bar is the step from the pivot before it. Both are
+documented; both are exactly the arithmetic the series promised to take
+away. A <code>Command.heading</code> member would also spare the samples
+<code>pivot.next.block.tangent(0).angle</code>.</p>
+<p><strong>Markers are per element, not per subpath.</strong> The first dimension lines
+used <code>marker-start</code> and <code>marker-end</code> for the arrowheads, and four lines
+in one layer got two arrows, at the first vertex of the first line and
+the last vertex of the last. The samples rotate one arrowhead block into
+place instead. A layer option that emits each subpath as its own element
+when markers are set is the language-side answer, and it is logged.</p>
+<p><strong>Two gates in the sample pipeline were wrong, and both are fixed.</strong> The
+first validation of this post&#39;s six figures reported 51 collisions,
+because the check compared each label with the bounding box of a whole
+path, and a label inside the linkage&#39;s hull overlaps the bars&#39; box. It
+now samples the label&#39;s rectangle against the geometry&#39;s real stroke
+and fill, and the same six figures report none. Then a slip in how the
+samples were generated left <code>#{{ … }}</code> around ten style blocks, and the
+formatter rewrote every one as <code>#{}</code> and reported success: it falls back
+to an error-recovery parse so a missing semicolon can still be
+formatted, and the recovered tree simply omitted the unparseable text.
+The playground and VS Code format through the same function. It now
+refuses when the recovery skipped real text. One more gate came out of
+the review: a label that strays across the panel divider is invisible to
+an area test, so the validator now flags any text crossing a hairline
+divider.</p>
+<h2>Where to go next</h2>
+<p>Part 4 leaves the classroom for the workbench. A Eurorack front panel
+prints its own drill schedule from <code>queryAll(&#39;call(circle)&#39;)</code>, the table
+of hole numbers, diameters and coordinates the panel shop needs.</p>
+<p>The reference pages are <a href="/docs#path-queries-path-queries">Path Queries</a>
+and <a href="/docs#subscriptions-subscriptions">Subscriptions</a>. Every sample
+above opens in the playground with one click: change a link length at
+the top and watch the worksheet re-solve.</p>
+
+      </div>
+    </article>
+  </main>
+  <auth-modal></auth-modal>
+  <!-- Eagerly register the <color-input> custom element so the chip and inspector
+       color pickers can mount. Same load pattern as playground/index.html.
+       Without this, <pathogen-color-input> waits on whenDefined('color-input')
+       indefinitely and renders an empty shadow root — the bug was that the
+       inspector chips and mini-workspace glass-bar chips both looked blank and
+       didn't respond to clicks on blog pages. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "hdr-color-input": "/vendor/hdr-color-input.js"
+      }
+    }
+  </script>
+  <script type="module" src="/vendor/hdr-color-input.js"></script>
+  <script src="/components/shared/theme-toggle.js" type="module"></script>
+  <script src="/components/shared/account-menu.js" type="module"></script>
+  <script src="/components/shared/auth-modal.js" type="module"></script>
+  <script src="/components/blog/reactive-svg.js" type="module"></script>
+  <!-- shared pan/zoom controller (window.PathogenPanZoom) — load before mini-preview -->
+  <script src="/dist/pan-zoom.global.js"></script>
+  <script src="/components/blog/mini-workspace.js" type="module"></script>
+  <script src="/components/blog/mini-preview.js" type="module"></script>
+</body>
+</html>

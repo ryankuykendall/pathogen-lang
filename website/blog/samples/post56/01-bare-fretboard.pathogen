@@ -1,0 +1,196 @@
+//-- A 22-fret fretboard drawn in millimetres from one scale length: the
+//-- taper and every slot follow from the twelfth root of two. Below: what
+//-- the slots layer can already say about itself.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value < 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac < 10) {
+    pad = '0';
+  }
+  return `${sign}${whole}.${pad}${frac}`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.9;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.9;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomOctave = PathLayer('bottom-octave') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomTable = TextLayer('bottom-table') #{
+  font-family: font;
+  font-size: 5.5;
+  font-weight: 700;
+  letter-spacing: 0.3;
+  fill: points;
+  text-anchor: start;
+};
+bottomPanel.append(bottomOutline, bottomSlots, bottomOctave, bottomTable);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+drawBoard(topOutline, topSlots, scaleLength);
+drawBoard(bottomOutline, bottomSlots, scaleLength);
+
+// Asked, not computed twice: the octave slot is the twelfth line, and
+// it sits at half the scale length.
+let frets = bottomSlots.queryAll('command(line)');
+let octave = bottomSlots.query('command(line):nth(11)');
+let last = bottomSlots.query('command(line):last');
+bottomOctave.apply {
+  octave.block.draw();
+}
+bottomTable.apply {
+  text(0, 68)`${frets.length} slots · octave at ${mm(octave.start.x)} mm, half of ${scaleLength} · fret ${frets.length} at ${mm(last.start.x)} mm`;
+}
+
+topEyebrow.apply {
+  text(25, 48)`THE FORM, 25.5 IN`;
+}
+topNote.apply {
+  text(25, 134)`scale 647.7 mm, 22 frets, 43 to 56 mm wide`;
+}
+bottomEyebrow.apply {
+  text(25, 166)`COMMAND(LINE), ASKED`;
+}
+bottomNote.apply {
+  text(25, 282)`the octave check, from the twelfth slot`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}

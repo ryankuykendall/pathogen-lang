@@ -1,0 +1,251 @@
+//-- A fanned-fret board: two scale lengths, 27 inches on the bass side and
+//-- 25.5 on the treble, with fret 7 perpendicular. Every slot leans a
+//-- little differently, and the same subscription numbers them all.
+
+define ViewBox(0, 0, 480, 300);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let marks = oklch(0.55 0.16 80);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 300);
+}
+
+// ─── The fretboard, in millimetres. One scale length is the design. ─
+let scaleLength = 647.7;
+let fretCount = 22;
+let nutWidth = 43;
+let endWidth = 56;
+
+// Equal temperament: fret n sits where the remaining string is n twelfths
+// of an octave shorter; what is taken off the scale is the fret's distance
+// from the nut.
+fn fretFrom(scale, n) {
+  return scale - scale / pow(2, n / 12);
+}
+fn boardLengthFor(scale) {
+  return fretFrom(scale, fretCount) + 10;
+}
+fn widthAt(x, length) {
+  return nutWidth + (endWidth - nutWidth) * x / length;
+}
+
+// The form: a tapered outline and one slot per fret, nut at x = 0.
+fn drawBoard(outline, slots, scale) {
+  let length = boardLengthFor(scale);
+  outline.apply {
+    M 0 0
+    L length 0
+    L length endWidth
+    L 0 nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let x = fretFrom(scale, n);
+      let w = widthAt(x, length);
+      M x 0
+      L x w
+    }
+  }
+}
+
+// Two decimals, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value < 0) {
+    sign = '-';
+  }
+  let hundredths = round(abs(value) * 100);
+  let whole = floor(hundredths / 100);
+  let frac = hundredths - whole * 100;
+  let pad = '';
+  if (frac < 10) {
+    pad = '0';
+  }
+  return `${sign}${whole}.${pad}${frac}`;
+}
+
+// ─── Top board: page position and scale, children in millimetres ──
+let topPanel = GroupLayer('top') #{
+  translate-x: 25;
+  translate-y: 62;
+  scale: 0.82;
+};
+let topOutline = PathLayer('top-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let topSlots = PathLayer('top-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+topPanel.append(topOutline, topSlots);
+// ─── Bottom board: page position and scale, children in millimetres ──
+let bottomPanel = GroupLayer('bottom') #{
+  translate-x: 25;
+  translate-y: 178;
+  scale: 0.82;
+};
+let bottomOutline = PathLayer('bottom-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.8;
+  fill: none;
+};
+let bottomSlots = PathLayer('bottom-slots') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let bottomMarks = PathLayer('bottom-marks') #{
+  stroke: marks;
+  stroke-width: 1.4;
+  fill: none;
+};
+let bottomNumbers = TextLayer('bottom-numbers') #{
+  font-family: font;
+  font-size: 6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: middle;
+};
+let bottomLean = TextLayer('bottom-lean') #{
+  font-family: mono;
+  font-size: 5;
+  letter-spacing: 0;
+  fill: marks;
+  text-anchor: middle;
+};
+bottomPanel.append(bottomOutline,
+    bottomSlots,
+    bottomMarks,
+    bottomNumbers,
+    bottomLean);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let topEyebrow = TextLayer('top-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let topNote = TextLayer('top-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let bottomEyebrow = TextLayer('bottom-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let bottomNote = TextLayer('bottom-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+let bassScale = 685.8;
+let trebleScale = scaleLength;
+let perpendicularFret = 7;
+
+// Each fret runs from its bass-side position to its treble-side position.
+// The treble side is shifted so the chosen fret stands straight, and the
+// nut and the far end lean the opposite ways.
+fn drawFannedBoard(outline, slots) {
+  let shift = fretFrom(bassScale, perpendicularFret) - fretFrom(trebleScale, perpendicularFret);
+  let bassEnd = boardLengthFor(bassScale);
+  let trebleEnd = shift + boardLengthFor(trebleScale);
+  outline.apply {
+    M 0 0
+    L bassEnd 0
+    L trebleEnd endWidth
+    L shift nutWidth
+    z
+  }
+  slots.apply {
+    for (n in 1..fretCount) {
+      let bassX = fretFrom(bassScale, n);
+      let trebleX = shift + fretFrom(trebleScale, n);
+      let w = widthAt(bassX, bassEnd);
+      M bassX 0
+      L trebleX w
+    }
+  }
+}
+
+// Declared before a slot is drawn: every line the slots layer records is
+// a fret, and the subscription's ordinal is the fret number, less one.
+fn numberFrets(slots, numbers) {
+  slots.subscribe('command(line)') {|fret, i|
+    numbers.apply {
+      text(fret.start.x, -2.5)`${i + 1}`;
+    }
+  };
+}
+
+numberFrets(bottomSlots, bottomNumbers);
+
+drawFannedBoard(topOutline, topSlots);
+drawFannedBoard(bottomOutline, bottomSlots);
+
+// The straight fret, by position; the lean of the nut and the last fret,
+// from each slot's own tangent (a straight slot points due down: 90°).
+for (fret in bottomSlots.queryAll('command(line):nth(6)')) {
+  bottomMarks.apply {
+    fret.block.draw();
+  }
+}
+for (fret in bottomSlots.queryAll('command(line):nth(0, 21)')) {
+  let lean = deg(fret.block.tangent(0).angle) - 90;
+  bottomLean.apply {
+    text(fret.end.x, fret.end.y + 7)`${mm(lean)}°`;
+  }
+}
+
+topEyebrow.apply {
+  text(25, 48)`THE FORM, FANNED`;
+}
+topNote.apply {
+  text(25, 134)`bass 685.8 mm, treble 647.7 mm, fret 7 straight`;
+}
+bottomEyebrow.apply {
+  text(25, 166)`SAME SUBSCRIPTION, LEANING SLOTS`;
+}
+bottomNote.apply {
+  text(25, 282)`numbers from the slots' ends, leans from their tangents`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 25 150
+  L 455 150
+}

@@ -1,0 +1,207 @@
+//-- Every hole numbered and crossed by one subscription on call(circle):
+//-- the number just outside its rim, the cross on its centre, in drawing order.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let font = 'sans-serif';
+let mono = 'monospace';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The panel, in millimetres. HP is the parameter. ──────────
+let hp = 6;
+let height = 128.5;
+let unit = 5.08;
+let width = hp * unit - 0.3;
+
+// A rail slot: 5.5 × 3.2, centred where the rail standard wants it.
+fn slot(cx, cy) {
+  roundRect(cx - 2.75,
+      cy - 1.6,
+      5.5,
+      3.2,
+      1.6);
+}
+
+// Every hole the panel needs, named where it is drawn. Jacks are ⌀6,
+// pots ⌀7, the LED ⌀3; columns sit on quarters of whatever the width is.
+fn drawHoles(holes) {
+  let mid = width / 2;
+  let left = width / 4;
+  let right = width * 3 / 4;
+  holes.apply {
+    slot(7.5, 3);
+    slot(7.5, height - 3);
+    if (hp >= 10) {
+      slot(width - 7.5, 3);
+      slot(width - 7.5, height - 3);
+    }
+    circle(mid, 24, 3.5) as segment('rate');
+    circle(mid, 48, 3.5) as segment('depth');
+    circle(mid, 64, 1.5) as segment('led');
+    circle(left, 82, 3) as segment('in');
+    circle(right, 82, 3) as segment('cv');
+    circle(left, 98, 3) as segment('out-a');
+    circle(right, 98, 3) as segment('out-b');
+    circle(left, 114, 3) as segment('sync');
+    circle(right, 114, 3) as segment('gate');
+  }
+}
+
+fn drawOutline(outline) {
+  outline.apply {
+    roundRect(0,
+        0,
+        width,
+        height,
+        1.5);
+  }
+}
+
+// One decimal, sign kept, always shown — there is no toFixed yet.
+fn mm(value) {
+  let sign = '';
+  if (value < 0) {
+    sign = '-';
+  }
+  let tenths = round(abs(value) * 10);
+  let whole = floor(tenths / 10);
+  return `${sign}${whole}.${tenths - whole * 10}`;
+}
+
+// ─── Left panel: page position and scale, children in millimetres ──
+let leftPanel = GroupLayer('left') #{
+  translate-x: 80;
+  translate-y: 40;
+  scale: 1.4;
+};
+let leftOutline = PathLayer('left-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let leftHoles = PathLayer('left-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+leftPanel.append(leftOutline, leftHoles);
+// ─── Right panel: page position and scale, children in millimetres ──
+let rightPanel = GroupLayer('right') #{
+  translate-x: 220;
+  translate-y: 40;
+  scale: 1.4;
+};
+let rightOutline = PathLayer('right-outline') #{
+  stroke: fg_auto;
+  stroke-width: 0.6;
+  fill: none;
+};
+let rightHoles = PathLayer('right-holes') #{
+  stroke: fg_auto;
+  stroke-width: 0.5;
+  fill: none;
+};
+let rightCrosses = PathLayer('right-crosses') #{
+  stroke: points;
+  stroke-width: 0.35;
+  fill: none;
+};
+let rightNumbers = TextLayer('right-numbers') #{
+  font-family: font;
+  font-size: 3.6;
+  font-weight: 700;
+  letter-spacing: 0.2;
+  fill: points;
+  text-anchor: start;
+};
+rightPanel.append(rightOutline, rightHoles, rightCrosses, rightNumbers);
+
+// ─── Captions, on the page ─────────────────────────────────────
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+
+// Declared before a hole is drawn: each circle() the twin's holes layer
+// records gets a centre cross and its number just outside its rim.
+rightHoles.subscribe('call(circle)') {|hole, i|
+  let centre = hole.block.centerPoint();
+  rightCrosses.apply {
+    M calc(centre.x - 1.2) centre.y
+    L calc(centre.x + 1.2) centre.y
+    M centre.x calc(centre.y - 1.2)
+    L centre.x calc(centre.y + 1.2)
+  }
+  let r = hole.block.boundingBox().width / 2;
+  rightNumbers.apply {
+    text(centre.x + r + 0.6, centre.y - r + 1.2)`${i + 1}`;
+  }
+};
+
+drawOutline(leftOutline);
+drawHoles(leftHoles);
+drawOutline(rightOutline);
+drawHoles(rightHoles);
+
+leftEyebrow.apply {
+  text(80, 30)`THE FORM`;
+}
+leftNote.apply {
+  text(80, 242)`nine holes, two slots`;
+}
+rightEyebrow.apply {
+  text(220, 30)`CALL(CIRCLE), SUBSCRIBED`;
+}
+rightNote.apply {
+  text(220, 242)`numbered in drawing order`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 190 30
+  L 190 235
+}

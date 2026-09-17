@@ -1,0 +1,272 @@
+//-- The same linkage at five crank angles, 72° apart. The annotation code does not
+//-- change: one subscription marks every moving pivot of every position, and
+//-- one query traces where B went.
+
+define ViewBox(0, 0, 480, 260);
+
+// ─── Core tokens ───────────────────────────────────────────────
+let bg_color = Color(CSSVar('--bg', #d0d7f0));
+let fg_auto = Color('#0d1638');
+let fg_muted = Color('#0d1638').alpha(0.6);
+let fg_hair = Color('#0d1638').alpha(0.22);
+let points = oklch(0.55 0.16 260);
+let angles = oklch(0.55 0.16 320);
+let trail = oklch(0.55 0.16 27);
+let font = 'sans-serif';
+
+let bg = PathLayer('bg') #{
+  fill: bg_color;
+  stroke: none;
+};
+bg.apply {
+  rect(0, 0, 480, 260);
+}
+
+// ─── The linkage: change these numbers and everything re-solves ─
+let ground = 120;
+let crank = 35;
+let coupler = 95;
+let rocker = 70;
+let crankAngle = 60deg;
+
+// Pivots for one crank angle. O2 and O4 are fixed to the ground; A rides
+// the crank; B is where the coupler's reach meets the rocker's reach —
+// the law of cosines, because there is no circle–circle helper yet.
+fn linkageAt(theta) {
+  let O2 = Point(0, 0);
+  let O4 = Point(ground, 0);
+  let pinA = Point(crank * cos(theta), -crank * sin(theta));
+  let dx = O4.x - pinA.x;
+  let dy = O4.y - pinA.y;
+  let reach = sqrt(dx * dx + dy * dy);
+  let toward = atan2(dy, dx);
+  let open = acos((coupler * coupler + reach * reach - rocker * rocker) / (2 * coupler * reach));
+  let pinB = Point(pinA.x + coupler * cos(toward - open), pinA.y + coupler * sin(toward - open));
+  return {
+    O2: O2,
+    pinA: pinA,
+    pinB: pinB,
+    O4: O4,
+  };
+}
+
+// The form: four links, each named, each ending at a named pivot. Blocks
+// are relative, so every link is the step from the pivot before it.
+// (`A` alone would be the arc command, hence pinA and pinB.)
+fn linkageBlock(theta) {
+  let pivots = linkageAt(theta);
+  let toA = pivots.pinA;
+  let toB = Point(pivots.pinB.x - pivots.pinA.x, pivots.pinB.y - pivots.pinA.y);
+  let toO4 = Point(pivots.O4.x - pivots.pinB.x, pivots.O4.y - pivots.pinB.y);
+  return @{
+    l toA.x toA.y as segment('crank'), endpoint('A');
+    l toB.x toB.y as segment('coupler'), endpoint('B');
+    l toO4.x toO4.y as segment('rocker'), endpoint('O4');
+    z as segment('ground'), endpoint('O2')
+  };
+}
+
+// ─── Left panel ────────────────────────────────────────────────
+let leftPanel = GroupLayer('left') #{
+  translate-x: 40;
+  translate-y: 60;
+};
+let leftBars = PathLayer('left-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let leftPivots = PathLayer('left-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let leftEyebrow = TextLayer('left-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let leftNote = TextLayer('left-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let leftGhosts = PathLayer('left-ghosts') #{
+  stroke: fg_hair;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  fill: none;
+};
+leftPanel.append(leftBars,
+    leftPivots,
+    leftEyebrow,
+    leftNote,
+    leftGhosts);
+
+// ─── Right panel ────────────────────────────────────────────────
+let rightPanel = GroupLayer('right') #{
+  translate-x: 270;
+  translate-y: 60;
+};
+let rightBars = PathLayer('right-bars') #{
+  stroke: fg_auto;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightPivots = PathLayer('right-pivots') #{
+  fill: bg_color;
+  stroke: fg_auto;
+  stroke-width: 1.5;
+};
+let rightEyebrow = TextLayer('right-eyebrow') #{
+  font-family: font;
+  font-size: 8;
+  font-weight: 700;
+  letter-spacing: 3;
+  fill: fg_muted;
+  text-anchor: start;
+};
+let rightNote = TextLayer('right-note') #{
+  font-family: font;
+  font-size: 8;
+  letter-spacing: 0.5;
+  fill: fg_auto;
+  text-anchor: start;
+};
+let rightGhosts = PathLayer('right-ghosts') #{
+  stroke: fg_hair;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  fill: none;
+};
+let rightDots = PathLayer('right-dots') #{
+  fill: bg_color;
+  stroke: points;
+  stroke-width: 1;
+};
+let rightTrace = PathLayer('right-trace') #{
+  stroke: trail;
+  stroke-width: 1.25;
+  stroke-dasharray: 3 3;
+  fill: none;
+};
+let rightAngles = TextLayer('right-angles') #{
+  font-family: font;
+  font-size: 7;
+  font-weight: 700;
+  letter-spacing: 0.5;
+  fill: angles;
+  text-anchor: middle;
+};
+rightPanel.append(rightBars,
+    rightPivots,
+    rightEyebrow,
+    rightNote,
+    rightGhosts,
+    rightDots,
+    rightTrace,
+    rightAngles);
+
+// Every moving pivot of every position, whichever layer it lands on.
+fn markPivots(source) {
+  source.subscribe('endpoint(A), endpoint(B)') {|pivot|
+    rightDots.apply {
+      circle(pivot.x, pivot.y, 2.5);
+    }
+  };
+}
+markPivots(rightGhosts);
+markPivots(rightBars);
+
+// The crank angle beside each ghost's A, read from the crank that arrives there.
+rightGhosts.subscribe('endpoint(A)') {|pivot|
+  let heading = pivot.command.block.tangent(1).angle;
+  // Above A when the crank points up, below it when the crank points down:
+  // always on the empty side of the ghost.
+  let side = -1;
+  if (sin(heading) > 0) {
+    side = 1;
+  }
+  // Screen headings wrap at ±180°; a crank angle counts 0..360 the other way.
+  let angle = -deg(heading);
+  if (angle < 0) {
+    angle = angle + 360;
+  }
+  rightAngles.apply {
+    text(pivot.x + cos(heading) * 4, pivot.y + side * 10 + 2.5)`${round(angle)}°`;
+  }
+};
+
+let positions = [
+  132deg,
+  204deg,
+  276deg,
+  348deg,
+];
+for (theta in positions) {
+  let ghost = linkageBlock(theta);
+  leftGhosts.apply {
+    M 40 100 ghost.draw()
+  }
+  rightGhosts.apply {
+    M 40 100 ghost.draw()
+  }
+}
+let form = linkageBlock(crankAngle);
+leftBars.apply {
+  M 40 100 form.draw()
+}
+rightBars.apply {
+  M 40 100 form.draw()
+}
+leftPivots.apply {
+  for (pivot in leftBars.queryAll('endpoint')) {
+    circle(pivot.x, pivot.y, 3.5);
+  }
+}
+rightPivots.apply {
+  for (pivot in rightBars.queryAll('endpoint(O2), endpoint(O4)')) {
+    circle(pivot.x, pivot.y, 3.5);
+  }
+}
+
+// Where B went: every B the ghosts drew, in crank-angle order.
+let path = rightGhosts.queryAll('endpoint(B)');
+let first = path[0];
+rightTrace.apply {
+  M first.x first.y
+  for (stop in path.slice(1)) {
+    L stop.x stop.y
+  }
+}
+
+leftEyebrow.apply {
+  text(0, -18)`FIVE POSITIONS`;
+}
+leftNote.apply {
+  text(0, 166)`one loop over crank angles`;
+}
+rightEyebrow.apply {
+  text(0, -18)`SAME SUBSCRIPTIONS`;
+}
+rightNote.apply {
+  text(0, 166)`${path.length} ghosts, one working position, no new code`;
+}
+
+// ─── Divider ───────────────────────────────────────────────────
+let divider = PathLayer('divider') #{
+  stroke: fg_hair;
+  stroke-width: 0.5;
+  fill: none;
+};
+divider.apply {
+  M 240 40
+  L 240 232
+}
