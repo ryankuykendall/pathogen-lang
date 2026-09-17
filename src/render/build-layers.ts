@@ -137,8 +137,15 @@ function buildText(layer: LayerOutput, options: BuildLayersOptions): VNode {
     }
     attrs.x = String(te.x);
     attrs.y = String(te.y);
-    if (te.rotation != null) {
-      attrs.transform = `rotate(${radToDeg(te.rotation)}, ${te.x}, ${te.y})`;
+    // The layer's transform (explicit, convenience or imperative) applies to
+    // every text it holds; a per-text rotation turns the text about its own
+    // anchor inside that transform, so it comes second.
+    const transforms = [
+      ...(layer.transform ? [layer.transform] : []),
+      ...(te.rotation != null ? [`rotate(${radToDeg(te.rotation)}, ${te.x}, ${te.y})`] : []),
+    ];
+    if (transforms.length > 0) {
+      attrs.transform = transforms.join(' ');
     }
     for (const [key, value] of Object.entries(mergedStyles)) {
       attrs[key] = String(value);

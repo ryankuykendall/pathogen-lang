@@ -170,3 +170,28 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     tip at the origin and `tip.rotate(along)` it into place at both ends — which is
     honest, and also the kind of thing the marker feature exists to avoid. Candidate:
     a layer option that emits each subpath as its own element when markers are set.
+
+22. **No `toFixed`.** (post55) A drill schedule wants `7.0` and `22.6`, not `7` and
+    `22.60000000000001`. `round()` returns an integer, so the panel samples carry a
+    four-line `mm()` helper (round to tenths, split whole and fraction, glue with a
+    dot) — fine for one decimal, tedious for three, wrong for negatives. Candidate:
+    `toFixed(n)` on numbers, or a precision argument on `text` interpolation.
+
+23. **Text anchoring is per layer, so a numeric table is several layers.** (post55)
+    `text-anchor` lives in the TextLayer's style, so a right-aligned number column
+    beside a left-aligned label column is two layers, and a muted footer row is a
+    third. The schedule uses a monospace face with fixed column offsets instead,
+    which only lines up because every value has exactly one decimal (entry 22).
+    Candidate: per-call anchor or a tab/column primitive on text layers.
+
+24. **RESOLVED (blog series part 5, 2026-09-16): a TextLayer's transform reaches its
+    `<text>` elements.** The fretboard's distance column wanted a text layer turned
+    a quarter turn, and `rotate: -0.5pi` on the TextLayer was silently dropped by both
+    emitters (`src/cli.ts` and the shared `src/render/build-layers.ts`) — path and group
+    layers honoured it, the docs promised it for text layers too. Both emitters now
+    compose the layer transform with the per-text rotation (`rotate(-90) rotate(30, x,
+    y)`). The samples ended up using the per-text form, `text(x, y, -90deg)`, which
+    turns each label about its own anchor and is the better tool for a column of
+    labels. Docs: layers "Transform Convenience Properties". Tests:
+    `tests/render/text-layer-transform.test.ts`, cli "applies a text layer's transform".
+    Original: 22 distance labels, none rotated, none on the page.

@@ -135,8 +135,13 @@ function _legacyGenerateSvg(result: CompileResult, options: CliOptions): string 
             .map(([k, v]) => `${k}="${escapeXml(String(v))}"`)
             .join(' ');
           const teIdAttr = i === 0 ? idAttr : '';
-          const transform =
-            te.rotation != null ? ` transform="rotate(${radToDeg(te.rotation)}, ${te.x}, ${te.y})"` : '';
+          // The layer's transform applies to every text; a per-text rotation
+          // turns the text about its own anchor inside it (same as build-layers).
+          const transforms = [
+            ...(layer.transform ? [escapeXml(layer.transform)] : []),
+            ...(te.rotation != null ? [`rotate(${radToDeg(te.rotation)}, ${te.x}, ${te.y})`] : []),
+          ];
+          const transform = transforms.length > 0 ? ` transform="${transforms.join(' ')}"` : '';
           const content = te.children
             .map((child) => {
               if (child.type === 'run') return escapeXml(child.text);

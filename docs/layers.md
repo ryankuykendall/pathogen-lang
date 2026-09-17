@@ -705,7 +705,7 @@ layer('shape').ctx.transform.scale.set(2, 2)
 
 ### Transform Convenience Properties
 
-Style blocks support individual transform properties as an alternative to `transform: ...` or the imperative API. These work on PathLayer, GroupLayer, and TextLayer:
+Style blocks support individual transform properties as an alternative to `transform: ...` or the imperative API. These work on PathLayer, GroupLayer, and TextLayer. On a TextLayer the transform applies to every `text` it holds; a per-text rotation (`text(x, y, 30deg)`) turns the text about its own anchor inside that transform:
 
 ```
 define PathLayer('p') #{

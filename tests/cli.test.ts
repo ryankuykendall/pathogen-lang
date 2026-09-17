@@ -154,6 +154,17 @@ describe('CLI', () => {
       expect(existsSync(outputTxt)).toBe(true);
     });
 
+    it('applies a text layer\'s transform to every <text> in the SVG file', () => {
+      writeFileSync(
+        inputFile,
+        "let font = 'sans-serif';\nlet t = TextLayer('t') #{ font-family: font; rotate: -0.5pi; };\nt.apply { text(10, 20)`a`; text(30, 40, 30deg)`b`; }",
+      );
+      runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
+      const svg = readFileSync(outputSvg, 'utf-8');
+      expect(svg).toMatch(/<text data-layer-name="t" id="t" x="10" y="20" transform="rotate\(-90(\.0+)?\)"/);
+      expect(svg).toMatch(/x="30" y="40" transform="rotate\(-90(\.0+)?\) rotate\((30|29\.9+\d*), 30, 40\)"/);
+    });
+
     it('writes SVG file with --output-svg-file', () => {
       writeFileSync(inputFile, 'circle(100, 100, 50);');
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
