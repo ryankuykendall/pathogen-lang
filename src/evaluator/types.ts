@@ -1203,6 +1203,12 @@ export interface EvaluationState {
   viewBox?: ViewBoxValue & { loc?: SourceLocation }; // Resolved viewBox from `define ViewBox(...)`
   subscriptions?: SubscriptionValue[]; // registration order; dispatched at program end
   dispatching?: SubscriptionValue | null; // the subscription whose callback is running
+  // Tracked commands of the path-emitting arguments (block.draw(), drawTo())
+  // of the statement being recorded, so their labels and identity survive the
+  // record site's re-parse of the emitted text. Null outside a statement.
+  // Only evaluate such arguments inside withTrackedArgs; a re-evaluation
+  // outside it would push into whatever statement is being recorded.
+  argTracked?: PathBlockCommand[] | null;
 }
 
 export interface Scope {

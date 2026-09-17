@@ -8114,6 +8114,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
         }
         if (value.type === 'PathWithResult') {
           // Extract path from compound result (result is stored but path is emitted)
+          noteTrackedArg(scope, value);
           return value.path;
         }
       }
@@ -8159,6 +8160,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
           return value.value;
         }
         if (value.type === 'PathWithResult') {
+          noteTrackedArg(scope, value);
           return value.path;
         }
       }
@@ -8633,9 +8635,10 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
     const ctx = scope.evalState?.pathContext;
     const startPos = ctx ? { x: ctx.position.x, y: ctx.position.y } : { x: 0, y: 0 };
     const subpathStart = ctx ? { x: ctx.start.x, y: ctx.start.y } : undefined;
-    const args = cmd.args.map((arg) => evaluatePathArg(arg, scope));
+    const { value: args, tracked } = withTrackedArgs(scope, () => cmd.args.map((arg) => evaluatePathArg(arg, scope)));
     const text = args.join(' ');
     const commands = text ? parsePathStringAt(text, startPos, subpathStart) : [];
+    mergeTrackedMeta(commands, tracked);
     return { text, commands };
   }
 
@@ -8643,7 +8646,9 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
   // tracks its own commands against the live context WHILE the args evaluate —
   // i.e. from the pen position before this command moves it — so snapshot first.
   const before = scope.evalState ? snapshotContext(scope.evalState.pathContext) : null;
-  const stringArgs = cmd.args.map((arg) => evaluatePathArg(arg, scope));
+  const { value: stringArgs, tracked } = withTrackedArgs(scope, () =>
+    cmd.args.map((arg) => evaluatePathArg(arg, scope)),
+  );
   const result = cmd.command + (stringArgs.length > 0 ? ` ${stringArgs.join(' ')}` : '');
 
   // Update path context if tracking is enabled
@@ -8656,8 +8661,11 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
       // record, the command history, and the pen all agree with the bytes.
       restoreContext(ctx, before);
       commands = parsePathStringToCommands(result, ctx);
+      mergeTrackedMeta(commands, tracked);
     } else {
-      const numericArgs = getNumericArgs(cmd.args, scope);
+      // getNumericArgs re-evaluates call-shaped args; any tracked commands
+      // they produce must not land in the enclosing statement's sink.
+      const numericArgs = withTrackedArgs(scope, () => getNumericArgs(cmd.args, scope)).value;
       const start = { x: ctx.position.x, y: ctx.position.y };
       updateContextForCommand(ctx, cmd.command, numericArgs);
       commands = [{ command: cmd.command, args: numericArgs, start, end: { x: ctx.position.x, y: ctx.position.y } }];
@@ -8666,6 +8674,49 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
   }
 
   return { text: result, commands };
+}
+
+/** Collect the tracked commands of a statement's path-emitting arguments while they evaluate. */
+function withTrackedArgs<T>(scope: Scope, evaluate: () => T): { value: T; tracked: PathBlockCommand[] } {
+  const state = scope.evalState;
+  if (!state) return { value: evaluate(), tracked: [] };
+  const saved = state.argTracked;
+  const tracked: PathBlockCommand[] = [];
+  state.argTracked = tracked;
+  try {
+    return { value: evaluate(), tracked };
+  } finally {
+    state.argTracked = saved;
+  }
+}
+
+/** A path-emitting argument (block.draw(), drawTo(), arc helpers) hands its tracked commands to the statement. */
+function noteTrackedArg(scope: Scope, value: { commands?: PathBlockCommand[] }): void {
+  const sink = scope.evalState?.argTracked;
+  if (sink && value.commands) sink.push(...value.commands);
+}
+
+/**
+ * The record site re-parses the emitted text, which loses the per-command
+ * meta a drawn block carried (labels, seam and call identity). The tracked
+ * commands of the statement's path-emitting arguments mirror that text one
+ * letter at a time, so when the tail of the parsed list lines up with them
+ * the meta is copied back by position; any mismatch leaves the parse alone.
+ */
+function mergeTrackedMeta(parsed: PathBlockCommand[], tracked: PathBlockCommand[]): void {
+  // The tracked list is a suffix of the parsed one because the grammar
+  // allows at most one call-shaped argument per path command, placed last;
+  // the letter check below is what guards that assumption.
+  if (tracked.length === 0) return;
+  const offset = parsed.length - tracked.length;
+  if (offset < 0) return;
+  for (let i = 0; i < tracked.length; i++) {
+    if (parsed[offset + i].command.toLowerCase() !== tracked[i].command.toLowerCase()) return;
+  }
+  for (let i = 0; i < tracked.length; i++) {
+    const meta = tracked[i].meta;
+    if (meta) parsed[offset + i].meta = { ...parsed[offset + i].meta, ...meta };
+  }
 }
 
 /**

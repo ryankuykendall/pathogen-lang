@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2026-09-16 (blog series "Drawing Without Bookkeeping", parts 1–2, and the friction fixes their samples exposed)
 
-Four evaluator bugs the first blog samples exposed, logged in `project-docs/observable-reactive-paths/FRICTION-LOG.md` (entries 12–15) and told in the posts' closing sections.
+Five evaluator bugs the first blog samples exposed, logged in `project-docs/observable-reactive-paths/FRICTION-LOG.md` (entries 12–16) and told in the posts' closing sections.
 
 ### Added
 
@@ -18,12 +18,18 @@ Four evaluator bugs the first blog samples exposed, logged in `project-docs/obse
 
 ### Fixed
 
+#### Development
+
+- **`validate:samples` measures text collisions against real geometry.** Check 3 compared a text's rect with each `<path>`'s bounding box, so any label inside a shape's hull — a pivot name, an angle value, a dimension beside its extension line — counted as a full collision. The check now samples a grid over the text and asks the element whether each point is on its stroke or inside its fill; the bounding-box overlap is only the fallback, and the message says which measure it used.
+- **The formatter never writes back a recovered parse that lost code.** `formatDocument` falls back to the error-recovery parse so a missing semicolon can still be formatted; when that recovery skipped an unparseable region (a doubled `#{{ … }}`), the recovered AST omitted it and the file was rewritten without it — in `format:samples`, the playground and VS Code alike. The fallback now refuses when the tree holds an error node with extent; a zero-length node (a missing `;`) still formats. `format:samples` reports such files as `REFUSED … parse error at line N` and exits non-zero instead of counting them as unchanged.
+
 #### Core
 
 - **The one-line `M x y block.draw()` idiom records what it draws.** The greedy path-argument tokenizer folds a following `block.draw()` into the preceding command's arguments; the block's commands were tracked against the live context *before* the command moved the pen, and the statement's structured record kept only the leading command. `layer('x').queryAll('endpoint')` on such a layer found nothing past the move, trace histories carried the wrong cursors, and `ctx.position` after the statement sat at the move rather than the block's end. The evaluator now snapshots the context before a command's arguments evaluate and, when the emitted text carries further commands, rewinds and replays the whole fragment in order; the record is named after the emitting call so `call(draw)` covers the statement. Emitted bytes unchanged.
 - **Blocks taken from a layer draw in place whatever case the layer was authored in.** The relative serializer compared command letters case-sensitively, so a run copied from a layer with an authored `M` (every `subpath(k)` block) or an uppercase `L` was emitted with the absolute letter and relative numbers. It compares and emits lowercase now.
 - **`subPath(t0, t1)` keeps the move between runs.** Moves were filtered out to measure arc length and never put back, so a slice spanning two runs spliced the second run onto the end of the first. A gap between fragments is now a relative move, and a `z` that would close to the slice's own start instead of the run's becomes the run's explicit closing line.
 - **A query block that begins with a move answers for its own run.** `Call.block`, `Segment.block` and `Subpath.block` on a run whose first command is a move were built with that move's recorded start — the pen position before it, which belongs to the previous statement — so `boundingBox()` reached back to the previous shape. The leading move is dropped when the block is wrapped; a lone move becomes a zero-length run at its own point.
+- **Labels travel with a drawn block.** A labelled `@{ }` block lost every `as segment(...)`/`as endpoint(...)` label when drawn into a layer with `draw()` or `drawTo()` (on its own line or as `M x y block.draw()`): the relative serializer carried the labels in its tracked commands, but only the emitted text reached the record site, which re-parsed it. The statement now collects its path-emitting arguments' tracked commands and copies their meta back onto the re-parsed commands by position, guarded by letter-for-letter agreement, so `layer('x').query('endpoint(name)')` and `segment('name')` find geometry a block authored. Corner operations were already applied when the block closed and are not applied again. Docs: "Labels travel with their block" in Segment Labels.
 
 ## [Unreleased] - 2026-09-15 (subscriptions: `layer.subscribe(selector)`)
 

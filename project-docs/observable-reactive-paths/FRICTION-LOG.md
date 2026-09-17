@@ -100,3 +100,73 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     around a face's head began at the panel origin. The block builder now
     makes a leading move zero-length. Original: **The rings landed between
     the dots.** (post53/05-annotate-the-annotations; post52/04-what-a-call-drew.)
+
+16. **RESOLVED (blog series part 3, 2026-09-16): labels travel with a drawn block.** The
+    linkage form (post54) is a labelled `@{ }` block — `l … as segment('crank'),
+    endpoint('A')` — drawn into each panel's form layer, and the twin asks the layer
+    for `endpoint(A)`. Every label vanished on the way in: `serializeRelativeAndTrack`
+    carried them in its tracked commands, but `evaluatePathArg` kept only the emitted
+    string and the record site re-parsed it. Part 1's comb never noticed because its
+    labels were authored inside the layer's own apply block. Fix: the statement collects
+    its path-emitting arguments' tracked commands (`EvaluationState.argTracked`) and
+    `mergeTrackedMeta` copies their meta back onto the re-parsed commands by position
+    (guarded by letter-for-letter agreement); corner ops were already stripped by
+    `derivedMeta`, so a filleted block is not rounded twice. Docs: segment-labels
+    "Labels travel with their block". Tests: `tests/path-queries.test.ts` "labels travel
+    with a drawn block" (one-line idiom, own line, drawTo, filleted). Original: the
+    prototype's `query('endpoint(O2)')` reported "available endpoint labels: (none)".
+
+17. **Pivot `A` is the arc command.** (post54) Every mechanisms textbook names the
+    moving pivots A and B and the ground pivots O2 and O4, and `L A.x A.y` in a block is a
+    parse error: "'A' is a path command here". The same class bit the fix's own test
+    (`.map {|s| s.label }` parsed as an `s` command with a member-expression argument).
+    Not a bug — path letters have to win in path position — but the domain post has to
+    say so in its first sample: variables `pinA`/`pinB`, labels 'A'/'B'. Part 4 hit it
+    again with `let c = hole.block.centerPoint()` and `M c.x …` — `c` is the cubic
+    command, and the most natural name for a centre. A friendlier parser hint ("did you
+    mean calc(A.x)?") is the only fix on offer.
+
+18. **No circle–circle intersection; blocks are relative-only.** (post54) The four-bar
+    position solve needs the point where the coupler circle meets the rocker circle.
+    `intersectionPoints()` is bounding-box based, so the sample solves it by the law of
+    cosines in eight lines (`acos` is there). And a form block cannot be written from
+    absolute pivots (`M O2.x O2.y` inside `@{ }` is "not allowed inside path blocks"), so
+    the block is built from link deltas. Both are documented behaviour; both are the
+    kind of arithmetic the series promised to remove. Candidate: a `circleCircle(c1, r1,
+    c2, r2)` stdlib helper returning both points, and a `Command.heading` member (the
+    samples reach for `pivot.next.block.tangent(0).angle`).
+
+19. **RESOLVED (tooling, 2026-09-16): `validate:samples` measures text against
+    real geometry.** Check 3 compared a text's rect with each `<path>`'s bounding
+    box, so every label inside the linkage's hull — the 60° at O2, the pivot names,
+    every dimension value beside its own extension line — was a "100% collision",
+    51 warnings on six clean figures. The check now samples a grid over the text's
+    rect and asks the element whether each point is on its stroke (at its stroke
+    width) or inside its fill (`isPointInStroke`/`isPointInFill` through the
+    element's screen CTM); the bounding-box overlap is only the fallback when
+    nothing could be sampled. Posts 52 and 53 stay at 0 warnings; the messages now
+    say which measure they used. Original: 51 false positives on post54.
+
+20. **RESOLVED (tooling, 2026-09-16): the formatter no longer writes back a
+    recovered parse that lost code.** A generator slip left `#{{ … }}` in ten
+    layer definitions. `format:samples` reported "6 formatted" and rewrote every
+    one as `#{}`: `formatDocument` falls back to Lezer's error-recovery parse so a
+    missing semicolon can still be formatted, and the recovered AST simply omitted
+    the unparseable region. The playground and VS Code call the same function. The
+    fallback now refuses (no edits) when the tree holds an error node with extent —
+    skipped text — while a zero-length node (a missing `;`) still formats. The script
+    reports `REFUSED … parse error at line N` instead of "unchanged" and exits 1.
+    Tests: formatter "never drops code". Original: ten empty style blocks, dots
+    drawn in the default fill, arrows and dimension lines invisible. **Residual:** `M c.x
+    calc(…)` in path position (entry 17's trap) recovers without an error node — the
+    tree reads it as `M` then a `c` command — so the guard does not fire and the
+    formatter writes back `M` / `c x calc(…)`, dropping the dot. Open.
+
+21. **`marker-start` / `marker-end` are per element, not per subpath.** (post54/03,
+    06) Four dimension lines in one layer are one `<path>`, so the outward
+    arrowheads appeared on the first vertex of the first line and the last vertex
+    of the last; `marker-mid` cannot help because a mid marker at a subpath's start
+    orients along the outgoing line. The samples draw one arrowhead block with its
+    tip at the origin and `tip.rotate(along)` it into place at both ends — which is
+    honest, and also the kind of thing the marker feature exists to avoid. Candidate:
+    a layer option that emits each subpath as its own element when markers are set.

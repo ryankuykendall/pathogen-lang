@@ -7,6 +7,8 @@ Segment labels and corner suffixes let you annotate a path **at the point you de
 
 Both clauses read left to right like English and work everywhere path commands do: inside `@{ }` [path blocks](#path-blocks-path-blocks), inside `layer('name').apply { }` blocks, and at the top level.
 
+Labels travel with their block. A labelled `@{ }` block keeps every label when it is drawn into a layer with `draw()` or `drawTo()`, on its own line or in the one-line `M x y block.draw()` spelling, so `layer('x').query('endpoint(name)')` and `layer('x').segment('name')` find the geometry the block authored. A block's corner operations were applied when the block closed and are not applied again on the way in.
+
 ```
 define ViewBox(0, 0, 120, 80);
 define default PathLayer('shape') #{ stroke: #333; stroke-width: 2; fill: none; }

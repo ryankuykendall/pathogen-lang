@@ -374,3 +374,58 @@ describe('path queries: display', () => {
     expect(lines[3]).toMatch(/^Subpath\(0/);
   });
 });
+
+describe('labels travel with a drawn block', () => {
+  const block =
+    "let bar = @{\n  l 40 0 as segment('crank'), endpoint('A')\n  l 0 40 as segment('coupler'), endpoint('B')\n  z as segment('ground'), endpoint('O2')\n};\n";
+  const ask =
+    "log(layer('p').queryAll('endpoint').map {|e| e.label }, layer('p').queryAll('segment').map {|seg| seg.label }, layer('p').segment('crank').commands.length);";
+
+  it('through the one-line M x y block.draw() idiom', () => {
+    const src = `define PathLayer('p') #{ fill: none; }\n${block}layer('p').apply {\n  M 10 10 bar.draw()\n}\n${ask}`;
+    expect(logLines(src)).toEqual(['[A, B, O2] [crank, coupler, ground] 1']);
+  });
+
+  it('through draw() on its own line', () => {
+    const src = `define PathLayer('p') #{ fill: none; }\n${block}layer('p').apply {\n  M 10 10\n  bar.draw();\n}\n${ask}`;
+    expect(logLines(src)).toEqual(['[A, B, O2] [crank, coupler, ground] 1']);
+  });
+
+  it('through drawTo()', () => {
+    const src = `define PathLayer('p') #{ fill: none; }\n${block}layer('p').apply {\n  bar.drawTo(10, 10);\n}\n${ask}`;
+    expect(logLines(src)).toEqual(['[A, B, O2] [crank, coupler, ground] 1']);
+  });
+
+  it('delivers a drawn block\'s labelled endpoint to a subscription', () => {
+    const src = `define PathLayer('p') #{ fill: none; }\n${block}layer('p').subscribe('endpoint(A)') {|pivot| log(pivot.label, pivot.x, pivot.y); };\nlayer('p').apply {\n  M 10 10 bar.draw()\n}`;
+    expect(logLines(src)).toEqual(['A 50 10']);
+  });
+
+  it('keeps labels independently when one block is drawn into two layers', () => {
+    const src = `define PathLayer('p') #{ fill: none; }\ndefine PathLayer('q') #{ fill: none; }\n${block}layer('p').apply {\n  M 10 10 bar.draw()\n}\nlayer('q').apply {\n  M 10 30 bar.draw()\n}\nlog(layer('p').query('endpoint(B)').y, layer('q').query('endpoint(B)').y, layer('q').queryAll('segment').length);`;
+    expect(logLines(src)).toEqual(['50 70 3']);
+  });
+
+  it('keeps the label of a queried segment drawn into another layer by the one-line idiom', () => {
+    const src = [
+      "define PathLayer('l') #{ fill: none; }",
+      "define PathLayer('out') #{ fill: none; }",
+      "layer('l').apply {\n  M 0 0;\n  h 28 as segment('e');\n  v 10;\n}",
+      "let edge = layer('l').segment('e');",
+      "layer('out').apply {\n  M 5 5 edge.draw()\n}",
+      "log(layer('out').segment('e').commands.length, layer('out').queryAll('endpoint').length);",
+    ].join('\n');
+    expect(logLines(src)).toEqual(['1 1']);
+  });
+
+  it('keeps labels on a filleted block without applying the fillet twice', () => {
+    const src = [
+      "define PathLayer('p') #{ fill: none; }",
+      "let tab = @{\n  h 40\n  v 40 with fillet(8) as endpoint('c')\n  h -40\n  z\n};",
+      "layer('p').apply {\n  M 10 10 tab.draw()\n}",
+      // one extra command in the layer: the M; the fillet arc was inserted once, when the block closed
+      "log(layer('p').queryAll('command').length - tab.commands.length, layer('p').query('endpoint(c)').label);",
+    ].join('\n');
+    expect(logLines(src)).toEqual(['1 c']);
+  });
+});
