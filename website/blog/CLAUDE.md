@@ -168,7 +168,7 @@ This uses Puppeteer to load each compiled SVG (run `npm run compile:samples` fir
 
 1. **Margin compliance** — all content ≥15px from viewBox edges (`--margin <px>` overrides)
 2. **Text-text collisions** — no overlapping text elements
-3. **Text-geometry collisions** — no text with ≥15% of its area on the real stroke or fill of path/shape geometry (sampled point by point, not against the element's bounding box, so a label inside a linkage's hull or among dimension lines is judged by what it actually touches)
+3. **Text-geometry collisions** — no text with ≥15% of its area on the real stroke or fill of path/shape geometry (sampled point by point, not against the element's bounding box, so a label inside a linkage's hull or among dimension lines is judged by what it actually touches); a label that crosses a hairline panel divider is flagged at any overlap, because it has left its column
 4. **Geometry-geometry collisions** — no shape covering ≥15% of a code-snippet block's background
 5. **GroupLayer usage** — warns if >3 layers but no GroupLayer organization
 6. **Dead space** — content must fill at least half the viewBox height

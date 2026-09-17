@@ -199,6 +199,26 @@ function runChecks(
     }
   }
 
+  // 3a. Text crossing a divider. A hairline that spans most of the canvas is a
+  // panel divider, and a label that strays across it has left its column; the
+  // area test above cannot see that (a 0.5-wide stroke is ~1% of any label).
+  for (const geo of geometryElements) {
+    const vertical = geo.bbox.width <= 1.5 && geo.bbox.height >= viewBox.height * 0.5;
+    const horizontal = geo.bbox.height <= 1.5 && geo.bbox.width >= viewBox.width * 0.5;
+    if (!vertical && !horizontal) continue;
+    for (const text of textElements) {
+      if (text.bbox.width === 0) continue;
+      if (sameSnippet(text, geo)) continue;
+      if (rectsOverlap(text.bbox, geo.bbox)) {
+        const geoLabel = geo.id ? `<${geo.tagName}>#${geo.id}` : `<${geo.tagName}>`;
+        warnings.push({
+          type: 'text-geometry-collision',
+          message: `Text "${truncate(text.textContent)}" crosses the divider ${geoLabel}`,
+        });
+      }
+    }
+  }
+
   // 3b. Geometry-geometry collision — only between snippet bg paths and non-snippet paths.
   // Anatomy diagrams have many legitimately overlapping paths (curves, tangent lines, arcs).
   // We only want to catch shapes that visually intrude into code block regions.

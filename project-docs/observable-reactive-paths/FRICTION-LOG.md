@@ -180,8 +180,8 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
 23. **Text anchoring is per layer, so a numeric table is several layers.** (post55)
     `text-anchor` lives in the TextLayer's style, so a right-aligned number column
     beside a left-aligned label column is two layers, and a muted footer row is a
-    third. The schedule uses a monospace face with fixed column offsets instead,
-    which only lines up because every value has exactly one decimal (entry 22).
+    third. The schedule's numbers are one end-anchored monospace layer (decimal
+    points line up) beside a start-anchored footer layer — the friction in action.
     Candidate: per-call anchor or a tab/column primitive on text layers.
 
 24. **RESOLVED (blog series part 5, 2026-09-16): a TextLayer's transform reaches its
@@ -195,3 +195,10 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     labels. Docs: layers "Transform Convenience Properties". Tests:
     `tests/render/text-layer-transform.test.ts`, cli "applies a text layer's transform".
     Original: 22 distance labels, none rotated, none on the page.
+
+25. **The formatter pads a labelled `z` inside a block.** (post54, all six) A block that
+    ends `l … as segment('rocker'), endpoint('O4');` then `z as segment('ground'),
+    endpoint('O2');` is rewritten with two blank lines before the `z` and its
+    semicolon removed, every time. A minimal block with the same three lines at top
+    level formats cleanly, so the trigger is the `return @{ … }` inside a `fn`. Cosmetic,
+    but it is what readers see in the code panel. Open.
