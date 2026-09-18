@@ -2573,3 +2573,20 @@ describe('array literals in path-argument position', () => {
     expect(lastArgs(src)).toMatchObject(expected as object[]);
   });
 });
+
+describe('a command letter followed by .name is a member access in path arguments', () => {
+  const compilePath = (src: string): string => compile(src).layers[0].data;
+
+  it('reads A.x and c.y as variables named after commands', () => {
+    expect(compilePath('let A = Point(5, 6);\nlet c = Point(1, 2);\nM c.x c.y\nL A.x A.y')).toBe('M 1 2 L 5 6');
+  });
+
+  it('keeps arcs spelled A .5 and A.5 as arcs', () => {
+    expect(compilePath('M 0 0\nA .5 .5 0 0 1 1 1')).toContain('A 0.5 0.5 0 0 1 1 1');
+    expect(compilePath('M 0 0\nA.5 .5 0 0 1 1 1')).toContain('A 0.5 0.5 0 0 1 1 1');
+  });
+
+  it('still reports a bare shadowed letter', () => {
+    expect(() => compilePath('let m = 40;\nM 0 0\nL m 40')).toThrow(/is a path command here/);
+  });
+});

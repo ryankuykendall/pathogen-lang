@@ -523,11 +523,10 @@ describe('legacy style-block opener (${ … } → #{ … })', () => {
 });
 
 describe('command-letter shadowing hint names member access', () => {
-  it('suggests calc(A.x) when the shadowed letter is followed by a member', () => {
+  it('reports nothing for A.x, which is a member access in path position', () => {
     const doc = new StringTextDocument("let A = Point(5, 6);\nM 0 0\nL A.x A.y\n");
     const diags = getDiagnostics(doc);
-    const hit = diags.find((dg) => dg.message.startsWith("'A' is a path command here"));
-    expect(hit?.message).toContain('write calc(A.x)');
+    expect(diags.filter((dg) => dg.severity === DiagnosticSeverity.Error)).toEqual([]);
   });
 
   it('keeps the plain suggestion for a bare letter', () => {

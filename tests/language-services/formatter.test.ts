@@ -847,11 +847,15 @@ describe('formatDocument never drops code', () => {
     expect(formatDocument(doc)).toEqual([]);
   });
 
-  it('refuses to turn a block it cannot parse into `return null`', () => {
-    // `a` is the arc command in path position; the recovered parse has no error node
-    // with extent, but the formatted text would lose the whole block.
+  it('keeps every word of a block whose arguments are members of a command-named variable', () => {
+    // `a.x` used to recover as the arc command and the block came back as `return null`;
+    // it parses as a member access now, and the word guard would refuse the edit otherwise.
     const src = "define ViewBox(0, 0, 100, 100);\nfn make() {\n  let a = Point(10, 0);\n  return @{\n    l a.x a.y as segment('a'), endpoint('p');\n    z as segment('c'), endpoint('r');\n  };\n}\n";
-    expect(formatDocument(new StringTextDocument(src))).toEqual([]);
+    const edits = formatDocument(new StringTextDocument(src));
+    const out = edits.length === 0 ? src : edits[0].newText;
+    expect(out).toContain("l a.x a.y as segment('a'), endpoint('p');");
+    expect(out).toContain("z as segment('c'), endpoint('r')");
+    expect(out).not.toContain('return null');
   });
 
   it('does not invent blank lines inside a block returned from a function', () => {

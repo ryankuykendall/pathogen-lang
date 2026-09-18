@@ -207,7 +207,15 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       // If at top level (not inside parens), check for statement-starting keywords
       if (depth === 0) {
         if ((KEYWORDS.has(word) || STATEMENT_FUNCTIONS.has(word) || CLAUSE_KEYWORDS.has(word)) && word !== 'calc' && word !== 'true' && word !== 'false') break;
-        if (word.length === 1 && PATH_COMMANDS.has(word)) break;
+        if (word.length === 1 && PATH_COMMANDS.has(word)) {
+          // A command letter followed directly by `.name` is a member access
+          // on a variable (`L A.x A.y`, `M c.x c.y`): no command is ever
+          // written as `A.x`. `A .5` and `A.5` stay arcs.
+          const next = input.peek(1);
+          const after = input.peek(2);
+          const memberAccess = next === 46 && (isAlpha(after) || after === 95);
+          if (!memberAccess) break;
+        }
       }
 
       // Consume the word
