@@ -112,6 +112,18 @@ function buildPath(layer: LayerOutput, options: BuildLayersOptions, defaults: Re
     attrs.transform = layer.transform;
   }
 
+  // `marker-scope: subpath`: the layer is a <g> carrying its name, id, styles
+  // and transform, with one bare <path> per subpath, so SVG's per-element
+  // marker-start/-end land on every run. Styles inherit down to the paths.
+  if (layer.subpaths) {
+    const { d: _whole, ...groupAttrs } = attrs;
+    return h(
+      'g',
+      groupAttrs,
+      layer.subpaths.map((d) => h('path', { d }, [])),
+    );
+  }
+
   return h('path', attrs, []);
 }
 

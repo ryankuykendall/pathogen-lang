@@ -914,6 +914,12 @@ export interface LayerOutput {
   styles: Record<string, string>; // SVG attribute name → value
   isDefault: boolean;
   transform?: string; // SVG transform attribute value
+  /**
+   * Path layers with `marker-scope: subpath`: one d-string per subpath, each
+   * starting with its own absolute move. Emitters write a <g> of <path>s so
+   * markers apply per run; `data` still holds the whole layer.
+   */
+  subpaths?: string[];
 }
 
 export interface MaskOutput {

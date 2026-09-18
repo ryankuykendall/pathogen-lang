@@ -170,6 +170,11 @@ function _legacyGenerateSvg(result: CompileResult, options: CliOptions): string 
       .join(' ');
     const extra = extraAttrs ? ` ${extraAttrs}` : '';
     const transformAttr = layer.transform ? ` transform="${escapeXml(layer.transform)}"` : '';
+    if (layer.subpaths) {
+      // marker-scope: subpath — a group per layer, a path per run (see build-layers).
+      const runs = layer.subpaths.map((d) => `${indent}  <path d="${escapeXml(d)}"/>`).join('\n');
+      return `${indent}<g${idAttr} fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${escapeXml(strokeWidth)}"${extra}${transformAttr}>\n${runs}\n${indent}</g>`;
+    }
     return `${indent}<path${idAttr} d="${escapeXml(layer.data)}" fill="${escapeXml(fill)}" stroke="${escapeXml(stroke)}" stroke-width="${escapeXml(strokeWidth)}"${extra}${transformAttr}/>`;
   }
 

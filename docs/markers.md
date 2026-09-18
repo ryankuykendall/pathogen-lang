@@ -207,6 +207,40 @@ layer('path1').apply {
 }
 ```
 
+## Markers on Every Subpath
+
+A layer is one `<path>`, and SVG puts `marker-start` on the first vertex of the element and `marker-end` on the last — so a layer holding four separate dimension lines gets an arrowhead at the start of the first line and the end of the last, and nothing on the other six ends. `marker-mid` cannot help: a mid marker at a subpath's first vertex orients along the *outgoing* line, the wrong way for an arrowhead that should point outward.
+
+Set `marker-scope: subpath` on the layer and every subpath becomes its own element, so every run gets its own start, mid and end markers:
+
+```
+let dimLines = PathLayer('dim-lines') #{
+  stroke: #b8860b;
+  stroke-width: 0.75;
+  fill: none;
+  marker-start: dimArrow;
+  marker-end: dimArrow;
+  marker-scope: subpath;
+};
+dimLines.apply {
+  M 10 20 L 90 20
+  M 10 40 L 90 40
+  M 10 60 L 90 60
+}
+```
+
+Each of the three lines is emitted as a `<path>` of its own inside one `<g>` that carries the layer's id, name, styles and transform:
+
+```
+<g id="dim-lines" stroke="#b8860b" stroke-width="0.75" fill="none" marker-start="url(#dim-arrow)" marker-end="url(#dim-arrow)">
+  <path d="M 10 20 L 90 20"/>
+  <path d="M 10 40 L 90 40"/>
+  <path d="M 10 60 L 90 60"/>
+</g>
+```
+
+Subpaths follow the SVG rule: a new one starts at every move, and again after a `z` when drawing continues without one. A run that begins without a move is given an absolute `M` at its own start point so it draws where it did. Styles and markers inherit from the group, the layer toggles in the playground and the inspector see one layer, and the layer's `id` is still the group's. The default, `marker-scope: path`, keeps the single `<path>`; any other value is an error.
+
 ## Generated SVG Output
 
 The basic arrow example above produces:

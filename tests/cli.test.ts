@@ -165,6 +165,19 @@ describe('CLI', () => {
       expect(svg).toMatch(/x="30" y="40" transform="rotate\(-90(\.0+)?\) rotate\((30|29\.9+\d*), 30, 40\)"/);
     });
 
+    it('writes a marker-scope: subpath layer as a group of paths', () => {
+      writeFileSync(
+        inputFile,
+        "let tip = @{ m 0 0 l 6 3 l -6 3 z };\nlet arrowMarker = Marker('arrow', 6, 6) {|m| m.append(tip, #{ fill: context-stroke; }); };\nlet d1 = PathLayer('dims') #{ stroke: #333; fill: none; marker-end: arrowMarker; marker-scope: subpath; };\nd1.apply {\n  M 10 20\n  L 90 20\n  M 10 40\n  L 90 40\n}",
+      );
+      runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);
+      const svg = readFileSync(outputSvg, 'utf-8');
+      expect(svg).toMatch(/<g data-layer-name="dims" id="dims" fill="none" stroke="#333" stroke-width="2" marker-end="url\(#arrow\)">/);
+      expect(svg).toContain('<path d="M 10 20 L 90 20"/>');
+      expect(svg).toContain('<path d="M 10 40 L 90 40"/>');
+      expect(svg).not.toContain('marker-scope');
+    });
+
     it('writes SVG file with --output-svg-file', () => {
       writeFileSync(inputFile, 'circle(100, 100, 50);');
       runCli([`--src=${inputFile}`, `--output-svg-file=${outputSvg}`]);

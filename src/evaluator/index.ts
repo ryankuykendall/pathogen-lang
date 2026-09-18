@@ -10060,14 +10060,35 @@ function traceFields(
   return { records: storeToRecordsOutput(store), commands: context.commands.map((c) => ({ ...c, args: [...c.args] })) };
 }
 
-function storeToFinalizedData(store: PathStore, evalState: EvaluationState): string {
+function finalizeStore(store: PathStore, evalState: EvaluationState): { data: string; commands: PathBlockCommand[] } {
   const flat = store.records.flatMap((r) => r.commands);
   const finalized = applyRecordedCornerOps(flat);
   for (const w of finalized.warnings) {
     warn(evalState, 'corner-op', w.message, w.loc);
   }
-  if (!finalized.changed) return storeToPathData(store);
-  return commandsToPathData(finalized.commands);
+  if (!finalized.changed) return { data: storeToPathData(store), commands: flat };
+  return { data: commandsToPathData(finalized.commands), commands: finalized.commands };
+}
+
+function storeToFinalizedData(store: PathStore, evalState: EvaluationState): string {
+  return finalizeStore(store, evalState).data;
+}
+
+/**
+ * One d-string per subpath (the SVG rule: a new run at every move, and after
+ * a `z` when drawing continues without one). A run that begins without a
+ * move is given an absolute M at its own start, so each string draws where
+ * the run did when it stands alone as its own <path>.
+ */
+function subpathData(commands: PathBlockCommand[]): string[] {
+  return splitSubpaths(commands).map((span) => {
+    const run = commands.slice(span.from, span.to);
+    const first = run[0];
+    const startsWithMove = first.command === 'm' || first.command === 'M';
+    const at = startsWithMove ? first.end : first.start;
+    const head: PathBlockCommand = { command: 'M', args: [at.x, at.y], start: first.start, end: at };
+    return commandsToPathData([head, ...(startsWithMove ? run.slice(1) : run)]);
+  });
 }
 
 function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): CompileResult {
@@ -10252,14 +10273,29 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
       } else {
         transform = transformStateToSvg(pathLayer.transformState) ?? undefined;
       }
+      // `marker-scope: subpath` is ours, not SVG's: it asks the emitters to
+      // write each subpath as its own <path> so markers land on every run.
+      let subpaths: string[] | undefined;
+      const markerScope = pathStyles['marker-scope'];
+      if (markerScope !== undefined) {
+        delete pathStyles['marker-scope'];
+        if (markerScope !== 'path' && markerScope !== 'subpath') {
+          throw new Error(`marker-scope on layer '${layer.name}' must be 'path' or 'subpath', got '${markerScope}'`);
+        }
+      }
+      const finalized = finalizeStore(pathLayer.accum, evalState);
+      if (markerScope === 'subpath' && finalized.commands.length > 0) {
+        subpaths = subpathData(finalized.commands);
+      }
       return {
         name: layer.name,
         type: 'path',
-        data: storeToFinalizedData(pathLayer.accum, evalState),
+        data: finalized.data,
         ...traceFields(pathLayer.accum, pathLayer.pathContext, evalState),
         styles: pathStyles,
         isDefault: layer.isDefault,
         transform,
+        ...(subpaths ? { subpaths } : {}),
       };
     }
 
