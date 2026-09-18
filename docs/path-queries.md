@@ -159,6 +159,14 @@ comb.queryAll('segment(tooth):nth(0, 2)');
 
 Two rules keep this predictable. Results always come back in authoring order whatever order you list. And after a space, `:nth` counts inside the scope: `subpath(1) command:nth(0)` is the first command **of that subpath**, not the first command of the path.
 
+A selector is an ordinary string, so it interpolates. `:nth` also accepts an array written into it, brackets and all, which is what an interpolated array produces:
+
+```
+let markerFrets = [3, 5, 7, 9, 12];
+let slots = markerFrets.map {|n| n - 1 };            // :nth counts from 0
+board.queryAll(`command(line):nth(${slots})`);       // same as :nth(2, 4, 6, 8, 11)
+```
+
 ### `subpath` versus `command:nth`
 
 These look similar and mean different things. Given three squares:
@@ -194,6 +202,7 @@ Every result is a struct: read members with `.`, or destructure with `let { x, y
 | `length` | number | arc length |
 | `block` | PathBlock / ProjectedPath | the command on its own, ready to draw or measure |
 | `segment`, `endpoint` | string or `null` | labels carried by this command |
+| `startHeading`, `endHeading` | Angle | direction of travel as the command begins and as it ends; the same for a line, different for a curve or arc |
 | `cp1`, `cp2` | Point | cubic control points (`s` is resolved to its implied first point) |
 | `cp` | Point | quadratic control point (`t` resolved likewise) |
 | `rx`, `ry`, `rotation` | number | arc radii and x-axis rotation in degrees |
@@ -214,10 +223,24 @@ Kind-specific members exist only on their kind: reading `rx` from a line is the 
 | `command` | Command | the command that ends here |
 | `next` | Command or `null` | the command leaving this point; on a closed subpath the last endpoint's `next` is the first drawing command |
 | `turn` | Angle | signed change of direction, wrapped to (−π, π] |
+| `arriving` | Angle | the direction the incoming command is travelling as it reaches this point (`command.endHeading`) |
+| `leaving` | Angle or `null` | the direction the next command sets off in (`next.startHeading`); `null` at an open end |
+| `outward` | Angle | the direction that points away from both commands at a joint — the bisector of the exterior angle, `arriving + turn / 2 − 90°`; at an open end, `arriving` |
 | `isJoint` | boolean | a drawing command arrives and another leaves |
 | `fillet(r)`, `chamfer(d, d2?)`, `ellipticalFillet(rx, ry, rot?)` | method | corner operations, joints only — exactly what `vertex('name')` offered |
 
 `vertex('name')` and `vertexAll('name')` return Endpoints.
+
+The three headings are Angle values, so `.deg` and `.rad` are available and they pass straight into `polarPoint()` and arithmetic with angle literals. `outward` is the one to reach for when placing a label at a joint: it points away from the path on the same side `normal(t)` picks at a straight joint, whichever way the path bends, so `text(pivot.x + cos(pivot.outward) * 12, pivot.y + sin(pivot.outward) * 12)` clears both bars at every corner of a loop drawn clockwise on the page. On a loop drawn the other way it points inward, exactly as `normal(t)` would.
+
+```
+let joint = layer('bars').query('endpoint(A)');
+let away = joint.outward;
+layer('names').apply {
+  text(joint.x + cos(away) * 12, joint.y + sin(away) * 12 + 3)`${joint.label}`;
+}
+let lean = fret.startHeading.deg - 90;   // how far a slot leans off vertical
+```
 
 ### Call
 

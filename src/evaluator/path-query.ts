@@ -174,7 +174,11 @@ function parseIndexSpec(text: string, raw: string): IndexSpec {
 }
 
 function parseIndexList(text: string, raw: string): IndexSpec[] {
-  const parts = text.split(',');
+  // An interpolated array arrives with its brackets — `:nth(${picks})` is
+  // `:nth([2, 4, 6])` — so a bracketed list is the same list.
+  const trimmed = text.trim();
+  const body = trimmed.startsWith('[') && trimmed.endsWith(']') ? trimmed.slice(1, -1) : text;
+  const parts = body.split(',');
   if (parts.length === 1 && parts[0].trim() === '') throw new Error(`Empty index list in '${raw}' — ${INDEX_HINT}`);
   return parts.map((p) => parseIndexSpec(p, raw));
 }
@@ -808,6 +812,8 @@ export function commandMembers(v: CommandValue): Record<string, () => Value> {
     block: () => blockOf(v.source, v.index, v.index + 1),
     segment: () => cmd.meta?.segmentLabel ?? null,
     endpoint: () => cmd.meta?.endVertex?.label ?? null,
+    startHeading: () => headingOf(getEdgeTangentAtStart(env.resolved[v.index])),
+    endHeading: () => headingOf(getEdgeTangentAtEnd(env.resolved[v.index])),
   };
   if (upper === 'C' || upper === 'S') {
     base.cp1 = () => point(controlPoint(env, v.index, 'cp1') as Point);
@@ -848,7 +854,25 @@ export function endpointMembers(v: EndpointValue): Record<string, () => Value> {
       const radians = wrapToPi(Math.atan2(outT.dy, outT.dx) - Math.atan2(inT.dy, inT.dx));
       return { type: 'AngleValue', radians, unit: 'rad' };
     },
+    arriving: () => headingOf(getEdgeTangentAtEnd(env.resolved[v.commandIndex])),
+    leaving: () => (v.nextIndex === null ? null : headingOf(getEdgeTangentAtStart(env.resolved[v.nextIndex]))),
+    // The direction that points away from both commands: the bisector of
+    // the exterior angle, on the side normal(t) picks at a straight joint.
+    // At an open end there is nothing to bisect, so it is the arriving heading.
+    outward: () => {
+      const inT = getEdgeTangentAtEnd(env.resolved[v.commandIndex]);
+      const arriving = Math.atan2(inT.dy, inT.dx);
+      if (v.nextIndex === null) return { type: 'AngleValue', radians: arriving, unit: 'rad' };
+      const outT = getEdgeTangentAtStart(env.resolved[v.nextIndex]);
+      const turn = wrapToPi(Math.atan2(outT.dy, outT.dx) - arriving);
+      return { type: 'AngleValue', radians: wrapToPi(arriving + turn / 2 - Math.PI / 2), unit: 'rad' };
+    },
   };
+}
+
+/** A tangent as an Angle value; a zero-length tangent reads as heading 0. */
+function headingOf(t: { dx: number; dy: number }): Value {
+  return { type: 'AngleValue', radians: Math.atan2(t.dy, t.dx), unit: 'rad' };
 }
 
 function spanCommands(source: QuerySource, from: number, to: number): Value {

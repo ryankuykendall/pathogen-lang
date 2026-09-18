@@ -112,8 +112,12 @@ export function describeCommandShadowing(
     const letter = input.slice(letterNode.from, letterNode.to);
     if (letter.length !== 1 || !PATH_COMMAND_LETTER_SET.has(letter)) return null;
     if (!isDeclared(letter)) return null;
+    // `A.x` reads as the arc command followed by junk; the fix the user
+    // wants is calc(A.x), not calc(A).
+    const member = /^\.([A-Za-z_]\w*)/.exec(input.slice(letterNode.to, letterNode.to + 64));
+    const spelling = member ? `${letter}.${member[1]}` : letter;
     return {
-      message: `'${letter}' is a path command here, so it cannot be used as a bare variable in path arguments — write calc(${letter}), or rename the variable`,
+      message: `'${letter}' is a path command here, so it cannot be used as a bare variable in path arguments — write calc(${spelling}), or rename the variable`,
       offset: letterNode.from,
     };
   };

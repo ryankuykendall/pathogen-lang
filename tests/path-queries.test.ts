@@ -429,3 +429,51 @@ describe('labels travel with a drawn block', () => {
     expect(logLines(src)).toEqual(['1 c']);
   });
 });
+
+describe('headings on Command and Endpoint', () => {
+  const corner = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  h 40\n  v 40\n}\n";
+
+  it('reports arriving, leaving, outward and turn at a right-angle joint', () => {
+    // At (40, 0): arrived heading east (0°), leaves heading south (90°), turn +90°, outward = 0 + 45 − 90.
+    const src = `${corner}let j = layer('p').query('endpoint:nth(0)');\nlog(round(j.arriving.deg), round(j.leaving.deg), round(j.outward.deg), round(j.turn.deg));`;
+    expect(logLines(src)).toEqual(['0 90 -45 90']);
+  });
+
+  it('at an open end leaving is null and outward is the arriving heading', () => {
+    const src = `${corner}let e = layer('p').query('endpoint:nth(1)');\nlog(round(e.arriving.deg), e.leaving, round(e.outward.deg));`;
+    expect(logLines(src)).toEqual(['90 null 90']);
+  });
+
+  it('outward at a straight joint is the side normal(t) picks', () => {
+    const src = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  h 20\n  h 20\n}\nlet j = layer('p').query('endpoint:nth(0)');\nlet bar = @{\n  h 40\n};\nlog(round(j.outward.deg), round(deg(bar.normal(0.5).angle)));";
+    expect(logLines(src)).toEqual(['-90 -90']);
+  });
+
+  it('startHeading and endHeading differ on an arc and agree on a line', () => {
+    const src = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  a 20 20 0 0 1 20 20\n  l 10 0\n}\nlet arc = layer('p').query('command(a)');\nlet line = layer('p').query('command(l)');\nlog(round(arc.startHeading.deg), round(arc.endHeading.deg), round(line.startHeading.deg), round(line.endHeading.deg));";
+    expect(logLines(src)).toEqual(['0 90 0 0']);
+  });
+
+  it('headings are Angle values that take part in angle arithmetic', () => {
+    const src = `${corner}let j = layer('p').query('endpoint:nth(0)');\nlet back = j.arriving + 180deg;\nlog(round(back.deg), (j.outward).rad < 0);`;
+    expect(logLines(src)).toEqual(['180 true']);
+  });
+});
+
+describe(':nth with an interpolated array', () => {
+  const lines = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  for (i in 1..6) {\n    L calc(i * 10) 0\n  }\n}\n";
+
+  it('accepts the brackets an interpolated array produces', () => {
+    const src = `${lines}let picks = [1, 3, 5];\nlog(layer('p').queryAll(\`command(line):nth(\${picks})\`).map {|cmd| cmd.end.x });`;
+    expect(logLines(src)).toEqual(['[20, 40, 60]']);
+  });
+
+  it('accepts a literal bracketed list and ranges inside it', () => {
+    const src = `${lines}log(layer('p').queryAll('command(line):nth([0, 2..3])').map {|cmd| cmd.end.x });`;
+    expect(logLines(src)).toEqual(['[10, 30, 40]']);
+  });
+
+  it('still rejects an empty list', () => {
+    expect(() => compile(`${lines}layer('p').queryAll('command(line):nth([])');`)).toThrow(/Empty index list/);
+  });
+});

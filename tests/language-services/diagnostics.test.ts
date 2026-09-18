@@ -521,3 +521,19 @@ describe('legacy style-block opener (${ … } → #{ … })', () => {
     expect(diags.some((d) => d.message === LEGACY_STYLE_OPENER_MESSAGE)).toBe(false);
   });
 });
+
+describe('command-letter shadowing hint names member access', () => {
+  it('suggests calc(A.x) when the shadowed letter is followed by a member', () => {
+    const doc = new StringTextDocument("let A = Point(5, 6);\nM 0 0\nL A.x A.y\n");
+    const diags = getDiagnostics(doc);
+    const hit = diags.find((dg) => dg.message.startsWith("'A' is a path command here"));
+    expect(hit?.message).toContain('write calc(A.x)');
+  });
+
+  it('keeps the plain suggestion for a bare letter', () => {
+    const doc = new StringTextDocument('let m = 40;\nM 0 0\nL m 40\n');
+    const diags = getDiagnostics(doc);
+    const hit = diags.find((dg) => dg.message.startsWith("'m' is a path command here"));
+    expect(hit?.message).toContain('write calc(m),');
+  });
+});
