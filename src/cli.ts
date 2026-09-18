@@ -146,6 +146,7 @@ function _legacyGenerateSvg(result: CompileResult, options: CliOptions): string 
             .map((child) => {
               if (child.type === 'run') return escapeXml(child.text);
               const spAttrs = [
+                child.x != null ? `x="${child.x}"` : '',
                 child.dx != null ? `dx="${child.dx}"` : '',
                 child.dy != null ? `dy="${child.dy}"` : '',
                 child.rotation != null ? `rotate="${radToDeg(child.rotation)}"` : '',

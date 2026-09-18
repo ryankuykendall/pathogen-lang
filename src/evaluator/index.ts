@@ -10070,6 +10070,59 @@ function finalizeStore(store: PathStore, evalState: EvaluationState): { data: st
   return { data: commandsToPathData(finalized.commands), commands: finalized.commands };
 }
 
+interface TabStop {
+  offset: number;
+  anchor: 'start' | 'middle' | 'end';
+}
+
+/** `tab-stops: 11 end, 24 end, 40` → offsets from the row's x, with an anchor each (start when omitted). */
+function parseTabStops(value: string, layerName: string): TabStop[] {
+  const stops = value
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .map((part) => {
+      const m = /^(-?\d+(?:\.\d+)?)(?:\s+(start|middle|end))?$/.exec(part);
+      if (!m) {
+        throw new Error(
+          `tab-stops on layer '${layerName}': each stop is an offset with an optional anchor (start, middle or end), got '${part}'`,
+        );
+      }
+      return { offset: Number(m[1]), anchor: (m[2] as TabStop['anchor']) ?? 'start' };
+    });
+  if (stops.length === 0) throw new Error(`tab-stops on layer '${layerName}' needs at least one stop`);
+  return stops;
+}
+
+/**
+ * Split each run at its tabs: the first field stays where the text is, and
+ * every field after a tab becomes a tspan at the next stop's x with that
+ * stop's anchor. Fields past the last stop stay inline.
+ */
+function applyTabStops(te: TextElement, stops: TabStop[]): TextElement {
+  if (!te.children.some((child) => child.type === 'run' && child.text.includes('\t'))) return te;
+  const children: TextChild[] = [];
+  let field = 0;
+  for (const child of te.children) {
+    if (child.type !== 'run' || !child.text.includes('\t')) {
+      children.push(child);
+      continue;
+    }
+    const pieces = child.text.split('\t');
+    children.push({ type: 'run', text: pieces[0] });
+    for (const piece of pieces.slice(1)) {
+      const stop = stops[field];
+      field++;
+      if (!stop) {
+        children.push({ type: 'run', text: piece });
+        continue;
+      }
+      children.push({ type: 'tspan', text: piece, x: te.x + stop.offset, styles: { 'text-anchor': stop.anchor } });
+    }
+  }
+  return { ...te, children };
+}
+
 function storeToFinalizedData(store: PathStore, evalState: EvaluationState): string {
   return finalizeStore(store, evalState).data;
 }
@@ -10213,6 +10266,11 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
       if (layer.layerType === 'TextLayer') {
         const textLayer = layer;
         const textStyles = { ...layer.styles };
+        // `tab-stops` is ours, not SVG's: fields after each tab become tspans
+        // with their own x and anchor, so a table is one statement per row.
+        const tabStops = textStyles['tab-stops'] !== undefined ? parseTabStops(textStyles['tab-stops'], layer.name) : null;
+        delete textStyles['tab-stops'];
+        const textElements = tabStops ? textLayer.textElements.map((te) => applyTabStops(te, tabStops)) : textLayer.textElements;
         const convenienceTransform = extractConvenienceTransform(textStyles);
         let transform: string | undefined;
         if (textStyles.transform) {
@@ -10221,12 +10279,12 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
         } else if (convenienceTransform) {
           transform = convenienceTransform;
         }
-        const allText = textLayer.textElements.map((te) => te.children.map((c) => c.text).join('')).join(' ');
+        const allText = textElements.map((te) => te.children.map((c) => c.text).join('')).join(' ');
         return {
           name: layer.name,
           type: 'text',
           data: allText,
-          textElements: textLayer.textElements,
+          textElements,
           styles: textStyles,
           isDefault: layer.isDefault,
           transform,

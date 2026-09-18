@@ -168,6 +168,7 @@ function buildText(layer: LayerOutput, options: BuildLayersOptions): VNode {
         return child.text;
       }
       const tspanAttrs: Record<string, string> = {};
+      if (child.x != null) tspanAttrs.x = String(child.x);
       if (child.dx != null) tspanAttrs.dx = String(child.dx);
       if (child.dy != null) tspanAttrs.dy = String(child.dy);
       if (child.rotation != null) tspanAttrs.rotate = String(radToDeg(child.rotation));

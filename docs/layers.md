@@ -621,6 +621,33 @@ layer('labels').apply {
 }
 ```
 
+### Tab Stops
+
+A table is one statement per row when the layer declares where its columns sit. `tab-stops` lists, for each tab in a row, the column's offset from the row's `x` and how it is anchored (`start`, `middle` or `end`; `start` when omitted). A tab in the text — a typed tab or `\t` — moves to the next stop:
+
+```
+let schedule = TextLayer('schedule') #{
+  font-family: 'monospace';
+  font-size: 5;
+  tab-stops: 11 end, 24 end, 40 end;
+};
+schedule.apply {
+  text(2, 10, #{ text-anchor: end; })`#\t⌀\tx\ty`;
+  for ([hole, i] in holes) {
+    let c = hole.block.centerPoint();
+    text(2, 16 + i * 6, #{ text-anchor: end; })`${i + 1}\t${toFixed(hole.block.boundingBox().width, 1)}\t${toFixed(c.x, 1)}\t${toFixed(c.y, 1)}`;
+  }
+}
+```
+
+The first field is the text itself, anchored by the layer or the per-text style; each field after a tab becomes a `<tspan>` with its own `x` and `text-anchor`, so the decimal points of an end-anchored column line up whatever the digit count:
+
+```
+<text x="2" y="16" text-anchor="end">1<tspan x="13" text-anchor="end">7.0</tspan><tspan x="26" text-anchor="end">15.1</tspan><tspan x="42" text-anchor="end">24.0</tspan></text>
+```
+
+A field with no stop left for it stays inline after the previous one. Without `tab-stops`, a tab is just a tab.
+
 ## Transforms
 
 Apply SVG matrix transformations (translate, rotate, scale) at the layer level. Transforms are set via method calls on `ctx.transform` and rendered as SVG `transform` attributes on the output elements.

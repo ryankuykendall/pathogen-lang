@@ -805,7 +805,7 @@ export type LayerStyle = Record<string, string>;
 
 export type TextChild =
   | { type: 'run'; text: string }
-  | { type: 'tspan'; text: string; dx?: number; dy?: number; rotation?: number; styles?: Record<string, string> }; // rotation in radians
+  | { type: 'tspan'; text: string; x?: number; dx?: number; dy?: number; rotation?: number; styles?: Record<string, string> }; // rotation in radians; x starts a new chunk (tab stops)
 
 export interface TextElement {
   x: number;
