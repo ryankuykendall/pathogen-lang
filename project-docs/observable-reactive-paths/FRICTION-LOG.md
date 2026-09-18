@@ -179,12 +179,14 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     helper learned to keep the sign (now nine lines in post55, thirteen in post56).
     Candidate: `toFixed(n)` on numbers, or a precision argument on `text` interpolation.
 
-23. **Text anchoring is per layer, so a numeric table is several layers.** (post55)
-    `text-anchor` lives in the TextLayer's style, so a right-aligned number column
-    beside a left-aligned label column is two layers, and a muted footer row is a
-    third. The schedule's numbers are one end-anchored monospace layer (decimal
-    points line up) beside a start-anchored footer layer — the friction in action.
-    Candidate: per-call anchor or a tab/column primitive on text layers.
+23. **WRONG PREMISE (2026-09-18): per-text styles already exist.** (post55) The
+    samples answered a right-aligned number column with two text layers on the belief
+    that `text-anchor` is per layer. `text(x, y, rotation, #{ … })` has carried a
+    per-call style block all along (TextStatement `styles`, merged over the layer's in
+    both emitters), documented under "Per-Element Styles on Text and Tspan" two hundred
+    lines below the `text()` forms — a discoverability gap, not a language one. The
+    `text()` section now cross-references it. Remaining candidate: tab stops / a column
+    primitive on text layers (see `language-candidates-v1.md`).
 
 24. **RESOLVED (blog series part 5, 2026-09-16): a TextLayer's transform reaches its
     `<text>` elements.** The fretboard's distance column wanted a text layer turned

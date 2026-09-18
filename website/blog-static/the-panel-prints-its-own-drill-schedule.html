@@ -1886,13 +1886,14 @@ sign, and glues the whole and the fraction back together. It is fine for
 one decimal and tedious for three, and its first draft was wrong for
 negative numbers, which part 5&#39;s fanned board found. A <code>toFixed(n)</code> on
 numbers, or a format argument on <code>text</code>, is the obvious addition.</p>
-<p><strong>A numeric column is two text layers.</strong> Text is anchored per layer,
-not per call, so a right-aligned column beside a left-aligned one means
-two layers. A footer that should be muted means a third. The schedule
-is one end-anchored layer for the numbers, so the decimal points line
-up, and one start-anchored layer for the footer, which is the friction
-in action. A <code>tab</code> or column primitive on text layers is the
-language-side answer, and it is logged.</p>
+<p><strong>Per-text styles exist, and the samples missed them.</strong> The schedule
+wanted right-aligned numbers beside a left-aligned footer, and the
+samples answer with two text layers, because <code>text-anchor</code> looked like a
+layer property. It is also a per-call one: <code>text()</code> takes an optional
+style block as its fourth argument, <code>text(x, y, 0deg, #{ text-anchor: end; })</code>. The layers reference says so, in a section two hundred lines
+below the one that introduces <code>text()</code>, and that introduction now points
+at it. A column primitive, tab stops on a text layer, would still spare
+a table its arithmetic, and it is logged.</p>
 <h2>Where to go next</h2>
 <p>Part 5 ends the series on the luthier&#39;s bench: a fretboard whose every
 slot is placed from one scale length by the twelfth root of two. The

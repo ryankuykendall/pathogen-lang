@@ -404,6 +404,8 @@ layer('labels').apply {
 }
 ```
 
+Both forms take an optional third argument, the rotation, and an optional fourth, a style block for that one text — `text(40, 20, 0deg, #{ text-anchor: end; })` right-aligns a single label on a start-anchored layer. See [Per-Element Styles on Text and Tspan](#layers-per-element-styles-on-text-and-tspan).
+
 **Block form** — mixed text runs and tspan children:
 
 ```

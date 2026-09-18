@@ -166,13 +166,15 @@ one decimal and tedious for three, and its first draft was wrong for
 negative numbers, which part 5's fanned board found. A `toFixed(n)` on
 numbers, or a format argument on `text`, is the obvious addition.
 
-**A numeric column is two text layers.** Text is anchored per layer,
-not per call, so a right-aligned column beside a left-aligned one means
-two layers. A footer that should be muted means a third. The schedule
-is one end-anchored layer for the numbers, so the decimal points line
-up, and one start-anchored layer for the footer, which is the friction
-in action. A `tab` or column primitive on text layers is the
-language-side answer, and it is logged.
+**Per-text styles exist, and the samples missed them.** The schedule
+wanted right-aligned numbers beside a left-aligned footer, and the
+samples answer with two text layers, because `text-anchor` looked like a
+layer property. It is also a per-call one: `text()` takes an optional
+style block as its fourth argument, `text(x, y, 0deg, #{ text-anchor:
+end; })`. The layers reference says so, in a section two hundred lines
+below the one that introduces `text()`, and that introduction now points
+at it. A column primitive, tab stops on a text layer, would still spare
+a table its arithmetic, and it is logged.
 
 ## Where to go next
 
