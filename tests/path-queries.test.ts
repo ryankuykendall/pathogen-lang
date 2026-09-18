@@ -477,3 +477,23 @@ describe(':nth with an interpolated array', () => {
     expect(() => compile(`${lines}layer('p').queryAll('command(line):nth([])');`)).toThrow(/Empty index list/);
   });
 });
+
+describe('zero-length commands are not endpoints', () => {
+  const src = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  l 10 10\n  l 0 0\n  v 40\n}\n";
+
+  it('skips a zero-length line, so turn and the headings describe real strokes', () => {
+    const q = `${src}let j = layer('p').query('endpoint:nth(0)');\nlog(layer('p').queryAll('endpoint').length, round(j.arriving.deg), round(j.leaving.deg), round(j.turn.deg), toFixed(j.outward, 1, 'deg'), j.next.command);`;
+    expect(logLines(q)).toEqual(['2 45 90 45 -22.5 v']);
+  });
+
+  it('still lists the zero-length command under command()', () => {
+    expect(logLines(`${src}log(layer('p').queryAll('command(l)').length);`)).toEqual(['2']);
+  });
+
+  it('skips an arc back to its own start but keeps a curve that loops', () => {
+    const arc = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  h 10\n  a 5 5 0 1 1 0 0\n  v 10\n}\nlog(layer('p').queryAll('endpoint').length);";
+    expect(logLines(arc)).toEqual(['2']);
+    const loop = "define PathLayer('p') #{ fill: none; }\nlayer('p').apply {\n  M 0 0\n  h 10\n  c 10 -10 10 10 0 0\n  v 10\n}\nlog(layer('p').queryAll('endpoint').length);";
+    expect(logLines(loop)).toEqual(['3']);
+  });
+});

@@ -26,12 +26,12 @@ layer('dots').apply {
 }
 ```
 
-`queryAll('endpoint')` returns one **Endpoint** per drawing command — the place each stroke of the pen finishes. Each one knows its `x`, `y`, the command that produced it, and the turn the path makes there.
+`queryAll('endpoint')` returns one **Endpoint** per drawing command — the place each stroke of the pen finishes. Each one knows its `x`, `y`, the command that produced it, and the turn the path makes there. A command that draws nothing — a pure move, a zero-length line or close, an arc back to its own start — is not an endpoint, and `next` steps over it, so `turn`, `arriving`, `leaving` and `outward` always describe real strokes. `command(...)` still lists every command, so `startHeading` on a move is the jump between subpaths, not a drawn direction.
 
 ## Things to know first
 
 - **Queries answer finished geometry.** A `with fillet(...)` corner has already been rounded when you query, so `command(a)` includes the fillet's arc and `endpoint(name)` on a filleted corner answers the trimmed tangent point. The legacy `point('name')` keeps its documented preference for the sharp *authored* corner; `query` does not.
-- **`endpoint` skips pure moves.** A move is where drawing starts, not where anything ends. A `z` that has length counts — its endpoint is the subpath's start.
+- **`endpoint` skips anything that draws nothing.** A move is where drawing starts, not where anything ends; a zero-length line, a close back onto its own start and an arc that ends where it began are skipped the same way, and `next` steps over them. A `z` that has length counts — its endpoint is the subpath's start.
 - **Command letters are case-insensitive.** `command(a)` and `command(A)` match the same arcs. Path blocks always report lowercase relative commands; `absolute` is only ever `true` on a layer source that was authored with uppercase commands.
 - **Coordinates come from the receiver.** On a `PathBlock`, positions are relative to the block's origin. Query the `ProjectedPath` returned by `.draw()`, `.drawTo()`, or `.project()` when you need page coordinates.
 - **`subpath` is not `.subPath()`.** The `subpath` noun is SVG structure: one pen-down run between moves. The `.subPath(startT, endT)` [method](#path-blocks-subpathstartt-endt-pathblock) slices a path by arc-length fraction. Same word, unrelated jobs.

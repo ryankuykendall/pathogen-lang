@@ -22,6 +22,10 @@ describe('toFixed(value, digits)', () => {
     expect(() => compile('let a = 45deg;\nlog(toFixed(a, 1));')).toThrow(/needs a unit/);
   });
 
+  it('rejects a unit given for a plain number', () => {
+    expect(() => compile("log(toFixed(5.678, 2, 'deg'));")).toThrow(/only for an Angle/);
+  });
+
   it('rejects digits outside 0..20 and non-numbers', () => {
     expect(() => compile('log(toFixed(1, 21));')).toThrow(/digits/);
     expect(() => compile("log(toFixed('x', 1));")).toThrow(/number/);

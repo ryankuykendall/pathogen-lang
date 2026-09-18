@@ -6,7 +6,14 @@ interface XY {
   y: number;
 }
 
-const EPS = 1e-9;
+// Tolerances scale with the geometry: 1e-9 of the largest magnitude in play,
+// never below 1e-9, so a drawing in tenths of a millimetre and one in
+// thousands of units judge tangency and parallelism the same way.
+function tolerance(...values: number[]): number {
+  let largest = 1;
+  for (const v of values) if (Math.abs(v) > largest) largest = Math.abs(v);
+  return 1e-9 * largest;
+}
 
 /** Read a point from a Point value, a context object ({x, y} inside `value`), or a bare {x, y}. */
 function asXY(v: unknown, fn: string): XY {
@@ -40,6 +47,7 @@ function circleCircle(c1: unknown, r1: unknown, c2: unknown, r2: unknown) {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const d = Math.hypot(dx, dy);
+  const EPS = tolerance(a.x, a.y, b.x, b.y, ra, rb);
   if (d < EPS) return points([]); // concentric: none, or infinitely many
   if (d > ra + rb + EPS || d < Math.abs(ra - rb) - EPS) return points([]);
   // Distance from c1 to the chord's midpoint along c1→c2, then half the chord.
@@ -70,6 +78,7 @@ function lineCircle(p1: unknown, p2: unknown, c: unknown, r: unknown) {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const len = Math.hypot(dx, dy);
+  const EPS = tolerance(a.x, a.y, b.x, b.y, centre.x, centre.y, rr);
   if (len < EPS) throw new Error('lineCircle() needs two distinct points to define the line');
   const ux = dx / len;
   const uy = dy / len;
@@ -99,7 +108,8 @@ function lineLine(p1: unknown, p2: unknown, p3: unknown, p4: unknown) {
   const r = { x: b.x - a.x, y: b.y - a.y };
   const s = { x: d.x - c.x, y: d.y - c.y };
   const cross = r.x * s.y - r.y * s.x;
-  if (Math.abs(cross) < EPS) return points([]);
+  const EPS = tolerance(a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y);
+  if (Math.abs(cross * cross) < EPS * EPS || Math.abs(cross) < EPS * Math.hypot(r.x, r.y) * Math.hypot(s.x, s.y)) return points([]);
   const t = ((c.x - a.x) * s.y - (c.y - a.y) * s.x) / cross;
   return points([{ x: a.x + r.x * t, y: a.y + r.y * t }]);
 }

@@ -26,6 +26,8 @@ The proposals in `project-docs/observable-reactive-paths/language-candidates-v1.
 #### Core
 
 - **Source offsets inside sub-parsed expressions are document offsets.** Expressions parsed through the `let _ = …` wrapper (function bodies' return values, style-value interpolations) kept wrapper-relative offsets on every line but the first; the formatter read blank-line counts from the wrong stretch of the file and padded a block's closing command with two blank lines. Both `adjustLocations` and `adjustLocs` now rebase every node.
+- **A zero-length command is not an endpoint.** A zero-length line, a close onto its own start or an arc back to its start was enumerated as an endpoint, so `turn` at the next joint (and now `arriving`, `leaving`, `outward`) read a degenerate tangent and came back wrong — 0° for a 45° heading. Such commands are skipped and `next` steps over them; a curve back to its own start still counts when a control point gives it reach. `command(...)` still lists every command. Found in the code review of the headings.
+- **`toFixed(value, digits, unit)` rejects a unit on a plain number** instead of ignoring it; the intersection helpers' tolerance now scales with the geometry.
 - **`A.x` is a member access in path position.** A command letter followed directly by `.name` cannot be a command, so the path-argument tokenizer reads `L A.x A.y` and `M c.x c.y` as the variables they are; `A .5` and `A.5` stay arcs. A bare shadowed letter is still reported, and the hint names the member spelling when there is one.
 
 #### Development

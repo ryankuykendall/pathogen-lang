@@ -344,10 +344,25 @@ const isMove = (c: string) => c === 'm' || c === 'M';
 const isClose = (c: string) => c === 'z' || c === 'Z';
 const EPS = 1e-9;
 
+/**
+ * A command that puts ink down. Moves never do; a straight command, a close
+ * or an arc that ends where it started drew nothing (SVG omits such an arc
+ * outright); a curve back to its own start still counts when a control
+ * point gives it reach. Non-drawing commands are not endpoints and `next`
+ * steps over them, so turns and headings always describe real strokes.
+ */
 function isDrawing(cmd: PathBlockCommand): boolean {
   if (isMove(cmd.command)) return false;
-  if (isClose(cmd.command)) return Math.abs(cmd.end.x - cmd.start.x) > EPS || Math.abs(cmd.end.y - cmd.start.y) > EPS;
-  return true;
+  const moved = Math.abs(cmd.end.x - cmd.start.x) > EPS || Math.abs(cmd.end.y - cmd.start.y) > EPS;
+  if (moved) return true;
+  const c = cmd.command.toLowerCase();
+  if (isClose(c) || c === 'l' || c === 'h' || c === 'v' || c === 'a') return false;
+  // c, s, q, t with no displacement: a loop if any explicit control point is off the start.
+  const rel = normalizeToRelativeArgs(cmd.command, cmd.args, cmd.start);
+  for (let i = 0; i + 1 < rel.length - 2; i += 2) {
+    if (Math.abs(rel[i]) > EPS || Math.abs(rel[i + 1]) > EPS) return true;
+  }
+  return false;
 }
 
 function envFor(source: QuerySource): QueryEnv {
