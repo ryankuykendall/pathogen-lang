@@ -373,3 +373,25 @@ worksheets, kinematics, surveying — and every program that calls a centre `c`.
 5(1) is a docs fix and is done. 6(1) is an afternoon. 2 (`circleCircle`) and 4
 (per-subpath markers) are the two real features and each earns a post of its own; the
 origami and dieline series held back from this one would use both.
+
+
+---
+
+## Status (2026-09-18)
+
+Ryan approved everything except the non-proposal on 2026-09-18; all of it landed the same day, one commit each, docs first:
+
+| # | Candidate | Landed as |
+|---|---|---|
+| 1 | Headings: `Command.startHeading`/`endHeading`, `Endpoint.arriving`/`leaving`/`outward` | 83241e1 (members) + the headings/toFixed/intersections commit |
+| 2 | `circleCircle`, `lineCircle`, `lineLine` | same commit |
+| 3 | `toFixed(value, digits)` and `toFixed(angle, digits, unit)` | same commit |
+| 4 | `marker-scope: subpath` | b229bb1 |
+| 5 | Per-text styles: `text()` section cross-references the fourth argument; `text(x, y, #{ … })` shorthand; `tab-stops` on a text layer | 3d373b7 (docs), 95e2a57 (shorthand), eee7526 (tab stops) |
+| 6 | `:nth` accepts a bracketed / interpolated list | 83241e1 |
+| 7 | `A.x` is a member access in path position; the hint names `calc(A.x)` for a bare letter | 9e827eb, 83241e1 |
+| 8 | Formatter padding (root cause: wrapper-relative offsets in sub-parsed expressions), formatter word guard, the `c.x` residual | 95e2a57, 9e827eb |
+
+Still open from §8: the validator containment rule (the divider check in e7d78bb covers the series' case). Not done: absolute commands in blocks — decided against.
+
+The series' samples still carry the pre-fix spellings (the law of cosines, the `mm()` helper, rotated arrowhead blocks, two-layer schedule) because the posts tell that story; adopting the new features in the samples is a separate editorial decision.
