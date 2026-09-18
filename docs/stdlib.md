@@ -73,6 +73,15 @@ These return **plain numbers**, not [Angle values](#syntax-angle-units) — hand
 | `min(a, b, ...)` | Minimum value |
 | `max(a, b, ...)` | Maximum value |
 
+### Formatting
+
+| Function | Description |
+|----------|-------------|
+| `toFixed(value, digits)` | Format a number with exactly `digits` decimals, as a string: `toFixed(323.85, 2)` is `'323.85'`, `toFixed(7, 1)` is `'7.0'`, `toFixed(-13.456, 2)` is `'-13.46'`. `digits` is 0–20. |
+| `toFixed(angle, digits, unit)` | Format an Angle value in `'deg'` or `'rad'`: `toFixed(fret.startHeading, 2, 'deg')`. An angle without a unit is an error, so a heading never prints as radians by accident. |
+
+The result is a string, so it belongs in a template — `text(x, y)`${toFixed(hole.x, 1)} mm`` — not in arithmetic.
+
 ### Interpolation & Clamping
 
 | Function | Description |
@@ -783,6 +792,28 @@ fn drawGridToLayer(layer, gridFn, type, angle, x, y, w, h, s) {
 ## Context-Aware Functions
 
 These functions use the current path context (position, tangent direction) to generate path segments. They maintain path continuity and are ideal for building complex shapes programmatically.
+
+### Intersections
+
+Where two circles, or a line and a circle, or two lines meet. Points are `Point(x, y)` values (or anything with `x` and `y`); the results are arrays of Points, empty when there is no intersection, so the length is the test.
+
+| Function | Returns |
+|----------|---------|
+| `circleCircle(c1, r1, c2, r2)` | The 0, 1 or 2 points where the circles meet. With two, the first is on the left of the direction from `c1` to `c2` as the page shows it, the second on the right. Concentric circles return `[]`. |
+| `lineCircle(p1, p2, c, r)` | The 0, 1 or 2 points where the infinite line through `p1` and `p2` meets the circle, in order along the direction from `p1` to `p2`. |
+| `lineLine(p1, p2, p3, p4)` | The point where the infinite lines through `p1, p2` and `p3, p4` meet, as a one-element array; `[]` when they are parallel. |
+
+The four-bar solve is the classic use — the coupler's reach from the crank pin meets the rocker's reach from its ground pivot:
+
+```
+let both = circleCircle(pinA, coupler, O4, rocker);
+if (both.length == 0) {
+  log(`cannot assemble at ${theta}`);
+}
+let pinB = both[0];   // the open configuration; both[1] is the crossed one
+```
+
+Compass constructions read the same way: an arc from A of radius r meets an arc from B of radius s at `circleCircle(A, r, B, s)`.
 
 ### Polar Movement
 

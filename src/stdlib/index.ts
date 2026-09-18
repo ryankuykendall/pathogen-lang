@@ -1,3 +1,5 @@
+import { formatFunctions } from './format';
+import { geometryFunctions } from './geometry';
 import { gridFunctions } from './grid';
 import { mathFunctions } from './math';
 import { pathFunctions } from './path';
@@ -6,6 +8,8 @@ export const stdlib = {
   ...mathFunctions,
   ...pathFunctions,
   ...gridFunctions,
+  ...formatFunctions,
+  ...geometryFunctions,
 };
 
 /**

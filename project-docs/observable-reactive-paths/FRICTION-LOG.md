@@ -116,7 +116,7 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     with a drawn block" (one-line idiom, own line, drawTo, filleted). Original: the
     prototype's `query('endpoint(O2)')` reported "available endpoint labels: (none)".
 
-17. **Pivot `A` is the arc command.** (post54) Every mechanisms textbook names the
+17. **RESOLVED (candidates batch, 2026-09-18): pivot `A` is the arc command.** The path-argument tokenizer now reads a command letter followed directly by `.name` as a member access, so `L A.x A.y` and `M c.x c.y` just work (`A .5` and `A.5` stay arcs); a bare shadowed letter is still reported, with the member spelling in the hint when there is one. (post54) Every mechanisms textbook names the
     moving pivots A and B and the ground pivots O2 and O4, and `L A.x A.y` in a block is a
     parse error: "'A' is a path command here". The same class bit the fix's own test
     (`.map {|s| s.label }` parsed as an `s` command with a member-expression argument).
@@ -126,7 +126,7 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     command, and the most natural name for a centre. A friendlier parser hint ("did you
     mean calc(A.x)?") is the only fix on offer.
 
-18. **No circle–circle intersection; blocks are relative-only.** (post54) The four-bar
+18. **RESOLVED (candidates batch, 2026-09-18): `circleCircle()`, `lineCircle()`, `lineLine()` in the stdlib; `Command.startHeading`/`endHeading` and `Endpoint.arriving`/`leaving`/`outward` on the structs. Blocks stay relative-only by decision (no absolute commands in blocks). Original: no circle–circle intersection; blocks are relative-only.** (post54) The four-bar
     position solve needs the point where the coupler circle meets the rocker circle.
     `intersectionPoints()` is bounding-box based, so the sample solves it by the law of
     cosines in eight lines (`acos` is there). And a form block cannot be written from
@@ -157,12 +157,12 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     skipped text — while a zero-length node (a missing `;`) still formats. The script
     reports `REFUSED … parse error at line N` instead of "unchanged" and exits 1.
     Tests: formatter "never drops code". Original: ten empty style blocks, dots
-    drawn in the default fill, arrows and dimension lines invisible. **Residual:** `M c.x
-    calc(…)` in path position (entry 17's trap) recovers without an error node — the
-    tree reads it as `M` then a `c` command — so the guard does not fire and the
-    formatter writes back `M` / `c x calc(…)`, dropping the dot. Open.
+    drawn in the default fill, arrows and dimension lines invisible. **Residual, now closed:** `M c.x
+    calc(…)` recovered without an error node and the formatter wrote back `M` / `c x
+    calc(…)`; `c.x` parses as a member access since entry 17's fix, and the formatter
+    additionally refuses any edit that loses a word.
 
-21. **`marker-start` / `marker-end` are per element, not per subpath.** (post54/03,
+21. **RESOLVED (candidates batch, 2026-09-18): `marker-scope: subpath` on a path layer emits one `<path>` per subpath inside a `<g>` that carries the layer, so markers land on every run. Original: `marker-start` / `marker-end` are per element, not per subpath.** (post54/03,
     06) Four dimension lines in one layer are one `<path>`, so the outward
     arrowheads appeared on the first vertex of the first line and the last vertex
     of the last; `marker-mid` cannot help because a mid marker at a subpath's start
@@ -171,7 +171,7 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     honest, and also the kind of thing the marker feature exists to avoid. Candidate:
     a layer option that emits each subpath as its own element when markers are set.
 
-22. **No `toFixed`.** (post55) A drill schedule wants `7.0` and `22.6`, not `7` and
+22. **RESOLVED (candidates batch, 2026-09-18): `toFixed(value, digits)` and `toFixed(angle, digits, 'deg'|'rad')`. Original: no `toFixed`.** (post55) A drill schedule wants `7.0` and `22.6`, not `7` and
     `22.60000000000001`. `round()` returns an integer, so the panel samples carry a
     four-line `mm()` helper (round to tenths, split whole and fraction, glue with a
     dot) — fine for one decimal, tedious for three, and its first draft was wrong for
@@ -185,8 +185,9 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     per-call style block all along (TextStatement `styles`, merged over the layer's in
     both emitters), documented under "Per-Element Styles on Text and Tspan" two hundred
     lines below the `text()` forms — a discoverability gap, not a language one. The
-    `text()` section now cross-references it. Remaining candidate: tab stops / a column
-    primitive on text layers (see `language-candidates-v1.md`).
+    `text()` section now cross-references it. The remaining candidate, tab stops on a
+    text layer, landed in the candidates batch (2026-09-18): `tab-stops: 11 end, 24 end;`
+    and a tab in the row.
 
 24. **RESOLVED (blog series part 5, 2026-09-16): a TextLayer's transform reaches its
     `<text>` elements.** The fretboard's distance column wanted a text layer turned
@@ -200,14 +201,14 @@ Format mirrors `project-docs/cutting-room/FEATURE-OPPORTUNITIES.md`.
     `tests/render/text-layer-transform.test.ts`, cli "applies a text layer's transform".
     Original: 22 distance labels, none rotated, none on the page.
 
-25. **The formatter pads a labelled `z` inside a block.** (post54, all six) A block that
+25. **RESOLVED (candidates batch, 2026-09-18): sub-parsed expressions carried wrapper-relative offsets on every line but the first, so the formatter counted blank lines in the wrong stretch of the file; offsets are document offsets now, and the formatter refuses any edit that loses a word (the recovered parse of `return @{ l a.x … }` had produced `return null`). Original: the formatter pads a labelled `z` inside a block.** (post54, all six) A block that
     ends `l … as segment('rocker'), endpoint('O4');` then `z as segment('ground'),
     endpoint('O2');` is rewritten with two blank lines before the `z` and its
     semicolon removed, every time. A minimal block with the same three lines at top
     level formats cleanly, so the trigger is the `return @{ … }` inside a `fn`. Cosmetic,
     but it is what readers see in the code panel. Open.
 
-26. **`:nth` takes literal indices only.** (post56/04) The marker frets are written
+26. **RESOLVED (candidates batch, 2026-09-18): `:nth` accepts a bracketed list, which is what an interpolated array produces. Original: `:nth` takes literal indices only.** (post56/04) The marker frets are written
     twice — `[3, 5, 7, 9, 12, 15, 17, 19, 21]` for the dots and `:nth(2, 4, 6, 8, 11, 14,
     16, 18, 20)` for the tint — and kept in step by hand, in a series about not doing
     that. A selector string built by interpolation may compile, but the post does not

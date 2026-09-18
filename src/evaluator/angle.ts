@@ -64,6 +64,16 @@ export function callStdlibPreservingAngles(
   fn: (...ns: number[]) => unknown,
   rawArgs: unknown[],
 ): unknown {
+  if (name === 'toFixed' && isAngleValue(rawArgs[0])) {
+    // An angle prints in the unit the caller names; never silently as radians.
+    const unit = rawArgs[2];
+    const value =
+      unit === 'deg' ? (rawArgs[0].radians * 180) / Math.PI : unit === 'rad' ? rawArgs[0].radians : undefined;
+    if (value === undefined) {
+      throw new Error("toFixed(angle, digits) needs a unit: toFixed(angle, 2, 'deg') or toFixed(angle, 2, 'rad')");
+    }
+    rawArgs = [value, rawArgs[1]];
+  }
   const args = rawArgs.map((v) => (isAngleValue(v) ? v.radians : v));
   const result = fn(...(args as number[]));
   if (typeof result !== 'number') return result;

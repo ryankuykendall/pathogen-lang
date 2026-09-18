@@ -144,6 +144,12 @@ export declare function Marker(id: string, markerWidth: number, markerHeight: nu
 // Context-Aware Functions (implemented in evaluator, not stdlib)
 // =============================================================================
 
+/** circleCircle(c1, r1, c2, r2) — The 0, 1 or 2 points where two circles meet; left of c1→c2 first @boost 6 */
+export declare function circleCircle(c1: PathogenPoint, r1: number, c2: PathogenPoint, r2: number): PathogenPoint[];
+/** lineCircle(p1, p2, c, r) — Where the line through p1, p2 meets the circle, in order along p1→p2 @boost 5 */
+export declare function lineCircle(p1: PathogenPoint, p2: PathogenPoint, c: PathogenPoint, r: number): PathogenPoint[];
+/** lineLine(p1, p2, p3, p4) — Where two infinite lines meet, as a one-element array; [] when parallel @boost 5 */
+export declare function lineLine(p1: PathogenPoint, p2: PathogenPoint, p3: PathogenPoint, p4: PathogenPoint): PathogenPoint[];
 /** polarPoint(angle, distance) — Point at polar offset @boost 14 */
 export declare function polarPoint(angle: AngleValue, distance: number): PathogenPoint;
 /** polarOffset(angle, distance) — Relative polar offset @boost 14 */
@@ -389,6 +395,8 @@ export declare function trunc(x: number): number;
 
 /** abs(x) — Absolute value; angle-preserving @boost 10 */
 export declare function abs(x: number): number;
+/** toFixed(value, digits, unit?) — Format a number with exactly `digits` decimals, as a string; an Angle needs a unit, 'deg' or 'rad' @boost 8 */
+export declare function toFixed(value: number, digits: number, unit?: string): string;
 /** sign(x) — Sign (-1, 0, or 1) @boost 6 */
 export declare function sign(x: number): number;
 /** min(a, b, ...) — Minimum; angle-preserving @boost 10 */
@@ -745,6 +753,10 @@ export interface PathogenString {
 
 /** @type Command */
 export interface PathogenCommand {
+  /** Direction of travel as the command begins */
+  readonly startHeading: AngleValue;
+  /** Direction of travel as the command ends (the same as startHeading for a line) */
+  readonly endHeading: AngleValue;
   /** Command letter, lowercase */
   readonly command: string;
   /** Authored with an uppercase (absolute) letter — layer sources only; blocks and projections are always relative */
@@ -871,6 +883,12 @@ export interface PathogenEndpoint {
   readonly turn: AngleValue;
   /** A drawing command arrives and another leaves */
   readonly isJoint: boolean;
+  /** The direction the incoming command is travelling as it reaches this point */
+  readonly arriving: AngleValue;
+  /** The direction the next command sets off in, or null at an open end */
+  readonly leaving: AngleValue;
+  /** The direction that points away from both commands at a joint (arriving + turn/2 − 90°); at an open end, arriving */
+  readonly outward: AngleValue;
   /** fillet(radius) — Round this corner; returns a PathBlock */
   fillet(radius: number): PathogenPathBlock;
   /** chamfer(d1, d2?) — Bevel this corner; returns a PathBlock */

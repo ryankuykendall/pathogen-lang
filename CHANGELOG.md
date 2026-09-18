@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-18 (language candidates from "Drawing Without Bookkeeping")
+
+The proposals in `project-docs/observable-reactive-paths/language-candidates-v1.md`, approved 2026-09-18, landing one by one.
+
+### Added
+
+#### Core
+
+- **Headings on query structs.** `Command.startHeading` and `endHeading`, and `Endpoint.arriving`, `leaving` (null at an open end) and `outward` — the bisector of the exterior angle at a joint, `arriving + turn/2 − 90°`, the direction a label goes to sit clear of both bars. All Angle values. Docs: Path Queries "What comes back".
+- **`toFixed(value, digits)`** returns a string with exactly `digits` decimals, sign kept; `toFixed(angle, digits, 'deg' | 'rad')` formats an Angle, and an Angle without a unit is an error rather than a silent radian. Docs: Standard Library "Formatting".
+- **`circleCircle(c1, r1, c2, r2)`, `lineCircle(p1, p2, c, r)`, `lineLine(p1, p2, p3, p4)`** return arrays of Points (empty when there is no intersection), with documented ordering — left of `c1→c2` first, along `p1→p2`. Docs: Standard Library "Intersections".
+- **`:nth` accepts a bracketed list**, which is what an interpolated array produces: `` `command(line):nth(${indexes})` ``. Docs: Path Queries.
+- **`text(x, y, #{ … })`** — the per-text style block can be the third argument when there is no rotation. Docs: Layers "text() — Two Forms".
+- **`tab-stops` on a text layer.** `tab-stops: 11 end, 24 end, 40 end;` declares where a row's columns sit and how each is anchored; a tab in the text moves to the next stop, and each field after a tab is emitted as a `<tspan>` with its own `x` and `text-anchor`, so a table is one statement per row and an end-anchored column's decimal points line up. Docs: Layers "Tab Stops".
+- **`marker-scope: subpath`** on a path layer emits the layer as a `<g>` carrying its id, name, styles and transform with one `<path>` per subpath, so `marker-start` and `marker-end` land on every run instead of the first and last vertex of the whole layer. A run that begins without a move gets its own absolute `M`. The default, `path`, keeps the single element; other values are an error. Shared by the CLI, the playground and VS Code through the one DOM builder. Docs: Markers "Markers on Every Subpath".
+
+### Fixed
+
+#### Core
+
+- **Source offsets inside sub-parsed expressions are document offsets.** Expressions parsed through the `let _ = …` wrapper (function bodies' return values, style-value interpolations) kept wrapper-relative offsets on every line but the first; the formatter read blank-line counts from the wrong stretch of the file and padded a block's closing command with two blank lines. Both `adjustLocations` and `adjustLocs` now rebase every node.
+- **`A.x` is a member access in path position.** A command letter followed directly by `.name` cannot be a command, so the path-argument tokenizer reads `L A.x A.y` and `M c.x c.y` as the variables they are; `A .5` and `A.5` stay arcs. A bare shadowed letter is still reported, and the hint names the member spelling when there is one.
+
+#### Development
+
+- **The formatter never loses a word.** After formatting, every identifier-like word in the source must still be present (the recovered parse of `return @{ l a.x … }` produced `return null` with no error node to refuse on); otherwise no edit is made.
+
 ## [Unreleased] - 2026-09-16 (blog series "Drawing Without Bookkeeping", parts 1–2, and the friction fixes their samples exposed)
 
 Five evaluator bugs the first blog samples exposed, logged in `project-docs/observable-reactive-paths/FRICTION-LOG.md` (entries 12–16) and told in the posts' closing sections.
