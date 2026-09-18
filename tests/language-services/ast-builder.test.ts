@@ -443,3 +443,18 @@ let g = PathBlock.fromGlyph("A", styles);`;
     });
   });
 });
+
+describe('locations inside sub-parsed expressions are document offsets', () => {
+  it('a block command inside a returned block points at its own text', () => {
+    const src = "fn make() {\n  let toA = Point(10, 0);\n  return @{\n    l toA.x toA.y\n    l 0 10\n  };\n}\n";
+    const ast = buildAST(parser.parse(src), src);
+    const fn = ast.body[0] as any;
+    const ret = fn.body.find((s: any) => s.type === 'ReturnStatement');
+    const block = ret.value;
+    const [first, second] = block.body;
+    expect(src.slice(first.loc.offset, first.loc.offset + 13)).toBe('l toA.x toA.y');
+    expect(src.slice(second.loc.offset, second.loc.offset + 6)).toBe('l 0 10');
+    expect(second.loc.line).toBe(5);
+    expect(second.loc.column).toBe(5);
+  });
+});

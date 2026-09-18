@@ -35,6 +35,25 @@ export interface FormatEdit {
  * Returns a single edit that replaces the entire document content.
  * Returns empty array if the source cannot be parsed.
  */
+/** Identifier-like words (names, keywords, command letters, words inside strings and comments), counted. */
+function wordCounts(text: string): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const m of text.matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)) {
+    counts.set(m[0], (counts.get(m[0]) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** True when any word occurs fewer times in `after` than in `before`. */
+function dropsWords(before: string, after: string): boolean {
+  const was = wordCounts(before);
+  const now = wordCounts(after);
+  for (const [word, n] of was) {
+    if ((now.get(word) ?? 0) < n) return true;
+  }
+  return false;
+}
+
 /**
  * True when the error-recovery parse skipped real text. A missing semicolon is a
  * zero-length error node (an insertion, nothing lost); an unparseable region
@@ -81,6 +100,12 @@ export function formatDocument(document: TextDocument, options?: FormatOptions):
 
   // If already formatted, return no edits
   if (formatted === source) return [];
+
+  // Formatting moves punctuation and whitespace; it never loses a word. A
+  // recovered parse can turn `return @{ l a.x … }` into `return null` with
+  // no error node to show for it, so the last line of defence is the text
+  // itself: every identifier-like word in the source must still be there.
+  if (dropsWords(source, formatted)) return [];
 
   return [{
     range: {

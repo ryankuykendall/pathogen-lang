@@ -34,3 +34,20 @@ describe('text layer transforms reach the emitted <text>', () => {
     expect(svg).not.toContain('transform=');
   });
 });
+
+describe('text() takes a style block as its third argument when there is no rotation', () => {
+  it('applies the per-text style and emits no rotation', () => {
+    const svg = render("let font = 'sans-serif';\nlet t = TextLayer('t') #{ font-family: font; text-anchor: start; };\nt.apply { text(40, 20, #{ text-anchor: end; })`right`; text(40, 30)`left`; }");
+    const texts = svg.match(/<text[^>]*>/g) ?? [];
+    expect(texts).toHaveLength(2);
+    expect(texts[0]).toContain('text-anchor="end"');
+    expect(texts[0]).not.toContain('transform=');
+    expect(texts[1]).toContain('text-anchor="start"');
+  });
+
+  it('keeps the four-argument form', () => {
+    const svg = render("let font = 'sans-serif';\nlet t = TextLayer('t') #{ font-family: font; };\nt.apply { text(40, 20, 90deg, #{ fill: red; })`a`; }");
+    expect(svg).toMatch(/transform="rotate\(90(\.0+)?, 40, 20\)"/);
+    expect(svg).toContain('fill="red"');
+  });
+});

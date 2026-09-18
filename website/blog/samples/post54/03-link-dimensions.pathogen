@@ -59,7 +59,6 @@ fn linkageBlock(theta) {
     l toA.x toA.y as segment('crank'), endpoint('A');
     l toB.x toB.y as segment('coupler'), endpoint('B');
     l toO4.x toO4.y as segment('rocker'), endpoint('O4');
-
     z as segment('ground'), endpoint('O2')
   };
 }

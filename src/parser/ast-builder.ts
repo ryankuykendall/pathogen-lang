@@ -103,24 +103,33 @@ function parseExpressionAt(exprStr: string, sourceOffset: number, source: string
   if (!expr) return null;
   // Calculate the line/column offset from the source position
   const targetLoc = offsetToLoc(sourceOffset, source);
-  adjustLocations(expr, targetLoc.line - 1, targetLoc.column - 1);
+  adjustLocations(expr, targetLoc.line - 1, targetLoc.column - 1, sourceOffset);
   return expr;
 }
 
 // Wrapper offset: `let _ = ` is 8 characters
 const WRAP_OFFSET = 8;
 
-function adjustLocations(node: any, lineOffset: number, colOffset: number, seen: Set<object> = new Set()): void {
+function adjustLocations(
+  node: any,
+  lineOffset: number,
+  colOffset: number,
+  sourceOffset: number,
+  seen: Set<object> = new Set(),
+): void {
   if (!node || typeof node !== 'object') return;
   // AST nodes may share a single loc object (e.g. MethodCallExpression and its
   // object Identifier) — adjust each loc exactly once or lines drift.
   if (node.loc && !seen.has(node.loc)) {
     seen.add(node.loc);
-    // For first line, adjust column accounting for the `let _ = ` wrapper
+    // The wrapped text is `let _ = ` + the expression, and the expression
+    // starts at sourceOffset in the document, so every node's offset moves
+    // by the same amount whatever line it is on. Columns only shift on the
+    // first line, where the wrapper sits.
+    node.loc.offset = node.loc.offset - WRAP_OFFSET + sourceOffset;
     if (node.loc.line === 1) {
       node.loc.line += lineOffset;
       node.loc.column = node.loc.column - WRAP_OFFSET + colOffset;
-      node.loc.offset = node.loc.offset - WRAP_OFFSET + colOffset;
     } else {
       node.loc.line += lineOffset;
     }
@@ -130,9 +139,9 @@ function adjustLocations(node: any, lineOffset: number, colOffset: number, seen:
     if (key === 'loc' || key === 'type') continue;
     const val = node[key];
     if (Array.isArray(val)) {
-      for (const item of val) adjustLocations(item, lineOffset, colOffset, seen);
+      for (const item of val) adjustLocations(item, lineOffset, colOffset, sourceOffset, seen);
     } else if (val && typeof val === 'object' && val.type) {
-      adjustLocations(val, lineOffset, colOffset, seen);
+      adjustLocations(val, lineOffset, colOffset, sourceOffset, seen);
     }
   }
 }
@@ -1610,8 +1619,13 @@ function buildTextStatement(cursor: TreeCursor, source: string): TextStatement {
 
   if (exprs.length >= 1) x = exprs[0];
   if (exprs.length >= 2) y = exprs[1];
-  if (exprs.length >= 3) rotation = exprs[2];
-  if (exprs.length >= 4) styles = exprs[3];
+  if (exprs.length === 3 && exprs[2].type === 'StyleBlockLiteral') {
+    // text(x, y, #{ … }) — a style block with no rotation to skip past.
+    styles = exprs[2];
+  } else {
+    if (exprs.length >= 3) rotation = exprs[2];
+    if (exprs.length >= 4) styles = exprs[3];
+  }
 
   return { type: 'TextStatement', x, y, rotation, styles, content, body, loc: nodeLoc };
 }

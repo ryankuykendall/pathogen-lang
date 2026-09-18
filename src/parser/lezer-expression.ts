@@ -112,11 +112,18 @@ export function parseExpressionAtOffset(
   // Parsimmon-parsed expressions had line 1, col 1 as the start.
   // Lezer-parsed expressions (via wrapping) have line 1, col 9 (after `let _ = `).
   // We need to adjust to the original source position.
-  adjustLocs(expr, lineOffset, colOffset, 8, new Set());
+  adjustLocs(expr, lineOffset, colOffset, 8, sourceOffset, new Set());
   return expr;
 }
 
-function adjustLocs(node: any, lineOffset: number, colOffset: number, wrapOffset: number, seen: Set<object>): void {
+function adjustLocs(
+  node: any,
+  lineOffset: number,
+  colOffset: number,
+  wrapOffset: number,
+  sourceOffset: number,
+  seen: Set<object>,
+): void {
   if (!node || typeof node !== 'object') return;
   // Some builders share ONE loc object between a node and its child (e.g. a
   // MemberExpression and its object head). Track adjusted loc objects so a
@@ -124,11 +131,13 @@ function adjustLocs(node: any, lineOffset: number, colOffset: number, wrapOffset
   // offset for member-head references inside style-value interpolations.
   if (node.loc && !seen.has(node.loc)) {
     seen.add(node.loc);
+    // The expression starts at sourceOffset in the document and the wrapper
+    // sits before it, so every node's offset moves by the same amount on
+    // every line; columns only shift on the first line.
+    node.loc.offset = node.loc.offset - wrapOffset + sourceOffset;
     if (node.loc.line === 1) {
       node.loc.line += lineOffset;
-      // Column: subtract the `let _ = ` prefix (8 chars), add the source offset
       node.loc.column = node.loc.column - wrapOffset + colOffset;
-      node.loc.offset = node.loc.offset - wrapOffset + (colOffset > 0 ? colOffset : 0);
     } else {
       node.loc.line += lineOffset;
     }
@@ -137,9 +146,9 @@ function adjustLocs(node: any, lineOffset: number, colOffset: number, wrapOffset
     if (key === 'loc' || key === 'type') continue;
     const val = node[key];
     if (Array.isArray(val)) {
-      for (const item of val) adjustLocs(item, lineOffset, colOffset, wrapOffset, seen);
+      for (const item of val) adjustLocs(item, lineOffset, colOffset, wrapOffset, sourceOffset, seen);
     } else if (val && typeof val === 'object' && val.type) {
-      adjustLocs(val, lineOffset, colOffset, wrapOffset, seen);
+      adjustLocs(val, lineOffset, colOffset, wrapOffset, sourceOffset, seen);
     }
   }
 }

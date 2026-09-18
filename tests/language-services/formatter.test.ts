@@ -847,6 +847,24 @@ describe('formatDocument never drops code', () => {
     expect(formatDocument(doc)).toEqual([]);
   });
 
+  it('refuses to turn a block it cannot parse into `return null`', () => {
+    // `a` is the arc command in path position; the recovered parse has no error node
+    // with extent, but the formatted text would lose the whole block.
+    const src = "define ViewBox(0, 0, 100, 100);\nfn make() {\n  let a = Point(10, 0);\n  return @{\n    l a.x a.y as segment('a'), endpoint('p');\n    z as segment('c'), endpoint('r');\n  };\n}\n";
+    expect(formatDocument(new StringTextDocument(src))).toEqual([]);
+  });
+
+  it('does not invent blank lines inside a block returned from a function', () => {
+    // Block commands used to carry offsets relative to the `let _ = ` wrapper the
+    // expression sub-parser adds, so the blank-line count between them was read
+    // from the wrong stretch of the file.
+    const src = "define ViewBox(0, 0, 100, 100);\n\n\nlet a1 = 1;\nfn make() {\n  let toA = Point(10, 0);\n  return @{\n    l toA.x toA.y as segment('a'), endpoint('p');\n    l 0 10 as segment('b'), endpoint('q');\n\n    z as segment('c'), endpoint('r')\n  };\n}\n";
+    const edits = formatDocument(new StringTextDocument(src));
+    const out = edits.length === 0 ? src : edits[0].newText;
+    expect(out).toContain("endpoint('p');\n    l 0 10");
+    expect(out).toContain("endpoint('q');\n\n    z as");
+  });
+
   it('still adds a missing semicolon, which is not a loss', () => {
     const doc = new StringTextDocument('let x = 5\nlet y = 6;\n');
     const edits = formatDocument(doc);
