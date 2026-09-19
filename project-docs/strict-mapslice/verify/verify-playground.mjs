@@ -19,7 +19,10 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import puppeteer from 'puppeteer';
 
-const ORIGIN = 'http://localhost:3000';
+// PATHOGEN_ORIGIN=https://pathogen.studio runs the same checks against
+// production after a push; results go to separate *-production files.
+const ORIGIN = process.env.PATHOGEN_ORIGIN ?? 'http://localhost:3000';
+const SUFFIX = process.env.PATHOGEN_ORIGIN ? '-production' : '';
 const DEMO = 'project-docs/strict-mapslice/demo.pathogen';
 const code = readFileSync(DEMO, 'utf8');
 const TYPO = 'let radii = [160, 120, 80];\nlet pairs = radii.mapSlice(2, { strict: false });\nM 0 0';
@@ -139,12 +142,12 @@ try {
   ).catch(() => null);
   check('the error panel shows the typo error to the user', !!panel && panel.includes('(supported: partial)'));
 
-  await page.screenshot({ path: 'project-docs/strict-mapslice/verify/playground-error-panel.png' });
+  await page.screenshot({ path: `project-docs/strict-mapslice/verify/playground-error-panel${SUFFIX}.png` });
 } finally {
   await browser.close();
 }
 
-writeFileSync('project-docs/strict-mapslice/verify/playground-results.json', `${JSON.stringify(results, null, 2)}\n`);
+writeFileSync(`project-docs/strict-mapslice/verify/playground-results${SUFFIX}.json`, `${JSON.stringify(results, null, 2)}\n`);
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} passed`);
 process.exit(failed.length ? 1 : 0);

@@ -2,9 +2,27 @@
 
 _2026-09-19. Resume point. Approved plan: `plan-v1.md`._
 
-**State: implemented, reviewed, and re-verified on all three surfaces against
-the final source. NOT committed.** Commit and push wait on the author seeing the
-review outcomes (docs changes require it; a push deploys Pages and the API).
+**State: SHIPPED.** Committed as `3813223` on `main` and pushed 2026-09-19
+(`428b8aa..3813223`), on the author's go-ahead after seeing the review outcomes.
+Cloudflare Pages: completed / success. The API worker did not redeploy — nothing
+under `api/`, `website/api/` or `website/auth/` changed.
+
+**Production verified, not assumed** (a green deploy check says the build
+finished, not that the site behaves):
+
+- `PATHOGEN_ORIGIN=https://pathogen.studio node verify/verify-playground.mjs` →
+  **13/13** (`verify/playground-results-production.json`): the demo renders with
+  path data byte-equal to the local CLI; full windows by default;
+  `{ partial: true }`; the `strict` typo error; the fractional-length error; the
+  missing context-aware argument; completion detail, snippet and hover; and the
+  live error panel.
+- `https://pathogen.studio/docs`: the new anchor, the behavior-change note, the
+  positive-integer clause, the option-key clause and the context-aware link are
+  each present; the old `#syntax-mapslicelength` anchor and the old "slices are
+  shorter" sentence are gone.
+
+Not done: the `.vsix` was built and verified headlessly but **not installed in
+an editor, and not published** — that is a separate release step.
 
 Reviews: `reviews/code-review-disposition.md` (1 Critical — a real hole in the
 path-emit guard, fixed; details there) and `reviews/docs-review-disposition.md`

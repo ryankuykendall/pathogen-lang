@@ -1,0 +1,67 @@
+[
+  {
+    "name": "demo renders in the playground preview",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "playground path data equals CLI path data",
+    "ok": true,
+    "detail": "207 vs 207 chars"
+  },
+  {
+    "name": "served bundle: default is full windows only",
+    "ok": true,
+    "detail": "[[1, 2], [2, 3], [3, 4]]"
+  },
+  {
+    "name": "served bundle: { partial: true } restores the old output",
+    "ok": true,
+    "detail": "[[1, 2], [2, 3], [3, 4], [4]]"
+  },
+  {
+    "name": "served bundle: length longer than the array gives []",
+    "ok": true,
+    "detail": "[]"
+  },
+  {
+    "name": "served bundle: { strict: false } is a positioned error naming the key",
+    "ok": true,
+    "detail": "Line 2, col 13: mapSlice() options: unknown key 'strict' (supported: partial)"
+  },
+  {
+    "name": "served bundle: a missing context-aware argument stops the compile",
+    "ok": true,
+    "detail": "Line 1, col 7: polarLine() produced a non-numeric coordinate (NaN) — check its arguments (it received 1 argument)"
+  },
+  {
+    "name": "served bundle: a fractional length is an error, not a silent round",
+    "ok": true,
+    "detail": "Line 2, col 13: mapSlice() length must be a positive integer, got 2.6 — wrap a computed length in round()"
+  },
+  {
+    "name": "served bundle: a valid context-aware call is untouched",
+    "ok": true,
+    "detail": "M 0 0 L 10 0"
+  },
+  {
+    "name": "completion detail carries the new signature",
+    "ok": true,
+    "detail": "mapSlice(length, options?) — Sliding windows of exactly `length`; { partial: true } keeps the short trailing windows"
+  },
+  {
+    "name": "completion snippet still inserts only the required argument",
+    "ok": true,
+    "detail": "mapSlice(${1:length})$0"
+  },
+  {
+    "name": "hover on mapSlice carries the new signature",
+    "ok": true,
+    "detail": "**mapSlice** — *array method*\n\nmapSlice(length, options?) — Sliding windows of exactly `length`; { partial: true } keeps"
+  },
+  {
+    "name": "the error panel shows the typo error to the user",
+    "ok": true,
+    "detail": ""
+  }
+]
