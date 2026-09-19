@@ -1,5 +1,13 @@
-// Pathogen syntax showcase — for TextMate grammar visual verification
-// Every language construct should be highlighted correctly
+// Pathogen syntax showcase — for TextMate grammar visual verification.
+// Every language construct should be highlighted correctly.
+//
+// This file is GUARDED by tests/all-syntax-fixture.test.ts: it must compile
+// with no error diagnostics (so the preview command can render it), and every
+// keyword in the Lezer grammar must appear in it (so "all syntax" stays true).
+// Adding a keyword to the grammar fails that test until it is shown here.
+
+// --- ViewBox ---
+define ViewBox(0, 0, 400, 300);
 
 // --- Variables & Literals ---
 let x = 10;
@@ -12,7 +20,7 @@ let nothing = null;
 
 // --- Numbers with units ---
 let angle = 45deg;
-let rad = 1.5rad;
+let radians = 1.5rad;
 let half = 50%;
 let turns = 2pi;
 
@@ -20,16 +28,44 @@ let turns = 2pi;
 let red = #ff0000;
 let green = #0f0;
 let semiTransparent = #cc000080;
+let warm = oklch(0.7 0.15 40);
+let cool = rgb(40 90 200);
 
 // --- Operators ---
 let sum = x + y;
+let difference = x - y;
 let product = x * y;
+let quotient = x / y;
 let mod = x % 3;
-let merged = obj1 << obj2;
+let base = { stroke: 1 };
+let extra = { fill: 2 };
+let merged = base << extra;
 let cond = x > 10 && y < 50;
 let either = flag || !flag;
 let equal = x == y;
 let notEqual = x != y;
+let atMost = x <= y;
+let below = x < y;
+let bigger = x >= y ? x : y;
+let scaled = (x + y) * 2;
+
+// --- Arrays, objects, destructuring ---
+let numbers = [1, 2, 3];
+let padded = [0, ...numbers, 4];
+let annotated = [1, 2]; // a trailing comment after a statement
+
+// --- Comments go anywhere whitespace can ---
+let palette = [
+  #e63946, // accent
+  // #f1faee,
+  #1d3557,
+];
+let ordered = numbers
+  // largest first
+  .sort {|left, right| return right - left; };
+let [first, second, ...others] = padded;
+let settings = { width: 40, height: 20 };
+let { width, height: tall } = settings;
 
 // --- Control flow ---
 if (x > 0) {
@@ -39,21 +75,98 @@ if (x > 0) {
 }
 
 for (i in 0..10) {
-  let angle = calc(i / 10 * TAU());
-  M calc(100 + 50 * cos(angle)) calc(100 + 50 * sin(angle))
+  let sweep = calc(i / 10 * TAU());
+  M calc(100 + 50 * cos(sweep)) calc(100 + 50 * sin(sweep))
 }
 
-for (item in [1, 2, 3]) {
+for (i in 0..<numbers.length) {
+  L numbers[i] 0
+}
+
+for (item in numbers) {
   L item 0
 }
 
+for ([item, index] in numbers) {
+  L item index
+}
+
+// --- Loop control: continue and break ---
+for (i in 0..20) {
+  if (i % 2 == 0) {
+    continue;
+  }
+  if (i > 9) {
+    break;
+  }
+  L i i
+}
+
+// --- switch: statement form (value, range, destructuring, where, default) ---
+switch (x) {
+  case 0 {
+    M 0 0
+  }
+  case 1..5, 7 {
+    M 1 1
+  }
+  case 10..<20 where flag {
+    M 2 2
+  }
+  case 100.. {
+    M 3 3
+  }
+  // case 200 {
+  //   M 9 9
+  // }
+  default {
+    M 4 4
+  }
+}
+
+switch (numbers) {
+  case [head, ...rest] {
+    M head 0
+  }
+  default {
+    M 5 5
+  }
+}
+
+// --- switch: expression form ---
+let band = switch (y) {
+  case ..<0 { 0 }
+  case 0..<50 { 1 }
+  default { 2 }
+};
+
+// --- Range values: a parenthesized range is an array of numbers ---
+let steps = (1..5);
+let doubled = (0..<steps.length).map {|step|
+  return step * 2;
+};
+for ([value, index] in (10..12)) {
+  L value index
+}
+
 // --- Functions ---
-fn drawStar(cx, cy, r) {
-  star(cx, cy, r, calc(r * 0.4), 5);
-  return r;
+fn drawStar(cx, cy, radius) {
+  star(cx, cy, radius, calc(radius * 0.4), 5);
+  return radius;
 }
 
 let result = drawStar(100, 100, 50);
+
+// --- Lambdas and << workers ---
+let double = {|value| value * 2};
+let addOffset = {|value, index|
+  return value + index;
+};
+let nothingToDo = {|| 0};
+let twice = numbers.map() << double;
+let total = numbers.reduce(0) {|acc, value|
+  return acc + value;
+};
 
 // --- Enum ---
 enum Direction {
@@ -62,6 +175,9 @@ enum Direction {
   LEFT,
   RIGHT
 }
+
+// --- Enum member access ---
+let dir = Direction.UP;
 
 // --- SVG Path commands ---
 M 0 0
@@ -78,68 +194,109 @@ m 10 10
 l 20 20
 z
 
+// --- calc() ---
+M calc(x + 10) calc(y * 2)
+
 // --- Stdlib calls ---
 circle(100, 100, 50);
 rect(0, 0, 200, 100);
 roundRect(10, 10, 180, 80, 10);
 polygon(100, 100, 50, 6);
-lerp(0, 100, 0.5);
-clamp(x, 0, 100);
+let middle = lerp(0, 100, 0.5);
+let limited = clamp(x, 0, 100);
+log(middle, limited);
+assert(limited >= 0, 'clamp never goes below its lower bound');
 
 // --- Layers ---
 define PathLayer('outline') #{ stroke: #000; stroke-width: 2; fill: none; }
 define TextLayer('labels') #{ font-size: 14; fill: #333; }
 define GroupLayer('group1') #{}
 
+// A layer can also be constructed as a value
+let sketch = PathLayer('sketch') #{ stroke: #999; fill: none; };
+let plain = TextLayer('plain');
+
 layer('outline').apply {
   circle(100, 100, 50);
 }
 
-// --- Text ---
-text(50, 50)`Hello World`
-text(100, 100) {
-  tspan(0, 0)`First line`
-  tspan(0, 20)`Second line`
-}
-
-// --- Blocks ---
-let shape = @{
-  M 0 0
-  L 100 0
-  L 100 100
-  Z
+// --- Style blocks with interpolation ---
+let accent = #3b82f6;
+let emphasis = #{
+  stroke: accent;
+  stroke-width: ${x / 5};
+  fill: none;
 };
 
+// --- Text ---
+layer('labels').apply {
+  text(50, 50)`Hello World`
+  text(100, 100) {
+    tspan(0, 0)`First line`
+    tspan(0, 20)`Second line`
+    for (row in 0..<2) {
+      if (row == 0) {
+        tspan(0, 40)`row ${row}`
+      } else {
+        tspan(0, 60)`last`
+      }
+    }
+    for (word in ['alpha', 'beta']) {
+      tspan(0, 80)`${word}`
+    }
+    switch (x) {
+      case 10 {
+        tspan(0, 100)`ten`
+      }
+      case 0..<10 where flag {
+        tspan(0, 100)`small`
+      }
+      default {
+        tspan(0, 100)`other`
+      }
+    }
+  }
+}
+
+// --- Path blocks (relative commands only) ---
+let shape = @{
+  m 0 0
+  l 100 0
+  l 0 100
+  z
+};
+
+// --- Text blocks ---
+let caption = &{
+  text(0, 14)`Title`
+  text(0, 30)`Subtitle`
+} << #{ font-size: 14; fill: #333; };
+
 // --- Method calls & property access ---
-let bb = shape.boundingBox();
-let len = shape.length;
-let pt = shape.get(0.5);
-let tx = pt.x;
+let bounds = shape.boundingBox();
+let shapeLength = shape.length;
+let midpoint = shape.get(0.5);
+let midpointX = midpoint.x;
 
 // --- Context ---
 M 50 50
 L 100 100
 let pos = ctx.position;
-let sx = ctx.start.x;
+let startX = ctx.start.x;
 
 // --- Font directive ---
 @font "Inter"
 
-// --- Range operator ---
-for (i in 0..count) {
-  log(i);
-}
-
 // --- Constructors ---
-let pt = Point(100, 200);
-let cv = CSSVar('--primary', #ff0000);
-let clr = Color('#3b82f6');
-let pv = PolarVector(45deg, 100);
-let cyc = Cycler([1, 2, 3]);
+let anchor = Point(100, 200);
+let primary = CSSVar('--primary', #ff0000);
+let brand = Color('#3b82f6');
+let heading = PolarVector(45deg, 100);
+let cycle = Cycler([1, 2, 3]);
 let mask = Mask('m1');
 let clip = ClipPath('c1');
 
-// --- Gradient constructors with trailing blocks ---
+// --- Constructors with binding blocks ---
 let sky = LinearGradient('sky', 0, 0, 0, 1) {|g|
   g.stop(0,   Color('#0d1b2a'));
   g.stop(0.5, Color('#415a77'));
@@ -151,19 +308,58 @@ let glow = RadialGradient('glow', 0.5, 0.5, 0.5) {|g|
   g.stop(1, Color('#000'));
 };
 
-// --- Enum member access ---
-let dir = Direction.UP;
-
-// --- calc() ---
-M calc(x + 10) calc(y * 2)
-
-// --- Path-command suffix clauses (with / as) ---
-let box = @{
-  M 0 0
-  h 20 with fillet(3) as segment('top')
-  v 20 with chamfer(2) as segment('right')
-  h -20 with ellipticalFillet(4, 2) as endpoint('corner'), segment('bottom')
+let arrow = @{
+  l 10 5
+  l -10 5
   z
 };
-circle(50, 50, 20) as segment('c1');
-h 10 with chamfer(2) as segment('base');
+let arrowhead = Marker('arrowhead', 10, 10) {|marker|
+  marker.append(arrow, #{ fill: context-stroke; });
+};
+
+let dot = @{ circle(10, 10, 3); };
+let dots = Pattern('dots', 0, 0, 20, 20) {|pattern|
+  pattern.append(dot, #{ fill: Color('#e63946'); });
+};
+
+let field = Grid(4, 4, { xDim: 10, yDim: 10 }) {|grid|
+  grid.fill {|row, col|
+    return row + col;
+  };
+};
+
+// --- Path-command suffix clauses (with / as) ---
+// A corner op rounds the joint with the PREVIOUS edge, so the first edge has none.
+let box = @{
+  m 0 0
+  h 20 as segment('top')
+  v 20 with fillet(3) as segment('right')
+  h -20 with chamfer(2) as endpoint('corner'), segment('bottom')
+  v -20 with ellipticalFillet(4, 2)
+  z
+};
+M 200 200
+h 30 as segment('base')
+v 30 with chamfer(4) as segment('rise')
+circle(50, 50, 20) as segment('ring');
+
+// --- Path queries and subscriptions ---
+let topEdge = box.query('segment(top)');
+let corners = box.queryAll('endpoint');
+log(corners.length, topEdge.length);
+
+// A subscription sees what is drawn AFTER it is registered.
+define PathLayer('watched') #{ stroke: #333; fill: none; marker-end: arrowhead; }
+define PathLayer('dots') #{ fill: dots; stroke: none; }
+layer('watched').subscribe('endpoint') {|corner, index|
+  layer('dots').apply {
+    circle(corner.x, corner.y, 3);
+  }
+};
+layer('watched').apply {
+  M 260 40
+  h 80
+  v 60
+  h -80
+  z
+}

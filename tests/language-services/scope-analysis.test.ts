@@ -484,3 +484,28 @@ describe('switch expressions', () => {
     expect(multi.references.find((r) => r.name === 'px')!.declaration!.typeContext).toBeUndefined();
   });
 });
+
+describe('analyzeScopes: range values', () => {
+  it('resolves identifiers inside both bounds', () => {
+    const info = analyze('let low = 1;\nlet high = 9;\nlet steps = (low..<high);');
+    expect(unresolvedRefs(info)).toEqual([]);
+    expect(refNames(info)).toEqual(expect.arrayContaining(['low', 'high']));
+    expect(info.references.find((r) => r.name === 'high')!.declaration!.name).toBe('high');
+  });
+
+  it('reports an undeclared bound as unresolved', () => {
+    expect(unresolvedRefs(analyze('let steps = (0..<missing);'))).toEqual(['missing']);
+  });
+
+  it('binds the block param of .map on a range with its owning call', () => {
+    const info = analyze('let doubled = (1..3).map {|index| return index * 2; };');
+    const index = info.declarations.find((d) => d.name === 'index')!;
+    expect(index.typeContext).toMatchObject({ kind: 'blockParam', index: 0 });
+    expect(unresolvedRefs(info)).toEqual([]);
+  });
+
+  it('survives a half-typed range (lenient parse must not throw)', () => {
+    expect(() => analyze('let low = 1;\nlet steps = (low..')).not.toThrow();
+    expect(declNames(analyze('let low = 1;\nlet steps = (low..'))).toContain('low');
+  });
+});

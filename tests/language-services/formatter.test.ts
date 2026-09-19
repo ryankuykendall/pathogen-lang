@@ -876,3 +876,49 @@ describe('formatDocument never drops code', () => {
     expect(edits[0].newText).toBe('let x = 5;\nlet y = 6;\n');
   });
 });
+
+// Range values `(a..b)`: the parentheses are part of the literal, so the
+// range prints its own. Without a formatter case the node fell to the
+// `default: return ''` branch and `let items = (1..100).map …` formatted to
+// `let items = .map …` — silent data loss.
+describe('formatDocument: range values', () => {
+  it.each([
+    ['a plain range', 'let steps = (1..5);'],
+    ['a half-open range', 'let steps = (0..<count);'],
+    ['expression bounds', 'let steps = (low + 1..<high * 2);'],
+    ['member and index bounds', 'let steps = (first[0]..limits.max);'],
+    ['a member on the range', 'let count = (1..5).length;'],
+    ['a range as a call argument', 'log((1..5));'],
+    ['a range in a for-each header', 'for (step in (1..5)) {\n  log(step);\n}'],
+  ])('%s round-trips unchanged and is idempotent', (_label, source) => {
+    const once = format(source);
+    expect(once.trim()).toBe(source);
+    expect(format(once)).toBe(once);
+  });
+
+  it('a range spread inside an array literal survives (arrays with non-literal elements wrap)', () => {
+    const once = format('let padded = [0, ...(1..3), 10];');
+    expect(once).toBe(format('let padded = [0, ...inner, 10];').replace('...inner', '...(1..3)'));
+    expect(format(once)).toBe(once);
+  });
+
+  it('never drops the receiver of a method call on a range', () => {
+    // Canonical call form prints the (empty) argument list: .map() {|…|
+    const once = format('let doubled = (1..100).map {|index|\nreturn index * 2;\n};');
+    expect(once.trim()).toBe('let doubled = (1..100).map() {|index|\n  return index * 2;\n};');
+    expect(format(once)).toBe(once);
+    const value = (parse(once).body[0] as any).value;
+    expect(value).toMatchObject({ type: 'MethodCallExpression', method: 'map', object: { type: 'RangeExpression' } });
+  });
+
+  it('removes spaces around the operator, like for headers and case arms', () => {
+    expect(format('let steps = ( 1 .. 5 );').trim()).toBe('let steps = (1..5);');
+    expect(format('let steps = ( 0 ..< 4 );').trim()).toBe('let steps = (0..<4);');
+  });
+
+  it('prints case (a..b) in its canonical bare form — it is the same pattern', () => {
+    const once = format('switch (t) {\ncase (1..5) {\nM 1 1\n}\n}');
+    expect(once).toContain('case 1..5 {');
+    expect(format(once)).toBe(once);
+  });
+});

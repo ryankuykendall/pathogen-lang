@@ -225,3 +225,18 @@ describe('getInlayHints switch expressions', () => {
     ]);
   });
 });
+
+describe('getInlayHints: range values', () => {
+  it('hints a variable bound to a range as an Array', () => {
+    expect(typeHints('let steps = (1..5);').map((h) => h.label)).toEqual([': Array']);
+  });
+
+  it('hints the result of .map on a range as an Array', () => {
+    expect(typeHints('let doubled = (1..5).map {|value| return value * 2; };').map((h) => h.label)).toEqual([': Array']);
+  });
+
+  it('gives parameter-name hints to calls inside the bounds', () => {
+    const labels = paramHints('let steps = (0..<clamp(7, 0, 5));').map((h) => h.label);
+    expect(labels.length).toBe(3);
+  });
+});

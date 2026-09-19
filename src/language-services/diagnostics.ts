@@ -3,6 +3,7 @@ import { groupWarnings } from '../evaluator/warning-groups';
 import {
   parse,
   detectMissingSemicolon,
+  describeBareRange,
   describeCommandShadowing,
   isLegacyStyleOpenerError,
   LEGACY_STYLE_OPENER_MESSAGE,
@@ -321,6 +322,10 @@ function describeMissingCaseHead(errorNode: import('@lezer/common').SyntaxNode):
 
 function describeError(errorNode: import('@lezer/common').SyntaxNode, source: string): string {
   if (isLegacyStyleOpenerError(source, errorNode)) return LEGACY_STYLE_OPENER_MESSAGE;
+  // ── Bare range in value position (`let r = 1..5;`, `(1..)`) ──
+  // Shared with parse() so the editor squiggle and the compile error agree.
+  const bareRange = describeBareRange(source, errorNode);
+  if (bareRange) return bareRange.message;
   const parent = errorNode.parent;
   const prev = errorNode.prevSibling;
   const next = errorNode.nextSibling;

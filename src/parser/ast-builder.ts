@@ -26,6 +26,7 @@ import type {
   SwitchExpression,
   SwitchArm,
   CasePattern,
+  RangeExpression,
   RangePattern,
   FunctionDefinition,
   ReturnStatement,
@@ -69,6 +70,8 @@ import type {
   SourceLocation,
   TextBodyItem,
 } from './ast';
+import { pathArgCommentRanges } from './path-args-tokenizer';
+import { RANGE_IN_PATH_ARGS } from './range-value-errors';
 
 // --- Expression parser reference (set by index.ts to break circular dependency) ---
 interface ExpressionParser {
@@ -148,6 +151,54 @@ function adjustLocations(
 
 // --- Public API ---
 
+// ─── Comments are trivia ────────────────────────────────────────────────────
+//
+// A `//` comment is a skipped token, so a LineComment node can turn up as a
+// child of ANY node (between switch clauses, inside an array literal, in the
+// middle of a method chain). This builder walks children with firstChild() /
+// nextSibling() in ~150 places, and none of them should have to know that.
+// So the cursor it walks with is COMMENT-BLIND: those two methods step over
+// LineComment nodes. The few lists that keep their comments — statement
+// lists, switch clause lists, text bodies — step with the *Raw variants at
+// that one level; everything they call still walks blind.
+
+type AstCursor = TreeCursor & { firstChildRaw: () => boolean; nextSiblingRaw: () => boolean };
+
+function commentBlindCursor(tree: Tree): TreeCursor {
+  const cursor = tree.cursor() as AstCursor;
+  const rawFirstChild = cursor.firstChild.bind(cursor);
+  const rawNextSibling = cursor.nextSibling.bind(cursor);
+  cursor.firstChildRaw = rawFirstChild;
+  cursor.nextSiblingRaw = rawNextSibling;
+  cursor.nextSibling = (): boolean => {
+    let steps = 0;
+    while (rawNextSibling()) {
+      steps++;
+      if (cursor.name !== 'LineComment') return true;
+    }
+    // Only comments followed. Callers rely on a failed nextSibling() leaving
+    // the cursor where it was (they go on to read it, or call parent()).
+    for (; steps > 0; steps--) cursor.prevSibling();
+    return false;
+  };
+  cursor.firstChild = (): boolean => {
+    if (!rawFirstChild()) return false;
+    if (cursor.name !== 'LineComment') return true;
+    if (cursor.nextSibling()) return true;
+    cursor.parent(); // nothing but comments in there
+    return false;
+  };
+  return cursor;
+}
+
+/** Step INCLUDING comments — only for the lists that turn them into Comment nodes. */
+function firstChildRaw(cursor: TreeCursor): boolean {
+  return (cursor as AstCursor).firstChildRaw();
+}
+function nextSiblingRaw(cursor: TreeCursor): boolean {
+  return (cursor as AstCursor).nextSiblingRaw();
+}
+
 /**
  * Convert a Lezer parse tree into a Pathogen AST Program node.
  * This produces the same AST as the Parsimmon parser's `parse()` function.
@@ -162,19 +213,16 @@ export function buildAST(tree: Tree, source: string): Program {
   loopDepth = 0;
   try {
   const body: Statement[] = [];
-  const cursor = tree.cursor();
+  const cursor = commentBlindCursor(tree);
 
-  if (!cursor.firstChild()) return { type: 'Program', body };
+  if (!firstChildRaw(cursor)) return { type: 'Program', body };
 
   do {
-    // Preserve comments in the AST so the formatter can round-trip them
-    if (cursor.name === 'Comment' || cursor.name === 'LineComment') {
-      body.push(buildComment(cursor, source));
-      continue;
-    }
+    // Statement-list comments stay in the AST (buildStatement builds them)
+    // so the formatter can round-trip them.
     const stmt = buildStatement(cursor, source);
     if (stmt) body.push(stmt);
-  } while (cursor.nextSibling());
+  } while (nextSiblingRaw(cursor));
 
   // Post-process: merge FontDirective + bare Number (Lezer splits them)
   for (let i = 0; i < body.length - 1; i++) {
@@ -205,19 +253,19 @@ export function buildASTWithComments(tree: Tree, source: string): { program: Pro
   try {
     const body: Statement[] = [];
     const comments: Comment[] = [];
-    const cursor = tree.cursor();
+    const cursor = commentBlindCursor(tree);
 
-    if (!cursor.firstChild()) return { program: { type: 'Program', body }, comments };
+    if (!firstChildRaw(cursor)) return { program: { type: 'Program', body }, comments };
 
     do {
-      if (cursor.name === 'Comment') {
+      if (cursor.name === 'LineComment') {
         const comment = buildComment(cursor, source);
         comments.push(comment);
       } else {
         const stmt = buildStatement(cursor, source);
         if (stmt) body.push(stmt);
       }
-    } while (cursor.nextSibling());
+    } while (nextSiblingRaw(cursor));
 
     return { program: { type: 'Program', body }, comments };
   } finally {
@@ -329,7 +377,7 @@ function buildLoopControl(
 
 function buildStatement(cursor: TreeCursor, source: string): Statement | null {
   switch (cursor.name) {
-    case 'Comment': return buildComment(cursor, source);
+    case 'LineComment': return buildComment(cursor, source);
     case 'LetDeclaration': return buildLetDeclaration(cursor, source);
     case 'ExpressionStatement': return buildExpressionStatement(cursor, source);
     case 'ForLoop': return buildForLoop(cursor, source);
@@ -710,11 +758,19 @@ function buildSwitchLike(
   let discriminant: Expression | null = null;
   const cases: SwitchCase[] = [];
   let defaultCase: SwitchDefault | null = null;
+  // Comments between clauses — most often a clause that has been commented
+  // out — lead the clause that follows them; the ones after the last clause
+  // trail the switch.
+  let pendingComments: Comment[] = [];
 
-  cursor.firstChild();
+  firstChildRaw(cursor);
   let inParens = false;
   do {
-    if (cursor.name === '(') {
+    if (cursor.name === 'LineComment') {
+      // Inside the (discriminant) a comment has no clause to lead: it stays
+      // uncaptured, and the formatter keeps the statement verbatim.
+      if (!inParens && discriminant) pendingComments.push(buildComment(cursor, source));
+    } else if (cursor.name === '(') {
       inParens = true;
     } else if (cursor.name === ')') {
       inParens = false;
@@ -727,14 +783,19 @@ function buildSwitchLike(
       if (defaultCase) {
         throw parseErrorAt(loc(cursor, source), "'default' must be the last clause in a switch");
       }
-      cases.push(buildCaseClause(cursor, source, buildBody));
+      const clause = buildCaseClause(cursor, source, buildBody);
+      if (pendingComments.length > 0) clause.leadingComments = pendingComments;
+      pendingComments = [];
+      cases.push(clause);
     } else if (cursor.name === defaultName) {
       if (defaultCase) {
         throw parseErrorAt(loc(cursor, source), "A switch may have only one 'default' clause");
       }
       defaultCase = buildDefaultClause(cursor, source, buildBody);
+      if (pendingComments.length > 0) defaultCase.leadingComments = pendingComments;
+      pendingComments = [];
     }
-  } while (cursor.nextSibling());
+  } while (nextSiblingRaw(cursor));
   cursor.parent();
 
   return {
@@ -742,6 +803,7 @@ function buildSwitchLike(
     discriminant: discriminant ?? { type: 'NullLiteral' },
     cases,
     defaultCase,
+    ...(pendingComments.length > 0 ? { trailingComments: pendingComments } : {}),
     loc: nodeLoc,
   };
 }
@@ -807,7 +869,14 @@ function buildCasePattern(cursor: TreeCursor, source: string): CasePattern {
   return pattern;
 }
 
-function buildRangePattern(cursor: TreeCursor, source: string, patLoc: SourceLocation): RangePattern {
+// The bound walk shared by RangePattern (`case a..b`, either bound optional)
+// and RangeExpression (`(a..b)`, both required). Children are the optional
+// parentheses, the bounds with their postfix chains flattened to sibling
+// level, and the operator token.
+function readRangeBounds(
+  cursor: TreeCursor,
+  source: string,
+): { start: Expression | null; end: Expression | null; inclusive: boolean } {
   let start: Expression | null = null;
   let end: Expression | null = null;
   let inclusive = true;
@@ -835,7 +904,28 @@ function buildRangePattern(cursor: TreeCursor, source: string, patLoc: SourceLoc
   } while (cursor.nextSibling());
   cursor.parent();
 
-  return { type: 'RangePattern', start, end, inclusive, loc: patLoc };
+  return { start, end, inclusive };
+}
+
+function buildRangePattern(cursor: TreeCursor, source: string, patLoc: SourceLocation): RangePattern {
+  return { type: 'RangePattern', ...readRangeBounds(cursor, source), loc: patLoc };
+}
+
+// `(a..b)` — the grammar requires both bounds, so a missing one means the tree
+// came from error recovery. parse() rejects error trees before building (with
+// the describeBareRange message); only the LENIENT path (parseLezer, used by
+// the language services mid-typing) reaches the fallback, and it must not
+// throw — a half-typed `(1..` would otherwise take the whole scope tree down.
+function buildRangeExpression(cursor: TreeCursor, source: string): RangeExpression {
+  const nodeLoc = loc(cursor, source);
+  const { start, end, inclusive } = readRangeBounds(cursor, source);
+  return {
+    type: 'RangeExpression',
+    start: start ?? { type: 'NullLiteral' },
+    end: end ?? { type: 'NullLiteral' },
+    inclusive,
+    loc: nodeLoc,
+  };
 }
 
 // Cover-grammar reinterpretation: the grammar parses `case [a, b]` and
@@ -845,6 +935,13 @@ function buildRangePattern(cursor: TreeCursor, source: string, patLoc: SourceLoc
 // cannot bind (`case [1, 2]`) is rejected — arrays and objects are never
 // `==`-comparable, so a value reading could never match anyway.
 function asCasePattern(expr: Expression, patLoc: SourceLocation): CasePattern {
+  // `case (1..5)` is the pattern `case 1..5`, never a comparison against the
+  // array the parenthesized range means in value position (arrays are not
+  // `==`-comparable, so that reading could never match). Only a BARE range
+  // converts: `case (1..5).length` reaches here as a MemberExpression.
+  if (expr.type === 'RangeExpression') {
+    return { type: 'RangePattern', start: expr.start, end: expr.end, inclusive: expr.inclusive, loc: patLoc };
+  }
   if (expr.type === 'ArrayLiteral') {
     const elements: string[] = [];
     let rest: string | undefined;
@@ -1029,6 +1126,7 @@ function buildFunctionDefinition(cursor: TreeCursor, source: string): FunctionDe
 }
 
 function buildReturnStatement(cursor: TreeCursor, source: string): ReturnStatement {
+  const nodeLoc = loc(cursor, source);
   // Extract text between 'return' and ';', parse with Parsimmon for full fidelity
   const stmtStart = cursor.from;
   const stmtEnd = cursor.to;
@@ -1045,7 +1143,7 @@ function buildReturnStatement(cursor: TreeCursor, source: string): ReturnStateme
     if (parsed) value = parsed;
   }
 
-  return { type: 'ReturnStatement', value };
+  return { type: 'ReturnStatement', value, loc: nodeLoc };
 }
 
 function buildEnumDefinition(cursor: TreeCursor, source: string): EnumDefinition {
@@ -1164,7 +1262,10 @@ function buildPathCommand(cursor: TreeCursor, source: string): Statement {
     if (cursor.name === 'PathCommandLetter') {
       command = text(cursor, source);
     } else if (cursor.name === 'PathArgs') {
-      argsText = text(cursor, source);
+      // A comment inside an open paren is part of the token's text. Blank it
+      // (same length, so every offset still points into the source) before
+      // anything below reads the arguments.
+      argsText = blankPathArgComments(text(cursor, source));
       argsFrom = cursor.from;
     }
   } while (cursor.nextSibling());
@@ -1191,6 +1292,7 @@ function buildPathCommand(cursor: TreeCursor, source: string): Statement {
   const trimmedArgs = argsText.trimStart();
   const trimOffset = argsText.length - trimmedArgs.length; // Leading whitespace skipped
   if (trimmedArgs.trim()) {
+    assertNoRangeInPathArgs(trimmedArgs.trim(), argsFrom + trimOffset, source);
     args.push(...parsePathArgs(trimmedArgs.trim(), argsFrom + trimOffset, source));
   }
   return { type: 'PathCommand', command, args, ...(annotations ? { annotations } : {}), loc: nodeLoc } as PathCommand;
@@ -1201,6 +1303,73 @@ function buildPathCommand(cursor: TreeCursor, source: string): Statement {
  * This handles: numbers, identifiers, calc(), booleans, function calls,
  * member access, and index access.
  */
+/**
+ * A range is never a path argument, and the path-args shadow grammar is blind
+ * to `..`: `L (1..3) 5` used to read as `1`, `.3`, `5`, and `L f((1..3)) 5`
+ * passed `1` to f — wrong path data with no error. Reject it up front.
+ *
+ * Only spans the SHADOW grammar reads are scanned. `calc(…)` interiors and
+ * array literals go to the real expression parser, where `(a..b)` is legal,
+ * so those groups are skipped whole; call arguments and `[index]` suffixes
+ * recurse through parsePathArgs and are scanned. Quoted strings are skipped.
+ * A statement that starts with `(` on the line after a path command with no
+ * `;` is swallowed into that command's args, which is why the message
+ * mentions the semicolon.
+ */
+function blankPathArgComments(argsText: string): string {
+  let out = argsText;
+  for (const [from, to] of pathArgCommentRanges(argsText)) {
+    out = out.slice(0, from) + ' '.repeat(to - from) + out.slice(to);
+  }
+  return out;
+}
+
+function assertNoRangeInPathArgs(argsText: string, baseOffset: number, source: string): void {
+  if (!argsText.includes('..')) return;
+  let pos = 0;
+  while (pos < argsText.length) {
+    const afterString = skipQuoted(argsText, pos);
+    if (afterString !== pos) {
+      pos = afterString;
+      continue;
+    }
+    const ch = argsText[pos];
+    if (ch === '(' && precededByCalc(argsText, pos)) {
+      const inner = extractParenContent(argsText, pos);
+      if (inner !== null) {
+        pos += inner.length + 2;
+        continue;
+      }
+    }
+    // `[` directly after a name, `)` or `]` is an index suffix (shadow
+    // grammar); anywhere else it opens an array literal (real parser).
+    if (ch === '[' && !(pos > 0 && /[\w)\]]/.test(argsText[pos - 1]))) {
+      const inner = extractBracketContent(argsText, pos);
+      if (inner !== null) {
+        pos += inner.length + 2;
+        continue;
+      }
+    }
+    if (ch === '.' && argsText[pos + 1] === '.') {
+      if (argsText[pos + 2] === '.') {
+        pos += 3; // spread
+        continue;
+      }
+      const at = offsetToLoc(baseOffset + pos, source);
+      throw parseErrorAt(at, RANGE_IN_PATH_ARGS);
+    }
+    pos++;
+  }
+}
+
+/** Is the `(` at `openPos` the opener of a `calc(`? */
+function precededByCalc(argsText: string, openPos: number): boolean {
+  let end = openPos;
+  while (end > 0 && /\s/.test(argsText[end - 1])) end--;
+  if (end < 4 || argsText.slice(end - 4, end) !== 'calc') return false;
+  return end === 4 || !/[\w.]/.test(argsText[end - 5]);
+}
+
 function parsePathArgs(argsText: string, baseOffset: number, source: string): PathArg[] {
   // Simple tokenizer for path args
   const args: PathArg[] = [];
@@ -1690,7 +1859,8 @@ function buildTextBodyItem(cursor: TreeCursor, source: string): TextBodyItem | n
 // until the matching '}', which the cursor rests on afterwards.
 function buildInlineTextBody(cursor: TreeCursor, source: string): TextBodyItem[] {
   const items: TextBodyItem[] = [];
-  while (cursor.nextSibling() && cursor.name !== '}') {
+  // Raw stepping: a comment between items is kept as a Comment item
+  while (nextSiblingRaw(cursor) && cursor.name !== '}') {
     const item = buildTextBodyItem(cursor, source);
     if (item) items.push(item);
   }
@@ -1699,12 +1869,12 @@ function buildInlineTextBody(cursor: TreeCursor, source: string): TextBodyItem[]
 
 function buildTextBlock(cursor: TreeCursor, source: string): TextBodyItem[] {
   const items: TextBodyItem[] = [];
-  cursor.firstChild();
+  firstChildRaw(cursor);
   do {
     if (cursor.name === '{' || cursor.name === '}') continue;
     const item = buildTextBodyItem(cursor, source);
     if (item) items.push(item);
-  } while (cursor.nextSibling());
+  } while (nextSiblingRaw(cursor));
   cursor.parent();
   return items;
 }
@@ -1881,6 +2051,7 @@ function buildExpression(cursor: TreeCursor, source: string): Expression {
     case 'LayerCallExpression': return buildLayerCallExpression(cursor, source);
     case 'Identifier': return buildIdentifier(cursor, source);
     case 'ParenExpression': return buildParenExpression(cursor, source);
+    case 'RangeExpression': return buildRangeExpression(cursor, source);
     // A TrailingBlock reached as an expression (not as a call suffix — those are
     // consumed by explicit peeks in buildExpressionWithPostfix) is a lambda literal.
     case 'TrailingBlock': {
@@ -2043,7 +2214,7 @@ function buildTrailingBlock(cursor: TreeCursor, source: string): { params: strin
   const savedLoopDepth = loopDepth;
   loopDepth = 0;
   try {
-    cursor.firstChild(); // Enter TrailingBlock
+    firstChildRaw(cursor); // Enter TrailingBlock (raw: body comments are kept)
     let inParams = false;
     let passedParams = false;
     do {
@@ -2071,10 +2242,19 @@ function buildTrailingBlock(cursor: TreeCursor, source: string): { params: strin
           if (stmt) body.push(stmt);
         }
       }
-    } while (cursor.nextSibling());
+    } while (nextSiblingRaw(cursor));
     cursor.parent();
   } finally {
     loopDepth = savedLoopDepth;
+  }
+
+  // An expression-bodied block `{|v| v * 2}` prints inline and has no line to
+  // hang a comment on: leave its comments out of the AST, so the formatter
+  // sees them as uncaptured and keeps the enclosing statement verbatim.
+  if (body.some((stmt) => stmt.type === 'ReturnStatement' && stmt.implicit)) {
+    for (let i = body.length - 1; i >= 0; i--) {
+      if (body[i].type === 'Comment') body.splice(i, 1);
+    }
   }
 
   return { params, body };
@@ -2766,13 +2946,13 @@ function buildPathBlockExpression(cursor: TreeCursor, source: string): PathBlock
   // Path-block bodies are break/continue boundaries
   const body = atLoopBoundary(() => {
     const stmts: Statement[] = [];
-    cursor.firstChild();
+    firstChildRaw(cursor);
     do {
       if (cursor.name !== 'pathBlockOpen' && cursor.name !== '}') {
         const stmt = buildStatement(cursor, source);
         if (stmt) stmts.push(stmt);
       }
-    } while (cursor.nextSibling());
+    } while (nextSiblingRaw(cursor));
     cursor.parent();
     return stmts;
   });
@@ -2784,13 +2964,13 @@ function buildTextBlockExpression(cursor: TreeCursor, source: string): TextBlock
   // Text-block-expression bodies are break/continue boundaries
   const body = atLoopBoundary(() => {
     const stmts: Statement[] = [];
-    cursor.firstChild();
+    firstChildRaw(cursor);
     do {
       if (cursor.name !== 'textBlockOpen' && cursor.name !== '}') {
         const stmt = buildStatement(cursor, source);
         if (stmt) stmts.push(stmt);
       }
-    } while (cursor.nextSibling());
+    } while (nextSiblingRaw(cursor));
     cursor.parent();
     return stmts;
   });
@@ -2870,17 +3050,14 @@ function buildParenExpression(cursor: TreeCursor, source: string): Expression {
 
 function buildBlock(cursor: TreeCursor, source: string): Statement[] {
   const stmts: Statement[] = [];
-  cursor.firstChild();
+  firstChildRaw(cursor); // a Block always has its braces
   do {
     if (cursor.name === '{' || cursor.name === '}') continue;
-    // Preserve comments in block bodies so the formatter can round-trip them
-    if (cursor.name === 'Comment' || cursor.name === 'LineComment') {
-      stmts.push(buildComment(cursor, source));
-      continue;
-    }
+    // Comments in block bodies stay (buildStatement builds them) so the
+    // formatter can round-trip them
     const stmt = buildStatement(cursor, source);
     if (stmt) stmts.push(stmt);
-  } while (cursor.nextSibling());
+  } while (nextSiblingRaw(cursor));
   cursor.parent();
   return stmts;
 }
@@ -2904,7 +3081,7 @@ function isExpressionNode(name: string): boolean {
     name === 'ColorLiteral' || name === 'CSSColorLiteral' || name === 'ArrayLiteral' ||
     name === 'ObjectLiteral' || name === 'StyleBlockLiteral' || name === 'PathBlockExpression' ||
     name === 'TextBlockExpression' || name === 'CalcExpression' || name === 'LayerConstructor' || name === 'LayerCallExpression' ||
-    name === 'Identifier' || name === 'ParenExpression' || name === 'ArgList' ||
+    name === 'Identifier' || name === 'ParenExpression' || name === 'RangeExpression' || name === 'ArgList' ||
     name === 'TrailingBlock' || name === 'SwitchExpression';
 }
 

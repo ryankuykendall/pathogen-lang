@@ -45,7 +45,7 @@ M x y L 100 100
 
 **Two naming rules:**
 
-- **`pi`, `deg`, and `rad` are reserved.** They are [angle unit suffixes](#syntax-angle-units), and only that: `let pi = …`, `fn deg(…) { }`, or using one as a loop or function parameter is a compile error, and referencing one standalone (`calc(pi)`) errors with a pointer at the forms that do exist — the suffix (`0.5pi`, `90deg`, `1.5rad`) and the standard-library calls (`PI()`, [`deg(x)` / `rad(x)`](#stdlib-angle-conversion)), which remain untouched.
+- **`pi`, `deg`, and `rad` are reserved.** They are [angle unit suffixes](#syntax-angle-units), and only that: `let pi = …`, `fn deg(…) { }`, or using one as a loop or function parameter is a compile error, and referencing one standalone (`calc(pi)`) errors with a pointer at the forms that do exist — the suffix (`0.5pi`, `90deg`, `1.5rad`) and the standard-library calls (`PI()`, [`deg(x)` / `rad(x)`](#stdlib-angle-conversion)), which remain untouched. The error lands on the name itself — even inside a function you never call — so `let rad = 50;` for a radius is flagged on the line you wrote it; call it `radius`. Only variables, parameters, and function names are affected: an enum member (`AngleUnit.deg`) and an object key (`{ rad: 1 }`, read back as `units.rad`) are fine.
 - **Single letters that are path commands** (`m l h v c s q t a z`, either case) *can* be declared, but cannot be referenced bare in path-argument position — there they always read as commands. `let m = 25; L m 40` is a compile error naming this rule; `L calc(m) 40` works. Prefer longer names.
 
 ## Strings and Template Literals
@@ -188,13 +188,15 @@ let c = (#ff0000).lighten(20%);  // lighten by 0.2
 
 ## Expressions with calc()
 
-For mathematical expressions, wrap them in `calc()`:
+In the arguments of a path command (`M`, `L`, `C`, …), wrap mathematical expressions in `calc()`:
 
 ```
 let r = 50;
 M calc(100 - r) 100
 L calc(100 + r) 100
 ```
+
+Everywhere else an expression is expected — a `let` value, a `return`, the arguments of a function or method call — arithmetic is written directly (`let half = width / 2;`). `calc()` is accepted there too, but not required.
 
 `calc()` computes on **values**. Percent suffixes are converted at the literal (`20%` → 0.2), so they always produce plain numbers. Angle suffixes (`deg`, `rad`, `pi`) are different: an angle-suffixed literal produces an **Angle value**, and `calc()` arithmetic keeps angle-ness where it makes sense — scaling an angle by a plain number is still an angle, a ratio of two angles is a plain number. **An angle is an angle wherever it flows**: it survives being stored in a variable, put in an array, or passed through a function. See [Angle Units](#syntax-angle-units).
 
@@ -405,8 +407,7 @@ error, because the inline spelling already exists: the trailing block
 The rule is structural: when the **left side is one of the nine callback
 builtins** — array `.map`/`.filter`/`.reduce`/`.sort`, `Grid.fill`/`.forEach`/`.map`,
 `variableOffset`/`compoundVariableOffset` — written **without** a trailing
-block, `<<` provides its callback. The right side may be a lambda variable,
-a named `fn`, or a lambda literal. Anywhere else, `<<` is the ordinary
+block, `<<` provides its callback. Anywhere else, `<<` is the ordinary
 merge above.
 
 Evaluation order: the receiver, then the parenthesized arguments (e.g.
@@ -760,7 +761,7 @@ let msg = `position: ${pt}`;  // "position: Point(42, 99)"
 
 ## Arrays
 
-Arrays hold ordered collections of values. Elements can be numbers, strings, style blocks, other arrays, or `null`.
+Arrays hold ordered collections of values. Elements can be values of any type — numbers, strings, colors, Points, objects, style blocks, other arrays, or `null`.
 
 ### Literals
 
@@ -787,6 +788,95 @@ let head = [10, 20];
 let tail = [40, 50];
 let full = [...head, 30, ...tail];  // [10, 20, 30, 40, 50]
 ```
+
+### Ranges as Values
+
+Put a range in parentheses and it becomes an array: `(1..5)` is `[1, 2, 3, 4, 5]`. Think of it as a [`for` loop](#syntax-for-loops) that hands you its counter values as a list instead of running a body — the same numbers, in the same order.
+
+```
+let steps = (1..5);   // [1, 2, 3, 4, 5]
+
+log((0..<4));    // [0, 1, 2, 3]       ..< stops before the end
+log((5..1));     // [5, 4, 3, 2, 1]    counts down when start > end
+log((0..<0));    // []                 nothing to visit, so an empty array
+log((0.5..3));   // [0.5, 1.5, 2.5]    steps by one from the start
+```
+
+Five things to know before you lean on it:
+
+- **Steps are always one, counted from the start.** From a whole-number start, `..` reaches the end bound; from a fractional one it can stop short — `(0.5..3)` is `[0.5, 1.5, 2.5]`, because the next step would overshoot 3.
+- **The parentheses are part of the spelling.** `let steps = 1..5;` is a compile error: `A range used as a value needs parentheses — write (1..5)`. A `for` header and a `case` arm keep their bare form — `for (i in 1..5)` and `case 1..5` need no extra parentheses and never build an array. Path-command arguments are the one place a range is rejected outright: `L (1..3) 5` is a compile error, since an array is not a coordinate. Read a single number out of it inside `calc()` instead — `L calc((1..3).last) 5`.
+- **Both ends are required.** The open-ended forms `100..` and `..<0` only exist as [case patterns](#syntax-range-patterns); a list has to stop somewhere.
+- **Bounds are read as plain numbers.** An [angle](#syntax-angle-units) bound counts in radians, so `(0deg..90deg)` is `[0, 1]` — not ninety steps. Count whole steps and scale inside the block instead: `(0..<4).map {|quarter| return quarter * 90deg; }`.
+- **There is a ceiling.** A range value holds at most 32,000 numbers; asking for more is a compile error (`range would produce 32001 elements (max 32000)`), not a slow compile. It is the same limit `for` loops get.
+
+The result is an ordinary array, so everything in this section works on it. The most common use is building a list of numbers without a loop and an accumulator:
+
+```
+// Before: an empty array, a loop, and a push
+let doubledByLoop = [];
+for (index in 1..100) {
+  doubledByLoop.push(index * 2);
+}
+
+// After: the range is the list
+let doubled = (1..100).map {|index|
+  return index * 2;
+};
+// doubled is [2, 4, 6, ..., 200]
+```
+
+`.filter`, `.reduce`, and the other array methods follow the same shape:
+
+```
+let evens = (0..<20).filter {|value|
+  return value % 2 == 0;
+};
+// evens is [0, 2, 4, ..., 18]
+
+let total = (1..10).reduce(0) {|sum, value|
+  return sum + value;
+};
+// total is 55
+```
+
+Because a range is a value, it can be held in a variable and used more than once. Here one list of column numbers produces two others — where each circle sits and how big it is — and the spacing comes from the list's own length and the [viewBox](#viewbox-reading-the-viewbox) rather than hand-picked numbers:
+
+```
+define ViewBox(0, 0, 240, 60);
+
+let columns = (0..<8);
+let spacing = viewbox.width / (columns.length + 1);
+
+let centers = columns.map {|column|
+  return Point((column + 1) * spacing, viewbox.height / 2);
+};
+let radii = columns.map {|column|
+  return 3 + column;
+};
+
+for ([center, index] in centers) {
+  circle(center.x, center.y, radii[index]);
+}
+// 8 evenly spaced circles, each one unit larger than the last
+```
+
+Change `(0..<8)` to `(0..<5)` and everything follows: five circles, respaced to fill the same width.
+
+A range value also spreads, destructures, and iterates like any other array:
+
+```
+let padded = [0, ...(1..3), 10];             // [0, 1, 2, 3, 10]
+let [first, second, ...others] = (10..14);   // 10, 11, [12, 13, 14]
+
+for ([value, index] in (10..12)) {
+  log(index, value);                         // index 0 is 10, then 1 is 11, then 2 is 12
+}
+```
+
+The parentheses are doing work in that last loop: the bare header `for (value in 10..12)` binds one counter and nothing else, so destructuring `[value, index]` needs the array that `(10..12)` produces. Leave them off and you get the same compile error as above.
+
+Both bounds are ordinary expressions, exactly as in a `for` header: `(0..<points.length)`, `(first..limits.max)`. Each time a range value is evaluated it produces a fresh array, so pushing onto one never changes another.
 
 ### Index Access
 
@@ -1361,7 +1451,7 @@ for (i in 0..10) {
 }
 ```
 
-The range `0..10` includes both endpoints (0 through 10, giving 11 iterations). Both bounds are ordinary expressions — variables, member accesses, indexes, and function calls all work without a `calc()` wrapper: `for (i in 1..points.length)`, `for (i in first[0]..limits.max)`. To visit array indexes, use a half-open range (`for (i in 0..<points.length)`, below) or iterate the array directly with `for (point in points)` or `for ([point, i] in points)`.
+The range `0..10` includes both endpoints (0 through 10, giving 11 iterations). Both bounds are ordinary expressions — variables, member accesses, indexes, and function calls all work without a `calc()` wrapper: `for (i in 1..points.length)`, `for (i in first[0]..limits.max)`. To visit array indexes, use a half-open range (`for (i in 0..<points.length)`, below) or iterate the array directly with `for (point in points)` or `for ([point, i] in points)`. To get the numbers themselves as an array — for `.map`, `.filter`, or spreading — wrap the range in parentheses: see [Ranges as Values](#syntax-ranges-as-values).
 
 ### Half-Open Ranges
 
@@ -1447,7 +1537,7 @@ for (g in glyphs) {
 - Everything else is a boundary: `fn` bodies, lambdas, callback blocks (`Grid.fill`, `.map`, …), `apply { }` blocks, path blocks (`@{ }`), and text blocks (outside their own loops). Using `continue` or `break` there — or outside any loop — is a compile error: `'continue' is only valid inside a for loop`.
 - `break` and `continue` are reserved words and cannot be used as variable names.
 
-Note: the loop-size safety limit (32,000 iterations) is checked against the range *before* the loop runs, so a `break` cannot make an over-limit range acceptable.
+Note: the loop-size safety limit (32,000 iterations) is checked against the range *before* the loop runs, so a `break` cannot make an over-limit range acceptable. The same limit caps a [range value](#syntax-ranges-as-values) at 32,000 numbers.
 
 ## Conditionals
 
@@ -1539,7 +1629,7 @@ switch(kind) {
 
 ### Range Patterns
 
-`a..b` matches every number from `a` through `b` inclusive, and `a..<b` excludes the upper bound, so adjacent bands never both claim a boundary. Both are the spellings `for` loops use, but a range pattern always reads low to high: `case 5..<0` matches nothing, where the same range in a `for` loop counts down.
+`a..b` matches every number from `a` through `b` inclusive, and `a..<b` excludes the upper bound, so adjacent bands never both claim a boundary. Both are the spellings `for` loops use, but a range pattern always reads low to high: `case 5..<0` matches nothing, where the same range in a `for` loop counts down. Parentheses around a two-ended range change nothing here: `case (1..5)` is the same pattern as `case 1..5`. It tests whether the value lies between the two numbers; it never compares against the array that `(1..5)` is as a [range value](#syntax-ranges-as-values). The open-ended forms below are written bare — `case (100..)` is a compile error that tells you to drop the parentheses.
 
 ```
 let t = 0.4;
@@ -1900,13 +1990,83 @@ production use; it now errors with a pointer to `<<`.
 
 ## Comments
 
-Line comments start with `//`:
+Line comments start with `//` and run to the end of the line:
 
 ```
 // This is a comment
-let x = 50;  // inline comment
-M x 0
+let size = 50;  // inline comment
+M size 0
 ```
+
+A comment can go anywhere a space or a line break can. So the everyday move works everywhere: put `//` in front of something to switch it off.
+
+Switch off one `case` of a `switch`:
+
+```
+switch (mode) {
+  case 0 {
+    circle(50, 50, 20);
+  }
+  // case 1 {
+  //   rect(30, 30, 40, 40);
+  // }
+  default {
+    polygon(50, 50, 20, 6);
+  }
+}
+```
+
+Switch off, or annotate, one entry of a list that is spread over several lines — an array, an object, an `enum` body, or the arguments of a call:
+
+```
+let palette = [
+  #e63946,   // accent
+  // #f1faee,
+  #1d3557,
+];
+
+let size = {
+  width: 120,   // in viewBox units
+  // height: 80,
+};
+
+let clamped = clamp(
+  value,   // what to limit
+  0,
+  100
+);
+```
+
+Explain one step of a method chain, or one line of a text body:
+
+```
+let ordered = scores
+  // highest first
+  .sort {|left, right| return right - left; };
+
+text(10, 20) {
+  // the heading
+  tspan()`Totals`
+  // tspan(0, 16)`(draft)`
+}
+```
+
+Style blocks take comments too, on their own line or after a declaration:
+
+```
+define PathLayer('outline') #{
+  // thin, unfilled
+  stroke: #333;
+  stroke-width: 1;   // hairline
+  fill: none;
+}
+```
+
+The one place `//` is **not** a comment is inside a string or a template, where it is ordinary text: `"https://example.com"` and `` `a // b` `` keep their slashes.
+
+There is no block-comment form (`/* … */`). To switch off several lines, put `//` on each one — the playground editor, VS Code, and most other editors do this with one keystroke (Cmd+/ or Ctrl+/).
+
+**Formatting keeps every comment, where you put it.** A comment on its own line between statements, between the cases of a `switch`, or between the items of a text body is re-indented with its neighbours, and a comment at the end of a line stays at the end of that line. A statement that has a comment *inside* it — in the middle of a list or a chain — is never reflowed: the formatter re-indents the whole statement if its block moves, but leaves its insides exactly as you wrote them, so the comment stays attached to the thing it describes.
 
 ## Path Context (ctx)
 

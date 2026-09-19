@@ -7,8 +7,12 @@ export interface SourceLocation {
   offset: number;
 }
 
-// Comment node — statement-position comments survive into the AST so the
-// formatter can re-emit them; the evaluator ignores them.
+// Comment node. A `//` comment is legal anywhere whitespace is; the ones that
+// sit in a LIST — a statement list, between switch clauses, between text-body
+// items — survive into the AST so the formatter can re-emit them on their own
+// line. The evaluator ignores them. A comment anywhere else (inside an array
+// literal, a call's arguments, a method chain) has no AST node: the formatter
+// finds it in the parse tree and keeps its statement verbatim.
 export interface Comment {
   type: 'Comment';
   text: string;
@@ -146,6 +150,8 @@ export interface SwitchStatement {
   discriminant: Expression;
   cases: SwitchCase[];              // source order; never contains the default
   defaultCase: SwitchDefault | null; // builder guarantees: last clause, at most one
+  /** Comments after the last clause, before the closing brace. Formatter-only. */
+  trailingComments?: Comment[];
   loc?: SourceLocation;
 }
 
@@ -155,6 +161,8 @@ export interface SwitchCase {
   patterns: CasePattern[];          // >= 1; comma alternatives share the body and the guard
   guard: Expression | null;         // `where` expression, evaluated after bindings
   body: Statement[];
+  /** Comments on the lines before this clause (typically a commented-out clause). Formatter-only. */
+  leadingComments?: Comment[];
   loc?: SourceLocation;
 }
 
@@ -162,6 +170,8 @@ export interface SwitchCase {
 export interface SwitchDefault {
   type: 'SwitchDefault';
   body: Statement[];
+  /** Comments on the lines before `default`. Formatter-only. */
+  leadingComments?: Comment[];
   loc?: SourceLocation;
 }
 
@@ -225,6 +235,7 @@ export interface ReturnStatement {
   /** True for the expression-bodied lambda sugar {|v| v * 2} — the return
    *  was synthesized, so the formatter must not print the keyword. */
   implicit?: boolean;
+  loc?: SourceLocation;
 }
 
 // break;
@@ -318,6 +329,18 @@ export interface TernaryExpression {
   condition: Expression;
   consequent: Expression;
   alternate: Expression;
+}
+
+// (a..b) / (a..<b) — a range as a VALUE: evaluates to a fresh array of the
+// numbers `for (i in a..b)` visits. The parentheses are part of the literal, so
+// for headers and case arms (ForLoop / RangePattern) never produce this node.
+export interface RangeExpression {
+  type: 'RangeExpression';
+  start: Expression;
+  end: Expression;
+  /** `..` true, `..<` false */
+  inclusive: boolean;
+  loc?: SourceLocation;
 }
 
 // -x, !x
@@ -461,7 +484,18 @@ export interface StyleBlockLiteral {
 }
 
 // text(x, y)`content` or text(x, y) { `text` tspan()... }
-export type TextBodyItem = TspanStatement | TemplateLiteral | ForLoop | ForEachLoop | IfStatement | SwitchStatement | LetDeclaration | BreakStatement | ContinueStatement;
+// `Comment`: a comment between items, kept so the formatter can re-emit it; the text walkers ignore it.
+export type TextBodyItem =
+  | TspanStatement
+  | TemplateLiteral
+  | ForLoop
+  | ForEachLoop
+  | IfStatement
+  | SwitchStatement
+  | LetDeclaration
+  | BreakStatement
+  | ContinueStatement
+  | Comment;
 
 export interface TextStatement {
   type: 'TextStatement';
@@ -585,6 +619,7 @@ export type Expression =
   | SwitchExpression
   | BinaryExpression
   | UnaryExpression
+  | RangeExpression
   | CalcExpression
   | FunctionCall
   | LambdaExpression

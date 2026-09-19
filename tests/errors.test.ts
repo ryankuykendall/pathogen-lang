@@ -863,6 +863,121 @@ describe('reserved unit-suffix names: pi, deg, rad (binding coverage matrix)', (
     }
   }
 
+  // The binding error used to carry no position at all: enforcement lived
+  // only in the evaluator's setVariable funnel (74 callers, no location), so
+  // the CLI printed no line and editors put the squiggle on line 1. It is now
+  // a static check over the parse tree, so it points AT the name — and it
+  // fires whether or not the binding ever executes (an uncalled fn or lambda,
+  // a case arm that never matches).
+  describe('binding errors point at the name', () => {
+    // `§` marks where the name goes, so the expected position is computed
+    // from the template rather than hardcoded.
+    const POSITIONED_FORMS: Array<[string, string]> = [
+      ['let declaration', 'M 0 0\nlet § = 1;'],
+      ['let array destructuring', 'let [first, §] = [1, 2];'],
+      ['let array rest', 'let [first, ...§] = [1, 2];'],
+      ['let object shorthand', 'let source = { a: 1 };\nlet { a, § } = source;'],
+      ['let object alias', 'let source = { a: 1 };\nlet { a: § } = source;'],
+      ['let object rest', 'let source = { a: 1 };\nlet { a, ...§ } = source;'],
+      ['for range variable', 'M 0 0\n\nfor (§ in 0..2) { M 0 0 }'],
+      ['for-in variable', 'for (§ in [1, 2]) { M 0 0 }'],
+      ['for-in pair variable', 'for ([§, i] in [1, 2]) { M 0 0 }'],
+      ['for-in index variable', 'for ([item, §] in [1, 2]) { M 0 0 }'],
+      ['text-body for variable', "define TextLayer('labels') #{}\nlayer('labels').apply {\n  text(0, 0) {\n    for (§ in 0..1) {\n      tspan()`x`\n    }\n  }\n}"],
+      ['text-block for variable', 'let block = &{\n  for (§ in 0..1) {\n    text(0, 0)`x`\n  }\n};'],
+      ['fn name', 'fn §(len) { h calc(len) }'],
+      ['fn parameter (fn never called)', 'fn unused(len, §) { h 1 }\nM 0 0'],
+      ['lambda parameter (lambda never called)', 'let unused = {|value, §| return 1; };\nM 0 0'],
+      ['trailing-block parameter', 'let out = [1].map {|§| return 1; };'],
+      ['enum name', 'enum § { a, b }'],
+      ['case array pattern', 'switch ([1, 2]) {\n  case [first, §] { M 0 0 }\n  default { M 1 1 }\n}'],
+      ['case array rest', 'switch ([1, 2]) {\n  case [first, ...§] { M 0 0 }\n  default { M 1 1 }\n}'],
+      ['case object shorthand', 'switch ({ a: 1 }) {\n  case { a, § } { M 0 0 }\n  default { M 1 1 }\n}'],
+      ['case object alias', 'switch ({ a: 1 }) {\n  case { a: § } { M 0 0 }\n  default { M 1 1 }\n}'],
+      ['case arm that never matches', 'switch (5) {\n  case [first, §] { M 0 0 }\n  default { M 1 1 }\n}'],
+      ['switch-expression arm', 'let picked = switch ([1, 2]) {\n  case [first, §] { 1 }\n  default { 0 }\n};'],
+    ];
+
+    for (const name of NAMES) {
+      it.each(POSITIONED_FORMS)(`'${name}' as a %s`, (_form, template) => {
+        const before = template.slice(0, template.indexOf('§')).split('\n');
+        const line = before.length;
+        const column = before[before.length - 1].length + 1;
+        let message = '';
+        try {
+          compile(template.replace('§', name));
+        } catch (e) {
+          message = (e as Error).message;
+        }
+        expect(message).toMatch(/reserved.*unit suffix/s);
+        expect(message).toContain(`line ${line}, column ${column}:`);
+      });
+    }
+
+    it('reports the FIRST reserved binding when there are several', () => {
+      expect(() => compile('let ok = 1;\nlet deg = 2;\nlet rad = 3;')).toThrow(/line 2, column 5: 'deg' is reserved/);
+    });
+
+    // The reserved-name check reads the parse tree; several other compile
+    // errors come from the AST builder, which runs afterwards. Whichever
+    // problem appears FIRST in the document is the one to report — people fix
+    // errors top-down.
+    it('an EARLIER builder error wins over a later reserved name', () => {
+      expect(() => compile('break;\nlet rad = 1;\nM 0 0')).toThrow(/line 1.*'break' is only valid inside a for loop/s);
+      expect(() => compile('break;\nlet rad = 1;\nM 0 0')).not.toThrow(/reserved/);
+    });
+
+    it('an earlier reserved name wins over a LATER builder error', () => {
+      expect(() => compile('let rad = 1;\nbreak;\nM 0 0')).toThrow(/line 1, column 5: 'rad' is reserved/);
+    });
+
+    it('orders against builder errors that carry a line but no column', () => {
+      // Older builder errors read `Parse error at line N: …` with no column.
+      // They still have a position, so document order still decides.
+      const clause = 'unknownName = 2 with fillet(3);';
+      const probe = (() => {
+        try {
+          compile(`let a1 = 1;\n${clause}`);
+        } catch (e) {
+          return (e as Error).message;
+        }
+        return '';
+      })();
+      expect(probe).toMatch(/^Parse error at line 2: /); // the column-less shape this test is about
+      expect(() => compile(`let rad = 2;\nlet a1 = 1;\n${clause}\nM 0 0`)).toThrow(/line 1, column 5: 'rad' is reserved/);
+      expect(() => compile(`let a1 = 1;\n${clause}\nlet rad = 2;\nM 0 0`)).toThrow(/^Parse error at line 2: /);
+    });
+
+    it('a malformed case pattern keeps its own message even when it names a suffix', () => {
+      // `case [deg, 2]` is not a destructuring pattern at all (2 binds nothing):
+      // the pattern error is the real one, exactly as for `case [a, 2]`.
+      const message = /Array patterns in a case bind names only/;
+      expect(() => compile('switch ([1, 2]) { case [first, 2] { M 0 0 } default { M 1 1 } }')).toThrow(message);
+      expect(() => compile('switch ([1, 2]) { case [deg, 2] { M 0 0 } default { M 1 1 } }')).toThrow(message);
+    });
+
+    it('a range in a path argument (a builder error) and a reserved name: first one wins', () => {
+      expect(() => compile('M 0 0 L (1..3) 5;\nlet deg = 1;')).toThrow(/range cannot be used as a path argument/);
+      expect(() => compile('let deg = 1;\nM 0 0 L (1..3) 5;')).toThrow(/'deg' is reserved/);
+    });
+
+    it('a syntax error still wins over a reserved name', () => {
+      expect(() => compile('let rad = ;')).toThrow(/Parse error/);
+      expect(() => compile('let rad = ;')).not.toThrow(/reserved/);
+    });
+
+    it.each([
+      ['enum MEMBERS are not variables', 'enum AngleUnit { deg, rad = 2, pi }\nlog(AngleUnit.deg);'],
+      ['object-literal keys', 'let units = { rad: 1, deg: 2, pi: 3 };\nM units.rad units.deg'],
+      ['a destructured KEY with a legal alias', 'let units = { rad: 1 };\nlet { rad: radians } = units;\nM radians 0'],
+      ['a case object KEY with a legal alias', 'switch ({ deg: 1 }) {\n  case { deg: degrees } { M degrees 0 }\n  default { M 1 1 }\n}'],
+      ['member access', 'let units = { rad: 1 };\nM units.rad 0'],
+      ['a value pattern that merely CONTAINS an array literal', 'let count = 2;\nswitch (2) {\n  case [count, count].length { M 0 0 }\n  default { M 1 1 }\n}'],
+    ])('stays legal: %s', (_label, source) => {
+      expect(() => compile(source)).not.toThrow();
+    });
+  });
+
   it('standalone reference errors name the suffix rule, per name', () => {
     expect(() => compile('M 0 0\nL calc(pi) 40')).toThrow(/unit suffix.*0\.5pi.*PI\(\)/s);
     expect(() => compile('M 0 0\nL calc(deg) 40')).toThrow(/unit suffix.*90deg.*deg\(/s);

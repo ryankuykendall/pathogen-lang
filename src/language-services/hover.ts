@@ -158,13 +158,19 @@ export function getHoverInfo(document: TextDocument, position: Position): HoverI
     return (decl ? inferDeclType(decl) : null) ?? regexNameResolver(name, source);
   };
 
+  // Element type of an array-valued name — types the receiver in `points[0].x`
+  const resolveElementType = (name: string): string | null => {
+    const decl = findDeclaration(getScopeInfo(), name, position);
+    return decl?.typeContext?.kind === 'init' ? inferExprElementType(decl.typeContext.expr, decl.scope) : null;
+  };
+
   // 3. Member access — the word follows a `.`: resolve the receiver through
   // the same path as member completion and describe the matched member.
   // A member position that doesn't resolve returns null rather than falling
   // through — the flat stdlib lookup would otherwise show e.g. the stdlib
   // `map(value, ...)` doc for `xs.map`, which describes a different function.
   if (word.startOffset > 0 && source[word.startOffset - 1] === '.') {
-    const resolution = resolveMemberAccess(source.slice(0, word.endOffset), source, resolveName);
+    const resolution = resolveMemberAccess(source.slice(0, word.endOffset), source, resolveName, resolveElementType);
     if (resolution) {
       const member =
         [...resolution.members.properties, ...resolution.members.methods].find((m) => m.label === word.text) ?? null;

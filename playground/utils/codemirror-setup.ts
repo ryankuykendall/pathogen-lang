@@ -846,6 +846,16 @@ export function svgPathCompletions(context: CompletionContext): CompletionResult
     return null;
   }
 
+  // Member access on a receiver that ends in `)` or `]` — `(1..100).`,
+  // `layer('a').`, `points[0].`, `[1, 2].` — is invisible to the `\w+\.`
+  // branches above, and the `.` trigger opens the popup EXPLICITLY, so the
+  // zero-length guard below does not stop it: the keyword list would flood
+  // the popup and bury the shared engine's member completions (same failure
+  // as the 2026-04-11 bug above, for non-word receivers). Defer instead.
+  if (context.matchBefore(/[)\]]\.\w*$/)) {
+    return null;
+  }
+
   // Regular word completion
   const word = context.matchBefore(/\w*/);
   if (!word || (word.from === word.to && !context.explicit)) return null;

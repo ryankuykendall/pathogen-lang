@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-19 (comments anywhere)
+
+A `//` comment is legal anywhere whitespace is. Spike, tree probes, demo and notes are in `project-docs/comments-anywhere/`.
+
+### Fixed
+
+#### Core
+
+- **A comment no longer has to be its own statement.** Putting `//` in front of one `case` of a `switch` to switch it off was a parse error, and so was a comment inside an array or object literal or a call's arguments spread over several lines, in a method chain, between enum members, between the items of a text body, or in the middle of any statement — all reported as a misleading `Missing ';'`. The grammar had two identical tokens: a `Comment` that was a *statement*, and a skipped `LineComment` for "everywhere else". `Comment` outranked `LineComment`, so the tokenizer always produced it, the skipped token never fired, and a comment anywhere a statement could not go was rejected. There is now one skipped token. A comment at statement level lands exactly where it did (the parse trees are identical), and `//` inside a string or a template is still text. Docs: Syntax "Comments".
+- **The AST builder is comment-blind by construction.** A skipped token can turn up as a child of any node, and the builder walks children in ~150 places. Rather than teach each one, the cursor it walks with steps over comments (`commentBlindCursor`); the lists that keep their comments — statement lists, switch clause lists, text bodies — step raw at that one level.
+
+#### Development
+
+- **Formatting keeps every comment.** Comments in a list are carried in the AST and re-indented with their neighbours: statement lists (as before), and now the clauses of a `switch` (`leadingComments` / `trailingComments` — a commented-out clause stays between its neighbours) and the items of a text body. A comment anywhere else has no AST node, so the statement that contains it is emitted verbatim, re-indented as a unit (lines inside a multi-line template are never touched) — the comment stays attached to what it describes, and the rest of the document still formats. The "never loses a word" net gained a sibling that compares the comments themselves, in order, so a comment made only of punctuation (`// ----`) cannot slip through.
+- **`all-syntax.pathogen` shows the new positions**, and the fixture test's one exception (`LineComment`, "unreachable today") is gone — its own "is this exception still needed?" test failed the moment the grammar was fixed.
+
+## [Unreleased] - 2026-09-18 (ranges as values)
+
+A range in parentheses is now an array, so numeric sequences no longer need a loop and a `push` accumulator. Plan, grammar spike, timings and verification scripts are in `project-docs/range-values/`.
+
+### Added
+
+#### Core
+
+- **Ranges as values: `(a..b)` and `(a..<b)`.** A parenthesized range evaluates to an ordinary array of exactly the numbers `for (i in a..b)` visits — inclusive `..`, half-open `..<`, counting down when start > end, fractional start preserved, same 32,000 limit — so `(1..100).map {|index| return index * 2; }`, `(0..<20).filter {…}`, `.reduce`, `.sort`, `.slice`, `.mapSlice`, `.length`, spread (`[0, ...(1..3)]`), destructuring, for-each with an index (`for ([value, index] in (10..12))`) and `<<` workers all work with no new rules. Each evaluation yields a fresh array. The parentheses are part of the spelling: `for` headers and `case` arms keep their bare form and build no array, and `case (1..5)` is the same interval pattern as `case 1..5`. One shared helper (`resolveRange` + `rangeValues` in `range-loop.ts`) validates bounds and produces values for both the loop and the value, and a parity-matrix test compares them row by row. Language services type a range value as `array`, its elements and `.map`/`.filter` block params as `number`, and offer array members after `(1..100).`. Docs: Syntax "Ranges as Values".
+
+### Changed
+
+#### Core
+
+- **Array `.map`, `.filter` and `.reduce` no longer pay a throw per element.** A top-level `return` in the callback now short-circuits without throwing, and a nested `return` is caught in a small helper (`runCallbackBody`) instead of inline in the ~3,700-line `evaluateMethodCall`, where V8 would not optimize around the handler. Over 32,000 elements, cold CLI: `.map` 14.4 s → 0.36 s; `.map` + `.filter` + `.reduce` 34.4 s → 0.38 s; 16,000 nested returns 0.61 s. `.sort` and the Grid callbacks already worked this way. One observable difference, matching `.sort` and `Grid.map`: the statements of a single callback invocation now share one discard sink (path output inside these callbacks is still discarded, per element).
+
+### Fixed
+
+#### Core
+
+- **A range in a path argument is a compile error instead of wrong path data.** The path-argument shadow grammar is blind to `..`: `L (1..3) 5` compiled to `L 1 .3 5`, and `L f((1..3)) 5` passed `1` to `f`, both silently. `calc(…)` interiors and array literals (which go to the real expression parser) are unaffected. The message also names the likeliest cause — a statement starting with `(` on the line after a path command with no `;` is swallowed into that command's arguments.
+- **A `for` loop inside a text block has the same limit and the same errors as every other `for` loop.** The `&{ }` text-block walker kept a hardcoded 10,000-iteration cap when the limit was raised to 32,000 on 2026-04-12 (the two named constants were updated; the bare literal was missed), so a loop the docs promised would run was rejected with `for loop exceeds 10000 iteration limit`. Both text walkers (`&{ }` bodies and `text() { }` bodies) also had their own wording for non-numeric and non-finite bounds, with no line number. All three loop sites and the range value now go through one helper (`resolveRange`): 32,000 everywhere, `for loop range must be numeric` / `… must be finite (got Infinity or NaN)` / `for loop would run N iterations (max 32000)` everywhere, each with `Line N:`. Docs: Syntax "For Loops" (the documented limit is now true of every loop).
+- **The reserved-name error (`pi`, `deg`, `rad`) points at the name.** It used to carry no position at all: the rule lived only in the evaluator's binding funnel (`setVariable`, 74 callers, no location), so the CLI printed no line and both editors put the squiggle on line 1 wherever the declaration was — and `let rad = 50;` for a radius is an easy thing to write. It is now a static check over the parse tree (`src/parser/reserved-bindings.ts`), folded into the scan `parse()` already does: `Parse error at line 3, column 5: 'rad' is reserved — …`, for every binding form — `let`, every destructuring shape, `for` variables (statement, text-block and text-body loops), `fn` names and parameters, lambda and trailing-block parameters, enum names, and `case [a, ...rest]` / `case { x, y: alias }` patterns. Because it no longer waits for the binding to execute, it also catches what slipped through before: a parameter of a function or lambda that is never called, and a pattern in a case arm that never matches. Enum members (`AngleUnit.deg`) and object keys (`{ rad: 1 }`) are not variables and stay legal. The language services' lenient parse is unaffected, so completion and hover keep working while the diagnostic shows. The evaluator check remains as the backstop. Docs: Syntax "Two naming rules".
+- **`let steps = 1..5;` asks for parentheses** (`A range used as a value needs parentheses — write (1..5)`, positioned at the operator) instead of `Missing ';' after let declaration`; `(1..)` and `(..5)` say a range value needs both bounds, and `case (100..)` says an open-ended case range takes no parentheses. The compile error and the editor diagnostic come from one detector (`describeBareRange`), so CLI, playground and VS Code show the same text.
+
+#### Playground
+
+- **Member completions after a receiver ending in `)` or `]` are no longer buried.** The editor merges two completion sources, and the legacy one only stepped aside for `name.` receivers; after `(1..100).`, `layer('main').` or `points[0].` — where the `.` trigger opens the popup explicitly — it flooded the list with 100+ keywords and stdlib names ahead of the real members. It now defers on any member access.
+
+#### Documentation
+
+- **Gradients "Pattern"**: the published tiling-pattern example did not compile — `let dot = @{ circle(10, 10, 3) };` is missing the `;` a statement call needs. Fixed, and pinned by a test (there is no doc-fence compiler).
+- **Syntax "Applying workers (`<<`)"** no longer says the right side may be a lambda literal — that is a compile error, as the paragraph above it already stated.
+- **Syntax "Expressions with calc()"** now says where `calc()` is actually required — the arguments of a path command — instead of "for mathematical expressions"; a `let` value, a `return` and call arguments take infix arithmetic directly (verified: `M width / 2 0` is a parse error, `let half = width / 2;` is not).
+
+#### Development
+
+- **Member completions and hover on receivers that end in a bracket.** `points[0].` offers the members of the array's element type (`x`, `y` for an array of Points), `[1, 2].` and `(1..100).` offer the array members; `member-resolution.ts` previously had no branch for any of them. Only the current line is examined, so comment text is never scanned and the cost does not grow with the document.
+- **`all-syntax.pathogen` compiles, covers the grammar, and is guarded.** The VS Code highlighting fixture was referenced by nothing executable, so it rotted: it did not compile (four errors, each hidden behind the one before — a reserved name, an undefined variable, absolute commands inside a path block, a corner op with no joint) and it never showed `switch`/`case`/`where`/`default`, `break`/`continue`, `define ViewBox`, text blocks, queries and subscriptions, `Grid`, `Marker` or `Pattern`. Rewritten, and `tests/all-syntax-fixture.test.ts` now holds it to both promises: zero diagnostics, and a parse tree containing every node type and keyword the Lezer grammar can produce (one justified exception, `LineComment`). A new grammar node fails the suite until the fixture shows it. The test found two operators the rewrite had still missed.
+- **Internal docs swept against the code.** `project-docs/developer-experience/cross-system-feature-lifecycle.md` and the quick checklist in `.claude/CLAUDE.md` still described the VS Code preview as a stub, the CLI as the place `<defs>` are emitted, a `completion-data.ts` that no longer exists, constructors registered in `api-surface.ts`, "no enum completion infrastructure", a "proposed" completion generator, and `/pathogen/…` dev URLs. They now describe what is there: one shared `src/render/build-defs.ts`, a functional preview webview that needs only a rebuilt `.vsix`, `src/pathogen-api.ts` → `generate:completions`, `builtin-enums.ts`, `constructor-registry.ts`, apex-path URLs — plus a new checklist for adding an expression node, written from what the range-value work ran into. `src/CLAUDE.md`'s docs-verification URL fixed too. `playground/CLAUDE.md` got the same treatment: `.ts` sources with `.js` import specifiers, apex `BASE_PATH`, extracted component CSS, the 150/600 ms debounce and cancellable `editorCompiler`, the `gpu/` and `types/` directories, the two merged completion sources, and the `dev:stack` rebuild rule.
+- **The `<<` worker coverage matrix gained its missing `array.filter` row**, plus `map` / `filter` / `reduce` / `sort` rows on a range receiver.
+
 ## [Unreleased] - 2026-09-18 (language candidates from "Drawing Without Bookkeeping")
 
 The proposals in `project-docs/observable-reactive-paths/language-candidates-v1.md`, approved 2026-09-18, landing one by one.

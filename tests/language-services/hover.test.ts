@@ -737,3 +737,60 @@ describe('switch expression type inference', () => {
     expect(result!.contents).toBe('**r** — *variable*\n\nDefined at line 2');
   });
 });
+
+describe('getHoverInfo: range values', () => {
+  function at(source: string, needle: string) {
+    const offset = source.indexOf(needle);
+    const before = source.slice(0, offset).split('\n');
+    return hover(source, before.length - 1, before[before.length - 1].length + 1);
+  }
+
+  it('types the block param of .map on a range as a number', () => {
+    const source = 'let doubled = (1..100).map {|index|\n  return index * 2;\n};';
+    expect(at(source, 'index|')!.contents).toContain('number');
+    expect(at(source, 'index * 2')!.contents).toContain('number');
+  });
+
+  it('types the second block param (the position) as a number', () => {
+    const source = 'let pairs = (10..12).map {|value, position|\n  return value + position;\n};';
+    expect(at(source, 'position|')!.contents).toContain('number');
+  });
+
+  it('types the element of a for-each over a range as a number', () => {
+    const source = 'for (step in (1..5)) {\n  log(step);\n}';
+    expect(at(source, 'step in')!.contents).toContain('number');
+  });
+
+  it('types a variable bound to a range as an array of numbers', () => {
+    const result = at('let steps = (1..5);', 'steps');
+    expect(result!.contents).toContain('array<number>');
+  });
+
+  it('shows array member hover for a method on a range receiver', () => {
+    const result = at('let doubled = (1..100).map {|index| return index; };', 'map');
+    expect(result).not.toBeNull();
+    expect(result!.contents).toContain('**map**');
+    expect(result!.contents).toContain('array');
+  });
+});
+
+describe('getHoverInfo: bracketed receivers', () => {
+  function at(source: string, needle: string) {
+    const offset = source.indexOf(needle);
+    const before = source.slice(0, offset).split('\n');
+    return hover(source, before.length - 1, before[before.length - 1].length + 1);
+  }
+
+  it('describes a member read from an indexed array element', () => {
+    const result = at('let points = [Point(1, 2)];\nlet px = points[0].x;', 'x;');
+    expect(result).not.toBeNull();
+    expect(result!.contents).toContain('**x**');
+    expect(result!.contents).toContain('Point');
+  });
+
+  it('describes an array member on an array literal', () => {
+    const result = at('let count = [1, 2].length;', 'length');
+    expect(result).not.toBeNull();
+    expect(result!.contents).toContain('**length**');
+  });
+});

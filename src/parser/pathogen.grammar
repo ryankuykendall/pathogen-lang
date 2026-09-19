@@ -22,7 +22,6 @@
 // ─── Statements ────────────────────────────────────────────────
 
 statement {
-  Comment |
   FontDirective |
   ViewBoxDefinition |
   LayerDefinition |
@@ -337,6 +336,7 @@ primaryExpression {
   LayerCallExpression |
   Identifier ~applyDot |
   ParenExpression |
+  RangeExpression |
   SwitchExpression |
   TrailingBlock
 }
@@ -369,6 +369,14 @@ LayerCallExpression {
 }
 
 ParenExpression { "(" expression ")" }
+
+//-- A range as a VALUE: `(1..5)` evaluates to the array a for loop over the
+//-- same range visits. The parentheses are part of the literal, which is what
+//-- keeps this conflict-free: it shares the `"(" expression` prefix with
+//-- ParenExpression and diverges on the next token, exactly as ForLoop and
+//-- ForEachLoop diverge on `..` vs `)`. Both bounds are required — open-ended
+//-- ranges exist only as case patterns (RangePattern).
+RangeExpression { "(" expression rangeOp expression ")" }
 
 //-- Appears in two positions: as a call suffix (trailing block) and as a
 //-- primaryExpression alternative (lambda literal). The AST builder decides
@@ -470,17 +478,22 @@ VariableName { Identifier }
 
 @skip { whitespace | LineComment }
 
-// LineComment is skipped (not preserved in tree). Comment nodes in statements
-// are preserved so the formatter can re-emit them. Both use "//" syntax — the
-// parser tries Comment first (in statement position), LineComment handles the rest.
+// A `//` comment is trivia: legal anywhere whitespace is. It is ONE skipped
+// token. (There used to be a second, identical `Comment` token that was a
+// statement; its precedence over LineComment meant the tokenizer always
+// produced it, so LineComment never fired and a comment anywhere but statement
+// position — between switch clauses, inside a multi-line list, in a method
+// chain — was a parse error.) Skipped tokens still appear in the tree, as
+// children of whatever node they fall inside: the AST builder turns the ones in
+// statement lists, switch clause lists and text bodies into Comment nodes so
+// the formatter can re-emit them, and ignores the rest.
 
 @tokens {
   whitespace { @whitespace+ }
 
-  Comment { "//" ![\n]* }
   LineComment { "//" ![\n]* }
 
-  @precedence { Comment, LineComment, "/" }
+  @precedence { LineComment, "/" }
 
   // Numbers: no leading minus (unary minus at expression level).
   // Require at least one digit after decimal point to prevent matching "0." before ".." range.

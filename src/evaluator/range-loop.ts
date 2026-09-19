@@ -24,3 +24,35 @@ export function planRange(start: number, end: number, inclusive: boolean): Range
     : (i: number) => (inclusive ? i >= end : i > end);
   return { ascending, iterations, step, continues };
 }
+
+/**
+ * The bound errors, once per phrasing: `loop` is a for header, `value` is a
+ * parenthesized range value `(a..b)`. One table so the two cannot drift —
+ * a range value promises the for loop's numbers, and its rejections too.
+ */
+export const RANGE_MESSAGES = {
+  loop: {
+    numeric: 'for loop range must be numeric',
+    finite: 'for loop range must be finite (got Infinity or NaN)',
+    cap: (count: number, max: number) => `for loop would run ${count} iterations (max ${max})`,
+  },
+  value: {
+    numeric: 'range bounds must be numeric',
+    finite: 'range bounds must be finite (got Infinity or NaN)',
+    cap: (count: number, max: number) => `range would produce ${count} elements (max ${max})`,
+  },
+} as const;
+
+export type RangeKind = keyof typeof RANGE_MESSAGES;
+
+/**
+ * The numbers a loop over the plan visits, in order. Deliberately the SAME
+ * repeated addition the for loop performs (`i += step`), never
+ * `start + k * step`: with a fractional start the two differ in the last
+ * bits, and `(a..b)` is defined as exactly what `for (i in a..b)` binds.
+ */
+export function rangeValues(start: number, plan: RangePlan): number[] {
+  const values: number[] = [];
+  for (let i = start; plan.continues(i); i += plan.step) values.push(i);
+  return values;
+}

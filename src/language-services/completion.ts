@@ -16,7 +16,7 @@ import {
 import { inferObjectProperties, regexNameResolver, resolveMemberAccess } from './member-resolution';
 import { analyzeScopes } from './scope-analysis';
 import { inferRhsType } from './type-inference';
-import { findDeclaration, inferDeclType } from './type-inference-ast';
+import { findDeclaration, inferDeclType, inferExprElementType } from './type-inference-ast';
 import { FILTER_CONSTRUCTORS } from '../evaluator/constructor-registry';
 
 import type { CompletionEntry } from './completion-data-static';
@@ -57,6 +57,12 @@ export function getCompletions(document: TextDocument, position: Position): Comp
     return (decl ? inferDeclType(decl) : null) ?? regexNameResolver(name, source);
   };
 
+  // Element type of an array-valued name — types the receiver in `points[0].`
+  const resolveElementType = (name: string): string | null => {
+    const decl = findDeclaration(getScopeInfo(), name, position);
+    return decl?.typeContext?.kind === 'init' ? inferExprElementType(decl.typeContext.expr, decl.scope) : null;
+  };
+
   // Inside a backtick template literal: offer the ${expr} interpolation
   // snippet plus normal scope-aware expression completions. Must run BEFORE
   // the style-block branch — otherwise an unmatched `${` inside a backtick
@@ -65,7 +71,7 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   if (isInsideBacktickString(textBefore)) {
     // Member access resolves inside `${...}` interpolations the same way it
     // does anywhere else — the resolver works on the raw textBefore slice.
-    const templateMember = resolveMemberAccess(textBefore, source, resolveName);
+    const templateMember = resolveMemberAccess(textBefore, source, resolveName, resolveElementType);
     if (templateMember) {
       return filterByPrefix(
         [...templateMember.members.properties, ...templateMember.members.methods].map(toCompletionItem),
@@ -182,7 +188,7 @@ export function getCompletions(document: TextDocument, position: Position): Comp
   // on the raw textBefore slice — same as hover), then stdlib + enums +
   // in-scope declarations. Never CSS property/value items here.
   if (isInsideOpenInterp(textBefore)) {
-    const interpMember = resolveMemberAccess(textBefore, source, resolveName);
+    const interpMember = resolveMemberAccess(textBefore, source, resolveName, resolveElementType);
     if (interpMember) {
       return filterByPrefix(
         [...interpMember.members.properties, ...interpMember.members.methods].map(toCompletionItem),
@@ -224,7 +230,7 @@ export function getCompletions(document: TextDocument, position: Position): Comp
 
   // Member access (dot completions, call chains, deep property access) —
   // shared with hover via member-resolution.ts.
-  const memberAccess = resolveMemberAccess(textBefore, source, resolveName);
+  const memberAccess = resolveMemberAccess(textBefore, source, resolveName, resolveElementType);
   if (memberAccess) {
     return filterByPrefix(
       [...memberAccess.members.properties, ...memberAccess.members.methods].map(toCompletionItem),

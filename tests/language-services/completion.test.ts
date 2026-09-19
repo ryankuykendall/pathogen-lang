@@ -1928,3 +1928,100 @@ describe('statement builtins and ln()', () => {
     expect(assert!.insertText).toBe("assert(${1:condition}, '${2:message}');$0");
   });
 });
+
+// A range value `(a..b)` is an array — the closing paren used to defeat every
+// receiver capture in member-resolution, so `(1..100).` offered nothing.
+describe('getCompletions: range values', () => {
+  const labels = (source: string) => completeAtEnd(source).map((i) => i.label);
+
+  it.each([
+    ['numeric bounds', 'let doubled = (1..100).'],
+    ['half-open with a name', 'let count = 4;\nlet doubled = (0..<count).'],
+    ['member bounds', 'let limits = { max: 9 };\nlet steps = (1..limits.max).'],
+    ['a call inside a bound', 'let steps = (0..<floor(9.5)).'],
+    ['after return', 'fn make() {\n  return (1..5).'],
+    ['statement start', '(1..3).'],
+  ])('offers array members after %s', (_label, source) => {
+    const names = labels(source);
+    expect(names).toContain('map');
+    expect(names).toContain('filter');
+    expect(names).toContain('reduce');
+    expect(names).toContain('length');
+  });
+
+  it('carries the trailing-block snippet, not just the label', () => {
+    const map = completeAtEnd('let doubled = (1..100).').find((i) => i.label === 'map')!;
+    expect(map.insertText).toContain('{|');
+    expect(map.isSnippet).toBe(true);
+  });
+
+  it('filters by the typed prefix', () => {
+    const names = labels('let doubled = (1..100).fi');
+    expect(names).toContain('filter');
+  });
+
+  it('does not treat a call or a plain parenthesized expression as a range', () => {
+    expect(labels('let total = 3;\nlet out = (total + 1).')).not.toContain('mapSlice');
+    expect(labels('let out = "a..b".')).not.toContain('mapSlice');
+  });
+
+  it('ignores `..` in a comment: only the current line is examined', () => {
+    // A `//` comment cannot precede the cursor on its own line, so comment
+    // text is never scanned; a receiver that opened on an earlier line is
+    // simply not resolved (rather than mis-resolved).
+    expect(labels('let total = 3;\nlet out = (total + 1 // a..b comment\n).')).not.toContain('mapSlice');
+  });
+
+  it('ignores `..` inside a string within the parentheses', () => {
+    expect(labels('let out = (pick("a..b")).')).not.toContain('mapSlice');
+  });
+
+  it('types a variable bound to a range as an array', () => {
+    expect(labels('let steps = (1..5);\nsteps.')).toContain('mapSlice');
+  });
+
+  it('types the result of .map on a range as an array', () => {
+    expect(labels('let doubled = (1..5).map {|value| return value * 2; };\ndoubled.')).toContain('mapSlice');
+  });
+});
+
+// Receivers that end in `]`. The playground's legacy completion source now
+// defers on these (it used to flood the popup), so the shared engine must
+// answer — otherwise `points[0].` would get nothing at all.
+describe('getCompletions: bracketed receivers', () => {
+  const labels = (source: string) => completeAtEnd(source).map((i) => i.label);
+
+  it('an element of an array variable gets its element type members', () => {
+    const names = labels('let points = [Point(1, 2), Point(3, 4)];\nlet first = points[0].');
+    expect(names).toContain('x');
+    expect(names).toContain('y');
+    expect(names).not.toContain('mapSlice');
+  });
+
+  it('an index that is a variable or an expression works too', () => {
+    expect(labels('let points = [Point(1, 2)];\nlet i = 0;\nlet px = points[i].')).toContain('x');
+    expect(labels('let points = [Point(1, 2)];\nlet px = points[points.length - 1].')).toContain('x');
+  });
+
+  it('an element of a range value is a number: no members to offer', () => {
+    expect(labels('let steps = (1..5);\nlet out = steps[0].')).not.toContain('mapSlice');
+  });
+
+  it('an element of .map on a range is typed by the block (unknown here): no wrong members', () => {
+    expect(labels('let pts = (0..<3).map {|n| return Point(n, n); };\nlet out = pts[0].')).not.toContain('mapSlice');
+  });
+
+  it('an array literal gets array members', () => {
+    const names = labels('let count = [1, 2].');
+    expect(names).toContain('length');
+    expect(names).toContain('mapSlice');
+  });
+
+  it('a nested index stays unresolved rather than guessing', () => {
+    expect(labels('let grid = [[Point(1, 2)]];\nlet out = grid[0][0].')).not.toContain('mapSlice');
+  });
+
+  it('a call result is not mistaken for a range or a literal', () => {
+    expect(labels('fn pick(list) { return list; }\nlet out = pick([1, 2]).')).not.toContain('mapSlice');
+  });
+});

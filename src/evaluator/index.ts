@@ -27,7 +27,8 @@ export { BUILTIN_ENUMS };
 import { angle, angleMethod, callStdlibPreservingAngles, formatAngleForDisplay, isAngleValue, radiansToDegreesSnapped } from './angle';
 import { isBooleanValue, isTruthy, toNumber, valuesEqual } from './value-semantics';
 import { selectSwitchArm, selectSwitchClause, type MatchHost } from './switch-match';
-import { planRange } from './range-loop';
+import { planRange, RANGE_MESSAGES, rangeValues } from './range-loop';
+import type { RangeKind, RangePlan } from './range-loop';
 import { checkAngleUnitMismatch, convertUnitSuffix } from './units';
 import { validateCSSIdent, validateCSSValue } from './sanitize';
 import { sanitizeSVGFragment } from './svg-sanitize';
@@ -662,6 +663,8 @@ function expressionToSource(expr: Expression): string {
       return `${expr.name}(${expr.args.map(expressionToSource).join(', ')})`;
     case 'CalcExpression':
       return `calc(${expressionToSource(expr.expression)})`;
+    case 'RangeExpression':
+      return `(${expressionToSource(expr.start)}${expr.inclusive ? '..' : '..<'}${expressionToSource(expr.end)})`;
     case 'TernaryExpression':
       return `(${expressionToSource(expr.condition)} ? ${expressionToSource(expr.consequent)} : ${expressionToSource(expr.alternate)})`;
     case 'SwitchExpression': {
@@ -1035,7 +1038,9 @@ function lookupVariable(scope: Scope, name: string, line?: number, column?: numb
 function setVariable(scope: Scope, name: string, value: Value): void {
   // The single funnel for every binding form (let, for, fn names,
   // fn/lambda params, destructuring, builtin callback params) — the
-  // one-line reservation check covers them all.
+  // one-line reservation check covers them all. It has no source location
+  // and only fires when a binding executes, so it is the BACKSTOP: parse()
+  // reports the same rule statically, at the name (parser/reserved-bindings.ts).
   if (RESERVED_UNIT_NAMES.has(name)) {
     throw new Error(reservedNameBindingError(name));
   }
@@ -1695,6 +1700,14 @@ function evaluateExpression(expr: Expression, scope: Scope): Value {
     case 'MethodCallExpression':
       return evaluateMethodCall(expr, scope);
 
+    // `(a..b)` — the array of numbers `for (i in a..b)` visits. A FRESH array
+    // per evaluation: it is an ordinary ArrayValue from here on (push, the
+    // iteration lock, reference semantics), so it must never be shared.
+    case 'RangeExpression': {
+      const { start, plan } = resolveRange(expr.start, expr.end, expr.inclusive, scope, 'value', getLine(expr));
+      return { type: 'ArrayValue' as const, elements: rangeValues(start, plan) };
+    }
+
     case 'TernaryExpression': {
       const condVal = evaluateExpression(expr.condition, scope);
       return isTruthy(condVal) ? evaluateExpression(expr.consequent, scope) : evaluateExpression(expr.alternate, scope);
@@ -2220,11 +2233,16 @@ function evaluateTextBlockBody(stmts: Statement[], scope: Scope, elements: TextB
     }
 
     if (stmt.type === 'ForLoop') {
-      const start = requireNumber(evaluateExpression(stmt.start, scope), 'for loop start');
-      const end = requireNumber(evaluateExpression(stmt.end, scope), 'for loop end');
-      if (!isFinite(start) || !isFinite(end)) throw new Error('for loop bounds must be finite');
-      const range = planRange(start, end, stmt.inclusive !== false);
-      if (range.iterations > 10000) throw new Error('for loop exceeds 10000 iteration limit');
+      // Same bounds rules, limit and messages as the statement loop — this
+      // site once kept a hardcoded 10,000 after MAX_ITERATIONS went to 32,000.
+      const { start, plan: range } = resolveRange(
+        stmt.start,
+        stmt.end,
+        stmt.inclusive !== false,
+        scope,
+        'loop',
+        getLine(stmt),
+      );
       for (let i = start; range.continues(i); i += range.step) {
         const loopScope = createScope(scope);
         loopScope.evalState = scope.evalState;
@@ -5759,24 +5777,13 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           setVariable(blockScope, mapParams[0], obj.elements[i]);
           if (mapParams.length > 1) setVariable(blockScope, mapParams[1], i);
           if (mapParams.length > 2) setVariable(blockScope, mapParams[2], obj);
+          // Path output inside the callback is discarded (one sink per
+          // element, shared by its statements — as in sort and Grid.map).
+          // no return → null
           try {
-            for (const stmt of cb.body) {
-              // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-              const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-              if (flow) throw loopFlowBoundaryError(flow);
-            }
-            result.push(null); // no return → null
+            result.push(runCallbackBody(cb.body, blockScope, createPathStore()));
           } catch (e) {
-            if (e instanceof ReturnSignal) {
-              result.push(e.value);
-            } else {
-              // Wrap error with map iteration context
-              const msg = e instanceof Error ? e.message : String(e);
-              throw new Error(formatError(
-                `Error in .map() callback at index ${i}: ${msg}`,
-                mapLine,
-              ));
-            }
+            throw callbackError('map', i, e, mapLine);
           }
         }
       } finally {
@@ -5798,24 +5805,12 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           setVariable(blockScope, filterParams[0], obj.elements[i]);
           if (filterParams.length > 1) setVariable(blockScope, filterParams[1], i);
           if (filterParams.length > 2) setVariable(blockScope, filterParams[2], obj);
-          let verdict: Value = null;
+          // no return → null → falsy → dropped
+          let verdict: Value;
           try {
-            for (const stmt of cb.body) {
-              // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-              const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-              if (flow) throw loopFlowBoundaryError(flow);
-            }
-            // no return → null → falsy → dropped
+            verdict = runCallbackBody(cb.body, blockScope, createPathStore());
           } catch (e) {
-            if (e instanceof ReturnSignal) {
-              verdict = e.value;
-            } else {
-              const msg = e instanceof Error ? e.message : String(e);
-              throw new Error(formatError(
-                `Error in .filter() callback at index ${i}: ${msg}`,
-                filterLine,
-              ));
-            }
+            throw callbackError('filter', i, e, filterLine);
           }
           const verdictNum = toNumber(verdict);
           if (verdict !== null && (verdictNum !== undefined ? verdictNum !== 0 : Boolean(verdict))) {
@@ -5842,23 +5837,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           if (reduceParams.length > 1) setVariable(blockScope, reduceParams[1], obj.elements[i]);
           if (reduceParams.length > 2) setVariable(blockScope, reduceParams[2], i);
           if (reduceParams.length > 3) setVariable(blockScope, reduceParams[3], obj);
+          // no return → null
           try {
-            for (const stmt of cb.body) {
-              // Callback bodies are break/continue boundaries (builder-enforced; defensive)
-              const flow = evaluateStatementToAccum(stmt, blockScope, createPathStore());
-              if (flow) throw loopFlowBoundaryError(flow);
-            }
-            accumulator = null; // no return → null
+            accumulator = runCallbackBody(cb.body, blockScope, createPathStore());
           } catch (e) {
-            if (e instanceof ReturnSignal) {
-              accumulator = e.value;
-            } else {
-              const msg = e instanceof Error ? e.message : String(e);
-              throw new Error(formatError(
-                `Error in .reduce() callback at index ${i}: ${msg}`,
-                reduceLine,
-              ));
-            }
+            throw callbackError('reduce', i, e, reduceLine);
           }
         }
       } finally {
@@ -8013,6 +7996,40 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
   throw new Error(formatError(`${call.name} is not a function`, getLine(call), getCol(call)));
 }
 
+/**
+ * Evaluate and validate a range's bounds — shared by EVERY for-loop site (the
+ * statement loop, the `&{ }` text-block loop, the `text() { }` body loop) and
+ * the range value `(a..b)`, so all of them read bounds the same way (start,
+ * then end; Angles and booleans through toNumber), reject the same inputs and
+ * enforce the same limit. The wording differs per `kind` (RANGE_MESSAGES); the
+ * rules do not. A new loop site must call this rather than planRange directly.
+ * `a..b` includes both ends; `a..<b` stops before b (range-loop.ts).
+ */
+function resolveRange(
+  startExpr: Expression,
+  endExpr: Expression,
+  inclusive: boolean,
+  scope: Scope,
+  kind: RangeKind,
+  line: number | undefined,
+): { start: number; plan: RangePlan } {
+  const messages = RANGE_MESSAGES[kind];
+  const start = toNumber(evaluateExpression(startExpr, scope));
+  const end = toNumber(evaluateExpression(endExpr, scope));
+  if (start === undefined || end === undefined) {
+    throw new Error(formatError(messages.numeric, line));
+  }
+  // Guard against infinite loops
+  if (!Number.isFinite(start) || !Number.isFinite(end)) {
+    throw new Error(formatError(messages.finite, line));
+  }
+  const plan = planRange(start, end, inclusive);
+  if (plan.iterations > MAX_ITERATIONS) {
+    throw new Error(formatError(messages.cap(plan.iterations, MAX_ITERATIONS), line));
+  }
+  return { start, plan };
+}
+
 function isCallableValue(v: Value): v is UserFunction {
   return typeof v === 'object' && v !== null && 'type' in v && v.type === 'UserFunction';
 }
@@ -8184,7 +8201,7 @@ function getNumericArgs(args: PathArg[], scope: Scope): number[] {
       numericArgs.push(arg.value ? 1 : 0);
     } else if (arg.type === 'Identifier') {
       if (RESERVED_UNIT_NAMES.has(arg.name)) {
-        throw new Error(reservedNameReferenceError(arg.name));
+        throw new Error(formatError(reservedNameReferenceError(arg.name), getLine(arg), getCol(arg)));
       }
       const value = lookupVariable(scope, arg.name);
       const n = toNumber(value);
@@ -8759,17 +8776,15 @@ function evaluateTextBody(items: TextBodyItem[], scope: Scope, children: TextChi
       }
       children.push({ type: 'tspan', text, dx, dy, rotation: rot, styles: tspanStyles });
     } else if (item.type === 'ForLoop') {
-      const start = requireNumber(evaluateExpression(item.start, scope), 'for loop start');
-      const end = requireNumber(evaluateExpression(item.end, scope), 'for loop end');
-
-      if (!Number.isFinite(start) || !Number.isFinite(end)) {
-        throw new Error('for loop range must be finite (got Infinity or NaN)');
-      }
-
-      const range = planRange(start, end, item.inclusive !== false);
-      if (range.iterations > MAX_ITERATIONS) {
-        throw new Error(`for loop would run ${range.iterations} iterations (max ${MAX_ITERATIONS})`);
-      }
+      // Same bounds rules, limit and messages as the statement loop.
+      const { start, plan: range } = resolveRange(
+        item.start,
+        item.end,
+        item.inclusive !== false,
+        scope,
+        'loop',
+        getLine(item),
+      );
 
       for (let i = start; range.continues(i); i += range.step) {
         const loopScope = createScope(scope);
@@ -8939,6 +8954,38 @@ function evaluateGridCellBody(
   return { returned: false, value: null };
 }
 
+/**
+ * Run one invocation of an array callback body (map / filter / reduce) and
+ * return what it returned, or null when no `return` executed.
+ *
+ * Two costs are being avoided, both measured (project-docs/range-values):
+ *  - a top-level `return` short-circuits in evaluateGridCellBody and never
+ *    throws at all;
+ *  - a NESTED return (inside if/for) still throws ReturnSignal, and it is
+ *    caught HERE, in a small function, rather than in the callers' inline
+ *    try/catch. The same throw caught inside the ~3,700-line
+ *    evaluateMethodCall cost ~0.2-0.5 ms (V8 will not optimize a function
+ *    that size around the handler) versus ~0.04 ms here: 32,000 elements
+ *    went from ~14 s to well under a second.
+ * Keep this function small and keep the catch out of evaluateMethodCall.
+ * Any other error propagates so the caller can add its index context.
+ */
+function runCallbackBody(body: Statement[], scope: Scope, sink: PathStore): Value {
+  try {
+    const result = evaluateGridCellBody(body, scope, sink);
+    return result.returned ? result.value : null;
+  } catch (e) {
+    if (e instanceof ReturnSignal) return e.value;
+    throw e;
+  }
+}
+
+/** Wrap a callback failure with the method and element index it happened at. */
+function callbackError(method: string, index: number, e: unknown, line: number | undefined): Error {
+  const msg = e instanceof Error ? e.message : String(e);
+  return new Error(formatError(`Error in .${method}() callback at index ${index}: ${msg}`, line));
+}
+
 /** Applies to the EVALUATED string, so computed labels are validated per
  *  iteration. Pure rule lives in segments.ts (labelNameError). */
 function validateLabelName(value: string, kind: 'segment' | 'endpoint', line: number | undefined): void {
@@ -9081,25 +9128,14 @@ function evaluateStatementToAccum(stmt: Statement, scope: Scope, accum: PathStor
     }
 
     case 'ForLoop': {
-      const start = toNumber(evaluateExpression(stmt.start, scope));
-      const end = toNumber(evaluateExpression(stmt.end, scope));
-
-      if (start === undefined || end === undefined) {
-        throw new Error(formatError('for loop range must be numeric', getLine(stmt)));
-      }
-
-      // Guard against infinite loops
-      if (!Number.isFinite(start) || !Number.isFinite(end)) {
-        throw new Error(formatError('for loop range must be finite (got Infinity or NaN)', getLine(stmt)));
-      }
-
-      // `a..b` includes both ends; `a..<b` stops before b (range-loop.ts).
-      const range = planRange(start, end, stmt.inclusive !== false);
-      if (range.iterations > MAX_ITERATIONS) {
-        throw new Error(
-          formatError(`for loop would run ${range.iterations} iterations (max ${MAX_ITERATIONS})`, getLine(stmt)),
-        );
-      }
+      const { start, plan: range } = resolveRange(
+        stmt.start,
+        stmt.end,
+        stmt.inclusive !== false,
+        scope,
+        'loop',
+        getLine(stmt),
+      );
 
       for (let i = start; range.continues(i); i += range.step) {
         const loopScope = createScope(scope);

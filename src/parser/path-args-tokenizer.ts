@@ -55,6 +55,16 @@ const STATEMENT_ONLY_KEYWORDS = new Set([
  * Stops at: keywords, path command letters, closing braces, semicolons, EOF
  * (braces and semicolons inside a switch expression's arms within calc() are content).
  */
+/** Advance to the end of the line (not past the newline); returns how many characters that was. */
+function skipLineComment(input: { next: number; advance: () => unknown }): number {
+  let n = 0;
+  while (input.next !== 10 && input.next !== -1) {
+    input.advance();
+    n++;
+  }
+  return n;
+}
+
 export const pathArgsTokenizer = new ExternalTokenizer((input) => {
   let consumed = 0;
   let depth = 0; // ( and [ nesting
@@ -109,7 +119,14 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       }
       if (input.next === 125 && braceDepth === 0) break; // '}' closes the enclosing block
       if (input.next === 47) { // '/' — might be comment
-        if (input.peek(1) === 47) break; // '//' comment → stop
+        if (input.peek(1) === 47) {
+          // A comment ends the args — unless a paren or brace this token
+          // opened is still open: then it is a comment INSIDE the argument
+          // (`calc(a // note⏎ + b)`), and the token carries it to end of line.
+          if (depth === 0 && braceDepth === 0) break;
+          consumed += skipLineComment(input);
+          continue;
+        }
         if (depth === 0) break; // Single '/' at top level after newline → stop
         // Inside parens (depth > 0), continue — could be division
       }
@@ -138,9 +155,15 @@ export const pathArgsTokenizer = new ExternalTokenizer((input) => {
       break;
     }
 
-    // Comment '//' → stop (single '/' handled as operator below)
+    // Comment '//' → stop at top level; inside an open paren/brace it is part
+    // of the argument and is carried to end of line (the AST builder blanks
+    // it before reading the args). Single '/' is handled as an operator below.
     if (ch === 47) { // '/'
-      if (input.peek(1) === 47) break; // '//' comment
+      if (input.peek(1) === 47) {
+        if (depth === 0 && braceDepth === 0) break; // '//' comment
+        consumed += skipLineComment(input);
+        continue;
+      }
       // Single '/' at depth 0 isn't a valid path arg operator — stop
       if (depth === 0) break;
       // Inside parens (depth > 0), fall through to operator handling
@@ -384,4 +407,33 @@ function isAssignmentTarget(input: { next: number; peek(offset: number): number 
 
   // Check for '=' not followed by '=' (assignment, not equality '==')
   return ch === 61 && input.peek(offset + 1) !== 61; // '=' but not '=='
+}
+
+/**
+ * The `//` comments inside a PathArgs token, as [from, to) ranges into `text`.
+ * The tokenizer carries a comment into the token only when a paren or brace is
+ * still open (`calc(a // note⏎ + b)`), so the token's text — not the parse tree
+ * — is the only place these comments exist. Quoted strings are skipped;
+ * backtick templates never occur in path args.
+ */
+export function pathArgCommentRanges(text: string): [number, number][] {
+  const ranges: [number, number][] = [];
+  if (!text.includes('//')) return ranges;
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'") {
+      i++;
+      while (i < text.length && text[i] !== ch) i += text[i] === '\\' ? 2 : 1;
+      i++;
+    } else if (ch === '/' && text[i + 1] === '/') {
+      let end = text.indexOf('\n', i);
+      if (end === -1) end = text.length;
+      ranges.push([i, end]);
+      i = end;
+    } else {
+      i++;
+    }
+  }
+  return ranges;
 }

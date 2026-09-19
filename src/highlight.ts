@@ -88,7 +88,6 @@ export const NODE_CLASS: Record<string, string> = {
   pathCommandLetter: 'op',
 
   // Comments
-  Comment: 'cm',
   LineComment: 'cm',
 
   // Style block content: the editor parser mounts the inner style grammar

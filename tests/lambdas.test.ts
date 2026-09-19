@@ -179,6 +179,48 @@ describe('<< worker coverage matrix', () => {
       expected: '[2, 3]',
     },
     {
+      name: 'array.filter',
+      block: 'let r = [4, -2, 7].filter {|v| return v > 0; };',
+      worker: (rhs) => `let r = [4, -2, 7].filter() << ${rhs};`,
+      lambda: '{|v| return v > 0; }',
+      fnDecl: 'fn w2(v) { return v > 0; }',
+      expected: '[4, 7]',
+    },
+    // A range value is an array, so every array callback builtin must accept
+    // the same worker kinds on a `(a..b)` receiver.
+    {
+      name: 'range.map',
+      block: 'let r = (1..3).map {|v| return calc(v + 1); };',
+      worker: (rhs) => `let r = (1..3).map() << ${rhs};`,
+      lambda: '{|v| return calc(v + 1); }',
+      fnDecl: 'fn w2(v) { return calc(v + 1); }',
+      expected: '[2, 3, 4]',
+    },
+    {
+      name: 'range.filter',
+      block: 'let r = (0..<6).filter {|v| return v % 2 == 0; };',
+      worker: (rhs) => `let r = (0..<6).filter() << ${rhs};`,
+      lambda: '{|v| return v % 2 == 0; }',
+      fnDecl: 'fn w2(v) { return v % 2 == 0; }',
+      expected: '[0, 2, 4]',
+    },
+    {
+      name: 'range.reduce',
+      block: 'let r = (1..4).reduce(0) {|acc, v| return calc(acc + v); };',
+      worker: (rhs) => `let r = (1..4).reduce(0) << ${rhs};`,
+      lambda: '{|acc, v| return calc(acc + v); }',
+      fnDecl: 'fn w2(acc, v) { return calc(acc + v); }',
+      expected: '10',
+    },
+    {
+      name: 'range.sort',
+      block: 'let r = (1..3).sort {|a, b| return calc(b - a); };',
+      worker: (rhs) => `let r = (1..3).sort() << ${rhs};`,
+      lambda: '{|a, b| return calc(b - a); }',
+      fnDecl: 'fn w2(a, b) { return calc(b - a); }',
+      expected: '[3, 2, 1]',
+    },
+    {
       name: 'array.reduce',
       block: 'let r = [1, 2, 3].reduce(4) {|acc, v| return calc(acc + v); };',
       worker: (rhs) => `let r = [1, 2, 3].reduce(4) << ${rhs};`,

@@ -5,6 +5,10 @@ import { buildAST, setExpressionParser } from './ast-builder';
 
 // Wire the Lezer-based expression parser into the AST builder
 import { parseExpression as lezerParseExpression, findExpressionErrorOffset } from './lezer-expression';
+import { describeBareRange } from './range-value-errors';
+import { reservedBindingAt } from './reserved-bindings';
+import type { ReservedBinding } from './reserved-bindings';
+
 setExpressionParser({
   parse: (input: string) => {
     const result = lezerParseExpression(input);
@@ -155,17 +159,24 @@ export function parseLezer(input: string): { tree: import('@lezer/common').Tree;
 /** Export the Lezer parser for direct CodeMirror integration. */
 export { lezerParser };
 
+export { describeBareRange, RANGE_IN_PATH_ARGS, RANGE_NEEDS_BOTH_BOUNDS } from './range-value-errors';
+
 export function parse(input: string): Program {
   const tree = lezerParser.parse(input);
 
-  // Check for Lezer parse errors
+  // One pass over the tree: stop at the first Lezer error node, and along the
+  // way note the first reserved name used as a binding (reserved-bindings.ts).
+  // A syntax error wins — the reserved-name check only reports on a tree that
+  // parsed cleanly.
   let hasErrors = false;
+  let reservedBinding: ReservedBinding | null = null;
   const errCur = tree.cursor();
   do {
     if (errCur.type.isError) {
       hasErrors = true;
       break;
     }
+    reservedBinding ??= reservedBindingAt(errCur, input);
   } while (errCur.next());
 
   if (hasErrors) {
@@ -188,6 +199,15 @@ export function parse(input: string): Program {
         `Parse error at line ${legacyLines.length}, column ${legacyLines[legacyLines.length - 1].length + 1}: ${LEGACY_STYLE_OPENER_MESSAGE}`,
       );
     }
+    // A bare `1..5` in value position recovers as a missing ';' — name the
+    // real fix (parentheses) instead. Same text as the editor diagnostic.
+    const bareRange = describeBareRange(input, errCur.node);
+    if (bareRange) {
+      const rangeLines = input.slice(0, bareRange.offset).split('\n');
+      throw new Error(
+        `Parse error at line ${rangeLines.length}, column ${rangeLines[rangeLines.length - 1].length + 1}: ${bareRange.message}`,
+      );
+    }
     const semiResult = detectMissingSemicolon(input, errOffset);
     if (semiResult) {
       throw new Error(`Parse error at line ${semiResult.line}, column ${semiResult.column}: ${semiResult.message}`);
@@ -198,7 +218,46 @@ export function parse(input: string): Program {
     );
   }
 
-  return buildAST(tree, input);
+  // The reserved-name check reads the tree; other compile errors ('break'
+  // outside a loop, a malformed case pattern, a range in a path argument)
+  // come from the AST builder. Report whichever problem appears FIRST in the
+  // document — people fix errors top-down, and `case [deg, 2]` is a malformed
+  // pattern before it is a naming problem. A builder error with no position
+  // wins, since it cannot be ordered.
+  let ast: Program;
+  try {
+    ast = buildAST(tree, input);
+  } catch (builderError) {
+    if (reservedBinding && reservedBinding.offset < parseErrorOffset(builderError, input)) {
+      throw reservedBindingError(reservedBinding, input);
+    }
+    throw builderError;
+  }
+  if (reservedBinding) throw reservedBindingError(reservedBinding, input);
+  return ast;
+}
+
+function reservedBindingError(binding: ReservedBinding, input: string): Error {
+  const lines = input.slice(0, binding.offset).split('\n');
+  return new Error(
+    `Parse error at line ${lines.length}, column ${lines[lines.length - 1].length + 1}: ${binding.message}`,
+  );
+}
+
+/**
+ * Document offset of a builder error. Two shapes exist: `Parse error at line
+ * L, column C: …` (parseErrorAt) and the older `Parse error at line L: …` with
+ * no column — that one still has a position, so it is placed at the start of
+ * its line rather than treated as unpositioned. Only a message with no line at
+ * all returns 0 (= earliest, so it wins).
+ */
+function parseErrorOffset(error: unknown, input: string): number {
+  const match = /^Parse error at line (\d+)(?:, column (\d+))?/.exec(error instanceof Error ? error.message : '');
+  if (!match) return 0;
+  const lines = input.split('\n');
+  let offset = 0;
+  for (let i = 0; i < Number(match[1]) - 1 && i < lines.length; i++) offset += lines[i].length + 1;
+  return offset + (match[2] ? Number(match[2]) - 1 : 0);
 }
 
 /**

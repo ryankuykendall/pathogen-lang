@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { StringTextDocument } from '../../src/language-services/document';
 import { getDiagnostics } from '../../src/language-services/diagnostics';
 import { DiagnosticSeverity } from '../../src/language-services/types';
-import { LEGACY_STYLE_OPENER_MESSAGE } from '../../src/parser';
+import { LEGACY_STYLE_OPENER_MESSAGE, parse } from '../../src/parser';
 
 function diagnose(source: string) {
   return getDiagnostics(new StringTextDocument(source));
@@ -534,5 +534,108 @@ describe('command-letter shadowing hint names member access', () => {
     const diags = getDiagnostics(doc);
     const hit = diags.find((dg) => dg.message.startsWith("'m' is a path command here"));
     expect(hit?.message).toContain('write calc(m),');
+  });
+});
+
+describe('getDiagnostics: range values', () => {
+  it('accepts range values', () => {
+    expect(diagnose('let doubled = (1..5).map {|value| return value * 2; };\nM doubled[0] 0')).toEqual([]);
+  });
+
+  it.each([
+    ['let declaration', 'let steps = 1..5;'],
+    ['call argument', 'log(1..5);'],
+    ['array literal', 'let list = [1..5];'],
+    ['return', 'fn make() {\n  return 1..5;\n}'],
+  ])('asks for parentheses: %s', (_label, source) => {
+    const messages = diagnose(source).map((d) => d.message);
+    expect(messages.some((m) => m.includes('A range used as a value needs parentheses'))).toBe(true);
+    expect(messages.some((m) => m.includes("Missing ';'"))).toBe(false);
+  });
+
+  it('points at the range operator', () => {
+    const [first] = diagnose('let steps = 1..5;');
+    expect(first.range.start).toEqual({ line: 0, character: 13 });
+    expect(first.severity).toBe(DiagnosticSeverity.Error);
+  });
+
+  it('says the same thing the compiler says', () => {
+    const source = 'let steps = 0..<count;';
+    let compileMessage = '';
+    try {
+      parse(source);
+    } catch (e) {
+      compileMessage = (e as Error).message;
+    }
+    const [first] = diagnose(source);
+    expect(compileMessage).toContain(first.message);
+    expect(first.message).toContain('write (0..<count)');
+  });
+
+  it('a missing bound gets its own message', () => {
+    expect(diagnose('let bad = (1..);').map((d) => d.message).join(' ')).toContain('needs both bounds');
+    expect(diagnose('let bad = (..5);').map((d) => d.message).join(' ')).toContain('needs both bounds');
+  });
+
+  it('a parenthesized open-ended case pattern says to drop the parentheses', () => {
+    const messages = diagnose('switch (5) {\n  case (100..) {\n    M 1 1\n  }\n  default {\n    M 0 0\n  }\n}').map((d) => d.message);
+    expect(messages.some((m) => m.includes('takes no parentheses') && m.includes('case 100..'))).toBe(true);
+    expect(messages.some((m) => m.includes('only work as case patterns'))).toBe(false);
+  });
+
+  it('reports a range in a path argument', () => {
+    const messages = diagnose('M 0 0 L (1..3) 5;').map((d) => d.message);
+    expect(messages.some((m) => m.includes('range cannot be used as a path argument'))).toBe(true);
+  });
+
+  it('reports runtime bound errors from the evaluator', () => {
+    const messages = diagnose('let bad = ("a".."c");').map((d) => d.message);
+    expect(messages.some((m) => m.includes('range bounds must be numeric'))).toBe(true);
+  });
+});
+
+// The reserved-name binding error used to arrive from the evaluator with no
+// position, so the squiggle landed on line 1 wherever the declaration was.
+describe('getDiagnostics: reserved unit-suffix names', () => {
+  it('puts the diagnostic on the name, not on line 1', () => {
+    const diagnostics = diagnose('M 0 0\nM 1 1\nlet rad = 50;');
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0].message).toContain("'rad' is reserved");
+    expect(diagnostics[0].range.start).toEqual({ line: 2, character: 4 });
+    expect(diagnostics[0].severity).toBe(DiagnosticSeverity.Error);
+  });
+
+  it.each([
+    ['a parameter of a fn that is never called', 'M 0 0\nfn unused(len, deg) { h 1 }', { line: 1, character: 15 }],
+    ['a lambda parameter that is never bound', 'let unused = {|pi| return 1; };', { line: 0, character: 15 }],
+    ['an object-destructuring shorthand', 'let source = { a: 1 };\nlet { a, rad } = source;', { line: 1, character: 9 }],
+    ['a case pattern in an arm that never matches', 'switch (5) {\n  case [first, deg] {\n    M 0 0\n  }\n  default {\n    M 1 1\n  }\n}', { line: 1, character: 15 }],
+  ])('flags %s, at the name', (_label, source, start) => {
+    const [first] = diagnose(source);
+    expect(first.message).toContain('is reserved');
+    expect(first.range.start).toEqual(start);
+  });
+
+  it('says the same thing the compiler says', () => {
+    const source = 'let ok = 1;\nlet deg = 2;';
+    let compileMessage = '';
+    try {
+      parse(source);
+    } catch (e) {
+      compileMessage = (e as Error).message;
+    }
+    expect(compileMessage).toContain('line 2, column 5');
+    expect(compileMessage).toContain(diagnose(source)[0].message);
+  });
+
+  it('enum members and object keys named like a suffix are not flagged', () => {
+    expect(diagnose('enum AngleUnit { deg, rad }\nlet units = { pi: 3 };\nM units.pi 0')).toEqual([]);
+  });
+
+  it('keeps scope analysis alive while the diagnostic is showing', async () => {
+    // parseLezer (the lenient path) must still build an AST for `let rad`.
+    const { analyzeScopes } = await import('../../src/language-services/scope-analysis');
+    const info = analyzeScopes(new StringTextDocument('let width = 40;\nlet rad = 50;\nlet half = width / 2;'));
+    expect(info.declarations.map((d) => d.name)).toEqual(expect.arrayContaining(['width', 'rad', 'half']));
   });
 });

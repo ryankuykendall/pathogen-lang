@@ -62,8 +62,19 @@ export function resolveMemberAccess(
   textBefore: string,
   source: string,
   resolveName?: NameTypeResolver,
+  resolveElementType?: NameTypeResolver,
 ): MemberAccessResolution | null {
   const resolver: NameTypeResolver = resolveName ?? ((name) => regexNameResolver(name, source));
+
+  // Member access on a receiver that ends in `)` or `]` and is not a call:
+  //   (1..100).      a range value            → array members
+  //   [1, 2].        an array literal         → array members
+  //   points[0].     an element of a variable → members of its element type
+  // The closing bracket defeats every `\w+` receiver capture below.
+  const bracketed = resolveBracketedReceiver(textBefore, resolveElementType);
+  if (bracketed && bracketed.typeName in TYPE_MEMBERS) {
+    return { typeName: bracketed.typeName, members: TYPE_MEMBERS[bracketed.typeName], memberPrefix: bracketed.memberPrefix };
+  }
 
   // Member access on a query result: expr.query('...'). / expr.queryAll('...').
   // The selector is a string literal that may itself contain parentheses
@@ -154,6 +165,98 @@ export function resolveMemberAccess(
     }
   }
 
+  return null;
+}
+
+/** Words that may directly precede a bracketed group without making it a call or an index. */
+const NON_CALLEE_WORDS = new Set(['return', 'in', 'case', 'where', 'else']);
+
+/**
+ * Type a member-access receiver that ends in `)` or `]`. Only the CURRENT LINE
+ * is examined: a receiver that closes on this line opened on it in every
+ * program the formatter would print, a `//` comment cannot precede the cursor
+ * on its own line (so comment text is never scanned), and the scan stays
+ * proportional to the line rather than to the document.
+ */
+function resolveBracketedReceiver(
+  textBefore: string,
+  resolveElementType?: NameTypeResolver,
+): { typeName: string; memberPrefix: string } | null {
+  const line = textBefore.slice(textBefore.lastIndexOf('\n') + 1);
+  const tail = /([)\]])\s*\.(\w*)$/.exec(line);
+  if (!tail) return null;
+  const closeAt = tail.index;
+  const memberPrefix = tail[2];
+  const openAt = matchingOpener(line, closeAt);
+  if (openAt === null) return null;
+
+  // What sits directly before the opener decides whether the group is a
+  // call's arguments / an index suffix (attached) or stands alone.
+  let before = openAt - 1;
+  while (before >= 0 && /\s/.test(line[before])) before--;
+  let attachedTo: string | null = null;
+  if (before >= 0 && /[\w)\]]/.test(line[before])) {
+    const word = /([A-Za-z_]\w*)$/.exec(line.slice(0, before + 1));
+    if (!word || !NON_CALLEE_WORDS.has(word[1])) attachedTo = word ? word[1] : '';
+  }
+
+  if (tail[1] === ']') {
+    // `[1, 2].` stands alone: an array literal.
+    if (attachedTo === null) return { typeName: 'array', memberPrefix };
+    // `points[0].` indexes a plain variable: its element type, when known.
+    // Anything deeper (`grid[0][1].`, `f(x)[0].`) stays unresolved.
+    const receiver = /(?:^|[^.\w)\]])([A-Za-z_]\w*)$/.exec(line.slice(0, openAt));
+    const elementType = receiver && resolveElementType ? resolveElementType(receiver[1]) : null;
+    return elementType ? { typeName: elementType, memberPrefix } : null;
+  }
+
+  // `(…)`: a call's argument list is not a receiver we can type here.
+  if (attachedTo !== null) return null;
+  // A range value has `..` / `..<` (not the `...` spread) at the group's own
+  // level, outside nested brackets and strings: `(0..<len(xs)).` qualifies,
+  // `(a + b).` does not.
+  let depth = 0;
+  for (let i = openAt + 1; i < closeAt; i++) {
+    const ch = line[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const closing = line.indexOf(ch, i + 1);
+      if (closing === -1 || closing > closeAt) return null;
+      i = closing;
+    } else if (ch === '(' || ch === '[' || ch === '{') {
+      depth++;
+    } else if (ch === ')' || ch === ']' || ch === '}') {
+      depth--;
+    } else if (depth === 0 && ch === '.' && line[i + 1] === '.') {
+      if (line[i + 2] === '.') {
+        i += 2; // spread
+        continue;
+      }
+      return { typeName: 'array', memberPrefix };
+    }
+  }
+  return null;
+}
+
+/**
+ * Index of the `(` / `[` matching the closer at `closeAt`, skipping quoted
+ * strings; null when unbalanced or mismatched.
+ */
+function matchingOpener(text: string, closeAt: number): number | null {
+  const stack: string[] = [];
+  for (let i = closeAt; i >= 0; i--) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const opening = text.lastIndexOf(ch, i - 1);
+      if (opening === -1) return null;
+      i = opening;
+    } else if (ch === ')' || ch === ']') {
+      stack.push(ch);
+    } else if (ch === '(' || ch === '[') {
+      const closer = stack.pop();
+      if ((ch === '(' && closer !== ')') || (ch === '[' && closer !== ']')) return null;
+      if (stack.length === 0) return i;
+    }
+  }
   return null;
 }
 

@@ -1,9 +1,12 @@
-import { parse, parseLezer } from '../parser';
-import type { Tree } from '@lezer/common';
+import { lezerParser, parse, parseLezer } from '../parser';
+import { pathArgCommentRanges } from '../parser/path-args-tokenizer';
+
+import type { SyntaxNode, Tree } from '@lezer/common';
 
 import type { TextDocument } from './document';
 import type { Range } from './types';
 import type {
+  Comment,
   Program,
   Statement,
   Expression,
@@ -68,6 +71,202 @@ function recoveryDroppedText(tree: Tree): boolean {
   return false;
 }
 
+// ─── Comments ───────────────────────────────────────────────────────────────
+//
+// A comment is legal anywhere whitespace is, but the AST only has a place for
+// the ones that sit in a list (a statement list, between switch clauses,
+// between text-body items) — those are re-emitted on their own line. A
+// comment anywhere else (inside an array literal, a call's arguments, a method
+// chain) has no AST node, so reprinting its statement from the AST would
+// delete it. Such a statement is emitted VERBATIM instead, re-indented as a
+// unit: formatting never moves a comment away from the thing it describes,
+// and the rest of the document still formats.
+
+/** Every comment in the text, in order. Reads the parse tree, so `//` inside a string or template does not count. */
+function commentTexts(text: string): string[] {
+  if (!text.includes('//')) return [];
+  const found: string[] = [];
+  const cursor = lezerParser.parse(text).cursor();
+  do {
+    if (cursor.name === 'LineComment') {
+      found.push(text.slice(cursor.from, cursor.to).trimEnd());
+    } else if (cursor.name === 'PathArgs') {
+      // A comment inside an open paren of a path argument lives in the
+      // token's text, not in the tree.
+      const args = text.slice(cursor.from, cursor.to);
+      for (const [from, to] of pathArgCommentRanges(args)) found.push(args.slice(from, to).trimEnd());
+    } else if (cursor.name === 'StyleContent') {
+      // Likewise inside a style block: its content is one raw token, and the
+      // style parser treats `//` to end of line as a comment.
+      for (const comment of styleContentComments(text.slice(cursor.from, cursor.to))) found.push(comment);
+    }
+  } while (cursor.next());
+  return found;
+}
+
+/** The `//…` comments inside a style block's raw content — the rule parseStyleDeclarations applies. */
+function styleContentComments(content: string): string[] {
+  if (!content.includes('//')) return [];
+  return [...content.matchAll(/\/\/[^\n]*/g)].map((m) => m[0].trimEnd());
+}
+
+/** True when `after` does not carry every comment of `before`, in order. */
+function dropsComments(before: string, after: string): boolean {
+  const was = commentTexts(before);
+  if (was.length === 0) return false;
+  const now = commentTexts(after);
+  return was.length !== now.length || was.some((text, i) => text !== now[i]);
+}
+
+/** Offsets of the comments the AST carries (Comment nodes anywhere in it). */
+function capturedCommentOffsets(node: unknown, into: Set<number>): Set<number> {
+  if (Array.isArray(node)) {
+    for (const child of node) capturedCommentOffsets(child, into);
+  } else if (node && typeof node === 'object') {
+    const record = node as { type?: unknown; loc?: { offset?: number } };
+    if (record.type === 'Comment' && typeof record.loc?.offset === 'number') into.add(record.loc.offset);
+    for (const key in record) {
+      if (key !== 'loc') capturedCommentOffsets((record as Record<string, unknown>)[key], into);
+    }
+  }
+  return into;
+}
+
+/**
+ * Tree nodes whose direct children form a list the AST keeps comments for.
+ * Two kinds. BODY-ONLY nodes are never list items themselves (a Block belongs
+ * to the statement that owns it). The text-flow nodes are BOTH: their `{ … }`
+ * items are their direct children, and they are themselves items of the text
+ * body around them — so a comment in the HEADER of `if (… // note⏎) { … }`
+ * makes that text-if the verbatim item, not the whole `text() { … }` above it.
+ */
+const BODY_ONLY_CONTAINERS = new Set([
+  'Program',
+  'Block',
+  'TrailingBlock',
+  'PathBlockExpression',
+  'TextBlockExpression',
+  'TextBlock',
+]);
+const LIST_CONTAINERS = new Set([
+  ...BODY_ONLY_CONTAINERS,
+  'TextForLoop',
+  'TextForEachLoop',
+  'TextIfStatement',
+  'TextCaseClause',
+  'TextDefaultClause',
+]);
+
+/** Verbatim spans, keyed by the start offset the AST statement carries in `loc.offset`. */
+interface VerbatimSpan {
+  to: number;
+  /** Multi-line templates inside the span: their continuation lines are content, never re-indented. */
+  templates: { from: number; to: number }[];
+}
+
+function verbatimSpans(source: string, ast: Program): Map<number, VerbatimSpan> {
+  const spans = new Map<number, VerbatimSpan>();
+  if (!source.includes('//')) return spans;
+  const captured = capturedCommentOffsets(ast, new Set<number>());
+  const tree = lezerParser.parse(source);
+  const cursor = tree.cursor();
+  do {
+    // Three places a comment can be that the AST does not carry: a tree
+    // comment outside the lists; one carried inside a PathArgs token; one
+    // inside a style block's raw content (printed from parsed declarations).
+    let uncaptured = false;
+    if (cursor.name === 'LineComment') uncaptured = !captured.has(cursor.from);
+    else if (cursor.name === 'PathArgs') {
+      uncaptured = pathArgCommentRanges(source.slice(cursor.from, cursor.to)).length > 0;
+    } else if (cursor.name === 'StyleContent') {
+      uncaptured = styleContentComments(source.slice(cursor.from, cursor.to)).length > 0;
+    }
+    if (!uncaptured) continue;
+    // The innermost node that is an item of a list: climb from the comment's
+    // parent until the next step up is a container. (An uncaptured comment can
+    // sit directly in a container — an expression-bodied `{|v| … }` — in which
+    // case the climb carries on to the statement that holds the container.)
+    let item: SyntaxNode | null = cursor.node.parent;
+    while (item?.parent && !(LIST_CONTAINERS.has(item.parent.name) && !BODY_ONLY_CONTAINERS.has(item.name))) {
+      item = item.parent;
+    }
+    if (!item?.parent) continue;
+    const templates: { from: number; to: number }[] = [];
+    item.cursor().iterate((n) => {
+      if (n.name === 'TemplateLiteral' && source.slice(n.from, n.to).includes('\n')) {
+        templates.push({ from: n.from, to: n.to });
+      }
+    });
+    spans.set(item.from, { to: item.to, templates });
+  } while (cursor.next());
+  return spans;
+}
+
+/** Set for the duration of one formatDocument call (the formatter is synchronous and single-entry). */
+let activeVerbatim: { source: string; spans: Map<number, VerbatimSpan> } | null = null;
+
+/**
+ * The source text of a statement that must not be reprinted, moved to `prefix`.
+ * Continuation lines keep their shape: the statement's original indent is
+ * swapped for the new one, a line that did not have it is left alone, and a
+ * line that is the inside of a multi-line template is never touched.
+ */
+function verbatimText(node: object, prefix: string): string | null {
+  // Not every statement / text-body item type declares a `loc`
+  const offset = (node as { loc?: { offset?: number } }).loc?.offset;
+  if (!activeVerbatim || typeof offset !== 'number') return null;
+  const span = activeVerbatim.spans.get(offset);
+  if (!span) return null;
+  const { source } = activeVerbatim;
+  const lineStart = source.lastIndexOf('\n', offset - 1) + 1;
+  const lead = source.slice(lineStart, offset);
+  const originalIndent = /^[ \t]*$/.test(lead) ? lead : null;
+  let position = offset;
+  return source
+    .slice(offset, span.to)
+    .split('\n')
+    .map((line, i) => {
+      const at = position;
+      position += line.length + 1;
+      if (i === 0) return prefix + line;
+      if (originalIndent === null || span.templates.some((t) => at > t.from && at <= t.to)) return line;
+      return line.startsWith(originalIndent) ? prefix + line.slice(originalIndent.length) : line;
+    })
+    .join('\n');
+}
+
+/**
+ * True when a comment shares its source line with code before it
+ * (`let x = 50; // note`). Such a comment describes that line, so it stays at
+ * the end of it — printed on a line of its own it would sit directly above
+ * the NEXT statement and read as describing that instead.
+ */
+function trailsCode(comment: { loc?: { offset?: number } }, source?: string): boolean {
+  const offset = comment.loc?.offset;
+  if (!source || typeof offset !== 'number') return false;
+  const lineStart = source.lastIndexOf('\n', offset - 1) + 1;
+  return source.slice(lineStart, offset).trim() !== '';
+}
+
+/** Add a comment to a list being printed: at the end of the previous entry when it trails code, else on its own line. */
+function pushComment(lines: string[], comment: Comment, prefix: string, source?: string): void {
+  if (lines.length > 0 && lines[lines.length - 1] !== '' && trailsCode(comment, source)) {
+    lines[lines.length - 1] += ` ${comment.text}`;
+  } else {
+    lines.push(`${prefix}${comment.text}`);
+  }
+}
+
+/** Print the items of a text body, keeping a trailing comment on its item's line. */
+function formatTextBodyItems(items: TextBodyItem[], depth: number, indent: string, source?: string): string {
+  const lines: string[] = [];
+  for (const item of items) {
+    if (item.type === 'Comment') pushComment(lines, item, indent.repeat(depth), source);
+    else lines.push(formatTextBodyItem(item, depth, indent, source));
+  }
+  return lines.join('\n');
+}
+
 export function formatDocument(document: TextDocument, options?: FormatOptions): FormatEdit[] {
   const source = document.getText();
   const indent = options?.indent ?? '  ';
@@ -90,7 +289,13 @@ export function formatDocument(document: TextDocument, options?: FormatOptions):
     }
   }
 
-  const raw = formatStatements(ast.body, 0, indent, source);
+  let raw: string;
+  activeVerbatim = { source, spans: verbatimSpans(source, ast) };
+  try {
+    raw = formatStatements(ast.body, 0, indent, source);
+  } finally {
+    activeVerbatim = null;
+  }
 
   // Strip trailing whitespace on every line
   const stripped = raw.split('\n').map((line) => line.trimEnd()).join('\n');
@@ -106,6 +311,9 @@ export function formatDocument(document: TextDocument, options?: FormatOptions):
   // no error node to show for it, so the last line of defence is the text
   // itself: every identifier-like word in the source must still be there.
   if (dropsWords(source, formatted)) return [];
+  // …and never loses, reorders or rewrites a comment (one made only of
+  // punctuation — `// ----` — has no word for the check above to miss).
+  if (dropsComments(source, formatted)) return [];
 
   return [{
     range: {
@@ -161,6 +369,11 @@ function formatStatements(stmts: Statement[], depth: number, indent: string, sou
       continue;
     }
 
+    if (stmt.type === 'Comment') {
+      pushComment(lines, stmt, prefix, source);
+      continue;
+    }
+
     lines.push(formatStatement(stmt, depth, indent, prefix, source));
   }
 
@@ -168,6 +381,8 @@ function formatStatements(stmts: Statement[], depth: number, indent: string, sou
 }
 
 function formatStatement(stmt: Statement, depth: number, indent: string, prefix: string, source?: string): string {
+  const verbatim = verbatimText(stmt, prefix);
+  if (verbatim !== null) return verbatim;
   switch (stmt.type) {
     case 'LetDeclaration': {
       const value = formatExpression(stmt.value, depth, indent, source);
@@ -281,9 +496,7 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
         return `${prefix}text(${args.join(', ')})${formatExpression(stmt.content, depth, indent, source)};`;
       }
       if (stmt.body) {
-        const body = stmt.body.map((item) =>
-          formatTextBodyItem(item, depth + 1, indent, source),
-        ).join('\n');
+        const body = formatTextBodyItems(stmt.body, depth + 1, indent, source);
         return `${prefix}text(${args.join(', ')}) {\n${body}\n${prefix}}`;
       }
       return `${prefix}text(${args.join(', ')});`;
@@ -302,16 +515,24 @@ function formatStatement(stmt: Statement, depth: number, indent: string, prefix:
       const disc = formatExpression(stmt.discriminant, depth, indent, source);
       const inner = indent.repeat(depth + 1);
       const clauses: string[] = [];
+      // Comments between clauses — usually a clause that was commented out —
+      // are re-indented with the clauses they sit among.
+      const pushComments = (comments?: Comment[]): void => {
+        for (const comment of comments ?? []) pushComment(clauses, comment, inner, source);
+      };
       for (const c of stmt.cases) {
+        pushComments(c.leadingComments);
         const patterns = c.patterns.map((p) => formatCasePattern(p, depth + 1, indent, source)).join(', ');
         const guard = c.guard ? ` where ${formatExpression(c.guard, depth + 1, indent, source)}` : '';
         const body = formatStatements(c.body, depth + 2, indent, source);
         clauses.push(`${inner}case ${patterns}${guard} {\n${body}\n${inner}}`);
       }
       if (stmt.defaultCase) {
+        pushComments(stmt.defaultCase.leadingComments);
         const body = formatStatements(stmt.defaultCase.body, depth + 2, indent, source);
         clauses.push(`${inner}default {\n${body}\n${inner}}`);
       }
+      pushComments(stmt.trailingComments);
       return `${prefix}switch(${disc}) {\n${clauses.join('\n')}\n${prefix}}`;
     }
     default:
@@ -370,6 +591,8 @@ function formatCasePattern(pattern: CasePattern, depth: number, indent: string, 
 
 function formatTextBodyItem(item: TextBodyItem, depth: number, indent: string, source?: string): string {
   const prefix = indent.repeat(depth);
+  const verbatim = verbatimText(item, prefix);
+  if (verbatim !== null) return verbatim;
   if (item.type === 'TspanStatement') {
     const args: string[] = [];
     if (item.dx) args.push(formatExpression(item.dx, depth, indent, source));
@@ -764,6 +987,13 @@ function formatExpression(expr: Expression, depth: number, indent: string, sourc
       }
       return `${expr.operator}${arg}`;
     }
+    case 'RangeExpression': {
+      // The parentheses are part of the literal, so the range prints its own —
+      // no spaces around the operator, matching for headers and case arms.
+      const start = formatExpression(expr.start, depth, indent, source);
+      const end = formatExpression(expr.end, depth, indent, source);
+      return `(${start}${expr.inclusive ? '..' : '..<'}${end})`;
+    }
     case 'TernaryExpression':
       return formatTernary(expr, depth, indent, source);
     case 'SwitchExpression':
@@ -843,9 +1073,7 @@ function formatExpression(expr: Expression, depth: number, indent: string, sourc
       return `@{\n${body}\n${indent.repeat(depth)}}`;
     }
     case 'TextBlockExpression': {
-      const body = (expr.body as any[]).map((item: any) =>
-        formatTextBodyItem(item, depth + 1, indent, source),
-      ).join('\n');
+      const body = formatTextBodyItems(expr.body as TextBodyItem[], depth + 1, indent, source);
       return `&{\n${body}\n${indent.repeat(depth)}}`;
     }
     default:

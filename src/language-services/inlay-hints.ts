@@ -173,6 +173,10 @@ function walkExpr(expr: Expression, source: string, range: Range, hints: InlayHi
     case 'UnaryExpression':
       walkExpr(expr.argument, source, range, hints);
       break;
+    case 'RangeExpression':
+      walkExpr(expr.start, source, range, hints);
+      walkExpr(expr.end, source, range, hints);
+      break;
     case 'TernaryExpression':
       walkExpr(expr.condition, source, range, hints);
       walkExpr(expr.consequent, source, range, hints);
@@ -379,6 +383,7 @@ function inferExprType(expr: Expression): string | null {
       if (expr.method === 'toPathBlock') return 'PathBlock';
       return null;
     case 'ArrayLiteral':
+    case 'RangeExpression': // (a..b) is an array of numbers
       return 'Array';
     case 'ObjectLiteral':
       return 'Object';

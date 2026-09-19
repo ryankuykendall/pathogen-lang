@@ -21,12 +21,24 @@ let _parseDepth = 0;
  *
  * This replaces Parsimmon's expression.parse() throughout the codebase.
  */
+/**
+ * `let _ = <expr>` + the statement's semicolon ON ITS OWN LINE. A `//` comment
+ * is legal anywhere whitespace is, so the slice may END in one; with the `;`
+ * on the same line the comment swallowed it, the sub-parse failed, and the
+ * callers' silent fallbacks took over — an if condition became `true`, a
+ * return value `null`. The 8-character prefix is what every offset adjustment
+ * in this file assumes; only the suffix changed.
+ */
+function wrapExpression(exprStr: string): string {
+  return `let _ = ${exprStr}\n;`;
+}
+
 export function parseExpression(exprStr: string): Expression | null {
   if (!exprStr.trim()) return null;
   if (_parseDepth >= MAX_PARSE_DEPTH) return null; // Bound pathological recursion
 
   // Wrap as a let declaration so the Lezer grammar can parse it
-  const wrapped = `let _ = ${exprStr};`;
+  const wrapped = wrapExpression(exprStr);
 
   _parseDepth++;
   try {
@@ -81,7 +93,7 @@ export function parseExpression(exprStr: string): Expression | null {
  */
 export function findExpressionErrorOffset(exprStr: string): number | null {
   if (!exprStr.trim()) return 0;
-  const wrapped = `let _ = ${exprStr};`;
+  const wrapped = wrapExpression(exprStr);
   const tree = parser.parse(wrapped);
   const cursor = tree.cursor();
   do {

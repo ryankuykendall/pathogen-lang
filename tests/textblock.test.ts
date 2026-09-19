@@ -114,6 +114,60 @@ describe('TextBlock', () => {
       expect(result.logs[0].parts[0].value).toBe('TextBlock(3 elements)');
     });
 
+    // A `for` loop means the same thing wherever it appears. The statement
+    // loop, the `&{ }` text-block loop and the `text() { }` body loop all read
+    // bounds through one helper (resolveRange), so the limit, the rejections
+    // and their wording cannot drift. They used to: the text-block walker kept
+    // a hardcoded 10,000 cap when the limit was raised to 32,000, and both
+    // text walkers had their own messages with no line number.
+    describe('loop limits and bound errors match the statement for loop', () => {
+      const inTextBlock = (range: string) => `
+        let t = &{
+          for (i in ${range}) {
+            text(0, 0)\`x\`
+          }
+        };
+        log(t);
+      `;
+      const inTextBody = (range: string) => `
+        define TextLayer('labels') #{}
+        layer('labels').apply {
+          text(0, 16) {
+            for (i in ${range}) {
+              tspan()\`x\`
+            }
+          }
+        }
+      `;
+      const inStatement = (range: string) => `for (i in ${range}) { M i 0 }`;
+      const sites: [string, (range: string) => string][] = [
+        ['statement loop', inStatement],
+        ['&{ } text-block loop', inTextBlock],
+        ['text() { } body loop', inTextBody],
+      ];
+
+      it.each(sites)('%s: runs a range of 32,000 (the documented limit)', (_site, program) => {
+        expect(() => compile(program('0..<32000'))).not.toThrow();
+      });
+
+      it('a text-block loop above the old 10,000 cap produces every element', () => {
+        const result = compile(inTextBlock('0..<12000'));
+        expect(result.logs[0].parts[0].value).toBe('TextBlock(12000 elements)');
+      });
+
+      it.each(sites)('%s: rejects 32,001 with the shared message and a line number', (_site, program) => {
+        expect(() => compile(program('0..<32001'))).toThrow(/Line \d+.*for loop would run 32001 iterations \(max 32000\)/);
+      });
+
+      it.each(sites)('%s: rejects a non-numeric bound with the shared message and a line number', (_site, program) => {
+        expect(() => compile(program('"a".."c"'))).toThrow(/Line \d+.*for loop range must be numeric/);
+      });
+
+      it.each(sites)('%s: rejects a non-finite bound with the shared message and a line number', (_site, program) => {
+        expect(() => compile(program('0..1 / 0'))).toThrow(/Line \d+.*for loop range must be finite \(got Infinity or NaN\)/);
+      });
+    });
+
     it('supports half-open for ranges inside text bodies', () => {
       const result = compile(`
         define TextLayer('labels') #{}

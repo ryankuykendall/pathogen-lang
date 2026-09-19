@@ -181,6 +181,7 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
     case 'TextBlockExpression':
       return 'ProjectedText';
     case 'ArrayLiteral':
+    case 'RangeExpression': // (a..b) evaluates to an array of numbers
       return 'array';
     case 'ObjectLiteral':
       return '_ObjectLiteral';
@@ -311,6 +312,9 @@ export function inferExprElementType(expr: Expression, scope: Scope, seen?: Set<
       if (first.type === 'SpreadElement') return inferExprElementType(first.argument, scope, visited);
       return inferExprType(first, scope, visited);
     }
+
+    case 'RangeExpression':
+      return 'number';
 
     case 'CalcExpression':
       return inferExprElementType(expr.expression, scope, visited);

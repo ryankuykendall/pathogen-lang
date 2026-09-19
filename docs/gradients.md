@@ -147,7 +147,7 @@ CSSVar stops are skipped during OKLCh expansion — since their actual color is 
 Create a tiling pattern with an ID, position, and tile dimensions:
 
 ```
-let dot = @{ circle(10, 10, 3) };
+let dot = @{ circle(10, 10, 3); };
 let dots = Pattern('dots', 0, 0, 20, 20) {|p|
   p.append(dot, #{ fill: Color('#e63946'); });
 };

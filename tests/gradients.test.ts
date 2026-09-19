@@ -637,6 +637,26 @@ describe('Gradients', () => {
   });
 
   describe('Pattern constructor', () => {
+    // docs/gradients.md "Pattern" — the published example once read
+    // `@{ circle(10, 10, 3) }`, which is a parse error (statement calls need
+    // `;`). There is no doc-fence compiler, so the example is pinned here.
+    it('the tiling-pattern example compiles (docs example)', () => {
+      const result = compile(`
+        let dot = @{ circle(10, 10, 3); };
+        let dots = Pattern('dots', 0, 0, 20, 20) {|p|
+          p.append(dot, #{ fill: Color('#e63946'); });
+        };
+        dots.patternUnits = 'userSpaceOnUse';
+        M 0 0
+      `);
+      expect(result.patterns).toHaveLength(1);
+      expect(result.patterns[0]).toMatchObject({ id: 'dots', patternUnits: 'userSpaceOnUse' });
+    });
+
+    it('a statement call inside an inline path block needs its semicolon', () => {
+      expect(() => compile('let dot = @{ circle(10, 10, 3) };')).toThrow(/Missing ';'/);
+    });
+
     it('creates Pattern with correct attributes', () => {
       const result = compile(`
         let dot = @{ circle(10, 10, 3); };

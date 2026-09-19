@@ -463,6 +463,10 @@ function walkExpr(expr: Expression, scope: Scope, col: Collector): void {
     case 'UnaryExpression':
       walkExpr(expr.argument, scope, col);
       break;
+    case 'RangeExpression':
+      walkExpr(expr.start, scope, col);
+      walkExpr(expr.end, scope, col);
+      break;
     case 'TernaryExpression':
       walkExpr(expr.condition, scope, col);
       walkExpr(expr.consequent, scope, col);
