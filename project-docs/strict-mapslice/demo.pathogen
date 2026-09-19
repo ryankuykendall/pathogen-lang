@@ -1,0 +1,21 @@
+// Strict mapSlice demo — neighbouring radii paired into rings.
+// Every window is full, so each pair destructures cleanly: no length check.
+define ViewBox(0, 0, 400, 400);
+define default PathLayer('rings') #{
+  fill: #c00;
+  fill-rule: evenodd;
+  stroke: #400;
+  stroke-width: 2;
+}
+
+let radii = [160, 120, 80, 40];
+for ([pair, index] in radii.mapSlice(2)) {
+  let [outer, inner] = pair;
+  if (index % 2 == 0) {
+    circle(200, 200, outer);
+    circle(200, 200, inner);
+  }
+}
+
+log(radii.mapSlice(2));
+log(radii.mapSlice(2, { partial: true }));

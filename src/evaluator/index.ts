@@ -72,6 +72,13 @@ import {
   scaleCommands,
   subPathCommands,
 } from './path-transforms';
+import {
+  describeBadPathArg,
+  describeMissingPathArgs,
+  describeNonFiniteContextResult,
+  describeNonFiniteEmit,
+  isPathEmittingStdlib,
+} from './path-emit-guard';
 import { pathCut, pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
 import {
   dashCommands,
@@ -1142,6 +1149,24 @@ function parseOffsetJoinOptions(val: Value, mkErr: (message: string) => Error): 
     options.join = joinVal;
   }
   return options;
+}
+
+/**
+ * Validate mapSlice()'s optional second argument: { partial: boolean }.
+ * Unknown keys throw, as offset() does — `{ strict: false }` must not pass
+ * silently. A Pathogen boolean is a wrapped BooleanValue (always truthy in JS),
+ * so it is unwrapped here the way every other boolean slot does it.
+ */
+function parseMapSliceOptions(val: Value, mkErr: (message: string) => Error): { partial: boolean } {
+  if (!isObjectValue(val)) throw mkErr('mapSlice() options must be an object, e.g. { partial: true }');
+  for (const key of val.properties.keys()) {
+    if (key !== 'partial') throw mkErr(`mapSlice() options: unknown key '${key}' (supported: partial)`);
+  }
+  const partialVal = val.properties.get('partial');
+  if (partialVal === undefined) return { partial: false };
+  if (isBooleanValue(partialVal)) return { partial: partialVal.value === 1 };
+  if (typeof partialVal === 'number') return { partial: partialVal !== 0 };
+  throw mkErr('mapSlice() partial must be a boolean');
 }
 
 function buildPathBlockFromCommands(cmds: PathBlockCommand[], origin?: { x: number; y: number }): PathBlockValue {
@@ -5850,14 +5875,30 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       return accumulator;
     }
     case 'mapSlice': {
-      if (expr.args.length !== 1) throw mError('mapSlice() expects 1 argument (slice length)');
+      if (expr.args.length < 1 || expr.args.length > 2)
+        throw mError('mapSlice() expects 1-2 arguments (length, options?)');
       if (expr.block) throw mError('mapSlice() does not take a trailing block');
       const lengthVal = evaluateExpression(expr.args[0], scope);
       if (typeof lengthVal !== 'number') throw mError('mapSlice() length must be a number');
-      const len = Math.round(lengthVal);
-      if (len < 1) throw mError('mapSlice() length must be at least 1');
+      // No rounding: mapSlice(2.6) used to make windows of 3 without a word, and
+      // mapSlice(0.4) rounded to 0 and then complained about "at least 1".
+      if (!Number.isInteger(lengthVal) || lengthVal < 1) {
+        // The round() hint only where rounding is the fix — not for 0, -2 or NaN.
+        const fractional = Number.isFinite(lengthVal) && !Number.isInteger(lengthVal);
+        const hint = fractional ? ' — wrap a computed length in round()' : '';
+        throw mError(`mapSlice() length must be a positive integer, got ${lengthVal}${hint}`);
+      }
+      const len = lengthVal;
+      const { partial } =
+        expr.args.length === 2
+          ? parseMapSliceOptions(evaluateExpression(expr.args[1], scope), mError)
+          : { partial: false };
+      // Full windows only by default: n elements hold n - len + 1 of them (none
+      // when len > n). { partial: true } also keeps the windows that run off the
+      // end — one per element, the last len - 1 of them short.
+      const windowCount = partial ? obj.elements.length : obj.elements.length - len + 1;
       const sliceResult: Value[] = [];
-      for (let i = 0; i < obj.elements.length; i++) {
+      for (let i = 0; i < windowCount; i++) {
         sliceResult.push({ type: 'ArrayValue' as const, elements: obj.elements.slice(i, i + len) });
       }
       return { type: 'ArrayValue' as const, elements: sliceResult };
@@ -7922,7 +7963,24 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
       const v = evaluateExpression(arg, scope);
       return isAngleValue(v) ? v.radians : v;
     });
-    return evaluateContextAwareFunction(call.name, args, scope, call.loc);
+    // Every context-aware function is numeric geometry — null is never a
+    // meaningful argument (polarLine used to coerce it to 0, tangentArc wrote
+    // `A null null`). Checked before dispatch: these mutate the path context.
+    const badCtxArg = describeBadPathArg(call.name, call.args, args);
+    if (badCtxArg) throw new Error(formatError(badCtxArg, getLine(call), getCol(call)));
+    const ctxResult = evaluateContextAwareFunction(call.name, args, scope, call.loc);
+    // A MISSING argument is not in `args`, so the check above cannot see it; it
+    // is `undefined` inside the case and comes out as NaN (`polarLine(0.5)` →
+    // `L NaN NaN`). These are switch cases, not function objects — no arity to
+    // read — so inspect what was produced instead. See describeNonFiniteEmit.
+    const badCtxEmit = describeNonFiniteContextResult(
+      call.name,
+      ctxResult,
+      args.length,
+      scope.evalState.pathContext.lastTangent,
+    );
+    if (badCtxEmit) throw new Error(formatError(badCtxEmit, getLine(call), getCol(call)));
+    return ctxResult;
   }
 
   const fn = lookupVariable(scope, call.name, getLine(call), getCol(call));
@@ -7935,9 +7993,27 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     }
 
     const stdlibArgs = call.args.map((arg) => evaluateExpression(arg, scope));
+    // A path-emitting function must never write a non-number into `d`
+    // (docs/syntax.md → Null). See path-emit-guard.ts.
+    const emitsPath = isPathEmittingStdlib(fn);
+    if (emitsPath) {
+      const badArg =
+        describeMissingPathArgs(call.name, fn, stdlibArgs.length) ??
+        describeBadPathArg(call.name, call.args, stdlibArgs);
+      if (badArg) throw new Error(formatError(badArg, getLine(call), getCol(call)));
+    }
     let result: Value;
     try {
       result = callStdlibPreservingAngles(call.name, fn as (...ns: number[]) => unknown, stdlibArgs) as Value;
+      if (
+        emitsPath &&
+        typeof result === 'object' &&
+        result !== null &&
+        (result as PathSegment).type === 'PathSegment'
+      ) {
+        const badEmit = describeNonFiniteEmit(call.name, (result as PathSegment).value);
+        if (badEmit) throw new Error(badEmit);
+      }
     } catch (e) {
       // Stdlib functions throw bare messages (e.g. cubicBezier handle
       // validation); attach the call site so the user can find it.

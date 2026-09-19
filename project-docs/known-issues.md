@@ -747,6 +747,86 @@ Both.
 
 ---
 
+## ISSUE-022: A method call on an array literal loses its error position
+
+**Discovered:** 2026-09-19 (writing positioned-error tests for strict `mapSlice`; the messages were right and the `Line N, col M` prefix was missing)
+
+**Severity:** Low
+
+**Description:**
+
+A `MethodCallExpression` takes its `loc` from its receiver (`src/parser/ast-builder.ts:2126`, `:2162`, `:2165` — `loc: (expr as { loc?: SourceLocation }).loc`), and `evaluateMethodCall` positions every `mError(...)` from that `loc`. An array **literal** node is built without a `loc`, so any error raised by a method called directly on one is unpositioned. Measured:
+
+| Receiver | Error for `.slice('a')` |
+|---|---|
+| `[1, 2].slice('a')` | `slice() start must be a number` — **no position** |
+| `arr.slice('a')` | `Line 1, col 27: slice() start must be a number` |
+| `(1..3).slice('a')` | positioned |
+| `(arr).slice('a')` | positioned |
+| `arr.reverse().slice('a')` | positioned |
+| `@{ h 10 }.offset('a')` | positioned |
+
+So the gap is exactly "array literal as the receiver", and it affects every array method (`slice`, `map`, `filter`, `sort`, `mapSlice`, …), not one of them. It predates the `mapSlice` change.
+
+**Impact:**
+
+The error panel and CLI show the message with no line, and editors cannot place the squiggle. Rare in real programs (arrays are usually bound to a name first); common in one-line tests and docs snippets, which is how it stayed hidden — `tests/evaluator.test.ts` asserted array-method errors by message only.
+
+**Current Workarounds:**
+
+Bind the array to a variable before calling the method.
+
+**Potential Solutions:**
+
+1. Give the array-literal node a `loc` where the AST builder constructs it, like every other literal receiver. Mind the note at `ast-builder.ts:124` — nodes may share one `loc` object — and check the formatter and the language-services walkers, which read `loc`.
+2. Fall back in `evaluateMethodCall`: when `expr.loc` is absent, walk to the nearest positioned ancestor or descendant (`getLineDeep` already does this for binary expressions).
+
+**Recommended Long-term Solution:**
+
+1, with a coverage-matrix test over receiver shapes × one representative method so a future literal kind cannot regress it (the table above is the matrix).
+
+---
+
+## ISSUE-023: A raw path argument accepts NaN and Infinity (`M NaN 0`) — a policy decision, not yet made
+
+**Discovered:** 2026-09-19 (widening the path-emit guard after code review; a fix was written, collided with five deliberate tests, and was reverted pending a decision)
+
+**Severity:** Medium
+
+**Description:**
+
+`evaluatePathArg` (`src/evaluator/index.ts`) rejects `null` — `Cannot use null as a path argument` — but formats any other number straight into the path, finite or not:
+
+| Program | Output today |
+|---|---|
+| `let bad = sqrt(-1); M bad 0` | `M NaN 0` |
+| `M calc(sqrt(-1)) 0` | `M NaN 0` |
+| `let big = 1 / 0; M big 0` | `M Infinity 0` |
+| `let bad = sqrt(-1); M 0 0 h bad` | `M 0 0 h NaN` |
+
+SVG cannot represent these; the browser stops reading the path at that token and logs `Expected number`, while the compiler reports success with no warning. It is the same user-visible failure the path-emit guard closed for drawing *functions* (`circle(50, 50, null)` → `a null null`), reached by a different route. All six computed-argument branches of `evaluatePathArg` end in `return formatNum(n)`, so the function is a true chokepoint and the mechanical fix is six call sites.
+
+**Why it was not simply fixed:**
+
+Five existing tests pin these outputs on purpose — `tests/errors.test.ts` ("division by zero (returns Infinity)", "modulo by zero (returns NaN)") and `tests/evaluator.test.ts` (`smoothstep` with equal edges, `bump` with zero spread, `noise` of a non-finite `x`, the last three marked "documented contract"). What they protect is each **math function's degenerate return value**; `M calc(…) 0` is only the channel they read it back through. But making the path argument fatal changes more than a test helper:
+
+- Today a degenerate math input yields **one broken path**. As a compile error it yields **no image at all**. For generative work driven by `random()`, a piece that renders 999 times in 1,000 would fail outright on the 1,000th instead of dropping one stroke.
+- Against that: the broken path is silent, arrives with no line number, and is the exact failure that started the 2026-09-19 investigation.
+
+**Inconsistency this leaves in the tree:** the path-emit guard already treats a non-finite *argument to a drawing function* as fatal (`circle(50, 50, sqrt(-1))` is an error), so `circle(x, y, r)` and `M x y` currently disagree about the same NaN. Whatever is decided here should be applied to both.
+
+**Potential Solutions:**
+
+1. **Compile error**, consistently (raw arguments and drawing functions). Move the five tests' observation channel to `log()`, which is the honest channel for a number anyway. Strictest; turns an intermittent visual glitch into an intermittent hard failure.
+2. **Positioned warning, path still emitted.** A new `WarningCode`; the `warn()` helper and all three surfaces already carry line and column. Nothing that renders today stops rendering, and the silence ends. The browser still logs `Expected number`. Would mean relaxing the drawing-function guard to match, for non-finite numbers only (`null` and missing arguments stay fatal — those are always programming errors).
+3. **Warning, and drop the offending command** so the rest of the path survives. Friendliest output; the compiler silently changing geometry is the kind of thing this project avoids.
+
+**Recommended Long-term Solution:**
+
+2. It ends the silent failure without making degenerate math fatal, it is the smallest behavioural change for existing programs, and it resolves the `circle` / `M` disagreement in the direction that breaks nothing. Pair it with a `--strict` CLI flag (warnings as errors) for published samples, where a NaN should stop the build. The author's call.
+
+---
+
 ## Resolved entries (kept for the trail)
 
 ### ISSUE-021 (resolved 2026-09-15): Arc length ignored the sweep flags — any arc of a half circle or more reported its chord

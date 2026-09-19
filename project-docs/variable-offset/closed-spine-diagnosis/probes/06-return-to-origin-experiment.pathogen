@@ -1,0 +1,74 @@
+// Probe 06 — would reset()/backToOrigin() have fixed the ring positioning?
+// History: returnToOrigin() -> dropped for block-local `M 0 0` (Item H) -> that
+// dropped for Item L, `@{|ctx| ...}` + ctx.origin.return(), which emits a
+// RELATIVE `m dx dy` home. Item L never landed, so this probe emulates exactly
+// what it would emit: m -endPoint.
+define ViewBox(0, 0, 4200, 1400);
+define default PathLayer('bg') #{
+  fill: #ffc;
+  stroke: none;
+}
+rect(0, 0, 4200, 1400);
+
+let outer = 500;
+let inner = 320;
+let spine = @{
+  circle(700, 700, outer);
+};
+let bumped = spine.variableOffset() {|vo, pb|
+  for (step in 0..71) {
+    let spikeHere = 5;
+    if (step == 36) {
+      spikeHere = 40;
+    }
+    vo.stop(step / 72, spikeHere, CurveContinuity.G1);
+  }
+  vo.stop(1, 5, CurveContinuity.G1);
+};
+
+// The fact everything turns on: where does the closed offset END, in its own frame?
+log("bumped.endPoint (own frame)", bumped.endPoint);
+log("bumped.anchor   (spine frame)", bumped.anchor);
+
+// (A) the original composition: << continues from the left block's end.
+let ringA = bumped << @{
+  circle(700, 700, inner);
+};
+
+// (B) return-to-origin, emulated: a relative move home to the offset's own
+// origin, THEN the inner circle. This is what ctx.origin.return() would emit.
+let homeX = 0 - bumped.endPoint.x;
+let homeY = 0 - bumped.endPoint.y;
+let ringB = bumped << @{
+  m homeX homeY
+} << @{
+  circle(700, 700, inner);
+};
+
+// (C) return to the SPINE's origin instead: home, then back out by the anchor.
+let spineHomeX = 0 - bumped.endPoint.x - bumped.anchor.x;
+let spineHomeY = 0 - bumped.endPoint.y - bumped.anchor.y;
+let ringC = bumped << @{
+  m spineHomeX spineHomeY
+} << @{
+  circle(700, 700, inner);
+};
+
+let ringStyle = #{
+  fill: #c00;
+  fill-rule: evenodd;
+  stroke: #400;
+  stroke-width: 3;
+};
+let layerA = PathLayer('ring-a') << ringStyle;
+let layerB = PathLayer('ring-b') << ringStyle;
+let layerC = PathLayer('ring-c') << ringStyle;
+layerA.apply {
+  ringA.drawTo(bumped.anchor.x, bumped.anchor.y);
+}
+layerB.apply {
+  ringB.drawTo(1400 + bumped.anchor.x, bumped.anchor.y);
+}
+layerC.apply {
+  ringC.drawTo(2800 + bumped.anchor.x, bumped.anchor.y);
+}

@@ -1,0 +1,116 @@
+// Segmenting the circles v5 — corrected, v2: keeps the author's single-block
+// `outerPB << inner` composition (v1 split the ring into two blocks; probe 06
+// showed that was unnecessary). Three changes, each marked FIX below. Layout, colors, stop
+// times and offsets are the author's, untouched.
+define ViewBox(-300, -300, 7600, 1600);
+define default PathLayer('main-path-layer') #{
+  fill: #ffc;
+  stroke: none;
+  stroke-width: 1;
+}
+let { width, height } = viewbox;
+rect(0, 0, width, height);
+
+let colors = [
+  #c00,
+  #eee,
+];
+let fills = Cycler(colors, true);
+let discs = [];
+for (idx in 1..5) {
+  let radii = [];
+  let radiusMin = 40;
+  let radiusMax = randomRange(120, 720);
+  radii.push(radiusMax);
+  for (i in 1..calc(round(randomRange(2, 5)))) {
+    radii.push(lerp(radiusMin, radiusMax, random()));
+  }
+  let sortedRadii = radii.sort().reverse();
+
+  let ringGroup = [];
+  for ([radius, index] in sortedRadii.mapSlice(2)) {
+    // FIX 1 — mapSlice(2) is a sliding window whose LAST slice is short
+    // ([r1,r2],[r2,r3],[r3]), so `inner` was null for the innermost ring.
+    if (radius.length == 2) {
+      let [outer, inner] = radius;
+      let spike = outer * randomRange(0.015, 0.065);
+
+      // The author's nine stops, as data: [time, offset, sharp].
+      let profile = [
+        [0, 5, 0],
+        [0.20, 7.5, 0],
+        [0.45, 4.5, 0],
+        [0.4995, 2, 1],
+        [0.5, spike, 1],
+        [0.5005, 2, 1],
+        [0.55, 4.5, 0],
+        [0.80, 7.5, 0],
+        [1, 5, 0],
+      ];
+
+      // FIX 2 — variableOffset builds a spline THROUGH its stops; the circle's
+      // own shape never reaches the output. Nine stops cannot describe a circle,
+      // so densify: one stop per ~5 degrees, easing the offset between rows.
+      let outerPB = @{
+        circle(500, 500, outer);
+      }.variableOffset() {|vo, pb|
+        for (row in 0..(profile.length - 2)) {
+          let [t0, d0, sharp0] = profile[row];
+          let [t1, d1, sharp1] = profile[row + 1];
+          let steps = max(1, round((t1 - t0) * 72));
+          for (step in 0..(steps - 1)) {
+            let u = step / steps;
+            let continuity = CurveContinuity.G1;
+            if (step == 0 && sharp0 == 1) {
+              continuity = CurveContinuity.G0;
+            }
+            vo.stop(lerp(t0, t1, u), lerp(d0, d1, smoothstep(0, 1, u)), continuity);
+          }
+        }
+        vo.stop(1, 5, CurveContinuity.G1);
+      };
+      // FIX 3 — `<<` continues from where the left block ENDS. A closed offset
+      // ends on its own first point, and variableOffset normalizes THAT to
+      // (0,0) — so the right block's frame is the offset's tip, not the
+      // circle's frame. Step back by `anchor` (the translation normalization
+      // removed) and the inner circle lands in the spine's frame: concentric,
+      // still one PathBlock.
+      let toSpineX = 0 - outerPB.endPoint.x - outerPB.anchor.x;
+      let toSpineY = 0 - outerPB.endPoint.y - outerPB.anchor.y;
+      let ring = outerPB << @{
+        m toSpineX toSpineY
+      } << @{
+        circle(500, 500, inner);
+      };
+      // The ring's own origin is still the offset's tip; remember where the
+      // spine's origin sits relative to it so placement stays in spine terms.
+      ringGroup.push([ring, outerPB.anchor]);
+    }
+  }
+  discs.push(ringGroup);
+}
+
+for ([group, dIndex] in discs) {
+  for ([ring, ringIndex] in group) {
+    let [ringPB, ringAnchor] = ring;
+    let fill = fills.pick();
+    let chance = random();
+    if (chance > 0.25) {
+      fill = fill.lighten(calc(0.01 * dIndex)).alpha(lerp(0.8, 0.2, calc(dIndex / discs.length)));
+    } else if (chance < 0.075) {
+      fill = fill.hueShift(1.2pi).desaturate(35%).lighten(randomRange(0.01, 0.35));
+    }
+
+    let radiusLayer = PathLayer(`radius-layer-disc-${dIndex}-${ringIndex}`) #{
+      fill: fill;
+      fill-rule: evenodd;
+      stroke-width: 2;
+    };
+
+    let x = calc(((dIndex % 19) * 1500));
+    let y = calc((floor(dIndex / 19) * 500));
+    radiusLayer.apply {
+      ringPB.drawTo(x + ringAnchor.x, y + ringAnchor.y);
+    }
+  }
+}

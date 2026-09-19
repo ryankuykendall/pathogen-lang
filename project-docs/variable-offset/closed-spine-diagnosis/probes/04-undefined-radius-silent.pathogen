@@ -1,0 +1,12 @@
+// Probe 04 — the console errors. mapSlice(2)'s last slice is short, so the
+// destructured `inner` is missing and circle() writes "undefined" into d.
+define ViewBox(0, 0, 400, 400);
+let radii = [120, 80, 40];
+for ([pair, index] in radii.mapSlice(2)) {
+  let [outer, inner] = pair;
+  log("pair", pair, "outer", outer, "inner", inner);
+  let ring = @{
+    circle(200, 200, inner);
+  };
+  ring.drawTo(0, 0);
+}

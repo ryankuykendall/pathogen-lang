@@ -715,8 +715,8 @@ export interface PathogenArray<T = Value> {
   filter(): PathogenArray<T>;
   /** reduce(init) {|acc, item| ...} — Reduce; or reduce(init) << worker @snippet reduce(${1:init}) {|${2:acc}, ${3:item}|\n\treturn $0;\n} */
   reduce(init: Value): Value;
-  /** mapSlice(length) — Sliding window slices */
-  mapSlice(length: number): PathogenArray;
+  /** mapSlice(length, options?) — Sliding windows of exactly `length`; { partial: true } keeps the short trailing windows */
+  mapSlice(length: number, options?: { partial?: boolean }): PathogenArray;
   /** slice(start, end?) — Get sub-array */
   slice(start: number, end?: number): PathogenArray<T>;
   /** reverse() — Reversed copy (non-mutating) */

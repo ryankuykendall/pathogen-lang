@@ -1,0 +1,91 @@
+// Probe 03 — works TODAY:
+//  (left)  startAt(50%) re-seams the circle so a bump can straddle the ORIGINAL
+//          closure point (the circle's seam is its leftmost point).
+//  (right) anchor restores concentricity: outer bumped ring + inner circle drawn
+//          into one layer at the same origin -> one fillable <path>.
+define ViewBox(0, 0, 2800, 1400);
+define default PathLayer('bg') #{
+  fill: #ffc;
+  stroke: none;
+}
+rect(0, 0, 2800, 1400);
+
+// Densified builder: sparse [time, offset, sharp] rows -> one stop per ~5 degrees.
+let profile = [
+  [0, 5, 0],
+  [0.20, 7.5, 0],
+  [0.45, 4.5, 0],
+  [0.4995, 2, 1],
+  [0.5, 40, 1],
+  [0.5005, 2, 1],
+  [0.55, 4.5, 0],
+  [0.80, 7.5, 0],
+  [1, 5, 0],
+];
+let hugSpine = {|vo, pb|
+  for (i in 0..(profile.length - 2)) {
+    let [t0, d0, sharp0] = profile[i];
+    let [t1, d1, sharp1] = profile[i + 1];
+    let steps = max(1, round((t1 - t0) * 72));
+    for (k in 0..(steps - 1)) {
+      let u = k / steps;
+      let continuity = CurveContinuity.G1;
+      if (k == 0 && sharp0 == 1) {
+        continuity = CurveContinuity.G0;
+      }
+      vo.stop(lerp(t0, t1, u), lerp(d0, d1, smoothstep(0, 1, u)), continuity);
+    }
+  }
+  vo.stop(1, 5, CurveContinuity.G1);
+};
+
+// ---- left: bump straddles the original seam ----
+let leftSpine = @{
+  circle(700, 700, 500);
+};
+let reseamed = leftSpine.startAt(50%);
+let seamBump = reseamed.variableOffset() << hugSpine;
+log("leftSpine.startPoint", leftSpine.startPoint);
+log("reseamed.startPoint", reseamed.startPoint);
+log("seamBump.anchor", seamBump.anchor);
+
+let guideLayer = PathLayer('guides') #{
+  fill: none;
+  stroke: #06c;
+  stroke-width: 3;
+  stroke-dasharray: 12, 8;
+};
+let bumpLayer = PathLayer('seam-bump') #{
+  fill: #c00;
+  fill-opacity: 0.25;
+  stroke: #c00;
+  stroke-width: 3;
+};
+guideLayer.apply {
+  leftSpine.drawTo(0, 0);
+}
+bumpLayer.apply {
+  seamBump.drawTo(seamBump.anchor.x, seamBump.anchor.y);
+}
+
+// ---- right: concentric ring, one fillable path ----
+let originX = 1400;
+let originY = 0;
+let outerSpine = @{
+  circle(700, 700, 500);
+};
+let innerCircle = @{
+  circle(700, 700, 320);
+};
+let outerBumped = outerSpine.variableOffset() << hugSpine;
+
+let ringLayer = PathLayer('ring') #{
+  fill: #c00;
+  fill-rule: evenodd;
+  stroke: #400;
+  stroke-width: 3;
+};
+ringLayer.apply {
+  outerBumped.drawTo(originX + outerBumped.anchor.x, originY + outerBumped.anchor.y);
+  innerCircle.drawTo(originX, originY);
+}

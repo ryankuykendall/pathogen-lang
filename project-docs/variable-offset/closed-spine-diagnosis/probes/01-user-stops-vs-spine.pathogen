@@ -1,0 +1,52 @@
+// Probe 01 — the user's exact stops on one circle, spine overlaid.
+// Question: how far does the variableOffset result stray from the circle?
+define ViewBox(0, 0, 1400, 1400);
+define default PathLayer('bg') #{
+  fill: #ffc;
+  stroke: none;
+}
+rect(0, 0, 1400, 1400);
+
+let outer = 500;
+let spine = @{
+  circle(700, 700, outer);
+};
+
+let bumped = spine.variableOffset() {|vo, pb|
+  vo.stop(0%, 5, CurveContinuity.G1);
+  vo.stop(20%, 7.5, CurveContinuity.G1);
+  vo.stop(45%, 4.5, CurveContinuity.G1);
+  vo.stop(49.95%, 2, CurveContinuity.G0);
+  vo.stop(50%, 30, CurveContinuity.G0);
+  vo.stop(50.05%, 2, CurveContinuity.G0);
+  vo.stop(55%, 4.5, CurveContinuity.G1);
+  vo.stop(80%, 7.5, CurveContinuity.G1);
+  vo.stop(100%, 5, CurveContinuity.G1);
+};
+
+log("spine.d", spine.d);
+log("spine.startPoint", spine.startPoint);
+log("bumped.anchor", bumped.anchor);
+log("bumped.d", bumped.d);
+log("bumped bbox", bumped.boundingBox());
+log("spine bbox", spine.boundingBox());
+
+let spineLayer = PathLayer('spine') #{
+  fill: none;
+  stroke: #06c;
+  stroke-width: 3;
+  stroke-dasharray: 12, 8;
+};
+spineLayer.apply {
+  spine.drawTo(0, 0);
+}
+
+let resultLayer = PathLayer('result') #{
+  fill: #c00;
+  fill-opacity: 0.25;
+  stroke: #c00;
+  stroke-width: 3;
+};
+resultLayer.apply {
+  bumped.drawTo(bumped.anchor.x, bumped.anchor.y);
+}

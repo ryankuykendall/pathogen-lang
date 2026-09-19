@@ -1,0 +1,66 @@
+// Probe 02 — works TODAY: the same sparse profile, densified in a loop so the
+// Model A spline has enough knots to follow the circle. One stop per ~5 degrees.
+define ViewBox(0, 0, 1400, 1400);
+define default PathLayer('bg') #{
+  fill: #ffc;
+  stroke: none;
+}
+rect(0, 0, 1400, 1400);
+
+let outer = 500;
+let spine = @{
+  circle(700, 700, outer);
+};
+
+// [time, offset, sharp] — the user's nine stops, as data.
+let profile = [
+  [0, 5, 0],
+  [0.20, 7.5, 0],
+  [0.45, 4.5, 0],
+  [0.4995, 2, 1],
+  [0.5, 30, 1],
+  [0.5005, 2, 1],
+  [0.55, 4.5, 0],
+  [0.80, 7.5, 0],
+  [1, 5, 0],
+];
+
+let bumped = spine.variableOffset() {|vo, pb|
+  for (i in 0..(profile.length - 2)) {
+    let [t0, d0, sharp0] = profile[i];
+    let [t1, d1, sharp1] = profile[i + 1];
+    let steps = max(1, round((t1 - t0) * 72));
+    for (k in 0..(steps - 1)) {
+      let u = k / steps;
+      let continuity = CurveContinuity.G1;
+      if (k == 0 && sharp0 == 1) {
+        continuity = CurveContinuity.G0;
+      }
+      vo.stop(lerp(t0, t1, u), lerp(d0, d1, smoothstep(0, 1, u)), continuity);
+    }
+  }
+  vo.stop(1, 5, CurveContinuity.G1);
+};
+
+log("command count", bumped.commands.length);
+log("bumped bbox", bumped.boundingBox());
+
+let spineLayer = PathLayer('spine') #{
+  fill: none;
+  stroke: #06c;
+  stroke-width: 3;
+  stroke-dasharray: 12, 8;
+};
+spineLayer.apply {
+  spine.drawTo(0, 0);
+}
+
+let resultLayer = PathLayer('result') #{
+  fill: #c00;
+  fill-opacity: 0.25;
+  stroke: #c00;
+  stroke-width: 3;
+};
+resultLayer.apply {
+  bumped.drawTo(bumped.anchor.x, bumped.anchor.y);
+}

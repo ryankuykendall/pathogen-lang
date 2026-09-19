@@ -506,12 +506,16 @@ l 5 0`);
     });
 
     it('works with stdlib path functions', () => {
+      // Was `circle(10)` — one argument to circle(cx, cy, r). That compiled to
+      // `M NaN undefined a undefined …` and this test passed anyway because it
+      // asserted only the prefix. The path-emit guard now rejects that call.
       const result = compilePath(`
-        let c = @{ circle(10); };
+        let c = @{ circle(0, 0, 10); };
         c.drawTo(50, 50);
       `);
-      // Should emit M 50 50 followed by the circle's relative commands
-      expect(result).toMatch(/^M 50 50 /);
+      // M 50 50, then the circle's own commands made relative: its start is
+      // (cx - r, cy) = (-10, 0), and each arc spans the diameter 2r = 20.
+      expect(result).toBe('M 50 50 m -10 0 a 10 10 0 1 1 20 0 a 10 10 0 1 1 -20 0');
     });
 
     it('works on ProjectedPathValue', () => {

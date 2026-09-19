@@ -1,0 +1,80 @@
+{
+  "at": "2026-09-19T23:16:20.117Z",
+  "results": [
+    {
+      "name": "LSP offers mapSlice on an array",
+      "ok": true,
+      "detail": "16 items"
+    },
+    {
+      "name": "LSP completion detail carries the new signature",
+      "ok": true,
+      "detail": "mapSlice(length, options?) — Sliding windows of exactly `length`; { partial: true } keeps the short trailing windows"
+    },
+    {
+      "name": "LSP completion snippet still inserts only the required argument",
+      "ok": true,
+      "detail": "\"mapSlice(${1:length})$0\""
+    },
+    {
+      "name": "LSP hover on mapSlice carries the new signature",
+      "ok": true,
+      "detail": "**mapSlice** — *array method*\n\nmapSlice(length, options?) — Sliding windows of exactly `length`; { partial: tr"
+    },
+    {
+      "name": "LSP reports no diagnostics for mapSlice(2, { partial: true })",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "bundled preview path data equals CLI path data",
+      "ok": true,
+      "detail": "207 vs 207 chars"
+    },
+    {
+      "name": "bundled preview: default is full windows only",
+      "ok": true,
+      "detail": "[[1, 2], [2, 3], [3, 4]]"
+    },
+    {
+      "name": "bundled preview: { partial: true } restores the old output",
+      "ok": true,
+      "detail": "[[1, 2], [2, 3], [3, 4], [4]]"
+    },
+    {
+      "name": "bundled preview: length longer than the array gives []",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "bundled preview: { strict: false } is a positioned error naming the key",
+      "ok": true,
+      "detail": "Line 2, col 13: mapSlice() options: unknown key 'strict' (supported: partial)"
+    },
+    {
+      "name": "bundled preview: the reported loop compiles unguarded",
+      "ok": true,
+      "detail": "no error"
+    },
+    {
+      "name": "bundled preview: with { partial: true } the null reaches the guard, not the path",
+      "ok": true,
+      "detail": "Line 4, col 3: circle(): argument 3 (`inner`) is null — path functions need a number here"
+    },
+    {
+      "name": "bundled preview: a missing context-aware argument stops the compile",
+      "ok": true,
+      "detail": "Line 1, col 7: polarLine() produced a non-numeric coordinate (NaN) — check its arguments (it received 1 argument)"
+    },
+    {
+      "name": "bundled preview: a fractional length is an error, not a silent round",
+      "ok": true,
+      "detail": "Line 2, col 13: mapSlice() length must be a positive integer, got 2.6 — wrap a computed length in round()"
+    },
+    {
+      "name": "bundled preview: a valid context-aware call is untouched",
+      "ok": true,
+      "detail": "M 0 0 L 10 0"
+    }
+  ]
+}

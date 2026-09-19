@@ -1,0 +1,78 @@
+
+define ViewBox(0, 0, 10000, 10000);
+define default PathLayer('main-path-layer') #{
+  fill: #ffc;
+  stroke: none;
+  stroke-width: 1;
+}
+let { width, height } = viewbox;
+rect(0, 0, width, height);
+
+// let discs = (1..100).map() {|index|
+// }
+
+let colors = [
+  #c00,
+  #eee,
+];
+let fills = Cycler(colors, true);
+let discs = [];
+for (idx in 1..5) {
+  let radii = [];
+  let radiusMin = 40;
+  let radiusMax = randomRange(120, 720);
+  radii.push(radiusMax);
+  for (i in 1..calc(round(randomRange(2, 5)))) {
+    radii.push(lerp(radiusMin, radiusMax, random()));
+  }
+  let sortedRadii = radii.sort().reverse();
+
+  let pathBlockGroup = [];  
+  for ([radius, index] in sortedRadii.mapSlice(2)) {
+    let [outer, inner] = radius;
+
+    let outerPB = @{
+      circle(500, 500, outer);
+    }.variableOffset() {|vo, pb|
+      vo.stop(0%, 5, CurveContinuity.G1);
+      vo.stop(20%, 7.5, CurveContinuity.G1);
+      vo.stop(45%, 4.5, CurveContinuity.G1);
+      vo.stop(49.95%, 2, CurveContinuity.G0);
+      vo.stop(50%, calc(outer * randomRange(0.015, 0.065)), CurveContinuity.G0);
+      vo.stop(50.05%, 2, CurveContinuity.G0);                        
+      vo.stop(55%, 4.5, CurveContinuity.G1);
+      vo.stop(80%, 7.5, CurveContinuity.G1);
+      vo.stop(100%, 5, CurveContinuity.G1);                        
+    };
+    
+    pathBlockGroup.push(outerPB << @{
+      circle(500, 500, inner);                        
+    });
+  }
+  discs.push(pathBlockGroup);
+}
+
+for ([group, dIndex] in discs) {
+  for ([pb, pbIndex] in group) {
+    // let fillColor = colors[calc(index % 2)];
+    let fill = fills.pick();
+    let chance = random();
+    if (chance > 0.25) {
+      fill = fill.lighten(calc(0.01 * dIndex)).alpha(lerp(0.8, 0.2, calc(dIndex / discs.length)));
+    } else if (chance < 0.075) {
+      fill = fill.hueShift(1.2pi).desaturate(35%).lighten(randomRange(0.01, 0.35));
+    }
+    
+    let radiusLayer = PathLayer(`radius-layer-disc-${dIndex}-${pbIndex}`) #{
+      fill: fill;
+      // fill-rule: evenodd;
+      stroke-width: 2;
+    };
+
+    let x = calc(((dIndex % 19) * 1500));
+    let y = calc((floor(dIndex / 19) * 500));
+    radiusLayer.apply {
+      pb.drawTo(x, y);
+    }    
+  }
+}

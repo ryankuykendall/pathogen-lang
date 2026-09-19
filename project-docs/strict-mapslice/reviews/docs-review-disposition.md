@@ -1,0 +1,35 @@
+# Docs review — disposition
+
+_2026-09-19. `content-reviewer` agentic review (UXD / UXE / PM / ID), scoped to
+the new writing in `docs/syntax.md`: **Passage A** = Null → Error Behavior (the
+drawing-function paragraphs), **Passage B** = `.mapSlice(length, options?)`._
+
+**Final verdict: ship** (first pass: ship with changes). 16 findings. 1–8 were
+delivered in two batches (the reviewer's replies truncate near 4k characters).
+The reviewer then hit its session limit; 9–14 were worked from the one-line
+preview it had already given of each. After the limit reset it re-read the
+revised passages, re-verified the quoted messages against the source, and sent
+15–16 with its final verdict — "neither blocks publication"; both adopted anyway.
+
+Every factual claim in a finding was reproduced before it was adopted — the
+reviewer has Read/Grep/Glob only and said so; two of its claims were half right
+(2, 5) and the docs follow what was reproduced, not what was claimed.
+
+| # | Finding | Raised by | Disposition |
+|---|---|---|---|
+| 1 | Passage B ships a breaking change with no in-page note, and the page has a precedent (`> **Behavior change:**`, `syntax.md` Angle units; also `color.md`, `stdlib.md`) | PM, ID, UXE | **Adopted.** Precedent verified on three pages. Note added after the first code block, in the house template. |
+| 2 | Passage A documents only `null`; the guard also rejects NaN / Infinity with a differently worded message, and has a second backstop message a reader could not find by searching the docs | UXE, ID | **Adopted with a correction.** The reviewer said the backstop "fires for a null nested inside an array argument". Reproduced: it fires for a nested **NaN** (`cubicSpline([{ x: sqrt(-1), … }])`), but a nested **null** is caught earlier by the spline's own validation (`Missing required property 'x'`). The docs describe the NaN case only. |
+| 3 | Reusing `x` in the new code block: the backticked name in the message is the *user's* variable, so `x` is ambiguous with a parameter name, and `x` for a radius misleads; the lead-in overpromises "the variable to chase" | UXD, ID, UXE | **Adopted.** `innerRadius`; lead-in now "the argument position, and — when the argument is a plain variable — the binding to chase". |
+| 4 | `n - length + 1` claims a negative count for a short array, and the correction was orphaned two paragraphs later | ID, UXE | **Adopted.** Empty case folded into the formula sentence; orphan paragraph removed. |
+| 5 | **Passage A's arity claim was false for the context-aware family**: `circle(50)` errors, but `polarLine(0.5pi)` produced NaN geometry with no error — the branch ran only the null check. Offered two ways out: narrow the docs claim, or close the gap in code with an arity table | UXE, ID | **Closed in code, not narrowed in docs — and not with a table.** The code reviewer found the same hole independently (its Critical #1). The context-aware branch now inspects what the call produced, so a missing argument is an error for both families. The message differs from `circle(50)`'s, so Passage A now shows it verbatim (reproduced): `polarLine() produced a non-numeric coordinate (NaN) — check its arguments (it received 1 argument)`. Why no table: see `code-review-disposition.md` 1a. |
+| 6 | "cursor-relative" is an invented term; the docs already name and link both families (`## Path Functions`, `## Context-Aware Functions` in `stdlib.md`) | ID, UXE, PM | **Adopted.** Both linked (`#stdlib-path-functions` has an existing link precedent). Term also replaced in `CHANGELOG.md`. |
+| 7 | Three undocumented `mapSlice` inputs: `length < 1` throws; a non-integer `length` silently rounds (`mapSlice(2.6)` → windows of 3; `mapSlice(0.4)` rounds to 0 and throws); unknown option keys throw. Recommends documenting the first and third, **not** the rounding ("documenting it locks it in — a code decision") | UXE, ID | **Adopted as recommended, then superseded by the author's decision.** All three reproduced; rounding was first left undocumented, as advised, and put to the author as a code decision. The author decided: **a non-integer length is an error** (`mapSlice() length must be a positive integer, got 2.6 — wrap a computed length in round()`). The clause now reads: "`length` must be a positive integer — `mapSlice(2.6)` is an error rather than a guess at 2 or 3, so wrap a computed length in `round()`. `partial` is the only option key; any other key is an error." A check of that one clause was requested from the reviewer after its final verdict. |
+| 8 | "window" is stable except the opening sentence ("sub-array") and the variable `slices` in both blocks | ID, UXD | **Adopted.** Lead sentence names the object once; `slices` → `windows`. |
+| 9 | British "neighbours" in an American corpus | — | **Adopted.** Corpus check: `docs/` had 3 "neighbor\*" and only the 2 "neighbour\*" written today; `color` 261 : `colour` 0. |
+| 10 | The pairing example binds an unused `index` and has an empty loop body | — | **Adopted.** `for (pair in radii.mapSlice(2))` with a real body (`log(...)`) and its two output lines as comments; run and verified. |
+| 11 | `n` vs `length`: Passage A's link text said `.mapSlice(n, …)` while Passage B uses `length` for the parameter and `n` for the array size | — | **Adopted.** Link text is now `.mapSlice(length, { partial: true })`. |
+| 12 | `{ partial: true }` with an over-long `length` | — | **Adopted — it was a real error.** "The last `length - 1` of them are shorter" is false when `length` exceeds the array: `[1, 2].mapSlice(5, { partial: true })` is `[[1, 2], [2]]` — two windows, both short, where the sentence promised "the last 4". Now: "any window that reaches past the end is cut short". |
+| 13 | `describeMissingPathArgs` counts only required parameters, so "expects N arguments" could understate | — | **No change.** The code reviewer confirmed there are no default parameters anywhere in `src/stdlib/path.ts`, so `circle() expects 3 arguments, got 1` is exact today. |
+| 14 | Proportion and jargon sweeps; an aside that `type-inference-ast.ts` models a trailing block `mapSlice` rejects | — | **Clean / already logged.** Passage B sits between `.reduce` and `.filter` in length; no pet term repeats. The aside is in `STATUS.md` → out of scope. |
+| 15 | (final pass) "In **two cases** the bad value is not an argument…" is a closed-set claim the code does not support: the same check also catches a NaN computed inside a context-aware function, and `turn()` / `heading()` report a poisoned heading with a third wording | UXE, ID | **Adopted.** "Sometimes the bad value is not an argument…" — the two bullets are now examples, not an exhaustive list. Consistent with what was reproduced: `turn()` → `left the heading as NaN`. |
+| 16 | (final pass) "`partial` is the only option; anything else is an error" reads as though any other *value* errors; the rule is unknown *keys* — `{ partial: false }` and `{ partial: 1 }` are both legal | UXE | **Adopted.** "`partial` is the only option key; any other key is an error." Both legal forms are pinned by tests. |

@@ -2736,37 +2736,190 @@ describe('Evaluator', () => {
     });
 
     describe('mapSlice', () => {
-      it('creates sliding windows', () => {
-        const result = compile('let r = [1, 2, 3, 4].mapSlice(2); log(r);');
-        expect(result.logs[0].parts[0].value).toBe('[[1, 2], [2, 3], [3, 4], [4]]');
+      const logged = (src: string) => compile(src).logs[0].parts[0].value;
+
+      // Strict by default since 2026-09-19: every window is exactly `length`
+      // long, so an array of n elements yields n - length + 1 windows. The short
+      // trailing slices moved behind { partial: true }.
+      describe('full windows (default)', () => {
+        it('creates sliding windows of exactly the requested length', () => {
+          expect(logged('let r = [1, 2, 3, 4].mapSlice(2); log(r);')).toBe('[[1, 2], [2, 3], [3, 4]]');
+        });
+
+        it('length equal to the array length gives the one full window', () => {
+          expect(logged('let r = [1, 2, 3].mapSlice(3); log(r);')).toBe('[[1, 2, 3]]');
+        });
+
+        it('length of 1 wraps each element', () => {
+          expect(logged('let r = [10, 20, 30].mapSlice(1); log(r);')).toBe('[[10], [20], [30]]');
+        });
+
+        it('empty array returns empty array', () => {
+          expect(logged('let r = [].mapSlice(2); log(r);')).toBe('[]');
+        });
+
+        it('length longer than the array leaves no full window', () => {
+          expect(logged('let r = [1, 2].mapSlice(5); log(r);')).toBe('[]');
+        });
+
+        it('every window destructures without a null binding', () => {
+          const src = `
+let radii = [120, 80, 40];
+let seen = [];
+for ([pair, index] in radii.mapSlice(2)) {
+  let [outer, inner] = pair;
+  seen.push(inner);
+}
+log(seen);`;
+          expect(logged(src)).toBe('[80, 40]');
+        });
+
+        it('{ partial: false } is the default, spelled out', () => {
+          expect(logged('let r = [1, 2, 3, 4].mapSlice(2, { partial: false }); log(r);')).toBe(
+            logged('let r = [1, 2, 3, 4].mapSlice(2); log(r);'),
+          );
+        });
       });
 
-      it('length equals array length', () => {
-        const result = compile('let r = [1, 2, 3].mapSlice(3); log(r);');
-        expect(result.logs[0].parts[0].value).toBe('[[1, 2, 3], [2, 3], [3]]');
+      // Each expectation is the pre-2026-09-19 output, byte for byte: opting in
+      // must restore the old behaviour exactly, not approximately.
+      describe('{ partial: true } keeps the short trailing windows', () => {
+        it('one window per element', () => {
+          expect(logged('let r = [1, 2, 3, 4].mapSlice(2, { partial: true }); log(r);')).toBe(
+            '[[1, 2], [2, 3], [3, 4], [4]]',
+          );
+        });
+
+        it('length equals array length', () => {
+          expect(logged('let r = [1, 2, 3].mapSlice(3, { partial: true }); log(r);')).toBe('[[1, 2, 3], [2, 3], [3]]');
+        });
+
+        it('length exceeds array length', () => {
+          expect(logged('let r = [1, 2].mapSlice(5, { partial: true }); log(r);')).toBe('[[1, 2], [2]]');
+        });
+
+        it('length of 1 is the same either way', () => {
+          expect(logged('let r = [10, 20, 30].mapSlice(1, { partial: true }); log(r);')).toBe('[[10], [20], [30]]');
+        });
+
+        it('empty array returns empty array', () => {
+          expect(logged('let r = [].mapSlice(2, { partial: true }); log(r);')).toBe('[]');
+        });
+
+        // A Pathogen boolean is a wrapped { type: 'BooleanValue' } object — always
+        // truthy in JS. These two fail if the option is read with `=== true` or `!v`.
+        it('reads a computed boolean, true', () => {
+          expect(logged('let r = [1, 2, 3].mapSlice(2, { partial: 3 > 2 }); log(r);')).toBe('[[1, 2], [2, 3], [3]]');
+        });
+
+        it('reads a computed boolean, false', () => {
+          expect(logged('let r = [1, 2, 3].mapSlice(2, { partial: 3 < 2 }); log(r);')).toBe('[[1, 2], [2, 3]]');
+        });
+
+        it('accepts 1 and 0 like every other boolean slot', () => {
+          expect(logged('let r = [1, 2, 3].mapSlice(2, { partial: 1 }); log(r);')).toBe('[[1, 2], [2, 3], [3]]');
+          expect(logged('let r = [1, 2, 3].mapSlice(2, { partial: 0 }); log(r);')).toBe('[[1, 2], [2, 3]]');
+        });
+
+        it('an empty options object changes nothing', () => {
+          expect(logged('let r = [1, 2, 3].mapSlice(2, {}); log(r);')).toBe('[[1, 2], [2, 3]]');
+        });
       });
 
-      it('length of 1 wraps each element', () => {
-        const result = compile('let r = [10, 20, 30].mapSlice(1); log(r);');
-        expect(result.logs[0].parts[0].value).toBe('[[10], [20], [30]]');
-      });
+      describe('errors', () => {
+        // A variable receiver, as in real programs. (A method call takes its
+        // position from its receiver, and an array LITERAL carries none — a
+        // separate, older AST-builder gap that affects every array method; see
+        // project-docs/known-issues.md. Positions are asserted here, so the
+        // receiver must be one that has a position.)
+        const onArr = (call: string) => `let arr = [1, 2];\nlet r = arr.${call};`;
 
-      it('empty array returns empty array', () => {
-        const result = compile('let r = [].mapSlice(2); log(r);');
-        expect(result.logs[0].parts[0].value).toBe('[]');
-      });
+        // The length used to be rounded silently — mapSlice(2.6) quietly made
+        // windows of 3, and mapSlice(0.4) rounded to 0 and complained about
+        // "at least 1". One rule now, one message, and it shows what arrived.
+        describe('length must be a positive integer', () => {
+          const cases: [string, string][] = [
+            ['2.6', '2.6'],
+            ['0.4', '0.4'],
+            ['0', '0'],
+            ['-2', '-2'],
+            ['1 / 0', 'Infinity'],
+            ['sqrt(-1)', 'NaN'],
+          ];
+          for (const [written, shown] of cases) {
+            it(`mapSlice(${written})`, () => {
+              const message = `mapSlice() length must be a positive integer, got ${shown}`;
+              expect(() => compile(onArr(`mapSlice(${written})`))).toThrow(
+                new RegExp(`Line 2, col \\d+: ${message.replace(/[()]/g, '\\$&')}`),
+              );
+            });
+          }
 
-      it('length exceeds array length', () => {
-        const result = compile('let r = [1, 2].mapSlice(5); log(r);');
-        expect(result.logs[0].parts[0].value).toBe('[[1, 2], [2]]');
-      });
+          it('says how to fix a computed length', () => {
+            expect(() => compile(onArr('mapSlice(2.6)'))).toThrow(/wrap a computed length in round\(\)/);
+          });
 
-      it('length less than 1 throws', () => {
-        expect(() => compile('let r = [1].mapSlice(0);')).toThrow(/must be at least 1/);
-      });
+          // round() cannot rescue 0, a negative, or NaN — offering it would mislead.
+          for (const written of ['0', '-2', 'sqrt(-1)', '1 / 0']) {
+            it(`offers no round() hint for mapSlice(${written})`, () => {
+              let message = '';
+              try {
+                compile(onArr(`mapSlice(${written})`));
+              } catch (e) {
+                message = (e as Error).message;
+              }
+              expect(message).toMatch(/must be a positive integer/);
+              expect(message).not.toMatch(/round\(\)/);
+            });
+          }
 
-      it('non-number argument throws', () => {
-        expect(() => compile("let r = [1].mapSlice('a');")).toThrow(/must be a number/);
+          it('a computed length wrapped in round() is fine', () => {
+            expect(logged('let arr = [1, 2, 3, 4];\nlet r = arr.mapSlice(round(2.6)); log(r);')).toBe(
+              '[[1, 2, 3], [2, 3, 4]]',
+            );
+          });
+
+          it('a whole number that arrives as a float is still an integer', () => {
+            expect(logged('let arr = [1, 2, 3, 4];\nlet r = arr.mapSlice(4 / 2); log(r);')).toBe(
+              '[[1, 2], [2, 3], [3, 4]]',
+            );
+          });
+        });
+
+        it('non-number argument throws', () => {
+          expect(() => compile(onArr("mapSlice('a')"))).toThrow(
+            /Line 2, col \d+: mapSlice\(\) length must be a number/,
+          );
+        });
+
+        it('a trailing block is still rejected', () => {
+          expect(() => compile(onArr('mapSlice(2) {|w| return w; }'))).toThrow(/does not take a trailing block/);
+        });
+
+        it('too many arguments', () => {
+          expect(() => compile(onArr('mapSlice(2, { partial: true }, 3)'))).toThrow(
+            /Line 2, col \d+: mapSlice\(\) expects 1-2 arguments \(length, options\?\)/,
+          );
+        });
+
+        it('options must be an object — a bare boolean is the likeliest mistake', () => {
+          expect(() => compile(onArr('mapSlice(2, true)'))).toThrow(
+            /Line 2, col \d+: mapSlice\(\) options must be an object, e\.g\. \{ partial: true \}/,
+          );
+        });
+
+        // `strict` is the name this option was designed under; name it in the error.
+        it('unknown key names the key and the supported one — { strict: false }', () => {
+          expect(() => compile(onArr('mapSlice(2, { strict: false })'))).toThrow(
+            /Line 2, col \d+: mapSlice\(\) options: unknown key 'strict' \(supported: partial\)/,
+          );
+        });
+
+        it('partial must be a boolean', () => {
+          expect(() => compile(onArr("mapSlice(2, { partial: 'yes' })"))).toThrow(
+            /Line 2, col \d+: mapSlice\(\) partial must be a boolean/,
+          );
+        });
       });
     });
 

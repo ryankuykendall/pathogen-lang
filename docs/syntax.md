@@ -486,6 +486,21 @@ let y = x + 1;     // Error: Cannot use null in arithmetic expression
 M x 0               // Error: Cannot use null as a path argument
 ```
 
+The same holds for every function that draws — the [path functions](#stdlib-path-functions) (`circle`, `rect`, `polygon`, …) and the [context-aware functions](#stdlib-context-aware-functions) (`polarLine`, `tangentArc`, …). The error names the function, the argument position, and — when the argument is a plain variable — the binding to chase:
+
+```
+let innerRadius = null;
+circle(50, 50, innerRadius);  // Error: circle(): argument 3 (`innerRadius`) is null — path functions need a number here
+circle(50);                   // Error: circle() expects 3 arguments, got 1
+```
+
+A `NaN` or `Infinity` argument reads the same way, asking for a *finite* number. Sometimes the bad value is not an argument the compiler can point at, so the function reports what it produced instead:
+
+- a `NaN` buried inside a structured argument, such as a point handed to `cubicSpline` — `cubicSpline() produced a non-numeric coordinate (NaN) — check its arguments`;
+- an argument missing from a context-aware function, which adds how many arrived — `polarLine() produced a non-numeric coordinate (NaN) — check its arguments (it received 1 argument)`.
+
+A `null` usually arrives by accident rather than from a literal: [destructuring](#syntax-destructuring) an array shorter than its pattern, `.first`/`.last` on an empty array, or the short windows from [`.mapSlice(length, { partial: true })`](#syntax-mapslicelength-options).
+
 ## Booleans
 
 The `true` and `false` keywords represent boolean values. They are a semantic subtype of number — `true` is `1`, `false` is `0` — but display as `true`/`false` in logs and template literals.
@@ -1126,18 +1141,44 @@ A reusable worker applies with `<<` — the initial value stays in the
 parentheses: `values.reduce(0) << sumFn;` (see
 [Applying workers](#syntax-applying-workers)).
 
-#### `.mapSlice(length)`
+#### `.mapSlice(length, options?)`
 
-Returns a new array where each element is a sub-array (slice) of `length` elements starting at that element's index. Near the end of the array, slices are shorter as they extend past the bounds.
+Slides a window of `length` elements along the array; each position it stops at becomes one window in the result. Every window is exactly `length` long, so an array of `n` elements gives `n - length + 1` windows — and none at all when the array is shorter than the window: `[1, 2].mapSlice(5)` is `[]`.
 
 ```
 let arr = [1, 2, 3, 4];
-let slices = arr.mapSlice(2);
-// slices is [[1, 2], [2, 3], [3, 4], [4]]
+let windows = arr.mapSlice(2);
+// windows is [[1, 2], [2, 3], [3, 4]]
 
 let triples = [10, 20, 30, 40, 50].mapSlice(3);
-// triples is [[10, 20, 30], [20, 30, 40], [30, 40, 50], [40, 50], [50]]
+// triples is [[10, 20, 30], [20, 30, 40], [30, 40, 50]]
 ```
+
+> **Behavior change:** `mapSlice` used to include the short windows at the end of the array — `[1, 2, 3, 4].mapSlice(2)` returned `[[1, 2], [2, 3], [3, 4], [4]]`. It now returns only full windows; pass `{ partial: true }` for the old result.
+
+This is how you pair neighbors — consecutive radii into rings, consecutive points into segments. Every window is full, so each one destructures cleanly:
+
+```
+let radii = [120, 80, 40];
+for (pair in radii.mapSlice(2)) {
+  let [outer, inner] = pair;
+  log(`ring from ${inner} to ${outer}`);
+}
+// ring from 80 to 120
+// ring from 40 to 80
+```
+
+Pass `{ partial: true }` to also keep the windows that run off the end of the array. There is then one window per element, and any window that reaches past the end is cut short:
+
+```
+let arr = [1, 2, 3, 4];
+let windows = arr.mapSlice(2, { partial: true });
+// windows is [[1, 2], [2, 3], [3, 4], [4]]
+```
+
+`length` must be a positive integer — `mapSlice(2.6)` is an error rather than a guess at 2 or 3, so wrap a computed length in `round()`. `partial` is the only option key; any other key is an error.
+
+Take care destructuring partial windows: a short one leaves its later bindings `null` (see [Null](#syntax-null)), so check the window's `.length` first.
 
 #### `.reverse()`
 

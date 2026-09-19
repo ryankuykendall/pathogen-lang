@@ -456,7 +456,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'map', kind: 'function', detail: 'map {|item| ...} — Transform elements; or map() << worker', boost: 8, insertText: 'map {|${1:item}|\n\treturn $0;\n}', isSnippet: true },
       { label: 'filter', kind: 'function', detail: 'filter {|item| ...} — Keep elements whose block returns truthy; or filter() << worker', boost: 8, insertText: 'filter {|${1:item}|\n\treturn $0;\n}', isSnippet: true },
       { label: 'reduce', kind: 'function', detail: 'reduce(init) {|acc, item| ...} — Reduce; or reduce(init) << worker', boost: 8, insertText: 'reduce(${1:init}) {|${2:acc}, ${3:item}|\n\treturn $0;\n}', isSnippet: true },
-      { label: 'mapSlice', kind: 'function', detail: 'mapSlice(length) — Sliding window slices', boost: 8, insertText: 'mapSlice(${1:length})$0', isSnippet: true },
+      { label: 'mapSlice', kind: 'function', detail: 'mapSlice(length, options?) — Sliding windows of exactly `length`; { partial: true } keeps the short trailing windows', boost: 8, insertText: 'mapSlice(${1:length})$0', isSnippet: true },
       { label: 'slice', kind: 'function', detail: 'slice(start, end?) — Get sub-array', boost: 8, insertText: 'slice(${1:start})$0', isSnippet: true },
       { label: 'reverse', kind: 'function', detail: 'reverse() — Reversed copy (non-mutating)', boost: 8, insertText: 'reverse()$0', isSnippet: true },
       { label: 'sort', kind: 'function', detail: 'sort() — Sorted copy, ascending; comparator via trailing block or sort() << cmp', boost: 8, insertText: 'sort()$0', isSnippet: true },
