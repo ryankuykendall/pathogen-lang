@@ -1,0 +1,14 @@
+let a = [];
+for (i in 1..32000) {
+  a.push(i);
+}
+let b = a.map() {|v|
+  return v * 2;
+};
+let c = b.filter() {|v|
+  return v % 3 == 0;
+};
+let total = c.reduce(0) {|acc, v|
+  return acc + v;
+};
+log(b.length, c.length, total);

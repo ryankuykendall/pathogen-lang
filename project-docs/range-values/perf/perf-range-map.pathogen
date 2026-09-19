@@ -1,0 +1,10 @@
+let doubled = (1..32000).map {|value|
+  return value * 2;
+};
+let kept = doubled.filter {|value|
+  return value % 3 == 0;
+};
+let total = kept.reduce(0) {|sum, value|
+  return sum + value;
+};
+log(doubled.length, kept.length, total);

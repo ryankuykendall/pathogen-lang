@@ -1,0 +1,33 @@
+define ViewBox(0, 0, 200, 80);
+
+// Pick a shape per column. Switch a case off by commenting it out.
+for (column in 0..<4) {
+  let centerX = column * 45 + 30;
+  switch (column) {
+    case 0 {
+      circle(centerX, 40, 14);
+    }
+    // case 1 {
+    //   rect(centerX - 14, 26, 28, 28);
+    // }
+    case 2 {
+      polygon(centerX, 40, 16, 3);
+    }
+    // everything else, including the switched-off column 1
+    default {
+      polygon(centerX, 40, 16, 6);
+    }
+  }
+}
+
+// Comments inside a list that is spread over several lines
+let ticks = [
+  10,  // left edge
+  // 55,
+  100, // middle
+  190,
+];
+for (tick in ticks) {
+  M tick 70
+  v 6
+}

@@ -1,0 +1,5 @@
+let a = [];
+for (i in 1..32000) {
+  a.push(i);
+}
+log(a.length);

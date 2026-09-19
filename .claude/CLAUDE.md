@@ -81,15 +81,15 @@ Pathogen has **three user-facing surfaces** where every language feature must wo
 | Surface | Location | How the user invokes | Render path |
 |---------|----------|----------------------|-------------|
 | **CLI** | `src/cli.ts` + `src/svg-generator.ts` | `pathogen-lang <file>`, `--output-svg-file` | Compiles to complete SVG string |
-| **Playground** | `playground/` (consumes `dist/index.global.js`) | Browser at `/pathogen` | `svg-preview-pane.ts` renders live DOM |
-| **VS Code** | `packages/vscode-pathogen` + `packages/pathogen-language-server` (consumes `file:../../`) | Editor via LSP + preview command | LSP handlers + preview webview |
+| **Playground** | `playground/` (consumes `dist/index.global.js`) | Browser (apex path; workspaces at `/workspaces`) | `svg-preview-pane.ts` renders live DOM |
+| **VS Code** | `packages/vscode-pathogen` + `packages/pathogen-language-server` (the `.vsix` bundles its own copy of the compiler and server — rebuild with `npm run build:vscode`) | Editor via LSP + preview command | LSP handlers + preview webview |
 
 **Parity is a requirement, not a nice-to-have.** If a feature works in the CLI but not the playground, users experience a silent regression — the same program produces a working SVG via the CLI and a broken one in the browser. The compiler is not a feature's "done" state; reaching all three surfaces is. Features that have landed in `src/` but haven't been wired through to the playground and VS Code preview are **shipped-incomplete** and must be flagged. When auditing, ask: "does this render identically in CLI output, playground preview, and VS Code preview?" If any answer is no, the feature is not shipped.
 
-Each surface has its own connector code that must be updated when the shared engine adds a new defs-producing construct (Mask, ClipPath, Gradient, Pattern, Marker, …):
-- **CLI**: `src/svg-generator.ts` — emits `<defs>` children in the final SVG string
-- **Playground**: `playground/types/compiler.d.ts` + `playground/types/store.d.ts` + `playground/state/store.ts` + `playground/components/workspace-view.ts` + `playground/components/svg-preview-pane.ts` — five-file chain from compiler result → store → preview pane DOM injection
-- **VS Code**: `packages/vscode-pathogen/src/preview.ts` (currently stub — tracked in `packages/vscode-pathogen/CLAUDE.md` Readiness Status)
+The `<defs>` elements themselves are built in ONE shared place — `src/render/build-defs.ts` (`buildDefs`), reached through `buildSvgTree`. When the shared engine adds a new defs-producing construct (Mask, ClipPath, Gradient, Pattern, Marker, …), add it there; what differs per surface is how the compile result gets to it:
+- **CLI**: `src/svg-generator.ts` passes the whole compile result to `buildSvgTree` and serializes it — no per-construct change
+- **Playground**: `playground/types/compiler.d.ts` + `playground/types/store.d.ts` + `playground/state/store.ts` + `playground/components/workspace-view.ts` + `playground/components/svg-preview-pane.ts` — five-file chain from compiler result → store → preview pane, which rebuilds a partial result by hand before calling the shared `buildDefs`. A field that is not forwarded is silently dropped; this is still where features go missing
+- **VS Code**: `packages/vscode-pathogen/src/preview.ts` is a functional webview that calls `PathogenLang.compile()` + `PathogenLang.buildSvgTree()` and mounts `<defs>` generically — no per-construct change, but the `.vsix` must be rebuilt (`npm run build` → `npm run build:vscode`) to pick up the new bundle
 
 ### Cross-Cutting (compiler, language-services, three surfaces)
 
@@ -99,12 +99,12 @@ For changes spanning multiple systems, see the [cross-system feature lifecycle](
 
 | Change type | Systems to update (in order) |
 |-------------|------------------------------|
-| New keyword | **`docs/` (relevant page)**, Grammar, evaluator, `completion-data.ts`, `hover.ts`, TextMate grammar, snippets, verify all three surfaces |
-| New stdlib function | **`docs/stdlib.md`**, `stdlib/*.ts`, `completion-data.ts`, `hover.ts`, verify all three surfaces |
-| New enum | **`docs/` (relevant section)**, evaluator `BUILTIN_ENUMS`, `completion-data.ts` (gap — see audit), verify all three surfaces |
-| New type with members | **`docs/<feature>.md` (new file + `DOC_FILES` entry)**, evaluator, `completion-data.ts`, `completion.ts` (inferType + getMembersForObject), verify all three surfaces |
-| New constructor / defs producer (`Marker()`, `Mask()`, `Gradient()`, `Pattern()`, `ClipPath()`, …) | **`docs/<feature>.md` (new file + `DOC_FILES` entry)**, `evaluator/types.ts`, `evaluator/index.ts`, **CLI: `svg-generator.ts`**, **Playground: `types/compiler.d.ts` + `types/store.d.ts` + `state/store.ts` + `workspace-view.ts` + `svg-preview-pane.ts`**, **VS Code: `packages/vscode-pathogen/src/preview.ts`**, `api-surface.ts`, language-services, tests |
-| New syntax construct | **`docs/syntax.md`**, Lezer grammar, AST, ast-builder, evaluator, TextMate grammar, language-services, verify all three surfaces |
+| New keyword | **`docs/` (relevant page)**, Grammar (+ regenerate), `path-args-tokenizer.ts` `KEYWORDS`, evaluator, `completion-data-static.ts` (`KEYWORD_COMPLETIONS`), `hover.ts` (`KEYWORD_HOVER`), formatter, TextMate grammar, snippets, verify all three surfaces |
+| New stdlib function | **`docs/stdlib.md`**, `stdlib/*.ts`, declare in `src/pathogen-api.ts` → `npm run generate:completions` (completion, hover and signature help are generated), verify all three surfaces |
+| New enum | **`docs/` (relevant section)**, `evaluator/builtin-enums.ts` (`BUILTIN_ENUMS`), `ENUM_METADATA` in `src/api-surface.ts`, `npm run generate:completions`, verify all three surfaces |
+| New type with members | **`docs/<feature>.md` (new file + `DOC_FILES` entry)**, evaluator, `@type`-tagged interface in `src/pathogen-api.ts` → `npm run generate:completions` (member completions, chain returns and hover are generated), verify all three surfaces |
+| New constructor / defs producer (`Marker()`, `Mask()`, `Gradient()`, `Pattern()`, `ClipPath()`, …) | **`docs/<feature>.md` (new file + `DOC_FILES` entry)**, `evaluator/types.ts`, `evaluator/index.ts`, `evaluator/constructor-registry.ts`, **shared render tree: `src/render/build-defs.ts`** (carries CLI + VS Code), **Playground: `types/compiler.d.ts` + `types/store.d.ts` + `state/store.ts` + `workspace-view.ts` + `svg-preview-pane.ts`**, **VS Code: rebuild the `.vsix`**, `src/pathogen-api.ts` → `generate:completions`, language-services, tests |
+| New syntax construct | **`docs/syntax.md`**, Lezer grammar (+ regenerate), AST, ast-builder, **path-args shadow grammar**, evaluator, formatter (a missing case deletes source), TextMate grammar, language-services walkers, verify all three surfaces |
 
 A new `.md` file in `docs/` has no effect until it is registered in `scripts/build-docs.ts` `DOC_FILES`. An unregistered doc is not published — treat the registration line as part of the doc itself.
 

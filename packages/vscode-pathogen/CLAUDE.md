@@ -27,9 +27,9 @@ The extension spawns the language server as a child process. The server imports 
 | `src/extension.ts` | Entry point. Starts LanguageClient, registers preview command |
 | `src/preview.ts` | SVG preview webview panel — functional; webview consumes the bundled library via `<script src="${compilerUri}">` and renders via the shared `buildSvgTree` + `mountInto` adapters. Pan/zoom is the shared `PanZoomController` (`window.PathogenPanZoom`, loaded from a second bundled script `compiler/pan-zoom.global.js`) — CSS-transform during the gesture, baked into the viewBox on idle; wheel + drag + touch pinch |
 | `syntaxes/pathogen.tmLanguage.json` | TextMate grammar for syntax highlighting |
-| `snippets/pathogen.code-snippets` | 18 code snippets (for, fn, if, shapes, etc.) |
+| `snippets/pathogen.code-snippets` | Code snippets (for, fn, if, switch, shapes, etc. — 35 as of 2026-09) |
 | `language-configuration.json` | Comment toggling, brackets, auto-closing, indentation, folding |
-| `test-fixtures/all-syntax.pathogen` | Syntax coverage test file |
+| `test-fixtures/all-syntax.pathogen` | The file to open when eyeballing highlighting. Not shipped (`.vscodeignore`), but **guarded** by `tests/all-syntax-fixture.test.ts`: it must compile with zero diagnostics (so the preview command renders it) and its parse tree must contain every node type and keyword the Lezer grammar can produce |
 | `package.json` | Extension manifest (contributes: languages, grammars, snippets, commands) |
 
 **Language Server** (`packages/pathogen-language-server/`):
@@ -83,13 +83,14 @@ The TextMate grammar (`syntaxes/pathogen.tmLanguage.json`) provides instant synt
 When a new keyword or syntax construct is added:
 1. Update the Lezer grammar (source of truth for the parser)
 2. Update the TextMate grammar keyword pattern or add new scope rules
-3. Verify in `test-fixtures/all-syntax.pathogen`
+3. Add the construct to `test-fixtures/all-syntax.pathogen` — `tests/all-syntax-fixture.test.ts` fails until the new node type appears there (or gets a justified exception), and fails if the file stops compiling
+4. Open the fixture in VS Code and check the highlighting by eye — there is still no automated TextMate tokenization test, so this step is the only check on the TextMate grammar's scopes (`tests/keyword-registry.test.ts` covers its keyword list only)
 
 The Lezer grammar also powers CodeMirror 6 highlighting in the playground via `src/parser/highlight.ts` — a third, separate highlighting definition.
 
 ## Snippets
 
-Snippets in `snippets/pathogen.code-snippets` (18 entries) mirror the snippet bodies from `completion-data.ts` KEYWORD_COMPLETIONS entries. When a new keyword snippet is added to completion-data, add a corresponding VS Code snippet here. Same templates, different format (VS Code JSON vs completion insertText).
+Snippets in `snippets/pathogen.code-snippets` mirror the snippet bodies from the hand-written `KEYWORD_COMPLETIONS` in `src/language-services/completion-data-static.ts`. When a new keyword snippet is added there, add a corresponding VS Code snippet here — nothing syncs the two. Same templates, different format (VS Code JSON vs completion insertText).
 
 ## What to Update When the Language Changes
 
@@ -126,7 +127,8 @@ _No open items._ Resolved 2026-09-06 (confirmed in the editor): **language serve
 
 - [ ] Language file icons (`icons/pathogen-light.svg`, `icons/pathogen-dark.svg`) are referenced but don't exist (removed from package.json to prevent errors)
 - [ ] No bundling (esbuild) — the extension ships raw `node_modules/` which is fragile and bloated; vsce warns about this
-- [ ] Snippet count in this doc says "18 entries" but there are now 27 after the formatter style guide work
+- [x] ~~Snippet count in this doc says "18 entries"~~ — the doc no longer hardcodes a count that was wrong twice (18, then 27; it is 35 as of 2026-09)
+- [ ] No automated TextMate tokenization test. `test-fixtures/all-syntax.pathogen` is guaranteed to CONTAIN every construct and to compile (`tests/all-syntax-fixture.test.ts`), but whether the TextMate grammar scopes each one correctly is still checked by eye. A `vscode-textmate` + `vscode-oniguruma` test over the same fixture would close this
 
 ## Development Lifecycle
 

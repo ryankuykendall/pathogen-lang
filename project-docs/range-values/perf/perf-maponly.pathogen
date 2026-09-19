@@ -1,0 +1,8 @@
+let a = [];
+for (i in 1..32000) {
+  a.push(i);
+}
+let b = a.map() {|v|
+  return v * 2;
+};
+log(b.length);

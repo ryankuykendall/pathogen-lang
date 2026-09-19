@@ -1,0 +1,7 @@
+let clamped = (1..32000).map {|value|
+  if (value > 16000) {
+    return 16000;
+  }
+  return value;
+};
+log(clamped.length, clamped.last);

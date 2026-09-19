@@ -1,0 +1,8 @@
+let a = [];
+for (i in 1..32000) {
+  a.push(i);
+}
+let b = a.sort() {|x, y|
+  return y - x;
+};
+log(b.length, b[0]);

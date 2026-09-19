@@ -1,0 +1,105 @@
+{
+  "at": "2026-09-19T17:53:36.708Z",
+  "results": [
+    {
+      "name": "demo renders in the playground preview",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "playground path data equals CLI path data",
+      "ok": true,
+      "detail": "499 vs 499 chars"
+    },
+    {
+      "name": "all-syntax fixture: zero diagnostics in the playground bundle",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "name": "all-syntax fixture: same geometry as the CLI on every layer (numbers within 1e-9)",
+      "ok": true,
+      "detail": "byte-identical: false; 1427 vs 1427 chars"
+    },
+    {
+      "name": "completions after `(1..100).` include map/filter/reduce/length",
+      "ok": true,
+      "detail": "16 items"
+    },
+    {
+      "name": "hover types the block param as a number",
+      "ok": true,
+      "detail": "**index** — *block parameter: number*\n\nDefined at line 1"
+    },
+    {
+      "name": "diagnostic asks for parentheses",
+      "ok": true,
+      "detail": "A range used as a value needs parentheses — write (1..5)"
+    },
+    {
+      "name": "a valid range value has no diagnostics",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "formatter keeps the range receiver",
+      "ok": true,
+      "detail": "\"let doubled = (1..100).map() {|index|\\n  \""
+    },
+    {
+      "name": "compile error asks for parentheses",
+      "ok": true,
+      "detail": "Parse error at line 1, column 14: A range used as a value needs parentheses — write (1..5)"
+    },
+    {
+      "name": "(5..1) evaluates to a descending array",
+      "ok": true,
+      "detail": "[5, 4, 3, 2, 1]"
+    },
+    {
+      "name": "a text-block loop runs 12,000 iterations (old cap was 10,000)",
+      "ok": true,
+      "detail": "TextBlock(12000 elements)"
+    },
+    {
+      "name": "comments anywhere: a commented-out case and a comment inside a list compile",
+      "ok": true,
+      "detail": "M 2 2 L 10 30"
+    },
+    {
+      "name": "comments anywhere: no diagnostics",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "comments anywhere: formatting keeps every comment and re-indents the commented-out clause",
+      "ok": true,
+      "detail": "\"let mode = 1;\\nswitch(mode) {\\n  case 0 {\\n    M 0 0\\n  }\\n  // case 1 {\\n  //   M 1 1\\n  // }\\n  default {\\n    M 2 2\\n  }\\n}\\nlet \""
+    },
+    {
+      "name": "reserved-name compile error carries line and column",
+      "ok": true,
+      "detail": "Parse error at line 3, column 5: 'rad' is reserved — it is a unit suffix (0.5pi, 90deg, 1.5rad); it cannot be used as a variable name"
+    },
+    {
+      "name": "reserved-name diagnostic sits on the name, not line 1",
+      "ok": true,
+      "detail": "[{\"start\":{\"line\":2,\"character\":4},\"message\":\"'rad' is reserved — it is a unit suffix (0.5pi, 90deg, 1.5rad); it cannot be used as a variable name\"}]"
+    },
+    {
+      "name": "live editor offers array members after typing `(1..100).`",
+      "ok": true,
+      "detail": "last line \"let typed = (1..100).\"; options: emptyempty() — Check if array is empty, filterfilter {|item| ...} — Keep elements whose block returns truthy; or filter() << worker, firstFirst element, or null if the array is empty (non-mutating), lastLast element, or null if the array is empty (non-mutating), lengthNumber of elements, mapmap {|item| ...} — Transform elements; or map() << worker, mapSlicemapSlice(length) — Sliding window slices, poppop() — Remove and return last element; throws while the array is being iterated, pushpush(item) — Add to end; throws while the array is being iterated, reducereduce(init) {|acc, item| ...} — Reduce; or reduce(init) << worker"
+    },
+    {
+      "name": "live editor: Cmd+/ comments a line out and back in",
+      "ok": true,
+      "detail": "\"// M 9 9\" then \"M 9 9\""
+    },
+    {
+      "name": "live editor offers Point members after typing `pts[0].`",
+      "ok": true,
+      "detail": "options: angleToangleTo(other) —  | distanceTodistanceTo(oth | lerplerp(other, t) — Int | midpointmidpoint(other)  | offsetoffset(other) — Ge | polarTranslatepolarTrans | rotaterotate(angle, orig | translatetranslate(dx, d"
+    }
+  ]
+}

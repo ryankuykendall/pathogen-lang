@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+
+<defs>
+  <mask id="m1"/>
+  <clipPath id="c1"/>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#0d1b2a"/>
+    <stop offset="0.5" stop-color="#415a77"/>
+    <stop offset="1" stop-color="#778da9"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset="1" stop-color="#000000"/>
+  </radialGradient>
+  <pattern id="dots" x="0" y="0" width="20" height="20">
+    <path d="M 7 10 A 3 3 0 1 1 13 10 A 3 3 0 1 1 7 10" fill="#e63946"/>
+  </pattern>
+  <marker id="arrowhead" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+    <path d="L 10 5 L 0 10 Z" fill="context-stroke"/>
+  </marker>
+</defs>
+
+  <path data-layer-name="default" d="M 10 20 M 150 100 M 140.45084971874738 129.38926261462365 M 115.45084971874738 147.55282581475768 M 84.54915028125264 147.55282581475768 M 59.549150281252636 129.38926261462365 M 50 100 M 59.54915028125263 70.61073738537635 M 84.54915028125262 52.447174185242325 M 115.45084971874736 52.44717418524232 M 140.45084971874735 70.61073738537632 M 150 99.99999999999999 L 1 0 L 2 0 L 3 0 L 1 0 L 2 0 L 3 0 L 1 0 L 2 1 L 3 2 L 1 1 L 3 3 L 5 5 L 7 7 L 9 9 M 2 2 M 1 0 L 10 0 L 11 1 L 12 2 M 0 0 L 100 100 H 50 V 75 C 10 20 30 40 50 60 S 70 80 90 100 Q 25 50 75 100 T 150 200 A 50 50 0 1 1 100 0 Z m 10 10 l 20 20 z M 20 41 M 50 100 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0 M 0 0 l 200 0 l 0 100 l -200 0 z M 20 10 l 160 0 q 10 0 10 10 l 0 60 q 0 10 -10 10 l -160 0 q -10 0 -10 -10 l 0 -60 q 0 -10 10 -10 z M 100 50 l 43.301270189221924 25 l 2.842170943040401e-14 50 l -43.30127018922195 25 l -43.301270189221924 -24.999999999999986 l -7.105427357601002e-15 -50.000000000000014 z M 50 50 L 100 100 M 200 200 l 26 0 l 4 4 l 0 26 M 30 50 a 20 20 0 1 1 40 0 a 20 20 0 1 1 -40 0" fill="none" stroke="#000" stroke-width="2"/>
+  <path data-layer-name="outline" id="outline" d="M 50 100 a 50 50 0 1 1 100 0 a 50 50 0 1 1 -100 0" fill="none" stroke="#000" stroke-width="2"/>
+  <text data-layer-name="labels" id="labels" x="50" y="50" font-size="14" fill="#333">Hello World</text>
+  <text data-layer-name="labels" x="100" y="100" font-size="14" fill="#333"><tspan dx="0" dy="0">First line</tspan><tspan dx="0" dy="20">Second line</tspan><tspan dx="0" dy="40">row 0</tspan><tspan dx="0" dy="60">last</tspan></text>
+  <g data-layer-name="group1" id="group1"/>
+  <path data-layer-name="watched" id="watched" d="M 260 40 h 80 v 60 h -80 z" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path data-layer-name="dots" id="dots" d="M 337 40 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 337 100 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 257 100 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0 M 257 40 a 3 3 0 1 1 6 0 a 3 3 0 1 1 -6 0" fill="url(#dots)" stroke="none" stroke-width="2"/>
+</svg>

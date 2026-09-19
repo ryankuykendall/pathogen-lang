@@ -1,0 +1,26 @@
+define ViewBox(0, 0, 240, 120);
+
+// A range value is the list of numbers a for loop would visit.
+let columns = (0..<10);
+
+// Map whole steps onto evenly spaced positions along a wave.
+let crests = columns.map {|column|
+  return Point(column * 22 + 21, 60 + sin(column * 0.7) * 28);
+};
+
+// Draw the wave through every crest.
+M crests[0].x crests[0].y
+for (crest in crests.slice(1, crests.length - 1)) {
+  L crest.x crest.y
+}
+
+// Mark the even-numbered crests.
+let marked = columns.filter {|column|
+  return column % 2 == 0;
+};
+for (column in marked) {
+  circle(crests[column].x, crests[column].y, 5);
+}
+
+log(columns);
+log(marked);
