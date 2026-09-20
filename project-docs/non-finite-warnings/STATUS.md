@@ -4,10 +4,30 @@ _2026-09-19. Resume point for ISSUE-023 and ISSUE-022. Both were logged while
 shipping strict `mapSlice` (`../strict-mapslice/STATUS.md`); the author asked for
 fixes the same day. Resolutions are in `../known-issues.md`._
 
-**State: implemented, reviewed, and re-verified on all three surfaces against
-the final source. NOT committed** — waiting on the author, who must see the
-review outcomes first (docs changes), and whose go-ahead a push needs (it
-deploys Pages).
+**State: SHIPPED.** Committed as `3ef436c` on `main` and pushed 2026-09-20
+(`60c2348..3ef436c`), on the author's go-ahead after seeing the review outcomes.
+One commit: the two fixes share `index.ts`, `ast-builder.ts`, the docs and the
+changelog. Cloudflare Pages: completed / success. The API worker did not
+redeploy — nothing under `api/`, `website/api/` or `website/auth/` changed.
+
+**Production verified, not assumed** (a green deploy check says the build
+finished, not that the site behaves):
+
+- `PATHOGEN_ORIGIN=https://pathogen.studio node verify/verify-playground.mjs` →
+  **21/21** (`verify/playground-results-production.json`): the sound layer
+  renders beside the degenerate one; `compile()` and `compileWithContext()` warn
+  identically at line 28, col 5; the editor diagnostic is a Warning; strict mode
+  in all three forms; null and a missing argument still errors; the ISSUE-022
+  positions; the live error panel reads `Line 3:14 — …` for a for-each header
+  error; a 2,000-warning loop renders with no stack overflow.
+- `../strict-mapslice/verify/verify-playground.mjs` against production: still passes.
+- `https://pathogen.studio/docs`: the three new anchors, the `non-finite` code,
+  the corrected fillet example and both reworded sentences are present; the old
+  "requested 30, using 20" output, "costs one stroke", "positioned like any
+  other error" and the retired `#cli-treat-warnings-as-errors` anchor are gone.
+
+Not done: the `.vsix` was built and verified headlessly but **not installed in
+an editor, and not published** — a separate release step.
 
 Reviews: `reviews/code-review-disposition.md` — one Critical that was real (a
 NaN corrupted the structured trace; fixed at the root), one filed as Critical
