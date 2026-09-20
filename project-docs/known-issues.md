@@ -747,47 +747,52 @@ Both.
 
 ---
 
-## ISSUE-022: A method call on an array literal loses its error position
+## ISSUE-024: `loc.offset` is block-relative for nodes inside a method's trailing block
 
-**Discovered:** 2026-09-19 (writing positioned-error tests for strict `mapSlice`; the messages were right and the `Line N, col M` prefix was missing)
+**Discovered:** 2026-09-19 (a differential check of every `loc` in every tracked program against the line/column definition; 665 of 83,922 disagreed, in 31 files)
 
-**Severity:** Low
+**Severity:** Low — no user-visible symptom found
 
 **Description:**
 
-A `MethodCallExpression` takes its `loc` from its receiver (`src/parser/ast-builder.ts:2126`, `:2162`, `:2165` — `loc: (expr as { loc?: SourceLocation }).loc`), and `evaluateMethodCall` positions every `mError(...)` from that `loc`. An array **literal** node is built without a `loc`, so any error raised by a method called directly on one is unpositioned. Measured:
-
-| Receiver | Error for `.slice('a')` |
-|---|---|
-| `[1, 2].slice('a')` | `slice() start must be a number` — **no position** |
-| `arr.slice('a')` | `Line 1, col 27: slice() start must be a number` |
-| `(1..3).slice('a')` | positioned |
-| `(arr).slice('a')` | positioned |
-| `arr.reverse().slice('a')` | positioned |
-| `@{ h 10 }.offset('a')` | positioned |
-
-So the gap is exactly "array literal as the receiver", and it affects every array method (`slice`, `map`, `filter`, `sort`, `mapSlice`, …), not one of them. It predates the `mapSlice` change.
+For statements inside a trailing block on a method call — `list.map {|item| … }`, `spine.variableOffset() {|go, pb| … }` — `loc.line` and `loc.column` are correct, but `loc.offset` is relative to the block's own text rather than the document. Measured on `project-docs/bulge-strokes/01-extract-function.pathogen`: a `PathCommand` reports `line 2, col 5` with `offset 57`, and offset 57 of the file is inside a comment. Errors raised inside such blocks report the RIGHT line and column (verified: `Line 5, col 13` and `Line 6, col 13` for errors on those lines), because `formatError` reads line and column, never offset.
 
 **Impact:**
 
-The error panel and CLI show the message with no line, and editors cannot place the squiggle. Rare in real programs (arrays are usually bound to a name first); common in one-line tests and docs snippets, which is how it stayed hidden — `tests/evaluator.test.ts` asserted array-method errors by message only.
+None observed. Anything that maps a node back to source text by `offset` — a future refactoring or code-action that slices the document — would read the wrong text for these nodes.
 
 **Current Workarounds:**
 
-Bind the array to a variable before calling the method.
+Use `line` / `column`, not `offset`, for nodes that may sit inside a trailing block.
 
 **Potential Solutions:**
 
-1. Give the array-literal node a `loc` where the AST builder constructs it, like every other literal receiver. Mind the note at `ast-builder.ts:124` — nodes may share one `loc` object — and check the formatter and the language-services walkers, which read `loc`.
-2. Fall back in `evaluateMethodCall`: when `expr.loc` is absent, walk to the nearest positioned ancestor or descendant (`getLineDeep` already does this for binary expressions).
+1. Rebase `offset` where the trailing block's body is built, the way `parseExpressionAt` → `adjustLocations` already does for sub-parsed expressions.
+2. Extend `tests/source-locations.test.ts`' "every loc agrees with the original definition" programs with a trailing block; today they deliberately avoid one, and the file says why.
 
 **Recommended Long-term Solution:**
 
-1, with a coverage-matrix test over receiver shapes × one representative method so a future literal kind cannot regress it (the table above is the matrix).
+1, then 2 as its regression test.
 
 ---
 
-## ISSUE-023: A raw path argument accepts NaN and Infinity (`M NaN 0`) — a policy decision, not yet made
+## Resolved entries (kept for the trail)
+
+### ISSUE-023 (resolved 2026-09-19): A raw path argument accepted NaN and Infinity (`M NaN 0`)
+
+**Resolution:** The author chose option 2 — a positioned warning, with a strict mode.
+
+- New warning code **`non-finite`**: a NaN or ±Infinity in a raw path argument, or handed to a function that draws, warns and the path is still emitted. `null` and a missing argument stay errors. The drawing functions, which had treated a NaN argument as fatal for a few hours on 2026-09-19, follow the same policy now, so `circle(x, y, r)` and `M x y` no longer disagree about the same NaN.
+- **Strict mode**: `compile(src, { strict: true | ['non-finite', …] })` (also `compileWithContext`), CLI `--strict` / `--strict=<codes>`. It lives in `warn()`, the one function every warning passes through, so it covers every code. `WARNING_CODES` is a runtime list with the `WarningCode` type DERIVED from it; the CLI validates against it.
+- `scripts/compile-samples.ts` passes `--strict=non-finite`, so a published sample cannot ship a path the browser stops reading partway. A named code, so warnings a sample has accepted do not fail the build.
+- The five pinned math-contract tests pass untouched — the value still reaches the path, with a warning beside it.
+- Census before shipping: 0 of 455 compiling tracked programs put NaN / Infinity into path data, so the warning is silent across the corpus and none fails under the gate.
+- A missing argument to a context-aware function is still detected by inspecting what was produced, and still fatal — but only when every argument was finite; a NaN ARGUMENT warns and the NaN it produces is expected. Finite-but-degenerate inputs (zero radius, zero sweep, zero distance) were measured to produce finite output, so a NaN there does mean a missing argument.
+- Accuracy note for anyone rewording the message: a layer's subpaths share one `d`, so a bad token costs everything AFTER it in that layer, not one stroke. `project-docs/non-finite-warnings/demo.png` shows it.
+
+Original entry:
+
+> ISSUE-023: A raw path argument accepts NaN and Infinity (`M NaN 0`) — a policy decision, not yet made
 
 **Discovered:** 2026-09-19 (widening the path-emit guard after code review; a fix was written, collided with five deliberate tests, and was reverted pending a decision)
 
@@ -827,7 +832,57 @@ Five existing tests pin these outputs on purpose — `tests/errors.test.ts` ("di
 
 ---
 
-## Resolved entries (kept for the trail)
+### ISSUE-022 (resolved 2026-09-19): A method call on a literal lost its error position — and every error in a for-each header said "Line 1, col 9"
+
+**Resolution:** Wider than first logged, and it had a performance bug underneath it.
+
+- **The class, not the instance.** An audit of `src/parser/ast-builder.ts` found ten expression node kinds built with no `loc`: `ArrayLiteral`, `ObjectLiteral`, `StringLiteral`, `TemplateLiteral` (2 returns), `NumberLiteral`, `BooleanLiteral`, `NullLiteral`, `CalcExpression` (2 sites — the path-argument one had a position computed and never attached), `UnaryExpression`, and a fallback `Identifier`. All carry one now; nine interfaces in `ast.ts` gained `loc?`. Chains inherit it, so `{ list: [1, 2] }.list.slice('a')` and `[[1, 2]][0].slice('a')` are positioned too.
+- **`loc()` was O(source) per call.** It sliced the document prefix and split it on newlines for every node; `offsetToLoc()` did the same once per PATH ARGUMENT. A 1.4 MB, 20,000-line program took **18.8 s to parse**; giving 140,000 more nodes a position would have made that worse. All three copies now share `lineColumnAt()` — line starts computed once, binary search, clamped exactly as `slice(0, offset)` clamps. The same program parses in **0.5 s**. First attempt used a one-entry line-start cache, which every `calc()` sub-parse evicted, rebuilding the document's line starts per `calc()` — still quadratic (11× time for 4× the lines, isolated by profiling one construct at a time). Sources of ≤ 512 characters now bypass the cache, which holds two entries.
+- **Equivalence is proven, not assumed.** `tests/source-locations.test.ts` keeps the old definition verbatim as an oracle: 22,000+ generated `(source, offset)` pairs including CRLF, astral characters, negative / beyond-length / fractional / NaN / ±Infinity offsets, plus a case that evicts the cache on every call.
+- **Found by that work: for-each headers.** `buildForEachLoop` parsed its header with the non-rebasing `parseExpressionString`, so ANY error in a for-each header — top level, function body, path block, text block — reported `Line 1, col 9` (column 9 is the width of the `let _ = ` wrapper). It now uses `parseExpressionAt`. A derived check ("every number literal's offset points at text that parses back to its value") exposed it: the `2` in `radii.mapSlice(2)` on line 3 reported `1:24`.
+- Adding `loc` to ten node kinds broke no test (152 files at the time), and no tracked program changed output.
+
+Original entry:
+
+> ISSUE-022: A method call on an array literal loses its error position
+
+**Discovered:** 2026-09-19 (writing positioned-error tests for strict `mapSlice`; the messages were right and the `Line N, col M` prefix was missing)
+
+**Severity:** Low
+
+**Description:**
+
+A `MethodCallExpression` takes its `loc` from its receiver (`src/parser/ast-builder.ts:2126`, `:2162`, `:2165` — `loc: (expr as { loc?: SourceLocation }).loc`), and `evaluateMethodCall` positions every `mError(...)` from that `loc`. An array **literal** node is built without a `loc`, so any error raised by a method called directly on one is unpositioned. Measured:
+
+| Receiver | Error for `.slice('a')` |
+|---|---|
+| `[1, 2].slice('a')` | `slice() start must be a number` — **no position** |
+| `arr.slice('a')` | `Line 1, col 27: slice() start must be a number` |
+| `(1..3).slice('a')` | positioned |
+| `(arr).slice('a')` | positioned |
+| `arr.reverse().slice('a')` | positioned |
+| `@{ h 10 }.offset('a')` | positioned |
+
+So the gap is exactly "array literal as the receiver", and it affects every array method (`slice`, `map`, `filter`, `sort`, `mapSlice`, …), not one of them. It predates the `mapSlice` change.
+
+**Impact:**
+
+The error panel and CLI show the message with no line, and editors cannot place the squiggle. Rare in real programs (arrays are usually bound to a name first); common in one-line tests and docs snippets, which is how it stayed hidden — `tests/evaluator.test.ts` asserted array-method errors by message only.
+
+**Current Workarounds:**
+
+Bind the array to a variable before calling the method.
+
+**Potential Solutions:**
+
+1. Give the array-literal node a `loc` where the AST builder constructs it, like every other literal receiver. Mind the note at `ast-builder.ts:124` — nodes may share one `loc` object — and check the formatter and the language-services walkers, which read `loc`.
+2. Fall back in `evaluateMethodCall`: when `expr.loc` is absent, walk to the nearest positioned ancestor or descendant (`getLineDeep` already does this for binary expressions).
+
+**Recommended Long-term Solution:**
+
+1, with a coverage-matrix test over receiver shapes × one representative method so a future literal kind cannot regress it (the table above is the matrix).
+
+---
 
 ### ISSUE-021 (resolved 2026-09-15): Arc length ignored the sweep flags — any arc of a half circle or more reported its chord
 

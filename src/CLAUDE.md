@@ -168,6 +168,7 @@ pathogen-lang --src=<file>     Compile a file (explicit flag)
 --print-logs                       Print log() output to stderr
 --log-file=<file>                  Write structured log data as JSON to file
 --to-fixed=<N>                     Round decimals to N digits (0-20)
+--strict[=<codes>]                 Warnings become errors (exit 1): all, or the named codes (--strict=non-finite)
 --output-svg-file=<file>           Output as complete SVG file
 -o, --output <file>                Write path output to file
 --viewBox=<box>                    SVG viewBox (default: "0 0 200 200")

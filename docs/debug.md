@@ -65,17 +65,69 @@ soft.draw();
 ```
 
 ```
-Line 7, col 20: Fillet radius clamped at vertex 0 (requested 30, using 20)
+Line 7, col 12: Fillet radius clamped at vertex 2: effective radius 10.00
+Line 7, col 12: Fillet skipped at vertex 2: radius too large for edge length
+Line 7, col 12: Fillet radius clamped at vertex 0: effective radius 10.00
+Line 7, col 12: Fillet skipped at vertex 0: radius too large for edge length
 ```
 
-Warnings never stop compilation. They appear:
+Warnings never stop compilation unless you ask them to. They appear:
 
 - in the playground console, marked with a **warn** chip, and as a yellow squiggle on the line in the editor;
 - in VS Code, as a warning diagnostic on the line;
-- on the CLI's stderr as `file:line:col: warning: message` (exit code stays 0);
-- in the structured result under `warnings`, one entry per instance, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, or `gradient`.
+- on the CLI's stderr as `file:line:col: warning: message` (exit code stays 0 unless [strict mode](#debug-strict-mode) is on);
+- in the structured result under `warnings`, one entry per instance, each with a `code`: `corner-op`, `cut`, `annotation-transfer`, `font-glyph`, `gradient`, or `non-finite`.
 
 A warning is also mirrored into the log stream as a `[warn] …` entry, so `--log-file` output keeps everything in one place.
+
+### Numbers SVG cannot draw
+
+`NaN` and `Infinity` are numbers, just not ones a path can hold. They usually come from the edge of a formula rather than from a mistake — `sqrt(-1)`, a division by zero, `smoothstep` with equal edges. A value like that reaching the path used to go unreported — the compiler said nothing and the browser quietly stopped drawing partway. It is now a warning, in a path argument or handed to a function that draws:
+
+```
+let radius = sqrt(-1);
+M radius 0
+circle(50, 50, radius);
+```
+
+```
+Line 2, col 3: `radius` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here
+Line 3, col 1: circle(): argument 3 (`radius`) is NaN — SVG cannot represent it; the path will be drawn only up to here
+```
+
+Each line is one warning's line, column and message. On the CLI, for a file saved as `poster.pathogen`, the first reads `poster.pathogen:2:3: warning: …`.
+
+The rest of the program still compiles and other layers are unaffected, but nothing after the bad number is drawn in that layer — check the preview, not just the exit code. When it should cost the build instead, use [strict mode](#debug-strict-mode).
+
+A `NaN` buried inside a structured argument — a point handed to `cubicSpline()` — warns the same way, naming what the call produced rather than which argument: `cubicSpline() produced a non-numeric coordinate (NaN) — check its arguments`.
+
+### Strict mode
+
+Strict mode turns warnings into errors: the first one stops compilation, carrying the warning's own position when it has one. Use it where a warning means the output is wrong — a build script, a published sample — and leave it off while sketching.
+
+Saved as `poster.pathogen`, the program above stops at its first warning:
+
+```bash
+pathogen-lang poster.pathogen --strict               # any warning is an error
+pathogen-lang poster.pathogen --strict=non-finite    # only these codes; comma-separate several
+```
+
+```
+Error: Line 2, col 3: `radius` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here (strict: non-finite)
+```
+
+The full flag reference — the exit code, what an unknown code does — is under [Warnings and strict mode](#cli-warnings-and-strict-mode).
+
+Naming codes lets a program keep the warnings it has accepted — a fillet it means to clamp — while still refusing a `NaN`. From the library it is the `strict` option, with the same two forms:
+
+```js
+compile(source, { strict: true });
+compile(source, { strict: ['non-finite'] });
+```
+
+`compileWithContext` takes the same option. `false` or an empty list mean off, and the runtime `WARNING_CODES` export is the full list of codes.
+
+Strict mode is a CLI and library setting — the playground and VS Code always show warnings as warnings.
 
 ### Repeated warnings
 

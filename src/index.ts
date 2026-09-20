@@ -1,7 +1,7 @@
 import { evaluate, evaluateWithContext } from './evaluator';
 import { parse } from './parser';
 
-import type { CompileResult } from './evaluator';
+import type { CompileResult, StrictOption } from './evaluator';
 
 export { LEGACY_STYLE_OPENER_MESSAGE, lezerParser, parse, parseLezer, parseWithComments } from './parser';
 export { editorParser, styleParser } from './parser/editor-parser';
@@ -111,6 +111,7 @@ export type {
   QuerySource,
   RecordedCornerOp,
   SegmentValue,
+  StrictOption,
   StyleBlockValue,
   SubpathValue,
   SubscriptionValue,
@@ -122,6 +123,7 @@ export type {
   TextLayerState,
   WarningCode,
 } from './evaluator';
+export { WARNING_CODES } from './evaluator/types';
 export {
   isBooleanValue,
   isClipPathValue,
@@ -224,6 +226,14 @@ export interface CompileOptions {
    * the result. Off by default so per-keystroke compiles stay small.
    */
   trace?: boolean;
+  /**
+   * Strict mode: warnings stop compilation as errors, each carrying the
+   * warning's position when it has one (`gradient` and `font-glyph` warnings
+   * have none). `true` for every warning, or a list of codes (`['non-finite']`)
+   * to keep the warnings a program has accepted. Off by default; `false` and
+   * `[]` also mean off. See docs/debug.md "Strict mode".
+   */
+  strict?: StrictOption;
 }
 
 /**
@@ -262,6 +272,8 @@ export interface CompileWithContextOptions {
   toFixed?: number;
   /** Font registry with loaded font data for precise metrics and glyph extraction */
   fonts?: import('./evaluator/types').FontRegistry;
+  /** Strict mode: warnings stop compilation as errors — see CompileOptions.strict. */
+  strict?: StrictOption;
 }
 
 /**

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { WARNING_CODES } from '../src';
 import { extractSVGElements } from './helpers';
 
 const CLI_PATH = join(__dirname, '..', 'src', 'cli.ts');
@@ -947,5 +948,63 @@ describe('warning grouping on stderr', () => {
       expect.stringMatching(/^<inline>: warning: TopoGradient 'surface2' has no contours/),
     ]);
     expect(result.stderr).not.toContain('more like this');
+  });
+});
+
+// --strict (ISSUE-023): warnings become errors — all of them, or the named codes.
+describe('CLI --strict', () => {
+  const NAN_PROGRAM = 'let bad = sqrt(-1);\nM bad 0';
+  const FILLET_PROGRAM =
+    'let plate = @{\n  h 40\n  v 40\n  h -40\n  z\n};\nlet soft = plate.fillet(30);\nM 10 10\nsoft.draw();';
+
+  it('without the flag a NaN is a warning: exit 0, path still printed', () => {
+    const result = runCli(['-e', NAN_PROGRAM]);
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe('M NaN 0');
+    expect(result.stderr).toMatch(/^<inline>:2:3: warning: `bad` is NaN in a path argument — /m);
+  });
+
+  it('--strict makes it a positioned error naming the code: exit 1, no path output', () => {
+    const result = runCli(['-e', NAN_PROGRAM, '--strict']);
+    expect(result.status).toBe(1);
+    expect(result.stdout.trim()).toBe('');
+    expect(result.stderr).toMatch(/Error: Line 2, col 3: `bad` is NaN in a path argument — .*\(strict: non-finite\)/);
+  });
+
+  it('--strict covers every code', () => {
+    const result = runCli(['-e', FILLET_PROGRAM, '--strict']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/\(strict: corner-op\)/);
+  });
+
+  it('--strict=non-finite stops a NaN but keeps a warning the program has accepted', () => {
+    expect(runCli(['-e', NAN_PROGRAM, '--strict=non-finite']).status).toBe(1);
+    const accepted = runCli(['-e', FILLET_PROGRAM, '--strict=non-finite']);
+    expect(accepted.status).toBe(0);
+    expect(accepted.stderr).toMatch(/warning: Fillet radius clamped/);
+  });
+
+  it('accepts a comma-separated list', () => {
+    expect(runCli(['-e', FILLET_PROGRAM, '--strict=non-finite,corner-op']).status).toBe(1);
+  });
+
+  it('an unknown code is an error that lists the valid ones', () => {
+    const result = runCli(['-e', NAN_PROGRAM, '--strict=bogus']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("unknown warning code 'bogus'");
+    // derived from the runtime list, so a code added later is advertised too
+    for (const code of WARNING_CODES) expect(result.stderr).toContain(code);
+  });
+
+  it('--strict= with nothing after it is an error, not "strict off"', () => {
+    const result = runCli(['-e', NAN_PROGRAM, '--strict=']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('--strict= needs at least one code');
+  });
+
+  it('a clean program is unaffected', () => {
+    const result = runCli(['-e', 'M 0 0 L 10 20', '--strict']);
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe('M 0 0 L 10 20');
   });
 });

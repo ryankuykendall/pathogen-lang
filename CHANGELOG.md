@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-20 (non-finite warnings, strict mode, and error positions)
+
+ISSUE-023 and ISSUE-022, both logged by the entry below and both wider than first logged. Demo, verification scripts and review records are in `project-docs/non-finite-warnings/`; the resolutions are in `project-docs/known-issues.md`.
+
+### Added
+
+#### Core
+
+- **A `NaN` or `Infinity` reaching path data is a warning (`non-finite`).** `M NaN 0` used to compile with exit 0 and no warning; the browser then stopped reading that path at the token, with nothing pointing at a line. It now warns at the argument — `` `ratio` is Infinity in a path argument — SVG cannot represent it; the path will be drawn only up to here `` — on all three surfaces, and the path is still emitted. A warning rather than an error because the value is usually the edge of a formula (`sqrt(-1)`, a division by zero, `smoothstep` with equal edges) and should not take the whole drawing down with it; five tests that observe documented math contracts through a path argument pass untouched. No tracked program emits one today. Docs: Debug "Numbers SVG cannot draw".
+- **Strict mode: warnings as errors.** `compile(source, { strict: true })` makes every warning an error, carrying the warning's position when it has one (`gradient` and `font-glyph` warnings have none); `{ strict: ['non-finite'] }` only the named codes, so a program keeps the warnings it has accepted. Also on `compileWithContext`. On the CLI, `--strict` and `--strict=non-finite,gradient`; an unknown code is an error that lists the valid ones. It lives in `warn()`, the one function every warning passes through, so it covers every code, and the error says which: `… (strict: non-finite)`. `WARNING_CODES` is exported as a runtime list, with the `WarningCode` type derived from it. Docs: Debug "Strict mode", CLI "Treat warnings as errors".
+
+### Changed
+
+#### Core
+
+- **A `NaN` or `Infinity` argument to a function that draws is a warning, not an error.** For a few hours on 2026-09-19 (the entry below) `circle(50, 50, sqrt(-1))` was fatal while `M NaN 0` was silent — the same number, two policies. Both now warn. **`null` and a missing argument are still errors**: those are always mistakes. A missing argument to a context-aware function is still caught by inspecting what the call produced, but only when every argument was finite — a `NaN` argument has already warned, and the `NaN` it produces is expected. Docs: Syntax "Null" → "Error Behavior".
+
+### Fixed
+
+#### Core
+
+- **A method called on a literal reports where it is.** `[1, 2].slice('a')` raised its error with no line or column: a method call takes its position from its receiver, and ten kinds of expression node were built without one — array, object, string, template, number, boolean and null literals, `calc()`, unary expressions, and a fallback identifier. All carry a position now, and chains inherit it (`{ list: [1, 2] }.list.slice('a')`, `[[1, 2]][0].slice('a')`). A `calc()` path argument had a position computed and never attached.
+- **A non-finite number no longer corrupts the structured trace.** `NaN` and `Infinity` are numbers spelled with letters, and two of those letters are path commands — the `a` in `NaN`, the `t` in `Infinity`. The scanner that rebuilds commands from emitted text read them as commands: with `trace` on, `circle(50, 50, sqrt(-1))` came back as ten commands instead of three, and `L calc(1 / 0) 20` grew a phantom `t`. Raw arguments had always done this, silently; code review caught it once drawing functions could reach it too. Every scanner in `src/evaluator/path-data.ts` now reads the words as numbers first, sign included. Across 23,500 path layers emitted by the tracked programs, the command sequence is unchanged.
+- **An error in a `for`-each header no longer says "Line 1, col 9".** The header was parsed from its own `let _ = …;` wrapper and never rebased onto the document, so every error in one — at the top level, in a function body, a path block or a text block — pointed at line 1, column 9 (the width of the wrapper). Found by a derived check on the new positions: the `2` in `radii.mapSlice(2)` on line 3 reported `1:24`.
+- **Parsing is no longer quadratic in the size of the program.** `loc()` sliced the document from 0 and split it on newlines for every node, and `offsetToLoc()` did the same once per path argument. A 1.4 MB, 20,000-line program took **18.8 s to parse; it now takes 0.5 s**, while carrying 140,000 more positions. The three copies share one function — line starts computed once, binary search — that clamps exactly as `slice(0, offset)` did. The first version cached line starts for one source; every `calc()` is parsed from its own short wrapped string, evicted it, and rebuilt the document's line starts per `calc()` — quadratic again, somewhere else (11× the time for 4× the lines, found by profiling one construct at a time). Short sources bypass the cache now.
+
+#### Development
+
+- **The old location definition is kept verbatim as a test oracle.** `tests/source-locations.test.ts` checks the new function against it over 22,000+ generated `(source, offset)` pairs — CRLF, astral characters, negative, beyond-length, fractional, `NaN` and ±Infinity offsets — plus a case that evicts the line-start cache on every call, a receiver-shape matrix, a `for`-each header matrix, and a test that parse time grows close to linearly. Two "never reaches the path" matrices returned from their `catch` without asserting anything, so nine cases in ten proved nothing (code review); both now assert both outcomes. The line-start cache's policy — two entries, short sources never enter it — is pinned by counting cache misses rather than by timing, and the tests were shown to fail against a one-entry cache and against a missing bypass before the source was restored byte-identical.
+- **Published samples are built under `--strict=non-finite`** (`scripts/compile-samples.ts`), so a sample cannot ship a path the browser stops reading partway. A named code, so warnings a sample has accepted do not fail the build.
+- **Logged, not fixed: ISSUE-024** — inside a method's trailing block, `loc.offset` is relative to the block's own text. Line and column are right, so errors there are positioned correctly; nothing user-visible was found.
+
 ## [Unreleased] - 2026-09-19 (strict mapSlice, and drawing functions reject a missing number)
 
 Both came out of one workspace: neighbouring radii paired into rings with `mapSlice(2)`, where the last ring's inner radius was `null` and the compiler wrote it into the path anyway. Plan, demo and three-surface verification scripts are in `project-docs/strict-mapslice/`; the diagnosis, probes and the corrected artwork are in `project-docs/variable-offset/closed-spine-diagnosis/`.

@@ -12,6 +12,8 @@
  *
  * Messages are returned bare — the caller attaches the call-site position, the
  * same way it already does for errors thrown by stdlib functions themselves.
+ * This module decides WHAT is wrong and how it reads; the evaluator decides
+ * whether that becomes `throw` or `warn()` (see the severity note below).
  */
 
 import { pathFunctions } from '../stdlib/path';
@@ -41,28 +43,60 @@ export function describeMissingPathArgs(name: string, fn: unknown, argCount: num
   return `${name}() expects ${required} arguments, got ${argCount}`;
 }
 
-function describeValue(v: unknown): string | null {
-  if (v === null || v === undefined) return 'null';
-  if (typeof v === 'number' && !Number.isFinite(v)) return String(v);
+// ---- two kinds of "not a number", two severities (ISSUE-023, 2026-09-19) ----
+//
+//   null / a missing argument → ERROR. Always a mistake: a destructured or
+//     `.first` / `.last` value from an array shorter than expected, a wrong call.
+//   NaN / ±Infinity           → WARNING (code `non-finite`), path still emitted.
+//     Usually the edge of a formula — `sqrt(-1)`, a division by zero,
+//     `smoothstep` with equal edges — so it costs the rest of that layer's path
+//     (subpaths share one `d`; the browser stops at the bad token), not the drawing.
+//     Strict mode turns it into an error where that is wanted.
+//
+// The same policy covers raw path arguments (`M x y`), which until this date were
+// silent about NaN while drawing functions threw.
+
+/** What SVG does with the value — shared by every `non-finite` warning. */
+const NON_FINITE_CONSEQUENCE = 'SVG cannot represent it; the path will be drawn only up to here';
+
+/** Names the variable when the argument is a plain identifier — the binding to chase. */
+function argLabel(expr: Expression | undefined): string {
+  return expr?.type === 'Identifier' ? ` (\`${expr.name}\`)` : '';
+}
+
+/** First `null` argument — an ERROR. */
+export function describeNullPathArg(name: string, argExprs: Expression[], args: unknown[]): string | null {
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] !== null && args[i] !== undefined) continue;
+    return `${name}(): argument ${i + 1}${argLabel(argExprs[i])} is null — path functions need a number here`;
+  }
   return null;
 }
 
+const NO_MESSAGES: readonly string[] = Object.freeze([]);
+
 /**
- * First argument that cannot become a coordinate: `null`, or a non-finite
- * number. Names the variable when the argument is a plain identifier — that is
- * the binding the user has to chase (typically a destructured or
- * `.first`/`.last` value from an array shorter than expected).
+ * Every NaN / ±Infinity argument — one WARNING each, so each names its own
+ * argument. Runs on every drawing-function call, so the common case (all
+ * finite) allocates nothing.
  */
-export function describeBadPathArg(name: string, argExprs: Expression[], args: unknown[]): string | null {
+export function describeNonFinitePathArgs(name: string, argExprs: Expression[], args: unknown[]): readonly string[] {
+  let messages: string[] | null = null;
   for (let i = 0; i < args.length; i++) {
-    const bad = describeValue(args[i]);
-    if (bad === null) continue;
-    const expr = argExprs[i];
-    const label = expr?.type === 'Identifier' ? ` (\`${expr.name}\`)` : '';
-    const need = bad === 'null' ? 'a number' : 'a finite number';
-    return `${name}(): argument ${i + 1}${label} is ${bad} — path functions need ${need} here`;
+    const value = args[i];
+    if (typeof value !== 'number' || Number.isFinite(value)) continue;
+    (messages ??= []).push(
+      `${name}(): argument ${i + 1}${argLabel(argExprs[i])} is ${value} — ${NON_FINITE_CONSEQUENCE}`,
+    );
   }
-  return null;
+  return messages ?? NO_MESSAGES;
+}
+
+/** A raw path argument (`M x y`, `h calc(…)`) that evaluated to NaN / ±Infinity — a WARNING. */
+export function describeNonFiniteRawArg(value: number, identifier?: string): string | null {
+  if (Number.isFinite(value)) return null;
+  const subject = identifier ? `\`${identifier}\` is ${value} in a path argument` : `a path argument is ${value}`;
+  return `${subject} — ${NON_FINITE_CONSEQUENCE}`;
 }
 
 const NON_FINITE_TOKEN = /(?:^|[\s,])(-?NaN|-?Infinity|null|undefined)(?=$|[\s,])/;

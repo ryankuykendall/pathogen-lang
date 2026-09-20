@@ -153,6 +153,11 @@ program
         `--width=${width}`,
         `--height=${height}`,
         '--include-metadata',
+        // A published sample must not ship a path the browser will stop reading
+        // partway: NaN / Infinity in path data is an error here, not a warning.
+        // Named code, so warnings a sample has accepted (a clamped fillet, a
+        // deliberately degenerate gradient) do not fail the build.
+        '--strict=non-finite',
       ];
       if (useGpu) {
         cliArgs.push('--render-gpu', '--scale=2');

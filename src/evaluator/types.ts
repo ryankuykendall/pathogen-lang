@@ -765,12 +765,27 @@ export interface LogEntry {
 }
 
 /** What kind of situation a compiler warning reports. */
-export type WarningCode =
-  | 'corner-op' // fillet / chamfer / ellipticalFillet clamped or skipped
-  | 'cut' // cut() stroke that did not separate anything
-  | 'annotation-transfer' // labels / corner ops dropped in a path block
-  | 'font-glyph' // characters with no glyph in the loaded font
-  | 'gradient'; // gradient definition that will render degenerate
+/**
+ * Every warning code, at runtime — the CLI validates `--strict=<codes>` against
+ * it. `WarningCode` is DERIVED from this list, so the two cannot drift.
+ */
+export const WARNING_CODES = [
+  'corner-op', // fillet / chamfer / ellipticalFillet clamped or skipped
+  'cut', // cut() stroke that did not separate anything
+  'annotation-transfer', // labels / corner ops dropped in a path block
+  'font-glyph', // characters with no glyph in the loaded font
+  'gradient', // gradient definition that will render degenerate
+  'non-finite', // NaN / Infinity reaching path data — SVG cannot represent it
+] as const;
+
+export type WarningCode = (typeof WARNING_CODES)[number];
+
+/**
+ * Strict mode: which warnings stop compilation as errors (positioned when the
+ * warning itself carries a position — not all do).
+ * `true` = all of them; a list = only those codes; absent / false / [] = none.
+ */
+export type StrictOption = boolean | readonly WarningCode[];
 
 /**
  * A non-fatal problem the compiler worked around. Surfaces on the CLI's
@@ -1188,6 +1203,8 @@ export interface EvaluationState {
   pathContext: PathContext;
   logs: LogEntry[];
   warnings: CompileWarning[];
+  /** Strict mode, resolved: `true` = every code, a set = those codes, undefined = off. See warn(). */
+  strictWarnings?: true | ReadonlySet<WarningCode>;
   /** Keep per-fragment records and command histories for the result (compile `trace` option). */
   trace?: boolean;
   calledStdlibFunctions: Set<string>; // Stdlib function names invoked during evaluation

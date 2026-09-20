@@ -129,6 +129,18 @@ Both flags can be combined:
 pathogen-lang --src=debug.pathogen --print-logs --log-file=logs.json --output-svg-file=out.svg
 ```
 
+## Warnings and strict mode
+
+Warnings (see [Debug & Console](#debug-warnings)) go to stderr and leave the exit code at 0. To fail a build on them instead:
+
+```bash
+pathogen-lang input.pathogen --strict               # any warning stops the build
+pathogen-lang input.pathogen --strict=non-finite    # only the named codes
+pathogen-lang input.pathogen --strict=non-finite,gradient
+```
+
+The first matching warning becomes an error, positioned when the warning has a position, and the exit code is 1. The codes are the ones listed under [Warnings](#debug-warnings). An unknown code is itself an error and lists the valid ones; so is `--strict=` with nothing after it — use `--strict` alone for every code. See [Strict mode](#debug-strict-mode) for when to use it.
+
 ## SVG Styling Options
 
 When using `--output-svg-file`, you can customize the appearance:
@@ -190,9 +202,9 @@ pathogen-lang -v
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Error (parse error, failed assertion, file not found, unknown option, `--png` without puppeteer, etc.) |
+| 1 | Error (parse error, failed assertion, file not found, unknown option, `--png` without puppeteer, a warning under `--strict`, etc.) |
 
-Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file:line:col: warning: message`; when the same warning repeats from one site with only its numbers changing, the first instance is followed by `  … N more like this`. Warnings do not change the exit code, and `--json` lists every instance.
+Warnings (see [Debug & Console](#debug-warnings)) are printed to stderr as `file:line:col: warning: message`; when the same warning repeats from one site with only its numbers changing, the first instance is followed by `  … N more like this`. Warnings do not change the exit code unless [`--strict`](#cli-warnings-and-strict-mode) is set, and `--json` lists every instance.
 
 ## File Extensions
 

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+
+  <path data-layer-name="sound" id="sound" d="M 20 60 L 380 60" fill="none" stroke="#0a7" stroke-width="6"/>
+  <path data-layer-name="degenerate" id="degenerate" d="M 20 140 L 200 140 L Infinity 140 L 380 140" fill="none" stroke="#c00" stroke-width="6"/>
+</svg>

@@ -12,11 +12,12 @@ import {
   parse,
   resolveFontDirectives,
   toJsonDocument,
+  WARNING_CODES,
 } from '.';
 import { groupWarnings } from './evaluator/warning-groups';
 import type { SvgGeneratorOptions } from './svg-generator';
 
-import type { CompileOptions, CompileResult, CompileWarning, FontRegistry, LogEntry } from '.';
+import type { CompileOptions, CompileResult, CompileWarning, FontRegistry, LogEntry, WarningCode } from '.';
 
 interface CliOptions {
   svgOutput?: string;
@@ -34,6 +35,8 @@ interface CliOptions {
   includeMetadata?: boolean;
   json?: boolean;
   pngOutput?: string;
+  /** --strict (every warning is an error) or --strict=<codes>. */
+  strict?: true | WarningCode[];
 }
 
 function printUsage() {
@@ -60,6 +63,10 @@ Options:
                                  logs, warnings, and the command trace.
                                  Combines with -o; not with --output-svg-file,
                                  --render-gpu, or --png.
+  --strict[=<codes>]             Treat warnings as errors: the first one stops
+                                 compilation with exit code 1. With no value,
+                                 every warning; with a comma-separated list,
+                                 only those codes (e.g. --strict=non-finite).
   --viewBox=<box>                SVG viewBox (default: "0 0 200 200").
                                  Overridden when the source has a
                                  'define ViewBox(...)' statement.
@@ -466,6 +473,33 @@ function parseArgs(args: string[]): { source: string; options: CliOptions; outpu
 
     if (arg === '--json') {
       options.json = true;
+      i++;
+      continue;
+    }
+
+    if (arg === '--strict') {
+      options.strict = true;
+      i++;
+      continue;
+    }
+
+    if (arg.startsWith('--strict=')) {
+      const codes = arg
+        .slice('--strict='.length)
+        .split(',')
+        .map((code) => code.trim())
+        .filter(Boolean);
+      const known: readonly string[] = WARNING_CODES;
+      const unknown = codes.filter((code) => !known.includes(code));
+      if (codes.length === 0 || unknown.length > 0) {
+        const problem =
+          codes.length === 0 ? '--strict= needs at least one code' : `unknown warning code '${unknown[0]}'`;
+        console.error(
+          `Error: ${problem}. Valid codes: ${WARNING_CODES.join(', ')}. Use --strict alone for all of them.`,
+        );
+        process.exit(1);
+      }
+      options.strict = codes as WarningCode[];
       i++;
       continue;
     }
@@ -969,6 +1003,7 @@ async function main() {
       ...(options.toFixed != null ? { toFixed: options.toFixed } : {}),
       ...(fontRegistry ? { fonts: fontRegistry } : {}),
       ...(options.json ? { trace: true } : {}),
+      ...(options.strict ? { strict: options.strict } : {}),
     };
     const result = compile(source, Object.keys(compileOptions).length > 0 ? compileOptions : undefined);
     outputLogs(result.logs, options);

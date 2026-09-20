@@ -145,13 +145,22 @@ for ([pair, index] in ${slices}) {
         for (const args of ['', '0.5']) {
           it(`${name}(${args})`, () => {
             const src = emitting(`${name}(${args})`);
-            let data = '';
+            let data: string | null = null;
+            let thrown = '';
             try {
               data = allPathData(src);
-            } catch {
-              return; // stopped the compile — the contract holds
+            } catch (error) {
+              thrown = (error as Error).message;
             }
-            expect(data).not.toMatch(NON_NUMERIC);
+            if (data === null) {
+              // Stopped the compile — but it must be a compile error about THIS
+              // call. Returning here unchecked (as this test first did) would
+              // let a parse error in the template satisfy every case.
+              expect(thrown).toMatch(/^Line 1, col \d+: /);
+              expect(thrown).toContain(name);
+            } else {
+              expect(data).not.toMatch(NON_NUMERIC);
+            }
           });
         }
       }
@@ -231,13 +240,19 @@ for ([pair, index] in ${slices}) {
     }
   });
 
-  describe('non-finite numbers', () => {
-    it('rejects a NaN argument instead of emitting `a NaN NaN`', () => {
-      expect(() => compile('circle(50, 50, sqrt(-1));')).toThrow(/Line 1, col \d+: circle\(\).*argument 3.*NaN/);
+  // NaN and Infinity were errors here for a few hours on 2026-09-19. They are now
+  // a WARNING (ISSUE-023): usually the edge of a formula rather than a mistake,
+  // and the same policy as a raw `M NaN 0`. The cases live in
+  // tests/non-finite-warnings.test.ts; what stays here is the boundary — a
+  // non-finite number no longer stops the compile, a missing number still does.
+  describe('non-finite numbers are not errors', () => {
+    it('a NaN argument compiles, with a warning', () => {
+      const result = compile('circle(50, 50, sqrt(-1));');
+      expect(result.warnings.map((warning) => warning.code)).toEqual(['non-finite']);
     });
 
-    it('rejects an infinite argument', () => {
-      expect(() => compile('rect(0, 0, 1 / 0, 10);')).toThrow(/rect\(\).*argument 3/);
+    it('null in the same position is still an error', () => {
+      expect(() => compile(`${NULL_PRELUDE}circle(50, 50, missing);`)).toThrow(/argument 3.*null/);
     });
   });
 

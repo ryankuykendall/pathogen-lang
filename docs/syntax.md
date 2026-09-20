@@ -494,10 +494,9 @@ circle(50, 50, innerRadius);  // Error: circle(): argument 3 (`innerRadius`) is 
 circle(50);                   // Error: circle() expects 3 arguments, got 1
 ```
 
-A `NaN` or `Infinity` argument reads the same way, asking for a *finite* number. Sometimes the bad value is not an argument the compiler can point at, so the function reports what it produced instead:
+`NaN` and `Infinity` are treated differently, because a formula produces them where a mistake produces a `null`. In a path argument, or handed to a function that draws, they produce a [warning](#debug-numbers-svg-cannot-draw) and the path is still emitted — that layer simply stops drawing where the bad number lands. [Strict mode](#debug-strict-mode) turns that into an error.
 
-- a `NaN` buried inside a structured argument, such as a point handed to `cubicSpline` — `cubicSpline() produced a non-numeric coordinate (NaN) — check its arguments`;
-- an argument missing from a context-aware function, which adds how many arrived — `polarLine() produced a non-numeric coordinate (NaN) — check its arguments (it received 1 argument)`.
+One `NaN` stays an error whatever the mode, because it is always a mistake: the one a *missing* argument produces in a context-aware function. There is no argument for the compiler to point at, so it reports what the call produced and how many arguments arrived — `polarLine() produced a non-numeric coordinate (NaN) — check its arguments (it received 1 argument)`.
 
 A `null` usually arrives by accident rather than from a literal: [destructuring](#syntax-destructuring) an array shorter than its pattern, `.first`/`.last` on an empty array, or the short windows from [`.mapSlice(length, { partial: true })`](#syntax-mapslicelength-options).
 

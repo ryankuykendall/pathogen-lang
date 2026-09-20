@@ -73,10 +73,12 @@ import {
   subPathCommands,
 } from './path-transforms';
 import {
-  describeBadPathArg,
   describeMissingPathArgs,
   describeNonFiniteContextResult,
   describeNonFiniteEmit,
+  describeNonFinitePathArgs,
+  describeNonFiniteRawArg,
+  describeNullPathArg,
   isPathEmittingStdlib,
 } from './path-emit-guard';
 import { pathCut, pathDifference, pathIntersection, pathUnion, pathXor } from './boolean-ops';
@@ -173,6 +175,7 @@ import type {
   QuerySource,
   Scope,
   SegmentValue,
+  StrictOption,
   StyleBlockValue,
   SubpathValue,
   SubscriptionValue,
@@ -281,6 +284,7 @@ export type {
   RecordedCornerOp,
   Scope,
   SegmentValue,
+  StrictOption,
   StyleBlockValue,
   SubpathValue,
   SubscriptionValue,
@@ -319,7 +323,12 @@ import {
   storeToPathData,
   derivedMeta,
 } from './segments';
-import { commandsToRelativeD, normalizeToRelativeArgs, serializeRelativeAndTrack } from './path-data';
+import {
+  commandsToRelativeD,
+  hasCommandLetter,
+  normalizeToRelativeArgs,
+  serializeRelativeAndTrack,
+} from './path-data';
 import { commandValues, endpointValue, parsePathQuery, runPathQuery, wrapCommands } from './path-query';
 import { tryResolveCSSFunctionArgs as sharedTryResolveCSSFunctionArgs } from './css-function-resolve';
 import { spliceTemplateFragments } from '../css-value-utils';
@@ -938,6 +947,13 @@ function formatError(message: string, line?: number, column?: number): string {
   return message;
 }
 
+/** `strict` option → the form warn() reads: true, a non-empty set, or undefined (off). */
+function resolveStrict(strict: StrictOption | undefined): true | ReadonlySet<WarningCode> | undefined {
+  if (strict === true) return true;
+  if (Array.isArray(strict) && strict.length > 0) return new Set(strict as readonly WarningCode[]);
+  return undefined;
+}
+
 function getLine(node: unknown): number | undefined {
   return (node as { loc?: { line: number } })?.loc?.line;
 }
@@ -957,6 +973,13 @@ function warn(
   if (!evalState) return;
   const line = loc?.line;
   const column = loc?.column;
+  // Strict mode: the warning stops the compile as an error, positioned when the
+  // warning has a loc (formatError returns the bare message without one). Every
+  // warning passes through here, so this is the only place strictness lives.
+  const strict = evalState.strictWarnings;
+  if (strict === true || strict?.has(code)) {
+    throw new Error(formatError(`${message} (strict: ${code})`, line, column));
+  }
   evalState.warnings.push({
     code,
     message,
@@ -7966,20 +7989,29 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     // Every context-aware function is numeric geometry — null is never a
     // meaningful argument (polarLine used to coerce it to 0, tangentArc wrote
     // `A null null`). Checked before dispatch: these mutate the path context.
-    const badCtxArg = describeBadPathArg(call.name, call.args, args);
-    if (badCtxArg) throw new Error(formatError(badCtxArg, getLine(call), getCol(call)));
+    const nullCtxArg = describeNullPathArg(call.name, call.args, args);
+    if (nullCtxArg) throw new Error(formatError(nullCtxArg, getLine(call), getCol(call)));
+    // NaN / Infinity is a warning, not an error (path-emit-guard.ts, severity note).
+    const nonFiniteCtxArgs = describeNonFinitePathArgs(call.name, call.args, args);
+    for (const message of nonFiniteCtxArgs) warn(scope.evalState, 'non-finite', message, call.loc);
     const ctxResult = evaluateContextAwareFunction(call.name, args, scope, call.loc);
-    // A MISSING argument is not in `args`, so the check above cannot see it; it
+    // A MISSING argument is not in `args`, so the checks above cannot see it; it
     // is `undefined` inside the case and comes out as NaN (`polarLine(0.5)` →
     // `L NaN NaN`). These are switch cases, not function objects — no arity to
     // read — so inspect what was produced instead. See describeNonFiniteEmit.
-    const badCtxEmit = describeNonFiniteContextResult(
-      call.name,
-      ctxResult,
-      args.length,
-      scope.evalState.pathContext.lastTangent,
-    );
-    if (badCtxEmit) throw new Error(formatError(badCtxEmit, getLine(call), getCol(call)));
+    // Only when every argument was finite: a NaN argument has already warned,
+    // and the NaN it produces is expected rather than evidence of a missing one.
+    // (Finite-but-degenerate inputs — zero radius, zero sweep — were measured to
+    // produce finite output, so NaN here does mean a missing argument.)
+    if (nonFiniteCtxArgs.length === 0) {
+      const badCtxEmit = describeNonFiniteContextResult(
+        call.name,
+        ctxResult,
+        args.length,
+        scope.evalState.pathContext.lastTangent,
+      );
+      if (badCtxEmit) throw new Error(formatError(badCtxEmit, getLine(call), getCol(call)));
+    }
     return ctxResult;
   }
 
@@ -7996,28 +8028,41 @@ function evaluateFunctionCall(call: FunctionCall, scope: Scope): Value {
     // A path-emitting function must never write a non-number into `d`
     // (docs/syntax.md → Null). See path-emit-guard.ts.
     const emitsPath = isPathEmittingStdlib(fn);
+    let warnedNonFiniteArg = false;
     if (emitsPath) {
+      // Errors: too few arguments, or a null one — always mistakes.
       const badArg =
         describeMissingPathArgs(call.name, fn, stdlibArgs.length) ??
-        describeBadPathArg(call.name, call.args, stdlibArgs);
+        describeNullPathArg(call.name, call.args, stdlibArgs);
       if (badArg) throw new Error(formatError(badArg, getLine(call), getCol(call)));
+      // Warnings: NaN / Infinity — the path is still emitted.
+      for (const message of describeNonFinitePathArgs(call.name, call.args, stdlibArgs)) {
+        warn(scope.evalState, 'non-finite', message, call.loc);
+        warnedNonFiniteArg = true;
+      }
     }
     let result: Value;
     try {
       result = callStdlibPreservingAngles(call.name, fn as (...ns: number[]) => unknown, stdlibArgs) as Value;
-      if (
-        emitsPath &&
-        typeof result === 'object' &&
-        result !== null &&
-        (result as PathSegment).type === 'PathSegment'
-      ) {
-        const badEmit = describeNonFiniteEmit(call.name, (result as PathSegment).value);
-        if (badEmit) throw new Error(badEmit);
-      }
     } catch (e) {
       // Stdlib functions throw bare messages (e.g. cubicBezier handle
       // validation); attach the call site so the user can find it.
       throw new Error(formatError(e instanceof Error ? e.message : String(e), getLine(call), getCol(call)));
+    }
+
+    // Backstop on what was emitted: a NaN the argument check could not see (one
+    // buried in a structured argument — a point handed to cubicSpline). Skipped
+    // when an argument already warned, so one bad value is one warning. Outside
+    // the try: under strict mode warn() throws an already-formatted error.
+    if (
+      emitsPath &&
+      !warnedNonFiniteArg &&
+      typeof result === 'object' &&
+      result !== null &&
+      (result as PathSegment).type === 'PathSegment'
+    ) {
+      const badEmit = describeNonFiniteEmit(call.name, (result as PathSegment).value);
+      if (badEmit) warn(scope.evalState, 'non-finite', badEmit, call.loc);
     }
 
     // If stdlib function returns a PathSegment, track its commands
@@ -8153,6 +8198,19 @@ function resolveCallbackBlock(
   return null;
 }
 
+/**
+ * Format a COMPUTED path argument. NaN / Infinity is still written — five tests
+ * observe documented math contracts through `M calc(…) 0`, and degenerate math
+ * should cost the rest of that layer's path, not the drawing — but no longer silently: it warns
+ * (`non-finite`), and strict mode makes that an error. Literals skip this; a
+ * number literal is finite by construction.
+ */
+function pathArgNumber(n: number, arg: PathArg, scope: Scope): string {
+  const message = describeNonFiniteRawArg(n, arg.type === 'Identifier' ? arg.name : undefined);
+  if (message) warn(scope.evalState, 'non-finite', message, { line: getLine(arg), column: getCol(arg) });
+  return formatNum(n);
+}
+
 function evaluatePathArg(arg: PathArg, scope: Scope): string {
   switch (arg.type) {
     case 'NumberLiteral':
@@ -8171,7 +8229,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       }
       const n = toNumber(value);
       if (n !== undefined) {
-        return formatNum(n);
+        return pathArgNumber(n, arg, scope);
       }
       if (typeof value === 'object' && value !== null && 'type' in value && value.type === 'PathSegment') {
         return value.value;
@@ -8188,7 +8246,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       if (n === undefined) {
         throw new Error('calc() must evaluate to a number');
       }
-      return formatNum(n);
+      return pathArgNumber(n, arg, scope);
     }
 
     case 'FunctionCall': {
@@ -8199,7 +8257,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       }
       const n = toNumber(value);
       if (n !== undefined) {
-        return formatNum(n);
+        return pathArgNumber(n, arg, scope);
       }
       if (typeof value === 'object' && value !== null && 'type' in value) {
         if (value.type === 'PathSegment') {
@@ -8221,7 +8279,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       }
       const n = toNumber(value);
       if (n !== undefined) {
-        return formatNum(n);
+        return pathArgNumber(n, arg, scope);
       }
       throw new Error(`Member expression did not evaluate to a number`);
     }
@@ -8233,7 +8291,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       }
       const n = toNumber(value);
       if (n !== undefined) {
-        return formatNum(n);
+        return pathArgNumber(n, arg, scope);
       }
       throw new Error('Index expression did not evaluate to a number');
     }
@@ -8246,7 +8304,7 @@ function evaluatePathArg(arg: PathArg, scope: Scope): string {
       }
       const n = toNumber(value);
       if (n !== undefined) {
-        return formatNum(n);
+        return pathArgNumber(n, arg, scope);
       }
       if (typeof value === 'object' && value !== null && 'type' in value) {
         if (value.type === 'PathSegment') {
@@ -8748,7 +8806,9 @@ function evaluatePathCommand(cmd: PathCommand, scope: Scope): { text: string; co
   let commands: PathBlockCommand[] = [];
   if (scope.evalState && cmd.command !== '') {
     const ctx = scope.evalState.pathContext;
-    if (before && /[MmLlHhVvCcSsQqTtAaZz]/.test(result.slice(1))) {
+    // hasCommandLetter, not a letter regex: the `a` in NaN and the `t` in Infinity
+    // are not commands (path-data.ts, "Non-finite numbers").
+    if (before && hasCommandLetter(result.slice(1))) {
       // The emitted text carries more commands than the letter we started
       // with: rewind and replay the whole fragment in order, so the structured
       // record, the command history, and the pen all agree with the bytes.
@@ -10800,7 +10860,7 @@ function buildCompileResult(mainAccum: PathStore, evalState: EvaluationState): C
 
 export function evaluate(
   program: Program,
-  options?: { toFixed?: number; fonts?: FontRegistry; trace?: boolean },
+  options?: { toFixed?: number; fonts?: FontRegistry; trace?: boolean; strict?: StrictOption },
 ): CompileResult {
   setNumberFormat(options?.toFixed);
   try {
@@ -10811,6 +10871,7 @@ export function evaluate(
       pathContext,
       logs,
       warnings: [],
+      strictWarnings: resolveStrict(options?.strict),
       trace: !!options?.trace,
       calledStdlibFunctions: new Set(),
       layers: new Map(),
@@ -10885,6 +10946,8 @@ export interface EvaluateWithContextOptions {
   toFixed?: number;
   /** Font registry with loaded font data for precise metrics and glyph extraction */
   fonts?: import('./types').FontRegistry;
+  /** Strict mode: warnings become errors — all (`true`) or the listed codes. */
+  strict?: StrictOption;
 }
 
 /**
@@ -10905,6 +10968,7 @@ export function evaluateWithContext(
       pathContext,
       logs,
       warnings: [],
+      strictWarnings: resolveStrict(options.strict),
       trace: !!options.trace,
       calledStdlibFunctions,
       layers: new Map(),

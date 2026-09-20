@@ -1,0 +1,90 @@
+{
+  "at": "2026-09-20T00:44:42.323Z",
+  "results": [
+    {
+      "name": "LSP publishes a diagnostic for a NaN path argument",
+      "ok": true,
+      "detail": "[\"`bad` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here\"]"
+    },
+    {
+      "name": "…with severity Warning (2), not Error (1)",
+      "ok": true,
+      "detail": "2"
+    },
+    {
+      "name": "…on the right line and column (0-based: line 1, character 2)",
+      "ok": true,
+      "detail": "{\"line\":1,\"character\":2}"
+    },
+    {
+      "name": "LSP: the demo gets exactly one Infinity warning, on line 28",
+      "ok": true,
+      "detail": "[[2,{\"line\":27,\"character\":4}]]"
+    },
+    {
+      "name": "LSP: finite arguments — zero, negative, fractional — produce no diagnostic",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "bundled preview: the demo warns once — non-finite, line 28 col 5",
+      "ok": true,
+      "detail": "[{\"code\":\"non-finite\",\"message\":\"`ratio` is Infinity in a path argument — SVG cannot represent it; the path will be drawn only up to here\",\"line\":28,\"column\":5}]"
+    },
+    {
+      "name": "bundled preview: both layers are emitted, the sound one intact",
+      "ok": true,
+      "detail": "[\"sound:M 20 60 L 380 60\",\"degenerate:M 20 140 L 200 140 L Infinity 140 L 380 140\"]"
+    },
+    {
+      "name": "bundled preview: strict: true → positioned error naming the code",
+      "ok": true,
+      "detail": "Line 2, col 3: `bad` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here (strict: non-finite)"
+    },
+    {
+      "name": "bundled preview: strict: ['non-finite'] → same error",
+      "ok": true,
+      "detail": "Line 2, col 3: `bad` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here (strict: non-finite)"
+    },
+    {
+      "name": "bundled preview: strict: ['gradient'] leaves it a warning",
+      "ok": true,
+      "detail": "1"
+    },
+    {
+      "name": "bundled preview: a drawing function warns instead of throwing",
+      "ok": true,
+      "detail": "[\"circle(): argument 3 (`radius`) is NaN — SVG cannot represent it; the path will be drawn only up to here\"]"
+    },
+    {
+      "name": "bundled preview: a pinned math contract still reaches the path",
+      "ok": true,
+      "detail": "M NaN 0"
+    },
+    {
+      "name": "bundled preview: null is still an error",
+      "ok": true,
+      "detail": "Line 2, col 1: circle(): argument 3 (`missing`) is null — path functions need a number here"
+    },
+    {
+      "name": "bundled preview: a missing context-aware argument is still an error",
+      "ok": true,
+      "detail": "Line 1, col 7: polarLine() produced a non-numeric coordinate (NaN) — check its arguments (it received 1 argument)"
+    },
+    {
+      "name": "ISSUE-022: array-literal receiver error is positioned",
+      "ok": true,
+      "detail": "Line 3, col 14: slice() start must be a number"
+    },
+    {
+      "name": "ISSUE-022: string-literal receiver error is positioned",
+      "ok": true,
+      "detail": "Line 2, col 14: slice() expects 2 arguments"
+    },
+    {
+      "name": "ISSUE-022: for-each header error is positioned at the header",
+      "ok": true,
+      "detail": "Line 3, col 14: slice() start must be a number"
+    }
+  ]
+}

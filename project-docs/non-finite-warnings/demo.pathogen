@@ -1,0 +1,30 @@
+// Non-finite warning demo — one degenerate value costs one stroke, not the drawing.
+// `spacing` is 0, so `ratio` is Infinity. The 'degenerate' layer's path stops at
+// that token in the browser; the 'sound' layer is untouched. The compiler used to
+// say nothing about this; it now warns at the `L ratio 140` line.
+define ViewBox(0, 0, 400, 200);
+
+let sound = PathLayer('sound') #{
+  fill: none;
+  stroke: #0a7;
+  stroke-width: 6;
+};
+let degenerate = PathLayer('degenerate') #{
+  fill: none;
+  stroke: #c00;
+  stroke-width: 6;
+};
+
+let spacing = 0;
+let ratio = 10 / spacing;
+
+sound.apply {
+  M 20 60
+  L 380 60
+}
+degenerate.apply {
+  M 20 140
+  L 200 140
+  L ratio 140
+  L 380 140
+}

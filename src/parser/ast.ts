@@ -292,6 +292,7 @@ export type PathArg =
 export interface CalcExpression {
   type: 'CalcExpression';
   expression: Expression;
+  loc?: SourceLocation;
 }
 
 // Shared shape of a block-with-params: trailing blocks and lambda literals
@@ -348,6 +349,7 @@ export interface UnaryExpression {
   type: 'UnaryExpression';
   operator: '-' | '!';
   argument: Expression;
+  loc?: SourceLocation;
 }
 
 // Property access: ctx.x, ctx.position.x
@@ -369,29 +371,34 @@ export interface NumberLiteral {
   type: 'NumberLiteral';
   value: number;
   unit?: 'deg' | 'rad' | 'pi' | '%'; // Optional unit suffix (angle or percent)
+  loc?: SourceLocation;
 }
 
 // String literal (for log messages)
 export interface StringLiteral {
   type: 'StringLiteral';
   value: string;
+  loc?: SourceLocation;
 }
 
 // Template literal: `hello ${name}!`
 export interface TemplateLiteral {
   type: 'TemplateLiteral';
   parts: (string | Expression)[]; // Alternating strings and expressions
+  loc?: SourceLocation;
 }
 
 // null literal
 export interface NullLiteral {
   type: 'NullLiteral';
+  loc?: SourceLocation;
 }
 
 // boolean literal
 export interface BooleanLiteral {
   type: 'BooleanLiteral';
   value: boolean;
+  loc?: SourceLocation;
 }
 
 // enum definition
@@ -412,6 +419,7 @@ export interface SpreadElement {
 export interface ArrayLiteral {
   type: 'ArrayLiteral';
   elements: (Expression | SpreadElement)[];
+  loc?: SourceLocation;
 }
 
 // Object property: key: value, or shorthand { key } desugared to key: key
@@ -428,6 +436,7 @@ export interface ObjectProperty {
 export interface ObjectLiteral {
   type: 'ObjectLiteral';
   properties: (ObjectProperty | SpreadElement)[];
+  loc?: SourceLocation;
 }
 
 // Array destructuring: let [a, b, ...rest] = expr;

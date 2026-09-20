@@ -1,0 +1,107 @@
+[
+  {
+    "name": "the sound layer renders complete beside a degenerate one",
+    "ok": true,
+    "detail": "M 20 60 L 380 60"
+  },
+  {
+    "name": "the degenerate layer is still emitted, Infinity and all",
+    "ok": true,
+    "detail": "M 20 140 L 200 140 L Infinity 140 L 380 140"
+  },
+  {
+    "name": "no compile ERROR is shown for a warning",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "served bundle: compile() warns — code, message, line 28 col 5",
+    "ok": true,
+    "detail": "[{\"code\":\"non-finite\",\"message\":\"`ratio` is Infinity in a path argument — SVG cannot represent it; the path will be drawn only up to here\",\"line\":28,\"column\":5}]"
+  },
+  {
+    "name": "served bundle: compileWithContext() warns identically (the path the playground takes)",
+    "ok": true,
+    "detail": "[{\"code\":\"non-finite\",\"message\":\"`ratio` is Infinity in a path argument — SVG cannot represent it; the path will be drawn only up to here\",\"line\":28,\"column\":5}]"
+  },
+  {
+    "name": "served bundle: the editor diagnostic is a Warning on the right line",
+    "ok": true,
+    "detail": "[{\"severity\":2,\"line\":1}]"
+  },
+  {
+    "name": "served bundle: WARNING_CODES is exported and lists non-finite",
+    "ok": true,
+    "detail": "[\"corner-op\",\"cut\",\"annotation-transfer\",\"font-glyph\",\"gradient\",\"non-finite\"]"
+  },
+  {
+    "name": "served bundle: strict: true → positioned error naming the code",
+    "ok": true,
+    "detail": "Line 2, col 3: `bad` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here (strict: non-finite)"
+  },
+  {
+    "name": "served bundle: strict: ['non-finite'] → same error",
+    "ok": true,
+    "detail": "Line 2, col 3: `bad` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here (strict: non-finite)"
+  },
+  {
+    "name": "served bundle: strict: ['gradient'] leaves it a warning",
+    "ok": true,
+    "detail": "1"
+  },
+  {
+    "name": "served bundle: compileWithContext honours strict",
+    "ok": true,
+    "detail": "Line 2, col 3: `bad` is NaN in a path argument — SVG cannot represent it; the path will be drawn only up to here (strict: non-finite)"
+  },
+  {
+    "name": "served bundle: a drawing function warns instead of throwing",
+    "ok": true,
+    "detail": "[\"circle(): argument 3 (`radius`) is NaN — SVG cannot represent it; the path will be drawn only up to here\"]"
+  },
+  {
+    "name": "served bundle: null is still an error",
+    "ok": true,
+    "detail": "Line 2, col 1: circle(): argument 3 (`missing`) is null — path functions need a number here"
+  },
+  {
+    "name": "served bundle: a missing context-aware argument is still an error",
+    "ok": true,
+    "detail": "Line 1, col 7: polarLine() produced a non-numeric coordinate (NaN) — check its arguments (it received 1 argument)"
+  },
+  {
+    "name": "ISSUE-022: array-literal receiver error is positioned",
+    "ok": true,
+    "detail": "Line 3, col 14: slice() start must be a number"
+  },
+  {
+    "name": "ISSUE-022: object-literal receiver error is positioned",
+    "ok": true,
+    "detail": "Line 2, col 14: slice() start must be a number"
+  },
+  {
+    "name": "ISSUE-022: for-each header error is positioned at the header",
+    "ok": true,
+    "detail": "Line 3, col 14: slice() start must be a number"
+  },
+  {
+    "name": "the error panel shows the for-each header error with its real position",
+    "ok": true,
+    "detail": "Line 3:14 — slice() start must be a number"
+  },
+  {
+    "name": "2,000 identical warnings: every instance is kept, as documented",
+    "ok": true,
+    "detail": "2000"
+  },
+  {
+    "name": "2,000 identical warnings: the preview still renders",
+    "ok": true,
+    "detail": "16016 chars of path data"
+  },
+  {
+    "name": "2,000 identical warnings: no stack overflow, no page error",
+    "ok": true,
+    "detail": "clean"
+  }
+]

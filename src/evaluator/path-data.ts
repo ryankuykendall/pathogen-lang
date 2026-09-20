@@ -27,6 +27,43 @@ export interface RawPathCommand {
 const COMMAND_LETTERS = new Set('MLHVCSQTAZmlhvcsqtaz');
 const isDigit = (ch: string) => ch >= '0' && ch <= '9';
 
+// ── Non-finite numbers ─────────────────────────────────────────────────
+//
+// `NaN`, `Infinity` and `-Infinity` are how formatNum writes a non-finite
+// number, and the evaluator does write them: a NaN reaching path data is a
+// warning (`non-finite`), not an error. They are NUMBERS spelled with letters —
+// and two of those letters are path commands, the `a` in NaN and the `t` in
+// Infinity. Read letter by letter, `L NaN 20` grows a phantom arc and
+// `circle(50, 50, NaN)` traces as ten commands instead of three. So every
+// scanner in this module asks for the word FIRST, sign included (left to the
+// number scanner, the `-` of `-Infinity` is a stray sign and gets dropped).
+const NON_FINITE_WORDS = ['NaN', 'Infinity'] as const;
+
+/** Length of a non-finite number word at `i` (with an optional sign), or 0. */
+function nonFiniteWordLength(d: string, i: number): number {
+  const signed = d[i] === '-' || d[i] === '+' ? 1 : 0;
+  for (const word of NON_FINITE_WORDS) if (d.startsWith(word, i + signed)) return signed + word.length;
+  return 0;
+}
+
+/**
+ * Does `text` contain a path command letter — not counting the letters inside a
+ * non-finite number? `/[MLHV…]/.test('L NaN 20'.slice(1))` says yes, which sent
+ * the evaluator down its replay path to re-tokenize a command that had not
+ * emitted any other.
+ */
+export function hasCommandLetter(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const skip = nonFiniteWordLength(text, i);
+    if (skip > 0) {
+      i += skip - 1;
+      continue;
+    }
+    if (COMMAND_LETTERS.has(text[i])) return true;
+  }
+  return false;
+}
+
 /**
  * Cursor-based scanner for SVG path data. Handles what the old regexes
  * mis-tokenized: implicit-decimal chains (`1.5.5` → 1.5, .5), packed arc
@@ -46,6 +83,14 @@ export function tokenizePathData(d: string): RawPathCommand[] {
 
   while (i < len) {
     const ch = d[i];
+
+    const wordLength = nonFiniteWordLength(d, i);
+    if (wordLength > 0) {
+      // Number(), not parseFloat(): it reads 'NaN', 'Infinity' and '-Infinity'.
+      if (current !== null) current.args.push(Number(d.slice(i, i + wordLength)));
+      i += wordLength;
+      continue;
+    }
 
     if (COMMAND_LETTERS.has(ch)) {
       current = { command: ch, args: [] };
@@ -121,12 +166,21 @@ export function tokenizePathData(d: string): RawPathCommand[] {
 /** Display-only split preserving raw arg text (no numeric round-trip). */
 export function splitPathCommands(d: string): { command: string; argsText: string }[] {
   const out: { command: string; argsText: string }[] = [];
-  let i = 0;
-  while (i < d.length && !COMMAND_LETTERS.has(d[i])) i++;
+  // Next command letter at or after `from`, stepping over non-finite number words.
+  const nextCommand = (from: number): number => {
+    let at = from;
+    while (at < d.length) {
+      const skip = nonFiniteWordLength(d, at);
+      if (skip > 0) at += skip;
+      else if (COMMAND_LETTERS.has(d[at])) break;
+      else at++;
+    }
+    return at;
+  };
+  let i = nextCommand(0);
   while (i < d.length) {
     const command = d[i];
-    let j = i + 1;
-    while (j < d.length && !COMMAND_LETTERS.has(d[j])) j++;
+    const j = nextCommand(i + 1);
     out.push({ command, argsText: d.slice(i + 1, j).trim() });
     i = j;
   }

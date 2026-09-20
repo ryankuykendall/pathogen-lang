@@ -275,14 +275,83 @@ export function buildASTWithComments(tree: Tree, source: string): { program: Pro
 
 // --- Helpers ---
 
+// ---- line / column for a source offset ----
+//
+// The definition (unchanged): `before = source.slice(0, offset)`; the line is the
+// number of '\n'-separated pieces of `before`, the column is the length of the
+// last piece plus one. '\r' is an ordinary column; columns are UTF-16 units.
+//
+// It used to be COMPUTED that way too — slice the prefix and split it, for every
+// node and every path argument. That is O(source) per call: a 1.4 MB program
+// took 18.8 s to parse, nearly all of it here. Line starts are now found once
+// per source and binary-searched. tests/source-locations.test.ts holds the old
+// definition verbatim as an oracle and checks every loc against it.
+
+function computeLineStarts(source: string): number[] {
+  const starts = [0];
+  for (let at = source.indexOf('\n'); at !== -1; at = source.indexOf('\n', at + 1)) starts.push(at + 1);
+  return starts;
+}
+
+// Sub-sources interleave with the document: every calc() argument and style
+// value is parsed from its own short wrapped string (`let _ = …;`) and then the
+// builder returns to the document. A one-entry cache is evicted by each of them
+// and rebuilds the document's line starts per calc() — quadratic again, just
+// somewhere else (measured: 11× time for 4× the calc() lines). So short sources
+// never enter the cache, and the cache holds two entries for the rare case of
+// one large source parsed inside another.
+const SHORT_SOURCE = 512;
+const lineStartsCache: { source: string; starts: number[] }[] = [];
+let lineStartsCacheMisses = 0;
+
+/**
+ * How many times a LONG source's line starts were computed (cache misses).
+ * @internal For tests/source-locations.test.ts, which pins the cache policy —
+ * two entries, short sources bypass — deterministically instead of by timing.
+ */
+export function lineStartsCacheMissCount(): number {
+  return lineStartsCacheMisses;
+}
+
+/** Offsets at which each line begins. */
+function lineStartsFor(source: string): number[] {
+  if (source.length <= SHORT_SOURCE) return computeLineStarts(source);
+  for (let i = 0; i < lineStartsCache.length; i++) {
+    if (lineStartsCache[i].source === source) {
+      if (i !== 0) lineStartsCache.unshift(lineStartsCache.splice(i, 1)[0]);
+      return lineStartsCache[0].starts;
+    }
+  }
+  lineStartsCacheMisses++;
+  lineStartsCache.unshift({ source, starts: computeLineStarts(source) });
+  if (lineStartsCache.length > 2) lineStartsCache.pop();
+  return lineStartsCache[0].starts;
+}
+
+/**
+ * 1-based line and column of `offset`, clamped exactly as `slice(0, offset)` clamps.
+ * @internal Exported for tests/source-locations.test.ts, which checks it against
+ * the original slice-and-split definition.
+ */
+export function lineColumnAt(source: string, offset: number): { line: number; column: number } {
+  let end = Number.isNaN(offset) ? 0 : Math.trunc(offset);
+  end = end < 0 ? Math.max(source.length + end, 0) : Math.min(end, source.length);
+  const starts = lineStartsFor(source);
+  // Last line start at or before `end`: a newline at i starts a line at i + 1,
+  // and it precedes `end` exactly when i + 1 <= end.
+  let low = 0;
+  let high = starts.length - 1;
+  while (low < high) {
+    const mid = (low + high + 1) >> 1;
+    if (starts[mid] <= end) low = mid;
+    else high = mid - 1;
+  }
+  return { line: low + 1, column: end - starts[low] + 1 };
+}
+
 function loc(cursor: TreeCursor, source: string): SourceLocation {
-  const before = source.slice(0, cursor.from);
-  const lines = before.split('\n');
-  return {
-    line: lines.length,
-    column: lines[lines.length - 1].length + 1,
-    offset: cursor.from,
-  };
+  const { line, column } = lineColumnAt(source, cursor.from);
+  return { line, column, offset: cursor.from };
 }
 
 function text(cursor: TreeCursor, source: string): string {
@@ -660,8 +729,12 @@ function buildForEachLoop(cursor: TreeCursor, source: string): ForEachLoop {
         if (cursor.name === ')') break;
         iterEnd = cursor.to;
       }
-      const iterStr = source.slice(iterStart, iterEnd).trim();
-      const parsed = parseExpressionString(iterStr);
+      // parseExpressionAt, not parseExpressionString: the header is parsed from
+      // its own `let _ = …;` wrapper, and without rebasing every error in a
+      // for-each header reported "Line 1, col 9" wherever the loop was.
+      const iterRaw = source.slice(iterStart, iterEnd);
+      const iterLead = iterRaw.length - iterRaw.trimStart().length;
+      const parsed = parseExpressionAt(iterRaw.trim(), iterStart + iterLead, source);
       if (parsed) iterable = parsed;
     } else if (cursor.name === 'Block') {
       body = buildLoopBody(cursor, source);
@@ -1432,7 +1505,9 @@ function parsePathArgs(argsText: string, baseOffset: number, source: string): Pa
                 `Parse error at line ${errLoc.line}, column ${errLoc.column}: cannot parse the expression inside calc() — check for an unclosed brace or bracket`,
               );
             }
-            args.push({ type: 'CalcExpression', expression: innerExpr } as CalcExpression);
+            // argLoc is where `calc` starts — a warning or error about the value
+            // this argument produced points here (it used to have no position).
+            args.push({ type: 'CalcExpression', expression: innerExpr, loc: argLoc });
             pos += parenContent.length + 2;
             continue;
           }
@@ -2038,7 +2113,7 @@ function buildExpression(cursor: TreeCursor, source: string): Expression {
     case 'String': return buildStringLiteral(cursor, source);
     case 'TemplateLiteral': return buildTemplateLiteral(cursor, source);
     case 'BooleanLiteral': return buildBooleanLiteral(cursor, source);
-    case 'NullLiteral': return { type: 'NullLiteral' };
+    case 'NullLiteral': return { type: 'NullLiteral', loc: loc(cursor, source) };
     case 'ColorLiteral': return buildColorLiteral(cursor, source);
     case 'CSSColorLiteral': return buildColorLiteral(cursor, source);
     case 'ArrayLiteral': return buildArrayLiteral(cursor, source);
@@ -2065,7 +2140,7 @@ function buildExpression(cursor: TreeCursor, source: string): Expression {
       if (cursor.name === 'postfixExpression' || isExpressionNode(cursor.name)) {
         return buildPostfixExpression(cursor, source);
       }
-      return { type: 'Identifier', name: text(cursor, source) };
+      return { type: 'Identifier', name: text(cursor, source), loc: loc(cursor, source) };
   }
 }
 
@@ -2427,6 +2502,7 @@ function buildBinaryExpression(cursor: TreeCursor, source: string): BinaryExpres
 }
 
 function buildUnaryExpression(cursor: TreeCursor, source: string): UnaryExpression {
+  const nodeLoc = loc(cursor, source);
   cursor.firstChild();
   let operator: '-' | '!' = '-';
   let argument: Expression = { type: 'NullLiteral' };
@@ -2446,7 +2522,7 @@ function buildUnaryExpression(cursor: TreeCursor, source: string): UnaryExpressi
   } while (cursor.nextSibling());
   cursor.parent();
 
-  return { type: 'UnaryExpression', operator, argument };
+  return { type: 'UnaryExpression', operator, argument, loc: nodeLoc };
 }
 
 // --- Literal builders ---
@@ -2456,15 +2532,15 @@ function buildNumberLiteral(cursor: TreeCursor, source: string): NumberLiteral {
   const unitMatch = raw.match(/(deg|rad|pi|%)$/);
   const unit = unitMatch ? unitMatch[1] as 'deg' | 'rad' | 'pi' | '%' : undefined;
   const valueStr = unit ? raw.slice(0, -unit.length) : raw;
-  return { type: 'NumberLiteral', value: parseFloat(valueStr), unit };
+  return { type: 'NumberLiteral', value: parseFloat(valueStr), unit, loc: loc(cursor, source) };
 }
 
 function buildStringLiteral(cursor: TreeCursor, source: string): StringLiteral {
-  return { type: 'StringLiteral', value: parseStringContent(text(cursor, source)) };
+  return { type: 'StringLiteral', value: parseStringContent(text(cursor, source)), loc: loc(cursor, source) };
 }
 
 function buildBooleanLiteral(cursor: TreeCursor, source: string): BooleanLiteral {
-  return { type: 'BooleanLiteral', value: text(cursor, source) === 'true' };
+  return { type: 'BooleanLiteral', value: text(cursor, source) === 'true', loc: loc(cursor, source) };
 }
 
 function buildColorLiteral(cursor: TreeCursor, source: string): ColorLiteral {
@@ -2488,6 +2564,7 @@ function buildTemplateLiteral(cursor: TreeCursor, source: string): TemplateLiter
   // re-parsed every expression a second time with offset-rewritten locations.
   // The raw scanner survives only as the error-recovery fallback below.
   const nodeFrom = cursor.from;
+  const nodeLoc = loc(cursor, source);
   const nodeTo = cursor.to;
   const raw = text(cursor, source);
   const opened = raw.startsWith('`');
@@ -2547,14 +2624,14 @@ function buildTemplateLiteral(cursor: TreeCursor, source: string): TemplateLiter
   // scanner so those degraded states still yield usable parts.
   if (!sawInterpolation && raw.includes('${') && opened) {
     const inner = closed ? raw.slice(1, -1) : raw.slice(1);
-    return { type: 'TemplateLiteral', parts: parseTemplateString(inner, nodeFrom + 1, source) };
+    return { type: 'TemplateLiteral', parts: parseTemplateString(inner, nodeFrom + 1, source), loc: nodeLoc };
   }
 
   // Trailing literal run (or the entire content for interpolation-free templates)
   if (contentEnd > prevEnd) {
     parts.push(unescapeTemplate(source.slice(prevEnd, contentEnd)));
   }
-  return { type: 'TemplateLiteral', parts };
+  return { type: 'TemplateLiteral', parts, loc: nodeLoc };
 }
 
 /**
@@ -2611,6 +2688,7 @@ function unescapeTemplate(s: string): string {
 }
 
 function buildCalcExpression(cursor: TreeCursor, source: string): CalcExpression {
+  const nodeLoc = loc(cursor, source);
   cursor.firstChild();
   let expression: Expression = { type: 'NullLiteral' };
   // The body of `calc(expr)` is a single expression. We must use
@@ -2627,10 +2705,12 @@ function buildCalcExpression(cursor: TreeCursor, source: string): CalcExpression
     }
   } while (cursor.nextSibling());
   cursor.parent();
-  return { type: 'CalcExpression', expression };
+  return { type: 'CalcExpression', expression, loc: nodeLoc };
 }
 
 function buildArrayLiteral(cursor: TreeCursor, source: string): ArrayLiteral {
+  // A method call takes its error position from its receiver (ISSUE-022).
+  const nodeLoc = loc(cursor, source);
   const elements: (Expression | SpreadElement)[] = [];
   cursor.firstChild();
   do {
@@ -2653,10 +2733,11 @@ function buildArrayLiteral(cursor: TreeCursor, source: string): ArrayLiteral {
     }
   } while (cursor.nextSibling());
   cursor.parent();
-  return { type: 'ArrayLiteral', elements };
+  return { type: 'ArrayLiteral', elements, loc: nodeLoc };
 }
 
 function buildObjectLiteral(cursor: TreeCursor, source: string): ObjectLiteral {
+  const nodeLoc = loc(cursor, source);
   const properties: (ObjectProperty | SpreadElement)[] = [];
   cursor.firstChild();
   do {
@@ -2713,7 +2794,7 @@ function buildObjectLiteral(cursor: TreeCursor, source: string): ObjectLiteral {
     }
   } while (cursor.nextSibling());
   cursor.parent();
-  return { type: 'ObjectLiteral', properties };
+  return { type: 'ObjectLiteral', properties, loc: nodeLoc };
 }
 
 function buildStyleBlockLiteral(cursor: TreeCursor, source: string): StyleBlockLiteral {
@@ -2750,9 +2831,7 @@ interface StyleIncomplete {
 
 /** line/column (1-based) for an absolute source offset, matching loc(). */
 function lineColAt(source: string, offset: number): { line: number; column: number } {
-  const before = source.slice(0, offset);
-  const lines = before.split('\n');
-  return { line: lines.length, column: lines[lines.length - 1].length + 1 };
+  return lineColumnAt(source, offset);
 }
 
 function lineColLoc(source: string, offset: number): SourceLocation {
@@ -3104,11 +3183,7 @@ function parseStringContent(raw: string): string {
 }
 
 function offsetToLoc(offset: number, source: string): SourceLocation {
-  const before = source.slice(0, offset);
-  const lines = before.split('\n');
-  return {
-    line: lines.length,
-    column: lines[lines.length - 1].length + 1,
-    offset,
-  };
+  // Called once per path argument — the hottest caller of lineColumnAt.
+  const { line, column } = lineColumnAt(source, offset);
+  return { line, column, offset };
 }

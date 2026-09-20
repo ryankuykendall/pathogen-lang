@@ -3,7 +3,7 @@
 // and extracting the value from the LetDeclaration AST node.
 
 import { parser } from './pathogen.generated';
-import { buildAST, setExpressionParser } from './ast-builder';
+import { buildAST, lineColumnAt, setExpressionParser } from './ast-builder';
 import type { Expression, SourceLocation } from './ast';
 
 // Bound recursive calls (parseExpression → buildAST → parseExpressionString →
@@ -114,11 +114,13 @@ export function parseExpressionAtOffset(
   const expr = parseExpression(exprStr);
   if (!expr) return null;
 
-  // Calculate the line/column offset from the source position
-  const before = source.slice(0, sourceOffset);
-  const lines = before.split('\n');
-  const lineOffset = lines.length - 1;
-  const colOffset = lines[lines.length - 1].length;
+  // Line/column offset of the source position. This runs once per calc() and
+  // per style value, and used to slice-and-split the whole document prefix each
+  // time — quadratic in a path-heavy program. lineColumnAt is the same
+  // definition, binary-searched (tests/source-locations.test.ts).
+  const at = lineColumnAt(source, sourceOffset);
+  const lineOffset = at.line - 1;
+  const colOffset = at.column - 1;
 
   // The wrapped expression has `let _ = ` (8 chars) prepended.
   // Parsimmon-parsed expressions had line 1, col 1 as the start.
