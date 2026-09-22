@@ -122,20 +122,20 @@ export function calculateCommandLength(cmd: SamplingCmd): number {
       const [x1, y1, x2, y2] = cmd.args;
       return approximateCubicBezierLength(
         cmd.start,
-        { x: cmd.start.x + x1, y: cmd.start.y + y1 },
-        { x: cmd.start.x + x2, y: cmd.start.y + y2 },
+        controlPointOf(cmd, x1, y1),
+        controlPointOf(cmd, x2, y2),
         cmd.end,
       );
     }
 
     case 'S': {
       const [x2, y2] = cmd.args;
-      return approximateCubicBezierLength(cmd.start, cmd.start, { x: cmd.start.x + x2, y: cmd.start.y + y2 }, cmd.end);
+      return approximateCubicBezierLength(cmd.start, cmd.start, controlPointOf(cmd, x2, y2), cmd.end);
     }
 
     case 'Q': {
       const [x1, y1] = cmd.args;
-      return approximateQuadraticBezierLength(cmd.start, { x: cmd.start.x + x1, y: cmd.start.y + y1 }, cmd.end);
+      return approximateQuadraticBezierLength(cmd.start, controlPointOf(cmd, x1, y1), cmd.end);
     }
 
     case 'A': {
@@ -171,6 +171,34 @@ export function calculatePathLength(commands: SamplingCmd[]): number {
   return total;
 }
 
+/**
+ * A curve command's argument pair, resolved against the command's own case.
+ *
+ * `SamplingCmd.command` is case-preserved on layer records (types.ts:560): a
+ * lowercase `c`/`s`/`q`/`t` carries deltas from `start`, an uppercase one carries
+ * absolute coordinates. Every sampler here used to read args as deltas whatever
+ * the case, so an absolutely-authored curve reached through a layer query
+ * measured and sampled against control points reflected off `start` — wrong
+ * lengths, wrong points, wrong tangents. `A` was never affected (its args are
+ * radii and flags, and its endpoint comes from `cmd.end`), nor were `L/H/V/M/Z`.
+ *
+ * The relative branch returns the arguments untouched rather than recomputing
+ * them, so results for lowercase input stay bit-identical.
+ */
+function isAbsoluteCmd(cmd: SamplingCmd): boolean {
+  return cmd.command === cmd.command.toUpperCase();
+}
+
+/** The pair as an absolute point. */
+function controlPointOf(cmd: SamplingCmd, ax: number, ay: number): Point {
+  return isAbsoluteCmd(cmd) ? { x: ax, y: ay } : { x: cmd.start.x + ax, y: cmd.start.y + ay };
+}
+
+/** The pair as a delta from `start`. */
+function controlDeltaOf(cmd: SamplingCmd, ax: number, ay: number): Point {
+  return isAbsoluteCmd(cmd) ? { x: ax - cmd.start.x, y: ay - cmd.start.y } : { x: ax, y: ay };
+}
+
 // ---- resolveSmooth: convert S→C and T→Q ----
 //
 // A smooth command (T/S) has an implicit control point — the reflection of the
@@ -189,8 +217,12 @@ export function resolveSmooth(commands: SamplingCmd[]): SamplingCmd[] {
     const upper = cmd.command.toUpperCase();
 
     if (upper === 'S') {
-      // S x2 y2 dx dy → C cp1x cp1y x2 y2 dx dy
-      const [x2, y2, dx, dy] = cmd.args;
+      // S x2 y2 x y → C cp1x cp1y x2 y2 dx dy. The emitted command is lowercase,
+      // so every pair is written as a delta from start — controlDeltaOf converts
+      // an uppercase S's absolute arguments and passes a lowercase s's through.
+      const [a1, a2, a3, a4] = cmd.args;
+      const cp2 = controlDeltaOf(cmd, a1, a2);
+      const end = controlDeltaOf(cmd, a3, a4);
       let cp1x: number;
       let cp1y: number;
       if (lastCubicCP) {
@@ -203,16 +235,16 @@ export function resolveSmooth(commands: SamplingCmd[]): SamplingCmd[] {
       }
       result.push({
         command: 'c',
-        args: [cp1x, cp1y, x2, y2, dx, dy],
+        args: [cp1x, cp1y, cp2.x, cp2.y, end.x, end.y],
         start: { ...cmd.start },
         end: { ...cmd.end },
         ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
       });
-      lastCubicCP = { x: cmd.start.x + x2, y: cmd.start.y + y2 };
+      lastCubicCP = { x: cmd.start.x + cp2.x, y: cmd.start.y + cp2.y };
       lastQuadCP = null;
     } else if (upper === 'T') {
-      // T dx dy → Q cpx cpy dx dy
-      const [dx, dy] = cmd.args;
+      // T x y → Q cpx cpy dx dy, likewise emitted lowercase.
+      const end = controlDeltaOf(cmd, cmd.args[0], cmd.args[1]);
       let cpx: number;
       let cpy: number;
       if (lastQuadCP) {
@@ -224,7 +256,7 @@ export function resolveSmooth(commands: SamplingCmd[]): SamplingCmd[] {
       }
       result.push({
         command: 'q',
-        args: [cpx, cpy, dx, dy],
+        args: [cpx, cpy, end.x, end.y],
         start: { ...cmd.start },
         end: { ...cmd.end },
         ...(cmd.meta !== undefined ? { meta: cmd.meta } : {}),
@@ -243,11 +275,11 @@ export function resolveSmooth(commands: SamplingCmd[]): SamplingCmd[] {
       // Track control points for C and Q so a following S/T can reflect them
       if (upper === 'C') {
         const [, , x2, y2] = cmd.args;
-        lastCubicCP = { x: cmd.start.x + x2, y: cmd.start.y + y2 };
+        lastCubicCP = controlPointOf(cmd, x2, y2);
         lastQuadCP = null;
       } else if (upper === 'Q') {
         const [x1, y1] = cmd.args;
-        lastQuadCP = { x: cmd.start.x + x1, y: cmd.start.y + y1 };
+        lastQuadCP = controlPointOf(cmd, x1, y1);
         lastCubicCP = null;
       } else {
         lastCubicCP = null;
@@ -473,8 +505,8 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
     case 'C': {
       const [cx1, cy1, cx2, cy2] = cmd.args;
       const p0 = cmd.start;
-      const p1 = { x: p0.x + cx1, y: p0.y + cy1 };
-      const p2 = { x: p0.x + cx2, y: p0.y + cy2 };
+      const p1 = controlPointOf(cmd, cx1, cy1);
+      const p2 = controlPointOf(cmd, cx2, cy2);
       const p3 = cmd.end;
 
       const table = buildArcLengthLookup((t) => cubicBezierAt(p0, p1, p2, p3, t), 64);
@@ -488,7 +520,7 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
       const [sx2, sy2] = cmd.args;
       const p0 = cmd.start;
       const p1 = p0;
-      const p2 = { x: p0.x + sx2, y: p0.y + sy2 };
+      const p2 = controlPointOf(cmd, sx2, sy2);
       const p3 = cmd.end;
 
       const table = buildArcLengthLookup((t) => cubicBezierAt(p0, p1, p2, p3, t), 64);
@@ -501,7 +533,7 @@ function sampleOnCommand(cmd: SamplingCmd, tLocal: number): SampleResult {
     case 'Q': {
       const [qx1, qy1] = cmd.args;
       const p0 = cmd.start;
-      const p1 = { x: p0.x + qx1, y: p0.y + qy1 };
+      const p1 = controlPointOf(cmd, qx1, qy1);
       const p2 = cmd.end;
 
       const table = buildArcLengthLookup((t) => quadBezierAt(p0, p1, p2, t), 64);
@@ -625,8 +657,8 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
     case 'C': {
       const [cx1, cy1, cx2, cy2] = cmd.args;
       const p0 = cmd.start;
-      const p1 = { x: p0.x + cx1, y: p0.y + cy1 };
-      const p2 = { x: p0.x + cx2, y: p0.y + cy2 };
+      const p1 = controlPointOf(cmd, cx1, cy1);
+      const p2 = controlPointOf(cmd, cx2, cy2);
       const p3 = cmd.end;
       const table = buildArcLengthLookup((t) => cubicBezierAt(p0, p1, p2, p3, t), 64);
       return lookupArcLengthT(table, arcLengthFraction);
@@ -636,7 +668,7 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
       const [sx2, sy2] = cmd.args;
       const p0 = cmd.start;
       const p1 = p0;
-      const p2 = { x: p0.x + sx2, y: p0.y + sy2 };
+      const p2 = controlPointOf(cmd, sx2, sy2);
       const p3 = cmd.end;
       const table = buildArcLengthLookup((t) => cubicBezierAt(p0, p1, p2, p3, t), 64);
       return lookupArcLengthT(table, arcLengthFraction);
@@ -645,7 +677,7 @@ export function getParametricTForCommand(cmd: SamplingCmd, arcLengthFraction: nu
     case 'Q': {
       const [qx1, qy1] = cmd.args;
       const p0 = cmd.start;
-      const p1 = { x: p0.x + qx1, y: p0.y + qy1 };
+      const p1 = controlPointOf(cmd, qx1, qy1);
       const p2 = cmd.end;
       const table = buildArcLengthLookup((t) => quadBezierAt(p0, p1, p2, t), 64);
       return lookupArcLengthT(table, arcLengthFraction);
