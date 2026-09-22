@@ -324,6 +324,7 @@ import {
   derivedMeta,
 } from './segments';
 import {
+  commandsToAbsoluteD as commandsToAbsoluteDFormatted,
   commandsToRelativeD,
   hasCommandLetter,
   normalizeToRelativeArgs,
@@ -1360,61 +1361,21 @@ function generateCodeSnippetLayers(
 }
 
 /**
- * Serialize PathBlockCommands to a relative SVG d-attribute string.
- * Reconstructs relative commands from structured command data. Used by .draw()
- * so PathBlock geometry stays relative to the cursor position.
- *
- * When bridgeOriginGap is true, prepends a relative move `m dx dy` if the first
- * command doesn't start at (0,0). This compensates for closed-path fillet/chamfer
- * operations that cyclically shift the command start point away from the pathblock origin.
- */
-/**
  * Serialize PathBlockCommands to an absolute SVG d-attribute string.
- * Commands have absolute start/end points; relative args are converted to absolute.
+ *
+ * Delegates to the shared serializer in path-data.ts. A local copy used to live
+ * here and had drifted: it dispatched on the exact lowercase letter, so every
+ * case-preserved uppercase command from a layer record fell through to a
+ * two-number `<LETTER> endX endY` fallback. That silently dropped control
+ * points, arc radii and flags, and emitted arguments for H/V/Z that take none
+ * or fewer — so `d`, `.length` and every sampling method answered from
+ * malformed data on any query block whose source was authored with absolute
+ * commands. The shared version branches on `isRelative`, which is correct for
+ * both cases. `formatNum` is passed explicitly because path-data defaults to
+ * `String`, which would lose the --to-fixed rounding.
  */
 function commandsToAbsoluteD(commands: PathBlockCommand[]): string {
-  const parts: string[] = [];
-  for (const cmd of commands) {
-    const c = cmd.command;
-    const abs = c.toUpperCase();
-    if (c === 'z') {
-      parts.push('Z');
-    } else if (c === 'h') {
-      parts.push(`H ${formatNum(cmd.end.x)}`);
-    } else if (c === 'v') {
-      parts.push(`V ${formatNum(cmd.end.y)}`);
-    } else if (c === 'c') {
-      // c dx1 dy1 dx2 dy2 dx dy → C x1 y1 x2 y2 x y
-      const [dx1, dy1, dx2, dy2] = cmd.args;
-      parts.push(
-        `C ${formatNum(cmd.start.x + dx1)} ${formatNum(cmd.start.y + dy1)} ${formatNum(cmd.start.x + dx2)} ${formatNum(cmd.start.y + dy2)} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`,
-      );
-    } else if (c === 's') {
-      // s dx2 dy2 dx dy → S x2 y2 x y
-      const [dx2, dy2] = cmd.args;
-      parts.push(
-        `S ${formatNum(cmd.start.x + dx2)} ${formatNum(cmd.start.y + dy2)} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`,
-      );
-    } else if (c === 'q') {
-      // q dx1 dy1 dx dy → Q x1 y1 x y
-      const [dx1, dy1] = cmd.args;
-      parts.push(
-        `Q ${formatNum(cmd.start.x + dx1)} ${formatNum(cmd.start.y + dy1)} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`,
-      );
-    } else if (c === 't') {
-      parts.push(`T ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`);
-    } else if (c === 'a') {
-      // a rx ry rotation largeArc sweep dx dy → A rx ry rotation largeArc sweep x y
-      const [rx, ry, rotation, largeArc, sweep] = cmd.args;
-      parts.push(
-        `A ${formatNum(rx)} ${formatNum(ry)} ${formatNum(rotation)} ${formatNum(largeArc)} ${formatNum(sweep)} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`,
-      );
-    } else {
-      // m, l → M, L: use end point as absolute coordinates
-      parts.push(`${abs} ${formatNum(cmd.end.x)} ${formatNum(cmd.end.y)}`);
-    }
-  }
-  return parts.join(' ');
+  return commandsToAbsoluteDFormatted(commands, { format: formatNum });
 }
 
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
