@@ -120,12 +120,7 @@ export function calculateCommandLength(cmd: SamplingCmd): number {
 
     case 'C': {
       const [x1, y1, x2, y2] = cmd.args;
-      return approximateCubicBezierLength(
-        cmd.start,
-        controlPointOf(cmd, x1, y1),
-        controlPointOf(cmd, x2, y2),
-        cmd.end,
-      );
+      return approximateCubicBezierLength(cmd.start, controlPointOf(cmd, x1, y1), controlPointOf(cmd, x2, y2), cmd.end);
     }
 
     case 'S': {

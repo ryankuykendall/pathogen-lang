@@ -99,6 +99,29 @@ let proj = shape.project(10, 10);
 // No path commands emitted, cursor unchanged
 ```
 
+## Back to a PathBlock — `toPathBlock()`
+
+A ProjectedPath is anchored: its coordinates *are* its position. `toPathBlock()` gives you the same geometry free-floating, re-based to its own first point, so you can place copies of it wherever you like:
+
+```
+let ring = layer('plate').query('call(circle)').block;   // a ProjectedPath
+let shape = ring.toPathBlock();                          // relative, portable
+
+for (i in 0..3) {
+  M calc(40 + i * 60) 100
+  shape.draw();
+}
+```
+
+The position you gave up is still readable as `startPoint` on the projected value, so putting it back is one call:
+
+```
+let rel = placed.toPathBlock();
+rel.drawTo(placed.startPoint.x, placed.startPoint.y);    // exactly where it was
+```
+
+Segment and endpoint labels survive the conversion. Reach for it when a query or subscription hands you geometry in page coordinates and you want to *reuse* it rather than annotate it in place — for annotating in place, the projected value's own `draw()` is shorter.
+
 ## Properties
 
 ### PathBlock
@@ -117,7 +140,7 @@ let proj = shape.project(10, 10);
 
 ### ProjectedPath
 
-Same properties as PathBlock but with absolute coordinates; `d` is absolute path data.
+Same properties as PathBlock but with absolute coordinates; `d` is absolute path data. A ProjectedPath returned by [`variableOffset`/`compoundVariableOffset`](#variable-offset-placement-origin-normalization-and-anchor) also answers `anchor`, which equals its `startPoint` because a projected result is already registered on its spine.
 
 ### Command entries
 
@@ -287,6 +310,22 @@ Sampling works on all command types including cubic/quadratic Bézier curves and
 ## Transforms
 
 Transforms create new paths from existing ones — reversing direction, computing bounding boxes and their centers, and constructing parallel paths. These methods work on both PathBlock values and ProjectedPath values.
+
+### Where the result lands
+
+A PathBlock has no position of its own, so a transform of one is free-floating by definition — you place it with `draw()` or `drawTo()`. A **ProjectedPath** does have a position, and the rule is that transforms keep it: the result stays in page coordinates, so `draw()` puts it where the geometry actually belongs.
+
+| On a ProjectedPath | Result |
+|---|---|
+| `offset`, `variableOffset`, `compoundVariableOffset`, `outline`, `dash` | page coordinates — the new curve sits alongside the original |
+| `reverse`, `startAt` | page coordinates — same path, different starting end |
+| `rotate`, `scale`, `mirror` | page coordinates — transformed about the path's own start unless you pass an origin |
+| `fillet`, `chamfer`, `ellipticalFillet` (and their `AtVertex` forms) | page coordinates — only the corner changes |
+| `union`, `difference`, `intersection`, `xor`, `cut` | page coordinates — the pieces stay where they were |
+| `toPathBlock` | free-floating, re-based to its own first point — this is what it is for |
+| `subPath` | free-floating: it returns a **PathBlock**, not a ProjectedPath, so the slice is re-based to `(0, 0)`. Capture the position first if you need it back |
+
+The two offset families additionally carry [`anchor`](#variable-offset-placement-origin-normalization-and-anchor). On a PathBlock result it recovers the position that origin normalization removed; on a ProjectedPath result nothing was removed, so it equals `startPoint`.
 
 ### `reverse()` → PathBlock / ProjectedPath
 

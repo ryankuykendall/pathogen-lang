@@ -1,0 +1,49 @@
+define ViewBox(0, 0, 1000, 1000);
+define default PathLayer('main-path-layer') #{
+  fill: #bbb;
+  stroke: #222;
+  stroke-width: 1;
+};
+
+let radius = 100;
+let basePB = @{
+  circle(500, 500, radius);
+};
+
+fn offsetTest(path, span) {
+  return path.variableOffset() {|vo, pb|
+    vo.stop(0%, 0, CurveContinuity.G1);
+    vo.stop(20%, 20, CurveContinuity.G1);
+    vo.stop(45%, 40, CurveContinuity.G1);
+    vo.stop(49.95%, 80, CurveContinuity.G2);
+    vo.stop(50%, calc(span * 1.5), CurveContinuity.G2);
+    vo.stop(50.05%, 80, CurveContinuity.G2);
+    vo.stop(55%, 40, CurveContinuity.G1);
+    vo.stop(80%, 20, CurveContinuity.G1);
+    vo.stop(100%, 0, CurveContinuity.G1);
+  };
+}
+
+let baseFormLayer = PathLayer(`base-form`) #{
+  fill: none;
+  stroke: #c00;
+  stroke-width: 2;
+};
+
+let formOffsetLayer = PathLayer(`form-offset`) #{
+  fill: none;
+  stroke: #0c0;
+  stroke-width: 2;
+};
+
+baseFormLayer.subscribe('command[length>0]') {|match, i, sub|
+  let edge = offsetTest(match.block, radius);
+  log(`match ${i}: block starts ${match.block.startPoint}, edge anchor ${edge.anchor}, edge start ${edge.startPoint}`);
+  formOffsetLayer.apply {
+    edge.draw();
+  }
+};
+
+baseFormLayer.apply {
+  basePB.draw();
+}

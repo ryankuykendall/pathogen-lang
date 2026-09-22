@@ -196,3 +196,71 @@ describe('subscriptions: chains and errors', () => {
     expect(logLines(src)).toEqual(["Subscription(shape: 'endpoint', 0 delivered)"]);
   });
 });
+
+/**
+ * The motivating case for variableOffset on a ProjectedPath: a callback builds
+ * new geometry from what a layer drew. `match.block` is projected, so the offset
+ * comes back registered on the match and `draw()` needs no `M`.
+ * Contract: docs/subscriptions.md "Where the drawing goes".
+ */
+describe('subscriptions — building geometry from match.block', () => {
+  const PROGRAM = `
+    define default PathLayer('sink') #{ fill: none; }
+    let shape = PathLayer('shape') #{ fill: none; };
+    let casing = PathLayer('casing') #{ fill: none; };
+
+    shape.subscribe('command[length>0]') {|match, i, sub|
+      let edge = match.block.variableOffset() {|go, pb|
+        go.stop(0%, 0, CurveContinuity.G1);
+        go.stop(50%, 6, CurveContinuity.G2);
+        go.stop(100%, 0, CurveContinuity.G1);
+      };
+      casing.apply {
+        edge.draw();
+      }
+    };
+
+    shape.apply {
+      M 100 100;
+      L 200 100;
+      L 200 200;
+    }
+  `;
+
+  it('offsets every matched command without Unknown ProjectedPath method', () => {
+    const d = layerData(PROGRAM, 'casing');
+    expect(d).not.toBe('');
+    // One offset per drawing command; the leading move is filtered out.
+    expect(moves(d)).toBe(2);
+  });
+
+  it('lands each offset on the command it came from', () => {
+    // The first matched command runs east from (100,100); its offset starts at
+    // that same point, because a stop at 0% with offset 0 sits on the spine.
+    const d = layerData(PROGRAM, 'casing');
+    expect(d).toMatch(/^M 100 100\b/);
+  });
+
+  it('a bare command selector now names the leading move as the problem', () => {
+    const withMove = PROGRAM.replace("'command[length>0]'", "'command'");
+    expect(() => layerData(withMove, 'casing')).toThrow(/arc length/);
+  });
+
+  it('a layer created inside the callback still reaches the output', () => {
+    const src = `
+      define default PathLayer('sink') #{ fill: none; }
+      let shape = PathLayer('shape') #{ fill: none; };
+      shape.subscribe('command[length>0]') {|match, i, sub|
+        let born = PathLayer(\`born-\${i}\`) #{ fill: none; };
+        born.apply {
+          match.block.draw();
+        }
+      };
+      shape.apply {
+        M 10 10;
+        L 40 10;
+      }
+    `;
+    expect(layerData(src, 'born-0')).toContain('M 10 10');
+  });
+});

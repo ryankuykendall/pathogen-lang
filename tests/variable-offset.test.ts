@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { compile } from '../src';
 import { compilePath, parseSVGPath } from './helpers';
 import { StringTextDocument } from '../src/language-services/document';
 import { getCompletions } from '../src/language-services/completion';
@@ -586,5 +587,190 @@ describe('variable-offset geometry: stop projection', () => {
     const { point } = projectStop(spine, 0.25, -6);
     expect(point.x).toBeCloseTo(25, 6);
     expect(point.y).toBeCloseTo(6, 6);
+  });
+});
+
+/**
+ * variableOffset / compoundVariableOffset on a ProjectedPath receiver.
+ *
+ * The PathBlock form origin-normalizes and hands the position back as `anchor`.
+ * A ProjectedPath already lives in page coordinates, so the projected form comes
+ * back registered on its spine: `draw()` lands it there with no `M` in front.
+ * Contract: docs/variable-offset.md "On a projected spine".
+ */
+/** log() output, one joined string per call. */
+function compileLogs(src: string): string[] {
+  return compile(src).logs.map((l) => l.parts.map((part) => String(part.value)).join(' '));
+}
+
+describe('variableOffset on a ProjectedPath', () => {
+  // `@{ h 100 }` runs east, so the left normal is (0,-1): a stop at time t with
+  // offset o sits at (100t, -o) relative to the spine's own start.
+  const STOPS = `go.stop(10%, 5, CurveContinuity.G1);\n  go.stop(90%, 5, CurveContinuity.G1);`;
+
+  it('registers the result on its spine, so draw() needs no M', () => {
+    const d = compilePath(`
+      let spine = @{ h 100 };
+      let placed = spine.project(200, 300);
+      let edge = placed.variableOffset() {|go, pb|
+        ${STOPS}
+      };
+      edge.draw();
+    `);
+    const cmds = parseSVGPath(d);
+    expect(cmds[0].command).toBe('M');
+    // 200 + 100 * 0.1 along the spine, 300 - 5 out along the left normal.
+    expect(cmds[0].args[0]).toBeCloseTo(210, 6);
+    expect(cmds[0].args[1]).toBeCloseTo(295, 6);
+  });
+
+  it('changes position only — the same curve as the PathBlock form placed by hand', () => {
+    // The load-bearing test: the projected form round-trips the normalization by
+    // its own anchor, so it must reproduce the block form placed at the same
+    // point. The spline itself is solved at page-coordinate magnitudes rather
+    // than around the origin, so the two agree to floating-point tolerance and
+    // not bit-for-bit — hence toBeCloseTo rather than a string compare.
+    const asBlock = compilePath(`
+      let spine = @{ h 100 };
+      let edge = spine.variableOffset() {|go, pb|
+        ${STOPS}
+      };
+      edge.drawTo(210, 295);
+    `);
+    const asProjected = compilePath(`
+      let spine = @{ h 100 };
+      let edge = spine.project(200, 300).variableOffset() {|go, pb|
+        ${STOPS}
+      };
+      edge.draw();
+    `);
+    const a = parseSVGPath(asBlock);
+    const b = parseSVGPath(asProjected);
+    expect(b.map((c) => c.command)).toEqual(a.map((c) => c.command));
+    a.forEach((cmd, i) => {
+      expect(b[i].args).toHaveLength(cmd.args.length);
+      cmd.args.forEach((arg, j) => expect(b[i].args[j]).toBeCloseTo(arg, 9));
+    });
+  });
+
+  it('answers anchor, equal to its own startPoint', () => {
+    const logs = compileLogs(`
+      let placed = @{ h 100 }.project(200, 300);
+      let edge = placed.variableOffset() {|go, pb|
+        ${STOPS}
+      };
+      log(edge.anchor, edge.startPoint);
+      M 0 0
+    `);
+    expect(logs[0]).toBe('Point(210, 295) Point(210, 295)');
+  });
+
+  it('rejects anchor on a projected path that is not an offset result', () => {
+    expect(() =>
+      compilePath(`
+        let placed = @{ h 100 }.project(0, 0);
+        log(placed.anchor);
+        M 0 0
+      `),
+    ).toThrow(/anchor.*variableOffset/);
+  });
+
+  it('accepts a << worker, the same as the PathBlock receiver', () => {
+    const d = compilePath(`
+      let profile = {|go, pb|
+        ${STOPS}
+      };
+      let edge = @{ h 100 }.project(200, 300).variableOffset() << profile;
+      edge.draw();
+    `);
+    const cmds = parseSVGPath(d);
+    expect(cmds[0].command).toBe('M');
+    expect(cmds[0].args[0]).toBeCloseTo(210, 6);
+    expect(cmds[0].args[1]).toBeCloseTo(295, 6);
+  });
+
+  it('binds pb to the projected spine, so it samples in page coordinates', () => {
+    const logs = compileLogs(`
+      let placed = @{ h 100 }.project(200, 300);
+      let edge = placed.variableOffset() {|go, pb|
+        log(pb.length, pb.get(0));
+        ${STOPS}
+      };
+      M 0 0
+    `);
+    expect(logs[0]).toBe('100 Point(200, 300)');
+  });
+
+  it('builds a compound ribbon in page coordinates', () => {
+    const d = compilePath(`
+      let edge = @{ h 100 }.project(200, 300).compoundVariableOffset() {|go, pb|
+        go.startCap(Cap.butt());
+        go.stop(10%, 5, CurveContinuity.G1, -5, CurveContinuity.G1);
+        go.stop(90%, 5, CurveContinuity.G1, -5, CurveContinuity.G1);
+        go.endCap(Cap.butt());
+      };
+      edge.draw();
+    `);
+    const cmds = parseSVGPath(d);
+    expect(cmds[0].command).toBe('M');
+    expect(cmds[0].args[0]).toBeCloseTo(210, 6);
+    expect(cmds[0].args[1]).toBeCloseTo(295, 6);
+    expect(d).toContain('z');
+  });
+
+  it('registers a capped compound ribbon correctly', () => {
+    // The subtle case for the un-normalization round-trip: caps are appended
+    // AFTER the profile traversal, so the first command still starts at profile
+    // 1's first knot — the point `anchor` names. If that stopped holding, a
+    // capped ribbon would land somewhere else.
+    const caps = `
+      go.startCap(Cap.tapered(10, CurveContinuity.G0));
+      go.stop(10%, 5, CurveContinuity.G1, -5, CurveContinuity.G1);
+      go.stop(90%, 5, CurveContinuity.G1, -5, CurveContinuity.G1);
+      go.endCap(Cap.tapered(10, CurveContinuity.G0));`;
+    const logs = compileLogs(`
+      let spine = @{ h 100 };
+      let projected = spine.project(200, 300).compoundVariableOffset() {|go, pb| ${caps}
+      };
+      let block = spine.compoundVariableOffset() {|go, pb| ${caps}
+      };
+      log(projected.anchor, projected.startPoint, block.anchor, block.startPoint);
+      M 0 0
+    `);
+    // Projected: registered on the spine, anchor == startPoint.
+    // Block: normalized to (0,0), anchor holding the removed translation.
+    // The two anchors differ by exactly the projection origin.
+    expect(logs[0]).toBe('Point(210, 295) Point(210, 295) Point(10, -5) Point(0, 0)');
+  });
+
+  it('rejects a spine with no arc length, on either receiver', () => {
+    const stops = `go.stop(10%, 5, CurveContinuity.G1); go.stop(90%, 5, CurveContinuity.G1);`;
+    expect(() => compilePath(`let e = @{ }.variableOffset() {|go, pb| ${stops} }; M 0 0`)).toThrow(/arc length/);
+    expect(() =>
+      compilePath(`let e = @{ m 10 10 }.project(0, 0).variableOffset() {|go, pb| ${stops} }; M 0 0`),
+    ).toThrow(/arc length/);
+    const compoundStops = `go.stop(10%, 5, CurveContinuity.G1, -5, CurveContinuity.G1); go.stop(90%, 5, CurveContinuity.G1, -5, CurveContinuity.G1);`;
+    expect(() =>
+      compilePath(`let e = @{ m 10 10 }.compoundVariableOffset() {|go, pb| ${compoundStops} }; M 0 0`),
+    ).toThrow(/arc length/);
+  });
+
+  it('still reports too-few-stops first, so existing errors keep their message', () => {
+    // Check order matters: a degenerate spine AND too few stops must report the
+    // stop error, which is what the PathBlock form has always said.
+    expect(() => compilePath(`let e = @{ m 10 10 }.variableOffset() {|go, pb| }; M 0 0`)).toThrow(/at least 2 stops/);
+  });
+
+  it('offers the methods in completions on a ProjectedPath', () => {
+    const src = `let pp = @{ h 100 }.project(0, 0);\npp.`;
+    const lines = src.split('\n');
+    const items = getCompletions(new StringTextDocument(src), {
+      line: lines.length - 1,
+      character: lines[lines.length - 1].length,
+    }).map((i) => i.label);
+    expect(items).toContain('variableOffset');
+    expect(items).toContain('compoundVariableOffset');
+    expect(items).toContain('anchor');
+    expect(items).toContain('toPathBlock');
   });
 });

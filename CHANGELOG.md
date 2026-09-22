@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-21 (variable offsets on projected paths; absolute commands in query blocks)
+
+ISSUE-019 resolved, ISSUE-025 logged. Paper trail, repro and the four engine-variance controls are in `project-docs/observable-reactive-paths/projected-variable-offset/`.
+
+### Added
+
+#### Core
+
+- **`variableOffset()` and `compoundVariableOffset()` work on a `ProjectedPath`.** They were PathBlock-only, so a subscription callback that reached for the obvious thing — `match.block.variableOffset() {|go, pb| ... }` — got `Unknown ProjectedPath method`. A diff of the two dispatch switches showed these were the entire parity gap (`project` is the only other difference, and is correctly absent). The geometry never cared: the builders take a command list and sample through `start`/`end`, so a projected spine works unchanged. The result comes back **registered on its spine** rather than origin-normalized — `.draw()` lands the curve exactly where the queried or subscribed geometry is, with no `M` and no `anchor` arithmetic — which is the shape the annotation use case wants. `anchor` is still answered, equal to `startPoint`, so one `<<` worker reads correctly on either receiver. Docs: Variable Offset "On a projected spine".
+- **`ProjectedPath.toPathBlock()`.** The inverse of `project()`/`draw()`: the same geometry re-based to its own first point, so query results can be *reused* elsewhere rather than only annotated in place. Labels survive; the position stays readable as `startPoint`. Docs: Path Blocks "Back to a PathBlock".
+- **The origin-preservation matrix is published.** Which ProjectedPath transforms keep page coordinates and which hand back free-floating geometry — measured, not assumed. Docs: Path Blocks → Transforms → "Where the result lands".
+
+### Fixed
+
+#### Core
+
+- **Absolute path commands in a query block no longer serialize malformed.** `commandsToAbsoluteD` existed twice; the copy the evaluator used dispatched on the exact lowercase letter and fell through to a two-number `<LETTER> endX endY` fallback for anything uppercase. Layer records preserve the case a command was authored in, so a `queryAll('command')` block off a layer written with absolute commands emitted `Z 50 50`, `H 200 150`, `C 250 250` and `A 380 380` — control points, radii and flags dropped, arguments invented for commands that take none. Only `M`, `L` and `T` came through intact. The case-aware implementation already existed in `path-data.ts`, exported and never called by the evaluator; it is now the only one. This also corrupted `Mask`, `ClipPath`, `Pattern` and `Marker` `.append()` and `.contour()`, all of which accept a ProjectedPath. Lowercase output is byte-identical, verified command-by-command before and after.
+- **Absolute curves are sampled and measured against their real control points.** `calculateCommandLength`, `sampleOnCommand`, `getParametricTForCommand` and `resolveSmooth` all read a `C`/`S`/`Q`/`T` argument pair as a delta from `start` whatever the command's case, so an absolutely-authored curve reached through a layer query measured and sampled against control points reflected off its own start: `length`, `get`, `tangent`, `normal` and `partition` all answered from the wrong curve, and a `C` measured 456 where the true arc length is 79. **The readers are fixed; the transforms are not** — `subPath`, `offset`, `reverse`, `startAt`, `scale`, `mirror`, `boundingBox`, `dash`, `outline` and `fillet` rebuild geometry in `path-transforms.ts`, which has the same case-blindness at ~15 sites and was left alone as a separate change. Audited and logged as ISSUE-026. `A` was never affected, nor were `L/H/V/M/Z`. The relative branch returns its arguments untouched, so no lowercase result moves.
+- **A spine with no arc length is an error instead of a collapsed curve.** A move-only or empty spine sampled the same point for every stop and produced a plausible-looking squiggle built from nothing. Both forms now say so, and name the usual cause: a bare `'command'` selector matches the leading move, so select drawing commands with `'command[length>0]'`. Ordered after the existing `< 2 stops` check, so nothing that errors today changes its message.
+
+### Changed
+
+#### Core
+
+- **Completions no longer promise what the runtime refuses.** `variableOffset`, `compoundVariableOffset`, `toPathBlock` and `anchor` are declared on `ProjectedPath`, along with `intersects` and `intersectionPoints` — which were in the ProjectedPath dispatch but had never been declared, the same drift in the opposite direction. `<<`-worker return typing is receiver-aware in `type-inference-ast.ts` and `inlay-hints.ts`.
+
+#### Development
+
+- **`tests/receiver-parity.test.ts`** derives the PathBlock method set from the generated completion data and probes the real ProjectedPath dispatch in both directions — a method added to one receiver and not the other now fails a test, as does a by-design exclusion that quietly becomes available. Nothing hand-maintained. It does not cover return types, which is how ISSUE-025 survived.
+- **An absolute/relative coverage matrix** in `tests/path-queries.test.ts` authors every command letter twice, once each way from the same start, and requires identical `d`, `length` and samples.
+
 ## [Unreleased] - 2026-09-20 (non-finite warnings, strict mode, and error positions)
 
 ISSUE-023 and ISSUE-022, both logged by the entry below and both wider than first logged. Demo, verification scripts and review records are in `project-docs/non-finite-warnings/`; the resolutions are in `project-docs/known-issues.md`.

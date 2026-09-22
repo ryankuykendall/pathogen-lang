@@ -117,6 +117,27 @@ layer('shape').subscribe('endpoint') {|corner, i|
 };
 ```
 
+A callback's `match.block` is a projected path, so geometry built from it is already in page coordinates — including a [variable offset](#variable-offset-variable-offset), which is the shortest way to case or thicken whatever a layer drew:
+
+```
+define PathLayer('casing') #{ fill: none; stroke: #c00; }
+
+layer('shape').subscribe('command[length>0]') {|match, i, sub|
+  let edge = match.block.variableOffset() {|go, pb|
+    go.stop(0%, 0, CurveContinuity.G1);
+    go.stop(50%, 6, CurveContinuity.G2);
+    go.stop(100%, 0, CurveContinuity.G1);
+  };
+  layer('casing').apply {
+    edge.draw();
+  }
+};
+```
+
+No `M` before `draw()`: the offset came off a projected spine, so it is already registered on it. The `[length>0]` filter skips the leading move — a stop cannot sample a path with no length.
+
+Layers can be created in a callback too, not just applied to: `PathLayer('casing') #{ … }` is an ordinary expression, and a layer born during dispatch is emitted with the rest.
+
 Bare path commands in a callback go where top-level commands go: the default layer. A callback may also call `log()`, query any layer, and read `ctx`, which is the top-level context.
 
 ## What the callback sees

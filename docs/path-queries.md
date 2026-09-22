@@ -275,6 +275,8 @@ let lean = fret.startHeading.deg - 90;   // how far a slot leans off vertical
 
 On a `PathBlock` receiver, `block` members are path blocks re-based to their own origin, the same as `segment('name')`. On a layer or `ProjectedPath` receiver they are projected paths in page coordinates.
 
+Either kind of `block` carries the full path-block method surface, so `offset`, [`variableOffset` and `compoundVariableOffset`](#variable-offset-variable-offset) work on a match directly. On a projected `block` the result stays in page coordinates and `draw()` lands it on the match, with no `M` in front. When you want the geometry free-floating instead — to place copies of it elsewhere — `toPathBlock()` re-bases a projected path to its own origin.
+
 ## When nothing matches
 
 `query` follows `querySelector`: no match is an error that lists what the path actually has — its segment labels, endpoint labels, command letters, calls, or subpath count — so a typo is caught where it happens. `queryAll` follows `querySelectorAll` and returns an empty array, so it loops safely over things that might not exist.

@@ -872,6 +872,7 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'startPoint', kind: 'property', detail: 'First point (absolute)', boost: 8 },
       { label: 'endPoint', kind: 'property', detail: 'Last point (absolute)', boost: 8 },
       { label: 'isEmpty', kind: 'property', detail: 'True when the path has no commands', boost: 8 },
+      { label: 'anchor', kind: 'property', detail: 'First point of a variableOffset/compoundVariableOffset result — equal to startPoint, since a projected result is already registered on its spine', boost: 8 },
     ],
     methods: [
       { label: 'draw', kind: 'function', detail: 'draw() — Draw the path exactly where it lies (anchored on its first command)', boost: 8, insertText: 'draw()$0', isSnippet: true },
@@ -884,6 +885,9 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'boundingBox', kind: 'function', detail: 'boundingBox() — Get bounding box', boost: 8, insertText: 'boundingBox()$0', isSnippet: true },
       { label: 'centerPoint', kind: 'function', detail: 'centerPoint() — Center of the bounding box as a Point', boost: 8, insertText: 'centerPoint()$0', isSnippet: true },
       { label: 'offset', kind: 'function', detail: 'offset(distance, options?) — Parallel path; options: { join: \'miter\' | \'bevel\' | \'round\' }', boost: 8, insertText: 'offset(${1:distance})$0', isSnippet: true },
+      { label: 'variableOffset', kind: 'function', detail: 'variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity, registered on this path\'s own coordinates; or variableOffset() << worker', boost: 8, insertText: 'variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n}', isSnippet: true },
+      { label: 'compoundVariableOffset', kind: 'function', detail: 'compoundVariableOffset() {|go, pb| ...} — Trace a two-profile offset ribbon with per-stop distances + continuities, registered on this path\'s own coordinates; or compoundVariableOffset() << worker', boost: 8, insertText: 'compoundVariableOffset() {|${1:go}, ${2:pb}|\n\t$0\n}', isSnippet: true },
+      { label: 'toPathBlock', kind: 'function', detail: 'toPathBlock() — The same geometry re-based to its own first point, as a free-floating PathBlock; the position is still readable as startPoint', boost: 8, insertText: 'toPathBlock()$0', isSnippet: true },
       { label: 'mirror', kind: 'function', detail: 'mirror(angle) — Mirror path', boost: 8, insertText: 'mirror(${1:angle})$0', isSnippet: true },
       { label: 'rotate', kind: 'function', detail: 'rotate(angle, origin?) — Rotate about an absolute point (default: the projection start)', boost: 8, insertText: 'rotate(${1:angle})$0', isSnippet: true },
       { label: 'rotateAtVertexIndex', kind: 'function', detail: 'rotateAtVertexIndex(index, angle) — Rotate at vertex', boost: 8, insertText: 'rotateAtVertexIndex(${1:index}, ${2:angle})$0', isSnippet: true },
@@ -903,6 +907,8 @@ export const TYPE_MEMBERS: Record<string, MemberCompletionSet> = {
       { label: 'intersection', kind: 'function', detail: 'intersection(other) — Boolean intersection', boost: 8, insertText: 'intersection(${1:other})$0', isSnippet: true },
       { label: 'xor', kind: 'function', detail: 'xor(other) — Boolean XOR', boost: 8, insertText: 'xor(${1:other})$0', isSnippet: true },
       { label: 'cut', kind: 'function', detail: 'cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces. Seams are labeled \'cut\' — or \'cut.<name>\' when the cutter edge was named as segment(\'name\')', boost: 8, insertText: 'cut(${1:cutter})$0', isSnippet: true },
+      { label: 'intersects', kind: 'function', detail: 'intersects(other) — Check for intersections', boost: 8, insertText: 'intersects(${1:other})$0', isSnippet: true },
+      { label: 'intersectionPoints', kind: 'function', detail: 'intersectionPoints(other) — Get intersection points', boost: 8, insertText: 'intersectionPoints(${1:other})$0', isSnippet: true },
       { label: 'query', kind: 'function', detail: 'query(selector) — First match of a path query. Nouns: command(a) · call(circle) · endpoint(label) · segment(label) · subpath(k); add [filters] and :first/:last/:nth(...); a space scopes the right side inside the left. Errors when nothing matches', boost: 8, insertText: 'query(\'${1:selector}\')$0', isSnippet: true },
       { label: 'queryAll', kind: 'function', detail: 'queryAll(selector) — Every match of a path query in authoring order; [] when nothing matches', boost: 8, insertText: 'queryAll(\'${1:selector}\')$0', isSnippet: true },
       { label: 'segment', kind: 'function', detail: 'segment(name) — First labeled sub-path matching name; returns a ProjectedPath (absolute coords). Accepts pseudo-selectors (name:last, name:nth(k))', boost: 8, insertText: 'segment(\'${1:name}\')$0', isSnippet: true },
@@ -1264,7 +1270,7 @@ export const TYPE_METHOD_RETURNS: Record<string, Record<string, string>> = {
   'PolarVector': { turn: 'PolarVector', scale: 'PolarVector', mirror: 'PolarVector' },
   'PathLayer': { subscribe: 'Subscription', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
   'ProjectedText': { translate: 'ProjectedText' },
-  'ProjectedPath': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', centerPoint: 'Point', offset: 'ProjectedPath', mirror: 'ProjectedPath', rotate: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'ProjectedPath', dash: 'array', outline: 'ProjectedPath', startAt: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'ProjectedPath', difference: 'ProjectedPath', intersection: 'ProjectedPath', xor: 'ProjectedPath', cut: 'array', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
+  'ProjectedPath': { draw: 'ProjectedPath', drawTo: 'ProjectedPath', get: 'Point', partition: 'array', reverse: 'ProjectedPath', centerPoint: 'Point', offset: 'ProjectedPath', variableOffset: 'ProjectedPath', compoundVariableOffset: 'ProjectedPath', toPathBlock: 'PathBlock', mirror: 'ProjectedPath', rotate: 'ProjectedPath', rotateAtVertexIndex: 'ProjectedPath', scale: 'ProjectedPath', subPath: 'ProjectedPath', dash: 'array', outline: 'ProjectedPath', startAt: 'ProjectedPath', chamfer: 'ProjectedPath', chamferAtVertex: 'ProjectedPath', fillet: 'ProjectedPath', filletAtVertex: 'ProjectedPath', ellipticalFillet: 'ProjectedPath', ellipticalFilletAtVertex: 'ProjectedPath', union: 'ProjectedPath', difference: 'ProjectedPath', intersection: 'ProjectedPath', xor: 'ProjectedPath', cut: 'array', intersectionPoints: 'array', segment: 'ProjectedPath', segmentAll: 'array', point: 'Point', pointAll: 'array', vertex: 'Endpoint', vertexAll: 'array' },
   'LinearGradient': { inherit: 'LinearGradient' },
   'RadialGradient': { inherit: 'RadialGradient' },
   'ConicGradient': { inherit: 'ConicGradient' },
@@ -1306,7 +1312,7 @@ export const TYPE_PROPERTY_TYPES: Record<string, Record<string, string>> = {
   'InnerShadowFilter': { id: 'string', offsetX: 'number', offsetY: 'number', blur: 'number', color: 'ColorInstance', opacity: 'number' },
   'PixelateFilter': { id: 'string', width: 'number', height: 'number', radius: 'number' },
   'MotionBlurFilter': { id: 'string', type: 'string', distance: 'number', angle: 'number', samples: 'number' },
-  'ProjectedPath': { length: 'number', vertices: 'array', subPathCount: 'number', subPathCommands: 'array', commands: 'array', d: 'string', startPoint: 'Point', endPoint: 'Point', isEmpty: 'boolean' },
+  'ProjectedPath': { length: 'number', vertices: 'array', subPathCount: 'number', subPathCommands: 'array', commands: 'array', d: 'string', startPoint: 'Point', endPoint: 'Point', isEmpty: 'boolean', anchor: 'Point' },
   'Mask': { id: 'string' },
   'ClipPath': { id: 'string' },
   'LinearGradient': { id: 'string', spreadMethod: 'string', gradientUnits: 'string', gradientTransform: 'string', interpolation: 'string', steps: 'number' },
@@ -1329,7 +1335,7 @@ export const TYPE_ELEMENT_TYPES: Record<string, Record<string, string>> = {
   'Subpath': { commands: 'Command' },
   'PathBlock': { vertices: 'Point', subPathCommands: 'Command', commands: 'Command', contours: 'PathBlock', dash: 'DashPiece', intersectionPoints: 'Point', cut: 'PathBlock', segmentAll: 'PathBlock', pointAll: 'Point', vertexAll: 'Endpoint' },
   'PathLayer': { segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'Endpoint' },
-  'ProjectedPath': { vertices: 'Point', subPathCommands: 'Command', commands: 'Command', dash: 'DashPiece', cut: 'PathBlock', segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'Endpoint' },
+  'ProjectedPath': { vertices: 'Point', subPathCommands: 'Command', commands: 'Command', dash: 'DashPiece', cut: 'PathBlock', intersectionPoints: 'Point', segmentAll: 'ProjectedPath', pointAll: 'Point', vertexAll: 'Endpoint' },
   'MeshGradient': { getRow: 'MeshPoint', getCol: 'MeshPoint' },
 };
 
@@ -1343,4 +1349,5 @@ export const NAMESPACE_METHOD_RETURNS: Record<string, Record<string, { type: str
 /** Per-type trailing-block param types from @blockparams tags (resolves {|go, pb| ...} params on method calls) */
 export const METHOD_BLOCK_PARAMS: Record<string, Record<string, string[]>> = {
   'PathBlock': { variableOffset: ['VariableOffsetBuilder', 'PathBlock'], compoundVariableOffset: ['CompoundVariableOffsetBuilder', 'PathBlock'] },
+  'ProjectedPath': { variableOffset: ['VariableOffsetBuilder', 'ProjectedPath'], compoundVariableOffset: ['CompoundVariableOffsetBuilder', 'ProjectedPath'] },
 };

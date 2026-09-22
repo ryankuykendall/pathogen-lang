@@ -722,6 +722,17 @@ Users hit the browser's limits (ISSUE-016) instead of a compiler message; peak m
 
 **Discovered:** 2026-09-09
 
+**RESOLVED:** 2026-09-21 — both methods now dispatch on `ProjectedPath` and return a
+result **registered on its spine** (absolute placement preserved), so `.draw()` lands
+the curve where the queried or subscribed geometry is. `anchor` rides along equal to
+`startPoint`, so a `<<` worker written with the registration idiom reads correctly on
+either receiver. The origin-preservation matrix asked for by solution 2 is published in
+`docs/path-blocks.md` → Transforms → "Where the result lands". A zero-length spine (the
+leading move a bare `'command'` selector matches) is now a named error instead of a
+curve collapsed onto one point, and `ProjectedPath.toPathBlock()` was added as the
+free-floating escape hatch. Paper trail:
+`project-docs/observable-reactive-paths/projected-variable-offset/`.
+
 **Severity:** Low
 
 **Description:**
@@ -744,6 +755,111 @@ Offset the un-projected piece and place with `drawTo(origin + anchor)`.
 **Recommended Long-term Solution:**
 
 Both.
+
+---
+
+## ISSUE-026: path transforms are case-blind to absolute curve commands
+
+**Discovered:** 2026-09-21 (code review of the ISSUE-019 work, then widened by audit)
+
+**Severity:** Medium
+
+**Description:**
+
+Same root cause as the sampling bug fixed in 7bb4bfc, in a different file. Layer records
+preserve the case a command was authored in, so an uppercase `C`/`S`/`Q`/`T` carries
+**absolute** control points. `src/evaluator/path-transforms.ts` rebuilds geometry from
+those arguments and treats them as deltas from `start` unconditionally — roughly fifteen
+sites, e.g. `splitCommandAtParametricT` (`:1444`, `:1445`, `:1477`), `:289`/`:290`/`:323`,
+`:485`/`:486`, `:562`, `:1028`–`:1063`, `:2134`/`:2142`.
+
+7bb4bfc fixed the *readers* (`calculateCommandLength`, `sampleOnCommand`,
+`getParametricTForCommand`, `resolveSmooth`), so `d`, `length`, `get`, `tangent` and
+`partition` are now correct. The *transforms* were never fixed and remain wrong.
+
+**Measured** (`project-docs/observable-reactive-paths/projected-variable-offset/audit-absolute-methods.pathogen`
+— the same curve authored absolutely and relatively, compared method by method):
+
+| Agree | Differ |
+|---|---|
+| `d`, `length`, `get`, `tangent`, `partition` | `subPath`, `offset`, `reverse`, `startAt`, `scale`, `mirror`, `boundingBox`, `dash`, `outline`, `fillet` |
+
+Concretely, `M 5 5; C 15 85 95 25 105 5;` and its exact relative twin produce the same
+`d` but different `subPath(0.4, 0.6)` output.
+
+**Impact:**
+
+Any transform of layer-sourced geometry authored with absolute curve commands produces
+the wrong shape — silently, because the whole-path `d` looks right. `dash()` inherits it
+through `subPathCommands`.
+
+**Exposure:** 2 published samples author absolute curve commands
+(`post1/radial-glow.pathogen`, `post24/theme-combined.pathogen`); **no** byte-snapshot
+fixture does. So a fix is unlikely to move pinned output.
+
+**Potential Solutions:**
+
+1. Apply the `isAbsoluteCmd` / `controlPointOf` helpers from `sampling.ts` (export them)
+   at each site in `path-transforms.ts`, exactly as 7bb4bfc did for the readers. The
+   relative branch must return arguments untouched so lowercase results stay
+   bit-identical.
+2. Or normalize case and arguments once, where layer commands become query geometry
+   (`wrapCommands`, `src/evaluator/path-query.ts`), so no downstream consumer has to
+   care. Fewer sites, but it changes what `Command.absolute` can report from a block and
+   needs its own audit.
+
+**Recommended Long-term Solution:**
+
+1, backed by extending the absolute/relative coverage matrix in `tests/path-queries.test.ts`
+to the transform surface — the audit script above is already the shape of that test.
+
+**Note:** the existing coverage matrix checks `d`, `length` and `get` only, which is why
+this survived the 7bb4bfc work.
+
+---
+
+## ISSUE-025: `ProjectedPath.subPath()` returns a PathBlock, but is declared as a ProjectedPath
+
+**Discovered:** 2026-09-21 (while auditing origin preservation for ISSUE-019)
+
+**Severity:** Low
+
+**Description:**
+
+Every other transform on a `ProjectedPath` keeps page coordinates. `subPath(t0, t1)` is
+the exception: `src/evaluator/index.ts` returns a `PathBlockValue` normalized to `(0,0)`,
+with the in-code comment "Return PathBlockValue (normalized to 0,0) so result is
+drawable" — so the behaviour is deliberate. What is not deliberate is the mismatch:
+`src/pathogen-api.ts` declares `subPath(startT, endT): PathogenProjectedPath` on
+`PathogenProjectedPath`, and the generated `TYPE_METHOD_RETURNS.ProjectedPath.subPath`
+therefore says `'ProjectedPath'`. Completions and chain-typing promise a projected value
+and the runtime hands back a relative one.
+
+Measured: `@{ h 100 v 40 }.project(200, 300).subPath(0.2, 0.8)` answers
+`d = 'l 72 0 l 0 12'`, `startPoint = Point(0, 0)`.
+
+**Impact:**
+
+Chained completions after `.subPath(...)` on a projected value offer the wrong member
+set, and a program that trusts the declared type places the slice at the origin. The
+same class of drift as ISSUE-019, which shipped as completions offering
+`match.block.variableOffset()` while the evaluator refused it.
+
+**Potential Solutions:**
+
+1. Declare the truth: `subPath(startT, endT): PathogenPathBlock` on `PathogenProjectedPath`,
+   regenerate completions, and document it in the "Where the result lands" table (the
+   table already states the current behaviour).
+2. Or make it consistent with the other transforms and return a registered
+   `ProjectedPathValue` — a behaviour change for anyone relying on the normalization.
+
+**Recommended Long-term Solution:**
+
+1 now (it is documentation-only and removes the false promise); 2 as a considered API
+change, since it would move existing output.
+
+**Note:** `tests/receiver-parity.test.ts` guards method *presence* in both directions but
+not return types, which is why this survived.
 
 ---
 

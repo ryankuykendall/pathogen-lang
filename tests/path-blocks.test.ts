@@ -3873,3 +3873,44 @@ describe('introspection: d, commands, and log() display', () => {
     expect(result.logs[2].parts[0].value).toBe('PathBlock(1 command: h 5)');
   });
 });
+
+/**
+ * ProjectedPath.toPathBlock() — the inverse of project()/draw(): the same
+ * geometry re-based to its own first point, so it can be placed elsewhere.
+ * Contract: docs/path-blocks.md "Back to a PathBlock".
+ */
+describe('ProjectedPath.toPathBlock()', () => {
+  it('re-bases the geometry to its own origin', () => {
+    const d = compilePath(`
+      let rel = @{ h 40 v 20 }.project(300, 400).toPathBlock();
+      M 0 0
+      rel.draw();
+    `);
+    expect(d).toBe('M 0 0 h 40 v 20');
+  });
+
+  it('round-trips through startPoint back to where it was', () => {
+    const direct = compilePath('@{ h 40 v 20 }.project(300, 400).draw();');
+    const roundTripped = compilePath(`
+      let placed = @{ h 40 v 20 }.project(300, 400);
+      let rel = placed.toPathBlock();
+      rel.drawTo(placed.startPoint.x, placed.startPoint.y);
+    `);
+    expect(roundTripped).toBe(direct);
+  });
+
+  it('keeps segment labels', () => {
+    const logs = compile(`
+      let placed = @{ h 40 as segment('top') v 20 }.project(300, 400);
+      log(placed.toPathBlock().segment('top').length);
+      M 0 0
+    `).logs;
+    expect(logs[0].parts.map((p) => String(p.value)).join(' ')).toBe('40');
+  });
+
+  it('rejects arguments', () => {
+    expect(() => compilePath('@{ h 40 }.project(0, 0).toPathBlock(1); M 0 0')).toThrow(
+      /toPathBlock\(\) expects 0 arguments/,
+    );
+  });
+});

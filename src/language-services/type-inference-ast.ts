@@ -209,7 +209,11 @@ export function inferExprType(expr: Expression, scope: Scope, seen?: Set<Declara
         ) {
           const method = expr.left.method;
           if (method === 'fill') return 'Grid';
-          if (method === 'variableOffset' || method === 'compoundVariableOffset') return 'PathBlock';
+          if (method === 'variableOffset' || method === 'compoundVariableOffset') {
+            // Receiver decides: a projected spine returns a projected result,
+            // registered where the spine is.
+            return inferExprType(expr.left.object, scope, visited) === 'ProjectedPath' ? 'ProjectedPath' : 'PathBlock';
+          }
           if (method === 'map' || method === 'sort' || method === 'filter') {
             const recv = inferExprType(expr.left.object, scope, visited);
             return recv === 'Grid' ? 'Grid' : recv === 'array' ? 'array' : recv;

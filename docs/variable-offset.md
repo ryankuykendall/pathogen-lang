@@ -1,6 +1,6 @@
 # Variable Offset
 
-`variableOffset` and `compoundVariableOffset` are [path block](#path-blocks-path-blocks) methods that trace a **new** path alongside an existing one, using a gradient-stop-like syntax. You place *stops* at positions along a reference path (the **spine**) and give each stop a perpendicular offset distance; the resulting points are connected into a smooth (or sharp) curve whose joins you control per-stop.
+`variableOffset` and `compoundVariableOffset` are [path block](#path-blocks-path-blocks) and [projected path](#path-blocks-projectedpath) methods that trace a **new** path alongside an existing one, using a gradient-stop-like syntax. You place *stops* at positions along a reference path (the **spine**) and give each stop a perpendicular offset distance; the resulting points are connected into a smooth (or sharp) curve whose joins you control per-stop.
 
 Where the existing `offset(distance)` produces a uniform parallel curve at one fixed distance, `variableOffset` lets the distance **vary** from stop to stop — and lets you choose the curve continuity (sharp corners, smooth tangents, or flowing curvature) at each stop. Reach for it when you want tapered or calligraphic strokes, ribbons and casings that follow a path, or banded flow-field effects.
 
@@ -164,6 +164,24 @@ That is the right behavior for placing a ribbon freely, but when the offset shou
 | `variableOffset` | the spine sampled at the first stop's `time`, stepped along the normal by that stop's offset |
 | `compoundVariableOffset` | **profile 1's** first knot — the same sample, stepped by the first stop's `offset1`. `offset2` plays no part |
 
+### On a projected spine
+
+The receiver decides. A `@{ }` path block has no position of its own, so an offset built on it is normalized and `anchor` hands the position back. A **ProjectedPath** — what `project()`, `draw()` and `drawTo()` return, what a [layer query](#path-queries-path-queries) answers with, and what a [subscription](#subscriptions-subscriptions) callback's `match.block` is — already lives in page coordinates, so the offset comes back **registered on its spine**:
+
+```
+let placed = spine.drawTo(120, 80);
+let edge = placed.variableOffset() {|go, pb|
+  go.stop(0%, 0, CurveContinuity.G1);
+  go.stop(50%, 12, CurveContinuity.G2);
+  go.stop(100%, 0, CurveContinuity.G1);
+};
+edge.draw();          // lands on the spine — no M, no anchor arithmetic
+```
+
+`anchor` is still there on a projected result, equal to its `startPoint`, so one worker function reads correctly on either kind of spine: on a projected one the `M calc(x + ribbon.anchor.x) …` from the example below simply becomes redundant rather than wrong.
+
+The spine must have arc length in either case. A path that only moves the pen has none, so every stop would sample the same point; both forms reject it rather than emit a curve collapsed onto one spot. This matters most with queries and subscriptions, because a bare `'command'` selector matches the leading move too — filter it with `'command[length>0]'`.
+
 Add `anchor` to the spine's own placement and the curve registers exactly, whatever the stop times and offsets:
 
 ```
@@ -203,7 +221,7 @@ The `M` + `draw()` pair for the ribbon mirrors how the glyph itself is placed �
 
 Sampling the spine yourself (`contour.get(10%)`) is *close* but off by the first stop's offset along the normal — and it silently drifts if you later edit the first `go.stop(...)`. `anchor` always matches the built curve.
 
-`anchor` lives only on the `variableOffset` / `compoundVariableOffset` result itself. Composing or transforming it (`@{ m -10 0 } << edge`, `.reverse()`, `.offset()`) produces a new path block that does **not** carry it — read `let a = edge.anchor;` before composing.
+`anchor` lives only on the `variableOffset` / `compoundVariableOffset` result itself — on a PathBlock result and a ProjectedPath result alike. Composing or transforming it (`@{ m -10 0 } << edge`, `.reverse()`, `.offset()`) produces a new path block that does **not** carry it — read `let a = edge.anchor;` before composing.
 
 ## Errors
 
@@ -216,6 +234,7 @@ The compiler rejects:
 - **A cap on the simple form** — `startCap`/`endCap` apply only to `compoundVariableOffset`.
 - **A tangent handle on the compound form** — `startTangent`/`endTangent` apply only to the simple `variableOffset`; a compound ribbon's ends are shaped by `startCap`/`endCap`.
 - **Fewer than two stops** — a path needs at least two points, so both forms require at least two `go.stop(...)` calls.
+- **A spine with no arc length** — an empty path, or one that only moves the pen. Every stop would sample the same point, so there is no curve to trace. A `'command'` query or subscription matches the leading move too; select drawing commands with `'command[length>0]'`.
 - **`anchor` on a block that is not a `variableOffset` / `compoundVariableOffset` result** — including one produced by composing or transforming a result (`<<`, `.reverse()`, `.offset()`). Read `anchor` off the result before composing.
 
 Self-intersecting output is **not** an error: if dense stops or extreme offsets make the curve cross itself, Pathogen emits the true curve as-is rather than silently reshaping your geometry.

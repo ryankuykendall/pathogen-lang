@@ -1263,6 +1263,129 @@ function projectCommands(commands: PathBlockCommand[], originX: number, originY:
 }
 
 /**
+ * Shared front half of `variableOffset()` / `compoundVariableOffset()`, for both
+ * the PathBlock and the ProjectedPath receiver: resolve the builder block (or
+ * `<<` worker), run it, and validate the stop run and the spine. The caller keeps
+ * the geometry call and the result shape, so the PathBlock path stays
+ * byte-identical.
+ *
+ * `spine` is the receiver, bound to the block's second parameter (`pb`): a
+ * PathBlock on a PathBlock receiver, a ProjectedPath on a projected one. Both
+ * expose length / get / tangent / normal / vertices, so `pb` behaves the same.
+ *
+ * Check order is deliberate: the stop-count check comes before the spine-length
+ * check, so input that errors today keeps its current message and only input
+ * that is currently *accepted* — and currently produces nonsense — reaches the
+ * new one.
+ */
+function collectVariableOffsetStops(
+  expr: MethodCallExpression,
+  scope: Scope,
+  workerExpr: Expression | undefined,
+  spine: PathBlockValue | ProjectedPathValue,
+  compound: boolean,
+  mError: (message: string) => Error,
+): VariableOffsetBuilderValue {
+  const name = compound ? 'compoundVariableOffset' : 'variableOffset';
+  const cb = resolveCallbackBlock(expr, scope, workerExpr);
+  if (!cb)
+    throw mError(
+      compound
+        ? 'compoundVariableOffset() requires a block or a << worker, e.g. compoundVariableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1, -10, CurveContinuity.G1); } or compoundVariableOffset() << f'
+        : 'variableOffset() requires a block or a << worker, e.g. variableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1); } or variableOffset() << f',
+    );
+  if (cb.extraArgs !== 0)
+    throw mError(`${name}() takes no arguments besides the callback — use ${name}() {|go, pb| ... } or ${name}() << f`);
+  const builder: VariableOffsetBuilderValue = {
+    type: 'VariableOffsetBuilderValue',
+    compound,
+    stops: [],
+  };
+  const blockScope = createScope(cb.closure ?? scope);
+  const params = cb.params;
+  if (params.length > 0) setVariable(blockScope, params[0], builder);
+  // pb = the spine itself (exposes get/tangent/normal/length/vertices).
+  if (params.length > 1) setVariable(blockScope, params[1], spine);
+  evaluateStatementsToAccum(cb.body, blockScope, createPathStore());
+  if (builder.stops.length < 2)
+    throw mError(
+      compound
+        ? 'compoundVariableOffset() needs at least 2 stops to trace a ribbon (each go.stop() places one cross-section)'
+        : 'variableOffset() needs at least 2 stops to trace a path (each go.stop() places one point)',
+    );
+  if (calculatePathLength(spine.commands) === 0)
+    throw mError(
+      `${name}() needs a spine with arc length — this path has none (it is empty, or only moves the pen), so every stop would sample the same point. A 'command' query or subscription matches the leading move too; select drawing commands with 'command[length>0]'`,
+    );
+  return builder;
+}
+
+/** Builder stops → the geometry module's simple-offset stop run. */
+function toSimpleStops(stops: VariableOffsetBuilderValue['stops']): SimpleStop[] {
+  return stops.map((s) => ({
+    time: s.time,
+    offset: s.offset1,
+    continuity: continuityFromValue(s.continuity1),
+  }));
+}
+
+/** Builder stops → the geometry module's compound (two-profile) stop run. */
+function toCompoundStops(stops: VariableOffsetBuilderValue['stops']): CompoundStop[] {
+  return stops.map((s) => ({
+    time: s.time,
+    offset1: s.offset1,
+    continuity1: continuityFromValue(s.continuity1),
+    offset2: s.offset2 ?? 0,
+    continuity2: continuityFromValue(s.continuity2 ?? s.continuity1),
+  }));
+}
+
+/** Builder cap → the geometry module's CapSpec. */
+function toCapSpec(c: CapValue | undefined): CapSpec | undefined {
+  return c
+    ? {
+        cap: c.cap,
+        projection: c.projection,
+        length: c.length,
+        continuity: c.continuity ? continuityFromValue(c.continuity) : undefined,
+      }
+    : undefined;
+}
+
+/**
+ * A variable-offset result on a ProjectedPath receiver: registered on its spine.
+ *
+ * The shared builders origin-normalize their output and report the translation
+ * they subtracted as `anchor`. Translating by `anchor` undoes exactly that, so
+ * the result sits where the spine sampled it and `.draw()` lands it there —
+ * which is the point for annotating query and subscription results. The builders
+ * are deliberately NOT given a skip-normalization option: the PathBlock path is
+ * pinned by byte-snapshot fixtures, and only `start`/`end` move here. Every
+ * command left after `stripLeadingMove` is a relative `c`, whose args are
+ * translation-invariant, so this is a re-registration and not a recomputation.
+ *
+ * `anchor` rides along, equal to `startPoint`, so a worker written with the
+ * documented registration idiom (`M calc(x + ribbon.anchor.x) …; ribbon.draw()`)
+ * keeps working on a projected spine — the `M` becomes redundant, not wrong. It
+ * is stored rather than aliased to `startPoint` because the member-access
+ * guidance error distinguishes "a variable-offset result" from "any projected
+ * path" by the field's presence.
+ */
+function buildProjectedVariableOffset(
+  cmds: PathBlockCommand[],
+  anchor: { x: number; y: number },
+  original: ProjectedPathValue,
+): ProjectedPathValue {
+  const registered = buildProjectedPathFromCommands(projectCommands(cmds, anchor.x, anchor.y), original);
+  // Unreachable in practice: collectVariableOffsetStops requires >= 2 stops, so the
+  // spline always emits at least one cubic. Kept as a guard because the PathBlock
+  // cases carry the same one, and an empty result must not claim an anchor.
+  if (cmds.length === 0) return registered;
+  (registered as ProjectedPathValue & { anchor: { x: number; y: number } }).anchor = { ...anchor };
+  return registered;
+}
+
+/**
  * Generate the GroupLayer, PathLayer (bg), and TextLayer (code) for toCodeSnippetBlock().
  */
 function generateCodeSnippetLayers(
@@ -2926,34 +3049,11 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       }
 
       case 'variableOffset': {
-        const cb = resolveCallbackBlock(expr, scope, workerExpr);
-        if (!cb)
-          throw mError('variableOffset() requires a block or a << worker, e.g. variableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1); } or variableOffset() << f');
-        if (cb.extraArgs !== 0)
-          throw mError('variableOffset() takes no arguments besides the callback — use variableOffset() {|go, pb| ... } or variableOffset() << f');
-        const builder: VariableOffsetBuilderValue = {
-          type: 'VariableOffsetBuilderValue',
-          compound: false,
-          stops: [],
-        };
-        const blockScope = createScope(cb.closure ?? scope);
-        const params = cb.params;
-        if (params.length > 0) setVariable(blockScope, params[0], builder);
-        // pb = the spine PathBlockValue itself (exposes get/tangent/normal/length/vertices).
-        if (params.length > 1) setVariable(blockScope, params[1], obj);
-        evaluateStatementsToAccum(cb.body, blockScope, createPathStore());
-        if (builder.stops.length < 2)
-          throw mError('variableOffset() needs at least 2 stops to trace a path (each go.stop() places one point)');
-
-        const simpleStops: SimpleStop[] = builder.stops.map((s) => ({
-          time: s.time,
-          offset: s.offset1,
-          continuity: continuityFromValue(s.continuity1),
-        }));
+        const builder = collectVariableOffsetStops(expr, scope, workerExpr, obj, false, mError);
         // PolarVectorValue ({angle, distance}) is structurally a PolarOverride.
         const { commands: voCmds, anchor: voAnchor } = buildSimpleVariableOffset(
           obj.commands,
-          simpleStops,
+          toSimpleStops(builder.stops),
           builder.startTangent,
           builder.endTangent,
         );
@@ -2980,46 +3080,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
       }
 
       case 'compoundVariableOffset': {
-        const cb = resolveCallbackBlock(expr, scope, workerExpr);
-        if (!cb)
-          throw mError('compoundVariableOffset() requires a block or a << worker, e.g. compoundVariableOffset() {|go, pb| go.stop(50%, 10, CurveContinuity.G1, -10, CurveContinuity.G1); } or compoundVariableOffset() << f');
-        if (cb.extraArgs !== 0)
-          throw mError('compoundVariableOffset() takes no arguments besides the callback — use compoundVariableOffset() {|go, pb| ... } or compoundVariableOffset() << f');
-        const builder: VariableOffsetBuilderValue = {
-          type: 'VariableOffsetBuilderValue',
-          compound: true,
-          stops: [],
-        };
-        const blockScope = createScope(cb.closure ?? scope);
-        const params = cb.params;
-        if (params.length > 0) setVariable(blockScope, params[0], builder);
-        if (params.length > 1) setVariable(blockScope, params[1], obj);
-        evaluateStatementsToAccum(cb.body, blockScope, createPathStore());
-        if (builder.stops.length < 2)
-          throw mError('compoundVariableOffset() needs at least 2 stops to trace a ribbon (each go.stop() places one cross-section)');
-
-        const compStops: CompoundStop[] = builder.stops.map((s) => ({
-          time: s.time,
-          offset1: s.offset1,
-          continuity1: continuityFromValue(s.continuity1),
-          offset2: s.offset2 ?? 0,
-          continuity2: continuityFromValue(s.continuity2 ?? s.continuity1),
-        }));
-        const capToSpec = (c: CapValue | undefined): CapSpec | undefined =>
-          c
-            ? {
-                cap: c.cap,
-                projection: c.projection,
-                length: c.length,
-                continuity: c.continuity ? continuityFromValue(c.continuity) : undefined,
-              }
-            : undefined;
+        const builder = collectVariableOffsetStops(expr, scope, workerExpr, obj, true, mError);
         // No tangent overrides here: go.startTangent/endTangent throw in compound
         // mode (ribbon ends are shaped by caps), so the builder fields are never set.
-        const { commands: cvCmds, anchor: cvAnchor } = buildCompoundVariableOffset(obj.commands, compStops, {
-          startCap: capToSpec(builder.startCap),
-          endCap: capToSpec(builder.endCap),
-        });
+        const { commands: cvCmds, anchor: cvAnchor } = buildCompoundVariableOffset(
+          obj.commands,
+          toCompoundStops(builder.stops),
+          { startCap: toCapSpec(builder.startCap), endCap: toCapSpec(builder.endCap) },
+        );
         if (cvCmds.length === 0) {
           return {
             type: 'PathBlockValue' as const,
@@ -3618,6 +3686,39 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
           startPoint: { x: oStart.x, y: oStart.y },
           endPoint: { x: oEnd.x, y: oEnd.y },
         };
+      }
+
+      // Unlike the PathBlock form, the result is registered on its spine: a
+      // ProjectedPath already lives in page coordinates, so `.draw()` lands the
+      // curve exactly where the queried or subscribed geometry is. See
+      // buildProjectedVariableOffset.
+      case 'variableOffset': {
+        const builder = collectVariableOffsetStops(expr, scope, workerExpr, obj, false, mError);
+        const { commands: voCmds, anchor: voAnchor } = buildSimpleVariableOffset(
+          obj.commands,
+          toSimpleStops(builder.stops),
+          builder.startTangent,
+          builder.endTangent,
+        );
+        return buildProjectedVariableOffset(voCmds, voAnchor, obj);
+      }
+
+      case 'compoundVariableOffset': {
+        const builder = collectVariableOffsetStops(expr, scope, workerExpr, obj, true, mError);
+        const { commands: cvCmds, anchor: cvAnchor } = buildCompoundVariableOffset(
+          obj.commands,
+          toCompoundStops(builder.stops),
+          { startCap: toCapSpec(builder.startCap), endCap: toCapSpec(builder.endCap) },
+        );
+        return buildProjectedVariableOffset(cvCmds, cvAnchor, obj);
+      }
+
+      // The inverse of project()/draw(): the same geometry, re-based to its own
+      // first point so it can be placed elsewhere. The position given up is still
+      // readable as this value's startPoint.
+      case 'toPathBlock': {
+        if (expr.args.length !== 0) throw mError('toPathBlock() expects 0 arguments');
+        return buildPathBlockFromCommands(obj.commands);
       }
 
       case 'mirror': {
@@ -6325,6 +6426,14 @@ function evaluateMemberExpression(expr: MemberExpression, scope: Scope): Value {
         return { type: 'PointValue' as const, x: obj.endPoint.x, y: obj.endPoint.y };
       case 'isEmpty':
         return boolVal(obj.commands.length === 0);
+      case 'anchor': {
+        const anchor = (obj as ProjectedPathValue & { anchor?: { x: number; y: number } }).anchor;
+        if (anchor === undefined)
+          throw new Error(
+            "'anchor' is only available on variableOffset/compoundVariableOffset results — it recovers the position removed by origin normalization. On a ProjectedPath the result is already registered on its spine, so 'anchor' equals 'startPoint'. Composing or transforming a result produces a new path without it; read anchor before composing",
+          );
+        return { type: 'PointValue' as const, x: anchor.x, y: anchor.y };
+      }
       default:
         throw new Error(`Property '${expr.property}' does not exist on ProjectedPath`);
     }

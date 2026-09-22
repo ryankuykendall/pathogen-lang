@@ -1336,6 +1336,8 @@ export interface PathogenProjectedPath {
   readonly endPoint: PathogenPoint;
   /** True when the path has no commands */
   readonly isEmpty: boolean;
+  /** First point of a variableOffset/compoundVariableOffset result — equal to startPoint, since a projected result is already registered on its spine */
+  readonly anchor: PathogenPoint;
   /** draw() — Draw the path exactly where it lies (anchored on its first command) */
   draw(): PathogenProjectedPath;
   /** drawTo(x, y) — Re-draw translated to a new origin; returns a ProjectedPath */
@@ -1356,6 +1358,12 @@ export interface PathogenProjectedPath {
   centerPoint(): PathogenPoint;
   /** offset(distance, options?) — Parallel path; options: { join: 'miter' | 'bevel' | 'round' } */
   offset(distance: number, options?: { join?: string }): PathogenProjectedPath;
+  /** variableOffset() {|go, pb| ...} — Trace a smooth offset path with per-stop distance + continuity, registered on this path's own coordinates; or variableOffset() << worker @blockparams VariableOffsetBuilder, ProjectedPath @snippet variableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
+  variableOffset(): PathogenProjectedPath;
+  /** compoundVariableOffset() {|go, pb| ...} — Trace a two-profile offset ribbon with per-stop distances + continuities, registered on this path's own coordinates; or compoundVariableOffset() << worker @blockparams CompoundVariableOffsetBuilder, ProjectedPath @snippet compoundVariableOffset() {|${1:go}, ${2:pb}|\n\t$0\n} */
+  compoundVariableOffset(): PathogenProjectedPath;
+  /** toPathBlock() — The same geometry re-based to its own first point, as a free-floating PathBlock; the position is still readable as startPoint */
+  toPathBlock(): PathogenPathBlock;
   /** mirror(angle) — Mirror path */
   mirror(angle: AngleValue): PathogenProjectedPath;
   /** rotate(angle, origin?) — Rotate about an absolute point (default: the projection start) */
@@ -1394,6 +1402,10 @@ export interface PathogenProjectedPath {
   xor(other: PathogenPathBlock): PathogenProjectedPath;
   /** cut(cutter) — Slice along the cutter(s): one PathBlock/ProjectedPath or an array of them; returns the healed pieces. Seams are labeled 'cut' — or 'cut.<name>' when the cutter edge was named as segment('name') */
   cut(cutter: PathogenPathBlock | PathogenProjectedPath | (PathogenPathBlock | PathogenProjectedPath)[]): PathogenArray<PathogenPathBlock>;
+  /** intersects(other) — Check for intersections */
+  intersects(other: PathogenPathBlock): boolean;
+  /** intersectionPoints(other) — Get intersection points */
+  intersectionPoints(other: PathogenPathBlock): PathogenArray<PathogenPoint>;
 
   // Path queries — one grammar for commands, calls, endpoints, segments, and subpaths (docs: Path Queries)
   /** query(selector) — First match of a path query. Nouns: command(a) · call(circle) · endpoint(label) · segment(label) · subpath(k); add [filters] and :first/:last/:nth(...); a space scopes the right side inside the left. Errors when nothing matches */

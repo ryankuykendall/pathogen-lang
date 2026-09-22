@@ -408,7 +408,10 @@ function inferExprType(expr: Expression): string | null {
         ) {
           const method = expr.left.method;
           if (method === 'fill') return 'Grid';
-          if (method === 'variableOffset' || method === 'compoundVariableOffset') return 'PathBlock';
+          if (method === 'variableOffset' || method === 'compoundVariableOffset') {
+            // Receiver decides: a projected spine returns a projected result.
+            return inferExprType(expr.left.object) === 'ProjectedPath' ? 'ProjectedPath' : 'PathBlock';
+          }
           if (method === 'map' || method === 'sort' || method === 'filter') {
             const recv = inferExprType(expr.left.object);
             return recv === 'Grid' ? 'Grid' : recv === 'Array' ? 'Array' : recv;

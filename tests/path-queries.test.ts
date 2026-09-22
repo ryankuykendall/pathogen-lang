@@ -497,3 +497,78 @@ describe('zero-length commands are not endpoints', () => {
     expect(logLines(loop)).toEqual(['3']);
   });
 });
+
+/**
+ * Layer records preserve the case a command was authored in
+ * (PathBlockCommand.command, types.ts), so a query block off a layer can hold
+ * uppercase commands whose args are absolute. Two independent bugs read those
+ * args as deltas from `start` anyway: the evaluator's local commandsToAbsoluteD
+ * (which also handed H/V/Z arguments they do not take) and the sampling family
+ * (calculateCommandLength, sampleOnCommand, getParametricTForCommand,
+ * resolveSmooth).
+ *
+ * Each row authors the same geometry twice — once absolute, once relative from
+ * the same start — so the two must agree on serialization and on every sampled
+ * quantity. Adding a command letter is one row.
+ */
+describe('query blocks — absolute and relative authoring agree', () => {
+  const START = 'M 50 50;';
+  const PAIRS: [name: string, absolute: string, relative: string][] = [
+    ['L', 'L 150 150;', 'l 100 100;'],
+    ['H', 'H 150;', 'h 100;'],
+    ['V', 'V 150;', 'v 100;'],
+    ['C', 'C 150 50 150 150 150 150;', 'c 100 0 100 100 100 100;'],
+    ['Q', 'Q 150 50 150 150;', 'q 100 0 100 100;'],
+    ['A', 'A 100 100 0 0 1 150 150;', 'a 100 100 0 0 1 100 100;'],
+    // S and T take their first control point from the preceding curve, so each
+    // needs one in front; both forms must expand it the same way.
+    ['S', 'C 100 20 120 40 150 50; S 180 90 200 100;', 'c 50 -30 70 -10 100 0; s 30 40 50 50;'],
+    ['T', 'Q 100 20 150 50; T 200 100;', 'q 50 -30 100 0; t 50 50;'],
+  ];
+
+  function probe(commands: string): { d: string; length: number; mid: string; quarter: string } {
+    const src = `
+      define default PathLayer('probe') #{ fill: none; }
+      ${START}
+      ${commands}
+      let last = layer('probe').query('command[length>0]:last');
+      log(last.block.d, last.block.length, last.block.get(0.5), last.block.get(0.25));
+      `;
+    const parts = compile(src).logs[0].parts.map((part) => String(part.value));
+    return { d: parts[0], length: Number(parts[1]), mid: parts[2], quarter: parts[3] };
+  }
+
+  for (const [name, absolute, relative] of PAIRS) {
+    it(`${name} — same d, length and samples either way`, () => {
+      const abs = probe(absolute);
+      const rel = probe(relative);
+      expect(abs.d).toBe(rel.d);
+      expect(abs.length).toBeCloseTo(rel.length, 9);
+      expect(abs.mid).toBe(rel.mid);
+      expect(abs.quarter).toBe(rel.quarter);
+    });
+  }
+
+  it('serializes every command with its full argument list', () => {
+    // The old fallback emitted `<LETTER> endX endY` for anything uppercase:
+    // `Z 50 50`, `H 200 150`, `C 250 250`, `A 380 380`.
+    const src = `
+      define default PathLayer('probe') #{ fill: none; }
+      M 50 50;
+      H 150;
+      V 150;
+      C 200 150 200 200 200 200;
+      A 25 25 0 0 1 250 200;
+      Z;
+      let d = layer('probe').query('subpath(0)').block.d;
+      log(d);
+    `;
+    const d = String(compile(src).logs[0].parts[0].value);
+    expect(d).toContain('H 150');
+    // H takes one number: the next token after it must be a command letter.
+    expect(d).toMatch(/H\s+[-\d.]+\s+[A-Za-z]/);
+    expect(d).toContain('C 200 150 200 200 200 200');
+    expect(d).toContain('A 25 25 0 0 1 250 200');
+    expect(d).toMatch(/Z\s*$/);
+  });
+});

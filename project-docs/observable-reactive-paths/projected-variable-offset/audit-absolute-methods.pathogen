@@ -1,0 +1,33 @@
+define ViewBox(0, 0, 400, 200);
+define default PathLayer('abs') #{ fill: none; };
+let rel = PathLayer('rel') #{ fill: none; };
+
+M 5 5;
+C 15 85 95 25 105 5;
+Q 150 90 195 5;
+
+rel.apply {
+  m 5 5;
+  c 10 80 90 20 100 0;
+  q 45 85 90 0;
+}
+
+let a = layer('abs').query('subpath(0)').block;
+let r = layer('rel').query('subpath(0)').block;
+
+log(`d            | ${a.d} | ${r.d}`);
+log(`length       | ${a.length} | ${r.length}`);
+log(`get(0.37)    | ${a.get(0.37)} | ${r.get(0.37)}`);
+log(`tangent(.37) | ${a.tangent(0.37).angle} | ${r.tangent(0.37).angle}`);
+log(`subPath      | ${a.subPath(0.4, 0.6).d} | ${r.subPath(0.4, 0.6).d}`);
+log(`offset(6)    | ${a.offset(6).d} | ${r.offset(6).d}`);
+log(`reverse      | ${a.reverse().d} | ${r.reverse().d}`);
+log(`startAt(0.3) | ${a.startAt(0.3).d} | ${r.startAt(0.3).d}`);
+log(`scale(2,2)   | ${a.scale(2, 2).d} | ${r.scale(2, 2).d}`);
+log(`mirror(0deg) | ${a.mirror(0deg).d} | ${r.mirror(0deg).d}`);
+log(`rotate(15deg)| ${a.rotate(15deg).d} | ${r.rotate(15deg).d}`);
+log(`bbox         | ${a.boundingBox().width} | ${r.boundingBox().width}`);
+log(`dash         | ${a.dash(#{ stroke-dasharray: 20 10; })[0].path.d} | ${r.dash(#{ stroke-dasharray: 20 10; })[0].path.d}`);
+log(`outline      | ${a.outline(#{ stroke-width: 4; }).d} | ${r.outline(#{ stroke-width: 4; }).d}`);
+log(`fillet(3)    | ${a.fillet(3).d} | ${r.fillet(3).d}`);
+log(`partition(4) | ${a.partition(4)[2].point} | ${r.partition(4)[2].point}`);
