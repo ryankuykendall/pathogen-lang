@@ -762,6 +762,18 @@ Both.
 
 **Discovered:** 2026-09-21 (code review of the ISSUE-019 work, then widened by audit)
 
+**RESOLVED:** 2026-09-22 — fixed at the boundary rather than at the ~20 call sites.
+`wrapCommands` (`src/evaluator/path-query.ts`) now normalizes a block's commands to
+lowercase-relative via `normalizeToRelativeArgs`, which is what `docs/path-queries.md`
+has always said a block is ("Path blocks always report lowercase relative commands";
+`absolute` is "always false on blocks and projections") — the runtime had been reporting
+`true`. Solution 2 from the list below, chosen over solution 1 because it is one site
+instead of twenty reads with three different shapes (absolute points, relative deltas,
+tangent vectors), and because it makes the runtime match a documented contract instead of
+adding a new one. `normalizeToRelativeArgs` returns lowercase args untouched, so nothing
+moves for the common case. All fifteen audited methods now agree; guarded by the
+"transforms agree too" matrix in `tests/path-queries.test.ts`.
+
 **Severity:** Medium
 
 **Description:**

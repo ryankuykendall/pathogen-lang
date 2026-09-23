@@ -79,16 +79,24 @@ samples.
 - `tests/path-queries.test.ts` — the absolute/relative coverage matrix, one row per
   command letter.
 
-## Found, flagged, not fixed
+## ISSUE-026 — found by review, then fixed (2026-09-22)
 
-**ISSUE-026** (from the code review, then widened by audit): `path-transforms.ts` has the
-same case-blindness 7bb4bfc fixed in the readers, at ~15 sites. Ten methods disagree
-between an absolutely- and a relatively-authored copy of the same curve — `subPath`,
-`offset`, `reverse`, `startAt`, `scale`, `mirror`, `boundingBox`, `dash`, `outline`,
-`fillet` — while `d`, `length`, `get`, `tangent` and `partition` now agree. Evidence:
-`audit-absolute-methods.pathogen`. Pre-existing, unrelated to this feature, and a
-separate change: 2 published samples author absolute curve commands and no byte-snapshot
-fixture does, so the fix is low-risk but outside the approved plan.
+The code review flagged that `path-transforms.ts` still had the case-blindness 7bb4bfc
+fixed in the readers. An audit of the whole method surface
+(`audit-absolute-methods.pathogen`) widened it from the two methods reported to **ten**:
+`subPath`, `offset`, `reverse`, `startAt`, `scale`, `mirror`, `boundingBox`, `dash`,
+`outline`, `fillet` all disagreed between an absolutely- and a relatively-authored copy
+of the same curve, while `d`, `length`, `get`, `tangent` and `partition` agreed.
+
+Fixed at the boundary, not at the ~20 call sites: `wrapCommands` normalizes a block to
+lowercase-relative. Three statements in `docs/path-queries.md` already said that is what
+a block is; the runtime had been reporting `absolute: true` on blocks. So this makes the
+runtime match a documented contract rather than inventing one, and it is one site instead
+of twenty reads with three different shapes (absolute points, relative deltas, tangent
+vectors). All fifteen audited methods now agree. Guarded by "transforms agree too" in
+`tests/path-queries.test.ts`.
+
+## Found, flagged, not fixed
 
 **ISSUE-025**: `ProjectedPath.subPath()` deliberately returns a PathBlock normalized to
 `(0,0)` while `pathogen-api.ts` declares it returns a ProjectedPath. Documented in the

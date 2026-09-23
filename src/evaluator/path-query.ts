@@ -767,7 +767,26 @@ export function wrapCommands(run: PathBlockCommand[], kind: QuerySource['kind'])
   // boxes, centres and draw() anchors then answer for the run alone.
   const first = run[0];
   const leadingMove = first.command === 'm' || first.command === 'M';
-  const source = !leadingMove ? run : run.length > 1 ? run.slice(1) : [{ ...first, start: { ...first.end } }];
+  const runCmds = !leadingMove ? run : run.length > 1 ? run.slice(1) : [{ ...first, start: { ...first.end } }];
+  // Layer records preserve the case a command was authored in, but a standalone
+  // block is always lowercase-relative — docs/path-queries.md states it three
+  // times ("Path blocks always report lowercase relative commands"; `absolute` is
+  // "always false on blocks and projections"). Normalizing once here is what makes
+  // that true, and it is the single point that keeps the ~20 curve-argument reads
+  // in path-transforms.ts correct: they all treat args as deltas from `start`, so
+  // an absolutely-authored C/S/Q/T reaching them silently produced the wrong
+  // shape from `subPath`, `offset`, `reverse`, `startAt`, `scale`, `mirror`,
+  // `boundingBox`, `dash`, `outline` and `fillet` (ISSUE-026). Args must be
+  // rebased against the ORIGINAL start, before the pathblock branch re-origins
+  // them. normalizeToRelativeArgs returns lowercase args untouched, so nothing
+  // moves for the overwhelmingly common case.
+  const source = runCmds.map((c) => ({
+    command: c.command.toLowerCase(),
+    args: normalizeToRelativeArgs(c.command, c.args, c.start),
+    start: c.start,
+    end: c.end,
+    ...(c.meta !== undefined ? { meta: c.meta } : {}),
+  }));
   if (kind === 'pathblock') {
     const runStart = source[0].start;
     const rebased = source.map((c) => ({

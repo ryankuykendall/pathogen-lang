@@ -549,6 +549,70 @@ describe('query blocks — absolute and relative authoring agree', () => {
     });
   }
 
+  /**
+   * The transform surface (ISSUE-026). Ten of these rebuilt geometry from curve
+   * arguments read as deltas from `start` whatever the command's case, so an
+   * absolutely-authored curve transformed into the wrong shape while its `d`
+   * still looked right. `wrapCommands` now normalizes a block to lowercase
+   * relative — what the docs have always said a block is — which is the single
+   * point that keeps ~20 argument reads in path-transforms.ts correct.
+   */
+  describe('transforms agree too', () => {
+    const ABS = 'M 5 5;\nC 15 85 95 25 105 5;\nQ 150 90 195 5;';
+    const REL = 'm 5 5;\nc 10 80 90 20 100 0;\nq 45 85 90 0;';
+
+    /** Evaluate `expr` against a block built from `commands`, as a log string. */
+    function probeTransform(commands: string, expr: string): string {
+      const src = `
+        define default PathLayer('probe') #{ fill: none; }
+        ${commands}
+        let blk = layer('probe').query('subpath(0)').block;
+        log(${expr});
+      `;
+      return compile(src)
+        .logs[0].parts.map((part) => String(part.value))
+        .join(' ');
+    }
+
+    const TRANSFORMS: [name: string, expr: string][] = [
+      ['subPath', 'blk.subPath(0.4, 0.6).d'],
+      ['offset', 'blk.offset(6).d'],
+      ['reverse', 'blk.reverse().d'],
+      ['startAt', 'blk.startAt(0.3).d'],
+      ['scale', 'blk.scale(2, 2).d'],
+      ['mirror', 'blk.mirror(0deg).d'],
+      ['rotate', 'blk.rotate(15deg).d'],
+      ['boundingBox', 'blk.boundingBox().width, blk.boundingBox().height'],
+      ['dash', 'blk.dash(#{ stroke-dasharray: 20 10; })[0].path.d'],
+      ['outline', 'blk.outline(#{ stroke-width: 4; }).d'],
+      ['fillet', 'blk.fillet(3).d'],
+      ['centerPoint', 'blk.centerPoint()'],
+      ['partition', 'blk.partition(4)[2].point'],
+      ['vertices', 'blk.vertices'],
+    ];
+
+    for (const [name, expr] of TRANSFORMS) {
+      it(`${name} — same result either way`, () => {
+        expect(probeTransform(ABS, expr)).toBe(probeTransform(REL, expr));
+      });
+    }
+
+    it('reports a block as lowercase and relative, as the docs promise', () => {
+      // docs/path-queries.md: `absolute` is "always false on blocks and
+      // projections"; the layer Command it came from still reports true.
+      const src = `
+        define default PathLayer('probe') #{ fill: none; }
+        ${ABS}
+        let blk = layer('probe').query('subpath(0)').block;
+        log(blk.commands[0].command, blk.commands[0].absolute, layer('probe').query('command(c)').absolute);
+      `;
+      const out = compile(src)
+        .logs[0].parts.map((part) => String(part.value))
+        .join(' ');
+      expect(out).toBe('c false true');
+    });
+  });
+
   it('serializes every command with its full argument list', () => {
     // The old fallback emitted `<LETTER> endX endY` for anything uppercase:
     // `Z 50 50`, `H 200 150`, `C 250 250`, `A 380 380`.
