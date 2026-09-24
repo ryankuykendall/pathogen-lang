@@ -21,6 +21,7 @@ That read is correct. This is the distillation.
 | `04-violations.md` | Every operation graded against those principles, ranked, each with a fix and its cost |
 | `05-defects.md` | Nine measured bugs, triaged for `known-issues.md` |
 | `06-vocabulary.md` | One name per concept, and the synonyms it replaces |
+| `D2-layer-transform-queries.md` | One-pager on D2: layer transforms vs query coordinates |
 | `probes/` | The evidence. Re-runnable. |
 
 ## How to re-run the evidence

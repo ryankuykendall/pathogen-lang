@@ -57,6 +57,8 @@ D1 and ISSUE-015 as FIXED; leaving those probes in place makes them the regressi
 
 ## D2 — A query on a transformed layer answers in a space that is not on screen · **High**
 
+> Expanded: **[`D2-layer-transform-queries.md`](D2-layer-transform-queries.md)** — full scope, the three facts that constrain a fix, and four costed options.
+
 ```
 let moved = PathLayer('moved') #{ translate-x: 100; translate-y: 50; };
 moved.apply { M 10 10; L 60 10; }
