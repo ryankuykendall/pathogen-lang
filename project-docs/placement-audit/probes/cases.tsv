@@ -1,0 +1,51 @@
+# receiver_id	label	expression
+# Each case is compiled on its own so a throw is a result, not a crash.
+# Receivers are defined in run-probes.sh.
+block	draw	R.draw()
+block	drawTo	R.drawTo(500, 500)
+block	project	R.project(500, 500)
+block	reverse	R.reverse()
+block	offset	R.offset(5)
+block	outline	R.outline(#{ stroke-width: 4; })
+block	startAt	R.startAt(0.3)
+block	subPath	R.subPath(0.1, 0.5)
+block	scale	R.scale(2, 2)
+block	mirror	R.mirror(0deg)
+block	rotate	R.rotate(15deg)
+block	rotateAtVertexIndex	R.rotateAtVertexIndex(1, 15deg)
+block	fillet	R.fillet(3)
+block	chamfer	R.chamfer(3)
+block	union	R.union(OTHER)
+block	difference	R.difference(OTHER)
+block	intersection	R.intersection(OTHER)
+block	xor	R.xor(OTHER)
+block	cut	R.cut(KNIFE)[0]
+block	dash	R.dash(#{ stroke-dasharray: 20 10; })[0].path
+block	segment	R.segment('edge')
+block	variableOffset	R.variableOffset() {|go, pb| go.stop(0%, 4, CurveContinuity.G1); go.stop(100%, 4, CurveContinuity.G1); }
+block	toPathBlock	R.toPathBlock()
+block	contours	R.contours[0]
+projected	draw	R.draw()
+projected	drawTo	R.drawTo(500, 500)
+projected	project	R.project(500, 500)
+projected	reverse	R.reverse()
+projected	offset	R.offset(5)
+projected	outline	R.outline(#{ stroke-width: 4; })
+projected	startAt	R.startAt(0.3)
+projected	subPath	R.subPath(0.1, 0.5)
+projected	scale	R.scale(2, 2)
+projected	mirror	R.mirror(0deg)
+projected	rotate	R.rotate(15deg)
+projected	rotateAtVertexIndex	R.rotateAtVertexIndex(1, 15deg)
+projected	fillet	R.fillet(3)
+projected	chamfer	R.chamfer(3)
+projected	union	R.union(OTHER)
+projected	difference	R.difference(OTHER)
+projected	intersection	R.intersection(OTHER)
+projected	xor	R.xor(OTHER)
+projected	cut	R.cut(KNIFE)[0]
+projected	dash	R.dash(#{ stroke-dasharray: 20 10; })[0].path
+projected	segment	R.segment('edge')
+projected	variableOffset	R.variableOffset() {|go, pb| go.stop(0%, 4, CurveContinuity.G1); go.stop(100%, 4, CurveContinuity.G1); }
+projected	toPathBlock	R.toPathBlock()
+projected	contours	R.contours[0]
