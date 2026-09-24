@@ -176,8 +176,10 @@ receivers or state the exclusion. `03` now states it.
    finding worth recording: the layer guard sits in `finalizeStore`, so it repairs *all* layer
    output, not only `draw()` — 22 unit tests asserted the unrepaired strings and were updated.
    No sample or snapshot moved.
-2. **D3, D6** — one-line fixes to measured wrongness on declared APIs (`drawTo` dropping every
-   label; `rotateAtVertexIndex` ignoring its index).
+2. **D3** — one-line fix to measured wrongness on a declared API (`drawTo` dropping every
+   label). ~~D6~~ was investigated and **is not a fix**: `rotateAtVertexIndex`'s index is
+   inert on a PathBlock because the result is deliberately re-based, and a published sample
+   compensates for that. Document or deprecate it instead — see `05-defects.md` D6.
 3. **The `subPath` decision**, then **V1 Fix B + V2** as one "make the declarations true" pass.
 4. **V8** — two named constructors; stops the next drift.
 5. **Documentation** — V5, V6, and `06`'s vocabulary collapse.

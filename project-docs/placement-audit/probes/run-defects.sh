@@ -55,7 +55,7 @@ M 0 0;
 " --print-logs 2>&1 | grep -oE '= [Mm] .*' | tail -1 | cut -c3-40)
 if [[ "$out" == M\ * ]]; then pass "union returns absolute data: $out"; else fail "union returns relative data: $out"; fi
 
-echo "D6 — rotateAtVertexIndex ignores its index on a PathBlock"
+echo "D6 — rotateAtVertexIndex index is inert on a PathBlock (BY DESIGN — see 05-defects.md)"
 # Compare numerically, not as strings: rotating about (0,0) and about vertex 2
 # differ by ~10 units, while two runs of the same rotation differ by ~1e-14.
 out=$(npx tsx src/cli.ts -e "
@@ -70,9 +70,9 @@ M 0 0;
 " --print-logs 2>&1 | grep -oE 'separation=[0-9.e-]+' | head -1)
 sep="${out#separation=}"
 if [ -n "$sep" ] && awk -v s="$sep" 'BEGIN { exit !(s > 0.001) }'; then
-  pass "vertex 2 pivots somewhere else ($out)"
+  printf '  %-8s %s\n' "CHANGED" "the re-basing was removed — check post40/shattered-glyph ($out)"
 else
-  fail "index ignored — rotate() and rotateAtVertexIndex(2) agree to $sep"
+  printf '  %-8s %s\n' "AS-SPEC" "index inert (re-based result); rotate() and atVertex(2) agree to $sep"
 fi
 
 echo "D7 — a bare number in the layer rotate key is radians"

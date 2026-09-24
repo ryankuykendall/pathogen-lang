@@ -3163,6 +3163,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (rAngle === undefined) throw mError('rotateAtVertexIndex() angle must be a number');
         if (!Number.isInteger(rIdx)) throw mError('rotateAtVertexIndex() index must be an integer');
         const rotated = rotateAtVertexCommands(obj.commands, rIdx, rAngle);
+        // Deliberately re-based (origin omitted): the result is normalized to its
+        // own first point. Consequence, audited 2026-09-24: because rotations of a
+        // rigid shape about different pivots are congruent and differ only by
+        // translation, re-basing makes the returned value IDENTICAL for every
+        // index — the pivot is observable only through where the caller places the
+        // result. website/blog/samples/post40/shattered-glyph.pathogen depends on
+        // this and adds the pivot back by hand. Do not "fix" it to keep the frame
+        // without migrating that sample. See project-docs/placement-audit/ D6.
         return buildPathBlockFromCommands(rotated);
       }
 
@@ -3504,15 +3512,14 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         if (typeof dtX !== 'number') throw mError('drawTo() x must be a number');
         if (typeof dtY !== 'number') throw mError('drawTo() y must be a number');
 
-        // Re-project commands from PPV origin to new drawTo origin
+        // Re-project commands from PPV origin to new drawTo origin.
+        // projectCommands rather than an inline map: the hand-rolled copy here
+        // omitted the `meta` spread, so this — the only way to translate a
+        // ProjectedPath, since there is no `translate` member — silently dropped
+        // every segment and endpoint label.
         const offsetX = dtX - obj.startPoint.x;
         const offsetY = dtY - obj.startPoint.y;
-        const reProjectedCommands = obj.commands.map((cmd) => ({
-          command: cmd.command,
-          args: [...cmd.args],
-          start: { x: cmd.start.x + offsetX, y: cmd.start.y + offsetY },
-          end: { x: cmd.end.x + offsetX, y: cmd.end.y + offsetY },
-        }));
+        const reProjectedCommands = projectCommands(obj.commands, offsetX, offsetY);
 
         // Emit M x y followed by relative commands, tracking in the same walk.
         // reProjectedCommands are world-space; the walk's deltas are unaffected.

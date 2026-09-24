@@ -122,23 +122,44 @@ Negative origins are explicitly recommended for centring in `docs/viewbox.md`.
 
 ---
 
-## D6 — `rotateAtVertexIndex` ignores its index on a PathBlock · **Medium**
+## D6 — `rotateAtVertexIndex`'s index is inert on a PathBlock · **not a bug — document or deprecate**
+
+**Revised 2026-09-24.** The first write-up said the index was ignored. The observable claim
+holds; the mechanism named was wrong, and the behaviour turns out to be deliberate.
 
 ```
-let b = @{ m 40 25 h 60 v 30 h -60 z };   // vertices: (0,0) (40,25) (100,25) (100,55) (40,55)
-b.rotate(15deg).startPoint              // Point(32.1665569…, 34.5009074…)
-b.rotateAtVertexIndex(1, 15deg)         // Point(32.1665569…, 34.5009074…)   identical
-b.rotateAtVertexIndex(2, 15deg)         // Point(32.1665569…, 34.5009074…)   identical
+let b = @{ m 40 25 h 60 v 30 h -60 z };
+b.rotate(15deg).d              // m 32.1665569… 34.5009074… l 57.955549…
+b.rotateAtVertexIndex(1, 15deg).d   // identical
+b.rotateAtVertexIndex(2, 15deg).d   // identical
 ```
 
-All three rotate about `(0,0)`. Rotating about vertex 1 — which *is* the start point — would
-leave `startPoint` at `(40,25)`; rotating about vertex 2 would give `(42.04, 9.47)`. Neither
-happens. The index argument has no effect.
+The index **is** passed to `rotateAtVertexCommands`. The result is then re-based by
+`buildPathBlockFromCommands(rotated)` with the origin argument omitted. Rotations of a rigid
+shape about different pivots are congruent and differ only by translation, so re-basing
+removes the only thing the pivot changed: the returned value is identical for every index.
 
-The **ProjectedPath** variant honours it: `rotate` gives `Point(200,300)` and
+**Why this is not a defect to fix.** The re-basing is deliberate, and three things depend on
+it:
+
+- `tests/path-blocks.test.ts` pins it, including a case named "startPoint (0,0) for the
+  self-rebased PathBlockValue result", with comments that compute the normalized expectation.
+- `website/blog/samples/post40/shattered-glyph.pathogen:74` documents it in a comment —
+  *"rotateAtVertexIndex rebases its result to the pivot vertex, so add the pivot's
+  glyph-local position back when placing the shard"* — and compensates for it.
+- `validate:samples` would **not** catch a change: it checks warnings and collisions, not
+  geometric identity, so a silent shift in that sample would ship.
+
+A frame-preserving version was implemented and reverted for exactly this reason.
+
+**What is still wrong:** a declared parameter that cannot change the returned value on this
+receiver. The honest options are to document the behaviour on `docs/path-blocks.md` (the page
+documents the re-basing for `rotateAtVertexIndex` at `:539` but does not say the index is
+therefore unobservable), or to deprecate the index on a PathBlock receiver and direct callers
+to the ProjectedPath form, where it works — `rotate` gives `Point(200,300)` and
 `rotateAtVertexIndex(1, …)` gives `Point(202.04, 284.47)`.
 
-**Fix:** use the vertex as the pivot on the PathBlock path, as the ProjectedPath path does.
+Recorded at the call site in `src/evaluator/index.ts` so the next reader does not "fix" it.
 
 ---
 

@@ -689,3 +689,53 @@ describe('pseudo guard on the layer query path (review warning 3)', () => {
     expect(() => compile(`${src}\nlet a = p.segment('hop:atomic');`)).not.toThrow(/0-indexed/);
   });
 });
+
+/**
+ * Labels must survive every transform that carries geometry forward.
+ * `ProjectedPath.drawTo()` was the one producer that did not: it rebuilt its
+ * commands with a hand-rolled map that omitted the `meta` spread, so it dropped
+ * every segment and endpoint label. That is sharpened by there being no
+ * `translate` member on a ProjectedPath — `drawTo` is the only way to move one,
+ * so the single available move operation was the destructive one.
+ *
+ * Audit: project-docs/placement-audit/ D3.
+ */
+describe('labels survive a ProjectedPath move', () => {
+  const SRC = "let p = @{ h 20 as segment('s1') v 20 as segment('s2') };";
+
+  function labelCount(expr: string): number {
+    const out = compile(`
+      ${SRC}
+      let moved = ${expr};
+      let n = 0;
+      for (c in moved.commands) { if (c.segment != null) { n = calc(n + 1); } }
+      let out = \`\${n}\`;
+      log(out);
+      M 0 0;
+    `);
+    return Number(out.logs[0].parts.map((part) => String(part.value)).join(''));
+  }
+
+  it('keeps both labels through ProjectedPath.drawTo()', () => {
+    expect(labelCount('p.project(0, 0).drawTo(9, 9)')).toBe(2);
+  });
+
+  it('keeps both labels through the producers that already did', () => {
+    // These are the comparison set that made drawTo's loss visible.
+    expect(labelCount('p.project(0, 0)')).toBe(2);
+    expect(labelCount('p.project(0, 0).offset(3)')).toBe(2);
+    expect(labelCount('p.project(0, 0).toPathBlock()')).toBe(2);
+    expect(labelCount('p.drawTo(9, 9)')).toBe(2);
+  });
+
+  it('still resolves the label by name after the move', () => {
+    const out = compile(`
+      ${SRC}
+      let moved = p.project(0, 0).drawTo(100, 100);
+      let out = \`\${moved.segment('s1').length}\`;
+      log(out);
+      M 0 0;
+    `);
+    expect(out.logs[0].parts.map((part) => String(part.value)).join('')).toBe('20');
+  });
+});

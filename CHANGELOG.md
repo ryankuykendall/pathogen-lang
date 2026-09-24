@@ -18,6 +18,8 @@ ISSUE-015 resolved, and the same failure found and fixed in every `<defs>` produ
 
 Both repairs are **serialization only**. The command list is never touched, because a synthesized move must not become a value the language can see — it would add a phantom `command` match, shift every `:nth` index, and change what `command:first` selects. So `let foo = @{ h 10 } << @{ v 10 };` still reports `foo.d` as `h 10 v 10` with two commands and one subpath, while the layer it is drawn into emits `m 0 0 h 10 v 10`.
 
+- **`ProjectedPath.drawTo()` no longer drops every label.** It rebuilt its commands with a hand-rolled map that omitted the `meta` spread `projectCommands` has, so a path with `as segment(...)` / `as endpoint(...)` labels came back with none — measured 0 of 2. Sharpened by there being no `translate` member on a ProjectedPath: `drawTo` is the only way to move one, so the single available move operation was the destructive one. `PathBlock.drawTo`, which already went through `projectCommands`, was unaffected.
+
 ### Changed
 
 #### Core
@@ -26,6 +28,7 @@ Both repairs are **serialization only**. The command list is never touched, beca
 
 #### Development
 
+- **`rotateAtVertexIndex`'s index is inert on a PathBlock, and that is deliberate.** Audited, a frame-preserving version implemented, then reverted: the result is re-based on purpose, `tests/path-blocks.test.ts` pins it, and `website/blog/samples/post40/shattered-glyph.pathogen` documents it in a comment and adds the pivot back by hand. `validate:samples` checks warnings and collisions, not geometric identity, so the change would have shipped a silent shift. Recorded at the call site and in the audit; the honest fix is documentation or deprecating the index on that receiver, not a behaviour change.
 - **`tests/leading-move.test.ts`** pins both halves of the contract: the output is repaired at both boundaries, and the value — `d`, `commands`, `subPathCount`, `command:first`, query counts — is not.
 
 ## [Unreleased] - 2026-09-21 (variable offsets on projected paths; absolute commands in query blocks)
