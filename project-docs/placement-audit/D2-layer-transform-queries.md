@@ -6,10 +6,10 @@
 
 ## The issue
 
-A layer query returns a `ProjectedPathValue`, whose documented contract is page
-coordinates (`docs/layers.md:112`: results are "in page coordinates"). When the layer carries
-a `transform`, that is false: the query answers **pre-transform** coordinates and the browser
-then moves the geometry.
+A layer query returns a `ProjectedPathValue`. When the layer carries a `transform`, the query
+answers **pre-transform** coordinates and the browser then moves the geometry. `docs/layers.md`
+used to promise these results were "in page coordinates"; option C corrected that, so what
+follows is now a documented sharp edge rather than a broken promise — but the edge is real.
 
 ```
 let moved = PathLayer('moved') #{ translate-x: 100; translate-y: 50; };
@@ -51,13 +51,14 @@ is not a constant offset you can subtract — every derived measurement is wrong
 
 ## Three facts that constrain the fix
 
-**1. ~~The transform is not readable back for the common spelling.~~ FIXED 2026-09-24.** A manual workaround
-("query, then add the transform yourself") is unavailable where it is most needed:
+**1. ~~The transform is not readable back for the common spelling.~~ FIXED 2026-09-24.**
+The manual workaround — query, then add the transform yourself — used to be unavailable
+exactly where it was most needed:
 
-| Spelling | `ctx.transform.translate` reads back | Renders with the transform? |
+| Spelling | `ctx.transform.translate` read back | Reads back now |
 |---|---|---|
-| `#{ translate-x: 100; translate-y: 50; }` | `0,0` | yes |
-| `ctx.transform.translate.set(100, 50)` | `100,50` | yes |
+| `#{ translate-x: 100; translate-y: 50; }` | `0,0` | `100,50` |
+| `ctx.transform.translate.set(100, 50)` | `100,50` | `100,50` |
 
 Style-block transforms were resolved at emit time and never populated `transformState` —
 two stores, one write-only. `absorbStyleTransform` now moves the shorthand into the layer's
@@ -109,16 +110,19 @@ is drawn into a layer with a *different* transform — which is exactly the fail
 the repro, and leaves the correct same-layer idiom alone. Narrower than B, more targeted than
 C, and needs no matrix work.
 
-## Recommendation
+## Recommendation and what has happened
 
-**Fix fact 1 first, regardless of which option you choose** — style-set transforms should
-populate `transformState`. It is a clear defect on its own, it makes the transform
-inspectable, and it is a prerequisite for C and for any diagnostic in B or D.
+Agreed 2026-09-24: fix fact 1, then C, then D.
 
-Then **D, then C**: warn on the genuinely-wrong pattern, document the space, and leave the
-working idiom working. Reach for **A** only if layer transforms are meant to be a first-class
-layout tool rather than a render-time convenience — that is a product question, not a bug
-question, and it is the one I would want your read on.
+- **Fact 1 — done.** One transform store; the shorthand reads back and the two spellings
+  compose instead of one silently winning.
+- **C — done.** The space is named in `docs/layers.md`, with both workarounds shown and
+  verified.
+- **D — open.** Warn when a query result from a transformed layer is drawn into a layer whose
+  transform differs, leaving the same-layer idiom (fact 2) alone.
+
+**A** stays unbuilt, and deliberately so: it is a product question — are layer transforms a
+first-class layout tool, or a render-time convenience? — not a bug question.
 
 ## Reproduce
 
