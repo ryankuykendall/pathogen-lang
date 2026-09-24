@@ -643,6 +643,26 @@ Option 1 when there is demand; the uniform layouts in `topo-shader.ts` and `topo
 
 **Discovered:** 2026-09-09 (glyph-halo diagnosis, `project-docs/glyph-halo-diagnosis/`)
 
+**RESOLVED:** 2026-09-24 — repaired at serialization, in `finalizeStore`
+(`src/evaluator/index.ts`), which is the single point every LayerOutput's `data` passes
+through. `ensureLeadingMove` (`src/evaluator/segments.ts`) prepends a zero-length **relative**
+`m 0 0`: at the start of path data a relative moveto resolves as absolute, so it names the
+(0,0) a layer's own cursor already starts from and adds no geometry. The same audit found the
+identical failure in every `<defs>` producer — `Mask`/`ClipPath`/`Pattern`/`Marker.append()`
+and `.contour()` emitted `d="H 40 V 40 H 0 Z"` — fixed alongside by `defsPathData`, which
+prepends the **absolute** first point instead, because defs content has no cursor for a
+relative move to resolve against.
+
+**The command list is never touched.** A synthesized move must not become a value the
+language can see: it would add a phantom `command` match, shift every `:nth` index, and
+change what `command:first` selects. Pinned by `tests/leading-move.test.ts`, which asserts
+both that the output is repaired and that `foo.d`, `.commands`, `subPathCount` and query
+indices are unchanged for `@{ h 10 } << @{ v 10 }`.
+
+Scope note: this repairs **all** layer output, including bare authored commands — `H 50` now
+compiles to `m 0 0 H 50`. 22 unit tests asserted the unrepaired (non-rendering) strings and
+were updated. No published sample changed; no byte-snapshot fixture moved.
+
 **Severity:** Medium
 
 **Description:**

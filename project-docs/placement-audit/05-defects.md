@@ -10,7 +10,7 @@ Severity is "how likely is a user to hit this, and how hard is it to diagnose wh
 
 ---
 
-## D1 — Every `<defs>` producer emits invalid SVG · **High**
+## D1 — Every `<defs>` producer emits invalid SVG · **High** · **FIXED 2026-09-24**
 
 `Mask.append()`, `ClipPath.append()`, `Pattern.append()`, `Marker.append()` and
 `TopoGradient.contour()` serialize through `commandsToAbsoluteD`, which never synthesizes a
@@ -48,8 +48,10 @@ So the leading `m` is what makes serialization correct — the opposite of the c
 problem it causes elsewhere. It is also why the six defs byte-snapshot fixtures are clean:
 `snapshots/03-mask.pathogen:3` authors `@{ m 0 0 … }`.
 
-**Fix:** synthesize the moveto where `d` is built for defs, or reuse the `.d` getter's
-logic. Additive, no breaking change.
+**FIXED** by `defsPathData` (`src/evaluator/index.ts`), which prepends the absolute first
+point at the five defs serialization sites. Serialization only — `commands` untouched. Landed
+with ISSUE-015, which is the same failure in layers. `probes/run-defects.sh` now reports
+D1 and ISSUE-015 as FIXED; leaving those probes in place makes them the regression check.
 
 ---
 

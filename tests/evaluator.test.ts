@@ -25,31 +25,31 @@ describe('Evaluator', () => {
     });
 
     it('evaluates H (horizontal line)', () => {
-      expect(compilePath('H 50')).toBe('H 50');
+      expect(compilePath('H 50')).toBe('m 0 0 H 50');
     });
 
     it('evaluates V (vertical line)', () => {
-      expect(compilePath('V 50')).toBe('V 50');
+      expect(compilePath('V 50')).toBe('m 0 0 V 50');
     });
 
     it('evaluates C (cubic bezier)', () => {
-      expect(compilePath('C 10 20 30 40 50 60')).toBe('C 10 20 30 40 50 60');
+      expect(compilePath('C 10 20 30 40 50 60')).toBe('m 0 0 C 10 20 30 40 50 60');
     });
 
     it('evaluates S (smooth cubic)', () => {
-      expect(compilePath('S 30 40 50 60')).toBe('S 30 40 50 60');
+      expect(compilePath('S 30 40 50 60')).toBe('m 0 0 S 30 40 50 60');
     });
 
     it('evaluates Q (quadratic bezier)', () => {
-      expect(compilePath('Q 25 50 50 0')).toBe('Q 25 50 50 0');
+      expect(compilePath('Q 25 50 50 0')).toBe('m 0 0 Q 25 50 50 0');
     });
 
     it('evaluates T (smooth quadratic)', () => {
-      expect(compilePath('T 50 0')).toBe('T 50 0');
+      expect(compilePath('T 50 0')).toBe('m 0 0 T 50 0');
     });
 
     it('evaluates A (arc)', () => {
-      expect(compilePath('A 25 25 0 1 1 50 50')).toBe('A 25 25 0 1 1 50 50');
+      expect(compilePath('A 25 25 0 1 1 50 50')).toBe('m 0 0 A 25 25 0 1 1 50 50');
     });
 
     it('evaluates lowercase relative commands', () => {
@@ -158,7 +158,7 @@ describe('Evaluator', () => {
       });
 
       it('evaluates division with function call in path args', () => {
-        expect(compilePath('l calc(4 / pow(2, 1)) 0')).toBe('l 2 0');
+        expect(compilePath('l calc(4 / pow(2, 1)) 0')).toBe('m 0 0 l 2 0');
       });
 
       it('evaluates modulo', () => {
@@ -864,7 +864,7 @@ describe('Evaluator', () => {
     it('evaluates arc', () => {
       // arc() is a continuation command — keeps uppercase A since it has no start-position knowledge
       const result = compilePath('arc(10, 10, 0, 1, 1, 50, 50);');
-      expect(result).toBe('A 10 10 0 1 1 50 50');
+      expect(result).toBe('m 0 0 A 10 10 0 1 1 50 50');
     });
 
     it('evaluates rect', () => {
@@ -939,12 +939,12 @@ describe('Evaluator', () => {
 
     it('evaluates lineTo', () => {
       const result = compilePath('lineTo(50, 100);');
-      expect(result).toBe('L 50 100');
+      expect(result).toBe('m 0 0 L 50 100');
     });
 
     it('evaluates closePath', () => {
       const result = compilePath('closePath();');
-      expect(result).toBe('Z');
+      expect(result).toBe('m 0 0 Z');
     });
 
     it('combines multiple path functions', () => {
@@ -956,20 +956,20 @@ describe('Evaluator', () => {
   describe('for loops', () => {
     it('evaluates simple for loop', () => {
       // 0..3 is inclusive: 0, 1, 2, 3
-      expect(compilePath('for (i in 0..3) { L i 0 }')).toBe('L 0 0 L 1 0 L 2 0 L 3 0');
+      expect(compilePath('for (i in 0..3) { L i 0 }')).toBe('m 0 0 L 0 0 L 1 0 L 2 0 L 3 0');
     });
 
     describe('half-open ranges (a..<b)', () => {
       it('stops before the upper bound', () => {
-        expect(compilePath('for (i in 0..<3) { L i 0 }')).toBe('L 0 0 L 1 0 L 2 0');
+        expect(compilePath('for (i in 0..<3) { L i 0 }')).toBe('m 0 0 L 0 0 L 1 0 L 2 0');
       });
 
       it('pairs with array lengths to visit every index exactly once', () => {
-        expect(compilePath('let pts = [10, 20, 30]; for (i in 0..<pts.length) { L pts[i] i }')).toBe('L 10 0 L 20 1 L 30 2');
+        expect(compilePath('let pts = [10, 20, 30]; for (i in 0..<pts.length) { L pts[i] i }')).toBe('m 0 0 L 10 0 L 20 1 L 30 2');
       });
 
       it('counts down and stops before the lower bound', () => {
-        expect(compilePath('for (i in 3..<0) { L i 0 }')).toBe('L 3 0 L 2 0 L 1 0');
+        expect(compilePath('for (i in 3..<0) { L i 0 }')).toBe('m 0 0 L 3 0 L 2 0 L 1 0');
       });
 
       it('runs zero times for an empty range', () => {
@@ -978,16 +978,16 @@ describe('Evaluator', () => {
       });
 
       it('steps by one from the start with a fractional bound', () => {
-        expect(compilePath('for (i in 0..<2.5) { L i 0 }')).toBe('L 0 0 L 1 0 L 2 0');
+        expect(compilePath('for (i in 0..<2.5) { L i 0 }')).toBe('m 0 0 L 0 0 L 1 0 L 2 0');
       });
 
       it('keeps the inclusive spelling unchanged', () => {
-        expect(compilePath('for (i in 0..2.5) { L i 0 }')).toBe('L 0 0 L 1 0 L 2 0');
-        expect(compilePath('for (i in 2.5..0) { L i 0 }')).toBe('L 2.5 0 L 1.5 0 L 0.5 0');
+        expect(compilePath('for (i in 0..2.5) { L i 0 }')).toBe('m 0 0 L 0 0 L 1 0 L 2 0');
+        expect(compilePath('for (i in 2.5..0) { L i 0 }')).toBe('m 0 0 L 2.5 0 L 1.5 0 L 0.5 0');
       });
 
       it('respects break and continue', () => {
-        expect(compilePath('for (i in 0..<6) { if (i == 1) { continue; } if (i == 4) { break; } L i 0 }')).toBe('L 0 0 L 2 0 L 3 0');
+        expect(compilePath('for (i in 0..<6) { if (i == 1) { continue; } if (i == 4) { break; } L i 0 }')).toBe('m 0 0 L 0 0 L 2 0 L 3 0');
       });
 
       it('applies the iteration limit to the exact count', () => {
@@ -998,7 +998,7 @@ describe('Evaluator', () => {
 
     it('evaluates for loop with calc', () => {
       // 0..3 is inclusive: 0, 1, 2, 3
-      expect(compilePath('for (i in 0..3) { L calc(i * 10) 0 }')).toBe('L 0 0 L 10 0 L 20 0 L 30 0');
+      expect(compilePath('for (i in 0..3) { L calc(i * 10) 0 }')).toBe('m 0 0 L 0 0 L 10 0 L 20 0 L 30 0');
     });
 
     it('evaluates nested for loops', () => {
@@ -1183,7 +1183,7 @@ describe('Evaluator', () => {
       });
 
       it('no match and no default is a no-op; execution continues after the switch', () => {
-        expect(compilePath('let k = "zzz"; switch (k) { case "circle" { M 1 1 } } L 9 9')).toBe('L 9 9');
+        expect(compilePath('let k = "zzz"; switch (k) { case "circle" { M 1 1 } } L 9 9')).toBe('m 0 0 L 9 9');
       });
 
       it('an empty switch is a no-op', () => {
@@ -1731,7 +1731,7 @@ describe('Evaluator', () => {
     });
 
     it('preserves arc flags as integers', () => {
-      expect(compilePath('A 25 25 0 1 1 50 50', { toFixed: 2 })).toBe('A 25 25 0 1 1 50 50');
+      expect(compilePath('A 25 25 0 1 1 50 50', { toFixed: 2 })).toBe('m 0 0 A 25 25 0 1 1 50 50');
     });
 
     it('handles negative decimals', () => {

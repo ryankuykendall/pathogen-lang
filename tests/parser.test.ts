@@ -2530,7 +2530,7 @@ describe('switch expressions', () => {
     // The tokenizer nests braces only inside a switch expression's arms; an
     // unclosed `(` must not swallow the enclosing block's `}` or a `let`.
     expect(() => compile('let k = 1;\nif (k > 0) {\n  M calc(1\n}\nL 0 0;')).toThrow('Line 3, col 5: Undefined variable: calc');
-    expect(compile('fn f() {\n  M calc(1\n}\nL 0 0').layers[0].data).toBe('L 0 0');
+    expect(compile('fn f() {\n  M calc(1\n}\nL 0 0').layers[0].data).toBe('m 0 0 L 0 0');
     expect(compile('let f = 5;\nlet y = 10;\nM f(y\nlet b = 1;\nL b 0;').layers[0].data).toBe('M 5 10 L 1 0');
   });
 

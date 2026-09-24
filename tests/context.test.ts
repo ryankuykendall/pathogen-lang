@@ -741,12 +741,15 @@ describe('Path Context Tracking', () => {
       expect(result.context.position.y).toBeCloseTo(-50, 5);
     });
 
-    it('emits only A command (no M or L)', () => {
+    it('emits only A command (no M or L of its own)', () => {
       const result = compileWithContext(`
         arcFromPolarOffset(0, 50, 90deg);
       `);
-      // Path should only be "A ..." with no M or L
-      expect(result.path).toMatch(/^A /);
+      // The leading `m 0 0` is synthesized at serialization so the layer begins
+      // with a moveto — a path that does not is discarded by the browser. It is
+      // not a command arcFromPolarOffset emitted; the arc is still the only
+      // drawing command, which is what this test is pinning.
+      expect(result.path).toMatch(/^m 0 0 A /);
       expect(result.path).not.toContain('M');
       expect(result.path).not.toContain('L');
     });

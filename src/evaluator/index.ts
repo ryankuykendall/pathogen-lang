@@ -309,6 +309,7 @@ import {
   collectSegmentLabels,
   commandsToPathData,
   createPathStore,
+  ensureLeadingMove,
   findEndpointCommands,
   labelNameError,
   firstInkedPointOf,
@@ -1499,6 +1500,25 @@ function generateCodeSnippetLayers(
  */
 function commandsToAbsoluteD(commands: PathBlockCommand[]): string {
   return commandsToAbsoluteDFormatted(commands, { format: formatNum });
+}
+
+/**
+ * Path data for a `<defs>` child (mask, clipPath, pattern, marker, contour).
+ *
+ * Defs content has no cursor, so unlike a layer there is no pen for a relative
+ * move to resolve against — prepend the ABSOLUTE first point instead. Without
+ * this, a command list that does not begin with a move serializes to
+ * `d="H 40 V 40 H 0 Z"`, which the browser discards, silently emptying the mask.
+ *
+ * SERIALIZATION ONLY: `commands` is untouched, exactly as in the ProjectedPath
+ * `d` getter, which has always done this.
+ */
+function defsPathData(commands: PathBlockCommand[]): string {
+  const d = commandsToAbsoluteD(commands);
+  const first = commands[0];
+  if (!first || first.command === 'M' || first.command === 'm') return d;
+  const at = firstInkedPointOf(commands) ?? first.start;
+  return `M ${formatNum(at.x)} ${formatNum(at.y)}${d ? ` ${d}` : ''}`;
 }
 
 function evaluateStyleBlockLiteral(expr: StyleBlockLiteral, scope: Scope): StyleBlockValue {
@@ -4879,7 +4899,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         } else {
           throw mError('Mask.append() first argument must be a PathBlock or ProjectedPath');
         }
-        const d = commandsToAbsoluteD(commands);
+        const d = defsPathData(commands);
         let styles: Record<string, string> = {};
         if (expr.args.length === 2) {
           const styleArg = evaluateExpression(expr.args[1], scope);
@@ -4908,7 +4928,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         } else {
           throw mError('ClipPath.append() argument must be a PathBlock or ProjectedPath');
         }
-        const d = commandsToAbsoluteD(commands);
+        const d = defsPathData(commands);
         obj.paths.push(d);
         return 0;
       }
@@ -4932,7 +4952,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         } else {
           throw mError('Pattern.append() first argument must be a PathBlock or ProjectedPath');
         }
-        const d = commandsToAbsoluteD(commands);
+        const d = defsPathData(commands);
         let styles: Record<string, string> = {};
         if (expr.args.length === 2) {
           const styleArg = evaluateExpression(expr.args[1], scope);
@@ -4962,7 +4982,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         } else {
           throw mError('Marker.append() first argument must be a PathBlock or ProjectedPath');
         }
-        const d = commandsToAbsoluteD(commands);
+        const d = defsPathData(commands);
         let styles: Record<string, string> = {};
         if (expr.args.length === 2) {
           const styleArg = evaluateExpression(expr.args[1], scope);
@@ -5336,7 +5356,7 @@ function evaluateMethodCall(expr: MethodCallExpression, scope: Scope, workerExpr
         const cmds = pathVal.commands;
         if (cmds.length === 0 || cmds[cmds.length - 1].command !== 'z')
           throw mError('.contour() path must be closed (end with closePath())');
-        const dString = commandsToAbsoluteD(cmds);
+        const dString = defsPathData(cmds);
         obj.topoContours!.push({
           elevation,
           commands: cmds.map((c) => ({
@@ -10308,8 +10328,10 @@ function finalizeStore(store: PathStore, evalState: EvaluationState): { data: st
   for (const w of finalized.warnings) {
     warn(evalState, 'corner-op', w.message, w.loc);
   }
-  if (!finalized.changed) return { data: storeToPathData(store), commands: flat };
-  return { data: commandsToPathData(finalized.commands), commands: finalized.commands };
+  // Every consumer of this function builds a LayerOutput, so the leading-move
+  // guard belongs here rather than at each call site.
+  if (!finalized.changed) return { data: ensureLeadingMove(storeToPathData(store)), commands: flat };
+  return { data: ensureLeadingMove(commandsToPathData(finalized.commands)), commands: finalized.commands };
 }
 
 interface TabStop {

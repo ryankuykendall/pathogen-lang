@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-24 (every path begins with a moveto)
+
+ISSUE-015 resolved, and the same failure found and fixed in every `<defs>` producer. Found by the placement audit in `project-docs/placement-audit/`; the probes there are now the regression check.
+
+### Fixed
+
+#### Core
+
+- **A layer's path data always begins with a moveto.** Per the SVG spec an initial relative command has no starting point, so the browser discards the **entire** path — the layer compiled clean and rendered nothing, with no warning. Any block with no leading move hit it: a `variableOffset` result, a `<<` concatenation, a bare `H 50`. It cost a prior session most of a day (48 halo-stroke layers compiled cleanly and were invisible). A zero-length relative `m 0 0` is now prepended where a layer's data is assembled; at the start of path data a relative moveto resolves as absolute, so it names the (0,0) the layer's cursor already starts from and adds no geometry.
+- **Every `<defs>` producer emitted invalid path data.** `Mask`, `ClipPath`, `Pattern` and `Marker` `.append()`, and `.contour()`, serialized to `d="H 40 V 40 H 0 Z"` — no moveto, so the mask was empty and whatever it masked vanished or showed unmasked. They now prepend the **absolute** first point, not a relative move: defs content has no cursor for a relative move to resolve against. The `ProjectedPath.d` getter had always done this; the defs path never did.
+
+Both repairs are **serialization only**. The command list is never touched, because a synthesized move must not become a value the language can see — it would add a phantom `command` match, shift every `:nth` index, and change what `command:first` selects. So `let foo = @{ h 10 } << @{ v 10 };` still reports `foo.d` as `h 10 v 10` with two commands and one subpath, while the layer it is drawn into emits `m 0 0 h 10 v 10`.
+
+### Changed
+
+#### Core
+
+- **Programs that omit an initial moveto now emit one.** The repair covers all layer output, not only `draw()`, so `H 50` compiles to `m 0 0 H 50`. The previous output was invalid SVG that would not render, so nothing that rendered before renders differently. 22 unit tests asserted the unrepaired strings and were updated; no published sample changed and no byte-snapshot fixture moved.
+
+#### Development
+
+- **`tests/leading-move.test.ts`** pins both halves of the contract: the output is repaired at both boundaries, and the value — `d`, `commands`, `subPathCount`, `command:first`, query counts — is not.
+
 ## [Unreleased] - 2026-09-21 (variable offsets on projected paths; absolute commands in query blocks)
 
 ISSUE-019 resolved, ISSUE-025 logged. Paper trail, repro and the four engine-variance controls are in `project-docs/observable-reactive-paths/projected-variable-offset/`.

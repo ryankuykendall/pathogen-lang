@@ -151,6 +151,28 @@ export function recordsFromCommands(commands: PathBlockCommand[]): PathRecord[] 
 }
 
 const isMoveCmd = (c: string) => c === 'm' || c === 'M';
+
+/**
+ * A layer's path data must begin with a moveto. Per the SVG spec an initial
+ * relative command has no starting point, so the browser discards the ENTIRE
+ * path — the layer compiles clean and renders nothing. A block with no leading
+ * move (a variableOffset result, a `<<` concatenation) emits `c …` when it is
+ * the first thing in a layer. That is ISSUE-015.
+ *
+ * Prepend a zero-length RELATIVE move. At the start of path data a relative
+ * moveto resolves as absolute, so `m 0 0` names the (0,0) a layer's own cursor
+ * already starts from: it adds no geometry and moves no pen.
+ *
+ * SERIALIZATION ONLY. The command list is never touched, because a synthesized
+ * move must not become a value the language can see — inserting one would add a
+ * phantom `command` match, shift every `:nth` index, and change what
+ * `command:first` selects.
+ */
+export function ensureLeadingMove(d: string): string {
+  const trimmed = d.trimStart();
+  if (trimmed === '' || isMoveCmd(trimmed[0])) return d;
+  return `m 0 0 ${trimmed}`;
+}
 const isCloseCmd = (c: string) => c === 'z' || c === 'Z';
 
 

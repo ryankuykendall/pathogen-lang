@@ -11,7 +11,7 @@ by P3, and separating those needs per-call receiver typing, which this audit did
 
 ---
 
-## V4 — Path data with no leading moveto is emitted silently · P5a · **do this first**
+## V4 — Path data with no leading moveto is emitted silently · P5a · **DONE 2026-09-24**
 
 Two forms, one cause (Cause B in `03`): command lists are not self-contained SVG and each
 serializer decides independently whether to synthesize a moveto.
@@ -171,8 +171,11 @@ receivers or state the exclusion. `03` now states it.
 
 ## Suggested order
 
-1. **V4 / D1 + ISSUE-015** — High severity, user-visible breakage, additive, snapshot-clean,
-   fix already recorded.
+1. ~~**V4 / D1 + ISSUE-015**~~ — **done 2026-09-24.** Repaired at both serialization
+   boundaries, relative `m 0 0` for layers and an absolute first point for defs. One scope
+   finding worth recording: the layer guard sits in `finalizeStore`, so it repairs *all* layer
+   output, not only `draw()` — 22 unit tests asserted the unrepaired strings and were updated.
+   No sample or snapshot moved.
 2. **D3, D6** — one-line fixes to measured wrongness on declared APIs (`drawTo` dropping every
    label; `rotateAtVertexIndex` ignoring its index).
 3. **The `subPath` decision**, then **V1 Fix B + V2** as one "make the declarations true" pass.
